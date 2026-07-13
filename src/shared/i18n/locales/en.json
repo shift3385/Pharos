@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "Pharos",
+    "tagline": "QA test management suite"
+  },
+  "topbar": {
+    "toggleTheme": "Toggle light or dark theme",
+    "language": "Language"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "es": "Español",
+    "en": "English"
+  },
+  "nav": {
+    "dashboard": "Home",
+    "projects": "Projects",
+    "testPlan": "Test plan",
+    "testCases": "Test cases",
+    "planner": "Planner",
+    "templates": "Templates",
+    "ai": "AI engine",
+    "admin": "Administration"
+  },
+  "dashboard": {
+    "title": "Welcome to Pharos",
+    "subtitle": "The lighthouse that guides your testing projects safely to port.",
+    "phaseLabel": "Phase 0 — Foundations",
+    "body": "You are looking at the application shell: navigation between sections, the Faro Nocturno theme in light and dark variants, and Spanish or English language. Each section will be built in its corresponding phase."
+  },
+  "section": {
+    "comingInPhase": "Coming in Phase {{phase}}",
+    "emptyBody": "This section has no content yet. It is part of the scope of a later phase of the implementation plan."
+  },
+  "page": {
+    "projects": {
+      "title": "Projects",
+      "subtitle": "Start a new testing project or continue an existing one."
+    },
+    "testPlan": {
+      "title": "Test plan",
+      "subtitle": "21-step wizard aligned with ISO/IEC/IEEE 29119."
+    },
+    "testCases": {
+      "title": "Test cases",
+      "subtitle": "Template editor and Gherkin view synchronized in real time."
+    },
+    "planner": {
+      "title": "Planner",
+      "subtitle": "Local kanban board for tasks, test data and defects."
+    },
+    "templates": {
+      "title": "Templates",
+      "subtitle": "Template space and export to .xlsx and .pdf."
+    },
+    "ai": {
+      "title": "AI engine",
+      "subtitle": "Online assistance with Gemini and offline with Ollama."
+    },
+    "admin": {
+      "title": "Administration",
+      "subtitle": "Templates, AI engine and test profiles."
+    }
+  }
+}

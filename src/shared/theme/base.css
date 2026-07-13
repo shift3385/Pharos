@@ -1,0 +1,72 @@
+/*
+ * Base element styles and a minimal reset. Colors/typography come only from
+ * design tokens (tokens.css) — no raw values here.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-page);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+h1 {
+  font-size: var(--fs-title-lg);
+}
+h2 {
+  font-size: var(--fs-title-md);
+}
+h3 {
+  font-size: var(--fs-title-sm);
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

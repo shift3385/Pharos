@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "Pharos",
+    "tagline": "Suite de gestión de pruebas QA"
+  },
+  "topbar": {
+    "toggleTheme": "Cambiar tema claro u oscuro",
+    "language": "Idioma"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
+  "language": {
+    "es": "Español",
+    "en": "English"
+  },
+  "nav": {
+    "dashboard": "Inicio",
+    "projects": "Proyectos",
+    "testPlan": "Plan de pruebas",
+    "testCases": "Casos de prueba",
+    "planner": "Planificador",
+    "templates": "Plantillas",
+    "ai": "Motor de IA",
+    "admin": "Administración"
+  },
+  "dashboard": {
+    "title": "Bienvenido a Pharos",
+    "subtitle": "El faro que guía tus proyectos de pruebas a puerto seguro.",
+    "phaseLabel": "Fase 0 — Cimientos",
+    "body": "Estás viendo el esqueleto de la aplicación: navegación entre secciones, tema Faro Nocturno en variantes clara y oscura, e idioma español o inglés. Cada sección se construirá en su fase correspondiente."
+  },
+  "section": {
+    "comingInPhase": "Se implementará en la Fase {{phase}}",
+    "emptyBody": "Esta sección todavía no tiene contenido. Forma parte del alcance de una fase posterior del plan de implementación."
+  },
+  "page": {
+    "projects": {
+      "title": "Proyectos",
+      "subtitle": "Inicia un nuevo proyecto de pruebas o continúa uno existente."
+    },
+    "testPlan": {
+      "title": "Plan de pruebas",
+      "subtitle": "Asistente de 21 pasos conforme a ISO/IEC/IEEE 29119."
+    },
+    "testCases": {
+      "title": "Casos de prueba",
+      "subtitle": "Editor de plantilla y vista Gherkin sincronizados en tiempo real."
+    },
+    "planner": {
+      "title": "Planificador",
+      "subtitle": "Tablero kanban local para tareas, datos de prueba y defectos."
+    },
+    "templates": {
+      "title": "Plantillas",
+      "subtitle": "Espacio de plantillas y exportación a .xlsx y .pdf."
+    },
+    "ai": {
+      "title": "Motor de IA",
+      "subtitle": "Asistencia en línea con Gemini y sin conexión con Ollama."
+    },
+    "admin": {
+      "title": "Administración",
+      "subtitle": "Plantillas, motor de IA y perfiles de prueba."
+    }
+  }
+}
