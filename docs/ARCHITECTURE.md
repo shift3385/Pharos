@@ -65,9 +65,24 @@ hardcoded UI strings. Adding a language = adding a file.
 Vitest + React Testing Library + jsdom. The QA tool tests itself: theme
 switching, i18n switching, navigation, and the no-hardcoded-color guard.
 
+## Backend (Phase 1+)
+
+`server/` is a Fastify + TypeScript app (run via `tsx`), orchestrated with
+`db/` (Postgres, reused `postgres:15-alpine`) by the root `docker-compose.yml`.
+Layered per domain module (`modules/auth`: routes → service → repository), with
+a minimal forward-only SQL migration runner (`db/migrate.ts` + `migrations/`).
+
+Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
+**JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
+with rotation + revocation. The desktop client caches the session in the OS
+keychain (Windows Credential Manager via a Tauri `keyring` command) and reopens
+offline from that cache (spec §4).
+
 ## Phase status
 
-- **Phase 0 — Foundations:** scaffold, modular structure, i18n (es/en), Faro
-  Nocturno theme (light/dark), initial glossary. Frontend verified (tests green,
-  runs in Vite dev). Native Tauri build pending the Rust toolchain.
-- Phases 1–9: not started (see `PROGRESO.md`).
+- **Phase 0 — Foundations:** complete. Scaffold, modular structure, i18n
+  (es/en), Faro Nocturno theme, native Tauri window (GNU toolchain).
+- **Phase 1 — Backend & auth:** docker-compose + Fastify API, Postgres schema,
+  register/login/refresh/logout, client auth UI + offline session. Tests green
+  (backend 9, client 8).
+- Phases 2–9: not started (see `PROGRESO.md`).

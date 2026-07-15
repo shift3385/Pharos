@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth, AuthScreen } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
+import { AppSplash } from "./AppSplash";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectsPage } from "@modules/projects";
 import { TestPlanPage } from "@modules/test-plan";
@@ -10,6 +12,11 @@ import { AiPage } from "@modules/ai";
 import { AdminPage } from "@modules/admin";
 
 export function App() {
+  const { status } = useAuth();
+
+  if (status === "loading") return <AppSplash />;
+  if (status === "unauthenticated") return <AuthScreen />;
+
   return (
     <AppShell>
       <Routes>

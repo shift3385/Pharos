@@ -3,6 +3,32 @@
     "name": "Pharos",
     "tagline": "Suite de gestión de pruebas QA"
   },
+  "common": {
+    "loading": "Cargando…"
+  },
+  "auth": {
+    "loginTitle": "Iniciar sesión",
+    "registerTitle": "Crear cuenta",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "displayName": "Alias (nombre para mostrar)",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "login": "Entrar",
+    "register": "Registrarme",
+    "toRegister": "¿No tienes cuenta? Regístrate",
+    "toLogin": "¿Ya tienes cuenta? Inicia sesión",
+    "loggingIn": "Entrando…",
+    "logout": "Cerrar sesión",
+    "offline": "Sin conexión",
+    "error": {
+      "invalid_credentials": "Correo o contraseña incorrectos.",
+      "email_in_use": "Ese correo ya está registrado.",
+      "validation_error": "Revisa los datos introducidos.",
+      "network": "No se pudo conectar con el servidor.",
+      "generic": "Algo salió mal. Inténtalo de nuevo."
+    }
+  },
   "topbar": {
     "toggleTheme": "Cambiar tema claro u oscuro",
     "language": "Idioma"

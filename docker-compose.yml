@@ -1,0 +1,47 @@
+# Backend orchestration for Pharos (spec §2, §14.2). Reuses the postgres:15-alpine
+# image already present on the machine (no new image pull); the client desktop app
+# is installed natively and is NOT dockerized.
+name: pharos
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: pharos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-pharos_db}
+    ports:
+      # Host 5433 to avoid clashing with any other local postgres on 5432.
+      - "5433:5432"
+    volumes:
+      - pharos_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-pharos_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    container_name: pharos-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-pharos_db}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-insecure-secret-change-me-please-min32}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "3000:3000"
+
+volumes:
+  pharos_pg_data:

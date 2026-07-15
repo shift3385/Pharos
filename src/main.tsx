@@ -9,6 +9,7 @@ import "@shared/theme/base.css";
 import "@shared/i18n";
 
 import { ThemeProvider } from "@shared/theme/ThemeProvider";
+import { AuthProvider } from "@modules/auth";
 import { App } from "@app/App";
 
 const rootElement = document.getElementById("root");
@@ -19,11 +20,13 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <HashRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        <App />
-      </HashRouter>
+      <AuthProvider>
+        <HashRouter
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
+          <App />
+        </HashRouter>
+      </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );

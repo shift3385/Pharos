@@ -45,6 +45,15 @@ files (`es`/`en`).
 | Nombre oficial             | `first_name`, `last_name` | Mandatory (spec §3) |
 | Idioma                     | `language`            | `es` (default) / `en` |
 | Tema                       | `theme`               | `light` / `dark` — "Faro Nocturno" |
+| Usuario                    | `user` / `User`       | auth (spec §4) |
+| Correo electrónico         | `email`               | almacenado en minúsculas, único |
+| Hash de contraseña         | `password_hash`       | Argon2id |
+| Rol                        | `role`                | `test_manager`, `tester`, … (§3) |
+| Token de acceso            | `access_token`        | JWT (HS256), corto |
+| Token de refresco          | `refresh_token`       | opaco; hash SHA-256 en BD, con rotación |
+| Sesión                     | `session`             | `{ accessToken, refreshToken, user }` |
+
+> API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 
 ## Audit fields (every business entity — spec §3)
 

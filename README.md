@@ -46,6 +46,16 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Domain modules live in
 `src/modules/*`, the shell in `src/app/*`, the design system and i18n in
 `src/shared/*`. The ubiquitous language is in [`docs/GLOSARIO.md`](docs/GLOSARIO.md).
 
+## Local test account
+
+For local development there is a seeded account you can sign in with (exists
+only in the local `pharos_db` — **not** a real credential):
+
+- **Email:** `smoke@pharos.dev`
+- **Password:** `supersecret1`
+
+If the database is reset, just register a new account from the login screen.
+
 ## Status
 
 Phase 0 (Foundations) — **complete**. Frontend verified (tests green, runs in

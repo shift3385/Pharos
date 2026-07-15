@@ -1,0 +1,14 @@
+.app-splash {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: var(--color-bg-page);
+}
+
+.app-splash__text {
+  color: var(--color-text-secondary);
+  font-size: var(--fs-ui);
+}

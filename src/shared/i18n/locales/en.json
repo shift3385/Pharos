@@ -3,6 +3,32 @@
     "name": "Pharos",
     "tagline": "QA test management suite"
   },
+  "common": {
+    "loading": "Loading…"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "registerTitle": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "displayName": "Alias (display name)",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "login": "Sign in",
+    "register": "Sign up",
+    "toRegister": "No account? Sign up",
+    "toLogin": "Already have an account? Sign in",
+    "loggingIn": "Signing in…",
+    "logout": "Sign out",
+    "offline": "Offline",
+    "error": {
+      "invalid_credentials": "Incorrect email or password.",
+      "email_in_use": "That email is already registered.",
+      "validation_error": "Please check the details you entered.",
+      "network": "Could not reach the server.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
   "topbar": {
     "toggleTheme": "Toggle light or dark theme",
     "language": "Language"

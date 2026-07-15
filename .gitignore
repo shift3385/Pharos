@@ -6,6 +6,11 @@ dist/
 dist-ssr/
 *.local
 
+# Env / secrets
+.env
+.env.*
+!.env.example
+
 # Tauri / Rust
 src-tauri/target/
 src-tauri/gen/

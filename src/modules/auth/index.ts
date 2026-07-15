@@ -1,3 +1,5 @@
-// auth module boundary (spec §4). Reserved from day 1; implemented in Phase 1
-// (account login with Argon2id + JWT/refresh, cached offline session).
-export const AUTH_MODULE = "auth" as const;
+// Public API of the auth module (spec §4).
+export { AuthProvider } from "./state/AuthProvider";
+export { useAuth } from "./state/useAuth";
+export { AuthScreen } from "./ui/AuthScreen";
+export type { AuthUser } from "./model/types";
