@@ -7,9 +7,14 @@ edition = "2021"
 rust-version = "1.77.2"
 
 # The library is what the desktop and (future) mobile entrypoints call into.
+# Desktop (Windows GNU) only needs the rlib: the binary (main.rs) links it.
+# The cdylib/staticlib are mobile artifacts (v0.0.4) and, when linked with
+# windows-rs under MinGW's BFD ld, hit the "export ordinal too large" bug.
+# Re-add ["staticlib", "cdylib"] when the mobile target is set up (it uses a
+# different linker toolchain).
 [lib]
 name = "pharos_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

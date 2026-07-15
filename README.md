@@ -10,9 +10,15 @@ Syllabus v4.0.1.
 ## Prerequisites
 
 - **Node.js** ≥ 20 and npm.
-- **Rust toolchain** (rustup) + **MSVC Build Tools** + **WebView2** — required to
-  build/run the native Tauri desktop app on Windows. The web frontend runs
-  without them via Vite.
+- To build/run the **native Tauri desktop app** on Windows:
+  - **Rust** via rustup with the **GNU** toolchain: `rustup toolchain install
+    stable-x86_64-pc-windows-gnu` (pinned in `src-tauri/rust-toolchain.toml`).
+  - **MinGW-w64** for the `windres` resource compiler: `choco install mingw`.
+  - **WebView2** runtime (preinstalled on Windows 11).
+  - GNU tooling can't handle spaces in the build path. If the project lives under
+    a path with spaces, redirect the Cargo `target-dir` to a space-free folder in
+    a local (git-ignored) `.cargo/config.toml`.
+- The web frontend runs without any of the above via `npm run dev`.
 
 ## Setup
 
@@ -42,6 +48,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Domain modules live in
 
 ## Status
 
-Phase 0 (Foundations) — frontend scaffold verified (tests green, runs in Vite
-dev). Native Tauri build pending the Rust toolchain. Progress tracked in
-`PROGRESO.md` (kept outside this repo, in the planning workspace).
+Phase 0 (Foundations) — **complete**. Frontend verified (tests green, runs in
+Vite dev); native Tauri window builds and runs on Windows 11 with the GNU
+toolchain. Progress tracked in `PROGRESO.md` (kept outside this repo, in the
+planning workspace).

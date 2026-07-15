@@ -1,0 +1,4 @@
+# Pin the Tauri (Rust) build to the GNU toolchain. Chosen over MSVC to avoid the
+# multi-GB Visual Studio C++ workload; links self-contained via bundled MinGW.
+[toolchain]
+channel = "stable-x86_64-pc-windows-gnu"

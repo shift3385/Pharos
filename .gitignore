@@ -10,6 +10,9 @@ dist-ssr/
 src-tauri/target/
 src-tauri/gen/
 
+# Local machine-specific cargo config (space-free target-dir override)
+.cargo/
+
 # Test / coverage
 coverage/
 
