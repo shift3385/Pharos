@@ -78,11 +78,30 @@ with rotation + revocation. The desktop client caches the session in the OS
 keychain (Windows Credential Manager via a Tauri `keyring` command) and reopens
 offline from that cache (spec §4).
 
+## Local data (Phase 2+)
+
+The desktop client owns an encrypted local SQLite database (offline source of
+truth, spec §9). SQLCipher is **not** used because its OpenSSL build does not
+compile under the project's GNU toolchain; instead the working database lives in
+memory and is persisted to `pharos.db.enc` as an **AES-256-GCM** blob (pure-Rust
+RustCrypto, no OpenSSL). The 32-byte key is stored in the OS keychain. Schema is
+applied by a small forward-only migration runner (`src-tauri/migrations/`).
+
+Every business entity is multi-user ready (spec §3): `workspace_id` + audit
+fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
+`revision`), filled automatically by the repository. The profile (`display_name`
+alias + mandatory `first_name`/`last_name`) is exposed to the client through
+typed Tauri commands (`profile_get`, `profile_upsert`); the browser falls back
+to localStorage for `vite dev`.
+
 ## Phase status
 
 - **Phase 0 — Foundations:** complete. Scaffold, modular structure, i18n
   (es/en), Faro Nocturno theme, native Tauri window (GNU toolchain).
 - **Phase 1 — Backend & auth:** docker-compose + Fastify API, Postgres schema,
-  register/login/refresh/logout, client auth UI + offline session. Tests green
-  (backend 9, client 8).
-- Phases 2–9: not started (see `PROGRESO.md`).
+  register/login/refresh/logout, client auth UI + offline session.
+- **Phase 2 — Local data & profile:** encrypted SQLite (pure-Rust AES-256-GCM),
+  migrations, multi-user schema (workspaces + profiles with audit fields),
+  profile CRUD via Tauri commands + client Profile page. Tests: Rust 7,
+  client 9.
+- Phases 3–9: not started (see `PROGRESO.md`).

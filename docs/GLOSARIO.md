@@ -46,6 +46,8 @@ files (`es`/`en`).
 | Idioma                     | `language`            | `es` (default) / `en` |
 | Tema                       | `theme`               | `light` / `dark` — "Faro Nocturno" |
 | Usuario                    | `user` / `User`       | auth (spec §4) |
+| Espacio de trabajo         | `workspace` / `Workspace` | contenedor multi-usuario (§3) |
+| Perfil                     | `profile` / `Profile` | alias + nombre oficial (§3) |
 | Correo electrónico         | `email`               | almacenado en minúsculas, único |
 | Hash de contraseña         | `password_hash`       | Argon2id |
 | Rol                        | `role`                | `test_manager`, `tester`, … (§3) |

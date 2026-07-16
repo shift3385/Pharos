@@ -49,7 +49,23 @@
     "planner": "Planificador",
     "templates": "Plantillas",
     "ai": "Motor de IA",
-    "admin": "Administración"
+    "admin": "Administración",
+    "profile": "Perfil"
+  },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Tu alias y tu nombre oficial (usado en los documentos).",
+    "displayName": "Alias (nombre para mostrar)",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "Guardado",
+    "error": "No se pudo guardar",
+    "auditTitle": "Auditoría",
+    "createdAt": "Creado",
+    "updatedAt": "Actualizado",
+    "revision": "Revisión"
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",

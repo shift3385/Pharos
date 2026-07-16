@@ -10,6 +10,7 @@ import { PlannerPage } from "@modules/planner";
 import { TemplatesPage } from "@modules/templates";
 import { AiPage } from "@modules/ai";
 import { AdminPage } from "@modules/admin";
+import { ProfilePage } from "@modules/profile";
 
 export function App() {
   const { status } = useAuth();
@@ -28,6 +29,7 @@ export function App() {
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/ai" element={<AiPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

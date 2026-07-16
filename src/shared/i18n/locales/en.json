@@ -49,7 +49,23 @@
     "planner": "Planner",
     "templates": "Templates",
     "ai": "AI engine",
-    "admin": "Administration"
+    "admin": "Administration",
+    "profile": "Profile"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your alias and official name (used in documents).",
+    "displayName": "Alias (display name)",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "error": "Could not save",
+    "auditTitle": "Audit",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "revision": "Revision"
   },
   "dashboard": {
     "title": "Welcome to Pharos",

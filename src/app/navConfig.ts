@@ -21,4 +21,5 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "templates", path: "/templates", icon: "❏", phase: 6 },
   { id: "ai", path: "/ai", icon: "✦", phase: 7 },
   { id: "admin", path: "/admin", icon: "⚙", phase: 9 },
+  { id: "profile", path: "/profile", icon: "◉" },
 ];

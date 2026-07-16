@@ -1,7 +1,12 @@
 //! Pharos desktop shell (Tauri 2). Kept in a library crate so the future mobile
 //! target (v0.0.4) can reuse the same entrypoint.
 
+mod db;
+mod profile;
+
+use db::Db;
 use keyring::Entry;
+use tauri::Manager;
 
 // The session is cached in the OS keychain (Windows Credential Manager) so the
 // app can reopen offline without storing the refresh token in plain text (§4).
@@ -37,10 +42,19 @@ fn session_clear() -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let data_dir = app.path().app_data_dir()?;
+            let database = Db::open(&data_dir)
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            app.manage(database);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             session_save,
             session_load,
-            session_clear
+            session_clear,
+            profile::profile_get,
+            profile::profile_upsert
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");
