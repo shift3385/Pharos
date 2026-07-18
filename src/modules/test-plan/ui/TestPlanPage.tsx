@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TestPlanList } from "./TestPlanList";
-import { TestPlanEditor } from "./TestPlanEditor";
+import { TestPlanWizard } from "./TestPlanWizard";
 
 type View = { kind: "list" } | { kind: "edit"; id: string | null };
 
@@ -9,7 +9,7 @@ export function TestPlanPage() {
 
   if (view.kind === "edit") {
     return (
-      <TestPlanEditor
+      <TestPlanWizard
         planId={view.id}
         onClose={() => setView({ kind: "list" })}
       />
