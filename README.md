@@ -40,6 +40,32 @@ npm install
 | `npm run check:licenses` | Fail on GPL/AGPL/SSPL dependencies                  |
 | `npm run verify`         | typecheck + lint + licenses + tests                 |
 
+## Running Pharos (development)
+
+Pharos has **three parts**, and `npm run tauri dev` starts only the last one:
+
+| Part | What | How |
+| ---- | ---- | --- |
+| Database | Postgres (Docker container `pharos-db`, port 5433) | `docker compose up -d db` |
+| Backend API | Fastify, http://localhost:3000 | `cd server && npm start` |
+| Desktop app | Tauri + Vite | `npm run tauri dev` |
+
+Login/sync talk to the backend API, so the database **and** the API must be up —
+otherwise you get "Could not reach the server" on sign-in.
+
+**One click:** run [`dev.bat`](dev.bat) (double-click it). It ensures the database
+is up, then opens a **"Pharos API"** window and a **"Pharos App"** window. Close a
+window (or press `Ctrl+C` in it) to stop that part. [`stop.bat`](stop.bat) stops
+the database container.
+
+**Manual:** make sure **Docker Desktop** is running, then in separate terminals:
+
+```
+docker compose up -d db      # 1) database (once; it auto-starts with Docker)
+cd server && npm start       # 2) backend API on :3000  (npm run dev = auto-reload)
+npm run tauri dev            # 3) desktop app  (from the repo root)
+```
+
 ## Project layout
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Domain modules live in
