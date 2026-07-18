@@ -13,6 +13,8 @@ import type {
   TestPlanInput,
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "./fields";
+import { ScheduleCalendar } from "./ScheduleCalendar";
+import { RevisionHistory } from "./RevisionHistory";
 import "./TestPlan.css";
 
 const TEST_TYPES = [
@@ -87,6 +89,7 @@ export function TestPlanWizard({ planId, onClose }: Props) {
   const [plan, setPlan] = useState<TestPlan | null>(null);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [showRev, setShowRev] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
 
   useEffect(() => {
@@ -378,6 +381,10 @@ export function TestPlanWizard({ planId, onClose }: Props) {
         id: "schedule",
         body: (
           <>
+            <ScheduleCalendar
+              sprints={form.sprints}
+              onAdd={(s) => set("sprints", [...form.sprints, s])}
+            />
             <FieldLabel text={t("testPlan.sprints")} />
             {form.sprints.map((s, i) => (
               <div className="tp-sched-row" key={i}>
@@ -550,6 +557,15 @@ export function TestPlanWizard({ planId, onClose }: Props) {
             {t("testPlan.revShort")} {plan.revision}
           </span>
         )}
+        {plan && (
+          <button
+            type="button"
+            className="tp-wizard__revbtn"
+            onClick={() => setShowRev((v) => !v)}
+          >
+            {t("testPlan.revisions")}
+          </button>
+        )}
         <button
           type="button"
           className="tp-editor__save"
@@ -559,6 +575,13 @@ export function TestPlanWizard({ planId, onClose }: Props) {
           {saving ? t("testPlan.saving") : t("testPlan.save")}
         </button>
       </header>
+
+      {plan && showRev && (
+        <div className="tp-revs-panel">
+          <h3>{t("testPlan.revisions")}</h3>
+          <RevisionHistory planId={plan.id} />
+        </div>
+      )}
 
       <div className="tp-wizard__body">
         <nav className="tp-wizard__steps" aria-label={t("testPlan.steps")}>

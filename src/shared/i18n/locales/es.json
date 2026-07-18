@@ -120,6 +120,9 @@
     "steps": "Pasos",
     "prev": "Anterior",
     "next": "Siguiente",
+    "addSprintFromRange": "Añadir sprint del rango",
+    "revisions": "Revisiones",
+    "noRevisions": "Sin revisiones anteriores.",
     "step": {
       "title": "Título",
       "meta": "Versión, fecha y autor",

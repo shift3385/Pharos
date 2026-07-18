@@ -27,9 +27,11 @@ function loadAll(): TestPlan[] {
 function saveAll(plans: TestPlan[]) {
   localStorage.setItem(KEY, JSON.stringify(plans));
 }
-function loadRevs(): RevisionSummary[] {
+type StoredRevision = RevisionSummary & { planId: string };
+
+function loadRevs(): StoredRevision[] {
   try {
-    return JSON.parse(localStorage.getItem(REV_KEY) ?? "[]") as RevisionSummary[];
+    return JSON.parse(localStorage.getItem(REV_KEY) ?? "[]") as StoredRevision[];
   } catch {
     return [];
   }
@@ -77,6 +79,7 @@ const browserApi = {
     const revs = loadRevs();
     revs.push({
       id: crypto.randomUUID(),
+      planId: id,
       revision: prev.revision,
       title: prev.title,
       createdAt: new Date().toISOString(),
@@ -99,9 +102,15 @@ const browserApi = {
   },
   async remove(id: string): Promise<void> {
     saveAll(loadAll().filter((p) => p.id !== id));
+    localStorage.setItem(
+      REV_KEY,
+      JSON.stringify(loadRevs().filter((r) => r.planId !== id)),
+    );
   },
-  async revisions(): Promise<RevisionSummary[]> {
-    return loadRevs().sort((a, b) => b.revision - a.revision);
+  async revisions(planId: string): Promise<RevisionSummary[]> {
+    return loadRevs()
+      .filter((r) => r.planId === planId)
+      .sort((a, b) => b.revision - a.revision);
   },
 };
 
@@ -124,5 +133,5 @@ export const testPlanApi = {
   remove: (id: string): Promise<void> =>
     isTauri() ? invoke("test_plan_delete", { id }) : browserApi.remove(id),
   revisions: (id: string): Promise<RevisionSummary[]> =>
-    isTauri() ? invoke("test_plan_revisions", { id }) : browserApi.revisions(),
+    isTauri() ? invoke("test_plan_revisions", { id }) : browserApi.revisions(id),
 };
