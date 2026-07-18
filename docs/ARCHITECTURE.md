@@ -102,6 +102,12 @@ to localStorage for `vite dev`.
   register/login/refresh/logout, client auth UI + offline session.
 - **Phase 2 — Local data & profile:** encrypted SQLite (pure-Rust AES-256-GCM),
   migrations, multi-user schema (workspaces + profiles with audit fields),
-  profile CRUD via Tauri commands + client Profile page. Tests: Rust 7,
-  client 9.
-- Phases 3–9: not started (see `PROGRESO.md`).
+  profile CRUD via Tauri commands + client Profile page.
+- **Phase 3 — Test plan:** `test_plans` (+ `test_plan_revisions`) with promoted
+  columns + a JSON `data` blob for the 21-field content (spec §5.1); Rust repo +
+  Tauri commands (list/get/create/update/delete/revisions); client test-plan
+  module — plan list/CRUD, a stepped wizard, a react-day-picker schedule
+  calendar, and a revision-history panel. Note: `cargo test` cannot launch on
+  this machine post-reboot (WebView2/GUI DLL entry-point error); the fix is to
+  split the data layer into a Tauri-free crate (tech debt).
+- Phases 4–9: not started (see `PROGRESO.md`).

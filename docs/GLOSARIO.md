@@ -48,6 +48,11 @@ files (`es`/`en`).
 | Usuario                    | `user` / `User`       | auth (spec §4) |
 | Espacio de trabajo         | `workspace` / `Workspace` | contenedor multi-usuario (§3) |
 | Perfil                     | `profile` / `Profile` | alias + nombre oficial (§3) |
+| Revisión (snapshot)        | `test_plan_revision`  | historial de versiones del plan |
+| Cronograma                 | `schedule`            | sprints + hitos |
+| Sprint                     | `sprint`              | `{ name, start, end }` |
+| Hito                       | `milestone`           | `{ name, date }` |
+| Riesgo / Mitigación        | `risk` / `mitigation` | |
 | Correo electrónico         | `email`               | almacenado en minúsculas, único |
 | Hash de contraseña         | `password_hash`       | Argon2id |
 | Rol                        | `role`                | `test_manager`, `tester`, … (§3) |
