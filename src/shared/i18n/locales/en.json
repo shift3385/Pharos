@@ -67,6 +67,33 @@
     "updatedAt": "Updated",
     "revision": "Revision"
   },
+  "testPlan": {
+    "title": "Test plans",
+    "subtitle": "Create, edit and version your test plans.",
+    "new": "New plan",
+    "empty": "No plans yet. Create the first one.",
+    "delete": "Delete",
+    "defaultTitle": "New test plan",
+    "newTitle": "New plan",
+    "editTitle": "Edit plan",
+    "back": "Back",
+    "revShort": "rev.",
+    "fieldTitle": "Title",
+    "version": "Version",
+    "date": "Date",
+    "status": "Status",
+    "summary": "Summary (introduction)",
+    "purpose": "Purpose",
+    "conclusion": "Conclusion",
+    "save": "Save",
+    "saving": "Saving…",
+    "statusLabel": {
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "approved": "Approved",
+      "obsolete": "Obsolete"
+    }
+  },
   "dashboard": {
     "title": "Welcome to Pharos",
     "subtitle": "The lighthouse that guides your testing projects safely to port.",

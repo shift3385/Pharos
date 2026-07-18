@@ -19,8 +19,13 @@ const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
 const NONCE_LEN: usize = 12;
 
-const MIGRATIONS: &[(&str, &str)] =
-    &[("0001_init.sql", include_str!("../migrations/0001_init.sql"))];
+const MIGRATIONS: &[(&str, &str)] = &[
+    ("0001_init.sql", include_str!("../migrations/0001_init.sql")),
+    (
+        "0002_test_plans.sql",
+        include_str!("../migrations/0002_test_plans.sql"),
+    ),
+];
 
 pub struct Db {
     conn: Mutex<Connection>,
@@ -81,6 +86,26 @@ impl Db {
         fs::write(&self.enc_path, blob).map_err(|e| e.to_string())?;
         Ok(())
     }
+}
+
+/// Returns the single workspace id, creating a default workspace on first use.
+pub(crate) fn ensure_workspace(conn: &Connection) -> Result<String, String> {
+    if let Some(id) = conn
+        .query_row("SELECT id FROM workspaces LIMIT 1", [], |r| {
+            r.get::<_, String>(0)
+        })
+        .optional()
+        .map_err(|e| e.to_string())?
+    {
+        return Ok(id);
+    }
+    let id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO workspaces (id, name) VALUES (?1, ?2)",
+        rusqlite::params![id, "My workspace"],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(id)
 }
 
 pub(crate) fn run_migrations(conn: &Connection) -> Result<(), String> {

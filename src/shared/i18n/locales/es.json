@@ -67,6 +67,33 @@
     "updatedAt": "Actualizado",
     "revision": "Revisión"
   },
+  "testPlan": {
+    "title": "Planes de prueba",
+    "subtitle": "Crea, edita y versiona tus planes de prueba.",
+    "new": "Nuevo plan",
+    "empty": "Aún no hay planes. Crea el primero.",
+    "delete": "Eliminar",
+    "defaultTitle": "Nuevo plan de pruebas",
+    "newTitle": "Nuevo plan",
+    "editTitle": "Editar plan",
+    "back": "Volver",
+    "revShort": "rev.",
+    "fieldTitle": "Título",
+    "version": "Versión",
+    "date": "Fecha",
+    "status": "Estado",
+    "summary": "Resumen (introducción)",
+    "purpose": "Propósito",
+    "conclusion": "Conclusión",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "statusLabel": {
+      "draft": "Borrador",
+      "reviewed": "Revisado",
+      "approved": "Aprobado",
+      "obsolete": "Obsoleto"
+    }
+  },
   "dashboard": {
     "title": "Bienvenido a Pharos",
     "subtitle": "El faro que guía tus proyectos de pruebas a puerto seguro.",

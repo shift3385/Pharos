@@ -59,25 +59,6 @@ fn current_profile(conn: &Connection) -> Result<Option<Profile>, String> {
         .map_err(|e| e.to_string())
 }
 
-fn ensure_workspace(conn: &Connection) -> Result<String, String> {
-    if let Some(id) = conn
-        .query_row("SELECT id FROM workspaces LIMIT 1", [], |r| {
-            r.get::<_, String>(0)
-        })
-        .optional()
-        .map_err(|e| e.to_string())?
-    {
-        return Ok(id);
-    }
-    let id = Uuid::new_v4().to_string();
-    conn.execute(
-        "INSERT INTO workspaces (id, name) VALUES (?1, ?2)",
-        params![id, "My workspace"],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(id)
-}
-
 /// Inserts or updates the single profile, filling audit fields automatically:
 /// `created_at`/`updated_at` = now, `revision` starts at 1 and increments on
 /// each update. Extracted from the command so it can be unit-tested.
@@ -88,7 +69,7 @@ fn upsert_profile(
     last_name: &str,
     role: &str,
 ) -> Result<(), String> {
-    let workspace_id = ensure_workspace(conn)?;
+    let workspace_id = crate::db::ensure_workspace(conn)?;
     let existing = conn
         .query_row(
             "SELECT id, revision FROM profiles WHERE deleted_at IS NULL LIMIT 1",

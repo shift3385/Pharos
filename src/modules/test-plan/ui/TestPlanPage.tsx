@@ -1,13 +1,25 @@
-import { useTranslation } from "react-i18next";
-import { EmptySection } from "@shared/ui/EmptySection";
+import { useState } from "react";
+import { TestPlanList } from "./TestPlanList";
+import { TestPlanEditor } from "./TestPlanEditor";
+
+type View = { kind: "list" } | { kind: "edit"; id: string | null };
 
 export function TestPlanPage() {
-  const { t } = useTranslation();
+  const [view, setView] = useState<View>({ kind: "list" });
+
+  if (view.kind === "edit") {
+    return (
+      <TestPlanEditor
+        planId={view.id}
+        onClose={() => setView({ kind: "list" })}
+      />
+    );
+  }
+
   return (
-    <EmptySection
-      title={t("page.testPlan.title")}
-      subtitle={t("page.testPlan.subtitle")}
-      phase={3}
+    <TestPlanList
+      onNew={() => setView({ kind: "edit", id: null })}
+      onOpen={(id) => setView({ kind: "edit", id })}
     />
   );
 }

@@ -3,6 +3,7 @@
 
 mod db;
 mod profile;
+mod test_plan;
 
 use db::Db;
 use keyring::Entry;
@@ -54,7 +55,13 @@ pub fn run() {
             session_load,
             session_clear,
             profile::profile_get,
-            profile::profile_upsert
+            profile::profile_upsert,
+            test_plan::test_plan_list,
+            test_plan::test_plan_get,
+            test_plan::test_plan_create,
+            test_plan::test_plan_update,
+            test_plan::test_plan_delete,
+            test_plan::test_plan_revisions
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");
