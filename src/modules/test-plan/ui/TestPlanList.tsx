@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { testPlanApi } from "../api/testPlanApi";
 import type { TestPlanSummary } from "../model/types";
+import { DeleteButton } from "./fields";
 import "./TestPlan.css";
 
 interface Props {
@@ -59,15 +60,7 @@ export function TestPlanList({ onNew, onOpen }: Props) {
                   {t("testPlan.revShort")} {p.revision}
                 </span>
               </button>
-              <button
-                type="button"
-                className="tp__item-del"
-                onClick={() => remove(p.id)}
-                aria-label={t("testPlan.delete")}
-                title={t("testPlan.delete")}
-              >
-                ✕
-              </button>
+              <DeleteButton needsConfirm onDelete={() => remove(p.id)} />
             </li>
           ))}
         </ul>

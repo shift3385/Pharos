@@ -4,7 +4,10 @@
     "tagline": "Suite de gestión de pruebas QA"
   },
   "common": {
-    "loading": "Cargando…"
+    "loading": "Cargando…",
+    "delete": "Eliminar",
+    "confirmDelete": "Sí, eliminar",
+    "cancel": "Cancelar"
   },
   "auth": {
     "loginTitle": "Iniciar sesión",
@@ -117,6 +120,8 @@
     "addItem": "Añadir",
     "removeItem": "Quitar",
     "addRow": "Añadir fila",
+    "other": "Otro",
+    "otherPlaceholder": "Especifica otro…",
     "steps": "Pasos",
     "prev": "Anterior",
     "next": "Siguiente",

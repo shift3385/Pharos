@@ -4,7 +4,10 @@
     "tagline": "QA test management suite"
   },
   "common": {
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "delete": "Delete",
+    "confirmDelete": "Yes, delete",
+    "cancel": "Cancel"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -117,6 +120,8 @@
     "addItem": "Add",
     "removeItem": "Remove",
     "addRow": "Add row",
+    "other": "Other",
+    "otherPlaceholder": "Specify other…",
     "steps": "Steps",
     "prev": "Previous",
     "next": "Next",

@@ -117,35 +117,41 @@ export function TestPlanWizard({ planId, onClose }: Props) {
     if (!form) return;
     setSaving(true);
     const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
+    // Drop empty entries so blank rows are not persisted (user feedback).
+    const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
     const input: TestPlanInput = {
-      title: form.title,
+      title: form.title.trim(),
       version: form.version,
       planDate: form.planDate || null,
       status: form.status,
       author,
       data: {
         summary: form.summary,
-        scopeIn: form.scopeIn,
-        scopeOut: form.scopeOut,
+        scopeIn: clean(form.scopeIn),
+        scopeOut: clean(form.scopeOut),
         testTypes: form.testTypes,
         methodologyType: form.methodologyType,
         sprintWeeks: form.sprintWeeks,
         ceremonies: form.ceremonies,
-        phases: form.phases,
+        phases: clean(form.phases),
         testLevels: form.testLevels,
-        deliverables: form.deliverables,
+        deliverables: clean(form.deliverables),
         environmentConfig: form.environmentConfig,
         environmentRequirements: form.environmentRequirements,
         tools: form.tools,
         automationStrategy: form.automationStrategy,
         testDataManagement: form.testDataManagement,
         defectManagement: form.defectManagement,
-        roles: form.roles,
-        sprints: form.sprints,
-        milestones: form.milestones,
-        risks: form.risks,
+        roles: form.roles.filter(
+          (r) => r.role.trim() || r.responsibility.trim(),
+        ),
+        sprints: form.sprints.filter((s) => s.name.trim() || s.start || s.end),
+        milestones: form.milestones.filter((m) => m.name.trim() || m.date),
+        risks: form.risks.filter((r) => r.risk.trim() || r.mitigation.trim()),
         communicationPlan: form.communicationPlan,
-        closureCriteria: form.closureCriteria,
+        closureCriteria: form.closureCriteria.filter(
+          (c) => c.criterion.trim() || c.metric.trim(),
+        ),
         purpose: form.purpose,
         conclusion: form.conclusion,
       },
@@ -230,6 +236,7 @@ export function TestPlanWizard({ planId, onClose }: Props) {
             selected={form.testTypes}
             onChange={(v) => set("testTypes", v)}
             labelFor={(k) => t(`testPlan.typeLabel.${k}`)}
+            allowCustom
           />
         ),
       },
@@ -333,6 +340,7 @@ export function TestPlanWizard({ planId, onClose }: Props) {
               selected={form.tools}
               onChange={(v) => set("tools", v)}
               labelFor={(k) => t(`testPlan.toolLabel.${k}`)}
+              allowCustom
             />
             <AreaField
               label={t("testPlan.automationStrategy")}

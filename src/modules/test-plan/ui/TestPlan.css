@@ -471,3 +471,50 @@
   font-size: var(--fs-caption);
   color: var(--color-text-muted);
 }
+
+/* ---- Inline delete confirmation ---- */
+.tp-confirm {
+  display: inline-flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.tp-confirm__yes,
+.tp-confirm__no {
+  height: 38px;
+  padding: 0 var(--space-2);
+  font-size: var(--fs-caption);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+.tp-confirm__yes {
+  color: var(--color-surface-1);
+  background: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.tp-confirm__no {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+}
+
+/* ---- Custom "Other" entry ---- */
+.tp-checks__custom {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tp-checks__custom input {
+  flex: 1;
+  height: 38px;
+  padding: 0 var(--space-3);
+  font-family: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
