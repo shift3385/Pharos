@@ -49,6 +49,8 @@ files (`es`/`en`).
 | Espacio de trabajo         | `workspace` / `Workspace` | contenedor multi-usuario (§3) |
 | Perfil                     | `profile` / `Profile` | alias + nombre oficial (§3) |
 | Revisión (snapshot)        | `test_plan_revision`  | historial de versiones del plan |
+| Revisión de caso (snapshot)| `test_case_revision`  | historial de versiones del caso |
+| Gherkin / .feature         | `gherkin` / `feature` | subconjunto acotado Feature/Scenario/Given/When/Then; export `${scenario_id}.feature` |
 | Cronograma                 | `schedule`            | sprints + hitos |
 | Sprint                     | `sprint`              | `{ name, start, end }` |
 | Hito                       | `milestone`           | `{ name, date }` |

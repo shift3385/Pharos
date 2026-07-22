@@ -12,7 +12,7 @@ import type {
   TestPlan,
   TestPlanInput,
 } from "../model/types";
-import { CheckboxGroup, ListField, PairListField } from "./fields";
+import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import "./TestPlan.css";

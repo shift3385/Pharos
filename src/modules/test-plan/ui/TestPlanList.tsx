@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { testPlanApi } from "../api/testPlanApi";
 import type { TestPlanSummary } from "../model/types";
-import { DeleteButton } from "./fields";
+import { DeleteButton } from "@shared/ui/fields";
 import "./TestPlan.css";
 
 interface Props {

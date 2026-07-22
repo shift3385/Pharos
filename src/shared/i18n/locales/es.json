@@ -207,6 +207,57 @@
       "obsolete": "Obsoleto"
     }
   },
+  "testCase": {
+    "title": "Casos de prueba",
+    "subtitle": "Crea casos con vistas Editor y Gherkin sincronizadas.",
+    "new": "Nuevo caso",
+    "empty": "Aún no hay casos. Crea el primero.",
+    "defaultTitle": "Nuevo caso de prueba",
+    "newTitle": "Nuevo caso",
+    "editTitle": "Editar caso",
+    "back": "Volver",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "revShort": "rev.",
+    "revisions": "Revisiones",
+    "noRevisions": "Sin revisiones anteriores.",
+    "exportFeature": "Exportar .feature",
+    "scenarioId": "ID de escenario",
+    "scenarioIdAuto": "Auto (ATS_001)",
+    "priority": "Prioridad",
+    "status": "Estado",
+    "version": "Versión",
+    "fieldTitle": "Título",
+    "mappedUseCase": "Caso de uso mapeado",
+    "traceability": "Trazabilidad (requisito / historia)",
+    "description": "Descripción",
+    "preconditions": "Precondiciones",
+    "steps": "Pasos de prueba",
+    "addStep": "Añadir paso",
+    "dragStep": "Arrastrar para reordenar",
+    "expectedResult": "Resultado esperado",
+    "postconditions": "Postcondiciones",
+    "acceptanceCriteria": "Criterios de aceptación",
+    "testData": "Datos de prueba",
+    "notes": "Notas",
+    "tab": {
+      "editor": "Editor",
+      "gherkin": "Gherkin",
+      "split": "Vista dividida"
+    },
+    "priorityLabel": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
+    "statusLabel": {
+      "draft": "Borrador",
+      "reviewed": "Revisado",
+      "approved": "Aprobado",
+      "obsolete": "Obsoleto"
+    }
+  },
   "dashboard": {
     "title": "Bienvenido a Pharos",
     "subtitle": "El faro que guía tus proyectos de pruebas a puerto seguro.",

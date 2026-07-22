@@ -3,6 +3,7 @@
 
 mod db;
 mod profile;
+mod test_case;
 mod test_plan;
 
 use db::Db;
@@ -61,7 +62,13 @@ pub fn run() {
             test_plan::test_plan_create,
             test_plan::test_plan_update,
             test_plan::test_plan_delete,
-            test_plan::test_plan_revisions
+            test_plan::test_plan_revisions,
+            test_case::test_case_list,
+            test_case::test_case_get,
+            test_case::test_case_create,
+            test_case::test_case_update,
+            test_case::test_case_delete,
+            test_case::test_case_revisions
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

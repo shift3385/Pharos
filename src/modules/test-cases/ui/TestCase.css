@@ -1,0 +1,308 @@
+/* ---- Shared list/shell classes (kept local to avoid cross-module imports) ---- */
+.tp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 900px;
+}
+.tp__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.tp__subtitle {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+.tp__muted {
+  color: var(--color-text-secondary);
+}
+.tp__new {
+  height: 40px;
+  padding: 0 var(--space-4);
+  font-weight: var(--fw-semibold);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+.tp__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tp__item {
+  display: flex;
+  gap: var(--space-2);
+}
+.tp__item-open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tp__item-open:hover {
+  border-color: var(--color-navy-300);
+}
+.tp__item-title {
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+}
+.tp__item-meta {
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+.tc-list__id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-navy-500);
+}
+
+.tp-editor__back {
+  background: none;
+  border: none;
+  color: var(--color-navy-500);
+  font-size: var(--fs-ui);
+}
+.tp-editor__save {
+  height: 40px;
+  padding: 0 var(--space-5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+}
+.tp-editor__save:disabled {
+  opacity: 0.6;
+}
+.tp-wizard__revbtn {
+  height: 40px;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-ui);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tp-revs-panel {
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tp-revs-panel h3 {
+  margin-bottom: var(--space-2);
+}
+.tp-revs {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tp-revs__item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-size: var(--fs-ui);
+}
+.tp-revs__rev {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-navy-500);
+}
+.tp-revs__title {
+  flex: 1;
+  color: var(--color-text-primary);
+}
+.tp-revs__date {
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+
+/* ---- Case editor ---- */
+.tc-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 960px;
+}
+/* Split view uses the full available width so both panes get room to breathe
+   and the header actions align to the right edge. */
+.tc-editor--wide {
+  max-width: none;
+}
+.tc-editor__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tc-editor__top h1 {
+  font-size: var(--fs-title-sm);
+}
+.tc-editor__id {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-navy-100);
+  color: var(--color-navy-500);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+.tc-editor__actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tc-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: 2px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  align-self: flex-start;
+}
+.tc-tabs__tab {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+}
+.tc-tabs__tab[data-active="true"] {
+  background: var(--color-surface-1);
+  color: var(--color-navy-500);
+  box-shadow: var(--shadow-1);
+}
+
+.tc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.tc-form__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+/* Let the 1fr columns shrink instead of overflowing the pane (min-width:auto). */
+.tc-form__grid > .tp-field {
+  min-width: 0;
+}
+.tc-form__grid input,
+.tc-form__grid select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.tc-gherkin {
+  display: flex;
+}
+.tc-gherkin__area {
+  width: 100%;
+  min-height: 340px;
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+}
+.tc-gherkin__area:focus {
+  outline: none;
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 3px var(--color-navy-100);
+}
+
+.tc-split {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: var(--space-6);
+  align-items: stretch;
+  margin-top: var(--space-2);
+}
+.tc-split__pane {
+  min-width: 0;
+}
+.tc-split__divider {
+  width: 1px;
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+}
+/* In split view the Gherkin editor fills the full height of the form column. */
+.tc-split .tc-gherkin {
+  height: 100%;
+}
+.tc-split .tc-gherkin__area {
+  height: 100%;
+}
+
+/* ---- Sortable steps ---- */
+.tc-steps-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tc-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tc-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tc-step__handle {
+  width: 30px;
+  height: 38px;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tc-step__n {
+  width: 22px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+.tc-step input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 var(--space-3);
+  font-family: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 768px) {
+  .tc-form__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tc-split {
+    grid-template-columns: 1fr;
+  }
+}

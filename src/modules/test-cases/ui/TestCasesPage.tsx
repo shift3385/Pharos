@@ -1,13 +1,25 @@
-import { useTranslation } from "react-i18next";
-import { EmptySection } from "@shared/ui/EmptySection";
+import { useState } from "react";
+import { TestCaseList } from "./TestCaseList";
+import { TestCaseEditor } from "./TestCaseEditor";
+
+type View = { kind: "list" } | { kind: "edit"; id: string | null };
 
 export function TestCasesPage() {
-  const { t } = useTranslation();
+  const [view, setView] = useState<View>({ kind: "list" });
+
+  if (view.kind === "edit") {
+    return (
+      <TestCaseEditor
+        caseId={view.id}
+        onClose={() => setView({ kind: "list" })}
+      />
+    );
+  }
+
   return (
-    <EmptySection
-      title={t("page.testCases.title")}
-      subtitle={t("page.testCases.subtitle")}
-      phase={4}
+    <TestCaseList
+      onNew={() => setView({ kind: "edit", id: null })}
+      onOpen={(id) => setView({ kind: "edit", id })}
     />
   );
 }

@@ -207,6 +207,57 @@
       "obsolete": "Obsolete"
     }
   },
+  "testCase": {
+    "title": "Test cases",
+    "subtitle": "Create cases with synced Editor and Gherkin views.",
+    "new": "New case",
+    "empty": "No cases yet. Create the first one.",
+    "defaultTitle": "New test case",
+    "newTitle": "New case",
+    "editTitle": "Edit case",
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving…",
+    "revShort": "rev.",
+    "revisions": "Revisions",
+    "noRevisions": "No previous revisions.",
+    "exportFeature": "Export .feature",
+    "scenarioId": "Scenario id",
+    "scenarioIdAuto": "Auto (ATS_001)",
+    "priority": "Priority",
+    "status": "Status",
+    "version": "Version",
+    "fieldTitle": "Title",
+    "mappedUseCase": "Mapped use case",
+    "traceability": "Traceability (requirement / story)",
+    "description": "Description",
+    "preconditions": "Preconditions",
+    "steps": "Test steps",
+    "addStep": "Add step",
+    "dragStep": "Drag to reorder",
+    "expectedResult": "Expected result",
+    "postconditions": "Postconditions",
+    "acceptanceCriteria": "Acceptance criteria",
+    "testData": "Test data",
+    "notes": "Notes",
+    "tab": {
+      "editor": "Editor",
+      "gherkin": "Gherkin",
+      "split": "Split view"
+    },
+    "priorityLabel": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "statusLabel": {
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "approved": "Approved",
+      "obsolete": "Obsolete"
+    }
+  },
   "dashboard": {
     "title": "Welcome to Pharos",
     "subtitle": "The lighthouse that guides your testing projects safely to port.",

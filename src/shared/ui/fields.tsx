@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./fields.css";
 
 /** Delete control that asks for confirmation when the target has content. */
 export function DeleteButton({
