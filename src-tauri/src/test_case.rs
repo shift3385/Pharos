@@ -18,6 +18,7 @@ pub struct TestCaseSummary {
     title: String,
     status: String,
     priority: String,
+    gherkin_level: String,
     updated_at: String,
     revision: i64,
 }
@@ -98,18 +99,24 @@ fn next_scenario_id(conn: &Connection) -> Result<String, String> {
 fn list_cases(conn: &Connection) -> Result<Vec<TestCaseSummary>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, scenario_id, title, status, priority, updated_at, revision \
+            "SELECT id, scenario_id, title, status, priority, data, updated_at, revision \
              FROM test_cases WHERE deleted_at IS NULL ORDER BY scenario_id",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map([], |r| {
+            let data_str: String = r.get("data")?;
+            let gherkin_level = serde_json::from_str::<Value>(&data_str)
+                .ok()
+                .and_then(|v| v.get("gherkinLevel")?.as_str().map(String::from))
+                .unwrap_or_else(|| "basic".to_string());
             Ok(TestCaseSummary {
                 id: r.get("id")?,
                 scenario_id: r.get("scenario_id")?,
                 title: r.get("title")?,
                 status: r.get("status")?,
                 priority: r.get("priority")?,
+                gherkin_level,
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })

@@ -245,6 +245,43 @@
       "gherkin": "Gherkin",
       "split": "Split view"
     },
+    "level": {
+      "label": "Level",
+      "pickTitle": "Choose the scenario type",
+      "pickSubtitle": "It determines which Gherkin keywords and which form you use. You can change it later.",
+      "basic": {
+        "name": "Basic",
+        "keywords": "Feature · Scenario · Given / When / Then",
+        "desc": "A single simple scenario. Ideal for one concrete case with a single flow."
+      },
+      "outline": {
+        "name": "Basic advanced",
+        "keywords": "Scenario Outline · Examples",
+        "desc": "A parametrized scenario with a data table. Each row is a variant (equivalence partition)."
+      },
+      "advanced": {
+        "name": "Advanced",
+        "keywords": "Background · Rule · multiple Scenario",
+        "desc": "A full Feature with several scenarios. Authored directly in the Gherkin editor."
+      },
+      "includes": "Includes"
+    },
+    "examples": {
+      "title": "Examples (data table)",
+      "hint": "Each column is a <placeholder> you can use in steps; each row is one run.",
+      "emptyHint": "No columns yet. Add the first one to start the table.",
+      "columnName": "column_name",
+      "addColumn": "+ Column",
+      "addRow": "+ Row",
+      "removeColumn": "Remove column",
+      "removeRow": "Remove row"
+    },
+    "outline": {
+      "title": "Feature structure",
+      "hint": "At the Advanced level the behavior is edited in the Gherkin tab. This is a summary.",
+      "none": "No scenarios yet. Write them in the Gherkin tab.",
+      "unnamed": "(unnamed)"
+    },
     "priorityLabel": {
       "low": "Low",
       "medium": "Medium",

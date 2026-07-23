@@ -56,6 +56,9 @@ export function TestCaseList({
               >
                 <span className="tp__item-title">
                   <span className="tc-list__id">{c.scenarioId}</span> {c.title}
+                  <span className={`tc-list__level tc-list__level--${c.gherkinLevel}`}>
+                    {t(`testCase.level.${c.gherkinLevel}.name`)}
+                  </span>
                 </span>
                 <span className="tp__item-meta">
                   {t(`testCase.priorityLabel.${c.priority}`)} ·{" "}

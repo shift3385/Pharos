@@ -50,7 +50,13 @@ files (`es`/`en`).
 | Perfil                     | `profile` / `Profile` | alias + nombre oficial (§3) |
 | Revisión (snapshot)        | `test_plan_revision`  | historial de versiones del plan |
 | Revisión de caso (snapshot)| `test_case_revision`  | historial de versiones del caso |
-| Gherkin / .feature         | `gherkin` / `feature` | subconjunto acotado Feature/Scenario/Given/When/Then; export `${scenario_id}.feature` |
+| Gherkin / .feature         | `gherkin` / `feature` | Feature/Scenario/Given/When/Then; export `${scenario_id}.feature` |
+| Nivel de Gherkin           | `gherkin_level`       | `basic` / `outline` / `advanced` — elegido al crear el caso (enmienda §5.3) |
+| Escenario parametrizado    | `scenario_outline`    | `Scenario Outline` + `examples` (nivel outline) |
+| Tabla de datos             | `examples`            | `{ headers[], rows[][] }`; cada columna es un `<placeholder>` |
+| Contexto común             | `background`          | nivel advanced (varios escenarios por Feature) |
+| Regla de negocio           | `rule`                | `Rule:` agrupa escenarios; nivel advanced |
+| Feature crudo              | `feature_source`      | texto Gherkin autoritativo cuando `gherkin_level = advanced` |
 | Cronograma                 | `schedule`            | sprints + hitos |
 | Sprint                     | `sprint`              | `{ name, start, end }` |
 | Hito                       | `milestone`           | `{ name, date }` |

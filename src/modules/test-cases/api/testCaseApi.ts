@@ -44,14 +44,15 @@ function nextScenarioId(cases: TestCase[]): string {
 const browserApi = {
   async list(): Promise<TestCaseSummary[]> {
     return loadAll()
-      .map(({ id, scenarioId, title, status, priority, updatedAt, revision }) => ({
-        id,
-        scenarioId,
-        title,
-        status,
-        priority,
-        updatedAt,
-        revision,
+      .map((c) => ({
+        id: c.id,
+        scenarioId: c.scenarioId,
+        title: c.title,
+        status: c.status,
+        priority: c.priority,
+        gherkinLevel: c.data?.gherkinLevel ?? "basic",
+        updatedAt: c.updatedAt,
+        revision: c.revision,
       }))
       .sort((a, b) => a.scenarioId.localeCompare(b.scenarioId));
   },

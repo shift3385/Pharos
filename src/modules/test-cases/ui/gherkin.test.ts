@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toGherkin, fromGherkin } from "./gherkin";
+import { toGherkin, fromGherkin, summarizeFeature } from "./gherkin";
 import type { TestCaseData } from "../model/types";
 
 const baseData: TestCaseData = {
@@ -54,5 +54,99 @@ describe("gherkin mapper", () => {
 
   it("falls back to Untitled when title is empty", () => {
     expect(toGherkin("", baseData)).toContain("Feature: Untitled");
+  });
+});
+
+describe("gherkin mapper — Scenario Outline", () => {
+  const outlineData: TestCaseData = {
+    ...baseData,
+    gherkinLevel: "outline",
+    preconditions: ["el usuario tiene un producto en el carrito"],
+    steps: ['ingresa el cupón "<cupon>" y presiona "Aplicar"'],
+    expectedResult: 'el sistema muestra "<resultado>"',
+    examples: {
+      headers: ["cupon", "resultado"],
+      rows: [
+        ["DESC10", "Descuento aplicado"],
+        ["VERANO23", "Cupón ha expirado"],
+      ],
+    },
+  };
+
+  it("renders Scenario Outline with an Examples table", () => {
+    const out = toGherkin("Aplicación de cupón", outlineData);
+    expect(out).toContain("  Scenario Outline: Aplicación de cupón");
+    expect(out).toContain('    When ingresa el cupón "<cupon>" y presiona "Aplicar"');
+    expect(out).toContain("    Examples:");
+    expect(out).toContain("      | cupon | resultado |");
+    expect(out).toContain("      | DESC10 | Descuento aplicado |");
+    expect(out).toContain("      | VERANO23 | Cupón ha expirado |");
+  });
+
+  it("round-trips the Examples table", () => {
+    const parsed = fromGherkin(toGherkin("Aplicación de cupón", outlineData));
+    expect(parsed.isOutline).toBe(true);
+    expect(parsed.steps).toEqual(outlineData.steps);
+    expect(parsed.examples?.headers).toEqual(["cupon", "resultado"]);
+    expect(parsed.examples?.rows).toEqual([
+      ["DESC10", "Descuento aplicado"],
+      ["VERANO23", "Cupón ha expirado"],
+    ]);
+  });
+
+  it("skips fully empty example rows", () => {
+    const out = toGherkin("X", {
+      ...outlineData,
+      examples: { headers: ["a"], rows: [["1"], ["  "]] },
+    });
+    const rows = out.split("\n").filter((l) => l.trim().startsWith("|"));
+    expect(rows).toHaveLength(2); // header + one data row
+  });
+});
+
+describe("gherkin mapper — advanced", () => {
+  const feature = `Feature: Checkout
+  Background:
+    Given el usuario inició sesión
+
+  Rule: cupones válidos
+
+  Scenario: aplica descuento
+    When aplica DESC10
+    Then ve el descuento
+
+  Scenario Outline: variantes
+    When aplica "<cupon>"
+    Then ve "<resultado>"
+`;
+
+  it("passes the feature source through unchanged", () => {
+    const out = toGherkin("ignored", {
+      ...baseData,
+      gherkinLevel: "advanced",
+      featureSource: feature,
+    });
+    expect(out).toBe(feature);
+  });
+
+  it("scaffolds a feature when advanced source is empty", () => {
+    const out = toGherkin("Nuevo", {
+      ...baseData,
+      gherkinLevel: "advanced",
+      featureSource: "",
+    });
+    expect(out).toContain("Feature: Nuevo");
+    expect(out).toContain("Scenario: Nuevo");
+  });
+
+  it("summarizes background, rules and scenarios", () => {
+    const s = summarizeFeature(feature);
+    expect(s.feature).toBe("Checkout");
+    expect(s.background).toBe(true);
+    expect(s.rules).toEqual(["cupones válidos"]);
+    expect(s.scenarios).toEqual([
+      { type: "scenario", name: "aplica descuento" },
+      { type: "outline", name: "variantes" },
+    ]);
   });
 });

@@ -245,6 +245,43 @@
       "gherkin": "Gherkin",
       "split": "Vista dividida"
     },
+    "level": {
+      "label": "Nivel",
+      "pickTitle": "Elige el tipo de escenario",
+      "pickSubtitle": "Determina qué palabras clave de Gherkin y qué formulario usarás. Podrás cambiarlo luego.",
+      "basic": {
+        "name": "Básico",
+        "keywords": "Feature · Scenario · Given / When / Then",
+        "desc": "Un escenario simple. Ideal para un caso concreto con un solo flujo."
+      },
+      "outline": {
+        "name": "Básico avanzado",
+        "keywords": "Scenario Outline · Examples",
+        "desc": "Un escenario parametrizado con una tabla de datos. Cada fila es una variante (partición de equivalencia)."
+      },
+      "advanced": {
+        "name": "Avanzado",
+        "keywords": "Background · Rule · varios Scenario",
+        "desc": "Un Feature completo con varios escenarios. Se escribe directamente en el editor Gherkin."
+      },
+      "includes": "Incluye"
+    },
+    "examples": {
+      "title": "Examples (tabla de datos)",
+      "hint": "Cada columna es un <placeholder> que puedes usar en los pasos; cada fila es una ejecución.",
+      "emptyHint": "Aún no hay columnas. Añade la primera para empezar la tabla.",
+      "columnName": "nombre_columna",
+      "addColumn": "+ Columna",
+      "addRow": "+ Fila",
+      "removeColumn": "Quitar columna",
+      "removeRow": "Quitar fila"
+    },
+    "outline": {
+      "title": "Estructura del Feature",
+      "hint": "En el nivel Avanzado, el comportamiento se edita en la pestaña Gherkin. Aquí ves un resumen.",
+      "none": "Aún no hay escenarios. Escríbelos en la pestaña Gherkin.",
+      "unnamed": "(sin nombre)"
+    },
     "priorityLabel": {
       "low": "Baja",
       "medium": "Media",
