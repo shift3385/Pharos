@@ -13,6 +13,7 @@ import type {
 } from "../model/types";
 import { SortableSteps } from "./SortableSteps";
 import { ExamplesTable } from "./ExamplesTable";
+import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
 import { fromGherkin, summarizeFeature, toGherkin } from "./gherkin";
 import "./TestCase.css";
@@ -446,16 +447,7 @@ export function TestCaseEditor({
     </div>
   );
 
-  const gherkinView = (
-    <div className="tc-gherkin">
-      <textarea
-        className="tc-gherkin__area"
-        spellCheck={false}
-        value={gherkin}
-        onChange={(e) => onGherkinInput(e.target.value)}
-      />
-    </div>
-  );
+  const gherkinView = <GherkinEditor value={gherkin} onChange={onGherkinInput} />;
 
   return (
     <section className={`tc-editor${tab === "split" ? " tc-editor--wide" : ""}`}>

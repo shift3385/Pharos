@@ -230,11 +230,33 @@
 
 .tc-gherkin {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
-.tc-gherkin__area {
-  width: 100%;
+
+/* ---- Keyword palette ---- */
+.tc-kw-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.tc-kw {
+  padding: 2px var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-metadata);
+  color: var(--color-navy-500);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.tc-kw:hover {
+  background: var(--color-navy-100);
+  border-color: var(--color-navy-300);
+}
+
+/* ---- Code editor (react-simple-code-editor + Prism) ---- */
+.tc-gherkin__editor {
   min-height: 340px;
-  padding: var(--space-4);
   font-family: var(--font-mono);
   font-size: var(--fs-ui);
   line-height: var(--lh-normal);
@@ -242,12 +264,51 @@
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  resize: vertical;
 }
-.tc-gherkin__area:focus {
-  outline: none;
+.tc-gherkin__editor:focus-within {
   border-color: var(--color-navy-500);
   box-shadow: 0 0 0 3px var(--color-navy-100);
+}
+.tc-gherkin__ta:focus {
+  outline: none;
+}
+.tc-gherkin__ta,
+.tc-gherkin__pre {
+  font-family: var(--font-mono) !important;
+  font-size: var(--fs-ui) !important;
+  line-height: var(--lh-normal) !important;
+}
+
+/* Gherkin syntax colors — Faro Nocturno tokens only (no hardcoded colors). */
+.tc-gherkin .token.feature,
+.tc-gherkin .token.scenario,
+.tc-gherkin .token.keyword,
+.tc-gherkin .token.atrule {
+  color: var(--color-navy-500);
+  font-weight: var(--fw-semibold);
+}
+.tc-gherkin .token.outline {
+  color: var(--color-accent);
+  font-weight: var(--fw-medium);
+}
+.tc-gherkin .token.string,
+.tc-gherkin .token.pystring {
+  color: var(--color-success);
+}
+.tc-gherkin .token.comment {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.tc-gherkin .token.tag {
+  color: var(--color-warning);
+}
+.tc-gherkin .token.table-head,
+.tc-gherkin .token.th {
+  color: var(--color-text-primary);
+  font-weight: var(--fw-semibold);
+}
+.tc-gherkin .token.punctuation {
+  color: var(--color-text-muted);
 }
 
 .tc-split {
@@ -269,7 +330,7 @@
 .tc-split .tc-gherkin {
   height: 100%;
 }
-.tc-split .tc-gherkin__area {
+.tc-split .tc-gherkin__editor {
   height: 100%;
 }
 

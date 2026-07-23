@@ -20,11 +20,10 @@ describe("i18n (es default / en)", () => {
     );
 
     expect(screen.getByText("Bienvenido a Pharos")).toBeInTheDocument();
-    expect(screen.getByTestId("lang-es")).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByTestId("lang-trigger")).toHaveTextContent("ES");
 
+    // Open the language dropdown, then pick English.
+    await user.click(screen.getByTestId("lang-trigger"));
     await user.click(screen.getByTestId("lang-en"));
 
     expect(screen.getByText("Welcome to Pharos")).toBeInTheDocument();

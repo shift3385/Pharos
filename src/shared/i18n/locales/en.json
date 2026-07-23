@@ -243,6 +243,8 @@
     "revisions": "Revisions",
     "noRevisions": "No previous revisions.",
     "exportFeature": "Export .feature",
+    "keywords": "Gherkin keywords",
+    "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
     "scenarioIdAuto": "Auto (ATS_001)",
     "priority": "Priority",
