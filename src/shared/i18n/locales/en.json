@@ -55,6 +55,27 @@
     "admin": "Administration",
     "profile": "Profile"
   },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Each project is a folder with its test plan and its test cases.",
+    "new": "New project",
+    "create": "Create",
+    "empty": "No projects yet. Create the first one.",
+    "namePlaceholder": "Project name",
+    "prefixMeta": "IDs",
+    "back": "Projects",
+    "name": "Project name",
+    "caseIdPrefix": "Case id prefix",
+    "caseIdDigits": "Number digits",
+    "prefixHint": "Cases will be numbered like:",
+    "save": "Save",
+    "saving": "Saving…",
+    "tab": {
+      "plan": "Test plan",
+      "cases": "Test cases",
+      "settings": "Settings"
+    }
+  },
   "profile": {
     "title": "Profile",
     "subtitle": "Your alias and official name (used in documents).",

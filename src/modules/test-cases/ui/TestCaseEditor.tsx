@@ -110,9 +110,15 @@ function formToData(f: FormState): TestCaseData {
 }
 
 export function TestCaseEditor({
+  projectId,
+  caseIdPrefix = "ATS_",
+  caseIdDigits = 3,
   caseId,
   onClose,
 }: {
+  projectId: string;
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
   caseId: string | null;
   onClose: () => void;
 }) {
@@ -230,6 +236,9 @@ export function TestCaseEditor({
     if (form.gherkinLevel === "outline") data.examples = cleanExamples(form.examples);
     if (form.gherkinLevel === "advanced") data.featureSource = form.featureSource;
     const input: TestCaseInput = {
+      projectId,
+      caseIdPrefix,
+      caseIdDigits,
       scenarioId: form.scenarioId.trim() || undefined,
       title: form.title.trim(),
       version: form.version,

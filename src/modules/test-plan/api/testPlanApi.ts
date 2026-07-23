@@ -53,6 +53,13 @@ const browserApi = {
   async get(id: string): Promise<TestPlan | null> {
     return loadAll().find((p) => p.id === id) ?? null;
   },
+  async byProject(projectId: string): Promise<TestPlan | null> {
+    return (
+      loadAll()
+        .filter((p) => p.projectId === projectId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
+    );
+  },
   async create(input: TestPlanInput): Promise<TestPlan> {
     const now = new Date().toISOString();
     const plan: TestPlan = {
@@ -64,6 +71,7 @@ const browserApi = {
       author: input.author,
       status: input.status ?? "draft",
       data: input.data,
+      projectId: input.projectId ?? null,
       createdAt: now,
       updatedAt: now,
       revision: 1,
@@ -124,6 +132,10 @@ export const testPlanApi = {
     isTauri() ? invoke("test_plan_list") : browserApi.list(),
   get: (id: string): Promise<TestPlan | null> =>
     isTauri() ? invoke("test_plan_get", { id }) : browserApi.get(id),
+  byProject: (projectId: string): Promise<TestPlan | null> =>
+    isTauri()
+      ? invoke("test_plan_by_project", { projectId })
+      : browserApi.byProject(projectId),
   create: (input: TestPlanInput): Promise<TestPlan | null> =>
     isTauri() ? invoke("test_plan_create", { input }) : browserApi.create(input),
   update: (id: string, input: TestPlanInput): Promise<TestPlan | null> =>

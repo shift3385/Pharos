@@ -3,6 +3,7 @@
 
 mod db;
 mod profile;
+mod project;
 mod test_case;
 mod test_plan;
 
@@ -57,8 +58,14 @@ pub fn run() {
             session_clear,
             profile::profile_get,
             profile::profile_upsert,
+            project::project_list,
+            project::project_get,
+            project::project_create,
+            project::project_update,
+            project::project_delete,
             test_plan::test_plan_list,
             test_plan::test_plan_get,
+            test_plan::test_plan_by_project,
             test_plan::test_plan_create,
             test_plan::test_plan_update,
             test_plan::test_plan_delete,

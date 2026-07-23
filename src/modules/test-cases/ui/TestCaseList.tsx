@@ -6,9 +6,11 @@ import type { TestCaseSummary } from "../model/types";
 import "./TestCase.css";
 
 export function TestCaseList({
+  projectId,
   onNew,
   onOpen,
 }: {
+  projectId: string;
   onNew: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -17,12 +19,13 @@ export function TestCaseList({
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    setCases(await testCaseApi.list());
+    setCases(await testCaseApi.list(projectId));
     setLoading(false);
   }
   useEffect(() => {
     void refresh();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   async function remove(id: string) {
     await testCaseApi.remove(id);

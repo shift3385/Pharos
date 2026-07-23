@@ -4,8 +4,6 @@ import { AppShell } from "./layout/AppShell";
 import { AppSplash } from "./AppSplash";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectsPage } from "@modules/projects";
-import { TestPlanPage } from "@modules/test-plan";
-import { TestCasesPage } from "@modules/test-cases";
 import { PlannerPage } from "@modules/planner";
 import { TemplatesPage } from "@modules/templates";
 import { AiPage } from "@modules/ai";
@@ -23,8 +21,6 @@ export function App() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/test-plan" element={<TestPlanPage />} />
-        <Route path="/test-cases" element={<TestCasesPage />} />
         <Route path="/planner" element={<PlannerPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/ai" element={<AiPage />} />

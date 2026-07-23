@@ -37,13 +37,28 @@ function loadRevs(): StoredRevision[] {
   }
 }
 
-function nextScenarioId(cases: TestCase[]): string {
-  return `ATS_${String(cases.length + 1).padStart(3, "0")}`;
+// Next id within a project: highest live suffix for the prefix + 1 (empty → 1),
+// mirroring the Rust logic so the browser preview matches the desktop app.
+function nextScenarioId(
+  cases: TestCase[],
+  projectId: string,
+  prefix: string,
+  digits: number,
+): string {
+  let max = 0;
+  for (const c of cases) {
+    if (c.projectId !== projectId) continue;
+    if (!c.scenarioId.startsWith(prefix)) continue;
+    const n = Number(c.scenarioId.slice(prefix.length));
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return `${prefix}${String(max + 1).padStart(digits, "0")}`;
 }
 
 const browserApi = {
-  async list(): Promise<TestCaseSummary[]> {
+  async list(projectId: string): Promise<TestCaseSummary[]> {
     return loadAll()
+      .filter((c) => c.projectId === projectId)
       .map((c) => ({
         id: c.id,
         scenarioId: c.scenarioId,
@@ -65,7 +80,10 @@ const browserApi = {
     const testCase: TestCase = {
       id: crypto.randomUUID(),
       workspaceId: "local",
-      scenarioId: input.scenarioId?.trim() || nextScenarioId(all),
+      projectId: input.projectId,
+      scenarioId:
+        input.scenarioId?.trim() ||
+        nextScenarioId(all, input.projectId, input.caseIdPrefix ?? "ATS_", input.caseIdDigits ?? 3),
       title: input.title,
       version: input.version ?? "1.0",
       status: input.status ?? "draft",
@@ -129,8 +147,8 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 }
 
 export const testCaseApi = {
-  list: (): Promise<TestCaseSummary[]> =>
-    isTauri() ? invoke("test_case_list") : browserApi.list(),
+  list: (projectId: string): Promise<TestCaseSummary[]> =>
+    isTauri() ? invoke("test_case_list", { projectId }) : browserApi.list(projectId),
   get: (id: string): Promise<TestCase | null> =>
     isTauri() ? invoke("test_case_get", { id }) : browserApi.get(id),
   create: (input: TestCaseInput): Promise<TestCase | null> =>

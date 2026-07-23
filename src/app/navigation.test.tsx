@@ -18,9 +18,9 @@ describe("navigation", () => {
     const user = userEvent.setup();
     renderWithProviders(<App />, { route: "/" });
 
-    await user.click(screen.getByTestId("nav-testCases"));
+    await user.click(screen.getByTestId("nav-projects"));
     expect(
-      screen.getByRole("heading", { name: "Casos de prueba" }),
+      screen.getByRole("heading", { name: "Proyectos" }),
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("nav-planner"));

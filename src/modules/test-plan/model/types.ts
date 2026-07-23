@@ -62,6 +62,7 @@ export interface TestPlan {
   author: string;
   status: string;
   data: TestPlanData;
+  projectId?: string | null;
   createdAt: string;
   updatedAt: string;
   revision: number;
@@ -77,6 +78,7 @@ export interface TestPlanSummary {
 }
 
 export interface TestPlanInput {
+  projectId?: string | null;
   title: string;
   version?: string;
   planDate?: string | null;

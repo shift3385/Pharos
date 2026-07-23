@@ -42,6 +42,7 @@ export type TestCasePriority = "low" | "medium" | "high" | "critical";
 export interface TestCase {
   id: string;
   workspaceId: string;
+  projectId?: string;
   scenarioId: string;
   title: string;
   version: string;
@@ -66,6 +67,7 @@ export interface TestCaseSummary {
 }
 
 export interface TestCaseInput {
+  projectId: string;
   scenarioId?: string;
   title: string;
   version?: string;
@@ -73,6 +75,10 @@ export interface TestCaseInput {
   priority?: string;
   author: string;
   data: TestCaseData;
+  // Browser-fallback numbering hints (ignored by the Rust store, which reads the
+  // project's configured prefix/width from the database).
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
 }
 
 export interface RevisionSummary {

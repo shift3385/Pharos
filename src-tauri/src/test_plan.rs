@@ -26,6 +26,7 @@ pub struct TestPlanSummary {
 pub struct TestPlan {
     id: String,
     workspace_id: String,
+    project_id: Option<String>,
     title: String,
     version: String,
     plan_date: Option<String>,
@@ -49,6 +50,7 @@ pub struct RevisionSummary {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestPlanInput {
+    project_id: Option<String>,
     title: String,
     version: Option<String>,
     plan_date: Option<String>,
@@ -62,7 +64,7 @@ fn empty_object() -> Value {
     Value::Object(serde_json::Map::new())
 }
 
-const SELECT_PLAN: &str = "SELECT id, workspace_id, title, version, plan_date, \
+const SELECT_PLAN: &str = "SELECT id, workspace_id, project_id, title, version, plan_date, \
     author, status, data, created_at, updated_at, revision \
     FROM test_plans WHERE id = ?1 AND deleted_at IS NULL";
 
@@ -71,6 +73,7 @@ fn map_plan(row: &rusqlite::Row) -> rusqlite::Result<TestPlan> {
     Ok(TestPlan {
         id: row.get("id")?,
         workspace_id: row.get("workspace_id")?,
+        project_id: row.get("project_id")?,
         title: row.get("title")?,
         version: row.get("version")?,
         plan_date: row.get("plan_date")?,
@@ -112,18 +115,33 @@ fn get_plan(conn: &Connection, id: &str) -> Result<Option<TestPlan>, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Returns the (single) plan of a project, if it has one (spec §5.1: 1 project =
+/// 1 test plan). Picks the most recently updated if several ever exist.
+fn get_plan_by_project(conn: &Connection, project_id: &str) -> Result<Option<TestPlan>, String> {
+    conn.query_row(
+        "SELECT id, workspace_id, project_id, title, version, plan_date, author, \
+         status, data, created_at, updated_at, revision FROM test_plans \
+         WHERE project_id = ?1 AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 1",
+        params![project_id],
+        map_plan,
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
 fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<String, String> {
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
     let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO test_plans (id, workspace_id, title, version, plan_date, \
+        "INSERT INTO test_plans (id, workspace_id, project_id, title, version, plan_date, \
          author, status, data, created_by, updated_by, created_at, updated_at, \
-         revision) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?1, ?1, \
+         revision) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?1, ?1, \
          datetime('now'), datetime('now'), 1)",
         params![
             id,
             workspace_id,
+            input.project_id,
             input.title,
             input.version.clone().unwrap_or_else(|| "1.0".to_string()),
             input.plan_date,
@@ -207,6 +225,14 @@ pub fn test_plan_get(db: State<Db>, id: String) -> Result<Option<TestPlan>, Stri
 }
 
 #[tauri::command]
+pub fn test_plan_by_project(
+    db: State<Db>,
+    project_id: String,
+) -> Result<Option<TestPlan>, String> {
+    db.with_conn(|conn| get_plan_by_project(conn, &project_id))
+}
+
+#[tauri::command]
 pub fn test_plan_create(db: State<Db>, input: TestPlanInput) -> Result<Option<TestPlan>, String> {
     let id = db.with_conn(|conn| insert_plan(conn, &input))?;
     db.persist()?;
@@ -254,6 +280,7 @@ mod tests {
 
     fn input(title: &str, data: Value) -> TestPlanInput {
         TestPlanInput {
+            project_id: None,
             title: title.to_string(),
             version: None,
             plan_date: None,

@@ -12,11 +12,11 @@ export interface NavItem {
   phase?: number;
 }
 
+// The test plan and test cases live inside a project (spec §5.1), so they are no
+// longer top-level sidebar entries — you reach them by opening a project.
 export const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", path: "/", icon: "⌂" },
   { id: "projects", path: "/projects", icon: "◫", phase: 3 },
-  { id: "testPlan", path: "/test-plan", icon: "☰", phase: 3 },
-  { id: "testCases", path: "/test-cases", icon: "▤", phase: 4 },
   { id: "planner", path: "/planner", icon: "▦", phase: 5 },
   { id: "templates", path: "/templates", icon: "❏", phase: 6 },
   { id: "ai", path: "/ai", icon: "✦", phase: 7 },

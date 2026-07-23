@@ -55,6 +55,27 @@
     "admin": "Administración",
     "profile": "Perfil"
   },
+  "projects": {
+    "title": "Proyectos",
+    "subtitle": "Cada proyecto es una carpeta con su plan de pruebas y sus casos.",
+    "new": "Nuevo proyecto",
+    "create": "Crear",
+    "empty": "Aún no hay proyectos. Crea el primero.",
+    "namePlaceholder": "Nombre del proyecto",
+    "prefixMeta": "IDs",
+    "back": "Proyectos",
+    "name": "Nombre del proyecto",
+    "caseIdPrefix": "Prefijo de ID de caso",
+    "caseIdDigits": "Dígitos del número",
+    "prefixHint": "Los casos se numerarán así:",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "tab": {
+      "plan": "Plan de pruebas",
+      "cases": "Casos de prueba",
+      "settings": "Ajustes"
+    }
+  },
   "profile": {
     "title": "Perfil",
     "subtitle": "Tu alias y tu nombre oficial (usado en los documentos).",

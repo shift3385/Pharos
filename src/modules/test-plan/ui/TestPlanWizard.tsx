@@ -80,10 +80,11 @@ interface FormState {
 
 interface Props {
   planId: string | null;
+  projectId?: string | null;
   onClose: () => void;
 }
 
-export function TestPlanWizard({ planId, onClose }: Props) {
+export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [plan, setPlan] = useState<TestPlan | null>(null);
@@ -120,6 +121,7 @@ export function TestPlanWizard({ planId, onClose }: Props) {
     // Drop empty entries so blank rows are not persisted (user feedback).
     const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
     const input: TestPlanInput = {
+      projectId: plan?.projectId ?? projectId ?? null,
       title: form.title.trim(),
       version: form.version,
       planDate: form.planDate || null,

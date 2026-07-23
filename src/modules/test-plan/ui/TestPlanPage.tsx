@@ -1,25 +1,28 @@
-import { useState } from "react";
-import { TestPlanList } from "./TestPlanList";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { testPlanApi } from "../api/testPlanApi";
 import { TestPlanWizard } from "./TestPlanWizard";
 
-type View = { kind: "list" } | { kind: "edit"; id: string | null };
+/** A project owns exactly one test plan (spec §5.1). This page loads that plan
+ *  for the given project (or starts a new one) and hands off to the wizard. */
+export function TestPlanPage({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+  const [planId, setPlanId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export function TestPlanPage() {
-  const [view, setView] = useState<View>({ kind: "list" });
-
-  if (view.kind === "edit") {
-    return (
-      <TestPlanWizard
-        planId={view.id}
-        onClose={() => setView({ kind: "list" })}
-      />
-    );
+  async function refresh() {
+    setLoading(true);
+    const plan = await testPlanApi.byProject(projectId);
+    setPlanId(plan?.id ?? null);
+    setLoading(false);
   }
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
-  return (
-    <TestPlanList
-      onNew={() => setView({ kind: "edit", id: null })}
-      onOpen={(id) => setView({ kind: "edit", id })}
-    />
-  );
+  if (loading) return <p className="tp__muted">{t("common.loading")}</p>;
+
+  // planId null → the wizard creates the plan for this project; otherwise edits.
+  return <TestPlanWizard planId={planId} projectId={projectId} onClose={refresh} />;
 }

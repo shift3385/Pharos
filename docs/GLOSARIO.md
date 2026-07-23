@@ -11,7 +11,8 @@ files (`es`/`en`).
 
 | Concepto (ES)              | Identifier            | Notes |
 | -------------------------- | --------------------- | ----- |
-| Proyecto                   | `project`             | |
+| Proyecto                   | `project` / `project_id` | Carpeta contenedora: 1 plan + sus casos (§5.1). El plan es su definición |
+| Prefijo de ID de caso      | `case_id_prefix`      | literal, por proyecto (`ATS_`, `FT`, `TC-`); + `case_id_digits` (relleno) |
 | Espacio de trabajo         | `workspace` / `workspace_id` | Multi-user from day 1 (spec §3) |
 | Plan de pruebas            | `test_plan` / `TestPlan` | |
 | Caso de prueba             | `test_case` / `TestCase` | |
