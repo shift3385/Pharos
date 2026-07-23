@@ -270,6 +270,7 @@
     },
     "level": {
       "label": "Nivel",
+      "locked": "El código Gherkin requiere al menos «{{level}}»; no puedes bajar de ahí.",
       "pickTitle": "Elige el tipo de escenario",
       "pickSubtitle": "Determina qué palabras clave de Gherkin y qué formulario usarás. Podrás cambiarlo luego.",
       "basic": {
@@ -297,7 +298,13 @@
       "addColumn": "+ Columna",
       "addRow": "+ Fila",
       "removeColumn": "Quitar columna",
-      "removeRow": "Quitar fila"
+      "removeRow": "Quitar fila",
+      "placeholders": "Placeholders detectados en los pasos",
+      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}"
+    },
+    "derived": {
+      "examples": "Examples (derivado del Gherkin)",
+      "comments": "Comentarios (derivado del Gherkin)"
     },
     "outline": {
       "title": "Estructura del Feature",

@@ -506,6 +506,37 @@
   gap: var(--space-2);
 }
 
+/* ---- Derived read-only data (advanced level) ---- */
+.tc-derived {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tc-derived__json {
+  margin: 0;
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.tc-derived__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+.tc-warn {
+  font-size: var(--fs-caption);
+  color: var(--color-warning);
+}
+
 /* ---- Advanced feature outline (read-only summary) ---- */
 .tc-outline {
   display: flex;

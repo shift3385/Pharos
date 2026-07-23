@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { toGherkin, fromGherkin, summarizeFeature } from "./gherkin";
+import {
+  toGherkin,
+  fromGherkin,
+  summarizeFeature,
+  detectLevel,
+  placeholdersIn,
+  extractComments,
+  extractExamples,
+} from "./gherkin";
 import type { TestCaseData } from "../model/types";
 
 const baseData: TestCaseData = {
@@ -148,5 +156,55 @@ describe("gherkin mapper — advanced", () => {
       { type: "scenario", name: "aplica descuento" },
       { type: "outline", name: "variantes" },
     ]);
+  });
+});
+
+describe("level auto-detection (proposal 2)", () => {
+  it("is basic for a plain single scenario", () => {
+    expect(
+      detectLevel("Feature: X\n  Scenario: X\n    Given a\n    When b\n    Then c\n"),
+    ).toBe("basic");
+  });
+
+  it("is outline when there are placeholders or an Examples table", () => {
+    expect(
+      detectLevel('Feature: X\n  Scenario Outline: X\n    When aplica "<cupon>"\n'),
+    ).toBe("outline");
+  });
+
+  it("is advanced with Background, Rule or multiple scenarios", () => {
+    expect(detectLevel("Feature: X\n  Background:\n    Given a\n")).toBe("advanced");
+    expect(
+      detectLevel("Feature: X\n  Scenario: a\n  Scenario: b\n"),
+    ).toBe("advanced");
+  });
+});
+
+describe("placeholder + derived helpers (proposals 3a/3b)", () => {
+  it("extracts unique placeholders in order", () => {
+    expect(
+      placeholdersIn(['aplica "<cupon>" y <cupon>', 've "<resultado>"']),
+    ).toEqual(["cupon", "resultado"]);
+  });
+
+  it("extracts comments without the marker", () => {
+    expect(extractComments("Feature: X\n# nota uno\n#nota dos")).toEqual([
+      "nota uno",
+      "nota dos",
+    ]);
+  });
+
+  it("extracts every Examples table with its scenario name", () => {
+    const feature = `Feature: F
+  Scenario Outline: variantes
+    When aplica "<cupon>"
+    Examples:
+      | cupon  | resultado |
+      | DESC10 | ok        |`;
+    const ex = extractExamples(feature);
+    expect(ex).toHaveLength(1);
+    expect(ex[0].name).toBe("variantes");
+    expect(ex[0].table.headers).toEqual(["cupon", "resultado"]);
+    expect(ex[0].table.rows).toEqual([["DESC10", "ok"]]);
   });
 });

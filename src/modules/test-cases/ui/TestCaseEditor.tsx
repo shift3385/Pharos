@@ -15,7 +15,16 @@ import { SortableSteps } from "./SortableSteps";
 import { ExamplesTable } from "./ExamplesTable";
 import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
-import { fromGherkin, summarizeFeature, toGherkin } from "./gherkin";
+import {
+  detectLevel,
+  extractComments,
+  extractExamples,
+  fromGherkin,
+  levelRank,
+  placeholdersIn,
+  summarizeFeature,
+  toGherkin,
+} from "./gherkin";
 import "./TestCase.css";
 
 type Tab = "split" | "editor" | "gherkin";
@@ -98,6 +107,21 @@ function fromCase(c: TestCase): FormState {
   };
 }
 
+/** Non-destructively adds an Examples column for every <placeholder> used in the
+ *  steps/expected result that has no column yet (proposal 3b). */
+function withPlaceholderColumns(f: FormState): ExampleTable {
+  const names = placeholdersIn([...f.steps, f.expectedResult]);
+  const headers = [...f.examples.headers];
+  for (const name of names) if (!headers.includes(name)) headers.push(name);
+  if (headers.length === f.examples.headers.length) return f.examples;
+  const rows = f.examples.rows.map((r) => {
+    const next = [...r];
+    while (next.length < headers.length) next.push("");
+    return next;
+  });
+  return { headers, rows };
+}
+
 /** Projects the form onto the data shape the Gherkin mapper reads. */
 function formToData(f: FormState): TestCaseData {
   return {
@@ -153,24 +177,37 @@ export function TestCaseEditor({
   }, [caseId]);
 
   const level = form.gherkinLevel;
+  // Lowest level the current content can live in — you cannot pick below it.
+  const requiredLevel = detectLevel(gherkin);
 
-  // Editor edits: update form and (for basic/outline) regenerate the Gherkin.
+  // Editor edits: update form and (for basic/outline) regenerate the Gherkin. In
+  // outline level, editing steps auto-adds matching Examples columns from their
+  // <placeholders> (proposal 3b), non-destructively.
   const update = (patch: Partial<FormState>) => {
-    const next = { ...form, ...patch };
+    let next = { ...form, ...patch };
+    if (
+      next.gherkinLevel === "outline" &&
+      ("steps" in patch || "expectedResult" in patch)
+    ) {
+      next = { ...next, examples: withPlaceholderColumns(next) };
+    }
     setForm(next);
     if (next.gherkinLevel !== "advanced") {
       setGherkin(toGherkin(next.title, formToData(next)));
     }
   };
 
-  // Gherkin edits: parse back into the mapped fields (basic/outline) or keep the
-  // raw feature as the source of truth (advanced).
+  // Gherkin edits: the level is derived from the code so the case is always in a
+  // level that can represent it (proposal 2). Advanced keeps the raw feature as
+  // the source of truth; basic/outline parse back into the mapped fields.
   const onGherkinInput = (text: string) => {
     setGherkin(text);
-    if (level === "advanced") {
+    const detected = detectLevel(text);
+    if (detected === "advanced") {
       const summary = summarizeFeature(text);
       setForm((f) => ({
         ...f,
+        gherkinLevel: "advanced",
         featureSource: text,
         title: summary.feature ?? f.title,
       }));
@@ -179,6 +216,8 @@ export function TestCaseEditor({
     const parsed = fromGherkin(text);
     setForm((f) => ({
       ...f,
+      gherkinLevel: detected,
+      featureSource: "",
       title: parsed.title ?? f.title,
       preconditions: parsed.preconditions,
       steps: parsed.steps,
@@ -195,7 +234,9 @@ export function TestCaseEditor({
   };
 
   // Switch level on an existing draft, reseeding the Gherkin/feature as needed.
+  // Downgrading below what the content needs is blocked (proposal 2).
   const changeLevel = (chosen: GherkinLevel) => {
+    if (levelRank(chosen) < levelRank(requiredLevel)) return;
     setForm((f) => {
       const next = { ...f, gherkinLevel: chosen };
       if (chosen === "advanced" && !next.featureSource.trim()) {
@@ -369,6 +410,26 @@ export function TestCaseEditor({
   );
 
   const summary = level === "advanced" ? summarizeFeature(form.featureSource) : null;
+  // Advanced: values derived read-only from the feature (proposal 3a).
+  const derivedExamples =
+    level === "advanced" ? extractExamples(form.featureSource) : [];
+  const derivedComments =
+    level === "advanced" ? extractComments(form.featureSource) : [];
+  const examplesJson = derivedExamples.map((e) => ({
+    scenario: e.name,
+    rows: e.table.rows.map((r) =>
+      Object.fromEntries(e.table.headers.map((h, i) => [h, r[i] ?? ""])),
+    ),
+  }));
+  // Outline: placeholders in steps and any columns that no longer match one.
+  const placeholders =
+    level === "outline" ? placeholdersIn([...form.steps, form.expectedResult]) : [];
+  const orphanColumns =
+    level === "outline"
+      ? form.examples.headers.filter(
+          (h) => h.trim() && !placeholders.includes(h.trim()),
+        )
+      : [];
 
   const editor = (
     <div className="tc-form">
@@ -398,6 +459,26 @@ export function TestCaseEditor({
           {summary && summary.rules.length > 0 && (
             <p className="tp-field__hint">Rule: {summary.rules.join(", ")}</p>
           )}
+
+          {examplesJson.length > 0 && (
+            <div className="tc-derived">
+              <p className="tp-field__grouplabel">{t("testCase.derived.examples")}</p>
+              <pre className="tc-derived__json">
+                {JSON.stringify(examplesJson, null, 2)}
+              </pre>
+            </div>
+          )}
+          {derivedComments.length > 0 && (
+            <div className="tc-derived">
+              <p className="tp-field__grouplabel">{t("testCase.derived.comments")}</p>
+              <ul className="tc-derived__list">
+                {derivedComments.map((c, i) => (
+                  <li key={i}># {c}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {docFields}
         </div>
       ) : (
@@ -424,6 +505,19 @@ export function TestCaseEditor({
             <>
               <p className="tp-field__grouplabel">{t("testCase.examples.title")}</p>
               <p className="tp-field__hint">{t("testCase.examples.hint")}</p>
+              {placeholders.length > 0 && (
+                <p className="tp-field__hint">
+                  {t("testCase.examples.placeholders")}:{" "}
+                  {placeholders.map((p) => `<${p}>`).join(", ")}
+                </p>
+              )}
+              {orphanColumns.length > 0 && (
+                <p className="tc-warn">
+                  {t("testCase.examples.orphanColumns", {
+                    cols: orphanColumns.join(", "),
+                  })}
+                </p>
+              )}
               <ExamplesTable
                 value={form.examples}
                 onChange={(v) => update({ examples: v })}
@@ -463,9 +557,20 @@ export function TestCaseEditor({
             <select
               value={level}
               onChange={(e) => changeLevel(e.target.value as GherkinLevel)}
+              title={
+                requiredLevel !== "basic"
+                  ? t("testCase.level.locked", {
+                      level: t(`testCase.level.${requiredLevel}.name`),
+                    })
+                  : undefined
+              }
             >
               {(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => (
-                <option key={l} value={l}>
+                <option
+                  key={l}
+                  value={l}
+                  disabled={levelRank(l) < levelRank(requiredLevel)}
+                >
                   {t(`testCase.level.${l}.name`)}
                 </option>
               ))}

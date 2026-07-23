@@ -270,6 +270,7 @@
     },
     "level": {
       "label": "Level",
+      "locked": "The Gherkin code needs at least “{{level}}”; you can't go below it.",
       "pickTitle": "Choose the scenario type",
       "pickSubtitle": "It determines which Gherkin keywords and which form you use. You can change it later.",
       "basic": {
@@ -297,7 +298,13 @@
       "addColumn": "+ Column",
       "addRow": "+ Row",
       "removeColumn": "Remove column",
-      "removeRow": "Remove row"
+      "removeRow": "Remove row",
+      "placeholders": "Placeholders detected in the steps",
+      "orphanColumns": "Columns without a placeholder in the steps: {{cols}}"
+    },
+    "derived": {
+      "examples": "Examples (derived from the Gherkin)",
+      "comments": "Comments (derived from the Gherkin)"
     },
     "outline": {
       "title": "Feature structure",

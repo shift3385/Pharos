@@ -75,6 +75,99 @@ export function toGherkin(title: string, data: TestCaseData): string {
   return lines.join("\n") + "\n";
 }
 
+const LEVEL_RANK: Record<GherkinLevel, number> = {
+  basic: 0,
+  outline: 1,
+  advanced: 2,
+};
+
+/** Ordinal of a level, so callers can compare "at least" requirements. */
+export function levelRank(level: GherkinLevel): number {
+  return LEVEL_RANK[level];
+}
+
+/** Minimum level that can represent the given Gherkin, so the UI can auto-place
+ *  the case and forbid downgrading below what the content needs (proposal 2):
+ *  Background / Rule / multiple scenarios → advanced; a data table or
+ *  `<placeholders>` → outline; otherwise basic. */
+export function detectLevel(text: string): GherkinLevel {
+  const s = summarizeFeature(text);
+  if (s.background || s.rules.length > 0 || s.scenarios.length > 1) {
+    return "advanced";
+  }
+  const parsed = fromGherkin(text);
+  const hasExamples = !!parsed.examples?.headers.some((h) => h.trim());
+  const hasPlaceholder = /<[^>\s][^>]*>/.test(text);
+  if (hasExamples || hasPlaceholder) return "outline";
+  return "basic";
+}
+
+/** Unique `<placeholder>` names found in the given texts, in order of first use
+ *  (proposal 3b: each placeholder maps to an Examples column). */
+export function placeholdersIn(texts: string[]): string[] {
+  const out: string[] = [];
+  for (const text of texts) {
+    for (const m of text.matchAll(/<([^>\s][^>]*)>/g)) {
+      const name = m[1].trim();
+      if (name && !out.includes(name)) out.push(name);
+    }
+  }
+  return out;
+}
+
+/** Comment lines (`# ...`) of a feature, without the leading marker. */
+export function extractComments(text: string): string[] {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("#"))
+    .map((l) => l.replace(/^#\s?/, ""));
+}
+
+export interface NamedExampleTable {
+  name: string;
+  table: ExampleTable;
+}
+
+/** Every Examples table in a feature, tagged with its scenario name (proposal
+ *  3a: shown read-only / as JSON in the advanced view). */
+export function extractExamples(text: string): NamedExampleTable[] {
+  const out: NamedExampleTable[] = [];
+  let scenarioName = "";
+  let collecting = false;
+  let rows: string[][] = [];
+  const flush = () => {
+    if (rows.length) {
+      out.push({
+        name: scenarioName,
+        table: { headers: rows[0], rows: rows.slice(1) },
+      });
+    }
+    rows = [];
+    collecting = false;
+  };
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    const scenario = line.match(/^Scenario(?:\s+Outline)?:\s*(.*)$/i);
+    if (scenario) {
+      flush();
+      scenarioName = scenario[1].trim();
+      continue;
+    }
+    if (/^Examples:/i.test(line)) {
+      flush();
+      collecting = true;
+      continue;
+    }
+    if (collecting) {
+      if (line.startsWith("|")) rows.push(parseRow(line));
+      else if (line) flush();
+    }
+  }
+  flush();
+  return out;
+}
+
 export interface FeatureSummary {
   feature?: string;
   background: boolean;
