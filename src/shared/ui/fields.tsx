@@ -161,19 +161,25 @@ export function PairListField<T>({
   );
 }
 
-/** Multi-select group of checkboxes, optionally allowing custom entries. */
+/** Multi-select group, optionally allowing custom entries. `variant="pills"`
+ *  renders selectable pill buttons (optionally split into labelled `groups`)
+ *  instead of checkboxes; the selection state/logic is identical. */
 export function CheckboxGroup({
   options,
   selected,
   onChange,
   labelFor,
   allowCustom,
+  variant = "checkbox",
+  groups,
 }: {
   options: string[];
   selected: string[];
   onChange: (next: string[]) => void;
   labelFor: (key: string) => string;
   allowCustom?: boolean;
+  variant?: "checkbox" | "pills";
+  groups?: { title: string; options: string[] }[];
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
@@ -185,6 +191,63 @@ export function CheckboxGroup({
         ? selected.filter((s) => s !== opt)
         : [...selected, opt],
     );
+
+  const addDraft = () => {
+    const v = draft.trim();
+    if (v && !selected.includes(v)) onChange([...selected, v]);
+    setDraft("");
+  };
+
+  const customField = allowCustom ? (
+    <div className="tp-checks__custom">
+      <input
+        value={draft}
+        placeholder={t("testPlan.otherPlaceholder")}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            addDraft();
+          }
+        }}
+      />
+      <button type="button" className="tp-list-field__add" onClick={addDraft}>
+        + {t("testPlan.other")}
+      </button>
+    </div>
+  ) : null;
+
+  if (variant === "pills") {
+    const groupList = groups ?? [{ title: "", options }];
+    const pill = (opt: string, label: string) => (
+      <button
+        key={opt}
+        type="button"
+        className="tp-pill"
+        data-active={selected.includes(opt)}
+        aria-pressed={selected.includes(opt)}
+        onClick={() => toggle(opt)}
+      >
+        {label}
+      </button>
+    );
+    return (
+      <div className="tp-pills-groups">
+        {groupList.map((g, gi) => (
+          <div className="tp-pills-group" key={gi}>
+            {g.title && <p className="tp-pills-group__title">{g.title}</p>}
+            <div className="tp-pills">
+              {g.options.map((opt) => pill(opt, labelFor(opt)))}
+            </div>
+          </div>
+        ))}
+        {custom.length > 0 && (
+          <div className="tp-pills">{custom.map((v) => pill(v, v))}</div>
+        )}
+        {customField}
+      </div>
+    );
+  }
 
   return (
     <div className="tp-checks">
@@ -204,34 +267,7 @@ export function CheckboxGroup({
           <span>{value}</span>
         </label>
       ))}
-      {allowCustom && (
-        <div className="tp-checks__custom">
-          <input
-            value={draft}
-            placeholder={t("testPlan.otherPlaceholder")}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                const v = draft.trim();
-                if (v && !selected.includes(v)) onChange([...selected, v]);
-                setDraft("");
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="tp-list-field__add"
-            onClick={() => {
-              const v = draft.trim();
-              if (v && !selected.includes(v)) onChange([...selected, v]);
-              setDraft("");
-            }}
-          >
-            + {t("testPlan.other")}
-          </button>
-        </div>
-      )}
+      {customField}
     </div>
   );
 }

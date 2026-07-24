@@ -388,16 +388,20 @@ export function TestCaseEditor({
     </>
   );
 
+  // Test data only makes sense at the basic level: the other levels express it
+  // with the Examples table.
   const docFields = (
     <>
-      <label className="tp-field">
-        <span>{t("testCase.testData")}</span>
-        <textarea
-          rows={2}
-          value={form.testData}
-          onChange={(e) => update({ testData: e.target.value })}
-        />
-      </label>
+      {level === "basic" && (
+        <label className="tp-field">
+          <span>{t("testCase.testData")}</span>
+          <textarea
+            rows={2}
+            value={form.testData}
+            onChange={(e) => update({ testData: e.target.value })}
+          />
+        </label>
+      )}
       <label className="tp-field">
         <span>{t("testCase.notes")}</span>
         <textarea
@@ -415,12 +419,6 @@ export function TestCaseEditor({
     level === "advanced" ? extractExamples(form.featureSource) : [];
   const derivedComments =
     level === "advanced" ? extractComments(form.featureSource) : [];
-  const examplesJson = derivedExamples.map((e) => ({
-    scenario: e.name,
-    rows: e.table.rows.map((r) =>
-      Object.fromEntries(e.table.headers.map((h, i) => [h, r[i] ?? ""])),
-    ),
-  }));
   // Outline: placeholders in steps and any columns that no longer match one.
   const placeholders =
     level === "outline" ? placeholdersIn([...form.steps, form.expectedResult]) : [];
@@ -457,15 +455,42 @@ export function TestCaseEditor({
             ))}
           </ul>
           {summary && summary.rules.length > 0 && (
-            <p className="tp-field__hint">Rule: {summary.rules.join(", ")}</p>
+            <ul className="tc-outline__list">
+              {summary.rules.map((r, i) => (
+                <li key={i} className="tc-outline__item">
+                  <span className="tc-outline__kind">Rule</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
           )}
 
-          {examplesJson.length > 0 && (
+          {derivedExamples.length > 0 && (
             <div className="tc-derived">
               <p className="tp-field__grouplabel">{t("testCase.derived.examples")}</p>
-              <pre className="tc-derived__json">
-                {JSON.stringify(examplesJson, null, 2)}
-              </pre>
+              {derivedExamples.map((e, i) => (
+                <div className="tc-derived__block" key={i}>
+                  {e.name && <p className="tp-field__hint">{e.name}</p>}
+                  <table className="tc-rotable">
+                    <thead>
+                      <tr>
+                        {e.table.headers.map((h, hi) => (
+                          <th key={hi}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {e.table.rows.map((row, ri) => (
+                        <tr key={ri}>
+                          {e.table.headers.map((_, ci) => (
+                            <td key={ci}>{row[ci] ?? ""}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
             </div>
           )}
           {derivedComments.length > 0 && (

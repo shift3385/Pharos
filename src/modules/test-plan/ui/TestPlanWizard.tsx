@@ -32,6 +32,42 @@ const TEST_TYPES = [
   "exploratory",
   "uat",
 ];
+// Test types split into functional vs non-functional coverage (visual grouping
+// only; the stored value is still the flat `testTypes` array).
+const FUNCTIONAL_TYPES = [
+  "functional",
+  "usability",
+  "compatibility",
+  "accessibility",
+  "uat",
+  "exploratory",
+  "sanity",
+];
+const NON_FUNCTIONAL_TYPES = [
+  "performance",
+  "load",
+  "stress",
+  "security",
+  "regression",
+  "smoke",
+];
+
+/** Per-sprint validation: an end date before the start is an error; overlapping
+ *  ranges are only a warning, since parallel sprints can be legitimate. */
+function sprintIssues(
+  sprints: ScheduleSprint[],
+): (null | "error" | "overlap")[] {
+  return sprints.map((s, i) => {
+    if (s.start && s.end && s.end < s.start) return "error";
+    if (!s.start || !s.end) return null;
+    const overlaps = sprints.some(
+      (o, j) =>
+        j !== i && o.start && o.end && o.start <= s.end && s.start <= o.end,
+    );
+    return overlaps ? "overlap" : null;
+  });
+}
+
 const TEST_LEVELS = ["unit", "integration", "system", "acceptance"];
 const TOOLS = ["selenium", "playwright", "cypress", "postman", "jmeter", "jira"];
 const CEREMONIES = ["daily", "review", "retrospective", "planning"];
@@ -239,6 +275,17 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             onChange={(v) => set("testTypes", v)}
             labelFor={(k) => t(`testPlan.typeLabel.${k}`)}
             allowCustom
+            variant="pills"
+            groups={[
+              {
+                title: t("testPlan.typeGroup.functional"),
+                options: FUNCTIONAL_TYPES,
+              },
+              {
+                title: t("testPlan.typeGroup.nonFunctional"),
+                options: NON_FUNCTIONAL_TYPES,
+              },
+            ]}
           />
         ),
       },
@@ -280,6 +327,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                   selected={form.ceremonies}
                   onChange={(v) => set("ceremonies", v)}
                   labelFor={(k) => t(`testPlan.ceremonyLabel.${k}`)}
+                  variant="pills"
                 />
               </>
             ) : (
@@ -300,6 +348,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             selected={form.testLevels}
             onChange={(v) => set("testLevels", v)}
             labelFor={(k) => t(`testPlan.levelLabel.${k}`)}
+            variant="pills"
           />
         ),
       },
@@ -343,6 +392,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               onChange={(v) => set("tools", v)}
               labelFor={(k) => t(`testPlan.toolLabel.${k}`)}
               allowCustom
+              variant="pills"
             />
             <AreaField
               label={t("testPlan.automationStrategy")}
@@ -396,46 +446,63 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               onAdd={(s) => set("sprints", [...form.sprints, s])}
             />
             <FieldLabel text={t("testPlan.sprints")} />
-            {form.sprints.map((s, i) => (
-              <div className="tp-sched-row" key={i}>
-                <input
-                  placeholder={t("testPlan.sprintName")}
-                  value={s.name}
-                  onChange={(e) => {
-                    const next = [...form.sprints];
-                    next[i] = { ...s, name: e.target.value };
-                    set("sprints", next);
-                  }}
-                />
-                <input
-                  type="date"
-                  value={s.start}
-                  onChange={(e) => {
-                    const next = [...form.sprints];
-                    next[i] = { ...s, start: e.target.value };
-                    set("sprints", next);
-                  }}
-                />
-                <input
-                  type="date"
-                  value={s.end}
-                  onChange={(e) => {
-                    const next = [...form.sprints];
-                    next[i] = { ...s, end: e.target.value };
-                    set("sprints", next);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="tp-list-field__del"
-                  onClick={() =>
-                    set("sprints", form.sprints.filter((_, j) => j !== i))
-                  }
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+            {form.sprints.map((s, i) => {
+              const issue = sprintIssues(form.sprints)[i];
+              return (
+                <div key={i}>
+                  <div className="tp-sched-row">
+                    <input
+                      placeholder={t("testPlan.sprintName")}
+                      value={s.name}
+                      onChange={(e) => {
+                        const next = [...form.sprints];
+                        next[i] = { ...s, name: e.target.value };
+                        set("sprints", next);
+                      }}
+                    />
+                    <input
+                      type="date"
+                      data-invalid={issue === "error"}
+                      value={s.start}
+                      onChange={(e) => {
+                        const next = [...form.sprints];
+                        next[i] = { ...s, start: e.target.value };
+                        set("sprints", next);
+                      }}
+                    />
+                    <input
+                      type="date"
+                      data-invalid={issue === "error"}
+                      value={s.end}
+                      onChange={(e) => {
+                        const next = [...form.sprints];
+                        next[i] = { ...s, end: e.target.value };
+                        set("sprints", next);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="tp-list-field__del"
+                      onClick={() =>
+                        set("sprints", form.sprints.filter((_, j) => j !== i))
+                      }
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {issue === "error" && (
+                    <p className="tp-msg tp-msg--error">
+                      {t("testPlan.sprintDateError")}
+                    </p>
+                  )}
+                  {issue === "overlap" && (
+                    <p className="tp-msg tp-msg--warn">
+                      {t("testPlan.sprintOverlap")}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
             <button
               type="button"
               className="tp-list-field__add"

@@ -170,6 +170,10 @@
       "purpose": "Propósito",
       "conclusion": "Conclusión"
     },
+    "typeGroup": {
+      "functional": "Cobertura funcional",
+      "nonFunctional": "Cobertura no funcional"
+    },
     "typeLabel": {
       "functional": "Funcionales",
       "performance": "Rendimiento",
@@ -226,7 +230,9 @@
       "reviewed": "Revisado",
       "approved": "Aprobado",
       "obsolete": "Obsoleto"
-    }
+    },
+    "sprintDateError": "La fecha de fin es anterior a la de inicio.",
+    "sprintOverlap": "Este sprint se solapa con otro."
   },
   "testCase": {
     "title": "Casos de prueba",
@@ -303,8 +309,8 @@
       "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}"
     },
     "derived": {
-      "examples": "Examples (derivado del Gherkin)",
-      "comments": "Comentarios (derivado del Gherkin)"
+      "examples": "Examples",
+      "comments": "Comentarios"
     },
     "outline": {
       "title": "Estructura del Feature",

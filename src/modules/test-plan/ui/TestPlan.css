@@ -472,6 +472,24 @@
   color: var(--color-text-muted);
 }
 
+/* ---- Inline validation messages (schedule) ---- */
+.tp-msg {
+  margin-top: var(--space-1);
+  font-size: var(--fs-caption);
+}
+
+.tp-msg--error {
+  color: var(--color-error);
+}
+
+.tp-msg--warn {
+  color: var(--color-warning);
+}
+
+.tp-sched-row input[data-invalid="true"] {
+  border-color: var(--color-error);
+}
+
 /* ---- Inline delete confirmation ---- */
 .tp-confirm {
   display: inline-flex;

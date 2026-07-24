@@ -170,6 +170,10 @@
       "purpose": "Purpose",
       "conclusion": "Conclusion"
     },
+    "typeGroup": {
+      "functional": "Functional coverage",
+      "nonFunctional": "Non-functional coverage"
+    },
     "typeLabel": {
       "functional": "Functional",
       "performance": "Performance",
@@ -226,7 +230,9 @@
       "reviewed": "Reviewed",
       "approved": "Approved",
       "obsolete": "Obsolete"
-    }
+    },
+    "sprintDateError": "The end date is before the start date.",
+    "sprintOverlap": "This sprint overlaps another one."
   },
   "testCase": {
     "title": "Test cases",
@@ -303,8 +309,8 @@
       "orphanColumns": "Columns without a placeholder in the steps: {{cols}}"
     },
     "derived": {
-      "examples": "Examples (derived from the Gherkin)",
-      "comments": "Comments (derived from the Gherkin)"
+      "examples": "Examples",
+      "comments": "Comments"
     },
     "outline": {
       "title": "Feature structure",
