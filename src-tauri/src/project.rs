@@ -39,6 +39,9 @@ pub struct ProjectInput {
     name: String,
     case_id_prefix: Option<String>,
     case_id_digits: Option<i64>,
+    /// Authenticated user that owns the project (set on create; never changed
+    /// by an update).
+    owner_id: Option<String>,
 }
 
 const DEFAULT_PREFIX: &str = "ATS_";
@@ -57,15 +60,17 @@ fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
     })
 }
 
-fn list_projects(conn: &Connection) -> Result<Vec<ProjectSummary>, String> {
+/// Only the owner sees a project (collaboration roles arrive with sync, Fase 8).
+fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, name, case_id_prefix, case_id_digits, updated_at, revision \
-             FROM projects WHERE deleted_at IS NULL ORDER BY name COLLATE NOCASE",
+             FROM projects WHERE owner_id = ?1 AND deleted_at IS NULL \
+             ORDER BY name COLLATE NOCASE",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map([], |r| {
+        .query_map(params![owner_id], |r| {
             Ok(ProjectSummary {
                 id: r.get("id")?,
                 name: r.get("name")?,
@@ -80,12 +85,16 @@ fn list_projects(conn: &Connection) -> Result<Vec<ProjectSummary>, String> {
         .map_err(|e| e.to_string())
 }
 
-fn get_project(conn: &Connection, id: &str) -> Result<Option<Project>, String> {
+fn get_project(
+    conn: &Connection,
+    id: &str,
+    owner_id: &str,
+) -> Result<Option<Project>, String> {
     conn.query_row(
         "SELECT id, workspace_id, name, case_id_prefix, case_id_digits, \
          created_at, updated_at, revision FROM projects \
-         WHERE id = ?1 AND deleted_at IS NULL",
-        params![id],
+         WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
+        params![id, owner_id],
         map_project,
     )
     .optional()
@@ -102,13 +111,32 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
         .unwrap_or_else(|| DEFAULT_PREFIX.to_string());
     let digits = input.case_id_digits.filter(|d| *d > 0).unwrap_or(DEFAULT_DIGITS);
     conn.execute(
-        "INSERT INTO projects (id, workspace_id, name, case_id_prefix, case_id_digits, \
-         created_by, updated_by, created_at, updated_at, revision) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?1, ?1, datetime('now'), datetime('now'), 1)",
-        params![id, workspace_id, input.name, prefix, digits],
+        "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, \
+         case_id_digits, created_by, updated_by, created_at, updated_at, revision) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?1, ?1, datetime('now'), datetime('now'), 1)",
+        params![
+            id,
+            workspace_id,
+            input.owner_id.clone().unwrap_or_default(),
+            input.name,
+            prefix,
+            digits
+        ],
     )
     .map_err(|e| e.to_string())?;
     Ok(id)
+}
+
+/// Guards mutations: only the owner may update or delete a project.
+fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM projects WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
+        params![id, owner_id],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+    .map(|r| r.is_some())
 }
 
 fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(), String> {
@@ -151,20 +179,25 @@ fn delete_project(conn: &Connection, id: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn project_list(db: State<Db>) -> Result<Vec<ProjectSummary>, String> {
-    db.with_conn(list_projects)
+pub fn project_list(db: State<Db>, owner_id: String) -> Result<Vec<ProjectSummary>, String> {
+    db.with_conn(|conn| list_projects(conn, &owner_id))
 }
 
 #[tauri::command]
-pub fn project_get(db: State<Db>, id: String) -> Result<Option<Project>, String> {
-    db.with_conn(|conn| get_project(conn, &id))
+pub fn project_get(
+    db: State<Db>,
+    id: String,
+    owner_id: String,
+) -> Result<Option<Project>, String> {
+    db.with_conn(|conn| get_project(conn, &id, &owner_id))
 }
 
 #[tauri::command]
 pub fn project_create(db: State<Db>, input: ProjectInput) -> Result<Option<Project>, String> {
+    let owner = input.owner_id.clone().unwrap_or_default();
     let id = db.with_conn(|conn| insert_project(conn, &input))?;
     db.persist()?;
-    db.with_conn(|conn| get_project(conn, &id))
+    db.with_conn(|conn| get_project(conn, &id, &owner))
 }
 
 #[tauri::command]
@@ -173,14 +206,25 @@ pub fn project_update(
     id: String,
     input: ProjectInput,
 ) -> Result<Option<Project>, String> {
-    db.with_conn(|conn| update_project(conn, &id, &input))?;
+    let owner = input.owner_id.clone().unwrap_or_default();
+    db.with_conn(|conn| {
+        if !owns(conn, &id, &owner)? {
+            return Err("project not found".to_string());
+        }
+        update_project(conn, &id, &input)
+    })?;
     db.persist()?;
-    db.with_conn(|conn| get_project(conn, &id))
+    db.with_conn(|conn| get_project(conn, &id, &owner))
 }
 
 #[tauri::command]
-pub fn project_delete(db: State<Db>, id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_project(conn, &id))?;
+pub fn project_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
+    db.with_conn(|conn| {
+        if !owns(conn, &id, &owner_id)? {
+            return Err("project not found".to_string());
+        }
+        delete_project(conn, &id)
+    })?;
     db.persist()
 }
 
@@ -194,11 +238,14 @@ mod tests {
         c
     }
 
+    const OWNER: &str = "user-1";
+
     fn input(name: &str, prefix: Option<&str>) -> ProjectInput {
         ProjectInput {
             name: name.to_string(),
             case_id_prefix: prefix.map(String::from),
             case_id_digits: None,
+            owner_id: Some(OWNER.to_string()),
         }
     }
 
@@ -206,7 +253,7 @@ mod tests {
     fn creates_project_with_default_numbering() {
         let c = conn();
         let id = insert_project(&c, &input("Checkout", None)).unwrap();
-        let p = get_project(&c, &id).unwrap().unwrap();
+        let p = get_project(&c, &id, OWNER).unwrap().unwrap();
         assert_eq!(p.name, "Checkout");
         assert_eq!(p.case_id_prefix, "ATS_");
         assert_eq!(p.case_id_digits, 3);
@@ -217,7 +264,10 @@ mod tests {
     fn stores_custom_prefix() {
         let c = conn();
         let id = insert_project(&c, &input("Billing", Some("TC-"))).unwrap();
-        assert_eq!(get_project(&c, &id).unwrap().unwrap().case_id_prefix, "TC-");
+        assert_eq!(
+            get_project(&c, &id, OWNER).unwrap().unwrap().case_id_prefix,
+            "TC-"
+        );
     }
 
     #[test]
@@ -225,7 +275,7 @@ mod tests {
         let c = conn();
         let id = insert_project(&c, &input("X", None)).unwrap();
         update_project(&c, &id, &input("X renamed", Some("FT"))).unwrap();
-        let p = get_project(&c, &id).unwrap().unwrap();
+        let p = get_project(&c, &id, OWNER).unwrap().unwrap();
         assert_eq!(p.revision, 2);
         assert_eq!(p.name, "X renamed");
         assert_eq!(p.case_id_prefix, "FT");
@@ -236,7 +286,18 @@ mod tests {
         let c = conn();
         let id = insert_project(&c, &input("Temp", None)).unwrap();
         delete_project(&c, &id).unwrap();
-        assert!(get_project(&c, &id).unwrap().is_none());
-        assert_eq!(list_projects(&c).unwrap().len(), 0);
+        assert!(get_project(&c, &id, OWNER).unwrap().is_none());
+        assert_eq!(list_projects(&c, OWNER).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn another_user_cannot_see_or_touch_the_project() {
+        let c = conn();
+        let id = insert_project(&c, &input("Private", None)).unwrap();
+        // A different signed-in user sees nothing and is not the owner.
+        assert!(get_project(&c, &id, "user-2").unwrap().is_none());
+        assert_eq!(list_projects(&c, "user-2").unwrap().len(), 0);
+        assert!(!owns(&c, &id, "user-2").unwrap());
+        assert!(owns(&c, &id, OWNER).unwrap());
     }
 }

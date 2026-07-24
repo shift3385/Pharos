@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@modules/auth";
 import { DeleteButton } from "@shared/ui/fields";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
@@ -10,6 +11,8 @@ type View = { kind: "list" } | { kind: "detail"; id: string };
 
 export function ProjectsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const ownerId = user?.id ?? "";
   const [view, setView] = useState<View>({ kind: "list" });
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,17 +20,18 @@ export function ProjectsPage() {
   const [name, setName] = useState("");
 
   async function refresh() {
-    setProjects(await projectApi.list());
+    setProjects(await projectApi.list(ownerId));
     setLoading(false);
   }
   useEffect(() => {
     void refresh();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerId]);
 
   async function create() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const project = await projectApi.create({ name: trimmed });
+    const project = await projectApi.create({ name: trimmed, ownerId });
     setName("");
     setCreating(false);
     await refresh();
@@ -35,7 +39,7 @@ export function ProjectsPage() {
   }
 
   async function remove(id: string) {
-    await projectApi.remove(id);
+    await projectApi.remove(id, ownerId);
     void refresh();
   }
 

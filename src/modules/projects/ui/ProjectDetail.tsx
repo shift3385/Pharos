@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@modules/auth";
 import { TestPlanPage } from "@modules/test-plan";
 import { TestCasesPage } from "@modules/test-cases";
 import { projectApi } from "../api/projectApi";
@@ -19,16 +20,18 @@ export function ProjectDetail({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const ownerId = user?.id ?? "";
   const [project, setProject] = useState<Project | null>(null);
   const [tab, setTab] = useState<Tab>("plan");
 
   async function refresh() {
-    setProject(await projectApi.get(projectId));
+    setProject(await projectApi.get(projectId, ownerId));
   }
   useEffect(() => {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, ownerId]);
 
   if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
 
@@ -91,6 +94,7 @@ function ProjectSettings({
   async function save() {
     setSaving(true);
     await projectApi.update(project.id, {
+      ownerId: project.ownerId,
       name: name.trim() || project.name,
       caseIdPrefix: prefix,
       caseIdDigits: digits,

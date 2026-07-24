@@ -33,6 +33,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0004_projects.sql",
         include_str!("../migrations/0004_projects.sql"),
     ),
+    (
+        "0005_project_ownership.sql",
+        include_str!("../migrations/0005_project_ownership.sql"),
+    ),
 ];
 
 pub struct Db {

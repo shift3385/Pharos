@@ -23,8 +23,9 @@ function saveAll(projects: Project[]) {
 }
 
 const browserApi = {
-  async list(): Promise<ProjectSummary[]> {
+  async list(ownerId: string): Promise<ProjectSummary[]> {
     return loadAll()
+      .filter((p) => p.ownerId === ownerId)
       .map(({ id, name, caseIdPrefix, caseIdDigits, updatedAt, revision }) => ({
         id,
         name,
@@ -35,14 +36,15 @@ const browserApi = {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   },
-  async get(id: string): Promise<Project | null> {
-    return loadAll().find((p) => p.id === id) ?? null;
+  async get(id: string, ownerId: string): Promise<Project | null> {
+    return loadAll().find((p) => p.id === id && p.ownerId === ownerId) ?? null;
   },
   async create(input: ProjectInput): Promise<Project> {
     const now = new Date().toISOString();
     const project: Project = {
       id: crypto.randomUUID(),
       workspaceId: "local",
+      ownerId: input.ownerId,
       name: input.name,
       caseIdPrefix: input.caseIdPrefix?.trim() || "ATS_",
       caseIdDigits: input.caseIdDigits ?? 3,
@@ -79,15 +81,17 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// Every call carries the signed-in user so a project is only visible to its
+// owner (collaboration roles arrive with sync, Fase 8).
 export const projectApi = {
-  list: (): Promise<ProjectSummary[]> =>
-    isTauri() ? invoke("project_list") : browserApi.list(),
-  get: (id: string): Promise<Project | null> =>
-    isTauri() ? invoke("project_get", { id }) : browserApi.get(id),
+  list: (ownerId: string): Promise<ProjectSummary[]> =>
+    isTauri() ? invoke("project_list", { ownerId }) : browserApi.list(ownerId),
+  get: (id: string, ownerId: string): Promise<Project | null> =>
+    isTauri() ? invoke("project_get", { id, ownerId }) : browserApi.get(id, ownerId),
   create: (input: ProjectInput): Promise<Project | null> =>
     isTauri() ? invoke("project_create", { input }) : browserApi.create(input),
   update: (id: string, input: ProjectInput): Promise<Project | null> =>
     isTauri() ? invoke("project_update", { id, input }) : browserApi.update(id, input),
-  remove: (id: string): Promise<void> =>
-    isTauri() ? invoke("project_delete", { id }) : browserApi.remove(id),
+  remove: (id: string, ownerId: string): Promise<void> =>
+    isTauri() ? invoke("project_delete", { id, ownerId }) : browserApi.remove(id),
 };

@@ -5,6 +5,7 @@
 export interface Project {
   id: string;
   workspaceId: string;
+  ownerId?: string;
   name: string;
   caseIdPrefix: string;
   caseIdDigits: number;
@@ -26,4 +27,6 @@ export interface ProjectInput {
   name: string;
   caseIdPrefix?: string;
   caseIdDigits?: number;
+  /** Authenticated user that owns the project (set on create). */
+  ownerId?: string;
 }
