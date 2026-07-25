@@ -232,7 +232,18 @@
       "obsolete": "Obsoleto"
     },
     "sprintDateError": "La fecha de fin es anterior a la de inicio.",
-    "sprintOverlap": "Este sprint se solapa con otro."
+    "sprintOverlap": "Este sprint se solapa con otro.",
+    "restore": "Restaurar",
+    "restoreConfirm": "¿Restaurar el contenido de esta revisión? Reemplazará lo que tienes ahora sin guardar.",
+    "discardConfirm": "Tienes cambios sin guardar. ¿Salir y descartarlos?",
+    "closureDefault": {
+      "executed": "% de casos ejecutados",
+      "executedMetric": "≥ 95%",
+      "defects": "Defectos críticos abiertos",
+      "defectsMetric": "0",
+      "coverage": "Cobertura de requisitos",
+      "coverageMetric": "≥ 90%"
+    }
   },
   "testCase": {
     "title": "Casos de prueba",

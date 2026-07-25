@@ -47,6 +47,16 @@ pub struct RevisionSummary {
     created_at: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevisionDetail {
+    id: String,
+    revision: i64,
+    title: String,
+    data: Value,
+    created_at: String,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestPlanInput {
@@ -263,9 +273,38 @@ pub fn test_plan_delete(db: State<Db>, id: String) -> Result<(), String> {
     db.persist()
 }
 
+/// Full content of a single revision (title + snapshotted 21-field data), for
+/// restoring it into the editor.
+fn get_revision(conn: &Connection, id: &str) -> Result<Option<RevisionDetail>, String> {
+    conn.query_row(
+        "SELECT id, revision, title, data, created_at FROM test_plan_revisions WHERE id = ?1",
+        params![id],
+        |r| {
+            let data_str: String = r.get(3)?;
+            Ok(RevisionDetail {
+                id: r.get(0)?,
+                revision: r.get(1)?,
+                title: r.get(2)?,
+                data: serde_json::from_str(&data_str).unwrap_or_else(|_| empty_object()),
+                created_at: r.get(4)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn test_plan_revisions(db: State<Db>, id: String) -> Result<Vec<RevisionSummary>, String> {
     db.with_conn(|conn| list_revisions(conn, &id))
+}
+
+#[tauri::command]
+pub fn test_plan_revision_get(
+    db: State<Db>,
+    id: String,
+) -> Result<Option<RevisionDetail>, String> {
+    db.with_conn(|conn| get_revision(conn, &id))
 }
 
 #[cfg(test)]
@@ -318,6 +357,11 @@ mod tests {
         assert_eq!(revisions.len(), 1);
         assert_eq!(revisions[0].revision, 1);
         assert_eq!(revisions[0].title, "Plan A");
+
+        // The snapshot keeps the full content so it can be restored.
+        let detail = get_revision(&c, &revisions[0].id).unwrap().unwrap();
+        assert_eq!(detail.title, "Plan A");
+        assert_eq!(detail.data, serde_json::json!({}));
     }
 
     #[test]

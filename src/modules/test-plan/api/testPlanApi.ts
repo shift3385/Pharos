@@ -1,4 +1,5 @@
 import type {
+  RevisionDetail,
   RevisionSummary,
   TestPlan,
   TestPlanInput,
@@ -27,7 +28,7 @@ function loadAll(): TestPlan[] {
 function saveAll(plans: TestPlan[]) {
   localStorage.setItem(KEY, JSON.stringify(plans));
 }
-type StoredRevision = RevisionSummary & { planId: string };
+type StoredRevision = RevisionDetail & { planId: string };
 
 function loadRevs(): StoredRevision[] {
   try {
@@ -90,6 +91,7 @@ const browserApi = {
       planId: id,
       revision: prev.revision,
       title: prev.title,
+      data: prev.data,
       createdAt: new Date().toISOString(),
     });
     localStorage.setItem(REV_KEY, JSON.stringify(revs));
@@ -120,6 +122,9 @@ const browserApi = {
       .filter((r) => r.planId === planId)
       .sort((a, b) => b.revision - a.revision);
   },
+  async revisionDetail(id: string): Promise<RevisionDetail | null> {
+    return loadRevs().find((r) => r.id === id) ?? null;
+  },
 };
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -146,4 +151,8 @@ export const testPlanApi = {
     isTauri() ? invoke("test_plan_delete", { id }) : browserApi.remove(id),
   revisions: (id: string): Promise<RevisionSummary[]> =>
     isTauri() ? invoke("test_plan_revisions", { id }) : browserApi.revisions(id),
+  revisionDetail: (id: string): Promise<RevisionDetail | null> =>
+    isTauri()
+      ? invoke("test_plan_revision_get", { id })
+      : browserApi.revisionDetail(id),
 };

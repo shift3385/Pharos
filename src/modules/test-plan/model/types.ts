@@ -93,3 +93,7 @@ export interface RevisionSummary {
   title: string;
   createdAt: string;
 }
+
+export interface RevisionDetail extends RevisionSummary {
+  data: TestPlanData;
+}

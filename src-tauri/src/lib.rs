@@ -70,6 +70,7 @@ pub fn run() {
             test_plan::test_plan_update,
             test_plan::test_plan_delete,
             test_plan::test_plan_revisions,
+            test_plan::test_plan_revision_get,
             test_case::test_case_list,
             test_case::test_case_get,
             test_case::test_case_create,

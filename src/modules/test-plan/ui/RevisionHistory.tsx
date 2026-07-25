@@ -3,7 +3,13 @@ import { useTranslation } from "react-i18next";
 import { testPlanApi } from "../api/testPlanApi";
 import type { RevisionSummary } from "../model/types";
 
-export function RevisionHistory({ planId }: { planId: string }) {
+export function RevisionHistory({
+  planId,
+  onRestore,
+}: {
+  planId: string;
+  onRestore?: (revisionId: string) => void;
+}) {
   const { t } = useTranslation();
   const [revisions, setRevisions] = useState<RevisionSummary[]>([]);
 
@@ -30,6 +36,15 @@ export function RevisionHistory({ planId }: { planId: string }) {
           </span>
           <span className="tp-revs__title">{r.title}</span>
           <span className="tp-revs__date">{r.createdAt}</span>
+          {onRestore && (
+            <button
+              type="button"
+              className="tp-revs__restore"
+              onClick={() => onRestore(r.id)}
+            >
+              {t("testPlan.restore")}
+            </button>
+          )}
         </li>
       ))}
     </ul>

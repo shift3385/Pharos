@@ -232,7 +232,18 @@
       "obsolete": "Obsolete"
     },
     "sprintDateError": "The end date is before the start date.",
-    "sprintOverlap": "This sprint overlaps another one."
+    "sprintOverlap": "This sprint overlaps another one.",
+    "restore": "Restore",
+    "restoreConfirm": "Restore this revision's content? It will replace what you have now, unsaved.",
+    "discardConfirm": "You have unsaved changes. Leave and discard them?",
+    "closureDefault": {
+      "executed": "% of cases executed",
+      "executedMetric": "≥ 95%",
+      "defects": "Open critical defects",
+      "defectsMetric": "0",
+      "coverage": "Requirements coverage",
+      "coverageMetric": "≥ 90%"
+    }
   },
   "testCase": {
     "title": "Test cases",

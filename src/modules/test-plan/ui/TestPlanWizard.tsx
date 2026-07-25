@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
@@ -10,6 +10,7 @@ import type {
   ScheduleMilestone,
   ScheduleSprint,
   TestPlan,
+  TestPlanData,
   TestPlanInput,
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
@@ -128,6 +129,8 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [showRev, setShowRev] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
+  // Snapshot of the form as loaded, to detect unsaved changes (C1).
+  const initialRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,10 +139,14 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         const p = await testPlanApi.get(planId);
         if (p && !cancelled) {
           setPlan(p);
-          setForm(fromPlan(p));
+          const f = fromPlan(p);
+          setForm(f);
+          initialRef.current = JSON.stringify(f);
         }
       } else if (!cancelled) {
-        setForm(defaults(t));
+        const f = defaults(t);
+        setForm(f);
+        initialRef.current = JSON.stringify(f);
       }
     })();
     return () => {
@@ -147,8 +154,29 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     };
   }, [planId, t]);
 
+  const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
+
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => (f ? { ...f, [key]: value } : f));
+
+  // Restore a past revision's content into the editor (A1). Version/date/status
+  // are not snapshotted, so they carry on from the current values; saving then
+  // creates a new revision.
+  async function restore(revisionId: string) {
+    if (!form) return;
+    const rev = await testPlanApi.revisionDetail(revisionId);
+    if (!rev) return;
+    if (!window.confirm(t("testPlan.restoreConfirm"))) return;
+    setForm(applyRevision(form, rev.title, rev.data));
+    setShowRev(false);
+    setStep(0);
+  }
+
+  // Leaving with unsaved changes asks first (C1).
+  const close = () => {
+    if (dirty && !window.confirm(t("testPlan.discardConfirm"))) return;
+    onClose();
+  };
 
   async function save() {
     if (!form) return;
@@ -156,10 +184,15 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
     // Drop empty entries so blank rows are not persisted (user feedback).
     const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
+    // Auto-bump the version when editing, unless the user set it by hand (A2).
+    const version =
+      plan && form.version === plan.version
+        ? nextVersion(form.version)
+        : form.version;
     const input: TestPlanInput = {
       projectId: plan?.projectId ?? projectId ?? null,
       title: form.title.trim(),
-      version: form.version,
+      version,
       planDate: form.planDate || null,
       status: form.status,
       author,
@@ -625,7 +658,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   return (
     <section className="tp-wizard">
       <header className="tp-wizard__top">
-        <button type="button" className="tp-editor__back" onClick={onClose}>
+        <button type="button" className="tp-editor__back" onClick={close}>
           ← {t("testPlan.back")}
         </button>
         <h1>{plan ? t("testPlan.editTitle") : t("testPlan.newTitle")}</h1>
@@ -656,7 +689,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       {plan && showRev && (
         <div className="tp-revs-panel">
           <h3>{t("testPlan.revisions")}</h3>
-          <RevisionHistory planId={plan.id} />
+          <RevisionHistory planId={plan.id} onRestore={restore} />
         </div>
       )}
 
@@ -777,9 +810,64 @@ function defaults(t: (k: string) => string): FormState {
     milestones: [],
     risks: [],
     communicationPlan: "",
-    closureCriteria: [],
+    closureCriteria: [
+      {
+        criterion: t("testPlan.closureDefault.executed"),
+        metric: t("testPlan.closureDefault.executedMetric"),
+      },
+      {
+        criterion: t("testPlan.closureDefault.defects"),
+        metric: t("testPlan.closureDefault.defectsMetric"),
+      },
+      {
+        criterion: t("testPlan.closureDefault.coverage"),
+        metric: t("testPlan.closureDefault.coverageMetric"),
+      },
+    ],
     purpose: "",
     conclusion: "",
+  };
+}
+
+/** Bumps the last dotted segment of a version (`1.0` → `1.1`, `1.9` → `1.10`). */
+function nextVersion(v: string): string {
+  const parts = v.split(".");
+  const n = Number(parts[parts.length - 1]);
+  if (!Number.isInteger(n)) return v;
+  parts[parts.length - 1] = String(n + 1);
+  return parts.join(".");
+}
+
+/** Overwrites the 21-field content of `base` with a revision's title + data,
+ *  keeping version/date/status (not snapshotted). */
+function applyRevision(base: FormState, title: string, d: TestPlanData): FormState {
+  return {
+    ...base,
+    title,
+    summary: d.summary ?? "",
+    scopeIn: d.scopeIn ?? [],
+    scopeOut: d.scopeOut ?? [],
+    testTypes: d.testTypes ?? [],
+    methodologyType: d.methodologyType ?? "agile",
+    sprintWeeks: d.sprintWeeks ?? 2,
+    ceremonies: d.ceremonies ?? [],
+    phases: d.phases ?? [],
+    testLevels: d.testLevels ?? [],
+    deliverables: d.deliverables ?? [],
+    environmentConfig: d.environmentConfig ?? "",
+    environmentRequirements: d.environmentRequirements ?? "",
+    tools: d.tools ?? [],
+    automationStrategy: d.automationStrategy ?? "",
+    testDataManagement: d.testDataManagement ?? "",
+    defectManagement: d.defectManagement ?? "",
+    roles: d.roles ?? [],
+    sprints: d.sprints ?? [],
+    milestones: d.milestones ?? [],
+    risks: d.risks ?? [],
+    communicationPlan: d.communicationPlan ?? "",
+    closureCriteria: d.closureCriteria ?? [],
+    purpose: d.purpose ?? "",
+    conclusion: d.conclusion ?? "",
   };
 }
 
