@@ -2,6 +2,7 @@
 //! target (v0.0.4) can reuse the same entrypoint.
 
 mod db;
+mod planner;
 mod profile;
 mod project;
 mod test_case;
@@ -76,7 +77,16 @@ pub fn run() {
             test_case::test_case_create,
             test_case::test_case_update,
             test_case::test_case_delete,
-            test_case::test_case_revisions
+            test_case::test_case_revisions,
+            planner::planner_list,
+            planner::planner_create,
+            planner::planner_update,
+            planner::planner_delete,
+            planner::planner_reorder,
+            planner::planner_attachment_add,
+            planner::planner_attachment_list,
+            planner::planner_attachment_get,
+            planner::planner_attachment_delete
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

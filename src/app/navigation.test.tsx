@@ -23,9 +23,9 @@ describe("navigation", () => {
       screen.getByRole("heading", { name: "Proyectos" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByTestId("nav-planner"));
+    await user.click(screen.getByTestId("nav-templates"));
     expect(
-      screen.getByRole("heading", { name: "Planificador" }),
+      screen.getByRole("heading", { name: "Plantillas" }),
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("nav-dashboard"));

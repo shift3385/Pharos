@@ -3,12 +3,13 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { TestPlanPage } from "@modules/test-plan";
 import { TestCasesPage } from "@modules/test-cases";
+import { PlannerBoard } from "@modules/planner";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import "./Projects.css";
 
-type Tab = "plan" | "cases" | "settings";
-const TABS: Tab[] = ["plan", "cases", "settings"];
+type Tab = "plan" | "cases" | "planner" | "settings";
+const TABS: Tab[] = ["plan", "cases", "planner", "settings"];
 
 /** A project's workspace: its test plan, its test cases and its settings, all
  *  scoped to this project (spec §5.1 — the project is the container). */
@@ -70,6 +71,9 @@ export function ProjectDetail({
           caseIdPrefix={project.caseIdPrefix}
           caseIdDigits={project.caseIdDigits}
         />
+      )}
+      {tab === "planner" && (
+        <PlannerBoard projectId={projectId} ownerId={ownerId} />
       )}
       {tab === "settings" && (
         <ProjectSettings project={project} onSaved={refresh} />

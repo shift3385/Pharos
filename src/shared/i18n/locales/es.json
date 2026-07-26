@@ -73,7 +73,8 @@
     "tab": {
       "plan": "Plan de pruebas",
       "cases": "Casos de prueba",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "planner": "Planificador"
     }
   },
   "profile": {
@@ -380,6 +381,38 @@
     "admin": {
       "title": "Administración",
       "subtitle": "Plantillas, motor de IA y perfiles de prueba."
+    }
+  },
+  "planner": {
+    "column": {
+      "backlog": "Backlog",
+      "in_progress": "En progreso",
+      "in_review": "En revisión",
+      "done": "Hecho"
+    },
+    "newCard": "Nueva tarjeta",
+    "editCard": "Editar tarjeta",
+    "back": "Volver",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "kind": "Tipo",
+    "cardTitle": "Título",
+    "description": "Descripción",
+    "priority": "Prioridad",
+    "labels": "Etiquetas",
+    "attachments": "Adjuntos",
+    "attachAfterSave": "Guarda la tarjeta para poder añadir adjuntos.",
+    "attachTooLarge": "«{{name}}» supera el límite de 10 MB.",
+    "kindLabel": {
+      "task": "Tarea",
+      "defect": "Defecto",
+      "test_data": "Datos de prueba"
+    },
+    "priorityLabel": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "critical": "Crítica"
     }
   }
 }

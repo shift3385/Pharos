@@ -1,0 +1,198 @@
+/* Planner kanban (spec §7). Colors come from Faro Nocturno tokens only. */
+.pl-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.pl-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+.pl-col[data-over="true"] {
+  border-color: var(--color-navy-300);
+}
+.pl-col__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-2);
+}
+.pl-col__title {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+.pl-col__count {
+  min-width: 20px;
+  text-align: center;
+  font-size: var(--fs-metadata);
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-1);
+}
+.pl-col__drop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 40px;
+}
+.pl-col__add {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--fs-ui);
+  color: var(--color-navy-500);
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* ---- Card ---- */
+.pl-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: grab;
+}
+.pl-card[data-priority="high"] {
+  border-left-color: var(--color-warning);
+}
+.pl-card[data-priority="critical"] {
+  border-left-color: var(--color-error);
+}
+.pl-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pl-card__kind {
+  padding: 0 var(--space-2);
+  font-size: var(--fs-metadata);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+.pl-card__kind--defect {
+  color: var(--color-error);
+}
+.pl-card__kind--test_data {
+  color: var(--color-navy-500);
+}
+.pl-card__del {
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  font-size: var(--fs-caption);
+}
+.pl-card__del:hover {
+  color: var(--color-error);
+}
+.pl-card__title {
+  text-align: left;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+}
+.pl-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+.pl-card__prio {
+  font-size: var(--fs-metadata);
+  color: var(--color-text-muted);
+}
+.pl-card__prio--critical {
+  color: var(--color-error);
+}
+.pl-card__label {
+  padding: 0 var(--space-1);
+  font-size: var(--fs-metadata);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Card editor ---- */
+.pl-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 640px;
+}
+.tc-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.tc-editor__actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---- Attachments ---- */
+.pl-attach {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pl-attach__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pl-attach__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pl-attach__open {
+  flex: 1;
+  text-align: left;
+  color: var(--color-navy-500);
+  background: none;
+  border: none;
+  font-size: var(--fs-ui);
+}
+.pl-attach__size {
+  font-size: var(--fs-metadata);
+  color: var(--color-text-muted);
+}
+.pl-attach__del {
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+}
+.pl-attach__del:hover {
+  color: var(--color-error);
+}
+.pl-attach__input {
+  font-size: var(--fs-ui);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .pl-board {
+    grid-template-columns: repeat(4, 240px);
+  }
+}

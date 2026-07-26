@@ -17,7 +17,11 @@ files (`es`/`en`).
 | Plan de pruebas            | `test_plan` / `TestPlan` | |
 | Caso de prueba             | `test_case` / `TestCase` | |
 | Plantilla                  | `template`            | |
-| Planificador               | `planner`             | Local kanban (spec §7) |
+| Planificador               | `planner`             | Local kanban por proyecto (spec §7) |
+| Tarjeta del planificador   | `planner_card`        | task / defect / test_data; con status, priority, position |
+| Columna del kanban         | `card_status`         | `backlog` / `in_progress` / `in_review` / `done` |
+| Tipo de tarjeta            | `card_kind`           | `task` / `defect` / `test_data` |
+| Adjunto                    | `attachment`          | blob dentro de la BD cifrada (name, mime, bytes) |
 | Título                     | `title`               | Same in plan AND test case — never `name` |
 | Versión                    | `version`             | |
 | Fecha                      | `date`                | |

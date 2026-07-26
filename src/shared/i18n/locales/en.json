@@ -73,7 +73,8 @@
     "tab": {
       "plan": "Test plan",
       "cases": "Test cases",
-      "settings": "Settings"
+      "settings": "Settings",
+      "planner": "Planner"
     }
   },
   "profile": {
@@ -380,6 +381,38 @@
     "admin": {
       "title": "Administration",
       "subtitle": "Templates, AI engine and test profiles."
+    }
+  },
+  "planner": {
+    "column": {
+      "backlog": "Backlog",
+      "in_progress": "In progress",
+      "in_review": "In review",
+      "done": "Done"
+    },
+    "newCard": "New card",
+    "editCard": "Edit card",
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving…",
+    "kind": "Kind",
+    "cardTitle": "Title",
+    "description": "Description",
+    "priority": "Priority",
+    "labels": "Labels",
+    "attachments": "Attachments",
+    "attachAfterSave": "Save the card first to add attachments.",
+    "attachTooLarge": "“{{name}}” exceeds the 10 MB limit.",
+    "kindLabel": {
+      "task": "Task",
+      "defect": "Defect",
+      "test_data": "Test data"
+    },
+    "priorityLabel": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
     }
   }
 }

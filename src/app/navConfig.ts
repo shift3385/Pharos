@@ -17,7 +17,6 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", path: "/", icon: "⌂" },
   { id: "projects", path: "/projects", icon: "◫", phase: 3 },
-  { id: "planner", path: "/planner", icon: "▦", phase: 5 },
   { id: "templates", path: "/templates", icon: "❏", phase: 6 },
   { id: "ai", path: "/ai", icon: "✦", phase: 7 },
   { id: "admin", path: "/admin", icon: "⚙", phase: 9 },
