@@ -75,7 +75,10 @@
       "cases": "Casos de prueba",
       "settings": "Ajustes",
       "planner": "Planificador"
-    }
+    },
+    "deleteTitle": "Eliminar proyecto",
+    "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
+    "deleteConfirm": "Sí, eliminar todo"
   },
   "profile": {
     "title": "Perfil",
@@ -261,6 +264,8 @@
     "revisions": "Revisiones",
     "noRevisions": "Sin revisiones anteriores.",
     "exportFeature": "Exportar .feature",
+    "exportXlsx": "Exportar .xlsx",
+    "exportDone": "Descargado «{{name}}» en tu carpeta de Descargas.",
     "keywords": "Palabras clave de Gherkin",
     "insertKeyword": "Insertar en el cursor",
     "scenarioId": "ID de escenario",
@@ -341,6 +346,23 @@
       "reviewed": "Revisado",
       "approved": "Aprobado",
       "obsolete": "Obsoleto"
+    },
+    "flow": {
+      "mainName": "Flujo principal",
+      "altName": "Flujo alterno",
+      "main": "Principal",
+      "alt": "Alterno",
+      "background": "Precondiciones compartidas (Background)",
+      "backgroundHint": "Se aplican a todos los flujos. Se traducen a Background en Gherkin.",
+      "namePlaceholder": "Nombre del flujo (ej. Cupón expirado)",
+      "preconditions": "Precondiciones del flujo",
+      "steps": "Pasos",
+      "expected": "Resultado esperado",
+      "examples": "Examples (opcional)",
+      "examplesHint": "Si el flujo se ejecuta con varias filas de datos, añade columnas y filas.",
+      "add": "Añadir flujo alterno",
+      "remove": "Quitar flujo",
+      "altUpper": "FLUJO ALTERNO"
     }
   },
   "dashboard": {

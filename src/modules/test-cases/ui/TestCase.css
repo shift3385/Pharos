@@ -554,6 +554,83 @@
   color: var(--color-warning);
 }
 
+.tc-notice {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-ui);
+  color: var(--color-success);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* ---- Advanced flows editor (main + alternative flows) ---- */
+.tc-flows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.tc-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-navy-300);
+  border-radius: var(--radius-md);
+}
+.tc-flow__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tc-flow__badge {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-navy-100);
+  color: var(--color-navy-500);
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.tc-flow__name {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tc-flow__del {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tc-flow__del:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+.tc-flow__add {
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--fw-medium);
+  color: var(--color-navy-500);
+  background: none;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+.tc-flow__add:hover {
+  border-color: var(--color-navy-300);
+  background: var(--color-surface-2);
+}
+
 /* ---- Advanced feature outline (read-only summary) ---- */
 .tc-outline {
   display: flex;

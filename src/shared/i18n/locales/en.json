@@ -75,7 +75,10 @@
       "cases": "Test cases",
       "settings": "Settings",
       "planner": "Planner"
-    }
+    },
+    "deleteTitle": "Delete project",
+    "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
+    "deleteConfirm": "Yes, delete everything"
   },
   "profile": {
     "title": "Profile",
@@ -261,6 +264,8 @@
     "revisions": "Revisions",
     "noRevisions": "No previous revisions.",
     "exportFeature": "Export .feature",
+    "exportXlsx": "Export .xlsx",
+    "exportDone": "Downloaded “{{name}}” to your Downloads folder.",
     "keywords": "Gherkin keywords",
     "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
@@ -341,6 +346,23 @@
       "reviewed": "Reviewed",
       "approved": "Approved",
       "obsolete": "Obsolete"
+    },
+    "flow": {
+      "mainName": "Main flow",
+      "altName": "Alternative flow",
+      "main": "Main",
+      "alt": "Alt",
+      "background": "Shared preconditions (Background)",
+      "backgroundHint": "Apply to every flow. They become the Background in Gherkin.",
+      "namePlaceholder": "Flow name (e.g. Coupon expired)",
+      "preconditions": "Flow preconditions",
+      "steps": "Steps",
+      "expected": "Expected result",
+      "examples": "Examples (optional)",
+      "examplesHint": "If the flow runs with several data rows, add columns and rows.",
+      "add": "Add alternative flow",
+      "remove": "Remove flow",
+      "altUpper": "ALTERNATIVE FLOW"
     }
   },
   "dashboard": {

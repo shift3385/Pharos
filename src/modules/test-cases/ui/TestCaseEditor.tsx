@@ -5,6 +5,7 @@ import { ListField } from "@shared/ui/fields";
 import { testCaseApi } from "../api/testCaseApi";
 import type {
   ExampleTable,
+  Flow,
   GherkinLevel,
   RevisionSummary,
   TestCase,
@@ -13,16 +14,17 @@ import type {
 } from "../model/types";
 import { SortableSteps } from "./SortableSteps";
 import { ExamplesTable } from "./ExamplesTable";
+import { FlowsEditor } from "./FlowsEditor";
 import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
 import {
   detectLevel,
-  extractComments,
-  extractExamples,
+  flowsToGherkin,
   fromGherkin,
   levelRank,
+  newFlow,
+  parseFeatureFlows,
   placeholdersIn,
-  summarizeFeature,
   toGherkin,
 } from "./gherkin";
 import "./TestCase.css";
@@ -51,6 +53,8 @@ interface FormState {
   dataRequirements: string;
   environmentRequirements: string;
   examples: ExampleTable;
+  background: string[];
+  flows: Flow[];
   featureSource: string;
 }
 
@@ -76,6 +80,8 @@ function emptyForm(): FormState {
     dataRequirements: "",
     environmentRequirements: "",
     examples: { headers: [], rows: [] },
+    background: [],
+    flows: [],
     featureSource: "",
   };
 }
@@ -103,6 +109,12 @@ function fromCase(c: TestCase): FormState {
     dataRequirements: d.dataRequirements ?? "",
     environmentRequirements: d.environmentRequirements ?? "",
     examples: d.examples ?? { headers: [], rows: [] },
+    background:
+      d.background ??
+      (d.featureSource ? parseFeatureFlows(d.featureSource).background : []),
+    flows:
+      d.flows ??
+      (d.featureSource ? parseFeatureFlows(d.featureSource).flows : []),
     featureSource: d.featureSource ?? "",
   };
 }
@@ -130,8 +142,18 @@ function formToData(f: FormState): TestCaseData {
     steps: f.steps,
     expectedResult: f.expectedResult,
     examples: f.examples,
+    background: f.background,
+    flows: f.flows,
     featureSource: f.featureSource,
   };
+}
+
+/** Advanced cases generate their Gherkin from the flows; others from the flat
+ *  fields. */
+function buildGherkin(f: FormState): string {
+  return f.gherkinLevel === "advanced"
+    ? flowsToGherkin(f.title, f.background, f.flows)
+    : toGherkin(f.title, formToData(f));
 }
 
 export function TestCaseEditor({
@@ -147,7 +169,7 @@ export function TestCaseEditor({
   caseId: string | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [testCase, setTestCase] = useState<TestCase | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -155,6 +177,7 @@ export function TestCaseEditor({
   const [tab, setTab] = useState<Tab>("split");
   const [saving, setSaving] = useState(false);
   const [revisions, setRevisions] = useState<RevisionSummary[] | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   // New cases start on the level picker; existing cases skip it.
   const [picking, setPicking] = useState(caseId === null);
 
@@ -167,7 +190,7 @@ export function TestCaseEditor({
           setTestCase(c);
           const f = fromCase(c);
           setForm(f);
-          setGherkin(toGherkin(f.title, formToData(f)));
+          setGherkin(buildGherkin(f));
         }
       }
     })();
@@ -192,24 +215,24 @@ export function TestCaseEditor({
       next = { ...next, examples: withPlaceholderColumns(next) };
     }
     setForm(next);
-    if (next.gherkinLevel !== "advanced") {
-      setGherkin(toGherkin(next.title, formToData(next)));
-    }
+    setGherkin(buildGherkin(next));
   };
 
   // Gherkin edits: the level is derived from the code so the case is always in a
-  // level that can represent it (proposal 2). Advanced keeps the raw feature as
-  // the source of truth; basic/outline parse back into the mapped fields.
+  // level that can represent it. Advanced parses into flows + background;
+  // basic/outline parse back into the flat fields.
   const onGherkinInput = (text: string) => {
     setGherkin(text);
     const detected = detectLevel(text);
     if (detected === "advanced") {
-      const summary = summarizeFeature(text);
+      const parsed = parseFeatureFlows(text);
       setForm((f) => ({
         ...f,
         gherkinLevel: "advanced",
+        title: parsed.title ?? f.title,
+        background: parsed.background,
+        flows: parsed.flows,
         featureSource: text,
-        title: summary.feature ?? f.title,
       }));
       return;
     }
@@ -217,6 +240,8 @@ export function TestCaseEditor({
     setForm((f) => ({
       ...f,
       gherkinLevel: detected,
+      background: [],
+      flows: [],
       featureSource: "",
       title: parsed.title ?? f.title,
       preconditions: parsed.preconditions,
@@ -228,25 +253,30 @@ export function TestCaseEditor({
 
   const pickLevel = (chosen: GherkinLevel) => {
     const f = { ...emptyForm(), gherkinLevel: chosen, title: t("testCase.defaultTitle") };
+    if (chosen === "advanced") f.flows = [newFlow(t("testCase.flow.mainName"))];
     setForm(f);
-    setGherkin(toGherkin(f.title, formToData(f)));
+    setGherkin(buildGherkin(f));
     setPicking(false);
   };
 
-  // Switch level on an existing draft, reseeding the Gherkin/feature as needed.
-  // Downgrading below what the content needs is blocked (proposal 2).
+  // Switch level on an existing draft. Downgrading below what the content needs
+  // is blocked (proposal 2). Switching to advanced seeds a main flow.
   const changeLevel = (chosen: GherkinLevel) => {
     if (levelRank(chosen) < levelRank(requiredLevel)) return;
     setForm((f) => {
       const next = { ...f, gherkinLevel: chosen };
-      if (chosen === "advanced" && !next.featureSource.trim()) {
-        next.featureSource = toGherkin(next.title, {
-          ...formToData(next),
-          gherkinLevel: "advanced",
-          featureSource: "",
-        });
+      if (chosen === "advanced" && next.flows.length === 0) {
+        next.background = f.preconditions;
+        next.flows = [
+          {
+            ...newFlow(t("testCase.flow.mainName")),
+            steps: f.steps,
+            expectedResult: f.expectedResult,
+            examples: f.examples,
+          },
+        ];
       }
-      setGherkin(toGherkin(next.title, formToData(next)));
+      setGherkin(buildGherkin(next));
       return next;
     });
   };
@@ -276,7 +306,11 @@ export function TestCaseEditor({
       environmentRequirements: form.environmentRequirements,
     };
     if (form.gherkinLevel === "outline") data.examples = cleanExamples(form.examples);
-    if (form.gherkinLevel === "advanced") data.featureSource = form.featureSource;
+    if (form.gherkinLevel === "advanced") {
+      data.background = clean(form.background);
+      data.flows = form.flows;
+      data.featureSource = buildGherkin(form);
+    }
     const input: TestCaseInput = {
       projectId,
       caseIdPrefix,
@@ -293,6 +327,45 @@ export function TestCaseEditor({
     else await testCaseApi.create(input);
     setSaving(false);
     onClose();
+  }
+
+  async function exportXlsx() {
+    const { exportCaseXlsx } = await import("../export/caseXlsx");
+    const author =
+      testCase?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
+    const name = await exportCaseXlsx(
+      {
+        scenarioId: form.scenarioId,
+        title: form.title,
+        version: form.version,
+        priority: t(`testCase.priorityLabel.${form.priority}`),
+        status: t(`testCase.statusLabel.${form.status}`),
+        author,
+        level,
+        gherkin,
+        background: form.background,
+        flows: form.flows,
+        altFlowLabel: t("testCase.flow.altUpper"),
+        examplesLabel: t("testCase.examples.title"),
+        data: {
+          mappedUseCase: form.mappedUseCase,
+          caseDate: form.caseDate,
+          description: form.description,
+          preconditions: form.preconditions,
+          steps: form.steps,
+          expectedResult: form.expectedResult,
+          postconditions: form.postconditions,
+          acceptanceCriteria: form.acceptanceCriteria,
+          testData: form.testData,
+          notes: form.notes,
+          examples: form.examples,
+          traceability: form.traceability,
+        },
+      },
+      i18n.resolvedLanguage ?? "es",
+    );
+    setNotice(t("testCase.exportDone", { name }));
+    window.setTimeout(() => setNotice(null), 5000);
   }
 
   function exportFeature() {
@@ -413,12 +486,6 @@ export function TestCaseEditor({
     </>
   );
 
-  const summary = level === "advanced" ? summarizeFeature(form.featureSource) : null;
-  // Advanced: values derived read-only from the feature (proposal 3a).
-  const derivedExamples =
-    level === "advanced" ? extractExamples(form.featureSource) : [];
-  const derivedComments =
-    level === "advanced" ? extractComments(form.featureSource) : [];
   // Outline: placeholders in steps and any columns that no longer match one.
   const placeholders =
     level === "outline" ? placeholdersIn([...form.steps, form.expectedResult]) : [];
@@ -435,77 +502,15 @@ export function TestCaseEditor({
       {identityFields}
 
       {level === "advanced" ? (
-        <div className="tc-outline">
-          <p className="tp-field__grouplabel">{t("testCase.outline.title")}</p>
-          <p className="tp-field__hint">{t("testCase.outline.hint")}</p>
-          {summary && summary.background && (
-            <span className="tc-outline__tag">Background</span>
-          )}
-          <ul className="tc-outline__list">
-            {summary && summary.scenarios.length === 0 && (
-              <li className="tp__muted">{t("testCase.outline.none")}</li>
-            )}
-            {summary?.scenarios.map((s, i) => (
-              <li key={i} className="tc-outline__item">
-                <span className="tc-outline__kind">
-                  {s.type === "outline" ? "Scenario Outline" : "Scenario"}
-                </span>
-                <span>{s.name || t("testCase.outline.unnamed")}</span>
-              </li>
-            ))}
-          </ul>
-          {summary && summary.rules.length > 0 && (
-            <ul className="tc-outline__list">
-              {summary.rules.map((r, i) => (
-                <li key={i} className="tc-outline__item">
-                  <span className="tc-outline__kind">Rule</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {derivedExamples.length > 0 && (
-            <div className="tc-derived">
-              <p className="tp-field__grouplabel">{t("testCase.derived.examples")}</p>
-              {derivedExamples.map((e, i) => (
-                <div className="tc-derived__block" key={i}>
-                  {e.name && <p className="tp-field__hint">{e.name}</p>}
-                  <table className="tc-rotable">
-                    <thead>
-                      <tr>
-                        {e.table.headers.map((h, hi) => (
-                          <th key={hi}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {e.table.rows.map((row, ri) => (
-                        <tr key={ri}>
-                          {e.table.headers.map((_, ci) => (
-                            <td key={ci}>{row[ci] ?? ""}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
-            </div>
-          )}
-          {derivedComments.length > 0 && (
-            <div className="tc-derived">
-              <p className="tp-field__grouplabel">{t("testCase.derived.comments")}</p>
-              <ul className="tc-derived__list">
-                {derivedComments.map((c, i) => (
-                  <li key={i}># {c}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
+        <>
+          <FlowsEditor
+            background={form.background}
+            flows={form.flows}
+            onBackgroundChange={(v) => update({ background: v })}
+            onFlowsChange={(v) => update({ flows: v })}
+          />
           {docFields}
-        </div>
+        </>
       ) : (
         <>
           <p className="tp-field__grouplabel">{t("testCase.preconditions")}</p>
@@ -606,6 +611,9 @@ export function TestCaseEditor({
               {t("testCase.revisions")}
             </button>
           )}
+          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportXlsx()}>
+            {t("testCase.exportXlsx")}
+          </button>
           <button type="button" className="tp-wizard__revbtn" onClick={exportFeature}>
             {t("testCase.exportFeature")}
           </button>
@@ -619,6 +627,8 @@ export function TestCaseEditor({
           </button>
         </div>
       </header>
+
+      {notice && <p className="tc-notice">✓ {notice}</p>}
 
       {revisions !== null && (
         <div className="tp-revs-panel">

@@ -15,6 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { DeleteButton } from "@shared/ui/fields";
 import { plannerApi } from "../api/plannerApi";
 import {
   CARD_STATUSES,
@@ -200,15 +201,12 @@ function Card({
         <span className={`pl-card__kind pl-card__kind--${card.kind}`}>
           {t(`planner.kindLabel.${card.kind}`)}
         </span>
-        <button
-          type="button"
+        <span
           className="pl-card__del"
-          aria-label={t("common.delete")}
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onDelete(card.id)}
         >
-          ✕
-        </button>
+          <DeleteButton needsConfirm onDelete={() => onDelete(card.id)} />
+        </span>
       </div>
       <button
         type="button"

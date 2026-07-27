@@ -1,4 +1,20 @@
-import type { ExampleTable, GherkinLevel, TestCaseData } from "../model/types";
+import type {
+  ExampleTable,
+  Flow,
+  GherkinLevel,
+  TestCaseData,
+} from "../model/types";
+
+function uid(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `flow-${Math.random().toString(36).slice(2)}`;
+}
+
+/** Creates an empty flow (main or alternative) for the flows editor. */
+export function newFlow(name: string): Flow {
+  return { id: uid(), name, preconditions: [], steps: [], expectedResult: "" };
+}
 
 const INDENT_STEP = "    ";
 const INDENT_TABLE = "      ";
@@ -166,6 +182,131 @@ export function extractExamples(text: string): NamedExampleTable[] {
   }
   flush();
   return out;
+}
+
+// ---- Advanced level: flows (main + alternatives) <-> Gherkin ----
+
+const step = (lines: string[], kw: string, first: boolean, text: string) =>
+  lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
+
+/** Generates the Gherkin of an advanced case from its shared Background and its
+ *  flows (each flow is a Scenario, or Scenario Outline when it has Examples). */
+export function flowsToGherkin(
+  title: string,
+  background: string[],
+  flows: Flow[],
+): string {
+  const lines: string[] = [`Feature: ${title || "Untitled"}`];
+
+  const bg = (background ?? []).map((s) => s.trim()).filter(Boolean);
+  if (bg.length) {
+    lines.push("", "  Background:");
+    bg.forEach((p, i) => step(lines, "Given", i === 0, p));
+  }
+
+  for (const flow of flows) {
+    const isOutline = !!flow.examples?.headers.some((h) => h.trim());
+    lines.push("", `  ${isOutline ? "Scenario Outline" : "Scenario"}: ${flow.name || "Escenario"}`);
+    (flow.preconditions ?? [])
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((p, i) => step(lines, "Given", i === 0, p));
+    (flow.steps ?? [])
+      .filter((s) => s.trim())
+      .forEach((s, i) => step(lines, "When", i === 0, s.trim()));
+    (flow.expectedResult ?? "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((t, i) => step(lines, "Then", i === 0, t));
+    if (isOutline && flow.examples) lines.push(...renderExamples(flow.examples));
+  }
+
+  return lines.join("\n") + "\n";
+}
+
+export interface ParsedFlows {
+  title?: string;
+  background: string[];
+  flows: Flow[];
+}
+
+/** Parses a whole feature into shared Background + flows, so hand-edited Gherkin
+ *  stays in sync with the structured flows editor (Rule lines are ignored — the
+ *  flow model does not group). */
+export function parseFeatureFlows(text: string): ParsedFlows {
+  let title: string | undefined;
+  const background: string[] = [];
+  const flows: Flow[] = [];
+  let cur:
+    | (Omit<Flow, "expectedResult"> & { then: string[] })
+    | null = null;
+  let mode: "bg" | "given" | "when" | "then" | "examples" | null = null;
+  let table: string[][] = [];
+
+  const closeFlow = () => {
+    if (!cur) return;
+    if (table.length) cur.examples = { headers: table[0], rows: table.slice(1) };
+    table = [];
+    flows.push({
+      id: cur.id,
+      name: cur.name,
+      preconditions: cur.preconditions,
+      steps: cur.steps,
+      expectedResult: cur.then.join("\n"),
+      examples: cur.examples,
+    });
+    cur = null;
+  };
+
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    const feat = line.match(/^Feature:\s*(.*)$/i);
+    if (feat) {
+      title = feat[1].trim();
+      continue;
+    }
+    if (/^Background:/i.test(line)) {
+      closeFlow();
+      mode = "bg";
+      continue;
+    }
+    if (/^Rule:/i.test(line)) continue;
+    const sc = line.match(/^Scenario(?:\s+Outline)?:\s*(.*)$/i);
+    if (sc) {
+      closeFlow();
+      cur = { id: uid(), name: sc[1].trim(), preconditions: [], steps: [], then: [] };
+      mode = null;
+      continue;
+    }
+    if (/^Examples:/i.test(line)) {
+      mode = "examples";
+      continue;
+    }
+    if (mode === "examples") {
+      if (line.startsWith("|")) table.push(parseRow(line));
+      continue;
+    }
+
+    const kw = line.match(/^(Given|When|Then|And|But|\*)\s+(.*)$/i);
+    if (!kw) continue;
+    const keyword = kw[1].toLowerCase();
+    const content = kw[2].trim();
+    if (keyword === "given") mode = mode === "bg" ? "bg" : "given";
+    else if (keyword === "when") mode = "when";
+    else if (keyword === "then") mode = "then";
+
+    if (mode === "bg") background.push(content);
+    else if (cur) {
+      if (mode === "given") (cur.preconditions ??= []).push(content);
+      else if (mode === "when") cur.steps.push(content);
+      else if (mode === "then") cur.then.push(content);
+    }
+  }
+  closeFlow();
+  return { title, background, flows };
 }
 
 export interface FeatureSummary {

@@ -31,6 +31,7 @@
   --color-surface-1: #ffffff; /* cards / surfaces */
   --color-surface-2: #f1f4f8; /* secondary surface */
   --color-border: #e2e6eb;
+  --color-overlay: rgba(16, 24, 40, 0.45);
   --color-text-primary: #1c2530;
   --color-text-secondary: #5f6b7a;
   --color-text-muted: #8792a0;
@@ -104,6 +105,7 @@
   --color-surface-1: #14202e;
   --color-surface-2: #1a2837;
   --color-border: #24344a;
+  --color-overlay: rgba(0, 0, 0, 0.55);
   --color-text-primary: #e8edf2;
   --color-text-secondary: #93a3b5;
   --color-text-muted: #6b7a8d;

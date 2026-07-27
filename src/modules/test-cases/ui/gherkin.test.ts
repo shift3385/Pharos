@@ -7,8 +7,10 @@ import {
   placeholdersIn,
   extractComments,
   extractExamples,
+  flowsToGherkin,
+  parseFeatureFlows,
 } from "./gherkin";
-import type { TestCaseData } from "../model/types";
+import type { Flow, TestCaseData } from "../model/types";
 
 const baseData: TestCaseData = {
   mappedUseCase: "",
@@ -177,6 +179,52 @@ describe("level auto-detection (proposal 2)", () => {
     expect(
       detectLevel("Feature: X\n  Scenario: a\n  Scenario: b\n"),
     ).toBe("advanced");
+  });
+});
+
+describe("advanced flows <-> Gherkin (main + alternative flows)", () => {
+  const flows: Flow[] = [
+    {
+      id: "1",
+      name: "Flujo principal",
+      preconditions: [],
+      steps: ['aplica el cupón "DESC10"'],
+      expectedResult: 'el total es "$90.00"',
+    },
+    {
+      id: "2",
+      name: "Alterno: cupón rechazado",
+      preconditions: ["el cupón está expirado"],
+      steps: ['aplica el cupón "<cupon>"'],
+      expectedResult: 've "<mensaje>"',
+      examples: {
+        headers: ["cupon", "mensaje"],
+        rows: [["VERANO23", "Cupón expirado"]],
+      },
+    },
+  ];
+  const background = ["el usuario ha iniciado sesión"];
+
+  it("generates Background + one scenario per flow (outline when it has data)", () => {
+    const g = flowsToGherkin("Cupón", background, flows);
+    expect(g).toContain("  Background:\n    Given el usuario ha iniciado sesión");
+    expect(g).toContain("  Scenario: Flujo principal");
+    expect(g).toContain("  Scenario Outline: Alterno: cupón rechazado");
+    expect(g).toContain("    Given el cupón está expirado");
+    expect(g).toContain("      | cupon | mensaje |");
+  });
+
+  it("round-trips flows through Gherkin", () => {
+    const parsed = parseFeatureFlows(flowsToGherkin("Cupón", background, flows));
+    expect(parsed.title).toBe("Cupón");
+    expect(parsed.background).toEqual(background);
+    expect(parsed.flows).toHaveLength(2);
+    expect(parsed.flows[0].name).toBe("Flujo principal");
+    expect(parsed.flows[0].steps).toEqual(['aplica el cupón "DESC10"']);
+    expect(parsed.flows[1].name).toBe("Alterno: cupón rechazado");
+    expect(parsed.flows[1].preconditions).toEqual(["el cupón está expirado"]);
+    expect(parsed.flows[1].expectedResult).toBe('ve "<mensaje>"');
+    expect(parsed.flows[1].examples?.rows).toEqual([["VERANO23", "Cupón expirado"]]);
   });
 });
 

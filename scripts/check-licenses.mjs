@@ -15,6 +15,30 @@ const modulesDir = join(root, "node_modules");
 const FORBIDDEN = [/\bagpl/i, /\bgpl/i, /\bsspl/i, /\bcc-by-sa/i, /\beupl/i];
 // Weak copyleft we tolerate but report as a warning (dynamic linking only).
 const WARN = [/\blgpl/i, /\bmpl/i];
+// Permissive licenses we may elect from a dual "A OR B" SPDX expression.
+const PERMISSIVE =
+  /\b(mit|apache|bsd|isc|ofl|0bsd|unlicense|cc0|zlib|wtfpl|blueoak|python-2|artistic)\b/i;
+
+// Classifies a license string. SPDX "A OR B" is a choice: if any option is
+// permissive we elect it (e.g. jszip's "MIT OR GPL-3.0-or-later" → MIT). Only
+// when no option is permissive do we judge the whole expression. "A AND B"
+// (both apply) has no OR, so a copyleft term still forbids it.
+function classify(license) {
+  const parts = license
+    .replace(/[()]/g, " ")
+    .split(/\s+OR\s+/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (
+    parts.length > 1 &&
+    parts.some((p) => PERMISSIVE.test(p) && !FORBIDDEN.some((re) => re.test(p)))
+  ) {
+    return "ok";
+  }
+  if (FORBIDDEN.some((re) => re.test(license))) return "forbidden";
+  if (WARN.some((re) => re.test(license))) return "warn";
+  return "ok";
+}
 
 function readLicense(pkgPath) {
   try {
@@ -66,9 +90,10 @@ for (const { name, license } of iterPackages(modulesDir)) {
     unknown.push(name);
     continue;
   }
-  if (FORBIDDEN.some((re) => re.test(license))) {
+  const verdict = classify(license);
+  if (verdict === "forbidden") {
     forbidden.push(`${name}: ${license}`);
-  } else if (WARN.some((re) => re.test(license))) {
+  } else if (verdict === "warn") {
     warnings.push(`${name}: ${license}`);
   }
 }

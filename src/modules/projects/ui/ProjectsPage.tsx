@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
-import { DeleteButton } from "@shared/ui/fields";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
 import { ProjectDetail } from "./ProjectDetail";
@@ -18,6 +18,7 @@ export function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<ProjectSummary | null>(null);
 
   async function refresh() {
     setProjects(await projectApi.list(ownerId));
@@ -110,10 +111,31 @@ export function ProjectsPage() {
                   {"1".padStart(p.caseIdDigits, "0")}
                 </span>
               </button>
-              <DeleteButton needsConfirm onDelete={() => remove(p.id)} />
+              <button
+                type="button"
+                className="tp-list-field__del"
+                aria-label={t("common.delete")}
+                onClick={() => setPendingDelete(p)}
+              >
+                ✕
+              </button>
             </li>
           ))}
         </ul>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={t("projects.deleteTitle")}
+          message={t("projects.deleteWarning", { name: pendingDelete.name })}
+          confirmLabel={t("projects.deleteConfirm")}
+          danger
+          onConfirm={() => {
+            void remove(pendingDelete.id);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </section>
   );

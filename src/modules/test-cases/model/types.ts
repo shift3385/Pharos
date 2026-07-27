@@ -14,6 +14,18 @@ export interface ExampleTable {
   rows: string[][];
 }
 
+// A flow of an advanced case: the main (happy) path or an alternative flow. Each
+// flow is a full scenario — its own preconditions, steps, expected result and,
+// optionally, an Examples table (making it a Scenario Outline).
+export interface Flow {
+  id: string;
+  name: string;
+  preconditions?: string[];
+  steps: string[];
+  expectedResult: string;
+  examples?: ExampleTable;
+}
+
 export interface TestCaseData {
   gherkinLevel?: GherkinLevel;
   mappedUseCase?: string;
@@ -28,7 +40,11 @@ export interface TestCaseData {
   notes?: string;
   // Scenario Outline data (only when gherkinLevel === "outline").
   examples?: ExampleTable;
-  // Raw Gherkin feature, authoritative when gherkinLevel === "advanced".
+  // Advanced level: shared preconditions (Background) + the flows (main +
+  // alternatives). Each flow becomes a scenario.
+  background?: string[];
+  flows?: Flow[];
+  // Raw Gherkin feature kept for the editable Gherkin view of advanced cases.
   featureSource?: string;
   // ISTQB attributes not covered by the template (spec §5.3)
   traceability?: string;
