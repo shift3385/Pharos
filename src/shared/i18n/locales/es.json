@@ -115,6 +115,8 @@
     "purpose": "Propósito",
     "conclusion": "Conclusión",
     "save": "Guardar",
+    "exportXlsx": "Exportar .xlsx",
+    "exportedToast": "Plan exportado: «{{name}}»",
     "saving": "Guardando…",
     "author": "Elaborado por",
     "scopeIn": "Elementos dentro del alcance",
@@ -123,7 +125,7 @@
     "agile": "Ágil",
     "traditional": "Tradicional / V-model",
     "sprintWeeks": "Duración de sprint (semanas)",
-    "ceremonies": "Ceremonias",
+    "ceremonies": "Reuniones del equipo",
     "phases": "Fases",
     "environmentConfig": "Configuración del entorno",
     "environmentRequirements": "Requisitos de hardware y software",
@@ -204,15 +206,16 @@
       "selenium": "Selenium",
       "playwright": "Playwright",
       "cypress": "Cypress",
+      "appium": "Appium",
       "postman": "Postman",
       "jmeter": "JMeter",
       "jira": "JIRA"
     },
     "ceremonyLabel": {
-      "daily": "Daily",
-      "review": "Review",
+      "daily": "Diaria",
+      "review": "Revisión",
       "retrospective": "Retrospectiva",
-      "planning": "Planning"
+      "planning": "Planificación"
     },
     "deliverableLabel": {
       "testPlan": "Documento de plan de pruebas",

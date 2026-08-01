@@ -71,7 +71,15 @@ function sprintIssues(
 }
 
 const TEST_LEVELS = ["unit", "integration", "system", "acceptance"];
-const TOOLS = ["selenium", "playwright", "cypress", "postman", "jmeter", "jira"];
+const TOOLS = [
+  "selenium",
+  "playwright",
+  "cypress",
+  "appium",
+  "postman",
+  "jmeter",
+  "jira",
+];
 const CEREMONIES = ["daily", "review", "retrospective", "planning"];
 const DELIVERABLE_KEYS = [
   "testPlan",
@@ -123,7 +131,7 @@ interface Props {
 }
 
 export function TestPlanWizard({ planId, projectId, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const toast = useToast();
   const [plan, setPlan] = useState<TestPlan | null>(null);
@@ -237,6 +245,59 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function exportXlsx() {
+    if (!form) return;
+    const { exportPlanXlsx } = await import("../export/planXlsx");
+    // Localize option lists (predefined keys → labels; custom values as-is).
+    const loc = (arr: string[], known: string[], prefix: string) =>
+      arr.map((k) => (known.includes(k) ? t(`${prefix}.${k}`) : k));
+    const methodology =
+      form.methodologyType === "agile"
+        ? `${t("testPlan.agile")} · ${t("testPlan.sprintWeeks")}: ${form.sprintWeeks} · ` +
+          `${t("testPlan.ceremonies")}: ${loc(form.ceremonies, CEREMONIES, "testPlan.ceremonyLabel").join(", ")}`
+        : `${t("testPlan.traditional")} · ${t("testPlan.phases")}: ${form.phases
+            .filter((p) => p.trim())
+            .join(", ")}`;
+    const name = await exportPlanXlsx(
+      {
+        filenameBase: form.title.trim() || "plan",
+        version: form.version,
+        planDate: form.planDate,
+        author: plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : ""),
+        status: t(`testPlan.statusLabel.${form.status}`),
+        summary: form.summary,
+        purpose: form.purpose,
+        scopeIn: form.scopeIn,
+        scopeOut: form.scopeOut,
+        testTypes: loc(form.testTypes, TEST_TYPES, "testPlan.typeLabel"),
+        methodology,
+        testLevels: loc(form.testLevels, TEST_LEVELS, "testPlan.levelLabel"),
+        deliverables: form.deliverables,
+        environmentConfig: form.environmentConfig,
+        environmentRequirements: form.environmentRequirements,
+        tools: loc(form.tools, TOOLS, "testPlan.toolLabel"),
+        automationStrategy: form.automationStrategy,
+        testDataManagement: form.testDataManagement,
+        defectManagement: form.defectManagement,
+        communicationPlan: form.communicationPlan,
+        conclusion: form.conclusion,
+        roles: form.roles.filter((r) => r.role.trim() || r.responsibility.trim()),
+        sprints: form.sprints
+          .filter((s) => s.name.trim() || s.start || s.end)
+          .map((s) => ({
+            name: s.name,
+            range: [s.start, s.end].filter(Boolean).join(" → "),
+          })),
+        risks: form.risks.filter((r) => r.risk.trim() || r.mitigation.trim()),
+        closureCriteria: form.closureCriteria.filter(
+          (c) => c.criterion.trim() || c.metric.trim(),
+        ),
+      },
+      i18n.resolvedLanguage ?? "es",
+    );
+    toast(t("testPlan.exportedToast", { name }));
   }
 
   const steps: { id: string; body: ReactNode }[] = useMemo(() => {
@@ -682,6 +743,13 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             {t("testPlan.revisions")}
           </button>
         )}
+        <button
+          type="button"
+          className="tp-wizard__revbtn"
+          onClick={() => void exportXlsx()}
+        >
+          {t("testPlan.exportXlsx")}
+        </button>
         <button
           type="button"
           className="tp-editor__save"
