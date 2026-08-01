@@ -14,6 +14,7 @@ import type {
   TestPlanInput,
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
+import { useToast } from "@shared/ui/Toast";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import "./TestPlan.css";
@@ -124,6 +125,7 @@ interface Props {
 export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const toast = useToast();
   const [plan, setPlan] = useState<TestPlan | null>(null);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -227,10 +229,14 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         conclusion: form.conclusion,
       },
     };
-    if (plan) await testPlanApi.update(plan.id, input);
-    else await testPlanApi.create(input);
-    setSaving(false);
-    onClose();
+    try {
+      if (plan) await testPlanApi.update(plan.id, input);
+      else await testPlanApi.create(input);
+      toast(t("testPlan.savedToast"));
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   const steps: { id: string; body: ReactNode }[] = useMemo(() => {

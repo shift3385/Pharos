@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
+import { useToast } from "@shared/ui/Toast";
 import { TestPlanPage } from "@modules/test-plan";
 import { TestCasesPage } from "@modules/test-cases";
 import { PlannerBoard } from "@modules/planner";
@@ -94,17 +95,22 @@ function ProjectSettings({
   const [prefix, setPrefix] = useState(project.caseIdPrefix);
   const [digits, setDigits] = useState(project.caseIdDigits);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   async function save() {
     setSaving(true);
-    await projectApi.update(project.id, {
-      ownerId: project.ownerId,
-      name: name.trim() || project.name,
-      caseIdPrefix: prefix,
-      caseIdDigits: digits,
-    });
-    setSaving(false);
-    onSaved();
+    try {
+      await projectApi.update(project.id, {
+        ownerId: project.ownerId,
+        name: name.trim() || project.name,
+        caseIdPrefix: prefix,
+        caseIdDigits: digits,
+      });
+      toast(t("projects.savedToast"));
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
   }
 
   const preview = `${prefix || "ATS_"}${"1".padStart(digits, "0")}`;

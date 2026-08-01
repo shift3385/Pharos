@@ -78,7 +78,8 @@
     },
     "deleteTitle": "Eliminar proyecto",
     "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
-    "deleteConfirm": "Sí, eliminar todo"
+    "deleteConfirm": "Sí, eliminar todo",
+    "savedToast": "Ajustes actualizados"
   },
   "profile": {
     "title": "Perfil",
@@ -247,7 +248,8 @@
       "defectsMetric": "0",
       "coverage": "Cobertura de requisitos",
       "coverageMetric": "≥ 90%"
-    }
+    },
+    "savedToast": "Plan de pruebas guardado"
   },
   "testCase": {
     "title": "Casos de prueba",
@@ -363,7 +365,8 @@
       "add": "Añadir flujo alterno",
       "remove": "Quitar flujo",
       "altUpper": "FLUJO ALTERNO"
-    }
+    },
+    "savedToast": "Caso de prueba guardado"
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",
@@ -435,6 +438,7 @@
       "medium": "Media",
       "high": "Alta",
       "critical": "Crítica"
-    }
+    },
+    "savedToast": "Tarjeta guardada"
   }
 }

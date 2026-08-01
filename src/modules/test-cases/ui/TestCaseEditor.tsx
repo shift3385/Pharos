@@ -17,6 +17,7 @@ import { ExamplesTable } from "./ExamplesTable";
 import { FlowsEditor } from "./FlowsEditor";
 import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
+import { useToast } from "@shared/ui/Toast";
 import {
   detectLevel,
   flowsToGherkin,
@@ -171,6 +172,7 @@ export function TestCaseEditor({
 }) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const toast = useToast();
   const [testCase, setTestCase] = useState<TestCase | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [gherkin, setGherkin] = useState("");
@@ -323,10 +325,14 @@ export function TestCaseEditor({
       author,
       data,
     };
-    if (testCase) await testCaseApi.update(testCase.id, input);
-    else await testCaseApi.create(input);
-    setSaving(false);
-    onClose();
+    try {
+      if (testCase) await testCaseApi.update(testCase.id, input);
+      else await testCaseApi.create(input);
+      toast(t("testCase.savedToast"));
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function exportXlsx() {

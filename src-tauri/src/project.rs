@@ -25,6 +25,7 @@ pub struct ProjectSummary {
 pub struct Project {
     id: String,
     workspace_id: String,
+    owner_id: String,
     name: String,
     case_id_prefix: String,
     case_id_digits: i64,
@@ -51,6 +52,7 @@ fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
     Ok(Project {
         id: row.get("id")?,
         workspace_id: row.get("workspace_id")?,
+        owner_id: row.get("owner_id")?,
         name: row.get("name")?,
         case_id_prefix: row.get("case_id_prefix")?,
         case_id_digits: row.get("case_id_digits")?,
@@ -91,7 +93,7 @@ fn get_project(
     owner_id: &str,
 ) -> Result<Option<Project>, String> {
     conn.query_row(
-        "SELECT id, workspace_id, name, case_id_prefix, case_id_digits, \
+        "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits, \
          created_at, updated_at, revision FROM projects \
          WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
         params![id, owner_id],

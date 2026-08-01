@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ListField } from "@shared/ui/fields";
+import { useToast } from "@shared/ui/Toast";
 import { plannerApi } from "../api/plannerApi";
 import {
   CARD_KINDS,
@@ -38,6 +39,7 @@ export function CardEditor({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [kind, setKind] = useState<CardKind>(card?.kind ?? "task");
   const [title, setTitle] = useState(card?.title ?? "");
   const [priority, setPriority] = useState<CardPriority>(card?.priority ?? "medium");
@@ -63,10 +65,14 @@ export function CardEditor({
       priority,
       data: { description, labels: labels.map((l) => l.trim()).filter(Boolean) },
     };
-    if (card) await plannerApi.update(card.id, input);
-    else await plannerApi.create(input);
-    setSaving(false);
-    onClose();
+    try {
+      if (card) await plannerApi.update(card.id, input);
+      else await plannerApi.create(input);
+      toast(t("planner.savedToast"));
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function addFiles(files: FileList | null) {

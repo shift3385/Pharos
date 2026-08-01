@@ -78,7 +78,8 @@
     },
     "deleteTitle": "Delete project",
     "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
-    "deleteConfirm": "Yes, delete everything"
+    "deleteConfirm": "Yes, delete everything",
+    "savedToast": "Settings updated"
   },
   "profile": {
     "title": "Profile",
@@ -247,7 +248,8 @@
       "defectsMetric": "0",
       "coverage": "Requirements coverage",
       "coverageMetric": "≥ 90%"
-    }
+    },
+    "savedToast": "Test plan saved"
   },
   "testCase": {
     "title": "Test cases",
@@ -363,7 +365,8 @@
       "add": "Add alternative flow",
       "remove": "Remove flow",
       "altUpper": "ALTERNATIVE FLOW"
-    }
+    },
+    "savedToast": "Test case saved"
   },
   "dashboard": {
     "title": "Welcome to Pharos",
@@ -435,6 +438,7 @@
       "medium": "Medium",
       "high": "High",
       "critical": "Critical"
-    }
+    },
+    "savedToast": "Card saved"
   }
 }

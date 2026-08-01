@@ -9,6 +9,7 @@ import "@shared/theme/base.css";
 import "@shared/i18n";
 
 import { ThemeProvider } from "@shared/theme/ThemeProvider";
+import { ToastProvider } from "@shared/ui/Toast";
 import { AuthProvider } from "@modules/auth";
 import { App } from "@app/App";
 
@@ -20,13 +21,15 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <HashRouter
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
-          <App />
-        </HashRouter>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <HashRouter
+            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+          >
+            <App />
+          </HashRouter>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );
