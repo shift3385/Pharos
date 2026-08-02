@@ -1,39 +1,66 @@
 import JSZip from "jszip";
-import { planWorkbookByProject } from "@modules/test-plan";
-import { projectCaseWorkbooks } from "@modules/test-cases";
+import { planWorkbookByProject, projectHasPlan } from "@modules/test-plan";
+import { projectCaseWorkbooks, projectCaseCount } from "@modules/test-cases";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
 
 type Translate = (key: string) => string;
+
+/** Progress events emitted while an export runs, for a progress modal. */
+export type ExportProgress =
+  | { phase: "building"; done: number; total: number; label: string }
+  | { phase: "zipping"; percent: number };
+
+type OnProgress = (p: ExportProgress) => void;
 
 /** Keeps a name safe as a zip path segment. */
 function sanitize(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, "_").trim() || "item";
 }
 
-/** Adds a project's plan + case .xlsx files into `folder/` of the zip.
- *  Returns how many files were added. */
+/** Mutable counter shared across a run so building progress is continuous. */
+interface Counter {
+  done: number;
+  total: number;
+}
+
+/** Adds a project's plan + case .xlsx files into `folder/` of the zip, emitting
+ *  a "building" event as each file is produced. Returns files added. */
 async function addProject(
   zip: JSZip,
   project: ProjectSummary,
   folder: string,
   t: Translate,
   lang: string,
+  counter: Counter,
+  onProgress?: OnProgress,
 ): Promise<number> {
   let files = 0;
+  const advance = (label: string) => {
+    counter.done += 1;
+    onProgress?.({ phase: "building", done: counter.done, total: counter.total, label });
+  };
+
   const plan = await planWorkbookByProject(project.id, t, lang);
   if (plan) {
     zip.file(`${folder}/${sanitize(plan.name)}`, plan.buffer);
     files += 1;
+    advance(plan.name);
   }
-  for (const c of await projectCaseWorkbooks(project.id, t, lang)) {
+  // The callback fires as each case workbook is built (drives the progress bar);
+  // buffers are added to the zip afterwards (an instant, non-async step).
+  const workbooks = await projectCaseWorkbooks(project.id, t, lang, (name) => advance(name));
+  for (const c of workbooks) {
     zip.file(`${folder}/${sanitize(c.name)}`, c.buffer);
     files += 1;
   }
   return files;
 }
 
-function triggerZipDownload(blob: Blob, filename: string) {
+async function finalizeZip(zip: JSZip, filename: string, onProgress?: OnProgress) {
+  const blob = await zip.generateAsync({ type: "blob" }, (meta) => {
+    onProgress?.({ phase: "zipping", percent: Math.round(meta.percent) });
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -50,11 +77,13 @@ export async function exportProjectZip(
   project: ProjectSummary,
   t: Translate,
   lang: string,
+  onProgress?: OnProgress,
 ): Promise<number> {
+  const total = (await projectHasPlan(project.id) ? 1 : 0) + (await projectCaseCount(project.id));
+  const counter: Counter = { done: 0, total };
   const zip = new JSZip();
-  const files = await addProject(zip, project, sanitize(project.name), t, lang);
-  const blob = await zip.generateAsync({ type: "blob" });
-  triggerZipDownload(blob, `${sanitize(project.name)}.zip`);
+  const files = await addProject(zip, project, sanitize(project.name), t, lang, counter, onProgress);
+  await finalizeZip(zip, `${sanitize(project.name)}.zip`, onProgress);
   return files;
 }
 
@@ -64,8 +93,18 @@ export async function exportAllProjects(
   ownerId: string,
   t: Translate,
   lang: string,
+  onProgress?: OnProgress,
 ): Promise<number> {
   const projects = await projectApi.list(ownerId);
+
+  // Pre-pass: count the artifacts so the progress bar has a total.
+  let total = 0;
+  for (const p of projects) {
+    total += (await projectHasPlan(p.id)) ? 1 : 0;
+    total += await projectCaseCount(p.id);
+  }
+
+  const counter: Counter = { done: 0, total };
   const zip = new JSZip();
   let files = 0;
   const usedFolders = new Set<string>();
@@ -74,10 +113,9 @@ export async function exportAllProjects(
     let folder = sanitize(p.name);
     for (let n = 2; usedFolders.has(folder); n += 1) folder = `${sanitize(p.name)} (${n})`;
     usedFolders.add(folder);
-    files += await addProject(zip, p, folder, t, lang);
+    files += await addProject(zip, p, folder, t, lang, counter, onProgress);
   }
 
-  const blob = await zip.generateAsync({ type: "blob" });
-  triggerZipDownload(blob, "pharos-export.zip");
+  await finalizeZip(zip, "pharos-export.zip", onProgress);
   return files;
 }

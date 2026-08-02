@@ -5,8 +5,19 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
+import type { ExportProgress } from "../export/exportAll";
 import { ProjectDetail } from "./ProjectDetail";
+import { ExportProgressModal, type ExportPhase } from "./ExportProgressModal";
 import "./Projects.css";
+
+interface ProgressState {
+  title: string;
+  phase: ExportPhase;
+  done: number;
+  total: number;
+  label: string;
+  percent: number;
+}
 
 type View = { kind: "list" } | { kind: "detail"; id: string };
 
@@ -21,28 +32,55 @@ export function ProjectsPage() {
   const [creating, setCreating] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingId, setExportingId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressState | null>(null);
   const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<ProjectSummary | null>(null);
 
+  function onProgress(title: string) {
+    return (p: ExportProgress) =>
+      setProgress((prev) => {
+        const base: ProgressState =
+          prev ?? { title, phase: "building", done: 0, total: 0, label: "", percent: 0 };
+        return p.phase === "zipping"
+          ? { ...base, title, phase: "zipping", percent: p.percent }
+          : { ...base, title, phase: "building", done: p.done, total: p.total, label: p.label };
+      });
+  }
+
   async function exportAll() {
     setExporting(true);
+    setProgress({ title: t("projects.exportAll"), phase: "building", done: 0, total: 0, label: "", percent: 0 });
     try {
       const { exportAllProjects } = await import("../export/exportAll");
-      const files = await exportAllProjects(ownerId, t, i18n.resolvedLanguage ?? "es");
+      const files = await exportAllProjects(
+        ownerId,
+        t,
+        i18n.resolvedLanguage ?? "es",
+        onProgress(t("projects.exportAll")),
+      );
       toast(t("projects.exportedAllToast", { count: files }));
     } finally {
       setExporting(false);
+      setProgress(null);
     }
   }
 
   async function exportProject(project: ProjectSummary) {
     setExportingId(project.id);
+    const title = t("projects.exportProject");
+    setProgress({ title, phase: "building", done: 0, total: 0, label: "", percent: 0 });
     try {
       const { exportProjectZip } = await import("../export/exportAll");
-      const files = await exportProjectZip(project, t, i18n.resolvedLanguage ?? "es");
+      const files = await exportProjectZip(
+        project,
+        t,
+        i18n.resolvedLanguage ?? "es",
+        onProgress(title),
+      );
       toast(t("projects.exportedProjectToast", { name: project.name, count: files }));
     } finally {
       setExportingId(null);
+      setProgress(null);
     }
   }
 
@@ -170,6 +208,17 @@ export function ProjectsPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {progress && (
+        <ExportProgressModal
+          title={progress.title}
+          phase={progress.phase}
+          done={progress.done}
+          total={progress.total}
+          label={progress.label}
+          percent={progress.percent}
+        />
       )}
 
       {pendingDelete && (

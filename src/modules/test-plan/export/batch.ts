@@ -56,6 +56,11 @@ export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
   };
 }
 
+/** Whether a project has a plan (cheap query for progress totals). */
+export async function projectHasPlan(projectId: string): Promise<boolean> {
+  return (await testPlanApi.byProject(projectId)) != null;
+}
+
 /** Builds the plan .xlsx buffer for a project (null if it has no plan). */
 export async function planWorkbookByProject(
   projectId: string,

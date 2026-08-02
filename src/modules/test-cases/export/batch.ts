@@ -36,11 +36,18 @@ export function caseToExportable(c: TestCase, t: Translate): ExportableCase {
   };
 }
 
-/** Builds an .xlsx buffer for every case of a project (for the batch ZIP). */
+/** Number of cases in a project (cheap metadata query for progress totals). */
+export async function projectCaseCount(projectId: string): Promise<number> {
+  return (await testCaseApi.list(projectId)).length;
+}
+
+/** Builds an .xlsx buffer for every case of a project (for the batch ZIP).
+ *  `onEach` fires with each file name as its workbook is built (for progress). */
 export async function projectCaseWorkbooks(
   projectId: string,
   t: Translate,
   lang: string,
+  onEach?: (name: string) => void,
 ): Promise<{ name: string; buffer: ArrayBuffer }[]> {
   const summaries = await testCaseApi.list(projectId);
   const out: { name: string; buffer: ArrayBuffer }[] = [];
@@ -49,6 +56,7 @@ export async function projectCaseWorkbooks(
     if (!full) continue;
     const { filename, buffer } = await buildCaseXlsx(caseToExportable(full, t), lang);
     out.push({ name: filename, buffer });
+    onEach?.(filename);
   }
   return out;
 }
