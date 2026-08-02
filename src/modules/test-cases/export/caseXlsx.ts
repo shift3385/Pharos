@@ -64,11 +64,11 @@ function growRow(
   sheet.getRow(rowNum).height = Math.max(min, visualLines(text, charsPerLine) * 15 + 6);
 }
 
-/** Fills the PHAROS case template (chosen by language) with the case data on the
- *  first sheet and the Gherkin equivalent on the "Gherkin" sheet, preserving the
- *  template's own formatting. Advanced cases keep the main flow in the standard
- *  fields and append one styled block per alternative flow (spec §5.4 / §16). */
-export async function exportCaseXlsx(c: ExportableCase, lang: string): Promise<string> {
+/** Builds the case workbook as a buffer (no download), for zipping/batch export. */
+export async function buildCaseXlsx(
+  c: ExportableCase,
+  lang: string,
+): Promise<{ filename: string; buffer: ArrayBuffer }> {
   const url = lang.startsWith("en") ? templateEn : templateEs;
   const buffer = await fetch(url).then((r) => r.arrayBuffer());
   const wb = new ExcelJS.Workbook();
@@ -129,7 +129,15 @@ export async function exportCaseXlsx(c: ExportableCase, lang: string): Promise<s
 
   const filename = `${c.scenarioId || "case"}.xlsx`;
   const out = await wb.xlsx.writeBuffer();
-  triggerDownload(out as ArrayBuffer, filename);
+  return { filename, buffer: out as ArrayBuffer };
+}
+
+/** Fills the PHAROS case template and triggers a download. Advanced cases keep
+ *  the main flow in the standard fields and append one styled block per
+ *  alternative flow (spec §5.4 / §16). */
+export async function exportCaseXlsx(c: ExportableCase, lang: string): Promise<string> {
+  const { filename, buffer } = await buildCaseXlsx(c, lang);
+  triggerDownload(buffer, filename);
   return filename;
 }
 

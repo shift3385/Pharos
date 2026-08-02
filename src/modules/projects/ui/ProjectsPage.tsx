@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { useToast } from "@shared/ui/Toast";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
 import { ProjectDetail } from "./ProjectDetail";
@@ -10,15 +11,28 @@ import "./Projects.css";
 type View = { kind: "list" } | { kind: "detail"; id: string };
 
 export function ProjectsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const toast = useToast();
   const ownerId = user?.id ?? "";
   const [view, setView] = useState<View>({ kind: "list" });
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<ProjectSummary | null>(null);
+
+  async function exportAll() {
+    setExporting(true);
+    try {
+      const { exportAllProjects } = await import("../export/exportAll");
+      const files = await exportAllProjects(ownerId, t, i18n.resolvedLanguage ?? "es");
+      toast(t("projects.exportedAllToast", { count: files }));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function refresh() {
     setProjects(await projectApi.list(ownerId));
@@ -57,9 +71,21 @@ export function ProjectsPage() {
           <h1>{t("projects.title")}</h1>
           <p className="tp__subtitle">{t("projects.subtitle")}</p>
         </div>
-        <button className="tp__new" type="button" onClick={() => setCreating(true)}>
-          {t("projects.new")}
-        </button>
+        <div className="pj-header-actions">
+          {projects.length > 0 && (
+            <button
+              type="button"
+              className="pj-export"
+              onClick={() => void exportAll()}
+              disabled={exporting}
+            >
+              {exporting ? t("projects.exporting") : t("projects.exportAll")}
+            </button>
+          )}
+          <button className="tp__new" type="button" onClick={() => setCreating(true)}>
+            {t("projects.new")}
+          </button>
+        </div>
       </header>
 
       {creating && (

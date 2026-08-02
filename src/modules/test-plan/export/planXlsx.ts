@@ -98,9 +98,11 @@ function fillTable(ws: ExcelJS.Worksheet, spec: TableSpec, items: unknown[]) {
   }
 }
 
-/** Fills the PHAROS test-plan template (by language) preserving its formatting
- *  (spec §5.4 / §16). Returns the downloaded file name. */
-export async function exportPlanXlsx(p: ExportablePlan, lang: string): Promise<string> {
+/** Builds the plan workbook as a buffer (no download), for zipping/batch export. */
+export async function buildPlanXlsx(
+  p: ExportablePlan,
+  lang: string,
+): Promise<{ filename: string; buffer: ArrayBuffer }> {
   const url = lang.startsWith("en") ? templateEn : templateEs;
   const buffer = await fetch(url).then((r) => r.arrayBuffer());
   const wb = new ExcelJS.Workbook();
@@ -198,6 +200,13 @@ export async function exportPlanXlsx(p: ExportablePlan, lang: string): Promise<s
 
   const filename = `${p.filenameBase || "plan"}.xlsx`;
   const out = await wb.xlsx.writeBuffer();
-  triggerDownload(out as ArrayBuffer, filename);
+  return { filename, buffer: out as ArrayBuffer };
+}
+
+/** Fills the PHAROS test-plan template (by language) and triggers a download
+ *  (spec §5.4 / §16). Returns the downloaded file name. */
+export async function exportPlanXlsx(p: ExportablePlan, lang: string): Promise<string> {
+  const { filename, buffer } = await buildPlanXlsx(p, lang);
+  triggerDownload(buffer, filename);
   return filename;
 }

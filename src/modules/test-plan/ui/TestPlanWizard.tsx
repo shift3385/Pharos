@@ -15,44 +15,19 @@ import type {
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
+import {
+  CEREMONIES,
+  DELIVERABLE_KEYS,
+  FUNCTIONAL_TYPES,
+  NON_FUNCTIONAL_TYPES,
+  ROLE_KEYS,
+  TEST_LEVELS,
+  TEST_TYPES,
+  TOOLS,
+} from "../model/catalogs";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import "./TestPlan.css";
-
-const TEST_TYPES = [
-  "functional",
-  "performance",
-  "load",
-  "stress",
-  "security",
-  "usability",
-  "compatibility",
-  "accessibility",
-  "regression",
-  "smoke",
-  "sanity",
-  "exploratory",
-  "uat",
-];
-// Test types split into functional vs non-functional coverage (visual grouping
-// only; the stored value is still the flat `testTypes` array).
-const FUNCTIONAL_TYPES = [
-  "functional",
-  "usability",
-  "compatibility",
-  "accessibility",
-  "uat",
-  "exploratory",
-  "sanity",
-];
-const NON_FUNCTIONAL_TYPES = [
-  "performance",
-  "load",
-  "stress",
-  "security",
-  "regression",
-  "smoke",
-];
 
 /** Per-sprint validation: an end date before the start is an error; overlapping
  *  ranges are only a warning, since parallel sprints can be legitimate. */
@@ -70,28 +45,6 @@ function sprintIssues(
   });
 }
 
-const TEST_LEVELS = ["unit", "integration", "system", "acceptance"];
-const TOOLS = [
-  "selenium",
-  "playwright",
-  "cypress",
-  "appium",
-  "postman",
-  "jmeter",
-  "jira",
-];
-const CEREMONIES = ["daily", "review", "retrospective", "planning"];
-const DELIVERABLE_KEYS = [
-  "testPlan",
-  "testCasesScripts",
-  "statusReports",
-  "summaryReports",
-  "defectReports",
-  "uatSignoff",
-  "testData",
-  "incidentReports",
-];
-const ROLE_KEYS = ["testManager", "tester", "automation", "productOwner"];
 
 interface FormState {
   title: string;
