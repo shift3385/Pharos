@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { testPlanApi } from "../api/testPlanApi";
+import type { ExportablePlan } from "../export/planXlsx";
 import type {
   RoleItem,
   RiskItem,
@@ -200,9 +201,10 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     }
   }
 
-  async function exportXlsx() {
-    if (!form) return;
-    const { exportPlanXlsx } = await import("../export/planXlsx");
+  /** Maps the current (possibly unsaved) form to the export shape, shared by the
+   *  .xlsx and .pdf exporters so both stay in sync. */
+  function buildExportablePlan(): ExportablePlan | null {
+    if (!form) return null;
     // Localize option lists (predefined keys → labels; custom values as-is).
     const loc = (arr: string[], known: string[], prefix: string) =>
       arr.map((k) => (known.includes(k) ? t(`${prefix}.${k}`) : k));
@@ -213,43 +215,52 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         : `${t("testPlan.traditional")} · ${t("testPlan.phases")}: ${form.phases
             .filter((p) => p.trim())
             .join(", ")}`;
-    const name = await exportPlanXlsx(
-      {
-        filenameBase: form.title.trim() || "plan",
-        version: form.version,
-        planDate: form.planDate,
-        author: plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : ""),
-        status: t(`testPlan.statusLabel.${form.status}`),
-        summary: form.summary,
-        purpose: form.purpose,
-        scopeIn: form.scopeIn,
-        scopeOut: form.scopeOut,
-        testTypes: loc(form.testTypes, TEST_TYPES, "testPlan.typeLabel"),
-        methodology,
-        testLevels: loc(form.testLevels, TEST_LEVELS, "testPlan.levelLabel"),
-        deliverables: form.deliverables,
-        environmentConfig: form.environmentConfig,
-        environmentRequirements: form.environmentRequirements,
-        tools: loc(form.tools, TOOLS, "testPlan.toolLabel"),
-        automationStrategy: form.automationStrategy,
-        testDataManagement: form.testDataManagement,
-        defectManagement: form.defectManagement,
-        communicationPlan: form.communicationPlan,
-        conclusion: form.conclusion,
-        roles: form.roles.filter((r) => r.role.trim() || r.responsibility.trim()),
-        sprints: form.sprints
-          .filter((s) => s.name.trim() || s.start || s.end)
-          .map((s) => ({
-            name: s.name,
-            range: [s.start, s.end].filter(Boolean).join(" → "),
-          })),
-        risks: form.risks.filter((r) => r.risk.trim() || r.mitigation.trim()),
-        closureCriteria: form.closureCriteria.filter(
-          (c) => c.criterion.trim() || c.metric.trim(),
-        ),
-      },
-      i18n.resolvedLanguage ?? "es",
-    );
+    return {
+      filenameBase: form.title.trim() || "plan",
+      version: form.version,
+      planDate: form.planDate,
+      author: plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : ""),
+      status: t(`testPlan.statusLabel.${form.status}`),
+      summary: form.summary,
+      purpose: form.purpose,
+      scopeIn: form.scopeIn,
+      scopeOut: form.scopeOut,
+      testTypes: loc(form.testTypes, TEST_TYPES, "testPlan.typeLabel"),
+      methodology,
+      testLevels: loc(form.testLevels, TEST_LEVELS, "testPlan.levelLabel"),
+      deliverables: form.deliverables,
+      environmentConfig: form.environmentConfig,
+      environmentRequirements: form.environmentRequirements,
+      tools: loc(form.tools, TOOLS, "testPlan.toolLabel"),
+      automationStrategy: form.automationStrategy,
+      testDataManagement: form.testDataManagement,
+      defectManagement: form.defectManagement,
+      communicationPlan: form.communicationPlan,
+      conclusion: form.conclusion,
+      roles: form.roles.filter((r) => r.role.trim() || r.responsibility.trim()),
+      sprints: form.sprints
+        .filter((s) => s.name.trim() || s.start || s.end)
+        .map((s) => ({ name: s.name, range: [s.start, s.end].filter(Boolean).join(" → ") })),
+      risks: form.risks.filter((r) => r.risk.trim() || r.mitigation.trim()),
+      closureCriteria: form.closureCriteria.filter(
+        (c) => c.criterion.trim() || c.metric.trim(),
+      ),
+    };
+  }
+
+  async function exportXlsx() {
+    const exportable = buildExportablePlan();
+    if (!exportable) return;
+    const { exportPlanXlsx } = await import("../export/planXlsx");
+    const name = await exportPlanXlsx(exportable, i18n.resolvedLanguage ?? "es");
+    toast(t("testPlan.exportedToast", { name }));
+  }
+
+  async function exportPdf() {
+    const exportable = buildExportablePlan();
+    if (!exportable) return;
+    const { exportPlanPdf } = await import("../export/planPdf");
+    const name = await exportPlanPdf(exportable, t);
     toast(t("testPlan.exportedToast", { name }));
   }
 
@@ -702,6 +713,13 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
           onClick={() => void exportXlsx()}
         >
           {t("testPlan.exportXlsx")}
+        </button>
+        <button
+          type="button"
+          className="tp-wizard__revbtn"
+          onClick={() => void exportPdf()}
+        >
+          {t("testPlan.exportPdf")}
         </button>
         <button
           type="button"

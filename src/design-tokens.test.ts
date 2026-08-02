@@ -6,9 +6,18 @@ import { fileURLToPath } from "node:url";
 // Guard for the token architecture (spec §12.1): no component or stylesheet may
 // hardcode a color value. Only tokens.css declares raw colors; everything else
 // consumes them via var(--token). This keeps future themes swappable.
+//
+// Exception: generated documents (PDF export) cannot consume CSS variables, and
+// must always render in the fixed light-theme brand regardless of the app's
+// active theme. Their colors live in a single module — pdfDoc.ts — which plays
+// the same "single source of raw colors" role for documents that tokens.css
+// plays for the UI. It is the only other file allowed to declare literals.
 
 const srcDir = dirname(fileURLToPath(import.meta.url));
-const ALLOWLIST = [join("shared", "theme", "tokens.css")];
+const ALLOWLIST = [
+  join("shared", "theme", "tokens.css"),
+  join("shared", "export", "pdfDoc.ts"),
+];
 
 const COLOR_PATTERNS = [/#[0-9a-fA-F]{3,8}\b/, /\brgba?\(/, /\bhsla?\(/];
 

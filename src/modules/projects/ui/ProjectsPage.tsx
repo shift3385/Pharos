@@ -20,6 +20,7 @@ export function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<ProjectSummary | null>(null);
 
@@ -31,6 +32,17 @@ export function ProjectsPage() {
       toast(t("projects.exportedAllToast", { count: files }));
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function exportProject(project: ProjectSummary) {
+    setExportingId(project.id);
+    try {
+      const { exportProjectZip } = await import("../export/exportAll");
+      const files = await exportProjectZip(project, t, i18n.resolvedLanguage ?? "es");
+      toast(t("projects.exportedProjectToast", { name: project.name, count: files }));
+    } finally {
+      setExportingId(null);
     }
   }
 
@@ -136,6 +148,16 @@ export function ProjectsPage() {
                   {t("projects.prefixMeta")}: {p.caseIdPrefix}
                   {"1".padStart(p.caseIdDigits, "0")}
                 </span>
+              </button>
+              <button
+                type="button"
+                className="pj-export-row"
+                aria-label={t("projects.exportProject")}
+                title={t("projects.exportProject")}
+                disabled={exportingId === p.id}
+                onClick={() => void exportProject(p)}
+              >
+                ⬇
               </button>
               <button
                 type="button"

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
 import { testCaseApi } from "../api/testCaseApi";
+import type { ExportableCase } from "../export/caseXlsx";
 import type {
   ExampleTable,
   Flow,
@@ -335,41 +336,50 @@ export function TestCaseEditor({
     }
   }
 
-  async function exportXlsx() {
-    const { exportCaseXlsx } = await import("../export/caseXlsx");
+  /** Maps the current form to the export shape, shared by .xlsx and .pdf. */
+  function buildExportableCase(): ExportableCase {
     const author =
       testCase?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
-    const name = await exportCaseXlsx(
-      {
-        scenarioId: form.scenarioId,
-        title: form.title,
-        version: form.version,
-        priority: t(`testCase.priorityLabel.${form.priority}`),
-        status: t(`testCase.statusLabel.${form.status}`),
-        author,
-        level,
-        gherkin,
-        background: form.background,
-        flows: form.flows,
-        altFlowLabel: t("testCase.flow.altUpper"),
-        examplesLabel: t("testCase.examples.title"),
-        data: {
-          mappedUseCase: form.mappedUseCase,
-          caseDate: form.caseDate,
-          description: form.description,
-          preconditions: form.preconditions,
-          steps: form.steps,
-          expectedResult: form.expectedResult,
-          postconditions: form.postconditions,
-          acceptanceCriteria: form.acceptanceCriteria,
-          testData: form.testData,
-          notes: form.notes,
-          examples: form.examples,
-          traceability: form.traceability,
-        },
+    return {
+      scenarioId: form.scenarioId,
+      title: form.title,
+      version: form.version,
+      priority: t(`testCase.priorityLabel.${form.priority}`),
+      status: t(`testCase.statusLabel.${form.status}`),
+      author,
+      level,
+      gherkin,
+      background: form.background,
+      flows: form.flows,
+      altFlowLabel: t("testCase.flow.altUpper"),
+      examplesLabel: t("testCase.examples.title"),
+      data: {
+        mappedUseCase: form.mappedUseCase,
+        caseDate: form.caseDate,
+        description: form.description,
+        preconditions: form.preconditions,
+        steps: form.steps,
+        expectedResult: form.expectedResult,
+        postconditions: form.postconditions,
+        acceptanceCriteria: form.acceptanceCriteria,
+        testData: form.testData,
+        notes: form.notes,
+        examples: form.examples,
+        traceability: form.traceability,
       },
-      i18n.resolvedLanguage ?? "es",
-    );
+    };
+  }
+
+  async function exportXlsx() {
+    const { exportCaseXlsx } = await import("../export/caseXlsx");
+    const name = await exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es");
+    setNotice(t("testCase.exportDone", { name }));
+    window.setTimeout(() => setNotice(null), 5000);
+  }
+
+  async function exportPdf() {
+    const { exportCasePdf } = await import("../export/casePdf");
+    const name = await exportCasePdf(buildExportableCase(), t);
     setNotice(t("testCase.exportDone", { name }));
     window.setTimeout(() => setNotice(null), 5000);
   }
@@ -619,6 +629,9 @@ export function TestCaseEditor({
           )}
           <button type="button" className="tp-wizard__revbtn" onClick={() => void exportXlsx()}>
             {t("testCase.exportXlsx")}
+          </button>
+          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportPdf()}>
+            {t("testCase.exportPdf")}
           </button>
           <button type="button" className="tp-wizard__revbtn" onClick={exportFeature}>
             {t("testCase.exportFeature")}
