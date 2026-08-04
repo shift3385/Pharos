@@ -128,6 +128,18 @@
     "exportPdf": "Exportar .pdf",
     "pdfKind": "Plan de Pruebas",
     "rangeCol": "Rango",
+    "import": {
+      "button": "Importar .xlsx",
+      "title": "Importar plan desde .xlsx",
+      "detecting": "Detectando… ({{done}}/{{total}})",
+      "doneMsg": "Detección completa. Revisa y aplica al formulario.",
+      "rows": "{{count}} fila(s)",
+      "notFound": "no detectado",
+      "blank": "en blanco",
+      "apply": "Aplicar al formulario",
+      "applied": "Plan importado. Revisa y guarda para confirmar.",
+      "error": "No se pudo leer el archivo. Prueba con un .xlsx sin comentarios de celda."
+    },
     "exportedToast": "Plan exportado: «{{name}}»",
     "saving": "Guardando…",
     "author": "Elaborado por",

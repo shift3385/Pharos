@@ -128,6 +128,18 @@
     "exportPdf": "Export .pdf",
     "pdfKind": "Test Plan",
     "rangeCol": "Range",
+    "import": {
+      "button": "Import .xlsx",
+      "title": "Import plan from .xlsx",
+      "detecting": "Detecting… ({{done}}/{{total}})",
+      "doneMsg": "Detection complete. Review and apply to the form.",
+      "rows": "{{count}} row(s)",
+      "notFound": "not detected",
+      "blank": "blank",
+      "apply": "Apply to form",
+      "applied": "Plan imported. Review and save to confirm.",
+      "error": "Could not read the file. Try a .xlsx without cell comments."
+    },
     "exportedToast": "Plan exported: “{{name}}”",
     "saving": "Saving…",
     "author": "Prepared by",

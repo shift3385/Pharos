@@ -28,6 +28,8 @@ import {
 } from "../model/catalogs";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
+import { ImportReportModal } from "./ImportReportModal";
+import type { DetectionRow, ImportResult } from "../import/planImport";
 import "./TestPlan.css";
 
 /** Per-sprint validation: an end date before the start is an error; overlapping
@@ -95,6 +97,15 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   const [form, setForm] = useState<FormState | null>(null);
   // Snapshot of the form as loaded, to detect unsaved changes (C1).
   const initialRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importState, setImportState] = useState<{
+    fileName: string;
+    parsing: boolean;
+    done: number;
+    total: number;
+    rows: DetectionRow[];
+    result: ImportResult | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -262,6 +273,34 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     const { exportPlanPdf } = await import("../export/planPdf");
     const name = await exportPlanPdf(exportable, t);
     toast(t("testPlan.exportedToast", { name }));
+  }
+
+  async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    const authorFallback = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
+    setImportState({ fileName: file.name, parsing: true, done: 0, total: 0, rows: [], result: null });
+    try {
+      const { parsePlanXlsx } = await import("../import/planImport");
+      const buffer = await file.arrayBuffer();
+      const result = await parsePlanXlsx(buffer, file.name, authorFallback, (p) =>
+        setImportState((prev) =>
+          prev ? { ...prev, done: p.done, total: p.total, rows: [...prev.rows, p.row] } : prev,
+        ),
+      );
+      setImportState((prev) => (prev ? { ...prev, parsing: false, result } : prev));
+    } catch {
+      setImportState(null);
+      toast(t("testPlan.import.error"));
+    }
+  }
+
+  function applyImport() {
+    if (!importState?.result || !form) return;
+    setForm(fromInput(importState.result.input, t));
+    setImportState(null);
+    toast(t("testPlan.import.applied"));
   }
 
   const steps: { id: string; body: ReactNode }[] = useMemo(() => {
@@ -723,6 +762,20 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         </button>
         <button
           type="button"
+          className="tp-wizard__revbtn"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {t("testPlan.import.button")}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx"
+          hidden
+          onChange={(e) => void onImportFile(e)}
+        />
+        <button
+          type="button"
           className="tp-editor__save"
           onClick={save}
           disabled={saving || !form.title}
@@ -730,6 +783,18 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
           {saving ? t("testPlan.saving") : t("testPlan.save")}
         </button>
       </header>
+
+      {importState && (
+        <ImportReportModal
+          fileName={importState.fileName}
+          parsing={importState.parsing}
+          done={importState.done}
+          total={importState.total}
+          rows={importState.rows}
+          onApply={applyImport}
+          onCancel={() => setImportState(null)}
+        />
+      )}
 
       {plan && showRev && (
         <div className="tp-revs-panel">
@@ -871,6 +936,18 @@ function defaults(t: (k: string) => string): FormState {
     ],
     purpose: "",
     conclusion: "",
+  };
+}
+
+/** Builds a form from an imported plan input, reusing the defaults for any field
+ *  the import did not detect (so undetected fields keep sensible defaults). */
+function fromInput(input: TestPlanInput, t: (k: string) => string): FormState {
+  const base = applyRevision(defaults(t), input.title, input.data);
+  return {
+    ...base,
+    version: input.version ?? "1.0",
+    planDate: input.planDate ?? "",
+    status: input.status ?? "draft",
   };
 }
 
