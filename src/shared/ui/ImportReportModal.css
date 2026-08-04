@@ -1,0 +1,59 @@
+/* Import report modal (shared by plan and case import). */
+.imp {
+  max-width: 560px;
+}
+.imp__progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-pill);
+}
+.imp__bar {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-pill);
+  transition: width 0.15s ease;
+}
+.imp__status {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+.imp__list {
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: var(--space-2);
+}
+.imp__row {
+  display: grid;
+  grid-template-columns: 18px 1fr 1.2fr;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--fs-caption);
+}
+.imp__icon {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.imp__row[data-status="filled"] .imp__icon {
+  color: var(--color-navy-500);
+}
+.imp__label {
+  color: var(--color-text-primary);
+}
+.imp__value {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp__row[data-status="notFound"] .imp__value {
+  color: var(--color-text-muted);
+  font-style: italic;
+}

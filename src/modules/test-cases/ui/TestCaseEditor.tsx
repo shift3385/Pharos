@@ -4,6 +4,7 @@ import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
 import { testCaseApi } from "../api/testCaseApi";
 import type { ExportableCase } from "../export/caseXlsx";
+import type { ImportedCase } from "../import/caseImport";
 import type {
   ExampleTable,
   Flow,
@@ -163,12 +164,15 @@ export function TestCaseEditor({
   caseIdPrefix = "ATS_",
   caseIdDigits = 3,
   caseId,
+  seed = null,
   onClose,
 }: {
   projectId: string;
   caseIdPrefix?: string;
   caseIdDigits?: number;
   caseId: string | null;
+  /** Prefilled content from an .xlsx import (new case, skips the level picker). */
+  seed?: ImportedCase | null;
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -181,8 +185,8 @@ export function TestCaseEditor({
   const [saving, setSaving] = useState(false);
   const [revisions, setRevisions] = useState<RevisionSummary[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  // New cases start on the level picker; existing cases skip it.
-  const [picking, setPicking] = useState(caseId === null);
+  // New cases start on the level picker; existing/imported cases skip it.
+  const [picking, setPicking] = useState(caseId === null && !seed);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,12 +199,25 @@ export function TestCaseEditor({
           setForm(f);
           setGherkin(buildGherkin(f));
         }
+      } else if (seed && !cancelled) {
+        // Imported case: seed the form (scenario id auto-assigned on save).
+        const f = fromCase({
+          ...seed,
+          scenarioId: "",
+          id: "",
+          workspaceId: "",
+          createdAt: "",
+          updatedAt: "",
+          revision: 0,
+        } as TestCase);
+        setForm(f);
+        setGherkin(buildGherkin(f));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [caseId]);
+  }, [caseId, seed]);
 
   const level = form.gherkinLevel;
   // Lowest level the current content can live in — you cannot pick below it.

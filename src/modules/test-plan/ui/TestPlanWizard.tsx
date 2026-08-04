@@ -28,7 +28,7 @@ import {
 } from "../model/catalogs";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
-import { ImportReportModal } from "./ImportReportModal";
+import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import type { DetectionRow, ImportResult } from "../import/planImport";
 import "./TestPlan.css";
 
@@ -786,7 +786,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
 
       {importState && (
         <ImportReportModal
-          fileName={importState.fileName}
+          title={t("testPlan.import.title")}
           parsing={importState.parsing}
           done={importState.done}
           total={importState.total}

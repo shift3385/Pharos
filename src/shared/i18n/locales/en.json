@@ -10,6 +10,14 @@
     "cancel": "Cancel",
     "noData": "No data"
   },
+  "importReport": {
+    "detecting": "Detecting… ({{done}}/{{total}})",
+    "doneMsg": "Detection complete. Review and apply.",
+    "rows": "{{count}} row(s)",
+    "notFound": "not detected",
+    "blank": "blank",
+    "apply": "Apply to form"
+  },
   "auth": {
     "loginTitle": "Sign in",
     "registerTitle": "Create account",
@@ -131,12 +139,6 @@
     "import": {
       "button": "Import .xlsx",
       "title": "Import plan from .xlsx",
-      "detecting": "Detecting… ({{done}}/{{total}})",
-      "doneMsg": "Detection complete. Review and apply to the form.",
-      "rows": "{{count}} row(s)",
-      "notFound": "not detected",
-      "blank": "blank",
-      "apply": "Apply to form",
       "applied": "Plan imported. Review and save to confirm.",
       "error": "Could not read the file. Try a .xlsx without cell comments."
     },
@@ -298,6 +300,10 @@
     "pdfKind": "Test Case",
     "author": "Prepared by",
     "caseDate": "Date",
+    "import": {
+      "button": "Import .xlsx",
+      "title": "Import case from .xlsx"
+    },
     "exportDone": "Downloaded “{{name}}” to your Downloads folder.",
     "keywords": "Gherkin keywords",
     "insertKeyword": "Insert at cursor",

@@ -99,7 +99,8 @@ describe("parsePlanXlsx (English template)", () => {
 describe("parsePlanXlsx (real ES template layout)", () => {
   it("reads values placed in the actual bundled template cells", async () => {
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(readFileSync("src/modules/test-plan/assets/plan-template-es.xlsx"));
+    const tpl = readFileSync("src/modules/test-plan/assets/plan-template-es.xlsx");
+    await wb.xlsx.load(tpl as unknown as ArrayBuffer);
     const ws = wb.worksheets[0];
     // Fill value cells exactly where the exporter writes them.
     ws.getCell("C4").value = "3.0";

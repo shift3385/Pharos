@@ -8,10 +8,12 @@ import "./TestCase.css";
 export function TestCaseList({
   projectId,
   onNew,
+  onImport,
   onOpen,
 }: {
   projectId: string;
   onNew: () => void;
+  onImport: () => void;
   onOpen: (id: string) => void;
 }) {
   const { t } = useTranslation();
@@ -39,9 +41,14 @@ export function TestCaseList({
           <h1>{t("testCase.title")}</h1>
           <p className="tp__subtitle">{t("testCase.subtitle")}</p>
         </div>
-        <button className="tp__new" type="button" onClick={onNew}>
-          {t("testCase.new")}
-        </button>
+        <div className="tc-list-actions">
+          <button className="tc-list-import" type="button" onClick={onImport}>
+            {t("testCase.import.button")}
+          </button>
+          <button className="tp__new" type="button" onClick={onNew}>
+            {t("testCase.new")}
+          </button>
+        </div>
       </header>
 
       {loading ? (
