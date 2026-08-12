@@ -1,6 +1,7 @@
 //! Pharos desktop shell (Tauri 2). Kept in a library crate so the future mobile
 //! target (v0.0.4) can reuse the same entrypoint.
 
+mod ai;
 mod db;
 mod planner;
 mod profile;
@@ -93,7 +94,11 @@ pub fn run() {
             template::template_create,
             template::template_update,
             template::template_delete,
-            template::template_seed
+            template::template_seed,
+            ai::ai_key_set,
+            ai::ai_key_status,
+            ai::ai_key_clear,
+            ai::ai_chat_online
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");
