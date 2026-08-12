@@ -10,6 +10,16 @@
     "cancel": "Cancel",
     "noData": "No data"
   },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Repository of plan and case templates. The PHAROS ones are included.",
+    "kind": {
+      "plan": "Test plans",
+      "case": "Test cases"
+    },
+    "builtin": "Included",
+    "download": "Download .xlsx"
+  },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",
     "doneMsg": "Detection complete. Review and apply.",

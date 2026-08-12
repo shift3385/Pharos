@@ -10,6 +10,16 @@
     "cancel": "Cancelar",
     "noData": "Sin datos"
   },
+  "templates": {
+    "title": "Plantillas",
+    "subtitle": "Repositorio de plantillas de plan y caso. Las de PHAROS vienen incluidas.",
+    "kind": {
+      "plan": "Planes de prueba",
+      "case": "Casos de prueba"
+    },
+    "builtin": "Incluida",
+    "download": "Descargar .xlsx"
+  },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",
     "doneMsg": "Detección completa. Revisa y aplica.",

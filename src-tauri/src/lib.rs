@@ -5,6 +5,7 @@ mod db;
 mod planner;
 mod profile;
 mod project;
+mod template;
 mod test_case;
 mod test_plan;
 
@@ -86,7 +87,13 @@ pub fn run() {
             planner::planner_attachment_add,
             planner::planner_attachment_list,
             planner::planner_attachment_get,
-            planner::planner_attachment_delete
+            planner::planner_attachment_delete,
+            template::template_list,
+            template::template_get,
+            template::template_create,
+            template::template_update,
+            template::template_delete,
+            template::template_seed
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");
