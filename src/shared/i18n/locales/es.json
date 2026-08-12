@@ -8,7 +8,8 @@
     "delete": "Eliminar",
     "confirmDelete": "Sí, eliminar",
     "cancel": "Cancelar",
-    "noData": "Sin datos"
+    "noData": "Sin datos",
+    "edit": "Editar"
   },
   "templates": {
     "title": "Plantillas",
@@ -18,7 +19,24 @@
       "case": "Casos de prueba"
     },
     "builtin": "Incluida",
-    "download": "Descargar .xlsx"
+    "download": "Descargar .xlsx",
+    "import": "Importar plantilla",
+    "importedToast": "Plantilla importada: «{{name}}»",
+    "updatedToast": "Plantilla actualizada",
+    "deleteTitle": "Eliminar plantilla",
+    "deleteWarning": "¿Eliminar la plantilla «{{name}}»? Esta acción no se puede deshacer.",
+    "form": {
+      "createTitle": "Importar plantilla",
+      "editTitle": "Editar plantilla",
+      "name": "Nombre",
+      "kind": "Tipo",
+      "language": "Idioma",
+      "version": "Versión",
+      "description": "Descripción",
+      "usagePrompt": "Prompt de uso (para la IA)",
+      "usagePromptHint": "Describe para qué sirve y cuándo la IA debería sugerirla.",
+      "save": "Guardar"
+    }
   },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",

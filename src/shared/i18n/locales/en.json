@@ -8,7 +8,8 @@
     "delete": "Delete",
     "confirmDelete": "Yes, delete",
     "cancel": "Cancel",
-    "noData": "No data"
+    "noData": "No data",
+    "edit": "Edit"
   },
   "templates": {
     "title": "Templates",
@@ -18,7 +19,24 @@
       "case": "Test cases"
     },
     "builtin": "Included",
-    "download": "Download .xlsx"
+    "download": "Download .xlsx",
+    "import": "Import template",
+    "importedToast": "Template imported: “{{name}}”",
+    "updatedToast": "Template updated",
+    "deleteTitle": "Delete template",
+    "deleteWarning": "Delete the template “{{name}}”? This cannot be undone.",
+    "form": {
+      "createTitle": "Import template",
+      "editTitle": "Edit template",
+      "name": "Name",
+      "kind": "Kind",
+      "language": "Language",
+      "version": "Version",
+      "description": "Description",
+      "usagePrompt": "Usage prompt (for the AI)",
+      "usagePromptHint": "Describe what it is for and when the AI should suggest it.",
+      "save": "Save"
+    }
   },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",
