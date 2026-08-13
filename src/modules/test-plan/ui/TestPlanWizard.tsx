@@ -29,6 +29,7 @@ import {
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
+import { AssistButton, aiAvailable } from "@modules/ai";
 import type { DetectionRow, ImportResult } from "../import/planImport";
 import "./TestPlan.css";
 
@@ -106,6 +107,11 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     rows: DetectionRow[];
     result: ImportResult | null;
   } | null>(null);
+  const [aiReady, setAiReady] = useState(false);
+
+  useEffect(() => {
+    void aiAvailable().then(setAiReady);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -349,11 +355,20 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       {
         id: "summary",
         body: (
-          <AreaField
-            label={t("testPlan.summary")}
-            value={form.summary}
-            onChange={(v) => set("summary", v)}
-          />
+          <>
+            <AreaField
+              label={t("testPlan.summary")}
+              value={form.summary}
+              onChange={(v) => set("summary", v)}
+            />
+            <AssistButton
+              available={aiReady}
+              instruction="the Summary (introduction) section of a software test plan"
+              notes={form.summary}
+              context={`Test plan title: ${form.title}`}
+              onUse={(v) => set("summary", v)}
+            />
+          </>
         ),
       },
       // 6. Scope in / out
@@ -475,10 +490,24 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               value={form.environmentConfig}
               onChange={(v) => set("environmentConfig", v)}
             />
+            <AssistButton
+              available={aiReady}
+              instruction="the test environment configuration description of a software test plan"
+              notes={form.environmentConfig}
+              context={`Test plan title: ${form.title}`}
+              onUse={(v) => set("environmentConfig", v)}
+            />
             <AreaField
               label={t("testPlan.environmentRequirements")}
               value={form.environmentRequirements}
               onChange={(v) => set("environmentRequirements", v)}
+            />
+            <AssistButton
+              available={aiReady}
+              instruction="the hardware and software requirements of a software test plan's test environment"
+              notes={form.environmentRequirements}
+              context={`Test plan title: ${form.title}`}
+              onUse={(v) => set("environmentRequirements", v)}
             />
           </>
         ),
@@ -698,28 +727,52 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       {
         id: "purpose",
         body: (
-          <AreaField
-            label={t("testPlan.purpose")}
-            hint={t("testPlan.purposeHint")}
-            value={form.purpose}
-            onChange={(v) => set("purpose", v)}
-          />
+          <>
+            <AreaField
+              label={t("testPlan.purpose")}
+              hint={t("testPlan.purposeHint")}
+              value={form.purpose}
+              onChange={(v) => set("purpose", v)}
+            />
+            <AssistButton
+              available={aiReady}
+              instruction="the Purpose section of a software test plan"
+              notes={form.purpose}
+              context={[
+                `Title: ${form.title}`,
+                form.summary && `Summary: ${form.summary}`,
+                form.scopeIn.filter(Boolean).length && `In scope: ${form.scopeIn.filter(Boolean).join(", ")}`,
+              ]
+                .filter(Boolean)
+                .join("\n")}
+              onUse={(v) => set("purpose", v)}
+            />
+          </>
         ),
       },
       // 21. Conclusion
       {
         id: "conclusion",
         body: (
-          <AreaField
-            label={t("testPlan.conclusion")}
-            value={form.conclusion}
-            onChange={(v) => set("conclusion", v)}
-          />
+          <>
+            <AreaField
+              label={t("testPlan.conclusion")}
+              value={form.conclusion}
+              onChange={(v) => set("conclusion", v)}
+            />
+            <AssistButton
+              available={aiReady}
+              instruction="the Conclusion section (summary and next steps) of a software test plan"
+              notes={form.conclusion}
+              context={`Test plan title: ${form.title}`}
+              onUse={(v) => set("conclusion", v)}
+            />
+          </>
         ),
       },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, t, plan, user]);
+  }, [form, t, plan, user, aiReady]);
 
   if (!form) return <p className="tp__muted">{t("common.loading")}</p>;
 

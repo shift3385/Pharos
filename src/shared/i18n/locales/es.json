@@ -73,7 +73,17 @@
     "testEmpty": "El proveedor respondió vacío",
     "testNoProvider": "No hay IA disponible (configura Gemini u Ollama)",
     "testFailed": "Falló la conexión con la IA",
-    "neverBlocks": "La ausencia de IA nunca bloquea la app: los botones de asistencia se deshabilitan con aviso."
+    "neverBlocks": "La ausencia de IA nunca bloquea la app: los botones de asistencia se deshabilitan con aviso.",
+    "assist": {
+      "button": "✨ Asistir con IA",
+      "drafting": "Redactando…",
+      "previewTitle": "Borrador de la IA",
+      "use": "Usar",
+      "discard": "Descartar",
+      "unavailable": "Configura la IA (Gemini u Ollama) para usar esto",
+      "empty": "La IA no devolvió texto.",
+      "error": "No se pudo redactar con la IA"
+    }
   },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",

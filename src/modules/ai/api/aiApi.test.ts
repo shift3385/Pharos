@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { loadConfig, pickProvider, saveConfig } from "./aiApi";
+import { buildAssistMessages, loadConfig, pickProvider, saveConfig } from "./aiApi";
 import { DEFAULT_AI_CONFIG } from "../model/types";
 
 describe("pickProvider", () => {
@@ -14,6 +14,34 @@ describe("pickProvider", () => {
     expect(pickProvider("online", { online: false, offline: true })).toBeNull();
     expect(pickProvider("offline", { online: true, offline: false })).toBeNull();
     expect(pickProvider("offline", { online: true, offline: true })).toBe("offline");
+  });
+});
+
+describe("buildAssistMessages", () => {
+  it("builds a system + user message in the requested language, with notes", () => {
+    const msgs = buildAssistMessages({
+      instruction: "the Summary section of a software test plan",
+      notes: "checkout flow, focus on payment",
+      lang: "es",
+      context: "Title: Checkout",
+    });
+    expect(msgs).toHaveLength(2);
+    expect(msgs[0].role).toBe("system");
+    expect(msgs[0].content).toContain("Spanish");
+    expect(msgs[1].role).toBe("user");
+    expect(msgs[1].content).toContain("the Summary section");
+    expect(msgs[1].content).toContain("Title: Checkout");
+    expect(msgs[1].content).toContain("checkout flow, focus on payment");
+  });
+
+  it("falls back to inferring a draft when there are no notes; English for en", () => {
+    const msgs = buildAssistMessages({
+      instruction: "the Purpose section",
+      notes: "   ",
+      lang: "en",
+    });
+    expect(msgs[0].content).toContain("English");
+    expect(msgs[1].content).toContain("no notes");
   });
 });
 

@@ -87,6 +87,51 @@ export function resolveProvider(config: AiConfig, status: AiStatus): ResolvedPro
   });
 }
 
+/** Whether any AI provider is usable right now (to enable/disable assist UI). */
+export async function aiAvailable(): Promise<boolean> {
+  const config = loadConfig();
+  return resolveProvider(config, await aiStatus(config)) !== null;
+}
+
+/** A drafting request for the "Assist with AI" buttons. */
+export interface AssistRequest {
+  /** What to write, e.g. "the Summary section of a software test plan". */
+  instruction: string;
+  /** Loose notes / current field content to base the draft on (may be empty). */
+  notes: string;
+  /** App language for the reply ("es" | "en" | ...). */
+  lang: string;
+  /** Optional extra context (plan title, scope, types…). */
+  context?: string;
+}
+
+/** Builds the chat messages for an assist request (pure — testable). */
+export function buildAssistMessages(req: AssistRequest): AiMessage[] {
+  const language = req.lang.startsWith("es") ? "Spanish" : "English";
+  const system: AiMessage = {
+    role: "system",
+    content:
+      `You are a QA documentation assistant. Write clear, professional ${language} ` +
+      `prose for a software test plan or test case. Return ONLY the requested text: ` +
+      `plain text, no markdown, no headings, no preamble, no quotes.`,
+  };
+  const parts = [`Write ${req.instruction}.`];
+  if (req.context?.trim()) parts.push(`Context:\n${req.context.trim()}`);
+  parts.push(
+    req.notes.trim()
+      ? `Base it on these notes:\n${req.notes.trim()}`
+      : `There are no notes; infer a reasonable, generic draft.`,
+  );
+  return [system, { role: "user", content: parts.join("\n\n") }];
+}
+
+/** Redacts a single field from loose notes + context, in the app language.
+ *  Reusable by the plan wizard (7B) and the case editor (7C). */
+export async function assistDraft(req: AssistRequest): Promise<string> {
+  const reply = await aiChat(buildAssistMessages(req));
+  return reply.trim();
+}
+
 /** Runs a chat completion through the resolved provider. Throws "no-provider"
  *  when neither online nor offline AI is available (callers disable UI then). */
 export async function aiChat(messages: AiMessage[]): Promise<string> {

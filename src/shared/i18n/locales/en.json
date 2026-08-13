@@ -73,7 +73,17 @@
     "testEmpty": "The provider returned an empty reply",
     "testNoProvider": "No AI available (configure Gemini or Ollama)",
     "testFailed": "AI connection failed",
-    "neverBlocks": "Missing AI never blocks the app: assist buttons are disabled with a notice."
+    "neverBlocks": "Missing AI never blocks the app: assist buttons are disabled with a notice.",
+    "assist": {
+      "button": "✨ Assist with AI",
+      "drafting": "Drafting…",
+      "previewTitle": "AI draft",
+      "use": "Use",
+      "discard": "Discard",
+      "unavailable": "Configure AI (Gemini or Ollama) to use this",
+      "empty": "The AI returned no text.",
+      "error": "Could not draft with AI"
+    }
   },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",
