@@ -132,6 +132,54 @@ export async function assistDraft(req: AssistRequest): Promise<string> {
   return reply.trim();
 }
 
+/** A suggested test case (title + one-line description) from the plan. */
+export interface TestSuggestion {
+  title: string;
+  description: string;
+}
+
+/** Extracts a JSON array of {title, description} from a model reply, tolerating
+ *  code fences and surrounding prose. */
+export function parseSuggestions(reply: string): TestSuggestion[] {
+  const start = reply.indexOf("[");
+  const end = reply.lastIndexOf("]");
+  if (start < 0 || end <= start) return [];
+  try {
+    const arr = JSON.parse(reply.slice(start, end + 1)) as unknown;
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((x) => {
+        const o = (x ?? {}) as Record<string, unknown>;
+        return {
+          title: String(o.title ?? o.name ?? "").trim(),
+          description: String(o.description ?? o.desc ?? "").trim(),
+        };
+      })
+      .filter((s) => s.title);
+  } catch {
+    return [];
+  }
+}
+
+/** Suggests test cases for a plan context, in the app language (spec §5.2). */
+export async function suggestTests(context: string, lang: string): Promise<TestSuggestion[]> {
+  const language = lang.startsWith("es") ? "Spanish" : "English";
+  const messages: AiMessage[] = [
+    {
+      role: "system",
+      content: `You are a QA test analyst. Propose concrete test cases for a software test plan. Respond in ${language}.`,
+    },
+    {
+      role: "user",
+      content:
+        `Based on this test plan, propose 5 to 10 test cases to write. Return ONLY a JSON ` +
+        `array; each item is an object with "title" (short, specific) and "description" ` +
+        `(one sentence). No markdown, no code fences, no extra text.\n\n${context}`,
+    },
+  ];
+  return parseSuggestions(await aiChat(messages));
+}
+
 /** Runs a chat completion through the resolved provider. Throws "no-provider"
  *  when neither online nor offline AI is available (callers disable UI then). */
 export async function aiChat(messages: AiMessage[]): Promise<string> {

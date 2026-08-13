@@ -1,9 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
+import { aiAvailable, type TestSuggestion } from "@modules/ai";
+import { projectHasPlan } from "@modules/test-plan";
+import { testCaseApi } from "../api/testCaseApi";
 import { TestCaseList } from "./TestCaseList";
 import { TestCaseEditor } from "./TestCaseEditor";
+import { SuggestTestsModal } from "./SuggestTestsModal";
 import type { CaseImportResult, DetectionRow } from "../import/caseImport";
 
 type View = { kind: "list" } | { kind: "edit"; id: string | null };
@@ -23,7 +27,35 @@ export function TestCasesPage({
   const { user } = useAuth();
   const [view, setView] = useState<View>({ kind: "list" });
   const [seed, setSeed] = useState<CaseImportResult["input"] | null>(null);
+  const [canSuggest, setCanSuggest] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([aiAvailable(), projectHasPlan(projectId)]).then(([ai, plan]) => {
+      if (!cancelled) setCanSuggest(ai && plan);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  async function createSuggested(items: TestSuggestion[]) {
+    const author = user ? `${user.firstName} ${user.lastName}` : "";
+    for (const s of items) {
+      await testCaseApi.create({
+        projectId,
+        title: s.title,
+        author,
+        caseIdPrefix,
+        caseIdDigits,
+        data: { description: s.description, gherkinLevel: "basic" },
+      });
+    }
+    setRefreshKey((k) => k + 1);
+  }
   const [importState, setImportState] = useState<{
     parsing: boolean;
     done: number;
@@ -78,7 +110,10 @@ export function TestCasesPage({
   return (
     <>
       <TestCaseList
+        key={refreshKey}
         projectId={projectId}
+        canSuggest={canSuggest}
+        onSuggest={() => setSuggesting(true)}
         onNew={() => {
           setSeed(null);
           setView({ kind: "edit", id: null });
@@ -102,6 +137,13 @@ export function TestCasesPage({
           rows={importState.rows}
           onApply={applyImport}
           onCancel={() => setImportState(null)}
+        />
+      )}
+      {suggesting && (
+        <SuggestTestsModal
+          projectId={projectId}
+          onCreate={createSuggested}
+          onClose={() => setSuggesting(false)}
         />
       )}
     </>

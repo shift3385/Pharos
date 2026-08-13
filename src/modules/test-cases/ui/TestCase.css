@@ -701,3 +701,39 @@
   color: var(--color-navy-500);
   border-color: var(--color-navy-300);
 }
+
+/* ---- AI "suggest tests" modal ---- */
+.tc-suggest {
+  max-width: 560px;
+}
+.tc-suggest__list {
+  list-style: none;
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-right: var(--space-2);
+}
+.tc-suggest__row {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.tc-suggest__check {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.tc-suggest__check > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tc-suggest__name {
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+}
+.tc-suggest__desc {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}

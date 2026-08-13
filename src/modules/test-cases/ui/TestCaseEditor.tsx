@@ -20,6 +20,7 @@ import { FlowsEditor } from "./FlowsEditor";
 import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
 import { useToast } from "@shared/ui/Toast";
+import { AssistButton, aiAvailable } from "@modules/ai";
 import {
   detectLevel,
   flowsToGherkin,
@@ -187,6 +188,11 @@ export function TestCaseEditor({
   const [notice, setNotice] = useState<string | null>(null);
   // New cases start on the level picker; existing/imported cases skip it.
   const [picking, setPicking] = useState(caseId === null && !seed);
+  const [aiReady, setAiReady] = useState(false);
+
+  useEffect(() => {
+    void aiAvailable().then(setAiReady);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -491,6 +497,13 @@ export function TestCaseEditor({
           onChange={(e) => update({ description: e.target.value })}
         />
       </label>
+      <AssistButton
+        available={aiReady}
+        instruction="the Description of a software test case (what it verifies)"
+        notes={form.description}
+        context={`Test case title: ${form.title}`}
+        onUse={(v) => update({ description: v })}
+      />
     </>
   );
 

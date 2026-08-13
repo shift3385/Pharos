@@ -7,11 +7,15 @@ import "./TestCase.css";
 
 export function TestCaseList({
   projectId,
+  canSuggest,
+  onSuggest,
   onNew,
   onImport,
   onOpen,
 }: {
   projectId: string;
+  canSuggest: boolean;
+  onSuggest: () => void;
   onNew: () => void;
   onImport: () => void;
   onOpen: (id: string) => void;
@@ -42,6 +46,15 @@ export function TestCaseList({
           <p className="tp__subtitle">{t("testCase.subtitle")}</p>
         </div>
         <div className="tc-list-actions">
+          <button
+            className="tc-list-import"
+            type="button"
+            onClick={onSuggest}
+            disabled={!canSuggest}
+            title={canSuggest ? undefined : t("testCase.suggest.disabled")}
+          >
+            {t("testCase.suggest.button")}
+          </button>
           <button className="tc-list-import" type="button" onClick={onImport}>
             {t("testCase.import.button")}
           </button>

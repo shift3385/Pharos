@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { buildAssistMessages, loadConfig, pickProvider, saveConfig } from "./aiApi";
+import { buildAssistMessages, loadConfig, parseSuggestions, pickProvider, saveConfig } from "./aiApi";
 import { DEFAULT_AI_CONFIG } from "../model/types";
 
 describe("pickProvider", () => {
@@ -42,6 +42,26 @@ describe("buildAssistMessages", () => {
     });
     expect(msgs[0].content).toContain("English");
     expect(msgs[1].content).toContain("no notes");
+  });
+});
+
+describe("parseSuggestions", () => {
+  it("parses a JSON array, tolerating code fences and prose", () => {
+    const reply =
+      "Here you go:\n```json\n[{\"title\":\"Login OK\",\"description\":\"Valid creds\"}," +
+      "{\"title\":\"Login fail\",\"description\":\"Bad password\"}]\n```";
+    const out = parseSuggestions(reply);
+    expect(out).toEqual([
+      { title: "Login OK", description: "Valid creds" },
+      { title: "Login fail", description: "Bad password" },
+    ]);
+  });
+
+  it("drops items without a title and returns [] on garbage", () => {
+    expect(parseSuggestions('[{"description":"no title"},{"title":"Keep"}]')).toEqual([
+      { title: "Keep", description: "" },
+    ]);
+    expect(parseSuggestions("not json at all")).toEqual([]);
   });
 });
 

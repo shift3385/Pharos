@@ -379,6 +379,15 @@
       "button": "Import .xlsx",
       "title": "Import case from .xlsx"
     },
+    "suggest": {
+      "button": "✨ Suggest tests",
+      "disabled": "You need AI configured and a plan in the project",
+      "title": "Suggest tests with AI",
+      "loading": "Generating suggestions from the plan…",
+      "empty": "No suggestions were generated. Check the plan has types/levels and the AI responds.",
+      "create": "Create {{count}}",
+      "creating": "Creating…"
+    },
     "exportDone": "Downloaded “{{name}}” to your Downloads folder.",
     "keywords": "Gherkin keywords",
     "insertKeyword": "Insert at cursor",

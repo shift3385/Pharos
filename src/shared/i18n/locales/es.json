@@ -379,6 +379,15 @@
       "button": "Importar .xlsx",
       "title": "Importar caso desde .xlsx"
     },
+    "suggest": {
+      "button": "✨ Sugerir pruebas",
+      "disabled": "Necesitas IA configurada y un plan en el proyecto",
+      "title": "Sugerir pruebas con IA",
+      "loading": "Generando sugerencias a partir del plan…",
+      "empty": "No se generaron sugerencias. Revisa que el plan tenga tipos/niveles y que la IA responda.",
+      "create": "Crear {{count}}",
+      "creating": "Creando…"
+    },
     "exportDone": "Descargado «{{name}}» en tu carpeta de Descargas.",
     "keywords": "Palabras clave de Gherkin",
     "insertKeyword": "Insertar en el cursor",
