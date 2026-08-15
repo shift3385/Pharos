@@ -85,6 +85,16 @@
       "error": "Could not draft with AI"
     }
   },
+  "sync": {
+    "synced": "Synced",
+    "pending": "Pending changes ({{count}})",
+    "offline": "Offline",
+    "now": "Sync now",
+    "syncing": "Syncing…",
+    "doneToast": "Synced (↑{{pushed}} · ↓{{pulled}})",
+    "needsAuth": "Sign in to sync",
+    "failed": "Could not sync (server unavailable?)"
+  },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",
     "doneMsg": "Detection complete. Review and apply.",

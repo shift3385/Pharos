@@ -11,6 +11,7 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::oplog;
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
@@ -176,6 +177,7 @@ pub fn template_create(db: State<Db>, input: TemplateInput) -> Result<Option<Tem
             ],
         )
         .map_err(|e| e.to_string())?;
+        oplog::record(conn, "template", &id, "upsert", "{}", 1, "")?;
         Ok(())
     })?;
     db.persist()?;
@@ -203,6 +205,7 @@ pub fn template_update(
             ],
         )
         .map_err(|e| e.to_string())?;
+        oplog::record(conn, "template", &id, "upsert", "{}", 0, "")?;
         Ok(())
     })?;
     db.persist()?;
@@ -230,6 +233,7 @@ pub fn template_delete(db: State<Db>, id: String) -> Result<(), String> {
             params![id],
         )
         .map_err(|e| e.to_string())?;
+        oplog::record(conn, "template", &id, "delete", "{}", 0, "")?;
         Ok(())
     })?;
     db.persist()

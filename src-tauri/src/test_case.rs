@@ -9,6 +9,7 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::oplog;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -188,6 +189,7 @@ fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<String, Strin
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "test_case", &id, "upsert", "{}", 1, &input.author)?;
     Ok(id)
 }
 
@@ -231,6 +233,7 @@ fn update_case(conn: &Connection, id: &str, input: &TestCaseInput) -> Result<(),
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "test_case", id, "upsert", "{}", revision + 1, &input.author)?;
     Ok(())
 }
 
@@ -294,6 +297,7 @@ pub fn test_case_delete(db: State<Db>, id: String) -> Result<(), String> {
             params![id],
         )
         .map_err(|e| e.to_string())?;
+        oplog::record(conn, "test_case", &id, "delete", "{}", 0, "")?;
         Ok(())
     })?;
     db.persist()

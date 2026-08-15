@@ -3,9 +3,11 @@
 
 mod ai;
 mod db;
+mod oplog;
 mod planner;
 mod profile;
 mod project;
+mod sync;
 mod template;
 mod test_case;
 mod test_plan;
@@ -98,7 +100,13 @@ pub fn run() {
             ai::ai_key_set,
             ai::ai_key_status,
             ai::ai_key_clear,
-            ai::ai_chat_online
+            ai::ai_chat_online,
+            oplog::oplog_pending_count,
+            sync::oplog_pending,
+            sync::oplog_mark_synced,
+            sync::apply_remote,
+            sync::sync_cursor_get,
+            sync::sync_cursor_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

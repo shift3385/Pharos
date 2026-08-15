@@ -8,6 +8,7 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::oplog;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -126,6 +127,7 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "project", &id, "upsert", "{}", 1, &input.owner_id.clone().unwrap_or_default())?;
     Ok(id)
 }
 
@@ -163,12 +165,21 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
         params![id, input.name, prefix, digits, revision + 1],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(
+        conn,
+        "project",
+        id,
+        "upsert",
+        "{}",
+        revision + 1,
+        &input.owner_id.clone().unwrap_or_default(),
+    )?;
     Ok(())
 }
 
 /// Soft-deletes a project and cascades the soft-delete to its plan, cases and
 /// planner cards so nothing is left orphaned (the hard-delete purge runs later).
-fn delete_project(conn: &Connection, id: &str) -> Result<(), String> {
+fn delete_project(conn: &Connection, id: &str, author: &str) -> Result<(), String> {
     for table in ["projects", "test_plans", "test_cases", "planner_cards"] {
         let sql = format!(
             "UPDATE {table} SET deleted_at = datetime('now') \
@@ -177,6 +188,7 @@ fn delete_project(conn: &Connection, id: &str) -> Result<(), String> {
         );
         conn.execute(&sql, params![id]).map_err(|e| e.to_string())?;
     }
+    oplog::record(conn, "project", id, "delete", "{}", 0, author)?;
     Ok(())
 }
 
@@ -225,7 +237,7 @@ pub fn project_delete(db: State<Db>, id: String, owner_id: String) -> Result<(),
         if !owns(conn, &id, &owner_id)? {
             return Err("project not found".to_string());
         }
-        delete_project(conn, &id)
+        delete_project(conn, &id, &owner_id)
     })?;
     db.persist()
 }
@@ -287,7 +299,7 @@ mod tests {
     fn delete_hides_project() {
         let c = conn();
         let id = insert_project(&c, &input("Temp", None)).unwrap();
-        delete_project(&c, &id).unwrap();
+        delete_project(&c, &id, OWNER).unwrap();
         assert!(get_project(&c, &id, OWNER).unwrap().is_none());
         assert_eq!(list_projects(&c, OWNER).unwrap().len(), 0);
     }

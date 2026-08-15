@@ -45,6 +45,14 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0007_templates.sql",
         include_str!("../migrations/0007_templates.sql"),
     ),
+    (
+        "0008_oplog.sql",
+        include_str!("../migrations/0008_oplog.sql"),
+    ),
+    (
+        "0009_sync_state.sql",
+        include_str!("../migrations/0009_sync_state.sql"),
+    ),
 ];
 
 pub struct Db {

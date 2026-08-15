@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ThemeToggle } from "@shared/theme/ThemeToggle";
 import { LanguageToggle } from "@shared/i18n/LanguageToggle";
 import { useAuth } from "@modules/auth";
+import { SyncIndicator } from "@modules/sync-offline";
 
 /** Top bar: offline indicator, global language/theme controls, and user menu. */
 export function Topbar() {
@@ -17,6 +18,7 @@ export function Topbar() {
             ● {t("auth.offline")}
           </span>
         )}
+        <SyncIndicator />
         <ThemeToggle />
         <LanguageToggle />
         {user && (

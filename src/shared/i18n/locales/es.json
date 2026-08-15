@@ -85,6 +85,16 @@
       "error": "No se pudo redactar con la IA"
     }
   },
+  "sync": {
+    "synced": "Sincronizado",
+    "pending": "Cambios pendientes ({{count}})",
+    "offline": "Sin conexión",
+    "now": "Sincronizar ahora",
+    "syncing": "Sincronizando…",
+    "doneToast": "Sincronizado (↑{{pushed}} · ↓{{pulled}})",
+    "needsAuth": "Inicia sesión para sincronizar",
+    "failed": "No se pudo sincronizar (¿servidor no disponible?)"
+  },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",
     "doneMsg": "Detección completa. Revisa y aplica.",

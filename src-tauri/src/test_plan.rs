@@ -9,6 +9,7 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::oplog;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -161,6 +162,7 @@ fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<String, Strin
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "test_plan", &id, "upsert", "{}", 1, &input.author)?;
     Ok(id)
 }
 
@@ -200,6 +202,7 @@ fn update_plan(conn: &Connection, id: &str, input: &TestPlanInput) -> Result<(),
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "test_plan", id, "upsert", "{}", revision + 1, &input.author)?;
     Ok(())
 }
 
@@ -268,6 +271,7 @@ pub fn test_plan_delete(db: State<Db>, id: String) -> Result<(), String> {
             params![id],
         )
         .map_err(|e| e.to_string())?;
+        oplog::record(conn, "test_plan", &id, "delete", "{}", 0, "")?;
         Ok(())
     })?;
     db.persist()

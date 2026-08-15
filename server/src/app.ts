@@ -7,6 +7,8 @@ import { createTokenService } from "./modules/auth/tokens";
 import { createAuthRepository } from "./modules/auth/auth.repository";
 import { createAuthService } from "./modules/auth/auth.service";
 import { authRoutes } from "./modules/auth/auth.routes";
+import { createSyncRepository } from "./modules/sync/sync.repository";
+import { syncRoutes } from "./modules/sync/sync.routes";
 import { AppError } from "./modules/auth/errors";
 
 /** Builds the Fastify application wired to the given pool + config. */
@@ -26,9 +28,14 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const repo = createAuthRepository(pool);
   const service = createAuthService({ repo, tokens });
 
+  const syncRepo = createSyncRepository(pool);
+
   app.get("/health", async () => ({ status: "ok" }));
   void app.register(async (instance) => {
     authRoutes(instance, { service, tokens });
+  });
+  void app.register(async (instance) => {
+    syncRoutes(instance, { repo: syncRepo, tokens });
   });
 
   app.setErrorHandler((error, req, reply) => {

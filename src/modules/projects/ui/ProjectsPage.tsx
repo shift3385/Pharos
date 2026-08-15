@@ -90,6 +90,10 @@ export function ProjectsPage() {
   }
   useEffect(() => {
     void refresh();
+    // Reload the list when a sync pulls remote changes.
+    const onSynced = () => void refresh();
+    window.addEventListener("pharos:synced", onSynced);
+    return () => window.removeEventListener("pharos:synced", onSynced);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId]);
 

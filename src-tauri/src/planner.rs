@@ -10,6 +10,7 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::oplog;
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
@@ -158,6 +159,7 @@ fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, St
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "planner_card", &id, "upsert", "{}", 1, &input.owner_id)?;
     Ok(id)
 }
 
@@ -177,6 +179,7 @@ fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<
         ],
     )
     .map_err(|e| e.to_string())?;
+    oplog::record(conn, "planner_card", id, "upsert", "{}", 0, &input.owner_id)?;
     Ok(())
 }
 
@@ -242,6 +245,7 @@ pub fn planner_delete(db: State<Db>, id: String, owner_id: String) -> Result<(),
             params![id],
         )
         .map_err(|e| e.to_string())?;
+        oplog::record(conn, "planner_card", &id, "delete", "{}", 0, &owner_id)?;
         Ok(())
     })?;
     db.persist()
