@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import { syncNow, syncPendingCount, syncStatus } from "../api/syncApi";
+import { hydrateFromBackend } from "../web/webSync";
 import "./SyncIndicator.css";
 
 function isTauri(): boolean {
@@ -54,12 +55,14 @@ export function SyncIndicator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus]);
 
-  /** Silent background sync (startup / reconnect). Errors are ignored here; the
-   *  manual button surfaces them. */
+  /** Silent background sync (startup / reconnect). On desktop runs the full
+   *  push/pull; on the web it hydrates the caches from the backend. Errors are
+   *  ignored here; the manual button surfaces them. */
   async function autoSync() {
-    if (!isTauri() || !navigator.onLine || !authedRef.current) return;
+    if (!navigator.onLine || !authedRef.current) return;
     try {
-      await syncNow();
+      if (isTauri()) await syncNow();
+      else await hydrateFromBackend();
     } catch {
       /* offline or transient — the indicator stays as-is */
     }
@@ -77,8 +80,13 @@ export function SyncIndicator() {
   async function runSync() {
     setSyncing(true);
     try {
-      const { pushed, pulled } = await syncNow();
-      toast(t("sync.doneToast", { pushed, pulled }));
+      if (isTauri()) {
+        const { pushed, pulled } = await syncNow();
+        toast(t("sync.doneToast", { pushed, pulled }));
+      } else {
+        const pulled = await hydrateFromBackend();
+        toast(t("sync.doneToast", { pushed: 0, pulled }));
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       // Surface the underlying cause (missing command after an un-rebuilt app,

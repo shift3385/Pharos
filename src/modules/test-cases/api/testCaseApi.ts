@@ -1,3 +1,4 @@
+import { pushEntity } from "@modules/sync-offline";
 import type {
   RevisionSummary,
   TestCase,
@@ -95,6 +96,7 @@ const browserApi = {
       revision: 1,
     };
     saveAll([...all, testCase]);
+    pushEntity("test_case", testCase.id, "upsert", testCase, testCase.revision, testCase.author);
     return testCase;
   },
   async update(id: string, input: TestCaseInput): Promise<TestCase | null> {
@@ -125,14 +127,17 @@ const browserApi = {
     };
     all[idx] = updated;
     saveAll(all);
+    pushEntity("test_case", id, "upsert", updated, updated.revision, updated.author);
     return updated;
   },
   async remove(id: string): Promise<void> {
+    const item = loadAll().find((c) => c.id === id);
     saveAll(loadAll().filter((c) => c.id !== id));
     localStorage.setItem(
       REV_KEY,
       JSON.stringify(loadRevs().filter((r) => r.caseId !== id)),
     );
+    pushEntity("test_case", id, "delete", { id }, (item?.revision ?? 0) + 1, item?.author ?? "");
   },
   async revisions(id: string): Promise<RevisionSummary[]> {
     return loadRevs()

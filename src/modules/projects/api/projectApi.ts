@@ -1,3 +1,4 @@
+import { pushEntity } from "@modules/sync-offline";
 import type { Project, ProjectInput, ProjectSummary } from "../model/types";
 
 function isTauri(): boolean {
@@ -53,6 +54,7 @@ const browserApi = {
       revision: 1,
     };
     saveAll([...loadAll(), project]);
+    pushEntity("project", project.id, "upsert", project, project.revision, input.ownerId ?? "");
     return project;
   },
   async update(id: string, input: ProjectInput): Promise<Project | null> {
@@ -69,10 +71,13 @@ const browserApi = {
     };
     all[idx] = updated;
     saveAll(all);
+    pushEntity("project", id, "upsert", updated, updated.revision, updated.ownerId ?? "");
     return updated;
   },
   async remove(id: string): Promise<void> {
+    const item = loadAll().find((p) => p.id === id);
     saveAll(loadAll().filter((p) => p.id !== id));
+    pushEntity("project", id, "delete", { id }, (item?.revision ?? 0) + 1, item?.ownerId ?? "");
   },
 };
 
