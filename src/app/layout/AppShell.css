@@ -179,3 +179,24 @@
     padding: var(--space-4);
   }
 }
+
+/* ---- Optional user background (Administration → custom background) ---- */
+.app-shell {
+  position: relative;
+}
+.app-shell__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--app-bg-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--app-bg-opacity, 0.3);
+}
+.sidebar,
+.app-shell__main {
+  position: relative;
+  z-index: 1;
+}

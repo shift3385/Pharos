@@ -95,6 +95,29 @@
     "needsAuth": "Sign in to sync",
     "failed": "Could not sync (server unavailable?)"
   },
+  "admin": {
+    "title": "Administration",
+    "subtitle": "Templates, AI engine and application settings.",
+    "section": {
+      "templates": { "title": "Templates", "desc": "Repository of plan and case templates." },
+      "ai": { "title": "AI engine", "desc": "Online (Gemini) and offline (Ollama) providers." }
+    },
+    "saved": "Settings saved",
+    "settings": {
+      "title": "Settings",
+      "background": "Custom background",
+      "bgChoose": "Choose image…",
+      "bgClear": "Remove",
+      "opacity": "Background opacity",
+      "opacityHint": "Lower = more transparent. Affects only the background, not the content.",
+      "retention": "Retention of deleted items (days)",
+      "retentionHint": "Items in the trash are permanently removed after this many days.",
+      "download": "Downloads folder",
+      "downloadPlaceholder": "Folder path (optional)",
+      "downloadHint": "Preference; it will apply to exports in a future release.",
+      "save": "Save settings"
+    }
+  },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",
     "doneMsg": "Detection complete. Review and apply.",

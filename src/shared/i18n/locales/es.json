@@ -95,6 +95,29 @@
     "needsAuth": "Inicia sesión para sincronizar",
     "failed": "No se pudo sincronizar (¿servidor no disponible?)"
   },
+  "admin": {
+    "title": "Administración",
+    "subtitle": "Plantillas, motor de IA y ajustes de la aplicación.",
+    "section": {
+      "templates": { "title": "Plantillas", "desc": "Repositorio de plantillas de plan y caso." },
+      "ai": { "title": "Motor de IA", "desc": "Proveedor online (Gemini) y offline (Ollama)." }
+    },
+    "saved": "Ajustes guardados",
+    "settings": {
+      "title": "Ajustes",
+      "background": "Fondo personalizado",
+      "bgChoose": "Elegir imagen…",
+      "bgClear": "Quitar",
+      "opacity": "Opacidad del fondo",
+      "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido.",
+      "retention": "Retención de elementos borrados (días)",
+      "retentionHint": "Los elementos en la papelera se eliminan definitivamente tras estos días.",
+      "download": "Carpeta de descargas",
+      "downloadPlaceholder": "Ruta de la carpeta (opcional)",
+      "downloadHint": "Preferencia; se aplicará a las exportaciones en una próxima versión.",
+      "save": "Guardar ajustes"
+    }
+  },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",
     "doneMsg": "Detección completa. Revisa y aplica.",
