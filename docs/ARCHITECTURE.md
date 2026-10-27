@@ -110,4 +110,12 @@ to localStorage for `vite dev`.
   calendar, and a revision-history panel. Note: `cargo test` cannot launch on
   this machine post-reboot (WebView2/GUI DLL entry-point error); the fix is to
   split the data layer into a Tauri-free crate (tech debt).
-- Phases 4–9: not started (see `PROGRESO.md`).
+- **Phases 4–9A:** implemented (test cases, planner, templates/export, AI,
+  oplog + push/pull sync, admin hub). 8C (conflict panel) and the rest of
+  Phase 9 are open.
+- **Roadmap and backlog:** `docs/ROADMAP.md` (replanned 2026-10-26 from the
+  state-of-the-art study). Its target direction: Pharos as a local-first
+  *control plane* that orchestrates external frameworks (Playwright, Karate,
+  Appium, k6…), ingests their results (JUnit, Cucumber Messages, CTRF, SARIF)
+  into a CTRF-inspired Run/Result model, and shares a Tauri-free `pharos-core`
+  crate between desktop, CLI and agent.
