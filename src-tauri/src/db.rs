@@ -2,15 +2,23 @@
 //! memory; at rest it is persisted to `pharos.db.enc` as an AES-256-GCM blob.
 //! The 32-byte key is kept in the OS keychain. SQLCipher is intentionally not
 //! used because its OpenSSL build does not compile under the GNU toolchain.
+//!
+//! The plaintext image only ever exists in memory: it is moved in and out of
+//! SQLite with `deserialize`/`serialize`. The encrypted file is replaced
+//! atomically (write `pharos.db.enc.new`, fsync, rename), so a crash mid-save
+//! leaves the previous copy intact.
 
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::ptr::NonNull;
 use std::sync::Mutex;
 
 use aes_gcm::aead::{Aead, AeadCore, KeyInit, OsRng};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
 use base64::Engine as _;
 use keyring::Entry;
+use rusqlite::serialize::OwnedData;
 use rusqlite::{Connection, DatabaseName, OptionalExtension};
 
 const KEYCHAIN_SERVICE: &str = "pharos";
@@ -64,25 +72,19 @@ pub struct Db {
 impl Db {
     /// Opens (or creates) the encrypted database under `app_data_dir`.
     pub fn open(app_data_dir: &Path) -> Result<Self, String> {
+        Self::open_with_key(app_data_dir, load_or_create_key()?)
+    }
+
+    fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
         let enc_path = app_data_dir.join("pharos.db.enc");
-        let key = load_or_create_key()?;
+        recover_leftovers(app_data_dir, &enc_path, &key)?;
         let mut conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
 
         if enc_path.exists() {
             let blob = fs::read(&enc_path).map_err(|e| e.to_string())?;
             let plain = decrypt(&key, &blob)?;
-            let tmp = app_data_dir.join("pharos.db.tmp");
-            fs::write(&tmp, &plain).map_err(|e| e.to_string())?;
-            let restored = conn
-                .restore(
-                    DatabaseName::Main,
-                    &tmp,
-                    None::<fn(rusqlite::backup::Progress)>,
-                )
-                .map_err(|e| e.to_string());
-            let _ = fs::remove_file(&tmp);
-            restored?;
+            load_image(&mut conn, &plain)?;
         }
 
         run_migrations(&conn)?;
@@ -105,15 +107,101 @@ impl Db {
     /// Serializes the in-memory database and writes it encrypted to disk.
     pub fn persist(&self) -> Result<(), String> {
         let conn = self.conn.lock().map_err(|_| "db lock poisoned".to_string())?;
-        let tmp = self.enc_path.with_extension("tmp");
-        conn.backup(DatabaseName::Main, &tmp, None)
+        let image = conn
+            .serialize(DatabaseName::Main)
             .map_err(|e| e.to_string())?;
-        let bytes = fs::read(&tmp).map_err(|e| e.to_string())?;
-        let _ = fs::remove_file(&tmp);
-        let blob = encrypt(&self.key, &bytes)?;
-        fs::write(&self.enc_path, blob).map_err(|e| e.to_string())?;
-        Ok(())
+        let blob = encrypt(&self.key, &image)?;
+        write_atomic(&self.enc_path, &blob)
     }
+}
+
+/// Path of the in-progress copy written before the atomic rename.
+fn pending_path(enc_path: &Path) -> PathBuf {
+    let mut name = enc_path.as_os_str().to_owned();
+    name.push(".new");
+    PathBuf::from(name)
+}
+
+/// Writes `bytes` to `<path>.new`, fsyncs it and renames it over `path`, so the
+/// previous file survives a crash or power cut at any point of the write.
+fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let pending = pending_path(path);
+    let written = (|| {
+        let mut file = fs::File::create(&pending)?;
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&pending, path)
+    })();
+    if let Err(e) = written {
+        let _ = fs::remove_file(&pending);
+        return Err(format!("failed to save local database: {e}"));
+    }
+    Ok(())
+}
+
+/// Cleans up what an interrupted run may have left next to `pharos.db.enc`:
+/// - `pharos.db.tmp`: plaintext copy written by versions before the in-memory
+///   fix; overwritten with zeros, then deleted.
+/// - `pharos.db.enc.new`: a save that never got renamed. AES-GCM authenticates
+///   the whole blob, so if it decrypts it is a complete, newer save and is
+///   promoted; otherwise it is a torn write and is discarded.
+fn recover_leftovers(dir: &Path, enc_path: &Path, key: &[u8; 32]) -> Result<(), String> {
+    let legacy_plain = dir.join("pharos.db.tmp");
+    if legacy_plain.exists() {
+        wipe_file(&legacy_plain)?;
+    }
+
+    let pending = pending_path(enc_path);
+    if pending.exists() {
+        let complete = fs::read(&pending)
+            .map(|blob| decrypt(key, &blob).is_ok())
+            .unwrap_or(false);
+        if complete {
+            fs::rename(&pending, enc_path).map_err(|e| e.to_string())?;
+        } else {
+            fs::remove_file(&pending).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Overwrites a file with zeros before deleting it. Best effort against
+/// recovery: SSD wear levelling and shadow copies may still keep old blocks.
+fn wipe_file(path: &Path) -> Result<(), String> {
+    let len = fs::metadata(path).map_err(|e| e.to_string())?.len();
+    {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .open(path)
+            .map_err(|e| e.to_string())?;
+        let zeros = vec![0u8; 64 * 1024];
+        let mut left = len;
+        while left > 0 {
+            let n = left.min(zeros.len() as u64) as usize;
+            file.write_all(&zeros[..n]).map_err(|e| e.to_string())?;
+            left -= n as u64;
+        }
+        file.sync_all().map_err(|e| e.to_string())?;
+    }
+    fs::remove_file(path).map_err(|e| e.to_string())
+}
+
+/// Loads a plaintext database image into `conn` without touching disk.
+fn load_image(conn: &mut Connection, image: &[u8]) -> Result<(), String> {
+    if image.is_empty() {
+        return Ok(());
+    }
+    // SAFETY: the buffer comes from `sqlite3_malloc64`, as `OwnedData` requires,
+    // and is fully initialised by the copy before SQLite takes ownership of it.
+    let data = unsafe {
+        let ptr = rusqlite::ffi::sqlite3_malloc64(image.len() as u64) as *mut u8;
+        let ptr = NonNull::new(ptr).ok_or("out of memory loading local database")?;
+        std::ptr::copy_nonoverlapping(image.as_ptr(), ptr.as_ptr(), image.len());
+        OwnedData::from_raw_nonnull(ptr, image.len())
+    };
+    conn.deserialize(DatabaseName::Main, data, false)
+        .map_err(|e| format!("failed to load local database: {e}"))
 }
 
 /// Returns the single workspace id, creating a default workspace on first use.
@@ -252,6 +340,115 @@ mod tests {
         let applied: i64 = conn
             .query_row("SELECT count(*) FROM schema_migrations", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(applied, 1);
+        assert_eq!(applied, MIGRATIONS.len() as i64);
+    }
+
+    const KEY: [u8; 32] = [9u8; 32];
+
+    fn temp_dir() -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("pharos-db-test-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn file_names(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn persist_and_reopen_keeps_data() {
+        let dir = temp_dir();
+        let id = {
+            let db = Db::open_with_key(&dir, KEY).unwrap();
+            let id = db.with_conn(ensure_workspace).unwrap();
+            db.persist().unwrap();
+            id
+        };
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
+        // Writes after a deserialize (memdb-backed) must persist too.
+        db.with_conn(|c| {
+            c.execute("UPDATE workspaces SET name = 'Renamed'", [])
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+        db.persist().unwrap();
+        drop(db);
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let name: String = db
+            .with_conn(|c| {
+                c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(name, "Renamed");
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn persist_leaves_only_the_encrypted_file() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        db.persist().unwrap();
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        let blob = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let header = b"SQLite format 3";
+        assert!(!blob.windows(header.len()).any(|w| w == header));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn open_wipes_legacy_plaintext_copy() {
+        let dir = temp_dir();
+        fs::write(dir.join("pharos.db.tmp"), b"SQLite format 3\0 plaintext").unwrap();
+        Db::open_with_key(&dir, KEY).unwrap();
+        assert!(!dir.join("pharos.db.tmp").exists());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn open_promotes_complete_pending_save() {
+        let dir = temp_dir();
+        let src = Connection::open_in_memory().unwrap();
+        src.execute_batch("CREATE TABLE marker (v TEXT); INSERT INTO marker VALUES ('newer');")
+            .unwrap();
+        let image = src.serialize(DatabaseName::Main).unwrap();
+        fs::write(dir.join("pharos.db.enc"), encrypt(&KEY, b"older").unwrap()).unwrap();
+        fs::write(dir.join("pharos.db.enc.new"), encrypt(&KEY, &image).unwrap()).unwrap();
+
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let v: String = db
+            .with_conn(|c| {
+                c.query_row("SELECT v FROM marker", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(v, "newer");
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn open_discards_torn_pending_save() {
+        let dir = temp_dir();
+        {
+            let db = Db::open_with_key(&dir, KEY).unwrap();
+            db.with_conn(ensure_workspace).unwrap();
+            db.persist().unwrap();
+        }
+        let mut torn = encrypt(&KEY, b"partial").unwrap();
+        torn.truncate(torn.len() - 4);
+        fs::write(dir.join("pharos.db.enc.new"), torn).unwrap();
+
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
     }
 }
