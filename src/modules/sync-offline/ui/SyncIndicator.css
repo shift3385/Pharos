@@ -36,3 +36,6 @@
 .sync__btn:disabled {
   opacity: 0.6;
 }
+.sync__dot--conflicts {
+  background: var(--color-warning);
+}

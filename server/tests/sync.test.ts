@@ -92,4 +92,66 @@ describe("sync", () => {
     const pullB = await app.inject({ method: "GET", url: "/sync/pull?since=0", headers: auth(b) });
     expect(pullB.json().docs).toHaveLength(0);
   });
+
+  describe("conflicts (Phase 8C)", () => {
+    const H = (wall: number, device: string) => `${String(wall).padStart(15, "0")}-00000-${device}`;
+    const push = (token: string, delta: Record<string, unknown>) =>
+      app.inject({
+        method: "POST",
+        url: "/sync/push",
+        headers: auth(token),
+        payload: { deltas: [{ entity: "test_case", entityId: "c1", op: "upsert", author: "A", ...delta }] },
+      });
+
+    it("rejects a delta whose base the server no longer holds and returns the server version", async () => {
+      const token = await tokenFor();
+      // Both devices start from revision 1 (pushed by the desktop).
+      await push(token, { payload: { title: "Login" }, revision: 1, hlc: H(100, "desk") });
+      // The web edits online and pushes first (no base: LWW by HLC).
+      const web = await push(token, { payload: { title: "Login (web)" }, revision: 2, hlc: H(200, "web") });
+      expect(web.json()).toEqual({ accepted: 1, conflicts: [] });
+      // The desktop edited offline from revision 1 and pushes on reconnect.
+      const desk = await push(token, {
+        payload: { title: "Login (desktop)" },
+        revision: 2,
+        hlc: H(300, "desk"),
+        baseRevision: 1,
+        baseHlc: H(100, "desk"),
+      });
+      const body = desk.json();
+      expect(body.accepted).toBe(0);
+      expect(body.conflicts).toHaveLength(1);
+      expect(body.conflicts[0]).toMatchObject({ entityId: "c1", revision: 2, hlc: H(200, "web"), payload: { title: "Login (web)" } });
+
+      // Nothing was overwritten.
+      const pull = await app.inject({ method: "GET", url: "/sync/pull?since=0", headers: auth(token) });
+      expect(pull.json().docs[0].payload).toEqual({ title: "Login (web)" });
+
+      // After "keep mine", the desktop re-bases on the server version and is accepted.
+      const resolved = await push(token, {
+        payload: { title: "Login (desktop)" },
+        revision: 3,
+        hlc: H(400, "desk"),
+        baseRevision: 2,
+        baseHlc: H(200, "web"),
+      });
+      expect(resolved.json()).toEqual({ accepted: 1, conflicts: [] });
+    });
+
+    it("accepts a retried push (same HLC) without reporting a conflict", async () => {
+      const token = await tokenFor();
+      await push(token, { payload: { title: "v1" }, revision: 1, hlc: H(100, "desk") });
+      const delta = { payload: { title: "v2" }, revision: 2, hlc: H(200, "desk"), baseRevision: 1, baseHlc: H(100, "desk") };
+      expect((await push(token, delta)).json().accepted).toBe(1);
+      // The response was lost; the client pushes the same delta again.
+      expect((await push(token, delta)).json()).toEqual({ accepted: 1, conflicts: [] });
+    });
+
+    it("pull carries the HLC of each document", async () => {
+      const token = await tokenFor();
+      await push(token, { payload: { title: "v1" }, revision: 1, hlc: H(100, "desk") });
+      const pull = await app.inject({ method: "GET", url: "/sync/pull?since=0", headers: auth(token) });
+      expect(pull.json().docs[0].hlc).toBe(H(100, "desk"));
+    });
+  });
 });
