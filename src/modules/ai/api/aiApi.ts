@@ -1,11 +1,14 @@
 import {
   DEFAULT_AI_CONFIG,
   type AiConfig,
+  type AiDestination,
   type AiMessage,
   type AiMode,
+  type AiProvenance,
   type AiStatus,
   type ResolvedProvider,
 } from "../model/types";
+import { newProvenance } from "../model/provenance";
 import { geminiProvider } from "../providers/gemini";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
 
@@ -93,6 +96,20 @@ export async function aiAvailable(): Promise<boolean> {
   return resolveProvider(config, await aiStatus(config)) !== null;
 }
 
+/** Maps the router's choice to the concrete provider + model (pure). */
+export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDestination | null {
+  if (which === "online") return { provider: "gemini", model: config.onlineModel };
+  if (which === "offline") return { provider: "ollama", model: config.offlineModel };
+  return null;
+}
+
+/** Where an AI request would go right now (null when no AI is available), so
+ *  the UI can say which provider will process the data before sending it. */
+export async function aiDestination(): Promise<AiDestination | null> {
+  const config = loadConfig();
+  return destinationFor(resolveProvider(config, await aiStatus(config)), config);
+}
+
 /** A drafting request for the "Assist with AI" buttons. */
 export interface AssistRequest {
   /** What to write, e.g. "the Summary section of a software test plan". */
@@ -125,11 +142,17 @@ export function buildAssistMessages(req: AssistRequest): AiMessage[] {
   return [system, { role: "user", content: parts.join("\n\n") }];
 }
 
+/** AI output together with its provenance (IA-01). */
+export interface AiResult<T> {
+  value: T;
+  provenance: AiProvenance;
+}
+
 /** Redacts a single field from loose notes + context, in the app language.
  *  Reusable by the plan wizard (7B) and the case editor (7C). */
-export async function assistDraft(req: AssistRequest): Promise<string> {
-  const reply = await aiChat(buildAssistMessages(req));
-  return reply.trim();
+export async function assistDraft(req: AssistRequest): Promise<AiResult<string>> {
+  const reply = await aiChatWithProvenance(buildAssistMessages(req));
+  return { value: reply.value.trim(), provenance: reply.provenance };
 }
 
 /** A suggested test case (title + one-line description) from the plan. */
@@ -162,7 +185,10 @@ export function parseSuggestions(reply: string): TestSuggestion[] {
 }
 
 /** Suggests test cases for a plan context, in the app language (spec §5.2). */
-export async function suggestTests(context: string, lang: string): Promise<TestSuggestion[]> {
+export async function suggestTests(
+  context: string,
+  lang: string,
+): Promise<AiResult<TestSuggestion[]>> {
   const language = lang.startsWith("es") ? "Spanish" : "English";
   const messages: AiMessage[] = [
     {
@@ -177,23 +203,28 @@ export async function suggestTests(context: string, lang: string): Promise<TestS
         `(one sentence). No markdown, no code fences, no extra text.\n\n${context}`,
     },
   ];
-  return parseSuggestions(await aiChat(messages));
+  const reply = await aiChatWithProvenance(messages);
+  return { value: parseSuggestions(reply.value), provenance: reply.provenance };
 }
 
-/** Runs a chat completion through the resolved provider. Throws "no-provider"
- *  when neither online nor offline AI is available (callers disable UI then). */
-export async function aiChat(messages: AiMessage[]): Promise<string> {
+/** Runs a chat completion through the resolved provider and records which
+ *  provider + model produced the reply (IA-01). Throws "no-provider" when
+ *  neither online nor offline AI is available (callers disable UI then). */
+export async function aiChatWithProvenance(messages: AiMessage[]): Promise<AiResult<string>> {
   const config = loadConfig();
   const status = await aiStatus(config);
   const which = resolveProvider(config, status);
-  if (which === "online") {
-    return geminiProvider.chat(messages, { model: config.onlineModel, temperature: config.temperature });
-  }
-  if (which === "offline") {
-    return ollamaProvider(config.ollamaEndpoint).chat(messages, {
-      model: config.offlineModel,
-      temperature: config.temperature,
-    });
-  }
-  throw new Error("no-provider");
+  const destination = destinationFor(which, config);
+  if (!destination) throw new Error("no-provider");
+  const opts = { model: destination.model, temperature: config.temperature };
+  const value =
+    destination.provider === "gemini"
+      ? await geminiProvider.chat(messages, opts)
+      : await ollamaProvider(config.ollamaEndpoint).chat(messages, opts);
+  return { value, provenance: newProvenance(destination) };
+}
+
+/** Plain chat completion (no provenance), e.g. the connection test. */
+export async function aiChat(messages: AiMessage[]): Promise<string> {
+  return (await aiChatWithProvenance(messages)).value;
 }

@@ -196,3 +196,29 @@
     grid-template-columns: repeat(4, 240px);
   }
 }
+
+/* Defect key (DEF-001) and defect ↔ test case links (traceability, TRZ-02). */
+.pl-card__key,
+.pl-links__id {
+  margin-right: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-navy-500);
+}
+.pl-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 220px;
+  overflow: auto;
+}
+.pl-links__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+}

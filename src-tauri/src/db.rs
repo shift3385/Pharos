@@ -53,6 +53,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0009_sync_state.sql",
         include_str!("../migrations/0009_sync_state.sql"),
     ),
+    (
+        "0010_traceability.sql",
+        include_str!("../migrations/0010_traceability.sql"),
+    ),
 ];
 
 pub struct Db {

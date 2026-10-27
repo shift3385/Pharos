@@ -39,6 +39,9 @@
     "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
+    "@cucumber/gherkin": "^42.0.1",
+    "@cucumber/messages": "^34.2.1",
+    "@cucumber/tag-expressions": "^11.0.1",
     "@tauri-apps/cli": "^2.1.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",

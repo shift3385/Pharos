@@ -29,7 +29,14 @@ import {
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
-import { AssistButton, aiAvailable } from "@modules/ai";
+import {
+  AssistButton,
+  aiAvailable,
+  markReviewed,
+  withProvenance,
+  type AiProvenance,
+  type ProvenanceMap,
+} from "@modules/ai";
 import type { DetectionRow, ImportResult } from "../import/planImport";
 import "./TestPlan.css";
 
@@ -79,7 +86,12 @@ interface FormState {
   closureCriteria: ClosureCriterion[];
   purpose: string;
   conclusion: string;
+  /** AI provenance of the assisted fields (IA-01). */
+  aiProvenance: ProvenanceMap;
 }
+
+/** Fields the wizard can draft with AI (keys of the provenance map). */
+type AssistedField = "summary" | "environmentConfig" | "environmentRequirements" | "purpose" | "conclusion";
 
 interface Props {
   planId: string | null;
@@ -139,6 +151,20 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => (f ? { ...f, [key]: value } : f));
+
+  // AI drafts are applied with their provenance; the field shows "AI · pending
+  // review" until a person marks it reviewed (IA-01).
+  const applyDraft = (field: AssistedField) => (text: string, provenance: AiProvenance) =>
+    setForm((f) =>
+      f ? { ...f, [field]: text, aiProvenance: withProvenance(f.aiProvenance, field, provenance) } : f,
+    );
+  const review = (field: AssistedField) => () =>
+    setForm((f) => (f ? { ...f, aiProvenance: markReviewed(f.aiProvenance, field, user?.id ?? "") } : f));
+  const aiProps = (field: AssistedField) => ({
+    provenance: form?.aiProvenance[field],
+    onUse: applyDraft(field),
+    onReview: review(field),
+  });
 
   // Restore a past revision's content into the editor (A1). Version/date/status
   // are not snapshotted, so they carry on from the current values; saving then
@@ -206,6 +232,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         ),
         purpose: form.purpose,
         conclusion: form.conclusion,
+        aiProvenance: form.aiProvenance,
       },
     };
     try {
@@ -366,7 +393,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               instruction="the Summary (introduction) section of a software test plan"
               notes={form.summary}
               context={`Test plan title: ${form.title}`}
-              onUse={(v) => set("summary", v)}
+              {...aiProps("summary")}
             />
           </>
         ),
@@ -495,7 +522,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               instruction="the test environment configuration description of a software test plan"
               notes={form.environmentConfig}
               context={`Test plan title: ${form.title}`}
-              onUse={(v) => set("environmentConfig", v)}
+              {...aiProps("environmentConfig")}
             />
             <AreaField
               label={t("testPlan.environmentRequirements")}
@@ -507,7 +534,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               instruction="the hardware and software requirements of a software test plan's test environment"
               notes={form.environmentRequirements}
               context={`Test plan title: ${form.title}`}
-              onUse={(v) => set("environmentRequirements", v)}
+              {...aiProps("environmentRequirements")}
             />
           </>
         ),
@@ -745,7 +772,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               ]
                 .filter(Boolean)
                 .join("\n")}
-              onUse={(v) => set("purpose", v)}
+              {...aiProps("purpose")}
             />
           </>
         ),
@@ -765,7 +792,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               instruction="the Conclusion section (summary and next steps) of a software test plan"
               notes={form.conclusion}
               context={`Test plan title: ${form.title}`}
-              onUse={(v) => set("conclusion", v)}
+              {...aiProps("conclusion")}
             />
           </>
         ),
@@ -989,6 +1016,7 @@ function defaults(t: (k: string) => string): FormState {
     ],
     purpose: "",
     conclusion: "",
+    aiProvenance: {},
   };
 }
 
@@ -1043,6 +1071,7 @@ function applyRevision(base: FormState, title: string, d: TestPlanData): FormSta
     closureCriteria: d.closureCriteria ?? [],
     purpose: d.purpose ?? "",
     conclusion: d.conclusion ?? "",
+    aiProvenance: d.aiProvenance ?? {},
   };
 }
 
@@ -1077,5 +1106,6 @@ function fromPlan(p: TestPlan): FormState {
     closureCriteria: d.closureCriteria ?? [],
     purpose: d.purpose ?? "",
     conclusion: d.conclusion ?? "",
+    aiProvenance: d.aiProvenance ?? {},
   };
 }

@@ -22,12 +22,25 @@ export const CARD_PRIORITIES: CardPriority[] = [
 export interface CardData {
   description?: string;
   labels?: string[];
+  /** Test cases a defect is linked to (traceability matrix, TRZ-02). */
+  testCaseIds?: string[];
 }
+
+/** A test case a defect can be linked to (supplied by the projects module). */
+export interface LinkableCase {
+  id: string;
+  scenarioId: string;
+  title: string;
+}
+
+export const DEFECT_KEY_PREFIX = "DEF-";
 
 export interface PlannerCard {
   id: string;
   projectId: string;
   kind: CardKind;
+  /** Visible id of a defect (DEF-001…), numbered per project; null otherwise. */
+  cardKey?: string | null;
   title: string;
   status: CardStatus;
   priority: CardPriority;

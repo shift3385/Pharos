@@ -45,3 +45,24 @@ export interface AiStatus {
 
 /** The provider the router would use right now (null = none available). */
 export type ResolvedProvider = "online" | "offline" | null;
+
+/** The concrete provider that produced a result (IA-01). */
+export type AiProviderId = "gemini" | "ollama";
+
+/** Where a request goes (or went): provider + model. Shown before sending and
+ *  stored with the result, so the user knows which provider processed what. */
+export interface AiDestination {
+  provider: AiProviderId;
+  model: string;
+}
+
+/** Provenance of AI-generated content (IA-01): it stays "pending review" until
+ *  a person marks it reviewed. Stored per field in the entity's `data`. */
+export interface AiProvenance extends AiDestination {
+  generatedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+
+/** Provenance by field name (e.g. `summary`, `description`, `case`). */
+export type ProvenanceMap = Record<string, AiProvenance>;

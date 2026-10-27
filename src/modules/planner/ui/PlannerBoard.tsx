@@ -20,6 +20,7 @@ import { plannerApi } from "../api/plannerApi";
 import {
   CARD_STATUSES,
   type CardStatus,
+  type LinkableCase,
   type PlannerCard,
 } from "../model/types";
 import { CardEditor } from "./CardEditor";
@@ -42,9 +43,12 @@ function group(cards: PlannerCard[]): Record<CardStatus, PlannerCard[]> {
 export function PlannerBoard({
   projectId,
   ownerId,
+  cases,
 }: {
   projectId: string;
   ownerId: string;
+  /** Test cases a defect can be linked to (supplied by the projects module). */
+  cases?: LinkableCase[];
 }) {
   const { t } = useTranslation();
   const [cards, setCards] = useState<PlannerCard[]>([]);
@@ -104,6 +108,7 @@ export function PlannerBoard({
         ownerId={ownerId}
         card={editing.card}
         initialStatus={editing.status}
+        cases={cases}
         onClose={() => {
           setEditing(null);
           void refresh();
@@ -214,6 +219,7 @@ function Card({
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => onOpen(card)}
       >
+        {card.cardKey && <span className="pl-card__key">{card.cardKey}</span>}
         {card.title}
       </button>
       <div className="pl-card__meta">

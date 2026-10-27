@@ -43,8 +43,21 @@ files (`es`/`en`).
 | Datos de prueba            | `test_data`           | |
 | Notas                      | `notes`               | |
 | Prioridad                  | `priority`            | ISTQB CTFL 5.1.5 |
-| Trazabilidad               | `traceability`        | Basis for v0.0.2 matrix |
+| Trazabilidad (texto libre) | `traceability`        | Free-text "other references" of a case (heredado de v0.0.1); los vínculos estructurados van en `requirement_keys` |
 | Estado (del caso)          | `status`              | draft / reviewed / approved / obsolete |
+| Requisito                  | `requirement` / `Requirement` | Elemento de la base de pruebas (ISTQB 1.4.4), por proyecto (v0.0.2, TRZ-01) |
+| Clave de requisito         | `requirement_key`   | `REQ-001` autonumerada por proyecto; **inmutable** tras crearla; viaja como tag `@REQ-001` |
+| Requisitos vinculados      | `requirement_keys`  | Lista de `requirement_key` en `data` del caso de prueba (vínculo requisito ↔ caso) |
+| Clave de tarjeta           | `card_key`          | `DEF-001`: ID visible de una tarjeta `defect`, numerado por proyecto |
+| Casos vinculados (defecto) | `test_case_ids`     | Ids de los casos a los que se vincula un defecto (en `data` de la tarjeta) |
+| Matriz de trazabilidad     | `traceability_matrix` | Requisito ↔ caso ↔ defecto; módulo `traceability` |
+| Cobertura                  | `coverage`          | `covered` / `not_covered` (un caso `obsolete` no cubre) |
+| Hueco de cobertura         | `coverage_gap`      | requisito sin caso, caso sin requisito, clave desconocida, defecto sin caso |
+| Estado de ejecución        | `execution_status`  | `passed` / `failed` / `blocked` / `not_run` (v0.0.2: siempre `not_run`) |
+| Etiqueta Gherkin           | `tag`               | `@TC-001`; `feature_tags` / `scenario_tags` = tags propios del usuario |
+| Procedencia IA             | `ai_provenance`     | `{ provider, model, generated_at, reviewed_by?, reviewed_at? }` por campo |
+| Proveedor IA               | `provider`          | `gemini` (online) / `ollama` (offline) |
+| IA pendiente de revisión   | `ai_pending`        | Listado de casos: algún contenido IA del caso aún sin revisar |
 | Perfil                     | `profile`             | |
 | Alias / nombre para mostrar| `display_name`        | UI only, never in official documents |
 | Nombre oficial             | `first_name`, `last_name` | Mandatory (spec §3) |
@@ -83,7 +96,8 @@ files (`es`/`en`).
 ## Module identifiers (spec §2)
 
 Folder names in English, kebab-case: `projects`, `test-plan`, `test-cases`,
-`planner`, `templates`, `integrations`, `ai`, `sync-offline`, `admin`, `auth`.
+`planner`, `templates`, `integrations`, `ai`, `sync-offline`, `admin`, `auth`,
+`traceability` (v0.0.2).
 
 ## Design token naming (spec §12.1)
 

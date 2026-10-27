@@ -7,6 +7,7 @@ mod oplog;
 mod planner;
 mod profile;
 mod project;
+mod requirement;
 mod sync;
 mod template;
 mod test_case;
@@ -82,6 +83,12 @@ pub fn run() {
             test_case::test_case_update,
             test_case::test_case_delete,
             test_case::test_case_revisions,
+            requirement::requirement_list,
+            requirement::requirement_get,
+            requirement::requirement_create,
+            requirement::requirement_update,
+            requirement::requirement_delete,
+            requirement::requirement_import,
             planner::planner_list,
             planner::planner_create,
             planner::planner_update,

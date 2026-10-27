@@ -61,6 +61,12 @@ export async function projectHasPlan(projectId: string): Promise<boolean> {
   return (await testPlanApi.byProject(projectId)) != null;
 }
 
+/** Version of a project’s plan (null when it has none), e.g. for the version
+ *  of documents derived from the plan such as the traceability matrix. */
+export async function projectPlanVersion(projectId: string): Promise<string | null> {
+  return (await testPlanApi.byProject(projectId))?.version ?? null;
+}
+
 /** Builds the plan .xlsx buffer for a project (null if it has no plan). */
 export async function planWorkbookByProject(
   projectId: string,

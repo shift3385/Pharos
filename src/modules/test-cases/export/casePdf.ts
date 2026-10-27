@@ -9,6 +9,7 @@ import {
 } from "@shared/export/pdfDoc";
 import type { ExampleTable, Flow } from "../model/types";
 import type { ExportableCase } from "./caseXlsx";
+import { traceabilityText } from "../model/trace";
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -97,7 +98,7 @@ export function caseDocDefinition(c: ExportableCase, t: Translate): TDocumentDef
       margin: [0, 2, 0, 0],
     },
     meta(t("testCase.mappedUseCase"), d.mappedUseCase),
-    meta(t("testCase.traceability"), d.traceability),
+    meta(t("testCase.traceability"), traceabilityText(d)),
     sectionHeader(t("testCase.description")),
     field(d.description ?? ""),
   ];

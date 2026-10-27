@@ -3,14 +3,15 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import { TestPlanPage } from "@modules/test-plan";
-import { TestCasesPage } from "@modules/test-cases";
-import { PlannerBoard } from "@modules/planner";
+import { TestCasesPage, projectTraceableCases, type RequirementOption } from "@modules/test-cases";
+import { PlannerBoard, type LinkableCase } from "@modules/planner";
+import { TraceabilityPage, requirementApi } from "@modules/traceability";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import "./Projects.css";
 
-type Tab = "plan" | "cases" | "planner" | "settings";
-const TABS: Tab[] = ["plan", "cases", "planner", "settings"];
+type Tab = "plan" | "cases" | "traceability" | "planner" | "settings";
+const TABS: Tab[] = ["plan", "cases", "traceability", "planner", "settings"];
 
 /** A project's workspace: its test plan, its test cases and its settings, all
  *  scoped to this project (spec §5.1 — the project is the container). */
@@ -26,6 +27,10 @@ export function ProjectDetail({
   const ownerId = user?.id ?? "";
   const [project, setProject] = useState<Project | null>(null);
   const [tab, setTab] = useState<Tab>("plan");
+  // Cross-module options, loaded by this composing module so test-cases and
+  // planner never depend on traceability (or on each other).
+  const [requirements, setRequirements] = useState<RequirementOption[]>([]);
+  const [linkableCases, setLinkableCases] = useState<LinkableCase[]>([]);
 
   async function refresh() {
     setProject(await projectApi.get(projectId, ownerId));
@@ -34,6 +39,18 @@ export function ProjectDetail({
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, ownerId]);
+
+  useEffect(() => {
+    if (tab === "cases") {
+      void requirementApi.list(projectId).then((list) =>
+        setRequirements(list.map((r) => ({ requirementKey: r.requirementKey, title: r.title }))),
+      );
+    } else if (tab === "planner") {
+      void projectTraceableCases(projectId).then((list) =>
+        setLinkableCases(list.map((c) => ({ id: c.id, scenarioId: c.scenarioId, title: c.title }))),
+      );
+    }
+  }, [tab, projectId]);
 
   if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
 
@@ -71,10 +88,14 @@ export function ProjectDetail({
           projectId={projectId}
           caseIdPrefix={project.caseIdPrefix}
           caseIdDigits={project.caseIdDigits}
+          requirements={requirements}
         />
       )}
+      {tab === "traceability" && (
+        <TraceabilityPage projectId={projectId} projectName={project.name} />
+      )}
       {tab === "planner" && (
-        <PlannerBoard projectId={projectId} ownerId={ownerId} />
+        <PlannerBoard projectId={projectId} ownerId={ownerId} cases={linkableCases} />
       )}
       {tab === "settings" && (
         <ProjectSettings project={project} onSaved={refresh} />

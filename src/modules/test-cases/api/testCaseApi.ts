@@ -1,3 +1,4 @@
+import { hasPendingReview } from "@modules/ai";
 import { pushEntity } from "@modules/sync-offline";
 import type {
   RevisionSummary,
@@ -67,6 +68,7 @@ const browserApi = {
         status: c.status,
         priority: c.priority,
         gherkinLevel: c.data?.gherkinLevel ?? "basic",
+        aiPending: hasPendingReview(c.data?.aiProvenance),
         updatedAt: c.updatedAt,
         revision: c.revision,
       }))

@@ -1,6 +1,8 @@
 // Test plan model (spec §5.1). Scalar/searchable fields live on the plan; the
 // 21-step content lives in `data` so the shape can evolve without a migration.
 
+import type { ProvenanceMap } from "@modules/ai";
+
 export interface ScheduleSprint {
   name: string;
   start: string;
@@ -49,6 +51,8 @@ export interface TestPlanData {
   closureCriteria?: ClosureCriterion[];
   purpose?: string;
   conclusion?: string;
+  /** AI provenance per assisted field (IA-01); the ai module owns the shape. */
+  aiProvenance?: ProvenanceMap;
 }
 
 export type TestPlanStatus = "draft" | "reviewed" | "approved" | "obsolete";
