@@ -2,12 +2,17 @@
 REM ==========================================================================
 REM  Pharos dev launcher.
 REM  Starts the three pieces Pharos needs in development:
-REM    1) Postgres database  (Docker container "pharos-db")
+REM    1) Postgres database  (Docker container "pharos-db", or a native
+REM                          PostgreSQL Windows service when Docker is absent)
 REM    2) Backend API        (Node/Fastify, http://localhost:3000)
 REM    3) Desktop app        (Tauri + Vite)
 REM  Double-click this file, or run  dev.bat  from a terminal.
+REM  With native Postgres, DATABASE_URL in .env must point to its port.
 REM ==========================================================================
 cd /d "%~dp0"
+
+where docker >nul 2>nul
+if errorlevel 1 goto native_db
 
 echo [Pharos] Ensuring Postgres (pharos-db) is running...
 docker compose up -d db
@@ -19,7 +24,21 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+goto start_apps
 
+:native_db
+echo [Pharos] Docker not found; checking the native PostgreSQL service...
+powershell -NoProfile -Command "if (Get-Service postgresql* -ErrorAction SilentlyContinue | Where-Object Status -eq 'Running') { exit 0 } else { exit 1 }"
+if errorlevel 1 (
+  echo.
+  echo [Pharos] ERROR: no running PostgreSQL service found.
+  echo          Start it from services.msc, or install Docker Desktop.
+  echo.
+  pause
+  exit /b 1
+)
+
+:start_apps
 echo [Pharos] Opening backend API window (http://localhost:3000)...
 start "Pharos API" /d "%~dp0server" cmd /k "npm start"
 
@@ -32,5 +51,5 @@ echo    - "Pharos API"  backend on http://localhost:3000
 echo    - "Pharos App"  Vite (1420) + the native window
 echo.
 echo  To stop: close each window (or press Ctrl+C inside it).
-echo  The database keeps running in Docker; run  stop.bat  to stop it too.
+echo  The database keeps running; with Docker, run  stop.bat  to stop it too.
 echo.

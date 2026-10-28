@@ -81,9 +81,12 @@ offline from that cache (spec §4).
 ## Local data (Phase 2+)
 
 The desktop client owns an encrypted local SQLite database (offline source of
-truth, spec §9). SQLCipher is **not** used because its OpenSSL build does not
-compile under the project's GNU toolchain; instead the working database lives in
-memory and is persisted to `pharos.db.enc` as an **AES-256-GCM** blob (pure-Rust
+truth, spec §9). SQLCipher is **not** used because its OpenSSL build did not
+compile under the GNU toolchain the project used until 2026-10-27 (it now builds
+with MSVC; page-level encryption is re-evaluated in backlog item SEC-04). Instead
+the working database lives in memory — loaded and saved with SQLite
+`deserialize`/`serialize`, so the plaintext never touches disk — and is
+persisted atomically to `pharos.db.enc` as an **AES-256-GCM** blob (pure-Rust
 RustCrypto, no OpenSSL). The 32-byte key is stored in the OS keychain. Schema is
 applied by a small forward-only migration runner (`src-tauri/migrations/`).
 
@@ -97,7 +100,8 @@ to localStorage for `vite dev`.
 ## Phase status
 
 - **Phase 0 — Foundations:** complete. Scaffold, modular structure, i18n
-  (es/en), Faro Nocturno theme, native Tauri window (GNU toolchain).
+  (es/en), Faro Nocturno theme, native Tauri window (GNU toolchain at the time; the
+  Rust build is pinned to MSVC since 2026-10-27).
 - **Phase 1 — Backend & auth:** docker-compose + Fastify API, Postgres schema,
   register/login/refresh/logout, client auth UI + offline session.
 - **Phase 2 — Local data & profile:** encrypted SQLite (pure-Rust AES-256-GCM),

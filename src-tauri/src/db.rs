@@ -1,7 +1,7 @@
 //! Local encrypted SQLite (spec §16 Phase 2). The working database lives in
 //! memory; at rest it is persisted to `pharos.db.enc` as an AES-256-GCM blob.
-//! The 32-byte key is kept in the OS keychain. SQLCipher is intentionally not
-//! used because its OpenSSL build does not compile under the GNU toolchain.
+//! The 32-byte key is kept in the OS keychain. SQLCipher was not used because
+//! its OpenSSL build did not compile under the former GNU toolchain (see SEC-04).
 //!
 //! The plaintext image only ever exists in memory: it is moved in and out of
 //! SQLite with `deserialize`/`serialize`. The encrypted file is replaced

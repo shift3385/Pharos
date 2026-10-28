@@ -1,4 +1,6 @@
-# Pin the Tauri (Rust) build to the GNU toolchain. Chosen over MSVC to avoid the
-# multi-GB Visual Studio C++ workload; links self-contained via bundled MinGW.
+# Pin the Tauri (Rust) build to the MSVC toolchain (Visual Studio 2022 C++
+# build tools). It replaced the earlier GNU/MinGW pin, which was chosen only to
+# avoid installing Visual Studio and broke the cdylib link (BFD ld) needed for
+# the mobile build.
 [toolchain]
-channel = "stable-x86_64-pc-windows-gnu"
+channel = "stable-x86_64-pc-windows-msvc"

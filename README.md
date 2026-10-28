@@ -11,13 +11,15 @@ Syllabus v4.0.1.
 
 - **Node.js** ≥ 20 and npm.
 - To build/run the **native Tauri desktop app** on Windows:
-  - **Rust** via rustup with the **GNU** toolchain: `rustup toolchain install
-    stable-x86_64-pc-windows-gnu` (pinned in `src-tauri/rust-toolchain.toml`).
-  - **MinGW-w64** for the `windres` resource compiler: `choco install mingw`.
+  - **Visual Studio 2022** (Community is enough) with the **"Desktop development
+    with C++"** workload (MSVC compiler, linker and Windows SDK).
+  - **Rust** via rustup with the **MSVC** toolchain: `rustup toolchain install
+    stable-x86_64-pc-windows-msvc` (pinned in `src-tauri/rust-toolchain.toml`;
+    rustup installs it on first build).
   - **WebView2** runtime (preinstalled on Windows 11).
-  - GNU tooling can't handle spaces in the build path. If the project lives under
-    a path with spaces, redirect the Cargo `target-dir` to a space-free folder in
-    a local (git-ignored) `.cargo/config.toml`.
+  - Before 2026-10-27 the project pinned the GNU toolchain + MinGW. A local
+    (git-ignored) `.cargo/config.toml` that redirects `target-dir` to a
+    space-free folder is a leftover of that setup; it is harmless with MSVC.
 - The web frontend runs without any of the above via `npm run dev`.
 
 ## Setup
@@ -49,6 +51,12 @@ Pharos has **three parts**, and `npm run tauri dev` starts only the last one:
 | Database | Postgres (Docker container `pharos-db`, port 5433) | `docker compose up -d db` |
 | Backend API | Fastify, http://localhost:3000 | `cd server && npm start` |
 | Desktop app | Tauri + Vite | `npm run tauri dev` |
+
+**Without Docker:** a native PostgreSQL (15 or newer, verified on 18.6) works too.
+Create `pharos_db` and `pharos_test_db`, point `DATABASE_URL` /
+`TEST_DATABASE_URL` in `.env` to its port (the installer default is 5432), and
+`dev.bat` will use the running `postgresql*` Windows service instead of Docker.
+The API applies its migrations on start.
 
 Login/sync talk to the backend API, so the database **and** the API must be up —
 otherwise you get "Could not reach the server" on sign-in.
@@ -85,6 +93,6 @@ If the database is reset, just register a new account from the login screen.
 ## Status
 
 Phase 0 (Foundations) — **complete**. Frontend verified (tests green, runs in
-Vite dev); native Tauri window builds and runs on Windows 11 with the GNU
-toolchain. Progress tracked in `PROGRESO.md` (kept outside this repo, in the
+Vite dev); native Tauri window builds and runs on Windows 11 (GNU toolchain at
+the time; MSVC since 2026-10-27). Progress tracked in `PROGRESO.md` (kept outside this repo, in the
 planning workspace).

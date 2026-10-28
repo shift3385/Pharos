@@ -44,10 +44,10 @@ clave de recuperación; no existe la entidad Requisito ni el modelo Run/Result.
 
 | Versión | Contenido | Criterio de salida |
 |---|---|---|
-| **v0.0.1 (cierre)** | SEC-01..03, CORE-01, SYNC-01/03 (8C), UX-05/06 (Fase 9) | Ningún texto plano en disco; `cargo test` en verde; conflicto simulado visible; instalador limpio en Windows 11 |
+| **v0.0.1 (cierre)** | SEC-01..03, SYNC-01/03 (8C), UX-05/06 (Fase 9) | Ningún texto plano en disco; `cargo test` en verde (logrado con MSVC); conflicto simulado visible; instalador limpio en Windows 11 |
 | **v0.0.2** | TRZ-01..03, IA-01, IA-05 | Matriz requisito→caso exportable a XLSX; `.feature` filtrable por `@TC-xxx` |
 | **v0.0.3** | EJE-01..04, ING-01..05 | Un run manual y uno de Playwright aparecen en la misma matriz |
-| **v0.0.3.x** | SEC-04/05, SYNC-05 | El CLI escribe con la app abierta; paquete `.pharos-bundle` importable |
+| **v0.0.3.x** | CORE-01, SEC-04/05, SYNC-05 | El CLI escribe con la app abierta; paquete `.pharos-bundle` importable |
 | **v0.0.4** | MOB-01, SYNC-04 | Un caso ejecutado en el móvil aparece en el escritorio |
 | **v0.0.5** | INT-01..04, SYNC-02, SYNC-07 | Un PR en GitHub reporta resultados a Pharos |
 | **v0.0.6** | RUN-01..03 | Botón "Ejecutar @TC-001" en local con resultado vinculado |
@@ -68,8 +68,8 @@ Prioridad: **P0** bloquea el hito · **P1** paridad de mercado · **P2** diferen
 | SEC-01 | Abrir/guardar la BD en memoria (`serialize`/`deserialize`), sin `pharos.db.tmp` | P0 | v0.0.1 | **En curso** | — | Nunca aparece un archivo SQLite en claro en el directorio de datos; la BD existente abre |
 | SEC-02 | Escritura atómica: `pharos.db.enc.new` + `sync_all` + `rename` | P0 | v0.0.1 | **En curso** | — | Matar el proceso a mitad del guardado no corrompe `pharos.db.enc` |
 | SEC-03 | Clave de recuperación exportable e importable | P0 | v0.0.1 | Pendiente | SEC-01 | En otro PC, con el `.enc` y la clave, se recuperan los datos |
-| CORE-01 | Extraer `pharos-core` (db, migraciones, repos, oplog) sin dependencia de Tauri | P0 | v0.0.1 | Pendiente | SEC-01/02, SYNC-01/03 | `cargo test` ejecuta en verde en esta máquina |
-| SEC-04 | Spike de cifrado por página bajo GNU: sqlite3mc frente a SQLCipher con OpenSSL vendored | P1 | v0.0.3.x | Pendiente | — | Informe con una opción que compila y su licencia |
+| CORE-01 | Extraer `pharos-core` (db, migraciones, repos, oplog) sin dependencia de Tauri | P1 | v0.0.3.x | Pendiente | SEC-01/02, SYNC-01/03 | El CLI y el escritorio usan el mismo crate; `cargo test -p pharos-core` sin enlazar WebView2. (Ya no bloquea los tests: desde el cambio a MSVC, `cargo test` pasa 28/28.) |
+| SEC-04 | Spike de cifrado por página (con MSVC desde 2026-10-27): sqlite3mc frente a SQLCipher con OpenSSL vendored | P1 | v0.0.3.x | Pendiente | — | Informe con una opción que compila y su licencia |
 | SEC-05 | SQLite en disco con cifrado por página + WAL | P1 | v0.0.3.x | Pendiente | SEC-04, CORE-01 | Guardar no es O(tamaño de la BD); otro proceso escribe con la app abierta |
 | CORE-02 | Test automatizado del keychain (deuda F1) | P2 | v0.0.1 | Pendiente | CORE-01 | Test en verde |
 
