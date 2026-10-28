@@ -1,8 +1,8 @@
 # integrations
 
-External tool integrations (spec §7). **Reserved boundary — future version, not in v0.0.1.**
+External tool integrations (spec §7). **Reserved boundary — future version (Jira: 0.8.0, backlog INT-05).**
 
-Planned scope (post-v0.0.1, JIRA first):
+Planned scope (JIRA first):
 
 - Create/query defects.
 - Sync test cases with Xray/Zephyr.

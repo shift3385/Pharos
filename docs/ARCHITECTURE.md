@@ -1,15 +1,16 @@
-# Pharos — Architecture (v0.0.1 – v0.0.2)
+# Pharos — Architecture (0.1.x)
 
 Pharos is an offline-first desktop QA test-management suite. This document
 records the architecture and the decisions taken, per the spec (source of truth:
 `PROMPT_PHAROS_v0.3.md`, amended 2026-10-27). Work proceeds one phase at a time
 _per track_ (spec §16); the backlog is `docs/ROADMAP.md`. How to install and
-run it: `README.md`.
+run it: `README.md`. Versioning (SemVer, one version for app, Rust core and
+backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`.
 
 ## Stack
 
 - **Client:** Tauri 2 + React 18 + TypeScript + Vite. Target: Windows 11.
-  Tauri 2 is deliberate — its mobile support lets v0.0.4 reuse this codebase.
+  Tauri 2 is deliberate — its mobile support lets the 0.4.0 mobile build reuse this codebase.
   The Rust side builds with the **MSVC** toolchain (`src-tauri/rust-toolchain.toml`).
 - **Local DB (Phase 2+):** SQLite (encrypted) as the offline source of truth.
 - **Backend (Phase 1+):** Node.js + TypeScript (Fastify) + PostgreSQL — a
@@ -40,10 +41,10 @@ Modules with UI sections expose a `*Page` component. Cross-cutting modules:
 `auth` (Phase 1) and `sync-offline` (Phase 8) are implemented; `integrations`
 remains a reserved boundary for Jira (backlog INT-05).
 
-Future modules — manual test execution (v0.0.3), mobile build (v0.0.4) — must
+Future modules — manual test execution (0.2.0), mobile build (0.4.0) — must
 be addable without touching existing modules.
 
-**Traceability (v0.0.2).** `traceability` owns requirements (`REQ-xxx`, stable
+**Traceability (0.1.0).** `traceability` owns requirements (`REQ-xxx`, stable
 keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`,
 `planner` and `test-plan` through their public APIs; none of them imports it.
 `projects` is the composition root: it hands requirement options to
@@ -145,7 +146,7 @@ to localStorage for `vite dev`.
 - **Phases 4–8 and 9A:** implemented — test cases, planner, templates/export,
   AI, oplog + push/pull sync with HLC and the conflict panel (8C), admin hub.
   The rest of Phase 9 (accessibility audit, installer, final docs) is open.
-- **v0.0.2 — Traceability:** requirements, the requirement ↔ case ↔ defect
+- **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
   visible AI provenance. Requirements are not synced yet (backlog SYNC-04).
 - **Roadmap and backlog:** `docs/ROADMAP.md` (replanned 2026-10-26 from the

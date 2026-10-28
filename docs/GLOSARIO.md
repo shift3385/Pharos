@@ -43,9 +43,9 @@ files (`es`/`en`).
 | Datos de prueba            | `test_data`           | |
 | Notas                      | `notes`               | |
 | Prioridad                  | `priority`            | ISTQB CTFL 5.1.5 |
-| Trazabilidad (texto libre) | `traceability`        | Free-text "other references" of a case (heredado de v0.0.1); los vínculos estructurados van en `requirement_keys` |
+| Trazabilidad (texto libre) | `traceability`        | Free-text "other references" of a case (campo original de los casos); los vínculos estructurados van en `requirement_keys` |
 | Estado (del caso)          | `status`              | draft / reviewed / approved / obsolete |
-| Requisito                  | `requirement` / `Requirement` | Elemento de la base de pruebas (ISTQB 1.4.4), por proyecto (v0.0.2, TRZ-01) |
+| Requisito                  | `requirement` / `Requirement` | Elemento de la base de pruebas (ISTQB 1.4.4), por proyecto (0.1.0, TRZ-01) |
 | Clave de requisito         | `requirement_key`   | `REQ-001` autonumerada por proyecto; **inmutable** tras crearla; viaja como tag `@REQ-001` |
 | Requisitos vinculados      | `requirement_keys`  | Lista de `requirement_key` en `data` del caso de prueba (vínculo requisito ↔ caso) |
 | Clave de tarjeta           | `card_key`          | `DEF-001`: ID visible de una tarjeta `defect`, numerado por proyecto |
@@ -53,7 +53,7 @@ files (`es`/`en`).
 | Matriz de trazabilidad     | `traceability_matrix` | Requisito ↔ caso ↔ defecto; módulo `traceability` |
 | Cobertura                  | `coverage`          | `covered` / `not_covered` (un caso `obsolete` no cubre) |
 | Hueco de cobertura         | `coverage_gap`      | requisito sin caso, caso sin requisito, clave desconocida, defecto sin caso |
-| Estado de ejecución        | `execution_status`  | `passed` / `failed` / `blocked` / `not_run` (v0.0.2: siempre `not_run`) |
+| Estado de ejecución        | `execution_status`  | `passed` / `failed` / `blocked` / `not_run` (hasta 0.2.0: siempre `not_run`) |
 | Etiqueta Gherkin           | `tag`               | `@TC-001`; `feature_tags` / `scenario_tags` = tags propios del usuario |
 | Procedencia IA             | `ai_provenance`     | `{ provider, model, generated_at, reviewed_by?, reviewed_at? }` por campo |
 | Proveedor IA               | `provider`          | `gemini` (online) / `ollama` (offline) |
@@ -105,7 +105,7 @@ files (`es`/`en`).
 
 Folder names in English, kebab-case: `projects`, `test-plan`, `test-cases`,
 `planner`, `templates`, `integrations`, `ai`, `sync-offline`, `admin`, `auth`,
-`traceability` (v0.0.2).
+`traceability` (0.1.0).
 
 ## Design token naming (spec §12.1)
 

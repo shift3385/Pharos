@@ -1,6 +1,6 @@
 [package]
 name = "pharos"
-version = "0.0.1"
+version = "0.1.0-alpha.1"
 description = "Pharos — QA test management suite"
 authors = ["Pharos"]
 edition = "2021"
@@ -8,7 +8,7 @@ rust-version = "1.77.2"
 
 # The library is what the desktop and (future) mobile entrypoints call into.
 # Desktop only needs the rlib: the binary (main.rs) links it.
-# The cdylib/staticlib are mobile artifacts (v0.0.4). Under the former GNU
+# The cdylib/staticlib are mobile artifacts (0.4.0). Under the former GNU
 # toolchain, MinGW's BFD ld failed to link them with windows-rs ("export
 # ordinal too large"); the MSVC toolchain does not have that limit. Re-add
 # ["staticlib", "cdylib"] when the mobile target is set up.

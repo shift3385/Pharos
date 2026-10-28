@@ -4,10 +4,12 @@ Desktop QA test-management suite (offline-first). Guides each testing project
 safely to port, following ISO/IEC/IEEE 29119, ISO/IEC 25010 and the ISTQB CTFL
 Syllabus v4.0.1.
 
-> **Current scope:** v0.0.1 (test plans, test cases with Gherkin, templates,
-> local planner, AI assist, offline sync with conflict panel, exports) plus
-> v0.0.2 (requirements and traceability matrix). No test execution yet (v0.0.3).
-> Roadmap and backlog: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Version 0.1.0-alpha.1** — test plans, test cases with Gherkin, templates,
+> local planner, AI assist, offline sync with conflict panel, exports, and
+> requirements with a traceability matrix. No test execution yet (0.2.0).
+> Roadmap and backlog: [`docs/ROADMAP.md`](docs/ROADMAP.md) · changes:
+> [`CHANGELOG.md`](CHANGELOG.md) · versioning policy:
+> [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## How Pharos runs
 
@@ -118,17 +120,19 @@ session.
 
 Frontend (repository root):
 
-| Command                  | Purpose                                         |
-| ------------------------ | ----------------------------------------------- |
-| `npm run dev`            | Vite dev server (web preview) at localhost:1420 |
-| `npm run tauri dev`      | Run the native desktop app (needs Rust)         |
-| `npm run build`          | Type-check + build the frontend                 |
-| `npm run tauri build`    | Build the Windows installer (needs Rust)        |
-| `npm test`               | Run the Vitest suite                            |
-| `npm run typecheck`      | TypeScript, no emit                             |
-| `npm run lint`           | ESLint (0 warnings allowed)                     |
-| `npm run check:licenses` | Fail on GPL/AGPL/SSPL dependencies              |
-| `npm run verify`         | typecheck + lint + licenses + tests             |
+| Command                        | Purpose                                           |
+| ------------------------------ | ------------------------------------------------- |
+| `npm run dev`                  | Vite dev server (web preview) at localhost:1420   |
+| `npm run tauri dev`            | Run the native desktop app (needs Rust)           |
+| `npm run build`                | Type-check + build the frontend                   |
+| `npm run tauri build`          | Build the Windows installer (needs Rust)          |
+| `npm test`                     | Run the Vitest suite                              |
+| `npm run typecheck`            | TypeScript, no emit                               |
+| `npm run lint`                 | ESLint (0 warnings allowed)                       |
+| `npm run check:licenses`       | Fail on GPL/AGPL/SSPL dependencies                |
+| `npm run check:version`        | Fail if the version differs across manifests      |
+| `npm run version:set -- X.Y.Z` | Set the version in every manifest (releases only) |
+| `npm run verify`               | typecheck + lint + licenses + version + tests     |
 
 Backend (`server/`): `npm start`, `npm run dev` (auto-reload), `npm run migrate`,
 `npm test` (needs `pharos_test_db`), `npm run typecheck`.
@@ -145,7 +149,12 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Phases 0–8 of v0.0.1 and v0.0.2 are implemented; Phase 9 (accessibility audit,
-installer, final docs) is open. Detailed progress lives in `PROGRESO.md`
-(outside this repo, in the planning workspace); the backlog lives in
-[`docs/ROADMAP.md`](docs/ROADMAP.md).
+Current version: **0.1.0-alpha.1**. The 0.1.0 milestone (planning and design +
+traceability) is implemented up to Phase 8; Phase 9 (accessibility audit,
+installer, final docs) and SEC-03 are open before 0.1.0 is released. Detailed
+progress lives in `PROGRESO.md` (outside this repo, in the planning workspace);
+the backlog lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+The version is kept in sync across all manifests by `scripts/version.mjs`
+(`npm run check:version`, `npm run version:set -- <version>`); never edit it
+by hand — see [`docs/VERSIONING.md`](docs/VERSIONING.md).
