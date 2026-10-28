@@ -1,15 +1,19 @@
-# Pharos — Architecture (v0.0.1)
+# Pharos — Architecture (v0.0.1 – v0.0.2)
 
 Pharos is an offline-first desktop QA test-management suite. This document
 records the architecture and the decisions taken, per the spec (source of truth:
-`PROMPT_PHAROS_v0.3.md`). Build strictly phase by phase (spec §16).
+`PROMPT_PHAROS_v0.3.md`, amended 2026-10-27). Work proceeds one phase at a time
+_per track_ (spec §16); the backlog is `docs/ROADMAP.md`. How to install and
+run it: `README.md`.
 
 ## Stack
 
 - **Client:** Tauri 2 + React 18 + TypeScript + Vite. Target: Windows 11.
   Tauri 2 is deliberate — its mobile support lets v0.0.4 reuse this codebase.
+  The Rust side builds with the **MSVC** toolchain (`src-tauri/rust-toolchain.toml`).
 - **Local DB (Phase 2+):** SQLite (encrypted) as the offline source of truth.
-- **Backend (Phase 1+):** Node.js + TypeScript + PostgreSQL via docker-compose.
+- **Backend (Phase 1+):** Node.js + TypeScript (Fastify) + PostgreSQL — a
+  native PostgreSQL service or the `docker-compose.yml` container.
 - **AI (Phase 7):** provider-agnostic layer — Gemini (online), Ollama (offline).
 
 ## Modular monolith (spec §2)
@@ -27,13 +31,14 @@ src/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
   shared/      # design system (theme tokens), i18n, ui kit, fonts
   test/        # test utilities (renderWithProviders)
-src-tauri/     # Tauri 2 (Rust) shell
-docs/          # GLOSARIO.md, ARCHITECTURE.md, referencias/
+src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync
+server/        # backend API (Fastify): auth + sync document store
+docs/          # ARCHITECTURE.md, ROADMAP.md, GLOSARIO.md, referencias/, spikes/
 ```
 
-Modules with UI sections in Phase 0 expose a `*Page` component; cross-cutting
-modules (`auth`, `sync-offline`, `integrations`) exist as reserved boundaries
-and are implemented in their phases (1, 8, and a future version respectively).
+Modules with UI sections expose a `*Page` component. Cross-cutting modules:
+`auth` (Phase 1) and `sync-offline` (Phase 8) are implemented; `integrations`
+remains a reserved boundary for Jira (backlog INT-05).
 
 Future modules — manual test execution (v0.0.3), mobile build (v0.0.4) — must
 be addable without touching existing modules.
@@ -71,15 +76,30 @@ hardcoded UI strings. Adding a language = adding a file.
 
 ## Testing
 
-Vitest + React Testing Library + jsdom. The QA tool tests itself: theme
-switching, i18n switching, navigation, and the no-hardcoded-color guard.
+The QA tool tests itself at three levels:
+
+- **Client:** Vitest + React Testing Library + jsdom (`npm run verify` also runs
+  typecheck, lint with 0 warnings and the license check). Includes the
+  no-hardcoded-color guard and a test that filters an exported `.feature` with
+  the real Cucumber tag-expression engine.
+- **Rust core:** `cargo test` in `src-tauri/` (repositories, encryption,
+  atomic persistence, HLC, sync merge). It runs again since the switch to MSVC.
+- **Backend:** Vitest against a real Postgres database (`pharos_test_db`).
 
 ## Backend (Phase 1+)
 
-`server/` is a Fastify + TypeScript app (run via `tsx`), orchestrated with
-`db/` (Postgres, reused `postgres:15-alpine`) by the root `docker-compose.yml`.
-Layered per domain module (`modules/auth`: routes → service → repository), with
-a minimal forward-only SQL migration runner (`db/migrate.ts` + `migrations/`).
+`server/` is a Fastify + TypeScript app (run via `tsx`) backed by PostgreSQL —
+either a native service or the `db` container of the root `docker-compose.yml`
+(`postgres:15-alpine`). Layered per domain module (routes → service/merge →
+repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
+`migrations/`) that the server also runs on start. Modules:
+
+- `auth` — accounts and sessions (below).
+- `sync` — per-user document store for the oplog: `POST /sync/push` (applies
+  deltas, last-write-wins by HLC; rejects a desktop delta whose base revision
+  the server no longer holds and returns its own version as a conflict) and
+  `GET /sync/pull?since=<seq>` (cursor-based). See
+  `src/modules/sync-offline/README.md`.
 
 Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 **JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
@@ -120,15 +140,17 @@ to localStorage for `vite dev`.
   columns + a JSON `data` blob for the 21-field content (spec §5.1); Rust repo +
   Tauri commands (list/get/create/update/delete/revisions); client test-plan
   module — plan list/CRUD, a stepped wizard, a react-day-picker schedule
-  calendar, and a revision-history panel. Note: `cargo test` cannot launch on
-  this machine post-reboot (WebView2/GUI DLL entry-point error); the fix is to
-  split the data layer into a Tauri-free crate (tech debt).
-- **Phases 4–9A:** implemented (test cases, planner, templates/export, AI,
-  oplog + push/pull sync, admin hub). 8C (conflict panel) and the rest of
-  Phase 9 are open.
+  calendar, and a revision-history panel. (The `cargo test` launch failure
+  noted at the time was specific to the GNU toolchain and is gone with MSVC.)
+- **Phases 4–8 and 9A:** implemented — test cases, planner, templates/export,
+  AI, oplog + push/pull sync with HLC and the conflict panel (8C), admin hub.
+  The rest of Phase 9 (accessibility audit, installer, final docs) is open.
+- **v0.0.2 — Traceability:** requirements, the requirement ↔ case ↔ defect
+  matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
+  visible AI provenance. Requirements are not synced yet (backlog SYNC-04).
 - **Roadmap and backlog:** `docs/ROADMAP.md` (replanned 2026-10-26 from the
   state-of-the-art study). Its target direction: Pharos as a local-first
-  *control plane* that orchestrates external frameworks (Playwright, Karate,
+  _control plane_ that orchestrates external frameworks (Playwright, Karate,
   Appium, k6…), ingests their results (JUnit, Cucumber Messages, CTRF, SARIF)
   into a CTRF-inspired Run/Result model, and shares a Tauri-free `pharos-core`
   crate between desktop, CLI and agent.

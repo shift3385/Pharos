@@ -1,12 +1,16 @@
 # auth
 
-Authentication and session domain (spec §4). **Reserved boundary — no logic yet.**
+Authentication and session domain (spec §4). Implemented in Phase 1.
 
-Scope when implemented (Phase 1):
+- **Account login** (email + password) against the backend (`server/`, module
+  `auth`): Argon2id hashing, short-lived JWT access token + opaque refresh
+  token with rotation and revocation.
+- **Offline session:** the last valid session is cached securely (Windows
+  Credential Manager via a Tauri `keyring` command on desktop; `localStorage`
+  in the browser preview), so the desktop app reopens without connectivity.
+  The first sign-in on a machine needs the backend.
 
-- Account login (email + password) against the backend, Argon2id hashing.
-- JWT access token + refresh token with rotation.
-- Securely cached offline session so the app opens without connectivity.
-
-Layers to be added: `domain/`, `application/`, `infrastructure/`, `ui/`.
-Other modules must consume this one only through its public `index.ts`.
+Layout: `api/authApi.ts` (HTTP calls), `model/` (types), `state/`
+(`AuthProvider`, session store, `useAuth`), `ui/AuthScreen.tsx` (sign in /
+sign up). Other modules consume it only through its public `index.ts`
+(e.g. `getAccessToken()` for sync).
