@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
-import { aiAvailable, type TestSuggestion } from "@modules/ai";
+import { useToast } from "@shared/ui/Toast";
+import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai";
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
 import { TestCaseList } from "./TestCaseList";
 import { TestCaseEditor } from "./TestCaseEditor";
 import { SuggestTestsModal } from "./SuggestTestsModal";
 import type { CaseImportResult, DetectionRow } from "../import/caseImport";
+import type { RequirementOption } from "../model/types";
 
 type View = { kind: "list" } | { kind: "edit"; id: string | null };
 
@@ -18,13 +20,17 @@ export function TestCasesPage({
   projectId,
   caseIdPrefix = "ATS_",
   caseIdDigits = 3,
+  requirements = [],
 }: {
   projectId: string;
   caseIdPrefix?: string;
   caseIdDigits?: number;
+  /** The project's requirements (from the traceability module, via projects). */
+  requirements?: RequirementOption[];
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const toast = useToast();
   const [view, setView] = useState<View>({ kind: "list" });
   const [seed, setSeed] = useState<CaseImportResult["input"] | null>(null);
   const [canSuggest, setCanSuggest] = useState(false);
@@ -42,7 +48,7 @@ export function TestCasesPage({
     };
   }, [projectId]);
 
-  async function createSuggested(items: TestSuggestion[]) {
+  async function createSuggested(items: TestSuggestion[], provenance: AiProvenance) {
     const author = user ? `${user.firstName} ${user.lastName}` : "";
     for (const s of items) {
       await testCaseApi.create({
@@ -51,7 +57,8 @@ export function TestCasesPage({
         author,
         caseIdPrefix,
         caseIdDigits,
-        data: { description: s.description, gherkinLevel: "basic" },
+        // The whole case (title + description) came from the AI (IA-01).
+        data: { description: s.description, gherkinLevel: "basic", aiProvenance: { case: provenance } },
       });
     }
     setRefreshKey((k) => k + 1);
@@ -84,6 +91,28 @@ export function TestCasesPage({
     }
   }
 
+  /** Batch .feature export (spec §5.3): one file per case, with its ID and
+   *  requirement tags, zipped under `features/`. */
+  async function exportFeatures() {
+    const [{ projectFeatureFiles }, { default: JSZip }] = await Promise.all([
+      import("../export/batch"),
+      import("jszip"),
+    ]);
+    const files = await projectFeatureFiles(projectId, t);
+    const zip = new JSZip();
+    for (const f of files) zip.file(`features/${f.name}`, f.content);
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "features.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast(t("testCase.exportFeaturesToast", { count: files.length }));
+  }
+
   function applyImport() {
     if (!importState?.result) return;
     setSeed(importState.result.input);
@@ -99,6 +128,7 @@ export function TestCasesPage({
         caseIdDigits={caseIdDigits}
         caseId={view.id}
         seed={view.id === null ? seed : null}
+        requirements={requirements}
         onClose={() => {
           setSeed(null);
           setView({ kind: "list" });
@@ -119,6 +149,7 @@ export function TestCasesPage({
           setView({ kind: "edit", id: null });
         }}
         onImport={() => fileInputRef.current?.click()}
+        onExportFeatures={() => void exportFeatures()}
         onOpen={(id) => setView({ kind: "edit", id })}
       />
       <input

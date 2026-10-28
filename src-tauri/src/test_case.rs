@@ -20,8 +20,18 @@ pub struct TestCaseSummary {
     status: String,
     priority: String,
     gherkin_level: String,
+    /// Some AI-generated content is still pending human review (IA-01).
+    ai_pending: bool,
     updated_at: String,
     revision: i64,
+}
+
+/// True when any entry of `data.aiProvenance` has no `reviewedAt` yet.
+fn ai_pending(data: &Value) -> bool {
+    data.get("aiProvenance")
+        .and_then(Value::as_object)
+        .map(|map| map.values().any(|p| p.get("reviewedAt").map_or(true, Value::is_null)))
+        .unwrap_or(false)
 }
 
 #[derive(Serialize)]
@@ -136,9 +146,11 @@ fn list_cases(conn: &Connection, project_id: &str) -> Result<Vec<TestCaseSummary
     let rows = stmt
         .query_map(params![project_id], |r| {
             let data_str: String = r.get("data")?;
-            let gherkin_level = serde_json::from_str::<Value>(&data_str)
-                .ok()
-                .and_then(|v| v.get("gherkinLevel")?.as_str().map(String::from))
+            let data = serde_json::from_str::<Value>(&data_str).unwrap_or(Value::Null);
+            let gherkin_level = data
+                .get("gherkinLevel")
+                .and_then(Value::as_str)
+                .map(String::from)
                 .unwrap_or_else(|| "basic".to_string());
             Ok(TestCaseSummary {
                 id: r.get("id")?,
@@ -147,6 +159,7 @@ fn list_cases(conn: &Connection, project_id: &str) -> Result<Vec<TestCaseSummary
                 status: r.get("status")?,
                 priority: r.get("priority")?,
                 gherkin_level,
+                ai_pending: ai_pending(&data),
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })
@@ -388,6 +401,20 @@ mod tests {
         let p = project(&c, "ATS_");
         let id = insert_case(&c, &input(&p, Some("ATS_042"), "Case")).unwrap();
         assert_eq!(get_case(&c, &id).unwrap().unwrap().scenario_id, "ATS_042");
+    }
+
+    #[test]
+    fn ai_pending_until_every_field_is_reviewed() {
+        let pending = serde_json::json!({ "aiProvenance": {
+            "description": { "provider": "gemini", "model": "m", "generatedAt": "t" },
+            "case": { "provider": "ollama", "model": "m", "generatedAt": "t", "reviewedAt": "t2" }
+        }});
+        let reviewed = serde_json::json!({ "aiProvenance": {
+            "description": { "provider": "gemini", "model": "m", "generatedAt": "t", "reviewedAt": "t2" }
+        }});
+        assert!(ai_pending(&pending));
+        assert!(!ai_pending(&reviewed));
+        assert!(!ai_pending(&serde_json::json!({})));
     }
 
     #[test]

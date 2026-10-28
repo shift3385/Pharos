@@ -29,6 +29,19 @@ describe("plannerApi browser fallback", () => {
     expect(cards[0].position).toBe(0);
   });
 
+  it("numbers defects DEF-001… per project and keeps the key across edits", async () => {
+    const task = await plannerApi.create(card("p1", "u1", "T"));
+    const d1 = await plannerApi.create({ ...card("p1", "u1", "D1"), kind: "defect" });
+    const other = await plannerApi.create({ ...card("p2", "u1", "D"), kind: "defect" });
+    expect(task?.cardKey).toBeNull();
+    expect(d1?.cardKey).toBe("DEF-001");
+    expect(other?.cardKey).toBe("DEF-001");
+    const promoted = await plannerApi.update(task!.id, { ...card("p1", "u1", "T"), kind: "defect" });
+    expect(promoted?.cardKey).toBe("DEF-002");
+    const back = await plannerApi.update(task!.id, card("p1", "u1", "T"));
+    expect(back?.cardKey).toBe("DEF-002");
+  });
+
   it("stores and reads back an attachment", async () => {
     const a = await plannerApi.create(card("p1", "u1", "Bug"));
     await plannerApi.attachmentAdd(a!.id, "u1", "log.txt", "text/plain", btoa("hello"));

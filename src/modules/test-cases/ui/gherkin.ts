@@ -19,6 +19,84 @@ export function newFlow(name: string): Flow {
 const INDENT_STEP = "    ";
 const INDENT_TABLE = "      ";
 
+// ---- Tags (TRZ-03) ----
+// The case ID travels as a scenario tag (@TC-001) and linked requirements as
+// feature tags (@REQ-014) — never as the scenario name, so renaming a scenario
+// never breaks the link. In a Scenario Outline the ID goes at scenario level.
+// Tags are stored without the leading "@".
+
+/** Turns a value into a valid tag token: no "@" prefix duplicated, no spaces. */
+function tagToken(value: string): string {
+  return value.trim().replace(/^@+/, "").replace(/\s+/g, "_");
+}
+
+/** One tag line (`@a @b`) with the given indent, or nothing when empty. */
+function tagLine(indent: string, tags: (string | undefined)[]): string[] {
+  const tokens: string[] = [];
+  for (const t of tags) {
+    const token = t ? tagToken(t) : "";
+    if (token && !tokens.includes(token)) tokens.push(token);
+  }
+  return tokens.length ? [`${indent}${tokens.map((t) => `@${t}`).join(" ")}`] : [];
+}
+
+/** Tags of a tag line (`@a @b # comment`), or null when the line is not one. */
+function tagsOf(line: string): string[] | null {
+  if (!line.startsWith("@")) return null;
+  return line
+    .replace(/\s#.*$/, "")
+    .split(/\s+/)
+    .filter((t) => t.startsWith("@") && t.length > 1)
+    .map((t) => t.slice(1));
+}
+
+/** What decides which parsed tags are managed by Pharos (the case ID and the
+ *  requirement links) and which are the user's own (`@smoke`). */
+export interface TagContext {
+  scenarioId: string;
+  /** Project case-ID prefix: any `<prefix><digits>` tag is treated as an ID tag. */
+  caseIdPrefix: string;
+  /** Keys of the project's requirements. */
+  knownRequirementKeys: string[];
+  /** Keys the case links today (kept while their tag stays, even if deleted). */
+  linkedRequirementKeys: string[];
+}
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** A tag that is the case ID. It is always re-rendered from the ID field, so
+ *  editing it in the Gherkin view never changes the ID (the field does). */
+export function isCaseIdTag(tag: string, ctx: TagContext): boolean {
+  if (ctx.scenarioId && tag === tagToken(ctx.scenarioId)) return true;
+  return !!ctx.caseIdPrefix && new RegExp(`^${escapeRegExp(tagToken(ctx.caseIdPrefix))}\\d+$`).test(tag);
+}
+
+/** Splits parsed feature tags into requirement links and the user's own tags. */
+export function splitFeatureTags(
+  tags: string[],
+  ctx: TagContext,
+): { requirementKeys: string[]; featureTags: string[] } {
+  const requirementKeys: string[] = [];
+  const featureTags: string[] = [];
+  for (const tag of tags) {
+    const isRequirement =
+      ctx.knownRequirementKeys.includes(tag) || ctx.linkedRequirementKeys.includes(tag);
+    const target = isRequirement ? requirementKeys : featureTags;
+    if (!target.includes(tag)) target.push(tag);
+  }
+  return { requirementKeys, featureTags };
+}
+
+/** The user's own scenario tags (the case ID tag is dropped). */
+export function userScenarioTags(tags: string[], ctx: TagContext): string[] {
+  return tags.filter((t, i) => !isCaseIdTag(t, ctx) && tags.indexOf(t) === i);
+}
+
+/** Feature-level tags of a case: its linked requirements, then the user's own. */
+function featureTagLine(data: Pick<TestCaseData, "requirementKeys" | "featureTags">): string[] {
+  return tagLine("", [...(data.requirementKeys ?? []), ...(data.featureTags ?? [])]);
+}
+
 /** Renders one Gherkin table row: `| a | b |`. */
 function renderRow(cells: string[]): string {
   return `${INDENT_TABLE}| ${cells.map((c) => c.trim()).join(" | ")} |`;
@@ -54,8 +132,10 @@ function scaffoldAdvanced(title: string, data: TestCaseData): string {
 
 /** Renders the structured case as Gherkin. The scenario keyword and the
  *  Examples block depend on the authoring level (spec §5.3 amendment):
- *  precondiciones → Given, pasos → When, resultado esperado → Then. */
-export function toGherkin(title: string, data: TestCaseData): string {
+ *  precondiciones → Given, pasos → When, resultado esperado → Then. The case ID
+ *  (`scenarioId`) is the scenario tag and the linked requirements are feature
+ *  tags (TRZ-03). */
+export function toGherkin(title: string, data: TestCaseData, scenarioId = ""): string {
   const level: GherkinLevel = data.gherkinLevel ?? "basic";
 
   if (level === "advanced") {
@@ -66,7 +146,9 @@ export function toGherkin(title: string, data: TestCaseData): string {
 
   const isOutline = level === "outline";
   const lines: string[] = [];
+  lines.push(...featureTagLine(data));
   lines.push(`Feature: ${title || "Untitled"}`);
+  lines.push(...tagLine("  ", [scenarioId, ...(data.scenarioTags ?? [])]));
   lines.push(`  ${isOutline ? "Scenario Outline" : "Scenario"}: ${title || "Scenario"}`);
 
   const step = (kw: string, first: boolean, text: string) =>
@@ -190,13 +272,15 @@ const step = (lines: string[], kw: string, first: boolean, text: string) =>
   lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
 
 /** Generates the Gherkin of an advanced case from its shared Background and its
- *  flows (each flow is a Scenario, or Scenario Outline when it has Examples). */
+ *  flows (each flow is a Scenario, or Scenario Outline when it has Examples).
+ *  The case is the whole Feature, so every scenario carries the case ID tag. */
 export function flowsToGherkin(
   title: string,
   background: string[],
   flows: Flow[],
+  tags: { scenarioId?: string; requirementKeys?: string[]; featureTags?: string[] } = {},
 ): string {
-  const lines: string[] = [`Feature: ${title || "Untitled"}`];
+  const lines: string[] = [...featureTagLine(tags), `Feature: ${title || "Untitled"}`];
 
   const bg = (background ?? []).map((s) => s.trim()).filter(Boolean);
   if (bg.length) {
@@ -206,7 +290,8 @@ export function flowsToGherkin(
 
   for (const flow of flows) {
     const isOutline = !!flow.examples?.headers.some((h) => h.trim());
-    lines.push("", `  ${isOutline ? "Scenario Outline" : "Scenario"}: ${flow.name || "Escenario"}`);
+    lines.push("", ...tagLine("  ", [tags.scenarioId, ...(flow.tags ?? [])]));
+    lines.push(`  ${isOutline ? "Scenario Outline" : "Scenario"}: ${flow.name || "Escenario"}`);
     (flow.preconditions ?? [])
       .map((s) => s.trim())
       .filter(Boolean)
@@ -227,6 +312,9 @@ export function flowsToGherkin(
 
 export interface ParsedFlows {
   title?: string;
+  /** Raw feature-level tags (see `splitFeatureTags`); each flow's raw scenario
+   *  tags are in `flow.tags` (see `userScenarioTags`). */
+  featureTags: string[];
   background: string[];
   flows: Flow[];
 }
@@ -243,6 +331,8 @@ export function parseFeatureFlows(text: string): ParsedFlows {
     | null = null;
   let mode: "bg" | "given" | "when" | "then" | "examples" | null = null;
   let table: string[][] = [];
+  let featureTags: string[] = [];
+  let pendingTags: string[] = [];
 
   const closeFlow = () => {
     if (!cur) return;
@@ -255,6 +345,7 @@ export function parseFeatureFlows(text: string): ParsedFlows {
       steps: cur.steps,
       expectedResult: cur.then.join("\n"),
       examples: cur.examples,
+      tags: cur.tags,
     });
     cur = null;
   };
@@ -263,26 +354,41 @@ export function parseFeatureFlows(text: string): ParsedFlows {
     const line = raw.trim();
     if (!line) continue;
 
+    const tags = tagsOf(line);
+    if (tags) {
+      pendingTags.push(...tags);
+      continue;
+    }
     const feat = line.match(/^Feature:\s*(.*)$/i);
     if (feat) {
       title = feat[1].trim();
+      featureTags = pendingTags;
+      pendingTags = [];
       continue;
     }
     if (/^Background:/i.test(line)) {
       closeFlow();
       mode = "bg";
+      pendingTags = [];
       continue;
     }
-    if (/^Rule:/i.test(line)) continue;
+    // Rule and Examples tags are not modelled (the flow model has no rules and
+    // one table per flow), so they are dropped rather than misattributed.
+    if (/^Rule:/i.test(line)) {
+      pendingTags = [];
+      continue;
+    }
     const sc = line.match(/^Scenario(?:\s+Outline)?:\s*(.*)$/i);
     if (sc) {
       closeFlow();
-      cur = { id: uid(), name: sc[1].trim(), preconditions: [], steps: [], then: [] };
+      cur = { id: uid(), name: sc[1].trim(), preconditions: [], steps: [], then: [], tags: pendingTags };
+      pendingTags = [];
       mode = null;
       continue;
     }
     if (/^Examples:/i.test(line)) {
       mode = "examples";
+      pendingTags = [];
       continue;
     }
     if (mode === "examples") {
@@ -306,7 +412,7 @@ export function parseFeatureFlows(text: string): ParsedFlows {
     }
   }
   closeFlow();
-  return { title, background, flows };
+  return { title, featureTags, background, flows };
 }
 
 export interface FeatureSummary {
@@ -350,6 +456,10 @@ export function summarizeFeature(text: string): FeatureSummary {
 
 export interface ParsedGherkin {
   title?: string;
+  /** Raw feature-level tags (see `splitFeatureTags`). */
+  featureTags: string[];
+  /** Raw scenario-level tags (see `userScenarioTags`). */
+  scenarioTags: string[];
   preconditions: string[];
   steps: string[];
   expectedResult: string;
@@ -376,23 +486,36 @@ export function fromGherkin(text: string): ParsedGherkin {
   let isOutline = false;
   let section: "given" | "when" | "then" | "examples" | null = null;
   const tableRows: string[][] = [];
+  let featureTags: string[] = [];
+  let scenarioTags: string[] = [];
+  let pendingTags: string[] = [];
 
   for (const raw of text.split("\n")) {
     const line = raw.trim();
     if (!line) continue;
 
+    const tags = tagsOf(line);
+    if (tags) {
+      pendingTags.push(...tags);
+      continue;
+    }
     const feature = line.match(/^Feature:\s*(.*)$/i);
     if (feature) {
       title = feature[1].trim();
+      featureTags = pendingTags;
+      pendingTags = [];
       continue;
     }
     const scenario = line.match(/^Scenario(\s+Outline)?:/i);
     if (scenario) {
       if (scenario[1]) isOutline = true;
+      if (!scenarioTags.length) scenarioTags = pendingTags;
+      pendingTags = [];
       continue;
     }
     if (/^Examples:/i.test(line)) {
       section = "examples";
+      pendingTags = [];
       continue;
     }
     if (section === "examples") {
@@ -421,6 +544,8 @@ export function fromGherkin(text: string): ParsedGherkin {
 
   return {
     title,
+    featureTags,
+    scenarioTags,
     preconditions,
     steps,
     expectedResult: then.join("\n"),

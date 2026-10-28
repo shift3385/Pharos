@@ -24,7 +24,7 @@ src/
   app/         # shell: layout (sidebar/topbar), router, dashboard, nav config
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
-    integrations/  ai/  sync-offline/  admin/  auth/
+    integrations/  ai/  sync-offline/  admin/  auth/  traceability/
   shared/      # design system (theme tokens), i18n, ui kit, fonts
   test/        # test utilities (renderWithProviders)
 src-tauri/     # Tauri 2 (Rust) shell
@@ -35,8 +35,17 @@ Modules with UI sections in Phase 0 expose a `*Page` component; cross-cutting
 modules (`auth`, `sync-offline`, `integrations`) exist as reserved boundaries
 and are implemented in their phases (1, 8, and a future version respectively).
 
-Future modules — traceability matrix (v0.0.2), manual test execution (v0.0.3),
-mobile build (v0.0.4) — must be addable without touching existing modules.
+Future modules — manual test execution (v0.0.3), mobile build (v0.0.4) — must
+be addable without touching existing modules.
+
+**Traceability (v0.0.2).** `traceability` owns requirements (`REQ-xxx`, stable
+keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`,
+`planner` and `test-plan` through their public APIs; none of them imports it.
+`projects` is the composition root: it hands requirement options to
+`test-cases` and linkable cases to `planner` as props, so the module graph stays
+acyclic. The link itself lives in the case (`data.requirementKeys`) so it is
+revisioned and synced with the case, and travels as Gherkin tags (`@REQ-xxx` on
+the Feature, `@<case id>` on each Scenario — never the scenario name).
 
 ## Design system — "Faro Nocturno" (spec §12.1)
 

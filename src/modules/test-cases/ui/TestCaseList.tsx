@@ -11,6 +11,7 @@ export function TestCaseList({
   onSuggest,
   onNew,
   onImport,
+  onExportFeatures,
   onOpen,
 }: {
   projectId: string;
@@ -18,6 +19,8 @@ export function TestCaseList({
   onSuggest: () => void;
   onNew: () => void;
   onImport: () => void;
+  /** Exports every case of the project as tagged .feature files (ZIP). */
+  onExportFeatures: () => void;
   onOpen: (id: string) => void;
 }) {
   const { t } = useTranslation();
@@ -58,6 +61,14 @@ export function TestCaseList({
           <button className="tc-list-import" type="button" onClick={onImport}>
             {t("testCase.import.button")}
           </button>
+          <button
+            className="tc-list-import"
+            type="button"
+            onClick={onExportFeatures}
+            disabled={cases.length === 0}
+          >
+            {t("testCase.exportFeatures")}
+          </button>
           <button className="tp__new" type="button" onClick={onNew}>
             {t("testCase.new")}
           </button>
@@ -82,6 +93,9 @@ export function TestCaseList({
                   <span className={`tc-list__level tc-list__level--${c.gherkinLevel}`}>
                     {t(`testCase.level.${c.gherkinLevel}.name`)}
                   </span>
+                  {c.aiPending && (
+                    <span className="ai-prov ai-prov--compact">{t("ai.provenance.short")}</span>
+                  )}
                 </span>
                 <span className="tp__item-meta">
                   {t(`testCase.priorityLabel.${c.priority}`)} ·{" "}

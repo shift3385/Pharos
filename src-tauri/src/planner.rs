@@ -14,6 +14,7 @@ use crate::oplog;
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
+const DEFECT_KEY_PREFIX: &str = "DEF-";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -21,6 +22,8 @@ pub struct PlannerCard {
     id: String,
     project_id: String,
     kind: String,
+    /// Visible id of a defect (DEF-001…), numbered per project; None otherwise.
+    card_key: Option<String>,
     title: String,
     status: String,
     priority: String,
@@ -71,6 +74,7 @@ fn map_card(row: &rusqlite::Row) -> rusqlite::Result<PlannerCard> {
         id: row.get("id")?,
         project_id: row.get("project_id")?,
         kind: row.get("kind")?,
+        card_key: row.get("card_key")?,
         title: row.get("title")?,
         status: row.get("status")?,
         priority: row.get("priority")?,
@@ -90,7 +94,7 @@ fn list_cards(
 ) -> Result<Vec<PlannerCard>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, project_id, kind, title, status, priority, position, data, \
+            "SELECT id, project_id, kind, card_key, title, status, priority, position, data, \
              created_at, updated_at, revision FROM planner_cards \
              WHERE project_id = ?1 AND owner_id = ?2 AND deleted_at IS NULL \
              ORDER BY position, created_at",
@@ -105,7 +109,7 @@ fn list_cards(
 
 fn get_card(conn: &Connection, id: &str, owner_id: &str) -> Result<Option<PlannerCard>, String> {
     conn.query_row(
-        "SELECT id, project_id, kind, title, status, priority, position, data, \
+        "SELECT id, project_id, kind, card_key, title, status, priority, position, data, \
          created_at, updated_at, revision FROM planner_cards \
          WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
         params![id, owner_id],
@@ -159,8 +163,52 @@ fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, St
         ],
     )
     .map_err(|e| e.to_string())?;
+    ensure_defect_key(conn, &id)?;
     oplog::record(conn, "planner_card", &id, "upsert", "{}", 1, &input.owner_id)?;
     Ok(id)
+}
+
+/// Next defect key within a project: highest `DEF-` suffix + 1, counting
+/// soft-deleted cards too so a key is never reused (the matrix shows it).
+fn next_defect_key(conn: &Connection, project_id: &str) -> Result<String, String> {
+    let mut stmt = conn
+        .prepare("SELECT card_key FROM planner_cards WHERE project_id = ?1 AND card_key IS NOT NULL")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map(params![project_id], |r| r.get::<_, String>(0))
+        .map_err(|e| e.to_string())?;
+    let mut max: u64 = 0;
+    for row in rows {
+        let key = row.map_err(|e| e.to_string())?;
+        if let Some(n) = key.strip_prefix(DEFECT_KEY_PREFIX).and_then(|s| s.parse::<u64>().ok()) {
+            max = max.max(n);
+        }
+    }
+    Ok(format!("{DEFECT_KEY_PREFIX}{:03}", max + 1))
+}
+
+/// Gives a defect its key the first time it is a defect (on create, or when a
+/// task is re-classified). The key is kept afterwards, even if the kind changes.
+fn ensure_defect_key(conn: &Connection, id: &str) -> Result<(), String> {
+    let row: Option<(String, String, Option<String>)> = conn
+        .query_row(
+            "SELECT project_id, kind, card_key FROM planner_cards WHERE id = ?1",
+            params![id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    if let Some((project_id, kind, None)) = row {
+        if kind == "defect" {
+            let key = next_defect_key(conn, &project_id)?;
+            conn.execute(
+                "UPDATE planner_cards SET card_key = ?2 WHERE id = ?1",
+                params![id, key],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<(), String> {
@@ -179,6 +227,7 @@ fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<
         ],
     )
     .map_err(|e| e.to_string())?;
+    ensure_defect_key(conn, id)?;
     oplog::record(conn, "planner_card", id, "upsert", "{}", 0, &input.owner_id)?;
     Ok(())
 }
@@ -392,6 +441,21 @@ mod tests {
         assert_eq!(cards[1].position, 1);
         // Another user sees nothing.
         assert_eq!(list_cards(&c, "p1", "user-2").unwrap().len(), 0);
+    }
+
+    #[test]
+    fn defects_get_sequential_keys_and_tasks_none() {
+        let c = conn();
+        let task = insert_card(&c, &input("task", "T", None)).unwrap();
+        let d1 = insert_card(&c, &input("defect", "D1", None)).unwrap();
+        let d2 = insert_card(&c, &input("defect", "D2", None)).unwrap();
+        let key = |id: &str| get_card(&c, id, OWNER).unwrap().unwrap().card_key;
+        assert_eq!(key(&task), None);
+        assert_eq!(key(&d1).as_deref(), Some("DEF-001"));
+        assert_eq!(key(&d2).as_deref(), Some("DEF-002"));
+        // Re-classifying a task as a defect gives it the next key.
+        update_card(&c, &task, &input("defect", "T", None)).unwrap();
+        assert_eq!(key(&task).as_deref(), Some("DEF-003"));
     }
 
     #[test]

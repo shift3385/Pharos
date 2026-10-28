@@ -5,6 +5,7 @@ import type {
   PlannerCard,
   PlannerCardInput,
 } from "../model/types";
+import { DEFECT_KEY_PREFIX } from "../model/types";
 
 function isTauri(): boolean {
   return (
@@ -41,6 +42,18 @@ function saveAtt(a: StoredAttachment[]) {
   localStorage.setItem(ATT_KEY, JSON.stringify(a));
 }
 
+/** Next defect key of a project (mirrors the Rust numbering; the fallback
+ *  hard-deletes cards, so here a deleted defect's key can be reused). */
+function nextDefectKey(cards: PlannerCard[], projectId: string): string {
+  let max = 0;
+  for (const c of cards) {
+    if (c.projectId !== projectId || !c.cardKey?.startsWith(DEFECT_KEY_PREFIX)) continue;
+    const n = Number(c.cardKey.slice(DEFECT_KEY_PREFIX.length));
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return `${DEFECT_KEY_PREFIX}${String(max + 1).padStart(3, "0")}`;
+}
+
 const browserApi = {
   async list(projectId: string, ownerId: string): Promise<PlannerCard[]> {
     return loadAll()
@@ -63,6 +76,7 @@ const browserApi = {
       projectId: input.projectId,
       ownerId: input.ownerId,
       kind: input.kind,
+      cardKey: input.kind === "defect" ? nextDefectKey(all, input.projectId) : null,
       title: input.title,
       status,
       priority: input.priority ?? "medium",
@@ -82,6 +96,9 @@ const browserApi = {
     all[idx] = {
       ...all[idx],
       kind: input.kind,
+      cardKey:
+        all[idx].cardKey ??
+        (input.kind === "defect" ? nextDefectKey(all, all[idx].projectId) : null),
       title: input.title,
       priority: input.priority ?? all[idx].priority,
       data: input.data,
@@ -179,3 +196,8 @@ export const plannerApi = {
       ? invoke("planner_attachment_delete", { id })
       : browserApi.attachmentDelete(id),
 };
+
+/** Defect cards of a project (for the traceability matrix). */
+export async function projectDefects(projectId: string, ownerId: string): Promise<PlannerCard[]> {
+  return (await plannerApi.list(projectId, ownerId)).filter((c) => c.kind === "defect");
+}

@@ -1,6 +1,8 @@
 // Test case model (spec §5.3 + ISTQB attributes). Scalars are columns on the
 // case; the rest lives in `data`.
 
+import type { ProvenanceMap } from "@modules/ai";
+
 // Gherkin authoring level chosen when creating a case (spec §5.3 amendment):
 //  - basic:    Feature/Scenario + Given/When/Then/And (one simple scenario)
 //  - outline:  + Scenario Outline + Examples (one parametrized scenario)
@@ -24,6 +26,8 @@ export interface Flow {
   steps: string[];
   expectedResult: string;
   examples?: ExampleTable;
+  /** The user’s own scenario tags (without "@"), e.g. smoke. */
+  tags?: string[];
 }
 
 export interface TestCaseData {
@@ -47,9 +51,37 @@ export interface TestCaseData {
   // Raw Gherkin feature kept for the editable Gherkin view of advanced cases.
   featureSource?: string;
   // ISTQB attributes not covered by the template (spec §5.3)
+  // Linked requirements (stable keys, e.g. REQ-014) — the structured trace to
+  // the test basis (v0.0.2, TRZ-01/02). Exported as @REQ-014 feature tags.
+  requirementKeys?: string[];
+  // The user’s own Gherkin tags (without "@"), kept on round-trip (TRZ-03).
+  // The case ID tag and the requirement tags are derived, never stored here.
+  featureTags?: string[];
+  scenarioTags?: string[];
+  // Free-text "other references" kept from v0.0.1 (links, story ids…).
   traceability?: string;
   dataRequirements?: string;
   environmentRequirements?: string;
+  // AI provenance (IA-01): `description` when drafted with AI, `case` when the
+  // whole case came from "Suggest tests". Shown until a person reviews it.
+  aiProvenance?: ProvenanceMap;
+}
+
+/** A requirement a case can link to (supplied by the projects module, so
+ *  test-cases does not depend on the traceability module). */
+export interface RequirementOption {
+  requirementKey: string;
+  title: string;
+}
+
+/** The slice of a case the traceability matrix needs. */
+export interface TraceableCase {
+  id: string;
+  scenarioId: string;
+  title: string;
+  status: string;
+  requirementKeys: string[];
+  traceability: string;
 }
 
 export type TestCaseStatus = "draft" | "reviewed" | "approved" | "obsolete";
@@ -78,6 +110,8 @@ export interface TestCaseSummary {
   status: string;
   priority: string;
   gherkinLevel: GherkinLevel;
+  /** Some AI-generated content of the case is still pending review (IA-01). */
+  aiPending?: boolean;
   updatedAt: string;
   revision: number;
 }

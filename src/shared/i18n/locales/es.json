@@ -44,10 +44,21 @@
     "test": "Probar conexión",
     "testing": "Probando…",
     "mode": "Modo",
-    "modeOption": { "auto": "Automático", "online": "Online", "offline": "Offline" },
+    "modeOption": {
+      "auto": "Automático",
+      "online": "Online",
+      "offline": "Offline"
+    },
     "using": "En uso",
-    "provider": { "online": "Gemini (online)", "offline": "Ollama (offline)", "none": "Ninguno" },
-    "tab": { "online": "IA online", "offline": "IA offline" },
+    "provider": {
+      "online": "Gemini (online)",
+      "offline": "Ollama (offline)",
+      "none": "Ninguno"
+    },
+    "tab": {
+      "online": "IA online",
+      "offline": "IA offline"
+    },
     "keyStatus": "Clave de API",
     "keyConfigured": "Configurada",
     "keyNotSet": "No configurada",
@@ -83,6 +94,16 @@
       "unavailable": "Configura la IA (Gemini u Ollama) para usar esto",
       "empty": "La IA no devolvió texto.",
       "error": "No se pudo redactar con la IA"
+    },
+    "provenance": {
+      "pending": "IA · pendiente de revisión",
+      "short": "IA · sin revisar",
+      "markReviewed": "Marcar revisado",
+      "destination": "Se enviará a {{source}}",
+      "provider": {
+        "gemini": "Gemini (en la nube)",
+        "ollama": "Ollama (local)"
+      }
     }
   },
   "sync": {
@@ -134,8 +155,14 @@
     "title": "Administración",
     "subtitle": "Plantillas, motor de IA y ajustes de la aplicación.",
     "section": {
-      "templates": { "title": "Plantillas", "desc": "Repositorio de plantillas de plan y caso." },
-      "ai": { "title": "Motor de IA", "desc": "Proveedor online (Gemini) y offline (Ollama)." }
+      "templates": {
+        "title": "Plantillas",
+        "desc": "Repositorio de plantillas de plan y caso."
+      },
+      "ai": {
+        "title": "Motor de IA",
+        "desc": "Proveedor online (Gemini) y offline (Ollama)."
+      }
     },
     "saved": "Ajustes guardados",
     "settings": {
@@ -234,7 +261,8 @@
       "plan": "Plan de pruebas",
       "cases": "Casos de prueba",
       "settings": "Ajustes",
-      "planner": "Planificador"
+      "planner": "Planificador",
+      "traceability": "Trazabilidad"
     },
     "deleteTitle": "Eliminar proyecto",
     "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
@@ -555,7 +583,18 @@
       "remove": "Quitar flujo",
       "altUpper": "FLUJO ALTERNO"
     },
-    "savedToast": "Caso de prueba guardado"
+    "savedToast": "Caso de prueba guardado",
+    "otherReferences": "Otras referencias (texto libre)",
+    "requirements": {
+      "label": "Requisitos vinculados",
+      "unknown": "Requisito desconocido",
+      "remove": "Quitar {{key}}",
+      "none": "Este proyecto aún no tiene requisitos (pestaña Trazabilidad).",
+      "add": "Vincular un requisito…"
+    },
+    "exportFeatures": "Exportar .feature (todos)",
+    "exportFeaturesToast": "{{count}} archivos .feature exportados en features.zip",
+    "aiPendingCase": "Caso generado por IA"
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",
@@ -628,6 +667,125 @@
       "high": "Alta",
       "critical": "Crítica"
     },
-    "savedToast": "Tarjeta guardada"
+    "savedToast": "Tarjeta guardada",
+    "linkedCases": "Casos de prueba vinculados",
+    "noCasesToLink": "Este proyecto aún no tiene casos de prueba."
+  },
+  "traceability": {
+    "title": "Trazabilidad",
+    "priorityLabel": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta"
+    },
+    "requirement": {
+      "listTitle": "Requisitos",
+      "listSubtitle": "La base de pruebas del proyecto. Cada requisito tiene un ID estable que los casos enlazan y que viaja como tag @REQ-xxx en el .feature.",
+      "new": "Nuevo requisito",
+      "newTitle": "Nuevo requisito",
+      "editTitle": "Editar requisito",
+      "empty": "Aún no hay requisitos. Crea uno o importa un CSV.",
+      "key": "ID de requisito",
+      "keyAuto": "Automático (REQ-001…)",
+      "keyHint": "Déjalo vacío para numerarlo solo. No se puede cambiar después.",
+      "keyLocked": "El ID es estable y no se puede cambiar.",
+      "keyInvalid": "Solo letras, números y - _ . : (sin espacios).",
+      "keyDuplicate": "Ya existe un requisito con este ID.",
+      "title": "Título",
+      "description": "Descripción",
+      "priority": "Prioridad",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "savedToast": "Requisito guardado",
+      "saveError": "No se pudo guardar el requisito",
+      "delete": "Eliminar {{key}}",
+      "deleteTitle": "Eliminar requisito",
+      "deleteWarning": "Se eliminará {{key}}. Su ID no se reutilizará: los casos que lo enlazan lo mostrarán como requisito desconocido.",
+      "deleteConfirm": "Eliminar",
+      "deletedToast": "{{key}} eliminado"
+    },
+    "import": {
+      "button": "Importar CSV",
+      "title": "Importar requisitos desde CSV",
+      "noTitleColumn": "No se encontró una columna de título (Título, Requisito, Descripción…).",
+      "columns": "Columnas detectadas",
+      "column": {
+        "requirementKey": "ID",
+        "title": "Título",
+        "description": "Descripción",
+        "priority": "Prioridad"
+      },
+      "more": "…y {{count}} filas más",
+      "summary": "Se crearán {{creates}} requisitos y se actualizarán {{updates}} con el mismo ID.",
+      "issue": {
+        "noTitle": "Línea {{line}}: sin título, se omite.",
+        "invalidKey": "Línea {{line}}: el ID «{{value}}» no es válido como tag, se omite.",
+        "duplicateKey": "Línea {{line}}: el ID «{{value}}» se repite en el archivo, se omite."
+      },
+      "confirm": "Importar {{count}}",
+      "importing": "Importando…",
+      "doneToast": "Importados: {{created}} nuevos, {{updated}} actualizados",
+      "error": "No se pudo importar el CSV"
+    },
+    "view": {
+      "requirements": "Requisitos",
+      "matrix": "Matriz"
+    },
+    "matrix": {
+      "title": "Matriz de trazabilidad",
+      "subtitle": "Requisito ↔ caso de prueba ↔ defecto, con los huecos de cobertura a la vista.",
+      "exportXlsx": "Exportar .xlsx",
+      "exporting": "Exportando…",
+      "exportedToast": "Matriz exportada: {{name}}",
+      "total": "Requisitos",
+      "covered": "Cubiertos",
+      "uncovered": "Sin cubrir",
+      "coverage": "Cobertura",
+      "onlyGaps": "Mostrar solo huecos",
+      "empty": "Aún no hay requisitos. Créalos en la vista Requisitos.",
+      "col": {
+        "requirement": "ID requisito",
+        "requirementTitle": "Requisito",
+        "priority": "Prioridad",
+        "case": "ID caso",
+        "caseTitle": "Caso de prueba",
+        "execution": "Estado de prueba",
+        "defects": "Defectos",
+        "coverage": "Cobertura",
+        "notes": "Comentarios"
+      }
+    },
+    "execution": {
+      "passed": "Pasa",
+      "failed": "Falla",
+      "blocked": "Bloqueado",
+      "not_run": "No ejecutado"
+    },
+    "coverage": {
+      "covered": "Cubierto",
+      "not_covered": "No cubierto"
+    },
+    "note": {
+      "obsoleteCase": "Caso obsoleto (no cubre)",
+      "openDefect": "Defecto abierto"
+    },
+    "gaps": {
+      "title": "Huecos de trazabilidad",
+      "casesWithoutRequirement": "Casos sin requisito",
+      "unknownLinks": "Casos que enlazan un requisito inexistente",
+      "defectsWithoutCase": "Defectos sin caso vinculado"
+    },
+    "migrate": {
+      "button": "Migrar trazabilidad ({{count}})",
+      "title": "Migrar el campo Trazabilidad a vínculos",
+      "intro": "Estos IDs aparecen en el texto libre de Trazabilidad de tus casos. Elige cuáles convertir en vínculos con requisitos. El texto libre se conserva.",
+      "include": "Incluir",
+      "found": "Encontrado",
+      "willCreate": "se creará",
+      "summary": "Se crearán {{links}} vínculos y {{creates}} requisitos nuevos.",
+      "apply": "Aplicar",
+      "applying": "Aplicando…",
+      "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
+    }
   }
 }

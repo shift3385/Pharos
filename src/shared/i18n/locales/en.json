@@ -44,10 +44,21 @@
     "test": "Test connection",
     "testing": "Testing…",
     "mode": "Mode",
-    "modeOption": { "auto": "Automatic", "online": "Online", "offline": "Offline" },
+    "modeOption": {
+      "auto": "Automatic",
+      "online": "Online",
+      "offline": "Offline"
+    },
     "using": "Using",
-    "provider": { "online": "Gemini (online)", "offline": "Ollama (offline)", "none": "None" },
-    "tab": { "online": "Online AI", "offline": "Offline AI" },
+    "provider": {
+      "online": "Gemini (online)",
+      "offline": "Ollama (offline)",
+      "none": "None"
+    },
+    "tab": {
+      "online": "Online AI",
+      "offline": "Offline AI"
+    },
     "keyStatus": "API key",
     "keyConfigured": "Configured",
     "keyNotSet": "Not set",
@@ -83,6 +94,16 @@
       "unavailable": "Configure AI (Gemini or Ollama) to use this",
       "empty": "The AI returned no text.",
       "error": "Could not draft with AI"
+    },
+    "provenance": {
+      "pending": "AI · pending review",
+      "short": "AI · not reviewed",
+      "markReviewed": "Mark reviewed",
+      "destination": "Will be sent to {{source}}",
+      "provider": {
+        "gemini": "Gemini (cloud)",
+        "ollama": "Ollama (local)"
+      }
     }
   },
   "sync": {
@@ -134,8 +155,14 @@
     "title": "Administration",
     "subtitle": "Templates, AI engine and application settings.",
     "section": {
-      "templates": { "title": "Templates", "desc": "Repository of plan and case templates." },
-      "ai": { "title": "AI engine", "desc": "Online (Gemini) and offline (Ollama) providers." }
+      "templates": {
+        "title": "Templates",
+        "desc": "Repository of plan and case templates."
+      },
+      "ai": {
+        "title": "AI engine",
+        "desc": "Online (Gemini) and offline (Ollama) providers."
+      }
     },
     "saved": "Settings saved",
     "settings": {
@@ -234,7 +261,8 @@
       "plan": "Test plan",
       "cases": "Test cases",
       "settings": "Settings",
-      "planner": "Planner"
+      "planner": "Planner",
+      "traceability": "Traceability"
     },
     "deleteTitle": "Delete project",
     "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
@@ -555,7 +583,18 @@
       "remove": "Remove flow",
       "altUpper": "ALTERNATIVE FLOW"
     },
-    "savedToast": "Test case saved"
+    "savedToast": "Test case saved",
+    "otherReferences": "Other references (free text)",
+    "requirements": {
+      "label": "Linked requirements",
+      "unknown": "Unknown requirement",
+      "remove": "Remove {{key}}",
+      "none": "This project has no requirements yet (Traceability tab).",
+      "add": "Link a requirement…"
+    },
+    "exportFeatures": "Export .feature (all)",
+    "exportFeaturesToast": "{{count}} .feature files exported in features.zip",
+    "aiPendingCase": "AI-generated case"
   },
   "dashboard": {
     "title": "Welcome to Pharos",
@@ -628,6 +667,125 @@
       "high": "High",
       "critical": "Critical"
     },
-    "savedToast": "Card saved"
+    "savedToast": "Card saved",
+    "linkedCases": "Linked test cases",
+    "noCasesToLink": "This project has no test cases yet."
+  },
+  "traceability": {
+    "title": "Traceability",
+    "priorityLabel": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "requirement": {
+      "listTitle": "Requirements",
+      "listSubtitle": "The project test basis. Each requirement has a stable ID that cases link to and that travels as an @REQ-xxx tag in the .feature.",
+      "new": "New requirement",
+      "newTitle": "New requirement",
+      "editTitle": "Edit requirement",
+      "empty": "No requirements yet. Create one or import a CSV.",
+      "key": "Requirement ID",
+      "keyAuto": "Automatic (REQ-001…)",
+      "keyHint": "Leave it empty to number it automatically. It cannot be changed later.",
+      "keyLocked": "The ID is stable and cannot be changed.",
+      "keyInvalid": "Only letters, digits and - _ . : (no spaces).",
+      "keyDuplicate": "A requirement with this ID already exists.",
+      "title": "Title",
+      "description": "Description",
+      "priority": "Priority",
+      "save": "Save",
+      "saving": "Saving…",
+      "savedToast": "Requirement saved",
+      "saveError": "The requirement could not be saved",
+      "delete": "Delete {{key}}",
+      "deleteTitle": "Delete requirement",
+      "deleteWarning": "{{key}} will be deleted. Its ID will not be reused: cases linking it will show it as an unknown requirement.",
+      "deleteConfirm": "Delete",
+      "deletedToast": "{{key}} deleted"
+    },
+    "import": {
+      "button": "Import CSV",
+      "title": "Import requirements from CSV",
+      "noTitleColumn": "No title column found (Title, Requirement, Description…).",
+      "columns": "Detected columns",
+      "column": {
+        "requirementKey": "ID",
+        "title": "Title",
+        "description": "Description",
+        "priority": "Priority"
+      },
+      "more": "…and {{count}} more rows",
+      "summary": "{{creates}} requirements will be created and {{updates}} with the same ID updated.",
+      "issue": {
+        "noTitle": "Line {{line}}: no title, skipped.",
+        "invalidKey": "Line {{line}}: ID “{{value}}” is not valid as a tag, skipped.",
+        "duplicateKey": "Line {{line}}: ID “{{value}}” repeats in the file, skipped."
+      },
+      "confirm": "Import {{count}}",
+      "importing": "Importing…",
+      "doneToast": "Imported: {{created}} new, {{updated}} updated",
+      "error": "The CSV could not be imported"
+    },
+    "view": {
+      "requirements": "Requirements",
+      "matrix": "Matrix"
+    },
+    "matrix": {
+      "title": "Traceability matrix",
+      "subtitle": "Requirement ↔ test case ↔ defect, with coverage gaps in plain sight.",
+      "exportXlsx": "Export .xlsx",
+      "exporting": "Exporting…",
+      "exportedToast": "Matrix exported: {{name}}",
+      "total": "Requirements",
+      "covered": "Covered",
+      "uncovered": "Not covered",
+      "coverage": "Coverage",
+      "onlyGaps": "Show gaps only",
+      "empty": "No requirements yet. Create them in the Requirements view.",
+      "col": {
+        "requirement": "Requirement ID",
+        "requirementTitle": "Requirement",
+        "priority": "Priority",
+        "case": "Case ID",
+        "caseTitle": "Test case",
+        "execution": "Test status",
+        "defects": "Defects",
+        "coverage": "Coverage",
+        "notes": "Comments"
+      }
+    },
+    "execution": {
+      "passed": "Pass",
+      "failed": "Fail",
+      "blocked": "Blocked",
+      "not_run": "Not run"
+    },
+    "coverage": {
+      "covered": "Covered",
+      "not_covered": "Not covered"
+    },
+    "note": {
+      "obsoleteCase": "Obsolete case (does not cover)",
+      "openDefect": "Open defect"
+    },
+    "gaps": {
+      "title": "Traceability gaps",
+      "casesWithoutRequirement": "Cases without a requirement",
+      "unknownLinks": "Cases linking a requirement that does not exist",
+      "defectsWithoutCase": "Defects without a linked case"
+    },
+    "migrate": {
+      "button": "Migrate traceability ({{count}})",
+      "title": "Migrate the Traceability field to links",
+      "intro": "These IDs appear in the free-text Traceability of your cases. Choose which become links to requirements. The free text is kept.",
+      "include": "Include",
+      "found": "Found",
+      "willCreate": "will be created",
+      "summary": "{{links}} links and {{creates}} new requirements will be created.",
+      "apply": "Apply",
+      "applying": "Applying…",
+      "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
+    }
   }
 }

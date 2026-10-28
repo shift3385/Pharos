@@ -17,8 +17,12 @@ export function caseToExportable(c: TestCase, t: Translate): ExportableCase {
   const flows = d.flows ?? fromFeature.flows;
   const gherkin =
     level === "advanced"
-      ? flowsToGherkin(c.title, background, flows)
-      : toGherkin(c.title, d);
+      ? flowsToGherkin(c.title, background, flows, {
+          scenarioId: c.scenarioId,
+          requirementKeys: d.requirementKeys,
+          featureTags: d.featureTags,
+        })
+      : toGherkin(c.title, d, c.scenarioId);
   return {
     scenarioId: c.scenarioId,
     title: c.title,
@@ -34,6 +38,26 @@ export function caseToExportable(c: TestCase, t: Translate): ExportableCase {
     altFlowLabel: t("testCase.flow.altUpper"),
     examplesLabel: t("testCase.examples.title"),
   };
+}
+
+/** File name of a case's .feature: its ID, made safe for any file system. */
+export function featureFileName(scenarioId: string): string {
+  return `${scenarioId.replace(/[^\p{L}\p{N}_.-]+/gu, "_") || "scenario"}.feature`;
+}
+
+/** Every case of a project as a .feature file with its ID and requirement
+ *  tags (TRZ-03), for the batch export (spec §5.3 "en lote por proyecto"). */
+export async function projectFeatureFiles(
+  projectId: string,
+  t: Translate,
+): Promise<{ name: string; content: string }[]> {
+  const out: { name: string; content: string }[] = [];
+  for (const s of await testCaseApi.list(projectId)) {
+    const full = await testCaseApi.get(s.id);
+    if (!full) continue;
+    out.push({ name: featureFileName(full.scenarioId), content: caseToExportable(full, t).gherkin });
+  }
+  return out;
 }
 
 /** Number of cases in a project (cheap metadata query for progress totals). */

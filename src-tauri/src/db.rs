@@ -62,6 +62,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0009_sync_state.sql"),
     ),
     (
+        "0010_traceability.sql",
+        include_str!("../migrations/0010_traceability.sql"),
+    ),
+    (
         "0011_sync_conflicts.sql",
         include_str!("../migrations/0011_sync_conflicts.sql"),
     ),

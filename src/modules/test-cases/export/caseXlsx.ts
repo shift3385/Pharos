@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import templateEs from "../assets/case-template-es.xlsx?url";
 import templateEn from "../assets/case-template-en.xlsx?url";
 import type { ExampleTable, Flow, TestCaseData } from "../model/types";
+import { traceabilityText } from "../model/trace";
 
 export interface ExportableCase {
   scenarioId: string;
@@ -93,7 +94,7 @@ export async function buildCaseXlsx(
   set("D6", c.version);
   set("B8", d.caseDate);
   set("D8", c.priority);
-  set("B10", d.traceability);
+  set("B10", traceabilityText(d));
   set("B12", c.author);
   set("D12", c.status);
   set("B15", d.description);

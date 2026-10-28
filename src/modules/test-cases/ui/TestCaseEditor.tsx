@@ -9,6 +9,7 @@ import type {
   ExampleTable,
   Flow,
   GherkinLevel,
+  RequirementOption,
   RevisionSummary,
   TestCase,
   TestCaseData,
@@ -19,8 +20,17 @@ import { ExamplesTable } from "./ExamplesTable";
 import { FlowsEditor } from "./FlowsEditor";
 import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
+import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
-import { AssistButton, aiAvailable } from "@modules/ai";
+import {
+  AssistButton,
+  ProvenanceBadge,
+  aiAvailable,
+  markReviewed,
+  withProvenance,
+  type AiProvenance,
+  type ProvenanceMap,
+} from "@modules/ai";
 import {
   detectLevel,
   flowsToGherkin,
@@ -29,7 +39,10 @@ import {
   newFlow,
   parseFeatureFlows,
   placeholdersIn,
+  splitFeatureTags,
   toGherkin,
+  userScenarioTags,
+  type TagContext,
 } from "./gherkin";
 import "./TestCase.css";
 
@@ -53,9 +66,13 @@ interface FormState {
   acceptanceCriteria: string[];
   testData: string;
   notes: string;
+  requirementKeys: string[];
+  featureTags: string[];
+  scenarioTags: string[];
   traceability: string;
   dataRequirements: string;
   environmentRequirements: string;
+  aiProvenance: ProvenanceMap;
   examples: ExampleTable;
   background: string[];
   flows: Flow[];
@@ -80,9 +97,13 @@ function emptyForm(): FormState {
     acceptanceCriteria: [],
     testData: "",
     notes: "",
+    requirementKeys: [],
+    featureTags: [],
+    scenarioTags: [],
     traceability: "",
     dataRequirements: "",
     environmentRequirements: "",
+    aiProvenance: {},
     examples: { headers: [], rows: [] },
     background: [],
     flows: [],
@@ -109,9 +130,13 @@ function fromCase(c: TestCase): FormState {
     acceptanceCriteria: d.acceptanceCriteria ?? [],
     testData: d.testData ?? "",
     notes: d.notes ?? "",
+    requirementKeys: d.requirementKeys ?? [],
+    featureTags: d.featureTags ?? [],
+    scenarioTags: d.scenarioTags ?? [],
     traceability: d.traceability ?? "",
     dataRequirements: d.dataRequirements ?? "",
     environmentRequirements: d.environmentRequirements ?? "",
+    aiProvenance: d.aiProvenance ?? {},
     examples: d.examples ?? { headers: [], rows: [] },
     background:
       d.background ??
@@ -142,6 +167,9 @@ function withPlaceholderColumns(f: FormState): ExampleTable {
 function formToData(f: FormState): TestCaseData {
   return {
     gherkinLevel: f.gherkinLevel,
+    requirementKeys: f.requirementKeys,
+    featureTags: f.featureTags,
+    scenarioTags: f.scenarioTags,
     preconditions: f.preconditions,
     steps: f.steps,
     expectedResult: f.expectedResult,
@@ -153,11 +181,15 @@ function formToData(f: FormState): TestCaseData {
 }
 
 /** Advanced cases generate their Gherkin from the flows; others from the flat
- *  fields. */
+ *  fields. Both carry the case ID and requirement tags (TRZ-03). */
 function buildGherkin(f: FormState): string {
   return f.gherkinLevel === "advanced"
-    ? flowsToGherkin(f.title, f.background, f.flows)
-    : toGherkin(f.title, formToData(f));
+    ? flowsToGherkin(f.title, f.background, f.flows, {
+        scenarioId: f.scenarioId,
+        requirementKeys: f.requirementKeys,
+        featureTags: f.featureTags,
+      })
+    : toGherkin(f.title, formToData(f), f.scenarioId);
 }
 
 export function TestCaseEditor({
@@ -166,6 +198,7 @@ export function TestCaseEditor({
   caseIdDigits = 3,
   caseId,
   seed = null,
+  requirements = [],
   onClose,
 }: {
   projectId: string;
@@ -174,6 +207,8 @@ export function TestCaseEditor({
   caseId: string | null;
   /** Prefilled content from an .xlsx import (new case, skips the level picker). */
   seed?: ImportedCase | null;
+  /** The project's requirements, for the requirement links picker. */
+  requirements?: RequirementOption[];
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -247,24 +282,38 @@ export function TestCaseEditor({
   // Gherkin edits: the level is derived from the code so the case is always in a
   // level that can represent it. Advanced parses into flows + background;
   // basic/outline parse back into the flat fields.
+  // Tags: the case ID tag is ignored (the ID field owns it), feature tags that
+  // are requirement keys become links, and every other tag is kept as typed.
+  const tagContext = (f: FormState): TagContext => ({
+    scenarioId: f.scenarioId,
+    caseIdPrefix,
+    knownRequirementKeys: requirements.map((r) => r.requirementKey),
+    linkedRequirementKeys: f.requirementKeys,
+  });
   const onGherkinInput = (text: string) => {
     setGherkin(text);
     const detected = detectLevel(text);
     if (detected === "advanced") {
       const parsed = parseFeatureFlows(text);
-      setForm((f) => ({
-        ...f,
-        gherkinLevel: "advanced",
-        title: parsed.title ?? f.title,
-        background: parsed.background,
-        flows: parsed.flows,
-        featureSource: text,
-      }));
+      setForm((f) => {
+        const ctx = tagContext(f);
+        return {
+          ...f,
+          ...splitFeatureTags(parsed.featureTags, ctx),
+          gherkinLevel: "advanced",
+          title: parsed.title ?? f.title,
+          background: parsed.background,
+          flows: parsed.flows.map((fl) => ({ ...fl, tags: userScenarioTags(fl.tags ?? [], ctx) })),
+          featureSource: text,
+        };
+      });
       return;
     }
     const parsed = fromGherkin(text);
     setForm((f) => ({
       ...f,
+      ...splitFeatureTags(parsed.featureTags, tagContext(f)),
+      scenarioTags: userScenarioTags(parsed.scenarioTags, tagContext(f)),
       gherkinLevel: detected,
       background: [],
       flows: [],
@@ -276,6 +325,10 @@ export function TestCaseEditor({
       examples: parsed.examples ?? f.examples,
     }));
   };
+
+  // A person marks AI content as reviewed (IA-01).
+  const review = (field: string) =>
+    setForm((f) => ({ ...f, aiProvenance: markReviewed(f.aiProvenance, field, user?.id ?? "") }));
 
   const pickLevel = (chosen: GherkinLevel) => {
     const f = { ...emptyForm(), gherkinLevel: chosen, title: t("testCase.defaultTitle") };
@@ -327,9 +380,13 @@ export function TestCaseEditor({
       acceptanceCriteria: clean(form.acceptanceCriteria),
       testData: form.testData,
       notes: form.notes,
+      requirementKeys: form.requirementKeys,
+      featureTags: form.featureTags,
+      scenarioTags: form.scenarioTags,
       traceability: form.traceability,
       dataRequirements: form.dataRequirements,
       environmentRequirements: form.environmentRequirements,
+      aiProvenance: form.aiProvenance,
     };
     if (form.gherkinLevel === "outline") data.examples = cleanExamples(form.examples);
     if (form.gherkinLevel === "advanced") {
@@ -388,6 +445,7 @@ export function TestCaseEditor({
         testData: form.testData,
         notes: form.notes,
         examples: form.examples,
+        requirementKeys: form.requirementKeys,
         traceability: form.traceability,
       },
     };
@@ -408,7 +466,7 @@ export function TestCaseEditor({
   }
 
   function exportFeature() {
-    const content = toGherkin(form.title, formToData(form));
+    const content = buildGherkin(form);
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -482,8 +540,13 @@ export function TestCaseEditor({
           onChange={(e) => update({ mappedUseCase: e.target.value })}
         />
       </label>
+      <RequirementLinks
+        value={form.requirementKeys}
+        options={requirements}
+        onChange={(v) => update({ requirementKeys: v })}
+      />
       <label className="tp-field">
-        <span>{t("testCase.traceability")}</span>
+        <span>{t("testCase.otherReferences")}</span>
         <input
           value={form.traceability}
           onChange={(e) => update({ traceability: e.target.value })}
@@ -502,7 +565,11 @@ export function TestCaseEditor({
         instruction="the Description of a software test case (what it verifies)"
         notes={form.description}
         context={`Test case title: ${form.title}`}
-        onUse={(v) => update({ description: v })}
+        provenance={form.aiProvenance.description}
+        onUse={(v: string, p: AiProvenance) =>
+          update({ description: v, aiProvenance: withProvenance(form.aiProvenance, "description", p) })
+        }
+        onReview={() => review("description")}
       />
     </>
   );
@@ -678,6 +745,13 @@ export function TestCaseEditor({
       </header>
 
       {notice && <p className="tc-notice">✓ {notice}</p>}
+
+      {form.aiProvenance.case && (
+        <div className="tc-ai-case">
+          <span>{t("testCase.aiPendingCase")}</span>
+          <ProvenanceBadge provenance={form.aiProvenance.case} onReview={() => review("case")} />
+        </div>
+      )}
 
       {revisions !== null && (
         <div className="tp-revs-panel">

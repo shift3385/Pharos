@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { suggestTests, type TestSuggestion } from "@modules/ai";
+import {
+  suggestTests,
+  type AiProvenance,
+  type TestSuggestion,
+} from "@modules/ai";
 import { planContextForProject } from "@modules/test-plan";
 import "@shared/ui/ConfirmDialog.css";
 import "./TestCase.css";
@@ -16,12 +20,17 @@ export function SuggestTestsModal({
   onClose,
 }: {
   projectId: string;
-  onCreate: (items: TestSuggestion[]) => Promise<void>;
+  /** Creates the chosen cases, marked as AI-generated with this provenance. */
+  onCreate: (
+    items: TestSuggestion[],
+    provenance: AiProvenance,
+  ) => Promise<void>;
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const [phase, setPhase] = useState<Phase>("loading");
   const [items, setItems] = useState<TestSuggestion[]>([]);
+  const [provenance, setProvenance] = useState<AiProvenance | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -29,10 +38,12 @@ export function SuggestTestsModal({
     (async () => {
       try {
         const context = await planContextForProject(projectId);
-        const list = context
+        const result = context
           ? await suggestTests(context, i18n.resolvedLanguage ?? "es")
-          : [];
+          : null;
+        const list = result?.value ?? [];
         if (cancelled) return;
+        setProvenance(result?.provenance ?? null);
         setItems(list);
         setSelected(new Set(list.map((_, i) => i)));
         setPhase(list.length ? "list" : "empty");
@@ -55,13 +66,22 @@ export function SuggestTestsModal({
   }
 
   async function create() {
+    if (!provenance) return;
     setPhase("creating");
-    await onCreate(items.filter((_, i) => selected.has(i)));
+    await onCreate(
+      items.filter((_, i) => selected.has(i)),
+      provenance,
+    );
     onClose();
   }
 
   return (
-    <div className="cd-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+    <div
+      className="cd-overlay"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
       <div className="cd tc-suggest" onClick={(e) => e.stopPropagation()}>
         <h3 className="cd__title">{t("testCase.suggest.title")}</h3>
 
@@ -70,19 +90,36 @@ export function SuggestTestsModal({
         ) : phase === "empty" ? (
           <p className="cd__msg">{t("testCase.suggest.empty")}</p>
         ) : (
-          <ul className="tc-suggest__list">
-            {items.map((s, i) => (
-              <li key={i} className="tc-suggest__row">
-                <label className="tc-suggest__check">
-                  <input type="checkbox" checked={selected.has(i)} onChange={() => toggle(i)} />
-                  <span>
-                    <span className="tc-suggest__name">{s.title}</span>
-                    {s.description && <span className="tc-suggest__desc">{s.description}</span>}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
+          <>
+            {provenance && (
+              <p className="tp-field__hint">
+                {t("ai.provenance.pending")} ·{" "}
+                {t(`ai.provenance.provider.${provenance.provider}`)} ·{" "}
+                {provenance.model}
+              </p>
+            )}
+            <ul className="tc-suggest__list">
+              {items.map((s, i) => (
+                <li key={i} className="tc-suggest__row">
+                  <label className="tc-suggest__check">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(i)}
+                      onChange={() => toggle(i)}
+                    />
+                    <span>
+                      <span className="tc-suggest__name">{s.title}</span>
+                      {s.description && (
+                        <span className="tc-suggest__desc">
+                          {s.description}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
 
         <div className="cd__actions">
