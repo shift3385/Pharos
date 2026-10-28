@@ -72,6 +72,14 @@ files (`es`/`en`).
 | Token de acceso            | `access_token`        | JWT (HS256), corto |
 | Token de refresco          | `refresh_token`       | opaco; hash SHA-256 en BD, con rotación |
 | Sesión                     | `session`             | `{ accessToken, refreshToken, user }` |
+| Journal de cambios         | `oplog`               | un delta por mutación local; `synced_at` NULL = pendiente (§9) |
+| Delta                      | `delta` / `Delta`     | estado completo de una entidad (o tombstone) que se envía en el push |
+| Reloj lógico híbrido (HLC) | `hlc`                 | `<wall_ms:15>-<counter:5>-<device_id>`; orden de texto = orden del reloj (SYNC-01) |
+| Dispositivo                | `device_id` / `deviceId` | id de la instalación (o del navegador); desempate final del HLC |
+| Revisión base              | `base_revision` / `baseRevision`, `base_hlc` / `baseHlc` | versión sobre la que se hizo el cambio local; el servidor la compara para detectar conflictos |
+| Base de sincronización     | `sync_base`           | última versión de cada entidad que coincide con el servidor |
+| Conflicto de sincronización| `sync_conflict` / `SyncConflict` | cambio local pendiente y cambio remoto divergentes desde la misma base (8C) |
+| Resolución                 | `resolution`          | `local` (conservar la mía) / `remote` (usar la del servidor); SYNC-02 podrá añadir `merged` |
 
 > API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 

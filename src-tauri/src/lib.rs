@@ -3,6 +3,7 @@
 
 mod ai;
 mod db;
+mod hlc;
 mod oplog;
 mod planner;
 mod profile;
@@ -106,7 +107,9 @@ pub fn run() {
             sync::oplog_mark_synced,
             sync::apply_remote,
             sync::sync_cursor_get,
-            sync::sync_cursor_set
+            sync::sync_cursor_set,
+            sync::sync_conflicts_list,
+            sync::sync_conflict_resolve
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

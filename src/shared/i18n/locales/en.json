@@ -93,7 +93,42 @@
     "syncing": "Syncing…",
     "doneToast": "Synced (↑{{pushed}} · ↓{{pulled}})",
     "needsAuth": "Sign in to sync",
-    "failed": "Could not sync (server unavailable?)"
+    "failed": "Could not sync (server unavailable?)",
+    "conflicts": "Conflicts ({{count}})",
+    "conflictToast": "Synced with {{count}} conflict(s) to review",
+    "conflict": {
+      "review": "Review conflicts",
+      "title": "Sync conflicts",
+      "intro": "These items were edited on this computer and on another device since the last sync. Choose which version to keep; the other one is discarded.",
+      "onlyChanged": "Show only the fields that differ",
+      "empty": "No pending conflicts.",
+      "close": "Close",
+      "field": "Field",
+      "local": "My version (this computer)",
+      "remote": "Server version",
+      "state": "State",
+      "deleted": "Deleted",
+      "exists": "Exists",
+      "keepLocal": "Keep mine",
+      "keepRemote": "Use the server's",
+      "resolved": "Conflict resolved",
+      "failed": "Could not resolve the conflict",
+      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case" },
+      "fields": {
+        "title": "Title",
+        "name": "Name",
+        "version": "Version",
+        "status": "Status",
+        "priority": "Priority",
+        "author": "Author",
+        "scenarioId": "Scenario ID",
+        "projectId": "Project",
+        "ownerId": "Owner",
+        "planDate": "Plan date",
+        "caseIdPrefix": "ID prefix",
+        "caseIdDigits": "ID digits"
+      }
+    }
   },
   "admin": {
     "title": "Administration",

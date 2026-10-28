@@ -93,7 +93,42 @@
     "syncing": "Sincronizando…",
     "doneToast": "Sincronizado (↑{{pushed}} · ↓{{pulled}})",
     "needsAuth": "Inicia sesión para sincronizar",
-    "failed": "No se pudo sincronizar (¿servidor no disponible?)"
+    "failed": "No se pudo sincronizar (¿servidor no disponible?)",
+    "conflicts": "Conflictos ({{count}})",
+    "conflictToast": "Sincronizado con {{count}} conflicto(s) por revisar",
+    "conflict": {
+      "review": "Revisar conflictos",
+      "title": "Conflictos de sincronización",
+      "intro": "Estos elementos se editaron en este equipo y en otro dispositivo desde la última sincronización. Elige qué versión conservar; la otra se descarta.",
+      "onlyChanged": "Mostrar solo los campos distintos",
+      "empty": "No hay conflictos pendientes.",
+      "close": "Cerrar",
+      "field": "Campo",
+      "local": "Mi versión (este equipo)",
+      "remote": "Versión del servidor",
+      "state": "Estado",
+      "deleted": "Eliminado",
+      "exists": "Existe",
+      "keepLocal": "Conservar la mía",
+      "keepRemote": "Usar la del servidor",
+      "resolved": "Conflicto resuelto",
+      "failed": "No se pudo resolver el conflicto",
+      "entity": { "project": "Proyecto", "test_plan": "Plan de pruebas", "test_case": "Caso de prueba" },
+      "fields": {
+        "title": "Título",
+        "name": "Nombre",
+        "version": "Versión",
+        "status": "Estado",
+        "priority": "Prioridad",
+        "author": "Autor",
+        "scenarioId": "ID de escenario",
+        "projectId": "Proyecto",
+        "ownerId": "Propietario",
+        "planDate": "Fecha del plan",
+        "caseIdPrefix": "Prefijo de IDs",
+        "caseIdDigits": "Dígitos de IDs"
+      }
+    }
   },
   "admin": {
     "title": "Administración",

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
-import { syncNow, syncPendingCount, syncStatus } from "../api/syncApi";
+import { syncLocalState, syncNow, syncStatus } from "../api/syncApi";
 import { hydrateFromBackend } from "../web/webSync";
+import { ConflictPanel } from "./ConflictPanel";
 import "./SyncIndicator.css";
 
 function isTauri(): boolean {
@@ -11,13 +12,15 @@ function isTauri(): boolean {
 }
 
 /** Topbar status indicator (spec §9): Synced / Pending changes (n) / Offline,
- *  with a "Sync now" button. Phase 8A shows local pending count from the oplog;
- *  the backend push/pull (button action) lands in 8B. */
+ *  with a "Sync now" button, plus Conflicts (n) that opens the conflict panel
+ *  (Phase 8C). Counts come from the local oplog. */
 export function SyncIndicator() {
   const { t } = useTranslation();
   const toast = useToast();
   const { status: authStatus } = useAuth();
   const [pending, setPending] = useState(0);
+  const [conflicts, setConflicts] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [online, setOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true,
   );
@@ -27,7 +30,12 @@ export function SyncIndicator() {
   authedRef.current = authStatus === "authenticated";
 
   async function refresh() {
-    setPending(await syncPendingCount().catch(() => 0));
+    const s = await syncLocalState().catch(() => ({
+      pending: 0,
+      conflicts: 0,
+    }));
+    setPending(s.pending);
+    setConflicts(s.conflicts);
   }
 
   useEffect(() => {
@@ -69,20 +77,26 @@ export function SyncIndicator() {
     await refresh();
   }
 
-  const status = syncStatus(online, pending);
+  const status = syncStatus(online, pending, conflicts);
   const label =
     status === "offline"
       ? t("sync.offline")
-      : status === "pending"
-        ? t("sync.pending", { count: pending })
-        : t("sync.synced");
+      : status === "conflicts"
+        ? t("sync.conflicts", { count: conflicts })
+        : status === "pending"
+          ? t("sync.pending", { count: pending })
+          : t("sync.synced");
 
   async function runSync() {
     setSyncing(true);
     try {
       if (isTauri()) {
-        const { pushed, pulled } = await syncNow();
-        toast(t("sync.doneToast", { pushed, pulled }));
+        const { pushed, pulled, conflicts: found } = await syncNow();
+        toast(
+          found > 0
+            ? t("sync.conflictToast", { count: found })
+            : t("sync.doneToast", { pushed, pulled }),
+        );
       } else {
         const pulled = await hydrateFromBackend();
         toast(t("sync.doneToast", { pushed: 0, pulled }));
@@ -107,10 +121,31 @@ export function SyncIndicator() {
     <div className="sync" title={label}>
       <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
       <span className="sync__label">{label}</span>
+      {conflicts > 0 && (
+        <button
+          type="button"
+          className="sync__btn"
+          onClick={() => setPanelOpen(true)}
+        >
+          {t("sync.conflict.review")}
+        </button>
+      )}
       {status !== "offline" && (
-        <button type="button" className="sync__btn" onClick={() => void runSync()} disabled={syncing}>
+        <button
+          type="button"
+          className="sync__btn"
+          onClick={() => void runSync()}
+          disabled={syncing}
+        >
           {syncing ? t("sync.syncing") : t("sync.now")}
         </button>
+      )}
+      {panelOpen && (
+        <ConflictPanel
+          onClose={() => setPanelOpen(false)}
+          // Push the kept version right away when online.
+          onResolved={() => void autoSync()}
+        />
       )}
     </div>
   );

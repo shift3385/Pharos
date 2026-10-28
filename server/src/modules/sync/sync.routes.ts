@@ -1,11 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import type { TokenService } from "../auth/tokens";
 import { makeRequireAuth } from "../auth/middleware";
-import type { SyncRepository } from "./sync.repository";
+import type { RemoteDoc, SyncRepository } from "./sync.repository";
 import { pullSchema, pushSchema } from "./sync.schemas";
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
- *  user; conflicts resolve per-entity last-write-wins by revision. */
+ *  user. A delta whose base the server no longer holds (or that loses
+ *  last-write-wins by HLC) is rejected and its server version returned in
+ *  `conflicts`, for the client's conflict panel. */
 export function syncRoutes(
   app: FastifyInstance,
   deps: { repo: SyncRepository; tokens: TokenService },
@@ -13,12 +15,16 @@ export function syncRoutes(
   const { repo, tokens } = deps;
   const requireAuth = makeRequireAuth(tokens);
 
-  // Push local pending deltas; server keeps the newest revision per entity.
+  // Push local pending deltas; rejected ones come back as conflicts.
   app.post("/sync/push", { preHandler: requireAuth }, async (req, reply) => {
     const { deltas } = pushSchema.parse(req.body);
     const userId = req.userId as string;
-    for (const d of deltas) await repo.apply(userId, d);
-    return reply.send({ accepted: deltas.length });
+    const conflicts: RemoteDoc[] = [];
+    for (const d of deltas) {
+      const res = await repo.apply(userId, d);
+      if (!res.accepted) conflicts.push(res.current);
+    }
+    return reply.send({ accepted: deltas.length - conflicts.length, conflicts });
   });
 
   // Pull everything changed after the client's cursor.
