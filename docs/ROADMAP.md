@@ -79,7 +79,7 @@ Prioridad: **P0** bloquea el hito · **P1** paridad de mercado · **P2** diferen
 | SYNC-03 | Panel de conflictos (Fase 8C) | P0 | v0.0.1 | Pendiente | — | Un conflicto simulado aparece y se resuelve a mano |
 | SYNC-01 | HLC en el oplog (hora de pared + contador + dispositivo) | P1 | v0.0.1 | Pendiente | — | Test: LWW determinista con relojes desfasados |
 | SYNC-02 | LWW por campo (§9) en lugar de por entidad | P1 | v0.0.5 | **Decisión pendiente** | SYNC-01 | El 2026-08-13 se decidió LWW por entidad; la spec y el estudio piden por campo |
-| SYNC-04 | Sincronizar planner y plantillas (8B-2); adjuntos por hash en MinIO/S3 | P1 | v0.0.4 | Pendiente | SYNC-03 | Una tarjeta con adjunto creada en escritorio se ve en la web |
+| SYNC-04 | Sincronizar planner, plantillas y requisitos (8B-2; hoy el sync solo cubre proyecto/plan/caso); adjuntos por hash en MinIO/S3 | P1 | v0.0.4 | Pendiente | SYNC-03 | Una tarjeta con adjunto creada en escritorio se ve en la web |
 | SYNC-05 | Paquetes de oplog firmados `.pharos-bundle` (modo aislado) | P2 | v0.0.3.x | Pendiente | SYNC-01 | Exportar e importar por USB entre dos PCs sin servidor |
 | SYNC-06 | Job de purga de soft-deleted coordinado con el oplog (la preferencia ya existe en Admin) | P1 | v0.0.1 | Pendiente | — | Lo purgado no "resucita" tras un pull |
 | SYNC-07 | RBAC por workspace + audit log + activar `project_members` | P1 | v0.0.5 | Pendiente | SYNC-02 | Un auditor ve el proyecto y no puede editarlo |
