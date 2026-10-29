@@ -8,7 +8,8 @@ export interface AdminSettings {
   backgroundImage: string;
   /** Background visibility, 0–100 (lower = more transparent). */
   backgroundOpacity: number;
-  /** Days a soft-deleted row is kept before automatic purge (task #37). */
+  /** Days a soft-deleted row is kept on this device before the purge removes
+   *  it for good (SYNC-06, `sync-offline/api/purgeApi.ts`). */
   retentionDays: number;
   /** Preferred download folder for exports (applied in a later update). */
   downloadLocation: string;

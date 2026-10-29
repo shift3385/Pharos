@@ -3,19 +3,14 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {
-      "0017": "A2 · purge (SYNC-06)"
-    },
+    "reserved": {},
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013"
     }
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {
-      "0005": "A1 spare, unused; A2 may take it for key blocks instead of 0006, otherwise retire it when 0006 ships",
-      "0006": "A2 · key blocks (DAT-01)"
-    },
+    "reserved": {},
     "retired": {}
   }
 }
