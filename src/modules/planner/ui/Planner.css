@@ -222,3 +222,15 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
 }
+
+/* Keyboard handle of a card (UX-05): Space picks it up, arrows move it. */
+.pl-card__handle {
+  padding: 0 var(--space-1);
+  font-size: var(--fs-ui);
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: grab;
+}

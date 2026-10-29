@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEventHandler } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   closestCorners,
   useDroppable,
   useSensor,
   useSensors,
+  type Announcements,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -53,9 +56,28 @@ export function PlannerBoard({
   const { t } = useTranslation();
   const [cards, setCards] = useState<PlannerCard[]>([]);
   const [editing, setEditing] = useState<EditView | null>(null);
+  // The mouse drags the whole card; the keyboard moves it with the card's
+  // handle (Space, arrows across rows and columns, Space), announced in the UI
+  // language (WCAG 2.1.1, UX-05).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  const titleOf = (id: unknown) => cards.find((c) => c.id === id)?.title ?? "";
+  const placeOf = (id: unknown) => {
+    const key = String(id);
+    if ((CARD_STATUSES as string[]).includes(key)) return t(`planner.column.${key}`);
+    const card = cards.find((c) => c.id === key);
+    return card ? t(`planner.column.${card.status}`) : "";
+  };
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => t("planner.drag.start", { card: titleOf(active.id) }),
+    onDragOver: ({ active, over }) =>
+      over ? t("planner.drag.over", { card: titleOf(active.id), column: placeOf(over.id) }) : undefined,
+    onDragEnd: ({ active, over }) =>
+      over ? t("planner.drag.end", { card: titleOf(active.id), column: placeOf(over.id) }) : undefined,
+    onDragCancel: ({ active }) => t("planner.drag.cancel", { card: titleOf(active.id) }),
+  };
 
   async function refresh() {
     setCards(await plannerApi.list(projectId, ownerId));
@@ -118,7 +140,12 @@ export function PlannerBoard({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragEnd={onDragEnd}
+      accessibility={{ announcements, screenReaderInstructions: { draggable: t("planner.drag.help") } }}
+    >
       <div className="pl-board">
         {CARD_STATUSES.map((status) => (
           <Column
@@ -154,9 +181,11 @@ function Column({
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
-    <section className="pl-col" data-over={isOver}>
+    <section className="pl-col" data-over={isOver} aria-labelledby={`pl-col-${status}`}>
       <header className="pl-col__head">
-        <span className="pl-col__title">{title}</span>
+        <span id={`pl-col-${status}`} className="pl-col__title">
+          {title}
+        </span>
         <span className="pl-col__count">{cards.length}</span>
       </header>
       <div ref={setNodeRef} className="pl-col__drop">
@@ -193,16 +222,27 @@ function Card({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  // The card itself only takes the mouse drag; the keyboard drag and the
+  // sortable role live on the handle, so the card holds no nested controls.
+  const { onKeyDown, ...pointer } = listeners ?? {};
   return (
     <div
       ref={setNodeRef}
       style={style}
       className="pl-card"
       data-priority={card.priority}
-      {...attributes}
-      {...listeners}
+      {...pointer}
     >
       <div className="pl-card__top">
+        <button
+          type="button"
+          className="pl-card__handle"
+          {...attributes}
+          onKeyDown={onKeyDown as KeyboardEventHandler<HTMLButtonElement> | undefined}
+          aria-label={t("planner.drag.handle", { card: card.title })}
+        >
+          ⠿
+        </button>
         <span className={`pl-card__kind pl-card__kind--${card.kind}`}>
           {t(`planner.kindLabel.${card.kind}`)}
         </span>
@@ -210,7 +250,7 @@ function Card({
           className="pl-card__del"
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <DeleteButton needsConfirm onDelete={() => onDelete(card.id)} />
+          <DeleteButton itemLabel={card.title} needsConfirm onDelete={() => onDelete(card.id)} />
         </span>
       </div>
       <button

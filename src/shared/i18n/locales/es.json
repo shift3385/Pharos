@@ -810,7 +810,15 @@
     },
     "savedToast": "Tarjeta guardada",
     "linkedCases": "Casos de prueba vinculados",
-    "noCasesToLink": "Este proyecto aún no tiene casos de prueba."
+    "noCasesToLink": "Este proyecto aún no tiene casos de prueba.",
+    "drag": {
+      "handle": "Mover la tarjeta «{{card}}»",
+      "help": "Para mover una tarjeta, pulsa Espacio o Intro en su asa, muévela con las flechas (arriba y abajo en la columna, izquierda y derecha entre columnas) y pulsa Espacio o Intro para soltarla. Escape cancela.",
+      "start": "Tarjeta «{{card}}» seleccionada para mover.",
+      "over": "Tarjeta «{{card}}» sobre la columna {{column}}.",
+      "end": "Tarjeta «{{card}}» movida a {{column}}.",
+      "cancel": "Movimiento cancelado; la tarjeta «{{card}}» vuelve a su sitio."
+    }
   },
   "traceability": {
     "title": "Trazabilidad",

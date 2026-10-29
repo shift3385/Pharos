@@ -67,7 +67,8 @@ export function Dialog({
     const root = ref.current;
     if (!root) return;
     stack.push(root);
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focused = document.activeElement;
+    const opener = focused instanceof HTMLElement && focused !== document.body ? focused : null;
 
     if (!root.contains(document.activeElement)) {
       const target = initialFocus?.current ?? focusables(root)[0] ?? root;
@@ -106,7 +107,10 @@ export function Dialog({
     return () => {
       document.removeEventListener("keydown", onKey);
       stack.splice(stack.indexOf(root), 1);
+      // The opener may be gone (e.g. the row the dialog just deleted): then the
+      // main content takes the focus rather than leaving it on <body>.
       if (opener?.isConnected) opener.focus();
+      else document.getElementById("main-content")?.focus();
     };
     // Focus is managed once per open; later prop changes must not steal it.
     // eslint-disable-next-line react-hooks/exhaustive-deps

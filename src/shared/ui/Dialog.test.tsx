@@ -80,6 +80,32 @@ describe("Dialog", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("focuses the main content when the opener is gone after closing", async () => {
+    function Row() {
+      const [state, setState] = useState<"row" | "asking" | "deleted">("row");
+      return (
+        <main id="main-content" tabIndex={-1}>
+          {state === "row" && (
+            <button type="button" onClick={() => setState("asking")}>
+              delete
+            </button>
+          )}
+          {state === "asking" && (
+            <Dialog label="Delete?" onClose={() => setState("row")}>
+              <button type="button" onClick={() => setState("deleted")}>
+                yes
+              </button>
+            </Dialog>
+          )}
+        </main>
+      );
+    }
+    render(<Row />);
+    await userEvent.click(screen.getByText("delete"));
+    await userEvent.click(screen.getByText("yes"));
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
   it("lets only the innermost of two stacked dialogs handle Escape", async () => {
     const outer = vi.fn();
     const inner = vi.fn();

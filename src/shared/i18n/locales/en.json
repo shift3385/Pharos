@@ -810,7 +810,15 @@
     },
     "savedToast": "Card saved",
     "linkedCases": "Linked test cases",
-    "noCasesToLink": "This project has no test cases yet."
+    "noCasesToLink": "This project has no test cases yet.",
+    "drag": {
+      "handle": "Move card “{{card}}”",
+      "help": "To move a card, press Space or Enter on its handle, move it with the arrows (up and down in a column, left and right between columns) and press Space or Enter to drop it. Escape cancels.",
+      "start": "Picked up card “{{card}}”.",
+      "over": "Card “{{card}}” is over the {{column}} column.",
+      "end": "Card “{{card}}” moved to {{column}}.",
+      "cancel": "Move cancelled; card “{{card}}” is back in place."
+    }
   },
   "traceability": {
     "title": "Traceability",
