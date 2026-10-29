@@ -1,14 +1,16 @@
-| `SYNC_TOMBSTONE_DAYS`     | Days the server keeps the content of a deleted record before clearing it; the tombstone stays [30]; `0` = never clear      |
 # Pharos
 
 Desktop QA test-management suite (offline-first). Guides each testing project
 safely to port, following ISO/IEC/IEEE 29119, ISO/IEC 25010 and the ISTQB CTFL
 Syllabus v4.0.1.
 
-> **Version 0.1.0-alpha.1** — test plans, test cases with Gherkin, templates,
-> local planner, AI assist, offline sync with conflict panel, exports, and
-> requirements with a traceability matrix. No test execution yet (0.2.0).
-> Roadmap and backlog: [`docs/ROADMAP.md`](docs/ROADMAP.md) · changes:
+> **Version 0.1.0-beta.1** (first beta) — test plans, test cases with Gherkin,
+> templates, local planner, AI assist with several providers, offline sync with
+> conflict panel, exports, requirements with a traceability matrix, a recovery
+> key for the local data, and keyboard and screen-reader access (WCAG 2.1 AA).
+> No test execution yet (0.2.0). Beta testers: start with the
+> [beta guide](docs/guia-beta.md) (Spanish). Roadmap and backlog:
+> [`docs/ROADMAP.md`](docs/ROADMAP.md) · changes:
 > [`CHANGELOG.md`](CHANGELOG.md) · versioning policy:
 > [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
@@ -26,6 +28,34 @@ sign-in on a machine always needs it:
 
 If the database or the API is down, sign-in shows "Could not reach the server"
 ("No se pudo conectar con el servidor" in Spanish, the default UI language).
+
+## Installing the beta (Windows 11)
+
+The **Installer** workflow builds the NSIS installer on every push to `main`
+(see "Continuous integration"). To install it:
+
+1. On GitHub: **Actions → Installer**, open the newest green run on `main`,
+   and download the artifact `pharos-<version>-<commit>-windows` under
+   **Artifacts** (you must be signed in to GitHub; artifacts expire after 30
+   days). It is a `.zip` holding `Pharos_<version>_x64-setup.exe`.
+2. Run the `-setup.exe`. **The installer is not code-signed**, so Windows
+   SmartScreen shows "Windows protected your PC": choose **More info → Run
+   anyway**. Signing is a known limitation of the beta.
+3. WebView2 is preinstalled on Windows 11. If it is missing, the installer
+   downloads it (this needs internet).
+4. Pharos appears in the Start menu. Uninstall it from **Settings → Apps →
+   Installed apps**. Your data stays in `%APPDATA%\com.pharos.desktop` and the
+   logs in `%LOCALAPPDATA%\com.pharos.desktop\logs` unless you delete them.
+
+**The installed app talks to the API on `http://localhost:3000`** (the address
+is fixed at build time, and the desktop CSP allows only that port). Sign-in and
+sync therefore need the database and the API running on the same PC: follow
+"Prerequisites", "First-time setup" and `cd server && npm start` below. Rust and
+Visual Studio are only needed to build the app, not to install it. Once you
+have signed in, the app opens offline from the cached session.
+
+The step-by-step checklist for testers, in Spanish, is
+[`docs/guia-beta.md`](docs/guia-beta.md).
 
 ## Prerequisites (Windows 11)
 
@@ -122,12 +152,40 @@ run with `NODE_ENV=production`. The account exists only in your local
 After the first sign-in the desktop app can reopen offline from the cached
 session.
 
+### Sync
+
+The desktop app works on its local database and sends and receives changes in
+the background: at start-up, when the connection comes back and after you
+resolve a conflict. The indicator in the top bar shows "Sincronizado" or the
+number of pending changes (items, not edits) and has **Sincronizar ahora**
+("Sync now").
+
+- Projects, plans, cases, requirements and planner cards sync. Attachments
+  and your own templates stay on the device that has them (SYNC-04b, later).
+- Two devices that change the same item open the **conflict panel**: you pick
+  the version to keep. Two devices that type the same key by hand show it in
+  Conflictos → "Claves repetidas"; keys created offline are provisional
+  (`ATS_?KQZD`) until the next sync (DAT-01).
+- Every sync request carries the app version. The server accepts its own
+  MINOR and the previous one (a 0.1.x server accepts 0.1.x and 0.0.x apps);
+  any other app gets "Actualiza la app para sincronizar" and nothing is
+  written (SYNC-08). `0.1.0-alpha.1` sends no version, so a newer server
+  refuses its sync: update the app.
+- Each account on the same PC has its own pending changes, cursor and
+  conflicts (FIX-07). Deleted items are purged after the retention days of
+  Administration (30 by default, SYNC-06).
+
 ### AI assist (optional)
 
 Pharos works fully without AI; every AI button is disabled with a notice until
-a provider is set up in the AI panel (one online provider with your own key,
-or Ollama offline). Before sending anything, each AI control says which
-provider and model will receive it. With AI you can:
+a provider is set up in the AI panel. Online providers, each with your own key
+(kept in the Windows Credential Manager) and its own model: **Gemini, OpenAI,
+Claude (Anthropic), OpenRouter** or any **OpenAI-compatible endpoint** (Groq,
+DeepSeek, Mistral, a local LM Studio or vLLM…; it must use `https`, or `http`
+only on `localhost`). "Listar modelos" lists the models your key offers.
+Offline: **Ollama** (`llama3.2:3b`, downloaded from the AI panel). Before
+sending anything, each AI control says which provider and model will receive
+it. With AI you can:
 
 - draft plan and case fields ("Assist with AI"), including the plan's
   automation strategy;
@@ -141,6 +199,24 @@ answer or a refusal is reported and nothing is applied
 you accept it, and AI content stays marked "AI · pending review" with its
 provider and model until someone reviews it.
 
+### Accessibility
+
+Pharos targets WCAG 2.1 AA (UX-05, [ADR-0027](docs/adr/0027-accesibilidad-y-validacion-de-formularios.md)):
+
+- everything works with the keyboard; "Saltar al contenido" is the first Tab
+  stop;
+- dialogs keep the focus inside, close with Escape and give the focus back to
+  the button that opened them;
+- case steps and planner cards are reordered with Space on the handle and
+  the arrow keys, and each move is announced;
+- forms explain every problem next to the field and in a summary that
+  screen readers announce. Save is never disabled without a reason: only
+  missing essentials block it, and other warnings let you save the draft
+  (UX-01).
+
+Both themes meet AA contrast. The audit and its open points are in
+[`docs/accesibilidad/auditoria-wcag-0.1.0.md`](docs/accesibilidad/auditoria-wcag-0.1.0.md).
+
 ### Troubleshooting
 
 | Symptom                                                  | Cause / fix                                                                                            |
@@ -153,6 +229,10 @@ provider and model until someone reviews it.
 | Console shows `localhost:11434 … ERR_CONNECTION_REFUSED` | Ollama is not installed or not running; harmless — AI assist is simply disabled                        |
 | "This data comes from a newer version of Pharos"         | The local database was saved by a newer Pharos; install that version, or restore a backup (below)      |
 | "The local database key is missing"                      | The Credential Manager lost the key (new PC, reinstall); enter the recovery key (below)                |
+| "Windows protected your PC" when installing              | The beta installer is not code-signed: More info → Run anyway                                          |
+| Installed app: "Could not reach the server"              | The installed app only talks to `localhost:3000`: start PostgreSQL and `cd server && npm start`        |
+| "Actualiza la app para sincronizar" (or `push 426`)      | The app version is not accepted by the server (Sync, above); install the version that matches it       |
+| "Demasiados intentos…" on sign-in                        | 10 attempts per minute per IP (`LOGIN_RATE_LIMIT_MAX`); wait a minute                                   |
 
 ### Local data backups
 
@@ -160,7 +240,8 @@ The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\pharos.db.enc`.
 
 Before a new version upgrades that database, the app saves an untouched,
 encrypted copy next to it: `pharos.db.enc.bak-<version>-<last migration>`. For
-example, `pharos.db.enc.bak-0.1.0-alpha.2-0011_sync_conflicts`.
+example, `0.1.0-beta.1` opening data saved by `0.1.0-alpha.1` keeps
+`pharos.db.enc.bak-0.1.0-beta.1-0011_sync_conflicts`.
 
 - Only the 3 newest copies are kept; older ones are deleted.
 - If the copy cannot be saved, the app upgrades nothing and says so.
@@ -248,7 +329,7 @@ Desktop core (`src-tauri/`): `cargo check`, `cargo test`.
 ## Continuous integration
 
 GitHub Actions ([`.github/workflows/`](.github/workflows/)) runs on every pull
-request and on every push to `main`. A red check blocks the merge once `main`
+request and on every push to `main`. A red check blocks the merge: `main`
 is protected (see below).
 
 | Check        | Runner                 | What it runs                                                             |
@@ -515,11 +596,21 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.1.0-alpha.1**. The 0.1.0 milestone (planning and design +
-traceability) is implemented up to Phase 8; Phase 9 (accessibility audit,
-installer, final docs) is open before 0.1.0 is released. Detailed
-progress lives in `PROGRESO.md` (outside this repo, in the planning workspace);
-the backlog lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Current version: **0.1.0-beta.1**, the first beta of the 0.1.0 milestone
+(planning and design + traceability). Gates A and B of the baseline are closed
+and every item of the milestone is merged. Before `0.1.0` the user still has to
+run the native validations of [`docs/ROADMAP.md` §6](docs/ROADMAP.md) (the
+[beta guide](docs/guia-beta.md) turns them into a checklist); each fix ships as
+a new `beta.N`. Known limitations of the beta:
+
+- the installer is not code-signed (SmartScreen warning);
+- the installed app needs the API on `localhost:3000` of the same PC;
+- attachments and your own templates do not sync yet (SYNC-04b), and the web
+  has no attachments, own templates or revision history;
+- no test execution yet (0.2.0).
+
+Detailed progress lives in `PROGRESO.md` (outside this repo, in the planning
+workspace); the backlog lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 The version is kept in sync across all manifests by `scripts/version.mjs`
 (`npm run check:version`, `npm run version:set -- <version>`); never edit it

@@ -495,6 +495,26 @@ alias + mandatory `first_name`/`last_name`) is exposed to the client through
 typed Tauri commands (`profile_get`, `profile_upsert`); the web edits the
 account's names on the server (`PATCH /auth/me`, BASE-10).
 
+## Distribution (BASE-09, UX-06)
+
+- **Installer:** `npm run build:installer` (`scripts/build-installer.mjs`)
+  picks the Tauri bundle formats from the version: NSIS only for alpha, beta
+  and rc (WiX rejects non-numeric pre-releases), NSIS + MSI for stable
+  versions (VERSIONING §5). The Installer workflow runs it on every push to
+  `main` and on `v*` tags and uploads `pharos-<version>-<sha7>-windows` (30
+  days). The NSIS bundle installs for the current user and downloads WebView2
+  only if it is missing.
+- **Not code-signed:** no certificate is configured, so SmartScreen warns on
+  install. Signing is out of scope for 0.1.0 and listed as a known limitation.
+- **Fixed API address:** the desktop build talks to `VITE_API_URL`, which
+  defaults to `http://localhost:3000`, and its CSP (`tauri.conf.json`) allows
+  only that port (plus Ollama on 11434). The CI installer is built without
+  `VITE_API_URL`, so an installed beta needs the API on the same PC.
+- **Version compatibility:** the server accepts its own MINOR and the previous
+  one (`server/src/modules/sync/sync.version.ts`, SYNC-08), and the local
+  upgrade from the previous published version is tested against a fixture
+  (BASE-04, "Local data" above).
+
 ## Phase status
 
 - **Phase 0 — Foundations:** complete. Scaffold, modular structure, i18n
@@ -513,7 +533,10 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   noted at the time was specific to the GNU toolchain and is gone with MSVC.)
 - **Phases 4–8 and 9A:** implemented — test cases, planner, templates/export,
   AI, oplog + push/pull sync with HLC and the conflict panel (8C), admin hub.
-  The rest of Phase 9 (accessibility audit, installer, final docs) is open.
+- **Phase 9:** the WCAG 2.1 AA audit and shared form validation (UX-05, UX-01),
+  the CI installer (BASE-09) and the final docs (UX-06, with the beta guide
+  `docs/guia-beta.md`) are done. `0.1.0-beta.1` is the first beta; the native
+  checks of `docs/ROADMAP.md` §6 remain before `0.1.0`.
 - **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
   visible AI provenance. Requirements and planner cards sync since SYNC-04a;
