@@ -25,9 +25,17 @@
   - **Todo o nada.** Si una sola parte no cumple, se rechaza la respuesta
     entera. Las claves desconocidas se descartan; tipos, enumerados y longitudes
     deben cumplirse.
-  - **Normalización mínima.** Cada paso queda en una línea y se quita una
-    palabra clave Gherkin inicial ("Given", "Dado que"…), porque el editor ya
-    la añade.
+  - **Normalización mínima.**
+    - Cada paso queda en una línea y se quita una palabra clave Gherkin
+      inicial ("Given", "Dado que", "Y", "Pero"…), porque el editor ya la
+      añade.
+    - La prioridad es un enumerado en inglés aunque los textos vayan en
+      español. El prompt lo pide así, y además se ignoran mayúsculas y tildes y
+      se traducen los nombres en español ("Alta" → `high`). Un valor
+      desconocido sigue rechazando la respuesta.
+  - **El texto del usuario no puede cerrar el bloque `<data>`.** Una etiqueta
+    `<data>` o `</data>` dentro del texto se neutraliza (su `<` pasa a `‹`), y
+    la descripción y el contexto se recortan a 4000 y 6000 caracteres.
   - **Errores tipados** (`AiOutputError`):
     - `empty`: respuesta vacía;
     - `refusal`: prosa sin JSON, o una lista vacía con `reason`, que es la vía
@@ -71,7 +79,9 @@
   - Un modelo pequeño o poco obediente puede devolver respuestas inválidas a
     menudo. Se ve como error y nunca se aplica en silencio.
   - Si falla el guardado de un caso concreto (un error del store, no de la IA),
-    los demás se crean igual y el aviso dice cuántos fallaron.
+    los demás se crean igual. La ventana sigue abierta con solo los que
+    fallaron seleccionados, para reintentarlos sin duplicar los ya creados, y
+    el aviso de éxito sale solo si se creó alguno.
   - Los esquemas son el contrato de cualquier ayuda estructurada nueva: un
     esquema, un prompt con la forma exacta y `aiJson`.
 

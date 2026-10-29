@@ -57,7 +57,7 @@ describe("proposed cases (IA-05)", () => {
       caseIdPrefix: "TC-",
       caseIdDigits: 3,
     });
-    expect(summary).toEqual({ created: 2, failed: 0 });
+    expect(summary).toEqual({ created: 2, failed: 0, failedIndexes: [] });
     const list = await testCaseApi.list("p1", "u1");
     expect(list.map((c) => [c.scenarioId, c.title, c.status, c.priority, c.aiPending])).toEqual([
       ["TC-001", "Account locked after five failures", "draft", "critical", true],
@@ -68,7 +68,7 @@ describe("proposed cases (IA-05)", () => {
     expect(saved?.data.aiProvenance?.case).toEqual(provenance);
   });
 
-  it("a store error on one case does not stop the rest and is counted", async () => {
+  it("a store error on one case does not stop the rest and says which ones failed", async () => {
     const real = testCaseApi.create;
     const spy = vi
       .spyOn(testCaseApi, "create")
@@ -83,7 +83,7 @@ describe("proposed cases (IA-05)", () => {
       provenance,
       proposals: [proposal, proposal, proposal],
     });
-    expect(summary).toEqual({ created: 1, failed: 2 });
+    expect(summary).toEqual({ created: 1, failed: 2, failedIndexes: [0, 1] });
     expect(spy).toHaveBeenCalledTimes(3);
   });
 });

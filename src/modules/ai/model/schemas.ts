@@ -18,18 +18,41 @@ const line = (max: number) =>
 const reason = z.string().trim().max(1000).optional();
 
 /** A leading Gherkin keyword the model added despite the prompt ("Given the
- *  user…", "Dado que…"): the editor adds the keyword itself. */
-const LEADING_KEYWORD = /^(given|when|then|and|but|dado que|dado|cuando|entonces)\s+/i;
+ *  user…", "Dado que…", "Y el usuario…"): the editor adds the keyword itself. */
+const LEADING_KEYWORD = /^(given|when|then|and|but|dad[oa]s?(?:\s+que)?|cuando|entonces|y|pero)\s+/i;
 const step = line(500).transform((s) => s.replace(LEADING_KEYWORD, "") || s);
 
 export const CASE_PRIORITIES = ["low", "medium", "high", "critical"] as const;
+
+/** Spanish names a model may write despite the prompt ("Alta", "crítica"). */
+const PRIORITY_ALIASES: Record<string, (typeof CASE_PRIORITIES)[number]> = {
+  baja: "low",
+  bajo: "low",
+  media: "medium",
+  medio: "medium",
+  alta: "high",
+  alto: "high",
+  critica: "critical",
+  critico: "critical",
+};
+
+/** The stored priority value: case and accents ignored, Spanish mapped to English. */
+const priority = z.preprocess((v) => {
+  if (typeof v !== "string") return v;
+  const k = v
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  return PRIORITY_ALIASES[k] ?? k;
+}, z.enum(CASE_PRIORITIES));
 
 /** One test scenario proposed from a requirement: Given (preconditions), When
  *  (steps) and Then (expected results), the same mapping as the case editor. */
 export const generatedCaseSchema = z.object({
   title: line(200),
   description: z.string().trim().max(2000).default(""),
-  priority: z.enum(CASE_PRIORITIES),
+  priority,
   given: z.array(step).max(15).default([]),
   when: z.array(step).min(1).max(20),
   then: z.array(step).min(1).max(15),

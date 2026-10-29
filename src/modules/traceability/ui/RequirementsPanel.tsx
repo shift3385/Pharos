@@ -42,7 +42,9 @@ export function RequirementsPanel({
   const [generating, setGenerating] = useState<Requirement | null>(null);
 
   useEffect(() => {
-    void aiAvailable().then(setAiReady);
+    void aiAvailable()
+      .then(setAiReady)
+      .catch(() => setAiReady(false));
   }, []);
 
   async function refresh() {
@@ -194,9 +196,9 @@ export function RequirementsPanel({
           caseIdPrefix={caseIdPrefix}
           caseIdDigits={caseIdDigits}
           onCreated={({ created, failed }) => {
-            setGenerating(null);
-            toast(t("traceability.generate.doneToast", { count: created, key: generating.requirementKey }));
-            if (failed) toast(t("traceability.generate.failedToast", { count: failed }));
+            if (created) toast(t("traceability.generate.doneToast", { count: created, key: generating.requirementKey }));
+            // Failed ones stay in the modal for a retry (it says so itself).
+            if (!failed) setGenerating(null);
           }}
           onClose={() => setGenerating(null)}
         />

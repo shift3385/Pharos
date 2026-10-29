@@ -752,10 +752,13 @@
       "loading": "Generating scenarios from the requirement…",
       "retry": "Retry",
       "gherkin": "Show Gherkin",
-      "accept": "Create {{count}} cases",
+      "accept_one": "Create 1 case",
+      "accept_other": "Create {{count}} cases",
       "creating": "Creating…",
-      "doneToast": "Cases created and linked to {{key}}: {{count}}",
-      "failedToast": "{{count}} cases could not be saved"
+      "doneToast_one": "1 case created and linked to {{key}}",
+      "doneToast_other": "{{count}} cases created and linked to {{key}}",
+      "saveFailed_one": "1 case could not be saved. It is still selected: create it again or cancel.",
+      "saveFailed_other": "{{count}} cases could not be saved. They are still selected: create them again or cancel."
     },
     "requirement": {
       "listTitle": "Requirements",

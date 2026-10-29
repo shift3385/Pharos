@@ -28,6 +28,19 @@ function systemRules(role: string, lang: string): AiMessage {
   };
 }
 
+/** Longest description / context sent, so one huge field cannot crowd out the
+ *  instructions. */
+const MAX_DESCRIPTION = 4000;
+const MAX_CONTEXT = 6000;
+
+const capped = (text: string, max: number) => (text.length > max ? `${text.slice(0, max)}…` : text);
+
+/** User text as material: a "<data>" or "</data>" inside it cannot open or
+ *  close the block (its "<" becomes "‹"). Pure — testable. */
+export function asData(text: string): string {
+  return text.replace(/<(\s*\/?\s*data)/gi, "‹$1");
+}
+
 /** What the model needs to know about a requirement. */
 export interface RequirementBrief {
   requirementKey: string;
@@ -39,9 +52,9 @@ export interface RequirementBrief {
 export function buildCasesFromRequirementMessages(req: RequirementBrief, lang: string): AiMessage[] {
   const user = [
     `<data>`,
-    `Requirement ${req.requirementKey}: ${req.title}`,
-    `Priority: ${req.priority}`,
-    `Description:\n${req.description.trim() || "(none)"}`,
+    asData(`Requirement ${req.requirementKey}: ${req.title}`),
+    asData(`Priority: ${req.priority}`),
+    asData(`Description:\n${capped(req.description.trim(), MAX_DESCRIPTION) || "(none)"}`),
     `</data>`,
     ``,
     `Propose 3 to 8 test scenarios that verify this requirement: the main success path, ` +
@@ -54,7 +67,9 @@ export function buildCasesFromRequirementMessages(req: RequirementBrief, lang: s
       `"then":["expected result"]}]}`,
     ``,
     `Rules: "when" and "then" have at least one item each; "given" may be empty. Each item ` +
-      `is one plain sentence without the Given/When/Then keyword. At most 10 cases. If the ` +
+      `is one plain sentence without the Given/When/Then keyword. "priority" is exactly one ` +
+      `of low, medium, high or critical, in English and lowercase, whatever the language of ` +
+      `the text. At most 10 cases. If the ` +
       `requirement is too vague to test, return {"cases":[],"reason":"why"}.`,
   ].join("\n");
   return [systemRules("You are a senior QA test analyst (ISTQB CTFL).", lang), { role: "user", content: user }];
@@ -72,9 +87,13 @@ export async function generateCasesFromRequirement(
 const listed = (label: string, items: string[]) =>
   items.length ? `\n${label}:\n${items.map((i) => `- ${i}`).join("\n")}` : "";
 
+/** The data block of the IA-10 aids: the form's own text, neutralised and capped. */
+const contextData = (context: string, label: string, existing: string[]) =>
+  `<data>\n${asData(capped(context.trim(), MAX_CONTEXT) || "(no details yet)")}${asData(listed(label, existing))}\n</data>`;
+
 export function buildRiskMessages(context: string, existing: string[], lang: string): AiMessage[] {
   const user = [
-    `<data>\n${context.trim() || "(no details yet)"}${listed("Risks already listed", existing)}\n</data>`,
+    contextData(context, "Risks already listed", existing),
     ``,
     `Propose 3 to 8 risks for this software testing project, each with a concrete ` +
       `mitigation. Skip the risks already listed.`,
@@ -97,7 +116,7 @@ export async function suggestRisks(
 
 export function buildPreconditionMessages(context: string, existing: string[], lang: string): AiMessage[] {
   const user = [
-    `<data>\n${context.trim() || "(no details yet)"}${listed("Preconditions already listed", existing)}\n</data>`,
+    contextData(context, "Preconditions already listed", existing),
     ``,
     `Propose 1 to 6 preconditions for this test case: the state that must hold before ` +
       `the steps run (data, user, configuration). One plain sentence each, without the ` +

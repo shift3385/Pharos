@@ -752,10 +752,13 @@
       "loading": "Generando escenarios a partir del requisito…",
       "retry": "Reintentar",
       "gherkin": "Ver Gherkin",
-      "accept": "Crear {{count}} casos",
+      "accept_one": "Crear 1 caso",
+      "accept_other": "Crear {{count}} casos",
       "creating": "Creando…",
-      "doneToast": "Casos creados y vinculados a {{key}}: {{count}}",
-      "failedToast": "No se pudieron guardar {{count}} casos"
+      "doneToast_one": "1 caso creado y vinculado a {{key}}",
+      "doneToast_other": "{{count}} casos creados y vinculados a {{key}}",
+      "saveFailed_one": "No se pudo guardar 1 caso. Sigue seleccionado: vuelve a crearlo o cancela.",
+      "saveFailed_other": "No se pudieron guardar {{count}} casos. Siguen seleccionados: vuelve a crearlos o cancela."
     },
     "requirement": {
       "listTitle": "Requisitos",

@@ -391,3 +391,14 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
+.tr-gen__failed {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-metadata);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+}
+/* The live status line stays in the DOM (so it is announced) but takes no room when empty. */
+.tr-gen__status:empty {
+  margin-top: calc(-1 * var(--space-3));
+}

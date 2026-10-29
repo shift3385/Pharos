@@ -52,15 +52,21 @@ export interface CreateProposedCasesInput {
   caseIdDigits?: number;
 }
 
+export interface CreateProposedCasesResult {
+  created: number;
+  failed: number;
+  /** Positions in `proposals` that were not saved, so the caller can offer
+   *  to retry just those (and never duplicate the saved ones). */
+  failedIndexes: number[];
+}
+
 /** Creates the accepted proposals as draft cases linked to the requirement.
  *  The answer was validated whole before this point; a store error on one case
- *  does not stop the rest, and the caller reports how many failed. */
-export async function createProposedCases(
-  input: CreateProposedCasesInput,
-): Promise<{ created: number; failed: number }> {
+ *  does not stop the rest, and the caller reports which ones failed. */
+export async function createProposedCases(input: CreateProposedCasesInput): Promise<CreateProposedCasesResult> {
   let created = 0;
-  let failed = 0;
-  for (const p of input.proposals) {
+  const failedIndexes: number[] = [];
+  for (const [i, p] of input.proposals.entries()) {
     try {
       // null: the store refused it (e.g. the project is not the user's).
       const saved = await testCaseApi.create({
@@ -75,10 +81,10 @@ export async function createProposedCases(
         data: proposalCaseData(p, input.requirementKey, input.provenance),
       });
       if (saved) created++;
-      else failed++;
+      else failedIndexes.push(i);
     } catch {
-      failed++;
+      failedIndexes.push(i);
     }
   }
-  return { created, failed };
+  return { created, failed: failedIndexes.length, failedIndexes };
 }

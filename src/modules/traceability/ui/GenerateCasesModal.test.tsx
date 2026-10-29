@@ -1,6 +1,6 @@
 // IA-05 in the UI: the user sees where the requirement goes, reviews the
-// proposals and only accepted ones are created; an invalid answer creates
-// nothing; with no AI the button is disabled.
+// proposals and only accepted ones are created (failed saves stay for a retry);
+// an invalid answer creates nothing; with no AI the button is disabled.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
@@ -13,7 +13,7 @@ const ai = vi.hoisted(() => ({
   available: vi.fn(async () => true),
   generate: vi.fn(),
 }));
-const createProposedCases = vi.hoisted(() => vi.fn(async () => ({ created: 1, failed: 0 })));
+const createProposedCases = vi.hoisted(() => vi.fn(async () => ({ created: 1, failed: 0, failedIndexes: [] as number[] })));
 
 vi.mock("@modules/ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@modules/ai")>()),
@@ -55,7 +55,7 @@ beforeEach(async () => {
   createProposedCases.mockClear();
 });
 
-function renderModal(onCreated = vi.fn()) {
+function renderModal(onCreated = vi.fn(), onClose = vi.fn()) {
   renderWithProviders(
     <GenerateCasesModal
       requirement={requirement}
@@ -63,7 +63,7 @@ function renderModal(onCreated = vi.fn()) {
       caseIdPrefix="TC-"
       caseIdDigits={3}
       onCreated={onCreated}
-      onClose={vi.fn()}
+      onClose={onClose}
     />,
   );
   return onCreated;
@@ -85,9 +85,9 @@ describe("GenerateCasesModal (IA-05)", () => {
     );
 
     await userEvent.click(screen.getAllByRole("checkbox")[1]); // drop "Locked account"
-    await userEvent.click(screen.getByRole("button", { name: "Create 1 cases" }));
+    await userEvent.click(screen.getByRole("button", { name: "Create 1 case" }));
 
-    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ created: 1, failed: 0 }));
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ created: 1, failed: 0, failedIndexes: [] }));
     expect(createProposedCases).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: "p1",
@@ -118,6 +118,41 @@ describe("GenerateCasesModal (IA-05)", () => {
     expect(ai.generate).toHaveBeenCalledTimes(2);
   });
 
+  it("cases that cannot be saved stay selected; Create retries only those", async () => {
+    const three = [...cases, { ...cases[0], title: "Wrong password" }];
+    ai.generate.mockResolvedValue({ value: three, provenance });
+    // First save: "Locked account" (position 1 of the two chosen) fails.
+    createProposedCases.mockResolvedValueOnce({ created: 1, failed: 1, failedIndexes: [1] });
+    const onCreated = renderModal();
+    await userEvent.click(await screen.findByRole("button", { name: "Generate" }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /Wrong password/ })); // not chosen
+    await userEvent.click(screen.getByRole("button", { name: "Create 2 cases" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("1 case could not be saved. It is still selected");
+    expect(onCreated).toHaveBeenCalledWith({ created: 1, failed: 1, failedIndexes: [1] });
+    // The saved one is gone (no duplicates); the unchosen one stays unchosen.
+    expect(screen.queryByText("Successful login")).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /Locked account/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Wrong password/ })).not.toBeChecked();
+
+    await userEvent.click(screen.getByRole("button", { name: "Create 1 case" }));
+    await waitFor(() => expect(createProposedCases).toHaveBeenCalledTimes(2));
+    expect(createProposedCases).toHaveBeenLastCalledWith(expect.objectContaining({ proposals: [cases[1]] }));
+  });
+
+  it("focuses the primary action, announces progress and closes with Escape", async () => {
+    const onClose = vi.fn();
+    renderModal(vi.fn(), onClose);
+    const generate = await screen.findByRole("button", { name: "Generate" });
+    expect(generate).toHaveFocus();
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    ai.generate.mockReturnValueOnce(new Promise(() => {})); // stays loading
+    await userEvent.click(generate);
+    expect(screen.getByRole("status")).toHaveTextContent("Generating scenarios from the requirement");
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("a timeout is reported as such", async () => {
     ai.generate.mockRejectedValueOnce("The AI provider did not answer in time");
     renderModal();
@@ -146,5 +181,20 @@ describe("RequirementsPanel — AI button (IA-05)", () => {
     await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(button);
     expect(await screen.findByRole("dialog")).toHaveTextContent("Generate cases from REQ-007");
+  });
+
+  it("when every save fails there is no success toast and the modal stays open", async () => {
+    ai.generate.mockResolvedValue({ value: cases, provenance });
+    createProposedCases.mockResolvedValueOnce({ created: 0, failed: 2, failedIndexes: [0, 1] });
+    renderWithProviders(<RequirementsPanel projectId="p1" />);
+    const button = await screen.findByRole("button", { name: "Generate cases with AI from REQ-007" });
+    await waitFor(() => expect(button).toBeEnabled());
+    await userEvent.click(button);
+    await userEvent.click(await screen.findByRole("button", { name: "Generate" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Create 2 cases" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("2 cases could not be saved");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByText(/created and linked/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create 2 cases" })).toBeEnabled();
   });
 });

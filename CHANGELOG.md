@@ -14,7 +14,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   de enviar dice a qué proveedor y modelo va el requisito. Revisas las
   propuestas, ves su Gherkin y solo se crean las que aceptas, como borradores
   vinculados al requisito (aparecen en la matriz) y marcados "IA · pendiente de
-  revisión" con el proveedor y el modelo reales.
+  revisión" con el proveedor y el modelo reales. Si algún caso no se puede
+  guardar, la ventana sigue abierta con solo esos seleccionados para
+  reintentarlos, sin duplicar los ya creados.
 - **Más ayudas de IA de la spec (IA-10):** sugerencia de la estrategia de
   automatización y de un banco de riesgos con mitigación en el plan, y de
   precondiciones en el editor de casos. Eliges qué sugerencias añadir.
@@ -22,7 +24,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   se comprueba contra un esquema antes de usarlo. Una respuesta inválida, un
   rechazo o un timeout se explican con "No se aplicó nada" y se puede
   reintentar; nunca se aplica a medias. Con Ollama se usa su modo JSON y una
-  llamada colgada falla a los 120 s, como las online.
+  llamada colgada falla a los 120 s, como las online. La prioridad se acepta
+  aunque el modelo la escriba en español o con mayúsculas ("Alta" → high).
 
 - **Varios motores de IA online (IA-08):** además de Gemini, ahora se puede usar
   OpenAI, Claude (Anthropic), OpenRouter o cualquier servicio compatible con la

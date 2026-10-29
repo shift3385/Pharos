@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { aiDestination, type AiResult } from "../api/aiApi";
 import { describeAiFailure, type AiFailure } from "../api/structured";
@@ -43,19 +43,31 @@ export function AiSuggestList<T>({
 
   const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
 
+  // Each request has a number; Cancel moves it on, so a late answer is ignored
+  // (the call itself keeps running until it ends or times out).
+  const request = useRef(0);
+
   async function suggest() {
+    const id = ++request.current;
     setLoading(true);
     setResult(null);
     setFailure(null);
     try {
       const r = await run();
+      if (id !== request.current) return;
       setResult(r);
       setSelected(new Set(r.value.map((_, i) => i)));
     } catch (e) {
+      if (id !== request.current) return;
       setFailure(describeAiFailure(e));
     } finally {
-      setLoading(false);
+      if (id === request.current) setLoading(false);
     }
+  }
+
+  function cancel() {
+    request.current++;
+    setLoading(false);
   }
 
   function toggle(i: number) {
@@ -80,6 +92,11 @@ export function AiSuggestList<T>({
         >
           {loading ? t("ai.structured.thinking") : buttonLabel}
         </button>
+        {loading && (
+          <button type="button" className="assist__discard" onClick={cancel}>
+            {t("common.cancel")}
+          </button>
+        )}
         {available && destination && (
           <span className="assist__dest">{t("ai.provenance.destination", { source: label(destination) })}</span>
         )}

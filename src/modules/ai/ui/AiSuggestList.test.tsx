@@ -49,6 +49,18 @@ describe("AiSuggestList (IA-10)", () => {
     expect(alert).toHaveTextContent("Not enough context");
   });
 
+  it("Cancel stops waiting and a late answer is ignored", async () => {
+    let answer: (v: { value: string[]; provenance: typeof provenance }) => void = () => {};
+    const onAdd = renderList(() => new Promise((resolve) => (answer = resolve)));
+    await userEvent.click(screen.getByRole("button", { name: "Suggest" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Suggest" })).toBeEnabled();
+    answer({ value: ["Too late"], provenance });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText("Too late")).not.toBeInTheDocument();
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
   it("is disabled with a notice when no AI is available", () => {
     const run = vi.fn();
     renderList(run, false);
