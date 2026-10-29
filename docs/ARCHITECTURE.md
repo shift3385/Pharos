@@ -228,6 +228,27 @@ persisted atomically to `pharos.db.enc` as an **AES-256-GCM** blob (pure-Rust
 RustCrypto, no OpenSSL). The 32-byte key is stored in the OS keychain. Schema is
 applied by a small forward-only migration runner (`src-tauri/migrations/`).
 
+Key recovery (SEC-03, [ADR-0024](adr/0024-clave-de-recuperacion.md)):
+
+- **Key store.** `db.rs` reads and writes the key through a `KeyStore` trait:
+  `Keychain` (account `db-key`, shared by every instance) in the app, an
+  in-memory store in tests.
+- **No silent new key.** A key is generated only when neither `pharos.db.enc`
+  nor `pharos.db.enc.new` exists. A missing key with a saved file fails with
+  `db-key-missing`; a key that does not decrypt it fails with `db-key-mismatch`.
+  Both land in `DbStatus` like any open error.
+- **Recovery key** (`src-tauri/src/recovery.rs`): the key itself plus a 3-byte
+  `SHA-256("pharos-recovery-v1" || key)` checksum, as 56 Crockford base32
+  characters in 14 groups of 4. `recovery_key_export` returns it for the
+  Profile dialog.
+- **`db_recover`** runs only while `DbStatus` holds a key error. It decodes the
+  key (`recovery-key-invalid`), opens the file with it (`recovery-key-wrong`),
+  stores it in the keychain, `manage`s the `Db` at runtime and clears
+  `DbStatus`, so the UI continues without a restart. A bad key changes no file
+  and no keychain entry.
+- **Never logged.** No error repeats the typed key; both redactors mask the
+  recovery key shape as `<recovery-key>`.
+
 Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
 
 - **Backup before migrating.** When an existing database has pending

@@ -45,6 +45,8 @@ tracing-appender = "0.2"
 # Diagnostic bundle: OS name/version and redaction of secrets in exported logs.
 os_info = { version = "3", default-features = false }
 regex = "1"
+# Checksum of the recovery key (SEC-03, ADR-0023); already in the tree via Tauri.
+sha2 = "0.10"
 
 [features]
 # This feature is used to produce production builds where an extra console

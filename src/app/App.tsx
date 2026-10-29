@@ -14,10 +14,11 @@ import { ProfilePage } from "@modules/profile";
 
 export function App() {
   const { status } = useAuth();
-  const dbError = useDbOpenError();
+  const [dbError, markDbOpened] = useDbOpenError();
   const { pathname } = useLocation();
 
-  if (dbError) return <DbErrorScreen error={dbError} />;
+  if (dbError)
+    return <DbErrorScreen error={dbError} onRecovered={markDbOpened} />;
   if (status === "loading" || dbError === undefined) return <AppSplash />;
   if (status === "unauthenticated") return <AuthScreen />;
 

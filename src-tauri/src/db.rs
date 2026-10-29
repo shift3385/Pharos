@@ -13,6 +13,13 @@
 //! `pharos.db.enc.bak-<app version>-<last migration>` (the newest 3 are kept), and a database that already carries
 //! migrations this build does not know (written by a newer Pharos) is refused
 //! without touching any file.
+//!
+//! Recovery (SEC-03, ADR-0024): the key can be exported as a recovery key
+//! (recovery.rs). A key is only generated on a fresh install: if the keychain
+//! entry is missing while an encrypted file exists (new PC, reinstalled
+//! Windows), opening fails with `KEY_MISSING_ERROR` instead of silently
+//! storing a new key, and `db_recover` opens the file with the recovery key and
+//! stores it in the keychain again.
 
 use std::fs;
 use std::io::Write;
@@ -27,6 +34,8 @@ use keyring::Entry;
 use rusqlite::serialize::OwnedData;
 use rusqlite::{Connection, DatabaseName, OptionalExtension};
 
+use crate::recovery;
+
 const KEYCHAIN_SERVICE: &str = "pharos";
 const KEYCHAIN_DB_KEY: &str = "db-key";
 const B64: base64::engine::general_purpose::GeneralPurpose =
@@ -37,6 +46,16 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Prefix of the `Db::open` error for a database written by a newer Pharos. The
 /// UI matches it to show a translated, blocking message.
 pub const NEWER_DB_ERROR: &str = "db-newer-than-app";
+/// Prefix of the `Db::open` error when the keychain has no key but an
+/// encrypted database exists: the UI offers to enter the recovery key.
+pub const KEY_MISSING_ERROR: &str = "db-key-missing";
+/// Prefix of the `Db::open` error when the keychain key does not decrypt the
+/// database (another key, or a damaged file): the UI offers recovery too.
+pub const KEY_MISMATCH_ERROR: &str = "db-key-mismatch";
+/// Prefix of the `db_recover` error for a well-formed recovery key that does
+/// not decrypt the database.
+pub const WRONG_RECOVERY_KEY: &str = "recovery-key-wrong";
+const DECRYPT_ERROR: &str = "failed to decrypt local database";
 
 pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
     ("0001_init.sql", include_str!("../migrations/0001_init.sql")),
@@ -104,10 +123,109 @@ pub struct Db {
     key: [u8; 32],
 }
 
+/// Where the database key is kept: the OS keychain in the app, memory in tests.
+pub(crate) trait KeyStore {
+    fn load(&self) -> Result<Option<[u8; 32]>, String>;
+    fn store(&self, key: &[u8; 32]) -> Result<(), String>;
+}
+
+/// The `db-key` account of the OS keychain. It is shared by every local
+/// instance, E2E profiles included (instance.rs).
+pub(crate) struct Keychain;
+
+impl Keychain {
+    fn entry() -> Result<Entry, String> {
+        Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_DB_KEY).map_err(|e| e.to_string())
+    }
+}
+
+impl KeyStore for Keychain {
+    fn load(&self) -> Result<Option<[u8; 32]>, String> {
+        match Self::entry()?.get_password() {
+            Ok(b64) => {
+                let bytes = B64.decode(b64).map_err(|e| e.to_string())?;
+                bytes
+                    .try_into()
+                    .map(Some)
+                    .map_err(|_| "stored db key has wrong length".to_string())
+            }
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    fn store(&self, key: &[u8; 32]) -> Result<(), String> {
+        Self::entry()?
+            .set_password(&B64.encode(key))
+            .map_err(|e| e.to_string())
+    }
+}
+
 impl Db {
     /// Opens (or creates) the encrypted database under `app_data_dir`.
     pub fn open(app_data_dir: &Path) -> Result<Self, String> {
-        Self::open_with_key(app_data_dir, load_or_create_key()?)
+        Self::open_with_store(app_data_dir, &Keychain)
+    }
+
+    /// Opens with the key in `store`. A key is generated and stored only when
+    /// there is no encrypted file yet; otherwise a missing or non-matching key
+    /// is an error the UI answers with the recovery key.
+    fn open_with_store(app_data_dir: &Path, store: &dyn KeyStore) -> Result<Self, String> {
+        let enc_path = app_data_dir.join("pharos.db.enc");
+        let key = match store.load()? {
+            Some(key) => key,
+            None if has_saved_file(&enc_path) => {
+                return Err(format!(
+                    "{KEY_MISSING_ERROR}: the key of the local database is not in the \
+                     system keychain. Enter the recovery key to open it."
+                ))
+            }
+            None => {
+                let mut key = [0u8; 32];
+                key.copy_from_slice(Aes256Gcm::generate_key(&mut OsRng).as_slice());
+                store.store(&key)?;
+                key
+            }
+        };
+        Self::open_with_key(app_data_dir, key).map_err(|e| {
+            if e == DECRYPT_ERROR {
+                format!(
+                    "{KEY_MISMATCH_ERROR}: the key in the system keychain does not open the \
+                     local database (another key, or a damaged file). Enter the recovery key."
+                )
+            } else {
+                e
+            }
+        })
+    }
+
+    /// Opens an existing database with a typed recovery key and, once it
+    /// decrypts, stores the key in `store` (SEC-03). A malformed or wrong key
+    /// leaves the files and the store untouched.
+    pub(crate) fn recover(
+        app_data_dir: &Path,
+        store: &dyn KeyStore,
+        recovery_key: &str,
+    ) -> Result<Self, String> {
+        let key = recovery::decode(recovery_key)?;
+        if !has_saved_file(&app_data_dir.join("pharos.db.enc")) {
+            return Err("there is no local database to recover".to_string());
+        }
+        let db = Self::open_with_key(app_data_dir, key).map_err(|e| {
+            if e == DECRYPT_ERROR {
+                format!("{WRONG_RECOVERY_KEY}: this recovery key does not open the local database")
+            } else {
+                e
+            }
+        })?;
+        store.store(&key)?;
+        Ok(db)
+    }
+
+    /// The recovery key of this database (ADR-0024). Only for an explicit
+    /// export by the user: never log or send it.
+    pub fn recovery_key(&self) -> String {
+        recovery::encode(&self.key)
     }
 
     fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
@@ -175,6 +293,12 @@ impl Db {
         let blob = encrypt(&self.key, &image)?;
         write_atomic(&self.enc_path, &blob)
     }
+}
+
+/// True if a database was ever saved here (`pharos.db.enc`, or a first save
+/// that never got renamed): then a missing key must not be replaced.
+fn has_saved_file(enc_path: &Path) -> bool {
+    enc_path.exists() || pending_path(enc_path).exists()
 }
 
 /// Path of the in-progress copy written before the atomic rename.
@@ -436,36 +560,53 @@ fn pending_migrations(conn: &Connection) -> Result<Vec<&'static str>, String> {
 }
 
 /// Why the local database could not be opened at startup (None when it
-/// opened). The app keeps running so the UI can explain it (SEC-06).
+/// opened). The app keeps running so the UI can explain it (SEC-06), or, for a
+/// key error, recover it (SEC-03).
 pub struct DbStatus {
-    pub open_error: Option<String>,
+    pub open_error: Mutex<Option<String>>,
+    pub data_dir: PathBuf,
 }
 
 #[tauri::command]
 pub fn db_open_error(status: tauri::State<DbStatus>) -> Option<String> {
-    status.open_error.clone()
+    status.open_error.lock().ok().and_then(|e| e.clone())
 }
 
-fn load_or_create_key() -> Result<[u8; 32], String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_DB_KEY).map_err(|e| e.to_string())?;
-    match entry.get_password() {
-        Ok(b64) => {
-            let bytes = B64.decode(b64).map_err(|e| e.to_string())?;
-            bytes
-                .try_into()
-                .map_err(|_| "stored db key has wrong length".to_string())
-        }
-        Err(keyring::Error::NoEntry) => {
-            let key = Aes256Gcm::generate_key(&mut OsRng);
-            entry
-                .set_password(&B64.encode(key.as_slice()))
-                .map_err(|e| e.to_string())?;
-            let mut out = [0u8; 32];
-            out.copy_from_slice(key.as_slice());
-            Ok(out)
-        }
-        Err(e) => Err(e.to_string()),
+/// True for the open errors a recovery key can fix.
+fn is_key_error(error: &str) -> bool {
+    error.starts_with(KEY_MISSING_ERROR) || error.starts_with(KEY_MISMATCH_ERROR)
+}
+
+/// Opens the database with the recovery key the user typed and stores the key
+/// in the keychain again (SEC-03). Only allowed while the database failed to
+/// open for a key error, so it can never replace the key of an open database.
+/// The key is never logged and no error repeats it.
+#[tauri::command]
+pub fn db_recover(
+    app: tauri::AppHandle,
+    status: tauri::State<DbStatus>,
+    recovery_key: String,
+) -> Result<(), String> {
+    use tauri::Manager;
+    let mut open_error = status
+        .open_error
+        .lock()
+        .map_err(|_| "db status lock poisoned".to_string())?;
+    if !open_error.as_deref().is_some_and(is_key_error) {
+        return Err("the recovery key is only needed when the database key is missing".into());
     }
+    let db = Db::recover(&status.data_dir, &Keychain, &recovery_key)?;
+    app.manage(db);
+    *open_error = None;
+    tracing::info!("local database recovered with the recovery key");
+    Ok(())
+}
+
+/// The recovery key of the open database, shown once to the user who asked
+/// for it (Profile). It goes to the UI only; never to logs or sync.
+#[tauri::command]
+pub fn recovery_key_export(db: tauri::State<Db>) -> String {
+    db.recovery_key()
 }
 
 fn encrypt(key: &[u8; 32], plaintext: &[u8]) -> Result<Vec<u8>, String> {
@@ -488,7 +629,7 @@ fn decrypt(key: &[u8; 32], blob: &[u8]) -> Result<Vec<u8>, String> {
     let nonce = Nonce::from_slice(nonce_bytes);
     cipher
         .decrypt(nonce, ciphertext)
-        .map_err(|_| "failed to decrypt local database".to_string())
+        .map_err(|_| DECRYPT_ERROR.to_string())
 }
 
 #[cfg(test)]
@@ -830,6 +971,176 @@ mod tests {
                 format!("pharos.db.enc.bak-{APP_VERSION}-0011_sync_conflicts"),
             ]
         );
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// An in-memory keychain, so recovery is tested without the real one.
+    #[derive(Default)]
+    struct MemStore(std::cell::RefCell<Option<[u8; 32]>>);
+
+    impl MemStore {
+        fn with(key: [u8; 32]) -> Self {
+            MemStore(std::cell::RefCell::new(Some(key)))
+        }
+        fn key(&self) -> Option<[u8; 32]> {
+            *self.0.borrow()
+        }
+    }
+
+    impl KeyStore for MemStore {
+        fn load(&self) -> Result<Option<[u8; 32]>, String> {
+            Ok(self.key())
+        }
+        fn store(&self, key: &[u8; 32]) -> Result<(), String> {
+            *self.0.borrow_mut() = Some(*key);
+            Ok(())
+        }
+    }
+
+    /// A database with one renamed workspace, saved in `dir` with `KEY`.
+    fn saved_db(dir: &Path) -> String {
+        let db = Db::open_with_store(dir, &MemStore::with(KEY)).unwrap();
+        let id = db.with_conn(ensure_workspace).unwrap();
+        db.with_conn(|c| {
+            c.execute("UPDATE workspaces SET name = 'Recovered'", [])
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+        db.persist().unwrap();
+        id
+    }
+
+    #[test]
+    fn a_fresh_install_generates_and_stores_a_key() {
+        let dir = temp_dir();
+        let store = MemStore::default();
+        let db = Db::open_with_store(&dir, &store).unwrap();
+        assert_eq!(store.key(), Some(db.key));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_missing_key_with_a_saved_file_is_not_replaced() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+
+        let store = MemStore::default();
+        let err = Db::open_with_store(&dir, &store)
+            .err()
+            .expect("must refuse");
+        assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
+        assert_eq!(store.key(), None, "no new key may be stored");
+        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+
+        // A first save that never got renamed counts as a saved file too.
+        fs::rename(dir.join("pharos.db.enc"), dir.join("pharos.db.enc.new")).unwrap();
+        let err = Db::open_with_store(&dir, &store).err().unwrap();
+        assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_keychain_key_that_does_not_decrypt_is_a_mismatch() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let store = MemStore::with([3u8; 32]);
+        let err = Db::open_with_store(&dir, &store).err().unwrap();
+        assert!(err.starts_with(KEY_MISMATCH_ERROR), "{err}");
+        assert!(is_key_error(&err));
+        assert_eq!(store.key(), Some([3u8; 32]));
+        assert!(!is_key_error(NEWER_DB_ERROR));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// Acceptance of SEC-03: on another PC, with only the `.enc` file and the
+    /// recovery key, the data comes back and the key is in the keychain again.
+    #[test]
+    fn the_enc_file_and_the_recovery_key_recover_the_data_on_another_pc() {
+        let first_pc = temp_dir();
+        let id = saved_db(&first_pc);
+        let recovery_key = Db::open_with_store(&first_pc, &MemStore::with(KEY))
+            .unwrap()
+            .recovery_key();
+
+        let other_pc = temp_dir();
+        fs::copy(
+            first_pc.join("pharos.db.enc"),
+            other_pc.join("pharos.db.enc"),
+        )
+        .unwrap();
+        let keychain = MemStore::default();
+        let err = Db::open_with_store(&other_pc, &keychain).err().unwrap();
+        assert!(err.starts_with(KEY_MISSING_ERROR), "{err}");
+
+        let typed = recovery_key.to_lowercase().replace('-', " ");
+        let db = Db::recover(&other_pc, &keychain, &typed).unwrap();
+        assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
+        let name: String = db
+            .with_conn(|c| {
+                c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(name, "Recovered");
+        assert_eq!(keychain.key(), Some(KEY));
+        drop(db);
+        // The next start opens normally from the keychain.
+        Db::open_with_store(&other_pc, &keychain).unwrap();
+        fs::remove_dir_all(&first_pc).unwrap();
+        fs::remove_dir_all(&other_pc).unwrap();
+    }
+
+    #[test]
+    fn a_recovery_key_replaces_a_mismatched_keychain_key() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let keychain = MemStore::with([3u8; 32]);
+        Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
+        assert_eq!(keychain.key(), Some(KEY));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_wrong_recovery_key_changes_nothing() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let keychain = MemStore::default();
+
+        let other_key = recovery::encode(&[4u8; 32]);
+        let err = Db::recover(&dir, &keychain, &other_key).err().unwrap();
+        assert!(err.starts_with(WRONG_RECOVERY_KEY), "{err}");
+        assert!(!err.contains(&other_key[..9]), "{err}");
+        assert_eq!(keychain.key(), None);
+        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_recovery_key_with_a_typo_is_rejected_before_touching_anything() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let keychain = MemStore::default();
+        let good = recovery::encode(&KEY);
+        let last = if good.ends_with('Z') { 'Y' } else { 'Z' };
+        let typo = format!("{}{last}", &good[..good.len() - 1]);
+
+        let err = Db::recover(&dir, &keychain, &typo).err().unwrap();
+        assert!(err.starts_with(recovery::INVALID_RECOVERY_KEY), "{err}");
+        assert_eq!(keychain.key(), None);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn recovery_needs_a_saved_database() {
+        let dir = temp_dir();
+        let keychain = MemStore::default();
+        assert!(Db::recover(&dir, &keychain, &recovery::encode(&KEY)).is_err());
+        assert_eq!(keychain.key(), None);
+        assert!(file_names(&dir).is_empty());
         fs::remove_dir_all(&dir).unwrap();
     }
 

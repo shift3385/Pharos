@@ -50,9 +50,20 @@
       "input": "blob QmFzZTY0U2VjcmV0VmFsdWUxMjM0NTY3ODkwYWJjZGVm end",
       "secrets": ["QmFzZTY0U2VjcmV0VmFsdWUxMjM0NTY3ODkwYWJjZGVm"],
       "expect": ["blob <redacted> end"]
+    },
+    {
+      "input": "typed 7k3m q9xa 2b4c d5e6 f7g8 h9j0 k1m2 n3p4 q5r6 s7t8 v9w0 x1y2 z3a4 b5c6 then",
+      "secrets": ["7k3m q9xa", "z3a4 b5c6"],
+      "expect": ["typed <recovery-key> then"]
+    },
+    {
+      "input": "key 7K3M-Q9XA-2B4C-D5E6-F7G8-H9J0-K1M2-N3P4-Q5R6-S7T8-V9W0-X1Y2-Z3A4-B5C6.",
+      "secrets": ["7K3M-Q9XA", "Z3A4-B5C6"],
+      "expect": ["key <recovery-key>."]
     }
   ],
   "kept": [
+    "this list must stay just like what came from that page when they gave each name some text here",
     "migration 0011_sync_conflicts.sql applied in 12 ms",
     "id 3f2504e0-4f89-11d3-9a0c-0305e82c3301 at src/modules/test-cases/ui/TestCaseEditor.tsx:42",
     "TypeError: Cannot read properties of undefined (reading 'map')",
