@@ -28,18 +28,20 @@
    móvil en 0.4.0.
 7. **El trabajo se hace en pistas paralelas** coordinadas como un equipo pequeño de agentes (§7).
 
-## 2. Estado real (2026-10-29, segunda ola cerrada)
+## 2. Estado real (2026-10-29, tercera ola cerrada; `0.1.0-beta.1`)
 
 | Área                                                                            | Estado                                                                           | Commits                         |
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------- |
 | Fases 0–7: base, cuentas, BD cifrada, plan, casos, planificador, plantillas, IA | Implementado                                                                     | `369d335`…`79a0185`             |
 | Fase 8: sync con oplog, HLC y panel de conflictos                               | Implementado, con 6 fallos verificados (compuerta A)                             | `bf96ad6`, `fb70768`, `4fdd6a5` |
-| Fase 9A: administración                                                         | Implementado; resto de la Fase 9 pendiente                                       | `2de8e8e`                       |
+| Fase 9A: administración                                                         | Implementado                                                                     | `2de8e8e`                       |
 | Trazabilidad: requisitos, matriz, tags                                          | Implementado                                                                     | `484e941`                       |
 | BD sin texto plano y guardado atómico (SEC-01/02)                               | Hecho                                                                            | `54f1dde`                       |
 | Varios proveedores de IA (IA-08) y cuenta de test (BASE-17)                     | Hecho                                                                            | `91f0b9a`                       |
-| Tests                                                                           | Cliente 188 · Rust 134 · servidor 58 · scripts 27. CI (pista B1); E2E local (B2) | —                               |
+| Tests                                                                           | Cliente 422 · Rust 244 · servidor 90 · scripts 40. CI con 8 checks obligatorios, E2E incluido | —                   |
 | Segunda ola: compuerta A cerrada, SEC-03, IA-05/IA-10, Inicio real, carpeta de descarga, PDFs en ZIPs, logs de sync, zod 4 | Hecho (A3, S1, Q1, I1, U1) | `b969824`, `b75e757`, `c000a53`, `24535c4`, `0eab0a1` |
+| Tercera ola: compuerta B cerrada, WCAG 2.1 AA y validación común de formularios (UX-05/UX-01), web como cliente puro del servidor y contratos generados (BASE-10/BASE-05), react-router 7 y cobertura en cada PR (BASE-20/BASE-13), E2E obligatorio | Hecho (X1, W1, D1, Q1) | `f1cac23`, `1f93e15`, `446dd7e`, `95958e6` |
+| Fase 9: documentación final, guía de la beta y release `0.1.0-beta.1` (UX-06) | Hecho (R1); falta la validación nativa (§6) | — |
 
 Las validaciones nativas pendientes están en §6.
 
@@ -47,7 +49,7 @@ Las validaciones nativas pendientes están en §6.
 
 | Versión                         | Tema                     | Contenido                                                                                                                    | Criterio de salida                                                                                                                                                                                                                                    |
 | ------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0.1.0** (hoy `0.1.0-alpha.1`) | MVP consolidado          | Compuertas A y B; SEC-03, SEC-06, SYNC-08, IA-05; Fase 9 (UX-05/06); huecos de la spec (§5)                                  | Compuertas A y B cerradas con evidencia; `cargo test`, `verify` y tests del servidor en CI; conflicto simulado visible; matriz exportable; `.feature` filtrable por `@TC-xxx`; instalador NSIS limpio en Windows 11; validaciones nativas (§6) hechas |
+| **0.1.0** (hoy `0.1.0-beta.1`: beta.1 en `main`; se publica al etiquetar; pendiente validación nativa) | MVP consolidado          | Compuertas A y B; SEC-03, SEC-06, SYNC-08, IA-05; Fase 9 (UX-05/06); huecos de la spec (§5)                                  | Compuertas A y B cerradas con evidencia; `cargo test`, `verify` y tests del servidor en CI; conflicto simulado visible; matriz exportable; `.feature` filtrable por `@TC-xxx`; instalador NSIS limpio en Windows 11; validaciones nativas (§6) hechas |
 | **0.2.0**                       | Ejecución                | Compuerta C cerrada (ADRs); EJE-01..04, RUN-00, AUD-01, DAT-02/03, CYC-01 y FLD-01 (recortables a 0.3.0), DEF-01; ING-02..05 | Un run manual y uno de Playwright aparecen en la misma matriz; editar un caso ejecutado no altera sus resultados                                                                                                                                      |
 | **0.3.0**                       | Núcleo y equipo          | CORE-01, SEC-04/05, SYNC-05, SYNC-07, TEN-01, CAS-01/02                                                                      | Dos usuarios trabajan en el mismo workspace con roles; el CLI escribe con la app abierta                                                                                                                                                              |
 | **0.4.0**                       | Campo                    | MOB-01, EXP-01, SYNC-04b, SYNC-09                                                                                            | Un caso ejecutado en el móvil aparece en el escritorio; una sesión exploratoria genera un Run                                                                                                                                                         |
@@ -245,7 +247,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ID     | Ítem                                                                                                | P   | Versión |
 | ------ | --------------------------------------------------------------------------------------------------- | --- | ------- |
 | UX-05  | Verificación WCAG 2.1 AA, incluido teclado y `aria` en los asistentes (Fase 9)                      | P0  | 0.1.0 · Hecho (X1) |
-| UX-06  | Instalador Windows limpio + documentación final (Fase 9; requiere BASE-09)                          | P0  | 0.1.0   |
+| UX-06  | Instalador Windows limpio + documentación final (Fase 9; requiere BASE-09)                          | P0  | 0.1.0 · Hecho (R1); falta QA del instalador en Win 11 limpio (§6) |
 | UX-01  | Validaciones transversales de formularios (números, requeridos, formatos, filas duplicadas)         | P1  | 0.1.0 · Hecho (X1) |
 | UX-08  | Inicio real: búsqueda, último acceso y progreso de proyectos (spec §5); sin el texto de la "Fase 0" | P2  | 0.1.0 · Hecho (U1) |
 | UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0 · Hecho (U1) |
@@ -254,6 +256,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | —       |
+| UX-09  | "Exportar diagnóstico" también en la pantalla de BD que no abre (`DbErrorScreen`); hoy solo queda el log (R1) | P2  | 0.1.x   |
 | DEU-01 | Backend compilado con `tsc` para producción                                                         | P2  | 0.5.0   |
 
 ## 6. Validaciones del usuario pendientes
@@ -288,6 +291,11 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   con Espacio y flechas), un diálogo de IA, el panel de conflictos y la clave de
   recuperación, y guardar un plan con avisos y otro sin título. Los puntos abiertos están en
   `docs/accesibilidad/auditoria-wcag-0.1.0.md`.
+- **Beta 0.1.0-beta.1 (R1, UX-06):** recorrer [`guia-beta.md`](guia-beta.md), que convierte
+  esta lista en casillas, con el instalador NSIS del CI en un Windows 11 limpio: instalar
+  (aviso de SmartScreen: el instalador no está firmado), primer arranque y WebView2, versión
+  visible, carpeta de datos, desinstalar y reinstalar, y actualizar encima de `0.1.0-alpha.1`.
+  La firma de código queda fuera de 0.1.0 (limitación conocida).
 - **E2E (BASE-14):** `npm run e2e` en verde con la API de `main` en el puerto 3000 (la CSP
   del escritorio solo admite ese puerto).
 

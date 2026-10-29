@@ -227,6 +227,18 @@ todavía. Cuando se implementen, cada fila puede pasar a la tabla de arriba. Dis
 | Enlace para saltar         | `skip-link` → `#main-content`            | primera parada del tabulador; lleva al `<main>`                                           |
 | Auditoría de accesibilidad | `a11y.test.tsx` / `a11y.e2e.ts`          | axe-core en componentes (por módulo) y en el binario real; informe en `docs/accesibilidad/` |
 
+## Release and distribution (VERSIONING, BASE-09, UX-06)
+
+| Concepto (ES)              | Identifier                                 | Notes                                                                                     |
+| -------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Pre-versión                | `X.Y.Z-alpha.N` / `-beta.N` / `-rc.N`      | SemVer; solo instalador NSIS (WiX rechaza pre-versiones no numéricas)                     |
+| Commit de release          | `chore(release): vX.Y.Z[-pre]`             | único sitio donde se usa `npm run version:set`; la etiqueta la pone la coordinación       |
+| Instalador                 | `build:installer` / `scripts/build-installer.mjs` | elige `nsis` o `nsis` + `msi` según la versión                                      |
+| Artefacto del instalador   | `pharos-<version>-<sha7>-windows`          | `.zip` con `Pharos_<version>_x64-setup.exe`, de la ejecución del workflow Installer (30 días) |
+| MENOR admitida             | `acceptedMinors` / `isSupportedClient`     | la MENOR del servidor y la anterior; el resto recibe 426 (SYNC-08)                        |
+| Fixture de actualización   | `src-tauri/tests/fixtures/<versión>/`      | base escrita por esa versión real; `upgrade_tests.rs` la migra sin perder filas (BASE-04) |
+| Validación nativa          | ROADMAP §6 / `docs/guia-beta.md`           | comprobación manual en la app instalada; bloquea pasar de `beta.N` a la estable           |
+
 ## Audit fields (every business entity — spec §3)
 
 `workspace_id`, `created_by`, `updated_by`, `created_at`, `updated_at`,

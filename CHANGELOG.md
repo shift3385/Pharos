@@ -7,6 +7,30 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## [Sin publicar]
 
+## [0.1.0-beta.1] - 2026-10-29
+
+Primera beta de 0.1.0. Cierra las compuertas A y B de la línea base y todo el
+contenido del hito; falta la validación nativa (guía:
+[`docs/guia-beta.md`](docs/guia-beta.md)).
+
+- **Primera ola:** sincronización corregida (varias cuentas en un equipo,
+  borrado en cascada, sincronizaciones grandes), copia antes de migrar y
+  protección contra datos más nuevos (SEC-06), versión de la app en cada sync
+  (SYNC-08), integración continua, smoke E2E y diagnóstico exportable.
+- **Segunda ola:** claves únicas entre equipos y purga de lo borrado (DAT-01,
+  SYNC-06), clave de recuperación (SEC-03), casos desde un requisito y más
+  ayudas de IA (IA-05, IA-10), Inicio real, carpeta de descarga y PDF en los
+  ZIP.
+- **Tercera ola:** accesibilidad WCAG 2.1 AA y validación común de
+  formularios (UX-05, UX-01), la web como cliente puro del servidor y
+  contratos generados (BASE-10, BASE-05), dependencias sin avisos de
+  seguridad y el E2E obligatorio para fusionar.
+- **Documentación final (UX-06):** README al día y guía de la beta.
+
+Conocido: el instalador NSIS no está firmado (SmartScreen avisa al
+instalar) y la app instalada necesita la API en `localhost:3000` del mismo
+equipo.
+
 ### Añadido
 
 - **La web trabaja contra el servidor (BASE-10, ADR-0004):** la versión web ya
@@ -146,7 +170,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   informar de un fallo: versión, sistema operativo, WebView2, migraciones
   aplicadas y los registros recientes. Nunca incluye tus proyectos, casos,
   perfil, base de datos, claves ni tokens; correos, tokens y rutas con tu
-  usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
+  usuario se enmascaran. Si la base local no abre, su pantalla aún no ofrece
+  el botón: adjunta el log del día (guía de la beta, apartado 5).
 - **Registros de la app:** el escritorio guarda un log diario en
   `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
 - **Los fallos de sincronización quedan en el log (BASE-08):** además del aviso,
@@ -164,7 +189,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   informes de cobertura (`npm run coverage`, `npm run coverage:rust`, BASE-13).
 - **El smoke E2E corre en CI (BASE-14):** cada PR y cada cambio en `main`
   arrancan el binario real en Windows contra una API local (unos 7 minutos) y
-  suben los resultados como artefacto. Aún no bloquea la fusión. Para ello,
+  suben los resultados como artefacto (es obligatorio para fusionar, ver
+  "Cambiado"). Para ello,
   una compilación debug con perfil E2E abre ella misma el puerto de DevTools
   de WebView2; una release nunca lo hace.
 - **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
@@ -302,9 +328,6 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Borrar un proyecto (FIX-05):** sus planes, casos, requisitos y tarjetas
   también desaparecen en los demás equipos. Los hijos de proyectos borrados
   antes de esta versión se reparan solos en el servidor.
-
-### Corregido
-
 - El servidor respondía "error interno" (500) a peticiones mal formadas
   (JSON roto, cuerpo demasiado grande, tipo de contenido no admitido). Ahora
   responde con el error 4xx correspondiente.
@@ -453,5 +476,6 @@ validaciones nativas pendientes.
 - Corregida una fuga entre usuarios de la misma instalación: los proyectos son
   ahora propiedad de cada usuario.
 
-[Sin publicar]: https://github.com/shift3385/Pharos/compare/v0.1.0-alpha.1...HEAD
+[Sin publicar]: https://github.com/shift3385/Pharos/compare/v0.1.0-beta.1...HEAD
+[0.1.0-beta.1]: https://github.com/shift3385/Pharos/compare/v0.1.0-alpha.1...v0.1.0-beta.1
 [0.1.0-alpha.1]: https://github.com/shift3385/Pharos/releases/tag/v0.1.0-alpha.1
