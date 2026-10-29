@@ -213,6 +213,20 @@ todavía. Cuando se implementen, cada fila puede pasar a la tabla de arriba. Dis
 | Límite de error            | `ErrorBoundary` / `ErrorFallback`        | captura errores de render y muestra reintentar, recargar y "Exportar diagnóstico"      |
 | Smoke E2E                  | `smoke` (`e2e/specs/smoke.e2e.ts`)       | arrancar → login → crear proyecto → reabrir, con el binario real (WDIO + tauri-driver) |
 
+## Accessibility and form validation (UX-05, UX-01 — ADR-0027)
+
+| Concepto (ES)              | Identifier                               | Notes                                                                                     |
+| -------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Diálogo                    | `Dialog` (`@shared/ui/Dialog`)           | todo modal: foco dentro y de vuelta, Tab retenido, Escape salvo si no es `dismissable`    |
+| Campo de formulario        | `FormField` / `ControlProps`             | etiqueta + ayuda + mensaje enlazados (`htmlFor`, `aria-describedby`, `aria-invalid`)    |
+| Problema de validación     | `Issue` (`@shared/validation`)           | `code` (i18n `validation.*` o clave propia) + `severity` + `params`                     |
+| Gravedad                   | `severity`: `error` / `warning`          | `error` bloquea el guardado (solo integridad); `warning` se guarda y se cuenta            |
+| Regla de los borradores    | draft rule                               | validar nunca bloquea en silencio: Guardar no se deshabilita, el bloqueo se explica       |
+| Resumen de errores         | `ErrorSummary` / `useSaveGuard`          | `role="alert"`; aparece y toma el foco al intentar guardar con un `error`                 |
+| Fila repetida              | `duplicateRows` / `duplicateRow`         | misma fila que una anterior (sin espacios ni mayúsculas); es un aviso; no en pasos      |
+| Enlace para saltar         | `skip-link` → `#main-content`            | primera parada del tabulador; lleva al `<main>`                                           |
+| Auditoría de accesibilidad | `a11y.test.tsx` / `a11y.e2e.ts`          | axe-core en componentes (por módulo) y en el binario real; informe en `docs/accesibilidad/` |
+
 ## Audit fields (every business entity — spec §3)
 
 `workspace_id`, `created_by`, `updated_by`, `created_at`, `updated_at`,
@@ -229,3 +243,8 @@ Folder names in English, kebab-case: `projects`, `test-plan`, `test-cases`,
 `--color-*` (colors), `--font-*` / `--fs-*` / `--fw-*` (typography),
 `--space-*` (spacing), `--radius-*` (radii), `--shadow-*` (elevation).
 Only `src/shared/theme/tokens.css` declares raw color values.
+`--color-<semantic>-text` is the AA text tone of a semantic color (the base
+hue is for fills and borders); `--color-focus` / `--color-focus-on-navy` are
+the focus indicator; `--color-border-input` is the ≥ 3:1 boundary of text
+fields, selects and textareas (`--color-border` stays for cards and
+dividers) (ADR-0027).

@@ -267,7 +267,7 @@
 }
 .tc-gherkin__editor:focus-within {
   border-color: var(--color-navy-500);
-  box-shadow: 0 0 0 3px var(--color-navy-100);
+  box-shadow: 0 0 0 2px var(--color-focus);
 }
 .tc-gherkin__ta:focus {
   outline: none;
@@ -293,14 +293,14 @@
 }
 .tc-gherkin .token.string,
 .tc-gherkin .token.pystring {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .tc-gherkin .token.comment {
   color: var(--color-text-muted);
   font-style: italic;
 }
 .tc-gherkin .token.tag {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .tc-gherkin .token.table-head,
 .tc-gherkin .token.th {
@@ -376,7 +376,7 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 
@@ -448,7 +448,7 @@
   padding: 0 var(--space-2);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 
@@ -480,7 +480,7 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-sm);
 }
 .tc-examples__table thead input {
@@ -499,7 +499,7 @@
 }
 .tc-examples__delcol:hover,
 .tc-examples__delrow:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .tc-examples__actions {
   display: flex;
@@ -551,13 +551,13 @@
 }
 .tc-warn {
   font-size: var(--fs-caption);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .tc-notice {
   padding: var(--space-2) var(--space-3);
   font-size: var(--fs-ui);
-  color: var(--color-success);
+  color: var(--color-success-text);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -614,7 +614,7 @@
   border-radius: var(--radius-md);
 }
 .tc-flow__del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: var(--color-error);
 }
 .tc-flow__add {
@@ -764,7 +764,7 @@
   border-color: var(--color-warning);
 }
 .tc-reqs__chip--unknown .tc-reqs__title {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .tc-reqs__key {
   font-family: var(--font-mono);
@@ -788,7 +788,7 @@
   border-radius: var(--radius-pill);
 }
 .tc-reqs__remove:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 /* ---- AI-generated case awaiting review (IA-01) ---- */
@@ -799,5 +799,13 @@
   gap: var(--space-2);
   font-size: var(--fs-caption);
   font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+/* Repeated Examples columns/rows, linked to their cells (UX-01). */
+.tc-examples__issues {
+  margin-top: var(--space-2);
+  padding-left: var(--space-5);
+  font-size: var(--fs-metadata);
   color: var(--color-text-secondary);
 }

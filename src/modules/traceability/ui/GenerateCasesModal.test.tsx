@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
+import { expectNoAxeViolations } from "@test/axe";
 import type { GeneratedCase } from "@modules/ai";
 import type { Requirement } from "../model/types";
 
@@ -80,6 +81,7 @@ describe("GenerateCasesModal (IA-05)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Generate" }));
     expect(await screen.findByText("Successful login")).toBeInTheDocument();
     expect(screen.getByText("AI · pending review · Claude · claude-opus-5-5")).toBeInTheDocument();
+    await expectNoAxeViolations(); // the review list (UX-05)
     expect(ai.generate).toHaveBeenCalledWith(
       expect.objectContaining({ requirementKey: "REQ-007", title: "Login with email" }),
       "en",

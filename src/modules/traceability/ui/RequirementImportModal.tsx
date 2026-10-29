@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
 import type { CsvImportResult } from "../import/requirementCsv";
 import "@shared/ui/ConfirmDialog.css";
 import "./Traceability.css";
@@ -24,6 +25,7 @@ export function RequirementImportModal({
 }) {
   const { t } = useTranslation();
   const [importing, setImporting] = useState(false);
+  const id = useId();
   const updates = result.rows.filter(
     (r) => r.requirementKey && existingKeys.includes(r.requirementKey),
   ).length;
@@ -40,87 +42,93 @@ export function RequirementImportModal({
   }
 
   return (
-    <div className="cd-overlay" role="dialog" aria-modal="true" onClick={onCancel}>
-      <div className="cd tr-modal tr-modal--wide" onClick={(e) => e.stopPropagation()}>
-        <h3 className="cd__title">{t("traceability.import.title")}</h3>
-        <p className="cd__msg">
-          <span className="tr-mono">{fileName}</span>
+    <Dialog
+      className="cd tr-modal tr-modal--wide"
+      labelledBy={`${id}-title`}
+      onClose={onCancel}
+      dismissable={!importing}
+    >
+      <h3 id={`${id}-title`} className="cd__title">{t("traceability.import.title")}</h3>
+      <p className="cd__msg">
+        <span className="tr-mono">{fileName}</span>
+      </p>
+
+      {result.columns.title === undefined ? (
+        <p className="tr-error" role="alert">
+          {t("traceability.import.noTitleColumn")}
         </p>
+      ) : (
+        <>
+          <p className="tp-field__hint">
+            {t("traceability.import.columns")}:{" "}
+            {columns
+              .map(([col, header]) => `${t(`traceability.import.column.${col}`)} ← «${header}»`)
+              .join(" · ")}
+          </p>
 
-        {result.columns.title === undefined ? (
-          <p className="tr-error">{t("traceability.import.noTitleColumn")}</p>
-        ) : (
-          <>
-            <p className="tp-field__hint">
-              {t("traceability.import.columns")}:{" "}
-              {columns
-                .map(([col, header]) => `${t(`traceability.import.column.${col}`)} ← «${header}»`)
-                .join(" · ")}
-            </p>
-
-            <div className="tr-table-wrap">
-              <table className="tr-table">
-                <thead>
-                  <tr>
-                    <th>{t("traceability.requirement.key")}</th>
-                    <th>{t("traceability.requirement.title")}</th>
-                    <th>{t("traceability.requirement.priority")}</th>
+          <div className="tr-table-wrap">
+            <table className="tr-table" aria-label={t("traceability.import.preview")}>
+              <thead>
+                <tr>
+                  <th>{t("traceability.requirement.key")}</th>
+                  <th>{t("traceability.requirement.title")}</th>
+                  <th>{t("traceability.requirement.priority")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.rows.slice(0, PREVIEW_ROWS).map((r, i) => (
+                  <tr key={i}>
+                    <td className="tr-mono">
+                      {r.requirementKey ?? (
+                        <span className="tp-field__hint">{t("traceability.requirement.keyAuto")}</span>
+                      )}
+                    </td>
+                    <td>{r.title}</td>
+                    <td>{t(`traceability.priorityLabel.${r.priority ?? "medium"}`)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {result.rows.slice(0, PREVIEW_ROWS).map((r, i) => (
-                    <tr key={i}>
-                      <td className="tr-mono">
-                        {r.requirementKey ?? (
-                          <span className="tp-field__hint">{t("traceability.requirement.keyAuto")}</span>
-                        )}
-                      </td>
-                      <td>{r.title}</td>
-                      <td>{t(`traceability.priorityLabel.${r.priority ?? "medium"}`)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {result.rows.length > PREVIEW_ROWS && (
-              <p className="tp-field__hint">
-                {t("traceability.import.more", { count: result.rows.length - PREVIEW_ROWS })}
-              </p>
-            )}
-
-            <p className="cd__msg">{t("traceability.import.summary", { creates, updates })}</p>
-
-            {result.issues.length > 0 && (
-              <ul className="tr-issues">
-                {result.issues.map((issue, i) => (
-                  <li key={i} className="tr-warn">
-                    {t(`traceability.import.issue.${issue.reason}`, {
-                      line: issue.line,
-                      value: issue.value ?? "",
-                    })}
-                  </li>
                 ))}
-              </ul>
-            )}
-          </>
-        )}
+              </tbody>
+            </table>
+          </div>
+          {result.rows.length > PREVIEW_ROWS && (
+            <p className="tp-field__hint">
+              {t("traceability.import.more", { count: result.rows.length - PREVIEW_ROWS })}
+            </p>
+          )}
 
-        <div className="cd__actions">
-          <button type="button" className="cd__cancel" onClick={onCancel}>
-            {t("common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="cd__confirm"
-            disabled={importing || result.rows.length === 0}
-            onClick={() => void confirm()}
-          >
-            {importing
-              ? t("traceability.import.importing")
-              : t("traceability.import.confirm", { count: result.rows.length })}
-          </button>
-        </div>
+          <p className="cd__msg">{t("traceability.import.summary", { creates, updates })}</p>
+
+          {result.issues.length > 0 && (
+            <ul className="tr-issues" aria-label={t("traceability.import.skipped", { count: result.issues.length })}>
+              {result.issues.map((issue, i) => (
+                <li key={i} className="tr-warn">
+                  <span className="sr-only">{t("validation.severity.warning")}: </span>
+                  {t(`traceability.import.issue.${issue.reason}`, {
+                    line: issue.line,
+                    value: issue.value ?? "",
+                  })}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+
+      <div className="cd__actions">
+        <button type="button" className="cd__cancel" onClick={onCancel}>
+          {t("common.cancel")}
+        </button>
+        <button
+          type="button"
+          className="cd__confirm"
+          disabled={importing || result.rows.length === 0}
+          onClick={() => void confirm()}
+        >
+          {importing
+            ? t("traceability.import.importing")
+            : t("traceability.import.confirm", { count: result.rows.length })}
+        </button>
       </div>
-    </div>
+    </Dialog>
   );
 }

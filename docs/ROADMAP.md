@@ -244,9 +244,9 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 
 | ID     | Ítem                                                                                                | P   | Versión |
 | ------ | --------------------------------------------------------------------------------------------------- | --- | ------- |
-| UX-05  | Verificación WCAG 2.1 AA, incluido teclado y `aria` en los asistentes (Fase 9)                      | P0  | 0.1.0   |
+| UX-05  | Verificación WCAG 2.1 AA, incluido teclado y `aria` en los asistentes (Fase 9)                      | P0  | 0.1.0 · Hecho (X1) |
 | UX-06  | Instalador Windows limpio + documentación final (Fase 9; requiere BASE-09)                          | P0  | 0.1.0   |
-| UX-01  | Validaciones transversales de formularios (números, requeridos, formatos, filas duplicadas)         | P1  | 0.1.0   |
+| UX-01  | Validaciones transversales de formularios (números, requeridos, formatos, filas duplicadas)         | P1  | 0.1.0 · Hecho (X1) |
 | UX-08  | Inicio real: búsqueda, último acceso y progreso de proyectos (spec §5); sin el texto de la "Fase 0" | P2  | 0.1.0 · Hecho (U1) |
 | UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0 · Hecho (U1) |
 | PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0 · Hecho (U1) |
@@ -283,6 +283,11 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
 - **Segunda ola (A3, S1, I1, U1):** sync entre dos equipos sin conexión creando casos (sin
   claves duplicadas, DAT-01); purga tras el plazo de retención (SYNC-06); plantillas con dos
   cuentas (FIX-08b); elegir la carpeta de descarga y exportar el ZIP con PDFs (UX-02, EXP-02).
+- **Tercera ola (X1, UX-05/UX-01):** en la app nativa, solo con teclado y con NVDA o el
+  Narrador de Windows, recorrer el asistente del plan, el editor de casos (reordenar pasos
+  con Espacio y flechas), un diálogo de IA, el panel de conflictos y la clave de
+  recuperación, y guardar un plan con avisos y otro sin título. Los puntos abiertos están en
+  `docs/accesibilidad/auditoria-wcag-0.1.0.md`.
 - **E2E (BASE-14):** `npm run e2e` en verde con la API de `main` en el puerto 3000 (la CSP
   del escritorio solo admite ese puerto).
 

@@ -26,15 +26,33 @@
   --color-warning: #b8860b;
   --color-info: #378add;
 
+  /* Text-strength variants of the semantic colors (WCAG 2.1 AA, UX-05). The
+     spec hues above are for fills, badges and borders; on light surfaces they
+     fall under 4.5:1 as text, so text (and white-on-color fills) uses these
+     darker tones of the same family. Dark mode maps them back to the base. */
+  --color-success-text: #167859;
+  --color-error-text: #bc3d3d;
+  --color-warning-text: #886308;
+  --color-info-text: #2b6cac;
+
+  /* Focus indicator: >= 3:1 against every surface it can sit on (1.4.11). The
+     amber beacon is only 2.1:1 on white, so light mode focuses in navy; the
+     navy sidebar keeps amber in both themes. */
+  --color-focus: #1f4e79;
+  --color-focus-on-navy: #f2a33c;
+
   /* ---- Surfaces & text (light) ---- */
   --color-bg-page: #f7f8fa;
   --color-surface-1: #ffffff; /* cards / surfaces */
   --color-surface-2: #f1f4f8; /* secondary surface */
   --color-border: #e2e6eb;
+  /* Boundary of text fields, selects and textareas: >= 3:1 on every surface
+     (WCAG 1.4.11). --color-border stays for cards and dividers. */
+  --color-border-input: #828c9a;
   --color-overlay: rgba(16, 24, 40, 0.45);
   --color-text-primary: #1c2530;
   --color-text-secondary: #5f6b7a;
-  --color-text-muted: #8792a0;
+  --color-text-muted: #616973; /* AA on page, surfaces and navy-100 (UX-05) */
 
   /* ---- Sidebar (navy surface) foreground ---- */
   --color-on-navy: #e8edf2;
@@ -88,7 +106,7 @@
   /* Navy 900 sidebar is kept; navy accents rise for contrast on dark. */
   --color-navy-500: #6fa3cc;
   --color-navy-300: #6fa3cc;
-  --color-navy-100: #1b3a57;
+  --color-navy-100: #193651; /* badge text navy-500 on it >= 4.5:1 */
 
   /* Amber beacon is identical across themes. */
   --color-accent: #f2a33c;
@@ -100,15 +118,23 @@
   --color-error: #f09595;
   --color-warning: #e0b341;
   --color-info: #6fb1ec;
+  --color-success-text: #5dcaa5;
+  --color-error-text: #f09595;
+  --color-warning-text: #e0b341;
+  --color-info-text: #6fb1ec;
+
+  --color-focus: #f2a33c;
+  --color-focus-on-navy: #f2a33c;
 
   --color-bg-page: #0d1620;
   --color-surface-1: #14202e;
   --color-surface-2: #1a2837;
   --color-border: #24344a;
+  --color-border-input: #64758a;
   --color-overlay: rgba(0, 0, 0, 0.55);
   --color-text-primary: #e8edf2;
   --color-text-secondary: #93a3b5;
-  --color-text-muted: #6b7a8d;
+  --color-text-muted: #8491a0; /* AA on page and surfaces (UX-05) */
 
   --color-on-navy: #e8edf2;
   --color-on-navy-muted: #93a3b5;

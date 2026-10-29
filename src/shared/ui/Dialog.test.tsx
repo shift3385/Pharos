@@ -1,0 +1,164 @@
+import { useState } from "react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { expectNoAxeViolations } from "@test/axe";
+import { Dialog } from "./Dialog";
+
+function Harness({ onClose = () => {}, dismissable = true }: { onClose?: () => void; dismissable?: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        open
+      </button>
+      {open && (
+        <Dialog
+          labelledBy="t"
+          dismissable={dismissable}
+          onClose={() => {
+            onClose();
+            setOpen(false);
+          }}
+        >
+          <h3 id="t">Title</h3>
+          <button type="button">first</button>
+          <button type="button">last</button>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+describe("Dialog", () => {
+  it("is a named modal and moves the focus inside", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByText("open"));
+    const dialog = screen.getByRole("dialog", { name: "Title" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.getByText("first")).toHaveFocus();
+    await expectNoAxeViolations();
+  });
+
+  it("keeps Tab and Shift+Tab inside the dialog", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.tab();
+    expect(screen.getByText("last")).toHaveFocus();
+    await userEvent.tab();
+    expect(screen.getByText("first")).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(screen.getByText("last")).toHaveFocus();
+  });
+
+  it("closes on Escape and returns the focus to the opener", async () => {
+    const onClose = vi.fn();
+    render(<Harness onClose={onClose} />);
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByText("open")).toHaveFocus();
+  });
+
+  it("ignores Escape and the backdrop while not dismissable", async () => {
+    const onClose = vi.fn();
+    render(<Harness onClose={onClose} dismissable={false} />);
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("dialog").parentElement!);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes on a backdrop click but not on a click inside", async () => {
+    const onClose = vi.fn();
+    render(<Harness onClose={onClose} />);
+    await userEvent.click(screen.getByText("open"));
+    await userEvent.click(screen.getByText("Title"));
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("dialog").parentElement!);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("returns the focus to the opener even when a child has autoFocus", async () => {
+    function AutoFocusHarness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            edit
+          </button>
+          {open && (
+            <Dialog label="Edit" onClose={() => setOpen(false)}>
+              <input aria-label="name" autoFocus />
+            </Dialog>
+          )}
+        </>
+      );
+    }
+    render(<AutoFocusHarness />);
+    await userEvent.click(screen.getByText("edit"));
+    expect(screen.getByRole("textbox", { name: "name" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByText("edit")).toHaveFocus();
+  });
+
+  it("asks confirmClose before Escape or the backdrop close it", async () => {
+    const onClose = vi.fn();
+    const confirmClose = vi.fn().mockReturnValue(false);
+    render(
+      <Dialog label="Form" onClose={onClose} confirmClose={confirmClose}>
+        <button type="button">x</button>
+      </Dialog>,
+    );
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("dialog").parentElement!);
+    expect(confirmClose).toHaveBeenCalledTimes(2);
+    expect(onClose).not.toHaveBeenCalled();
+    confirmClose.mockReturnValue(true);
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("focuses the main content when the opener is gone after closing", async () => {
+    function Row() {
+      const [state, setState] = useState<"row" | "asking" | "deleted">("row");
+      return (
+        <main id="main-content" tabIndex={-1}>
+          {state === "row" && (
+            <button type="button" onClick={() => setState("asking")}>
+              delete
+            </button>
+          )}
+          {state === "asking" && (
+            <Dialog label="Delete?" onClose={() => setState("row")}>
+              <button type="button" onClick={() => setState("deleted")}>
+                yes
+              </button>
+            </Dialog>
+          )}
+        </main>
+      );
+    }
+    render(<Row />);
+    await userEvent.click(screen.getByText("delete"));
+    await userEvent.click(screen.getByText("yes"));
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
+  it("lets only the innermost of two stacked dialogs handle Escape", async () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    render(
+      <Dialog label="outer" onClose={outer}>
+        <button type="button">a</button>
+        <Dialog label="inner" onClose={inner}>
+          <button type="button">b</button>
+        </Dialog>
+      </Dialog>,
+    );
+    await userEvent.keyboard("{Escape}");
+    expect(inner).toHaveBeenCalledOnce();
+    expect(outer).not.toHaveBeenCalled();
+  });
+});

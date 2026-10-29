@@ -33,6 +33,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0024](0024-clave-de-recuperacion.md)              | Clave de recuperación de la BD local: la `db-key` en base32 con comprobación         | Aceptado | 2026-10-29 |
 | [0025](0025-carpeta-descarga-y-ultimo-acceso.md)   | Carpeta de descarga escrita desde Rust y último acceso local                         | Aceptado | 2026-10-29 |
 | [0026](0026-contratos-generados.md)                | Contratos TS ↔ Rust ↔ servidor generados con `ts-rs` y fixtures de sync compartidas  | Aceptado | 2026-10-29 |
+| [0027](0027-accesibilidad-y-validacion-de-formularios.md) | Accesibilidad WCAG 2.1 AA y validación común de formularios                   | Aceptado | 2026-10-29 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

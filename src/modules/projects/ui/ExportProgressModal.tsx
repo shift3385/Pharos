@@ -1,4 +1,6 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
 import "@shared/ui/ConfirmDialog.css";
 import "./Projects.css";
 
@@ -22,6 +24,7 @@ export function ExportProgressModal({
   percent: number;
 }) {
   const { t } = useTranslation();
+  const id = useId();
 
   const ratio =
     phase === "zipping"
@@ -40,21 +43,29 @@ export function ExportProgressModal({
         : t("projects.exportBuilding", { done, total });
 
   return (
-    <div className="cd-overlay" role="dialog" aria-modal="true">
-      <div className="cd">
-        <h3 className="cd__title">{title}</h3>
+    <Dialog labelledBy={`${id}-title`}>
+      <h3 id={`${id}-title`} className="cd__title">
+        {title}
+      </h3>
+      <div
+        className="pj-progress"
+        role="progressbar"
+        aria-labelledby={`${id}-title`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(ratio * 100)}
+      >
         <div
-          className="pj-progress"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(ratio * 100)}
-        >
-          <div className="pj-progress__bar" style={{ width: `${Math.round(ratio * 100)}%` }} />
-        </div>
-        <p className="cd__msg">{status}</p>
-        {phase === "building" && label && <p className="pj-progress__file">{label}</p>}
+          className="pj-progress__bar"
+          style={{ width: `${Math.round(ratio * 100)}%` }}
+        />
       </div>
-    </div>
+      <p className="cd__msg" role="status">
+        {status}
+      </p>
+      {phase === "building" && label && (
+        <p className="pj-progress__file">{label}</p>
+      )}
+    </Dialog>
   );
 }

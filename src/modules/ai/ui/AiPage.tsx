@@ -246,6 +246,7 @@ export function AiPage() {
               type="password"
               autoComplete="off"
               className="ai__input"
+              aria-label={`${t("ai.keyStatus")} · ${providerLabel(provider)}`}
               placeholder={
                 info.keyRequired
                   ? t("ai.keyPlaceholder", { provider: providerLabel(provider) })

@@ -39,8 +39,8 @@ src/
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
-  shared/      # design system (theme tokens), i18n, ui kit, fonts, diagnostics, version, platform, contracts
-  test/        # test utilities (renderWithProviders)
+  shared/      # design system (theme tokens), i18n, ui kit, form validation, fonts, diagnostics, version, platform, contracts
+  test/        # test utilities (renderWithProviders, axe helper, fake server)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync, logs
 e2e/           # desktop smoke of the real binary (WebdriverIO + tauri-driver)
 server/        # backend API (Fastify): auth, sync document store, the web's domain API
@@ -138,6 +138,42 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - Typography: **Inter** (UI/titles) + **JetBrains Mono** (code/Gherkin/IDs),
   self-hosted via `@fontsource` (OFL, no font CDN — the app is offline).
 - Responsive from day 1 (sidebar collapses to an icon rail ≤768px).
+- WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
+  their `--color-*-text` tone. Field boundaries use `--color-border-input`
+  (≥ 3:1). Focus is `--color-focus` (navy on light, amber
+  on dark and on the navy sidebar). `src/shared/theme/contrast.test.ts` reads
+  `tokens.css` and fails the build if a text/background pair drops under
+  4.5:1 or the focus under 3:1, in either theme.
+
+## Accessibility and form validation (UX-05, UX-01, ADR-0027)
+
+- **Dialogs:** every modal is a `Dialog` (`@shared/ui/Dialog`): focus moves
+  in and returns to the opener, Tab stays inside, Escape and the backdrop close
+  it unless it is not `dismissable` (while saving, an export in progress, the
+  recovery key on screen). Nested dialogs: only the innermost handles keys.
+  The opener is read on the first render (an `autoFocus` child would
+  otherwise pose as it). A form passes `confirmClose`, so Escape and the
+  backdrop ask before discarding typed changes.
+- **Shell:** a skip link is the first Tab stop and jumps to
+  `<main id="main-content">`; the sidebar is the "Main navigation" landmark.
+- **Forms:** rules are pure functions in `@shared/validation` returning an
+  `Issue` (`code`, `severity`). `FormField` / `FieldMessage` render them with
+  `aria-invalid` (errors only) and `aria-describedby`. `ListField`,
+  `PairListField`, `CheckboxGroup` and `SortableSteps` require a `label` that
+  names the group and each row, and warn about repeated rows (not
+  `SortableSteps`: a repeated step is a normal test). A `required` error
+  shows on the field after the first save attempt.
+- **Draft rule:** an `error` (data integrity: a blank title or template name,
+  an invalid or repeated requirement key, case-ID digits or retention out of
+  range) blocks saving; `useSaveGuard` then shows an `ErrorSummary` that takes
+  the focus. Save is never disabled by validation. Anything else is a
+  `warning`: it saves and the save toast counts it.
+- **Keyboard:** steps and planner cards move with the dnd-kit keyboard
+  sensor (Space, arrows, Space; announced in es/en). A planner card takes the
+  mouse drag itself and the keyboard drag on its ⠿ handle, so it holds no
+  nested controls. The Gherkin editor keeps Tab for indentation and says how
+  to leave it (Escape, then Tab). When a dialog's opener is gone after it
+  closes, the focus goes to `#main-content`.
 
 ## Internationalization (spec §11)
 
@@ -256,6 +292,14 @@ The QA tool tests itself at four levels:
   `sync.hlc.ts` and `hlc.ts`; `documents.json` is stored and read back by
   the desktop and matched by what the web API writes.
 - **Backend:** Vitest against a real Postgres database (`pharos_test_db`).
+- **Accessibility (UX-05):** axe-core (`src/test/axe.ts`) in one
+  `a11y.test.tsx` per module: every dialog, every step of the plan wizard, the
+  case editor, admin and the shared form parts, plus direct assertions for
+  what axe cannot see (focus order and return, Escape, summary focus, row
+  names). jsdom has no layout, so contrast is the token test's job there.
+  `e2e/specs/a11y.e2e.ts` runs axe, contrast included, on the real binary in
+  both themes. The manual keyboard and screen-reader pass is in
+  `docs/accesibilidad/auditoria-wcag-0.1.0.md`.
 - **Repository gates** (`scripts/*.mjs`, tested with `node:test`): migration
   numbering, npm audit with expiring exceptions, and `cargo fmt`/clippy with exact
   exceptions.

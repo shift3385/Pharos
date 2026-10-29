@@ -32,6 +32,37 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   Rust, y la CI falla si dejan de coincidir. Al comprobarlos, un caso abierto
   en la app de escritorio ahora incluye su proyecto (`projectId`), como ya
   hacía la sincronización.
+- **Accesibilidad WCAG 2.1 AA (UX-05):** Pharos se usa entero con el teclado.
+  - Un enlace "Saltar al contenido" es la primera parada del tabulador.
+  - Todos los diálogos reciben el foco al abrirse, no lo dejan escapar con
+    Tab, se cierran con Escape (salvo mientras guardan, durante una
+    exportación o con la clave de recuperación en pantalla) y devuelven el
+    foco al botón que los abrió.
+  - En el asistente del plan, el paso actual se anuncia y al cambiar de paso
+    el foco va a su título.
+  - Los pasos de un caso se reordenan con el teclado: Espacio en el asa,
+    flechas y Espacio; cada movimiento se anuncia. Las tarjetas del
+    planificador igual, con su asa ⠿: las flechas izquierda y derecha las
+    cambian de columna.
+  - Al cerrar un diálogo, el foco vuelve al botón que lo abrió; si ese botón
+    ya no existe (por ejemplo, tras borrar un proyecto), va al contenido.
+  - El selector de idioma dice el idioma actual ("ES, Idioma") y se cierra
+    con Escape.
+  - Cada fila de las listas y tablas (alcance, roles, sprints, hitos, riesgos,
+    pasos, ejemplos) y cada botón ✕ dicen a qué fila pertenecen.
+  - El editor Gherkin explica cómo salir de él con el teclado: Escape y
+    después Tab.
+- **Validaciones comunes en los formularios (UX-01):** todos los formularios
+  avisan igual, junto al campo y con el lector de pantalla.
+  - Guardar ya no se queda deshabilitado sin explicación. Si falta algo
+    imprescindible (el título del plan o del caso, el nombre de la plantilla,
+    una clave de requisito válida y única, los dígitos del ID de caso entre 1
+    y 8, o los días de retención entre 1 y 3650), un resumen dice qué es y
+    lleva a cada campo.
+  - Lo demás es un aviso y no impide guardar el borrador: fechas de sprint al
+    revés o solapadas, y filas, columnas o ejemplos repetidos (los pasos se
+    pueden repetir sin aviso). El
+    mensaje de "guardado" dice cuántos avisos quedan por revisar.
 
 - **Inicio real (UX-08):** la pantalla de inicio ya no muestra el texto de la
   "Fase 0". Ofrece "Iniciar nuevo proyecto de pruebas" y "Continuar proyecto
@@ -169,6 +200,24 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   Rust, y las auditorías de dependencias y de licencias.
 
 ### Cambiado
+
+- **Contraste AA en los dos temas (UX-05):** el texto atenuado y los textos de
+  éxito, error, aviso e información se ven más oscuros en el tema claro; los
+  botones de borrar usan un rojo más oscuro; las insignias navy del tema
+  oscuro tienen el fondo un poco más oscuro. El indicador de foco es navy en
+  el tema claro (el ámbar no se distinguía sobre blanco) y ámbar en el oscuro
+  y en la barra lateral, y los campos muestran un anillo de foco visible.
+  El borde de los campos de texto y los selectores es más oscuro, para
+  distinguirlos del fondo en los dos temas.
+- **Formularios en diálogos:** si has escrito algo en una plantilla o un
+  requisito, Escape, un clic fuera o Cancelar preguntan antes de
+  descartarlo. Un campo obligatorio vacío se marca al intentar guardar, no
+  nada más abrir el formulario.
+- **Calendario del cronograma:** el día de hoy se marca en navy en lugar de
+  ámbar. Los colores del tema no llegaban al calendario, que mostraba el azul
+  por defecto de la librería, casi ilegible en el tema oscuro.
+- **Crear proyecto:** "Crear" ya no se deshabilita con el nombre vacío; al
+  pulsarlo, un mensaje dice que el nombre es obligatorio.
 
 - Cada PR publica la cobertura del cliente (BASE-13): el resumen (líneas,
   sentencias, funciones y ramas) en el resumen del job `client` y el informe

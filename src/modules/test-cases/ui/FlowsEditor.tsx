@@ -33,7 +33,7 @@ export function FlowsEditor({
     <div className="tc-flows">
       <p className="tp-field__grouplabel">{t("testCase.flow.background")}</p>
       <p className="tp-field__hint">{t("testCase.flow.backgroundHint")}</p>
-      <ListField items={background} onChange={onBackgroundChange} />
+      <ListField label={t("testCase.flow.background")} items={background} onChange={onBackgroundChange} />
 
       {flows.map((flow, i) => (
         <div className="tc-flow" key={flow.id}>
@@ -43,6 +43,7 @@ export function FlowsEditor({
             </span>
             <input
               className="tc-flow__name"
+              aria-label={t("testCase.flow.namePlaceholder")}
               value={flow.name}
               placeholder={t("testCase.flow.namePlaceholder")}
               onChange={(e) => setFlow(i, { name: e.target.value })}
@@ -52,6 +53,7 @@ export function FlowsEditor({
                 type="button"
                 className="tc-flow__del"
                 title={t("testCase.flow.remove")}
+                aria-label={`${t("testCase.flow.remove")}: ${flow.name}`}
                 onClick={() => removeFlow(i)}
               >
                 ✕
@@ -61,12 +63,14 @@ export function FlowsEditor({
 
           <p className="tp-field__grouplabel">{t("testCase.flow.preconditions")}</p>
           <ListField
+            label={`${t("testCase.flow.preconditions")} · ${flow.name}`}
             items={flow.preconditions ?? []}
             onChange={(v) => setFlow(i, { preconditions: v })}
           />
 
           <p className="tp-field__grouplabel">{t("testCase.flow.steps")}</p>
           <SortableSteps
+            label={`${t("testCase.flow.steps")} · ${flow.name}`}
             steps={flow.steps}
             onChange={(v) => setFlow(i, { steps: v })}
           />

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import Editor from "react-simple-code-editor";
 import Prism from "prismjs";
@@ -21,7 +21,9 @@ const KEYWORDS: { label: string; insert: string }[] = [
 ];
 
 /** Syntax-highlighted Gherkin editor with a keyword palette (spec §5.3). Colors
- *  come from the Faro Nocturno design tokens (see TestCase.css). */
+ *  come from the Faro Nocturno design tokens (see TestCase.css). Tab indents
+ *  inside it; Escape then Tab leaves it, which a hint tells keyboard and
+ *  screen-reader users (WCAG 2.1.2, UX-05). */
 export function GherkinEditor({
   value,
   onChange,
@@ -31,6 +33,12 @@ export function GherkinEditor({
 }) {
   const { t } = useTranslation();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const id = useId();
+
+  // The editor does not forward aria-* to its textarea, so link the hint here.
+  useEffect(() => {
+    textarea()?.setAttribute("aria-describedby", `${id}-keys`);
+  }, [id]);
 
   const textarea = () =>
     wrapRef.current?.querySelector<HTMLTextAreaElement>("textarea") ?? null;
@@ -65,7 +73,14 @@ export function GherkinEditor({
           </button>
         ))}
       </div>
+      <label htmlFor={`${id}-ta`} className="sr-only">
+        {t("testCase.gherkinEditor")}
+      </label>
+      <p id={`${id}-keys`} className="tp-field__hint">
+        {t("testCase.gherkinKeys")}
+      </p>
       <Editor
+        textareaId={`${id}-ta`}
         value={value}
         onValueChange={onChange}
         highlight={(code) =>

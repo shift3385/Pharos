@@ -28,7 +28,8 @@
     "confirmDelete": "Sí, eliminar",
     "cancel": "Cancelar",
     "noData": "Sin datos",
-    "edit": "Editar"
+    "edit": "Editar",
+    "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?"
   },
   "templates": {
     "title": "Plantillas",
@@ -672,7 +673,9 @@
       "removeColumn": "Quitar columna",
       "removeRow": "Quitar fila",
       "placeholders": "Placeholders detectados en los pasos",
-      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}"
+      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}",
+      "columnN": "Columna {{n}}",
+      "actions": "Acciones"
     },
     "derived": {
       "examples": "Examples",
@@ -725,7 +728,17 @@
     "exportFeatures": "Exportar .feature (todos)",
     "exportFeaturesToast": "{{count}} archivos .feature exportados en {{path}}",
     "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
-    "aiPendingCase": "Caso generado por IA"
+    "aiPendingCase": "Caso generado por IA",
+    "stepN": "Paso {{n}}",
+    "drag": {
+      "help": "Para reordenar un paso, pulsa Espacio o Intro en su asa, muévelo con las flechas arriba y abajo, y pulsa Espacio o Intro para soltarlo. Escape cancela.",
+      "start": "Paso {{n}} seleccionado para mover.",
+      "over": "Paso {{n}} sobre la posición {{to}}.",
+      "end": "Paso {{n}} movido a la posición {{to}}.",
+      "cancel": "Movimiento cancelado; el paso {{n}} vuelve a su sitio."
+    },
+    "gherkinEditor": "Editor Gherkin",
+    "gherkinKeys": "Tab sangra. Para salir del editor con el teclado, pulsa Escape y después Tab."
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",
@@ -814,7 +827,15 @@
     },
     "savedToast": "Tarjeta guardada",
     "linkedCases": "Casos de prueba vinculados",
-    "noCasesToLink": "Este proyecto aún no tiene casos de prueba."
+    "noCasesToLink": "Este proyecto aún no tiene casos de prueba.",
+    "drag": {
+      "handle": "Mover la tarjeta «{{card}}»",
+      "help": "Para mover una tarjeta, pulsa Espacio o Intro en su asa, muévela con las flechas (arriba y abajo en la columna, izquierda y derecha entre columnas) y pulsa Espacio o Intro para soltarla. Escape cancela.",
+      "start": "Tarjeta «{{card}}» seleccionada para mover.",
+      "over": "Tarjeta «{{card}}» sobre la columna {{column}}.",
+      "end": "Tarjeta «{{card}}» movida a {{column}}.",
+      "cancel": "Movimiento cancelado; la tarjeta «{{card}}» vuelve a su sitio."
+    }
   },
   "traceability": {
     "title": "Trazabilidad",
@@ -887,7 +908,9 @@
       "importing": "Importando…",
       "doneToast": "Importados: {{created}} nuevos, {{updated}} actualizados",
       "skippedToast": "No importados (son de requisitos borrados y no se reutilizan): {{keys}}",
-      "error": "No se pudo importar el CSV"
+      "error": "No se pudo importar el CSV",
+      "preview": "Vista previa de los requisitos",
+      "skipped": "Filas que se omitirán ({{count}})"
     },
     "view": {
       "requirements": "Requisitos",
@@ -989,5 +1012,32 @@
     "copiedHint": "Pégala en tu gestor de contraseñas y después copia otra cosa para vaciar el portapapeles.",
     "savedCheck": "Ya la he guardado en un lugar seguro",
     "close": "Cerrar"
+  },
+  "a11y": {
+    "skipToContent": "Saltar al contenido",
+    "close": "Cerrar",
+    "currentStep": "paso actual",
+    "row": "Fila {{n}}",
+    "mainNav": "Navegación principal",
+    "start": "Inicio",
+    "end": "Fin",
+    "date": "Fecha"
+  },
+  "validation": {
+    "severity": {
+      "error": "Error",
+      "warning": "Aviso"
+    },
+    "required": "Este campo es obligatorio.",
+    "number": "Escribe un número.",
+    "integer": "Escribe un número entero.",
+    "min": "El mínimo es {{min}}.",
+    "max": "El máximo es {{max}}.",
+    "dateOrder": "La fecha de fin es anterior a la de inicio.",
+    "format": "Formato no válido. Ejemplo: {{example}}.",
+    "duplicateRow": "Fila repetida: ya hay otra igual.",
+    "duplicateKey": "Ese ID ya existe.",
+    "summary": "No se puede guardar: revisa {{count}} campo(s).",
+    "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar."
   }
 }

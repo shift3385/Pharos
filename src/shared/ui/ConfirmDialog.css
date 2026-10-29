@@ -62,5 +62,5 @@
 
 .cd__confirm--danger {
   color: var(--color-surface-1);
-  background: var(--color-error);
+  background: var(--color-error-text);
 }

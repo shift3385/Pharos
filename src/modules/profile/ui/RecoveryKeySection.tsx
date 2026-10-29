@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
 import { recoveryKeyApi } from "../api/recoveryKeyApi";
 import "./RecoveryKeySection.css";
 
@@ -78,95 +79,93 @@ export function RecoveryKeySection() {
       </button>
 
       {step === "confirm" && (
-        <div
-          className="recovery-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="recovery-confirm"
+        <Dialog
+          overlayClassName="recovery-overlay"
+          className="recovery-dialog"
+          labelledBy="recovery-confirm"
+          onClose={() => setStep("idle")}
         >
-          <div className="recovery-dialog">
-            <h3 id="recovery-confirm" className="recovery-dialog__title">
-              {t("recoveryKey.confirmTitle")}
-            </h3>
-            <p>{t("recoveryKey.confirmBody")}</p>
-            <div className="recovery-dialog__actions">
-              <button
-                type="button"
-                className="recovery-dialog__secondary"
-                onClick={() => setStep("idle")}
-              >
-                {t("common.cancel")}
-              </button>
-              <button
-                type="button"
-                className="recovery-dialog__primary"
-                onClick={() => void reveal()}
-              >
-                {t("recoveryKey.confirm")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {step === "shown" && key && (
-        <div
-          className="recovery-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="recovery-shown"
-        >
-          <div className="recovery-dialog">
-            <h3 id="recovery-shown" className="recovery-dialog__title">
-              {t("recoveryKey.shownTitle")}
-            </h3>
-            <ol
-              className="recovery-key"
-              aria-label={t("recoveryKey.title")}
-              data-testid="recovery-key"
-            >
-              {key.split("-").map((group, i) => (
-                <li key={i}>
-                  <code>{group}</code>
-                </li>
-              ))}
-            </ol>
-            <ul className="recovery-dialog__guidance">
-              <li>{t("recoveryKey.guidePaper")}</li>
-              <li>{t("recoveryKey.guideManager")}</li>
-              <li>{t("recoveryKey.guideRisk")}</li>
-              <li>{t("recoveryKey.guideBackup")}</li>
-            </ul>
+          <h3 id="recovery-confirm" className="recovery-dialog__title">
+            {t("recoveryKey.confirmTitle")}
+          </h3>
+          <p>{t("recoveryKey.confirmBody")}</p>
+          <div className="recovery-dialog__actions">
             <button
               type="button"
               className="recovery-dialog__secondary"
-              onClick={() => void copy()}
+              onClick={() => setStep("idle")}
             >
-              {copied ? t("recoveryKey.copied") : t("recoveryKey.copy")}
+              {t("common.cancel")}
             </button>
-            {copied && (
-              <p className="recovery__meta">{t("recoveryKey.copiedHint")}</p>
-            )}
-            <label className="recovery-dialog__check">
-              <input
-                type="checkbox"
-                checked={saved}
-                onChange={(e) => setSaved(e.target.checked)}
-              />
-              {t("recoveryKey.savedCheck")}
-            </label>
-            <div className="recovery-dialog__actions">
-              <button
-                type="button"
-                className="recovery-dialog__primary"
-                disabled={!saved}
-                onClick={close}
-              >
-                {t("recoveryKey.close")}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="recovery-dialog__primary"
+              onClick={() => void reveal()}
+            >
+              {t("recoveryKey.confirm")}
+            </button>
           </div>
-        </div>
+        </Dialog>
+      )}
+
+      {/* Not dismissable: it closes only after "I have saved it", which also
+          drops the key from memory. */}
+      {step === "shown" && key && (
+        <Dialog
+          overlayClassName="recovery-overlay"
+          className="recovery-dialog"
+          labelledBy="recovery-shown"
+          dismissable={false}
+        >
+          <h3 id="recovery-shown" className="recovery-dialog__title">
+            {t("recoveryKey.shownTitle")}
+          </h3>
+          <ol
+            className="recovery-key"
+            aria-label={t("recoveryKey.title")}
+            data-testid="recovery-key"
+          >
+            {key.split("-").map((group, i) => (
+              <li key={i}>
+                <code>{group}</code>
+              </li>
+            ))}
+          </ol>
+          <ul className="recovery-dialog__guidance">
+            <li>{t("recoveryKey.guidePaper")}</li>
+            <li>{t("recoveryKey.guideManager")}</li>
+            <li>{t("recoveryKey.guideRisk")}</li>
+            <li>{t("recoveryKey.guideBackup")}</li>
+          </ul>
+          <button
+            type="button"
+            className="recovery-dialog__secondary"
+            onClick={() => void copy()}
+          >
+            {copied ? t("recoveryKey.copied") : t("recoveryKey.copy")}
+          </button>
+          <p className="recovery__meta" role="status">
+            {copied ? t("recoveryKey.copiedHint") : ""}
+          </p>
+          <label className="recovery-dialog__check">
+            <input
+              type="checkbox"
+              checked={saved}
+              onChange={(e) => setSaved(e.target.checked)}
+            />
+            {t("recoveryKey.savedCheck")}
+          </label>
+          <div className="recovery-dialog__actions">
+            <button
+              type="button"
+              className="recovery-dialog__primary"
+              disabled={!saved}
+              onClick={close}
+            >
+              {t("recoveryKey.close")}
+            </button>
+          </div>
+        </Dialog>
       )}
     </section>
   );

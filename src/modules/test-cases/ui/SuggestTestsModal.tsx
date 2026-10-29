@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
 import {
   suggestTests,
   type AiProvenance,
@@ -29,6 +30,7 @@ export function SuggestTestsModal({
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  const id = useId();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const [phase, setPhase] = useState<Phase>("loading");
@@ -79,73 +81,75 @@ export function SuggestTestsModal({
   }
 
   return (
-    <div
-      className="cd-overlay"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
+    <Dialog
+      className="cd tc-suggest"
+      labelledBy={`${id}-title`}
+      onClose={onClose}
+      dismissable={phase !== "creating"}
     >
-      <div className="cd tc-suggest" onClick={(e) => e.stopPropagation()}>
-        <h3 className="cd__title">{t("testCase.suggest.title")}</h3>
+      <h3 id={`${id}-title`} className="cd__title">{t("testCase.suggest.title")}</h3>
 
-        {phase === "loading" ? (
-          <p className="cd__msg">{t("testCase.suggest.loading")}</p>
-        ) : phase === "empty" ? (
-          <p className="cd__msg">{t("testCase.suggest.empty")}</p>
-        ) : (
-          <>
-            {provenance && (
-              <p className="tp-field__hint">
-                {t("ai.provenance.pending")} ·{" "}
-                {t(`ai.provenance.provider.${provenance.provider}`)} ·{" "}
-                {provenance.model}
-              </p>
-            )}
-            <ul className="tc-suggest__list">
-              {items.map((s, i) => (
-                <li key={i} className="tc-suggest__row">
-                  <label className="tc-suggest__check">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(i)}
-                      onChange={() => toggle(i)}
-                    />
-                    <span>
-                      <span className="tc-suggest__name">{s.title}</span>
-                      {s.description && (
-                        <span className="tc-suggest__desc">
-                          {s.description}
-                        </span>
-                      )}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+      {/* Always present, so screen readers announce loading and results. */}
+      <p className="cd__msg" role="status">
+        {phase === "loading"
+          ? t("testCase.suggest.loading")
+          : phase === "empty"
+            ? t("testCase.suggest.empty")
+            : ""}
+      </p>
+      {phase === "loading" || phase === "empty" ? null : (
+        <>
+          {provenance && (
+            <p className="tp-field__hint">
+              {t("ai.provenance.pending")} ·{" "}
+              {t(`ai.provenance.provider.${provenance.provider}`)} ·{" "}
+              {provenance.model}
+            </p>
+          )}
+          <ul className="tc-suggest__list">
+            {items.map((s, i) => (
+              <li key={i} className="tc-suggest__row">
+                <label className="tc-suggest__check">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(i)}
+                    onChange={() => toggle(i)}
+                  />
+                  <span>
+                    <span className="tc-suggest__name">{s.title}</span>
+                    {s.description && (
+                      <span className="tc-suggest__desc">
+                        {s.description}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
-        <div className="cd__actions">
-          <button type="button" className="cd__cancel" onClick={onClose}>
-            {t("common.cancel")}
+      <div className="cd__actions">
+        <button type="button" className="cd__cancel" onClick={onClose}>
+          {t("common.cancel")}
+        </button>
+        {phase === "list" && (
+          <button
+            type="button"
+            className="cd__confirm"
+            disabled={selected.size === 0}
+            onClick={() => void create()}
+          >
+            {t("testCase.suggest.create", { count: selected.size })}
           </button>
-          {phase === "list" && (
-            <button
-              type="button"
-              className="cd__confirm"
-              disabled={selected.size === 0}
-              onClick={() => void create()}
-            >
-              {t("testCase.suggest.create", { count: selected.size })}
-            </button>
-          )}
-          {phase === "creating" && (
-            <button type="button" className="cd__confirm" disabled>
-              {t("testCase.suggest.creating")}
-            </button>
-          )}
-        </div>
+        )}
+        {phase === "creating" && (
+          <button type="button" className="cd__confirm" disabled>
+            {t("testCase.suggest.creating")}
+          </button>
+        )}
       </div>
-    </div>
+    </Dialog>
   );
 }
