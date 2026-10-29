@@ -7,11 +7,13 @@ mod diag;
 mod downloads;
 mod hlc;
 mod instance;
+mod key_sync;
 mod keys;
 mod oplog;
 mod planner;
 mod profile;
 mod project;
+mod purge;
 mod requirement;
 mod sync;
 mod template;
@@ -158,6 +160,12 @@ pub fn run() {
             sync::sync_cursor_set,
             sync::sync_conflicts_list,
             sync::sync_conflict_resolve,
+            purge::purge_deleted,
+            key_sync::key_lease_requests,
+            key_sync::key_blocks_apply,
+            key_sync::key_conflicts_record,
+            key_sync::key_conflicts_list,
+            key_sync::key_conflict_resolve,
             diag::diag_log,
             diag::diag_export,
             downloads::download_dir_get,

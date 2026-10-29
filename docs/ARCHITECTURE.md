@@ -241,10 +241,14 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   batch of up to 500 deltas; last-write-wins by HLC; rejects a desktop delta
   whose base revision the server no longer holds and returns its own version as
   a conflict; a project delete also tombstones its plans, cases, requirements
-  and planner cards) and `GET /sync/pull?since=<seq>` (pages of up to 500 with
-  `hasMore`). Every sync request must carry `x-pharos-version`; the server
-  serves its own MINOR and the previous one and answers others with 426
-  (ADR-0020). See `src/modules/sync-offline/README.md`.
+  and planner cards; refuses an upsert whose key another live document of the
+  project has, in `keyConflicts`), `GET /sync/pull?since=<seq>` (pages of up
+  to 500 with `hasMore`) and `POST /sync/key-blocks` (blocks of 50 key numbers
+  per project and kind, DAT-01). Every sync request must carry
+  `x-pharos-version`; the server serves its own MINOR and the previous one and
+  answers others with 426 (ADR-0020). Tombstones are never removed; at start
+  and then daily (`server.ts`) the payload of those older than
+  `SYNC_TOMBSTONE_DAYS` is cleared (SYNC-06). See `src/modules/sync-offline/README.md`.
 
 Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 **JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
@@ -303,6 +307,10 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
 
 - **Audit fields (FIX-06):** `created_by` and `updated_by` hold the signed-in
   user's id.
+- **Deletes are soft, then purged (SYNC-06):** a delete sets `deleted_at`;
+  `src-tauri/src/purge.rs` removes the row for good after the Administration
+  retention, once the server has its tombstone (rules in
+  `src/modules/sync-offline/README.md`).
 - **Owner checks (FIX-08):** every command that reads or changes a test plan,
   test case, requirement or planner attachment takes the signed-in user
   (`userId`, or `ownerId` in the planner). It only touches rows of projects that
@@ -310,7 +318,11 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   fails to change, without writing an oplog row.
   - A plan without a project is shown to nobody: the owner comes from the
     project, and the UI only reaches a plan through its project.
-  - Templates and the sync conflicts are not owner-scoped yet (FIX-08b, FIX-07).
+  - Templates (FIX-08b): a user template belongs to the account that imported
+    it (`templates.owner_id`, migration 0018) and only that account edits or
+    deletes it. Built-in templates and shared legacy ones (imported before
+    accounts, `owner_id` NULL) are visible to every account and read-only.
+    Sync conflicts, oplog and cursor are per account since FIX-07.
   - The user id comes from the UI. This separates the accounts of one
     installation; it does not defend against a tampered frontend.
 - **Human-readable keys (DAT-01, ADR-0010):** case, requirement and defect keys
@@ -319,10 +331,12 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   - a case's `scenario_id` is immutable;
   - a hand-typed or imported key already used by any row, live or deleted, is
     refused (the requirement CSV import skips and reports it).
-  - Phase 2 of track A2 brings server-leased key blocks for several devices.
-    It also brings unique indexes on live case and defect keys (local migration
-    `0017`), together with the sync handling of a pulled key that collides with
-    a local one.
+  - numbers come from blocks the server leases per project and kind
+    (`key_sync.rs`), so two devices never hand out the same key; offline
+    without a block the key is provisional (`ATS_?KQZD`) until the next sync;
+  - live keys are unique per project (local unique indexes, migration 0017);
+    a key another document already has becomes a key conflict for the user,
+    never a silent rename (rules in `src/modules/sync-offline/README.md`).
 
 The profile (`display_name`
 alias + mandatory `first_name`/`last_name`) is exposed to the client through

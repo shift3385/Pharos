@@ -107,7 +107,15 @@ export function TestCasesPage({
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });
     const path = await unlessReported(saveFile("features.zip", blob, "application/zip"));
-    if (path) toast(t("testCase.exportFeaturesToast", { count: files.length, path }));
+    if (!path) return;
+    // A provisional key (DAT-01) is never written as a tag: say so.
+    const provisional = files.filter((f) => f.provisional).length;
+    const done = t("testCase.exportFeaturesToast", { count: files.length, path });
+    toast(
+      provisional > 0
+        ? `${done}. ${t("testCase.exportProvisionalToast", { count: provisional })}`
+        : done,
+    );
   }
 
   function applyImport() {

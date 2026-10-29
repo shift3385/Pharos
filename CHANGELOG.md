@@ -80,6 +80,32 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
   instalador NSIS como artefacto descargable. Las versiones alfa, beta y rc
   solo tienen instalador NSIS; las estables tendrán además MSI.
+- **Claves únicas entre equipos (DAT-01):** dos equipos que crean casos,
+  requisitos o defectos sin conexión ya no repiten claves. Cada equipo numera
+  con un bloque de números que le reserva el servidor al sincronizar, así que
+  la numeración tiene huecos entre equipos (`ATS_007` en uno, `ATS_051` en
+  otro): la clave identifica, no cuenta.
+  - Sin conexión y sin números reservados, el elemento recibe una clave
+    provisional (`ATS_?KQZD`) que se sustituye por la definitiva en el
+    siguiente sync. Mientras tanto no se exporta como tag: el `.feature` sale
+    sin él y la exportación lo avisa. Los proyectos ya sincronizados antes de
+    esta versión usan claves provisionales hasta su primer sync con conexión.
+  - Si dos equipos escriben a mano la misma clave, el servidor se la da al
+    primero. El otro elemento aparece en Conflictos → "Claves repetidas", con
+    una clave provisional, hasta que escribes otra o eliges "Asignar la
+    siguiente". Una clave nunca cambia sola.
+  - Límite conocido: en la web no hay panel de claves repetidas. Un cambio
+    web cuya clave ya existe queda en "Cambios pendientes" marcado como
+    rechazado hasta que la web use el servidor como única fuente (BASE-10).
+    Créalo o corrígelo desde el escritorio.
+- **Purga de lo borrado (SYNC-06):** lo que borras se elimina definitivamente
+  del escritorio tras los días de retención de Administración (30 por
+  defecto), con su historial y sus adjuntos. Un borrado que aún no llegó al
+  servidor espera al siguiente sync, y un elemento con un conflicto abierto
+  espera a que lo resuelvas. Lo purgado no vuelve con la sincronización y sus
+  claves (`ATS_007`, `REQ-003`, `DEF-002`) nunca se reutilizan. El servidor
+  vacía el contenido de lo borrado tras `SYNC_TOMBSTONE_DAYS` días (30) y solo
+  conserva la marca de borrado. Migración local `0017`.
 - **Integración continua (BASE-01):** cada cambio pasa automáticamente los
   tests del cliente, del núcleo Rust y del servidor, el formato y el lint de
   Rust, y las auditorías de dependencias y de licencias.
@@ -182,6 +208,15 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   cuentas, los casos, planes, requisitos y adjuntos de una no se pueden leer ni
   modificar desde la otra. Borrar algo que no existe ya no deja un cambio
   pendiente de sincronizar.
+- **Plantillas por usuario (FIX-08b):** una plantilla importada es de la cuenta
+  que la importó; otra cuenta del mismo equipo no la ve, no la descarga, no la
+  edita ni la borra. Las plantillas incluidas con la app las ven todas y ya no
+  se pueden editar: un cambio de una cuenta las cambiaba para todas. Las
+  plantillas importadas antes de esta versión pasan a la única cuenta con
+  proyectos en el equipo. Si hay varias, quedan como "Compartida": todas las
+  cuentas las ven y ninguna las edita ni las borra; para cambiar una,
+  descárgala e impórtala de nuevo. Editar o borrar una plantilla que no existe
+  ya no deja un cambio pendiente.
 
 ### Cambios incompatibles
 
@@ -191,6 +226,20 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   antiguo no puede enviar requisitos ni tarjetas. Al actualizar, cada cuenta
   descarga sus datos una vez más desde el principio (sin pérdida). Migraciones
   locales `0012` y `0013` y del servidor `0004` (ADR-0020).
+- **Claves repetidas que ya existían (DAT-01):** si dos equipos habían creado
+  la misma clave antes de esta versión, al actualizar se conserva en el
+  elemento con el id más bajo y los demás pasan a `ATS_004-dup1`, `-dup2`…, en
+  el servidor y en cada equipo por igual. Esas claves ya eran ambiguas; revisa
+  los tags de automatización que las usen. En el escritorio, un elemento que
+  el servidor ya tenía aparece un momento en "Claves repetidas" hasta que el
+  siguiente sync trae su clave nueva. Migraciones local `0017` y del servidor
+  `0005` y `0006`.
+- **Desplegar servidor y app juntos (DAT-01):** contra un servidor antiguo la
+  app sincroniza, pero sus claves nuevas se quedan provisionales. Una app
+  anterior a esta versión contra el servidor nuevo sincroniza igual, salvo
+  cuando envía una clave que otro elemento ya usa: entonces el servidor
+  responde "actualiza la app" (426) en lugar de un rechazo que esa app tomaría
+  por aceptado, y no se pierde nada.
 
 ## [0.1.0-alpha.1] - 2026-10-28
 
