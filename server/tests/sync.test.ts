@@ -4,6 +4,7 @@ import type { Pool } from "pg";
 import { readFileSync } from "node:fs";
 import { setupTestApp, truncateAll } from "./helpers";
 import { SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
+import { LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -289,6 +290,85 @@ describe("sync", () => {
     expect(late.json()).toEqual({ accepted: 1, conflicts: [] });
   });
 
+  it("an anonymous caller gets 401, not the server version", async () => {
+    const res = await app.inject({ method: "GET", url: "/sync/pull" });
+    expect(res.statusCode).toBe(401);
+    expect(res.body).not.toContain(SERVER_VERSION);
+  });
+
+  it("the cascade never touches another user's documents with the same projectId (FIX-05)", async () => {
+    const a = await tokenFor("a@pharos.dev");
+    const b = await tokenFor("b@pharos.dev");
+    const child = { entity: "test_case", entityId: "c1", op: "upsert", payload: { projectId: "p1" }, revision: 1, author: "x", hlc: "000000000000100-00000-d" };
+    await pushBatch(a, [child]);
+    await pushBatch(b, [child]);
+    await pushBatch(a, [{ entity: "project", entityId: "p1", op: "delete", payload: {}, revision: 2, author: "a", hlc: "000000000000200-00000-d" }]);
+    expect((await pullAll(a)).docs.find((d) => d.entityId === "c1")?.deleted).toBe(true);
+    expect((await pullAll(b)).docs.find((d) => d.entityId === "c1")?.deleted).toBe(false);
+  });
+
+  it("a cascaded tombstone never moves a child's HLC backwards (FIX-05)", async () => {
+    const token = await tokenFor();
+    const newer = "000000000000900-00000-web";
+    await pushBatch(token, [{ entity: "test_case", entityId: "c1", op: "upsert", payload: { projectId: "p1" }, revision: 1, author: "x", hlc: newer }]);
+    await pushBatch(token, [{ entity: "project", entityId: "p1", op: "delete", payload: {}, revision: 2, author: "a", hlc: "000000000000500-00000-desk" }]);
+    const c1 = (await pullAll(token)).docs.find((d) => d.entityId === "c1") as unknown as { deleted: boolean; hlc: string };
+    expect(c1).toMatchObject({ deleted: true, hlc: newer });
+    // A stale web upsert (older than the child's last change) cannot revive it.
+    const stale = await pushBatch(token, [{ entity: "test_case", entityId: "c1", op: "upsert", payload: { projectId: "p1" }, revision: 3, author: "w", hlc: "000000000000700-00000-web" }]);
+    expect(stale.json().conflicts).toHaveLength(1);
+  });
+
+  it("serializes a user's writes so a pull cursor never skips a late commit", async () => {
+    const token = await tokenFor();
+    const { rows } = await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1");
+    const userId = rows[0].id;
+    // An in-flight push of this user: it holds the user's lock and took a seq.
+    const slow = await pool.connect();
+    await slow.query("BEGIN");
+    await slow.query(LOCK_USER_SQL, [userId]);
+    await slow.query(
+      `INSERT INTO documents (user_id, entity, entity_id, payload, seq) VALUES ($1, 'test_case', 'slow', '{}', nextval('documents_seq'))`,
+      [userId],
+    );
+    // A second push starts meanwhile; it must wait instead of taking a later seq
+    // and committing first.
+    let done = false;
+    const fast = pushBatch(token, cases(1, 0)).then((r) => {
+      done = true;
+      return r;
+    });
+    await new Promise((r) => setTimeout(r, 300));
+    expect(done).toBe(false);
+    const early = (await app.inject({ method: "GET", url: "/sync/pull?since=0", headers: auth(token) })).json();
+    expect(early.docs).toHaveLength(0);
+    await slow.query("COMMIT");
+    slow.release();
+    expect((await fast).statusCode).toBe(200);
+    const { docs } = await pullAll(token);
+    expect(docs.map((d) => d.entityId)).toEqual(["slow", "c0"]);
+  });
+
+  it("concurrent pushes all reach a client paging the pull meanwhile", async () => {
+    const token = await tokenFor();
+    const seen = new Set<string>();
+    let cursor = 0;
+    let pushing = true;
+    const pull = async () => {
+      const body = (await app.inject({ method: "GET", url: `/sync/pull?since=${cursor}`, headers: auth(token) })).json();
+      for (const d of body.docs) seen.add(d.entityId);
+      cursor = body.cursor;
+    };
+    const puller = (async () => {
+      while (pushing) await pull();
+    })();
+    await Promise.all(Array.from({ length: 20 }, (_, i) => pushBatch(token, cases(10, i * 10))));
+    pushing = false;
+    await puller;
+    await pull();
+    expect(seen.size).toBe(200);
+  });
+
   it("migration 0004 repairs children of projects deleted before the fix (FIX-05)", async () => {
     const token = await tokenFor();
     const { rows } = await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1");
@@ -296,9 +376,9 @@ describe("sync", () => {
     // As the old server stored it: only the project tombstone.
     await pool.query(
       `INSERT INTO documents (user_id, entity, entity_id, payload, revision, deleted, hlc) VALUES
-         ($1, 'project', 'old', '{}', 2, true, 'h-del'),
-         ($1, 'test_case', 'oc', '{"projectId":"old"}', 1, false, 'h1'),
-         ($1, 'test_case', 'keep', '{"projectId":"live"}', 1, false, 'h1')`,
+         ($1, 'project', 'old', '{}', 2, true, '000000000000200-00000-d'),
+         ($1, 'test_case', 'oc', '{"projectId":"old"}', 1, false, '000000000000100-00000-d'),
+         ($1, 'test_case', 'keep', '{"projectId":"live"}', 1, false, '000000000000100-00000-d')`,
       [userId],
     );
     const before = (await pool.query("SELECT max(seq) AS s FROM documents")).rows[0].s;
@@ -309,6 +389,6 @@ describe("sync", () => {
     expect(byId.keep.deleted).toBe(false);
     const repaired = (await pool.query("SELECT seq, hlc, revision FROM documents WHERE entity_id = 'oc'")).rows[0];
     expect(Number(repaired.seq)).toBeGreaterThan(Number(before));
-    expect(repaired).toMatchObject({ hlc: "h-del", revision: 2 });
+    expect(repaired).toMatchObject({ hlc: "000000000000200-00000-d", revision: 2 });
   });
 });

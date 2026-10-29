@@ -294,10 +294,16 @@ fn mark_entity_synced(conn: &Connection, user: &str, entity: &str, id: &str) -> 
     Ok(())
 }
 
-fn open_conflict_id(conn: &Connection, entity: &str, id: &str) -> Result<Option<String>, String> {
+fn open_conflict_id(
+    conn: &Connection,
+    user: &str,
+    entity: &str,
+    id: &str,
+) -> Result<Option<String>, String> {
     conn.query_row(
-        "SELECT id FROM sync_conflicts WHERE entity = ?1 AND entity_id = ?2 AND resolved_at IS NULL",
-        params![entity, id],
+        "SELECT id FROM sync_conflicts
+          WHERE user_id = ?1 AND entity = ?2 AND entity_id = ?3 AND resolved_at IS NULL",
+        params![user, entity, id],
         |r| r.get(0),
     )
     .optional()
@@ -309,6 +315,7 @@ fn open_conflict_id(conn: &Connection, entity: &str, id: &str) -> Result<Option<
 /// base and the oplog ids covered. Entities with an open conflict are held back
 /// until it is resolved.
 fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
+    oplog::claim_unowned(conn)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -318,8 +325,9 @@ fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
             .prepare(&format!(
                 "SELECT o.entity, o.entity_id, o.id, o.hlc, o.author FROM oplog o
                  WHERE o.synced_at IS NULL AND o.user_id = ?1 AND o.entity IN ({})
-                   AND NOT EXISTS (SELECT 1 FROM sync_conflicts c WHERE c.entity = o.entity
-                                   AND c.entity_id = o.entity_id AND c.resolved_at IS NULL)
+                   AND NOT EXISTS (SELECT 1 FROM sync_conflicts c WHERE c.user_id = o.user_id
+                                   AND c.entity = o.entity AND c.entity_id = o.entity_id
+                                   AND c.resolved_at IS NULL)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list()
             ))
@@ -444,7 +452,7 @@ fn upsert_conflict(
     base: Option<(i64, String)>,
 ) -> Result<(), String> {
     let remote_payload = doc.payload.to_string();
-    if let Some(id) = open_conflict_id(conn, &doc.entity, &doc.entity_id)? {
+    if let Some(id) = open_conflict_id(conn, user, &doc.entity, &doc.entity_id)? {
         conn.execute(
             "UPDATE sync_conflicts SET remote_payload = ?2, remote_revision = ?3, remote_deleted = ?4,
                     remote_hlc = ?5 WHERE id = ?1",
@@ -506,7 +514,7 @@ fn apply_doc(
     if base.as_ref() == Some(&(doc.revision, doc.hlc.clone())) {
         return Ok(());
     }
-    if open_conflict_id(conn, &doc.entity, &doc.entity_id)?.is_some()
+    if open_conflict_id(conn, user, &doc.entity, &doc.entity_id)?.is_some()
         || latest_pending(conn, user, &doc.entity, &doc.entity_id)?.is_some()
     {
         return upsert_conflict(conn, user, doc, base);
@@ -880,6 +888,11 @@ fn resolve_conflict(
             )?;
         }
         "remote" => {
+            // Taking back a project this device had deleted: its children were
+            // soft-deleted with it, only here (the server rejected the delete).
+            if c.entity == "project" && c.local.deleted && !c.remote.deleted {
+                restore_project_children(conn, &c.entity_id)?;
+            }
             let doc = RemoteDoc {
                 entity: c.entity.clone(),
                 entity_id: c.entity_id.clone(),
@@ -907,6 +920,41 @@ fn resolve_conflict(
         params![id, resolution],
     )
     .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Undeletes the plans, cases, requirements and cards that `delete_project`
+/// removed together with the project: deleted at or after the project and
+/// without a delete of their own in the oplog (those stay deleted).
+fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), String> {
+    let Some(deleted_at) = conn
+        .query_row(
+            "SELECT deleted_at FROM projects WHERE id = ?1",
+            params![project_id],
+            |r| r.get::<_, Option<String>>(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?
+        .flatten()
+    else {
+        return Ok(());
+    };
+    for (entity, table) in [
+        ("test_plan", "test_plans"),
+        ("test_case", "test_cases"),
+        ("requirement", "requirements"),
+        ("planner_card", "planner_cards"),
+    ] {
+        conn.execute(
+            &format!(
+                "UPDATE {table} SET deleted_at = NULL
+                  WHERE project_id = ?1 AND deleted_at >= ?2
+                    AND id NOT IN (SELECT entity_id FROM oplog WHERE entity = ?3 AND op = 'delete')"
+            ),
+            params![project_id, deleted_at, entity],
+        )
+        .map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 
@@ -1404,5 +1452,161 @@ mod tests {
             .collect::<rusqlite::Result<_>>()
             .unwrap();
         assert_eq!(keys, ["device_id"]);
+    }
+
+    fn is_deleted(c: &Connection, table: &str, id: &str) -> bool {
+        c.query_row(
+            &format!("SELECT deleted_at IS NOT NULL FROM {table} WHERE id = ?1"),
+            params![id],
+            |r| r.get(0),
+        )
+        .unwrap()
+    }
+
+    // FIX-05 end to end on the deleting device: only the project tombstone is
+    // pushed; the server's cascade comes back as child tombstones that apply
+    // cleanly, with nothing left pending.
+    #[test]
+    fn deleting_a_project_pushes_its_tombstone_and_takes_the_cascade_back() {
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        crate::project::delete_project(&c, "p1", U1).unwrap();
+        assert!(is_deleted(&c, "test_cases", "c1"));
+
+        let deltas = build_pending(&c, U1).unwrap().deltas;
+        assert_eq!(deltas.len(), 1);
+        assert_eq!(
+            (deltas[0].entity.as_str(), deltas[0].op.as_str()),
+            ("project", "delete")
+        );
+        mark_pushed(&c, U1, &[pushed(&deltas[0])]).unwrap();
+
+        // The pull returns the project echo and the cascaded child tombstone.
+        apply_doc(&c, &ws, U1, &as_remote(&deltas[0])).unwrap();
+        let child = RemoteDoc {
+            entity: "test_case".into(),
+            entity_id: "c1".into(),
+            payload: json!({ "id": "c1", "projectId": "p1" }),
+            revision: 2,
+            deleted: true,
+            hlc: deltas[0].hlc.clone(),
+        };
+        apply_doc(&c, &ws, U1, &child).unwrap();
+        assert!(is_deleted(&c, "test_cases", "c1"));
+        assert_eq!(open_conflicts(&c), 0);
+        assert_eq!(oplog::sync_state(&c, U1).unwrap().pending, 0);
+    }
+
+    /// A project deleted here while another device edited it: the delete is
+    /// rejected and comes back as a conflict.
+    fn rejected_project_delete(c: &Connection) -> String {
+        let ws = synced_case(c, "c1", "Login");
+        synced_case(c, "c2", "Logout");
+        // c2 was deleted on its own before (its delete is in the oplog).
+        c.execute(
+            "UPDATE test_cases SET deleted_at = '2000-01-01 00:00:00' WHERE id = 'c2'",
+            [],
+        )
+        .unwrap();
+        oplog::record(c, "test_case", "c2", "delete", "{}", 2, U1).unwrap();
+        crate::project::delete_project(c, "p1", U1).unwrap();
+        let remote = RemoteDoc {
+            entity: "project".into(),
+            entity_id: "p1".into(),
+            payload: json!({ "id": "p1", "ownerId": U1, "name": "Checkout (renamed elsewhere)" }),
+            revision: 2,
+            deleted: false,
+            hlc: WEB_HLC.into(),
+        };
+        apply_doc(c, &ws, U1, &remote).unwrap();
+        assert_eq!(open_conflicts(c), 1);
+        ws
+    }
+
+    // Review fix: "use the server's" on a rejected project delete brings the
+    // project back with the children that were deleted with it.
+    #[test]
+    fn taking_the_server_project_back_restores_its_children() {
+        let c = conn();
+        let ws = rejected_project_delete(&c);
+        resolve_conflict(&c, &ws, U1, &sync_conflict_id(&c), "remote").unwrap();
+        assert!(!is_deleted(&c, "projects", "p1"));
+        assert!(
+            !is_deleted(&c, "test_cases", "c1"),
+            "deleted with the project: restored"
+        );
+        assert!(
+            is_deleted(&c, "test_cases", "c2"),
+            "deleted on its own: stays deleted"
+        );
+        let name: String = c
+            .query_row("SELECT name FROM projects WHERE id = 'p1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(name, "Checkout (renamed elsewhere)");
+        // Only c2's own delete is still waiting to be pushed.
+        let pending = build_pending(&c, U1).unwrap().deltas;
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].entity_id, "c2");
+    }
+
+    #[test]
+    fn keeping_the_local_project_delete_pushes_it_again_on_the_server_base() {
+        let c = conn();
+        let ws = rejected_project_delete(&c);
+        resolve_conflict(&c, &ws, U1, &sync_conflict_id(&c), "local").unwrap();
+        assert!(is_deleted(&c, "test_cases", "c1"));
+        let pending = build_pending(&c, U1).unwrap().deltas;
+        let project = pending.iter().find(|d| d.entity == "project").unwrap();
+        assert_eq!(project.op, "delete");
+        assert_eq!(project.base_revision, Some(2));
+        assert_eq!(project.base_hlc.as_deref(), Some(WEB_HLC));
+    }
+
+    // Review fix: a change written before its project arrived gets an owner
+    // once the project is here, instead of staying unsynced silently.
+    #[test]
+    fn a_change_without_owner_is_claimed_when_its_project_arrives() {
+        let c = conn();
+        let ws = ensure_workspace(&c).unwrap();
+        c.execute(
+            "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, version, status,
+                    priority, author, data, created_by, updated_by, created_at, updated_at, revision)
+             VALUES ('c9', ?1, 'p9', 'ATS_009', 'Early', '1.0', 'draft', 'medium', 'Ada', '{}', 'Ada', 'Ada',
+                    datetime('now'), datetime('now'), 1)",
+            params![ws],
+        )
+        .unwrap();
+        oplog::record(&c, "test_case", "c9", "upsert", "{}", 1, "Ada").unwrap();
+        let before = oplog::sync_state(&c, U1).unwrap();
+        assert_eq!(
+            (before.pending, before.orphans),
+            (0, 1),
+            "visible as an orphan"
+        );
+
+        project(&c, "p9", U1);
+        let after = oplog::sync_state(&c, U1).unwrap();
+        assert_eq!((after.pending, after.orphans), (1, 0));
+        assert_eq!(build_pending(&c, U1).unwrap().deltas[0].entity_id, "c9");
+    }
+
+    // Review fix: conflicts are looked up per account too.
+    #[test]
+    fn another_accounts_open_conflict_does_not_hold_back_my_push() {
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        edit_locally(&c, "c1", "Mine");
+        // A conflict row of another account on the same entity id (legacy data).
+        c.execute(
+            "INSERT INTO sync_conflicts (id, entity, entity_id, detected_at, user_id)
+             VALUES ('k', 'test_case', 'c1', 'now', ?1)",
+            params![U2],
+        )
+        .unwrap();
+        assert_eq!(build_pending(&c, U1).unwrap().deltas.len(), 1);
+        assert!(list_conflicts(&c, U1).unwrap().is_empty());
+        let _ = ws;
     }
 }

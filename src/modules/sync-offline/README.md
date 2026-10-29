@@ -36,11 +36,22 @@ resolution can be added without a schema change.
   (`__APP_VERSION__`, from the root `package.json`); the server answers an
   unsupported version with 426 `unsupported_client_version` before writing
   (SYNC-08). Pushes go in batches of at most 200 deltas / ~512 KiB (FIX-03);
-  network errors, 5xx and 429 are retried with growing waits. Pulls page until
-  `hasMore` is false and the cursor is saved after every page (FIX-02).
+  the server must accept at least 1 MiB per push. Network errors, 5xx and 429
+  are retried with growing waits; 401/403/426 stop the sync. A batch refused
+  for its content (413, 400) is split to isolate the deltas at fault
+  (`sendIsolating`): they are skipped and stay pending, the user is told
+  (`pharos:sync-skipped`), and the other batches and the pull still run.
+  Pulls page until `hasMore` is false and the cursor is saved after every
+  page (FIX-02). The server serializes each user's writes (advisory lock), so
+  a cursor never skips a late commit.
 - **Project deletes (FIX-05).** The server tombstones a deleted project's plans,
   cases, requirements and cards, so every client receives them as normal
-  deletes. A device with a pending edit of one of them gets a conflict.
+  deletes. A device with a pending edit of one of them gets a conflict. If the
+  project delete itself comes back as a conflict and the user takes the server
+  version, the children deleted with it are restored.
+- **Orphans.** A change written before its entity's owner is known (a case
+  whose project was not pulled yet) is stamped `''`; it is claimed as soon as
+  the owner can be derived, and meanwhile the indicator tooltip counts it.
 - **Duplicate keys until DAT-01.** Two devices can number `REQ-004` offline.
   Both requirements are kept (migration `0013` makes the local index
   non-unique); creating one locally still rejects a duplicate key.
@@ -48,13 +59,23 @@ resolution can be added without a schema change.
 ## Web client (`web/webSync.ts`, ADR-0004)
 
 - **Outbox.** Web writes (`pushEntity`) go to `pharos.sync.outbox:<userId>`,
-  one entry per entity, and are pushed in batches. A failed push stays queued
-  and is retried every 10 s, on reconnect and on "Sync now" (FIX-04).
+  one entry per entity, and are pushed in batches. A transient failure stays
+  queued and is retried every 10 s, on reconnect and on "Sync now" (FIX-04);
+  auth or version errors stop without retrying; a delta refused for its
+  content is flagged `refused` and not resent until the entity is edited.
+  Writes queued during a flush go out in the same flush.
 - **Lost conflicts.** When the server keeps a newer version, the web edit and
   the server version are stored in `pharos.sync.conflicts:<userId>`, a toast
   tells the user, and the same conflict panel resolves it: `local` pushes the
   web version again with a newer HLC, `remote` takes the server copy. While
-  queued or in conflict, a pull never replaces the web edit in the cache.
+  queued or in conflict, a pull never replaces the web edit in the cache, but
+  it does refresh the conflict's server side, so neither choice acts on a
+  stale copy.
+- **Caches per account.** `pharos.sync.cacheOwner` records whose server data
+  the caches hold; they are emptied on sign-out (`pharos:signed-out`) and when
+  another account syncs. On the first full pull after upgrading, rows of this
+  account that the server does not have (old pushes that failed silently) are
+  queued instead of lost.
 - **Pull.** Incremental from `pharos.sync.cursor:<userId>`; if every cache is
   empty it restarts at 0. Deleted requirements keep a `deletedAt` tombstone so
   their key is never reused.

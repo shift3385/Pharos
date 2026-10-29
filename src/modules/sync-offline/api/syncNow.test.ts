@@ -147,3 +147,44 @@ describe("syncNow", () => {
     expect(new Set(tokens)).toEqual(new Set(["Bearer tok-B"]));
   });
 });
+
+describe("syncNow with a refused delta (review fix)", () => {
+  it("skips a delta the server refuses as too large, pushes the rest and still pulls", async () => {
+    const calls = fakeCore(Array.from({ length: 5 }, (_, i) => delta(i)));
+    let pulls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        if (url.includes("/sync/push")) {
+          const ids = (JSON.parse(init.body as string) as { deltas: { entityId: string }[] }).deltas.map((d) => d.entityId);
+          // c3 is over the body limit: any request carrying it gets 413.
+          if (ids.includes("c3")) return json({ code: "FST_ERR_CTP_BODY_TOO_LARGE", message: "Request body is too large" }, 413);
+          return json({ accepted: ids.length, conflicts: [] });
+        }
+        pulls++;
+        return json({ docs: [], cursor: 0, hasMore: false });
+      }),
+    );
+    const skippedEvent = vi.fn();
+    window.addEventListener("pharos:sync-skipped", skippedEvent);
+    const res = await syncNow();
+    window.removeEventListener("pharos:sync-skipped", skippedEvent);
+
+    expect(res).toMatchObject({ pushed: 4, skipped: 1 });
+    expect(pulls).toBe(1);
+    const marked = calls
+      .filter((c) => c.cmd === "oplog_mark_synced")
+      .flatMap((c) => (c.args.deltas as { entityId: string }[]).map((d) => d.entityId));
+    expect(marked.sort()).toEqual(["c0", "c1", "c2", "c4"]);
+    expect(skippedEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops at once on an unsupported version: nothing marked, no pull", async () => {
+    const calls = fakeCore([delta(1)]);
+    const fetch = vi.fn(() => json({ code: "unsupported_client_version", message: "old" }, 426));
+    vi.stubGlobal("fetch", fetch);
+    await expect(syncNow()).rejects.toMatchObject({ status: 426 });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(calls.some((c) => c.cmd === "oplog_mark_synced" || c.cmd === "sync_cursor_set")).toBe(false);
+  });
+});

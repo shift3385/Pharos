@@ -144,6 +144,8 @@
     "conflictToast": "Sincronizado con {{count}} conflicto(s) por revisar",
     "unsupportedVersion": "Esta versión de Pharos ya no es compatible con el servidor. Actualiza la app para sincronizar; tus cambios se conservan.",
     "webConflictToast": "Otro dispositivo guardó una versión más reciente de {{count}} elemento(s). Tu edición se conserva: revísala en Conflictos.",
+    "skippedToast": "El servidor rechazó {{count}} cambio(s) (demasiado grandes o no válidos). Siguen pendientes y el resto se sincronizó.",
+    "orphans": "{{count}} cambio(s) sin proyecto conocido todavía; se enviarán cuando llegue su proyecto",
     "conflict": {
       "review": "Revisar conflictos",
       "title": "Conflictos de sincronización",

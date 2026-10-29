@@ -38,14 +38,23 @@ function toDoc(r: Record<string, unknown>): RemoteDoc {
   };
 }
 
+/** Serializes one user's sync writes until the transaction ends. `seq` comes
+ *  from `nextval()` inside the transaction, so without this a transaction that
+ *  took a lower seq could commit after a client already pulled past a higher
+ *  one, and the client would never see it. With one writer per user at a
+ *  time, a user's seqs become visible in order. */
+export const LOCK_USER_SQL = "SELECT pg_advisory_xact_lock(hashtext($1))";
+
 /** Deleting a project deletes its plans, cases, requirements and planner
  *  cards in the same transaction (FIX-05, ADR-0020), whichever client sent
  *  it. Each child gets a tombstone with a new `seq`, so every device pulls it;
- *  a device with a pending edit of that child sees a conflict, not a loss. */
+ *  a device with a pending edit of that child sees a conflict, not a loss.
+ *  A child's HLC never goes backwards (a newer child edit keeps its HLC), so
+ *  a stale web upsert cannot win last-write-wins against the tombstone. */
 async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta): Promise<void> {
   await client.query(
     `UPDATE documents
-        SET deleted = true, revision = revision + 1, hlc = $3, author = $4,
+        SET deleted = true, revision = revision + 1, hlc = GREATEST(hlc, $3), author = $4,
             updated_at = now(), seq = nextval('documents_seq')
       WHERE user_id = $1 AND entity = ANY($5::text[]) AND NOT deleted
         AND payload->>'projectId' = $2`,
@@ -61,6 +70,7 @@ export function createSyncRepository(pool: Pool) {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
+        await client.query(LOCK_USER_SQL, [userId]);
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents
             WHERE user_id = $1 AND entity = $2 AND entity_id = $3

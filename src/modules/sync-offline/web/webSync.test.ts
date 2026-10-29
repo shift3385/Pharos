@@ -39,7 +39,7 @@ describe("web outbox (FIX-04)", () => {
       pushed.push(...deltas.map((d) => d.entityId));
       return json({ accepted: deltas.length, conflicts: [] });
     });
-    await expect(web.flushOutbox()).resolves.toEqual({ pushed: 1, conflicts: 0 });
+    await expect(web.flushOutbox()).resolves.toEqual({ pushed: 1, conflicts: 0, skipped: 0 });
     expect(pushed).toEqual(["c1"]);
     expect(web.webLocalState("user-A").pending).toBe(0);
   });
@@ -131,5 +131,114 @@ describe("web pull (FIX-02)", () => {
     await web.hydrateFromBackend();
     const [r] = JSON.parse(localStorage.getItem("pharos.requirements") ?? "[]") as { deletedAt?: string }[];
     expect(r.deletedAt).toBeTruthy();
+  });
+});
+
+describe("review fixes (web)", () => {
+  const remoteDoc = (title: string, hlc: string) => ({ entity: "test_case", entityId: "c1", payload: { id: "c1", title }, revision: 5, deleted: false, hlc });
+
+  it("a pull refreshes the server side of an open conflict", async () => {
+    localStorage.setItem("pharos.testCases", JSON.stringify([{ id: "c1", title: "web edit" }]));
+    const first = remoteDoc("desktop v1", "009999999999999-00000-desk");
+    backend(async () => json({ accepted: 0, conflicts: [first] }), [{ docs: [first], cursor: 7, hasMore: false }]);
+    web.enqueue("user-A", { entity: "test_case", entityId: "c1", op: "upsert", payload: { id: "c1", title: "web edit" }, revision: 2, author: "A", hlc: web.nextWebHlc() });
+    await web.hydrateFromBackend();
+    // A third device writes again; the next pull carries it.
+    const newer = remoteDoc("third device", "019999999999999-00000-third");
+    backend(async () => json({}), [{ docs: [newer], cursor: 8, hasMore: false }]);
+    await web.hydrateFromBackend();
+    const [c] = web.webConflicts("user-A");
+    expect(c.remote.payload).toMatchObject({ title: "third device" });
+    expect(cases()[0].title).toBe("web edit"); // still held
+    // Taking the server version now takes the newest one, not the stale one.
+    await web.resolveWebConflict("user-A", c.id, "remote");
+    expect(cases()[0].title).toBe("third device");
+  });
+
+  it("applies the cascade tombstones to the caches after a project delete", async () => {
+    localStorage.setItem("pharos.projects", JSON.stringify([{ id: "p1", ownerId: "user-A" }]));
+    localStorage.setItem("pharos.testCases", JSON.stringify([{ id: "c1", projectId: "p1" }]));
+    localStorage.setItem("pharos.sync.cacheOwner", "user-A");
+    localStorage.setItem("pharos.sync.cursor:user-A", JSON.stringify("3"));
+    const tomb = (entity: string, id: string) => ({ entity, entityId: id, payload: { id, projectId: "p1" }, revision: 2, deleted: true, hlc: "" });
+    backend(async (d) => json({ accepted: d.length, conflicts: [] }), [{ docs: [tomb("project", "p1"), tomb("test_case", "c1")], cursor: 5, hasMore: false }]);
+    web.enqueue("user-A", { entity: "project", entityId: "p1", op: "delete", payload: { id: "p1" }, revision: 2, author: "A", hlc: web.nextWebHlc() });
+    await web.flushOutbox();
+    await vi.waitFor(() => expect(cases()).toHaveLength(0));
+    expect(JSON.parse(localStorage.getItem("pharos.projects") ?? "[]")).toHaveLength(0);
+  });
+
+  it("a delta refused as too large is flagged and does not block the others", async () => {
+    const sent: string[] = [];
+    backend(async (deltas) => {
+      if (deltas.some((d) => d.entityId === "big")) return json({ code: "too_large" }, 413);
+      sent.push(...deltas.map((d) => d.entityId));
+      return json({ accepted: deltas.length, conflicts: [] });
+    });
+    for (const id of ["a", "big", "b"])
+      web.enqueue("user-A", { entity: "test_case", entityId: id, op: "upsert", payload: { id }, revision: 1, author: "A", hlc: web.nextWebHlc() });
+    const res = await web.flushOutbox();
+    expect(res).toEqual({ pushed: 2, conflicts: 0, skipped: 1 });
+    expect(sent.sort()).toEqual(["a", "b"]);
+    const left = web.loadOutbox("user-A");
+    expect(left.map((d) => [d.entityId, d.refused])).toEqual([["big", true]]);
+    // Not resent on the next flush until it is edited again.
+    await web.flushOutbox();
+    expect(sent).toHaveLength(2);
+  });
+
+  it("an unsupported version stops the flush without scheduling retries", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetch = backend(async () => json({ code: "unsupported_client_version" }, 426));
+      web.enqueue("user-A", { entity: "test_case", entityId: "c1", op: "upsert", payload: {}, revision: 1, author: "A", hlc: "h" });
+      await expect(web.flushOutbox()).rejects.toMatchObject({ status: 426 });
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(web.webLocalState("user-A").pending).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("writes queued during a flush are sent in the same flush", async () => {
+    const sent: string[] = [];
+    backend(async (deltas) => {
+      sent.push(...deltas.map((d) => d.entityId));
+      if (sent.length === 1)
+        web.enqueue("user-A", { entity: "test_case", entityId: "late", op: "upsert", payload: {}, revision: 1, author: "A", hlc: web.nextWebHlc() });
+      return json({ accepted: deltas.length, conflicts: [] });
+    });
+    web.enqueue("user-A", { entity: "test_case", entityId: "first", op: "upsert", payload: {}, revision: 1, author: "A", hlc: web.nextWebHlc() });
+    await web.flushOutbox();
+    expect(sent).toEqual(["first", "late"]);
+    expect(web.webLocalState("user-A").pending).toBe(0);
+  });
+
+  it("caches belong to one account: emptied when another account syncs and on sign-out (FIX-07)", async () => {
+    localStorage.setItem("pharos.projects", JSON.stringify([{ id: "pa", ownerId: "user-A" }]));
+    localStorage.setItem("pharos.sync.cacheOwner", "user-A");
+    session.userId = "user-B";
+    backend(async () => json({}), [{ docs: [{ entity: "project", entityId: "pb", payload: { id: "pb", ownerId: "user-B" }, revision: 1, deleted: false, hlc: "" }], cursor: 2, hasMore: false }]);
+    await web.hydrateFromBackend();
+    expect(JSON.parse(localStorage.getItem("pharos.projects") ?? "[]")).toEqual([{ id: "pb", ownerId: "user-B" }]);
+
+    window.dispatchEvent(new CustomEvent("pharos:signed-out"));
+    expect(localStorage.getItem("pharos.projects")).toBeNull();
+  });
+
+  it("rows written before this version that never reached the server are queued, not lost", async () => {
+    localStorage.setItem("pharos.projects", JSON.stringify([{ id: "p1", ownerId: "user-A" }, { id: "px", ownerId: "someone-else" }]));
+    localStorage.setItem("pharos.testCases", JSON.stringify([{ id: "c-unsent", projectId: "p1", revision: 3 }, { id: "c-synced", projectId: "p1" }]));
+    const sent: string[] = [];
+    backend(
+      async (deltas) => {
+        sent.push(...deltas.map((d) => d.entityId));
+        return json({ accepted: deltas.length, conflicts: [] });
+      },
+      [{ docs: [{ entity: "project", entityId: "p1", payload: { id: "p1", ownerId: "user-A" }, revision: 1, deleted: false, hlc: "" }, { entity: "test_case", entityId: "c-synced", payload: { id: "c-synced", projectId: "p1" }, revision: 1, deleted: false, hlc: "" }], cursor: 2, hasMore: false }],
+    );
+    await web.hydrateFromBackend();
+    await vi.waitFor(() => expect(sent).toEqual(["c-unsent"]));
   });
 });

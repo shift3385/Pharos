@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
-import { syncAny, syncLocalState, syncStatus } from "../api/syncApi";
+import {
+  syncAny,
+  syncLocalState,
+  syncStatus,
+  type LocalSyncState,
+} from "../api/syncApi";
 import { SyncHttpError } from "../api/transport";
 import { ConflictPanel } from "./ConflictPanel";
 import "./SyncIndicator.css";
@@ -17,6 +22,7 @@ export function SyncIndicator() {
   const { status: authStatus, user } = useAuth();
   const [pending, setPending] = useState(0);
   const [conflicts, setConflicts] = useState(0);
+  const [orphans, setOrphans] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [online, setOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true,
@@ -27,12 +33,13 @@ export function SyncIndicator() {
   authedRef.current = authStatus === "authenticated";
 
   async function refresh() {
-    const s = await syncLocalState().catch(() => ({
+    const s: LocalSyncState = await syncLocalState().catch(() => ({
       pending: 0,
       conflicts: 0,
     }));
     setPending(s.pending);
     setConflicts(s.conflicts);
+    setOrphans(s.orphans ?? 0);
   }
 
   /** User-facing reason of a failed sync. */
@@ -59,16 +66,23 @@ export function SyncIndicator() {
       const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
       toast(t("sync.webConflictToast", { count }));
     };
+    // Changes the server refused for their content: they stay pending.
+    const refused = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
+      toast(t("sync.skippedToast", { count }));
+    };
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
     window.addEventListener("pharos:sync-state", changed);
     window.addEventListener("pharos:sync-conflict", lost);
+    window.addEventListener("pharos:sync-skipped", refused);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("online", on);
       window.removeEventListener("offline", off);
       window.removeEventListener("pharos:sync-state", changed);
       window.removeEventListener("pharos:sync-conflict", lost);
+      window.removeEventListener("pharos:sync-skipped", refused);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -104,6 +118,9 @@ export function SyncIndicator() {
         : status === "pending"
           ? t("sync.pending", { count: pending })
           : t("sync.synced");
+  // Changes with no owner yet (desktop) cannot sync: say so in the tooltip.
+  const title =
+    orphans > 0 ? `${label} · ${t("sync.orphans", { count: orphans })}` : label;
 
   async function runSync() {
     setSyncing(true);
@@ -126,7 +143,7 @@ export function SyncIndicator() {
   }
 
   return (
-    <div className="sync" title={label}>
+    <div className="sync" title={title}>
       <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
       <span className="sync__label">{label}</span>
       {conflicts > 0 && (

@@ -36,6 +36,36 @@ export function isTransient(e: unknown): boolean {
   return e instanceof TypeError; // fetch: network failure
 }
 
+/** Errors that no batch can get past (authentication, unsupported version):
+ *  the whole sync stops and the user is told. */
+export function isFatal(e: unknown): boolean {
+  return e instanceof SyncHttpError && [401, 403, 426].includes(e.status);
+}
+
+/** Sends one batch with `send`. If the server refuses it for its content (a
+ *  non-transient, non-fatal 4xx such as 413 too large or 400 invalid), the
+ *  batch is split to isolate the deltas at fault, which are returned as
+ *  skipped instead of blocking the others (FIX-03). Fatal and transient
+ *  errors are thrown. `onSent` runs for every part the server took. */
+export async function sendIsolating<T, R>(
+  batch: T[],
+  send: (part: T[]) => Promise<R>,
+  onSent: (part: T[], body: R) => Promise<void> | void,
+): Promise<T[]> {
+  try {
+    await onSent(batch, await send(batch));
+    return [];
+  } catch (e) {
+    if (!(e instanceof SyncHttpError) || isTransient(e) || isFatal(e)) throw e;
+    if (batch.length === 1) return batch;
+    const half = Math.ceil(batch.length / 2);
+    return [
+      ...(await sendIsolating(batch.slice(0, half), send, onSent)),
+      ...(await sendIsolating(batch.slice(half), send, onSent)),
+    ];
+  }
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Runs `fn`, retrying transient failures with growing waits. */

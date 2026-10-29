@@ -6,8 +6,7 @@ import { pullSchema, pushSchema } from "./sync.schemas";
 import { requireSupportedVersion } from "./sync.version";
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
- *  user, and only clients of a supported version are served (SYNC-08): the
- *  version check runs first, before anything is read or written. A delta
+ *  user, and only clients of a supported version are served (SYNC-08). A delta
  *  whose base the server no longer holds (or that loses last-write-wins by
  *  HLC) is rejected and its server version returned in `conflicts`, for the
  *  client's conflict panel. */
@@ -16,7 +15,9 @@ export function syncRoutes(
   deps: { repo: SyncRepository; tokens: TokenService },
 ) {
   const { repo, tokens } = deps;
-  const preHandler = [requireSupportedVersion, makeRequireAuth(tokens)];
+  // Authentication first, so an anonymous caller learns nothing (not even the
+  // server version); then the version check, before anything is read or written.
+  const preHandler = [makeRequireAuth(tokens), requireSupportedVersion];
 
   // Push one batch of local pending deltas; rejected ones come back as
   // conflicts. Clients split large pushes into batches (FIX-03).

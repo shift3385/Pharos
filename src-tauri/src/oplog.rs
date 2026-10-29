@@ -160,12 +160,47 @@ pub struct SyncState {
     pub(crate) pending: i64,
     /// Open conflicts waiting for the user in the conflict panel (Phase 8C).
     pub(crate) conflicts: i64,
+    /// Pending changes of synced entities that belong to no account yet (no
+    /// derivable owner): kept, but they cannot sync until they get one.
+    pub(crate) orphans: i64,
+}
+
+/// Gives an owner to pending rows stamped without one because the entity's
+/// owner was unknown when they were written (e.g. a case whose project had not
+/// been pulled yet). Rows that still have no derivable owner stay `''`.
+pub fn claim_unowned(conn: &Connection) -> Result<(), String> {
+    let unowned: Vec<(String, String)> = {
+        let mut stmt = conn
+            .prepare(&format!(
+                "SELECT DISTINCT entity, entity_id FROM oplog
+                  WHERE user_id = '' AND synced_at IS NULL AND entity IN ({})",
+                synced_sql_list()
+            ))
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?
+    };
+    for (entity, entity_id) in unowned {
+        if let Some(owner) = owner_of(conn, &entity, &entity_id)? {
+            conn.execute(
+                "UPDATE oplog SET user_id = ?3
+                  WHERE user_id = '' AND synced_at IS NULL AND entity = ?1 AND entity_id = ?2",
+                params![entity, entity_id, owner],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 /// Pending changes of one account: the distinct synced entities with unsynced
 /// rows, i.e. the deltas its next push would send (FIX-01, FIX-07) — plus its
 /// open conflicts.
 pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String> {
+    claim_unowned(conn)?;
     let pending: i64 = conn
         .query_row(
             &format!(
@@ -184,7 +219,22 @@ pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String>
             |r| r.get(0),
         )
         .map_err(|e| e.to_string())?;
-    Ok(SyncState { pending, conflicts })
+    let orphans: i64 = conn
+        .query_row(
+            &format!(
+                "SELECT count(*) FROM (SELECT DISTINCT entity, entity_id FROM oplog
+                  WHERE synced_at IS NULL AND user_id = '' AND entity IN ({}))",
+                synced_sql_list()
+            ),
+            [],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(SyncState {
+        pending,
+        conflicts,
+        orphans,
+    })
 }
 
 /// Pending changes and open conflicts of the signed-in account — drives the

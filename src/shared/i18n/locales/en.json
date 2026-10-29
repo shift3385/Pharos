@@ -144,6 +144,8 @@
     "conflictToast": "Synced with {{count}} conflict(s) to review",
     "unsupportedVersion": "This Pharos version is no longer supported by the server. Update the app to sync; your changes are kept.",
     "webConflictToast": "Another device saved a newer version of {{count}} item(s). Your edit is kept: review it in Conflicts.",
+    "skippedToast": "The server refused {{count}} change(s) (too large or invalid). They stay pending; everything else synced.",
+    "orphans": "{{count}} change(s) without a known project yet; they will be sent once it arrives",
     "conflict": {
       "review": "Review conflicts",
       "title": "Sync conflicts",

@@ -115,6 +115,8 @@ export function AuthProvider({
       }
     }
     await clearSession();
+    // Lets other modules drop this account's cached data (FIX-07).
+    window.dispatchEvent(new CustomEvent("pharos:signed-out"));
   }, [clearSession]);
 
   const value = useMemo(

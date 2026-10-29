@@ -6,7 +6,8 @@
 -- Before this fix only the project tombstone was stored, so children of
 -- already-deleted projects are still live here and would come back on every
 -- device. Repair them once, the same way: a tombstone with a new seq (so every
--- client pulls it) and the project's delete HLC. Forward-only; nothing is
+-- client pulls it) and the project's delete HLC, unless the child's own HLC is
+-- newer (an HLC never goes backwards). Forward-only; nothing is
 -- removed, the rows are only marked deleted.
 
 CREATE INDEX IF NOT EXISTS documents_project_idx
@@ -15,7 +16,7 @@ CREATE INDEX IF NOT EXISTS documents_project_idx
 UPDATE documents AS c
    SET deleted = true,
        revision = c.revision + 1,
-       hlc = p.hlc,
+       hlc = GREATEST(c.hlc, p.hlc),
        updated_at = now(),
        seq = nextval('documents_seq')
   FROM documents AS p

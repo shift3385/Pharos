@@ -12,6 +12,7 @@ import type { ConflictResolution, SyncConflict } from "../domain/conflict";
 import {
   batchDeltas,
   pullPages,
+  sendIsolating,
   syncRequest,
   withRetry,
   type RemoteDoc,
@@ -78,6 +79,8 @@ function isTauri(): boolean {
 export interface LocalSyncState {
   pending: number;
   conflicts: number;
+  /** Desktop: pending changes with no owner yet, which cannot sync. */
+  orphans?: number;
 }
 
 /** The signed-in account's changes not yet synced and its open conflicts. */
@@ -98,8 +101,9 @@ export async function syncPendingCount(): Promise<number> {
 
 /** Runs one desktop sync cycle for the signed-in account: push its pending
  *  deltas in batches (each accepted batch is marked synced at once, rejected
- *  deltas become conflicts), then pull every page after its cursor. Throws on
- *  network/auth/version errors (after retries); callers toast. */
+ *  deltas become conflicts, deltas the server refuses for their content are
+ *  skipped and stay pending), then pull every page after its cursor. Throws
+ *  on network/auth/version errors (after retries); callers toast. */
 export async function syncNow(): Promise<SyncResult> {
   if (!isTauri()) throw new Error("sync-desktop-only");
   // Token and user from one read: never push one account's changes with
@@ -115,23 +119,33 @@ export async function syncNow(): Promise<SyncResult> {
   });
   let pushed = 0;
   let conflicts = 0;
-  for (const batch of batchDeltas(deltas)) {
-    const body = await withRetry(() =>
+  let skipped = 0;
+  const send = (part: PendingDelta[]) =>
+    withRetry(() =>
       syncRequest<{ conflicts?: RemoteDoc[] }>("/sync/push", token, {
         method: "POST",
-        body: { deltas: batch.map(({ opIds: _opIds, ...d }) => d) },
+        body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
       }),
     );
-    const rejected = body.conflicts ?? [];
-    const { accepted } = splitPushed(batch, rejected);
-    await invoke("oplog_mark_synced", { userId, deltas: accepted });
-    // The server's versions of rejected deltas: applying them while the local
-    // change is still pending records the conflict instead of overwriting.
-    if (rejected.length > 0) {
-      await invoke("apply_remote", { userId, docs: rejected });
-    }
-    pushed += accepted.length;
-    conflicts += rejected.length;
+  for (const batch of batchDeltas(deltas)) {
+    // A delta the server refuses for its content (e.g. 413) is skipped and
+    // stays pending; the other batches and the pull still run.
+    const refused = await sendIsolating(batch, send, async (part, body) => {
+      const rejected = body.conflicts ?? [];
+      const { accepted } = splitPushed(part, rejected);
+      await invoke("oplog_mark_synced", { userId, deltas: accepted });
+      // The server's versions of rejected deltas: applying them while the
+      // local change is still pending records the conflict instead of
+      // overwriting.
+      if (rejected.length > 0) {
+        await invoke("apply_remote", { userId, docs: rejected });
+      }
+      pushed += accepted.length;
+      conflicts += rejected.length;
+    });
+    skipped += refused.length;
+    for (const d of refused)
+      console.warn("[sync] the server refused", d.entity, d.entityId);
   }
 
   // Pull. The cursor lives in the local DB (wiped with the data), one per
@@ -145,8 +159,13 @@ export async function syncNow(): Promise<SyncResult> {
   });
   // Tell open pages to reload from the (now updated) local DB.
   if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
+  if (skipped > 0) {
+    window.dispatchEvent(
+      new CustomEvent("pharos:sync-skipped", { detail: { count: skipped } }),
+    );
+  }
 
-  return { pushed, pulled, conflicts };
+  return { pushed, pulled, conflicts, skipped };
 }
 
 /** One sync on either platform: the desktop cycle, or on the web the outbox

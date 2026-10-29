@@ -103,6 +103,9 @@ files (`es`/`en`).
 | Bandeja de salida (web)     | `outbox` / `pharos.sync.outbox:<userId>`                 | cambios web pendientes de enviar; se reintentan hasta que el servidor los acepta (FIX-04)                                  |
 | Conflicto web               | `WebConflict` / `pharos.sync.conflicts:<userId>`         | edición web que perdió LWW; se conserva junto a la del servidor hasta que se resuelve (FIX-04)                             |
 | Versión del cliente         | `x-pharos-version` / `APP_VERSION`                       | versión de la app en cada petición de sync; 426 `unsupported_client_version` si no se admite (SYNC-08)                     |
+| Cambio sin dueño            | `orphans`                                                | cambio pendiente cuyo dueño aún no se puede derivar (p. ej. su proyecto no ha llegado); se reclama al derivarse (ADR-0020) |
+| Delta rechazado             | `skipped` / `refused`                                    | delta que el servidor rechaza por su contenido (413, 400); se aísla, queda pendiente y se avisa (`pharos:sync-skipped`)    |
+| Dueño de la caché web       | `pharos.sync.cacheOwner`                                 | cuenta cuyos datos guarda la caché del navegador; se vacía al cerrar sesión (`pharos:signed-out`) o al cambiar de cuenta   |
 
 > API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 
