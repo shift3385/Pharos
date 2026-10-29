@@ -1,76 +1,47 @@
-import { beforeEach, describe, expect, it } from "vitest";
+// BASE-10: on the web the requirement store is a client of the server's domain API and keeps
+// nothing in localStorage; on the desktop the same calls go to the Rust core.
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fakeServer } from "@test/server";
 import { requirementApi } from "./requirementApi";
 
-const USER = "user-1";
-const base = { projectId: "p1", userId: USER };
+const invoke = vi.fn();
+vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 
-describe("requirementApi (browser fallback)", () => {
-  beforeEach(() => localStorage.clear());
+function onDesktop() {
+  (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+  invoke.mockReset();
+  invoke.mockResolvedValue([]);
+}
+afterEach(() => {
+  delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+});
 
-  it("numbers keys per project starting at REQ-001", async () => {
-    const a = await requirementApi.create({ ...base, title: "A" });
-    const b = await requirementApi.create({ ...base, title: "B" });
-    const c = await requirementApi.create({ ...base, projectId: "p2", title: "C" });
-    expect([a?.requirementKey, b?.requirementKey, c?.requirementKey]).toEqual([
-      "REQ-001",
-      "REQ-002",
-      "REQ-001",
+const input = { projectId: "p1", title: "Pay", userId: "u1" };
+
+describe("requirementApi", () => {
+  it("web: /api/requirements, import by project", async () => {
+    const server = fakeServer({ created: 1, updated: 0, skipped: [] });
+    await requirementApi.list("p1", "u1");
+    await requirementApi.get("r1", "u1");
+    await requirementApi.create(input);
+    await requirementApi.update("r1", input);
+    await requirementApi.remove("r1", "u1");
+    expect(await requirementApi.importRows("p1", "u1", [{ title: "R" }])).toEqual({ created: 1, updated: 0, skipped: [] });
+    expect(server.calls()).toEqual([
+      "GET /api/requirements?projectId=p1",
+      "GET /api/requirements/r1",
+      "POST /api/requirements",
+      "PUT /api/requirements/r1",
+      "DELETE /api/requirements/r1",
+      "POST /api/requirements/import?projectId=p1",
     ]);
+    expect(server.body(5)).toEqual({ rows: [{ title: "R" }] });
   });
 
-  it("never reuses the key of a deleted requirement", async () => {
-    const a = await requirementApi.create({ ...base, title: "A" });
-    await requirementApi.remove(a!.id, USER);
-    expect(await requirementApi.list("p1", USER)).toEqual([]);
-    const b = await requirementApi.create({ ...base, title: "B" });
-    expect(b?.requirementKey).toBe("REQ-002");
-  });
-
-  it("rejects duplicate and tag-unsafe keys", async () => {
-    await requirementApi.create({ ...base, requirementKey: "US-12", title: "A" });
-    await expect(
-      requirementApi.create({ ...base, requirementKey: "US-12", title: "B" }),
-    ).rejects.toThrow(/duplicate/);
-    await expect(
-      requirementApi.create({ ...base, requirementKey: "REQ 1", title: "C" }),
-    ).rejects.toThrow(/invalid/);
-  });
-
-  it("keeps the key immutable and bumps the revision on update", async () => {
-    const a = await requirementApi.create({ ...base, title: "A" });
-    const u = await requirementApi.update(a!.id, {
-      ...base,
-      requirementKey: "REQ-999",
-      title: "A v2",
-      priority: "high",
-    });
-    expect(u).toMatchObject({ requirementKey: "REQ-001", title: "A v2", priority: "high", revision: 2 });
-  });
-
-  it("imports by upserting on the key", async () => {
-    await requirementApi.create({ ...base, requirementKey: "REQ-001", title: "Old" });
-    const summary = await requirementApi.importRows("p1", USER, [
-      { requirementKey: "REQ-001", title: "New" },
-      { title: "Fresh" },
-      { title: "  " },
-    ]);
-    expect(summary).toEqual({ created: 1, updated: 1, skipped: [] });
-    const list = await requirementApi.list("p1", USER);
-    expect(list.map((r) => [r.requirementKey, r.title])).toEqual([
-      ["REQ-001", "New"],
-      ["REQ-002", "Fresh"],
-    ]);
-  });
-
-  it("never brings back a deleted key, typed or imported (ADR-0010)", async () => {
-    const a = await requirementApi.create({ ...base, requirementKey: "REQ-002", title: "A" });
-    await requirementApi.remove(a!.id, USER);
-    await expect(
-      requirementApi.create({ ...base, requirementKey: "REQ-002", title: "B" }),
-    ).rejects.toThrow(/deleted/);
-    const summary = await requirementApi.importRows("p1", USER, [
-      { requirementKey: "REQ-002", title: "Back?" },
-    ]);
-    expect(summary).toEqual({ created: 0, updated: 0, skipped: ["REQ-002"] });
+  it("desktop: the Rust core", async () => {
+    onDesktop();
+    await requirementApi.importRows("p1", "u1", []);
+    expect(invoke).toHaveBeenCalledWith("requirement_import", { projectId: "p1", userId: "u1", rows: [] });
   });
 });

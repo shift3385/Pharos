@@ -182,6 +182,14 @@
     "webConflictToast": "Otro dispositivo guardó una versión más reciente de {{count}} elemento(s). Tu edición se conserva: revísala en Conflictos.",
     "skippedToast": "El servidor rechazó {{count}} cambio(s) (demasiado grandes o no válidos). Siguen pendientes y el resto se sincronizó.",
     "orphans": "{{count}} cambio(s) sin proyecto conocido todavía; se enviarán cuando llegue su proyecto",
+    "web": {
+      "staleWrite": "Este elemento se cambió en otro sitio desde que lo abriste. Tu edición sigue en el formulario: guarda de nuevo para reemplazar esa versión, o cierra sin guardar para conservarla.",
+      "keyTaken": "Ese ID ya lo usa otro elemento del proyecto. Elige otro o déjalo vacío para numerarlo automáticamente.",
+      "keyRetired": "Ese ID era de un elemento eliminado y no se reutiliza nunca. Elige otro o déjalo vacío.",
+      "invalidKey": "Ese ID no es válido. Usa solo letras, dígitos y - _ . :",
+      "desktopOnly": "Por ahora solo está disponible en la app de escritorio.",
+      "legacyLeftovers": "{{count}} elemento(s) de una versión web anterior no se pudieron enviar al servidor. Se guardaron en un archivo en tus descargas."
+    },
     "conflict": {
       "review": "Revisar conflictos",
       "title": "Conflictos de sincronización",

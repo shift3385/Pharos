@@ -2,10 +2,13 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
+import { fakeServer } from "@test/server";
 import { App } from "./App";
 
 describe("navigation", () => {
   beforeEach(async () => {
+    // The web reads its data from the server (BASE-10): an empty account.
+    fakeServer([]);
     await i18n.changeLanguage("es");
   });
 

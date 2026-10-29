@@ -1,3 +1,5 @@
+import { desktopOnly } from "@modules/sync-offline";
+import { invoke, isTauri } from "@shared/platform";
 import type {
   TemplateData,
   TemplateInput,
@@ -6,128 +8,54 @@ import type {
   TemplateSummary,
 } from "../model/types";
 
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
+// The desktop keeps the built-in templates and each user's own in its
+// encrypted local store (Rust). Templates do not reach the server yet
+// (SYNC-04b), so the web has only the built-ins, bundled with the app and held
+// in memory while the page is open; importing, editing or deleting a template
+// is desktop-only there (BASE-10, ADR-0004).
+let builtins: TemplateData[] = [];
 
-// Browser fallback so the templates UI works in `vite dev`. The real, encrypted
-// store lives in Rust and is used in the desktop app.
-const KEY = "pharos.templates";
+const toSummary = ({ dataBase64: _omit, ...rest }: TemplateData): TemplateSummary => ({
+  ...rest,
+  updatedAt: new Date(0).toISOString(),
+});
 
-function loadAll(): TemplateData[] {
-  try {
-    // One browser profile, one user: every imported template is its own.
-    return (JSON.parse(localStorage.getItem(KEY) ?? "[]") as TemplateData[]).map((t) => ({
-      ...t,
-      isOwn: !t.isBuiltin,
-    }));
-  } catch {
-    return [];
-  }
-}
-function saveAll(items: TemplateData[]) {
-  localStorage.setItem(KEY, JSON.stringify(items));
-}
-const toSummary = (t: TemplateData): TemplateSummary => {
-  const { dataBase64: _omit, ...rest } = t;
-  return { ...rest, updatedAt: new Date(0).toISOString() };
-};
-
-const browserApi = {
-  async list(): Promise<TemplateSummary[]> {
-    return loadAll()
+const web = {
+  list: async (): Promise<TemplateSummary[]> =>
+    builtins
       .map(toSummary)
-      .sort(
-        (a, b) =>
-          Number(b.isBuiltin) - Number(a.isBuiltin) ||
-          a.kind.localeCompare(b.kind) ||
-          a.name.localeCompare(b.name),
-      );
-  },
-  async get(id: string): Promise<TemplateData | null> {
-    return loadAll().find((t) => t.id === id) ?? null;
-  },
-  async create(input: TemplateInput): Promise<TemplateData | null> {
-    const item: TemplateData = {
-      id: crypto.randomUUID(),
-      kind: input.kind,
-      language: input.language,
-      name: input.name,
-      description: input.description ?? "",
-      usagePrompt: input.usagePrompt ?? "",
-      version: input.version ?? "1.0",
-      isBuiltin: false,
-      isOwn: true,
-      dataBase64: input.dataBase64,
-    };
-    saveAll([...loadAll(), item]);
-    return item;
-  },
-  async update(id: string, meta: TemplateMeta): Promise<TemplateData | null> {
-    const items = loadAll();
-    const idx = items.findIndex((t) => t.id === id);
-    if (idx < 0) return null;
-    if (items[idx].isBuiltin) throw new Error("built-in templates are read-only");
-    items[idx] = {
-      ...items[idx],
-      name: meta.name,
-      description: meta.description ?? "",
-      usagePrompt: meta.usagePrompt ?? "",
-      version: meta.version ?? items[idx].version,
-    };
-    saveAll(items);
-    return items[idx];
-  },
-  async remove(id: string): Promise<void> {
-    const items = loadAll();
-    const target = items.find((t) => t.id === id);
-    if (target?.isBuiltin) throw new Error("built-in templates cannot be deleted");
-    saveAll(items.filter((t) => t.id !== id));
-  },
-  async seed(seeds: TemplateSeedItem[]): Promise<void> {
-    const items = loadAll();
-    const ids = new Set(items.map((t) => t.id));
-    for (const s of seeds) {
-      if (ids.has(s.id)) continue;
-      items.push({
-        id: s.id,
-        kind: s.kind,
-        language: s.language,
-        name: s.name,
-        description: s.description ?? "",
-        usagePrompt: s.usagePrompt ?? "",
-        version: s.version ?? "1.0",
-        isBuiltin: true,
-        isOwn: false,
-        dataBase64: s.dataBase64,
-      });
-    }
-    saveAll(items);
+      .sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name)),
+  get: async (id: string): Promise<TemplateData | null> =>
+    builtins.find((t) => t.id === id) ?? null,
+  seed: async (items: TemplateSeedItem[]): Promise<void> => {
+    builtins = items.map((s) => ({
+      id: s.id,
+      kind: s.kind,
+      language: s.language,
+      name: s.name,
+      description: s.description ?? "",
+      usagePrompt: s.usagePrompt ?? "",
+      version: s.version ?? "1.0",
+      isBuiltin: true,
+      isOwn: false,
+      dataBase64: s.dataBase64,
+    }));
   },
 };
-
-async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<T>(cmd, args);
-}
 
 // `userId` is the signed-in user (FIX-08b): the desktop store only lists, reads
-// or changes the built-in templates and that user's own. The browser fallback
-// ignores it until BASE-10 removes it.
+// or changes the built-in templates and that user's own.
 export const templateApi = {
   list: (userId: string): Promise<TemplateSummary[]> =>
-    isTauri() ? invoke("template_list", { userId }) : browserApi.list(),
+    isTauri() ? invoke("template_list", { userId }) : web.list(),
   get: (id: string, userId: string): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_get", { id, userId }) : browserApi.get(id),
-  create: (input: TemplateInput, userId: string): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_create", { input, userId }) : browserApi.create(input),
-  update: (id: string, meta: TemplateMeta, userId: string): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_update", { id, meta, userId }) : browserApi.update(id, meta),
-  remove: (id: string, userId: string): Promise<void> =>
-    isTauri() ? invoke("template_delete", { id, userId }) : browserApi.remove(id),
+    isTauri() ? invoke("template_get", { id, userId }) : web.get(id),
+  create: async (input: TemplateInput, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_create", { input, userId }) : desktopOnly("userTemplates"),
+  update: async (id: string, meta: TemplateMeta, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_update", { id, meta, userId }) : desktopOnly("userTemplates"),
+  remove: async (id: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("template_delete", { id, userId }) : desktopOnly("userTemplates"),
   seed: (items: TemplateSeedItem[]): Promise<void> =>
-    isTauri() ? invoke("template_seed", { items }) : browserApi.seed(items),
+    isTauri() ? invoke("template_seed", { items }) : web.seed(items),
 };

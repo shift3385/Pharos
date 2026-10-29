@@ -1,13 +1,16 @@
 // Offline sync client surface (Phase 8, spec §9). Reads the local oplog's pending
 // count for the status indicator and runs the delta push/pull against the
-// backend. The desktop holds the local DB + oplog; in the browser the same
-// surface is served by `web/webSync.ts` (outbox + web conflicts).
+// backend. The desktop holds the local DB + oplog. The web has neither: it is
+// a client of the server (BASE-10), so it has nothing pending and no
+// conflicts, and "Sync now" only reloads the open pages (after handing over
+// what an older web version left in the browser, `web/legacyWebData.ts`).
 // Phase 8C: deltas carry their base + HLC; the server rejects diverged ones and
 // they are kept as conflicts for the conflict panel (never silently overwritten).
 // Everything runs for the signed-in account only (FIX-07); pushes go in batches
 // with retries (FIX-03) and pulls page until the server has no more (FIX-02).
 
 import { getSession } from "@modules/auth";
+import { invoke as platformInvoke, isTauri } from "@shared/platform";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
 import { logRefusedChanges } from "./syncFailure";
 import {
@@ -19,15 +22,18 @@ import {
   withRetry,
   type RemoteDoc,
 } from "./transport";
-import {
-  hydrateFromBackend,
-  resolveWebConflict,
-  webConflicts,
-  webLocalState,
-  type SyncResult,
-} from "../web/webSync";
+import { drainLegacyWebData } from "../web/legacyWebData";
 
-export type { SyncResult };
+/** Outcome of one sync cycle. */
+export interface SyncResult {
+  pushed: number;
+  pulled: number;
+  /** Deltas the server rejected in this cycle (now open conflicts). */
+  conflicts: number;
+  /** Deltas the server refused for their content (too large, invalid); they
+   *  stay pending and are reported to the user. */
+  skipped: number;
+}
 export type SyncStatus = "offline" | "conflicts" | "pending" | "synced";
 
 /** One pending delta as built by Rust (`sync::Delta`). */
@@ -71,13 +77,6 @@ export function splitPushed<T extends { entity: string; entityId: string }>(
   };
 }
 
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
-
 export interface LocalSyncState {
   pending: number;
   conflicts: number;
@@ -89,9 +88,8 @@ export interface LocalSyncState {
 export async function syncLocalState(): Promise<LocalSyncState> {
   const session = await getSession();
   if (!session) return { pending: 0, conflicts: 0 };
-  if (!isTauri()) return webLocalState(session.userId);
-  const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<LocalSyncState>("oplog_pending_count", {
+  if (!isTauri()) return { pending: 0, conflicts: 0 };
+  return platformInvoke<LocalSyncState>("oplog_pending_count", {
     userId: session.userId,
   });
 }
@@ -155,7 +153,7 @@ export async function syncNow(): Promise<SyncResult> {
   const session = await getSession();
   if (!session) throw new Error("not-authenticated");
   const { accessToken: token, userId } = session;
-  const { invoke } = await import("@tauri-apps/api/core");
+  const invoke = platformInvoke;
 
   // Key blocks first (DAT-01): provisional keys get their definitive one
   // before the push, so it carries them.
@@ -225,20 +223,21 @@ export async function syncNow(): Promise<SyncResult> {
   return { pushed, pulled, conflicts, skipped };
 }
 
-/** One sync on either platform: the desktop cycle, or on the web the outbox
- *  flush + incremental pull. */
+/** One sync on either platform: the desktop cycle. On the web every change
+ *  is already on the server, so it hands over the old browser store once and
+ *  tells the open pages to reload. */
 export async function syncAny(): Promise<SyncResult> {
   if (isTauri()) return syncNow();
-  return hydrateFromBackend();
+  const { pushed, leftovers } = await drainLegacyWebData();
+  window.dispatchEvent(new CustomEvent("pharos:synced"));
+  return { pushed, pulled: 0, conflicts: 0, skipped: leftovers };
 }
 
 /** Open conflicts of the signed-in account, oldest first. */
 export async function listConflicts(): Promise<SyncConflict[]> {
   const session = await getSession();
-  if (!session) return [];
-  if (!isTauri()) return webConflicts(session.userId);
-  const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<SyncConflict[]>("sync_conflicts_list", {
+  if (!session || !isTauri()) return [];
+  return platformInvoke<SyncConflict[]>("sync_conflicts_list", {
     userId: session.userId,
   });
 }
@@ -251,16 +250,12 @@ export async function resolveConflict(
 ): Promise<void> {
   const session = await getSession();
   if (!session) throw new Error("not-authenticated");
-  if (!isTauri()) {
-    await resolveWebConflict(session.userId, id, resolution);
-  } else {
-    const { invoke } = await import("@tauri-apps/api/core");
-    await invoke("sync_conflict_resolve", {
-      userId: session.userId,
-      id,
-      resolution,
-    });
-  }
+  if (!isTauri()) throw new Error("sync-desktop-only");
+  await platformInvoke("sync_conflict_resolve", {
+    userId: session.userId,
+    id,
+    resolution,
+  });
   window.dispatchEvent(new CustomEvent("pharos:synced"));
 }
 
@@ -282,8 +277,7 @@ export interface KeyConflict {
 export async function listKeyConflicts(): Promise<KeyConflict[]> {
   const session = await getSession();
   if (!session || !isTauri()) return [];
-  const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<KeyConflict[]>("key_conflicts_list", { userId: session.userId });
+  return platformInvoke<KeyConflict[]>("key_conflicts_list", { userId: session.userId });
 }
 
 /** Gives the row `key`, or the next number of its project when omitted
@@ -291,8 +285,7 @@ export async function listKeyConflicts(): Promise<KeyConflict[]> {
 export async function resolveKeyConflict(id: string, key?: string): Promise<string> {
   const session = await getSession();
   if (!session) throw new Error("not-authenticated");
-  const { invoke } = await import("@tauri-apps/api/core");
-  const assigned = await invoke<string>("key_conflict_resolve", {
+  const assigned = await platformInvoke<string>("key_conflict_resolve", {
     userId: session.userId,
     id,
     key: key ?? null,

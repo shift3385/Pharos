@@ -56,6 +56,19 @@ export function createAuthRepository(pool: Pool) {
       return rows[0] ?? null;
     },
 
+    /** Updates the profile fields of a user (the web's profile, BASE-10). */
+    async updateProfile(
+      id: string,
+      input: { display_name: string; first_name: string; last_name: string },
+    ): Promise<UserRow | null> {
+      const { rows } = await pool.query<UserRow>(
+        `UPDATE users SET display_name = $2, first_name = $3, last_name = $4, updated_at = now()
+          WHERE id = $1 RETURNING *`,
+        [id, input.display_name, input.first_name, input.last_name],
+      );
+      return rows[0] ?? null;
+    },
+
     async findById(id: string): Promise<UserRow | null> {
       const { rows } = await pool.query<UserRow>(
         `SELECT * FROM users WHERE id = $1 LIMIT 1`,

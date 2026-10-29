@@ -9,6 +9,22 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Añadido
 
+- **La web trabaja contra el servidor (BASE-10, ADR-0004):** la versión web ya
+  no guarda proyectos, planes, casos, requisitos ni tarjetas en el navegador:
+  lee y escribe en el servidor, que aplica las mismas reglas que la app de
+  escritorio (numeración de IDs, IDs que no se reutilizan, posiciones del
+  planificador). Lo que haces en la web llega a tus equipos en la siguiente
+  sincronización, y al revés. Si otro equipo cambió un elemento mientras lo
+  editabas, al guardar un aviso lo dice y tu edición sigue en el formulario;
+  guardar de nuevo reemplaza esa versión. Un ID ya usado se rechaza al guardar,
+  con un aviso. En la web puedes cambiar tu nombre en el perfil (el rol no).
+  Por ahora los adjuntos, tus propias plantillas y el historial de revisiones
+  solo están en la app de escritorio; la web muestra las plantillas de PHAROS.
+  La primera vez que sincronizas en la web con esta versión, los cambios que
+  una versión anterior dejó sin enviar se envían, y lo que el servidor no
+  acepta (y los adjuntos y plantillas que solo estaban en el navegador) se
+  descarga en `pharos-web-unsent-<fecha>.json`.
+
 - **Inicio real (UX-08):** la pantalla de inicio ya no muestra el texto de la
   "Fase 0". Ofrece "Iniciar nuevo proyecto de pruebas" y "Continuar proyecto
   existente", y lista tus proyectos con búsqueda por nombre (sin distinguir
@@ -129,9 +145,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     primero. El otro elemento aparece en Conflictos → "Claves repetidas", con
     una clave provisional, hasta que escribes otra o eliges "Asignar la
     siguiente". Una clave nunca cambia sola.
-  - Límite conocido: en la web no hay panel de claves repetidas. Un cambio
-    web cuya clave ya existe queda en "Cambios pendientes" marcado como
-    rechazado hasta que la web use el servidor como única fuente (BASE-10).
+  - En la web una clave repetida se rechaza al guardar, con un aviso
+    (BASE-10).
     Créalo o corrígelo desde el escritorio.
 - **Purga de lo borrado (SYNC-06):** lo que borras se elimina definitivamente
   del escritorio tras los días de retención de Administración (30 por

@@ -127,8 +127,8 @@ export interface TestCaseInput {
   data: TestCaseData;
   /** Signed-in user making the change (owner check and audit fields). */
   userId: string;
-  // Browser-fallback numbering hints (ignored by the Rust store, which reads the
-  // project's configured prefix/width from the database).
+  // Numbering hints, ignored: the desktop and the server number from the
+  // project's own series (BASE-10).
   caseIdPrefix?: string;
   caseIdDigits?: number;
 }

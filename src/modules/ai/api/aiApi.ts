@@ -14,15 +14,9 @@ import {
 import { newProvenance } from "../model/provenance";
 import { onlineModels, onlineProvider } from "../providers/online";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
+import { isTauri } from "@shared/platform";
 
 const CONFIG_KEY = "pharos.ai.config";
-
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   const { invoke } = await import("@tauri-apps/api/core");

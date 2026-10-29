@@ -11,6 +11,10 @@ import { createAuthService } from "./modules/auth/auth.service";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { createSyncRepository } from "./modules/sync/sync.repository";
 import { syncRoutes } from "./modules/sync/sync.routes";
+import { createServerClock } from "./modules/sync/sync.hlc";
+import { createDomainStore } from "./modules/domain/domain.store";
+import { createDomainService } from "./modules/domain/domain.service";
+import { domainRoutes } from "./modules/domain/domain.routes";
 import { AppError } from "./modules/auth/errors";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
@@ -53,7 +57,8 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
         },
       };
     }
-    if (route.url.startsWith("/sync/")) {
+    // Sync batches and the web's domain writes carry whole documents.
+    if (route.url.startsWith("/sync/") || route.url.startsWith("/api/")) {
       route.bodyLimit ??= env.SYNC_BODY_LIMIT_BYTES;
     }
   });
@@ -76,6 +81,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const service = createAuthService({ repo, tokens });
 
   const syncRepo = createSyncRepository(pool);
+  const domain = createDomainService(createDomainStore(pool, createServerClock()));
 
   app.get("/health", async () => ({ status: "ok" }));
   void app.register(async (instance) => {
@@ -83,6 +89,9 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   void app.register(async (instance) => {
     syncRoutes(instance, { repo: syncRepo, tokens });
+  });
+  void app.register(async (instance) => {
+    domainRoutes(instance, { domain, tokens });
   });
 
   app.setErrorHandler((error, req, reply) => {
@@ -96,7 +105,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
     if (error instanceof AppError) {
       return reply
         .code(error.statusCode)
-        .send({ code: error.code, message: error.message });
+        .send({ ...error.details, code: error.code, message: error.message });
     }
     // Fastify's own client errors (body too large, malformed JSON, wrong
     // content type…) keep their 4xx status instead of becoming a 500.

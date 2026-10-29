@@ -11,6 +11,9 @@ import {
   type KeyKind,
 } from "./sync.schemas";
 
+/** A pool, or a client inside a transaction. */
+type Queryable = Pick<Pool, "query"> | PoolClient;
+
 export interface RemoteDoc {
   entity: string;
   entityId: string;
@@ -48,7 +51,7 @@ export interface KeyBlock {
 }
 
 /** The key expression of `documents_key_idx` (migration 0006). */
-const KEY_SQL = "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey')";
+export const KEY_SQL = "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey')";
 
 /** One pull page: documents after the cursor and whether more remain. */
 export interface PullPage {
@@ -56,9 +59,9 @@ export interface PullPage {
   hasMore: boolean;
 }
 
-const COLS = "entity, entity_id, payload, revision, author, deleted, hlc, seq";
+export const COLS = "entity, entity_id, payload, revision, author, deleted, hlc, seq";
 
-function toDoc(r: Record<string, unknown>): RemoteDoc {
+export function toDoc(r: Record<string, unknown>): RemoteDoc {
   return {
     entity: r.entity as string,
     entityId: r.entity_id as string,
@@ -99,7 +102,7 @@ async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta
  *  upsert (DAT-01), as a key conflict; null when the key is free, empty or
  *  provisional. Runs under the user's write lock, so two pushes of the same key
  *  cannot both pass. */
-async function takenKey(client: PoolClient, userId: string, d: Delta): Promise<KeyConflict | null> {
+export async function takenKey(client: PoolClient, userId: string, d: Delta): Promise<KeyConflict | null> {
   const field = KEY_FIELD[d.entity];
   const key = field ? d.payload[field] : undefined;
   if (d.op !== "upsert" || typeof key !== "string" || !key || isProvisionalKey(key)) return null;
@@ -111,6 +114,64 @@ async function takenKey(client: PoolClient, userId: string, d: Delta): Promise<K
     [userId, d.entity, String(d.payload.projectId ?? ""), key, d.entityId],
   );
   return rows[0] ? { entity: d.entity, entityId: d.entityId, key, takenBy: rows[0].entity_id } : null;
+}
+
+/** Stores a delta as the user's latest version of the entity (with a new
+ *  `seq`) and cascades a project delete to its children. The caller holds the
+ *  user's write lock and has already decided that the delta wins. */
+export async function storeDoc(client: PoolClient, userId: string, d: Delta): Promise<void> {
+  await client.query(
+    `INSERT INTO documents
+       (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
+     ON CONFLICT (user_id, entity, entity_id) DO UPDATE
+       SET payload = EXCLUDED.payload,
+           revision = EXCLUDED.revision,
+           author = EXCLUDED.author,
+           deleted = EXCLUDED.deleted,
+           hlc = EXCLUDED.hlc,
+           updated_at = now(),
+           seq = nextval('documents_seq')`,
+    [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc],
+  );
+  if (d.entity === "project" && d.op === "delete") await cascadeProjectDelete(client, userId, d);
+}
+
+/** Takes `size` key numbers of a project's series (DAT-01, ADR-0010 rule 4),
+ *  starting at the highest of: the next number never handed out, `floor`, and
+ *  the highest number of the series this server stores for the project (keys
+ *  pushed before blocks existed, or typed by hand). One
+ *  `INSERT … ON CONFLICT DO UPDATE … RETURNING` locks the row, so two leases
+ *  never overlap. Returns the first number taken, or null when the row belongs
+ *  to another account. */
+export async function leaseRange(
+  q: Queryable,
+  userId: string,
+  r: { projectId: string; kind: KeyKind; prefix: string; floor: number },
+  size: number,
+): Promise<number | null> {
+  // Only keys of the series count: the prefix followed by digits only
+  // (a typed `JIRA-48213` must not push every later block that far).
+  const stored = r.prefix
+    ? await q.query<{ max: string | null }>(
+        `SELECT max(CASE WHEN left(k, length($4)) = $4 AND substr(k, length($4) + 1) ~ '^[0-9]{1,15}$'
+                         THEN substr(k, length($4) + 1)::bigint END) AS max
+           FROM (SELECT ${KEY_SQL} AS k FROM documents
+                  WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3) AS keyed`,
+        [userId, KEY_ENTITY[r.kind], r.projectId, r.prefix],
+      )
+    : null;
+  const floor = Math.max(r.floor, Number(stored?.rows[0]?.max ?? 0) + 1);
+  const { rows } = await q.query<{ next_value: string }>(
+    `INSERT INTO key_blocks (project_id, kind, owner_id, next_value)
+     VALUES ($1, $2, $3, $4::bigint + $5)
+     ON CONFLICT (project_id, kind) DO UPDATE
+       SET next_value = GREATEST(key_blocks.next_value, $4::bigint) + $5, updated_at = now()
+       WHERE key_blocks.owner_id = $3
+     RETURNING next_value`,
+    [r.projectId, r.kind, userId, floor, size],
+  );
+  return rows[0] ? Number(rows[0].next_value) - size : null;
 }
 
 export function createSyncRepository(pool: Pool) {
@@ -136,21 +197,7 @@ export function createSyncRepository(pool: Pool) {
             await client.query("COMMIT");
             return { accepted: false, keyConflict };
           }
-          await client.query(
-            `INSERT INTO documents
-               (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
-             ON CONFLICT (user_id, entity, entity_id) DO UPDATE
-               SET payload = EXCLUDED.payload,
-                   revision = EXCLUDED.revision,
-                   author = EXCLUDED.author,
-                   deleted = EXCLUDED.deleted,
-                   hlc = EXCLUDED.hlc,
-                   updated_at = now(),
-                   seq = nextval('documents_seq')`,
-            [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc],
-          );
-          if (d.entity === "project" && d.op === "delete") await cascadeProjectDelete(client, userId, d);
+          await storeDoc(client, userId, d);
         }
         await client.query("COMMIT");
         return decision === "conflict" && current ? { accepted: false, current } : { accepted: true };
@@ -176,13 +223,9 @@ export function createSyncRepository(pool: Pool) {
       return { docs: rows.slice(0, limit).map(toDoc), hasMore: rows.length > limit };
     },
 
-    /** Leases one block of key numbers per request (DAT-01, ADR-0010 rule 4).
-     *  The block starts at the highest of: the next number never handed out,
-     *  the device's own next number (`floor`, so keys numbered before the
-     *  project's first push stay valid) and the highest number this server
-     *  stores for the project (keys pushed before blocks existed). One
-     *  `INSERT … ON CONFLICT DO UPDATE … RETURNING` per request locks the row,
-     *  so concurrent leases never overlap. A project another account owns is
+    /** Leases one block of key numbers per request (`leaseRange`). The
+     *  device's own next number is the floor, so keys numbered before the
+     *  project's first push stay valid. A project another account owns is
      *  refused. */
     async leaseBlocks(
       userId: string,
@@ -195,37 +238,12 @@ export function createSyncRepository(pool: Pool) {
           `SELECT 1 FROM documents WHERE entity = 'project' AND entity_id = $1 AND user_id <> $2 LIMIT 1`,
           [r.projectId, userId],
         );
-        if (foreign.rowCount) {
+        const start = foreign.rowCount ? null : await leaseRange(pool, userId, r, KEY_BLOCK_SIZE);
+        if (start === null) {
           refused.push({ projectId: r.projectId, kind: r.kind });
           continue;
         }
-        // Only keys of the series count: the prefix followed by digits only
-        // (a typed `JIRA-48213` must not push every later block that far).
-        const stored = r.prefix
-          ? await pool.query<{ max: string | null }>(
-              `SELECT max(CASE WHEN left(k, length($4)) = $4 AND substr(k, length($4) + 1) ~ '^[0-9]{1,15}$'
-                               THEN substr(k, length($4) + 1)::bigint END) AS max
-                 FROM (SELECT ${KEY_SQL} AS k FROM documents
-                        WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3) AS keyed`,
-              [userId, KEY_ENTITY[r.kind], r.projectId, r.prefix],
-            )
-          : null;
-        const floor = Math.max(r.floor, Number(stored?.rows[0]?.max ?? 0) + 1);
-        const { rows } = await pool.query<{ next_value: string }>(
-          `INSERT INTO key_blocks (project_id, kind, owner_id, next_value)
-           VALUES ($1, $2, $3, $4::bigint + $5)
-           ON CONFLICT (project_id, kind) DO UPDATE
-             SET next_value = GREATEST(key_blocks.next_value, $4::bigint) + $5, updated_at = now()
-             WHERE key_blocks.owner_id = $3
-           RETURNING next_value`,
-          [r.projectId, r.kind, userId, floor, KEY_BLOCK_SIZE],
-        );
-        if (!rows[0]) {
-          refused.push({ projectId: r.projectId, kind: r.kind });
-          continue;
-        }
-        const next = Number(rows[0].next_value);
-        blocks.push({ projectId: r.projectId, kind: r.kind, start: next - KEY_BLOCK_SIZE, end: next - 1 });
+        blocks.push({ projectId: r.projectId, kind: r.kind, start, end: start + KEY_BLOCK_SIZE - 1 });
       }
       return { blocks, refused };
     },

@@ -182,6 +182,14 @@
     "webConflictToast": "Another device saved a newer version of {{count}} item(s). Your edit is kept: review it in Conflicts.",
     "skippedToast": "The server refused {{count}} change(s) (too large or invalid). They stay pending; everything else synced.",
     "orphans": "{{count}} change(s) without a known project yet; they will be sent once it arrives",
+    "web": {
+      "staleWrite": "This item was changed elsewhere since you opened it. Your edit is still in the form: save again to replace that version, or close without saving to keep it.",
+      "keyTaken": "That ID is already used by another item of the project. Choose another one or leave it empty to number it automatically.",
+      "keyRetired": "That ID belonged to a deleted item and is never reused. Choose another one or leave it empty.",
+      "invalidKey": "That ID is not valid. Use letters, digits and - _ . : only.",
+      "desktopOnly": "Only available in the desktop app for now.",
+      "legacyLeftovers": "{{count}} item(s) from an older web version could not be sent to the server. They were saved to a file in your downloads."
+    },
     "conflict": {
       "review": "Review conflicts",
       "title": "Sync conflicts",

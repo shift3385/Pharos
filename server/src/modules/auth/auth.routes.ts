@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { AuthService } from "./auth.service";
 import type { TokenService } from "./tokens";
-import { loginSchema, refreshSchema, registerSchema } from "./auth.schemas";
+import { loginSchema, profileSchema, refreshSchema, registerSchema } from "./auth.schemas";
 import { AuthErrors } from "./errors";
 
 declare module "fastify" {
@@ -52,5 +52,11 @@ export function authRoutes(
 
   app.get("/auth/me", { preHandler: requireAuth }, async (req) => {
     return service.me(req.userId as string);
+  });
+
+  // The web edits its profile here (BASE-10); the desktop keeps its own in
+  // the local store.
+  app.patch("/auth/me", { preHandler: requireAuth }, async (req) => {
+    return service.updateProfile(req.userId as string, profileSchema.parse(req.body));
   });
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { isTauri } from "@shared/platform";
 
 /** Prefix of the Rust error for a database written by a newer Pharos (SEC-06). */
 export const NEWER_DB_ERROR = "db-newer-than-app";
@@ -15,13 +16,6 @@ export const WRONG_RECOVERY_KEY = "recovery-key-wrong";
 export function isKeyError(error: string): boolean {
   return (
     error.startsWith(KEY_MISSING_ERROR) || error.startsWith(KEY_MISMATCH_ERROR)
-  );
-}
-
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
   );
 }
 

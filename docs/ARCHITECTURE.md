@@ -39,11 +39,11 @@ src/
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
-  shared/      # design system (theme tokens), i18n, ui kit, fonts, diagnostics, version
+  shared/      # design system (theme tokens), i18n, ui kit, fonts, diagnostics, version, platform
   test/        # test utilities (renderWithProviders)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync, logs
 e2e/           # desktop smoke of the real binary (WebdriverIO + tauri-driver)
-server/        # backend API (Fastify): auth + sync document store
+server/        # backend API (Fastify): auth, sync document store, the web's domain API
 docs/          # ARCHITECTURE.md, ROADMAP.md, GLOSARIO.md, adr/, design/, referencias/, spikes/
 ```
 
@@ -53,6 +53,36 @@ remains a reserved boundary for Jira (backlog INT-05).
 
 Future modules — manual test execution (0.2.0), mobile build (0.4.0) — must
 be addable without touching existing modules.
+
+**One platform layer (BASE-10, [ADR-0004](adr/0004-web-cliente-del-servidor.md)).**
+`@shared/platform` is the only place that knows whether Pharos runs as the
+desktop app or as the web build: `isTauri()`, `invoke()` (Tauri, loaded on
+demand) and `capabilities` (what only the desktop has). Each module's `api/`
+file sends a call either to the Rust core (`invoke`) or, on the web, to the
+server's domain API through `serverApi` (`@modules/sync-offline`). The
+browser holds **no domain logic and no domain data**: no localStorage store,
+no outbox, no web conflicts. What stays in localStorage is per-browser
+preferences only (theme, language, Administration settings, AI non-secret
+config, last access, when the recovery key was shown) and, on the web, the
+session. Until SYNC-04b, attachments, the user's own templates and revision
+history are desktop-only: the web shows the built-in templates (held in
+memory) and no history, and a desktop-only action says so in a toast.
+
+- **Edits never overwrite blindly (FIX-04).** `serverApi` remembers the
+  revision of every item the page read and sends it with each update or
+  delete. If the item changed elsewhere meanwhile, the server answers 409
+  `stale_write` with its version; the user is told, the form keeps the edit,
+  and saving again replaces the newer version knowingly.
+- **Keys.** On the web the server numbers cases, requirements and defects from
+  the same key series as the devices' leased blocks (`key_blocks`), so a web
+  key never collides with a device's. A typed key that is taken (`key_taken`),
+  belonged to a deleted item (`key_retired`) or is invalid (`invalid_key`) is
+  refused at once with a toast, never queued.
+- **Old browser data.** On the account's first sync with this version,
+  `web/legacyWebData.ts` pushes what the old outbox still held, saves what the
+  server does not take (and the attachments and imported templates that only
+  lived in the browser) to `pharos-web-unsent-<date>.json`, and removes the old
+  store.
 
 **Home (UX-08, spec §5).** `app/dashboard` shows two actions (start a new
 project, continue one) and the user's projects with search, last access, plan
@@ -254,6 +284,20 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   answers others with 426 (ADR-0020). Tombstones are never removed; at start
   and then daily (`server.ts`) the payload of those older than
   `SYNC_TOMBSTONE_DAYS` is cleared (SYNC-06). See `src/modules/sync-offline/README.md`.
+- `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`,
+  `/api/test-plans`, `/api/test-cases`, `/api/requirements` (+ `/import`) and
+  `/api/planner-cards` (+ `/reorder`). `domain.service.ts` applies the
+  desktop core's rules (defaults, immutable keys, keys never reused,
+  positions per column, upsert-by-key import) to the same document store, in
+  one transaction under the user's sync write lock (`domain.store.ts`). Every
+  write is a document with a new revision, a new `seq` and an HLC stamped by
+  the server's clock (`sync.hlc.ts`, device id `server`, always newer than the
+  version it replaces), so devices pull it like any other change and a
+  project delete cascades as on `/sync/push`. Payloads have exactly the shape
+  the desktop pushes (`sync.rs::read_payload`). Updates and deletes name the
+  revision the client read; a newer one answers 409 `stale_write` with the
+  current version. Same auth and version check (426) as `/sync/*`.
+  `PATCH /auth/me` changes the account's names (not its role).
 
 Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 **JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
@@ -276,7 +320,7 @@ In production it refuses a default/short JWT secret and `CORS_ORIGIN=*`.
 
 - a per-IP attempt limit on `/auth/login` and `/auth/register`
   (`@fastify/rate-limit`, 429 `rate_limited`);
-- body limits of 1 MiB in general and 8 MiB on `/sync/*` (413
+- body limits of 1 MiB in general and 8 MiB on `/sync/*` and `/api/*` (413
   `payload_too_large`).
 
 Fastify's own 4xx errors keep their status in the JSON error format.
@@ -381,8 +425,8 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
 
 The profile (`display_name`
 alias + mandatory `first_name`/`last_name`) is exposed to the client through
-typed Tauri commands (`profile_get`, `profile_upsert`); the browser falls back
-to localStorage for `vite dev`.
+typed Tauri commands (`profile_get`, `profile_upsert`); the web edits the
+account's names on the server (`PATCH /auth/me`, BASE-10).
 
 ## Phase status
 

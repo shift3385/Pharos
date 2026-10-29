@@ -23,3 +23,18 @@
   - El backend necesitará endpoints de dominio a medida que la web los use.
   - FIX-04 (avisar del conflicto y no perder la edición) se resuelve en este
     marco.
+- **Implementación (BASE-10, 2026-10-29):**
+  - `@shared/platform` (`isTauri`, `invoke`, `capabilities`) sustituye las
+    copias de `isTauri()`.
+  - El servidor expone una API de dominio (`/api/*`, módulo `domain`) que
+    aplica las reglas del núcleo sobre el mismo almacén de documentos: cada
+    escritura web es un documento con revisión, `seq` y HLC del servidor, y los
+    escritorios la reciben en el pull.
+  - Cada actualización o borrado web lleva la revisión que leyó; si cambió, el
+    servidor responde 409 `stale_write` con su versión: se avisa, la edición
+    sigue en el formulario y guardar de nuevo la reemplaza (FIX-04).
+  - Desaparecen la bandeja de salida, los conflictos y las cachés web. Lo que
+    dejó una versión anterior se envía una vez y lo que no entra se descarga
+    en un archivo.
+  - Hasta SYNC-04b, adjuntos, plantillas propias e historial de revisiones son
+    solo de escritorio; la web muestra las plantillas incluidas.

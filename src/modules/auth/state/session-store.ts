@@ -1,4 +1,5 @@
 import type { Session } from "../model/types";
+import { isTauri } from "@shared/platform";
 
 /**
  * Abstraction over where the session is cached so the app can reopen offline
@@ -47,13 +48,6 @@ export const tauriSessionStore: SessionStore = {
     await invoke("session_clear");
   },
 };
-
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
 
 /**
  * Picks the keychain store inside Tauri and localStorage in a plain browser.

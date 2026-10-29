@@ -89,7 +89,7 @@ También bloquean 0.1.0: SEC-03, SEC-06, SYNC-08, IA-05, UX-05, UX-06 y las vali
 Límites conocidos de FIX-08 (rama A2):
 
 - El id del usuario lo envía la UI al núcleo Rust. La comprobación separa las cuentas de un mismo equipo; no protege de una UI manipulada.
-- El fallback del navegador (`vite dev`) ignora `userId` hasta que BASE-10 lo elimine.
+- En la web el dueño ya no lo envía la UI: el servidor lo toma de la sesión (BASE-10).
 - Un plan sin proyecto (posible por un pull antiguo) no se muestra a nadie: el dueño se deduce del proyecto, y la UI solo llega al plan desde su proyecto.
 
 ### B · Ingeniería (bloquea publicar 0.1.0)
@@ -104,7 +104,7 @@ Límites conocidos de FIX-08 (rama A2):
 | BASE-06 | Servidor endurecido: secreto obligatorio de 32+ en producción, CORS explícito, límite de intentos de login y de tamaño de petición                           | P0  | Hecho (B1, en main)                   | El servidor no arranca en producción con el secreto por defecto o CORS `*` |
 | BASE-08 | Logs estructurados (`tracing`), `ErrorBoundary` y "Exportar diagnóstico" con la versión (absorbe UX-07)                                                      | P1  | Hecho (B2, Q1); falta validación nativa | El diagnóstico exportado no contiene datos de usuario                      |
 | BASE-09 | Instalador NSIS en pre-versiones (MSI solo en estables), construido en CI                                                                                    | P0  | Hecho (B1); falta QA en Win 11 limpio | El artefacto de CI se instala en un Windows 11 limpio                      |
-| BASE-10 | Una sola capa de plataforma (`@shared/platform`); la web como cliente del servidor, sin dominio duplicado ([ADR-0004](adr/0004-web-cliente-del-servidor.md)) | P1  | Pendiente                             | No queda ninguna implementación de dominio sobre `localStorage`            |
+| BASE-10 | Una sola capa de plataforma (`@shared/platform`); la web como cliente del servidor, sin dominio duplicado ([ADR-0004](adr/0004-web-cliente-del-servidor.md)) | P1  | Hecho (W1)                            | No queda ninguna implementación de dominio sobre `localStorage`            |
 | BASE-11 | ADRs y reglas de trabajo dentro del repo                                                                                                                     | P1  | Hecho: `docs/adr/`, `CONTRIBUTING.md` | —                                                                          |
 | BASE-12 | Registro de números de migración con test de duplicados y huecos                                                                                             | P1  | Hecho (B1, en main)                   | CI falla si dos migraciones comparten número                               |
 | BASE-13 | Cobertura medida como informe (`@vitest/coverage-v8`, `cargo llvm-cov`) y tests de `oplog.rs` y `template.rs`                                                | P2  | Hecho (D1, tests de oplog y plantillas en A3): informe del cliente en cada PR; Rust en local | El informe de cobertura se publica en cada PR                              |

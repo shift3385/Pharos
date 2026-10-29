@@ -94,9 +94,13 @@ npm run tauri dev            # 3) desktop app (or: npm run dev for the web previ
 ```
 
 **Web preview only:** with the database and the API up, `npm run dev` and open
-http://localhost:1420. The browser has no local encrypted database or oplog; it
-reads and writes the backend directly, so offline work and the conflict panel
-are desktop-only.
+http://localhost:1420. The web build is a client of the server (ADR-0004,
+BASE-10): it keeps no domain data in the browser and reads and writes through
+the API's domain endpoints (`/api/*`), so it needs the API and works only
+online. Offline work, the conflict panel, attachments, your own templates and
+revision history are desktop-only for now; the web shows the built-in
+templates. If an item changed elsewhere while you edited it, saving tells you
+and keeps your edit; saving again replaces the newer version.
 
 ### Signing in
 

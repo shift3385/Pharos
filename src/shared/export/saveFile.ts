@@ -11,13 +11,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import i18n from "i18next";
 import { notify, ReportedError } from "../ui/notify";
-
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
+import { isTauri } from "../platform";
 
 /** Where downloads go: `custom` false = the OS Downloads folder; `missing`
  *  true = the chosen folder no longer exists (files fall back to Downloads). */
