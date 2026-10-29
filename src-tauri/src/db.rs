@@ -479,8 +479,9 @@ fn write_atomic_io(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
 /// - `pharos.db.enc.new`: a save that never got renamed. AES-GCM authenticates
 ///   the whole blob, so if it decrypts it is a complete, newer save and is
 ///   promoted; otherwise, next to a `pharos.db.enc` this key opens, it is a
-///   torn write and is discarded. Without that file it is never deleted (see
-///   `latest_save`).
+///   torn write and is discarded. It is never deleted without that proof (no
+///   `pharos.db.enc`, or one this key does not open): it may be a complete,
+///   newer save under another key, and both files are left as they are.
 fn recover_leftovers(dir: &Path, enc_path: &Path, key: &[u8; 32]) -> Result<(), String> {
     let legacy_plain = dir.join("pharos.db.tmp");
     if legacy_plain.exists() {
@@ -494,10 +495,16 @@ fn recover_leftovers(dir: &Path, enc_path: &Path, key: &[u8; 32]) -> Result<(), 
             .unwrap_or(false);
         if complete {
             fs::rename(&pending, enc_path).map_err(|e| e.to_string())?;
-        } else if enc_path.try_exists().map_err(|e| e.to_string())? {
-            fs::remove_file(&pending).map_err(|e| e.to_string())?;
         } else {
-            return Err(DECRYPT_ERROR.to_string());
+            let enc = match fs::read(enc_path) {
+                Ok(blob) => blob,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                    return Err(DECRYPT_ERROR.to_string())
+                }
+                Err(e) => return Err(e.to_string()),
+            };
+            decrypt(key, &enc)?;
+            fs::remove_file(&pending).map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -1230,6 +1237,61 @@ mod tests {
         let db = Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
         assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
         assert_eq!(keychain.key(), Some(KEY));
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// A crash between writing `.new` and the rename leaves a complete, newer
+    /// save. A wrong key must not delete it: the right key brings it back.
+    #[test]
+    fn a_wrong_key_never_deletes_a_complete_pending_save() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let db = Db::open_with_store(&dir, &MemStore::with(KEY)).unwrap();
+        db.with_conn(|c| {
+            c.execute("UPDATE workspaces SET name = 'Newest'", [])
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+        let image = db
+            .with_conn(|c| {
+                c.serialize(DatabaseName::Main)
+                    .map(|d| d.to_vec())
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        drop(db);
+        fs::write(
+            dir.join("pharos.db.enc.new"),
+            encrypt(&KEY, &image).unwrap(),
+        )
+        .unwrap();
+        let enc = fs::read(dir.join("pharos.db.enc")).unwrap();
+        let pending = fs::read(dir.join("pharos.db.enc.new")).unwrap();
+        let unchanged = || {
+            assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), enc);
+            assert_eq!(fs::read(dir.join("pharos.db.enc.new")).unwrap(), pending);
+        };
+
+        // The cleanup itself needs proof that the key opens `pharos.db.enc`.
+        let err = recover_leftovers(&dir, &dir.join("pharos.db.enc"), &[3u8; 32]).unwrap_err();
+        assert_eq!(err, DECRYPT_ERROR);
+        unchanged();
+        let err = Db::open_with_store(&dir, &MemStore::with([3u8; 32]))
+            .err()
+            .unwrap();
+        assert!(err.starts_with(KEY_MISMATCH_ERROR), "{err}");
+        unchanged();
+
+        let keychain = MemStore::with([3u8; 32]);
+        let db = Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
+        let name: String = db
+            .with_conn(|c| {
+                c.query_row("SELECT name FROM workspaces", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(name, "Newest");
         assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
         fs::remove_dir_all(&dir).unwrap();
     }
