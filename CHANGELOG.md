@@ -147,6 +147,13 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- Cada PR publica la cobertura del cliente (BASE-13): el resumen (líneas,
+  sentencias, funciones y ramas) en el resumen del job `client` y el informe
+  completo como artefacto `coverage-client`. Es un informe, no un gate; los
+  tests del cliente se ejecutan una sola vez (`npm run verify:static` y luego
+  `npm run coverage`) y un test roto sigue dejando el job en rojo. La
+  cobertura de Rust sigue en local (`npm run coverage:rust`): en CI costaría un
+  segundo build completo instrumentado.
 - El smoke E2E del escritorio (`e2e`) es ahora un check obligatorio para
   fusionar en `main`, junto a los otros siete (BASE-02, BASE-14).
 - Las exportaciones y el diagnóstico ya no los guarda el navegador interno en
@@ -261,6 +268,13 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   - vitest y vite (herramientas de desarrollo con avisos críticos).
   - zod 4 en el servidor (BASE-18), que corrige el aviso alto
     GHSA-mrhx-c7xc-m3w5. La auditoría de npm ya no tolera ningún aviso.
+  - react-router 7 en lugar de react-router-dom 6 (BASE-20), que corrige la
+    redirección abierta GHSA-wrjc-x8rr-h8h6 y GHSA-337j-9hxr-rhxg. La
+    navegación no cambia.
+  - `uuid` 11 para exceljs (BASE-20, GHSA-w5hq-g745-h8pq). El `npm audit` de
+    la raíz queda sin avisos. La app sigue llevando el uuid 8 que exceljs trae
+    ya empaquetado en su `dist/exceljs.min.js`, pero el aviso no le afecta:
+    solo toca v3/v5/v6 con el argumento `buf`, y exceljs solo llama a `v4()`.
 - Para desarrollo: el driver del smoke E2E (`msedgedriver`) solo se descarga
   del servidor de Microsoft y debe estar firmado por Microsoft antes de
   ejecutarse.

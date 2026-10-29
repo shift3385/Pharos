@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import type { ProjectOverview } from "@modules/projects";
 import { DashboardPage } from "./DashboardPage";

@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter } from "react-router-dom";
+import { HashRouter } from "react-router";
 
 // Side-effect imports: vendored fonts, design tokens, base styles, i18n init.
 import "@shared/fonts";
@@ -29,9 +29,7 @@ ReactDOM.createRoot(rootElement).render(
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <HashRouter
-              future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-            >
+            <HashRouter>
               <App />
             </HashRouter>
           </AuthProvider>
