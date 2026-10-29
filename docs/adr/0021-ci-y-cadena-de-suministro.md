@@ -41,7 +41,8 @@
   - **La misma regla en npm:** el gate de licencias rechaza el copyleft débil
     salvo los paquetes nombrados en `scripts/license-exceptions.json` (hoy
     `lightningcss`, MPL-2.0, que vite 7 instala en `server/` a través de
-    vitest 4; no se distribuye). Una excepción con `coversPlatformBinaries`
+    vitest 4, y `axe-core`, MPL-2.0, el comprobador WCAG de los tests de
+    accesibilidad, ADR-0027; ninguno se distribuye). Una excepción con `coversPlatformBinaries`
     cubre también los binarios por plataforma del paquete (sus
     `optionalDependencies`, con la misma licencia), porque npm instala solo el
     del sistema actual: en la CI de Linux son otros que en Windows.
