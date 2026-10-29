@@ -95,12 +95,19 @@ are desktop-only.
 ### Signing in
 
 On a fresh database there are no accounts: use **"Sign up"** ("Regístrate")
-on the login screen. For local development the convention is this test account (it exists
-only in your local `pharos_db` — **not** a real credential; register it once if
-it is missing):
+on the login screen, or create the local test account with:
+
+```
+cd server && npm run seed:test-user
+```
+
+The script is idempotent (it does nothing if the account exists) and refuses to
+run with `NODE_ENV=production`. The account exists only in your local
+`pharos_db` — **not** a real credential:
 
 - **Email:** `smoke@pharos.dev`
 - **Password:** `supersecret1`
+- Override both with `TEST_USER_EMAIL` / `TEST_USER_PASSWORD`.
 
 After the first sign-in the desktop app can reopen offline from the cached
 session.
@@ -135,7 +142,7 @@ Frontend (repository root):
 | `npm run verify`               | typecheck + lint + licenses + version + tests     |
 
 Backend (`server/`): `npm start`, `npm run dev` (auto-reload), `npm run migrate`,
-`npm test` (needs `pharos_test_db`), `npm run typecheck`.
+`npm run seed:test-user`, `npm test` (needs `pharos_test_db`), `npm run typecheck`.
 
 Desktop core (`src-tauri/`): `cargo check`, `cargo test`.
 

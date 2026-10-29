@@ -156,3 +156,14 @@
   font-size: var(--fs-caption);
   color: var(--color-text-muted);
 }
+.ai__hint {
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+.ai__hint code {
+  font-family: var(--font-mono);
+}
+.ai__row .ai__input {
+  flex: 1;
+  min-width: 0;
+}

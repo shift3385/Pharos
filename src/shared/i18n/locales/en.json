@@ -40,7 +40,7 @@
   },
   "ai": {
     "title": "AI assistant",
-    "subtitle": "Configure the online (Gemini) and offline (Ollama) providers. The app works without AI.",
+    "subtitle": "Pick the online provider with your own key (Gemini, OpenAI, Claude, OpenRouter or a compatible endpoint) and the offline one (Ollama). The app works without AI.",
     "test": "Test connection",
     "testing": "Testing…",
     "mode": "Mode",
@@ -51,10 +51,24 @@
     },
     "using": "Using",
     "provider": {
-      "online": "Gemini (online)",
       "offline": "Ollama (offline)",
       "none": "None"
     },
+    "onlineProvider": "Provider",
+    "providerHint": {
+      "gemini": "Google's Gemini models.",
+      "openai": "OpenAI's GPT models.",
+      "anthropic": "Anthropic's Claude models.",
+      "openrouter": "One key for models from many providers.",
+      "custom": "Any service compatible with the OpenAI API: Groq, DeepSeek, Mistral, Together, or a local server such as LM Studio or vLLM."
+    },
+    "keyWhere": "Get your key at",
+    "baseUrl": "Base URL",
+    "baseUrlHint": "E.g. https://api.groq.com/openai/v1 or http://localhost:1234/v1 (LM Studio). Must be https; http is only allowed for localhost.",
+    "endpointStatus": "Endpoint",
+    "endpointSet": "Configured",
+    "endpointNotSet": "Base URL missing",
+    "keyOptional": "API key (optional)",
     "tab": {
       "online": "Online AI",
       "offline": "Offline AI"
@@ -62,13 +76,20 @@
     "keyStatus": "API key",
     "keyConfigured": "Configured",
     "keyNotSet": "Not set",
-    "keyPlaceholder": "Paste your Gemini API key",
+    "keyPlaceholder": "Paste your {{provider}} API key",
     "saveKey": "Save key",
     "clearKey": "Clear key",
     "keySaved": "Key saved to the keychain",
     "keyCleared": "Key removed",
     "model": "Model",
+    "modelPlaceholder": "Type a model or press “List models”",
+    "listModels": "List models",
+    "listingModels": "Checking…",
+    "modelsFound": "{{count}} models available: pick one in the Model field",
+    "modelsNone": "The provider returned no models",
+    "modelsFailed": "Could not list models: {{error}}",
     "temperature": "Temperature",
+    "temperatureIgnored": "Claude's API does not accept a temperature setting, so this value is not sent.",
     "ollamaStatus": "Ollama",
     "ollamaOffline": "Not detected (is it running?)",
     "modelInstalled": "Model installed",
@@ -82,8 +103,8 @@
     "testPrompt": "Reply only with: OK",
     "testOk": "Connection OK",
     "testEmpty": "The provider returned an empty reply",
-    "testNoProvider": "No AI available (configure Gemini or Ollama)",
-    "testFailed": "AI connection failed",
+    "testNoProvider": "No AI available: configure an online provider (key and model) or Ollama",
+    "testFailedWith": "AI connection failed: {{error}}",
     "neverBlocks": "Missing AI never blocks the app: assist buttons are disabled with a notice.",
     "assist": {
       "button": "✨ Assist with AI",
@@ -91,7 +112,7 @@
       "previewTitle": "AI draft",
       "use": "Use",
       "discard": "Discard",
-      "unavailable": "Configure AI (Gemini or Ollama) to use this",
+      "unavailable": "Configure AI (an online provider or Ollama) to use this",
       "empty": "The AI returned no text.",
       "error": "Could not draft with AI"
     },
@@ -101,7 +122,11 @@
       "markReviewed": "Mark reviewed",
       "destination": "Will be sent to {{source}}",
       "provider": {
-        "gemini": "Gemini (cloud)",
+        "gemini": "Gemini",
+        "openai": "OpenAI",
+        "anthropic": "Claude",
+        "openrouter": "OpenRouter",
+        "custom": "OpenAI-compatible",
         "ollama": "Ollama (local)"
       }
     }
@@ -161,7 +186,7 @@
       },
       "ai": {
         "title": "AI engine",
-        "desc": "Online (Gemini) and offline (Ollama) providers."
+        "desc": "Online provider with your key (Gemini, OpenAI, Claude, OpenRouter…) and offline (Ollama)."
       }
     },
     "saved": "Settings saved",

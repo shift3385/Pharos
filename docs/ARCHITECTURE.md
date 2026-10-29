@@ -15,7 +15,12 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
 - **Local DB (Phase 2+):** SQLite (encrypted) as the offline source of truth.
 - **Backend (Phase 1+):** Node.js + TypeScript (Fastify) + PostgreSQL — a
   native PostgreSQL service or the `docker-compose.yml` container.
-- **AI (Phase 7):** provider-agnostic layer — Gemini (online), Ollama (offline).
+- **AI (Phase 7, IA-08):** provider-agnostic layer. One active online
+  provider, chosen by the user with their own key: Gemini, OpenAI, Claude
+  (Anthropic), OpenRouter or any OpenAI-compatible endpoint. Calls run in Rust
+  (`src-tauri/src/ai.rs`) so each key stays in the OS keychain; three wire
+  formats (Gemini, OpenAI chat completions, Anthropic Messages) cover them.
+  Offline: Ollama, called from the frontend.
 
 ## Modular monolith (spec §2)
 

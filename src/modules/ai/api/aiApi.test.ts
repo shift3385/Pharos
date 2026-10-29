@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { buildAssistMessages, loadConfig, parseSuggestions, pickProvider, saveConfig } from "./aiApi";
-import { DEFAULT_AI_CONFIG } from "../model/types";
+import {
+  activeOnlineModel,
+  buildAssistMessages,
+  destinationFor,
+  loadConfig,
+  normalizeConfig,
+  parseSuggestions,
+  pickProvider,
+  saveConfig,
+} from "./aiApi";
+import { DEFAULT_AI_CONFIG, ONLINE_PROVIDERS, providerInfo } from "../model/types";
 
 describe("pickProvider", () => {
   it("auto prefers online when available, else offline", () => {
@@ -78,5 +87,52 @@ describe("ai config persistence", () => {
     expect(cfg.mode).toBe("offline");
     expect(cfg.temperature).toBe(0.2);
     expect(cfg.offlineModel).toBe(DEFAULT_AI_CONFIG.offlineModel); // untouched default
+  });
+
+  it("migrates a pre-IA-08 config: its single model becomes the Gemini model", () => {
+    localStorage.setItem(
+      "pharos.ai.config",
+      JSON.stringify({ mode: "online", onlineModel: "gemini-1.5-pro", temperature: 0.4 }),
+    );
+    const cfg = loadConfig();
+    expect(cfg.onlineProvider).toBe("gemini");
+    expect(cfg.onlineModels.gemini).toBe("gemini-1.5-pro");
+    expect(cfg.onlineModels.anthropic).toBe(DEFAULT_AI_CONFIG.onlineModels.anthropic);
+    expect(cfg).not.toHaveProperty("onlineModel");
+    expect(cfg.mode).toBe("online");
+  });
+
+  it("keeps each provider's model and rejects an unknown provider", () => {
+    const cfg = normalizeConfig({
+      onlineProvider: "evil",
+      onlineModels: { openai: "gpt-x" },
+    });
+    expect(cfg.onlineProvider).toBe("gemini");
+    expect(cfg.onlineModels.openai).toBe("gpt-x");
+    expect(cfg.onlineModels.gemini).toBe(DEFAULT_AI_CONFIG.onlineModels.gemini);
+    expect(normalizeConfig("garbage")).toEqual(DEFAULT_AI_CONFIG);
+  });
+});
+
+describe("active online provider", () => {
+  it("routes online requests to the selected provider and its model", () => {
+    const cfg = normalizeConfig({ onlineProvider: "anthropic" });
+    expect(activeOnlineModel(cfg)).toBe("claude-opus-5-5");
+    expect(destinationFor("online", cfg)).toEqual({ provider: "anthropic", model: "claude-opus-5-5" });
+    expect(destinationFor("offline", cfg)).toEqual({ provider: "ollama", model: cfg.offlineModel });
+    expect(destinationFor(null, cfg)).toBeNull();
+  });
+
+  it("has no model until the user picks one for providers without a known default", () => {
+    expect(activeOnlineModel(normalizeConfig({ onlineProvider: "openrouter" }))).toBe("");
+    expect(activeOnlineModel(normalizeConfig({ onlineProvider: "openai", onlineModels: { openai: "  m  " } }))).toBe("m");
+  });
+
+  it("describes each provider: Claude ignores temperature, custom needs no key", () => {
+    expect(ONLINE_PROVIDERS.map((p) => p.id)).toEqual(["gemini", "openai", "anthropic", "openrouter", "custom"]);
+    expect(providerInfo("anthropic").supportsTemperature).toBe(false);
+    expect(providerInfo("custom").keyRequired).toBe(false);
+    expect(providerInfo("custom").keyUrl).toBeNull();
+    expect(providerInfo("openai").keyRequired).toBe(true);
   });
 });

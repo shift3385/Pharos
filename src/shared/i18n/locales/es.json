@@ -40,7 +40,7 @@
   },
   "ai": {
     "title": "Asistente de IA",
-    "subtitle": "Configura el proveedor online (Gemini) y el offline (Ollama). La app funciona sin IA.",
+    "subtitle": "Elige el proveedor online con tu propia clave (Gemini, OpenAI, Claude, OpenRouter o un endpoint compatible) y el offline (Ollama). La app funciona sin IA.",
     "test": "Probar conexión",
     "testing": "Probando…",
     "mode": "Modo",
@@ -51,10 +51,24 @@
     },
     "using": "En uso",
     "provider": {
-      "online": "Gemini (online)",
       "offline": "Ollama (offline)",
       "none": "Ninguno"
     },
+    "onlineProvider": "Proveedor",
+    "providerHint": {
+      "gemini": "Modelos Gemini de Google.",
+      "openai": "Modelos GPT de OpenAI.",
+      "anthropic": "Modelos Claude de Anthropic.",
+      "openrouter": "Una sola clave para modelos de muchos proveedores.",
+      "custom": "Cualquier servicio compatible con la API de OpenAI: Groq, DeepSeek, Mistral, Together, o un servidor local como LM Studio o vLLM."
+    },
+    "keyWhere": "Consigue tu clave en",
+    "baseUrl": "URL base",
+    "baseUrlHint": "Ej.: https://api.groq.com/openai/v1 o http://localhost:1234/v1 (LM Studio). Debe ser https; http solo se admite para localhost.",
+    "endpointStatus": "Endpoint",
+    "endpointSet": "Configurado",
+    "endpointNotSet": "Falta la URL base",
+    "keyOptional": "API key (opcional)",
     "tab": {
       "online": "IA online",
       "offline": "IA offline"
@@ -62,13 +76,20 @@
     "keyStatus": "Clave de API",
     "keyConfigured": "Configurada",
     "keyNotSet": "No configurada",
-    "keyPlaceholder": "Pega tu API key de Gemini",
+    "keyPlaceholder": "Pega tu API key de {{provider}}",
     "saveKey": "Guardar clave",
     "clearKey": "Borrar clave",
     "keySaved": "Clave guardada en el keychain",
     "keyCleared": "Clave eliminada",
     "model": "Modelo",
+    "modelPlaceholder": "Escribe un modelo o pulsa «Listar modelos»",
+    "listModels": "Listar modelos",
+    "listingModels": "Consultando…",
+    "modelsFound": "{{count}} modelos disponibles: elige uno en el campo Modelo",
+    "modelsNone": "El proveedor no devolvió modelos",
+    "modelsFailed": "No se pudieron listar los modelos: {{error}}",
     "temperature": "Temperatura",
+    "temperatureIgnored": "La API de Claude no admite ajustar la temperatura, así que este valor no se envía.",
     "ollamaStatus": "Ollama",
     "ollamaOffline": "No detectado (¿está en ejecución?)",
     "modelInstalled": "Modelo instalado",
@@ -82,8 +103,8 @@
     "testPrompt": "Responde solo con: OK",
     "testOk": "Conexión correcta",
     "testEmpty": "El proveedor respondió vacío",
-    "testNoProvider": "No hay IA disponible (configura Gemini u Ollama)",
-    "testFailed": "Falló la conexión con la IA",
+    "testNoProvider": "No hay IA disponible: configura un proveedor online (clave y modelo) u Ollama",
+    "testFailedWith": "Falló la conexión con la IA: {{error}}",
     "neverBlocks": "La ausencia de IA nunca bloquea la app: los botones de asistencia se deshabilitan con aviso.",
     "assist": {
       "button": "✨ Asistir con IA",
@@ -91,7 +112,7 @@
       "previewTitle": "Borrador de la IA",
       "use": "Usar",
       "discard": "Descartar",
-      "unavailable": "Configura la IA (Gemini u Ollama) para usar esto",
+      "unavailable": "Configura la IA (un proveedor online u Ollama) para usar esto",
       "empty": "La IA no devolvió texto.",
       "error": "No se pudo redactar con la IA"
     },
@@ -101,7 +122,11 @@
       "markReviewed": "Marcar revisado",
       "destination": "Se enviará a {{source}}",
       "provider": {
-        "gemini": "Gemini (en la nube)",
+        "gemini": "Gemini",
+        "openai": "OpenAI",
+        "anthropic": "Claude",
+        "openrouter": "OpenRouter",
+        "custom": "Compatible con OpenAI",
         "ollama": "Ollama (local)"
       }
     }
@@ -161,7 +186,7 @@
       },
       "ai": {
         "title": "Motor de IA",
-        "desc": "Proveedor online (Gemini) y offline (Ollama)."
+        "desc": "Proveedor online con tu clave (Gemini, OpenAI, Claude, OpenRouter…) y offline (Ollama)."
       }
     },
     "saved": "Ajustes guardados",

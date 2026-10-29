@@ -1,15 +1,18 @@
 import {
   DEFAULT_AI_CONFIG,
+  ONLINE_PROVIDERS,
+  providerInfo,
   type AiConfig,
   type AiDestination,
   type AiMessage,
   type AiMode,
   type AiProvenance,
   type AiStatus,
+  type OnlineProviderId,
   type ResolvedProvider,
 } from "../model/types";
 import { newProvenance } from "../model/provenance";
-import { geminiProvider } from "../providers/gemini";
+import { onlineModels, onlineProvider } from "../providers/online";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
 
 const CONFIG_KEY = "pharos.ai.config";
@@ -28,11 +31,26 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 
 // --- non-secret config (localStorage) ----------------------------------------
 
+/** Merges a stored config over the defaults (pure — testable). Configs saved
+ *  before IA-08 had a single Gemini `onlineModel`; it becomes the Gemini model. */
+export function normalizeConfig(stored: unknown): AiConfig {
+  const raw = (stored && typeof stored === "object" ? stored : {}) as Partial<AiConfig> & {
+    onlineModel?: unknown;
+  };
+  const { onlineModel, ...rest } = raw;
+  const models = { ...DEFAULT_AI_CONFIG.onlineModels, ...(raw.onlineModels ?? {}) };
+  if (typeof onlineModel === "string" && !raw.onlineModels) models.gemini = onlineModel;
+  const provider = ONLINE_PROVIDERS.some((p) => p.id === raw.onlineProvider)
+    ? (raw.onlineProvider as OnlineProviderId)
+    : DEFAULT_AI_CONFIG.onlineProvider;
+  return { ...DEFAULT_AI_CONFIG, ...rest, onlineProvider: provider, onlineModels: models };
+}
+
 export function loadConfig(): AiConfig {
   try {
-    return { ...DEFAULT_AI_CONFIG, ...JSON.parse(localStorage.getItem(CONFIG_KEY) ?? "{}") };
+    return normalizeConfig(JSON.parse(localStorage.getItem(CONFIG_KEY) ?? "{}"));
   } catch {
-    return { ...DEFAULT_AI_CONFIG };
+    return normalizeConfig({});
   }
 }
 export function saveConfig(config: AiConfig) {
@@ -50,6 +68,24 @@ export const aiKeys = {
     isTauri() ? invoke("ai_key_clear", { provider }) : Promise.resolve(),
 };
 
+/** Models the active provider offers to the stored key (desktop only). */
+export function aiListModels(provider: OnlineProviderId, baseUrl: string): Promise<string[]> {
+  return isTauri() ? onlineModels(provider, baseUrl) : Promise.resolve([]);
+}
+
+/** The model chosen for the active online provider. */
+export function activeOnlineModel(config: AiConfig): string {
+  return config.onlineModels[config.onlineProvider]?.trim() ?? "";
+}
+
+/** Whether the active online provider has what it needs to be called: its key
+ *  (custom endpoint: a base URL; the key is optional). */
+export async function onlineConfigured(config: AiConfig): Promise<boolean> {
+  const info = providerInfo(config.onlineProvider);
+  if (!info.keyRequired) return config.customBaseUrl.trim() !== "";
+  return aiKeys.status(config.onlineProvider).catch(() => false);
+}
+
 // --- routing -----------------------------------------------------------------
 
 /** Pure decision: which provider to use given the mode and what's available. */
@@ -66,7 +102,7 @@ export function pickProvider(
 
 /** Probes provider availability (key set, connectivity, Ollama + model). */
 export async function aiStatus(config: AiConfig): Promise<AiStatus> {
-  const onlineKeySet = await aiKeys.status("gemini").catch(() => false);
+  const onlineKeySet = await onlineConfigured(config);
   const online = typeof navigator !== "undefined" ? navigator.onLine : false;
   let ollamaReachable = false;
   let ollamaModelReady = false;
@@ -85,7 +121,7 @@ export async function aiStatus(config: AiConfig): Promise<AiStatus> {
 /** The provider the router would pick right now. */
 export function resolveProvider(config: AiConfig, status: AiStatus): ResolvedProvider {
   return pickProvider(config.mode, {
-    online: status.onlineKeySet && status.online && isTauri(),
+    online: status.onlineKeySet && status.online && isTauri() && activeOnlineModel(config) !== "",
     offline: status.ollamaReachable && status.ollamaModelReady,
   });
 }
@@ -98,7 +134,7 @@ export async function aiAvailable(): Promise<boolean> {
 
 /** Maps the router's choice to the concrete provider + model (pure). */
 export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDestination | null {
-  if (which === "online") return { provider: "gemini", model: config.onlineModel };
+  if (which === "online") return { provider: config.onlineProvider, model: activeOnlineModel(config) };
   if (which === "offline") return { provider: "ollama", model: config.offlineModel };
   return null;
 }
@@ -209,7 +245,8 @@ export async function suggestTests(
 
 /** Runs a chat completion through the resolved provider and records which
  *  provider + model produced the reply (IA-01). Throws "no-provider" when
- *  neither online nor offline AI is available (callers disable UI then). */
+ *  neither online nor offline AI is available (callers disable UI then).
+ *  Online errors are the provider's own message (bad key, unknown model…). */
 export async function aiChatWithProvenance(messages: AiMessage[]): Promise<AiResult<string>> {
   const config = loadConfig();
   const status = await aiStatus(config);
@@ -218,9 +255,9 @@ export async function aiChatWithProvenance(messages: AiMessage[]): Promise<AiRes
   if (!destination) throw new Error("no-provider");
   const opts = { model: destination.model, temperature: config.temperature };
   const value =
-    destination.provider === "gemini"
-      ? await geminiProvider.chat(messages, opts)
-      : await ollamaProvider(config.ollamaEndpoint).chat(messages, opts);
+    destination.provider === "ollama"
+      ? await ollamaProvider(config.ollamaEndpoint).chat(messages, opts)
+      : await onlineProvider(destination.provider, config.customBaseUrl).chat(messages, opts);
   return { value, provenance: newProvenance(destination) };
 }
 

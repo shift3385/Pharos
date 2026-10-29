@@ -1,6 +1,8 @@
-// AI module model (spec §8). A provider-agnostic layer: the online provider is
-// Gemini (called through Rust so the key stays in the keychain), the offline one
-// is Ollama (local, no key). Consumers call the router, never a provider directly.
+// AI module model (spec §8, IA-08). A provider-agnostic layer: the user picks one
+// active online provider (Gemini, OpenAI, Claude, OpenRouter or any OpenAI-
+// compatible endpoint), called through Rust so each key stays in the keychain;
+// the offline one is Ollama (local, no key). Consumers call the router, never a
+// provider directly.
 
 export type AiRole = "system" | "user" | "assistant";
 
@@ -12,9 +14,39 @@ export interface AiMessage {
 /** Which provider to use: auto picks online when available, else offline. */
 export type AiMode = "auto" | "online" | "offline";
 
+/** Online providers, all called through Rust with the user's own key. */
+export type OnlineProviderId = "gemini" | "openai" | "anthropic" | "openrouter" | "custom";
+
+export interface OnlineProviderInfo {
+  id: OnlineProviderId;
+  /** Where the user gets a key (shown as text); null for custom endpoints. */
+  keyUrl: string | null;
+  /** A local OpenAI-compatible server may not need a key. */
+  keyRequired: boolean;
+  /** Claude's API rejects `temperature`, so the slider does not apply. */
+  supportsTemperature: boolean;
+}
+
+export const ONLINE_PROVIDERS: OnlineProviderInfo[] = [
+  { id: "gemini", keyUrl: "aistudio.google.com/apikey", keyRequired: true, supportsTemperature: true },
+  { id: "openai", keyUrl: "platform.openai.com/api-keys", keyRequired: true, supportsTemperature: true },
+  { id: "anthropic", keyUrl: "console.anthropic.com/settings/keys", keyRequired: true, supportsTemperature: false },
+  { id: "openrouter", keyUrl: "openrouter.ai/keys", keyRequired: true, supportsTemperature: true },
+  { id: "custom", keyUrl: null, keyRequired: false, supportsTemperature: true },
+];
+
+export function providerInfo(id: OnlineProviderId): OnlineProviderInfo {
+  return ONLINE_PROVIDERS.find((p) => p.id === id) ?? ONLINE_PROVIDERS[0];
+}
+
 export interface AiConfig {
   mode: AiMode;
-  onlineModel: string;
+  /** The active online provider. */
+  onlineProvider: OnlineProviderId;
+  /** Model per online provider, so switching providers keeps each choice. */
+  onlineModels: Record<OnlineProviderId, string>;
+  /** Base URL of the OpenAI-compatible endpoint (provider "custom"). */
+  customBaseUrl: string;
   offlineModel: string;
   temperature: number;
   ollamaEndpoint: string;
@@ -22,7 +54,16 @@ export interface AiConfig {
 
 export const DEFAULT_AI_CONFIG: AiConfig = {
   mode: "auto",
-  onlineModel: "gemini-2.0-flash",
+  onlineProvider: "gemini",
+  // Empty = pick one with "List models"; only ids known to exist are prefilled.
+  onlineModels: {
+    gemini: "gemini-2.0-flash",
+    openai: "",
+    anthropic: "claude-opus-5-5",
+    openrouter: "",
+    custom: "",
+  },
+  customBaseUrl: "",
   offlineModel: "llama3.2:3b",
   temperature: 0.7,
   ollamaEndpoint: "http://localhost:11434",
@@ -33,7 +74,8 @@ export interface AiProvider {
 }
 
 export interface AiStatus {
-  /** Gemini API key stored in the keychain. */
+  /** The active online provider is configured: its key is in the keychain
+   *  (custom endpoint: a base URL is set; the key is optional). */
   onlineKeySet: boolean;
   /** Browser/OS reports connectivity. */
   online: boolean;
@@ -47,7 +89,7 @@ export interface AiStatus {
 export type ResolvedProvider = "online" | "offline" | null;
 
 /** The concrete provider that produced a result (IA-01). */
-export type AiProviderId = "gemini" | "ollama";
+export type AiProviderId = OnlineProviderId | "ollama";
 
 /** Where a request goes (or went): provider + model. Shown before sending and
  *  stored with the result, so the user knows which provider processed what. */

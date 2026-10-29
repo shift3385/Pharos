@@ -1,19 +1,38 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/Toast";
-import { aiChat, aiKeys, aiStatus, loadConfig, resolveProvider, saveConfig } from "../api/aiApi";
+import {
+  aiChat,
+  aiKeys,
+  aiListModels,
+  aiStatus,
+  destinationFor,
+  loadConfig,
+  resolveProvider,
+  saveConfig,
+} from "../api/aiApi";
 import {
   getDownloadState,
   startDownload,
   subscribeDownload,
   type DownloadView,
 } from "../providers/ollamaDownload";
-import type { AiConfig, AiMode, AiStatus } from "../model/types";
+import {
+  ONLINE_PROVIDERS,
+  providerInfo,
+  type AiConfig,
+  type AiMode,
+  type AiStatus,
+  type OnlineProviderId,
+} from "../model/types";
 import "./Ai.css";
 
 type Tab = "online" | "offline";
 
 const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
+
+/** The provider's own message (Rust returns a string; fetch errors an Error). */
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export function AiPage() {
   const { t } = useTranslation();
@@ -24,6 +43,8 @@ export function AiPage() {
   const [keyInput, setKeyInput] = useState("");
   const [pull, setPull] = useState<DownloadView | null>(getDownloadState().view);
   const [testing, setTesting] = useState(false);
+  const [models, setModels] = useState<string[]>([]);
+  const [listing, setListing] = useState(false);
 
   async function refreshStatus(cfg = config) {
     setStatus(await aiStatus(cfg));
@@ -50,19 +71,50 @@ export function AiPage() {
     const next = { ...config, ...patch };
     setConfig(next);
     saveConfig(next);
+    return next;
+  }
+
+  const provider = config.onlineProvider;
+  const info = providerInfo(provider);
+  const providerLabel = (id: OnlineProviderId | "ollama") => t(`ai.provenance.provider.${id}`);
+
+  /** Switches the active online provider; its key status and model list change. */
+  async function selectProvider(id: OnlineProviderId) {
+    if (id === provider) return;
+    const next = update({ onlineProvider: id });
+    setKeyInput("");
+    setModels([]);
+    await refreshStatus(next);
+  }
+
+  function setModel(model: string) {
+    update({ onlineModels: { ...config.onlineModels, [provider]: model } });
   }
 
   async function saveKey() {
     if (!keyInput.trim()) return;
-    await aiKeys.set("gemini", keyInput.trim());
+    await aiKeys.set(provider, keyInput.trim());
     setKeyInput("");
     toast(t("ai.keySaved"));
     await refreshStatus();
   }
   async function clearKey() {
-    await aiKeys.clear("gemini");
+    await aiKeys.clear(provider);
     toast(t("ai.keyCleared"));
     await refreshStatus();
+  }
+
+  async function listModels() {
+    setListing(true);
+    try {
+      const found = await aiListModels(provider, config.customBaseUrl);
+      setModels(found);
+      toast(found.length ? t("ai.modelsFound", { count: found.length }) : t("ai.modelsNone"));
+    } catch (e) {
+      toast(t("ai.modelsFailed", { error: errorText(e) }));
+    } finally {
+      setListing(false);
+    }
   }
 
   /** Starts the download in the module-level manager. Ollama resumes from the
@@ -79,14 +131,26 @@ export function AiPage() {
       const reply = await aiChat([{ role: "user", content: t("ai.testPrompt") }]);
       toast(reply.trim() ? t("ai.testOk") : t("ai.testEmpty"));
     } catch (e) {
-      toast(e instanceof Error && e.message === "no-provider" ? t("ai.testNoProvider") : t("ai.testFailed"));
+      toast(
+        e instanceof Error && e.message === "no-provider"
+          ? t("ai.testNoProvider")
+          : t("ai.testFailedWith", { error: errorText(e) }),
+      );
     } finally {
       setTesting(false);
     }
   }
 
   const resolved = status ? resolveProvider(config, status) : null;
+  const destination = destinationFor(resolved, config);
   const modes: AiMode[] = ["auto", "online", "offline"];
+  const keyStatus = !info.keyRequired
+    ? status?.onlineKeySet
+      ? t("ai.endpointSet")
+      : t("ai.endpointNotSet")
+    : status?.onlineKeySet
+      ? t("ai.keyConfigured")
+      : t("ai.keyNotSet");
 
   return (
     <section className="ai">
@@ -115,7 +179,9 @@ export function AiPage() {
         ))}
         <span className="ai__resolved">
           {t("ai.using")}:{" "}
-          <strong>{resolved ? t(`ai.provider.${resolved}`) : t("ai.provider.none")}</strong>
+          <strong>
+            {destination ? `${providerLabel(destination.provider)} · ${destination.model}` : t("ai.provider.none")}
+          </strong>
         </span>
       </div>
 
@@ -130,41 +196,116 @@ export function AiPage() {
 
       {tab === "online" ? (
         <div className="ai__panel">
+          <div className="ai__mode" role="radiogroup" aria-label={t("ai.onlineProvider")}>
+            <span className="ai__mode-label">{t("ai.onlineProvider")}</span>
+            {ONLINE_PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="radio"
+                aria-checked={provider === p.id}
+                className="ai__mode-btn"
+                data-active={provider === p.id}
+                onClick={() => void selectProvider(p.id)}
+              >
+                {providerLabel(p.id)}
+              </button>
+            ))}
+          </div>
+          <p className="ai__hint">
+            {t(`ai.providerHint.${provider}`)}
+            {info.keyUrl && (
+              <>
+                {" "}
+                {t("ai.keyWhere")} <code>{info.keyUrl}</code>
+              </>
+            )}
+          </p>
+
+          {provider === "custom" && (
+            <label className="ai__field">
+              <span>{t("ai.baseUrl")}</span>
+              <input
+                id="ai-base-url"
+                className="ai__input"
+                placeholder="https://api.groq.com/openai/v1"
+                value={config.customBaseUrl}
+                onChange={(e) => update({ customBaseUrl: e.target.value })}
+                onBlur={() => void refreshStatus()}
+              />
+              <small className="ai__hint">{t("ai.baseUrlHint")}</small>
+            </label>
+          )}
+
           <p className="ai__status">
-            {t("ai.keyStatus")}:{" "}
-            <strong>{status?.onlineKeySet ? t("ai.keyConfigured") : t("ai.keyNotSet")}</strong>
+            {info.keyRequired ? t("ai.keyStatus") : t("ai.endpointStatus")}: <strong>{keyStatus}</strong>
           </p>
           <div className="ai__row">
             <input
+              id="ai-key"
               type="password"
+              autoComplete="off"
               className="ai__input"
-              placeholder={t("ai.keyPlaceholder")}
+              placeholder={
+                info.keyRequired
+                  ? t("ai.keyPlaceholder", { provider: providerLabel(provider) })
+                  : t("ai.keyOptional")
+              }
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
             />
             <button type="button" className="ai__btn" onClick={() => void saveKey()} disabled={!keyInput.trim()}>
               {t("ai.saveKey")}
             </button>
-            {status?.onlineKeySet && (
+            {info.keyRequired && status?.onlineKeySet && (
               <button type="button" className="ai__btn" onClick={() => void clearKey()}>
                 {t("ai.clearKey")}
               </button>
             )}
           </div>
+
           <label className="ai__field">
             <span>{t("ai.model")}</span>
-            <input className="ai__input" value={config.onlineModel} onChange={(e) => update({ onlineModel: e.target.value })} />
+            <div className="ai__row">
+              <input
+                id="ai-online-model"
+                className="ai__input"
+                list="ai-online-models"
+                placeholder={t("ai.modelPlaceholder")}
+                value={config.onlineModels[provider]}
+                onChange={(e) => setModel(e.target.value)}
+              />
+              <button
+                type="button"
+                className="ai__btn"
+                onClick={() => void listModels()}
+                disabled={listing || !status?.onlineKeySet}
+              >
+                {listing ? t("ai.listingModels") : t("ai.listModels")}
+              </button>
+            </div>
+            <datalist id="ai-online-models">
+              {models.map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
           </label>
+
           <label className="ai__field">
-            <span>{t("ai.temperature")}: {config.temperature.toFixed(1)}</span>
+            <span>
+              {t("ai.temperature")}: {config.temperature.toFixed(1)}
+            </span>
             <input
+              id="ai-temperature"
               type="range"
               min={0}
               max={1}
               step={0.1}
               value={config.temperature}
+              disabled={!info.supportsTemperature}
               onChange={(e) => update({ temperature: Number(e.target.value) })}
             />
+            {!info.supportsTemperature && <small className="ai__hint">{t("ai.temperatureIgnored")}</small>}
           </label>
         </div>
       ) : (

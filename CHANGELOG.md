@@ -7,6 +7,32 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Varios motores de IA online (IA-08):** además de Gemini, ahora se puede usar
+  OpenAI, Claude (Anthropic), OpenRouter o cualquier servicio compatible con la
+  API de OpenAI (Groq, DeepSeek, Mistral, LM Studio o vLLM locales…). Se elige
+  un proveedor activo y cada uno guarda su propia clave en el keychain y su
+  propio modelo. El botón "Listar modelos" consulta los modelos que ofrece tu
+  clave, y la procedencia de lo generado muestra el proveedor real.
+- `npm run seed:test-user` (en `server/`) crea la cuenta local de pruebas del
+  README en una base nueva o reseteada; no hace nada si ya existe y se niega a
+  ejecutarse en producción.
+
+### Cambiado
+
+- La configuración de IA anterior se migra sola: el modelo que tenías pasa a
+  ser el modelo de Gemini.
+- "Probar conexión" muestra el mensaje real del proveedor cuando falla (clave
+  incorrecta, modelo inexistente…).
+
+### Seguridad
+
+- La clave de Gemini ya no viaja en la URL sino en una cabecera; las peticiones
+  de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.
+- Un endpoint compatible personalizado debe usar `https` (http solo en
+  `localhost`), para que la clave no viaje sin cifrar.
+
 ## [0.1.0-alpha.1] - 2026-10-28
 
 Primera versión etiquetada. Reúne lo construido para los hitos antes llamados

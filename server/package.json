@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "check:licenses": "node scripts/check-licenses.mjs"
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "seed:test-user": "tsx src/db/seed-test-user.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
