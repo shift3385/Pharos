@@ -139,42 +139,6 @@ jobs:
             throw "The API did not answer on localhost:3000"
           }
           npm run e2e
-      # TEMPORARY (BASE-14 diagnosis): why WebView2 never opens its DevTools
-      # port on the runner. Remove once the smoke is green.
-      - name: Diagnose WebView2
-        if: failure()
-        continue-on-error: true
-        run: |
-          $id = [Security.Principal.WindowsIdentity]::GetCurrent()
-          "user: $($id.Name) admin: $(([Security.Principal.WindowsPrincipal]$id).IsInRole('Administrators')) session: $([Diagnostics.Process]::GetCurrentProcess().SessionId)"
-          Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -ErrorAction SilentlyContinue | Select-Object EnableLUA, ConsentPromptBehaviorAdmin | Format-List | Out-String
-          $env:PHAROS_E2E_PROFILE = 'diag'
-          # One try: start Pharos, wait, show the WebView2 browser process's
-          # arguments and whether the DevTools port answers, then stop it.
-          function Try-Launch($label, $port) {
-            "=== $label"
-            $app = Start-Process -FilePath src-tauri\target\debug\pharos.exe -PassThru
-            Start-Sleep 20
-            "app alive: $(-not $app.HasExited)"
-            Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" |
-              Where-Object { $_.CommandLine -notmatch '--type=' } |
-              ForEach-Object { "browser: $($_.CommandLine)" }
-            try { "devtools: $((Invoke-RestMethod "http://127.0.0.1:$port/json/version").Browser)" } catch { "devtools: $($_.Exception.Message)" }
-            Get-ChildItem $env:WEBVIEW2_USER_DATA_FOLDER -Recurse -Filter DevToolsActivePort -ErrorAction SilentlyContinue | ForEach-Object { "found: $($_.FullName)" }
-            Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
-            Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-            Start-Sleep 2
-          }
-          $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:RUNNER_TEMP 'wv2-env'
-          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
-          Try-Launch 'environment variable' 9222
-          Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
-          $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:RUNNER_TEMP 'wv2-reg'
-          $key = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
-          New-Item -Path $key -Force | Out-Null
-          New-ItemProperty -Path $key -Name 'pharos.exe' -Value '--remote-debugging-port=9223' -Force | Out-Null
-          Try-Launch 'registry policy (HKCU)' 9223
-          Remove-Item -Path 'HKCU:\Software\Policies\Microsoft\Edge\WebView2' -Recurse -Force
       - name: Upload the E2E results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

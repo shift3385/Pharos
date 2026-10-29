@@ -255,11 +255,11 @@ is protected (see below).
 | `commits`    | Ubuntu (PRs only)      | `commitlint` on every commit of the PR                                   |
 | `e2e`        | Windows + PostgreSQL   | Desktop smoke `npm run e2e` against the API on `localhost:3000` (below)  |
 
-**`e2e` is in progress and failing** (BASE-14): on the runner, WebView2 does not
-open the DevTools port that msedgedriver needs (see "Desktop E2E smoke"). It is
-not a required check; it becomes one only after it has stayed green for a
-while. Until then, run the smoke locally. The coverage reports are not in CI
-yet (BASE-13); run them locally too (below).
+`e2e` (BASE-14) runs the desktop smoke on every pull request and push to
+`main`, in about 7 minutes with a warm cache (see "Desktop E2E smoke"). It is
+**not a required check yet**: making it one is a separate decision once it has
+stayed green for a while. The coverage reports are not in CI yet (BASE-13);
+run them locally (below).
 
 The **Installer** workflow builds the Windows installer on every push to `main`
 and on `v*` tags, and publishes it as a run artifact (30 days). Download it
@@ -267,7 +267,7 @@ from the run page on GitHub (Actions → Installer → the run → Artifacts).
 
 To reproduce CI locally: `npm run verify`, `npm run check:rust`,
 `cd src-tauri && cargo test`, `cd server && npm test`, `npm run check:audit`,
-`npm run check:deps`.
+`npm run check:deps` and, with the API running, `npm run e2e`.
 
 Every action is pinned to a commit SHA, and Dependabot proposes updates weekly
 (npm, Cargo and actions) after a cooldown ([ADR-0021](docs/adr/0021-ci-y-cadena-de-suministro.md)).
@@ -435,7 +435,7 @@ machine that never ran Pharos, the first E2E run creates it, and the app reuses
 it later. Its recovery key (Profile → Recovery key) therefore also opens the
 E2E databases.
 
-**In CI (in progress, failing).** The `e2e` job (`.github/workflows/ci.yml`,
+**In CI.** The `e2e` job (`.github/workflows/ci.yml`,
 on `windows-latest`, which already has WebView2) does the same. It starts the
 runner image's PostgreSQL service and creates `pharos_db`, writes `.env` from
 `.env.example`, runs `cd server && npm run migrate`, installs `tauri-driver`
@@ -443,7 +443,11 @@ runner image's PostgreSQL service and creates `pharos_db`, writes `.env` from
 fails) and runs `npm run e2e:driver`. Then, in one step, it starts the API on
 `localhost:3000` in the background and runs `npm run e2e`: the runner kills
 whatever a step leaves running. The run's `e2e/results/` and the API logs are
-published as the `e2e-results` artifact (14 days), also when the smoke fails.
+published as the `e2e-results` artifact (14 days), also when the smoke fails,
+with msedgedriver's verbose log (`PHAROS_E2E_DRIVER_LOG=1`). With a warm cache
+the job takes about 7 minutes, almost 5 of them for the debug build and the
+smoke.
+
 **Why Pharos opens the DevTools port itself.** msedgedriver asks WebView2 for
 a DevTools port through `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. On the CI
 runner, which runs elevated (an administrator with UAC auto-elevation), the
@@ -455,8 +459,7 @@ variable works). So with `PHAROS_E2E_PROFILE` set, a debug build adds
 the port in `DevToolsActivePort` in the run's WebView2 folder. A release build
 never does, whatever the environment (ADR-0022). The main window is therefore
 built in `src-tauri/src/lib.rs` from its `tauri.conf.json` entry
-(`"create": false`), with the same title, sizes and CSP. Until the job is green,
-a temporary diagnosis step runs when the smoke fails.
+(`"create": false`), with the same title, sizes and CSP.
 
 `npm install` / `npm ci` download no browser driver: the `edgedriver` and
 `geckodriver` packages that WebdriverIO pulls in only download when

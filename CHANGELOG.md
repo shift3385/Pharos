@@ -107,6 +107,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   lateral y en Administración → Diagnóstico.
 - Para desarrollo: smoke E2E del binario real (`npm run e2e`, BASE-14) e
   informes de cobertura (`npm run coverage`, `npm run coverage:rust`, BASE-13).
+- **El smoke E2E corre en CI (BASE-14):** cada PR y cada cambio en `main`
+  arrancan el binario real en Windows contra una API local (unos 7 minutos) y
+  suben los resultados como artefacto. Aún no bloquea la fusión. Para ello,
+  una compilación debug con perfil E2E abre ella misma el puerto de DevTools
+  de WebView2; una release nunca lo hace.
 - **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
   instalador NSIS como artefacto descargable. Las versiones alfa, beta y rc
   solo tienen instalador NSIS; las estables tendrán además MSI.
