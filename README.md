@@ -145,7 +145,7 @@ provider and model until someone reviews it.
 | "Could not reach the server" on sign-in                  | The API window is closed or crashed; check that window, then `.env` (`DATABASE_URL` port and password) |
 | API fails with a database connection error               | Wrong port/password in `.env`, or the database does not exist (step 3)                                 |
 | `cargo` not found / `npm run tauri dev` fails at once    | Open a new terminal after installing Rust; check the Visual Studio C++ workload                        |
-| Port 3000 or 1420 already in use                         | Another API/Vite is still running; close the old windows                                               |
+| Port 3000 or 1420 already in use                         | 3000: `npm start` / `npm run dev` stop an earlier Pharos API themselves (any checkout or worktree) and refuse to touch another program, naming it; `node scripts/api-port.mjs owner` shows who holds the port. 1420: close the old Vite window |
 | Console shows `localhost:11434 … ERR_CONNECTION_REFUSED` | Ollama is not installed or not running; harmless — AI assist is simply disabled                        |
 | "This data comes from a newer version of Pharos"         | The local database was saved by a newer Pharos; install that version, or restore a backup (below)      |
 | "The local database key is missing"                      | The Credential Manager lost the key (new PC, reinstall); enter the recovery key (below)                |
@@ -412,7 +412,9 @@ Every run, with PostgreSQL and the API running (`cd server && npm start`):
 npm run e2e
 ```
 
-It checks the prerequisites and says how to fix a missing one, seeds the test
+It checks the prerequisites and says how to fix a missing one (including an API
+on port 3000 that belongs to another checkout or worktree: the smoke would test
+that code instead), seeds the test
 account (`seed:test-user`, idempotent), builds the debug binary
 (`tauri build --debug --no-bundle`; skip it with `E2E_SKIP_BUILD=1`) and runs
 the specs. Results: the console, plus one JUnit file per spec
