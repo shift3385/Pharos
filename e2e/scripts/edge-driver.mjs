@@ -45,14 +45,24 @@ export function isMicrosoftSigned(status, subject) {
   return status === "Valid" && MICROSOFT_SIGNER.test(subject ?? "");
 }
 
-/** Authenticode status and signer subject of `path` (PowerShell). */
+/**
+ * Authenticode status and signer subject of `path`, from Windows PowerShell.
+ * Its environment drops `PSModulePath`: one inherited from PowerShell 7 (a
+ * CI step's shell) makes Windows PowerShell load 7's
+ * Microsoft.PowerShell.Security, which fails, and the file looks unsigned.
+ */
 function authenticode(path) {
   const script =
     "$s = Get-AuthenticodeSignature -LiteralPath $env:PHAROS_SIGNED_FILE; " +
     '"$($s.Status)|$($s.SignerCertificate.Subject)"';
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(
+      ([name]) => name.toUpperCase() !== "PSMODULEPATH",
+    ),
+  );
   const out = execFileSync("powershell.exe", ["-NoProfile", "-Command", script], {
     encoding: "utf8",
-    env: { ...process.env, PHAROS_SIGNED_FILE: path },
+    env: { ...env, PHAROS_SIGNED_FILE: path },
   }).trim();
   const [status, subject = ""] = out.split("|");
   return { status, subject };
