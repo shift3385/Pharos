@@ -47,8 +47,9 @@
     del sistema actual: en la CI de Linux son otros que en Windows.
   - **Actualizaciones mayores del tooling hechas ya:** vitest 2 → 4, vite 5 → 7
     y plugin-react 4 → 5; Node ≥ 22.12 (Node 20 está fuera de soporte). zod 4
-    se aplaza a BASE-18, porque toca el esquema de sync de la pista A1, y queda
-    tolerado hasta el 2026-12-15.
+    se aplazó a BASE-18, porque tocaba el esquema de sync de la pista A1, y
+    quedó tolerado hasta el 2026-12-15. *Actualización (pista Q1, BASE-18):*
+    el servidor ya usa zod 4 y `scripts/audit-allowlist.json` está vacía.
   - **Imagen de Postgres de CI** fijada por etiqueta (`postgres:18`), no por
     digest: solo sirve para los tests y Dependabot no la actualizaría.
 - **Alternativas:**

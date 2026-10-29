@@ -73,3 +73,17 @@
   - La redacción es una red de seguridad, no un permiso: un nombre propio en
     texto libre no se detecta, por eso la regla de contenido es la primera
     defensa.
+- **Actualización (pista Q1, BASE-08):** los fallos de sincronización van al
+  log con `logSyncFailure` (`src/modules/sync-offline/api/syncFailure.ts`),
+  con el contexto `sync: <acción>`. Aplica la regla de contenido así:
+  - un error HTTP de sync (`SyncHttpError`) se escribe solo como
+    `HTTP <estado> <código>`; su mensaje, que escribe el servidor (un error de
+    parseo puede citar el cuerpo de la petición), no se guarda, y tampoco su
+    pila, que empieza por ese mensaje;
+  - un rechazo de un comando nativo (texto de Rust) guarda solo su tipo, como
+    cualquier valor que no sea `Error`;
+  - los cambios que el servidor rechaza se anotan en una línea por envío, con
+    el tipo de entidad y el id;
+  - los pasos en segundo plano (sincronización automática, recuento cada 5 s,
+    envío de la web) anotan un fallo repetido una sola vez, hasta que cambia o
+    el paso vuelve a funcionar, para no gastar el límite de `diag_log`.

@@ -211,7 +211,16 @@ Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 **JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
 with rotation + revocation. The desktop client caches the session in the OS
 keychain (Windows Credential Manager via a Tauri `keyring` command) and reopens
-offline from that cache (spec §4).
+offline from that cache (spec §4). The session and AI-key commands go through
+`src-tauri/src/keychain.rs` (`read` / `write` / `delete`; a missing entry is
+`None`, deleting it is not an error), whose tests (CORE-02) run against the
+real Credential Manager. Windows caps a secret at 1280 UTF-16 code units; a
+session at the server's field limits fits. The module serializes its calls
+behind one lock: writes and deletes from several threads of one process make
+Credential Manager lose deletes (a deleted entry comes back). Sync Tauri
+commands run on the main thread, but the async AI commands (`ai_chat_online`,
+`ai_list_models`) read keys from the runtime's threads. Only `db.rs` still
+calls `keyring` directly, once at startup to load the database key.
 
 Hardening (BASE-06): `config/env.ts` validates the environment at start-up.
 In production it refuses a default/short JWT secret and `CORS_ORIGIN=*`.

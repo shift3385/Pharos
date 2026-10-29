@@ -327,7 +327,10 @@ The level is `info`. For more detail, start the app with `PHAROS_LOG` set to
 an `EnvFilter` directive, e.g. `PHAROS_LOG=debug`. Logs never contain your
 data: only ids, command names, counts and error kinds, with emails, tokens and
 keys masked. A crash (panic) is also written straight to `pharos.panic.log` in
-the same folder. Frontend errors are logged too, at most 20 every 10 seconds.
+the same folder. Frontend errors are logged too, at most 20 every 10 seconds,
+and so are sync failures: HTTP status and code or error kind only, never the
+server's text or your data, and a failure that repeats in the background only
+once.
 
 **To report a problem:** Administration → **Diagnóstico** → **Exportar
 diagnóstico** ("Export diagnostics"). It is also on the error screen that
