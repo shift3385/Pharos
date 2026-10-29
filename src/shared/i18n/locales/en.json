@@ -137,6 +137,21 @@
       "empty": "The AI returned no text.",
       "error": "Could not draft with AI"
     },
+    "structured": {
+      "thinking": "Thinking…",
+      "proposals": "AI proposals",
+      "addSelected": "Add {{count}}",
+      "nothingApplied": "Nothing was applied.",
+      "error": {
+        "empty": "The AI replied with nothing.",
+        "refusal": "The AI made no proposals.",
+        "invalid-json": "The AI's answer is not valid JSON.",
+        "invalid-schema": "The AI's answer does not have the expected format.",
+        "no-provider": "No AI available: set up an online provider or Ollama.",
+        "timeout": "The AI did not answer in time.",
+        "provider": "The AI provider returned an error."
+      }
+    },
     "provenance": {
       "pending": "AI · pending review",
       "short": "AI · not reviewed",
@@ -247,9 +262,15 @@
       "opacityHint": "Lower = more transparent. Affects only the background, not the content.",
       "retention": "Retention of deleted items (days)",
       "retentionHint": "What you delete is removed for good from this device after this many days. A deletion not yet synced waits for the next sync. The server has its own period and keeps a marker of what was deleted.",
-      "download": "Downloads folder",
-      "downloadPlaceholder": "Folder path (optional)",
-      "downloadHint": "Preference; it will apply to exports in a future release.",
+      "download": "Download folder",
+      "downloadCurrent": "Current folder",
+      "downloadDefault": "system Downloads",
+      "downloadChoose": "Choose folder…",
+      "downloadReset": "Use Downloads",
+      "downloadError": "Could not read or change the download folder.",
+      "downloadMissing": "The chosen folder no longer exists; files go to Downloads until you choose another.",
+      "downloadHint": "Every export and the diagnostics bundle are saved here. A file is never overwritten: “ (2)” is added.",
+      "downloadWebHint": "In the web preview the browser decides where downloads go. Choose the folder in the desktop app.",
       "save": "Save settings"
     },
     "diagnostics": {
@@ -322,8 +343,9 @@
     "exportAll": "Export all",
     "exporting": "Exporting…",
     "exportProject": "Export project (ZIP)",
-    "exportedAllToast": "Exported {{count}} files as a ZIP",
-    "exportedProjectToast": "“{{name}}”: {{count}} files exported as a ZIP",
+    "exportedAllToast": "Exported {{count}} files to {{path}}",
+    "exportedProjectToast": "“{{name}}”: {{count}} files exported to {{path}}",
+    "pdfSkippedToast": "{{count}} PDFs could not be created and are not in the ZIP: {{names}}",
     "exportBuilding": "Generating files… ({{done}}/{{total}})",
     "exportZipping": "Compressing the ZIP…",
     "exportFinishing": "Finishing…",
@@ -408,6 +430,7 @@
     "environmentRequirements": "Hardware and software requirements",
     "tools": "Tools",
     "automationStrategy": "Automation strategy",
+    "suggestRisks": "✨ Suggest risks with AI",
     "testDataManagement": "Test data management",
     "defectManagement": "Defect management",
     "roleCol": "Role",
@@ -488,6 +511,15 @@
       "jmeter": "JMeter",
       "jira": "JIRA"
     },
+    "frequencyFor": "{{ceremony}} frequency",
+    "frequencyLabel": {
+      "daily": "every day",
+      "twiceWeekly": "twice a week",
+      "weekly": "weekly",
+      "biweekly": "every two weeks",
+      "perSprint": "once per sprint",
+      "monthly": "monthly"
+    },
     "ceremonyLabel": {
       "daily": "Daily",
       "review": "Review",
@@ -555,6 +587,7 @@
       "button": "Import .xlsx",
       "title": "Import case from .xlsx"
     },
+    "suggestPreconditions": "✨ Suggest preconditions",
     "suggest": {
       "button": "✨ Suggest tests",
       "disabled": "You need AI configured and a plan in the project",
@@ -564,7 +597,7 @@
       "create": "Create {{count}}",
       "creating": "Creating…"
     },
-    "exportDone": "Downloaded “{{name}}” to your Downloads folder.",
+    "exportDone": "Saved to {{name}}",
     "keywords": "Gherkin keywords",
     "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
@@ -674,15 +707,29 @@
       "add": "Link a requirement…"
     },
     "exportFeatures": "Export .feature (all)",
-    "exportFeaturesToast": "{{count}} .feature files exported in features.zip",
+    "exportFeaturesToast": "{{count}} .feature files exported to {{path}}",
     "exportProvisionalToast": "{{count}} case(s) still have a provisional key: their files have no ID tag yet. Sync and export again.",
     "aiPendingCase": "AI-generated case"
   },
   "dashboard": {
     "title": "Welcome to Pharos",
+    "greeting": "Hello, {{name}}",
     "subtitle": "The lighthouse that guides your testing projects safely to port.",
-    "phaseLabel": "Phase 0 — Foundations",
-    "body": "You are looking at the application shell: navigation between sections, the Faro Nocturno theme in light and dark variants, and Spanish or English language. Each section will be built in its corresponding phase."
+    "newProject": "Start a new test project",
+    "newProjectDesc": "Create the project and write its plan with the wizard.",
+    "continue": "Continue an existing project",
+    "continueDesc": "Find a project in the list and pick it up where you left it.",
+    "projectsTitle": "Your projects",
+    "searchLabel": "Search projects",
+    "searchPlaceholder": "Search by name…",
+    "empty": "You have no projects yet. Begin with “Start a new test project”.",
+    "noMatch": "No project matches “{{query}}”.",
+    "lastAccess": "Last opened: {{date}}",
+    "neverOpened": "Not opened on this device · updated {{date}}",
+    "noPlan": "No plan",
+    "progressLabel": "Progress of {{name}}",
+    "progress": "{{approved}} of {{total}} cases approved",
+    "noCases": "No cases yet"
   },
   "section": {
     "comingInPhase": "Coming in Phase {{phase}}",
@@ -759,6 +806,22 @@
       "low": "Low",
       "medium": "Medium",
       "high": "High"
+    },
+    "generate": {
+      "button": "Generate cases with AI from {{key}}",
+      "title": "Generate cases from {{key}}",
+      "intro": "The AI will propose Gherkin scenarios and test cases for this requirement. You review them and only the ones you accept are created, as drafts linked to the requirement and marked “AI · pending review”.",
+      "run": "Generate",
+      "loading": "Generating scenarios from the requirement…",
+      "retry": "Retry",
+      "gherkin": "Show Gherkin",
+      "accept_one": "Create 1 case",
+      "accept_other": "Create {{count}} cases",
+      "creating": "Creating…",
+      "doneToast_one": "1 case created and linked to {{key}}",
+      "doneToast_other": "{{count}} cases created and linked to {{key}}",
+      "saveFailed_one": "1 case could not be saved. It is still selected: create it again or cancel.",
+      "saveFailed_other": "{{count}} cases could not be saved. They are still selected: create them again or cancel."
     },
     "requirement": {
       "listTitle": "Requirements",
@@ -871,10 +934,16 @@
       "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
     }
   },
+  "downloads": {
+    "saved": "Saved to {{path}}",
+    "fallback": "Your download folder could not be used (missing or not writable). Saved to Downloads: {{path}}",
+    "failed": "Could not save “{{name}}”: {{reason}}",
+    "pdfFailed": "Could not create the PDF “{{name}}”: {{reason}}"
+  },
   "diagnostics": {
     "export": "Export diagnostics",
     "exporting": "Exporting…",
-    "exported": "Diagnostics saved to your downloads folder: {{file}}",
+    "exported": "Diagnostics saved to {{file}}",
     "failed": "The diagnostics could not be exported."
   },
   "errorBoundary": {

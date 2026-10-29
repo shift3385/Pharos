@@ -2,7 +2,8 @@ import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import {
   baseDoc,
   dataTable,
-  downloadPdf,
+  pdfBytes,
+  savePdf,
   field,
   itemList,
   sectionHeader,
@@ -90,12 +91,15 @@ export function planDocDefinition(p: ExportablePlan, t: Translate): TDocumentDef
   return baseDoc(t("testPlan.pdfKind"), content);
 }
 
-/** Builds the plan PDF and triggers a download. Returns the file name. */
-export async function exportPlanPdf(
-  p: ExportablePlan,
-  t: Translate,
-): Promise<string> {
-  const filename = `${p.filenameBase || "plan"}.pdf`;
-  await downloadPdf(planDocDefinition(p, t), filename);
-  return filename;
+/** File name of a plan PDF. */
+export const planPdfName = (p: ExportablePlan) => `${p.filenameBase || "plan"}.pdf`;
+
+/** Builds the plan PDF bytes (for the project ZIP, EXP-02). */
+export async function buildPlanPdf(p: ExportablePlan, t: Translate): Promise<Uint8Array> {
+  return pdfBytes(planDocDefinition(p, t));
+}
+
+/** Builds the plan PDF and saves it. Returns where (see saveFile). */
+export async function exportPlanPdf(p: ExportablePlan, t: Translate): Promise<string> {
+  return savePdf(planDocDefinition(p, t), planPdfName(p));
 }

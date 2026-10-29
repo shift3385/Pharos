@@ -1,19 +1,29 @@
-import type { AiProvider } from "../model/types";
+import { AI_REQUEST_TIMEOUT_MS, AI_TIMEOUT_MESSAGE, type AiProvider } from "../model/types";
 
-/** Offline provider (Ollama). Runs locally over HTTP — no key, no TLS. */
+/** Offline provider (Ollama). Runs locally over HTTP — no key, no TLS. A call
+ *  slower than the online limit fails with the same timeout error. */
 export function ollamaProvider(endpoint: string): AiProvider {
   return {
     async chat(messages, opts) {
-      const res = await fetch(`${endpoint}/api/chat`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          model: opts.model,
-          messages,
-          stream: false,
-          options: { temperature: opts.temperature },
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch(`${endpoint}/api/chat`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            model: opts.model,
+            messages,
+            stream: false,
+            // Native JSON mode: small local models drift from the schema without it.
+            ...(opts.json ? { format: "json" } : {}),
+            options: { temperature: opts.temperature },
+          }),
+          signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
+        });
+      } catch (e) {
+        if ((e as { name?: string })?.name === "TimeoutError") throw new Error(AI_TIMEOUT_MESSAGE);
+        throw e;
+      }
       if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
       const data = (await res.json()) as { message?: { content?: string } };
       return data.message?.content ?? "";

@@ -9,13 +9,20 @@ describe("admin settings", () => {
   });
 
   it("persists and reloads settings", () => {
-    saveSettings({ retentionDays: 15, downloadLocation: "C:/exports", backgroundImage: "data:x", backgroundOpacity: 50 });
+    saveSettings({ retentionDays: 15, backgroundImage: "data:x", backgroundOpacity: 50 });
     expect(loadSettings()).toEqual({
       retentionDays: 15,
-      downloadLocation: "C:/exports",
       backgroundImage: "data:x",
       backgroundOpacity: 50,
     });
+  });
+
+  it("drops the legacy free-text download folder (UX-02)", () => {
+    localStorage.setItem(
+      "pharos.admin.settings",
+      JSON.stringify({ ...DEFAULT_SETTINGS, downloadLocation: "C:/exports" }),
+    );
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
   });
 
   it("clamps bad retention and opacity to safe ranges", () => {

@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { saveFile } from "@shared/export/saveFile";
 import templateEs from "../assets/case-template-es.xlsx?url";
 import templateEn from "../assets/case-template-en.xlsx?url";
 import type { ExampleTable, Flow, TestCaseData } from "../model/types";
@@ -22,19 +23,7 @@ export interface ExportableCase {
   examplesLabel?: string;
 }
 
-function triggerDownload(buffer: ArrayBuffer, filename: string) {
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 function tableText(ex?: ExampleTable): string {
   if (!ex || !ex.headers.some((h) => h.trim())) return "";
@@ -138,8 +127,7 @@ export async function buildCaseXlsx(
  *  alternative flow (spec §5.4 / §16). */
 export async function exportCaseXlsx(c: ExportableCase, lang: string): Promise<string> {
   const { filename, buffer } = await buildCaseXlsx(c, lang);
-  triggerDownload(buffer, filename);
-  return filename;
+  return saveFile(filename, buffer, XLSX_MIME);
 }
 
 interface BlockLabels {

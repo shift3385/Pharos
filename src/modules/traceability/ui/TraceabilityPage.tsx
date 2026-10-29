@@ -9,7 +9,18 @@ const VIEWS: View[] = ["requirements", "matrix"];
 
 /** Traceability tab of a project (v0.0.2): its requirements (TRZ-01) and the
  *  requirement ↔ case ↔ defect matrix (TRZ-02). */
-export function TraceabilityPage({ projectId, projectName }: { projectId: string; projectName: string }) {
+export function TraceabilityPage({
+  projectId,
+  projectName,
+  caseIdPrefix,
+  caseIdDigits,
+}: {
+  projectId: string;
+  projectName: string;
+  /** Numbering of the cases generated from a requirement (browser fallback). */
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
+}) {
   const { t } = useTranslation();
   const [view, setView] = useState<View>("requirements");
 
@@ -31,7 +42,7 @@ export function TraceabilityPage({ projectId, projectName }: { projectId: string
         ))}
       </nav>
       {view === "requirements" ? (
-        <RequirementsPanel projectId={projectId} />
+        <RequirementsPanel projectId={projectId} caseIdPrefix={caseIdPrefix} caseIdDigits={caseIdDigits} />
       ) : (
         <MatrixView projectId={projectId} projectName={projectName} />
       )}

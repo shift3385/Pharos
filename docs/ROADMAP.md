@@ -28,7 +28,7 @@
    móvil en 0.4.0.
 7. **El trabajo se hace en pistas paralelas** coordinadas como un equipo pequeño de agentes (§7).
 
-## 2. Estado real (2026-10-29, primera ola cerrada)
+## 2. Estado real (2026-10-29, segunda ola cerrada)
 
 | Área                                                                            | Estado                                                                           | Commits                         |
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------- |
@@ -39,6 +39,7 @@
 | BD sin texto plano y guardado atómico (SEC-01/02)                               | Hecho                                                                            | `54f1dde`                       |
 | Varios proveedores de IA (IA-08) y cuenta de test (BASE-17)                     | Hecho                                                                            | `91f0b9a`                       |
 | Tests                                                                           | Cliente 188 · Rust 134 · servidor 58 · scripts 27. CI (pista B1); E2E local (B2) | —                               |
+| Segunda ola: compuerta A cerrada, SEC-03, IA-05/IA-10, Inicio real, carpeta de descarga, PDFs en ZIPs, logs de sync, zod 4 | Hecho (A3, S1, Q1, I1, U1) | `b969824`, `b75e757`, `c000a53`, `24535c4`, `0eab0a1` |
 
 Las validaciones nativas pendientes están en §6.
 
@@ -77,11 +78,11 @@ hito · **P1** paridad de mercado · **P2** diferenciador · **P3** escala.
 | FIX-06   | `created_by`/`updated_by` guardan el usuario, no el id de la entidad                                                             | P0  | Hecho: escrituras locales (A2) y datos recibidos por sync (A1)                         | Test de repositorio comprueba el autor en proyectos, planes y casos                                  |
 | FIX-07   | Oplog, cursor y `sync_base` separados por usuario en el mismo equipo                                                             | P0  | Hecho (A1, en main `50525bf`)                                                          | Tras cambiar de cuenta, B no envía cambios pendientes de A                                           |
 | FIX-08   | Casos, planes, requisitos, tarjetas y adjuntos comprueban el dueño (plantillas: FIX-08b; conflictos, oplog y cursor: FIX-07)     | P0  | Hecho (A2, en main `8ee8731`)                                                          | Test: otro usuario no lee ni modifica ninguna de esas entidades                                      |
-| FIX-08b  | Plantillas por usuario; actualizar o borrar un id inexistente no escribe oplog (tras fusionar B2, que refactoriza `template.rs`) | P0  | Hecho (A3, rama `claude/a3-datos-sync-4dadd9`; migración 0018)                          | Test: otro usuario no lista, lee ni borra plantillas ajenas; un id inexistente no deja fila de oplog |
+| FIX-08b  | Plantillas por usuario; actualizar o borrar un id inexistente no escribe oplog (tras fusionar B2, que refactoriza `template.rs`) | P0  | Hecho (A3, en main `b969824`; migración 0018)                                            | Test: otro usuario no lista, lee ni borra plantillas ajenas; un id inexistente no deja fila de oplog |
 | FIX-09   | Clave de Gemini en cabecera, timeout y errores sin URL                                                                           | P0  | Hecho con IA-08 (`91f0b9a`)                                                            | Test de `ai.rs`: la clave nunca aparece en la URL ni en el error                                     |
 | SYNC-04a | Sincronizar requisitos y tarjetas/defectos                                                                                       | P0  | Hecho (A1, en main `50525bf`)                                                          | Un requisito creado en A aparece en B y los vínculos de los casos resuelven                          |
-| DAT-01   | IDs de caso, requisito y defecto únicos entre equipos                                                                            | P0  | Hecho (A3, rama; ADR-0010 enmendado; migraciones local 0017, servidor 0005-0006)        | Dos equipos sin conexión crean casos y tras sincronizar no hay claves duplicadas                     |
-| SYNC-06  | Purga real de eliminados (o quitar el texto de Admin que la promete)                                                             | P1  | Hecho (A3, rama; migración 0017)                                                      | Tras N días el registro desaparece y no resucita tras un pull                                        |
+| DAT-01   | IDs de caso, requisito y defecto únicos entre equipos                                                                            | P0  | Hecho (A3, en main; ADR-0010 enmendado; migraciones local 0017, servidor 0005-0006)    | Dos equipos sin conexión crean casos y tras sincronizar no hay claves duplicadas                     |
+| SYNC-06  | Purga real de eliminados (o quitar el texto de Admin que la promete)                                                             | P1  | Hecho (A3, en main; migración 0017)                                                   | Tras N días el registro desaparece y no resucita tras un pull                                        |
 
 También bloquean 0.1.0: SEC-03, SEC-06, SYNC-08, IA-05, UX-05, UX-06 y las validaciones de §6.
 
@@ -111,7 +112,7 @@ Límites conocidos de FIX-08 (rama A2):
 | BASE-16 | Pre-commit ligero (`lint-staged`, `commitlint`)                                                                                                              | P2  | Hecho (B1, en main)                   | Un commit fuera de Conventional Commits se rechaza                         |
 | BASE-17 | Cuenta local de test reproducible (`npm run seed:test-user`)                                                                                                 | P1  | Hecho (`91f0b9a`)                     | Idempotente y bloqueada en producción                                      |
 | BASE-18 | Zod 4 en el servidor (aviso alto GHSA-mrhx-c7xc-m3w5), tras fusionar A1; excepción en la auditoría hasta el 2026-12-15                                       | P1  | Hecho (Q1)                            | `npm run check:audit` pasa sin excepciones en `server/`                    |
-| BASE-19 | `cargo fmt` y clippy limpios en los archivos de A1/A2; vaciar `scripts/rust-gates.allowlist.json`                                                            | P1  | Parcial: project.rs hecho (A3); falta planner.rs (U1) | La allowlist queda vacía y la CI sigue en verde                            |
+| BASE-19 | `cargo fmt` y clippy limpios en los archivos de A1/A2; vaciar `scripts/rust-gates.allowlist.json`                                                            | P1  | Hecho: project.rs (A3) y planner.rs (U1); allowlist vacía | La allowlist queda vacía y la CI sigue en verde                            |
 | BASE-20 | Avisos moderados: react-router 6 (redirección abierta, arreglado solo en v7) y `uuid` vía exceljs                                                            | P2  | Pendiente                             | `npm audit` de la raíz sin avisos moderados                                |
 
 ### C · Decisiones de modelo (bloquea empezar 0.2.0; cada una cierra con un ADR)
@@ -158,7 +159,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | SYNC-03  | Panel de conflictos (Fase 8C)                                                                             | P0  | 0.1.0   | Hecho (`4fdd6a5`); falta validación nativa | —          | Un conflicto simulado aparece y se resuelve a mano                |
 | SYNC-08  | Cada petición de sync lleva la versión de la app; el servidor rechaza las no soportadas sin escribir      | P1  | 0.1.0   | Hecho (A1, revisado y en main)             | —          | Un cliente de una MENOR no soportada recibe un error claro        |
 | SYNC-04a | Ver compuerta A                                                                                           | P0  | 0.1.0   | Hecho (A1, revisado y en main)             | —          | —                                                                 |
-| SYNC-06  | Ver compuerta A                                                                                           | P1  | 0.1.0   | Hecho (A3, rama)                           | —          | —                                                                 |
+| SYNC-06  | Ver compuerta A                                                                                           | P1  | 0.1.0   | Hecho (A3, en main)                        | —          | —                                                                 |
 | SYNC-05  | Paquetes de oplog firmados `.pharos-bundle` (modo aislado)                                                | P2  | 0.3.0   | Pendiente                                  | SYNC-01    | Exportar e importar por USB entre dos PCs sin servidor            |
 | SYNC-07  | Workspaces con roles, `project_members` activo ([ADR-0003](adr/0003-workspaces-compartidos.md))           | P1  | 0.3.0   | Pendiente                                  | TEN-01     | Un auditor ve el proyecto y no puede editarlo                     |
 | SYNC-04b | Sincronizar plantillas; adjuntos por hash fuera del oplog (las tarjetas del planificador van en SYNC-04a) | P1  | 0.4.0   | Pendiente                                  | DAT-03     | Una tarjeta con adjunto creada en escritorio se ve en otro equipo |
@@ -219,8 +220,8 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ----- | ------------------------------------------------------------------------------------------------------------------------ | --- | ---------------------------------------------------------- | ------------------------------------------------------------ | ------------- |
 | IA-01 | Procedencia visible "IA · pendiente de revisión"                                                                         | P1  | 0.1.0                                                      | Hecho (`484e941`)                                            | —             |
 | IA-08 | Varios proveedores online con clave propia, uno activo, "Listar modelos" ([ADR-0007](adr/0007-varios-proveedores-ia.md)) | P1  | 0.1.0                                                      | Hecho (`91f0b9a`); falta validación nativa con claves reales | —             |
-| IA-05 | Gherkin y casos desde un requisito (salida JSON con esquema)                                                             | P1  | 0.1.0                                                      | Pendiente                                                    | TRZ-01, IA-01 |
-| IA-10 | Ayudas de IA que pide la spec §5.1/§5.3: riesgos, estrategia de automatización, precondiciones                           | P2  | 0.1.0                                                      | Pendiente                                                    | —             |
+| IA-05 | Gherkin y casos desde un requisito (salida JSON con esquema, [ADR-0023](adr/0023-salida-estructurada-ia.md))             | P1  | 0.1.0                                                      | Hecho (I1, en main); falta validación con claves reales      | TRZ-01, IA-01 |
+| IA-10 | Ayudas de IA que pide la spec §5.1/§5.3: riesgos, estrategia de automatización, precondiciones                           | P2  | 0.1.0                                                      | Hecho (I1, en main); falta validación con claves reales      | —             |
 | IA-02 | Detección de duplicados con embeddings locales                                                                           | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-03 | _Lint_ de oráculo (resultados esperados débiles)                                                                         | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-06 | Servidor MCP local (stdio)                                                                                               | P1  | 0.7.0                                                      | Pendiente                                                    | SEC-05        |
@@ -246,10 +247,10 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | UX-05  | Verificación WCAG 2.1 AA, incluido teclado y `aria` en los asistentes (Fase 9)                      | P0  | 0.1.0   |
 | UX-06  | Instalador Windows limpio + documentación final (Fase 9; requiere BASE-09)                          | P0  | 0.1.0   |
 | UX-01  | Validaciones transversales de formularios (números, requeridos, formatos, filas duplicadas)         | P1  | 0.1.0   |
-| UX-08  | Inicio real: búsqueda, último acceso y progreso de proyectos (spec §5); sin el texto de la "Fase 0" | P2  | 0.1.0   |
-| UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0   |
-| PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0   |
-| EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0   |
+| UX-08  | Inicio real: búsqueda, último acceso y progreso de proyectos (spec §5); sin el texto de la "Fase 0" | P2  | 0.1.0 · Hecho (U1) |
+| UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0 · Hecho (U1) |
+| PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0 · Hecho (U1) |
+| EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0 · Hecho (U1) |
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | —       |
@@ -272,10 +273,16 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   la clave. Probar también una errata y una clave de otro equipo.
 - **IA-08:** probar con claves reales cada proveedor que vayas a usar (Gemini, OpenAI, Claude,
   OpenRouter o un endpoint compatible).
+- **IA-05 / IA-10:** con claves reales (y con Ollama), generar casos desde un requisito y
+  aceptar algunos (quedan vinculados en la matriz); sugerir riesgos, estrategia de
+  automatización y precondiciones. Anotar qué modelos devuelven JSON inválido a menudo.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario
   (BASE-08) y el instalador NSIS del CI en un Windows 11 limpio (BASE-09).
+- **Segunda ola (A3, S1, I1, U1):** sync entre dos equipos sin conexión creando casos (sin
+  claves duplicadas, DAT-01); purga tras el plazo de retención (SYNC-06); plantillas con dos
+  cuentas (FIX-08b); elegir la carpeta de descarga y exportar el ZIP con PDFs (UX-02, EXP-02).
 - **E2E (BASE-14):** `npm run e2e` en verde con la API de `main` en el puerto 3000 (la CSP
   del escritorio solo admite ese puerto).
 
@@ -304,6 +311,11 @@ Primeras pistas propuestas para la línea base:
 | B1 · CI y seguridad     | BASE-01..03, 06, 09, 12, 16              | `.github/`, `scripts/`, `server/src/config`, `tauri.conf.json`    | Ninguno                     |
 | B2 · Diagnóstico y E2E  | BASE-08, BASE-14, BASE-13                | `src-tauri` (logging), `src/app`, nuevo `e2e/`                    | Ninguno                     |
 | C · Modelo de ejecución | ADRs de la compuerta C (solo documentos) | `docs/adr/`                                                       | Ninguno                     |
+
+Segunda ola (2026-10-29), fusionada en `main` por PR con revisión independiente, QA y CI en
+verde: A3 (#5), S1 (#4), Q1 (#2), I1 (#3) y U1 (#6). El E2E en CI (BASE-14) sigue en el PR #7.
+Desde esta ola, antes de cada compilación se comprueba el espacio en D: y se pide confirmación
+para borrar la compilación anterior (cada pista reutiliza su carpeta de compilación).
 
 Pistas del 2026-10-27, ya fusionadas en `main`: seguridad de `db.rs`, cierre de sync (8C +
 HLC), trazabilidad y spike de ingesta.

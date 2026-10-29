@@ -9,6 +9,48 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Añadido
 
+- **Inicio real (UX-08):** la pantalla de inicio ya no muestra el texto de la
+  "Fase 0". Ofrece "Iniciar nuevo proyecto de pruebas" y "Continuar proyecto
+  existente", y lista tus proyectos con búsqueda por nombre (sin distinguir
+  mayúsculas ni tildes), último acceso en este equipo, estado del plan y
+  progreso (casos aprobados sobre los que no están obsoletos).
+- **Carpeta de descarga (UX-02):** en Administración → Ajustes eliges con el
+  selector de carpetas de Windows dónde se guardan todas las exportaciones y el
+  diagnóstico; "Usar Descargas" vuelve a la carpeta de Descargas. Un archivo
+  nunca se sobrescribe (se añade " (2)") y el aviso muestra la ruta completa.
+  Si la carpeta no existe o no se puede escribir en ella, el archivo va a
+  Descargas y un aviso lo dice; si no se puede guardar, un aviso de error
+  explica por qué. Los adjuntos del planificador se guardan marcados como
+  descargados de Internet, para que Windows avise antes de abrirlos.
+- **PDF en los ZIP (EXP-02):** el ZIP de un proyecto y el de "exportar todo"
+  incluyen ahora el plan y cada caso también en `.pdf`, junto al `.xlsx`. Si
+  un PDF no se puede generar, el ZIP se guarda sin él y un aviso dice cuál
+  falta.
+- **Frecuencia de las reuniones del equipo (PLN-01):** en el paso Metodología
+  del asistente del plan, cada ceremonia ágil elegida (diaria, revisión,
+  retrospectiva, planificación) tiene su frecuencia: a diario, dos veces por
+  semana, semanal, cada dos semanas, una vez por sprint o mensual. Por defecto,
+  la diaria a diario y las demás una vez por sprint. Se exporta en el `.xlsx` y
+  el `.pdf` ("Diaria (a diario)") y la importación del plan la recupera. Un
+  plan guardado con una versión anterior muestra los valores por defecto.
+- **Casos desde un requisito con IA (IA-05):** el botón ✨ de cada requisito
+  (pestaña Trazabilidad) pide a la IA escenarios Gherkin y casos de prueba. Antes
+  de enviar dice a qué proveedor y modelo va el requisito. Revisas las
+  propuestas, ves su Gherkin y solo se crean las que aceptas, como borradores
+  vinculados al requisito (aparecen en la matriz) y marcados "IA · pendiente de
+  revisión" con el proveedor y el modelo reales. Si algún caso no se puede
+  guardar, la ventana sigue abierta con solo esos seleccionados para
+  reintentarlos, sin duplicar los ya creados.
+- **Más ayudas de IA de la spec (IA-10):** sugerencia de la estrategia de
+  automatización y de un banco de riesgos con mitigación en el plan, y de
+  precondiciones en el editor de casos. Eliges qué sugerencias añadir.
+- **Respuestas de la IA validadas (ADR-0023):** lo estructurado llega como JSON y
+  se comprueba contra un esquema antes de usarlo. Una respuesta inválida, un
+  rechazo o un timeout se explican con "No se aplicó nada" y se puede
+  reintentar; nunca se aplica a medias. Con Ollama se usa su modo JSON y una
+  llamada colgada falla a los 120 s, como las online. La prioridad se acepta
+  aunque el modelo la escriba en español o con mayúsculas ("Alta" → high).
+
 - **Varios motores de IA online (IA-08):** además de Gemini, ahora se puede usar
   OpenAI, Claude (Anthropic), OpenRouter o cualquier servicio compatible con la
   API de OpenAI (Groq, DeepSeek, Mistral, LM Studio o vLLM locales…). Se elige
@@ -100,6 +142,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- Las exportaciones y el diagnóstico ya no los guarda el navegador interno en
+  Descargas: los guarda la app en la carpeta de descarga, y el aviso dice la ruta
+  (UX-02). El campo de texto "Carpeta de descargas" de Ajustes, que no se
+  aplicaba, se sustituye por el selector.
 - **Keychain probado (CORE-02):** la sesión y las claves de IA guardadas en el
   Administrador de credenciales de Windows pasan por un único módulo con tests
   automáticos contra el keychain real: guardar, leer, sobrescribir, borrar,
@@ -140,6 +186,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Corregido
 
+- **Exportar a PDF ya funciona (EXP-02):** el plan y los casos en `.pdf` se
+  quedaban sin generar, sin aviso, porque no se cargaban las fuentes del PDF
+  ("Roboto-Medium.ttf"). Ahora se generan en la app y dentro de los ZIP.
 - **Indicador atascado en "Pendiente" (FIX-01):** editar un requisito, una
   tarjeta o una plantilla ya no deja el indicador en "Cambios pendientes" tras
   sincronizar; solo cuenta lo que el sync envía.

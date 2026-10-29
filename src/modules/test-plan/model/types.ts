@@ -34,6 +34,9 @@ export interface TestPlanData {
   methodologyType?: "agile" | "traditional";
   sprintWeeks?: number;
   ceremonies?: string[];
+  /** Ceremony key → frequency key (CEREMONY_FREQUENCIES), PLN-01. Missing
+   *  entries (plans saved before 0.1.0) read as the industry default. */
+  ceremonyFrequency?: Record<string, string>;
   phases?: string[];
   testLevels?: string[];
   deliverables?: string[];

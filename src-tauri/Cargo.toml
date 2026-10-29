@@ -48,6 +48,13 @@ regex = "1"
 # Checksum of the recovery key (SEC-03, ADR-0024); already in the tree via Tauri.
 sha2 = "0.10"
 
+# Native folder picker for the download folder (UX-02), called only from Rust
+# (downloads.rs): no dialog plugin, so the webview gets no dialog permission.
+# Windows only (the shipped target): rfd uses the system dialog through COM, and
+# its default features (gtk3/Wayland) only matter on Linux.
+[target.'cfg(windows)'.dependencies]
+rfd = { version = "0.17", default-features = false }
+
 [features]
 # This feature is used to produce production builds where an extra console
 # window is not spawned on Windows. Enabled by `tauri build`.
