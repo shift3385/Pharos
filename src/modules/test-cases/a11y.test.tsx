@@ -39,9 +39,10 @@ describe("case editor", () => {
       name: "Drag to reorder: Step 1",
     });
     expect(handle).toHaveAccessibleDescription(/arrows/);
-    expect(
-      screen.getByRole("textbox", { name: "Step 2" }),
-    ).toHaveAccessibleDescription(/Duplicate row/);
+    // A repeated step is normal ("Click Next" twice): no warning.
+    expect(screen.getByRole("textbox", { name: "Step 2" })).not.toHaveAccessibleDescription(
+      /Duplicate row/,
+    );
     await expectNoAxeViolations();
   });
 

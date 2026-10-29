@@ -28,7 +28,8 @@
     "confirmDelete": "Yes, delete",
     "cancel": "Cancel",
     "noData": "No data",
-    "edit": "Edit"
+    "edit": "Edit",
+    "discardConfirm": "You have unsaved changes. Discard them?"
   },
   "templates": {
     "title": "Templates",

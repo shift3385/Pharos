@@ -28,7 +28,8 @@
     "confirmDelete": "Sí, eliminar",
     "cancel": "Cancelar",
     "noData": "Sin datos",
-    "edit": "Editar"
+    "edit": "Editar",
+    "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?"
   },
   "templates": {
     "title": "Plantillas",

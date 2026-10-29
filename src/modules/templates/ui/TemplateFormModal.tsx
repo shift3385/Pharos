@@ -33,14 +33,18 @@ export function TemplateFormModal({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
-  const [values, setValues] = useState<TemplateFormValues>({
+  const [start] = useState<TemplateFormValues>(() => ({
     name: initial?.name ?? fileName?.replace(/\.xlsx$/i, "") ?? "",
     kind: initial?.kind ?? "plan",
     language: initial?.language ?? "es",
     version: initial?.version ?? "1.0",
     description: initial?.description ?? "",
     usagePrompt: initial?.usagePrompt ?? "",
-  });
+  }));
+  const [values, setValues] = useState<TemplateFormValues>(start);
+  // Typed data is never thrown away without asking (draft rule, ADR-0027).
+  const dirty = JSON.stringify(values) !== JSON.stringify(start);
+  const confirmDiscard = () => !dirty || window.confirm(t("common.discardConfirm"));
   const set = <K extends keyof TemplateFormValues>(k: K, v: TemplateFormValues[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
   const id = useId();
@@ -48,7 +52,12 @@ export function TemplateFormModal({
   const { guard, showSummary, attempted, summaryRef } = useSaveGuard(nameIssue !== null);
 
   return (
-    <Dialog className="cd tpl-form" labelledBy={`${id}-title`} onClose={onCancel}>
+    <Dialog
+      className="cd tpl-form"
+      labelledBy={`${id}-title`}
+      onClose={onCancel}
+      confirmClose={confirmDiscard}
+    >
       <h3 id={`${id}-title`} className="cd__title">
         {t(mode === "create" ? "templates.form.createTitle" : "templates.form.editTitle")}
       </h3>
@@ -125,7 +134,7 @@ export function TemplateFormModal({
       </label>
 
       <div className="cd__actions">
-        <button type="button" className="cd__cancel" onClick={onCancel}>
+        <button type="button" className="cd__cancel" onClick={() => confirmDiscard() && onCancel()}>
           {t("common.cancel")}
         </button>
         <button

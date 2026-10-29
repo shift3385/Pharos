@@ -37,7 +37,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     y 8, o los días de retención entre 1 y 3650), un resumen dice qué es y
     lleva a cada campo.
   - Lo demás es un aviso y no impide guardar el borrador: fechas de sprint al
-    revés o solapadas, y filas, pasos, columnas o ejemplos repetidos. El
+    revés o solapadas, y filas, columnas o ejemplos repetidos (los pasos se
+    pueden repetir sin aviso). El
     mensaje de "guardado" dice cuántos avisos quedan por revisar.
 
 - **Inicio real (UX-08):** la pantalla de inicio ya no muestra el texto de la
@@ -184,6 +185,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   oscuro tienen el fondo un poco más oscuro. El indicador de foco es navy en
   el tema claro (el ámbar no se distinguía sobre blanco) y ámbar en el oscuro
   y en la barra lateral, y los campos muestran un anillo de foco visible.
+  El borde de los campos de texto y los selectores es más oscuro, para
+  distinguirlos del fondo en los dos temas.
+- **Formularios en diálogos:** si has escrito algo en una plantilla o un
+  requisito, Escape, un clic fuera o Cancelar preguntan antes de
+  descartarlo. Un campo obligatorio vacío se marca al intentar guardar, no
+  nada más abrir el formulario.
 - **Calendario del cronograma:** el día de hoy se marca en navy en lugar de
   ámbar. Los colores del tema no llegaban al calendario, que mostraba el azul
   por defecto de la librería, casi ilegible en el tema oscuro.

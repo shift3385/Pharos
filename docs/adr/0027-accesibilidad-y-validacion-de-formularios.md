@@ -43,14 +43,20 @@
    - Un `error` bloquea el guardado y se reserva para la integridad de los
      datos: título vacío del plan o del caso, nombre vacío de la plantilla,
      clave de requisito inválida o repetida, dígitos del ID de caso fuera de
-     1–8 y días de retención fuera de 1–3650.
+     1–8 y días de retención fuera de 1–3650. Un campo obligatorio vacío se
+     marca después del primer intento de guardar, no al abrir el formulario.
    - Todo lo demás es un `aviso`: fechas de sprint al revés o solapadas,
-     filas, pasos, columnas o ejemplos repetidos. El trabajo se guarda, el
+     filas, columnas o ejemplos repetidos. Los pasos no se comprueban:
+     repetir "Pulsar Siguiente" es normal y solo inflaría los avisos. El
+     trabajo se guarda, el
      aviso sigue visible junto al campo y el mensaje de "guardado" dice
      cuántos avisos quedan.
    - El botón Guardar no se deshabilita por validación. Si algo bloquea,
      `useSaveGuard` muestra un resumen (`ErrorSummary`, `role="alert"`) que
      toma el foco y enlaza cada problema con su campo.
+   - Lo escrito no se pierde sin preguntar: un formulario en un diálogo pasa
+     `confirmClose` a `Dialog`, y Escape, el fondo y Cancelar piden
+     confirmación si hay cambios.
 4. **Contraste por tokens, sin tocar los colores de la spec.**
    - Los tonos semánticos de la spec siguen en rellenos, insignias y bordes
      (todos ≥ 3:1 como elemento no textual).
@@ -60,6 +66,9 @@
      la misma familia".
    - Cambian el texto atenuado (`#616973` en claro, `#8491a0` en oscuro) y el
      navy-100 oscuro (`#193651`), que no fija la spec.
+   - El borde de los campos usa `--color-border-input` (`#828c9a` en claro,
+     `#64758a` en oscuro, ≥ 3:1 sobre página y superficies); `--color-border`
+     (el de la spec) sigue en tarjetas y separadores.
    - El foco usa `--color-focus`: navy en claro, ámbar en oscuro y ámbar
      siempre sobre la barra lateral navy.
 5. **Cómo se comprueba.**

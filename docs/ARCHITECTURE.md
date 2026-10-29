@@ -102,7 +102,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   self-hosted via `@fontsource` (OFL, no font CDN — the app is offline).
 - Responsive from day 1 (sidebar collapses to an icon rail ≤768px).
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
-  their `--color-*-text` tone. Focus is `--color-focus` (navy on light, amber
+  their `--color-*-text` tone. Field boundaries use `--color-border-input`
+  (≥ 3:1). Focus is `--color-focus` (navy on light, amber
   on dark and on the navy sidebar). `src/shared/theme/contrast.test.ts` reads
   `tokens.css` and fails the build if a text/background pair drops under
   4.5:1 or the focus under 3:1, in either theme.
@@ -113,13 +114,18 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   in and returns to the opener, Tab stays inside, Escape and the backdrop close
   it unless it is not `dismissable` (while saving, an export in progress, the
   recovery key on screen). Nested dialogs: only the innermost handles keys.
+  The opener is read on the first render (an `autoFocus` child would
+  otherwise pose as it). A form passes `confirmClose`, so Escape and the
+  backdrop ask before discarding typed changes.
 - **Shell:** a skip link is the first Tab stop and jumps to
   `<main id="main-content">`; the sidebar is the "Main navigation" landmark.
 - **Forms:** rules are pure functions in `@shared/validation` returning an
   `Issue` (`code`, `severity`). `FormField` / `FieldMessage` render them with
   `aria-invalid` (errors only) and `aria-describedby`. `ListField`,
   `PairListField`, `CheckboxGroup` and `SortableSteps` require a `label` that
-  names the group and each row, and warn about repeated rows.
+  names the group and each row, and warn about repeated rows (not
+  `SortableSteps`: a repeated step is a normal test). A `required` error
+  shows on the field after the first save attempt.
 - **Draft rule:** an `error` (data integrity: a blank title or template name,
   an invalid or repeated requirement key, case-ID digits or retention out of
   range) blocks saving; `useSaveGuard` then shows an `ErrorSummary` that takes

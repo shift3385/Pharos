@@ -35,12 +35,16 @@ export function RequirementFormModal({
 }) {
   const { t } = useTranslation();
   const id = useId();
-  const [draft, setDraft] = useState<RequirementDraft>({
+  const [start] = useState<RequirementDraft>(() => ({
     requirementKey: requirement?.requirementKey ?? "",
     title: requirement?.title ?? "",
     description: requirement?.description ?? "",
     priority: requirement?.priority ?? "medium",
-  });
+  }));
+  const [draft, setDraft] = useState<RequirementDraft>(start);
+  // Typed data is never thrown away without asking (draft rule, ADR-0027).
+  const dirty = JSON.stringify(draft) !== JSON.stringify(start);
+  const confirmDiscard = () => !dirty || window.confirm(t("common.discardConfirm"));
   const [saving, setSaving] = useState(false);
   const isNew = requirement === null;
 
@@ -71,6 +75,7 @@ export function RequirementFormModal({
       className="cd tr-modal"
       labelledBy={`${id}-title`}
       onClose={onCancel}
+      confirmClose={confirmDiscard}
       dismissable={!saving}
     >
       <h3 id={`${id}-title`} className="cd__title">
@@ -148,7 +153,7 @@ export function RequirementFormModal({
       </FormField>
 
       <div className="cd__actions">
-        <button type="button" className="cd__cancel" onClick={onCancel}>
+        <button type="button" className="cd__cancel" onClick={() => confirmDiscard() && onCancel()}>
           {t("common.cancel")}
         </button>
         <button

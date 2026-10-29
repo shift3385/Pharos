@@ -37,4 +37,27 @@ describe("template form", () => {
       expect.objectContaining({ name: "Plan base" }),
     );
   });
+
+  it("Escape asks before throwing typed changes away (draft rule)", async () => {
+    const onCancel = vi.fn();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderWithProviders(<TemplateFormModal mode="create" fileName="base.xlsx" onSubmit={() => {}} onCancel={onCancel} />);
+    await userEvent.keyboard("{Escape}"); // untouched: closes without asking
+    expect(confirm).not.toHaveBeenCalled();
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("with typed changes, Escape and Cancel ask first and can keep the form", async () => {
+    const onCancel = vi.fn();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderWithProviders(<TemplateFormModal mode="create" fileName="base.xlsx" onSubmit={() => {}} onCancel={onCancel} />);
+    await userEvent.type(screen.getByRole("textbox", { name: /Name/ }), " v2");
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(onCancel).not.toHaveBeenCalled();
+    confirm.mockReturnValue(true);
+    await userEvent.keyboard("{Escape}");
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
 });

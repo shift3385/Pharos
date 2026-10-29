@@ -188,7 +188,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   }, [step]);
   // The title is the only rule that blocks saving a plan (draft rule).
   const titleIssue = form ? required(form.title) : null;
-  const { guard, showSummary, summaryRef } = useSaveGuard(titleIssue !== null);
+  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(titleIssue !== null);
 
   useEffect(() => {
     void aiAvailable().then(setAiReady);
@@ -418,7 +418,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
           <FormField
             id="tp-title"
             label={t("testPlan.fieldTitle")}
-            issue={required(form.title)}
+            issue={attempted ? required(form.title) : null}
             required
           >
             {(p) => (
@@ -1028,7 +1028,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, t, plan, user, aiReady]);
+  }, [form, t, plan, user, aiReady, attempted]);
 
   if (!form) return <p className="tp__muted">{t("common.loading")}</p>;
 

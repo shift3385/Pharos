@@ -199,7 +199,7 @@ function buildGherkin(f: FormState): string {
     : toGherkin(f.title, formToData(f), f.scenarioId);
 }
 
-/** Number of warnings a case is saved with: repeated steps, list items and
+/** Number of warnings a case is saved with: repeated list items and
  *  Examples columns or rows. Shown in the save toast so they are not missed. */
 function caseWarnings(f: FormState): number {
   const text = (v: string) => v;
@@ -210,9 +210,9 @@ function caseWarnings(f: FormState): number {
         duplicateRows(ex.rows, (r) => (r.some((c) => c.trim()) ? r.map((c) => c.trim()).join(" | ") : "")).size
       : 0;
   return (
-    lists([f.steps, f.preconditions, f.postconditions, f.acceptanceCriteria, f.background]) +
+    lists([f.preconditions, f.postconditions, f.acceptanceCriteria, f.background]) +
     examples(f.examples) +
-    f.flows.reduce((n, fl) => n + lists([fl.steps, fl.preconditions ?? []]) + examples(fl.examples), 0)
+    f.flows.reduce((n, fl) => n + lists([fl.preconditions ?? []]) + examples(fl.examples), 0)
   );
 }
 
@@ -251,7 +251,7 @@ export function TestCaseEditor({
   const [aiReady, setAiReady] = useState(false);
   // The title is the only rule that blocks saving a case (draft rule, ADR-0027).
   const titleIssue = required(form.title);
-  const { guard, showSummary, summaryRef } = useSaveGuard(titleIssue !== null);
+  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(titleIssue !== null);
 
   useEffect(() => {
     void aiAvailable().then(setAiReady);
@@ -568,7 +568,7 @@ export function TestCaseEditor({
 
   const identityFields = (
     <>
-      <FormField id="tc-title" label={t("testCase.fieldTitle")} issue={titleIssue} required>
+      <FormField id="tc-title" label={t("testCase.fieldTitle")} issue={attempted ? titleIssue : null} required>
         {(p) => <input {...p} value={form.title} onChange={(e) => update({ title: e.target.value })} />}
       </FormField>
       <label className="tp-field">

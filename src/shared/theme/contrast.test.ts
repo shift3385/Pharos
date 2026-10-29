@@ -54,6 +54,9 @@ const EXTRA: [string, string, number][] = [
   ["color-navy-500", "color-navy-100", 4.5], // soft badges
   ["color-surface-1", "color-error-text", 4.5], // danger buttons
   ["color-focus-on-navy", "color-navy-900", 3],
+  ["color-border-input", "color-bg-page", 3], // field boundaries
+  ["color-border-input", "color-surface-1", 3],
+  ["color-border-input", "color-surface-2", 3],
   ["color-success", "color-surface-1", 3], // state borders
   ["color-error", "color-surface-1", 3],
   ["color-warning", "color-surface-1", 3],

@@ -46,6 +46,9 @@
   --color-surface-1: #ffffff; /* cards / surfaces */
   --color-surface-2: #f1f4f8; /* secondary surface */
   --color-border: #e2e6eb;
+  /* Boundary of text fields, selects and textareas: >= 3:1 on every surface
+     (WCAG 1.4.11). --color-border stays for cards and dividers. */
+  --color-border-input: #828c9a;
   --color-overlay: rgba(16, 24, 40, 0.45);
   --color-text-primary: #1c2530;
   --color-text-secondary: #5f6b7a;
@@ -127,6 +130,7 @@
   --color-surface-1: #14202e;
   --color-surface-2: #1a2837;
   --color-border: #24344a;
+  --color-border-input: #64758a;
   --color-overlay: rgba(0, 0, 0, 0.55);
   --color-text-primary: #e8edf2;
   --color-text-secondary: #93a3b5;

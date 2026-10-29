@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import "./ConfirmDialog.css";
 
 const FOCUSABLE = [
@@ -33,7 +33,8 @@ function focusables(root: HTMLElement): HTMLElement[] {
  *   element that opened it on close.
  * - Tab and Shift+Tab stay inside the dialog.
  * - Escape and a click on the backdrop call `onClose`, unless the dialog is
- *   not `dismissable` (e.g. while it saves) or has no `onClose`.
+ *   not `dismissable` (e.g. while it saves) or has no `onClose`. A form
+ *   passes `confirmClose` so typed data is never thrown away without asking.
  * - It is named by its title (`labelledBy`) or by `label`.
  */
 export function Dialog({
@@ -41,6 +42,7 @@ export function Dialog({
   label,
   describedBy,
   onClose,
+  confirmClose,
   dismissable = true,
   initialFocus,
   role = "dialog",
@@ -52,6 +54,9 @@ export function Dialog({
   label?: string;
   describedBy?: string;
   onClose?: () => void;
+  /** Asked before Escape or the backdrop close the dialog; false keeps it
+   *  open (e.g. "discard your changes?" when the form is dirty). */
+  confirmClose?: () => boolean;
   dismissable?: boolean;
   initialFocus?: RefObject<HTMLElement | null>;
   role?: "dialog" | "alertdialog";
@@ -62,13 +67,26 @@ export function Dialog({
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef<(() => void) | undefined>(undefined);
   closeRef.current = dismissable ? onClose : undefined;
+  const confirmRef = useRef(confirmClose);
+  confirmRef.current = confirmClose;
+  const dismiss = () => {
+    if (!closeRef.current) return;
+    if (confirmRef.current && !confirmRef.current()) return;
+    closeRef.current();
+  };
+  const dismissRef = useRef(dismiss);
+  dismissRef.current = dismiss;
+  // The opener is read during the first render: by the time effects run,
+  // React has already applied an autoFocus inside the dialog.
+  const [opener] = useState(() => {
+    const focused = document.activeElement;
+    return focused instanceof HTMLElement && focused !== document.body ? focused : null;
+  });
 
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
     stack.push(root);
-    const focused = document.activeElement;
-    const opener = focused instanceof HTMLElement && focused !== document.body ? focused : null;
 
     if (!root.contains(document.activeElement)) {
       const target = initialFocus?.current ?? focusables(root)[0] ?? root;
@@ -81,7 +99,7 @@ export function Dialog({
         if (!closeRef.current) return;
         e.preventDefault();
         e.stopPropagation();
-        closeRef.current();
+        dismissRef.current();
         return;
       }
       if (e.key !== "Tab") return;
@@ -120,7 +138,7 @@ export function Dialog({
     <div
       className={overlayClassName}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) closeRef.current?.();
+        if (e.target === e.currentTarget) dismiss();
       }}
     >
       <div

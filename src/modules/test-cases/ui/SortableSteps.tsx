@@ -18,16 +18,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
-import { FieldMessage } from "@shared/ui/FormField";
-import { controlProps } from "@shared/ui/fieldProps";
-import { duplicateRow, duplicateRows, type Issue } from "@shared/validation";
 
 function SortableStep({
   id,
   inputId,
   index,
   value,
-  issue,
   onChange,
   onRemove,
 }: {
@@ -35,7 +31,6 @@ function SortableStep({
   inputId: string;
   index: number;
   value: string;
-  issue: Issue | null;
   onChange: (v: string) => void;
   onRemove: () => void;
 }) {
@@ -64,22 +59,21 @@ function SortableStep({
           {index + 1}
         </span>
         <input
-          {...controlProps(inputId, issue)}
+          id={inputId}
           aria-label={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
         <DeleteButton itemLabel={name} needsConfirm={value.trim() !== ""} onDelete={onRemove} />
       </div>
-      {issue && <FieldMessage id={`${inputId}-msg`} issue={issue} />}
     </div>
   );
 }
 
 /** Reorderable list of test steps (drag & drop, spec §5.3). The handle also
  *  works from the keyboard (Space to pick up, arrows to move, Space to drop,
- *  Escape to cancel) and each move is announced (WCAG 2.1.1, UX-05). A step
- *  that repeats an earlier one gets a warning. */
+ *  Escape to cancel) and each move is announced (WCAG 2.1.1, UX-05). Steps
+ *  are not checked for repeats: "Click Next" twice is a normal test. */
 export function SortableSteps({
   steps,
   onChange,
@@ -96,7 +90,6 @@ export function SortableSteps({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const ids = steps.map((_, i) => String(i));
-  const dupes = duplicateRows(steps, (s) => s);
   const n = (id: UniqueIdentifier) => Number(id) + 1;
   const announcements: Announcements = {
     onDragStart: ({ active }) => t("testCase.drag.start", { n: n(active.id) }),
@@ -134,7 +127,6 @@ export function SortableSteps({
                 inputId={`${baseId}-${i}`}
                 index={i}
                 value={value}
-                issue={duplicateRow(dupes, i)}
                 onChange={(v) => {
                   const next = [...steps];
                   next[i] = v;

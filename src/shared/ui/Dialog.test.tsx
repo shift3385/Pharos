@@ -80,6 +80,46 @@ describe("Dialog", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("returns the focus to the opener even when a child has autoFocus", async () => {
+    function AutoFocusHarness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            edit
+          </button>
+          {open && (
+            <Dialog label="Edit" onClose={() => setOpen(false)}>
+              <input aria-label="name" autoFocus />
+            </Dialog>
+          )}
+        </>
+      );
+    }
+    render(<AutoFocusHarness />);
+    await userEvent.click(screen.getByText("edit"));
+    expect(screen.getByRole("textbox", { name: "name" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByText("edit")).toHaveFocus();
+  });
+
+  it("asks confirmClose before Escape or the backdrop close it", async () => {
+    const onClose = vi.fn();
+    const confirmClose = vi.fn().mockReturnValue(false);
+    render(
+      <Dialog label="Form" onClose={onClose} confirmClose={confirmClose}>
+        <button type="button">x</button>
+      </Dialog>,
+    );
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("dialog").parentElement!);
+    expect(confirmClose).toHaveBeenCalledTimes(2);
+    expect(onClose).not.toHaveBeenCalled();
+    confirmClose.mockReturnValue(true);
+    await userEvent.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it("focuses the main content when the opener is gone after closing", async () => {
     function Row() {
       const [state, setState] = useState<"row" | "asking" | "deleted">("row");
