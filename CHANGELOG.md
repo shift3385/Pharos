@@ -45,6 +45,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
 - **Registros de la app:** el escritorio guarda un log diario en
   `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
+- **Los fallos de sincronización quedan en el log (BASE-08):** además del aviso,
+  cada fallo deja una línea en el log que recoge "Exportar diagnóstico": al
+  sincronizar a mano o en segundo plano, al listar o resolver conflictos, y
+  los cambios que el servidor rechaza. Solo guarda el código HTTP y el tipo de
+  error, nunca el texto del servidor ni el contenido de tus datos. Un fallo que
+  se repite en segundo plano se anota una sola vez.
 - **Pantalla de error:** si una vista falla, ya no queda la ventana en blanco:
   aparece un aviso con "Reintentar", "Recargar" y "Exportar diagnóstico", y el
   resto de la app sigue funcionando.

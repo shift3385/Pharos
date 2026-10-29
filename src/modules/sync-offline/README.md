@@ -79,3 +79,23 @@ resolution can be added without a schema change.
 - **Pull.** Incremental from `pharos.sync.cursor:<userId>`; if every cache is
   empty it restarts at 0. Deleted requirements keep a `deletedAt` tombstone so
   their key is never reused.
+
+## Failures in the local log (`api/syncFailure.ts`, BASE-08, ADR-0022)
+
+The UI tells the user; every sync failure also goes to the local log through
+`logClientError`, so "Exportar diagnóstico" can explain it. Context line
+`sync: <action>`: `manual` ("Sync now"), `auto` (startup, reconnect, after a
+resolution), `state` (the 5 s count refresh), `conflicts-list`,
+`conflict-resolve`, `push-refused` and `web-push`.
+
+- **No server text.** A `SyncHttpError` is logged as `HTTP <status> <code>`
+  only: its message is what the server wrote (a parse error can quote the
+  request body), and its stack starts with that message.
+- **Native rejections** (strings from the Rust commands) keep only their type,
+  like any non-`Error` value; other errors keep their redacted name, message
+  and stack.
+- **Refused changes** are one line per push, with entity types and ids, never
+  payloads.
+- **Background steps** (`auto`, `state`, `web-push`) log a repeated failure
+  once (`SyncFailureLog`) until it changes or the step succeeds, so an API
+  that is down does not use up the log budget (20 messages every 10 s).

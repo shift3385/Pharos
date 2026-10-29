@@ -20,6 +20,7 @@
 import { getSession } from "@modules/auth";
 import { encodeHlc, parseHlc, recvHlc, tickHlc, type Hlc } from "../domain/hlc";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
+import { SyncFailureLog, logRefusedChanges } from "../api/syncFailure";
 import {
   batchDeltas,
   isTransient,
@@ -337,8 +338,7 @@ async function doFlush(): Promise<FlushResult> {
           ),
         );
         total.skipped += refused.length;
-        for (const d of refused)
-          console.warn("[web push] the server refused", d.entity, d.entityId);
+        logRefusedChanges(refused);
       }
     }
   }
@@ -366,6 +366,9 @@ async function doFlush(): Promise<FlushResult> {
   return total;
 }
 
+/** Failed fire-and-forget pushes, logged once until they change (BASE-08). */
+const pushFailures = new SyncFailureLog();
+
 /** Queues a web write and pushes it right away (fire-and-forget). Used inside
  *  the browser write fallbacks; no-op on desktop (it has the oplog). */
 export function pushEntity(
@@ -390,7 +393,8 @@ export function pushEntity(
       hlc: nextWebHlc(),
     });
     await flushOutbox();
-  })().catch((e) => console.warn("[web push] queued, will retry:", e));
+    pushFailures.clear("web-push");
+  })().catch((e) => pushFailures.report(e, "web-push")); // queued, retried
 }
 
 interface Row {

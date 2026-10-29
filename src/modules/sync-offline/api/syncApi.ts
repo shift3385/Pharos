@@ -9,6 +9,7 @@
 
 import { getSession } from "@modules/auth";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
+import { logRefusedChanges } from "./syncFailure";
 import {
   batchDeltas,
   pullPages,
@@ -144,8 +145,7 @@ export async function syncNow(): Promise<SyncResult> {
       conflicts += rejected.length;
     });
     skipped += refused.length;
-    for (const d of refused)
-      console.warn("[sync] the server refused", d.entity, d.entityId);
+    logRefusedChanges(refused);
   }
 
   // Pull. The cursor lives in the local DB (wiped with the data), one per
