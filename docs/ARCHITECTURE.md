@@ -129,7 +129,13 @@ Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
 
 - **Backup before migrating.** When an existing database has pending
   migrations, the still-encrypted file is first copied to
-  `pharos.db.enc.bak-<app version>`. The migrated image is then saved at once.
+  `pharos.db.enc.bak-<app version>-<last applied migration>`. The migration
+  part keeps two upgrades within one app version apart.
+  - The migrated image is then saved at once.
+  - Only the 3 newest backups are kept (`BACKUPS_KEPT`); pruning is best effort.
+  - If the backup cannot be written, or its path holds anything other than the
+    same bytes, opening fails with "failed to save the pre-migration backup"
+    and nothing is migrated.
 - **No silent downgrade.** A database whose `schema_migrations` lists a
   migration this build does not ship was written by a newer Pharos. `Db::open`
   refuses it with an error starting with `db-newer-than-app` before touching any
@@ -152,11 +158,17 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   (`userId`, or `ownerId` in the planner). It only touches rows of projects that
   user owns (`projects.owner_id`). A foreign or unknown id reads as nothing and
   fails to change, without writing an oplog row.
+  - A plan without a project is shown to nobody: the owner comes from the
+    project, and the UI only reaches a plan through its project.
+  - Templates and the sync conflicts are not owner-scoped yet (FIX-08b, FIX-07).
+  - The user id comes from the UI. This separates the accounts of one
+    installation; it does not defend against a tampered frontend.
 - **Human-readable keys (DAT-01, ADR-0010):** case, requirement and defect keys
   come from `key_counters` (`src-tauri/src/keys.rs`):
   - the counter only moves forward, so a key is never reused;
-  - a case's `scenario_id` is immutable, and a hand-typed key already used by
-    a live case is refused.
+  - a case's `scenario_id` is immutable;
+  - a hand-typed or imported key already used by any row, live or deleted, is
+    refused (the requirement CSV import skips and reports it).
   - Phase 2 of track A2 brings server-leased key blocks for several devices.
     It also brings unique indexes on live case and defect keys (local migration
     `0017`), together with the sync handling of a pulled key that collides with

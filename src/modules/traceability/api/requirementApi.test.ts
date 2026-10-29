@@ -54,11 +54,23 @@ describe("requirementApi (browser fallback)", () => {
       { title: "Fresh" },
       { title: "  " },
     ]);
-    expect(summary).toEqual({ created: 1, updated: 1 });
+    expect(summary).toEqual({ created: 1, updated: 1, skipped: [] });
     const list = await requirementApi.list("p1", USER);
     expect(list.map((r) => [r.requirementKey, r.title])).toEqual([
       ["REQ-001", "New"],
       ["REQ-002", "Fresh"],
     ]);
+  });
+
+  it("never brings back a deleted key, typed or imported (ADR-0010)", async () => {
+    const a = await requirementApi.create({ ...base, requirementKey: "REQ-002", title: "A" });
+    await requirementApi.remove(a!.id, USER);
+    await expect(
+      requirementApi.create({ ...base, requirementKey: "REQ-002", title: "B" }),
+    ).rejects.toThrow(/deleted/);
+    const summary = await requirementApi.importRows("p1", USER, [
+      { requirementKey: "REQ-002", title: "Back?" },
+    ]);
+    expect(summary).toEqual({ created: 0, updated: 0, skipped: ["REQ-002"] });
   });
 });

@@ -122,6 +122,31 @@ session.
 | `cargo` not found / `npm run tauri dev` fails at once    | Open a new terminal after installing Rust; check the Visual Studio C++ workload                        |
 | Port 3000 or 1420 already in use                         | Another API/Vite is still running; close the old windows                                               |
 | Console shows `localhost:11434 … ERR_CONNECTION_REFUSED` | Ollama is not installed or not running; harmless — AI assist is simply disabled                        |
+| "This data comes from a newer version of Pharos"         | The local database was saved by a newer Pharos; install that version, or restore a backup (below)      |
+
+### Local data backups
+
+The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\pharos.db.enc`.
+
+Before a new version upgrades that database, the app saves an untouched,
+encrypted copy next to it: `pharos.db.enc.bak-<version>-<last migration>`. For
+example, `pharos.db.enc.bak-0.1.0-alpha.2-0011_sync_conflicts`.
+
+- Only the 3 newest copies are kept; older ones are deleted.
+- If the copy cannot be saved, the app upgrades nothing and says so.
+
+To go back to the data from before an upgrade:
+
+1. Close Pharos.
+2. Rename `pharos.db.enc` (keep it until you are sure you want to discard it).
+3. Copy the `.bak-…` file you want to `pharos.db.enc`.
+4. Open the Pharos version that wrote that copy.
+
+The copy is encrypted with the same key, kept in the Windows Credential
+Manager, so it only opens on the same Windows account.
+
+`0.1.0-alpha.1` does not check for newer data. Never open data upgraded by a
+later version with it; restore the matching `.bak` copy first.
 
 ## Scripts
 

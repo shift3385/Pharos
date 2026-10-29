@@ -79,6 +79,9 @@ export function RequirementsPanel({ projectId }: { projectId: string }) {
     try {
       const summary = await requirementApi.importRows(projectId, userId, importing.result.rows);
       toast(t("traceability.import.doneToast", { created: summary.created, updated: summary.updated }));
+      if (summary.skipped.length) {
+        toast(t("traceability.import.skippedToast", { keys: summary.skipped.join(", ") }));
+      }
       setImporting(null);
       await refresh();
     } catch {

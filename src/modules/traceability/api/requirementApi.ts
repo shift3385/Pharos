@@ -63,6 +63,10 @@ function insert(all: Stored[], input: RequirementInput): Stored {
     if (all.some((r) => live(r) && r.projectId === input.projectId && r.requirementKey === given)) {
       throw new Error(`duplicate requirement key: ${given}`);
     }
+    // ADR-0010: the key of a deleted requirement is never reused.
+    if (all.some((r) => r.projectId === input.projectId && r.requirementKey === given)) {
+      throw new Error(`requirement key ${given} belonged to a deleted requirement`);
+    }
   }
   const now = new Date().toISOString();
   const item: Stored = {
@@ -133,7 +137,7 @@ const browserApi = {
     rows: RequirementImportRow[],
   ): Promise<ImportSummary> {
     const all = loadAll();
-    const summary: ImportSummary = { created: 0, updated: 0 };
+    const summary: ImportSummary = { created: 0, updated: 0, skipped: [] };
     for (const row of rows) {
       if (!row.title.trim()) continue;
       const input: RequirementInput = { ...row, projectId, userId };
@@ -144,6 +148,8 @@ const browserApi = {
       if (idx >= 0) {
         all[idx] = patch(all[idx], input);
         summary.updated++;
+      } else if (key && all.some((r) => r.projectId === projectId && r.requirementKey === key)) {
+        summary.skipped.push(key);
       } else {
         insert(all, input);
         summary.created++;

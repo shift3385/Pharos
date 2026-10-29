@@ -91,7 +91,7 @@ fn map_card(row: &rusqlite::Row) -> rusqlite::Result<PlannerCard> {
 }
 
 /// Cards of a project, owner-scoped, ordered for the board.
-fn list_cards(
+pub(crate) fn list_cards(
     conn: &Connection,
     project_id: &str,
     owner_id: &str,
@@ -362,7 +362,7 @@ pub fn planner_attachment_add(
 }
 
 /// Attachments of a live card the user owns (none for anyone else).
-fn list_attachments(
+pub(crate) fn list_attachments(
     conn: &Connection,
     card_id: &str,
     owner_id: &str,

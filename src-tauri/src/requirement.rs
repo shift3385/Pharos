@@ -61,6 +61,9 @@ pub struct RequirementImportRow {
 pub struct ImportSummary {
     created: usize,
     updated: usize,
+    /// Keys of deleted requirements found in the file: never reused, so those
+    /// rows are not imported (ADR-0010).
+    skipped: Vec<String>,
 }
 
 /// Live requirements of live projects owned by the given user.
@@ -124,7 +127,7 @@ fn next_requirement_key(conn: &Connection, project_id: &str) -> Result<String, S
     )
 }
 
-fn list_requirements(
+pub(crate) fn list_requirements(
     conn: &Connection,
     project_id: &str,
     user_id: &str,
@@ -185,6 +188,12 @@ fn insert_requirement(conn: &Connection, input: &RequirementInput) -> Result<Str
             }
             if find_by_key(conn, &input.project_id, k)?.is_some() {
                 return Err(format!("duplicate requirement key: {k}"));
+            }
+            // Cases may still link the deleted requirement's key (@REQ-…).
+            if keys::taken(conn, KeyKind::Requirement, &input.project_id, k)? {
+                return Err(format!(
+                    "requirement key {k} belonged to a deleted requirement and is never reused"
+                ));
             }
             keys::note_manual(conn, KeyKind::Requirement, &input.project_id, KEY_PREFIX, k)?;
             k.to_string()
@@ -267,7 +276,8 @@ fn delete_requirement(conn: &Connection, id: &str, user_id: &str) -> Result<(), 
 }
 
 /// Bulk CSV import in one transaction: rows whose key already exists update that
-/// requirement; the rest are created (keyed as given, or auto-numbered).
+/// requirement; rows with the key of a deleted requirement are skipped and
+/// reported; the rest are created (keyed as given, or auto-numbered).
 fn import_requirements(
     conn: &Connection,
     project_id: &str,
@@ -281,6 +291,7 @@ fn import_requirements(
     let mut summary = ImportSummary {
         created: 0,
         updated: 0,
+        skipped: Vec::new(),
     };
     for row in rows {
         if row.title.trim().is_empty() {
@@ -294,10 +305,21 @@ fn import_requirements(
             priority: row.priority.clone(),
             user_id: user_id.to_string(),
         };
-        let existing = match row.requirement_key.as_deref().map(str::trim) {
-            Some(k) if !k.is_empty() => find_by_key(&tx, project_id, k)?,
-            _ => None,
+        let key = row
+            .requirement_key
+            .as_deref()
+            .map(str::trim)
+            .filter(|k| !k.is_empty());
+        let existing = match key {
+            Some(k) => find_by_key(&tx, project_id, k)?,
+            None => None,
         };
+        if let (Some(k), None) = (key, &existing) {
+            if keys::taken(&tx, KeyKind::Requirement, project_id, k)? {
+                summary.skipped.push(k.to_string());
+                continue;
+            }
+        }
         match existing {
             Some((id, _)) => {
                 update_requirement(&tx, &id, &input)?;
@@ -433,6 +455,43 @@ mod tests {
         let a = insert_requirement(&c, &input("p1", None, "A")).unwrap();
         delete_requirement(&c, &a, USER).unwrap();
         assert_eq!(next_requirement_key(&c, "p1").unwrap(), "REQ-002");
+    }
+
+    #[test]
+    fn a_hand_typed_key_cannot_resurrect_a_deleted_requirement() {
+        let c = conn();
+        let a = insert_requirement(&c, &input("p1", Some("REQ-002"), "A")).unwrap();
+        delete_requirement(&c, &a, USER).unwrap();
+        let err = insert_requirement(&c, &input("p1", Some("REQ-002"), "B")).unwrap_err();
+        assert!(err.contains("deleted"), "{err}");
+    }
+
+    #[test]
+    fn import_skips_and_reports_keys_of_deleted_requirements() {
+        let c = conn();
+        let gone = insert_requirement(&c, &input("p1", Some("REQ-002"), "Gone")).unwrap();
+        delete_requirement(&c, &gone, USER).unwrap();
+        let row = |key: &str, title: &str| RequirementImportRow {
+            requirement_key: Some(key.into()),
+            title: title.into(),
+            description: None,
+            priority: None,
+        };
+        let s = import_requirements(
+            &c,
+            "p1",
+            USER,
+            &[row("REQ-002", "Back?"), row("REQ-010", "New")],
+        )
+        .unwrap();
+        assert_eq!((s.created, s.updated), (1, 0));
+        assert_eq!(s.skipped, vec!["REQ-002"]);
+        let keys: Vec<String> = list_requirements(&c, "p1", USER)
+            .unwrap()
+            .into_iter()
+            .map(|r| r.requirement_key)
+            .collect();
+        assert_eq!(keys, vec!["REQ-010"]);
     }
 
     #[test]

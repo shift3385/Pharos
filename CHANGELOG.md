@@ -20,10 +20,14 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   ejecutarse en producción.
 - **Copia antes de actualizar (SEC-06):** cuando una versión nueva va a
   actualizar la base de datos local, antes guarda el archivo tal cual estaba,
-  cifrado, como `pharos.db.enc.bak-<versión>` en la carpeta de datos de la app.
+  cifrado, como `pharos.db.enc.bak-<versión>-<última migración>` en la carpeta
+  de datos de la app. Se conservan las 3 copias más recientes. Si la copia no se
+  puede guardar, la app no actualiza nada. Cómo restaurarla: README.
 - **Datos de una versión más nueva (SEC-06):** si abres Pharos con datos que
   guardó una versión más reciente, la app muestra una pantalla que lo explica y
-  no abre ni modifica esos datos.
+  no abre ni modifica esos datos. Esta protección empieza en esta versión:
+  `0.1.0-alpha.1` no la tiene y abriría esos datos sin avisar. Para volver a
+  ella, restaura antes la copia `.bak`.
 
 ### Cambiado
 
@@ -33,6 +37,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   señalar otro caso. Antes, los casos sí reutilizaban el número del borrado.
 - **El ID de un caso no cambia una vez asignado (DAT-01):** el campo es de solo
   lectura al editar un caso existente.
+- **Un ID escrito a mano no recupera el de un borrado (DAT-01):** crear un caso
+  o un requisito con el ID de uno borrado da error. Al importar requisitos por
+  CSV, las filas con la clave de un requisito borrado no se importan y se
+  avisa de cuáles son.
 - Los campos de auditoría "creado por" y "modificado por" de proyectos, planes y
   casos guardan ahora el usuario que hizo el cambio (antes guardaban el ID del
   propio registro o el nombre del autor). La actualización corrige los registros

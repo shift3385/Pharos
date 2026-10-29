@@ -80,6 +80,9 @@
   5. **Claves escritas a mano** (importación de Excel o CSV, campo manual al
      crear):
      - se aceptan si no chocan en local;
+     - **nunca resucitan una clave borrada:** la clave de un caso, requisito o
+       defecto borrado (o purgado) cuenta como usada. Al crear se rechaza; en
+       una importación CSV esa fila se omite y se informa;
      - si el servidor detecta un duplicado al recibirlas, la entidad pasa al
        panel de conflictos para que la persona elija otra clave;
      - nunca se renombra sola.
@@ -87,6 +90,36 @@
      `(project_id, card_key)` entre las filas vivas, como ya tiene
      `requirements`. La misma regla se aplica en el servidor cuando indexe por
      proyecto (TEN-01). Llega en la fase 2 (ver Consecuencias).
+
+- **Precisiones** (revisión independiente, 2026-10-28):
+  - **Una clave provisional se sustituye por la definitiva.**
+    - En la misma transacción se reescriben las referencias por clave:
+      `data.requirementKeys` de los casos del proyecto, cuando lo sustituido es
+      un requisito.
+    - Los vínculos por id (`data.testCaseIds` de los defectos) no cambian.
+    - Una clave provisional nunca llega a un `.feature`, así que ningún
+      repositorio de automatización la conoce.
+  - **Cambiar `case_id_prefix`.**
+    - El contador y los bloques son números por proyecto y tipo; no dependen
+      del prefijo.
+    - Las claves ya asignadas conservan su prefijo, porque son inmutables.
+    - Las nuevas usan el prefijo nuevo y siguen la numeración: tras `ATS_007`
+      viene `TC-008`.
+  - **Un segundo equipo del mismo usuario recibe el proyecto antes de tener
+    bloque.**
+    - El dueño del rango (regla 3) solo existe hasta el primer push. En ese
+      push, el servidor registra el máximo usado y entrega al equipo creador
+      su primer bloque, a partir de ese máximo.
+    - Cualquier otro equipo que reciba el proyecto empieza sin bloque. Pide
+      uno antes de numerar y, hasta tenerlo, sin conexión, usa claves
+      provisionales.
+  - **"Nunca el mismo rango dos veces", con varios usuarios.**
+    - El servidor guarda un máximo por `(project_id, kind)`, no por usuario.
+    - Entrega un bloque con un `UPDATE … SET next = next + 50 RETURNING`
+      dentro de una transacción, que bloquea esa fila. Dos peticiones
+      simultáneas, de cualquier usuario, no pueden recibir el mismo rango.
+    - Con los workspaces (TEN-01), la fila pasa a ser del proyecto compartido
+      y la regla no cambia.
 
 - **Consecuencias:**
   - **Parte local**, migración `0016` y `src-tauri/src/keys.rs`, hecha en la
@@ -96,8 +129,9 @@
       usó alguna vez, incluidas las filas borradas.
     - Una clave ya usada por cualquier fila, viva o borrada, se salta.
     - Los `next_*` leen el contador.
-    - Una clave escrita a mano que ya usa un caso vivo del proyecto se rechaza
-      en el repositorio.
+    - Una clave escrita a mano o importada que ya usó cualquier fila del
+      proyecto, viva o borrada, se rechaza en el repositorio. La importación
+      CSV omite esa fila y la informa.
     - `scenario_id` pasa a ser inmutable, también en la UI.
     - **SYNC-06** debe crear el contador de un proyecto antes de purgar sus
       filas. Si no, una purga sin contador permitiría volver a numerar desde

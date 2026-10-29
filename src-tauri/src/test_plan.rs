@@ -120,7 +120,7 @@ fn owns(conn: &Connection, id: &str, user_id: &str) -> Result<bool, String> {
     .map(|r| r.is_some())
 }
 
-fn list_plans(conn: &Connection, user_id: &str) -> Result<Vec<TestPlanSummary>, String> {
+pub(crate) fn list_plans(conn: &Connection, user_id: &str) -> Result<Vec<TestPlanSummary>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT t.id, t.title, t.version, t.status, t.updated_at, t.revision \
@@ -153,7 +153,7 @@ fn get_plan(conn: &Connection, id: &str, user_id: &str) -> Result<Option<TestPla
 
 /// Returns the (single) plan of a project, if it has one (spec §5.1: 1 project =
 /// 1 test plan). Picks the most recently updated if several ever exist.
-fn get_plan_by_project(
+pub(crate) fn get_plan_by_project(
     conn: &Connection,
     project_id: &str,
     user_id: &str,

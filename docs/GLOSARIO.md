@@ -92,7 +92,7 @@ files (`es`/`en`).
 | Sesión                      | `session`                                                | `{ accessToken, refreshToken, user }`                                                                                      |
 | Usuario actual              | `user_id` / `userId`                                     | Usuario con sesión que hace el cambio: va a `created_by`/`updated_by` y se compara con el dueño (FIX-06/08)                |
 | Dueño                       | `owner_id` / `ownerId`                                   | Usuario dueño de un proyecto o tarjeta; casos, planes y requisitos heredan el dueño de su proyecto                         |
-| Copia previa a migrar       | `pharos.db.enc.bak-<versión>`                            | Archivo cifrado tal cual estaba antes de que esa versión migrara la base (SEC-06)                                          |
+| Copia previa a migrar       | `pharos.db.enc.bak-<versión>-<migración>`                | Archivo cifrado tal cual estaba antes de migrar (SEC-06); se guardan las 3 más recientes                                   |
 | BD de versión más nueva     | `db-newer-than-app` / `dbError`                          | Error al abrir una base con migraciones desconocidas; la UI muestra `dbError.*` y no la toca (SEC-06)                      |
 | Journal de cambios          | `oplog`                                                  | un delta por mutación local; `synced_at` NULL = pendiente (§9)                                                             |
 | Delta                       | `delta` / `Delta`                                        | estado completo de una entidad (o tombstone) que se envía en el push                                                       |

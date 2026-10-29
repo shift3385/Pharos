@@ -151,7 +151,7 @@ fn next_scenario_id(conn: &Connection, project_id: &str) -> Result<String, Strin
     keys::allocate(conn, KeyKind::Case, project_id, &prefix, digits)
 }
 
-fn list_cases(
+pub(crate) fn list_cases(
     conn: &Connection,
     project_id: &str,
     user_id: &str,
@@ -205,6 +205,12 @@ fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<String, Strin
         Some(s) if !s.is_empty() => {
             if keys::taken_live(conn, KeyKind::Case, &input.project_id, s)? {
                 return Err(format!("duplicate scenario id: {s}"));
+            }
+            // A deleted case's id may still be a tag in an automation repo.
+            if keys::taken(conn, KeyKind::Case, &input.project_id, s)? {
+                return Err(format!(
+                    "scenario id {s} belonged to a deleted case and is never reused"
+                ));
             }
             let (prefix, _) = numbering(conn, &input.project_id)?;
             keys::note_manual(conn, KeyKind::Case, &input.project_id, &prefix, s)?;
@@ -484,6 +490,16 @@ mod tests {
         // A tag @ATS_001 in an automation repo must never point to another case.
         let b = insert_case(&c, &input(&p, None, "B")).unwrap();
         assert_eq!(scenario(&c, &b), "ATS_002");
+    }
+
+    #[test]
+    fn a_hand_typed_id_cannot_resurrect_a_deleted_case() {
+        let c = conn();
+        let p = project(&c, "ATS_");
+        let a = insert_case(&c, &input(&p, Some("ATS_042"), "A")).unwrap();
+        delete_case(&c, &a, USER).unwrap();
+        let err = insert_case(&c, &input(&p, Some("ATS_042"), "B")).unwrap_err();
+        assert!(err.contains("deleted"), "{err}");
     }
 
     #[test]

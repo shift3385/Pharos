@@ -143,7 +143,9 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
 
     // SEC-06: the untouched alpha.1 file was kept before migrating.
-    let backup = dir.join(format!("pharos.db.enc.bak-{APP_VERSION}"));
+    let backup = dir.join(format!(
+        "pharos.db.enc.bak-{APP_VERSION}-0011_sync_conflicts"
+    ));
     assert_eq!(fs::read(&backup).unwrap(), FIXTURE);
 
     db.with_conn(|new| {
@@ -210,6 +212,81 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 2);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+/// Values of `field` in the JSON the UI receives for `items`.
+fn field_of<T: serde::Serialize>(items: &[T], field: &str) -> Vec<String> {
+    items
+        .iter()
+        .map(|i| {
+            serde_json::to_value(i).unwrap()[field]
+                .as_str()
+                .unwrap_or_default()
+                .to_string()
+        })
+        .collect()
+}
+
+#[test]
+fn the_migrated_fixture_reads_back_through_the_owner_scoped_commands() {
+    let dir = temp_dir();
+    fs::write(dir.join("pharos.db.enc"), FIXTURE).unwrap();
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    db.with_conn(|c| {
+        let project_of = |owner: &str| -> String {
+            c.query_row(
+                "SELECT id FROM projects WHERE owner_id = ?1",
+                params![owner],
+                |r| r.get(0),
+            )
+            .unwrap()
+        };
+        let (p1, p2) = (project_of(USER_1), project_of(USER_2));
+
+        // Cases: the owner sees its live ones (incl. the pulled ATS_004), nobody else does.
+        let cases = crate::test_case::list_cases(c, &p1, USER_1)?;
+        assert_eq!(
+            field_of(&cases, "scenarioId"),
+            vec!["ATS_001", "ATS_002", "ATS_004"]
+        );
+        assert!(crate::test_case::list_cases(c, &p1, USER_2)?.is_empty());
+        assert_eq!(crate::test_case::list_cases(c, &p2, USER_2)?.len(), 1);
+
+        // Requirements: REQ-001 live, REQ-002 deleted.
+        let reqs = crate::requirement::list_requirements(c, &p1, USER_1)?;
+        assert_eq!(field_of(&reqs, "requirementKey"), vec!["REQ-001"]);
+        assert!(crate::requirement::list_requirements(c, &p1, USER_2)?.is_empty());
+
+        // Plans: one per user, each visible only to its owner.
+        assert_eq!(
+            field_of(&crate::test_plan::list_plans(c, USER_1)?, "title"),
+            vec!["Plan checkout v2"]
+        );
+        assert_eq!(
+            field_of(&crate::test_plan::list_plans(c, USER_2)?, "title"),
+            vec!["Plan billing"]
+        );
+        assert!(crate::test_plan::get_plan_by_project(c, &p1, USER_2)?.is_none());
+
+        // Planner: the defect keeps DEF-001 and its attachment, for its owner only.
+        let cards = crate::planner::list_cards(c, &p1, USER_1)?;
+        assert_eq!(cards.len(), 2);
+        let defect = cards
+            .iter()
+            .map(|card| serde_json::to_value(card).unwrap())
+            .find(|v| v["kind"] == "defect")
+            .unwrap();
+        assert_eq!(defect["cardKey"], "DEF-001");
+        let defect_id = defect["id"].as_str().unwrap();
+        let files = crate::planner::list_attachments(c, defect_id, USER_1)?;
+        assert_eq!(field_of(&files, "name"), vec!["log.txt"]);
+        assert!(crate::planner::list_attachments(c, defect_id, USER_2)?.is_empty());
+        assert!(crate::planner::list_cards(c, &p1, USER_2)?.is_empty());
+        Ok(())
+    })
+    .unwrap();
+    drop(db);
     fs::remove_dir_all(&dir).unwrap();
 }
 

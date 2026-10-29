@@ -757,6 +757,7 @@
       "confirm": "Import {{count}}",
       "importing": "Importing…",
       "doneToast": "Imported: {{created}} new, {{updated}} updated",
+      "skippedToast": "Not imported (they belong to deleted requirements and are never reused): {{keys}}",
       "error": "The CSV could not be imported"
     },
     "view": {
