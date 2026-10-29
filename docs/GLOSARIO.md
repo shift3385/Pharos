@@ -50,6 +50,9 @@ files (`es`/`en`).
 | Requisitos vinculados       | `requirement_keys`                                       | Lista de `requirement_key` en `data` del caso de prueba (vínculo requisito ↔ caso)                                                |
 | Clave de tarjeta            | `card_key`                                               | `DEF-001`: ID visible de una tarjeta `defect`, numerado por proyecto y nunca reutilizado; en 0.2.0 pasa a `defect_key` (ADR-0016) |
 | Contador de claves          | `key_counters` / `KeyKind`                               | Siguiente número por proyecto y tipo (`case`/`requirement`/`defect`); solo avanza: la clave identifica, no cuenta                 |
+| Bloque de claves            | `key_blocks` / `KeyBlock` / `block_end`                  | Rango de 50 números que el servidor entrega a un equipo por proyecto y tipo (`POST /sync/key-blocks`); nunca se repite (DAT-01) |
+| Clave provisional           | `<prefijo>?XXXX` / `is_provisional`                      | `ATS_?KQZD`: clave creada sin conexión y sin bloque; nunca va como tag y recibe la definitiva en el siguiente sync (ADR-0010)   |
+| Conflicto de clave          | `key_conflicts` / `KeyConflict` / `keyConflicts`         | Fila que perdió su clave porque otro documento del proyecto la tiene; lleva una provisional hasta que la persona elige otra     |
 | Bloque de claves            | `block_end`                                              | Último número del bloque reservado en el servidor para un equipo (ADR-0010, fase 2 de A2)                                         |
 | Casos vinculados (defecto)  | `test_case_ids`                                          | Ids de los casos a los que se vincula un defecto (en `data` de la tarjeta)                                                        |
 | Matriz de trazabilidad      | `traceability_matrix`                                    | Requisito ↔ caso ↔ defecto; módulo `traceability`                                                                                 |
@@ -96,6 +99,10 @@ files (`es`/`en`).
 | BD de versión más nueva     | `db-newer-than-app` / `dbError`                          | Error al abrir una base con migraciones desconocidas; la UI muestra `dbError.*` y no la toca (SEC-06)                             |
 | Journal de cambios          | `oplog`                                                  | un delta por mutación local; `synced_at` NULL = pendiente (§9)                                                                    |
 | Delta                       | `delta` / `Delta`                                        | estado completo de una entidad (o tombstone) que se envía en el push                                                              |
+| Lápida                      | `tombstone` / `deleted`                                  | documento del servidor que marca una entidad borrada; se conserva siempre para que un registro purgado no resucite (SYNC-06)   |
+| Purga                       | `purge` / `purge_deleted` / `PurgeSummary`               | borrado definitivo en el escritorio de lo borrado hace más de `retentionDays` días; espera a que el servidor tenga el borrado (SYNC-06) |
+| Clave retirada              | `retired_keys`                                           | clave de un caso, requisito o defecto purgado; sigue contando como usada (ADR-0010, SYNC-06)                                    |
+| Compactar lápidas           | `compactTombstones` / `SYNC_TOMBSTONE_DAYS`              | el servidor vacía el `payload` de las lápidas con más de N días; la lápida queda (SYNC-06)                                      |
 | Reloj lógico híbrido (HLC)  | `hlc`                                                    | `<wall_ms:15>-<counter:5>-<device_id>`; orden de texto = orden del reloj (SYNC-01)                                                |
 | Dispositivo                 | `device_id` / `deviceId`                                 | id de la instalación (o del navegador); desempate final del HLC                                                                   |
 | Revisión base               | `base_revision` / `baseRevision`, `base_hlc` / `baseHlc` | versión sobre la que se hizo el cambio local; el servidor la compara para detectar conflictos                                     |
@@ -109,6 +116,7 @@ files (`es`/`en`).
 | Bandeja de salida (web)     | `outbox` / `pharos.sync.outbox:<userId>`                 | cambios web pendientes de enviar; se reintentan hasta que el servidor los acepta (FIX-04)                                         |
 | Conflicto web               | `WebConflict` / `pharos.sync.conflicts:<userId>`         | edición web que perdió LWW; se conserva junto a la del servidor hasta que se resuelve (FIX-04)                                    |
 | Versión del cliente         | `x-pharos-version` / `APP_VERSION`                       | versión de la app en cada petición de sync; 426 `unsupported_client_version` si no se admite (SYNC-08)                            |
+| Capacidades de sync         | `x-pharos-sync-features`                                 | lo que entiende el cliente; `key-conflicts`: lee `keyConflicts` del push. Sin ella, un choque de clave da 426 (DAT-01)             |
 | Cambio sin dueño            | `orphans`                                                | cambio pendiente cuyo dueño aún no se puede derivar (p. ej. su proyecto no ha llegado); se reclama al derivarse (ADR-0020)        |
 | Delta rechazado             | `skipped` / `refused`                                    | delta que el servidor rechaza por su contenido (413, 400); se aísla, queda pendiente y se avisa (`pharos:sync-skipped`)           |
 | Dueño de la caché web       | `pharos.sync.cacheOwner`                                 | cuenta cuyos datos guarda la caché del navegador; se vacía al cerrar sesión (`pharos:signed-out`) o al cambiar de cuenta          |
@@ -179,6 +187,13 @@ todavía. Cuando se implementen, cada fila puede pasar a la tabla de arriba. Dis
 | Filtro de logs             | `PHAROS_LOG`                             | directiva `EnvFilter` (p. ej. `debug`, `pharos_lib=debug`); por defecto `info`         |
 | Perfil E2E                 | `PHAROS_E2E_PROFILE`                     | solo debug: datos, logs y sesión del keychain aislados por ejecución del smoke         |
 | Cuenta del keychain        | `instance::account(base)`                | toda cuenta pasa por aquí: `base` o `<base>-e2e-<perfil>` (sesión, claves de IA)       |
+| Clave de la BD local       | `db-key` / `KeyStore` / `Keychain`       | 32 bytes en el keychain, compartida por todas las instancias; `KeyStore` en tests      |
+| Clave de recuperación      | `recovery key` / `recovery::encode`      | la `db-key` + comprobación, 56 caracteres base32 en 14 grupos de 4 (ADR-0024, SEC-03)  |
+| Recuperar la BD            | `db_recover` / `recoverDb`               | abre la BD con la clave de recuperación y la vuelve a guardar en el keychain           |
+| Clave reemplazada          | `db-key.prev`                            | la clave que sustituyó la última recuperación, guardada una vez en el keychain         |
+| Exportar clave             | `recovery_key_export` / `recoveryKeyApi` | muestra la clave una vez en Perfil, tras confirmar; nunca a logs ni sync               |
+| Errores de clave           | `db-key-missing` / `db-key-mismatch`     | la BD no abrió por la clave: falta en el keychain / no la descifra                     |
+| Errores de recuperación    | `recovery-key-invalid` / `-wrong`        | errata (falla la comprobación) / clave válida que no abre esta BD o archivo dañado     |
 | Error al abrir la BD       | `openError`                              | en `diagnostic.json` cuando la base local no abrió; redactado, sin migraciones         |
 | Log de panics              | `pharos.panic.log`                       | se escribe de forma síncrona en cada panic; viaja en el paquete de diagnóstico         |
 | Proyecto de prueba E2E     | `TEST_PROJECT_PREFIX` (`E2E `)           | los specs borran al final todo proyecto con este prefijo en la cuenta de test          |

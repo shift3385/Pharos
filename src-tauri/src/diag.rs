@@ -263,6 +263,20 @@ fn rules() -> &'static [Rule] {
     })
 }
 
+/// The shape of a recovery key (SEC-03, ADR-0024): 14 groups of 4 base32
+/// characters, as written (`-`) or as typed (spaces).
+fn recovery_key_run() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| {
+        Regex::new(r"(?i)\b[0-9A-Z]{4}(?:[ -][0-9A-Z]{4}){13}\b").expect("valid pattern")
+    })
+}
+
+/// True if `run` mixes ASCII letters and digits, as keys do and words don't.
+fn mixed(run: &str) -> bool {
+    run.chars().any(|ch| ch.is_ascii_digit()) && run.chars().any(|ch| ch.is_ascii_alphabetic())
+}
+
 /// Long opaque runs (keys, hashes, base64 blobs) that mix letters and digits.
 fn opaque_run() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
@@ -278,19 +292,27 @@ fn uuid() -> &'static Regex {
 }
 
 /// Masks emails, tokens, API keys, secrets in `key=value` form, long opaque
-/// strings and the Windows user name in profile paths. A safety net, not a
-/// licence: free text (a person's name in a provider error) is not detected.
+/// strings, recovery keys and the Windows user name in profile paths. A safety
+/// net, not a licence: free text (a person's name in a provider error) is not
+/// detected.
 pub fn redact(text: &str) -> String {
     let mut out = text.to_string();
     for rule in rules() {
         out = rule.re.replace_all(&out, rule.with).into_owned();
     }
+    out = recovery_key_run()
+        .replace_all(&out, |c: &Captures| {
+            if mixed(&c[0]) {
+                "<recovery-key>".to_string()
+            } else {
+                c[0].to_string()
+            }
+        })
+        .into_owned();
     opaque_run()
         .replace_all(&out, |c: &Captures| {
             let run = &c[0];
-            let mixed = run.chars().any(|ch| ch.is_ascii_digit())
-                && run.chars().any(|ch| ch.is_ascii_alphabetic());
-            if mixed && !uuid().is_match(run) {
+            if mixed(run) && !uuid().is_match(run) {
                 "<redacted>".to_string()
             } else {
                 run.to_string()

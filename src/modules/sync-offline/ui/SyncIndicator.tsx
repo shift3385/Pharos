@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { loadSettings } from "@modules/admin";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import {
@@ -9,6 +10,7 @@ import {
   type LocalSyncState,
 } from "../api/syncApi";
 import { SyncFailureLog, logSyncFailure } from "../api/syncFailure";
+import { purgeDeleted } from "../api/purgeApi";
 import { SyncHttpError } from "../api/transport";
 import { ConflictPanel } from "./ConflictPanel";
 import "./SyncIndicator.css";
@@ -98,11 +100,27 @@ export function SyncIndicator() {
   // Auto-sync once the session is ready (waits for the token refresh on startup,
   // so we never fire a request with a stale/expired access token), and again
   // when another account signs in: counts and sync are per account (FIX-07).
+  // The purge (SYNC-06) runs then too, also offline.
   useEffect(() => {
     void refresh();
-    if (authStatus === "authenticated") void autoSync();
+    if (authStatus === "authenticated") {
+      void purge();
+      void autoSync();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authStatus, user?.id]);
+
+  /** Removes for good what was deleted more than the Administration retention
+   *  ago (SYNC-06). Best-effort: a failure only means it runs again later; it
+   *  is logged once until it changes (BASE-08). */
+  async function purge() {
+    try {
+      await purgeDeleted(loadSettings().retentionDays);
+      failures.clear("purge");
+    } catch (e) {
+      failures.report(e, "purge");
+    }
+  }
 
   /** Silent background sync (startup / reconnect). The user is not told here;
    *  the manual button surfaces errors. A failure is logged once until it
@@ -112,6 +130,7 @@ export function SyncIndicator() {
     try {
       await syncAny();
       failures.clear("auto");
+      await purge();
     } catch (e) {
       // Offline or transient: the indicator stays as-is.
       failures.report(e, "auto");
@@ -136,6 +155,7 @@ export function SyncIndicator() {
     setSyncing(true);
     try {
       const { pushed, pulled, conflicts: found } = await syncAny();
+      await purge();
       toast(
         found > 0
           ? t("sync.conflictToast", { count: found })

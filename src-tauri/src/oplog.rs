@@ -97,7 +97,7 @@ pub fn synced_sql_list() -> String {
 }
 
 /// The account an entity belongs to (FIX-07): its owner, or its project's owner.
-/// None when it cannot be derived (templates, rows without a project).
+/// None when it cannot be derived (built-in templates, rows without a project).
 pub fn owner_of(
     conn: &Connection,
     entity: &str,
@@ -111,6 +111,7 @@ pub fn owner_of(
             "SELECT p.owner_id FROM requirements x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
         }
         "planner_card" => "SELECT owner_id FROM planner_cards WHERE id = ?1",
+        "template" => "SELECT owner_id FROM templates WHERE id = ?1",
         _ => return Ok(None),
     };
     let owner: Option<Option<String>> = conn
@@ -118,6 +119,21 @@ pub fn owner_of(
         .optional()
         .map_err(|e| e.to_string())?;
     Ok(owner.flatten().filter(|o| !o.is_empty()))
+}
+
+/// True when the server ever knew this entity: a sync base or a synced journal
+/// row exists for it, on any account of this device (SYNC-06, DAT-01).
+pub(crate) fn known_to_server(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM sync_base WHERE entity = ?1 AND entity_id = ?2
+         UNION ALL SELECT 1 FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NOT NULL
+         LIMIT 1",
+        params![entity, id],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+    .map(|r| r.is_some())
 }
 
 /// Appends a delta for an entity mutation. Called inside each repo's write, in
@@ -198,9 +214,10 @@ pub fn claim_unowned(conn: &Connection) -> Result<(), String> {
 
 /// Pending changes of one account: the distinct synced entities with unsynced
 /// rows, i.e. the deltas its next push would send (FIX-01, FIX-07) — plus its
-/// open conflicts.
+/// open conflicts (of version and of key).
 pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String> {
     claim_unowned(conn)?;
+    crate::key_sync::close_stale(conn)?;
     let pending: i64 = conn
         .query_row(
             &format!(
@@ -214,7 +231,8 @@ pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String>
         .map_err(|e| e.to_string())?;
     let conflicts: i64 = conn
         .query_row(
-            "SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL AND user_id = ?1",
+            "SELECT (SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL AND user_id = ?1)
+                  + (SELECT count(*) FROM key_conflicts WHERE resolved_at IS NULL AND user_id = ?1)",
             params![user_id],
             |r| r.get(0),
         )
@@ -242,4 +260,191 @@ pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String>
 #[tauri::command]
 pub fn oplog_pending_count(db: State<Db>, user_id: String) -> Result<SyncState, String> {
     db.with_conn(|conn| sync_state(conn, &user_id))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const A: &str = "user-a";
+    const B: &str = "user-b";
+
+    fn conn() -> Connection {
+        let c = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&c).unwrap();
+        c
+    }
+
+    fn add_project(c: &Connection, id: &str, owner: &str) {
+        let ws = crate::db::ensure_workspace(c).unwrap();
+        c.execute(
+            "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, \
+             created_at, updated_at) VALUES (?1, ?2, ?3, 'P', ?3, ?3, 'now', 'now')",
+            params![id, ws, owner],
+        )
+        .unwrap();
+    }
+
+    fn add_case(c: &Connection, id: &str, project: &str) {
+        let ws = crate::db::ensure_workspace(c).unwrap();
+        c.execute(
+            "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, author, \
+             created_by, updated_by, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?1, 't', 'a', 'a', 'a', 'now', 'now')",
+            params![id, ws, project],
+        )
+        .unwrap();
+    }
+
+    fn user_of(c: &Connection, entity_id: &str) -> String {
+        c.query_row(
+            "SELECT user_id FROM oplog WHERE entity_id = ?1 ORDER BY rowid DESC LIMIT 1",
+            [entity_id],
+            |r| r.get(0),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn hlc_is_monotonic_and_the_device_id_is_stable() {
+        let c = conn();
+        let device = device_id(&c).unwrap();
+        assert_eq!(device_id(&c).unwrap(), device);
+        let mut prev = next_hlc(&c).unwrap();
+        for _ in 0..50 {
+            let next = next_hlc(&c).unwrap();
+            assert!(
+                hlc::cmp_encoded(&next, &prev).is_gt(),
+                "{next} after {prev}"
+            );
+            assert!(next.ends_with(&device));
+            prev = next;
+        }
+    }
+
+    #[test]
+    fn observing_a_remote_clock_moves_the_local_one_past_it() {
+        let c = conn();
+        let ahead = Hlc::parse(&next_hlc(&c).unwrap()).unwrap();
+        // A device one hour ahead.
+        let remote = hlc::tick(Some(&ahead), now_ms() + 3_600_000, "other-device").encode();
+        observe_hlc(&c, &remote).unwrap();
+        assert!(hlc::cmp_encoded(&next_hlc(&c).unwrap(), &remote).is_gt());
+        // Legacy or garbage values are ignored.
+        let before = state_get(&c, "hlc_last").unwrap();
+        observe_hlc(&c, "").unwrap();
+        observe_hlc(&c, "not-an-hlc").unwrap();
+        assert_eq!(state_get(&c, "hlc_last").unwrap(), before);
+    }
+
+    #[test]
+    fn owner_of_follows_the_project_or_the_row() {
+        let c = conn();
+        add_project(&c, "p1", A);
+        add_case(&c, "c1", "p1");
+        add_case(&c, "orphan", "missing-project");
+        let ws = crate::db::ensure_workspace(&c).unwrap();
+        c.execute(
+            "INSERT INTO planner_cards (id, workspace_id, project_id, owner_id, kind, title, \
+             created_by, updated_by, created_at, updated_at) \
+             VALUES ('k1', ?1, 'p1', ?2, 'task', 't', 'x', 'x', 'now', 'now')",
+            params![ws, B],
+        )
+        .unwrap();
+        assert_eq!(owner_of(&c, "project", "p1").unwrap().as_deref(), Some(A));
+        assert_eq!(owner_of(&c, "test_case", "c1").unwrap().as_deref(), Some(A));
+        assert_eq!(
+            owner_of(&c, "planner_card", "k1").unwrap().as_deref(),
+            Some(B)
+        );
+        assert_eq!(owner_of(&c, "test_case", "orphan").unwrap(), None);
+        assert_eq!(owner_of(&c, "test_case", "missing").unwrap(), None);
+        assert_eq!(owner_of(&c, "attachment", "x").unwrap(), None);
+        add_project(&c, "p-empty", "");
+        assert_eq!(owner_of(&c, "project", "p-empty").unwrap(), None);
+    }
+
+    #[test]
+    fn record_stamps_the_owner_and_an_hlc() {
+        let c = conn();
+        add_project(&c, "p1", A);
+        record(&c, "project", "p1", "upsert", "{}", 1, "me").unwrap();
+        record(&c, "test_case", "not-yet-pulled", "upsert", "{}", 1, "me").unwrap();
+        assert_eq!(user_of(&c, "p1"), A);
+        assert_eq!(user_of(&c, "not-yet-pulled"), "");
+        let (hlc, synced): (String, Option<String>) = c
+            .query_row(
+                "SELECT hlc, synced_at FROM oplog WHERE entity_id = 'p1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert!(Hlc::parse(&hlc).is_some());
+        assert!(synced.is_none(), "a new row is pending");
+    }
+
+    #[test]
+    fn claim_unowned_gives_pending_rows_their_owner_once_known() {
+        let c = conn();
+        add_case(&c, "c1", "p1");
+        record(&c, "test_case", "c1", "upsert", "{}", 1, "me").unwrap();
+        record(&c, "test_case", "c1", "upsert", "{}", 2, "me").unwrap();
+        c.execute("UPDATE oplog SET synced_at = 'now' WHERE revision = 1", [])
+            .unwrap();
+        claim_unowned(&c).unwrap();
+        assert_eq!(user_of(&c, "c1"), "", "still no derivable owner");
+
+        add_project(&c, "p1", A);
+        claim_unowned(&c).unwrap();
+        let users: Vec<(i64, String)> = {
+            let mut stmt = c
+                .prepare("SELECT revision, user_id FROM oplog ORDER BY revision")
+                .unwrap();
+            stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        };
+        // Only the pending row is claimed; a synced row is history.
+        assert_eq!(users, [(1, String::new()), (2, A.to_string())]);
+    }
+
+    #[test]
+    fn sync_state_counts_one_accounts_synced_entities() {
+        let c = conn();
+        add_project(&c, "pa", A);
+        add_project(&c, "pb", B);
+        add_case(&c, "ca", "pa");
+        // Two changes of one entity count once.
+        record(&c, "test_case", "ca", "upsert", "{}", 1, "a").unwrap();
+        record(&c, "test_case", "ca", "upsert", "{}", 2, "a").unwrap();
+        record(&c, "project", "pa", "upsert", "{}", 1, "a").unwrap();
+        // Another account's change, a synced one, an unsynced entity kind and
+        // an orphan.
+        record(&c, "project", "pb", "upsert", "{}", 1, "b").unwrap();
+        record(&c, "project", "pa", "upsert", "{}", 2, "a").unwrap();
+        c.execute(
+            "UPDATE oplog SET synced_at = 'now' WHERE entity_id = 'pa' AND revision = 2",
+            [],
+        )
+        .unwrap();
+        c.execute(
+            "INSERT INTO oplog (id, entity, entity_id, op, created_at, user_id) \
+             VALUES ('t', 'template', 't1', 'upsert', 'now', ?1)",
+            [A],
+        )
+        .unwrap();
+        record(&c, "test_case", "orphan", "upsert", "{}", 1, "x").unwrap();
+        c.execute(
+            "INSERT INTO sync_conflicts (id, entity, entity_id, detected_at, user_id) \
+             VALUES ('k', 'test_case', 'ca', 'now', ?1)",
+            [A],
+        )
+        .unwrap();
+
+        let a = sync_state(&c, A).unwrap();
+        assert_eq!((a.pending, a.conflicts, a.orphans), (2, 1, 1));
+        let b = sync_state(&c, B).unwrap();
+        assert_eq!((b.pending, b.conflicts, b.orphans), (1, 0, 1));
+    }
 }

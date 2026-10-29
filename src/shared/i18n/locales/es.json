@@ -8,7 +8,19 @@
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
     "newerTitle": "Estos datos son de una versión más nueva de Pharos",
-    "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior."
+    "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior.",
+    "keyMissingTitle": "Falta la clave de la base de datos local",
+    "keyMismatchTitle": "La clave guardada no abre la base de datos local",
+    "keyBody": "Los datos siguen cifrados en este equipo, pero la clave no está en el almacén de credenciales del sistema (pasa en un PC nuevo o tras reinstalar Windows). Escribe la clave de recuperación que guardaste desde Perfil para abrirlos. Pharos no modifica ningún archivo hasta que la clave sea correcta.",
+    "recovery": {
+      "label": "Clave de recuperación",
+      "hint": "56 caracteres en grupos de 4. Da igual mayúsculas, espacios o guiones.",
+      "submit": "Abrir con la clave",
+      "opening": "Abriendo…",
+      "invalid": "La clave tiene un error de escritura: revisa cada grupo y vuelve a intentarlo.",
+      "wrong": "La clave es válida, pero no abre esta base de datos: es otra clave o el archivo está dañado. Comprueba que sea la de este equipo; si lo es, una copia pharos.db.enc.bak-… puede abrirse con ella (README, Clave de recuperación).",
+      "failed": "No se pudo abrir con la clave: {{detail}}"
+    }
   },
   "common": {
     "loading": "Cargando…",
@@ -26,6 +38,8 @@
       "case": "Casos de prueba"
     },
     "builtin": "Incluida",
+    "shared": "Compartida",
+    "sharedHint": "Importada antes de las cuentas: la ven todas las cuentas de este equipo y es de solo lectura. Para editarla, descárgala e impórtala de nuevo.",
     "download": "Descargar .xlsx",
     "import": "Importar plantilla",
     "importedToast": "Plantilla importada: «{{name}}»",
@@ -170,7 +184,13 @@
       "keepRemote": "Usar la del servidor",
       "resolved": "Conflicto resuelto",
       "failed": "No se pudo resolver el conflicto",
-      "entity": { "project": "Proyecto", "test_plan": "Plan de pruebas", "test_case": "Caso de prueba", "requirement": "Requisito", "planner_card": "Tarjeta del planificador" },
+      "entity": {
+        "project": "Proyecto",
+        "test_plan": "Plan de pruebas",
+        "test_case": "Caso de prueba",
+        "requirement": "Requisito",
+        "planner_card": "Tarjeta del planificador"
+      },
       "fields": {
         "title": "Título",
         "name": "Nombre",
@@ -189,6 +209,18 @@
         "description": "Descripción",
         "kind": "Tipo",
         "position": "Posición"
+      },
+      "key": {
+        "title": "Claves repetidas",
+        "intro": "Otro elemento del proyecto ya tiene esta clave en el servidor. Mientras eliges otra, este lleva una clave provisional y no se sincroniza. Si algún caso enlazaba la clave antigua, revísalo.",
+        "lost": "Quería {{key}}",
+        "current": "Ahora: {{key}}",
+        "placeholder": "Nueva clave",
+        "use": "Usar esta clave",
+        "next": "Asignar la siguiente",
+        "assigned": "Clave asignada: {{key}}",
+        "noBlock": "Sincroniza antes para obtener números nuevos, o escribe una clave.",
+        "failed": "No se pudo usar esa clave: {{reason}}"
       }
     }
   },
@@ -214,7 +246,7 @@
       "opacity": "Opacidad del fondo",
       "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido.",
       "retention": "Retención de elementos borrados (días)",
-      "retentionHint": "Los elementos en la papelera se eliminan definitivamente tras estos días.",
+      "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera al siguiente sync. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
       "download": "Carpeta de descargas",
       "downloadPlaceholder": "Ruta de la carpeta (opcional)",
       "downloadHint": "Preferencia; se aplicará a las exportaciones en una próxima versión.",
@@ -643,6 +675,7 @@
     },
     "exportFeatures": "Exportar .feature (todos)",
     "exportFeaturesToast": "{{count}} archivos .feature exportados en features.zip",
+    "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
     "aiPendingCase": "Caso generado por IA"
   },
   "dashboard": {
@@ -850,5 +883,26 @@
     "retry": "Reintentar",
     "reload": "Recargar",
     "details": "Detalles técnicos"
+  },
+  "recoveryKey": {
+    "title": "Clave de recuperación",
+    "intro": "La base de datos local está cifrada y su clave vive solo en el almacén de credenciales de este equipo. Si lo pierdes (PC nuevo, Windows reinstalado), solo la clave de recuperación junto con tu copia de pharos.db.enc devuelve tus datos.",
+    "lastShown": "Mostrada por última vez: {{date}}",
+    "desktopOnly": "Disponible solo en la app de escritorio.",
+    "show": "Mostrar clave de recuperación",
+    "failed": "No se pudo leer la clave de recuperación.",
+    "confirmTitle": "¿Mostrar la clave de recuperación?",
+    "confirmBody": "Quien tenga esta clave y una copia de tus datos puede leerlos. Muéstrala solo cuando nadie mire tu pantalla.",
+    "confirm": "Mostrar",
+    "shownTitle": "Guarda esta clave ahora",
+    "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o",
+    "guideManager": "guárdala en un gestor de contraseñas.",
+    "guideRisk": "No la envíes por correo ni chat y no la guardes junto a la copia de tus datos.",
+    "guideBackup": "Para restaurar en otro equipo necesitas esta clave y una copia de pharos.db.enc (y de la carpeta evidence/ cuando exista). Pharos no puede recuperarla por ti.",
+    "copy": "Copiar al portapapeles",
+    "copied": "Copiada",
+    "copiedHint": "Pégala en tu gestor de contraseñas y después copia otra cosa para vaciar el portapapeles.",
+    "savedCheck": "Ya la he guardado en un lugar seguro",
+    "close": "Cerrar"
   }
 }

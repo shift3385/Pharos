@@ -13,6 +13,9 @@ export interface TemplateSummary {
   usagePrompt: string;
   version: string;
   isBuiltin: boolean;
+  /** The signed-in account imported it, so it may edit or delete it. Built-in
+   *  and shared legacy templates (imported before accounts) are read-only. */
+  isOwn: boolean;
   updatedAt: string;
 }
 

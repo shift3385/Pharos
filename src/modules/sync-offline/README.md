@@ -52,9 +52,41 @@ resolution can be added without a schema change.
 - **Orphans.** A change written before its entity's owner is known (a case
   whose project was not pulled yet) is stamped `''`; it is claimed as soon as
   the owner can be derived, and meanwhile the indicator tooltip counts it.
-- **Duplicate keys until DAT-01.** Two devices can number `REQ-004` offline.
-  Both requirements are kept (migration `0013` makes the local index
-  non-unique); creating one locally still rejects a duplicate key.
+- **Purge (SYNC-06).** `api/purgeApi.ts` → `purge_deleted` (`src-tauri/src/purge.rs`)
+  removes for good, on this device, the signed-in account's rows deleted more
+  than `retentionDays` ago (Administration), with their history, attachments,
+  oplog rows, sync bases and resolved conflicts. `SyncIndicator` runs it after
+  sign-in (also offline) and after every sync. A row waits while it has an open
+  conflict, or a pending change the server must receive first (unless the
+  server never knew it); a child waits while its project's delete is pending or
+  in conflict. Keys of purged cases, requirements and defects go to
+  `retired_keys` and stay taken. The server keeps every tombstone, so a later
+  pull of it updates nothing: a purged record never comes back. After
+  `SYNC_TOMBSTONE_DAYS` (30) the server clears the tombstone's payload, without
+  a new `seq`. A record comes back only if another device still had it and the
+  user chose "keep mine" in the conflict panel.
+- **Keys across devices (DAT-01, ADR-0010).** Case, requirement and defect
+  keys are unique per project between devices:
+  - every desktop sync starts with `leaseKeyBlocks`: `key_lease_requests` lists
+    the project/kind pairs with fewer than 10 numbers left,
+    `POST /sync/key-blocks` leases blocks of 50, and `key_blocks_apply` stores
+    them and gives provisional keys (`ATS_?KQZD`, created offline without a
+    block) their definitive one before the push. A server without the
+    endpoint (404) only leaves keys provisional;
+  - the server refuses an upsert whose key another live document of the
+    project has (`keyConflicts` in the push answer). `key_conflicts_record`
+    gives the row a provisional key and a key conflict. Only clients that send
+    `x-pharos-sync-features: key-conflicts` (`transport.ts`) get that answer;
+    an older client gets 426 instead of a refusal it would take for accepted;
+  - on a pull, a different local row holding the pulled key loses it the same
+    way (`sync.rs::write_doc`);
+  - a row with an open key conflict is not pushed. The conflict panel lists it
+    (`ui/KeyConflictList.tsx`): type a new key or take the next number
+    (`key_conflict_resolve`). The indicator counts it with the conflicts. It
+    also closes when the server sends the row with a key, when the server
+    deletes the holder of a key a synced row lost (`holder_deleted`), or when
+    the row is deleted (its delete must still sync);
+  - the web keeps a refused key in its outbox, flagged like a refused delta.
 
 ## Web client (`web/webSync.ts`, ADR-0004)
 
@@ -86,7 +118,8 @@ The UI tells the user; every sync failure also goes to the local log through
 `logClientError`, so "Exportar diagnóstico" can explain it. Context line
 `sync: <action>`: `manual` ("Sync now"), `auto` (startup, reconnect, after a
 resolution), `state` (the 5 s count refresh), `conflicts-list`,
-`conflict-resolve`, `push-refused` and `web-push`.
+`key-conflicts-list`, `conflict-resolve`, `purge` (SYNC-06, after an automatic
+sync), `push-refused` and `web-push`.
 
 - **No server text.** A `SyncHttpError` is logged as `HTTP <status> <code>`
   only: its message is what the server wrote (a parse error can quote the
@@ -96,6 +129,6 @@ resolution), `state` (the 5 s count refresh), `conflicts-list`,
   and stack.
 - **Refused changes** are one line per push, with entity types and ids, never
   payloads.
-- **Background steps** (`auto`, `state`, `web-push`) log a repeated failure
+- **Background steps** (`auto`, `state`, `purge`, `web-push`) log a repeated failure
   once (`SyncFailureLog`) until it changes or the step succeeds, so an API
   that is down does not use up the log budget (20 messages every 10 s).

@@ -1,8 +1,15 @@
 //! Template repository + Tauri commands (spec §6). An internal store of .xlsx
 //! templates (plan / case) with metadata (name, description, usage prompt,
 //! version) and the raw file bytes as a blob, kept in the encrypted database so
-//! the repository works offline. Built-in templates are seeded idempotently and
-//! cannot be deleted.
+//! the repository works offline (FIX-08b):
+//! - a user template belongs to the account that imported it; no other account
+//!   lists, reads, edits or deletes it;
+//! - built-in templates are seeded idempotently, every account sees them and
+//!   they are read-only;
+//! - a template imported before accounts existed, which migration 0018 could
+//!   not attribute (several accounts on the device), is shared: every account
+//!   sees it, none edits or deletes it. To change it, download it and import
+//!   it again.
 
 use base64::Engine as _;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -16,6 +23,21 @@ use crate::oplog;
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
 
+const NOT_FOUND: &str = "template not found";
+const READ_ONLY: &str = "built-in and shared templates are read-only";
+
+/// The templates an account sees: built-in, shared legacy (no owner) and its
+/// own. `?1` is the account.
+const VISIBLE: &str =
+    "deleted_at IS NULL AND (is_builtin = 1 OR owner_id IS NULL OR owner_id = ?1)";
+
+fn require_user(user_id: &str) -> Result<(), String> {
+    if user_id.is_empty() {
+        return Err("not-authenticated".into());
+    }
+    Ok(())
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateSummary {
@@ -27,6 +49,8 @@ pub struct TemplateSummary {
     usage_prompt: String,
     version: String,
     is_builtin: bool,
+    /// The account imported it, so it may edit or delete it.
+    is_own: bool,
     updated_at: String,
 }
 
@@ -41,6 +65,7 @@ pub struct TemplateData {
     usage_prompt: String,
     version: String,
     is_builtin: bool,
+    is_own: bool,
     data_base64: String,
 }
 
@@ -97,31 +122,43 @@ fn map_summary(row: &rusqlite::Row) -> rusqlite::Result<TemplateSummary> {
         usage_prompt: row.get("usage_prompt")?,
         version: row.get("version")?,
         is_builtin: row.get::<_, i64>("is_builtin")? != 0,
+        is_own: row.get::<_, i64>("is_own")? != 0,
         updated_at: row.get("updated_at")?,
     })
 }
 
-fn list_templates(conn: &Connection) -> Result<Vec<TemplateSummary>, String> {
+/// Live templates the account can see: built-in, shared and its own.
+fn list_templates(conn: &Connection, user_id: &str) -> Result<Vec<TemplateSummary>, String> {
+    require_user(user_id)?;
     let mut stmt = conn
-        .prepare(
-            "SELECT id, kind, language, name, description, usage_prompt, version, is_builtin, updated_at
-             FROM templates WHERE deleted_at IS NULL
-             ORDER BY is_builtin DESC, kind, language, name",
-        )
+        .prepare(&format!(
+            "SELECT id, kind, language, name, description, usage_prompt, version, is_builtin,
+                    coalesce(owner_id = ?1, 0) AS is_own, updated_at
+             FROM templates WHERE {VISIBLE}
+             ORDER BY is_builtin DESC, kind, language, name"
+        ))
         .map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map([], map_summary)
+        .query_map(params![user_id], map_summary)
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
     Ok(rows)
 }
 
-fn get_template(conn: &Connection, id: &str) -> Result<Option<TemplateData>, String> {
+fn get_template(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<TemplateData>, String> {
+    require_user(user_id)?;
     conn.query_row(
-        "SELECT id, kind, language, name, description, usage_prompt, version, is_builtin, file
-         FROM templates WHERE id = ?1 AND deleted_at IS NULL",
-        params![id],
+        &format!(
+            "SELECT id, kind, language, name, description, usage_prompt, version, is_builtin,
+                    coalesce(owner_id = ?1, 0) AS is_own, file
+             FROM templates WHERE id = ?2 AND {VISIBLE}"
+        ),
+        params![user_id, id],
         |row| {
             let bytes: Vec<u8> = row.get("file")?;
             Ok(TemplateData {
@@ -133,6 +170,7 @@ fn get_template(conn: &Connection, id: &str) -> Result<Option<TemplateData>, Str
                 usage_prompt: row.get("usage_prompt")?,
                 version: row.get("version")?,
                 is_builtin: row.get::<_, i64>("is_builtin")? != 0,
+                is_own: row.get::<_, i64>("is_own")? != 0,
                 data_base64: B64.encode(bytes),
             })
         },
@@ -141,8 +179,35 @@ fn get_template(conn: &Connection, id: &str) -> Result<Option<TemplateData>, Str
     .map_err(|e| e.to_string())
 }
 
-/// Inserts a user template and records it in the oplog; returns its new id.
-fn insert_template(conn: &Connection, input: &TemplateInput) -> Result<String, String> {
+/// The revision of a live template the account owns. An unknown, deleted or
+/// foreign id is not found; a built-in or shared one is read-only.
+fn owned_revision(conn: &Connection, id: &str, user_id: &str) -> Result<i64, String> {
+    let row: Option<(i64, bool)> = conn
+        .query_row(
+            &format!(
+                "SELECT revision, coalesce(owner_id = ?1, 0) AS is_own FROM templates
+                  WHERE id = ?2 AND {VISIBLE}"
+            ),
+            params![user_id, id],
+            |r| Ok((r.get(0)?, r.get::<_, i64>(1)? != 0)),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    match row {
+        None => Err(NOT_FOUND.to_string()),
+        Some((_, false)) => Err(READ_ONLY.to_string()),
+        Some((revision, true)) => Ok(revision),
+    }
+}
+
+/// Inserts a user template owned by the account and records it in the oplog;
+/// returns its new id.
+fn insert_template(
+    conn: &Connection,
+    input: &TemplateInput,
+    user_id: &str,
+) -> Result<String, String> {
+    require_user(user_id)?;
     let id = Uuid::new_v4().to_string();
     let bytes = B64
         .decode(input.data_base64.as_bytes())
@@ -151,8 +216,8 @@ fn insert_template(conn: &Connection, input: &TemplateInput) -> Result<String, S
     conn.execute(
         "INSERT INTO templates
            (id, workspace_id, kind, language, name, description, usage_prompt, version,
-            file, is_builtin, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, datetime('now'), datetime('now'))",
+            file, is_builtin, owner_id, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, ?10, datetime('now'), datetime('now'))",
         params![
             id,
             workspace_id,
@@ -163,19 +228,28 @@ fn insert_template(conn: &Connection, input: &TemplateInput) -> Result<String, S
             input.usage_prompt,
             input.version.clone().unwrap_or_else(|| "1.0".to_string()),
             bytes,
+            user_id,
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "template", &id, "upsert", "{}", 1, "")?;
+    oplog::record(conn, "template", &id, "upsert", "{}", 1, user_id)?;
     Ok(id)
 }
 
-/// Updates a template's metadata (the file itself is immutable).
-fn update_template(conn: &Connection, id: &str, meta: &TemplateMeta) -> Result<(), String> {
+/// Updates the metadata of a template the account owns (the file itself is
+/// immutable). Anything else is an error and leaves no oplog row.
+fn update_template(
+    conn: &Connection,
+    id: &str,
+    meta: &TemplateMeta,
+    user_id: &str,
+) -> Result<(), String> {
+    require_user(user_id)?;
+    let revision = owned_revision(conn, id, user_id)?;
     conn.execute(
         "UPDATE templates
             SET name = ?2, description = ?3, usage_prompt = ?4, version = ?5,
-                updated_at = datetime('now'), revision = revision + 1
+                updated_at = datetime('now'), revision = ?6
           WHERE id = ?1 AND deleted_at IS NULL",
         params![
             id,
@@ -183,34 +257,25 @@ fn update_template(conn: &Connection, id: &str, meta: &TemplateMeta) -> Result<(
             meta.description,
             meta.usage_prompt,
             meta.version.clone().unwrap_or_else(|| "1.0".to_string()),
+            revision + 1,
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "template", id, "upsert", "{}", 0, "")?;
+    oplog::record(conn, "template", id, "upsert", "{}", revision + 1, user_id)?;
     Ok(())
 }
 
-/// Soft-deletes a user template; built-in templates cannot be deleted.
-fn delete_template(conn: &Connection, id: &str) -> Result<(), String> {
-    let builtin: Option<i64> = conn
-        .query_row(
-            "SELECT is_builtin FROM templates WHERE id = ?1 AND deleted_at IS NULL",
-            params![id],
-            |r| r.get(0),
-        )
-        .optional()
-        .map_err(|e| e.to_string())?;
-    match builtin {
-        None => return Err("template not found".to_string()),
-        Some(1) => return Err("built-in templates cannot be deleted".to_string()),
-        _ => {}
-    }
+/// Soft-deletes a template the account owns. Anything else is an error and
+/// leaves no oplog row.
+fn delete_template(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
+    require_user(user_id)?;
+    let revision = owned_revision(conn, id, user_id)?;
     conn.execute(
-        "UPDATE templates SET deleted_at = datetime('now') WHERE id = ?1",
-        params![id],
+        "UPDATE templates SET deleted_at = datetime('now'), revision = ?2 WHERE id = ?1",
+        params![id, revision + 1],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "template", id, "delete", "{}", 0, "")?;
+    oplog::record(conn, "template", id, "delete", "{}", revision + 1, user_id)?;
     Ok(())
 }
 
@@ -257,24 +322,31 @@ fn seed_templates(conn: &Connection, items: &[TemplateSeedItem]) -> Result<bool,
     Ok(wrote)
 }
 
+// `user_id` is the signed-in account (FIX-08b): commands only change that
+// account's own templates, and return those plus the built-in and shared ones.
 #[tauri::command]
-pub fn template_list(db: State<Db>) -> Result<Vec<TemplateSummary>, String> {
-    db.with_conn(list_templates)
+pub fn template_list(db: State<Db>, user_id: String) -> Result<Vec<TemplateSummary>, String> {
+    db.with_conn(|conn| list_templates(conn, &user_id))
 }
 
 #[tauri::command]
-pub fn template_get(db: State<Db>, id: String) -> Result<Option<TemplateData>, String> {
-    db.with_conn(|conn| get_template(conn, &id))
+pub fn template_get(
+    db: State<Db>,
+    id: String,
+    user_id: String,
+) -> Result<Option<TemplateData>, String> {
+    db.with_conn(|conn| get_template(conn, &id, &user_id))
 }
 
 #[tauri::command]
 pub fn template_create(
     db: State<Db>,
     input: TemplateInput,
+    user_id: String,
 ) -> Result<Option<TemplateData>, String> {
-    let id = db.with_conn(|conn| insert_template(conn, &input))?;
+    let id = db.with_conn(|conn| insert_template(conn, &input, &user_id))?;
     db.persist()?;
-    db.with_conn(|conn| get_template(conn, &id))
+    db.with_conn(|conn| get_template(conn, &id, &user_id))
 }
 
 #[tauri::command]
@@ -282,15 +354,16 @@ pub fn template_update(
     db: State<Db>,
     id: String,
     meta: TemplateMeta,
+    user_id: String,
 ) -> Result<Option<TemplateData>, String> {
-    db.with_conn(|conn| update_template(conn, &id, &meta))?;
+    db.with_conn(|conn| update_template(conn, &id, &meta, &user_id))?;
     db.persist()?;
-    db.with_conn(|conn| get_template(conn, &id))
+    db.with_conn(|conn| get_template(conn, &id, &user_id))
 }
 
 #[tauri::command]
-pub fn template_delete(db: State<Db>, id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_template(conn, &id))?;
+pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
+    db.with_conn(|conn| delete_template(conn, &id, &user_id))?;
     db.persist()
 }
 
@@ -315,6 +388,9 @@ mod tests {
     }
 
     const XLSX: &[u8] = b"PK\x03\x04 fake xlsx bytes";
+    /// Two accounts signed in on the same device.
+    const U: &str = "user-a";
+    const V: &str = "user-b";
 
     fn input(name: &str, version: Option<&str>) -> TemplateInput {
         TemplateInput {
@@ -363,8 +439,8 @@ mod tests {
     #[test]
     fn create_round_trips_metadata_and_file_bytes() {
         let c = conn();
-        let id = insert_template(&c, &input("Casos", Some("3.1"))).unwrap();
-        let t = get_template(&c, &id).unwrap().unwrap();
+        let id = insert_template(&c, &input("Casos", Some("3.1")), U).unwrap();
+        let t = get_template(&c, &id, U).unwrap().unwrap();
         assert_eq!((t.kind.as_str(), t.language.as_str()), ("case", "es"));
         assert_eq!(t.name, "Casos");
         assert_eq!(t.usage_prompt, "use it for cases");
@@ -377,8 +453,8 @@ mod tests {
     #[test]
     fn create_defaults_version_to_1_0() {
         let c = conn();
-        let id = insert_template(&c, &input("Casos", None)).unwrap();
-        assert_eq!(get_template(&c, &id).unwrap().unwrap().version, "1.0");
+        let id = insert_template(&c, &input("Casos", None), U).unwrap();
+        assert_eq!(get_template(&c, &id, U).unwrap().unwrap().version, "1.0");
     }
 
     #[test]
@@ -386,24 +462,24 @@ mod tests {
         let c = conn();
         let mut bad = input("Roto", None);
         bad.data_base64 = "not base64 !!".into();
-        assert!(insert_template(&c, &bad).is_err());
-        assert!(list_templates(&c).unwrap().is_empty());
+        assert!(insert_template(&c, &bad, U).is_err());
+        assert!(list_templates(&c, U).unwrap().is_empty());
     }
 
     #[test]
     fn get_unknown_id_is_none() {
-        assert!(get_template(&conn(), "missing").unwrap().is_none());
+        assert!(get_template(&conn(), "missing", U).unwrap().is_none());
     }
 
     #[test]
     fn list_puts_builtins_first_and_hides_deleted() {
         let c = conn();
-        let user_b = insert_template(&c, &input("B user", None)).unwrap();
-        let user_a = insert_template(&c, &input("A user", None)).unwrap();
+        let user_b = insert_template(&c, &input("B user", None), U).unwrap();
+        let user_a = insert_template(&c, &input("A user", None), U).unwrap();
         seed_templates(&c, &[seed_item("builtin-plan", "plan", "Plan")]).unwrap();
-        delete_template(&c, &user_b).unwrap();
+        delete_template(&c, &user_b, U).unwrap();
 
-        let ids: Vec<String> = list_templates(&c)
+        let ids: Vec<String> = list_templates(&c, U)
             .unwrap()
             .into_iter()
             .map(|t| t.id)
@@ -414,16 +490,16 @@ mod tests {
     #[test]
     fn update_changes_metadata_and_bumps_revision() {
         let c = conn();
-        let id = insert_template(&c, &input("Casos", Some("1.0"))).unwrap();
+        let id = insert_template(&c, &input("Casos", Some("1.0")), U).unwrap();
         let meta = TemplateMeta {
             name: "Casos v2".into(),
             description: "nueva".into(),
             usage_prompt: "otra".into(),
             version: None,
         };
-        update_template(&c, &id, &meta).unwrap();
+        update_template(&c, &id, &meta, U).unwrap();
 
-        let t = get_template(&c, &id).unwrap().unwrap();
+        let t = get_template(&c, &id, U).unwrap().unwrap();
         assert_eq!(
             (t.name.as_str(), t.description.as_str()),
             ("Casos v2", "nueva")
@@ -442,26 +518,30 @@ mod tests {
     #[test]
     fn update_does_not_revive_a_deleted_template() {
         let c = conn();
-        let id = insert_template(&c, &input("Casos", None)).unwrap();
-        delete_template(&c, &id).unwrap();
+        let id = insert_template(&c, &input("Casos", None), U).unwrap();
+        delete_template(&c, &id, U).unwrap();
         let meta = TemplateMeta {
             name: "Otra".into(),
             description: String::new(),
             usage_prompt: String::new(),
             version: None,
         };
-        update_template(&c, &id, &meta).unwrap();
-        assert!(get_template(&c, &id).unwrap().is_none());
-        assert_eq!(revision(&c, &id), 1);
+        assert_eq!(
+            update_template(&c, &id, &meta, U).unwrap_err(),
+            "template not found"
+        );
+        assert!(get_template(&c, &id, U).unwrap().is_none());
+        assert_eq!(revision(&c, &id), 2, "only the delete bumped it");
+        assert_eq!(oplog_ops(&c, &id), ["upsert", "delete"]);
     }
 
     #[test]
     fn delete_is_soft_and_recorded() {
         let c = conn();
-        let id = insert_template(&c, &input("Casos", None)).unwrap();
-        delete_template(&c, &id).unwrap();
+        let id = insert_template(&c, &input("Casos", None), U).unwrap();
+        delete_template(&c, &id, U).unwrap();
 
-        assert!(get_template(&c, &id).unwrap().is_none());
+        assert!(get_template(&c, &id, U).unwrap().is_none());
         let deleted_at: Option<String> = c
             .query_row(
                 "SELECT deleted_at FROM templates WHERE id = ?1",
@@ -478,18 +558,21 @@ mod tests {
         let c = conn();
         seed_templates(&c, &[seed_item("builtin-case", "case", "Casos")]).unwrap();
         assert_eq!(
-            delete_template(&c, "builtin-case").unwrap_err(),
-            "built-in templates cannot be deleted"
+            delete_template(&c, "builtin-case", U).unwrap_err(),
+            READ_ONLY
         );
-        assert!(get_template(&c, "builtin-case").unwrap().is_some());
+        assert!(get_template(&c, "builtin-case", U).unwrap().is_some());
         assert_eq!(
-            delete_template(&c, "missing").unwrap_err(),
+            delete_template(&c, "missing", U).unwrap_err(),
             "template not found"
         );
 
-        let id = insert_template(&c, &input("Casos", None)).unwrap();
-        delete_template(&c, &id).unwrap();
-        assert_eq!(delete_template(&c, &id).unwrap_err(), "template not found");
+        let id = insert_template(&c, &input("Casos", None), U).unwrap();
+        delete_template(&c, &id, U).unwrap();
+        assert_eq!(
+            delete_template(&c, &id, U).unwrap_err(),
+            "template not found"
+        );
     }
 
     #[test]
@@ -505,7 +588,7 @@ mod tests {
             "second seed writes nothing"
         );
 
-        let all = list_templates(&c).unwrap();
+        let all = list_templates(&c, U).unwrap();
         assert_eq!(all.len(), 2);
         assert!(all.iter().all(|t| t.is_builtin && t.version == "2.0"));
         // Built-ins ship with the app: seeding does not journal them for sync.
@@ -513,33 +596,194 @@ mod tests {
     }
 
     #[test]
-    fn seed_keeps_user_edits_to_builtin_metadata() {
+    fn builtin_templates_are_read_only_for_every_account() {
+        // Every account sees them: one account must not change them for another.
         let c = conn();
         let items = [seed_item("builtin-plan", "plan", "Plan")];
         seed_templates(&c, &items).unwrap();
-        let meta = TemplateMeta {
-            name: "Mi plan".into(),
-            description: String::new(),
-            usage_prompt: String::new(),
-            version: Some("2.0".into()),
-        };
-        update_template(&c, "builtin-plan", &meta).unwrap();
-        seed_templates(&c, &items).unwrap();
         assert_eq!(
-            get_template(&c, "builtin-plan").unwrap().unwrap().name,
-            "Mi plan"
+            update_template(&c, "builtin-plan", &meta("Mi plan"), U).unwrap_err(),
+            READ_ONLY
         );
+        assert_eq!(oplog_count(&c), 0);
+        let t = get_template(&c, "builtin-plan", V).unwrap().unwrap();
+        assert_eq!(t.name, "Plan");
+        assert!(t.is_builtin && !t.is_own);
     }
 
     #[test]
     fn seed_skips_soft_deleted_ids() {
         // A deleted row still holds its id, so seeding never resurrects it.
         let c = conn();
-        let id = insert_template(&c, &input("Casos", None)).unwrap();
-        delete_template(&c, &id).unwrap();
+        let id = insert_template(&c, &input("Casos", None), U).unwrap();
+        delete_template(&c, &id, U).unwrap();
         let mut item = seed_item(&id, "case", "Casos");
         item.name = "Builtin".into();
         assert!(!seed_templates(&c, &[item]).unwrap());
-        assert!(get_template(&c, &id).unwrap().is_none());
+        assert!(get_template(&c, &id, U).unwrap().is_none());
+    }
+
+    fn meta(name: &str) -> TemplateMeta {
+        TemplateMeta {
+            name: name.into(),
+            description: String::new(),
+            usage_prompt: String::new(),
+            version: None,
+        }
+    }
+
+    fn oplog_count(c: &Connection) -> i64 {
+        c.query_row(
+            "SELECT count(*) FROM oplog WHERE entity = 'template'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn another_account_cannot_list_read_edit_or_delete_a_template() {
+        let c = conn();
+        seed_templates(&c, &[seed_item("builtin-plan", "plan", "Plan")]).unwrap();
+        let mine = insert_template(&c, &input("De A", None), U).unwrap();
+
+        // B sees only the built-in one.
+        let ids: Vec<String> = list_templates(&c, V)
+            .unwrap()
+            .into_iter()
+            .map(|t| t.id)
+            .collect();
+        assert_eq!(ids, ["builtin-plan"]);
+        assert!(get_template(&c, &mine, V).unwrap().is_none());
+
+        let before = oplog_count(&c);
+        assert_eq!(
+            update_template(&c, &mine, &meta("Robada"), V).unwrap_err(),
+            "template not found"
+        );
+        assert_eq!(
+            delete_template(&c, &mine, V).unwrap_err(),
+            "template not found"
+        );
+        assert_eq!(oplog_count(&c), before, "no oplog row for a refused change");
+
+        // A still has it untouched.
+        let t = get_template(&c, &mine, U).unwrap().unwrap();
+        assert_eq!(t.name, "De A");
+        assert_eq!(revision(&c, &mine), 1);
+    }
+
+    #[test]
+    fn unknown_ids_write_no_oplog_row() {
+        let c = conn();
+        assert_eq!(
+            update_template(&c, "missing", &meta("x"), U).unwrap_err(),
+            "template not found"
+        );
+        assert_eq!(
+            delete_template(&c, "missing", U).unwrap_err(),
+            "template not found"
+        );
+        assert_eq!(oplog_count(&c), 0);
+    }
+
+    #[test]
+    fn oplog_rows_belong_to_the_owner_and_carry_the_revision() {
+        let c = conn();
+        let id = insert_template(&c, &input("Casos", None), U).unwrap();
+        update_template(&c, &id, &meta("v2"), U).unwrap();
+        delete_template(&c, &id, U).unwrap();
+        let rows: Vec<(String, i64, String)> = {
+            let mut stmt = c
+                .prepare(
+                    "SELECT op, revision, user_id FROM oplog WHERE entity_id = ?1 ORDER BY rowid",
+                )
+                .unwrap();
+            stmt.query_map([&id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        };
+        assert_eq!(
+            rows,
+            [
+                ("upsert".to_string(), 1, U.to_string()),
+                ("upsert".to_string(), 2, U.to_string()),
+                ("delete".to_string(), 3, U.to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn commands_require_an_account() {
+        let c = conn();
+        assert_eq!(
+            list_templates(&c, "").err().as_deref(),
+            Some("not-authenticated")
+        );
+        assert!(insert_template(&c, &input("x", None), "").is_err());
+        assert!(list_templates(&c, U).unwrap().is_empty());
+    }
+
+    #[test]
+    fn legacy_templates_without_owner_are_shared_and_read_only() {
+        // Migration 0018 could not attribute it (several accounts on the device).
+        let c = conn();
+        let id = insert_template(&c, &input("Antigua", None), U).unwrap();
+        c.execute("UPDATE templates SET owner_id = NULL", [])
+            .unwrap();
+        for account in [U, V] {
+            let t = get_template(&c, &id, account).unwrap().unwrap();
+            assert!(!t.is_own && !t.is_builtin);
+            assert!(list_templates(&c, account)
+                .unwrap()
+                .iter()
+                .any(|s| s.id == id));
+        }
+        let before = oplog_count(&c);
+        assert_eq!(
+            update_template(&c, &id, &meta("x"), V).unwrap_err(),
+            READ_ONLY
+        );
+        assert_eq!(delete_template(&c, &id, U).unwrap_err(), READ_ONLY);
+        assert_eq!(oplog_count(&c), before);
+    }
+
+    #[test]
+    fn migration_gives_legacy_templates_to_the_only_project_owner() {
+        // Migration 0018 on a database with user templates and one account.
+        let c = Connection::open_in_memory().unwrap();
+        let upto_0016: Vec<_> = crate::db::MIGRATIONS
+            .iter()
+            .filter(|(n, _)| *n < "0018")
+            .collect();
+        for (_, sql) in &upto_0016 {
+            c.execute_batch(sql).unwrap();
+        }
+        let ws = crate::db::ensure_workspace(&c).unwrap();
+        c.execute(
+            "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, \
+             created_at, updated_at) VALUES ('p1', ?1, 'only', 'P', 'only', 'only', 'now', 'now')",
+            [&ws],
+        )
+        .unwrap();
+        for (id, builtin) in [("mine", 0), ("builtin", 1)] {
+            c.execute(
+                "INSERT INTO templates (id, workspace_id, kind, language, name, file, is_builtin, \
+                 created_at, updated_at) VALUES (?1, ?2, 'case', 'es', 'T', x'00', ?3, 'now', 'now')",
+                params![id, ws, builtin],
+            )
+            .unwrap();
+        }
+        c.execute_batch(include_str!("../migrations/0018_template_owner.sql"))
+            .unwrap();
+        let owner = |id: &str| -> Option<String> {
+            c.query_row("SELECT owner_id FROM templates WHERE id = ?1", [id], |r| {
+                r.get(0)
+            })
+            .unwrap()
+        };
+        assert_eq!(owner("mine").as_deref(), Some("only"));
+        assert_eq!(owner("builtin"), None);
     }
 }

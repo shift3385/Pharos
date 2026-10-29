@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@shared/ui/Toast";
-import { listConflicts, resolveConflict } from "../api/syncApi";
+import {
+  listConflicts,
+  listKeyConflicts,
+  resolveConflict,
+  type KeyConflict,
+} from "../api/syncApi";
 import { logSyncFailure } from "../api/syncFailure";
 import {
   conflictTitle,
@@ -9,6 +14,7 @@ import {
   type ConflictResolution,
   type SyncConflict,
 } from "../domain/conflict";
+import { KeyConflictList } from "./KeyConflictList";
 import "./ConflictPanel.css";
 
 function show(v: unknown): string {
@@ -29,6 +35,7 @@ export function ConflictPanel({
   const { t } = useTranslation();
   const toast = useToast();
   const [conflicts, setConflicts] = useState<SyncConflict[] | null>(null);
+  const [keyConflicts, setKeyConflicts] = useState<KeyConflict[]>([]);
   const [onlyChanged, setOnlyChanged] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -36,6 +43,12 @@ export function ConflictPanel({
     setConflicts(
       await listConflicts().catch((e: unknown) => {
         logSyncFailure(e, "conflicts-list");
+        return [];
+      }),
+    );
+    setKeyConflicts(
+      await listKeyConflicts().catch((e: unknown) => {
+        logSyncFailure(e, "key-conflicts-list");
         return [];
       }),
     );
@@ -93,7 +106,15 @@ export function ConflictPanel({
           {t("sync.conflict.onlyChanged")}
         </label>
 
-        {conflicts !== null && conflicts.length === 0 && (
+        <KeyConflictList
+          items={keyConflicts}
+          onResolved={() => {
+            void load();
+            onResolved();
+          }}
+        />
+
+        {conflicts !== null && conflicts.length === 0 && keyConflicts.length === 0 && (
           <p className="cp__empty">{t("sync.conflict.empty")}</p>
         )}
 
