@@ -47,6 +47,9 @@ Un cambio está hecho cuando se cumplen todas estas condiciones, con evidencia:
   arreglos y los commits de release. El PR se fusiona con merge commit (el
   equivalente de `merge --no-ff`), con todos los checks en verde y sin push
   directo, tampoco de administradores.
+- **Commits:** los de trabajo siguen Conventional Commits; los de
+  integración empiezan por `Merge` ("Merge track A1: …", "Merge branch …") y
+  quedan exentos, en el hook y en la CI (`commitlint.config.mjs`).
 - Los hooks de git (husky) se instalan con `npm install`: el script `prepare`
   apunta `core.hooksPath` a `.husky/_`, también en un clon nuevo. Ese ajuste
   vive en el `.git/config` compartido por todos los worktrees; un worktree
