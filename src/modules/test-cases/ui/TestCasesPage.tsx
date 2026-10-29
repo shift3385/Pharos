@@ -112,7 +112,14 @@ export function TestCasesPage({
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    toast(t("testCase.exportFeaturesToast", { count: files.length }));
+    // A provisional key (DAT-01) is never written as a tag: say so.
+    const provisional = files.filter((f) => f.provisional).length;
+    const done = t("testCase.exportFeaturesToast", { count: files.length });
+    toast(
+      provisional > 0
+        ? `${done}. ${t("testCase.exportProvisionalToast", { count: provisional })}`
+        : done,
+    );
   }
 
   function applyImport() {

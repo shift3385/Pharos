@@ -87,6 +87,10 @@ const schema = z
       .int()
       .positive()
       .default(8_388_608),
+    // Days a sync tombstone keeps the content of what was deleted (SYNC-06).
+    // After that its payload is cleared; the tombstone itself stays, so a
+    // purged record never comes back on a pull. 0 = never clear.
+    SYNC_TOMBSTONE_DAYS: z.coerce.number().int().min(0).default(30),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== "production") return;

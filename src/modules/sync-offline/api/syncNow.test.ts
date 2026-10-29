@@ -188,3 +188,77 @@ describe("syncNow with a refused delta (review fix)", () => {
     expect(calls.some((c) => c.cmd === "oplog_mark_synced" || c.cmd === "sync_cursor_set")).toBe(false);
   });
 });
+
+describe("syncNow key blocks (DAT-01)", () => {
+  const lease = [{ projectId: "p1", kind: "case", floor: 3 }];
+  const block = { projectId: "p1", kind: "case", start: 3, end: 52 };
+
+  function coreWithLease(pending: PendingDelta[]) {
+    const calls: { cmd: string; args: Record<string, unknown> }[] = [];
+    invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "key_lease_requests") return lease;
+      if (cmd === "oplog_pending") return { deltas: pending };
+      if (cmd === "sync_cursor_get") return "0";
+      return undefined;
+    });
+    return calls;
+  }
+
+  it("leases blocks and finalizes keys before reading what to push", async () => {
+    const calls = coreWithLease([delta(1)]);
+    const urls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        urls.push(url.replace(/^.*\/sync/, "/sync").replace(/\?.*$/, ""));
+        if (url.includes("/sync/key-blocks")) {
+          expect(JSON.parse(init.body as string)).toEqual({ requests: lease });
+          return json({ blocks: [block], refused: [] });
+        }
+        if (url.includes("/sync/push")) return json({ accepted: 1, conflicts: [], keyConflicts: [] });
+        return json({ docs: [], cursor: 0, hasMore: false });
+      }),
+    );
+    await syncNow();
+    expect(urls).toEqual(["/sync/key-blocks", "/sync/push", "/sync/pull"]);
+    const order = calls.map((c) => c.cmd);
+    expect(order.indexOf("key_blocks_apply")).toBeLessThan(order.indexOf("oplog_pending"));
+    expect(calls.find((c) => c.cmd === "key_blocks_apply")?.args).toEqual({ userId: "user-A", blocks: [block] });
+  });
+
+  it("records refused keys as key conflicts and does not mark them synced", async () => {
+    const calls = coreWithLease([delta(1), delta(2)]);
+    const keyConflicts = [{ entity: "test_case", entityId: "c2", key: "LOGIN-1", takenBy: "x" }];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url.includes("/sync/key-blocks")) return json({ blocks: [], refused: [] });
+        if (url.includes("/sync/push")) return json({ accepted: 1, conflicts: [], keyConflicts });
+        return json({ docs: [], cursor: 0, hasMore: false });
+      }),
+    );
+    const res = await syncNow();
+    expect(res).toMatchObject({ pushed: 1, conflicts: 1 });
+    const marked = calls
+      .filter((c) => c.cmd === "oplog_mark_synced")
+      .flatMap((c) => (c.args.deltas as { entityId: string }[]).map((d) => d.entityId));
+    expect(marked).toEqual(["c1"]);
+    expect(calls.find((c) => c.cmd === "key_conflicts_record")?.args).toEqual({ userId: "user-A", items: keyConflicts });
+  });
+
+  it("still syncs against a server without key blocks (404)", async () => {
+    const calls = coreWithLease([delta(1)]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url.includes("/sync/key-blocks")) return json({ code: "not_found", message: "no" }, 404);
+        if (url.includes("/sync/push")) return json({ accepted: 1, conflicts: [] });
+        return json({ docs: [], cursor: 0, hasMore: false });
+      }),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await syncNow()).toMatchObject({ pushed: 1 });
+    expect(calls.find((c) => c.cmd === "key_blocks_apply")?.args).toEqual({ userId: "user-A", blocks: [] });
+  });
+});

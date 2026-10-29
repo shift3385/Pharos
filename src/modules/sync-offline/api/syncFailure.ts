@@ -10,7 +10,9 @@ export type SyncAction =
   | "auto"
   | "state"
   | "conflicts-list"
+  | "key-conflicts-list"
   | "conflict-resolve"
+  | "purge"
   | "push-refused"
   | "web-push";
 
@@ -57,9 +59,9 @@ function failureKey(e: unknown): string {
 
 /**
  * Logs background failures once: a step that keeps failing the same way (the
- * 5 s state refresh, auto-sync while the API is down) writes one line, not one
- * per attempt, so it does not use up the log's 20-messages-per-10-s budget. A
- * success, or a different failure, re-arms it.
+ * 5 s state refresh, auto-sync while the API is down, the purge) writes one
+ * line, not one per attempt, so it does not use up the log's
+ * 20-messages-per-10-s budget. A success, or a different failure, re-arms it.
  */
 export class SyncFailureLog {
   private last = new Map<SyncAction, string>();
