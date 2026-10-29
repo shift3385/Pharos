@@ -58,6 +58,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Integración continua (BASE-01):** cada cambio pasa automáticamente los
   tests del cliente, del núcleo Rust y del servidor, el formato y el lint de
   Rust, y las auditorías de dependencias y de licencias.
+- **El smoke E2E corre en CI (BASE-14):** cada PR arranca el binario real en
+  Windows contra una API local y sube los resultados como artefacto. Aún no
+  bloquea la fusión.
 
 ### Cambiado
 

@@ -42,7 +42,8 @@ Un cambio está hecho cuando se cumplen todas estas condiciones, con evidencia:
 
 - Cada PR y cada push a `main` pasan los checks de CI: `client`, `rust`,
   `server`, `audit`, `cargo-deny`, `workflows` y `commits` (README,
-  "Continuous integration"). Ningún check se desactiva para fusionar.
+  "Continuous integration"). Ningún check se desactiva para fusionar. El
+  smoke E2E (`e2e`) también corre en cada PR, pero aún no es obligatorio.
 - Con `main` protegida (BASE-02) **todo entra por PR**: las pistas, los
   arreglos y los commits de release. El PR se fusiona con merge commit (el
   equivalente de `merge --no-ff`), con todos los checks en verde y sin push

@@ -52,6 +52,14 @@
     el servidor ya usa zod 4 y `scripts/audit-allowlist.json` está vacía.
   - **Imagen de Postgres de CI** fijada por etiqueta (`postgres:18`), no por
     digest: solo sirve para los tests y Dependabot no la actualizaría.
+  - *Actualización (pista Q1, BASE-14):* job `e2e` en `windows-latest` con el
+    smoke del binario real. Usa el PostgreSQL que trae la imagen del runner
+    (los contenedores de servicio solo existen en Linux) y la API en
+    `localhost:3000`, el único puerto que admite la CSP del escritorio.
+    `tauri-driver` se fija a una versión exacta (`2.1.0`) y vive en la caché de
+    Rust. **No es un check obligatorio** hasta que lleve un tiempo en verde;
+    añadirlo a `.github/branch-protection.json` es una decisión aparte del
+    usuario.
 - **Alternativas:**
   - Etiquetas de versión (`@v4`) en las acciones: se descartó por el riesgo
     de suministro.
