@@ -1,7 +1,9 @@
 # ADR-0012 · Tipos de resultado genéricos: Result, Finding, Metric y sesión exploratoria (KND-01)
 
-- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las respuestas recomendadas). Bloquea EJE-01; ING-06 (0.5.0) e
-  ING-07 dependen de él.
+- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
+  respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
+  independiente (ver "Revisión"): precisiones, sin cambio de decisión. Bloquea EJE-01;
+  ING-06 (0.5.0) e ING-07 dependen de él.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -53,8 +55,13 @@ Reglas:
 - **Inmutables.** Finding y Metric son _append-only_, como Result. El triaje de
   un hallazgo (falso positivo, riesgo aceptado) no modifica el hallazgo: vive
   en `finding_triage`, por `fingerprint`, y se aplica a todas las ejecuciones.
-- **Estado en la matriz:**
-  - el estado de un caso en un run es el peor entre sus Result finales y las
+  Su id es determinista,
+  `UUIDv5(NS_FINDING_TRIAGE, project_id ‖ fingerprint)`, así que dos equipos
+  que triagean el mismo hallazgo escriben la misma entidad y gana el último
+  cambio, sin duplicados.
+- **Estado en la matriz** (regla completa en ADR-0013):
+  - se toma el run más reciente del caso;
+  - dentro de ese run, el estado es el peor entre sus Result finales y las
     Metric vinculadas que tienen umbral;
   - los Finding no cambian el estado: se muestran como recuento por severidad;
   - si un hallazgo bloquea o no la release lo deciden las quality gates
@@ -92,7 +99,7 @@ CREATE TABLE findings (
 );
 CREATE INDEX findings_fp_idx ON findings (project_id, fingerprint);
 
-CREATE TABLE finding_triage (               -- mutable (LWW): una fila por hallazgo recurrente
+CREATE TABLE finding_triage (               -- LWW; id = UUIDv5(project_id ‖ fingerprint)
   id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
   fingerprint TEXT NOT NULL,
   state TEXT NOT NULL,                      -- open | false_positive | accepted_risk | fixed
@@ -119,7 +126,7 @@ CREATE TABLE exploratory_sessions (         -- extensión 1:1 de un Run
   timebox_minutes INTEGER, tester TEXT NOT NULL, started_at TEXT, ended_at TEXT
 );
 CREATE TABLE session_notes (                -- línea de tiempo append-only
-  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, run_id TEXT NOT NULL,
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL, run_id TEXT NOT NULL,
   kind TEXT NOT NULL,                       -- note | bug | question | idea
   text TEXT NOT NULL, at TEXT NOT NULL, created_by TEXT NOT NULL
 );
@@ -139,12 +146,23 @@ reales a la API.
   solo añaden código.
 - No hay datos previos que migrar.
 
-## Preguntas resueltas (2026-10-28)
+## Decisiones del usuario (2026-10-28)
 
-El usuario aceptó la recomendación de cada pregunta; lo que sigue queda decidido.
+1. Un hallazgo no marca como fallido el caso vinculado. Se muestra con su
+   severidad, y si bloquea la release lo decide una quality gate (DOC-02).
+2. La UI de las sesiones exploratorias llega en 0.4.0 (EXP-01).
 
-1. **¿Un hallazgo crítico debe marcar como fallido el caso vinculado?**
-   Recomendación: no. Se muestra con su severidad y lo decide una quality gate
-   (DOC-02); así un SARIF ruidoso no tiñe de rojo la matriz.
-2. **¿Las sesiones exploratorias se mantienen en 0.4.0 (EXP-01)?** Las tablas
-   se crean ya en 0.2.0; la UI llega en 0.4.0. Recomendación: sí.
+## Revisión (2026-10-28, tras la revisión independiente)
+
+- **Precisiones, sin cambio de decisión:**
+  - `finding_triage` con id determinista por `fingerprint`;
+  - la regla de estado de la matriz se alinea con ADR-0013 (el run más
+    reciente y, dentro de él, el peor resultado);
+  - `project_id` en `session_notes`, para derivar el dueño (ADR-0020).
+- **Simplificación propuesta al usuario (no aplicada):** no crear en 0.2.0 las
+  tablas `findings`, `finding_triage`, `metrics`, `exploratory_sessions`
+  ni `session_notes`. Su forma quedaría fijada en el esquema de Pharos Run
+  JSON, y las tablas se añadirían, con una migración aditiva, en 0.4.0
+  (sesiones) y 0.5.0 (SARIF, k6, axe). Hay que cambiar el criterio de ING-06,
+  que pide guardarlos "sin migrar el esquema", por "sin cambiar el formato
+  Pharos Run JSON".

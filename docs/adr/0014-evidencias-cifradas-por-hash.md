@@ -1,7 +1,10 @@
 # ADR-0014 · Evidencias cifradas fuera de la BD, direccionadas por hash (DAT-03)
 
-- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las respuestas recomendadas). Bloquea EJE-02; SYNC-04b (0.4.0)
-  depende de él.
+- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
+  respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
+  independiente (ver "Revisión"). **⚠ Un punto requiere confirmación del
+  usuario:** la retención de evidencias, que sustituye a "no se borran nunca".
+  Bloquea EJE-02; SYNC-04b (0.4.0) depende de él.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -50,6 +53,13 @@
 - **Clave:** `evidence_key = HKDF-SHA256(db_key, "pharos-evidence-v1")`. No añade
   ninguna entrada al keychain, y la clave de recuperación (SEC-03) también cubre
   las evidencias.
+  - **Rotación.** Al derivarse de `db_key`, los nombres y el cifrado de los
+    archivos dependen de esa clave. Si `db_key` cambia (rotación, o la
+    migración a cifrado por página de SEC-05 con otra clave), hay que
+    recifrar y renombrar `evidence/` en segundo plano, de forma reanudable.
+    Para evitarlo, SEC-05 puede conservar la misma clave maestra de 32 bytes y
+    derivar de ella tanto la clave de página como `evidence_key`. SEC-04 debe
+    elegir una de las dos vías.
 - **Formato `.pev`:**
   - cabecera con `magic "PEV1"`, versión y tamaño de bloque;
   - AES-256-GCM en modo STREAM (bloques de 64 KiB, `aead::stream` de
@@ -63,9 +73,29 @@
   CTRF y JUnit (relativas al informe) y decodifican el BASE64 de Messages.
 - **Límite por archivo** configurable (pregunta 1).
 - **Recolección de basura.** Un blob se borra cuando ningún `attachment` vivo lo
-  referencia y, con sync, después de que el servidor confirme que lo tiene. Las
-  evidencias de resultados no se borran nunca, salvo con la purga explícita de
-  un proyecto.
+  referencia y, con sync, después de que el servidor confirme que lo tiene.
+- **⚠ Retención por tipo (pendiente de confirmar; sustituye a "las evidencias de
+  resultados no se borran nunca").** Con 200 MB por archivo y trazas y vídeos
+  de CI a diario, guardarlo todo llena el disco sin límite. Por eso cada
+  proyecto tiene una política por `kind`, configurable en Admin. Valores por
+  defecto:
+
+  | `kind`                   | Se conserva |
+  | ------------------------ | ----------- |
+  | `trace`, `video`         | 30 días     |
+  | `raw_report`             | 90 días     |
+  | `log`                    | 90 días     |
+  | `screenshot`, `evidence` | siempre     |
+  - **Excepciones:** nunca caduca la evidencia de un resultado final fallido o
+    bloqueado, ni la de un resultado vinculado a un defecto abierto, ni nada de
+    la ejecución manual.
+  - **Al caducar** se borra el blob (en local y, desde 0.4.0, en el servidor).
+    El `attachment` se conserva con `blob_purged_at` y su `sha256`, para
+    que el histórico diga qué hubo, y se escribe un evento `redact` en la
+    auditoría (ADR-0015).
+  - El resultado y sus metadatos no cambian; la caducidad la decide una tarea
+    local, no el sync.
+
 - **Plantillas:** siguen como BLOB en la BD (fuera de alcance).
 
 ## Esquema (boceto)
@@ -85,7 +115,9 @@ CREATE TABLE attachments (                  -- uso de un blob; se sincroniza
   owner_entity TEXT NOT NULL,               -- result | step_result | session_note | defect | planner_card | run_shard
   owner_id TEXT NOT NULL,
   kind TEXT NOT NULL DEFAULT 'evidence',    -- evidence | screenshot | video | trace | log | raw_report
-  created_by TEXT NOT NULL, created_at TEXT NOT NULL, deleted_at TEXT
+  blob_purged_at TEXT,                      -- caducado por la retención; el metadato se conserva
+  created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL, deleted_at TEXT, revision INTEGER NOT NULL DEFAULT 1   -- LWW
 );
 CREATE INDEX attachments_owner_idx ON attachments (owner_entity, owner_id);
 CREATE INDEX attachments_sha_idx ON attachments (sha256);
@@ -112,9 +144,12 @@ Endpoints:
 
 ## Impacto en sync y migraciones
 
-- `attachment` es una entidad de sync normal (LWW con borrado lógico). Las de
-  `result`, `step_result` y `run_shard` nunca se borran. Los bytes **nunca**
-  pasan por el oplog.
+- `attachment` es una entidad de sync normal (LWW con borrado lógico), con los
+  campos de auditoría completos. Las de `result`, `step_result` y `run_shard`
+  no se borran a mano: solo la retención puede marcar `blob_purged_at`. Los
+  bytes **nunca** pasan por el oplog.
+- **Dueño** (regla 1 de [ADR-0020](0020-sync-por-usuario-cascada-y-version.md),
+  hasta 0.3.0): el dueño de `project_id`.
 - Hasta 0.4.0 el sync solo lleva metadatos. En otro equipo una evidencia aparece
   como `remote_only` y no se puede abrir. SYNC-04b añade la subida y la descarga
   bajo demanda.
@@ -132,16 +167,22 @@ Endpoints:
   datos significa `pharos.db.enc` + `evidence/`. SEC-03 y la documentación de
   backup lo tienen que decir.
 
-## Preguntas resueltas (2026-10-28)
+## Decisiones del usuario (2026-10-28)
 
-El usuario aceptó la recomendación de cada pregunta; lo que sigue queda decidido.
-
-1. **Límite por archivo.** Recomendación: 200 MB por defecto, configurable en
-   Admin, para que entren las trazas y los vídeos de Playwright.
-2. **Cifrado en el servidor.** Recomendación: cifrado en reposo gestionado por
-   el servidor (disco o MinIO con SSE) más TLS. Con cifrado de extremo a
-   extremo, ni los miembros del workspace ni la web
-   ([ADR-0004](0004-web-cliente-del-servidor.md)) podrían verlas sin repartir
-   claves; queda para después de 1.0.
-3. **Descarga en otros equipos (0.4.0).** Recomendación: bajo demanda, con la
+1. El límite por archivo es de 200 MB por defecto, configurable en Admin.
+2. En el servidor, las evidencias se cifran en reposo con claves que gestiona el
+   servidor (disco o MinIO con SSE), y viajan con TLS. El cifrado de extremo a
+   extremo queda para después de 1.0: con él, ni los miembros del workspace ni
+   la web ([ADR-0004](0004-web-cliente-del-servidor.md)) podrían verlas sin
+   repartir claves.
+3. En otros equipos (0.4.0) las evidencias se descargan bajo demanda, con la
    opción "disponible sin conexión" por proyecto.
+
+## Revisión (2026-10-28, tras la revisión independiente)
+
+- **Precisiones, sin cambio de decisión:**
+  - `attachments` lleva `revision` y `updated_*`, como toda entidad LWW;
+  - se documenta la vía de rotación de `evidence_key` para SEC-04/05;
+  - el dueño se toma de `project_id`.
+- **⚠ Cambia una decisión aceptada:** se añade la retención por tipo, con sus
+  excepciones. Pendiente de confirmar.

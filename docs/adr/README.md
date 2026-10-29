@@ -26,11 +26,13 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0018](0018-campos-personalizados.md)              | Campos personalizados tipados por proyecto y tipo de caso (FLD-01)                   | Aceptado | 2026-10-28 |
 | [0019](0019-diseno-workspaces-compartidos.md)      | Diseño técnico de los workspaces compartidos con roles (TEN-01)                      | Aceptado | 2026-10-28 |
 
-El número 0010 queda reservado fuera de esta serie. Los ADR 0011 a 0019 son la compuerta C
+El 0010 (DAT-01, pista A2) y los 0020–0022 (pistas A1, B1 y B2) están en otras
+ramas; el coordinador los ordena al fusionar. Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
 [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
-Se aceptaron el 2026-10-28 con la opción y las respuestas recomendadas; eso
-cierra la compuerta C. Un ADR "Propuesto" todavía no obliga a nada: pasa a
+Se aceptaron el 2026-10-28 con la opción y las respuestas recomendadas y se
+revisaron ese mismo día tras la revisión independiente. Quedan tres puntos
+pendientes de confirmar (`docs/design/0.2.0-modelo-ejecucion.md` §7). Un ADR "Propuesto" todavía no obliga a nada: pasa a
 "Aceptado" cuando el usuario decide, con la opción elegida.
 
 Plantilla: copia la estructura de cualquier ADR (Contexto, Decisión,

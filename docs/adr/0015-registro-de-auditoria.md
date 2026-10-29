@@ -1,6 +1,9 @@
 # ADR-0015 · Registro de auditoría append-only desde 0.2.0 (AUD-01)
 
-- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las respuestas recomendadas).
+- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
+  respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
+  independiente (ver "Revisión"). **⚠ Un punto requiere confirmación del
+  usuario:** quién ve la auditoría.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -16,8 +19,9 @@
     purgarse (SYNC-06);
   - no registra los cambios que llegan por pull;
   - solo cubre las entidades que se sincronizan.
-- **Los campos de autor de hoy no son fiables** (FIX-06: `created_by` guarda el
-  id de la entidad).
+- **Los campos de autor estaban mal** (FIX-06: `created_by` guardaba el id de
+  la entidad). La pista A2 lo corrige con la migración `0015` y guarda el
+  usuario. La auditoría parte de esos datos ya corregidos.
 - **Mercado.** El audit log es requisito enterprise y la puerta a mercados
   regulados (21 CFR Part 11, estudio del arte, §"Los diferenciadores").
 
@@ -57,11 +61,23 @@
   - **Cambios remotos:** sus eventos llegan por sync desde el equipo de origen.
     Al aplicar un pull no se crea ningún evento local, salvo al resolver un
     conflicto (`resolve_conflict`).
-- **Cadena de hash por dispositivo** (pregunta 1):
-  - `hash = sha256(prev_hash ‖ evento canónico sin changes ‖ changes_sha256)`;
+- **Cadena de hash por dispositivo y workspace** `(device_id, workspace_id)`:
+  - `hash = sha256(prev_hash ‖ JCS(evento sin changes, workspace_id ni project_id) ‖ changes_sha256)`;
+  - una cadena por workspace: un miembro que solo sincroniza el workspace A ve
+    todas sus cadenas completas;
+  - la ubicación (`workspace_id`, `project_id`) no entra en el hash, así que
+    mover un proyecto de workspace (ADR-0019) no rompe la cadena. El evento
+    conserva `chain_workspace_id`, el workspace en el que se encadenó;
   - al calcularse sobre `changes_sha256`, se puede **redactar** el contenido
     (purga, derecho de supresión) sin romper la cadena: se borra `changes` y se
-    conserva su hash.
+    conserva su hash. La redacción es una operación de servidor sobre
+    documentos `append_only` (ADR-0011) y deja su propio evento `redact`.
+- **Dueño de un evento** (regla 1 de
+  [ADR-0020](0020-sync-por-usuario-cascada-y-version.md), hasta 0.3.0):
+  - con `project_id`, el dueño del proyecto;
+  - sin `project_id`, el usuario del actor si es `user:`;
+  - un evento `system:` sin proyecto (por ejemplo, de una migración) se queda en
+    local y no se envía.
 - **Lecturas:** no se auditan en 0.2.0. El registro de accesos llega con la API
   del servidor (0.5.0).
 - **Retención:** no se purga en `0.x`. Se consulta en Admin > Auditoría (filtros
@@ -81,11 +97,12 @@ CREATE TABLE audit_log (
   actor TEXT NOT NULL, on_behalf_of TEXT,
   action TEXT NOT NULL,                     -- create | update | delete | restore | import | execute | link | unlink | resolve_conflict | redact
   entity TEXT NOT NULL, entity_id TEXT NOT NULL,
-  entity_key TEXT,                          -- TC-001, REQ-014, DEF-003… (lectura humana)
+  entity_key TEXT,                          -- ATS_001, REQ-014, DEF-003… (lectura humana)
   changes TEXT,                             -- JSON { campo: [antes, después] }; NULL si se redactó
   changes_sha256 TEXT NOT NULL,
   summary TEXT,                             -- JSON para importaciones: recuentos, formato, archivo
   origin TEXT NOT NULL DEFAULT 'local',     -- local | migration
+  chain_workspace_id TEXT NOT NULL,         -- cadena en la que se encadenó (no cambia al mover)
   prev_hash TEXT, hash TEXT NOT NULL
 );
 CREATE INDEX audit_entity_idx ON audit_log (entity, entity_id);
@@ -101,19 +118,34 @@ auditan en el servidor.
 
 - `audit_event` es `append_only`. Al estar ordenados por `hlc`, los eventos de
   varios equipos forman un historial común; cada cadena de hash se verifica por
-  `device_id`.
+  `(device_id, chain_workspace_id)`.
 - Migración aditiva: la tabla es nueva y no se rellena con nada anterior.
 - El volumen se mantiene acotado porque los resultados no generan un evento
   cada uno.
 - SYNC-06 (purga real) escribe un evento `redact` en lugar de borrar eventos.
 
-## Preguntas resueltas (2026-10-28)
+## Decisiones del usuario (2026-10-28)
 
-El usuario aceptó la recomendación de cada pregunta; lo que sigue queda decidido.
+1. Hay cadena de hash desde 0.2.0. Evita un cambio de esquema cuando lleguen los
+   paquetes normativos (DOC-03, Part 11) y permite redactar contenido.
+2. **⚠ Pendiente de confirmar (aclaración).** En 0.2.0 la auditoría la ve el
+   propio usuario; desde 0.3.0, solo el **Test Manager** del workspace. La
+   respuesta aceptada incluía también "Viewer con permiso de auditoría" a través
+   del antiguo rol `auditor` de `project_members`, pero ADR-0019 no usa
+   `project_members` y su tabla de permisos da la auditoría solo al Test
+   Manager. Se propone quedarse con esto último; un rol de auditor puede volver
+   con los roles por proyecto.
 
-1. **¿Cadena de hash desde 0.2.0?** Recomendación: sí. Cuesta poco ahora, evita
-   un cambio de esquema cuando lleguen los paquetes normativos (DOC-03, Part 11)
-   y es compatible con redactar contenido.
-2. **¿Quién ve la auditoría?** Recomendación: en 0.2.0, el propio usuario; desde
-   0.3.0, Test Manager y Viewer con permiso de auditoría. Encaja con el antiguo
-   rol `auditor` de `project_members`.
+## Revisión (2026-10-28, tras la revisión independiente)
+
+- **Precisiones, sin cambio de decisión:**
+  - la cadena pasa a ser por `(device_id, workspace_id)`;
+  - la ubicación queda fuera del hash;
+  - la redacción es una operación de servidor;
+  - se define el dueño de un evento según la regla de ADR-0020;
+  - FIX-06 ya está corregido en A2.
+- **⚠ Aclaración pendiente de confirmar:** quién ve la auditoría (decisión 2).
+- **Simplificación propuesta al usuario (no aplicada):** para las entidades con
+  revisión (casos, ADR-0011), el evento podría apuntar a las revisiones de antes
+  y después en lugar de copiar las diferencias. Se ahorra espacio y se pierde
+  la lectura directa del evento.

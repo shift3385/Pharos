@@ -1,6 +1,9 @@
 # ADR-0016 · El defecto como entidad propia (DEF-01)
 
-- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las respuestas recomendadas). INT-05 (Jira, 0.8.0) depende de él.
+- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
+  respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
+  independiente (ver "Revisión"): precisiones, sin cambio de decisión. INT-05 (Jira,
+  0.8.0) depende de él.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -87,14 +90,15 @@ CREATE TABLE defects (
   created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL, deleted_at TEXT, revision INTEGER NOT NULL DEFAULT 1
 );
-CREATE UNIQUE INDEX defects_project_key_idx ON defects (project_id, defect_key) WHERE deleted_at IS NULL;
+CREATE INDEX defects_project_key_idx ON defects (project_id, defect_key);   -- no único: ver "Claves repetidas"
 
 CREATE TABLE defect_links (
-  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, defect_id TEXT NOT NULL REFERENCES defects (id),
+  id TEXT PRIMARY KEY,                      -- UUIDv5(defect_id ‖ target_kind ‖ target_id)
+  workspace_id TEXT NOT NULL, project_id TEXT NOT NULL, defect_id TEXT NOT NULL REFERENCES defects (id),
   target_kind TEXT NOT NULL,                -- result | test_case | requirement | finding | session_note
   target_id TEXT NOT NULL,
-  created_by TEXT NOT NULL, created_at TEXT NOT NULL, deleted_at TEXT,
-  revision INTEGER NOT NULL DEFAULT 1
+  created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL, deleted_at TEXT, revision INTEGER NOT NULL DEFAULT 1
 );
 ```
 
@@ -116,23 +120,45 @@ Servidor: documentos `defect` y `defect_link` (LWW).
   Al ser determinista, dos equipos que migran por separado producen los mismos
   ids y convergen sin duplicados.
 
-- **Clientes 0.1.x.** Mientras el servidor los acepte (VERSIONING §6.5), un
-  cliente 0.2.0 que reciba por pull una tarjeta `defect` la convierte al
-  aplicarla con la misma función.
+- **Claves repetidas.** No hay índice `UNIQUE` sobre `defect_key`, como en la
+  fase 2 de [ADR-0010](0010-claves-entre-equipos.md): un pull con una clave que
+  ya usa otro defecto vivo haría fallar el pull entero.
+  - Crear un defecto en local sigue rechazando una clave repetida (comprobación
+    en el repositorio).
+  - Si un pull trae un defecto con una clave que ya usa otro defecto vivo, el
+    defecto se guarda y va al panel de conflictos para que la persona elija
+    otra clave. Nunca se renombra solo.
+- **Vínculos.** El id de un `defect_link` siempre es determinista
+  (`UUIDv5(defect_id ‖ target_kind ‖ target_id)`), así que vincular lo mismo
+  en dos equipos da la misma entidad.
+- **Dueño** (regla 1 de [ADR-0020](0020-sync-por-usuario-cascada-y-version.md),
+  hasta 0.3.0): el dueño de `project_id`. Los defectos dejan de depender de
+  `planner_cards.owner_id`.
+- **Tarjetas `defect` de clientes 0.1.** Las escritas antes de actualizar el
+  servidor llegan por pull, y un cliente 0.2.0 las convierte al aplicarlas con la
+  misma función. Después, si se confirma que el servidor 0.2 acepta los 0.1 solo
+  en lectura (ADR-0011), un 0.1 ya no puede crear tarjetas `defect` nuevas en
+  el servidor.
 - **SYNC-04a (A1, 0.1.0)** sincroniza las tarjetas y los defectos tal como
   están hoy. DEF-01 no depende de ese diseño, pero su migración tiene que
   aceptar tarjetas ya sincronizadas.
 - **Test de actualización:** un fixture 0.1.0 con defectos en las cuatro
   columnas, adjuntos y vínculos produce los mismos `DEF-xxx` y la misma matriz.
 
-## Preguntas resueltas (2026-10-28)
+## Decisiones del usuario (2026-10-28)
 
-El usuario aceptó la recomendación de cada pregunta; lo que sigue queda decidido.
+1. Los defectos salen del kanban. El módulo `defects` tiene lista y tablero por
+   estado, y el planificador queda para tareas y datos de prueba.
+2. En 0.2.0 el ciclo de vida es fijo (el descrito arriba). Será configurable más
+   adelante, cuando haya Jira.
+3. La severidad tiene 4 niveles: `critical | major | minor | trivial`.
 
-1. **¿Se siguen viendo los defectos en el kanban del planificador?**
-   Recomendación: no. El módulo `defects` tiene lista y tablero por estado; el
-   planificador queda para tareas y datos de prueba.
-2. **¿Ciclo de vida fijo en 0.2.0?** Recomendación: fijo (el de arriba);
-   configurable más adelante, cuando haya Jira.
-3. **¿Escala de severidad de 4 niveles** (`critical | major | minor | trivial`)?
-   ¿O 5, añadiendo `blocker`?
+## Revisión (2026-10-28, tras la revisión independiente)
+
+Son precisiones; la decisión no cambia.
+
+- El índice de `defect_key` deja de ser único; los choques que traiga el pull
+  van al panel de conflictos.
+- `defect_links` lleva id determinista y los campos LWW completos.
+- El dueño se toma de `project_id`.
+- Se acota la conversión de tarjetas que llegan de clientes 0.1.

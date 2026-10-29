@@ -106,7 +106,8 @@ También bloquean 0.1.0: SEC-03, SEC-06, SYNC-08, IA-05, UX-05, UX-06 y las vali
 
 ### C · Decisiones de modelo (bloquea empezar 0.2.0; cada una cierra con un ADR)
 
-Cerrada el 2026-10-28: el usuario aceptó los ADR 0011–0019. Cómo encajan y en qué orden se
+Cerrada el 2026-10-28: el usuario aceptó los ADR 0011–0019. La revisión
+independiente dejó tres puntos pendientes de confirmar (§7 del diseño). Cómo encajan y en qué orden se
 implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecucion.md).
 
 | ID      | Decisión                                                                                                                      | P   | Estado                                                                                                                                      |

@@ -1,6 +1,8 @@
 # ADR-0019 · Diseño técnico de los workspaces compartidos con roles (TEN-01)
 
-- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las respuestas recomendadas). Detalla
+- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
+  respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
+  independiente (ver "Revisión"): precisiones, sin cambio de decisión. Detalla
   [ADR-0003](0003-workspaces-compartidos.md), que ya fijó el modelo. Se
   implementa en 0.3.0 (SYNC-07).
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
@@ -58,6 +60,11 @@
      adjuntos, blobs, campos);
   2. deja tombstones en el origen;
   3. lo registra en la auditoría.
+
+  Para los documentos `append_only` es un **cambio de ubicación**, una de las
+  tres operaciones de servidor que admite esa clase (ADR-0011). El contenido
+  y los hashes no cambian, y la cadena de auditoría sigue siendo válida
+  (ADR-0015).
 
   Los clientes lo reciben por pull de ambos workspaces.
 
@@ -125,7 +132,7 @@ defecto con el que alguien crea un workspace.
 SQLite local:
 
 ```sql
-ALTER TABLE workspaces ADD COLUMN kind TEXT NOT NULL DEFAULT 'local';   -- local | personal | shared
+ALTER TABLE workspaces ADD COLUMN kind TEXT NOT NULL DEFAULT 'local';   -- workspace_kind: local | personal | shared
 ALTER TABLE workspaces ADD COLUMN my_role TEXT;                         -- caché del rol (la autoridad es el servidor)
 ALTER TABLE workspaces ADD COLUMN revoked_at TEXT;
 CREATE TABLE workspace_members (                                        -- espejo de solo lectura
@@ -168,26 +175,49 @@ como dato de autoría, no de visibilidad.
   caché antes de escribir, y la UI desactiva lo que el rol no permite. Si aun así
   un delta se rechaza (rol cambiado sin conexión), queda en el panel de
   conflictos como "rechazado por permisos", con la opción de descartarlo.
-- **Las claves visibles** (`TC`, `REQ`, `DEF`, `RUN`, `CYC`) tienen que ser
+- **Las claves visibles** (`<scenario_id>`, `REQ`, `DEF`, `RUN`, `CYC`) tienen que ser
   únicas entre **usuarios** de un workspace, no solo entre equipos: es un
   requisito para el mecanismo de DAT-01.
+- **Sustituye la regla 1 de
+  [ADR-0020](0020-sync-por-usuario-cascada-y-version.md)** ("el usuario de un
+  cambio es el dueño de la entidad" y "un pull nunca sobrescribe una entidad
+  de otra cuenta"). Con workspaces compartidos, esa regla descartaría las
+  ediciones de los compañeros. Desde 0.3.0:
+  - el estado del sync (`oplog`, `sync_base`, `sync_conflicts` y el cursor)
+    es por `(user_id, workspace_id)`;
+  - un documento recibido se aplica si su `workspace_id` es de uno de los
+    workspaces del usuario, sea quien sea su autor;
+  - `owner_id` queda solo como dato de autoría;
+  - el mapeo `owner_of` por entidad que exige ADR-0020 en 0.2.x (todas las
+    entidades nuevas derivan su dueño de `project_id`) deja de hacer falta:
+    el filtro es el `workspace_id` que ya lleva cada fila.
 - **Los blobs** se indexan por `(workspace_id, sha256)` (ADR-0014).
 - **Test de actualización** con los datos de un servidor 0.2.0 y dos clientes
   0.2.0 del mismo usuario: tras migrar, ambos ven un solo workspace y los mismos
   datos.
 
-## Preguntas resueltas (2026-10-28)
+## Decisiones del usuario (2026-10-28)
 
-El usuario aceptó la recomendación de cada pregunta; lo que sigue queda decidido.
+1. En 0.3.0 solo hay roles por workspace. Los roles por proyecto (opción B)
+   podrán añadirse después sobre `project_members`, si hacen falta.
+2. Al revocar a un miembro, su copia local se borra en el siguiente sync, con un
+   aviso previo. Queda documentado que una copia que no vuelve a conectarse no se
+   puede borrar a distancia.
+3. "Compartir proyecto" (moverlo del workspace personal a uno compartido) entra
+   en 0.3.0.
+4. En 0.3.0 las invitaciones se hacen por enlace o código, sin correo. El SMTP
+   llegará con el despliegue (0.5.0).
+5. Solo el Test Manager ve la auditoría (coherente con ADR-0015, decisión 2,
+   pendiente de confirmar).
 
-1. **¿Basta con roles por workspace en 0.3.0?** Recomendación: sí. Los roles
-   por proyecto (opción B) se añaden después sobre `project_members`, si hacen
-   falta.
-2. **Al revocar a un miembro, ¿se borra su copia local** en el siguiente sync?
-   Recomendación: sí, avisando antes. Queda documentado que una copia que nunca
-   vuelve a conectarse no se puede borrar a distancia.
-3. **¿Hace falta "compartir proyecto"** (mover del personal a uno compartido) en
-   0.3.0? Recomendación: sí; es la forma natural de empezar a trabajar en equipo
-   con lo que ya existe.
-4. **Invitaciones sin correo** (enlace o código que se copia) en 0.3.0.
-   Recomendación: sí. El SMTP queda para cuando haya despliegue (0.5.0).
+## Revisión (2026-10-28, tras la revisión independiente)
+
+- **Precisiones, sin cambio de decisión:**
+  - este ADR sustituye a la regla 1 de ADR-0020 a partir de 0.3.0;
+  - mover un proyecto es un cambio de ubicación para los documentos
+    `append_only`;
+  - la columna `kind` corresponde al concepto `workspace_kind` del GLOSARIO;
+  - las claves de caso se llaman `<scenario_id>` y no `TC-xxx`.
+- **Simplificación propuesta al usuario (no aplicada):** marcar este ADR como
+  "dirección aceptada; se revisa al planificar SYNC-07". Se implementa en
+  0.3.0, después de que 0.2.0 haya cambiado el sync.
