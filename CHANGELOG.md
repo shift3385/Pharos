@@ -131,6 +131,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   local pero el archivo cifrado existía, la app creaba y guardaba una clave
   nueva y luego no podía abrir los datos. Ahora no guarda nada y te pide la
   clave de recuperación.
+- **Primer guardado que no se descifra (SEC-03):** si solo existía
+  `pharos.db.enc.new` y la clave no lo descifraba, la app lo borraba y empezaba
+  con una base vacía. Ahora lo conserva y te pide la clave de recuperación.
+  Una entrada del keychain dañada también lleva a la recuperación, y la clave
+  que se reemplaza se guarda una vez como `db-key.prev`.
 
 ### Seguridad
 

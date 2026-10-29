@@ -100,7 +100,7 @@ describe("DbErrorScreen recovery (SEC-03)", () => {
     );
     await user.click(submit);
     expect(
-      await screen.findByText(/no es la de esta base de datos/),
+      await screen.findByText(/no abre esta base de datos/),
     ).toBeInTheDocument();
 
     expect(onRecovered).not.toHaveBeenCalled();

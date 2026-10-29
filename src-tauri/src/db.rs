@@ -125,37 +125,54 @@ pub struct Db {
 
 /// Where the database key is kept: the OS keychain in the app, memory in tests.
 pub(crate) trait KeyStore {
+    /// The stored key. An entry that is not a valid key is a
+    /// `KEY_MISMATCH_ERROR`, so the recovery key can replace it.
     fn load(&self) -> Result<Option<[u8; 32]>, String>;
     fn store(&self, key: &[u8; 32]) -> Result<(), String>;
+    /// Keeps the key a recovery replaces, once (the older one is dropped).
+    fn keep_previous(&self, key: &[u8; 32]) -> Result<(), String>;
 }
 
 /// The `db-key` account of the OS keychain. It is shared by every local
 /// instance, E2E profiles included (instance.rs).
 pub(crate) struct Keychain;
 
+/// Account that keeps the key replaced by the last recovery (ADR-0024).
+const KEYCHAIN_PREVIOUS_DB_KEY: &str = "db-key.prev";
+
 impl Keychain {
-    fn entry() -> Result<Entry, String> {
-        Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_DB_KEY).map_err(|e| e.to_string())
+    fn entry(account: &str) -> Result<Entry, String> {
+        Entry::new(KEYCHAIN_SERVICE, account).map_err(|e| e.to_string())
     }
 }
 
 impl KeyStore for Keychain {
     fn load(&self) -> Result<Option<[u8; 32]>, String> {
-        match Self::entry()?.get_password() {
-            Ok(b64) => {
-                let bytes = B64.decode(b64).map_err(|e| e.to_string())?;
-                bytes
-                    .try_into()
-                    .map(Some)
-                    .map_err(|_| "stored db key has wrong length".to_string())
-            }
+        match Self::entry(KEYCHAIN_DB_KEY)?.get_password() {
+            Ok(b64) => B64
+                .decode(b64)
+                .ok()
+                .and_then(|bytes| <[u8; 32]>::try_from(bytes).ok())
+                .map(Some)
+                .ok_or_else(|| {
+                    format!(
+                        "{KEY_MISMATCH_ERROR}: the key in the system keychain is damaged. \
+                         Enter the recovery key."
+                    )
+                }),
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.to_string()),
         }
     }
 
     fn store(&self, key: &[u8; 32]) -> Result<(), String> {
-        Self::entry()?
+        Self::entry(KEYCHAIN_DB_KEY)?
+            .set_password(&B64.encode(key))
+            .map_err(|e| e.to_string())
+    }
+
+    fn keep_previous(&self, key: &[u8; 32]) -> Result<(), String> {
+        Self::entry(KEYCHAIN_PREVIOUS_DB_KEY)?
             .set_password(&B64.encode(key))
             .map_err(|e| e.to_string())
     }
@@ -172,20 +189,20 @@ impl Db {
     /// is an error the UI answers with the recovery key.
     fn open_with_store(app_data_dir: &Path, store: &dyn KeyStore) -> Result<Self, String> {
         let enc_path = app_data_dir.join("pharos.db.enc");
-        let key = match store.load()? {
-            Some(key) => key,
-            None if has_saved_file(&enc_path) => {
+        let saved = has_saved_file(&enc_path)?;
+        let key = match store.load() {
+            Ok(Some(key)) => key,
+            Ok(None) if saved => {
                 return Err(format!(
                     "{KEY_MISSING_ERROR}: the key of the local database is not in the \
                      system keychain. Enter the recovery key to open it."
                 ))
             }
-            None => {
-                let mut key = [0u8; 32];
-                key.copy_from_slice(Aes256Gcm::generate_key(&mut OsRng).as_slice());
-                store.store(&key)?;
-                key
-            }
+            // A damaged entry with nothing saved here opens nothing: replace it
+            // like a missing one.
+            Ok(None) => new_key(store)?,
+            Err(e) if e.starts_with(KEY_MISMATCH_ERROR) && !saved => new_key(store)?,
+            Err(e) => return Err(e),
         };
         Self::open_with_key(app_data_dir, key).map_err(|e| {
             if e == DECRYPT_ERROR {
@@ -200,24 +217,37 @@ impl Db {
     }
 
     /// Opens an existing database with a typed recovery key and, once it
-    /// decrypts, stores the key in `store` (SEC-03). A malformed or wrong key
-    /// leaves the files and the store untouched.
+    /// decrypts, stores the key in `store` (SEC-03). The key it replaces is kept
+    /// once with `keep_previous`. A malformed or wrong key leaves the files and
+    /// the store untouched: the saved file must decrypt before anything else.
     pub(crate) fn recover(
         app_data_dir: &Path,
         store: &dyn KeyStore,
         recovery_key: &str,
     ) -> Result<Self, String> {
         let key = recovery::decode(recovery_key)?;
-        if !has_saved_file(&app_data_dir.join("pharos.db.enc")) {
-            return Err("there is no local database to recover".to_string());
-        }
-        let db = Self::open_with_key(app_data_dir, key).map_err(|e| {
+        let wrong = |e: String| {
             if e == DECRYPT_ERROR {
-                format!("{WRONG_RECOVERY_KEY}: this recovery key does not open the local database")
+                format!(
+                    "{WRONG_RECOVERY_KEY}: this recovery key does not open the local database \
+                     (another key, or a damaged file; a pharos.db.enc.bak-* copy may still open)"
+                )
             } else {
                 e
             }
-        })?;
+        };
+        if latest_save(&app_data_dir.join("pharos.db.enc"), &key)
+            .map_err(wrong)?
+            .is_none()
+        {
+            return Err("there is no local database to recover".to_string());
+        }
+        let db = Self::open_with_key(app_data_dir, key).map_err(wrong)?;
+        if let Ok(Some(old)) = store.load() {
+            if old != key {
+                store.keep_previous(&old)?;
+            }
+        }
         store.store(&key)?;
         Ok(db)
     }
@@ -295,10 +325,20 @@ impl Db {
     }
 }
 
+/// Generates a database key and stores it: only for a fresh install.
+fn new_key(store: &dyn KeyStore) -> Result<[u8; 32], String> {
+    let mut key = [0u8; 32];
+    key.copy_from_slice(Aes256Gcm::generate_key(&mut OsRng).as_slice());
+    store.store(&key)?;
+    Ok(key)
+}
+
 /// True if a database was ever saved here (`pharos.db.enc`, or a first save
-/// that never got renamed): then a missing key must not be replaced.
-fn has_saved_file(enc_path: &Path) -> bool {
-    enc_path.exists() || pending_path(enc_path).exists()
+/// that never got renamed): then a missing key must not be replaced. An I/O
+/// error is an error, not "no file", so it never leads to a new key.
+fn has_saved_file(enc_path: &Path) -> Result<bool, String> {
+    let exists = |p: &Path| p.try_exists().map_err(|e| e.to_string());
+    Ok(exists(enc_path)? || exists(&pending_path(enc_path))?)
 }
 
 /// Path of the in-progress copy written before the atomic rename.
@@ -377,14 +417,26 @@ type Saved = (Vec<u8>, Vec<u8>);
 /// Encrypted blob and plaintext image of the latest save: a complete
 /// `pharos.db.enc.new` (promoted later by `recover_leftovers`), or else
 /// `pharos.db.enc`. None on a fresh install. Reads only; changes no file.
+///
+/// A `.new` that does not decrypt while there is no `pharos.db.enc` is
+/// `DECRYPT_ERROR`, never a fresh install: AES-GCM cannot tell a torn first
+/// save from another key, and that file may be the only copy of the data.
 fn latest_save(enc_path: &Path, key: &[u8; 32]) -> Result<Option<Saved>, String> {
     let pending = pending_path(enc_path);
-    if let Ok(blob) = fs::read(&pending) {
-        if let Ok(plain) = decrypt(key, &blob) {
-            return Ok(Some((blob, plain)));
+    let enc_exists = enc_path.try_exists().map_err(|e| e.to_string())?;
+    match fs::read(&pending) {
+        Ok(blob) => {
+            if let Ok(plain) = decrypt(key, &blob) {
+                return Ok(Some((blob, plain)));
+            }
+            if !enc_exists {
+                return Err(DECRYPT_ERROR.to_string());
+            }
         }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(e.to_string()),
     }
-    if !enc_path.exists() {
+    if !enc_exists {
         return Ok(None);
     }
     let blob = fs::read(enc_path).map_err(|e| e.to_string())?;
@@ -418,7 +470,9 @@ fn write_atomic_io(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
 ///   fix; overwritten with zeros, then deleted.
 /// - `pharos.db.enc.new`: a save that never got renamed. AES-GCM authenticates
 ///   the whole blob, so if it decrypts it is a complete, newer save and is
-///   promoted; otherwise it is a torn write and is discarded.
+///   promoted; otherwise, next to a `pharos.db.enc` this key opens, it is a
+///   torn write and is discarded. Without that file it is never deleted (see
+///   `latest_save`).
 fn recover_leftovers(dir: &Path, enc_path: &Path, key: &[u8; 32]) -> Result<(), String> {
     let legacy_plain = dir.join("pharos.db.tmp");
     if legacy_plain.exists() {
@@ -426,14 +480,16 @@ fn recover_leftovers(dir: &Path, enc_path: &Path, key: &[u8; 32]) -> Result<(), 
     }
 
     let pending = pending_path(enc_path);
-    if pending.exists() {
+    if pending.try_exists().map_err(|e| e.to_string())? {
         let complete = fs::read(&pending)
             .map(|blob| decrypt(key, &blob).is_ok())
             .unwrap_or(false);
         if complete {
             fs::rename(&pending, enc_path).map_err(|e| e.to_string())?;
-        } else {
+        } else if enc_path.try_exists().map_err(|e| e.to_string())? {
             fs::remove_file(&pending).map_err(|e| e.to_string())?;
+        } else {
+            return Err(DECRYPT_ERROR.to_string());
         }
     }
     Ok(())
@@ -976,23 +1032,43 @@ mod tests {
 
     /// An in-memory keychain, so recovery is tested without the real one.
     #[derive(Default)]
-    struct MemStore(std::cell::RefCell<Option<[u8; 32]>>);
+    struct MemStore {
+        slot: std::cell::Cell<Option<[u8; 32]>>,
+        previous: std::cell::Cell<Option<[u8; 32]>>,
+        /// The entry exists but is not a valid key (`Keychain::load`).
+        damaged: std::cell::Cell<bool>,
+    }
 
     impl MemStore {
         fn with(key: [u8; 32]) -> Self {
-            MemStore(std::cell::RefCell::new(Some(key)))
+            let store = MemStore::default();
+            store.slot.set(Some(key));
+            store
+        }
+        fn damaged() -> Self {
+            let store = MemStore::default();
+            store.damaged.set(true);
+            store
         }
         fn key(&self) -> Option<[u8; 32]> {
-            *self.0.borrow()
+            self.slot.get()
         }
     }
 
     impl KeyStore for MemStore {
         fn load(&self) -> Result<Option<[u8; 32]>, String> {
+            if self.damaged.get() {
+                return Err(format!("{KEY_MISMATCH_ERROR}: damaged entry"));
+            }
             Ok(self.key())
         }
         fn store(&self, key: &[u8; 32]) -> Result<(), String> {
-            *self.0.borrow_mut() = Some(*key);
+            self.damaged.set(false);
+            self.slot.set(Some(*key));
+            Ok(())
+        }
+        fn keep_previous(&self, key: &[u8; 32]) -> Result<(), String> {
+            self.previous.set(Some(*key));
             Ok(())
         }
     }
@@ -1099,6 +1175,79 @@ mod tests {
         let keychain = MemStore::with([3u8; 32]);
         Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
         assert_eq!(keychain.key(), Some(KEY));
+        // The replaced key is kept once: it may open another instance's data.
+        assert_eq!(keychain.previous.get(), Some([3u8; 32]));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// A first save that never got renamed may be the only copy of the data:
+    /// a key that does not open it must never make it look like a fresh install.
+    #[test]
+    fn a_wrong_recovery_key_never_deletes_a_lone_first_save() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        fs::rename(dir.join("pharos.db.enc"), dir.join("pharos.db.enc.new")).unwrap();
+        let before = fs::read(dir.join("pharos.db.enc.new")).unwrap();
+        let keychain = MemStore::default();
+
+        let err = Db::recover(&dir, &keychain, &recovery::encode(&[4u8; 32]))
+            .err()
+            .expect("must refuse");
+        assert!(err.starts_with(WRONG_RECOVERY_KEY), "{err}");
+        assert_eq!(keychain.key(), None);
+        assert_eq!(keychain.previous.get(), None);
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc.new"]);
+        assert_eq!(fs::read(dir.join("pharos.db.enc.new")).unwrap(), before);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_keychain_key_that_does_not_open_a_lone_first_save_is_a_mismatch() {
+        let dir = temp_dir();
+        let id = saved_db(&dir);
+        fs::rename(dir.join("pharos.db.enc"), dir.join("pharos.db.enc.new")).unwrap();
+        let before = fs::read(dir.join("pharos.db.enc.new")).unwrap();
+        let keychain = MemStore::with([3u8; 32]);
+
+        let err = Db::open_with_store(&dir, &keychain).err().unwrap();
+        assert!(err.starts_with(KEY_MISMATCH_ERROR), "{err}");
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc.new"]);
+        assert_eq!(fs::read(dir.join("pharos.db.enc.new")).unwrap(), before);
+        // Opening with the key itself (no keychain) does not discard it either.
+        let err = Db::open_with_key(&dir, [3u8; 32]).err().unwrap();
+        assert_eq!(err, DECRYPT_ERROR);
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc.new"]);
+
+        // The right recovery key promotes it and brings the data back.
+        let db = Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
+        assert_eq!(db.with_conn(ensure_workspace).unwrap(), id);
+        assert_eq!(keychain.key(), Some(KEY));
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_damaged_keychain_entry_is_a_mismatch_the_recovery_key_fixes() {
+        let dir = temp_dir();
+        saved_db(&dir);
+        let keychain = MemStore::damaged();
+        let err = Db::open_with_store(&dir, &keychain).err().unwrap();
+        assert!(is_key_error(&err), "{err}");
+        assert_eq!(keychain.key(), None, "a damaged entry is not overwritten");
+
+        Db::recover(&dir, &keychain, &recovery::encode(&KEY)).unwrap();
+        assert_eq!(keychain.key(), Some(KEY));
+        assert_eq!(keychain.previous.get(), None);
+        Db::open_with_store(&dir, &keychain).unwrap();
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn a_damaged_keychain_entry_with_nothing_saved_is_replaced() {
+        let dir = temp_dir();
+        let keychain = MemStore::damaged();
+        let db = Db::open_with_store(&dir, &keychain).unwrap();
+        assert_eq!(keychain.key(), Some(db.key));
         fs::remove_dir_all(&dir).unwrap();
     }
 

@@ -18,7 +18,7 @@
       "submit": "Open with the key",
       "opening": "Opening…",
       "invalid": "The key has a typo: check each group and try again.",
-      "wrong": "The key is valid, but it is not the key of this database. Make sure it is the one for this computer.",
+      "wrong": "The key is valid, but it does not open this database: it is another key, or the file is damaged. Make sure it is the one for this computer; if it is, a pharos.db.enc.bak-… copy may open with it (README, Recovery key).",
       "failed": "Could not open with the key: {{detail}}"
     }
   },

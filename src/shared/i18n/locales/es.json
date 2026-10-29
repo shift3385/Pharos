@@ -18,7 +18,7 @@
       "submit": "Abrir con la clave",
       "opening": "Abriendo…",
       "invalid": "La clave tiene un error de escritura: revisa cada grupo y vuelve a intentarlo.",
-      "wrong": "La clave es válida, pero no es la de esta base de datos. Comprueba que sea la de este equipo.",
+      "wrong": "La clave es válida, pero no abre esta base de datos: es otra clave o el archivo está dañado. Comprueba que sea la de este equipo; si lo es, una copia pharos.db.enc.bak-… puede abrirse con ella (README, Clave de recuperación).",
       "failed": "No se pudo abrir con la clave: {{detail}}"
     }
   },

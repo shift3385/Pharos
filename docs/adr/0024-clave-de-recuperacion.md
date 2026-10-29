@@ -28,18 +28,32 @@
       descifrar el archivo.
   - **Abrir la BD** (`db.rs`):
     - solo se genera una clave en una instalación nueva, es decir, cuando no
-      existe `pharos.db.enc` ni `pharos.db.enc.new`;
+      existe `pharos.db.enc` ni `pharos.db.enc.new`. Si no se puede saber si
+      existen (error de E/S), se falla en lugar de generar;
     - si falta la clave en el keychain pero hay un archivo cifrado, el error
       empieza por `db-key-missing` y no se guarda ninguna clave;
     - si la clave del keychain no descifra el archivo, el error empieza por
       `db-key-mismatch` (otra clave, o un archivo dañado: AES-GCM no los
-      distingue).
+      distingue). Una entrada del keychain que no es una clave válida (base64
+      roto, otra longitud) también es `db-key-mismatch`; si no hay nada
+      guardado, se reemplaza como si faltara;
+    - **nunca se borra un archivo guardado que no se puede descifrar.** Un
+      `pharos.db.enc.new` solo (primer guardado sin renombrar) que la clave no
+      descifra da `db-key-mismatch` y se deja en su sitio, aunque sea un
+      guardado a medias: puede ser la única copia. Solo se descarta un `.new`
+      roto junto a un `pharos.db.enc` que esa misma clave abre.
   - **Importar** (`db_recover`): solo se acepta mientras la BD no abrió por uno
     de esos dos errores, así que nunca puede reemplazar la clave de una BD
-    abierta. Comprueba el formato (`recovery-key-invalid`), abre el archivo
-    con la clave (`recovery-key-wrong` si no lo descifra) y solo entonces la
-    guarda en el keychain y deja la app abierta sin reiniciar. Una clave mala
-    no toca ni los archivos ni el keychain.
+    abierta. Comprueba el formato (`recovery-key-invalid`), descifra el último
+    guardado antes de tocar nada (`recovery-key-wrong` si no lo descifra:
+    otra clave o un archivo dañado; el mensaje remite a las copias
+    `.bak-…`) y solo entonces abre la BD, guarda la clave en el keychain y deja
+    la app abierta sin reiniciar. Una clave mala no toca ni los archivos ni el
+    keychain.
+  - **La clave reemplazada se guarda una vez** en la cuenta `db-key.prev` del
+    keychain. La entrada `db-key` es compartida por todas las instancias
+    locales (perfiles E2E incluidos), así que la clave que se sustituye puede
+    abrir los datos de otra; la siguiente recuperación la sobrescribe.
   - **Exportar** (`recovery_key_export`): en **Perfil → Clave de
     recuperación**, tras una confirmación. Se muestra una vez en un diálogo,
     con indicaciones para guardarla (papel o gestor de contraseñas, nunca junto

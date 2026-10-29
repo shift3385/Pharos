@@ -173,7 +173,15 @@ To recover on another PC:
    does not open the database) and asks for the recovery key.
 4. Type it: case, spaces and hyphens do not matter. A typo is reported before
    anything is changed. Once it opens, the key is stored in the Credential
-   Manager again and the next start opens normally.
+   Manager again and the next start opens normally. The key it replaces, if
+   any, is kept once as `db-key.prev`.
+
+If a valid recovery key is reported as not opening the database, either it is
+another key or the file is damaged (AES-GCM cannot tell them apart). With the
+right key, close Pharos, move `pharos.db.enc` aside and copy the newest
+`pharos.db.enc.bak-…` in its place as `pharos.db.enc`. Pharos never deletes a
+saved file it cannot decrypt: a lone `pharos.db.enc.new` (a first save that
+never finished) stays until it opens or you remove it.
 
 `0.1.0-alpha.1` does not check for newer data. Never open data upgraded by a
 later version with it; restore the matching `.bak` copy first.
