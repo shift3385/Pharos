@@ -143,27 +143,36 @@ jobs:
         if: failure()
         continue-on-error: true
         run: |
-          "whoami: $(whoami)"
-          "session: $([System.Diagnostics.Process]::GetCurrentProcess().SessionId)"
-          "interactive: $([Environment]::UserInteractive)"
-          query session 2>&1
-          foreach ($k in 'HKLM:\SOFTWARE\Policies\Microsoft\Edge', 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2', 'HKCU:\SOFTWARE\Policies\Microsoft\Edge') {
-            if (Test-Path $k) { "policy $k"; Get-ItemProperty $k | Format-List | Out-String }
-          }
-          $udf = Join-Path $env:RUNNER_TEMP 'webview2-diag'
+          $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+          "user: $($id.Name) admin: $(([Security.Principal.WindowsPrincipal]$id).IsInRole('Administrators')) session: $([Diagnostics.Process]::GetCurrentProcess().SessionId)"
+          Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -ErrorAction SilentlyContinue | Select-Object EnableLUA, ConsentPromptBehaviorAdmin | Format-List | Out-String
           $env:PHAROS_E2E_PROFILE = 'diag'
-          $env:WEBVIEW2_USER_DATA_FOLDER = $udf
+          # One try: start Pharos, wait, show the WebView2 browser process's
+          # arguments and whether the DevTools port answers, then stop it.
+          function Try-Launch($label, $port) {
+            "=== $label"
+            $app = Start-Process -FilePath src-tauri\target\debug\pharos.exe -PassThru
+            Start-Sleep 20
+            "app alive: $(-not $app.HasExited)"
+            Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" |
+              Where-Object { $_.CommandLine -notmatch '--type=' } |
+              ForEach-Object { "browser: $($_.CommandLine)" }
+            try { "devtools: $((Invoke-RestMethod "http://127.0.0.1:$port/json/version").Browser)" } catch { "devtools: $($_.Exception.Message)" }
+            Get-ChildItem $env:WEBVIEW2_USER_DATA_FOLDER -Recurse -Filter DevToolsActivePort -ErrorAction SilentlyContinue | ForEach-Object { "found: $($_.FullName)" }
+            Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
+            Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Sleep 2
+          }
+          $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:RUNNER_TEMP 'wv2-env'
           $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
-          $app = Start-Process -FilePath src-tauri\target\debug\pharos.exe -PassThru
-          Start-Sleep 30
-          "app alive: $(-not $app.HasExited)"
-          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Select-Object Id, SessionId, StartTime | Format-Table | Out-String
-          Get-ChildItem $udf -Recurse -ErrorAction SilentlyContinue | Select-Object -First 30 FullName | Out-String
-          try { Invoke-RestMethod http://127.0.0.1:9222/json/version | ConvertTo-Json } catch { "devtools: $($_.Exception.Message)" }
-          Get-WinEvent -LogName Application -MaxEvents 30 -ErrorAction SilentlyContinue |
-            Where-Object { $_.ProviderName -match 'Application Error|Windows Error Reporting|WebView|Edge' } |
-            Select-Object TimeCreated, ProviderName, Message | Format-List | Out-String -Width 300
-          Stop-Process -Id $app.Id -Force -ErrorAction SilentlyContinue
+          Try-Launch 'environment variable' 9222
+          Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+          $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:RUNNER_TEMP 'wv2-reg'
+          $key = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name 'pharos.exe' -Value '--remote-debugging-port=9223' -Force | Out-Null
+          Try-Launch 'registry policy (HKCU)' 9223
+          Remove-Item -Path 'HKCU:\Software\Policies\Microsoft\Edge\WebView2' -Recurse -Force
       - name: Upload the E2E results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
