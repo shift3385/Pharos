@@ -73,9 +73,8 @@
     tokens. El usuario decide reintentar.
 - **Consecuencias:**
   - El cliente gana la dependencia `zod` 4 (`^4.6.7`, unos 15 KB gzip). Es la
-    versión con el arreglo de GHSA-mrhx-c7xc-m3w5; el servidor sigue en zod 3
-    con esa excepción hasta BASE-18. Cuando el servidor suba a zod 4, los dos
-    lados compartirán versión.
+    versión con el arreglo de GHSA-mrhx-c7xc-m3w5. El servidor también usa
+    zod 4 desde BASE-18, así que los dos lados comparten versión.
   - Un modelo pequeño o poco obediente puede devolver respuestas inválidas a
     menudo. Se ve como error y nunca se aplica en silencio.
   - Si falla el guardado de un caso concreto (un error del store, no de la IA),
