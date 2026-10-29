@@ -41,7 +41,19 @@ describe("client diagnostics", () => {
     );
     expect(text).toContain("Error: login failed for <email>");
     expect(text).not.toContain("ana@cliente.example");
-    expect(describeError("x".repeat(5000)).length).toBe(2000);
+    expect(describeError(new Error("x".repeat(5000))).length).toBe(2000);
+  });
+
+  it("keeps only the type of non-Error values, which may hold user text", () => {
+    expect(describeError("Proyecto Zafiro no encontrado")).toBe(
+      "Non-Error value (string)",
+    );
+    expect(describeError({ title: "Caso secreto" })).toBe(
+      "Non-Error value (object)",
+    );
+    expect(describeError(null, "unhandledrejection")).toBe(
+      "Non-Error value (null)\nunhandledrejection",
+    );
   });
 
   it("buffers errors in the web preview without calling Rust", () => {

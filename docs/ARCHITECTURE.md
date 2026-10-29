@@ -89,26 +89,38 @@ Local only — nothing is sent anywhere.
   daily rotating file, `pharos.YYYY-MM-DD.log` (7 kept), under the app log dir
   (`%LOCALAPPDATA%\com.pharos.desktop\logs`). The filter is `info`, or the
   `EnvFilter` directive in `PHAROS_LOG`. `log` records from Tauri/wry are
-  bridged in, panics are logged, and debug builds also log to stderr. Startup
-  logs the version, OS and WebView2, and how long the database took to open.
+  bridged in and debug builds also log to stderr. A panic is also appended
+  synchronously to `pharos.panic.log`, since the non-blocking writer may not
+  flush before the process ends. Without a resolvable or writable log dir the
+  app runs without a log file. Today the Rust side logs startup (version, OS,
+  WebView2), how long the database took to open or why it failed, the
+  diagnostic export and frontend errors; each track adds logging to its own
+  modules under the content rule below (ADR-0022).
 - **Content rule:** a log line never interpolates user content — only ids,
   command names, counts and error kinds. Text from outside that rule
   (frontend errors, error strings) goes through `redact` (emails, tokens, API
   keys, `key=value` secrets, long opaque strings except UUIDs, the Windows
-  user name in paths). Every module logs its own failures with
-  `tracing::warn!` / `error!` under this rule.
+  user name in paths). Redaction is a safety net: free text such as a name in
+  a provider error is not detected, so the content rule comes first.
 - **Frontend (`@shared/diagnostics`):** uncaught errors, unhandled rejections
   and errors caught by `ErrorBoundary` go to the desktop log through the
-  `diag_log` command (in the web preview, to an in-memory buffer). Two
+  `diag_log` command (in the web preview, to an in-memory buffer). Only an
+  `Error`'s name, message and stack are kept; for any other thrown or
+  rejected value only its type. `diag_log` writes at most 20 messages per
+  10 s, so an error loop cannot grow the log without bound. Two
   boundaries: one around the whole app (`main.tsx`) and one per page inside
   the shell, reset on navigation.
 - **Diagnostic bundle:** `diag_export` builds it and the frontend zips it
   (`diagnostic.json` + `logs/`). It carries the app version (the single
   version source), build profile, Tauri, OS, WebView2, UI language and theme,
-  applied migrations and the last 2,000 lines of the 3 newest logs, redacted
-  again. It never carries the database or its key, keychain entries, the
-  profile, entity content, settings or environment variables. The test
-  `diag::tests::bundle_excludes_user_data` enforces it.
+  applied migrations and the last 2,000 lines (read from at most the last
+  1 MiB) of the 3 newest logs, redacted again. It works without a database:
+  when the local database failed to open, the bundle carries no migrations and
+  a redacted `openError` instead. It never carries the database or its key,
+  keychain entries, the profile, entity content, settings or environment
+  variables. The test `diag::tests::bundle_excludes_user_data` and the E2E
+  spec `e2e/specs/diagnostics.e2e.ts` (which clicks the button and opens the
+  saved ZIP) enforce it.
 - **Version in the UI (UX-07):** `APP_VERSION` (`@shared/version`, read from
   the root `package.json`) at the foot of the sidebar and in Administration.
 
@@ -128,8 +140,12 @@ The QA tool tests itself at four levels:
   sign in with the seeded test account, create a project, restart, and the
   project and the session are still there. Each run uses an isolated
   instance: `PHAROS_E2E_PROFILE` (honoured only by debug builds,
-  `src-tauri/src/instance.rs`) moves the data dir, log dir and keychain session
-  entry, and `WEBVIEW2_USER_DATA_FOLDER` moves the WebView2 storage.
+  `src-tauri/src/instance.rs`) moves the data dir, log dir and every keychain
+  account (`instance::account`: the session and the AI keys; only the local
+  database key in `db.rs` is shared), and the run deletes its
+  credentials at the end. `WEBVIEW2_USER_DATA_FOLDER` moves the WebView2
+  storage. Each spec starts signed out and, at the end, deletes every `E2E …`
+  project on the test account, syncs and signs out.
 
 Coverage (BASE-13) is a report, not a gate: `npm run coverage`
 (`@vitest/coverage-v8`) and `npm run coverage:rust` (`cargo llvm-cov`, works

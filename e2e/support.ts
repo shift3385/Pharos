@@ -2,7 +2,7 @@
 // locale (the default UI language), so a text change in es.json does not break
 // the selectors.
 import { readFileSync } from "node:fs";
-import { $, browser, expect } from "@wdio/globals";
+import { $, $$, browser, expect } from "@wdio/globals";
 
 export const es = JSON.parse(
   readFileSync(
@@ -31,7 +31,7 @@ export async function signIn() {
 
 export async function openProjects() {
   await $('[data-testid="nav-projects"]').click();
-  await expect($("h1")).toHaveText(es.projects.title);
+  await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
 }
 
 /** Creates a project; the app then opens it, titled with its name. */
@@ -40,7 +40,7 @@ export async function createProject(name: string) {
   await button(es.projects.new).click();
   await $(`input[placeholder="${es.projects.namePlaceholder}"]`).setValue(name);
   await button(es.projects.create).click();
-  await expect($("h1")).toHaveText(name);
+  await expect($(`h1=${name}`)).toBeDisplayed();
 }
 
 /**
@@ -70,27 +70,62 @@ export async function syncNow() {
   }
 }
 
+/** Projects the specs create start with this, so leftovers are recognisable. */
+export const TEST_PROJECT_PREFIX = "E2E ";
+
+export async function signOut() {
+  await button(es.auth.logout).click();
+  await expect(button(es.auth.login)).toBeDisplayed();
+}
+
 /**
- * Leaves the local server account as it was: deletes the project, pushes the
- * deletion (autosync only runs at sign-in) and signs out, which also clears
- * the run's keychain entry. Signing out happens even if a step before fails,
- * so the next spec starts signed out.
+ * Each spec starts signed out, whatever the previous spec left: specs share
+ * the run's profile (data dir and keychain), so a cached session survives.
  */
-export async function cleanUp(projectName: string) {
+export async function ensureSignedOut() {
+  await $("body").waitForExist();
+  await browser.waitUntil(
+    async () =>
+      (await button(es.auth.login).isExisting()) ||
+      (await button(es.auth.logout).isExisting()),
+    { timeoutMsg: "neither the sign-in screen nor the app shell appeared" },
+  );
+  if (await button(es.auth.logout).isExisting()) await signOut();
+}
+
+/** Titles of the projects whose name starts with `TEST_PROJECT_PREFIX`. */
+async function testProjectTitles(): Promise<string[]> {
+  const titles = await $$("li.tp__item .tp__item-title").map((el) =>
+    el.getText(),
+  );
+  return (
+    titles
+      // Drop the folder glyph ("▸ ") in front of the name.
+      .map((title) => title.replace(/^[^\p{L}\p{N}]+/u, "").trim())
+      .filter((name) => name.startsWith(TEST_PROJECT_PREFIX))
+  );
+}
+
+/**
+ * Leaves the local test account as it was: deletes every `E2E …` project
+ * (this run's and any a failed run left, which arrive with the sign-in pull),
+ * pushes the deletions (autosync only runs at sign-in) and signs out, which
+ * also clears the run's keychain session. Signing out happens even if a step
+ * before fails, so the next spec starts signed out.
+ */
+export async function cleanUp() {
   try {
     await openProjects();
-    if (await projectRow(projectName).isExisting()) {
-      await projectRow(projectName)
+    const names = await testProjectTitles();
+    for (const name of names) {
+      await projectRow(name)
         .$(`button[aria-label="${es.common.delete}"]`)
         .click();
       await button(es.projects.deleteConfirm).click();
-      await expect(projectRow(projectName)).not.toBeExisting();
-      await syncNow();
+      await expect(projectRow(name)).not.toBeExisting();
     }
+    if (names.length > 0) await syncNow();
   } finally {
-    if (await button(es.auth.logout).isExisting()) {
-      await button(es.auth.logout).click();
-      await expect(button(es.auth.login)).toBeDisplayed();
-    }
+    if (await button(es.auth.logout).isExisting()) await signOut();
   }
 }

@@ -160,11 +160,7 @@
       "keepRemote": "Use the server's",
       "resolved": "Conflict resolved",
       "failed": "Could not resolve the conflict",
-      "entity": {
-        "project": "Project",
-        "test_plan": "Test plan",
-        "test_case": "Test case"
-      },
+      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case" },
       "fields": {
         "title": "Title",
         "name": "Name",
@@ -827,7 +823,7 @@
   "diagnostics": {
     "export": "Export diagnostics",
     "exporting": "Exporting…",
-    "exported": "Diagnostics saved: {{file}}",
+    "exported": "Diagnostics saved to your downloads folder: {{file}}",
     "failed": "The diagnostics could not be exported."
   },
   "errorBoundary": {

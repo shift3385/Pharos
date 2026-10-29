@@ -34,7 +34,9 @@ describe("ErrorBoundary (BASE-08)", () => {
     );
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Algo salió mal")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Exportar diagnóstico" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Exportar diagnóstico" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(`Versión ${pkg.version}`)).toBeInTheDocument();
     expect(vi.mocked(logClientError)).toHaveBeenCalledWith(
       expect.objectContaining({ message: "render exploded" }),
@@ -86,9 +88,13 @@ describe("ErrorBoundary (BASE-08)", () => {
         <Boom explode />
       </ErrorBoundary>,
     );
-    await user.click(screen.getByRole("button", { name: "Exportar diagnóstico" }));
+    await user.click(
+      screen.getByRole("button", { name: "Exportar diagnóstico" }),
+    );
     expect(
-      await screen.findByText("Diagnóstico guardado: pharos-diagnostic-x.zip"),
+      await screen.findByText(
+        "Diagnóstico guardado en tu carpeta de descargas: pharos-diagnostic-x.zip",
+      ),
     ).toBeInTheDocument();
   });
 });

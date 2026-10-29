@@ -70,6 +70,32 @@ function waitForPort(port: number, timeoutMs: number): Promise<void> {
   });
 }
 
+/**
+ * Deletes every Credential Manager entry of this run: the instance scopes
+ * keychain accounts as `<base>-e2e-<run>` (session, AI keys), stored as
+ * `<account>.<service>`. Signing out already clears the session; this also
+ * covers a run that failed before signing out.
+ */
+function removeRunCredentials() {
+  let listing = "";
+  try {
+    listing = execFileSync("cmdkey", ["/list"], { encoding: "utf8" });
+  } catch {
+    return;
+  }
+  const suffix = `-e2e-${runId}.`;
+  const targets = [...listing.matchAll(/target=(\S+)/gi)]
+    .map((m) => m[1])
+    .filter((target) => target.includes(suffix));
+  for (const target of targets) {
+    try {
+      execFileSync("cmdkey", [`/delete:${target}`], { stdio: "ignore" });
+    } catch {
+      console.warn(`Could not delete the credential ${target}`);
+    }
+  }
+}
+
 const application = appBinary();
 let tauriDriver: ChildProcess | undefined;
 
@@ -148,5 +174,6 @@ export const config: WebdriverIO.Config = {
         // Not empty (another run) or already gone.
       }
     }
+    removeRunCredentials();
   },
 };

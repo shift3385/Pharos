@@ -1,14 +1,15 @@
 //! Which local instance this process is (ADR-0022). Normally the app uses its
-//! data and log directories and the `session` keychain entry. The E2E smoke
-//! (BASE-14) sets `PHAROS_E2E_PROFILE=<name>` so a test run gets its own
-//! directories and keychain entry and never touches the user's data or cached
-//! session. The variable is honoured only in debug builds: a release build
-//! always runs as the normal instance.
+//! data and log directories and its keychain accounts (`session`,
+//! `ai-key.<provider>`). The E2E smoke (BASE-14) sets
+//! `PHAROS_E2E_PROFILE=<name>` so a test run gets its own directories and
+//! keychain accounts and never touches the user's data, cached session or AI
+//! keys. Only the local database key (`db-key`, owned by db.rs) is shared. The
+//! variable is honoured only in debug builds: a release build always runs as
+//! the normal instance.
 
 use std::path::PathBuf;
 
 const PROFILE_VAR: &str = "PHAROS_E2E_PROFILE";
-const SESSION_ACCOUNT: &str = "session";
 
 /// The active E2E profile name, if any (debug builds only).
 pub fn e2e_profile() -> Option<String> {
@@ -42,15 +43,17 @@ fn scoped_dir_for(base: PathBuf, profile: Option<&str>) -> PathBuf {
     }
 }
 
-/// Keychain account that caches the session for this instance.
-pub fn session_account() -> String {
-    session_account_for(e2e_profile().as_deref())
+/// The keychain account `base` for this instance: `base` itself, or
+/// `<base>-e2e-<profile>` for an E2E profile. Every keychain account goes
+/// through here.
+pub fn account(base: &str) -> String {
+    account_for(base, e2e_profile().as_deref())
 }
 
-fn session_account_for(profile: Option<&str>) -> String {
+fn account_for(base: &str, profile: Option<&str>) -> String {
     match profile {
-        Some(name) => format!("{SESSION_ACCOUNT}-e2e-{name}"),
-        None => SESSION_ACCOUNT.to_string(),
+        Some(name) => format!("{base}-e2e-{name}"),
+        None => base.to_string(),
     }
 }
 
@@ -72,7 +75,8 @@ mod tests {
     fn normal_instance_keeps_dirs_and_session() {
         let base = PathBuf::from("data");
         assert_eq!(scoped_dir_for(base.clone(), None), base);
-        assert_eq!(session_account_for(None), "session");
+        assert_eq!(account_for("session", None), "session");
+        assert_eq!(account_for("ai-key.gemini", None), "ai-key.gemini");
     }
 
     #[test]
@@ -82,6 +86,10 @@ mod tests {
             scoped_dir_for(base, Some("run1")),
             PathBuf::from("data").join("e2e").join("run1")
         );
-        assert_eq!(session_account_for(Some("run1")), "session-e2e-run1");
+        assert_eq!(account_for("session", Some("run1")), "session-e2e-run1");
+        assert_eq!(
+            account_for("ai-key.openai", Some("run1")),
+            "ai-key.openai-e2e-run1"
+        );
     }
 }

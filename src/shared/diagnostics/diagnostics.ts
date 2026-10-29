@@ -18,12 +18,16 @@ function isTauri(): boolean {
   );
 }
 
-/** Message (and stack) of anything thrown, redacted and truncated. */
+/**
+ * Message (and stack) of an Error, redacted and truncated. Anything else that
+ * is thrown or rejected (a string, an API payload) may hold user text, so only
+ * its type is kept.
+ */
 export function describeError(error: unknown, context?: string): string {
   const base =
     error instanceof Error
       ? `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`
-      : String(error);
+      : `Non-Error value (${error === null ? "null" : typeof error})`;
   const text = context ? `${base}\n${context}` : base;
   return redact(text).slice(0, MAX_MESSAGE);
 }
@@ -128,6 +132,7 @@ export async function exportDiagnostics(): Promise<string> {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Revoking right after click() can cancel the download before it starts.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
   return name;
 }

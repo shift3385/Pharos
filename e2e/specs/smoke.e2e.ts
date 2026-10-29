@@ -3,9 +3,11 @@
 // session are still there.
 import { browser, expect } from "@wdio/globals";
 import {
+  TEST_PROJECT_PREFIX,
   button,
   cleanUp,
   createProject,
+  ensureSignedOut,
   es,
   openProjects,
   pkg,
@@ -14,9 +16,13 @@ import {
   versionBadge,
 } from "../support";
 
-const projectName = `E2E smoke ${process.env.PHAROS_E2E_PROFILE}`;
+const projectName = `${TEST_PROJECT_PREFIX}smoke ${process.env.PHAROS_E2E_PROFILE}`;
 
 describe("Pharos desktop smoke (BASE-14)", () => {
+  before(async () => {
+    await ensureSignedOut();
+  });
+
   it("starts on the sign-in screen", async () => {
     await expect(button(es.auth.login)).toBeDisplayed();
   });
@@ -38,6 +44,6 @@ describe("Pharos desktop smoke (BASE-14)", () => {
   });
 
   after(async () => {
-    await cleanUp(projectName);
+    await cleanUp();
   });
 });

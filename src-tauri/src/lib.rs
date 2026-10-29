@@ -22,20 +22,21 @@ use tauri::Manager;
 
 // The session is cached in the OS keychain (Windows Credential Manager) so the
 // app can reopen offline without storing the refresh token in plain text (§4).
-// The account is `session`, or a per-run one for an E2E profile (instance.rs).
+// The account is `session`, scoped per instance for an E2E profile (instance.rs).
 const KEYCHAIN_SERVICE: &str = "pharos";
+const SESSION_ACCOUNT: &str = "session";
 
 #[tauri::command]
 fn session_save(data: String) -> Result<(), String> {
-    Entry::new(KEYCHAIN_SERVICE, &instance::session_account())
+    Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
         .and_then(|entry| entry.set_password(&data))
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn session_load() -> Result<Option<String>, String> {
-    let entry =
-        Entry::new(KEYCHAIN_SERVICE, &instance::session_account()).map_err(|e| e.to_string())?;
+    let entry = Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
+        .map_err(|e| e.to_string())?;
     match entry.get_password() {
         Ok(password) => Ok(Some(password)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -45,8 +46,8 @@ fn session_load() -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn session_clear() -> Result<(), String> {
-    let entry =
-        Entry::new(KEYCHAIN_SERVICE, &instance::session_account()).map_err(|e| e.to_string())?;
+    let entry = Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
+        .map_err(|e| e.to_string())?;
     match entry.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),
@@ -57,11 +58,14 @@ fn session_clear() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            app.manage(diag::init(instance::scoped_dir(app.path().app_log_dir()?)));
+            // Without a resolvable log dir Pharos runs without a log file.
+            let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
+            app.manage(diag::init(log_dir));
             let data_dir = instance::scoped_dir(app.path().app_data_dir()?);
             let started = std::time::Instant::now();
             let database = Db::open(&data_dir).map_err(|e| {
                 tracing::error!(error = %diag::redact(&e), "local database failed to open");
+                app.state::<diag::DiagState>().record_db_open_error(&e);
                 std::io::Error::other(e)
             })?;
             tracing::info!(

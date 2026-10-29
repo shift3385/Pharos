@@ -6,20 +6,24 @@
 //! an `EnvFilter` directive. Log statements never interpolate user content —
 //! only ids, command names, counts and error kinds — and anything that comes
 //! from outside that rule (frontend errors, error strings) goes through
-//! [`redact`] first.
+//! [`redact`] first. A panic is also appended synchronously to
+//! `pharos.panic.log`, because the non-blocking writer may not flush it.
 //!
 //! The diagnostic bundle carries the app version, OS, WebView2, applied
 //! migrations and the recent logs (redacted again). It never carries the
-//! database, keys, tokens, the profile or any entity content.
+//! database, keys, tokens, the profile or any entity content. It still works
+//! when the database failed to open: it then reports why, without migrations.
 
 use std::fs;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use regex::{Captures, Regex};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::layer::SubscriberExt;
@@ -31,34 +35,65 @@ use crate::db::Db;
 const LOG_PREFIX: &str = "pharos";
 const LOG_SUFFIX: &str = "log";
 const LOG_FILES_KEPT: usize = 7;
-/// Log files and lines per file that go into a diagnostic bundle.
+const PANIC_LOG: &str = "pharos.panic.log";
+/// Log files, lines per file and bytes read from the end of each file that go
+/// into a diagnostic bundle.
 const BUNDLE_LOG_FILES: usize = 3;
 const BUNDLE_LOG_LINES: usize = 2000;
+const BUNDLE_LOG_TAIL_BYTES: u64 = 1024 * 1024;
 /// Longest frontend message accepted by `diag_log`.
 const MAX_CLIENT_MESSAGE: usize = 2000;
+/// `diag_log` writes at most this many messages per window, so an error loop
+/// in the frontend cannot grow the day's log without bound.
+const CLIENT_LOG_MAX: u32 = 20;
+const CLIENT_LOG_WINDOW: Duration = Duration::from_secs(10);
+/// Longest database-open error kept for the bundle.
+const MAX_OPEN_ERROR: usize = 300;
 
-/// Managed state: where the logs live, plus the guard that flushes the
-/// non-blocking writer when the app exits.
+/// Managed state: where the logs live, why the database did not open (if it
+/// did not), the `diag_log` throttle, and the guard that flushes the
+/// non-blocking writer.
 pub struct DiagState {
-    log_dir: PathBuf,
+    log_dir: Option<PathBuf>,
+    db_open_error: Mutex<Option<String>>,
+    throttle: Mutex<Throttle>,
     _guard: Option<WorkerGuard>,
 }
 
-/// Starts logging into `log_dir`. Never fails the app: without a writable log
-/// dir Pharos runs without a log file.
-pub fn init(log_dir: PathBuf) -> DiagState {
+impl DiagState {
+    /// Keeps a redacted, truncated copy of why the database failed to open, so
+    /// a later diagnostic export can report it.
+    pub fn record_db_open_error(&self, error: &str) {
+        let kept: String = redact(error).chars().take(MAX_OPEN_ERROR).collect();
+        if let Ok(mut slot) = self.db_open_error.lock() {
+            *slot = Some(kept);
+        }
+    }
+
+    fn db_open_error(&self) -> Option<String> {
+        self.db_open_error.lock().ok().and_then(|slot| slot.clone())
+    }
+}
+
+/// The daily rotating appender in `log_dir`, or `None` if the dir cannot be
+/// created or written.
+fn file_appender(log_dir: &Path) -> Option<RollingFileAppender> {
+    fs::create_dir_all(log_dir).ok()?;
+    RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix(LOG_PREFIX)
+        .filename_suffix(LOG_SUFFIX)
+        .max_log_files(LOG_FILES_KEPT)
+        .build(log_dir)
+        .ok()
+}
+
+/// Starts logging into `log_dir`. Never fails the app: without a log dir, or
+/// with one that cannot be written, Pharos runs without a log file.
+pub fn init(log_dir: Option<PathBuf>) -> DiagState {
     let filter =
         || EnvFilter::try_from_env("PHAROS_LOG").unwrap_or_else(|_| EnvFilter::new("info"));
-    let file = fs::create_dir_all(&log_dir).ok().and_then(|_| {
-        RollingFileAppender::builder()
-            .rotation(Rotation::DAILY)
-            .filename_prefix(LOG_PREFIX)
-            .filename_suffix(LOG_SUFFIX)
-            .max_log_files(LOG_FILES_KEPT)
-            .build(&log_dir)
-            .ok()
-    });
-    let (file_layer, guard) = match file {
+    let (file_layer, guard) = match log_dir.as_deref().and_then(file_appender) {
         Some(appender) => {
             let (writer, guard) = tracing_appender::non_blocking(appender);
             let layer = fmt::layer()
@@ -70,6 +105,7 @@ pub fn init(log_dir: PathBuf) -> DiagState {
         }
         None => (None, None),
     };
+    let has_file = file_layer.is_some();
     let stderr_layer = cfg!(debug_assertions).then(|| {
         fmt::layer()
             .with_writer(std::io::stderr)
@@ -81,21 +117,24 @@ pub fn init(log_dir: PathBuf) -> DiagState {
         .with(stderr_layer)
         .try_init();
 
-    install_panic_hook();
+    install_panic_hook(log_dir.clone().filter(|_| has_file));
     tracing::info!(
         version = env!("CARGO_PKG_VERSION"),
         build = build_profile(),
         os = %os_info::get(),
         webview = tauri::webview_version().ok().as_deref().unwrap_or("unknown"),
+        log_file = has_file,
         "pharos started"
     );
     DiagState {
         log_dir,
+        db_open_error: Mutex::new(None),
+        throttle: Mutex::new(Throttle::default()),
         _guard: guard,
     }
 }
 
-fn install_panic_hook() {
+fn install_panic_hook(log_dir: Option<PathBuf>) {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         let location = info
@@ -108,9 +147,38 @@ fn install_panic_hook() {
             .map(|s| s.to_string())
             .or_else(|| info.payload().downcast_ref::<String>().cloned())
             .unwrap_or_default();
-        tracing::error!(target: "panic", location, message = %redact(&payload), "panic");
+        let message = redact(&payload);
+        if let Some(dir) = &log_dir {
+            write_panic_line(dir, &location, &message);
+        }
+        tracing::error!(target: "panic", location, %message, "panic");
         previous(info);
     }));
+}
+
+/// Appends one JSON line to `pharos.panic.log` and syncs it. A panic may end
+/// the process before the non-blocking writer flushes, so this path does not
+/// go through it.
+fn write_panic_line(log_dir: &Path, location: &str, message: &str) {
+    let unix_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or_default();
+    let line = serde_json::json!({
+        "unixMs": unix_ms,
+        "level": "ERROR",
+        "target": "panic",
+        "fields": { "message": "panic", "location": location, "panic": message },
+    });
+    // If even this fails there is nothing else to do: stderr still has it.
+    let _ = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_dir.join(PANIC_LOG))
+        .and_then(|mut file| {
+            writeln!(file, "{line}")?;
+            file.sync_all()
+        });
 }
 
 fn build_profile() -> &'static str {
@@ -118,6 +186,40 @@ fn build_profile() -> &'static str {
         "debug"
     } else {
         "release"
+    }
+}
+
+/// Fixed-window limit for `diag_log`.
+#[derive(Default)]
+struct Throttle {
+    window_start: Option<Instant>,
+    admitted: u32,
+    dropped: u32,
+}
+
+impl Throttle {
+    /// `Some(n)` when a message may be written, where `n` messages were
+    /// dropped in the previous window (to report once); `None` to drop it.
+    fn admit(&mut self, now: Instant) -> Option<u32> {
+        let fresh = self
+            .window_start
+            .map_or(true, |start| now.duration_since(start) >= CLIENT_LOG_WINDOW);
+        let mut dropped_before = 0;
+        if fresh {
+            dropped_before = self.dropped;
+            *self = Throttle {
+                window_start: Some(now),
+                admitted: 0,
+                dropped: 0,
+            };
+        }
+        if self.admitted < CLIENT_LOG_MAX {
+            self.admitted += 1;
+            Some(dropped_before)
+        } else {
+            self.dropped += 1;
+            None
+        }
     }
 }
 
@@ -176,7 +278,8 @@ fn uuid() -> &'static Regex {
 }
 
 /// Masks emails, tokens, API keys, secrets in `key=value` form, long opaque
-/// strings and the Windows user name in profile paths.
+/// strings and the Windows user name in profile paths. A safety net, not a
+/// licence: free text (a person's name in a provider error) is not detected.
 pub fn redact(text: &str) -> String {
     let mut out = text.to_string();
     for rule in rules() {
@@ -249,6 +352,9 @@ struct OsInfo {
 #[serde(rename_all = "camelCase")]
 struct DatabaseInfo {
     migrations: Vec<AppliedMigration>,
+    /// Why the local database is not open; absent when it is.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    open_error: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
@@ -286,9 +392,29 @@ fn is_log_name(name: &str) -> bool {
     name.starts_with(&format!("{LOG_PREFIX}.")) && name.ends_with(&format!(".{LOG_SUFFIX}"))
 }
 
+/// The last `max_lines` lines of `path`, reading at most `max_bytes` from its
+/// end (a partial first line is dropped), so a huge log is never loaded whole.
+fn read_tail(path: &Path, max_bytes: u64, max_lines: usize) -> Option<String> {
+    let mut file = fs::File::open(path).ok()?;
+    let len = file.metadata().ok()?.len();
+    let start = len.saturating_sub(max_bytes);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes).ok()?;
+    let text = String::from_utf8_lossy(&bytes);
+    let text = if start > 0 {
+        text.split_once('\n').map(|(_, rest)| rest).unwrap_or("")
+    } else {
+        &text
+    };
+    let lines: Vec<&str> = text.lines().collect();
+    Some(lines[lines.len().saturating_sub(max_lines)..].join("\n"))
+}
+
 /// The newest `BUNDLE_LOG_FILES` logs in `log_dir` (not its subdirectories,
-/// where E2E profiles log), each cut to its last `BUNDLE_LOG_LINES` lines and
-/// redacted. A missing dir gives no logs.
+/// where E2E profiles log), each cut to its tail and redacted. Names sort
+/// newest first, and `pharos.panic.log` before the dated files. A missing dir
+/// gives no logs.
 fn recent_logs(log_dir: &Path) -> Vec<LogFile> {
     let Ok(entries) = fs::read_dir(log_dir) else {
         return Vec::new();
@@ -299,16 +425,16 @@ fn recent_logs(log_dir: &Path) -> Vec<LogFile> {
         .filter_map(|e| e.file_name().into_string().ok())
         .filter(|n| is_log_name(n))
         .collect();
-    // Date-stamped names sort chronologically; newest first.
     names.sort_unstable_by(|a, b| b.cmp(a));
     names
         .into_iter()
         .take(BUNDLE_LOG_FILES)
         .filter_map(|name| {
-            let bytes = fs::read(log_dir.join(&name)).ok()?;
-            let text = String::from_utf8_lossy(&bytes);
-            let lines: Vec<&str> = text.lines().collect();
-            let tail = lines[lines.len().saturating_sub(BUNDLE_LOG_LINES)..].join("\n");
+            let tail = read_tail(
+                &log_dir.join(&name),
+                BUNDLE_LOG_TAIL_BYTES,
+                BUNDLE_LOG_LINES,
+            )?;
             Some(LogFile {
                 name,
                 content: redact(&tail),
@@ -317,13 +443,26 @@ fn recent_logs(log_dir: &Path) -> Vec<LogFile> {
         .collect()
 }
 
+/// The bundle. `conn` is `None` when the database failed to open; the bundle
+/// then carries `open_error` instead of the migrations.
 fn build_bundle(
-    conn: &Connection,
-    log_dir: &Path,
+    conn: Option<&Connection>,
+    open_error: Option<String>,
+    log_dir: Option<&Path>,
     client: ClientInfo,
     webview: String,
 ) -> Result<DiagnosticBundle, String> {
     let os = os_info::get();
+    let database = match conn {
+        Some(conn) => DatabaseInfo {
+            migrations: applied_migrations(conn)?,
+            open_error: None,
+        },
+        None => DatabaseInfo {
+            migrations: Vec::new(),
+            open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
+        },
+    };
     Ok(DiagnosticBundle {
         manifest: Manifest {
             app: AppInfo {
@@ -343,35 +482,67 @@ fn build_bundle(
                 language: redact(&client.language),
                 theme: redact(&client.theme),
             },
-            database: DatabaseInfo {
-                migrations: applied_migrations(conn)?,
-            },
+            database,
         },
-        logs: recent_logs(log_dir),
+        logs: log_dir.map(recent_logs).unwrap_or_default(),
     })
 }
 
-/// Writes a frontend error or warning into the log, redacted and truncated.
+/// The level and the redacted, truncated text `diag_log` writes for a
+/// frontend message. Unknown levels are logged as info.
+fn client_event(level: &str, message: &str) -> (tracing::Level, String) {
+    let level = match level {
+        "error" => tracing::Level::ERROR,
+        "warn" => tracing::Level::WARN,
+        _ => tracing::Level::INFO,
+    };
+    let text = redact(message).chars().take(MAX_CLIENT_MESSAGE).collect();
+    (level, text)
+}
+
+/// Writes a frontend error or warning into the log: redacted, truncated and
+/// throttled (`CLIENT_LOG_MAX` per `CLIENT_LOG_WINDOW`).
 #[tauri::command]
-pub fn diag_log(level: String, message: String) {
-    let message: String = redact(&message).chars().take(MAX_CLIENT_MESSAGE).collect();
-    match level.as_str() {
-        "error" => tracing::error!(target: "frontend", %message),
-        "warn" => tracing::warn!(target: "frontend", %message),
+pub fn diag_log(diag: State<DiagState>, level: String, message: String) {
+    let admitted = match diag.throttle.lock() {
+        Ok(mut throttle) => throttle.admit(Instant::now()),
+        Err(_) => None,
+    };
+    let Some(dropped_before) = admitted else {
+        return;
+    };
+    if dropped_before > 0 {
+        tracing::warn!(target: "frontend", dropped = dropped_before, "frontend messages dropped by the throttle");
+    }
+    let (level, message) = client_event(&level, &message);
+    match level {
+        tracing::Level::ERROR => tracing::error!(target: "frontend", %message),
+        tracing::Level::WARN => tracing::warn!(target: "frontend", %message),
         _ => tracing::info!(target: "frontend", %message),
     }
 }
 
-/// Builds the diagnostic bundle; the frontend zips and saves it.
+/// Builds the diagnostic bundle; the frontend zips and saves it. Works without
+/// a database, so it is available exactly when the database failed to open.
 #[tauri::command]
 pub fn diag_export(
-    db: State<Db>,
+    app: AppHandle,
     diag: State<DiagState>,
     client: ClientInfo,
 ) -> Result<DiagnosticBundle, String> {
     let webview = tauri::webview_version().unwrap_or_else(|_| "unknown".to_string());
-    let bundle = db.with_conn(|conn| build_bundle(conn, &diag.log_dir, client, webview))?;
-    tracing::info!(logs = bundle.logs.len(), "diagnostic bundle exported");
+    let log_dir = diag.log_dir.as_deref();
+    let bundle = match app.try_state::<Db>() {
+        Some(db) => {
+            db.with_conn(|conn| build_bundle(Some(conn), None, log_dir, client, webview))?
+        }
+        None => build_bundle(None, diag.db_open_error(), log_dir, client, webview)?,
+    };
+    tracing::info!(
+        logs = bundle.logs.len(),
+        database_open = bundle.manifest.database.open_error.is_none(),
+        "diagnostic bundle exported"
+    );
     Ok(bundle)
 }
 
@@ -388,6 +559,9 @@ mod tests {
     const OPENAI_KEY: &str = "sk-proj-AbCdEf0123456789GhIjKl";
     const GEMINI_KEY: &str = "AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q";
     const REFRESH: &str = "f3a9c1d2e4b5a6978877665544332211aabbccdd";
+
+    /// Cases shared with the frontend redactor (redact.test.ts).
+    const FIXTURE: &str = include_str!("../../src/shared/diagnostics/redaction-fixture.json");
 
     fn tmp_dir(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("pharos-diag-{tag}-{}", uuid::Uuid::new_v4()));
@@ -429,28 +603,110 @@ mod tests {
         fs::write(dir.join(name), lines.join("\n")).unwrap();
     }
 
-    #[test]
-    fn redact_masks_secrets_and_identifiers() {
-        let text = format!(
-            "user {EMAIL} Authorization: Bearer {JWT} key={OPENAI_KEY} g={GEMINI_KEY} \
-             refresh_token={REFRESH} path C:\\Users\\anabel\\AppData\\Roaming jwt {JWT} \
-             json \"password\":\"hunter2\" C:\\\\Users\\\\anabel\\\\x"
-        );
-        let out = redact(&text);
-        for secret in [
-            EMAIL, JWT, OPENAI_KEY, GEMINI_KEY, REFRESH, "anabel", "hunter2",
-        ] {
-            assert!(!out.contains(secret), "{secret} leaked in: {out}");
-        }
-        assert!(out.contains("<email>"));
-        assert!(out.contains("C:\\Users\\<user>\\AppData"));
+    fn strings(value: &serde_json::Value) -> Vec<String> {
+        value
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_string())
+            .collect()
     }
 
     #[test]
-    fn redact_keeps_ordinary_diagnostics() {
-        let text = "migration 0011_sync_conflicts.sql applied in 12 ms; \
-                    id 3f2504e0-4f89-11d3-9a0c-0305e82c3301 at src/modules/test-cases/ui/TestCaseEditor.tsx:42";
-        assert_eq!(redact(text), text);
+    fn redact_agrees_with_the_shared_fixture() {
+        let fixture: serde_json::Value = serde_json::from_str(FIXTURE).unwrap();
+        for case in fixture["masked"].as_array().unwrap() {
+            let input = case["input"].as_str().unwrap();
+            let out = redact(input);
+            for secret in strings(&case["secrets"]) {
+                assert!(!out.contains(&secret), "{secret} leaked in: {out}");
+            }
+            for expected in strings(&case["expect"]) {
+                assert!(out.contains(&expected), "{expected:?} missing in: {out}");
+            }
+        }
+        for kept in strings(&fixture["kept"]) {
+            assert_eq!(redact(&kept), kept);
+        }
+    }
+
+    #[test]
+    fn unwritable_log_dir_gives_no_file_appender() {
+        let dir = tmp_dir("unwritable");
+        let file = dir.join("a-file");
+        fs::write(&file, "not a dir").unwrap();
+        // A dir cannot be created under a regular file.
+        assert!(file_appender(&file.join("logs")).is_none());
+        assert!(file_appender(&dir.join("logs")).is_some());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn panic_lines_are_appended_synchronously() {
+        let dir = tmp_dir("panic");
+        write_panic_line(&dir, "src/x.rs:1", "first");
+        write_panic_line(&dir, "src/y.rs:2", "second");
+        let text = fs::read_to_string(dir.join(PANIC_LOG)).unwrap();
+        let lines: Vec<serde_json::Value> = text
+            .lines()
+            .map(|l| serde_json::from_str(l).unwrap())
+            .collect();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[1]["fields"]["location"], "src/y.rs:2");
+        assert_eq!(lines[1]["fields"]["panic"], "second");
+        assert!(is_log_name(PANIC_LOG), "the bundle picks it up");
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn client_event_maps_levels_redacts_and_truncates() {
+        assert_eq!(client_event("error", "x").0, tracing::Level::ERROR);
+        assert_eq!(client_event("warn", "x").0, tracing::Level::WARN);
+        assert_eq!(client_event("info", "x").0, tracing::Level::INFO);
+        assert_eq!(client_event("bogus", "x").0, tracing::Level::INFO);
+        assert_eq!(
+            client_event("error", &format!("hi {EMAIL}")).1,
+            "hi <email>"
+        );
+        let long = "é".repeat(MAX_CLIENT_MESSAGE + 50);
+        assert_eq!(
+            client_event("error", &long).1.chars().count(),
+            MAX_CLIENT_MESSAGE
+        );
+    }
+
+    #[test]
+    fn throttle_limits_each_window_and_reports_drops_once() {
+        let mut throttle = Throttle::default();
+        let t0 = Instant::now();
+        for _ in 0..CLIENT_LOG_MAX {
+            assert_eq!(throttle.admit(t0), Some(0));
+        }
+        assert_eq!(throttle.admit(t0), None);
+        assert_eq!(throttle.admit(t0 + Duration::from_secs(1)), None);
+        // Next window: admitted again, and the 2 drops are reported once.
+        let t1 = t0 + CLIENT_LOG_WINDOW;
+        assert_eq!(throttle.admit(t1), Some(2));
+        assert_eq!(throttle.admit(t1), Some(0));
+    }
+
+    #[test]
+    fn read_tail_reads_only_the_end_of_a_big_file() {
+        let dir = tmp_dir("tail");
+        let path = dir.join("pharos.2026-10-28.log");
+        let lines: Vec<String> = (0..1000).map(|i| format!("line-{i:04}")).collect();
+        write_log(&dir, "pharos.2026-10-28.log", &lines);
+        // 100 bytes from the end: a partial first line is dropped.
+        let tail = read_tail(&path, 100, 2000).unwrap();
+        let got: Vec<&str> = tail.lines().collect();
+        assert!(got.len() < 12, "only the end was read: {} lines", got.len());
+        assert_eq!(got.last(), Some(&"line-0999"));
+        assert!(got.iter().all(|l| l.len() == "line-0000".len()));
+        // Whole small file, cut to the last lines.
+        let tail = read_tail(&path, u64::MAX, 3).unwrap();
+        assert_eq!(tail, "line-0997\nline-0998\nline-0999");
+        assert!(read_tail(&dir.join("missing.log"), 100, 10).is_none());
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
@@ -512,7 +768,8 @@ mod tests {
             language: "es".into(),
             theme: "dark".into(),
         };
-        let bundle = build_bundle(&conn, &dir, client, "156.0.0.0".into()).unwrap();
+        let bundle =
+            build_bundle(Some(&conn), None, Some(&dir), client, "156.0.0.0".into()).unwrap();
         let json = serde_json::to_string(&bundle).unwrap();
 
         for marker in [
@@ -526,6 +783,7 @@ mod tests {
         assert!(json.contains("0011_sync_conflicts.sql"));
         assert!(json.contains("156.0.0.0"));
         assert!(json.contains("login failed for <email>"));
+        assert!(!json.contains("openError"), "the database is open");
         assert_eq!(bundle.logs.len(), 1);
         fs::remove_dir_all(dir).unwrap();
     }
@@ -534,8 +792,9 @@ mod tests {
     fn bundle_without_logs_still_reports_versions() {
         let conn = conn_with_user_data();
         let bundle = build_bundle(
-            &conn,
-            Path::new("does-not-exist"),
+            Some(&conn),
+            None,
+            Some(Path::new("does-not-exist")),
             ClientInfo::default(),
             "unknown".into(),
         )
@@ -543,5 +802,53 @@ mod tests {
         assert!(bundle.logs.is_empty());
         assert_eq!(bundle.manifest.app.version, env!("CARGO_PKG_VERSION"));
         assert!(!bundle.manifest.database.migrations.is_empty());
+        let no_log_dir =
+            build_bundle(Some(&conn), None, None, ClientInfo::default(), "x".into()).unwrap();
+        assert!(no_log_dir.logs.is_empty());
+    }
+
+    /// The export is most needed when the database did not open.
+    #[test]
+    fn bundle_when_the_database_failed_to_open() {
+        let dir = tmp_dir("noopen");
+        write_log(&dir, "pharos.2026-10-28.log", &["boot".to_string()]);
+        let error = format!(r"decrypt failed for C:\Users\anabel\AppData\pharos.db.enc ({EMAIL})");
+        let bundle = build_bundle(
+            None,
+            Some(error),
+            Some(&dir),
+            ClientInfo::default(),
+            "156.0.0.0".into(),
+        )
+        .unwrap();
+        let json = serde_json::to_value(&bundle).unwrap();
+        let db = &json["manifest"]["database"];
+        assert_eq!(db["migrations"], serde_json::json!([]));
+        let open_error = db["openError"].as_str().unwrap();
+        assert!(open_error.starts_with("decrypt failed for C:\\Users\\<user>\\"));
+        assert!(!open_error.contains("anabel") && !open_error.contains(EMAIL));
+        assert_eq!(bundle.logs.len(), 1, "logs still travel");
+
+        let unknown = build_bundle(None, None, None, ClientInfo::default(), "x".into()).unwrap();
+        assert_eq!(
+            unknown.manifest.database.open_error.as_deref(),
+            Some("database not open")
+        );
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn open_error_is_kept_redacted_and_short() {
+        let state = DiagState {
+            log_dir: None,
+            db_open_error: Mutex::new(None),
+            throttle: Mutex::new(Throttle::default()),
+            _guard: None,
+        };
+        assert_eq!(state.db_open_error(), None);
+        state.record_db_open_error(&format!("keychain error for {EMAIL} {}", "x".repeat(400)));
+        let kept = state.db_open_error().unwrap();
+        assert!(kept.starts_with("keychain error for <email>"));
+        assert_eq!(kept.chars().count(), MAX_OPEN_ERROR);
     }
 }

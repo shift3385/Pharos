@@ -19,10 +19,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   README en una base nueva o reseteada; no hace nada si ya existe y se niega a
   ejecutarse en producción.
 - **Exportar diagnóstico (BASE-08):** en Administración → Diagnóstico, y en la
-  pantalla de error, un botón genera un `.zip` para informar de un fallo:
-  versión, sistema operativo, WebView2, migraciones aplicadas y los registros
-  recientes. Nunca incluye tus proyectos, casos, perfil, base de datos, claves
-  ni tokens; correos, tokens y rutas con tu usuario se enmascaran.
+  pantalla de error, un botón guarda en tu carpeta de descargas un `.zip` para
+  informar de un fallo: versión, sistema operativo, WebView2, migraciones
+  aplicadas y los registros recientes. Nunca incluye tus proyectos, casos,
+  perfil, base de datos, claves ni tokens; correos, tokens y rutas con tu
+  usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
 - **Registros de la app:** el escritorio guarda un log diario en
   `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
 - **Pantalla de error:** si una vista falla, ya no queda la ventana en blanco:

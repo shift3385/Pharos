@@ -110,6 +110,10 @@ files (`es`/`en`).
 | Redacción                  | `redact`                                 | enmascara correos, tokens, claves, secretos y el usuario de Windows en rutas           |
 | Filtro de logs             | `PHAROS_LOG`                             | directiva `EnvFilter` (p. ej. `debug`, `pharos_lib=debug`); por defecto `info`         |
 | Perfil E2E                 | `PHAROS_E2E_PROFILE`                     | solo debug: datos, logs y sesión del keychain aislados por ejecución del smoke         |
+| Cuenta del keychain        | `instance::account(base)`                | toda cuenta pasa por aquí: `base` o `<base>-e2e-<perfil>` (sesión, claves de IA)       |
+| Error al abrir la BD       | `openError`                              | en `diagnostic.json` cuando la base local no abrió; redactado, sin migraciones         |
+| Log de panics              | `pharos.panic.log`                       | se escribe de forma síncrona en cada panic; viaja en el paquete de diagnóstico         |
+| Proyecto de prueba E2E     | `TEST_PROJECT_PREFIX` (`E2E `)           | los specs borran al final todo proyecto con este prefijo en la cuenta de test          |
 | Límite de error            | `ErrorBoundary` / `ErrorFallback`        | captura errores de render y muestra reintentar, recargar y "Exportar diagnóstico"      |
 | Smoke E2E                  | `smoke` (`e2e/specs/smoke.e2e.ts`)       | arrancar → login → crear proyecto → reabrir, con el binario real (WDIO + tauri-driver) |
 
