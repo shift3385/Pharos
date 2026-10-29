@@ -16,6 +16,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0007](0007-varios-proveedores-ia.md)      | Varios proveedores de IA, uno activo                          | Aceptado | 2026-10-28 |
 | [0008](0008-toolchain-msvc.md)             | Toolchain de Rust MSVC                                        | Aceptado | 2026-10-27 |
 | [0009](0009-versionado-semver.md)          | Versionado SemVer con una sola versión                        | Aceptado | 2026-10-28 |
+| [0021](0021-ci-y-cadena-de-suministro.md)  | CI y cadena de suministro                                     | Aceptado | 2026-10-28 |
 
 Plantilla: copia la estructura de cualquier ADR (Contexto, Decisión,
 Alternativas, Consecuencias) con el siguiente número libre.

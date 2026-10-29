@@ -18,6 +18,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - `npm run seed:test-user` (en `server/`) crea la cuenta local de pruebas del
   README en una base nueva o reseteada; no hace nada si ya existe y se niega a
   ejecutarse en producción.
+- **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
+  instalador NSIS como artefacto descargable. Las versiones alfa, beta y rc
+  solo tienen instalador NSIS; las estables tendrán además MSI.
+- **Integración continua (BASE-01):** cada cambio pasa automáticamente los
+  tests del cliente, del núcleo Rust y del servidor, el formato y el lint de
+  Rust, y las auditorías de dependencias y de licencias.
 
 ### Cambiado
 
@@ -26,8 +32,28 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - "Probar conexión" muestra el mensaje real del proveedor cuando falla (clave
   incorrecta, modelo inexistente…).
 
+### Corregido
+
+- El servidor respondía "error interno" (500) a peticiones mal formadas
+  (JSON roto, cuerpo demasiado grande, tipo de contenido no admitido). Ahora
+  responde con el error 4xx correspondiente.
+
 ### Seguridad
 
+- **Servidor endurecido (BASE-06):**
+  - En producción el servidor no arranca con el secreto JWT de ejemplo, con un
+    secreto de menos de 32 caracteres o con `CORS_ORIGIN=*`.
+  - Inicio de sesión y registro limitados a 10 intentos por minuto y por IP.
+    La app muestra "Demasiados intentos. Espera un minuto y vuelve a
+    intentarlo."
+  - Límite de tamaño de petición: 1 MiB en general y 8 MiB en la
+    sincronización.
+- **Dependencias actualizadas (BASE-03):**
+  - rustls, rustls-webpki y h2 (6 vulnerabilidades en las conexiones TLS de
+    las llamadas a la IA).
+  - fastify y sus dependencias.
+  - vitest y vite (herramientas de desarrollo con avisos críticos).
+- Licencias de Rust auditadas: solo permisivas, igual que en npm.
 - La clave de Gemini ya no viaja en la URL sino en una cabecera; las peticiones
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.
 - Un endpoint compatible personalizado debe usar `https` (http solo en

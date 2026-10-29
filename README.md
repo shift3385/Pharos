@@ -30,7 +30,7 @@ If the database or the API is down, sign-in shows "Could not reach the server"
 
 | Needed for            | Install                                                                                                                                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Everything            | **Node.js ≥ 20** with npm                                                                                                                                                                                                                         |
+| Everything            | **Node.js ≥ 22.12** with npm (CI uses the version in `.nvmrc`, Node 24)                                                                                                                                                                           |
 | Database (pick one)   | **PostgreSQL ≥ 15** native (verified on 18.6), **or** **Docker Desktop** (needs WSL2)                                                                                                                                                             |
 | Native desktop app    | **Visual Studio 2022** (Community is enough) with the **"Desktop development with C++"** workload, and **Rust** via [rustup](https://rustup.rs) — the MSVC toolchain pinned in `src-tauri/rust-toolchain.toml` installs itself on the first build |
 | Native desktop app    | **WebView2** runtime (preinstalled on Windows 11)                                                                                                                                                                                                 |
@@ -49,6 +49,10 @@ Run from the repository root:
    npm install
    cd server && npm install && cd ..
    ```
+
+   The root install also enables the git hooks (husky): `commit-msg` rejects a
+   message that is not a [Conventional Commit](docs/VERSIONING.md#4-commits-ramas-y-etiquetas),
+   and `pre-commit` runs ESLint on the staged `.ts`/`.tsx` files.
 
 2. **Create `.env`** from the template: `copy .env.example .env`.
    - **Native PostgreSQL:** change the port in `DATABASE_URL` and
@@ -127,24 +131,93 @@ session.
 
 Frontend (repository root):
 
-| Command                        | Purpose                                           |
-| ------------------------------ | ------------------------------------------------- |
-| `npm run dev`                  | Vite dev server (web preview) at localhost:1420   |
-| `npm run tauri dev`            | Run the native desktop app (needs Rust)           |
-| `npm run build`                | Type-check + build the frontend                   |
-| `npm run tauri build`          | Build the Windows installer (needs Rust)          |
-| `npm test`                     | Run the Vitest suite                              |
-| `npm run typecheck`            | TypeScript, no emit                               |
-| `npm run lint`                 | ESLint (0 warnings allowed)                       |
-| `npm run check:licenses`       | Fail on GPL/AGPL/SSPL dependencies                |
-| `npm run check:version`        | Fail if the version differs across manifests      |
-| `npm run version:set -- X.Y.Z` | Set the version in every manifest (releases only) |
-| `npm run verify`               | typecheck + lint + licenses + version + tests     |
+| Command                        | Purpose                                                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                  | Vite dev server (web preview) at localhost:1420                                                                   |
+| `npm run tauri dev`            | Run the native desktop app (needs Rust)                                                                           |
+| `npm run build`                | Type-check + build the frontend                                                                                   |
+| `npm run build:installer`      | Build the Windows installer (needs Rust): NSIS for pre-releases, NSIS + MSI for stable versions                   |
+| `npm test`                     | Run the Vitest suite                                                                                              |
+| `npm run typecheck`            | TypeScript, no emit                                                                                               |
+| `npm run lint`                 | ESLint (0 warnings allowed)                                                                                       |
+| `npm run check:licenses`       | Fail on GPL/AGPL/SSPL dependencies                                                                                |
+| `npm run check:version`        | Fail if the version differs across manifests                                                                      |
+| `npm run check:migrations`     | Fail on duplicate or unexplained missing migration numbers (registry: `scripts/migration-registry.json`)          |
+| `npm run test:scripts`         | `node:test` suite of the `scripts/` gates                                                                         |
+| `npm run check:audit`          | npm audit gate: fails on high/critical advisories not in `scripts/audit-allowlist.json`                           |
+| `npm run check:deps`           | `cargo deny` (RustSec advisories, licenses, sources); needs `cargo install --locked cargo-deny`                   |
+| `npm run check:rust`           | `cargo fmt --check` + `cargo clippy -D warnings` with the exact exceptions of `scripts/rust-gates.allowlist.json` |
+| `npm run version:set -- X.Y.Z` | Set the version in every manifest (releases only)                                                                 |
+| `npm run verify`               | typecheck + lint + licenses + version + migrations + script tests + tests                                         |
 
 Backend (`server/`): `npm start`, `npm run dev` (auto-reload), `npm run migrate`,
 `npm run seed:test-user`, `npm test` (needs `pharos_test_db`), `npm run typecheck`.
 
 Desktop core (`src-tauri/`): `cargo check`, `cargo test`.
+
+## Continuous integration
+
+GitHub Actions ([`.github/workflows/`](.github/workflows/)) runs on every pull
+request and on every push to `main`. A red check blocks the merge once `main`
+is protected (see below).
+
+| Check        | Runner                 | What it runs                                                             |
+| ------------ | ---------------------- | ------------------------------------------------------------------------ |
+| `client`     | Windows                | `npm ci`, `npm run verify`                                               |
+| `rust`       | Windows                | `npm run check:rust` equivalents (fmt, clippy) and `cargo test --locked` |
+| `server`     | Ubuntu + PostgreSQL 18 | `server/`: typecheck, license check, `npm test`                          |
+| `audit`      | Ubuntu                 | `npm run check:audit` (root and `server/`)                               |
+| `cargo-deny` | Ubuntu                 | `npm run check:deps`                                                     |
+| `workflows`  | Ubuntu                 | `zizmor` security lint of the workflows                                  |
+| `commits`    | Ubuntu (PRs only)      | `commitlint` on every commit of the PR                                   |
+
+The **Installer** workflow builds the Windows installer on every push to `main`
+and on `v*` tags, and publishes it as a run artifact (30 days). Download it
+from the run page on GitHub (Actions → Installer → the run → Artifacts).
+
+To reproduce CI locally: `npm run verify`, `npm run check:rust`,
+`cd src-tauri && cargo test`, `cd server && npm test`, `npm run check:audit`,
+`npm run check:deps`.
+
+Every action is pinned to a commit SHA, and Dependabot proposes updates weekly
+(npm, Cargo and actions) after a cooldown ([ADR-0021](docs/adr/0021-ci-y-cadena-de-suministro.md)).
+
+**Protecting `main`** (BASE-02): an administrator applies
+[`.github/branch-protection.json`](.github/branch-protection.json) once. After that:
+
+- a PR with all the checks above green is required;
+- administrators are included;
+- no force-push or deletion is allowed.
+
+```
+gh api -X PUT repos/shift3385/Pharos/branches/main/protection --input .github/branch-protection.json
+```
+
+## Production configuration (API)
+
+With `NODE_ENV=production` the API **refuses to start** (exit code 1, with the
+reason) unless:
+
+- `JWT_ACCESS_SECRET` is a random value of at least 32 characters, not the
+  example one. Generate one with
+  `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`.
+- `CORS_ORIGIN` lists the allowed origins explicitly (never `*`): the web
+  client's URL and the desktop app's `http://tauri.localhost`, comma-separated,
+  each written as `scheme://host[:port]` with no path.
+
+Optional limits (defaults in brackets):
+
+| Variable                  | Purpose                                                                    |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login` and `/auth/register` [10]          |
+| `LOGIN_RATE_LIMIT_WINDOW` | Window for that limit [`1 minute`]; above it the API answers 429           |
+| `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                 |
+| `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                           |
+| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs [false] |
+
+The `api` service of `docker-compose.yml` runs in production mode. Set
+`JWT_ACCESS_SECRET` and `CORS_ORIGIN` in `.env` before `docker compose up`.
+The database-only setup (`docker compose up -d db`, `dev.bat`) is unaffected.
 
 ## Project layout
 

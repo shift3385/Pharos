@@ -1,6 +1,12 @@
 # Pin the Tauri (Rust) build to the MSVC toolchain (Visual Studio 2022 C++
 # build tools). It replaced the earlier GNU/MinGW pin, which was chosen only to
 # avoid installing Visual Studio and broke the cdylib link (BFD ld) needed for
-# the mobile build.
+# the mobile build (ADR-0008). rustup's default host on Windows is MSVC; rustup
+# no longer accepts a target tuple in a pinned channel name, so the MSVC target
+# is listed under `targets`. The exact release is pinned so that a new stable
+# clippy cannot turn CI red on its own; bump it on purpose (ADR-0021).
 [toolchain]
-channel = "stable-x86_64-pc-windows-msvc"
+channel = "1.99.1"
+targets = ["x86_64-pc-windows-msvc"]
+components = ["rustfmt", "clippy"]
+profile = "minimal"

@@ -30,12 +30,36 @@ código.
 
 Un cambio está hecho cuando se cumplen todas estas condiciones, con evidencia:
 
-- [ ] `npm run verify` en verde: typecheck, lint sin warnings, licencias, versión y tests.
-- [ ] `cargo test` en `src-tauri/` en verde, si se tocó Rust.
+- [ ] `npm run verify` en verde: typecheck, lint sin warnings, licencias, versión, migraciones, tests de `scripts/` y tests.
+- [ ] `cargo test` en `src-tauri/` y `npm run check:rust` (fmt + clippy) en verde, si se tocó Rust.
 - [ ] `npm test` en `server/` en verde, si se tocó el backend.
 - [ ] Lo visible se probó en la app o en el navegador, no solo con tests.
 - [ ] La documentación de la tabla anterior está actualizada.
 - [ ] El commit sigue Conventional Commits, en inglés, y no cambia la versión (eso solo ocurre en un commit de release).
+- [ ] La CI del PR está en verde (los checks de `.github/workflows/ci.yml`).
+
+## Integración continua y ramas
+
+- Cada PR y cada push a `main` pasan los checks de CI: `client`, `rust`,
+  `server`, `audit`, `cargo-deny`, `workflows` y `commits` (README,
+  "Continuous integration"). Ningún check se desactiva para fusionar.
+- Con `main` protegida (BASE-02) **todo entra por PR**: las pistas, los
+  arreglos y los commits de release. El PR se fusiona con merge commit (el
+  equivalente de `merge --no-ff`), con todos los checks en verde y sin push
+  directo, tampoco de administradores.
+- Los hooks de git (husky) se instalan con `npm install`. `commit-msg`
+  rechaza un mensaje fuera de Conventional Commits y `pre-commit` pasa ESLint
+  a los `.ts`/`.tsx` preparados. No uses `--no-verify`: la CI comprueba lo
+  mismo.
+- **Excepciones temporales**, siempre con dueño y salida (ADR-0021):
+  - `scripts/rust-gates.allowlist.json`: formato y lints de Rust de una pista
+    en curso.
+  - `scripts/audit-allowlist.json`: avisos npm altos, con fecha de caducidad.
+- **Números de migración:** se reservan en `scripts/migration-registry.json`
+  en el mismo cambio que el plan de la pista (VERSIONING §6).
+- **Una dependencia nueva** debe pasar el gate de licencias (npm) o
+  `cargo deny` (Rust). Una licencia nueva, aunque sea permisiva, se añade a
+  `deny.toml` de forma explícita.
 
 ## Decisiones
 

@@ -100,8 +100,9 @@ fn validate_custom_url(raw: Option<&str>) -> Result<String, String> {
     }
     if let Some(rest) = url.strip_prefix("http://") {
         let local = ["localhost", "127.0.0.1", "[::1]"].iter().any(|host| {
-            rest.strip_prefix(host)
-                .is_some_and(|tail| tail.is_empty() || tail.starts_with(':') || tail.starts_with('/'))
+            rest.strip_prefix(host).is_some_and(|tail| {
+                tail.is_empty() || tail.starts_with(':') || tail.starts_with('/')
+            })
         });
         if local {
             return Ok(url.to_string());
@@ -230,7 +231,11 @@ fn chat_call(
         Provider::Gemini => {
             let contents: Vec<Value> = turns
                 .map(|m| {
-                    let role = if m.role == "assistant" { "model" } else { "user" };
+                    let role = if m.role == "assistant" {
+                        "model"
+                    } else {
+                        "user"
+                    };
                     json!({ "role": role, "parts": [{ "text": m.content }] })
                 })
                 .collect();
@@ -250,7 +255,11 @@ fn chat_call(
         Provider::Anthropic => {
             let msgs: Vec<Value> = turns
                 .map(|m| {
-                    let role = if m.role == "assistant" { "assistant" } else { "user" };
+                    let role = if m.role == "assistant" {
+                        "assistant"
+                    } else {
+                        "user"
+                    };
                     json!({ "role": role, "content": m.content })
                 })
                 .collect();
@@ -266,7 +275,11 @@ fn chat_call(
                 headers.push(("anthropic-beta", ANTHROPIC_FALLBACK_BETA.to_string()));
                 body["fallbacks"] = json!("default");
             }
-            HttpCall { url: format!("{base}/messages"), headers, body: Some(body) }
+            HttpCall {
+                url: format!("{base}/messages"),
+                headers,
+                body: Some(body),
+            }
         }
         _ => {
             let msgs: Vec<Value> = messages
@@ -277,7 +290,11 @@ fn chat_call(
             if let Some(t) = temperature {
                 body["temperature"] = json!(t);
             }
-            HttpCall { url: format!("{base}/chat/completions"), headers, body: Some(body) }
+            HttpCall {
+                url: format!("{base}/chat/completions"),
+                headers,
+                body: Some(body),
+            }
         }
     }
 }
@@ -288,7 +305,11 @@ fn models_call(provider: Provider, base: &str, key: Option<&str>) -> HttpCall {
         Provider::Anthropic => format!("{base}/models?limit=1000"),
         _ => format!("{base}/models"),
     };
-    HttpCall { url, headers: auth_headers(provider, key), body: None }
+    HttpCall {
+        url,
+        headers: auth_headers(provider, key),
+        body: None,
+    }
 }
 
 /// The provider's own error message, or a generic one with the HTTP status.
@@ -311,7 +332,11 @@ fn parse_chat(provider: Provider, status: u16, val: &Value) -> Result<String, St
         Provider::Gemini => {
             let parts = val["candidates"][0]["content"]["parts"].as_array();
             Ok(parts
-                .map(|ps| ps.iter().filter_map(|p| p["text"].as_str()).collect::<String>())
+                .map(|ps| {
+                    ps.iter()
+                        .filter_map(|p| p["text"].as_str())
+                        .collect::<String>()
+                })
                 .unwrap_or_default())
         }
         Provider::Anthropic => {
@@ -329,7 +354,10 @@ fn parse_chat(provider: Provider, status: u16, val: &Value) -> Result<String, St
                 })
                 .unwrap_or_default())
         }
-        _ => Ok(val["choices"][0]["message"]["content"].as_str().unwrap_or("").to_string()),
+        _ => Ok(val["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string()),
     }
 }
 
@@ -354,7 +382,12 @@ fn parse_models(provider: Provider, status: u16, val: &Value) -> Result<Vec<Stri
             .unwrap_or_default(),
         _ => val["data"]
             .as_array()
-            .map(|ms| ms.iter().filter_map(|m| m["id"].as_str()).map(String::from).collect())
+            .map(|ms| {
+                ms.iter()
+                    .filter_map(|m| m["id"].as_str())
+                    .map(String::from)
+                    .collect()
+            })
             .unwrap_or_default(),
     };
     ids.sort();
@@ -389,12 +422,17 @@ async fn send(call: &HttpCall) -> Result<(u16, Value), String> {
     let text = resp.text().await.map_err(|e| e.without_url().to_string())?;
     let val = serde_json::from_str(&text).unwrap_or(Value::Null);
     if val.is_null() && (200..300).contains(&status) {
-        return Err(format!("Unexpected response from the AI provider (HTTP {status})"));
+        return Err(format!(
+            "Unexpected response from the AI provider (HTTP {status})"
+        ));
     }
     Ok((status, val))
 }
 
-fn credentials(provider: Provider, base_url: Option<&str>) -> Result<(String, Option<String>), String> {
+fn credentials(
+    provider: Provider,
+    base_url: Option<&str>,
+) -> Result<(String, Option<String>), String> {
     let base = provider.base_url(base_url)?;
     let key = read_key(provider.id())?;
     if provider.key_required() && key.is_none() {
@@ -425,7 +463,9 @@ pub async fn ai_chat_online(
     // without it instead of failing the user's request.
     if provider.openai_style()
         && status == 400
-        && error_message(&val, status).to_lowercase().contains("temperature")
+        && error_message(&val, status)
+            .to_lowercase()
+            .contains("temperature")
     {
         let retry = chat_call(provider, &base, key.as_deref(), model, None, &messages);
         let (status, val) = send(&retry).await?;
@@ -437,7 +477,10 @@ pub async fn ai_chat_online(
 /// Lists the models the provider offers to this key, so the user picks a real
 /// id instead of typing one that may have been retired.
 #[tauri::command]
-pub async fn ai_list_models(provider: String, base_url: Option<String>) -> Result<Vec<String>, String> {
+pub async fn ai_list_models(
+    provider: String,
+    base_url: Option<String>,
+) -> Result<Vec<String>, String> {
     let provider = Provider::parse(&provider)?;
     let (base, key) = credentials(provider, base_url.as_deref())?;
     let (status, val) = send(&models_call(provider, &base, key.as_deref())).await?;
@@ -450,21 +493,43 @@ mod tests {
 
     fn msgs() -> Vec<AiMessage> {
         vec![
-            AiMessage { role: "system".into(), content: "Be brief".into() },
-            AiMessage { role: "user".into(), content: "Hi".into() },
-            AiMessage { role: "assistant".into(), content: "Hello".into() },
-            AiMessage { role: "user".into(), content: "Draft".into() },
+            AiMessage {
+                role: "system".into(),
+                content: "Be brief".into(),
+            },
+            AiMessage {
+                role: "user".into(),
+                content: "Hi".into(),
+            },
+            AiMessage {
+                role: "assistant".into(),
+                content: "Hello".into(),
+            },
+            AiMessage {
+                role: "user".into(),
+                content: "Draft".into(),
+            },
         ]
     }
 
     fn header<'a>(call: &'a HttpCall, name: &str) -> Option<&'a str> {
-        call.headers.iter().find(|(n, _)| *n == name).map(|(_, v)| v.as_str())
+        call.headers
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|(_, v)| v.as_str())
     }
 
     #[test]
     fn gemini_sends_the_key_in_a_header_never_in_the_url() {
         let base = Provider::Gemini.base_url(None).unwrap();
-        let call = chat_call(Provider::Gemini, &base, Some("SECRET"), "gemini-x", Some(0.3), &msgs());
+        let call = chat_call(
+            Provider::Gemini,
+            &base,
+            Some("SECRET"),
+            "gemini-x",
+            Some(0.3),
+            &msgs(),
+        );
         assert!(!call.url.contains("SECRET"));
         assert!(call.url.ends_with("/models/gemini-x:generateContent"));
         assert_eq!(header(&call, "x-goog-api-key"), Some("SECRET"));
@@ -477,7 +542,14 @@ mod tests {
 
     #[test]
     fn openai_style_uses_bearer_and_passes_messages_through() {
-        let call = chat_call(Provider::OpenAi, "https://api.openai.com/v1", Some("k"), "m", Some(0.5), &msgs());
+        let call = chat_call(
+            Provider::OpenAi,
+            "https://api.openai.com/v1",
+            Some("k"),
+            "m",
+            Some(0.5),
+            &msgs(),
+        );
         assert_eq!(call.url, "https://api.openai.com/v1/chat/completions");
         assert_eq!(header(&call, "authorization"), Some("Bearer k"));
         let body = call.body.unwrap();
@@ -491,9 +563,23 @@ mod tests {
 
     #[test]
     fn openrouter_identifies_the_app_and_custom_may_go_without_key() {
-        let or = chat_call(Provider::OpenRouter, "b", Some("k"), "vendor/model", None, &msgs());
+        let or = chat_call(
+            Provider::OpenRouter,
+            "b",
+            Some("k"),
+            "vendor/model",
+            None,
+            &msgs(),
+        );
         assert_eq!(header(&or, "x-title"), Some("Pharos"));
-        let local = chat_call(Provider::Custom, "http://localhost:1234/v1", None, "m", None, &msgs());
+        let local = chat_call(
+            Provider::Custom,
+            "http://localhost:1234/v1",
+            None,
+            "m",
+            None,
+            &msgs(),
+        );
         assert!(header(&local, "authorization").is_none());
         assert_eq!(local.url, "http://localhost:1234/v1/chat/completions");
     }
@@ -501,7 +587,14 @@ mod tests {
     #[test]
     fn anthropic_uses_its_headers_top_level_system_and_no_temperature() {
         let base = Provider::Anthropic.base_url(None).unwrap();
-        let call = chat_call(Provider::Anthropic, &base, Some("k"), "claude-haiku-4-5", None, &msgs());
+        let call = chat_call(
+            Provider::Anthropic,
+            &base,
+            Some("k"),
+            "claude-haiku-4-5",
+            None,
+            &msgs(),
+        );
         assert_eq!(call.url, "https://api.anthropic.com/v1/messages");
         assert_eq!(header(&call, "x-api-key"), Some("k"));
         assert_eq!(header(&call, "anthropic-version"), Some(ANTHROPIC_VERSION));
@@ -516,8 +609,18 @@ mod tests {
 
     #[test]
     fn anthropic_enables_refusal_fallback_only_on_models_that_accept_it() {
-        let call = chat_call(Provider::Anthropic, "b", Some("k"), "claude-opus-5-5", None, &msgs());
-        assert_eq!(header(&call, "anthropic-beta"), Some(ANTHROPIC_FALLBACK_BETA));
+        let call = chat_call(
+            Provider::Anthropic,
+            "b",
+            Some("k"),
+            "claude-opus-5-5",
+            None,
+            &msgs(),
+        );
+        assert_eq!(
+            header(&call, "anthropic-beta"),
+            Some(ANTHROPIC_FALLBACK_BETA)
+        );
         assert_eq!(call.body.unwrap()["fallbacks"], "default");
     }
 
@@ -527,23 +630,37 @@ mod tests {
         assert_eq!(parse_chat(Provider::Gemini, 200, &gemini).unwrap(), "Hola");
 
         let openai = json!({ "choices": [{ "message": { "content": "Hola" } }] });
-        assert_eq!(parse_chat(Provider::OpenRouter, 200, &openai).unwrap(), "Hola");
+        assert_eq!(
+            parse_chat(Provider::OpenRouter, 200, &openai).unwrap(),
+            "Hola"
+        );
 
         let claude = json!({
             "stop_reason": "end_turn",
             "content": [{ "type": "thinking", "thinking": "" }, { "type": "text", "text": "Hola" }]
         });
-        assert_eq!(parse_chat(Provider::Anthropic, 200, &claude).unwrap(), "Hola");
+        assert_eq!(
+            parse_chat(Provider::Anthropic, 200, &claude).unwrap(),
+            "Hola"
+        );
     }
 
     #[test]
     fn surfaces_refusals_and_provider_errors() {
         let refusal = json!({ "stop_reason": "refusal", "content": [] });
-        assert!(parse_chat(Provider::Anthropic, 200, &refusal).unwrap_err().contains("refusal"));
+        assert!(parse_chat(Provider::Anthropic, 200, &refusal)
+            .unwrap_err()
+            .contains("refusal"));
 
         let err = json!({ "error": { "message": "Incorrect API key" } });
-        assert_eq!(parse_chat(Provider::OpenAi, 401, &err).unwrap_err(), "Incorrect API key");
-        assert_eq!(parse_chat(Provider::Gemini, 500, &Value::Null).unwrap_err(), "AI request failed (HTTP 500)");
+        assert_eq!(
+            parse_chat(Provider::OpenAi, 401, &err).unwrap_err(),
+            "Incorrect API key"
+        );
+        assert_eq!(
+            parse_chat(Provider::Gemini, 500, &Value::Null).unwrap_err(),
+            "AI request failed (HTTP 500)"
+        );
     }
 
     #[test]
@@ -553,21 +670,44 @@ mod tests {
             { "name": "models/embed", "supportedGenerationMethods": ["embedContent"] },
             { "name": "models/gemini-a", "supportedGenerationMethods": ["generateContent"] }
         ]});
-        assert_eq!(parse_models(Provider::Gemini, 200, &gemini).unwrap(), vec!["gemini-a", "gemini-b"]);
+        assert_eq!(
+            parse_models(Provider::Gemini, 200, &gemini).unwrap(),
+            vec!["gemini-a", "gemini-b"]
+        );
 
         let openai = json!({ "data": [{ "id": "z" }, { "id": "a" }, { "id": "a" }] });
-        assert_eq!(parse_models(Provider::OpenAi, 200, &openai).unwrap(), vec!["a", "z"]);
-        assert_eq!(parse_models(Provider::Anthropic, 200, &json!({ "data": [{ "id": "claude-x" }] })).unwrap(), vec!["claude-x"]);
+        assert_eq!(
+            parse_models(Provider::OpenAi, 200, &openai).unwrap(),
+            vec!["a", "z"]
+        );
+        assert_eq!(
+            parse_models(
+                Provider::Anthropic,
+                200,
+                &json!({ "data": [{ "id": "claude-x" }] })
+            )
+            .unwrap(),
+            vec!["claude-x"]
+        );
 
         let anthropic_models = models_call(Provider::Anthropic, "b", Some("k"));
-        assert_eq!(header(&anthropic_models, "anthropic-version"), Some(ANTHROPIC_VERSION));
+        assert_eq!(
+            header(&anthropic_models, "anthropic-version"),
+            Some(ANTHROPIC_VERSION)
+        );
         assert!(anthropic_models.body.is_none());
     }
 
     #[test]
     fn custom_base_url_must_be_https_or_local() {
-        assert_eq!(validate_custom_url(Some(" https://api.groq.com/openai/v1/ ")).unwrap(), "https://api.groq.com/openai/v1");
-        assert_eq!(validate_custom_url(Some("http://localhost:1234/v1")).unwrap(), "http://localhost:1234/v1");
+        assert_eq!(
+            validate_custom_url(Some(" https://api.groq.com/openai/v1/ ")).unwrap(),
+            "https://api.groq.com/openai/v1"
+        );
+        assert_eq!(
+            validate_custom_url(Some("http://localhost:1234/v1")).unwrap(),
+            "http://localhost:1234/v1"
+        );
         assert!(validate_custom_url(Some("http://127.0.0.1")).is_ok());
         assert!(validate_custom_url(Some("http://example.com/v1")).is_err());
         assert!(validate_custom_url(Some("http://localhost.evil.com")).is_err());
@@ -588,10 +728,15 @@ mod tests {
 
     /// A one-shot-per-response HTTP server on 127.0.0.1 that records each raw
     /// request, standing in for an OpenAI-compatible provider (no real key).
-    fn mock_server(responses: Vec<(u16, &'static str)>) -> (String, std::sync::mpsc::Receiver<String>) {
+    fn mock_server(
+        responses: Vec<(u16, &'static str)>,
+    ) -> (String, std::sync::mpsc::Receiver<String>) {
         use std::io::{Read, Write};
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-        let base = format!("http://127.0.0.1:{}/v1", listener.local_addr().unwrap().port());
+        let base = format!(
+            "http://127.0.0.1:{}/v1",
+            listener.local_addr().unwrap().port()
+        );
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             for (status, body) in responses {
@@ -605,7 +750,11 @@ mod tests {
                     if let Some(end) = text.find("\r\n\r\n") {
                         let len = text
                             .lines()
-                            .find_map(|l| l.to_lowercase().strip_prefix("content-length:").map(|v| v.trim().parse::<usize>().unwrap_or(0)))
+                            .find_map(|l| {
+                                l.to_lowercase()
+                                    .strip_prefix("content-length:")
+                                    .map(|v| v.trim().parse::<usize>().unwrap_or(0))
+                            })
                             .unwrap_or(0);
                         if raw.len() >= end + 4 + len {
                             break;
@@ -627,12 +776,16 @@ mod tests {
     }
 
     fn user_msg() -> Vec<AiMessage> {
-        vec![AiMessage { role: "user".into(), content: "Reply OK".into() }]
+        vec![AiMessage {
+            role: "user".into(),
+            content: "Reply OK".into(),
+        }]
     }
 
     #[test]
     fn calls_a_compatible_endpoint_end_to_end() {
-        let (base, requests) = mock_server(vec![(200, r#"{"choices":[{"message":{"content":"OK"}}]}"#)]);
+        let (base, requests) =
+            mock_server(vec![(200, r#"{"choices":[{"message":{"content":"OK"}}]}"#)]);
         let reply = tauri::async_runtime::block_on(ai_chat_online(
             "custom".into(),
             "local-model".into(),
@@ -651,12 +804,20 @@ mod tests {
     #[test]
     fn retries_without_temperature_when_the_model_rejects_it() {
         let (base, requests) = mock_server(vec![
-            (400, r#"{"error":{"message":"Unsupported value: 'temperature' does not support 0.4"}}"#),
+            (
+                400,
+                r#"{"error":{"message":"Unsupported value: 'temperature' does not support 0.4"}}"#,
+            ),
             (200, r#"{"choices":[{"message":{"content":"OK"}}]}"#),
         ]);
-        let reply =
-            tauri::async_runtime::block_on(ai_chat_online("custom".into(), "m".into(), 0.4, user_msg(), Some(base)))
-                .unwrap();
+        let reply = tauri::async_runtime::block_on(ai_chat_online(
+            "custom".into(),
+            "m".into(),
+            0.4,
+            user_msg(),
+            Some(base),
+        ))
+        .unwrap();
         assert_eq!(reply, "OK");
         assert!(requests.recv().unwrap().contains(r#""temperature""#));
         assert!(!requests.recv().unwrap().contains(r#""temperature""#));
@@ -665,23 +826,44 @@ mod tests {
     #[test]
     fn lists_models_and_passes_provider_errors_through() {
         // Keep the receivers alive: the mock records each request before replying.
-        let (base, _list_requests) = mock_server(vec![(200, r#"{"data":[{"id":"b"},{"id":"a"}]}"#)]);
-        let models = tauri::async_runtime::block_on(ai_list_models("custom".into(), Some(base))).unwrap();
+        let (base, _list_requests) =
+            mock_server(vec![(200, r#"{"data":[{"id":"b"},{"id":"a"}]}"#)]);
+        let models =
+            tauri::async_runtime::block_on(ai_list_models("custom".into(), Some(base))).unwrap();
         assert_eq!(models, vec!["a", "b"]);
 
-        let (base, _chat_requests) = mock_server(vec![(404, r#"{"error":{"message":"The model `nope` does not exist"}}"#)]);
-        let err = tauri::async_runtime::block_on(ai_chat_online("custom".into(), "nope".into(), 0.4, user_msg(), Some(base)))
-            .unwrap_err();
+        let (base, _chat_requests) = mock_server(vec![(
+            404,
+            r#"{"error":{"message":"The model `nope` does not exist"}}"#,
+        )]);
+        let err = tauri::async_runtime::block_on(ai_chat_online(
+            "custom".into(),
+            "nope".into(),
+            0.4,
+            user_msg(),
+            Some(base),
+        ))
+        .unwrap_err();
         assert_eq!(err, "The model `nope` does not exist");
     }
 
     #[test]
     fn unreachable_endpoint_gives_a_plain_error_without_the_url() {
         // Nothing listens on this port once the listener is dropped.
-        let port = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
         let base = format!("http://127.0.0.1:{port}/v1");
-        let err = tauri::async_runtime::block_on(ai_chat_online("custom".into(), "m".into(), 0.4, user_msg(), Some(base)))
-            .unwrap_err();
+        let err = tauri::async_runtime::block_on(ai_chat_online(
+            "custom".into(),
+            "m".into(),
+            0.4,
+            user_msg(),
+            Some(base),
+        ))
+        .unwrap_err();
         assert!(!err.contains("127.0.0.1"), "error leaked the URL: {err}");
     }
 

@@ -21,7 +21,10 @@ impl Hlc {
     /// Fixed-width text form `<wall_ms:15>-<counter:5>-<device_id>`; byte-wise
     /// string order equals `Ord`.
     pub fn encode(&self) -> String {
-        format!("{:015}-{:05}-{}", self.wall_ms, self.counter, self.device_id)
+        format!(
+            "{:015}-{:05}-{}",
+            self.wall_ms, self.counter, self.device_id
+        )
     }
 
     pub fn parse(s: &str) -> Option<Hlc> {
@@ -42,9 +45,17 @@ impl Hlc {
 /// millisecond forward instead (order is preserved).
 fn normalize(wall_ms: u64, counter: u32, device_id: &str) -> Hlc {
     if counter > COUNTER_MAX {
-        Hlc { wall_ms: wall_ms + 1, counter: 0, device_id: device_id.to_string() }
+        Hlc {
+            wall_ms: wall_ms + 1,
+            counter: 0,
+            device_id: device_id.to_string(),
+        }
     } else {
-        Hlc { wall_ms, counter, device_id: device_id.to_string() }
+        Hlc {
+            wall_ms,
+            counter,
+            device_id: device_id.to_string(),
+        }
     }
 }
 
@@ -97,7 +108,14 @@ mod tests {
         for w in seen.windows(2) {
             assert!(w[0] < w[1]);
         }
-        assert_eq!(seen[3], Hlc { wall_ms: 1001, counter: 1, device_id: A.into() });
+        assert_eq!(
+            seen[3],
+            Hlc {
+                wall_ms: 1001,
+                counter: 1,
+                device_id: A.into()
+            }
+        );
     }
 
     #[test]
@@ -120,20 +138,62 @@ mod tests {
 
     #[test]
     fn recv_merges_counters() {
-        let prev = Hlc { wall_ms: 1000, counter: 3, device_id: A.into() };
-        let remote = Hlc { wall_ms: 1000, counter: 7, device_id: B.into() };
-        assert_eq!(recv(Some(&prev), &remote, 999, A), Hlc { wall_ms: 1000, counter: 8, device_id: A.into() });
-        assert_eq!(recv(Some(&prev), &remote, 2000, A), Hlc { wall_ms: 2000, counter: 0, device_id: A.into() });
+        let prev = Hlc {
+            wall_ms: 1000,
+            counter: 3,
+            device_id: A.into(),
+        };
+        let remote = Hlc {
+            wall_ms: 1000,
+            counter: 7,
+            device_id: B.into(),
+        };
+        assert_eq!(
+            recv(Some(&prev), &remote, 999, A),
+            Hlc {
+                wall_ms: 1000,
+                counter: 8,
+                device_id: A.into()
+            }
+        );
+        assert_eq!(
+            recv(Some(&prev), &remote, 2000, A),
+            Hlc {
+                wall_ms: 2000,
+                counter: 0,
+                device_id: A.into()
+            }
+        );
     }
 
     #[test]
     fn encoding_is_fixed_width_and_sortable() {
         let hs = [
-            Hlc { wall_ms: 9, counter: 0, device_id: B.into() },
-            Hlc { wall_ms: 10, counter: 0, device_id: A.into() },
-            Hlc { wall_ms: 10, counter: 2, device_id: A.into() },
-            Hlc { wall_ms: 10, counter: 2, device_id: B.into() },
-            Hlc { wall_ms: 1_730_000_000_000, counter: 99_999, device_id: A.into() },
+            Hlc {
+                wall_ms: 9,
+                counter: 0,
+                device_id: B.into(),
+            },
+            Hlc {
+                wall_ms: 10,
+                counter: 0,
+                device_id: A.into(),
+            },
+            Hlc {
+                wall_ms: 10,
+                counter: 2,
+                device_id: A.into(),
+            },
+            Hlc {
+                wall_ms: 10,
+                counter: 2,
+                device_id: B.into(),
+            },
+            Hlc {
+                wall_ms: 1_730_000_000_000,
+                counter: 99_999,
+                device_id: A.into(),
+            },
         ];
         let enc: Vec<String> = hs.iter().map(Hlc::encode).collect();
         let mut sorted = enc.clone();
@@ -148,7 +208,18 @@ mod tests {
 
     #[test]
     fn counter_overflow_rolls_into_next_ms() {
-        let prev = Hlc { wall_ms: 50, counter: 99_999, device_id: A.into() };
-        assert_eq!(tick(Some(&prev), 10, A), Hlc { wall_ms: 51, counter: 0, device_id: A.into() });
+        let prev = Hlc {
+            wall_ms: 50,
+            counter: 99_999,
+            device_id: A.into(),
+        };
+        assert_eq!(
+            tick(Some(&prev), 10, A),
+            Hlc {
+                wall_ms: 51,
+                counter: 0,
+                device_id: A.into()
+            }
+        );
     }
 }

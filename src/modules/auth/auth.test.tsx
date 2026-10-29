@@ -97,4 +97,23 @@ describe("auth screen", () => {
       "Correo o contraseña incorrectos.",
     );
   });
+
+  it("explains the login attempt limit (429 rate_limited)", async () => {
+    vi.mocked(authApi.login).mockRejectedValue(
+      new ApiError(429, "rate_limited", "Too many attempts."),
+    );
+    const user = userEvent.setup();
+    renderAuthScreen();
+
+    await user.type(
+      screen.getByLabelText("Correo electrónico"),
+      "qa@pharos.dev",
+    );
+    await user.type(screen.getByLabelText("Contraseña"), "wrongpass");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Demasiados intentos. Espera un minuto y vuelve a intentarlo.",
+    );
+  });
 });

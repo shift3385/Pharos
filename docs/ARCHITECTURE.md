@@ -91,6 +91,15 @@ The QA tool tests itself at three levels:
 - **Rust core:** `cargo test` in `src-tauri/` (repositories, encryption,
   atomic persistence, HLC, sync merge). It runs again since the switch to MSVC.
 - **Backend:** Vitest against a real Postgres database (`pharos_test_db`).
+- **Repository gates** (`scripts/*.mjs`, tested with `node:test`): migration
+  numbering, npm audit with expiring exceptions, and `cargo fmt`/clippy with exact
+  exceptions.
+
+All of the above runs in GitHub Actions on every PR and push to `main`
+(`.github/workflows/ci.yml`). The same pipeline also runs `cargo deny`
+(RustSec, licenses) and `zizmor` on the workflows. The Windows installer is
+built as a CI artifact (`installer.yml`). Policy:
+[ADR-0021](adr/0021-ci-y-cadena-de-suministro.md).
 
 ## Backend (Phase 1+)
 
@@ -112,6 +121,17 @@ Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 with rotation + revocation. The desktop client caches the session in the OS
 keychain (Windows Credential Manager via a Tauri `keyring` command) and reopens
 offline from that cache (spec §4).
+
+Hardening (BASE-06): `config/env.ts` validates the environment at start-up.
+In production it refuses a default/short JWT secret and `CORS_ORIGIN=*`.
+`app.ts` sets per-route policies in one `onRoute` hook:
+
+- a per-IP attempt limit on `/auth/login` and `/auth/register`
+  (`@fastify/rate-limit`, 429 `rate_limited`);
+- body limits of 1 MiB in general and 8 MiB on `/sync/*` (413
+  `payload_too_large`).
+
+Fastify's own 4xx errors keep their status in the JSON error format.
 
 ## Local data (Phase 2+)
 

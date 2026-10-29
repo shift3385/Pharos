@@ -24,6 +24,9 @@ services:
       timeout: 5s
       retries: 10
 
+  # Production mode: the API refuses to start until .env sets a real
+  # JWT_ACCESS_SECRET (32+ chars) and an explicit CORS_ORIGIN (README,
+  # "Production configuration"). `docker compose up -d db` alone is unaffected.
   api:
     build: ./server
     container_name: pharos-api

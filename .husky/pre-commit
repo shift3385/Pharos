@@ -1,0 +1,4 @@
+# Lint the staged TypeScript only (fast). --no-stash: the git stash stack is
+# shared by every worktree of this repository, so lint-staged must not use it;
+# its tasks only check, they never rewrite files.
+npx --no -- lint-staged --no-stash

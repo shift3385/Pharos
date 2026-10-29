@@ -152,7 +152,10 @@ pub fn template_get(db: State<Db>, id: String) -> Result<Option<TemplateData>, S
 }
 
 #[tauri::command]
-pub fn template_create(db: State<Db>, input: TemplateInput) -> Result<Option<TemplateData>, String> {
+pub fn template_create(
+    db: State<Db>,
+    input: TemplateInput,
+) -> Result<Option<TemplateData>, String> {
     let id = Uuid::new_v4().to_string();
     let bytes = B64
         .decode(input.data_base64.as_bytes())

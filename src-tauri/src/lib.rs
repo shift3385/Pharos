@@ -54,8 +54,7 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
-            let database = Db::open(&data_dir)
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            let database = Db::open(&data_dir).map_err(std::io::Error::other)?;
             app.manage(database);
             Ok(())
         })
