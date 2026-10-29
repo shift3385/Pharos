@@ -19,3 +19,5 @@
     en localhost), para que una clave no viaje sin cifrar (implementado en
     IA-08).
   - SEC-07 entra en el backlog para 0.5.0.
+- **Ver también:** [ADR-0024](0024-clave-de-recuperacion.md) aplica la misma
+  regla a la clave de la base de datos local y añade su clave de recuperación.
