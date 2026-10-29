@@ -33,6 +33,23 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   la diaria a diario y las demás una vez por sprint. Se exporta en el `.xlsx` y
   el `.pdf` ("Diaria (a diario)") y la importación del plan la recupera. Un
   plan guardado con una versión anterior muestra los valores por defecto.
+- **Casos desde un requisito con IA (IA-05):** el botón ✨ de cada requisito
+  (pestaña Trazabilidad) pide a la IA escenarios Gherkin y casos de prueba. Antes
+  de enviar dice a qué proveedor y modelo va el requisito. Revisas las
+  propuestas, ves su Gherkin y solo se crean las que aceptas, como borradores
+  vinculados al requisito (aparecen en la matriz) y marcados "IA · pendiente de
+  revisión" con el proveedor y el modelo reales. Si algún caso no se puede
+  guardar, la ventana sigue abierta con solo esos seleccionados para
+  reintentarlos, sin duplicar los ya creados.
+- **Más ayudas de IA de la spec (IA-10):** sugerencia de la estrategia de
+  automatización y de un banco de riesgos con mitigación en el plan, y de
+  precondiciones en el editor de casos. Eliges qué sugerencias añadir.
+- **Respuestas de la IA validadas (ADR-0023):** lo estructurado llega como JSON y
+  se comprueba contra un esquema antes de usarlo. Una respuesta inválida, un
+  rechazo o un timeout se explican con "No se aplicó nada" y se puede
+  reintentar; nunca se aplica a medias. Con Ollama se usa su modo JSON y una
+  llamada colgada falla a los 120 s, como las online. La prioridad se acepta
+  aunque el modelo la escriba en español o con mayúsculas ("Alta" → high).
 
 - **Varios motores de IA online (IA-08):** además de Gemini, ahora se puede usar
   OpenAI, Claude (Anthropic), OpenRouter o cualquier servicio compatible con la

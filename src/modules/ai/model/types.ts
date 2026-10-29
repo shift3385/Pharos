@@ -69,9 +69,24 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
   ollamaEndpoint: "http://localhost:11434",
 };
 
-export interface AiProvider {
-  chat(messages: AiMessage[], opts: { model: string; temperature: number }): Promise<string>;
+export interface ChatOptions {
+  model: string;
+  temperature: number;
+  /** The reply must be a JSON object (structured output, ADR-0023). Ollama
+   *  enforces it natively; online providers rely on the prompt. */
+  json?: boolean;
 }
+
+export interface AiProvider {
+  chat(messages: AiMessage[], opts: ChatOptions): Promise<string>;
+}
+
+/** Same text as the Rust timeout error (`ai.rs`), so the UI recognises a
+ *  provider that did not answer whichever path the call took. */
+export const AI_TIMEOUT_MESSAGE = "The AI provider did not answer in time";
+
+/** Same limit as the Rust online calls (`REQUEST_TIMEOUT`). */
+export const AI_REQUEST_TIMEOUT_MS = 120_000;
 
 export interface AiStatus {
   /** The active online provider is configured: its key is in the keychain

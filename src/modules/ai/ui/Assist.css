@@ -115,3 +115,47 @@
   vertical-align: middle;
   border-radius: var(--radius-pill);
 }
+
+/* ---- Structured AI answers (ADR-0023): pick lists and failure notices ---- */
+.assist__picklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.assist__pick {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+}
+.assist__pick input {
+  margin-top: 3px;
+}
+.assist__pick-sub {
+  display: block;
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+.assist__failure {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+}
+.assist__failure p {
+  margin: 0;
+}
+.assist__details {
+  margin: var(--space-1) 0;
+  padding-left: var(--space-4);
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.assist__nothing {
+  font-style: italic;
+}

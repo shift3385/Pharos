@@ -33,9 +33,11 @@ import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import {
+  AiSuggestList,
   AssistButton,
   aiAvailable,
   markReviewed,
+  suggestRisks,
   withProvenance,
   type AiProvenance,
   type ProvenanceMap,
@@ -95,7 +97,34 @@ interface FormState {
 }
 
 /** Fields the wizard can draft with AI (keys of the provenance map). */
-type AssistedField = "summary" | "environmentConfig" | "environmentRequirements" | "purpose" | "conclusion";
+type AssistedField =
+  | "summary"
+  | "environmentConfig"
+  | "environmentRequirements"
+  | "automationStrategy"
+  | "purpose"
+  | "conclusion";
+/** Assisted fields plus the list the AI can add rows to (IA-10). */
+type ReviewableField = AssistedField | "risks";
+
+/** What the AI aids of the plan need to know about it (IA-10): title,
+ *  summary, scope, types, levels and tools. */
+function planBrief(form: FormState): string {
+  const list = (label: string, items: string[]) =>
+    items.filter(Boolean).length ? `${label}: ${items.filter(Boolean).join(", ")}` : "";
+  return [
+    `Title: ${form.title}`,
+    form.summary.trim() && `Summary: ${form.summary.trim()}`,
+    list("In scope", form.scopeIn),
+    list("Out of scope", form.scopeOut),
+    list("Test types", form.testTypes),
+    list("Test levels", form.testLevels),
+    list("Tools", form.tools),
+    `Methodology: ${form.methodologyType}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 interface Props {
   planId: string | null;
@@ -163,7 +192,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     setForm((f) =>
       f ? { ...f, [field]: text, aiProvenance: withProvenance(f.aiProvenance, field, provenance) } : f,
     );
-  const review = (field: AssistedField) => () =>
+  const review = (field: ReviewableField) => () =>
     setForm((f) => (f ? { ...f, aiProvenance: markReviewed(f.aiProvenance, field, user?.id ?? "") } : f));
   const aiProps = (field: AssistedField) => ({
     provenance: form?.aiProvenance[field],
@@ -588,6 +617,13 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               value={form.automationStrategy}
               onChange={(v) => set("automationStrategy", v)}
             />
+            <AssistButton
+              available={aiReady}
+              instruction="the test automation strategy of a software test plan: what to automate first, at which levels, with which of the chosen tools, and what stays manual"
+              notes={form.automationStrategy}
+              context={planBrief(form)}
+              {...aiProps("automationStrategy")}
+            />
           </>
         ),
       },
@@ -749,12 +785,45 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       {
         id: "risks",
         body: (
-          <PairListField
-            items={form.risks}
-            keys={["risk", "mitigation"]}
-            labels={[t("testPlan.riskCol"), t("testPlan.mitigationCol")]}
-            onChange={(v) => set("risks", v)}
-          />
+          <>
+            <PairListField
+              items={form.risks}
+              keys={["risk", "mitigation"]}
+              labels={[t("testPlan.riskCol"), t("testPlan.mitigationCol")]}
+              onChange={(v) => set("risks", v)}
+            />
+            <AiSuggestList
+              available={aiReady}
+              buttonLabel={t("testPlan.suggestRisks")}
+              run={() =>
+                suggestRisks(
+                  planBrief(form),
+                  form.risks.map((r) => r.risk).filter((r) => r.trim()),
+                  i18n.resolvedLanguage ?? "es",
+                )
+              }
+              renderItem={(r) => (
+                <>
+                  {r.risk}
+                  <span className="assist__pick-sub">{r.mitigation}</span>
+                </>
+              )}
+              provenance={form.aiProvenance.risks}
+              onAdd={(items, provenance) =>
+                setForm((f) =>
+                  f
+                    ? {
+                        ...f,
+                        // Replace the empty starter row instead of keeping it.
+                        risks: [...f.risks.filter((r) => r.risk.trim() || r.mitigation.trim()), ...items],
+                        aiProvenance: withProvenance(f.aiProvenance, "risks", provenance),
+                      }
+                    : f,
+                )
+              }
+              onReview={review("risks")}
+            />
+          </>
         ),
       },
       // 18. Communication plan
