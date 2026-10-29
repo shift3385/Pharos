@@ -1,0 +1,21 @@
+{
+  "$comment": "Migration number registry (BASE-12, docs/VERSIONING.md §6). Files are the source of truth for numbers already in use; this file only records numbers reserved by a track that has not merged yet, and numbers retired without a file. `npm run check:migrations` fails on duplicate numbers, on gaps not explained here, and (local) on files not registered in src-tauri/src/db.rs. Reserve numbers here in the same change as the track plan; when a reserved number ships, remove its entry; if it is abandoned, move it to `retired`.",
+  "local": {
+    "dir": "src-tauri/migrations",
+    "registeredIn": "src-tauri/src/db.rs",
+    "reserved": {
+      "0017": "A2 · purge (SYNC-06)"
+    },
+    "retired": {
+      "0014": "A1 spare, never used; A1 merged with 0012-0013"
+    }
+  },
+  "server": {
+    "dir": "server/migrations",
+    "reserved": {
+      "0005": "A1 spare, unused; A2 may take it for key blocks instead of 0006, otherwise retire it when 0006 ships",
+      "0006": "A2 · key blocks (DAT-01)"
+    },
+    "retired": {}
+  }
+}

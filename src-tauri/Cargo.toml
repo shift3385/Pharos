@@ -5,6 +5,7 @@ description = "Pharos — QA test management suite"
 authors = ["Pharos"]
 edition = "2021"
 rust-version = "1.77.2"
+publish = false
 
 # The library is what the desktop and (future) mobile entrypoints call into.
 # Desktop only needs the rlib: the binary (main.rs) links it.

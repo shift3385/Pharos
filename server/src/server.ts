@@ -1,7 +1,9 @@
-import { env } from "./config/env";
+import { env, startupWarnings } from "./config/env";
 import { createPool } from "./db/pool";
 import { runMigrations } from "./db/migrate";
 import { buildApp } from "./app";
+
+for (const warning of startupWarnings(env)) console.warn(`Warning: ${warning}`);
 
 const pool = createPool(env.DATABASE_URL);
 

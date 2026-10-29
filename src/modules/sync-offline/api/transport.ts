@@ -15,7 +15,8 @@ export const VERSION_HEADER = "x-pharos-version";
 export { APP_VERSION };
 
 /** Most deltas per push request and target size of one request body (the
- *  server accepts 500 deltas and 1 MiB). */
+ *  server accepts 500 deltas per push and, on /sync/*, bodies up to
+ *  SYNC_BODY_LIMIT_BYTES: 8 MiB by default). */
 export const MAX_BATCH_DELTAS = 200;
 export const MAX_BATCH_BYTES = 512 * 1024;
 

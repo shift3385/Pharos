@@ -14,6 +14,7 @@ const KNOWN_ERROR_CODES = new Set([
   "invalid_credentials",
   "email_in_use",
   "validation_error",
+  "rate_limited",
 ]);
 
 function errorMessageKey(error: unknown): string {

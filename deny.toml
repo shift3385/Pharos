@@ -1,0 +1,64 @@
+# cargo-deny policy for the Tauri/Rust crate (BASE-03, ADR-0021).
+#   cargo deny --manifest-path src-tauri/Cargo.toml --config deny.toml check
+# (`npm run check:deps`). Runs in CI next to the npm audit and license gates.
+
+[graph]
+# The desktop app ships for Windows only (ADR-0008): judge that dependency graph.
+targets = ["x86_64-pc-windows-msvc"]
+
+[advisories]
+# RustSec: every vulnerability fails; unmaintained crates fail too unless
+# ignored here with a reason and a way out.
+unmaintained = "all"
+yanked = "deny"
+ignore = [
+  # unic-* (no successor release) come only from tauri-utils -> urlpattern 0.3,
+  # a build/config dependency of Tauri itself. Removed when Tauri moves off it.
+  { id = "RUSTSEC-2025-0075", reason = "unic-char-range via tauri-utils/urlpattern (upstream Tauri)" },
+  { id = "RUSTSEC-2025-0080", reason = "unic-common via tauri-utils/urlpattern (upstream Tauri)" },
+  { id = "RUSTSEC-2025-0081", reason = "unic-char-property via tauri-utils/urlpattern (upstream Tauri)" },
+  { id = "RUSTSEC-2025-0098", reason = "unic-ucd-version via tauri-utils/urlpattern (upstream Tauri)" },
+  { id = "RUSTSEC-2025-0100", reason = "unic-ucd-ident via tauri-utils/urlpattern (upstream Tauri)" },
+]
+
+[licenses]
+# Permissive licenses only (spec §15): anything not listed fails, so GPL, AGPL,
+# LGPL, SSPL and EUPL are rejected without naming them. The list holds only the
+# licenses in use; adding another permissive one is a reviewed change.
+allow = [
+  "MIT",
+  "MIT-0",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
+  "CC0-1.0",
+  "0BSD",
+]
+confidence-threshold = 0.9
+# MPL-2.0 is weak, file-level copyleft: it only binds changes to those files.
+# Tolerated for these unmodified Tauri dependencies only (ADR-0021); a new
+# MPL-2.0 crate fails until it is reviewed and added here.
+exceptions = [
+  { allow = ["MPL-2.0"], crate = "cssparser" },
+  { allow = ["MPL-2.0"], crate = "cssparser-macros" },
+  { allow = ["MPL-2.0"], crate = "dtoa-short" },
+  { allow = ["MPL-2.0"], crate = "option-ext" },
+  { allow = ["MPL-2.0"], crate = "selectors" },
+]
+
+[licenses.private]
+# The pharos crate itself (publish = false) is not distributed on crates.io.
+ignore = true
+
+[bans]
+# Tauri pulls several versions of some crates; that is not a policy problem.
+multiple-versions = "allow"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

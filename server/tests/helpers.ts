@@ -13,7 +13,7 @@ export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ??
   "postgres://postgres:postgres@localhost:5433/pharos_test_db";
 
-const testEnv: Env = {
+export const testEnv: Env = {
   NODE_ENV: "test",
   HOST: "0.0.0.0",
   PORT: 0,
@@ -22,6 +22,12 @@ const testEnv: Env = {
   ACCESS_TOKEN_TTL: "15m",
   REFRESH_TOKEN_TTL_DAYS: 30,
   CORS_ORIGIN: "*",
+  TRUST_PROXY: false,
+  // Far above what one test file sends, so only the limit tests hit it.
+  LOGIN_RATE_LIMIT_MAX: 1000,
+  LOGIN_RATE_LIMIT_WINDOW: 60_000,
+  BODY_LIMIT_BYTES: 1_048_576,
+  SYNC_BODY_LIMIT_BYTES: 8_388_608,
 };
 
 export async function setupTestApp(): Promise<{

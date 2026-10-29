@@ -3,6 +3,10 @@
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  isExcepted,
+  optionalDepsReader,
+} from "../../scripts/license-policy.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const modulesDir = join(root, "node_modules");
@@ -45,23 +49,40 @@ if (!existsSync(modulesDir)) {
   process.exit(1);
 }
 
+// Weak copyleft is accepted only for packages named in the repository's
+// scripts/license-exceptions.json (shared with the client gate, ADR-0021).
+const exceptionsFile = join(root, "..", "scripts", "license-exceptions.json");
+const exceptions = existsSync(exceptionsFile)
+  ? JSON.parse(readFileSync(exceptionsFile, "utf8")).npm
+  : {};
+const optionalDepsOf = optionalDepsReader(modulesDir);
+
 const forbidden = [];
-const warnings = [];
+const excepted = [];
 let checked = 0;
 for (const { name, license } of iterPackages(modulesDir)) {
   checked += 1;
   if (!license) continue;
   if (FORBIDDEN.some((re) => re.test(license))) forbidden.push(`${name}: ${license}`);
-  else if (WARN.some((re) => re.test(license))) warnings.push(`${name}: ${license}`);
+  else if (WARN.some((re) => re.test(license))) {
+    if (isExcepted(name, license, exceptions, optionalDepsOf))
+      excepted.push(`${name}: ${license}`);
+    else
+      forbidden.push(
+        `${name}: ${license} (weak copyleft not listed in scripts/license-exceptions.json)`,
+      );
+  }
 }
 
 console.log(`Checked ${checked} installed packages.`);
-if (warnings.length) {
-  console.warn("\nWeak-copyleft (review manually):");
-  warnings.forEach((w) => console.warn(`  - ${w}`));
+if (excepted.length) {
+  console.warn("\nWeak-copyleft accepted by scripts/license-exceptions.json:");
+  excepted.forEach((w) => console.warn(`  - ${w}`));
 }
 if (forbidden.length) {
-  console.error("\nFORBIDDEN licenses detected (GPL/AGPL/SSPL — spec §15):");
+  console.error(
+    "\nFORBIDDEN licenses detected (GPL/AGPL/SSPL, or unlisted weak copyleft — spec §15):",
+  );
   forbidden.forEach((f) => console.error(`  - ${f}`));
   process.exit(1);
 }

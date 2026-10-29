@@ -27,7 +27,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": ["nsis"],
     "publisher": "Pharos",
     "category": "DeveloperTool",
     "shortDescription": "QA test management suite",

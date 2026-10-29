@@ -82,8 +82,10 @@ funcionalidad: así las pistas paralelas no chocan.
   Un cambio incompatible se marca con `!` (`feat(sync)!: …`) o con un pie
   `BREAKING CHANGE: …`, y obliga a subir la MENOR mientras estemos en `0.x`.
 - **Ramas:** `main` siempre en verde (`npm run verify`, `cargo test`, tests del
-  backend). Cada pista trabaja en su rama/worktree y entra en `main` con
-  `merge --no-ff`. Los arreglos sobre una versión publicada van en
+  backend), comprobado por la CI. Cada pista trabaja en su rama/worktree y
+  entra en `main` con un merge commit (`merge --no-ff`); con `main` protegida
+  (BASE-02), eso se hace mediante un PR con la CI en verde. El `commit-msg` hook
+  y el check `commits` de la CI exigen Conventional Commits. Los arreglos sobre una versión publicada van en
   `hotfix/X.Y.Z`.
 - **Etiquetas:** anotadas, con el formato `vX.Y.Z` o `vX.Y.Z-beta.N`, sobre
   `main`. Una etiqueta publicada (con push) **no se mueve ni se borra nunca**;
@@ -107,9 +109,14 @@ funcionalidad: así las pistas paralelas no chocan.
 la versión subida, la etiqueta y la fusión de vuelta a `main`.
 
 **Instalador MSI:** el bundler WiX de Tauri solo acepta pre-versiones
-numéricas. Las alfas y betas se distribuyen con el instalador NSIS o sin
-instalador, y el MSI se genera solo para versiones estables. Hay que
-confirmarlo al construir el instalador (UX-06).
+numéricas. Se confirmó el 2026-10-28 con `0.1.0-alpha.1`: "optional
+pre-release identifier in app version must be numeric-only". Por eso:
+
+- las alfas, betas y rc se distribuyen con el instalador NSIS;
+- el MSI se genera solo para versiones estables.
+
+`npm run build:installer` (`scripts/build-installer.mjs`) elige los formatos a
+partir de la versión, y la CI publica el instalador como artefacto (BASE-09).
 
 ## 6. Compatibilidad de datos (obligatoria para cambios grandes)
 
@@ -121,7 +128,11 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    - una migración fusionada en `main` no se edita jamás;
    - los arreglos van en una migración nueva;
    - los números se reservan en el plan de la pista antes de empezar, para que
-     dos pistas no elijan el mismo.
+     dos pistas no elijan el mismo. La reserva se escribe en
+     `scripts/migration-registry.json`;
+   - `npm run check:migrations` (parte de `verify` y de la CI) falla si dos
+     migraciones comparten número, si falta un número sin reservar ni retirar,
+     o si una migración local no está registrada en `db.rs`.
 2. **Actualización desde la versión anterior.** Cada MENOR debe abrir sin
    pérdida una base de datos de la MENOR publicada anterior. El plan de la
    pista que añade migraciones incluye una prueba de esa actualización.
