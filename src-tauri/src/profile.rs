@@ -4,10 +4,13 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::Db;
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Profile {
@@ -24,6 +27,7 @@ pub struct Profile {
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProfileInput {

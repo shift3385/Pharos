@@ -5,11 +5,14 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
 use crate::oplog;
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSummary {
@@ -21,6 +24,7 @@ pub struct ProjectSummary {
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Project {
@@ -35,6 +39,7 @@ pub struct Project {
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectInput {

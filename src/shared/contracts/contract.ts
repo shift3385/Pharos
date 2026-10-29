@@ -1,0 +1,42 @@
+// Barrel of the generated contracts (BASE-05). Written by hand: ts-rs writes
+// one file per type in generated/. `npm run check:contracts` fails if a file is
+// missing here.
+export type * from "./generated/AttachmentData";
+export type * from "./generated/AttachmentSummary";
+export type * from "./generated/Conflict";
+export type * from "./generated/ConflictSide";
+export type * from "./generated/Delta";
+export type * from "./generated/ImportSummary";
+export type * from "./generated/KeyBlock";
+export type * from "./generated/KeyConflict";
+export type * from "./generated/LeaseRequest";
+export type * from "./generated/Pending";
+export type * from "./generated/PlannerCard";
+export type * from "./generated/PlannerCardInput";
+export type * from "./generated/Profile";
+export type * from "./generated/ProfileInput";
+export type * from "./generated/Project";
+export type * from "./generated/ProjectInput";
+export type * from "./generated/ProjectSummary";
+export type * from "./generated/PurgeSummary";
+export type * from "./generated/PushedDelta";
+export type * from "./generated/RejectedKey";
+export type * from "./generated/RemoteDoc";
+export type * from "./generated/Requirement";
+export type * from "./generated/RequirementImportRow";
+export type * from "./generated/RequirementInput";
+export type * from "./generated/SyncState";
+export type * from "./generated/TemplateData";
+export type * from "./generated/TemplateInput";
+export type * from "./generated/TemplateMeta";
+export type * from "./generated/TemplateSeedItem";
+export type * from "./generated/TemplateSummary";
+export type * from "./generated/TestCase";
+export type * from "./generated/TestCaseInput";
+export type * from "./generated/TestCaseRevisionSummary";
+export type * from "./generated/TestCaseSummary";
+export type * from "./generated/TestPlan";
+export type * from "./generated/TestPlanInput";
+export type * from "./generated/TestPlanRevisionDetail";
+export type * from "./generated/TestPlanRevisionSummary";
+export type * from "./generated/TestPlanSummary";

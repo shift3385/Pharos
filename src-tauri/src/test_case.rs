@@ -11,6 +11,8 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
@@ -18,6 +20,7 @@ use crate::keys::{self, KeyKind};
 use crate::oplog;
 use crate::project;
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestCaseSummary {
@@ -44,23 +47,27 @@ fn ai_pending(data: &Value) -> bool {
         .unwrap_or(false)
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestCase {
     id: String,
     workspace_id: String,
+    project_id: String,
     scenario_id: String,
     title: String,
     version: String,
     status: String,
     priority: String,
     author: String,
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     created_at: String,
     updated_at: String,
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestCaseRevisionSummary"))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevisionSummary {
@@ -70,6 +77,7 @@ pub struct RevisionSummary {
     created_at: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestCaseInput {
@@ -83,6 +91,7 @@ pub struct TestCaseInput {
     /// Name printed on the document; not an id.
     author: String,
     #[serde(default = "empty_object")]
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     /// Signed-in user making the change (owner check + audit fields).
     user_id: String,
@@ -93,7 +102,8 @@ fn empty_object() -> Value {
 }
 
 /// Live case `?1` of a live project owned by `?2`.
-const SELECT_CASE: &str = "SELECT c.id, c.workspace_id, c.scenario_id, c.title, c.version, \
+const SELECT_CASE: &str =
+    "SELECT c.id, c.workspace_id, c.project_id, c.scenario_id, c.title, c.version, \
     c.status, c.priority, c.author, c.data, c.created_at, c.updated_at, c.revision \
     FROM test_cases c JOIN projects p ON p.id = c.project_id \
     WHERE c.id = ?1 AND p.owner_id = ?2 AND c.deleted_at IS NULL AND p.deleted_at IS NULL";
@@ -103,6 +113,7 @@ fn map_case(row: &rusqlite::Row) -> rusqlite::Result<TestCase> {
     Ok(TestCase {
         id: row.get("id")?,
         workspace_id: row.get("workspace_id")?,
+        project_id: row.get("project_id")?,
         scenario_id: row.get("scenario_id")?,
         title: row.get("title")?,
         version: row.get("version")?,

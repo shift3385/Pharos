@@ -10,12 +10,15 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
 use crate::oplog;
 use crate::project;
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestPlanSummary {
@@ -27,6 +30,7 @@ pub struct TestPlanSummary {
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestPlan {
@@ -38,12 +42,14 @@ pub struct TestPlan {
     plan_date: Option<String>,
     author: String,
     status: String,
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     created_at: String,
     updated_at: String,
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestPlanRevisionSummary"))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevisionSummary {
@@ -53,16 +59,19 @@ pub struct RevisionSummary {
     created_at: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestPlanRevisionDetail"))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevisionDetail {
     id: String,
     revision: i64,
     title: String,
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     created_at: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestPlanInput {
@@ -74,6 +83,7 @@ pub struct TestPlanInput {
     author: String,
     status: Option<String>,
     #[serde(default = "empty_object")]
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     /// Signed-in user making the change (owner check + audit fields).
     user_id: String,

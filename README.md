@@ -230,6 +230,8 @@ Frontend (repository root):
 | `npm run check:audit`          | npm audit gate: fails on high/critical advisories not in `scripts/audit-allowlist.json`                           |
 | `npm run check:deps`           | `cargo deny` (RustSec advisories, licenses, sources); needs `cargo install --locked cargo-deny`                   |
 | `npm run check:rust`           | `cargo fmt --check` + `cargo clippy -D warnings` with the exact exceptions of `scripts/rust-gates.allowlist.json` |
+| `npm run contracts`            | Regenerate the TS contracts from the Rust types (`src/shared/contracts/generated/`, ADR-0026)                    |
+| `npm run check:contracts`      | Fail if the generated contracts differ from the committed ones or the barrel misses one (BASE-05)                |
 | `npm run version:set -- X.Y.Z` | Set the version in every manifest (releases only)                                                                 |
 | `npm run verify`               | typecheck + lint + licenses + version + migrations + script tests + tests                                         |
 | `npm run verify:static`        | `verify` without the Vitest suite (CI runs it, then `npm run coverage`)                                           |
@@ -252,7 +254,7 @@ is protected (see below).
 | Check        | Runner                 | What it runs                                                             |
 | ------------ | ---------------------- | ------------------------------------------------------------------------ |
 | `client`     | Windows                | `npm ci`, `npm run verify:static`, `npm run coverage` (tests + report)   |
-| `rust`       | Windows                | `npm run check:rust` equivalents (fmt, clippy) and `cargo test --locked` |
+| `rust`       | Windows                | `npm run check:rust` equivalents (fmt, clippy), `cargo test --locked` and the generated-contracts drift check |
 | `server`     | Ubuntu + PostgreSQL 18 | `server/`: typecheck, license check, `npm test`                          |
 | `audit`      | Ubuntu                 | `npm run check:audit` (root and `server/`)                               |
 | `cargo-deny` | Ubuntu                 | `npm run check:deps`                                                     |

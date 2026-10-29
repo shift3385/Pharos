@@ -16,6 +16,8 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::Db;
@@ -28,6 +30,7 @@ const LOW_WATER: u64 = 10;
 /// One block this device needs: `floor` is its next number, so a project
 /// numbered before its first push keeps the keys it already has. `prefix` lets
 /// the server count only the keys of this series (`JIRA-48213` is not one).
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct LeaseRequest {
@@ -38,6 +41,7 @@ pub struct LeaseRequest {
 }
 
 /// A block leased from the server, both ends included.
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyBlock {
@@ -48,6 +52,7 @@ pub struct KeyBlock {
 }
 
 /// A key the server refused because another live document has it.
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RejectedKey {
@@ -58,6 +63,7 @@ pub struct RejectedKey {
 }
 
 /// An open key conflict, for the conflict panel.
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct KeyConflict {

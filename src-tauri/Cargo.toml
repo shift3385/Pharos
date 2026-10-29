@@ -55,6 +55,12 @@ sha2 = "0.10"
 [target.'cfg(windows)'.dependencies]
 rfd = { version = "0.17", default-features = false }
 
+[dev-dependencies]
+# Generated TS contracts (BASE-05, ADR-0026): the derives are test-only, so
+# cargo test writes src/shared/contracts/generated/ and the binary never
+# carries ts-rs. Settings in .cargo/config.toml.
+ts-rs = "12"
+
 [features]
 # This feature is used to produce production builds where an extra console
 # window is not spawned on Windows. Enabled by `tauri build`.

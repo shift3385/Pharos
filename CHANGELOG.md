@@ -24,6 +24,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   una versión anterior dejó sin enviar se envían, y lo que el servidor no
   acepta (y los adjuntos y plantillas que solo estaban en el navegador) se
   descarga en `pharos-web-unsent-<fecha>.json`.
+- **Contratos generados (BASE-05, ADR-0026):** los tipos que la app de
+  escritorio intercambia con la interfaz y con el servidor se generan desde
+  Rust, y la CI falla si dejan de coincidir. Al comprobarlos, un caso abierto
+  en la app de escritorio ahora incluye su proyecto (`projectId`), como ya
+  hacía la sincronización.
 
 - **Inicio real (UX-08):** la pantalla de inicio ya no muestra el texto de la
   "Fase 0". Ofrece "Iniciar nuevo proyecto de pruebas" y "Continuar proyecto

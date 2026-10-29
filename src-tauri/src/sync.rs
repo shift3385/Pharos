@@ -16,6 +16,8 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
@@ -44,12 +46,14 @@ fn require_user(user_id: &str) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Delta {
     entity: String,
     entity_id: String,
     op: String,
+    #[cfg_attr(test, ts(type = "unknown"))]
     payload: Value,
     revision: i64,
     author: String,
@@ -63,18 +67,21 @@ pub struct Delta {
     op_ids: Vec<String>,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Pending {
     deltas: Vec<Delta>,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteDoc {
     entity: String,
     entity_id: String,
     #[serde(default)]
+    #[cfg_attr(test, ts(type = "unknown"))]
     payload: Value,
     revision: i64,
     #[serde(default)]
@@ -84,6 +91,7 @@ pub struct RemoteDoc {
 }
 
 /// A delta the server accepted (echoed back by the TS layer after the push).
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PushedDelta {
@@ -788,9 +796,11 @@ pub fn apply_remote(db: State<Db>, user_id: String, docs: Vec<RemoteDoc>) -> Res
     db.persist()
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConflictSide {
+    #[cfg_attr(test, ts(type = "unknown"))]
     payload: Value,
     revision: i64,
     deleted: bool,
@@ -799,6 +809,7 @@ pub struct ConflictSide {
 
 /// An open conflict as shown in the conflict panel: both full versions, so the
 /// UI can diff them field by field (SYNC-02 can later add a merged resolution).
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Conflict {
@@ -2012,5 +2023,42 @@ mod tests {
             )
             .unwrap();
         assert_eq!(a_key, "ATS_001");
+    }
+
+    /// The documents fixture shared with the server (BASE-05, ADR-0026): each
+    /// one, as a device pushes it, is stored and read back with the same
+    /// fields and values (only the local timestamps and workspace differ).
+    #[test]
+    fn stores_and_reads_back_the_shared_documents() {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../src/shared/contracts/fixtures/sync/documents.json"
+        ))
+        .unwrap();
+        let user = fixture["userId"].as_str().unwrap();
+        let c = conn();
+        let ws = ensure_workspace(&c).unwrap();
+        for raw in fixture["docs"].as_array().unwrap() {
+            let doc: RemoteDoc = serde_json::from_value(raw.clone()).unwrap();
+            apply_doc(&c, &ws, user, &doc).unwrap();
+            let (payload, revision, deleted) = read_payload(&c, &doc.entity, &doc.entity_id)
+                .unwrap()
+                .unwrap_or_else(|| panic!("{} not stored", doc.entity));
+            assert_eq!((revision, deleted), (doc.revision, false), "{}", doc.entity);
+            let (got, want) = (
+                payload.as_object().unwrap(),
+                raw["payload"].as_object().unwrap(),
+            );
+            let mut got_keys: Vec<&String> = got.keys().collect();
+            let mut want_keys: Vec<&String> = want.keys().collect();
+            got_keys.sort();
+            want_keys.sort();
+            assert_eq!(got_keys, want_keys, "{} fields", doc.entity);
+            for (key, value) in want {
+                if ["createdAt", "updatedAt", "workspaceId"].contains(&key.as_str()) {
+                    continue;
+                }
+                assert_eq!(&got[key], value, "{}.{key}", doc.entity);
+            }
+        }
     }
 }

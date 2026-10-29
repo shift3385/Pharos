@@ -9,6 +9,8 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
@@ -20,6 +22,7 @@ const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
 pub(crate) const DEFECT_KEY_PREFIX: &str = "DEF-";
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlannerCard {
@@ -32,12 +35,14 @@ pub struct PlannerCard {
     status: String,
     priority: String,
     position: i64,
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
     created_at: String,
     updated_at: String,
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlannerCardInput {
@@ -48,9 +53,11 @@ pub struct PlannerCardInput {
     status: Option<String>,
     priority: Option<String>,
     #[serde(default = "empty_object")]
+    #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachmentSummary {
@@ -60,6 +67,7 @@ pub struct AttachmentSummary {
     size: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachmentData {

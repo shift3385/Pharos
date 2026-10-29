@@ -39,7 +39,7 @@ src/
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
-  shared/      # design system (theme tokens), i18n, ui kit, fonts, diagnostics, version, platform
+  shared/      # design system (theme tokens), i18n, ui kit, fonts, diagnostics, version, platform, contracts
   test/        # test utilities (renderWithProviders)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync, logs
 e2e/           # desktop smoke of the real binary (WebdriverIO + tauri-driver)
@@ -235,6 +235,19 @@ The QA tool tests itself at four levels:
   the real Cucumber tag-expression engine.
 - **Rust core:** `cargo test` in `src-tauri/` (repositories, encryption,
   atomic persistence, HLC, sync merge). It runs again since the switch to MSVC.
+- **Contracts (BASE-05, [ADR-0026](adr/0026-contratos-generados.md)):** the
+  Rust types that cross the Tauri boundary and the sync wire derive
+  `ts_rs::TS` in tests only, so `cargo test` writes their TS form to
+  `src/shared/contracts/generated/` (`i64` as `number`, `Value` as
+  `unknown`, inputs with optional fields). The hand-written models stay; each
+  `model/types.ts` (and `server/src/modules/sync/sync.contracts.ts`) asserts
+  `Covers<Producer, Consumer>` against them, so `tsc` fails when a field is
+  renamed, dropped or retyped. The CI job `rust` empties the folder, runs
+  `cargo test` and fails if the result differs from the commit
+  (`scripts/contracts.mjs`). Shared sync fixtures
+  (`src/shared/contracts/fixtures/sync/`): `hlc.json` runs against `hlc.rs`,
+  `sync.hlc.ts` and `hlc.ts`; `documents.json` is stored and read back by
+  the desktop and matched by what the web API writes.
 - **Backend:** Vitest against a real Postgres database (`pharos_test_db`).
 - **Repository gates** (`scripts/*.mjs`, tested with `node:test`): migration
   numbering, npm audit with expiring exceptions, and `cargo fmt`/clippy with exact

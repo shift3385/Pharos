@@ -9,6 +9,7 @@
 // Everything runs for the signed-in account only (FIX-07); pushes go in batches
 // with retries (FIX-03) and pulls page until the server has no more (FIX-02).
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
 import { getSession } from "@modules/auth";
 import { invoke as platformInvoke, isTauri } from "@shared/platform";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
@@ -293,3 +294,13 @@ export async function resolveKeyConflict(id: string, key?: string): Promise<stri
   window.dispatchEvent(new CustomEvent("pharos:synced"));
   return assigned;
 }
+
+// The Rust contract (BASE-05, ADR-0026): `tsc` fails if these stop matching
+// the Rust types they are read from or sent to.
+export type _RustContract = [
+  Assert<Covers<Contract.Delta, PendingDelta>>,
+  Assert<Covers<PendingDelta, Contract.PushedDelta>>,
+  Assert<Covers<Contract.SyncState, LocalSyncState>>,
+  Assert<Covers<KeyConflictDoc, Contract.RejectedKey>>,
+  Assert<Covers<Contract.KeyConflict, KeyConflict>>,
+];

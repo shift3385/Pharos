@@ -1,6 +1,7 @@
 // Test plan model (spec §5.1). Scalar/searchable fields live on the plan; the
 // 21-step content lives in `data` so the shape can evolve without a migration.
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
 import type { ProvenanceMap } from "@modules/ai";
 
 export interface ScheduleSprint {
@@ -106,3 +107,14 @@ export interface RevisionSummary {
 export interface RevisionDetail extends RevisionSummary {
   data: TestPlanData;
 }
+
+// The Rust contract (BASE-05, ADR-0026): what Rust sends covers what this model
+// reads, and what this model sends covers what Rust reads. `tsc` fails if a
+// field is renamed, dropped or retyped on either side.
+export type _RustContract = [
+  Assert<Covers<Contract.TestPlanSummary, TestPlanSummary>>,
+  Assert<Covers<Contract.TestPlan, TestPlan>>,
+  Assert<Covers<Contract.TestPlanRevisionSummary, RevisionSummary>>,
+  Assert<Covers<Contract.TestPlanRevisionDetail, RevisionDetail>>,
+  Assert<Covers<TestPlanInput, Contract.TestPlanInput>>,
+];

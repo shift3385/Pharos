@@ -77,9 +77,15 @@ jobs:
       # exact entries in scripts/rust-gates.allowlist.json.
       - run: node scripts/rust-gates.mjs fmt
       - run: node scripts/rust-gates.mjs clippy
+      # cargo test also writes the generated TS contracts (BASE-05, ADR-0026):
+      # emptied first so a type removed from Rust leaves no stale file, then
+      # compared with the committed ones.
+      - run: node scripts/contracts.mjs clean
       - name: cargo test
         working-directory: src-tauri
         run: cargo test --locked
+      - name: Generated TS contracts match the committed ones
+        run: node scripts/contracts.mjs check
 
   # Desktop smoke of the real debug binary (BASE-14, README → "Desktop E2E
   # smoke"): WebdriverIO → tauri-driver → msedgedriver → Pharos. The desktop

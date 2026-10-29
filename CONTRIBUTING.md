@@ -32,6 +32,7 @@ Un cambio está hecho cuando se cumplen todas estas condiciones, con evidencia:
 
 - [ ] `npm run verify` en verde: typecheck, lint sin warnings, licencias, versión, migraciones, tests de `scripts/` y tests.
 - [ ] `cargo test` en `src-tauri/` y `npm run check:rust` (fmt + clippy) en verde, si se tocó Rust.
+- [ ] Si cambió un tipo Rust exportado a TS: `npm run contracts`, `npm run check:contracts` y `src/shared/contracts/` commiteado (ADR-0026).
 - [ ] `npm test` en `server/` en verde, si se tocó el backend.
 - [ ] Lo visible se probó en la app o en el navegador, no solo con tests.
 - [ ] La documentación de la tabla anterior está actualizada.
