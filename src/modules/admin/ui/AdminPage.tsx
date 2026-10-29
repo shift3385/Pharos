@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useToast } from "@shared/ui/Toast";
 import { ReportedError } from "@shared/ui/notify";
 import { exportDiagnostics, logClientError } from "@shared/diagnostics";

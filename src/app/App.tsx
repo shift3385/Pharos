@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router";
 import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
 import { useAuth, AuthScreen } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
