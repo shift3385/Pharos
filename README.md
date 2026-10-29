@@ -34,10 +34,12 @@ If the database or the API is down, sign-in shows "Could not reach the server"
 The **Installer** workflow builds the NSIS installer on every push to `main`
 (see "Continuous integration"). To install it:
 
-1. On GitHub: **Actions → Installer**, open the newest green run on `main`,
-   and download the artifact `pharos-<version>-<commit>-windows` under
-   **Artifacts** (you must be signed in to GitHub; artifacts expire after 30
-   days). It is a `.zip` holding `Pharos_<version>_x64-setup.exe`.
+1. On GitHub: **Actions → Installer**, filter by the release tag (for this
+   beta, `v0.1.0-beta.1`), open that green run and download the artifact
+   `pharos-<version>-<commit>-windows` under **Artifacts** (you must be signed
+   in to GitHub; artifacts expire after 30 days). Use the tag's run only:
+   later pushes to `main` build artifacts with the same version number but
+   unreleased code. It is a `.zip` holding `Pharos_<version>_x64-setup.exe`.
 2. Run the `-setup.exe`. **The installer is not code-signed**, so Windows
    SmartScreen shows "Windows protected your PC": choose **More info → Run
    anyway**. Signing is a known limitation of the beta.
@@ -440,8 +442,11 @@ in the download folder (see below), with `diagnostic.json` (app version, OS, Web
 applied migrations, UI language and theme) and `logs/` (the recent logs,
 masked again). It never includes projects, plans, cases, requirements, your
 profile, the database, keys or tokens. In the web preview it holds only the
-frontend facts. It still works when the local database could not open: it then
-says why (`openError`) instead of listing the migrations.
+frontend facts. The bundle can describe a local database that did not open
+(`openError` instead of the migrations), but the screen shown in that case
+(missing key, newer data) has no export button yet and Administration is out
+of reach (UX-09): report the exact message, a screenshot and that day's
+`pharos.YYYY-MM-DD.log` from the logs folder above.
 
 The installed version is shown at the foot of the sidebar and in
 Administration → Diagnóstico.
@@ -605,6 +610,8 @@ a new `beta.N`. Known limitations of the beta:
 
 - the installer is not code-signed (SmartScreen warning);
 - the installed app needs the API on `localhost:3000` of the same PC;
+- when the local database does not open, its screen has no "Exportar
+  diagnóstico" button yet (UX-09): attach that day's log instead;
 - attachments and your own templates do not sync yet (SYNC-04b), and the web
   has no attachments, own templates or revision history;
 - no test execution yet (0.2.0).

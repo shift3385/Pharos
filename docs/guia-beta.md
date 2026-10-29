@@ -33,7 +33,8 @@ marcando) y cómo informar de un problema. Los detalles técnicos están en el
 - **Exportar diagnóstico** para informar de fallos sin enviar tus datos.
 
 **Todavía no incluye:** ejecución de pruebas (llega en 0.2.0), sincronizar
-adjuntos y plantillas propias, ni instalador firmado.
+adjuntos y plantillas propias, ni instalador firmado. Si la base local no
+abre, la pantalla que lo explica no ofrece "Exportar diagnóstico" (apartado 5).
 
 ## 2. Antes de empezar
 
@@ -42,9 +43,12 @@ La app instalada inicia sesión y sincroniza contra la API de Pharos en
 
 - [ ] Windows 11 con WebView2 (viene instalado).
 - [ ] PostgreSQL en marcha (servicio nativo en el puerto 5432, o Docker).
-- [ ] La API de Pharos: el repositorio con `npm install` en la raíz y en
+- [ ] Git y Node.js ≥ 22.12 con npm, para ejecutar la API.
+- [ ] La API de Pharos en la misma versión que la app: clona el repositorio
+      (`git clone https://github.com/shift3385/Pharos.git`) y, dentro,
+      `git checkout v0.1.0-beta.1`. Después, `npm install` en la raíz y en
       `server/`, un `.env` y las bases `pharos_db` / `pharos_test_db`
-      (README → "First-time setup"). Después, cada vez:
+      (README → "First-time setup"). Cada vez que pruebes:
       `cd server && npm start`.
 - [ ] Una cuenta: "Regístrate" en la pantalla de inicio de sesión, o la cuenta
       de pruebas local con `cd server && npm run seed:test-user` (sus datos
@@ -55,10 +59,12 @@ compilarla.
 
 ## 3. Instalar
 
-1. En GitHub, **Actions → Installer**. Abre la ejecución en verde más reciente
-   de `main` (la del commit de la versión `0.1.0-beta.1`) y, en **Artifacts**,
-   descarga `pharos-0.1.0-beta.1-<commit>-windows`. Hace falta haber iniciado
-   sesión en GitHub y el artefacto caduca a los 30 días.
+1. En GitHub, **Actions → Installer**, filtra por la rama o etiqueta
+   **`v0.1.0-beta.1`** y abre esa ejecución (en verde). En **Artifacts**,
+   descarga `pharos-0.1.0-beta.1-<commit>-windows`. Usa solo la ejecución de
+   la etiqueta: los cambios posteriores en `main` generan artefactos con el
+   mismo nombre de versión, pero con código aún no publicado. Hace falta haber
+   iniciado sesión en GitHub y el artefacto caduca a los 30 días.
 2. Descomprime el `.zip`: contiene `Pharos_0.1.0-beta.1_x64-setup.exe`.
 3. Ejecútalo. **El instalador no está firmado**, así que Windows SmartScreen
    muestra "Windows protegió tu PC": pulsa **Más información → Ejecutar de
@@ -129,7 +135,10 @@ seguir.
       puedes elegir versión (Fase 8C).
 - [ ] Borrar un proyecto en un equipo: en el otro desaparece con sus planes,
       casos, requisitos y tarjetas (FIX-05).
-- [ ] Tras los días de retención, lo borrado se purga y no vuelve (SYNC-06).
+- [ ] Purga (SYNC-06): en Administración → Ajustes, pon la retención de
+      elementos borrados en el mínimo (1 día) y guarda. Borra un caso ya
+      sincronizado y, pasado un día, sincroniza: el caso se purga y no vuelve.
+      Después restablece la retención (30 por defecto).
 
 ### 4.6 Clave de recuperación (SEC-03)
 
@@ -173,15 +182,24 @@ Los puntos abiertos de la auditoría están en
 
 ## 5. Cómo informar de un problema
 
-1. Si la pantalla muestra un error, pulsa **Exportar diagnóstico** ahí mismo;
+1. Si una vista falla, su pantalla de error tiene **Exportar diagnóstico**;
    si no, ve a Administración → Diagnóstico → **Exportar diagnóstico**.
-   Funciona aunque la base local no haya podido abrirse.
-2. Abre un issue en el repositorio de GitHub (`shift3385/Pharos`) con:
+2. **Si la base local no abre** (pantalla "Falta la clave de la base de datos
+   local", "datos de una versión más nueva" u otra que no deja entrar), esa
+   pantalla no tiene "Exportar diagnóstico" y Administración no es accesible
+   (limitación conocida de la beta). En su lugar:
+   - copia el mensaje exacto de la pantalla;
+   - haz una captura;
+   - adjunta el log de ese día, `pharos.AAAA-MM-DD.log`, de
+     `%LOCALAPPDATA%\com.pharos.desktop\logs` (y `pharos.panic.log` si
+     existe). Los logs no llevan tus datos: correos, tokens y claves van
+     enmascarados.
+3. Abre un issue en el repositorio de GitHub (`shift3385/Pharos`) con:
    - la versión (`0.1.0-beta.1`) y el apartado de esta guía;
    - los pasos para reproducirlo, lo que esperabas y lo que pasó;
    - una captura, si ayuda;
-   - el ZIP de diagnóstico adjunto.
-3. **Nunca adjuntes** `pharos.db.enc`, las copias `.bak-…`, tu clave de
+   - el ZIP de diagnóstico (o, si la base no abrió, el log del paso 2).
+4. **Nunca adjuntes** `pharos.db.enc`, las copias `.bak-…`, tu clave de
    recuperación, claves de IA ni contraseñas.
 
 Cada corrección se publica como una nueva beta (`0.1.0-beta.2`…). Cuando todas

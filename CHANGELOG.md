@@ -170,7 +170,8 @@ equipo.
   informar de un fallo: versión, sistema operativo, WebView2, migraciones
   aplicadas y los registros recientes. Nunca incluye tus proyectos, casos,
   perfil, base de datos, claves ni tokens; correos, tokens y rutas con tu
-  usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
+  usuario se enmascaran. Si la base local no abre, su pantalla aún no ofrece
+  el botón: adjunta el log del día (guía de la beta, apartado 5).
 - **Registros de la app:** el escritorio guarda un log diario en
   `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
 - **Los fallos de sincronización quedan en el log (BASE-08):** además del aviso,
