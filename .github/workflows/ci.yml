@@ -88,13 +88,13 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: src-tauri -> target
-      # The image ships PostgreSQL as a stopped Windows service (service
+      # The image ships PostgreSQL as a disabled Windows service (service
       # containers need Linux runners); PGBIN, PGUSER and PGPASSWORD come
       # from the image.
       - name: Start PostgreSQL
         run: |
           $pg = Get-Service -Name 'postgresql*' | Select-Object -First 1
-          Set-Service -InputObject $pg -Status Running
+          Set-Service -InputObject $pg -StartupType Manual -Status Running
           & "$env:PGBIN\pg_isready.exe" --host=localhost --timeout=60
           if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not start" }
           & "$env:PGBIN\createdb.exe" --host=localhost pharos_db
