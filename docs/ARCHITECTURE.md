@@ -50,6 +50,15 @@ remains a reserved boundary for Jira (backlog INT-05).
 Future modules — manual test execution (0.2.0), mobile build (0.4.0) — must
 be addable without touching existing modules.
 
+**Home (UX-08, spec §5).** `app/dashboard` shows two actions (start a new
+project, continue one) and the user's projects with search, last access, plan
+status and progress, from `projectOverview` (`projects`), which reads the plan
+status and case counts through the `test-plan` and `test-cases` public APIs.
+Progress is approved cases over non-obsolete cases until the run model (0.2.0)
+gives execution progress. The last access is device-local metadata kept in
+`localStorage` per user (`pharos.projects.lastAccess.<userId>`): project ids
+and timestamps only, outside the database and sync on purpose.
+
 **Traceability (0.1.0).** `traceability` owns requirements (`REQ-xxx`, stable
 keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`,
 `planner` and `test-plan` through their public APIs; none of them imports it.
@@ -143,6 +152,32 @@ Local only — nothing is sent anywhere.
   saved ZIP) enforce it.
 - **Version in the UI (UX-07):** `APP_VERSION` (`@shared/version`, read from
   the root `package.json`) at the foot of the sidebar and in Administration.
+
+## Exports and the download folder (UX-02, EXP-02)
+
+Every file the app hands to the user (plan and case `.xlsx`/`.pdf`,
+`.feature` files, project ZIPs, the matrix, templates, planner attachments
+and the diagnostic bundle) goes through `saveFile` (`@shared/export/saveFile`).
+
+- **Desktop:** the bytes travel as a raw IPC body to `download_save`
+  (`src-tauri/src/downloads.rs`), with the name in the `x-pharos-filename`
+  header. Rust writes the file into the download folder: the one chosen in
+  Administration, or the OS Downloads folder when none was chosen or the
+  chosen one disappeared. The name is reduced to one safe component, an
+  existing file is never overwritten (`name (2).ext`) and the write is atomic
+  (`.part` + rename). The full path comes back for the confirmation message.
+- **Choosing the folder:** only the native picker (`download_dir_pick`, the
+  `rfd` crate called from Rust, modal to the main window) can set it, so the
+  webview can never name a path; the capability keeps `core:default` only, with
+  no dialog or fs permission. It is stored in `downloads.json` under the
+  instance's config dir (an E2E profile gets its own, see `instance.rs`). The
+  picker is Windows-only (the shipped target); elsewhere it reports that it is
+  not available and files go to Downloads.
+- **Web preview:** no Rust side, so `saveFile` falls back to the browser's
+  own download.
+- **ZIPs (spec §5.4):** the project ZIP and the global ZIP carry, per project,
+  the plan and every case as `.xlsx` **and** `.pdf`. `projects` builds them
+  from `projectPlanFiles` (`test-plan`) and `projectCaseFiles` (`test-cases`).
 
 ## Testing
 

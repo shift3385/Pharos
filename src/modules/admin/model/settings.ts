@@ -1,7 +1,8 @@
 // Administration settings (spec §10.3). Language and theme live in the topbar;
 // here we keep app personalization (custom background + opacity) and operational
-// preferences (retention, download folder). Persisted in localStorage for now
-// (DB persistence + sync is a later refinement).
+// preferences (retention). Persisted in localStorage for now (DB persistence +
+// sync is a later refinement). The download folder is not here: the desktop app
+// stores it, chosen with the native picker (UX-02, src/shared/export/saveFile).
 
 export interface AdminSettings {
   /** Custom app background image as a data URI (empty = none). */
@@ -10,15 +11,12 @@ export interface AdminSettings {
   backgroundOpacity: number;
   /** Days a soft-deleted row is kept before automatic purge (task #37). */
   retentionDays: number;
-  /** Preferred download folder for exports (applied in a later update). */
-  downloadLocation: string;
 }
 
 export const DEFAULT_SETTINGS: AdminSettings = {
   backgroundImage: "",
   backgroundOpacity: 30,
   retentionDays: 30,
-  downloadLocation: "",
 };
 
 const KEY = "pharos.admin.settings";
@@ -28,7 +26,10 @@ const clampInt = (v: number, min: number, max: number, fallback: number) =>
 
 export function loadSettings(): AdminSettings {
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
+    const stored = JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, unknown>;
+    // Before UX-02 a free-text download folder was stored here and never used.
+    delete stored.downloadLocation;
+    return { ...DEFAULT_SETTINGS, ...stored };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

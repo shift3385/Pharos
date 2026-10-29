@@ -94,6 +94,16 @@
   color: var(--color-navy-500);
   border-color: var(--color-navy-300);
 }
+.adm__path {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+.adm__warn {
+  font-size: var(--fs-caption);
+  color: var(--color-error);
+}
 .adm__bg-preview {
   width: 64px;
   height: 36px;

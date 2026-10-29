@@ -1,4 +1,5 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
+import { saveFile } from "./saveFile";
 
 /** Brand palette for generated documents. Values mirror the Faro Nocturno
  *  light-theme tokens in `shared/theme/tokens.css` (a PDF is content, not
@@ -146,14 +147,31 @@ export function baseDoc(kind: string, content: Content[]): TDocumentDefinitions 
 
 // Memoized pdfmake instance (the library + its font VFS are ~1 MB, so this
 // module is meant to be imported dynamically to stay out of the main bundle).
-let cached: Promise<PdfMake> | null = null;
+let cached: Promise<{ pdfMake: PdfMake; vfs?: Vfs }> | null = null;
+
+type Vfs = Record<string, string>;
 
 interface PdfMake {
-  vfs: Record<string, string>;
-  createPdf: (dd: TDocumentDefinitions) => { download: (name: string, cb?: () => void) => void };
+  createPdf: (
+    dd: TDocumentDefinitions,
+    tableLayouts?: unknown,
+    fonts?: unknown,
+    vfs?: Vfs,
+  ) => { getBuffer: (cb: (buffer: Uint8Array) => void) => void };
 }
 
-async function getPdfMake(): Promise<PdfMake> {
+/** The font VFS in any of the shapes `vfs_fonts` has been published with:
+ *  `{ pdfMake: { vfs } }`, `{ vfs }` or (0.2.x) the file map itself. */
+function vfsOf(mod: unknown): Vfs | undefined {
+  const m = mod as Record<string, unknown> | undefined;
+  if (!m || typeof m !== "object") return undefined;
+  const nested =
+    (m.pdfMake as { vfs?: Vfs } | undefined)?.vfs ?? (m.vfs as Vfs | undefined);
+  if (nested && typeof nested === "object") return nested;
+  return typeof m["Roboto-Regular.ttf"] === "string" ? (m as Vfs) : undefined;
+}
+
+async function getPdfMake(): Promise<{ pdfMake: PdfMake; vfs?: Vfs }> {
   if (!cached) {
     cached = (async () => {
       const [pdfMakeMod, fontsMod] = await Promise.all([
@@ -162,22 +180,29 @@ async function getPdfMake(): Promise<PdfMake> {
       ]);
       const pdfMake = ((pdfMakeMod as { default?: unknown }).default ??
         pdfMakeMod) as unknown as PdfMake;
-      const fonts = fontsMod as Record<string, unknown> & { default?: Record<string, unknown> };
+      // Passed to every createPdf: under an ESM bundler pdfmake does not set
+      // `window.pdfMake`, so vfs_fonts cannot register itself, and without the
+      // fonts pdfmake fails asynchronously ("Roboto-Medium.ttf not found").
       const vfs =
-        (fonts.pdfMake as { vfs?: Record<string, string> })?.vfs ??
-        (fonts.default?.pdfMake as { vfs?: Record<string, string> })?.vfs ??
-        (fonts.vfs as Record<string, string> | undefined) ??
-        (fonts.default as { vfs?: Record<string, string> })?.vfs;
-      if (vfs) pdfMake.vfs = vfs;
-      return pdfMake;
+        vfsOf(fontsMod) ?? vfsOf((fontsMod as { default?: unknown }).default);
+      return { pdfMake, vfs };
     })();
   }
   return cached;
 }
 
-/** Renders the document and triggers a browser download. */
-export async function downloadPdf(dd: TDocumentDefinitions, filename: string): Promise<string> {
-  const pdfMake = await getPdfMake();
-  await new Promise<void>((resolve) => pdfMake.createPdf(dd).download(filename, () => resolve()));
-  return filename;
+/** Renders the document to PDF bytes (for a ZIP or for saveFile). */
+export async function pdfBytes(dd: TDocumentDefinitions): Promise<Uint8Array> {
+  const { pdfMake, vfs } = await getPdfMake();
+  return new Promise<Uint8Array>((resolve) =>
+    pdfMake.createPdf(dd, undefined, undefined, vfs).getBuffer(resolve),
+  );
+}
+
+/** Renders the document and saves it; returns where (see saveFile). */
+export async function savePdf(
+  dd: TDocumentDefinitions,
+  filename: string,
+): Promise<string> {
+  return saveFile(filename, await pdfBytes(dd), "application/pdf");
 }

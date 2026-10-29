@@ -46,6 +46,13 @@ tracing-appender = "0.2"
 os_info = { version = "3", default-features = false }
 regex = "1"
 
+# Native folder picker for the download folder (UX-02), called only from Rust
+# (downloads.rs): no dialog plugin, so the webview gets no dialog permission.
+# Windows only (the shipped target): rfd uses the system dialog through COM, and
+# its default features (gtk3/Wayland) only matter on Linux.
+[target.'cfg(windows)'.dependencies]
+rfd = { version = "0.17", default-features = false }
+
 [features]
 # This feature is used to produce production builds where an extra console
 # window is not spawned on Windows. Enabled by `tauri build`.

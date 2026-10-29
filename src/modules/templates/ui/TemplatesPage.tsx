@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
+import { saveFile } from "@shared/export/saveFile";
 import { templateApi } from "../api/templateApi";
 import { builtinSeeds, toBase64 } from "../model/builtins";
 import type { TemplateKind, TemplateSummary } from "../model/types";
@@ -58,14 +59,8 @@ export function TemplatesPage() {
       const bin = atob(full.dataBase64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-      const url = URL.createObjectURL(new Blob([bytes], { type: XLSX_MIME }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${tpl.name}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const path = await saveFile(`${tpl.name}.xlsx`, bytes, XLSX_MIME);
+      toast(t("downloads.saved", { path }));
     } finally {
       setBusy(null);
     }

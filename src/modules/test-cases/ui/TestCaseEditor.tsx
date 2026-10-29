@@ -22,6 +22,7 @@ import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
 import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
+import { saveFile } from "@shared/export/saveFile";
 import {
   AssistButton,
   ProvenanceBadge,
@@ -467,17 +468,14 @@ export function TestCaseEditor({
     window.setTimeout(() => setNotice(null), 5000);
   }
 
-  function exportFeature() {
-    const content = buildGherkin(form);
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${form.scenarioId || "scenario"}.feature`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  async function exportFeature() {
+    const name = await saveFile(
+      `${form.scenarioId || "scenario"}.feature`,
+      buildGherkin(form),
+      "text/plain;charset=utf-8",
+    );
+    setNotice(t("testCase.exportDone", { name }));
+    window.setTimeout(() => setNotice(null), 5000);
   }
 
   async function toggleRevisions() {
@@ -734,7 +732,7 @@ export function TestCaseEditor({
           <button type="button" className="tp-wizard__revbtn" onClick={() => void exportPdf()}>
             {t("testCase.exportPdf")}
           </button>
-          <button type="button" className="tp-wizard__revbtn" onClick={exportFeature}>
+          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportFeature()}>
             {t("testCase.exportFeature")}
           </button>
           <button

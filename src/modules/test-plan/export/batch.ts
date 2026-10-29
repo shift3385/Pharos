@@ -1,7 +1,9 @@
 import type { TestPlan } from "../model/types";
-import { CEREMONIES, TEST_LEVELS, TEST_TYPES, TOOLS } from "../model/catalogs";
+import { TEST_LEVELS, TEST_TYPES, TOOLS } from "../model/catalogs";
+import { methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
+import { buildPlanPdf, planPdfName } from "./planPdf";
 
 type Translate = (key: string) => string;
 
@@ -16,13 +18,7 @@ const loc = (
  *  localizing option lists and composing the methodology line. */
 export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
   const d = plan.data ?? {};
-  const methodology =
-    (d.methodologyType ?? "agile") === "agile"
-      ? `${t("testPlan.agile")} · ${t("testPlan.sprintWeeks")}: ${d.sprintWeeks ?? ""} · ` +
-        `${t("testPlan.ceremonies")}: ${loc(d.ceremonies, CEREMONIES, "testPlan.ceremonyLabel", t).join(", ")}`
-      : `${t("testPlan.traditional")} · ${t("testPlan.phases")}: ${(d.phases ?? [])
-          .filter((p) => p.trim())
-          .join(", ")}`;
+  const methodology = methodologyText(d, t);
   return {
     filenameBase: plan.title?.trim() || "plan",
     version: plan.version,
@@ -61,6 +57,14 @@ export async function projectHasPlan(projectId: string, userId: string): Promise
   return (await testPlanApi.byProject(projectId, userId)) != null;
 }
 
+/** Status of a project’s plan (null when it has none), for the Home list. */
+export async function projectPlanStatus(
+  projectId: string,
+  userId: string,
+): Promise<string | null> {
+  return (await testPlanApi.byProject(projectId, userId))?.status ?? null;
+}
+
 /** Version of a project’s plan (null when it has none), e.g. for the version
  *  of documents derived from the plan such as the traceability matrix. */
 export async function projectPlanVersion(
@@ -70,15 +74,28 @@ export async function projectPlanVersion(
   return (await testPlanApi.byProject(projectId, userId))?.version ?? null;
 }
 
-/** Builds the plan .xlsx buffer for a project (null if it has no plan). */
-export async function planWorkbookByProject(
+/** Files exported for a plan in the batch ZIP: its .xlsx and its .pdf (EXP-02). */
+export const FILES_PER_PLAN = 2;
+
+/** Builds the plan .xlsx and .pdf for a project (empty if it has no plan),
+ *  spec §5.4. `onEach` fires with each file name as it is built (progress). */
+export async function projectPlanFiles(
   projectId: string,
   userId: string,
   t: Translate,
   lang: string,
-): Promise<{ name: string; buffer: ArrayBuffer } | null> {
+  onEach?: (name: string) => void,
+): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
-  if (!plan) return null;
-  const { filename, buffer } = await buildPlanXlsx(planToExportable(plan, t), lang);
-  return { name: filename, buffer };
+  if (!plan) return [];
+  const exportable = planToExportable(plan, t);
+  const { filename, buffer } = await buildPlanXlsx(exportable, lang);
+  onEach?.(filename);
+  const pdfName = planPdfName(exportable);
+  const pdf = await buildPlanPdf(exportable, t);
+  onEach?.(pdfName);
+  return [
+    { name: filename, buffer },
+    { name: pdfName, buffer: pdf },
+  ];
 }

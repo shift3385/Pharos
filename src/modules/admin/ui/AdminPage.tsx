@@ -5,6 +5,7 @@ import { useToast } from "@shared/ui/Toast";
 import { exportDiagnostics, logClientError } from "@shared/diagnostics";
 import { APP_VERSION } from "@shared/version";
 import { applyBackground, loadSettings, saveSettings } from "../model/settings";
+import { DownloadFolderField } from "./DownloadFolderField";
 import "./Admin.css";
 
 /** Administration panel (spec §10): quick access to Templates and the AI engine,
@@ -127,16 +128,7 @@ export function AdminPage() {
           <span className="adm__hint">{t("admin.settings.retentionHint")}</span>
         </label>
 
-        <label className="adm__field">
-          <span className="adm__label">{t("admin.settings.download")}</span>
-          <input
-            type="text"
-            placeholder={t("admin.settings.downloadPlaceholder")}
-            value={settings.downloadLocation}
-            onChange={(e) => setSettings((s) => ({ ...s, downloadLocation: e.target.value }))}
-          />
-          <span className="adm__hint">{t("admin.settings.downloadHint")}</span>
-        </label>
+        <DownloadFolderField />
 
         <button type="button" className="adm__save" onClick={save}>
           {t("admin.settings.save")}

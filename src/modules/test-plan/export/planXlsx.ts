@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { saveFile } from "@shared/export/saveFile";
 import templateEs from "../assets/plan-template-es.xlsx?url";
 import templateEn from "../assets/plan-template-en.xlsx?url";
 
@@ -30,19 +31,7 @@ export interface ExportablePlan {
   closureCriteria: { criterion: string; metric: string }[];
 }
 
-function triggerDownload(buffer: ArrayBuffer, filename: string) {
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 const list = (a: string[]) => a.map((s) => s.trim()).filter(Boolean).join("\n");
 
@@ -207,6 +196,5 @@ export async function buildPlanXlsx(
  *  (spec §5.4 / §16). Returns the downloaded file name. */
 export async function exportPlanXlsx(p: ExportablePlan, lang: string): Promise<string> {
   const { filename, buffer } = await buildPlanXlsx(p, lang);
-  triggerDownload(buffer, filename);
-  return filename;
+  return saveFile(filename, buffer, XLSX_MIME);
 }

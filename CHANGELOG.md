@@ -9,6 +9,25 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Añadido
 
+- **Inicio real (UX-08):** la pantalla de inicio ya no muestra el texto de la
+  "Fase 0". Ofrece "Iniciar nuevo proyecto de pruebas" y "Continuar proyecto
+  existente", y lista tus proyectos con búsqueda por nombre (sin distinguir
+  mayúsculas ni tildes), último acceso en este equipo, estado del plan y
+  progreso (casos aprobados sobre los que no están obsoletos).
+- **Carpeta de descarga (UX-02):** en Administración → Ajustes eliges con el
+  selector de carpetas de Windows dónde se guardan todas las exportaciones y el
+  diagnóstico; "Usar Descargas" vuelve a la carpeta de Descargas. Un archivo
+  nunca se sobrescribe (se añade " (2)") y el aviso muestra la ruta completa.
+- **PDF en los ZIP (EXP-02):** el ZIP de un proyecto y el de "exportar todo"
+  incluyen ahora el plan y cada caso también en `.pdf`, junto al `.xlsx`.
+- **Frecuencia de las reuniones del equipo (PLN-01):** en el paso Metodología
+  del asistente del plan, cada ceremonia ágil elegida (diaria, revisión,
+  retrospectiva, planificación) tiene su frecuencia: a diario, dos veces por
+  semana, semanal, cada dos semanas, una vez por sprint o mensual. Por defecto,
+  la diaria a diario y las demás una vez por sprint. Se exporta en el `.xlsx` y
+  el `.pdf` ("Diaria (a diario)") y la importación del plan la recupera. Un
+  plan guardado con una versión anterior muestra los valores por defecto.
+
 - **Varios motores de IA online (IA-08):** además de Gemini, ahora se puede usar
   OpenAI, Claude (Anthropic), OpenRouter o cualquier servicio compatible con la
   API de OpenAI (Groq, DeepSeek, Mistral, LM Studio o vLLM locales…). Se elige
@@ -61,6 +80,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- Las exportaciones y el diagnóstico ya no los guarda el navegador interno en
+  Descargas: los guarda la app en la carpeta de descarga, y el aviso dice la ruta
+  (UX-02). El campo de texto "Carpeta de descargas" de Ajustes, que no se
+  aplicaba, se sustituye por el selector.
 - **Cada sincronización lleva la versión de la app (SYNC-08):** el servidor
   acepta su versión MENOR y la anterior; una app no admitida no escribe nada y,
   desde esta versión, muestra "Actualiza la app para sincronizar".
@@ -94,6 +117,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Corregido
 
+- **Exportar a PDF ya funciona (EXP-02):** el plan y los casos en `.pdf` se
+  quedaban sin generar, sin aviso, porque no se cargaban las fuentes del PDF
+  ("Roboto-Medium.ttf"). Ahora se generan en la app y dentro de los ZIP.
 - **Indicador atascado en "Pendiente" (FIX-01):** editar un requisito, una
   tarjeta o una plantilla ya no deja el indicador en "Cambios pendientes" tras
   sincronizar; solo cuenta lo que el sync envía.

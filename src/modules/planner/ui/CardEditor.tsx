@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
+import { saveFile } from "@shared/export/saveFile";
 import { plannerApi } from "../api/plannerApi";
 import {
   CARD_KINDS,
@@ -102,15 +103,8 @@ export function CardEditor({
     const d = await plannerApi.attachmentGet(a.id, ownerId);
     if (!d) return;
     const bytes = Uint8Array.from(atob(d.dataBase64), (c) => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: d.mime ?? "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const el = document.createElement("a");
-    el.href = url;
-    el.download = d.name;
-    document.body.appendChild(el);
-    el.click();
-    el.remove();
-    URL.revokeObjectURL(url);
+    const path = await saveFile(d.name, bytes, d.mime ?? undefined);
+    toast(t("downloads.saved", { path }));
   }
 
   async function removeAttachment(id: string) {

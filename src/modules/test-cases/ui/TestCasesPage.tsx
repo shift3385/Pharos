@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { useToast } from "@shared/ui/Toast";
+import { saveFile } from "@shared/export/saveFile";
 import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai";
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
@@ -104,15 +105,8 @@ export function TestCasesPage({
     const zip = new JSZip();
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "features.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast(t("testCase.exportFeaturesToast", { count: files.length }));
+    const path = await saveFile("features.zip", blob, "application/zip");
+    toast(t("testCase.exportFeaturesToast", { count: files.length, path }));
   }
 
   function applyImport() {

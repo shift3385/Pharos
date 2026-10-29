@@ -1,6 +1,7 @@
 import JSZip from "jszip";
-import { planWorkbookByProject, projectHasPlan } from "@modules/test-plan";
-import { projectCaseWorkbooks, projectCaseCount } from "@modules/test-cases";
+import { FILES_PER_PLAN, projectHasPlan, projectPlanFiles } from "@modules/test-plan";
+import { FILES_PER_CASE, projectCaseCount, projectCaseFiles } from "@modules/test-cases";
+import { saveFile } from "@shared/export/saveFile";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
 
@@ -13,6 +14,12 @@ export type ExportProgress =
 
 type OnProgress = (p: ExportProgress) => void;
 
+/** What an export produced: files inside the ZIP and where the ZIP was saved. */
+export interface ZipExport {
+  files: number;
+  path: string;
+}
+
 /** Keeps a name safe as a zip path segment. */
 function sanitize(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, "_").trim() || "item";
@@ -24,8 +31,15 @@ interface Counter {
   total: number;
 }
 
-/** Adds a project's plan + case .xlsx files into `folder/` of the zip, emitting
- *  a "building" event as each file is produced. Returns files added. */
+/** Files a project contributes to the ZIP (plan and cases, .xlsx + .pdf each). */
+async function projectFileCount(projectId: string, ownerId: string): Promise<number> {
+  const plan = (await projectHasPlan(projectId, ownerId)) ? FILES_PER_PLAN : 0;
+  return plan + (await projectCaseCount(projectId, ownerId)) * FILES_PER_CASE;
+}
+
+/** Adds a project's plan and case files (.xlsx and .pdf, spec §5.4) into
+ *  `folder/` of the zip, emitting a "building" event as each file is produced.
+ *  Returns files added. */
 async function addProject(
   zip: JSZip,
   project: ProjectSummary,
@@ -36,57 +50,41 @@ async function addProject(
   counter: Counter,
   onProgress?: OnProgress,
 ): Promise<number> {
-  let files = 0;
   const advance = (label: string) => {
     counter.done += 1;
     onProgress?.({ phase: "building", done: counter.done, total: counter.total, label });
   };
-
-  const plan = await planWorkbookByProject(project.id, ownerId, t, lang);
-  if (plan) {
-    zip.file(`${folder}/${sanitize(plan.name)}`, plan.buffer);
-    files += 1;
-    advance(plan.name);
-  }
-  // The callback fires as each case workbook is built (drives the progress bar);
-  // buffers are added to the zip afterwards (an instant, non-async step).
-  const workbooks = await projectCaseWorkbooks(project.id, ownerId, t, lang, (name) =>
-    advance(name),
-  );
-  for (const c of workbooks) {
-    zip.file(`${folder}/${sanitize(c.name)}`, c.buffer);
-    files += 1;
-  }
-  return files;
+  // The callbacks fire as each file is built (drives the progress bar); buffers
+  // are added to the zip afterwards (an instant, non-async step).
+  const files = [
+    ...(await projectPlanFiles(project.id, ownerId, t, lang, advance)),
+    ...(await projectCaseFiles(project.id, ownerId, t, lang, advance)),
+  ];
+  for (const f of files) zip.file(`${folder}/${sanitize(f.name)}`, f.buffer);
+  return files.length;
 }
 
-async function finalizeZip(zip: JSZip, filename: string, onProgress?: OnProgress) {
+async function finalizeZip(
+  zip: JSZip,
+  filename: string,
+  onProgress?: OnProgress,
+): Promise<string> {
   const blob = await zip.generateAsync({ type: "blob" }, (meta) => {
     onProgress?.({ phase: "zipping", percent: Math.round(meta.percent) });
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  return saveFile(filename, blob, "application/zip");
 }
 
-/** Exports a single project as `<name>.zip` with its plan and case .xlsx files
- *  inside a folder named after the project. Returns the file count. */
+/** Exports a single project as `<name>.zip` with its plan and case files
+ *  (.xlsx and .pdf) inside a folder named after the project. */
 export async function exportProjectZip(
   project: ProjectSummary,
   ownerId: string,
   t: Translate,
   lang: string,
   onProgress?: OnProgress,
-): Promise<number> {
-  const total =
-    ((await projectHasPlan(project.id, ownerId)) ? 1 : 0) +
-    (await projectCaseCount(project.id, ownerId));
-  const counter: Counter = { done: 0, total };
+): Promise<ZipExport> {
+  const counter: Counter = { done: 0, total: await projectFileCount(project.id, ownerId) };
   const zip = new JSZip();
   const files = await addProject(
     zip,
@@ -98,26 +96,24 @@ export async function exportProjectZip(
     counter,
     onProgress,
   );
-  await finalizeZip(zip, `${sanitize(project.name)}.zip`, onProgress);
-  return files;
+  const path = await finalizeZip(zip, `${sanitize(project.name)}.zip`, onProgress);
+  return { files, path };
 }
 
 /** Exports every project of the owner as a single ZIP: one folder per project
- *  holding its plan and case .xlsx files, in the given language (spec §5.4). */
+ *  holding its plan and case files (.xlsx and .pdf), in the given language
+ *  (spec §5.4). */
 export async function exportAllProjects(
   ownerId: string,
   t: Translate,
   lang: string,
   onProgress?: OnProgress,
-): Promise<number> {
+): Promise<ZipExport> {
   const projects = await projectApi.list(ownerId);
 
   // Pre-pass: count the artifacts so the progress bar has a total.
   let total = 0;
-  for (const p of projects) {
-    total += (await projectHasPlan(p.id, ownerId)) ? 1 : 0;
-    total += await projectCaseCount(p.id, ownerId);
-  }
+  for (const p of projects) total += await projectFileCount(p.id, ownerId);
 
   const counter: Counter = { done: 0, total };
   const zip = new JSZip();
@@ -131,6 +127,6 @@ export async function exportAllProjects(
     files += await addProject(zip, p, ownerId, folder, t, lang, counter, onProgress);
   }
 
-  await finalizeZip(zip, "pharos-export.zip", onProgress);
-  return files;
+  const path = await finalizeZip(zip, "pharos-export.zip", onProgress);
+  return { files, path };
 }
