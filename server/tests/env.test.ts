@@ -137,6 +137,16 @@ describe("environment (BASE-06)", () => {
     expect(parseDurationMs("soon")).toBeNull();
     expect(parseDurationMs("5 fortnights")).toBeNull();
     expect(loadEnv(production).LOGIN_RATE_LIMIT_WINDOW).toBe(60_000);
+    // Unset, the default "1 minute" still goes through the parser (zod 4
+    // `prefault`; a plain `default` would hand back the raw string).
+    expect(
+      loadEnv({ ...production, LOGIN_RATE_LIMIT_WINDOW: undefined })
+        .LOGIN_RATE_LIMIT_WINDOW,
+    ).toBe(60_000);
+    expect(
+      loadEnv({ ...production, LOGIN_RATE_LIMIT_WINDOW: "30 seconds" })
+        .LOGIN_RATE_LIMIT_WINDOW,
+    ).toBe(30_000);
     expect(() =>
       loadEnv({ ...production, LOGIN_RATE_LIMIT_WINDOW: "a while" }),
     ).toThrow(/LOGIN_RATE_LIMIT_WINDOW: "a while" is not a duration/);

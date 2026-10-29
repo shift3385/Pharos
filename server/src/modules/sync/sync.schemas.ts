@@ -20,7 +20,7 @@ export const deltaSchema = z.object({
   entity: z.enum(SYNCED_ENTITIES),
   entityId: z.string().min(1),
   op: z.enum(["upsert", "delete"]),
-  payload: z.record(z.unknown()).default({}),
+  payload: z.record(z.string(), z.unknown()).default({}),
   revision: z.number().int().nonnegative().default(1),
   author: z.string().default(""),
   hlc: z.string().max(200).default(""),
