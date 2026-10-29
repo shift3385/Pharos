@@ -3,6 +3,7 @@
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
   independiente (ver "Revisión"): precisiones, sin cambio de decisión.
+  **Recortable de 0.2.0** (decisión del usuario, 2026-10-28): si el hito se alarga, pasa a 0.3.0 y `runs.cycle_id` y `runs.configuration_id` quedan nulos hasta entonces.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -123,7 +124,8 @@ Servidor: documentos `configuration`, `test_cycle` y `test_cycle_item` (LWW).
   - la importación casa por caso + flujo + fila + configuración;
   - `project_id` en los elementos, para derivar el dueño (ADR-0020);
   - las preguntas se reescriben como decisiones.
-- **Simplificación propuesta al usuario (no aplicada):** marcar ciclos y
-  configuraciones como recortables de 0.2.0. El criterio de salida de 0.2.0 se
-  cumple con runs sin ciclo; `runs.cycle_id` y `runs.configuration_id`
-  quedarían nulos hasta que se implementen.
+- **Simplificación aceptada (decisión del usuario, 2026-10-28):** ciclos y configuraciones son
+  recortables de 0.2.0. El criterio de salida de 0.2.0 se cumple con runs sin
+  ciclo; `runs.cycle_id` y `runs.configuration_id` quedan nulos hasta que se
+  implementen. Las columnas sí existen desde 0.2.0, así que recortar no cambia
+  el esquema base.

@@ -144,7 +144,7 @@ auditan en el servidor.
   - se define el dueño de un evento según la regla de ADR-0020;
   - FIX-06 ya está corregido en A2.
 - **Aclaración confirmado por el usuario el 2026-10-28:** quién ve la auditoría (decisión 2).
-- **Simplificación propuesta al usuario (no aplicada):** para las entidades con
-  revisión (casos, ADR-0011), el evento podría apuntar a las revisiones de antes
-  y después en lugar de copiar las diferencias. Se ahorra espacio y se pierde
-  la lectura directa del evento.
+- **Simplificación descartada (decisión del usuario, 2026-10-28):** que el evento apuntara a las
+  revisiones de antes y después en lugar de copiar las diferencias. Se mantiene
+  `changes`: el evento se entiende sin consultar las revisiones, el volumen es
+  pequeño y la redacción es más sencilla.

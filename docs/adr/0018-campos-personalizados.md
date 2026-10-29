@@ -3,6 +3,7 @@
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
   independiente (ver "Revisión"): precisiones, sin cambio de decisión.
+  **Recortable de 0.2.0** (decisión del usuario, 2026-10-28): si el hito se alarga, pasa a 0.3.0; `case_type` y `automation_status` entran en 0.2.0 en cualquier caso.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -131,6 +132,7 @@ de cada entidad.
     recibir el valor por defecto;
   - el dueño se deriva de `project_id`;
   - las preguntas se reescriben como decisiones.
-- **Simplificación propuesta al usuario (no aplicada):** marcar los campos
-  personalizados como recortables de 0.2.0. `case_type` y `automation_status`
-  se quedarían, porque las revisiones de ADR-0011 los incluyen en su contenido.
+- **Simplificación aceptada (decisión del usuario, 2026-10-28):** los campos personalizados son
+  recortables de 0.2.0. `case_type` y `automation_status` entran en
+  cualquier caso, porque las revisiones de ADR-0011 los incluyen en su
+  contenido. `data.custom` se reserva desde 0.2.0 aunque no haya definiciones.

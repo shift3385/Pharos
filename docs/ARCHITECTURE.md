@@ -65,7 +65,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - Every execution, manual or imported, is a `run` with its context
   (environment, build, commit, dataset, configuration).
 - A run holds four generic kinds: `result` (+ `step_result`), `finding`,
-  `metric` and `exploratory_session`.
+  `metric` and `exploratory_session`. 0.2.0 stores results only; the other
+  kinds are fixed in the Pharos Run JSON schema and get their tables in
+  0.4.0/0.5.0. Cycles, configurations and custom fields may slip to 0.3.0.
 - Results are append-only and point to an immutable, synced
   `test_case_revision` and to stable step ids.
 - Evidence lives encrypted outside the database (`evidence/`, addressed by

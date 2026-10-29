@@ -2,7 +2,9 @@
 
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
-  independiente (ver "Revisión"): precisiones, sin cambio de decisión. Detalla
+  independiente (ver "Revisión"): precisiones, sin cambio de decisión.
+  **Aceptado como dirección** (decisión del usuario, 2026-10-28): el diseño se revisa al planificar
+  SYNC-07, cuando 0.2.0 ya haya cambiado el sync. Detalla
   [ADR-0003](0003-workspaces-compartidos.md), que ya fijó el modelo. Se
   implementa en 0.3.0 (SYNC-07).
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
@@ -218,6 +220,7 @@ como dato de autoría, no de visibilidad.
     `append_only`;
   - la columna `kind` corresponde al concepto `workspace_kind` del GLOSARIO;
   - las claves de caso se llaman `<scenario_id>` y no `TC-xxx`.
-- **Simplificación propuesta al usuario (no aplicada):** marcar este ADR como
-  "dirección aceptada; se revisa al planificar SYNC-07". Se implementa en
-  0.3.0, después de que 0.2.0 haya cambiado el sync.
+- **Simplificación aceptada (decisión del usuario, 2026-10-28):** este ADR queda como "dirección
+  aceptada; se revisa al planificar SYNC-07". Se implementa en 0.3.0, después de
+  que 0.2.0 haya cambiado el sync. Si la revisión cambia algo de fondo, se
+  escribe un ADR que lo sustituya.

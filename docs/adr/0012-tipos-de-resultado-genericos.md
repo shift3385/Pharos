@@ -2,8 +2,10 @@
 
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
-  independiente (ver "Revisión"): precisiones, sin cambio de decisión. Bloquea EJE-01;
-  ING-06 (0.5.0) e ING-07 dependen de él.
+  independiente (ver "Revisión"). Después se aceptó una simplificación (decisión del usuario, 2026-10-28):
+  las tablas de Finding, Metric y sesión exploratoria se aplazan a 0.4.0/0.5.0,
+  y en 0.2.0 su forma queda fijada en Pharos Run JSON. Bloquea EJE-01; ING-06
+  (0.5.0) e ING-07 dependen de él.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -80,7 +82,9 @@ Reglas:
 
 ## Esquema (boceto)
 
-SQLite local (`results` y `step_results` en ADR-0013):
+SQLite local (`results` y `step_results` en ADR-0013). Estas tablas **no se
+crean en 0.2.0** (ver "Impacto"): la de sesiones llega en 0.4.0 y las de
+hallazgos y métricas en 0.5.0, con esta forma:
 
 ```sql
 CREATE TABLE findings (
@@ -141,9 +145,23 @@ reales a la API.
 - `finding`, `metric` y `session_note` son `append_only` (ADR-0011).
   `finding_triage` y `exploratory_session` son LWW (las fechas y el charter de
   la sesión se editan mientras está abierta).
-- Todas las tablas se crean en la migración de 0.2.0, aunque Finding y Metric
-  no tengan importador hasta 0.5.0 y la sesión hasta 0.4.0. Así ING-06 y EXP-01
-  solo añaden código.
+- **En 0.2.0 no se crean estas tablas** (decisión del usuario, 2026-10-28). Lo que se fija ya es el formato:
+  - el esquema versionado de Pharos Run JSON incluye `findings[]`, `metrics[]`
+    y `exploratorySession` con la forma de arriba;
+  - un Pharos Run JSON que las traiga se importa igual: los resultados se
+    guardan y el archivo completo queda como `raw_report` del shard
+    (ADR-0014);
+  - cuando lleguen las tablas, una migración aditiva las crea y se pueden
+    reindexar los informes en bruto que sigan guardados.
+- **Calendario:**
+  - `exploratory_sessions` y `session_notes` en 0.4.0 (EXP-01);
+  - `findings`, `finding_triage` y `metrics` en 0.5.0 (ING-06).
+
+  El criterio de ING-06 pasa a ser "un SARIF y un k6 summary se guardan sin
+  cambiar el formato Pharos Run JSON".
+
+- Hasta entonces, `defect_links` (ADR-0016) no admite `finding` ni
+  `session_note` como destino.
 - No hay datos previos que migrar.
 
 ## Decisiones del usuario (2026-10-28)
@@ -159,10 +177,8 @@ reales a la API.
   - la regla de estado de la matriz se alinea con ADR-0013 (el run más
     reciente y, dentro de él, el peor resultado);
   - `project_id` en `session_notes`, para derivar el dueño (ADR-0020).
-- **Simplificación propuesta al usuario (no aplicada):** no crear en 0.2.0 las
-  tablas `findings`, `finding_triage`, `metrics`, `exploratory_sessions`
-  ni `session_notes`. Su forma quedaría fijada en el esquema de Pharos Run
-  JSON, y las tablas se añadirían, con una migración aditiva, en 0.4.0
-  (sesiones) y 0.5.0 (SARIF, k6, axe). Hay que cambiar el criterio de ING-06,
-  que pide guardarlos "sin migrar el esquema", por "sin cambiar el formato
-  Pharos Run JSON".
+- **Simplificación aceptada (decisión del usuario, 2026-10-28):** las tablas `findings`,
+  `finding_triage`, `metrics`, `exploratory_sessions` y `session_notes` no
+  se crean en 0.2.0. Su forma queda fijada en Pharos Run JSON, y las tablas
+  llegan con una migración aditiva en 0.4.0 (sesiones) y 0.5.0 (SARIF, k6,
+  axe). Cambia el criterio de ING-06 en el ROADMAP.
