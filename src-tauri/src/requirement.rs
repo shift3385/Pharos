@@ -17,7 +17,7 @@ use crate::keys::{self, KeyKind};
 use crate::oplog;
 use crate::project;
 
-const KEY_PREFIX: &str = "REQ-";
+pub(crate) const KEY_PREFIX: &str = "REQ-";
 const KEY_DIGITS: usize = 3;
 const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
 

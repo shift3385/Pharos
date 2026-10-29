@@ -119,6 +119,22 @@ export function createSyncRepository(pool: Pool) {
       );
       return { docs: rows.slice(0, limit).map(toDoc), hasMore: rows.length > limit };
     },
+
+    /** Clears the content of tombstones older than `days` days (SYNC-06):
+     *  what was deleted leaves the server, but the tombstone (entity, id,
+     *  deleted, revision, HLC) stays, so a device that pulls it later deletes
+     *  its copy and a purged record never comes back. `seq` is not bumped:
+     *  devices already have the tombstone and need nothing new. Returns how
+     *  many were cleared. */
+    async compactTombstones(days: number): Promise<number> {
+      const { rowCount } = await pool.query(
+        `UPDATE documents SET payload = '{}'::jsonb
+          WHERE deleted AND payload <> '{}'::jsonb
+            AND updated_at < now() - make_interval(days => $1)`,
+        [days],
+      );
+      return rowCount ?? 0;
+    },
   };
 }
 

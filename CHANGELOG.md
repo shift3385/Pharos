@@ -55,6 +55,14 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
   instalador NSIS como artefacto descargable. Las versiones alfa, beta y rc
   solo tienen instalador NSIS; las estables tendrán además MSI.
+- **Purga de lo borrado (SYNC-06):** lo que borras se elimina definitivamente
+  del escritorio tras los días de retención de Administración (30 por
+  defecto), con su historial y sus adjuntos. Un borrado que aún no llegó al
+  servidor espera al siguiente sync, y un elemento con un conflicto abierto
+  espera a que lo resuelvas. Lo purgado no vuelve con la sincronización y sus
+  claves (`ATS_007`, `REQ-003`, `DEF-002`) nunca se reutilizan. El servidor
+  vacía el contenido de lo borrado tras `SYNC_TOMBSTONE_DAYS` días (30) y solo
+  conserva la marca de borrado. Migración local `0017`.
 - **Integración continua (BASE-01):** cada cambio pasa automáticamente los
   tests del cliente, del núcleo Rust y del servidor, el formato y el lint de
   Rust, y las auditorías de dependencias y de licencias.

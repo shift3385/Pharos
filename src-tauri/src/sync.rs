@@ -1693,4 +1693,37 @@ mod tests {
         assert!(list_conflicts(&c, U1).unwrap().is_empty());
         let _ = ws;
     }
+
+    #[test]
+    fn a_purged_record_does_not_come_back_on_a_pull() {
+        // SYNC-06: a case deleted, pushed and purged after the retention.
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        c.execute(
+            "UPDATE test_cases SET deleted_at = datetime('now', '-40 days'), revision = 2 WHERE id = 'c1'",
+            [],
+        )
+        .unwrap();
+        oplog::record(&c, "test_case", "c1", "delete", "{}", 2, "Ada").unwrap();
+        let push = build_pending(&c, U1).unwrap();
+        let tombstone = as_remote(&push.deltas[0]);
+        assert!(tombstone.deleted);
+        mark_pushed(&c, U1, &[pushed(&push.deltas[0])]).unwrap();
+        assert_eq!(crate::purge::purge(&c, U1, 30).unwrap().test_cases, 1);
+
+        // The next pull (or a full re-pull from cursor 0) brings the tombstone
+        // the server keeps: nothing is written, nothing comes back.
+        for _ in 0..2 {
+            apply_doc(&c, &ws, U1, &tombstone).unwrap();
+            c.execute("DELETE FROM sync_base", []).unwrap();
+        }
+        let rows: i64 = c
+            .query_row("SELECT count(*) FROM test_cases WHERE id = 'c1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(rows, 0);
+        assert_eq!(open_conflicts(&c), 0);
+        assert!(build_pending(&c, U1).unwrap().deltas.is_empty());
+    }
 }

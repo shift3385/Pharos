@@ -3,9 +3,9 @@
 //!
 //! A key travels as a Gherkin tag, so once assigned it never changes and is
 //! never handed out again. The next number of each project and kind lives in
-//! `key_counters` and only moves forward: deleting (or, later, purging) rows
-//! cannot make a key come back. Every key ever stored, live or deleted, also
-//! counts as taken. Server-leased blocks (ADR-0010 rule 4) arrive in phase 2.
+//! `key_counters` and only moves forward: deleting or purging (SYNC-06) rows
+//! cannot make a key come back. Every key ever stored, live, deleted or purged
+//! (`retired_keys`), also counts as taken. Server-leased blocks (ADR-0010 rule 4) arrive in phase 2.
 
 use rusqlite::{params, Connection, OptionalExtension};
 
@@ -36,7 +36,7 @@ impl KeyKind {
     }
 }
 
-/// True if `key` was ever used in the project, by a live or a deleted row.
+/// True if `key` was ever used in the project, by a live, deleted or purged row.
 pub(crate) fn taken(
     conn: &Connection,
     kind: KeyKind,
@@ -45,8 +45,12 @@ pub(crate) fn taken(
 ) -> Result<bool, String> {
     let (table, column) = kind.column();
     conn.query_row(
-        &format!("SELECT 1 FROM {table} WHERE project_id = ?1 AND {column} = ?2 LIMIT 1"),
-        params![project_id, key],
+        &format!(
+            "SELECT 1 FROM {table} WHERE project_id = ?1 AND {column} = ?2 \
+             UNION ALL SELECT 1 FROM retired_keys \
+             WHERE project_id = ?1 AND kind = ?3 AND key = ?2 LIMIT 1"
+        ),
+        params![project_id, key, kind.name()],
         |_| Ok(()),
     )
     .optional()
@@ -106,11 +110,12 @@ fn counter(
     let (table, column) = kind.column();
     let mut stmt = conn
         .prepare(&format!(
-            "SELECT {column} FROM {table} WHERE project_id = ?1 AND {column} IS NOT NULL"
+            "SELECT {column} FROM {table} WHERE project_id = ?1 AND {column} IS NOT NULL \
+             UNION ALL SELECT key FROM retired_keys WHERE project_id = ?1 AND kind = ?2"
         ))
         .map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map(params![project_id], |r| r.get::<_, String>(0))
+        .query_map(params![project_id, kind.name()], |r| r.get::<_, String>(0))
         .map_err(|e| e.to_string())?;
     let mut max = 0;
     for key in rows {
@@ -150,6 +155,28 @@ pub(crate) fn allocate(
         }
         n += 1;
     }
+}
+
+/// Records the key of a row the purge is about to remove (SYNC-06): the
+/// project's counter is created first (seeded while the row still exists), and
+/// the key stays taken in `retired_keys` after the row is gone.
+pub(crate) fn retire(
+    conn: &Connection,
+    kind: KeyKind,
+    project_id: &str,
+    prefix: &str,
+    key: &str,
+) -> Result<(), String> {
+    let next = counter(conn, kind, project_id, prefix)?;
+    store(conn, kind, project_id, next)?;
+    if !key.is_empty() {
+        conn.execute(
+            "INSERT OR IGNORE INTO retired_keys (project_id, kind, key) VALUES (?1, ?2, ?3)",
+            params![project_id, kind.name(), key],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Records a key given by hand (import, manual field) so the counter never

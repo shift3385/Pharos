@@ -52,6 +52,19 @@ resolution can be added without a schema change.
 - **Orphans.** A change written before its entity's owner is known (a case
   whose project was not pulled yet) is stamped `''`; it is claimed as soon as
   the owner can be derived, and meanwhile the indicator tooltip counts it.
+- **Purge (SYNC-06).** `api/purgeApi.ts` → `purge_deleted` (`src-tauri/src/purge.rs`)
+  removes for good, on this device, the signed-in account's rows deleted more
+  than `retentionDays` ago (Administration), with their history, attachments,
+  oplog rows, sync bases and resolved conflicts. `SyncIndicator` runs it after
+  sign-in (also offline) and after every sync. A row waits while it has an open
+  conflict, or a pending change the server must receive first (unless the
+  server never knew it); a child waits while its project's delete is pending or
+  in conflict. Keys of purged cases, requirements and defects go to
+  `retired_keys` and stay taken. The server keeps every tombstone, so a later
+  pull of it updates nothing: a purged record never comes back. After
+  `SYNC_TOMBSTONE_DAYS` (30) the server clears the tombstone's payload, without
+  a new `seq`. A record comes back only if another device still had it and the
+  user chose "keep mine" in the conflict panel.
 - **Duplicate keys until DAT-01.** Two devices can number `REQ-004` offline.
   Both requirements are kept (migration `0013` makes the local index
   non-unique); creating one locally still rejects a duplicate key.

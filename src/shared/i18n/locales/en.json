@@ -214,7 +214,7 @@
       "opacity": "Background opacity",
       "opacityHint": "Lower = more transparent. Affects only the background, not the content.",
       "retention": "Retention of deleted items (days)",
-      "retentionHint": "Items in the trash are permanently removed after this many days.",
+      "retentionHint": "What you delete is removed for good from this device after this many days. A deletion not yet synced waits for the next sync. The server has its own period and keeps a marker of what was deleted.",
       "download": "Downloads folder",
       "downloadPlaceholder": "Folder path (optional)",
       "downloadHint": "Preference; it will apply to exports in a future release.",

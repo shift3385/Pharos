@@ -11,6 +11,7 @@ mod oplog;
 mod planner;
 mod profile;
 mod project;
+mod purge;
 mod requirement;
 mod sync;
 mod template;
@@ -147,6 +148,7 @@ pub fn run() {
             sync::sync_cursor_set,
             sync::sync_conflicts_list,
             sync::sync_conflict_resolve,
+            purge::purge_deleted,
             diag::diag_log,
             diag::diag_export
         ])

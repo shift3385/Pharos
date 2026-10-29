@@ -4,7 +4,7 @@ import type { Pool } from "pg";
 import { readFileSync } from "node:fs";
 import { setupTestApp, truncateAll } from "./helpers";
 import { SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
-import { LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
+import { createSyncRepository, LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -390,5 +390,44 @@ describe("sync", () => {
     const repaired = (await pool.query("SELECT seq, hlc, revision FROM documents WHERE entity_id = 'oc'")).rows[0];
     expect(Number(repaired.seq)).toBeGreaterThan(Number(before));
     expect(repaired).toMatchObject({ hlc: "000000000000200-00000-d", revision: 2 });
+  });
+
+  it("clears the content of old tombstones but keeps them, so nothing comes back (SYNC-06)", async () => {
+    const token = await tokenFor();
+    const { rows } = await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1");
+    const userId = rows[0].id;
+    await pool.query(
+      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, deleted, hlc, updated_at) VALUES
+         ($1, 'test_case', 'old', '{"title":"secret"}', 2, true, 'h1', now() - interval '31 days'),
+         ($1, 'test_case', 'recent', '{"title":"recent"}', 2, true, 'h2', now() - interval '5 days'),
+         ($1, 'test_case', 'live', '{"title":"live"}', 1, false, 'h3', now() - interval '90 days')`,
+      [userId],
+    );
+    const seqBefore = (await pool.query("SELECT entity_id, seq FROM documents ORDER BY entity_id")).rows;
+
+    const repo = createSyncRepository(pool);
+    expect(await repo.compactTombstones(30)).toBe(1);
+    expect(await repo.compactTombstones(30)).toBe(0);
+
+    const { docs } = await pullAll(token);
+    const byId = Object.fromEntries(docs.map((d) => [d.entityId, d]));
+    expect(byId.old).toMatchObject({ deleted: true, payload: {}, revision: 2, hlc: "h1" });
+    expect(byId.recent.payload).toEqual({ title: "recent" });
+    expect(byId.live.payload).toEqual({ title: "live" });
+    // Devices already have these tombstones: no new seq to pull.
+    expect((await pool.query("SELECT entity_id, seq FROM documents ORDER BY entity_id")).rows).toEqual(seqBefore);
+
+    // A stale upsert from a device that never saw the delete is a conflict,
+    // not a resurrection.
+    const push = await app.inject({
+      method: "POST",
+      url: "/sync/push",
+      headers: auth(token),
+      payload: {
+        deltas: [{ entity: "test_case", entityId: "old", op: "upsert", payload: { title: "stale" }, revision: 2, hlc: "h0", baseRevision: 1, baseHlc: "h-1" }],
+      },
+    });
+    expect(push.json().conflicts).toHaveLength(1);
+    expect((await pool.query("SELECT deleted FROM documents WHERE entity_id = 'old'")).rows[0].deleted).toBe(true);
   });
 });

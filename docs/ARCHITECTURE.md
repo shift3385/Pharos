@@ -197,7 +197,9 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   and planner cards) and `GET /sync/pull?since=<seq>` (pages of up to 500 with
   `hasMore`). Every sync request must carry `x-pharos-version`; the server
   serves its own MINOR and the previous one and answers others with 426
-  (ADR-0020). See `src/modules/sync-offline/README.md`.
+  (ADR-0020). Tombstones are never removed; at start and then daily
+  (`server.ts`) the payload of those older than `SYNC_TOMBSTONE_DAYS` is cleared
+  (SYNC-06). See `src/modules/sync-offline/README.md`.
 
 Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 **JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
@@ -256,6 +258,10 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
 
 - **Audit fields (FIX-06):** `created_by` and `updated_by` hold the signed-in
   user's id.
+- **Deletes are soft, then purged (SYNC-06):** a delete sets `deleted_at`;
+  `src-tauri/src/purge.rs` removes the row for good after the Administration
+  retention, once the server has its tombstone (rules in
+  `src/modules/sync-offline/README.md`).
 - **Owner checks (FIX-08):** every command that reads or changes a test plan,
   test case, requirement or planner attachment takes the signed-in user
   (`userId`, or `ownerId` in the planner). It only touches rows of projects that

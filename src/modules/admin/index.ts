@@ -1,3 +1,3 @@
 // Public API of the admin module (spec §10).
 export { AdminPage } from "./ui/AdminPage";
-export { applyBackground } from "./model/settings";
+export { applyBackground, loadSettings } from "./model/settings";

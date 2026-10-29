@@ -18,7 +18,7 @@ use crate::project;
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
-const DEFECT_KEY_PREFIX: &str = "DEF-";
+pub(crate) const DEFECT_KEY_PREFIX: &str = "DEF-";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
