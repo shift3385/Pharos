@@ -28,6 +28,7 @@ vi.mock("@modules/test-cases", async (importOriginal) => ({
 }));
 
 const { GenerateCasesModal } = await import("./GenerateCasesModal");
+const { requirementApi } = await import("../api/requirementApi");
 const { RequirementsPanel } = await import("./RequirementsPanel");
 const { AiOutputError } = await import("@modules/ai");
 
@@ -166,7 +167,7 @@ describe("GenerateCasesModal (IA-05)", () => {
 
 describe("RequirementsPanel — AI button (IA-05)", () => {
   beforeEach(() => {
-    localStorage.setItem("pharos.requirements", JSON.stringify([{ ...requirement, createdBy: "u", updatedBy: "u" }]));
+    vi.spyOn(requirementApi, "list").mockResolvedValue([requirement]);
   });
 
   it("is disabled with a notice when no AI is available", async () => {

@@ -28,6 +28,8 @@
     "check:audit": "node scripts/audit-gate.mjs",
     "check:deps": "cd src-tauri && cargo deny --config ../deny.toml check",
     "check:rust": "node scripts/rust-gates.mjs fmt && node scripts/rust-gates.mjs clippy",
+    "contracts": "node scripts/contracts.mjs generate",
+    "check:contracts": "node scripts/contracts.mjs check",
     "version:set": "node scripts/version.mjs set",
     "verify:static": "npm run typecheck && npm run lint && npm run check:licenses && npm run check:version && npm run check:migrations && npm run test:scripts",
     "verify": "npm run verify:static && npm run test",

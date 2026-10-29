@@ -1,0 +1,7 @@
+# Generated TS contracts (BASE-05, ADR-0026). `cargo test` writes one file per
+# exported Rust type into src/shared/contracts/generated/; CI fails if they
+# differ from the committed ones (`npm run check:contracts`). Integers are
+# plain numbers in JS: every i64 the app sends fits in 2^53.
+[env]
+TS_RS_EXPORT_DIR = { value = "../src/shared/contracts/generated", relative = true }
+TS_RS_LARGE_INT = "number"

@@ -2,7 +2,7 @@ import type { AuthRepository, UserRow } from "./auth.repository";
 import type { TokenService } from "./tokens";
 import { hashPassword, verifyPassword } from "./password";
 import { AuthErrors } from "./errors";
-import type { LoginInput, RegisterInput } from "./auth.schemas";
+import type { LoginInput, ProfileInput, RegisterInput } from "./auth.schemas";
 
 export interface PublicUser {
   id: string;
@@ -12,6 +12,7 @@ export interface PublicUser {
   lastName: string;
   role: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Session {
@@ -37,6 +38,7 @@ export function createAuthService(deps: {
       lastName: user.last_name,
       role: user.role,
       createdAt: user.created_at,
+      updatedAt: user.updated_at,
     };
   }
 
@@ -123,6 +125,17 @@ export function createAuthService(deps: {
       if (record && record.revoked_at === null) {
         await repo.revokeRefreshToken(record.id);
       }
+    },
+
+    /** Changes the user's names (the role is not the user's to change). */
+    async updateProfile(userId: string, input: ProfileInput): Promise<PublicUser> {
+      const user = await repo.updateProfile(userId, {
+        display_name: input.displayName,
+        first_name: input.firstName,
+        last_name: input.lastName,
+      });
+      if (!user) throw AuthErrors.unauthorized();
+      return toPublicUser(user);
     },
 
     async me(userId: string): Promise<PublicUser> {

@@ -3,4 +3,5 @@
 export const SYNC_OFFLINE_MODULE = "sync-offline" as const;
 export { SyncIndicator } from "./ui/SyncIndicator";
 export { syncStatus, syncPendingCount, type SyncStatus } from "./api/syncApi";
-export { pushEntity, hydrateFromBackend } from "./web/webSync";
+// The web's client of the server's domain API (BASE-10).
+export { serverApi, desktopOnly } from "./web/serverApi";

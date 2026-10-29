@@ -1,9 +1,4 @@
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
+import { isTauri } from "@shared/platform";
 
 // When the recovery key was last shown, so the profile can say so. Only the
 // date is kept here, never the key (ADR-0024).

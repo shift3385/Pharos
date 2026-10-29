@@ -1,6 +1,8 @@
 // Template repository model (spec §6). A template is a stored .xlsx (plan or
 // case) with metadata; built-ins are seeded from the bundled PHAROS templates.
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
+
 export type TemplateKind = "plan" | "case";
 export type TemplateLanguage = "es" | "en";
 
@@ -52,3 +54,14 @@ export interface TemplateSeedItem {
   version?: string;
   dataBase64: string;
 }
+
+// The Rust contract (BASE-05, ADR-0026): what Rust sends covers what this model
+// reads, and what this model sends covers what Rust reads. `tsc` fails if a
+// field is renamed, dropped or retyped on either side.
+export type _RustContract = [
+  Assert<Covers<Contract.TemplateSummary, TemplateSummary>>,
+  Assert<Covers<Contract.TemplateData, TemplateData>>,
+  Assert<Covers<TemplateInput, Contract.TemplateInput>>,
+  Assert<Covers<TemplateMeta, Contract.TemplateMeta>>,
+  Assert<Covers<TemplateSeedItem, Contract.TemplateSeedItem>>,
+];

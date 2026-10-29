@@ -15,6 +15,8 @@ use base64::Engine as _;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
@@ -38,6 +40,7 @@ fn require_user(user_id: &str) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateSummary {
@@ -54,6 +57,7 @@ pub struct TemplateSummary {
     updated_at: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateData {
@@ -69,6 +73,7 @@ pub struct TemplateData {
     data_base64: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateInput {
@@ -84,6 +89,7 @@ pub struct TemplateInput {
     data_base64: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateMeta {
@@ -96,6 +102,7 @@ pub struct TemplateMeta {
     version: Option<String>,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateSeedItem {

@@ -3,6 +3,8 @@
 // immutable once created, links test cases (`data.requirementKeys`) and travels
 // as a Gherkin tag (@REQ-001).
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
+
 export type RequirementPriority = "low" | "medium" | "high";
 
 export const REQUIREMENT_PRIORITIES: RequirementPriority[] = ["low", "medium", "high"];
@@ -52,3 +54,13 @@ export interface ImportSummary {
 export function isValidRequirementKey(key: string): boolean {
   return /^[A-Za-z0-9_.:-]+$/.test(key);
 }
+
+// The Rust contract (BASE-05, ADR-0026): what Rust sends covers what this model
+// reads, and what this model sends covers what Rust reads. `tsc` fails if a
+// field is renamed, dropped or retyped on either side.
+export type _RustContract = [
+  Assert<Covers<Contract.Requirement, Requirement>>,
+  Assert<Covers<Contract.ImportSummary, ImportSummary>>,
+  Assert<Covers<RequirementInput, Contract.RequirementInput>>,
+  Assert<Covers<RequirementImportRow, Contract.RequirementImportRow>>,
+];

@@ -6,10 +6,13 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
+import { fakeServer } from "@test/server";
 import { ExportProgressModal } from "./ui/ExportProgressModal";
 import { ProjectsPage } from "./ui/ProjectsPage";
 
 beforeEach(async () => {
+  // The web reads its projects from the server (BASE-10): an empty account.
+  fakeServer([]);
   await i18n.changeLanguage("en");
 });
 

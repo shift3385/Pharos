@@ -8,14 +8,14 @@ Offline-first synchronization domain (spec §9).
   account — exactly what the next push sends (FIX-01).
 - **8B — push/pull.** `api/syncApi.ts` pushes pending deltas to the backend
   (`POST /sync/push`) and pulls remote documents (`GET /sync/pull?since=`).
-  `web/webSync.ts` lets the browser read/write the backend directly.
+  The web build does not sync: it is a client of the server (below).
 - **8C — HLC + conflicts.** `domain/hlc.ts` (mirrored in `src-tauri/src/hlc.rs`)
   stamps every change with a Hybrid Logical Clock. Desktop deltas carry their
   base version (`sync_base`); the server rejects a delta whose base it no longer
   holds and returns its own version. That pair is kept in `sync_conflicts` and
   shown in `ui/ConflictPanel.tsx`, where the user keeps one version per entity
-  (`domain/conflict.ts` builds the field-by-field view). Web deltas carry an HLC
-  but no base, so they resolve by last-write-wins on the HLC.
+  (`domain/conflict.ts` builds the field-by-field view). Web writes are
+  stamped by the server's clock (`server/src/modules/sync/sync.hlc.ts`).
 
 Granularity is **per entity** (decision 2026-08-13, ADR-0002). Field-level LWW
 (SYNC-02) is pending; the conflict rows store both full versions so a `merged`
@@ -86,31 +86,40 @@ resolution can be added without a schema change.
     also closes when the server sends the row with a key, when the server
     deletes the holder of a key a synced row lost (`holder_deleted`), or when
     the row is deleted (its delete must still sync);
-  - the web keeps a refused key in its outbox, flagged like a refused delta.
+  - on the web a taken key is refused when saving (409 `key_taken`), with a toast.
 
-## Web client (`web/webSync.ts`, ADR-0004)
+## Web client (`web/serverApi.ts`, ADR-0004, BASE-10)
 
-- **Outbox.** Web writes (`pushEntity`) go to `pharos.sync.outbox:<userId>`,
-  one entry per entity, and are pushed in batches. A transient failure stays
-  queued and is retried every 10 s, on reconnect and on "Sync now" (FIX-04);
-  auth or version errors stop without retrying; a delta refused for its
-  content is flagged `refused` and not resent until the entity is edited.
-  Writes queued during a flush go out in the same flush.
-- **Lost conflicts.** When the server keeps a newer version, the web edit and
-  the server version are stored in `pharos.sync.conflicts:<userId>`, a toast
-  tells the user, and the same conflict panel resolves it: `local` pushes the
-  web version again with a newer HLC, `remote` takes the server copy. While
-  queued or in conflict, a pull never replaces the web edit in the cache, but
-  it does refresh the conflict's server side, so neither choice acts on a
-  stale copy.
-- **Caches per account.** `pharos.sync.cacheOwner` records whose server data
-  the caches hold; they are emptied on sign-out (`pharos:signed-out`) and when
-  another account syncs. On the first full pull after upgrading, rows of this
-  account that the server does not have (old pushes that failed silently) are
-  queued instead of lost.
-- **Pull.** Incremental from `pharos.sync.cursor:<userId>`; if every cache is
-  empty it restarts at 0. Deleted requirements keep a `deletedAt` tombstone so
-  their key is never reused.
+The web build has no local store, oplog or outbox. Every module API calls the
+server's domain API (`/api/*`, `server/src/modules/domain/`) through
+`serverApi`, and the server applies the domain rules on the same document
+store the devices sync with. So the web has nothing pending, no conflicts and
+no pull: "Sync now" only reloads the open pages.
+
+- **Edits never overwrite blindly (FIX-04).** `serverApi` remembers the
+  revision of each item it read and sends it with every update and delete.
+  If the item changed elsewhere, the server answers 409 `stale_write` with its
+  version: a toast tells the user, the form keeps the edit, and saving again
+  replaces that version (its revision is now the one remembered).
+- **Refusals the user can act on** (`key_taken`, `key_retired`, `invalid_key`,
+  desktop-only features) are shown once as a toast and thrown as
+  `ReportedError`.
+- **Deleted elsewhere.** 409 `deleted_elsewhere` has its own toast and
+  changes nothing remembered: saving again repeats it.
+- **Old browser data** (`web/legacyWebData.ts`). On the account's first sync
+  with this version, the old outbox (`pharos.sync.outbox:<userId>`) is pushed
+  one last time. Changes the server does not take, open web conflicts, and the
+  attachments, imported templates and revision history that only lived in the
+  browser are set aside in `pharos.legacy.unsent:<userId>` (written before
+  anything is removed); then the old caches, outbox, conflicts, cursor and
+  clock are removed. `ui/LegacyUnsentNotice.tsx` (topbar, web only) offers
+  "Download" (`pharos-web-unsent-<date>.json`) and removes the set only when
+  the user confirms the file is saved or discards it: a browser download
+  cannot tell it was saved. The browser-only data was kept per browser: an
+  account takes the attachments of the cards in its own outbox, and the rest
+  only if `pharos.sync.cacheOwner` is that account (or unset, data from
+  before FIX-07); the shared keys go when nothing is left. A network failure
+  changes nothing. Other accounts' outboxes wait until those accounts sign in.
 
 ## Failures in the local log (`api/syncFailure.ts`, BASE-08, ADR-0022)
 
@@ -119,7 +128,7 @@ The UI tells the user; every sync failure also goes to the local log through
 `sync: <action>`: `manual` ("Sync now"), `auto` (startup, reconnect, after a
 resolution), `state` (the 5 s count refresh), `conflicts-list`,
 `key-conflicts-list`, `conflict-resolve`, `purge` (SYNC-06, after an automatic
-sync), `push-refused` and `web-push`.
+sync) and `push-refused`.
 
 - **No server text.** A `SyncHttpError` is logged as `HTTP <status> <code>`
   only: its message is what the server wrote (a parse error can quote the
@@ -129,6 +138,6 @@ sync), `push-refused` and `web-push`.
   and stack.
 - **Refused changes** are one line per push, with entity types and ids, never
   payloads.
-- **Background steps** (`auto`, `state`, `purge`, `web-push`) log a repeated failure
+- **Background steps** (`auto`, `state`, `purge`) log a repeated failure
   once (`SyncFailureLog`) until it changes or the step succeeds, so an API
   that is down does not use up the log budget (20 messages every 10 s).

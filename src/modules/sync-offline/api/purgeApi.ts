@@ -4,7 +4,9 @@
 // later pull never brings a purged record back. The browser keeps no local
 // copy of deleted rows, so there is nothing to purge there.
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
 import { getSession } from "@modules/auth";
+import { isTauri } from "@shared/platform";
 
 /** Rows removed by one purge, per kind (`purge::PurgeSummary`). */
 export interface PurgeSummary {
@@ -14,13 +16,6 @@ export interface PurgeSummary {
   requirements: number;
   plannerCards: number;
   templates: number;
-}
-
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
 }
 
 /** Runs the purge on the desktop; null in the browser or without a session. */
@@ -34,3 +29,7 @@ export async function purgeDeleted(retentionDays: number): Promise<PurgeSummary 
     retentionDays,
   });
 }
+
+// The Rust contract (BASE-05, ADR-0026): `tsc` fails if these stop matching
+// the Rust types they are read from or sent to.
+export type _RustContract = [Assert<Covers<Contract.PurgeSummary, PurgeSummary>>];

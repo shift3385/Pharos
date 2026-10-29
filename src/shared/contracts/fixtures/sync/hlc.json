@@ -1,0 +1,88 @@
+{
+  "$comment": "Shared HLC fixture (BASE-05, ADR-0026). The desktop (src-tauri/src/hlc.rs), the server (server/src/modules/sync/sync.hlc.ts) and the client (src/modules/sync-offline/domain/hlc.ts) must give exactly these answers. Change it only together with all three.",
+  "encode": [
+    { "hlc": { "wallMs": 1730000000000, "counter": 0, "deviceId": "dev-a" }, "text": "001730000000000-00000-dev-a" },
+    { "hlc": { "wallMs": 5, "counter": 42, "deviceId": "server" }, "text": "000000000000005-00042-server" },
+    { "hlc": { "wallMs": 1, "counter": 1, "deviceId": "a-b-c" }, "text": "000000000000001-00001-a-b-c" }
+  ],
+  "invalid": [
+    "",
+    "123-00000-a",
+    "000000000000001-0001-a",
+    "000000000000001-00001-",
+    "+00000000000001-00001-a",
+    "00000000000000a-00001-a",
+    "000000000000001-+0001-a"
+  ],
+  "sorted": [
+    "000000000000001-00000-b",
+    "000000000000001-00001-a",
+    "000000000000002-00000-a",
+    "000000000000002-00000-b",
+    "000000000000010-00000-a"
+  ],
+  "tick": [
+    { "prev": null, "nowMs": 1000, "deviceId": "a", "next": { "wallMs": 1000, "counter": 0, "deviceId": "a" } },
+    {
+      "prev": { "wallMs": 1000, "counter": 0, "deviceId": "a" },
+      "nowMs": 1000,
+      "deviceId": "a",
+      "next": { "wallMs": 1000, "counter": 1, "deviceId": "a" }
+    },
+    {
+      "prev": { "wallMs": 1000, "counter": 5, "deviceId": "a" },
+      "nowMs": 900,
+      "deviceId": "a",
+      "next": { "wallMs": 1000, "counter": 6, "deviceId": "a" }
+    },
+    {
+      "prev": { "wallMs": 1000, "counter": 5, "deviceId": "a" },
+      "nowMs": 2000,
+      "deviceId": "a",
+      "next": { "wallMs": 2000, "counter": 0, "deviceId": "a" }
+    },
+    {
+      "prev": { "wallMs": 1000, "counter": 99999, "deviceId": "a" },
+      "nowMs": 1000,
+      "deviceId": "a",
+      "next": { "wallMs": 1001, "counter": 0, "deviceId": "a" }
+    }
+  ],
+  "recv": [
+    {
+      "prev": null,
+      "remote": { "wallMs": 5000, "counter": 3, "deviceId": "b" },
+      "nowMs": 1000,
+      "deviceId": "a",
+      "next": { "wallMs": 5000, "counter": 4, "deviceId": "a" }
+    },
+    {
+      "prev": { "wallMs": 5000, "counter": 7, "deviceId": "a" },
+      "remote": { "wallMs": 5000, "counter": 3, "deviceId": "b" },
+      "nowMs": 1000,
+      "deviceId": "a",
+      "next": { "wallMs": 5000, "counter": 8, "deviceId": "a" }
+    },
+    {
+      "prev": { "wallMs": 6000, "counter": 2, "deviceId": "a" },
+      "remote": { "wallMs": 5000, "counter": 9, "deviceId": "b" },
+      "nowMs": 1000,
+      "deviceId": "a",
+      "next": { "wallMs": 6000, "counter": 3, "deviceId": "a" }
+    },
+    {
+      "prev": { "wallMs": 1000, "counter": 2, "deviceId": "a" },
+      "remote": { "wallMs": 900, "counter": 9, "deviceId": "b" },
+      "nowMs": 3000,
+      "deviceId": "a",
+      "next": { "wallMs": 3000, "counter": 0, "deviceId": "a" }
+    },
+    {
+      "prev": null,
+      "remote": { "wallMs": 1000, "counter": 99999, "deviceId": "b" },
+      "nowMs": 10,
+      "deviceId": "a",
+      "next": { "wallMs": 1001, "counter": 0, "deviceId": "a" }
+    }
+  ]
+}

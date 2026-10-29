@@ -10,6 +10,8 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
@@ -21,6 +23,7 @@ pub(crate) const KEY_PREFIX: &str = "REQ-";
 pub(crate) const KEY_DIGITS: usize = 3;
 const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Requirement {
@@ -35,6 +38,7 @@ pub struct Requirement {
     revision: i64,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequirementInput {
@@ -47,6 +51,7 @@ pub struct RequirementInput {
     user_id: String,
 }
 
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequirementImportRow {
@@ -56,6 +61,7 @@ pub struct RequirementImportRow {
     priority: Option<String>,
 }
 
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportSummary {

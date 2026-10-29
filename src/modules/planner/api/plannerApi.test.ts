@@ -1,54 +1,56 @@
-import { describe, it, expect, beforeEach } from "vitest";
+// BASE-10: on the web the planner store is a client of the server's domain API and keeps
+// nothing in localStorage; on the desktop the same calls go to the Rust core.
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fakeServer } from "@test/server";
+import { DesktopOnlyError } from "@shared/platform";
 import { plannerApi } from "./plannerApi";
-import type { PlannerCardInput } from "../model/types";
 
-function card(projectId: string, ownerId: string, title: string): PlannerCardInput {
-  return { projectId, ownerId, kind: "task", title, data: {} };
+const invoke = vi.fn();
+vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
+
+function onDesktop() {
+  (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+  invoke.mockReset();
+  invoke.mockResolvedValue([]);
 }
+afterEach(() => {
+  delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+});
 
-describe("plannerApi browser fallback", () => {
-  beforeEach(() => localStorage.clear());
+const input = { projectId: "p1", ownerId: "u1", kind: "defect" as const, title: "Bug", data: {} };
 
-  it("creates cards appended per column and scoped to project + owner", async () => {
-    const a = await plannerApi.create(card("p1", "u1", "A"));
-    const b = await plannerApi.create(card("p1", "u1", "B"));
-    await plannerApi.create(card("p2", "u1", "C"));
-    expect(a?.position).toBe(0);
-    expect(b?.position).toBe(1);
-    const p1 = await plannerApi.list("p1", "u1");
-    expect(p1.map((c) => c.title)).toEqual(["A", "B"]);
-    // Another user sees nothing.
-    expect(await plannerApi.list("p1", "u2")).toHaveLength(0);
+describe("plannerApi", () => {
+  it("web: /api/planner-cards and reorder", async () => {
+    const server = fakeServer();
+    await plannerApi.list("p1", "u1");
+    await plannerApi.create(input);
+    await plannerApi.update("k1", input);
+    await plannerApi.reorder("u1", "done", ["k1", "k2"]);
+    await plannerApi.remove("k1", "u1");
+    expect(server.calls()).toEqual([
+      "GET /api/planner-cards?projectId=p1",
+      "POST /api/planner-cards",
+      "PUT /api/planner-cards/k1",
+      "POST /api/planner-cards/reorder",
+      "DELETE /api/planner-cards/k1",
+    ]);
+    expect(server.body(3)).toEqual({ status: "done", ids: ["k1", "k2"] });
   });
 
-  it("reorder moves a card to another column", async () => {
-    const a = await plannerApi.create(card("p1", "u1", "A"));
-    await plannerApi.reorder("u1", "in_progress", [a!.id]);
-    const cards = await plannerApi.list("p1", "u1");
-    expect(cards[0].status).toBe("in_progress");
-    expect(cards[0].position).toBe(0);
+  it("web: attachments stay on the desktop (SYNC-04b)", async () => {
+    const server = fakeServer();
+    expect(await plannerApi.attachmentList("k1", "u1")).toEqual([]);
+    expect(await plannerApi.attachmentGet("a1", "u1")).toBeNull();
+    await expect(plannerApi.attachmentAdd("k1", "u1", "a.txt", null, "AA==")).rejects.toBeInstanceOf(DesktopOnlyError);
+    await expect(plannerApi.attachmentDelete("a1", "u1")).rejects.toBeInstanceOf(DesktopOnlyError);
+    expect(server.calls()).toEqual([]);
+    expect(Object.keys(localStorage)).toEqual(["pharos.session"]);
   });
 
-  it("numbers defects DEF-001… per project and keeps the key across edits", async () => {
-    const task = await plannerApi.create(card("p1", "u1", "T"));
-    const d1 = await plannerApi.create({ ...card("p1", "u1", "D1"), kind: "defect" });
-    const other = await plannerApi.create({ ...card("p2", "u1", "D"), kind: "defect" });
-    expect(task?.cardKey).toBeNull();
-    expect(d1?.cardKey).toBe("DEF-001");
-    expect(other?.cardKey).toBe("DEF-001");
-    const promoted = await plannerApi.update(task!.id, { ...card("p1", "u1", "T"), kind: "defect" });
-    expect(promoted?.cardKey).toBe("DEF-002");
-    const back = await plannerApi.update(task!.id, card("p1", "u1", "T"));
-    expect(back?.cardKey).toBe("DEF-002");
-  });
-
-  it("stores and reads back an attachment", async () => {
-    const a = await plannerApi.create(card("p1", "u1", "Bug"));
-    await plannerApi.attachmentAdd(a!.id, "u1", "log.txt", "text/plain", btoa("hello"));
-    const list = await plannerApi.attachmentList(a!.id, "u1");
-    expect(list).toHaveLength(1);
-    const data = await plannerApi.attachmentGet(list[0].id, "u1");
-    expect(data?.name).toBe("log.txt");
-    expect(atob(data!.dataBase64)).toBe("hello");
+  it("desktop: attachments in the Rust core", async () => {
+    onDesktop();
+    await plannerApi.attachmentList("k1", "u1");
+    expect(invoke).toHaveBeenCalledWith("planner_attachment_list", { cardId: "k1", ownerId: "u1" });
   });
 });

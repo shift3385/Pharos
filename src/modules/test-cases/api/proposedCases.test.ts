@@ -6,6 +6,24 @@ import { generateMessages } from "@cucumber/gherkin";
 import { IdGenerator, SourceMediaType } from "@cucumber/messages";
 import { createProposedCases, proposalCaseData, proposalGherkin, type ScenarioProposal } from "./proposedCases";
 import { testCaseApi } from "./testCaseApi";
+import type { TestCase, TestCaseInput } from "../model/types";
+
+/** What the store returns for a created case (numbering is the store's job). */
+const stored = (input: TestCaseInput): TestCase => ({
+  id: crypto.randomUUID(),
+  workspaceId: "local",
+  projectId: input.projectId,
+  scenarioId: "TC-001",
+  title: input.title,
+  version: "1.0",
+  status: input.status ?? "draft",
+  priority: input.priority ?? "medium",
+  author: input.author,
+  data: input.data,
+  createdAt: "2026-10-29T10:00:00.000Z",
+  updatedAt: "2026-10-29T10:00:00.000Z",
+  revision: 1,
+});
 
 const provenance = { provider: "anthropic" as const, model: "claude-opus-5-5", generatedAt: "2026-10-29T10:00:00.000Z" };
 
@@ -47,6 +65,7 @@ describe("proposed cases (IA-05)", () => {
   });
 
   it("creates the accepted proposals as draft cases with the AI mark", async () => {
+    const create = vi.spyOn(testCaseApi, "create").mockImplementation(async (input) => stored(input));
     const summary = await createProposedCases({
       projectId: "p1",
       userId: "u1",
@@ -58,23 +77,22 @@ describe("proposed cases (IA-05)", () => {
       caseIdDigits: 3,
     });
     expect(summary).toEqual({ created: 2, failed: 0, failedIndexes: [] });
-    const list = await testCaseApi.list("p1", "u1");
-    expect(list.map((c) => [c.scenarioId, c.title, c.status, c.priority, c.aiPending])).toEqual([
-      ["TC-001", "Account locked after five failures", "draft", "critical", true],
-      ["TC-002", "Successful login", "draft", "high", true],
+    const inputs = create.mock.calls.map(([input]) => input);
+    expect(inputs.map((c) => [c.projectId, c.title, c.status, c.priority])).toEqual([
+      ["p1", "Account locked after five failures", "draft", "critical"],
+      ["p1", "Successful login", "draft", "high"],
     ]);
-    const saved = await testCaseApi.get(list[0].id, "u1");
-    expect(saved?.data.requirementKeys).toEqual(["REQ-007"]);
-    expect(saved?.data.aiProvenance?.case).toEqual(provenance);
+    expect(inputs[0].data.requirementKeys).toEqual(["REQ-007"]);
+    expect(inputs[0].data.aiProvenance?.case).toEqual(provenance);
+    create.mockRestore();
   });
 
   it("a store error on one case does not stop the rest and says which ones failed", async () => {
-    const real = testCaseApi.create;
     const spy = vi
       .spyOn(testCaseApi, "create")
       .mockImplementationOnce(() => Promise.reject(new Error("disk full")))
       .mockImplementationOnce(() => Promise.resolve(null))
-      .mockImplementation((input) => real(input));
+      .mockImplementation(async (input) => stored(input));
     const summary = await createProposedCases({
       projectId: "p2",
       userId: "u1",

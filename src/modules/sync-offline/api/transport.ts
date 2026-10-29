@@ -1,4 +1,5 @@
-// HTTP transport shared by the desktop and web sync clients (spec §9). Every
+// HTTP transport shared by the desktop sync client and the web's server
+// client (spec §9, BASE-10). Every
 // request carries the app version (SYNC-08); pushes go in batches small enough
 // for the server's body limit (FIX-03); transient failures are retried.
 
@@ -27,12 +28,14 @@ export const MAX_BATCH_DELTAS = 200;
 export const MAX_BATCH_BYTES = 512 * 1024;
 
 /** A failed sync request. `code` is the server's machine-readable code when
- *  it sent one (e.g. `unsupported_client_version`). */
+ *  it sent one (e.g. `unsupported_client_version`); `body` is the whole error
+ *  body (e.g. the server's current version of an item on a 409). */
 export class SyncHttpError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly body: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = "SyncHttpError";
@@ -159,11 +162,12 @@ export async function pullPages(
   return pulled;
 }
 
-/** One authenticated sync request; throws `SyncHttpError` on a non-2xx. */
+/** One authenticated request to the server; throws `SyncHttpError` on a
+ *  non-2xx. An empty answer (204) resolves to `undefined`. */
 export async function syncRequest<T>(
   path: string,
   token: string,
-  init: { method?: "GET" | "POST"; body?: unknown } = {},
+  init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown } = {},
 ): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method: init.method ?? "GET",
@@ -176,12 +180,17 @@ export async function syncRequest<T>(
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
   });
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { code?: string; message?: string };
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
+      code?: string;
+      message?: string;
+    };
     throw new SyncHttpError(
       res.status,
       body.code ?? "",
       body.message ?? `${path} ${res.status}`,
+      body,
     );
   }
-  return (await res.json()) as T;
+  const text = res.status === 204 ? "" : await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }

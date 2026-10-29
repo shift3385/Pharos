@@ -47,7 +47,8 @@ export interface CreateProposedCasesInput {
   requirementKey: string;
   provenance: AiProvenance;
   proposals: ScenarioProposal[];
-  // Browser-fallback numbering hints (the Rust store reads the project's own).
+  // Numbering hints, ignored: the desktop and the server number from the
+  // project's own series (BASE-10).
   caseIdPrefix?: string;
   caseIdDigits?: number;
 }

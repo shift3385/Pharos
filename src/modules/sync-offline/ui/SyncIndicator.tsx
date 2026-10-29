@@ -12,7 +12,9 @@ import {
 import { SyncFailureLog, logSyncFailure } from "../api/syncFailure";
 import { purgeDeleted } from "../api/purgeApi";
 import { SyncHttpError } from "../api/transport";
+import { isTauri } from "@shared/platform";
 import { ConflictPanel } from "./ConflictPanel";
+import { LegacyUnsentNotice } from "./LegacyUnsentNotice";
 import "./SyncIndicator.css";
 
 /** Topbar status indicator (spec §9): Synced / Pending changes (n) / Offline,
@@ -184,6 +186,7 @@ export function SyncIndicator() {
           {t("sync.conflict.review")}
         </button>
       )}
+      {!isTauri() && <LegacyUnsentNotice />}
       {status !== "offline" && (
         <button
           type="button"

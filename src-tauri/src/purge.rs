@@ -22,6 +22,8 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use tauri::State;
+#[cfg(test)]
+use ts_rs::TS;
 
 use crate::db::Db;
 use crate::keys::{self, KeyKind};
@@ -32,6 +34,7 @@ const MIN_DAYS: i64 = 1;
 const MAX_DAYS: i64 = 3650;
 
 /// Rows removed by one purge, per kind.
+#[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize, Default, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PurgeSummary {

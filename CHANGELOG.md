@@ -9,6 +9,29 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Añadido
 
+- **La web trabaja contra el servidor (BASE-10, ADR-0004):** la versión web ya
+  no guarda proyectos, planes, casos, requisitos ni tarjetas en el navegador:
+  lee y escribe en el servidor, que aplica las mismas reglas que la app de
+  escritorio (numeración de IDs, IDs que no se reutilizan, posiciones del
+  planificador). Lo que haces en la web llega a tus equipos en la siguiente
+  sincronización, y al revés. Si otro equipo cambió un elemento mientras lo
+  editabas, al guardar un aviso lo dice y tu edición sigue en el formulario;
+  guardar de nuevo reemplaza esa versión. Un ID ya usado se rechaza al guardar,
+  con un aviso. En la web puedes cambiar tu nombre en el perfil (el rol no).
+  Por ahora los adjuntos, tus propias plantillas y el historial de revisiones
+  solo están en la app de escritorio; la web muestra las plantillas de PHAROS.
+  La primera vez que sincronizas en la web con esta versión, los cambios que
+  una versión anterior dejó sin enviar se envían. Lo que el servidor no acepta,
+  y los adjuntos, plantillas e historial que solo estaban en el navegador, se
+  guardan aparte: un aviso arriba ofrece "Descargar" (`pharos-web-unsent-<fecha>.json`)
+  y solo se borran cuando confirmas que guardaste el archivo o decides
+  descartarlos. Cada cuenta recibe solo lo suyo. Si un elemento se eliminó en
+  otro sitio mientras lo editabas, al guardar un aviso lo dice.
+- **Contratos generados (BASE-05, ADR-0026):** los tipos que la app de
+  escritorio intercambia con la interfaz y con el servidor se generan desde
+  Rust, y la CI falla si dejan de coincidir. Al comprobarlos, un caso abierto
+  en la app de escritorio ahora incluye su proyecto (`projectId`), como ya
+  hacía la sincronización.
 - **Accesibilidad WCAG 2.1 AA (UX-05):** Pharos se usa entero con el teclado.
   - Un enlace "Saltar al contenido" es la primera parada del tabulador.
   - Todos los diálogos reciben el foco al abrirse, no lo dejan escapar con
@@ -161,9 +184,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     primero. El otro elemento aparece en Conflictos → "Claves repetidas", con
     una clave provisional, hasta que escribes otra o eliges "Asignar la
     siguiente". Una clave nunca cambia sola.
-  - Límite conocido: en la web no hay panel de claves repetidas. Un cambio
-    web cuya clave ya existe queda en "Cambios pendientes" marcado como
-    rechazado hasta que la web use el servidor como única fuente (BASE-10).
+  - En la web una clave repetida se rechaza al guardar, con un aviso
+    (BASE-10).
     Créalo o corrígelo desde el escritorio.
 - **Purga de lo borrado (SYNC-06):** lo que borras se elimina definitivamente
   del escritorio tras los días de retención de Administración (30 por

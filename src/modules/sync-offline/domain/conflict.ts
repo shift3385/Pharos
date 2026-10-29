@@ -3,6 +3,8 @@
 // 2026-08-13); the field diff below is only for display, but it is the shape a
 // future field-level merge (SYNC-02) would build on.
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
+
 export type ConflictResolution = "local" | "remote";
 
 export interface ConflictSide {
@@ -80,3 +82,7 @@ export function conflictTitle(c: SyncConflict): string {
   }
   return c.entityId;
 }
+
+// The Rust contract (BASE-05, ADR-0026): `tsc` fails if these stop matching
+// the Rust types they are read from or sent to.
+export type _RustContract = [Assert<Covers<Contract.Conflict, SyncConflict>>];

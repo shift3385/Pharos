@@ -30,7 +30,9 @@ impl Hlc {
     pub fn parse(s: &str) -> Option<Hlc> {
         let (wall, rest) = s.split_once('-')?;
         let (counter, device) = rest.split_once('-')?;
-        if wall.len() != 15 || counter.len() != 5 || device.is_empty() {
+        // Digits only: `str::parse` alone would also take a sign ("+0…").
+        let digits = |t: &str, n: usize| t.len() == n && t.bytes().all(|c| c.is_ascii_digit());
+        if !digits(wall, 15) || !digits(counter, 5) || device.is_empty() {
             return None;
         }
         Some(Hlc {
@@ -221,5 +223,62 @@ mod tests {
                 device_id: A.into()
             }
         );
+    }
+
+    /// The HLC fixture shared with the server and the client (BASE-05,
+    /// ADR-0026): all three give exactly these answers.
+    #[test]
+    fn matches_the_shared_fixture() {
+        use serde_json::Value;
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../src/shared/contracts/fixtures/sync/hlc.json"
+        ))
+        .unwrap();
+        let hlc = |v: &Value| -> Option<Hlc> {
+            v.as_object().map(|o| Hlc {
+                wall_ms: o["wallMs"].as_u64().unwrap(),
+                counter: o["counter"].as_u64().unwrap() as u32,
+                device_id: o["deviceId"].as_str().unwrap().into(),
+            })
+        };
+        for case in fixture["encode"].as_array().unwrap() {
+            let h = hlc(&case["hlc"]).unwrap();
+            let text = case["text"].as_str().unwrap();
+            assert_eq!(h.encode(), text);
+            assert_eq!(Hlc::parse(text), Some(h));
+        }
+        for text in fixture["invalid"].as_array().unwrap() {
+            assert_eq!(Hlc::parse(text.as_str().unwrap()), None, "{text}");
+        }
+        let sorted: Vec<&str> = fixture["sorted"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        for pair in sorted.windows(2) {
+            assert_eq!(cmp_encoded(pair[0], pair[1]), Ordering::Less);
+            let (a, b) = (Hlc::parse(pair[0]).unwrap(), Hlc::parse(pair[1]).unwrap());
+            assert!(a < b, "{} < {}", pair[0], pair[1]);
+        }
+        for case in fixture["tick"].as_array().unwrap() {
+            let prev = hlc(&case["prev"]);
+            let now = case["nowMs"].as_u64().unwrap();
+            let device = case["deviceId"].as_str().unwrap();
+            assert_eq!(
+                tick(prev.as_ref(), now, device),
+                hlc(&case["next"]).unwrap()
+            );
+        }
+        for case in fixture["recv"].as_array().unwrap() {
+            let prev = hlc(&case["prev"]);
+            let remote = hlc(&case["remote"]).unwrap();
+            let now = case["nowMs"].as_u64().unwrap();
+            let device = case["deviceId"].as_str().unwrap();
+            assert_eq!(
+                recv(prev.as_ref(), &remote, now, device),
+                hlc(&case["next"]).unwrap()
+            );
+        }
     }
 }

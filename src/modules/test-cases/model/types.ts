@@ -1,6 +1,7 @@
 // Test case model (spec §5.3 + ISTQB attributes). Scalars are columns on the
 // case; the rest lives in `data`.
 
+import type { Assert, Contract, Covers } from "@shared/contracts";
 import type { ProvenanceMap } from "@modules/ai";
 
 // Gherkin authoring level chosen when creating a case (spec §5.3 amendment):
@@ -127,8 +128,8 @@ export interface TestCaseInput {
   data: TestCaseData;
   /** Signed-in user making the change (owner check and audit fields). */
   userId: string;
-  // Browser-fallback numbering hints (ignored by the Rust store, which reads the
-  // project's configured prefix/width from the database).
+  // Numbering hints, ignored: the desktop and the server number from the
+  // project's own series (BASE-10).
   caseIdPrefix?: string;
   caseIdDigits?: number;
 }
@@ -139,3 +140,13 @@ export interface RevisionSummary {
   title: string;
   createdAt: string;
 }
+
+// The Rust contract (BASE-05, ADR-0026): what Rust sends covers what this model
+// reads, and what this model sends covers what Rust reads. `tsc` fails if a
+// field is renamed, dropped or retyped on either side.
+export type _RustContract = [
+  Assert<Covers<Contract.TestCaseSummary, TestCaseSummary>>,
+  Assert<Covers<Contract.TestCase, TestCase>>,
+  Assert<Covers<Contract.TestCaseRevisionSummary, RevisionSummary>>,
+  Assert<Covers<TestCaseInput, Contract.TestCaseInput>>,
+];

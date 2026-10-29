@@ -1,66 +1,45 @@
+import { serverApi } from "@modules/sync-offline";
+import { invoke, isTauri } from "@shared/platform";
 import type { Profile, ProfileInput } from "../model/types";
 
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
+/** The account as the server returns it (`/auth/me`). */
+interface ServerUser {
+  id: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
-// Browser fallback so the profile UI is usable in `vite dev` (no Tauri backend).
-// The real, encrypted SQLite store lives in Rust and is used in the desktop app.
-const FALLBACK_KEY = "pharos.profile";
+const toProfile = (u: ServerUser): Profile => ({
+  id: u.id,
+  workspaceId: "server",
+  displayName: u.displayName,
+  firstName: u.firstName,
+  lastName: u.lastName,
+  role: u.role,
+  createdBy: u.id,
+  updatedBy: u.id,
+  createdAt: u.createdAt,
+  updatedAt: u.updatedAt ?? u.createdAt,
+  revision: 1,
+});
 
-const browserApi = {
-  async get(): Promise<Profile | null> {
-    try {
-      const raw = localStorage.getItem(FALLBACK_KEY);
-      return raw ? (JSON.parse(raw) as Profile) : null;
-    } catch {
-      return null;
-    }
-  },
-  async upsert(input: ProfileInput): Promise<Profile> {
-    const existing = await browserApi.get();
-    const now = new Date().toISOString();
-    const profile: Profile = existing
-      ? {
-          ...existing,
-          displayName: input.displayName,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          role: input.role ?? existing.role,
-          updatedAt: now,
-          updatedBy: existing.id,
-          revision: existing.revision + 1,
-        }
-      : {
-          id: crypto.randomUUID(),
-          workspaceId: "local",
-          displayName: input.displayName,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          role: input.role ?? "test_manager",
-          createdBy: "local",
-          updatedBy: "local",
-          createdAt: now,
-          updatedAt: now,
-          revision: 1,
-        };
-    localStorage.setItem(FALLBACK_KEY, JSON.stringify(profile));
-    return profile;
-  },
-};
-
+// The desktop keeps the profile in its encrypted local store (Rust). The web
+// edits the account's names on the server (BASE-10); the role is not the
+// user's to change there.
 export const profileApi = {
   async get(): Promise<Profile | null> {
-    if (!isTauri()) return browserApi.get();
-    const { invoke } = await import("@tauri-apps/api/core");
-    return invoke<Profile | null>("profile_get");
+    if (isTauri()) return invoke<Profile | null>("profile_get");
+    return toProfile(await serverApi.get<ServerUser>("/auth/me"));
   },
   async upsert(input: ProfileInput): Promise<Profile | null> {
-    if (!isTauri()) return browserApi.upsert(input);
-    const { invoke } = await import("@tauri-apps/api/core");
-    return invoke<Profile | null>("profile_upsert", { input });
+    if (isTauri()) return invoke<Profile | null>("profile_upsert", { input });
+    const { displayName, firstName, lastName } = input;
+    return toProfile(
+      await serverApi.patch<ServerUser>("/auth/me", { displayName, firstName, lastName }),
+    );
   },
 };

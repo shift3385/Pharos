@@ -7,17 +7,11 @@ import i18n from "i18next";
 import { saveFile } from "../export/saveFile";
 import { APP_VERSION } from "../version";
 import { redact } from "./redact";
+import { isTauri } from "../platform";
 
 const MAX_MESSAGE = 2000;
 const MAX_BUFFERED = 50;
 const recentErrors: string[] = [];
-
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
 
 /**
  * Message (and stack) of an Error, redacted and truncated. Anything else that

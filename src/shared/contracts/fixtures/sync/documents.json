@@ -1,0 +1,109 @@
+{
+  "$comment": "Shared sync documents (BASE-05, ADR-0026): one document per synced entity, with the payload exactly as the desktop pushes it (src-tauri/src/sync.rs read_payload). The desktop must store and read each one back unchanged; the web API (server/src/modules/domain) must write payloads with the same fields and value types. Change it only together with both.",
+  "userId": "u-fixture",
+  "docs": [
+    {
+      "entity": "project",
+      "entityId": "p-fixture",
+      "revision": 2,
+      "deleted": false,
+      "hlc": "001730000000000-00000-dev-a",
+      "payload": {
+        "id": "p-fixture",
+        "workspaceId": "local",
+        "ownerId": "u-fixture",
+        "name": "Checkout",
+        "caseIdPrefix": "TC-",
+        "caseIdDigits": 4,
+        "createdAt": "2026-10-29 10:00:00",
+        "updatedAt": "2026-10-29 10:05:00",
+        "revision": 2
+      }
+    },
+    {
+      "entity": "test_plan",
+      "entityId": "tp-fixture",
+      "revision": 1,
+      "deleted": false,
+      "hlc": "001730000000001-00000-dev-a",
+      "payload": {
+        "id": "tp-fixture",
+        "workspaceId": "local",
+        "projectId": "p-fixture",
+        "title": "Checkout plan",
+        "version": "1.0",
+        "planDate": "2026-11-01",
+        "author": "QA",
+        "status": "draft",
+        "data": { "scope": "Payments" },
+        "createdAt": "2026-10-29 10:00:00",
+        "updatedAt": "2026-10-29 10:00:00",
+        "revision": 1
+      }
+    },
+    {
+      "entity": "test_case",
+      "entityId": "tc-fixture",
+      "revision": 3,
+      "deleted": false,
+      "hlc": "001730000000002-00000-dev-a",
+      "payload": {
+        "id": "tc-fixture",
+        "workspaceId": "local",
+        "projectId": "p-fixture",
+        "scenarioId": "TC-0001",
+        "title": "Pay with a saved card",
+        "version": "1.0",
+        "status": "approved",
+        "priority": "high",
+        "author": "QA",
+        "data": { "gherkinLevel": "basic", "steps": ["open the cart", "pay"], "requirementKeys": ["REQ-001"] },
+        "createdAt": "2026-10-29 10:00:00",
+        "updatedAt": "2026-10-29 10:10:00",
+        "revision": 3
+      }
+    },
+    {
+      "entity": "requirement",
+      "entityId": "r-fixture",
+      "revision": 1,
+      "deleted": false,
+      "hlc": "001730000000003-00000-dev-a",
+      "payload": {
+        "id": "r-fixture",
+        "workspaceId": "local",
+        "projectId": "p-fixture",
+        "requirementKey": "REQ-001",
+        "title": "Saved cards",
+        "description": "A user can pay with a saved card.",
+        "priority": "high",
+        "createdAt": "2026-10-29 10:00:00",
+        "updatedAt": "2026-10-29 10:00:00",
+        "revision": 1
+      }
+    },
+    {
+      "entity": "planner_card",
+      "entityId": "k-fixture",
+      "revision": 1,
+      "deleted": false,
+      "hlc": "001730000000004-00000-dev-a",
+      "payload": {
+        "id": "k-fixture",
+        "workspaceId": "local",
+        "projectId": "p-fixture",
+        "ownerId": "u-fixture",
+        "kind": "defect",
+        "cardKey": "DEF-001",
+        "title": "Card declined twice",
+        "status": "todo",
+        "priority": "medium",
+        "position": 0,
+        "data": { "severity": "major" },
+        "createdAt": "2026-10-29 10:00:00",
+        "updatedAt": "2026-10-29 10:00:00",
+        "revision": 1
+      }
+    }
+  ]
+}

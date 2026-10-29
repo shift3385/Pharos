@@ -2,11 +2,14 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
+import { fakeServer } from "@test/server";
 import { DashboardPage } from "@app/dashboard/DashboardPage";
 import { LanguageToggle } from "./LanguageToggle";
 
 describe("i18n (es default / en)", () => {
   beforeEach(async () => {
+    // The dashboard reads from the server on the web (BASE-10).
+    fakeServer([]);
     await i18n.changeLanguage("es");
   });
 

@@ -1,4 +1,5 @@
-import { pushEntity } from "@modules/sync-offline";
+import { serverApi } from "@modules/sync-offline";
+import { invoke, isTauri } from "@shared/platform";
 import type {
   RevisionDetail,
   RevisionSummary,
@@ -7,159 +8,30 @@ import type {
   TestPlanSummary,
 } from "../model/types";
 
-function isTauri(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
-  );
-}
+const path = (id: string) => `/api/test-plans/${encodeURIComponent(id)}`;
 
-// Browser fallback so the test-plan UI works in `vite dev`. The real, encrypted
-// store lives in Rust and is used in the desktop app.
-const KEY = "pharos.testPlans";
-const REV_KEY = "pharos.testPlanRevisions";
-
-function loadAll(): TestPlan[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]") as TestPlan[];
-  } catch {
-    return [];
-  }
-}
-function saveAll(plans: TestPlan[]) {
-  localStorage.setItem(KEY, JSON.stringify(plans));
-}
-type StoredRevision = RevisionDetail & { planId: string };
-
-function loadRevs(): StoredRevision[] {
-  try {
-    return JSON.parse(localStorage.getItem(REV_KEY) ?? "[]") as StoredRevision[];
-  } catch {
-    return [];
-  }
-}
-
-const browserApi = {
-  async list(): Promise<TestPlanSummary[]> {
-    return loadAll()
-      .map(({ id, title, version, status, updatedAt, revision }) => ({
-        id,
-        title,
-        version,
-        status,
-        updatedAt,
-        revision,
-      }))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  },
-  async get(id: string): Promise<TestPlan | null> {
-    return loadAll().find((p) => p.id === id) ?? null;
-  },
-  async byProject(projectId: string): Promise<TestPlan | null> {
-    return (
-      loadAll()
-        .filter((p) => p.projectId === projectId)
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
-    );
-  },
-  async create(input: TestPlanInput): Promise<TestPlan> {
-    const now = new Date().toISOString();
-    const plan: TestPlan = {
-      id: crypto.randomUUID(),
-      workspaceId: "local",
-      title: input.title,
-      version: input.version ?? "1.0",
-      planDate: input.planDate ?? null,
-      author: input.author,
-      status: input.status ?? "draft",
-      data: input.data,
-      projectId: input.projectId ?? null,
-      createdAt: now,
-      updatedAt: now,
-      revision: 1,
-    };
-    saveAll([...loadAll(), plan]);
-    pushEntity("test_plan", plan.id, "upsert", plan, plan.revision, plan.author);
-    return plan;
-  },
-  async update(id: string, input: TestPlanInput): Promise<TestPlan | null> {
-    const plans = loadAll();
-    const idx = plans.findIndex((p) => p.id === id);
-    if (idx < 0) return null;
-    const prev = plans[idx];
-    const revs = loadRevs();
-    revs.push({
-      id: crypto.randomUUID(),
-      planId: id,
-      revision: prev.revision,
-      title: prev.title,
-      data: prev.data,
-      createdAt: new Date().toISOString(),
-    });
-    localStorage.setItem(REV_KEY, JSON.stringify(revs));
-    const updated: TestPlan = {
-      ...prev,
-      title: input.title,
-      version: input.version ?? prev.version,
-      planDate: input.planDate ?? null,
-      author: input.author,
-      status: input.status ?? prev.status,
-      data: input.data,
-      updatedAt: new Date().toISOString(),
-      revision: prev.revision + 1,
-    };
-    plans[idx] = updated;
-    saveAll(plans);
-    pushEntity("test_plan", id, "upsert", updated, updated.revision, updated.author);
-    return updated;
-  },
-  async remove(id: string): Promise<void> {
-    const item = loadAll().find((p) => p.id === id);
-    saveAll(loadAll().filter((p) => p.id !== id));
-    localStorage.setItem(
-      REV_KEY,
-      JSON.stringify(loadRevs().filter((r) => r.planId !== id)),
-    );
-    pushEntity("test_plan", id, "delete", { id }, (item?.revision ?? 0) + 1, item?.author ?? "");
-  },
-  async revisions(planId: string): Promise<RevisionSummary[]> {
-    return loadRevs()
-      .filter((r) => r.planId === planId)
-      .sort((a, b) => b.revision - a.revision);
-  },
-  async revisionDetail(id: string): Promise<RevisionDetail | null> {
-    return loadRevs().find((r) => r.id === id) ?? null;
-  },
-};
-
-async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<T>(cmd, args);
-}
-
-// `userId` is the signed-in user: the desktop store only returns or changes
-// plans of projects that user owns (FIX-08).
+// The desktop reads and writes its encrypted local store (Rust); the web is a
+// client of the server, which applies the same rules (BASE-10, ADR-0004).
+// `userId` is the signed-in user: only plans of projects that user owns are
+// returned or changed (FIX-08; on the web the server takes it from the
+// session). Revision history stays on the desktop (SYNC-04b): the web has none.
 export const testPlanApi = {
   list: (userId: string): Promise<TestPlanSummary[]> =>
-    isTauri() ? invoke("test_plan_list", { userId }) : browserApi.list(),
+    isTauri() ? invoke("test_plan_list", { userId }) : serverApi.get("/api/test-plans"),
   get: (id: string, userId: string): Promise<TestPlan | null> =>
-    isTauri() ? invoke("test_plan_get", { id, userId }) : browserApi.get(id),
+    isTauri() ? invoke("test_plan_get", { id, userId }) : serverApi.get(path(id)),
   byProject: (projectId: string, userId: string): Promise<TestPlan | null> =>
     isTauri()
       ? invoke("test_plan_by_project", { projectId, userId })
-      : browserApi.byProject(projectId),
+      : serverApi.get(`/api/test-plans?projectId=${encodeURIComponent(projectId)}`),
   create: (input: TestPlanInput): Promise<TestPlan | null> =>
-    isTauri() ? invoke("test_plan_create", { input }) : browserApi.create(input),
+    isTauri() ? invoke("test_plan_create", { input }) : serverApi.post("/api/test-plans", input),
   update: (id: string, input: TestPlanInput): Promise<TestPlan | null> =>
-    isTauri()
-      ? invoke("test_plan_update", { id, input })
-      : browserApi.update(id, input),
+    isTauri() ? invoke("test_plan_update", { id, input }) : serverApi.put(path(id), id, input),
   remove: (id: string, userId: string): Promise<void> =>
-    isTauri() ? invoke("test_plan_delete", { id, userId }) : browserApi.remove(id),
+    isTauri() ? invoke("test_plan_delete", { id, userId }) : serverApi.remove(path(id), id),
   revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>
-    isTauri() ? invoke("test_plan_revisions", { id, userId }) : browserApi.revisions(id),
+    isTauri() ? invoke("test_plan_revisions", { id, userId }) : Promise.resolve([]),
   revisionDetail: (id: string, userId: string): Promise<RevisionDetail | null> =>
-    isTauri()
-      ? invoke("test_plan_revision_get", { id, userId })
-      : browserApi.revisionDetail(id),
+    isTauri() ? invoke("test_plan_revision_get", { id, userId }) : Promise.resolve(null),
 };
