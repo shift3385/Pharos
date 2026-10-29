@@ -21,7 +21,7 @@ files (`es`/`en`).
 | Tarjeta del planificador    | `planner_card`                                           | task / defect / test_data; con status, priority, position                                                                  |
 | Columna del kanban          | `card_status`                                            | `backlog` / `in_progress` / `in_review` / `done`                                                                           |
 | Tipo de tarjeta             | `card_kind`                                              | `task` / `defect` / `test_data`                                                                                            |
-| Adjunto                     | `attachment`                                             | blob dentro de la BD cifrada (name, mime, bytes)                                                                           |
+| Adjunto                     | `attachment`                                             | hoy, blob dentro de la BD cifrada; desde 0.2.0, uso de un blob de `evidence/` (ADR-0014)                                   |
 | Título                      | `title`                                                  | Same in plan AND test case — never `name`                                                                                  |
 | Versión                     | `version`                                                |                                                                                                                            |
 | Fecha                       | `date`                                                   |                                                                                                                            |
@@ -48,12 +48,12 @@ files (`es`/`en`).
 | Requisito                   | `requirement` / `Requirement`                            | Elemento de la base de pruebas (ISTQB 1.4.4), por proyecto (0.1.0, TRZ-01)                                                 |
 | Clave de requisito          | `requirement_key`                                        | `REQ-001` autonumerada por proyecto; **inmutable** tras crearla; viaja como tag `@REQ-001`                                 |
 | Requisitos vinculados       | `requirement_keys`                                       | Lista de `requirement_key` en `data` del caso de prueba (vínculo requisito ↔ caso)                                         |
-| Clave de tarjeta            | `card_key`                                               | `DEF-001`: ID visible de una tarjeta `defect`, numerado por proyecto                                                       |
+| Clave de tarjeta            | `card_key`                                               | `DEF-001` de una tarjeta `defect`; en 0.2.0 pasa a `defect_key` (ADR-0016)                                                 |
 | Casos vinculados (defecto)  | `test_case_ids`                                          | Ids de los casos a los que se vincula un defecto (en `data` de la tarjeta)                                                 |
 | Matriz de trazabilidad      | `traceability_matrix`                                    | Requisito ↔ caso ↔ defecto; módulo `traceability`                                                                          |
 | Cobertura                   | `coverage`                                               | `covered` / `not_covered` (un caso `obsolete` no cubre)                                                                    |
 | Hueco de cobertura          | `coverage_gap`                                           | requisito sin caso, caso sin requisito, clave desconocida, defecto sin caso                                                |
-| Estado de ejecución         | `execution_status`                                       | `passed` / `failed` / `blocked` / `not_run` (hasta 0.2.0: siempre `not_run`)                                               |
+| Estado de ejecución         | `execution_status`                                       | `passed` / `failed` / `blocked` / `not_run` (hasta 0.2.0: siempre `not_run`; luego, del último Result)                     |
 | Etiqueta Gherkin            | `tag`                                                    | `@TC-001`; `feature_tags` / `scenario_tags` = tags propios del usuario                                                     |
 | Procedencia IA              | `ai_provenance`                                          | `{ provider, model, generated_at, reviewed_by?, reviewed_at? }` por campo                                                  |
 | Proveedor IA                | `provider`                                               | Online: `gemini` / `openai` / `anthropic` / `openrouter` / `custom` (compatible con OpenAI); offline: `ollama`             |
@@ -96,6 +96,57 @@ files (`es`/`en`).
 | Base de sincronización      | `sync_base`                                              | última versión de cada entidad que coincide con el servidor                                                                |
 | Conflicto de sincronización | `sync_conflict` / `SyncConflict`                         | cambio local pendiente y cambio remoto divergentes desde la misma base (8C)                                                |
 | Resolución                  | `resolution`                                             | `local` (conservar la mía) / `remote` (usar la del servidor); SYNC-02 podrá añadir `merged`                                |
+
+## Execution model identifiers (gate C, ADR-0011…0019)
+
+**Aceptados** el 2026-10-28 junto con los ADR de la compuerta C. Son los nombres
+obligatorios para el código de 0.2.0 en adelante; ninguno está implementado
+todavía. Cuando se implementen, cada fila puede pasar a la tabla de arriba. Diseño de conjunto: `docs/design/0.2.0-modelo-ejecucion.md`.
+
+| Concepto (ES)                | Identifier                                        | Notes                                                                                                          | ADR  |
+| ---------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---- |
+| Paso (con identidad)         | `step` / `Step`, `step_id`                        | `{ id, text }` en `data.steps`, `background`, `flows[].steps`; id corto, estable, nunca reutilizado            | 0011 |
+| Fila de ejemplo              | `example_row` / `ExampleRow`, `example_values`    | `{ id, values }`; en un resultado, `n` de `TC-002[n]` + copia de los valores                                   | 0011 |
+| Revisión de caso (inmutable) | `test_case_revision_id`, `content_sha256`         | Una fila por guardado, incluida la vigente; id = UUIDv5(caso, revisión, hash)                                  | 0011 |
+| Clase de sync                | `sync_class`                                      | `lww` / `append_only` / `local`                                                                                | 0011 |
+| Ejecución                    | `run` / `Run`, `run_key`                          | `RUN-001`; sobre común de todos los tipos de resultado, con su contexto                                        | 0013 |
+| Disparador                   | `trigger`                                         | `manual` / `local` / `agent` / `ci` / `cloud` / `import`                                                       | 0013 |
+| Herramienta de origen        | `source_tool`, `source_tool_version`              | `playwright`, `cucumber-js`, `pharos`…                                                                         | 0013 |
+| Formato de origen            | `source_format`                                   | `cucumber_messages` / `ctrf` / `junit` / `playwright_json` / `pharos_run_json` / `sarif` / `k6` / `axe`        | 0013 |
+| Entorno / build / dataset    | `environment`, `build`, `commit_sha`, `dataset`   | Texto en el Run; el resto del contexto en `context` (JSON)                                                     | 0013 |
+| Shard                        | `run_shard`, `shard_index`, `shard_total`         | Una subida o trozo de un Run; `source_file_sha256` da la idempotencia                                          | 0013 |
+| Elemento del run             | `run_item`                                        | Caso + revisión congelada + fila + configuración + asignado: el alcance previsto                               | 0013 |
+| Resultado                    | `result` / `Result`, `result_status`              | Un intento, inmutable: `passed` / `failed` / `blocked` / `skipped` / `other` (+ `raw_status`)                  | 0013 |
+| Intento                      | `attempt`                                         | 0-based; el final es el máximo por clave natural (derivado)                                                    | 0013 |
+| Flaky                        | `flaky`                                           | Derivado: el final pasó y algún intento previo falló (definición CTRF)                                         | 0013 |
+| Clave del caso en un informe | `case_key`                                        | `TC-002` tal como llega en el tag                                                                              | 0013 |
+| Clave no vinculada           | `unlinked_key`                                    | uri normalizada + nombre + fila de un test sin tag de caso (ING-05)                                            | 0013 |
+| Regla de enlace              | `unlinked_mapping`                                | `unlinked_key → test_case_id`; enlaza sin modificar resultados                                                 | 0013 |
+| Resultado de paso            | `step_result`                                     | Estado y `actual` por paso; viaja dentro del documento de su resultado                                         | 0013 |
+| Borrador de ejecución        | `execution_draft`                                 | Estado local de un intento manual abierto; no se sincroniza                                                    | 0013 |
+| Riesgo del requisito         | `risk_likelihood`, `risk_impact`, `risk_level`    | ISTQB: probabilidad × impacto; `risk_level` derivado                                                           | 0013 |
+| Hallazgo                     | `finding` / `Finding`, `rule_id`, `fingerprint`   | Regla incumplida en una ubicación (SARIF, axe); inmutable                                                      | 0012 |
+| Severidad                    | `severity`                                        | Hallazgo: `critical` / `high` / `medium` / `low` / `info`; defecto: `critical` / `major` / `minor` / `trivial` | 0012 |
+| Referencia normativa         | `standard_refs`                                   | `WCAG2.2:1.4.3`, `ASVS5:V2.1.1`, `MASVS2:STORAGE-1`                                                            | 0012 |
+| Triaje de hallazgo           | `finding_triage`                                  | `open` / `false_positive` / `accepted_risk` / `fixed`, por `fingerprint`                                       | 0012 |
+| Métrica                      | `metric` / `Metric`, `threshold`                  | Valor medido (k6, mutación, LLM); `passed` NULL sin umbral                                                     | 0012 |
+| Sesión exploratoria          | `exploratory_session`, `session_note`, `charter`  | Extensión 1:1 de un Run. **No** `session` (ya es la sesión de autenticación)                                   | 0012 |
+| Pharos Run JSON              | `pharos_run_json`                                 | Formato normalizado de importación/exportación, superconjunto de CTRF, con `schemaVersion`                     | 0012 |
+| Contenido de evidencia       | `blob`, `sha256`                                  | Archivo `.pev` cifrado en `evidence/`, nombrado por HMAC del sha256                                            | 0014 |
+| Adjunto (nuevo modelo)       | `attachment`, `owner_entity`, `owner_id`          | Uso de un blob por una entidad; sustituye a los BLOB de `planner_attachments`                                  | 0014 |
+| Registro de auditoría        | `audit_log` / `audit_event`, `action`, `changes`  | Append-only; `changes = { campo: [antes, después] }`; cadena `prev_hash` / `hash`                              | 0015 |
+| Actor                        | `actor`, `on_behalf_of`                           | `user:<uuid>` / `agent:<client_id>` / `system:<componente>` / `ci:<token_id>`                                  | 0015 |
+| Defecto                      | `defect` / `Defect`, `defect_key`                 | `DEF-001` (continúa la serie de `card_key`); estados `new` … `closed`, `resolution`                            | 0016 |
+| Vínculo de defecto           | `defect_link`, `target_kind`                      | `result` / `test_case` / `requirement` / `finding` / `session_note`                                            | 0016 |
+| Clave externa                | `external_system`, `external_key`, `external_url` | Jira u otro gestor (INT-05)                                                                                    | 0016 |
+| Configuración                | `configuration`, `match_labels`                   | Navegador × SO × dispositivo por proyecto; `configuration_label` = texto que trae el informe                   | 0017 |
+| Ciclo de pruebas             | `test_cycle`, `cycle_key`, `test_cycle_item`      | `CYC-001`; qué, dónde, contra qué build y cuándo                                                               | 0017 |
+| Campo personalizado          | `custom_field`, `field_key`, `field_type`         | Definición por proyecto y entidad; valores en `data.custom`                                                    | 0018 |
+| Tipo de caso                 | `case_type`                                       | `standard` / `checklist`                                                                                       | 0018 |
+| Estado de automatización     | `automation_status`                               | `manual` / `to_automate` / `automated`                                                                         | 0018 |
+| Tipo de workspace            | `workspace_kind`                                  | `local` / `personal` / `shared`                                                                                | 0019 |
+| Miembro / rol de workspace   | `workspace_member`, `workspace_role`              | `test_manager` / `test_analyst` / `automation_engineer` / `product_owner` / `viewer`                           | 0019 |
+| Invitación                   | `workspace_invitation`                            | Enlace o código de un solo uso (hash en BD)                                                                    | 0019 |
 
 > API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 

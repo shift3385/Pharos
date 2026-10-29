@@ -106,18 +106,21 @@ También bloquean 0.1.0: SEC-03, SEC-06, SYNC-08, IA-05, UX-05, UX-06 y las vali
 
 ### C · Decisiones de modelo (bloquea empezar 0.2.0; cada una cierra con un ADR)
 
-| ID      | Decisión                                                                                                                      | P   | Estado                                      |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------- | --- | ------------------------------------------- |
-| DAT-02  | Un resultado apunta a la revisión del caso y a pasos con ID estable                                                           | P0  | Pendiente                                   |
-| DAT-03  | Evidencias cifradas fuera de la BD, direccionadas por hash                                                                    | P0  | Pendiente                                   |
-| AUD-01  | Registro de auditoría append-only (antes/después, actor, `agent:<id>`) desde 0.2.0                                            | P0  | Pendiente                                   |
-| KND-01  | Tipos de resultado genéricos: Result, Finding, Metric, Session                                                                | P0  | Pendiente                                   |
-| RUN-00  | Entorno, build, commit, dataset y riesgo del requisito dentro del Run desde el inicio (absorbe EJE-05 y los campos de TRZ-04) | P0  | Pendiente                                   |
-| DEF-01  | El defecto como entidad propia (severidad, estado, clave externa, enlace a Result)                                            | P1  | Pendiente                                   |
-| CYC-01  | Ciclo o conjunto de pruebas y matriz de configuración                                                                         | P1  | Pendiente                                   |
-| FLD-01  | Campos personalizados tipados por proyecto y tipo de caso                                                                     | P1  | Pendiente                                   |
-| TEN-01  | Diseño de workspaces compartidos ([ADR-0003](adr/0003-workspaces-compartidos.md))                                             | P0  | Decidido el modelo; falta el diseño técnico |
-| SYNC-02 | Conflictos por entidad hasta 0.5.0 ([ADR-0002](adr/0002-conflictos-por-entidad.md))                                           | —   | Decidido                                    |
+Cerrada el 2026-10-28: el usuario aceptó los ADR 0011–0019. Cómo encajan y en qué orden se
+implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecucion.md).
+
+| ID      | Decisión                                                                                                                      | P   | Estado                                                                                                                                      |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| DAT-02  | Un resultado apunta a la revisión del caso y a pasos con ID estable                                                           | P0  | Aceptado: [ADR-0011](adr/0011-revision-del-caso-y-pasos-estables.md)                                                                        |
+| DAT-03  | Evidencias cifradas fuera de la BD, direccionadas por hash                                                                    | P0  | Aceptado: [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)                                                                              |
+| AUD-01  | Registro de auditoría append-only (antes/después, actor, `agent:<id>`) desde 0.2.0                                            | P0  | Aceptado: [ADR-0015](adr/0015-registro-de-auditoria.md)                                                                                     |
+| KND-01  | Tipos de resultado genéricos: Result, Finding, Metric, Session                                                                | P0  | Aceptado: [ADR-0012](adr/0012-tipos-de-resultado-genericos.md)                                                                              |
+| RUN-00  | Entorno, build, commit, dataset y riesgo del requisito dentro del Run desde el inicio (absorbe EJE-05 y los campos de TRZ-04) | P0  | Aceptado: [ADR-0013](adr/0013-campos-del-run.md)                                                                                            |
+| DEF-01  | El defecto como entidad propia (severidad, estado, clave externa, enlace a Result)                                            | P1  | Aceptado: [ADR-0016](adr/0016-defecto-como-entidad.md)                                                                                      |
+| CYC-01  | Ciclo o conjunto de pruebas y matriz de configuración                                                                         | P1  | Aceptado: [ADR-0017](adr/0017-ciclos-y-configuraciones.md)                                                                                  |
+| FLD-01  | Campos personalizados tipados por proyecto y tipo de caso                                                                     | P1  | Aceptado: [ADR-0018](adr/0018-campos-personalizados.md)                                                                                     |
+| TEN-01  | Diseño de workspaces compartidos ([ADR-0003](adr/0003-workspaces-compartidos.md))                                             | P0  | Aceptado: modelo en [ADR-0003](adr/0003-workspaces-compartidos.md), diseño técnico en [ADR-0019](adr/0019-diseno-workspaces-compartidos.md) |
+| SYNC-02 | Conflictos por entidad hasta 0.5.0 ([ADR-0002](adr/0002-conflictos-por-entidad.md))                                           | —   | Decidido                                                                                                                                    |
 
 ## 5. Backlog por área
 
