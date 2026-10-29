@@ -3,7 +3,9 @@
 
 mod ai;
 mod db;
+mod diag;
 mod hlc;
+mod instance;
 mod keys;
 mod oplog;
 mod planner;
@@ -21,19 +23,21 @@ use tauri::Manager;
 
 // The session is cached in the OS keychain (Windows Credential Manager) so the
 // app can reopen offline without storing the refresh token in plain text (§4).
+// The account is `session`, scoped per instance for an E2E profile (instance.rs).
 const KEYCHAIN_SERVICE: &str = "pharos";
-const KEYCHAIN_ACCOUNT: &str = "session";
+const SESSION_ACCOUNT: &str = "session";
 
 #[tauri::command]
 fn session_save(data: String) -> Result<(), String> {
-    Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+    Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
         .and_then(|entry| entry.set_password(&data))
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn session_load() -> Result<Option<String>, String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).map_err(|e| e.to_string())?;
+    let entry = Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
+        .map_err(|e| e.to_string())?;
     match entry.get_password() {
         Ok(password) => Ok(Some(password)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -43,7 +47,8 @@ fn session_load() -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn session_clear() -> Result<(), String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).map_err(|e| e.to_string())?;
+    let entry = Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
+        .map_err(|e| e.to_string())?;
     match entry.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),
@@ -54,16 +59,30 @@ fn session_clear() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let data_dir = app.path().app_data_dir()?;
+            // Without a resolvable log dir Pharos runs without a log file.
+            let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
+            app.manage(diag::init(log_dir));
+            let data_dir = instance::scoped_dir(app.path().app_data_dir()?);
+            let started = std::time::Instant::now();
             // A database that cannot be opened (e.g. written by a newer Pharos,
             // SEC-06) does not abort startup: the UI asks `db_open_error` and
-            // shows why instead of the app silently failing to start.
+            // shows why instead of the app silently failing to start. The
+            // failure is logged so a diagnostics export can explain it.
             let open_error = match Db::open(&data_dir) {
                 Ok(database) => {
+                    tracing::info!(
+                        elapsed_ms = started.elapsed().as_millis() as u64,
+                        e2e_profile = instance::e2e_profile().is_some(),
+                        "local database opened"
+                    );
                     app.manage(database);
                     None
                 }
-                Err(e) => Some(e),
+                Err(e) => {
+                    tracing::error!(error = %diag::redact(&e), "local database failed to open");
+                    app.state::<diag::DiagState>().record_db_open_error(&e);
+                    Some(e)
+                }
             };
             app.manage(DbStatus { open_error });
             Ok(())
@@ -127,7 +146,9 @@ pub fn run() {
             sync::sync_cursor_get,
             sync::sync_cursor_set,
             sync::sync_conflicts_list,
-            sync::sync_conflict_resolve
+            sync::sync_conflict_resolve,
+            diag::diag_log,
+            diag::diag_export
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

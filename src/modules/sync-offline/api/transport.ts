@@ -2,6 +2,8 @@
 // request carries the app version (SYNC-08); pushes go in batches small enough
 // for the server's body limit (FIX-03); transient failures are retried.
 
+import { APP_VERSION } from "@shared/version";
+
 export const API_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ??
   "http://localhost:3000";
@@ -9,8 +11,8 @@ export const API_URL =
 /** Header with the app version; the server rejects unsupported ones (426). */
 export const VERSION_HEADER = "x-pharos-version";
 
-/** The app version, from the root package.json at build time. */
-export const APP_VERSION: string = __APP_VERSION__;
+/** The app version, from its single source (`@shared/version`, UX-07). */
+export { APP_VERSION };
 
 /** Most deltas per push request and target size of one request body (the
  *  server accepts 500 deltas and 1 MiB). */

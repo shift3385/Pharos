@@ -1,0 +1,62 @@
+{
+  "$comment": "Shared by redact.test.ts and src-tauri/src/diag.rs tests: both redactors must agree. 'masked': none of 'secrets' may survive and every 'expect' must appear. 'kept': the text must come out unchanged.",
+  "masked": [
+    {
+      "input": "login failed for ana.perez@cliente.example",
+      "secrets": ["ana.perez@cliente.example"],
+      "expect": ["login failed for <email>"]
+    },
+    {
+      "input": "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.c2lnbmF0dXJlLXNlY3JldA",
+      "secrets": ["eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.c2lnbmF0dXJlLXNlY3JldA"],
+      "expect": ["Authorization: "]
+    },
+    {
+      "input": "jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.c2lnbmF0dXJlLXNlY3JldA in a body",
+      "secrets": ["eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.c2lnbmF0dXJlLXNlY3JldA"],
+      "expect": ["jwt <token> in a body"]
+    },
+    {
+      "input": "provider rejected sk-proj-AbCdEf0123456789GhIjKl and sk-ant-api03-ZyXw9876543210VuTsRq",
+      "secrets": ["sk-proj-AbCdEf0123456789GhIjKl", "sk-ant-api03-ZyXw9876543210VuTsRq"],
+      "expect": ["<key>"]
+    },
+    {
+      "input": "gemini AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q failed",
+      "secrets": ["AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q"],
+      "expect": ["gemini <key> failed"]
+    },
+    {
+      "input": "refresh_token=f3a9c1d2e4b5a6978877665544332211aabbccdd&x=1",
+      "secrets": ["f3a9c1d2e4b5a6978877665544332211aabbccdd"],
+      "expect": ["refresh_token=<redacted>&x=1"]
+    },
+    {
+      "input": "{\"password\":\"hunter2\",\"api_key\": \"abc123\"}",
+      "secrets": ["hunter2", "abc123"],
+      "expect": ["\"password\":\"<redacted>\""]
+    },
+    {
+      "input": "opened C:\\Users\\anabel\\AppData\\Roaming\\com.pharos.desktop",
+      "secrets": ["anabel"],
+      "expect": ["C:\\Users\\<user>\\AppData"]
+    },
+    {
+      "input": "json path C:\\\\Users\\\\anabel\\\\AppData and d:/users/anabel/x",
+      "secrets": ["anabel"],
+      "expect": ["<user>"]
+    },
+    {
+      "input": "blob QmFzZTY0U2VjcmV0VmFsdWUxMjM0NTY3ODkwYWJjZGVm end",
+      "secrets": ["QmFzZTY0U2VjcmV0VmFsdWUxMjM0NTY3ODkwYWJjZGVm"],
+      "expect": ["blob <redacted> end"]
+    }
+  ],
+  "kept": [
+    "migration 0011_sync_conflicts.sql applied in 12 ms",
+    "id 3f2504e0-4f89-11d3-9a0c-0305e82c3301 at src/modules/test-cases/ui/TestCaseEditor.tsx:42",
+    "TypeError: Cannot read properties of undefined (reading 'map')",
+    "local database opened elapsed_ms=30",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  ]
+}

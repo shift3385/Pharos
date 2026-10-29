@@ -37,6 +37,21 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   no abre ni modifica esos datos. Esta protección empieza en esta versión:
   `0.1.0-alpha.1` no la tiene y abriría esos datos sin avisar. Para volver a
   ella, restaura antes la copia `.bak`.
+- **Exportar diagnóstico (BASE-08):** en Administración → Diagnóstico, y en la
+  pantalla de error, un botón guarda en tu carpeta de descargas un `.zip` para
+  informar de un fallo: versión, sistema operativo, WebView2, migraciones
+  aplicadas y los registros recientes. Nunca incluye tus proyectos, casos,
+  perfil, base de datos, claves ni tokens; correos, tokens y rutas con tu
+  usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
+- **Registros de la app:** el escritorio guarda un log diario en
+  `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
+- **Pantalla de error:** si una vista falla, ya no queda la ventana en blanco:
+  aparece un aviso con "Reintentar", "Recargar" y "Exportar diagnóstico", y el
+  resto de la app sigue funcionando.
+- **Versión visible (UX-07):** la versión instalada aparece al pie de la barra
+  lateral y en Administración → Diagnóstico.
+- Para desarrollo: smoke E2E del binario real (`npm run e2e`, BASE-14) e
+  informes de cobertura (`npm run coverage`, `npm run coverage:rust`, BASE-13).
 
 ### Cambiado
 
@@ -68,6 +83,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   ser el modelo de Gemini.
 - "Probar conexión" muestra el mensaje real del proveedor cuando falla (clave
   incorrecta, modelo inexistente…).
+- La barra superior y la lateral quedan fijas: en páginas largas solo se
+  desplaza el contenido (antes se desplazaba toda la ventana).
 
 ### Corregido
 

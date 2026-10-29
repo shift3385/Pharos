@@ -27,8 +27,9 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0018](0018-campos-personalizados.md)              | Campos personalizados tipados por proyecto y tipo de caso (FLD-01)                   | Aceptado | 2026-10-28 |
 | [0019](0019-diseno-workspaces-compartidos.md)      | Diseño técnico de los workspaces compartidos con roles (TEN-01)                      | Aceptado | 2026-10-28 |
 | [0020](0020-sync-por-usuario-cascada-y-version.md) | Sync por usuario, cascada en el servidor y versión del cliente                       | Aceptado | 2026-10-28 |
+| [0022](0022-observabilidad-local-y-diagnostico.md) | Observabilidad local: logs, diagnóstico sin datos de usuario y perfil E2E            | Aceptado | 2026-10-28 |
 
-Los 0021 y 0022 (pistas B1 y B2) se añaden al fusionar sus ramas. Los ADR 0011 a 0019 son la compuerta C
+El 0021 (pista B1) se añade al fusionar su rama. Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
 [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 Se aceptaron el 2026-10-28 con la opción y las respuestas recomendadas y se

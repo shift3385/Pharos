@@ -4,14 +4,16 @@ import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 
-// Tauri expects a fixed port and does not clear the terminal on rebuild.
-const host = process.env.TAURI_DEV_HOST;
-
 // The root package.json is the single source of the Pharos version
-// (docs/VERSIONING.md); sync requests carry it (SYNC-08).
+// (scripts/version.mjs, docs/VERSIONING.md), inlined as a constant so the
+// bundle does not carry the whole package.json. The UI shows it (UX-07) and
+// sync requests carry it (SYNC-08).
 const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as { version: string };
+
+// Tauri expects a fixed port and does not clear the terminal on rebuild.
+const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig({

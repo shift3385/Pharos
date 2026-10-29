@@ -167,6 +167,24 @@ todavía. Cuando se implementen, cada fila puede pasar a la tabla de arriba. Dis
 
 > API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 
+## Observability and testing (BASE-08, BASE-13, BASE-14 — ADR-0022)
+
+| Concepto (ES)              | Identifier                               | Notes                                                                                  |
+| -------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| Versión de la app          | `APP_VERSION`                            | `@shared/version`; leída del `package.json` raíz, la única fuente de versión           |
+| Paquete de diagnóstico     | `DiagnosticBundle` / `diagnostic bundle` | `.zip` con `diagnostic.json` + `logs/`; nunca datos de usuario, claves ni tokens       |
+| Exportar diagnóstico       | `diag_export` / `exportDiagnostics`      | comando Tauri que arma el paquete / acción del frontend que lo descarga                |
+| Registrar error de cliente | `diag_log` / `logClientError`            | lleva un error del frontend, redactado, al log del escritorio                          |
+| Redacción                  | `redact`                                 | enmascara correos, tokens, claves, secretos y el usuario de Windows en rutas           |
+| Filtro de logs             | `PHAROS_LOG`                             | directiva `EnvFilter` (p. ej. `debug`, `pharos_lib=debug`); por defecto `info`         |
+| Perfil E2E                 | `PHAROS_E2E_PROFILE`                     | solo debug: datos, logs y sesión del keychain aislados por ejecución del smoke         |
+| Cuenta del keychain        | `instance::account(base)`                | toda cuenta pasa por aquí: `base` o `<base>-e2e-<perfil>` (sesión, claves de IA)       |
+| Error al abrir la BD       | `openError`                              | en `diagnostic.json` cuando la base local no abrió; redactado, sin migraciones         |
+| Log de panics              | `pharos.panic.log`                       | se escribe de forma síncrona en cada panic; viaja en el paquete de diagnóstico         |
+| Proyecto de prueba E2E     | `TEST_PROJECT_PREFIX` (`E2E `)           | los specs borran al final todo proyecto con este prefijo en la cuenta de test          |
+| Límite de error            | `ErrorBoundary` / `ErrorFallback`        | captura errores de render y muestra reintentar, recargar y "Exportar diagnóstico"      |
+| Smoke E2E                  | `smoke` (`e2e/specs/smoke.e2e.ts`)       | arrancar → login → crear proyecto → reabrir, con el binario real (WDIO + tauri-driver) |
+
 ## Audit fields (every business entity — spec §3)
 
 `workspace_id`, `created_by`, `updated_by`, `created_at`, `updated_at`,

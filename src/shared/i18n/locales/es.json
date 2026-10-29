@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "Suite de gestión de pruebas QA"
+    "tagline": "Suite de gestión de pruebas QA",
+    "version": "Versión {{version}}"
   },
   "dbError": {
     "title": "No se pudo abrir la base de datos local",
@@ -218,6 +219,12 @@
       "downloadPlaceholder": "Ruta de la carpeta (opcional)",
       "downloadHint": "Preferencia; se aplicará a las exportaciones en una próxima versión.",
       "save": "Guardar ajustes"
+    },
+    "diagnostics": {
+      "title": "Diagnóstico",
+      "version": "Versión instalada",
+      "desc": "Genera un .zip para informar de un fallo: versión de la app, sistema operativo, WebView2, migraciones aplicadas y los registros recientes.",
+      "excludes": "Nunca incluye tus datos: ni proyectos, planes, casos o requisitos, ni tu perfil, ni la base de datos, claves, tokens o claves de IA. Correos, tokens y rutas con tu usuario se enmascaran."
     }
   },
   "importReport": {
@@ -829,5 +836,18 @@
       "applying": "Aplicando…",
       "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
     }
+  },
+  "diagnostics": {
+    "export": "Exportar diagnóstico",
+    "exporting": "Exportando…",
+    "exported": "Diagnóstico guardado en tu carpeta de descargas: {{file}}",
+    "failed": "No se pudo exportar el diagnóstico."
+  },
+  "errorBoundary": {
+    "title": "Algo salió mal",
+    "message": "Esta vista ha fallado. Tus datos no se han perdido: puedes reintentar, recargar la aplicación o exportar un diagnóstico para informar del fallo.",
+    "retry": "Reintentar",
+    "reload": "Recargar",
+    "details": "Detalles técnicos"
   }
 }

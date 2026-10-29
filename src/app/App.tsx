@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
 import { useAuth, AuthScreen } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
 import { AppSplash } from "./AppSplash";
@@ -14,6 +15,7 @@ import { ProfilePage } from "@modules/profile";
 export function App() {
   const { status } = useAuth();
   const dbError = useDbOpenError();
+  const { pathname } = useLocation();
 
   if (dbError) return <DbErrorScreen error={dbError} />;
   if (status === "loading" || dbError === undefined) return <AppSplash />;
@@ -21,15 +23,18 @@ export function App() {
 
   return (
     <AppShell>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/templates" element={<TemplatesPage />} />
-        <Route path="/ai" element={<AiPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {/* A crashing page keeps the shell usable; navigating away clears it. */}
+      <ErrorBoundary resetKey={pathname}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/ai" element={<AiPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
     </AppShell>
   );
 }

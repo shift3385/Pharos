@@ -36,6 +36,14 @@ uuid = { version = "1", features = ["v4"] }
 # tree; default TLS avoids OpenSSL (originally required by the GNU toolchain —
 # see the Phase 2 spike). `json` for request/response bodies.
 reqwest = { version = "0.13", features = ["json"] }
+# Observability (BASE-08, ADR-0022): structured JSON-lines logs in a daily
+# rotating file under the app log dir; `log` records from Tauri are bridged in.
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+# Diagnostic bundle: OS name/version and redaction of secrets in exported logs.
+os_info = { version = "3", default-features = false }
+regex = "1"
 
 [features]
 # This feature is used to produce production builds where an extra console
