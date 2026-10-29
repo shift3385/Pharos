@@ -1,0 +1,86 @@
+.err-boundary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+}
+.err-boundary--app {
+  min-height: 100vh;
+  align-items: center;
+  background: var(--color-bg-page);
+}
+.err-boundary__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 560px;
+  padding: var(--space-5);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-error);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+.err-boundary__title {
+  font-size: var(--fs-title-md);
+  color: var(--color-text-primary);
+}
+.err-boundary__message {
+  color: var(--color-text-secondary);
+}
+.err-boundary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.err-boundary__primary,
+.err-boundary__btn {
+  height: 36px;
+  padding: 0 var(--space-4);
+  font-weight: var(--fw-medium);
+  border-radius: var(--radius-md);
+}
+.err-boundary__primary {
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border: none;
+}
+.err-boundary__btn {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+.err-boundary__btn:hover {
+  color: var(--color-navy-500);
+  border-color: var(--color-navy-300);
+}
+.err-boundary__btn:disabled {
+  opacity: 0.6;
+}
+.err-boundary__status {
+  font-size: var(--fs-caption);
+  color: var(--color-success);
+}
+.err-boundary__status--error {
+  color: var(--color-error);
+}
+.err-boundary__details {
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+.err-boundary__details pre {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+}
+.err-boundary__version {
+  font-family: var(--font-mono);
+  font-size: var(--fs-metadata);
+  color: var(--color-text-muted);
+}

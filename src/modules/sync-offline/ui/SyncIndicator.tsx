@@ -2,24 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
-import { syncLocalState, syncNow, syncStatus } from "../api/syncApi";
-import { hydrateFromBackend } from "../web/webSync";
+import {
+  syncAny,
+  syncLocalState,
+  syncStatus,
+  type LocalSyncState,
+} from "../api/syncApi";
+import { SyncHttpError } from "../api/transport";
 import { ConflictPanel } from "./ConflictPanel";
 import "./SyncIndicator.css";
 
-function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-
 /** Topbar status indicator (spec §9): Synced / Pending changes (n) / Offline,
  *  with a "Sync now" button, plus Conflicts (n) that opens the conflict panel
- *  (Phase 8C). Counts come from the local oplog. */
+ *  (Phase 8C). Counts are the signed-in account's: from the local oplog on the
+ *  desktop, from the outbox and web conflicts in the browser. */
 export function SyncIndicator() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { status: authStatus } = useAuth();
+  const { status: authStatus, user } = useAuth();
   const [pending, setPending] = useState(0);
   const [conflicts, setConflicts] = useState(0);
+  const [orphans, setOrphans] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [online, setOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true,
@@ -30,12 +33,23 @@ export function SyncIndicator() {
   authedRef.current = authStatus === "authenticated";
 
   async function refresh() {
-    const s = await syncLocalState().catch(() => ({
+    const s: LocalSyncState = await syncLocalState().catch(() => ({
       pending: 0,
       conflicts: 0,
     }));
     setPending(s.pending);
     setConflicts(s.conflicts);
+    setOrphans(s.orphans ?? 0);
+  }
+
+  /** User-facing reason of a failed sync. */
+  function failure(e: unknown): string {
+    if (e instanceof SyncHttpError && e.code === "unsupported_client_version")
+      return t("sync.unsupportedVersion");
+    const msg = e instanceof Error ? e.message : String(e);
+    return msg === "not-authenticated"
+      ? t("sync.needsAuth")
+      : `${t("sync.failed")} — ${msg}`;
   }
 
   useEffect(() => {
@@ -46,31 +60,49 @@ export function SyncIndicator() {
       void autoSync(); // reconnected → push/pull automatically (spec §9)
     };
     const off = () => setOnline(false);
+    const changed = () => void refresh();
+    // A web push lost to a newer version: the edit is kept, tell the user.
+    const lost = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
+      toast(t("sync.webConflictToast", { count }));
+    };
+    // Changes the server refused for their content: they stay pending.
+    const refused = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail?.count ?? 1;
+      toast(t("sync.skippedToast", { count }));
+    };
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
+    window.addEventListener("pharos:sync-state", changed);
+    window.addEventListener("pharos:sync-conflict", lost);
+    window.addEventListener("pharos:sync-skipped", refused);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("online", on);
       window.removeEventListener("offline", off);
+      window.removeEventListener("pharos:sync-state", changed);
+      window.removeEventListener("pharos:sync-conflict", lost);
+      window.removeEventListener("pharos:sync-skipped", refused);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-sync once the session is ready (waits for the token refresh on startup,
-  // so we never fire a request with a stale/expired access token).
+  // so we never fire a request with a stale/expired access token), and again
+  // when another account signs in: counts and sync are per account (FIX-07).
   useEffect(() => {
+    void refresh();
     if (authStatus === "authenticated") void autoSync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authStatus]);
+  }, [authStatus, user?.id]);
 
-  /** Silent background sync (startup / reconnect). On desktop runs the full
-   *  push/pull; on the web it hydrates the caches from the backend. Errors are
-   *  ignored here; the manual button surfaces them. */
+  /** Silent background sync (startup / reconnect). Errors are ignored here;
+   *  the manual button surfaces them. On the web a failed push stays in the
+   *  outbox and is retried. */
   async function autoSync() {
     if (!navigator.onLine || !authedRef.current) return;
     try {
-      if (isTauri()) await syncNow();
-      else await hydrateFromBackend();
+      await syncAny();
     } catch {
       /* offline or transient — the indicator stays as-is */
     }
@@ -86,31 +118,24 @@ export function SyncIndicator() {
         : status === "pending"
           ? t("sync.pending", { count: pending })
           : t("sync.synced");
+  // Changes with no owner yet (desktop) cannot sync: say so in the tooltip.
+  const title =
+    orphans > 0 ? `${label} · ${t("sync.orphans", { count: orphans })}` : label;
 
   async function runSync() {
     setSyncing(true);
     try {
-      if (isTauri()) {
-        const { pushed, pulled, conflicts: found } = await syncNow();
-        toast(
-          found > 0
-            ? t("sync.conflictToast", { count: found })
-            : t("sync.doneToast", { pushed, pulled }),
-        );
-      } else {
-        const pulled = await hydrateFromBackend();
-        toast(t("sync.doneToast", { pushed: 0, pulled }));
-      }
+      const { pushed, pulled, conflicts: found } = await syncAny();
+      toast(
+        found > 0
+          ? t("sync.conflictToast", { count: found })
+          : t("sync.doneToast", { pushed, pulled }),
+      );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
       // Surface the underlying cause (missing command after an un-rebuilt app,
       // HTTP status, network error…) for diagnosis.
-      console.error("[sync] failed:", msg);
-      toast(
-        msg === "not-authenticated"
-          ? t("sync.needsAuth")
-          : `${t("sync.failed")} — ${msg}`,
-      );
+      console.error("[sync] failed:", e);
+      toast(failure(e));
     } finally {
       setSyncing(false);
       await refresh();
@@ -118,7 +143,7 @@ export function SyncIndicator() {
   }
 
   return (
-    <div className="sync" title={label}>
+    <div className="sync" title={title}>
       <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
       <span className="sync__label">{label}</span>
       {conflicts > 0 && (

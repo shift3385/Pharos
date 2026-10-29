@@ -55,8 +55,8 @@ export function CardEditor({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (card) void plannerApi.attachmentList(card.id).then(setAttachments);
-  }, [card]);
+    if (card) void plannerApi.attachmentList(card.id, ownerId).then(setAttachments);
+  }, [card, ownerId]);
 
   async function save() {
     if (!title.trim()) return;
@@ -94,12 +94,12 @@ export function CardEditor({
       const b64 = await fileToBase64(file);
       await plannerApi.attachmentAdd(card.id, ownerId, file.name, file.type || null, b64);
     }
-    setAttachments(await plannerApi.attachmentList(card.id));
+    setAttachments(await plannerApi.attachmentList(card.id, ownerId));
     if (fileRef.current) fileRef.current.value = "";
   }
 
   async function download(a: AttachmentSummary) {
-    const d = await plannerApi.attachmentGet(a.id);
+    const d = await plannerApi.attachmentGet(a.id, ownerId);
     if (!d) return;
     const bytes = Uint8Array.from(atob(d.dataBase64), (c) => c.charCodeAt(0));
     const blob = new Blob([bytes], { type: d.mime ?? "application/octet-stream" });
@@ -114,8 +114,8 @@ export function CardEditor({
   }
 
   async function removeAttachment(id: string) {
-    await plannerApi.attachmentDelete(id);
-    if (card) setAttachments(await plannerApi.attachmentList(card.id));
+    await plannerApi.attachmentDelete(id, ownerId);
+    if (card) setAttachments(await plannerApi.attachmentList(card.id, ownerId));
   }
 
   return (

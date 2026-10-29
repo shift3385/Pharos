@@ -181,6 +181,7 @@ function triggerDownload(buffer: ArrayBuffer, filename: string) {
 export async function exportMatrixXlsx(
   matrix: TraceabilityMatrix,
   projectId: string,
+  userId: string,
   projectName: string,
   lang: string,
   t: (key: string) => string,
@@ -193,7 +194,7 @@ export async function exportMatrixXlsx(
     {
       documentId: `RTM-${projectName}`,
       projectName,
-      version: (await projectPlanVersion(projectId)) ?? "1.0",
+      version: (await projectPlanVersion(projectId, userId)) ?? "1.0",
       noteLabel: (note) => t(`traceability.note.${note}`),
     },
     template,

@@ -10,6 +10,7 @@ function make(projectId: string, prefix: string, title: string): TestCaseInput {
     title,
     author: "Ada",
     data: {},
+    userId: "u1",
   };
 }
 
@@ -26,18 +27,24 @@ describe("testCaseApi browser numbering (mirrors the Rust store)", () => {
     expect(b1?.scenarioId).toBe("TC-001");
   });
 
-  it("restarts at 1 for an empty project after deletion", async () => {
+  it("never reuses the id of a deleted case (DAT-01)", async () => {
     const c = await testCaseApi.create(make("p1", "ATS_", "only"));
     expect(c?.scenarioId).toBe("ATS_001");
-    await testCaseApi.remove(c!.id);
+    await testCaseApi.remove(c!.id, "u1");
     const again = await testCaseApi.create(make("p1", "ATS_", "new"));
-    expect(again?.scenarioId).toBe("ATS_001");
+    expect(again?.scenarioId).toBe("ATS_002");
+  });
+
+  it("keeps the scenario id when a case is updated", async () => {
+    const c = await testCaseApi.create(make("p1", "ATS_", "only"));
+    const updated = await testCaseApi.update(c!.id, { ...make("p1", "ATS_", "v2"), scenarioId: "X_9" });
+    expect(updated?.scenarioId).toBe("ATS_001");
   });
 
   it("lists only the cases of the requested project", async () => {
     await testCaseApi.create(make("p1", "ATS_", "A"));
     await testCaseApi.create(make("p2", "ATS_", "B"));
-    const p1 = await testCaseApi.list("p1");
+    const p1 = await testCaseApi.list("p1", "u1");
     expect(p1).toHaveLength(1);
     expect(p1[0].title).toBe("A");
   });

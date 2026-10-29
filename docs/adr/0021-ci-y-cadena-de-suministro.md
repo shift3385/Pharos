@@ -41,7 +41,10 @@
   - **La misma regla en npm:** el gate de licencias rechaza el copyleft débil
     salvo los paquetes nombrados en `scripts/license-exceptions.json` (hoy
     `lightningcss`, MPL-2.0, que vite 7 instala en `server/` a través de
-    vitest 4; no se distribuye).
+    vitest 4; no se distribuye). Una excepción con `coversPlatformBinaries`
+    cubre también los binarios por plataforma del paquete (sus
+    `optionalDependencies`, con la misma licencia), porque npm instala solo el
+    del sistema actual: en la CI de Linux son otros que en Windows.
   - **Actualizaciones mayores del tooling hechas ya:** vitest 2 → 4, vite 5 → 7
     y plugin-react 4 → 5; Node ≥ 22.12 (Node 20 está fuera de soporte). zod 4
     se aplaza a BASE-18, porque toca el esquema de sync de la pista A1, y queda

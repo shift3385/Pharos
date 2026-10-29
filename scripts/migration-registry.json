@@ -4,20 +4,16 @@
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
     "reserved": {
-      "0012": "A1 · sync per user (FIX-07)",
-      "0013": "A1 · requirement key collisions (conditional)",
-      "0014": "A1 · spare",
-      "0015": "A2 · audit actor repair (FIX-06)",
-      "0016": "A2 · key uniqueness (DAT-01)",
       "0017": "A2 · purge (SYNC-06)"
     },
-    "retired": {}
+    "retired": {
+      "0014": "A1 spare, never used; A1 merged with 0012-0013"
+    }
   },
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0004": "A1 · sync cascade (FIX-05)",
-      "0005": "A1 · spare",
+      "0005": "A1 spare, unused; A2 may take it for key blocks instead of 0006, otherwise retire it when 0006 ships",
       "0006": "A2 · key blocks (DAT-01)"
     },
     "retired": {}

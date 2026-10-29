@@ -3,10 +3,13 @@ import { testCaseApi } from "./testCaseApi";
 
 /** Cases of a project with their requirement links (for the traceability
  *  matrix). Reads each case in full because the links live in `data`. */
-export async function projectTraceableCases(projectId: string): Promise<TraceableCase[]> {
+export async function projectTraceableCases(
+  projectId: string,
+  userId: string,
+): Promise<TraceableCase[]> {
   const out: TraceableCase[] = [];
-  for (const s of await testCaseApi.list(projectId)) {
-    const c = await testCaseApi.get(s.id);
+  for (const s of await testCaseApi.list(projectId, userId)) {
+    const c = await testCaseApi.get(s.id, userId);
     if (!c) continue;
     out.push({
       id: c.id,
@@ -25,8 +28,9 @@ export async function projectTraceableCases(projectId: string): Promise<Traceabl
 export async function setCaseRequirementKeys(
   caseId: string,
   requirementKeys: string[],
+  userId: string,
 ): Promise<TestCase | null> {
-  const c = await testCaseApi.get(caseId);
+  const c = await testCaseApi.get(caseId, userId);
   if (!c) return null;
   return testCaseApi.update(c.id, {
     projectId: c.projectId ?? "",
@@ -37,5 +41,6 @@ export async function setCaseRequirementKeys(
     priority: c.priority,
     author: c.author,
     data: { ...c.data, requirementKeys: [...new Set(requirementKeys)] },
+    userId,
   });
 }

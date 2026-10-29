@@ -2,17 +2,33 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/ui/Toast";
+import { exportDiagnostics, logClientError } from "@shared/diagnostics";
+import { APP_VERSION } from "@shared/version";
 import { applyBackground, loadSettings, saveSettings } from "../model/settings";
 import "./Admin.css";
 
 /** Administration panel (spec §10): quick access to Templates and the AI engine,
- *  plus app personalization (custom background) and preferences. */
+ *  app personalization (custom background) and preferences, and diagnostics
+ *  (installed version and "Exportar diagnóstico", BASE-08). */
 export function AdminPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
   const [settings, setSettings] = useState(loadSettings());
   const fileRef = useRef<HTMLInputElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportDiag() {
+    setExporting(true);
+    try {
+      toast(t("diagnostics.exported", { file: await exportDiagnostics() }));
+    } catch (e) {
+      logClientError(e, "diagnostic export");
+      toast(t("diagnostics.failed"));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function save() {
     saveSettings(settings);
@@ -124,6 +140,24 @@ export function AdminPage() {
 
         <button type="button" className="adm__save" onClick={save}>
           {t("admin.settings.save")}
+        </button>
+      </div>
+
+      <div className="adm__settings" data-testid="admin-diagnostics">
+        <h2 className="adm__settings-title">{t("admin.diagnostics.title")}</h2>
+        <div className="adm__field">
+          <span className="adm__label">{t("admin.diagnostics.version")}</span>
+          <span className="adm__version">{APP_VERSION}</span>
+        </div>
+        <p className="adm__hint">{t("admin.diagnostics.desc")}</p>
+        <p className="adm__hint">{t("admin.diagnostics.excludes")}</p>
+        <button
+          type="button"
+          className="adm__btn adm__btn--start"
+          onClick={() => void exportDiag()}
+          disabled={exporting}
+        >
+          {exporting ? t("diagnostics.exporting") : t("diagnostics.export")}
         </button>
       </div>
     </section>

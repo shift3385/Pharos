@@ -2,6 +2,10 @@
 //! the test basis of a project; each has a stable `requirement_key` (REQ-001…)
 //! that is auto-numbered per project, immutable once created, and linked from
 //! test cases (`data.requirementKeys`) and Gherkin tags (`@REQ-001`).
+//!
+//! A requirement belongs to its project's owner: every function takes the
+//! signed-in `user_id` and only touches requirements of projects that user owns
+//! (FIX-08). Keys come from the project's key counter (DAT-01, ADR-0010).
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -9,7 +13,9 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::keys::{self, KeyKind};
 use crate::oplog;
+use crate::project;
 
 const KEY_PREFIX: &str = "REQ-";
 const KEY_DIGITS: usize = 3;
@@ -55,10 +61,15 @@ pub struct RequirementImportRow {
 pub struct ImportSummary {
     created: usize,
     updated: usize,
+    /// Keys of deleted requirements found in the file: never reused, so those
+    /// rows are not imported (ADR-0010).
+    skipped: Vec<String>,
 }
 
-const SELECT_REQUIREMENT: &str = "SELECT id, project_id, requirement_key, title, description, \
-    priority, created_at, updated_at, revision FROM requirements";
+/// Live requirements of live projects owned by the given user.
+const SELECT_REQUIREMENT: &str = "SELECT r.id, r.project_id, r.requirement_key, r.title, \
+    r.description, r.priority, r.created_at, r.updated_at, r.revision \
+    FROM requirements r JOIN projects p ON p.id = r.project_id";
 
 fn map_requirement(row: &rusqlite::Row) -> rusqlite::Result<Requirement> {
     Ok(Requirement {
@@ -90,51 +101,72 @@ fn normalize_priority(p: Option<&str>) -> String {
     }
 }
 
-/// Next key within a project: highest `REQ-` suffix + 1. Unlike scenario ids,
-/// soft-deleted requirements still count, so a key is never reused and cases
-/// that linked a deleted requirement are not silently re-linked to a new one.
-fn next_requirement_key(conn: &Connection, project_id: &str) -> Result<String, String> {
-    let mut stmt = conn
-        .prepare("SELECT requirement_key FROM requirements WHERE project_id = ?1")
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map(params![project_id], |r| r.get::<_, String>(0))
-        .map_err(|e| e.to_string())?;
-    let mut max: u64 = 0;
-    for row in rows {
-        let key = row.map_err(|e| e.to_string())?;
-        if let Some(n) = key.strip_prefix(KEY_PREFIX).and_then(|s| s.parse::<u64>().ok()) {
-            max = max.max(n);
-        }
-    }
-    Ok(format!("{KEY_PREFIX}{:0width$}", max + 1, width = KEY_DIGITS))
+/// True when the requirement is live and its project is owned by `user_id`.
+fn owns(conn: &Connection, id: &str, user_id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM requirements r JOIN projects p ON p.id = r.project_id \
+         WHERE r.id = ?1 AND p.owner_id = ?2 AND r.deleted_at IS NULL AND p.deleted_at IS NULL",
+        params![id, user_id],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+    .map(|r| r.is_some())
 }
 
-fn list_requirements(conn: &Connection, project_id: &str) -> Result<Vec<Requirement>, String> {
+/// Next key within a project, from its key counter: a key is never reused,
+/// so cases that linked a deleted requirement are not silently re-linked to a
+/// new one.
+fn next_requirement_key(conn: &Connection, project_id: &str) -> Result<String, String> {
+    keys::allocate(
+        conn,
+        KeyKind::Requirement,
+        project_id,
+        KEY_PREFIX,
+        KEY_DIGITS,
+    )
+}
+
+pub(crate) fn list_requirements(
+    conn: &Connection,
+    project_id: &str,
+    user_id: &str,
+) -> Result<Vec<Requirement>, String> {
     let mut stmt = conn
         .prepare(&format!(
-            "{SELECT_REQUIREMENT} WHERE project_id = ?1 AND deleted_at IS NULL \
-             ORDER BY requirement_key"
+            "{SELECT_REQUIREMENT} WHERE r.project_id = ?1 AND p.owner_id = ?2 \
+             AND r.deleted_at IS NULL AND p.deleted_at IS NULL ORDER BY r.requirement_key"
         ))
         .map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map(params![project_id], map_requirement)
+        .query_map(params![project_id, user_id], map_requirement)
         .map_err(|e| e.to_string())?;
     rows.collect::<rusqlite::Result<Vec<_>>>()
         .map_err(|e| e.to_string())
 }
 
-fn get_requirement(conn: &Connection, id: &str) -> Result<Option<Requirement>, String> {
+fn get_requirement(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<Requirement>, String> {
     conn.query_row(
-        &format!("{SELECT_REQUIREMENT} WHERE id = ?1 AND deleted_at IS NULL"),
-        params![id],
+        &format!(
+            "{SELECT_REQUIREMENT} WHERE r.id = ?1 AND p.owner_id = ?2 \
+             AND r.deleted_at IS NULL AND p.deleted_at IS NULL"
+        ),
+        params![id, user_id],
         map_requirement,
     )
     .optional()
     .map_err(|e| e.to_string())
 }
 
-fn find_by_key(conn: &Connection, project_id: &str, key: &str) -> Result<Option<(String, i64)>, String> {
+fn find_by_key(
+    conn: &Connection,
+    project_id: &str,
+    key: &str,
+) -> Result<Option<(String, i64)>, String> {
     conn.query_row(
         "SELECT id, revision FROM requirements \
          WHERE project_id = ?1 AND requirement_key = ?2 AND deleted_at IS NULL",
@@ -146,6 +178,9 @@ fn find_by_key(conn: &Connection, project_id: &str, key: &str) -> Result<Option<
 }
 
 fn insert_requirement(conn: &Connection, input: &RequirementInput) -> Result<String, String> {
+    if !project::owns(conn, &input.project_id, &input.user_id)? {
+        return Err("project not found".to_string());
+    }
     let key = match input.requirement_key.as_deref().map(str::trim) {
         Some(k) if !k.is_empty() => {
             if !valid_key(k) {
@@ -154,6 +189,13 @@ fn insert_requirement(conn: &Connection, input: &RequirementInput) -> Result<Str
             if find_by_key(conn, &input.project_id, k)?.is_some() {
                 return Err(format!("duplicate requirement key: {k}"));
             }
+            // Cases may still link the deleted requirement's key (@REQ-…).
+            if keys::taken(conn, KeyKind::Requirement, &input.project_id, k)? {
+                return Err(format!(
+                    "requirement key {k} belonged to a deleted requirement and is never reused"
+                ));
+            }
+            keys::note_manual(conn, KeyKind::Requirement, &input.project_id, KEY_PREFIX, k)?;
             k.to_string()
         }
         _ => next_requirement_key(conn, &input.project_id)?,
@@ -182,15 +224,16 @@ fn insert_requirement(conn: &Connection, input: &RequirementInput) -> Result<Str
 
 /// Updates the editable fields. The key is immutable and ignored here.
 fn update_requirement(conn: &Connection, id: &str, input: &RequirementInput) -> Result<(), String> {
+    if !owns(conn, id, &input.user_id)? {
+        return Err("requirement not found".to_string());
+    }
     let revision: i64 = conn
         .query_row(
-            "SELECT revision FROM requirements WHERE id = ?1 AND deleted_at IS NULL",
+            "SELECT revision FROM requirements WHERE id = ?1",
             params![id],
             |r| r.get(0),
         )
-        .optional()
-        .map_err(|e| e.to_string())?
-        .ok_or("requirement not found")?;
+        .map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE requirements SET title = ?2, description = ?3, priority = ?4, \
          updated_by = ?5, updated_at = datetime('now'), revision = ?6 WHERE id = ?1",
@@ -204,11 +247,24 @@ fn update_requirement(conn: &Connection, id: &str, input: &RequirementInput) -> 
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "requirement", id, "upsert", "{}", revision + 1, &input.user_id)?;
+    oplog::record(
+        conn,
+        "requirement",
+        id,
+        "upsert",
+        "{}",
+        revision + 1,
+        &input.user_id,
+    )?;
     Ok(())
 }
 
+/// Soft-deletes a requirement the user owns. An unknown or foreign id is an
+/// error and leaves no oplog row behind.
 fn delete_requirement(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
+    if !owns(conn, id, user_id)? {
+        return Err("requirement not found".to_string());
+    }
     conn.execute(
         "UPDATE requirements SET deleted_at = datetime('now'), updated_by = ?2 \
          WHERE id = ?1 AND deleted_at IS NULL",
@@ -220,15 +276,23 @@ fn delete_requirement(conn: &Connection, id: &str, user_id: &str) -> Result<(), 
 }
 
 /// Bulk CSV import in one transaction: rows whose key already exists update that
-/// requirement; the rest are created (keyed as given, or auto-numbered).
+/// requirement; rows with the key of a deleted requirement are skipped and
+/// reported; the rest are created (keyed as given, or auto-numbered).
 fn import_requirements(
     conn: &Connection,
     project_id: &str,
     user_id: &str,
     rows: &[RequirementImportRow],
 ) -> Result<ImportSummary, String> {
+    if !project::owns(conn, project_id, user_id)? {
+        return Err("project not found".to_string());
+    }
     let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
-    let mut summary = ImportSummary { created: 0, updated: 0 };
+    let mut summary = ImportSummary {
+        created: 0,
+        updated: 0,
+        skipped: Vec::new(),
+    };
     for row in rows {
         if row.title.trim().is_empty() {
             continue;
@@ -241,10 +305,21 @@ fn import_requirements(
             priority: row.priority.clone(),
             user_id: user_id.to_string(),
         };
-        let existing = match row.requirement_key.as_deref().map(str::trim) {
-            Some(k) if !k.is_empty() => find_by_key(&tx, project_id, k)?,
-            _ => None,
+        let key = row
+            .requirement_key
+            .as_deref()
+            .map(str::trim)
+            .filter(|k| !k.is_empty());
+        let existing = match key {
+            Some(k) => find_by_key(&tx, project_id, k)?,
+            None => None,
         };
+        if let (Some(k), None) = (key, &existing) {
+            if keys::taken(&tx, KeyKind::Requirement, project_id, k)? {
+                summary.skipped.push(k.to_string());
+                continue;
+            }
+        }
         match existing {
             Some((id, _)) => {
                 update_requirement(&tx, &id, &input)?;
@@ -261,13 +336,21 @@ fn import_requirements(
 }
 
 #[tauri::command]
-pub fn requirement_list(db: State<Db>, project_id: String) -> Result<Vec<Requirement>, String> {
-    db.with_conn(|conn| list_requirements(conn, &project_id))
+pub fn requirement_list(
+    db: State<Db>,
+    project_id: String,
+    user_id: String,
+) -> Result<Vec<Requirement>, String> {
+    db.with_conn(|conn| list_requirements(conn, &project_id, &user_id))
 }
 
 #[tauri::command]
-pub fn requirement_get(db: State<Db>, id: String) -> Result<Option<Requirement>, String> {
-    db.with_conn(|conn| get_requirement(conn, &id))
+pub fn requirement_get(
+    db: State<Db>,
+    id: String,
+    user_id: String,
+) -> Result<Option<Requirement>, String> {
+    db.with_conn(|conn| get_requirement(conn, &id, &user_id))
 }
 
 #[tauri::command]
@@ -277,7 +360,7 @@ pub fn requirement_create(
 ) -> Result<Option<Requirement>, String> {
     let id = db.with_conn(|conn| insert_requirement(conn, &input))?;
     db.persist()?;
-    db.with_conn(|conn| get_requirement(conn, &id))
+    db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
 #[tauri::command]
@@ -288,7 +371,7 @@ pub fn requirement_update(
 ) -> Result<Option<Requirement>, String> {
     db.with_conn(|conn| update_requirement(conn, &id, &input))?;
     db.persist()?;
-    db.with_conn(|conn| get_requirement(conn, &id))
+    db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
 #[tauri::command]
@@ -314,10 +397,21 @@ mod tests {
     use super::*;
 
     const USER: &str = "user-1";
+    const OTHER: &str = "user-2";
 
+    /// A database with projects `p1` and `p2`, both owned by USER.
     fn conn() -> Connection {
         let c = Connection::open_in_memory().unwrap();
         crate::db::run_migrations(&c).unwrap();
+        let ws = ensure_workspace(&c).unwrap();
+        for id in ["p1", "p2"] {
+            c.execute(
+                "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, \
+                 created_at, updated_at) VALUES (?1, ?2, ?3, 'P', ?3, ?3, datetime('now'), datetime('now'))",
+                params![id, ws, USER],
+            )
+            .unwrap();
+        }
         c
     }
 
@@ -333,7 +427,15 @@ mod tests {
     }
 
     fn key_of(c: &Connection, id: &str) -> String {
-        get_requirement(c, id).unwrap().unwrap().requirement_key
+        get_requirement(c, id, USER)
+            .unwrap()
+            .unwrap()
+            .requirement_key
+    }
+
+    fn oplog_rows(c: &Connection) -> i64 {
+        c.query_row("SELECT count(*) FROM oplog", [], |r| r.get(0))
+            .unwrap()
     }
 
     #[test]
@@ -356,6 +458,43 @@ mod tests {
     }
 
     #[test]
+    fn a_hand_typed_key_cannot_resurrect_a_deleted_requirement() {
+        let c = conn();
+        let a = insert_requirement(&c, &input("p1", Some("REQ-002"), "A")).unwrap();
+        delete_requirement(&c, &a, USER).unwrap();
+        let err = insert_requirement(&c, &input("p1", Some("REQ-002"), "B")).unwrap_err();
+        assert!(err.contains("deleted"), "{err}");
+    }
+
+    #[test]
+    fn import_skips_and_reports_keys_of_deleted_requirements() {
+        let c = conn();
+        let gone = insert_requirement(&c, &input("p1", Some("REQ-002"), "Gone")).unwrap();
+        delete_requirement(&c, &gone, USER).unwrap();
+        let row = |key: &str, title: &str| RequirementImportRow {
+            requirement_key: Some(key.into()),
+            title: title.into(),
+            description: None,
+            priority: None,
+        };
+        let s = import_requirements(
+            &c,
+            "p1",
+            USER,
+            &[row("REQ-002", "Back?"), row("REQ-010", "New")],
+        )
+        .unwrap();
+        assert_eq!((s.created, s.updated), (1, 0));
+        assert_eq!(s.skipped, vec!["REQ-002"]);
+        let keys: Vec<String> = list_requirements(&c, "p1", USER)
+            .unwrap()
+            .into_iter()
+            .map(|r| r.requirement_key)
+            .collect();
+        assert_eq!(keys, vec!["REQ-010"]);
+    }
+
+    #[test]
     fn rejects_duplicate_and_invalid_keys() {
         let c = conn();
         insert_requirement(&c, &input("p1", Some("US-12"), "A")).unwrap();
@@ -367,10 +506,8 @@ mod tests {
     fn update_keeps_key_bumps_revision_and_audits() {
         let c = conn();
         let id = insert_requirement(&c, &input("p1", None, "A")).unwrap();
-        let mut changed = input("p1", Some("REQ-999"), "A v2");
-        changed.user_id = "user-2".to_string();
-        update_requirement(&c, &id, &changed).unwrap();
-        let r = get_requirement(&c, &id).unwrap().unwrap();
+        update_requirement(&c, &id, &input("p1", Some("REQ-999"), "A v2")).unwrap();
+        let r = get_requirement(&c, &id, USER).unwrap().unwrap();
         assert_eq!(r.requirement_key, "REQ-001");
         assert_eq!(r.title, "A v2");
         assert_eq!(r.revision, 2);
@@ -381,7 +518,7 @@ mod tests {
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .unwrap();
-        assert_eq!((created_by.as_str(), updated_by.as_str()), (USER, "user-2"));
+        assert_eq!((created_by.as_str(), updated_by.as_str()), (USER, USER));
     }
 
     #[test]
@@ -420,10 +557,47 @@ mod tests {
         ];
         let s = import_requirements(&c, "p1", USER, &rows).unwrap();
         assert_eq!((s.created, s.updated), (1, 1));
-        let list = list_requirements(&c, "p1").unwrap();
+        let list = list_requirements(&c, "p1", USER).unwrap();
         assert_eq!(list.len(), 2);
         assert_eq!(list[0].title, "New");
         assert_eq!(list[0].priority, "high");
         assert_eq!(list[1].requirement_key, "REQ-002");
+    }
+
+    #[test]
+    fn another_user_can_neither_read_nor_modify_the_requirement() {
+        let c = conn();
+        let id = insert_requirement(&c, &input("p1", None, "Private")).unwrap();
+        let ops = oplog_rows(&c);
+
+        assert!(list_requirements(&c, "p1", OTHER).unwrap().is_empty());
+        assert!(get_requirement(&c, &id, OTHER).unwrap().is_none());
+
+        let mut theirs = input("p1", None, "Hijacked");
+        theirs.user_id = OTHER.to_string();
+        assert!(insert_requirement(&c, &theirs).is_err());
+        assert!(update_requirement(&c, &id, &theirs).is_err());
+        assert!(delete_requirement(&c, &id, OTHER).is_err());
+        let row = RequirementImportRow {
+            requirement_key: None,
+            title: "Imported".into(),
+            description: None,
+            priority: None,
+        };
+        assert!(import_requirements(&c, "p1", OTHER, &[row]).is_err());
+
+        assert_eq!(
+            get_requirement(&c, &id, USER).unwrap().unwrap().title,
+            "Private"
+        );
+        assert_eq!(list_requirements(&c, "p1", USER).unwrap().len(), 1);
+        assert_eq!(oplog_rows(&c), ops);
+    }
+
+    #[test]
+    fn deleting_an_unknown_requirement_fails_without_an_oplog_row() {
+        let c = conn();
+        assert!(delete_requirement(&c, "no-such-requirement", USER).is_err());
+        assert_eq!(oplog_rows(&c), 0);
     }
 }

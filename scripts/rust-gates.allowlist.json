@@ -1,25 +1,14 @@
 {
   "$comment": "Temporary exceptions for `node scripts/rust-gates.mjs` (BASE-01). Each entry names a file (and, for clippy, a lint) owned by a track that is still changing it. Remove the entry when that track merges with the file formatted / the lint fixed; the gate warns about entries that no longer match anything (ROADMAP BASE-01).",
   "fmt": [
-    { "file": "src-tauri/src/db.rs", "owner": "A1/A2" },
-    { "file": "src-tauri/src/oplog.rs", "owner": "A1" },
-    { "file": "src-tauri/src/sync.rs", "owner": "A1" },
-    { "file": "src-tauri/src/planner.rs", "owner": "A1/A2" },
-    { "file": "src-tauri/src/project.rs", "owner": "A2" },
-    { "file": "src-tauri/src/requirement.rs", "owner": "A2" },
-    { "file": "src-tauri/src/test_case.rs", "owner": "A2" },
-    { "file": "src-tauri/src/test_plan.rs", "owner": "A2" }
-  ],
-  "clippy": [
-    {
-      "file": "src-tauri/src/sync.rs",
-      "lint": "clippy::type_complexity",
-      "owner": "A1"
-    },
     {
       "file": "src-tauri/src/planner.rs",
-      "lint": "clippy::cloned_ref_to_slice_refs",
-      "owner": "A1/A2"
+      "owner": "A2 (merged; format when next touched)"
+    },
+    {
+      "file": "src-tauri/src/project.rs",
+      "owner": "A2 (merged; format when next touched)"
     }
-  ]
+  ],
+  "clippy": []
 }

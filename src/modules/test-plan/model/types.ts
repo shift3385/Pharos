@@ -89,6 +89,8 @@ export interface TestPlanInput {
   author: string;
   status?: string;
   data: TestPlanData;
+  /** Signed-in user making the change (owner check and audit fields). */
+  userId: string;
 }
 
 export interface RevisionSummary {

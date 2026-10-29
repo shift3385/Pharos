@@ -1,3 +1,4 @@
+import { pushEntity } from "@modules/sync-offline";
 import {
   REQUIREMENT_KEY_DIGITS,
   REQUIREMENT_KEY_PREFIX,
@@ -19,7 +20,7 @@ function isTauri(): boolean {
 
 // Browser fallback so the UI works in `vite dev`. The real, encrypted store
 // lives in Rust (`requirement.rs`); this mirrors its rules (numbering, immutable
-// keys, upsert-by-key import). Requirements are not synced yet (see ROADMAP).
+// keys, upsert-by-key import). Writes are pushed to the backend (SYNC-04a).
 const KEY = "pharos.requirements";
 
 type Stored = Requirement & { deletedAt?: string; createdBy: string; updatedBy: string };
@@ -37,6 +38,11 @@ function saveAll(items: Stored[]) {
 
 const live = (r: Stored) => !r.deletedAt;
 const strip = ({ deletedAt: _d, createdBy: _c, updatedBy: _u, ...r }: Stored): Requirement => r;
+
+/** Sends a requirement's latest state (or its tombstone) to the backend. */
+function push(r: Stored) {
+  pushEntity("requirement", r.id, r.deletedAt ? "delete" : "upsert", strip(r), r.revision, r.updatedBy);
+}
 
 function normalizePriority(p?: string): RequirementPriority {
   return REQUIREMENT_PRIORITIES.includes(p as RequirementPriority)
@@ -62,6 +68,10 @@ function insert(all: Stored[], input: RequirementInput): Stored {
     if (!isValidRequirementKey(given)) throw new Error(`invalid requirement key: ${given}`);
     if (all.some((r) => live(r) && r.projectId === input.projectId && r.requirementKey === given)) {
       throw new Error(`duplicate requirement key: ${given}`);
+    }
+    // ADR-0010: the key of a deleted requirement is never reused.
+    if (all.some((r) => r.projectId === input.projectId && r.requirementKey === given)) {
+      throw new Error(`requirement key ${given} belonged to a deleted requirement`);
     }
   }
   const now = new Date().toISOString();
@@ -110,6 +120,7 @@ const browserApi = {
     const all = loadAll();
     const item = insert(all, input);
     saveAll(all);
+    push(item);
     return strip(item);
   },
   async update(id: string, input: RequirementInput): Promise<Requirement | null> {
@@ -118,14 +129,18 @@ const browserApi = {
     if (idx < 0) return null;
     all[idx] = patch(all[idx], input);
     saveAll(all);
+    push(all[idx]);
     return strip(all[idx]);
   },
   async remove(id: string, userId: string): Promise<void> {
-    saveAll(
-      loadAll().map((r) =>
-        r.id === id && live(r) ? { ...r, deletedAt: new Date().toISOString(), updatedBy: userId } : r,
-      ),
+    const all = loadAll().map((r) =>
+      r.id === id && live(r)
+        ? { ...r, deletedAt: new Date().toISOString(), updatedBy: userId, revision: r.revision + 1 }
+        : r,
     );
+    saveAll(all);
+    const removed = all.find((r) => r.id === id);
+    if (removed?.deletedAt) push(removed);
   },
   async importRows(
     projectId: string,
@@ -133,7 +148,8 @@ const browserApi = {
     rows: RequirementImportRow[],
   ): Promise<ImportSummary> {
     const all = loadAll();
-    const summary: ImportSummary = { created: 0, updated: 0 };
+    const summary: ImportSummary = { created: 0, updated: 0, skipped: [] };
+    const touched: Stored[] = [];
     for (const row of rows) {
       if (!row.title.trim()) continue;
       const input: RequirementInput = { ...row, projectId, userId };
@@ -143,13 +159,17 @@ const browserApi = {
         : -1;
       if (idx >= 0) {
         all[idx] = patch(all[idx], input);
+        touched.push(all[idx]);
         summary.updated++;
+      } else if (key && all.some((r) => r.projectId === projectId && r.requirementKey === key)) {
+        summary.skipped.push(key);
       } else {
-        insert(all, input);
+        touched.push(insert(all, input));
         summary.created++;
       }
     }
     saveAll(all);
+    touched.forEach(push);
     return summary;
   },
 };
@@ -159,11 +179,13 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user: the desktop store only returns or changes
+// requirements of projects that user owns (FIX-08).
 export const requirementApi = {
-  list: (projectId: string): Promise<Requirement[]> =>
-    isTauri() ? invoke("requirement_list", { projectId }) : browserApi.list(projectId),
-  get: (id: string): Promise<Requirement | null> =>
-    isTauri() ? invoke("requirement_get", { id }) : browserApi.get(id),
+  list: (projectId: string, userId: string): Promise<Requirement[]> =>
+    isTauri() ? invoke("requirement_list", { projectId, userId }) : browserApi.list(projectId),
+  get: (id: string, userId: string): Promise<Requirement | null> =>
+    isTauri() ? invoke("requirement_get", { id, userId }) : browserApi.get(id),
   create: (input: RequirementInput): Promise<Requirement | null> =>
     isTauri() ? invoke("requirement_create", { input }) : browserApi.create(input),
   update: (id: string, input: RequirementInput): Promise<Requirement | null> =>

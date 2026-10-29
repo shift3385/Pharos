@@ -1,7 +1,14 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "QA test management suite"
+    "tagline": "QA test management suite",
+    "version": "Version {{version}}"
+  },
+  "dbError": {
+    "title": "The local database could not be opened",
+    "body": "Pharos has not modified any file. Close the app and try again; if it keeps happening, share this detail with support.",
+    "newerTitle": "This data comes from a newer version of Pharos",
+    "newerBody": "The local database was saved by a more recent version than this one. To avoid damaging it, Pharos neither opens nor modifies it. Install that version or a later one."
   },
   "common": {
     "loading": "Loading…",
@@ -142,6 +149,10 @@
     "failed": "Could not sync (server unavailable?)",
     "conflicts": "Conflicts ({{count}})",
     "conflictToast": "Synced with {{count}} conflict(s) to review",
+    "unsupportedVersion": "This Pharos version is no longer supported by the server. Update the app to sync; your changes are kept.",
+    "webConflictToast": "Another device saved a newer version of {{count}} item(s). Your edit is kept: review it in Conflicts.",
+    "skippedToast": "The server refused {{count}} change(s) (too large or invalid). They stay pending; everything else synced.",
+    "orphans": "{{count}} change(s) without a known project yet; they will be sent once it arrives",
     "conflict": {
       "review": "Review conflicts",
       "title": "Sync conflicts",
@@ -159,7 +170,7 @@
       "keepRemote": "Use the server's",
       "resolved": "Conflict resolved",
       "failed": "Could not resolve the conflict",
-      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case" },
+      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case", "requirement": "Requirement", "planner_card": "Planner card" },
       "fields": {
         "title": "Title",
         "name": "Name",
@@ -172,7 +183,12 @@
         "ownerId": "Owner",
         "planDate": "Plan date",
         "caseIdPrefix": "ID prefix",
-        "caseIdDigits": "ID digits"
+        "caseIdDigits": "ID digits",
+        "requirementKey": "Requirement key",
+        "cardKey": "Defect key",
+        "description": "Description",
+        "kind": "Kind",
+        "position": "Position"
       }
     }
   },
@@ -203,6 +219,12 @@
       "downloadPlaceholder": "Folder path (optional)",
       "downloadHint": "Preference; it will apply to exports in a future release.",
       "save": "Save settings"
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "version": "Installed version",
+      "desc": "Creates a .zip to report a problem: app version, operating system, WebView2, applied migrations and the recent logs.",
+      "excludes": "It never includes your data: no projects, plans, cases or requirements, no profile, no database, keys, tokens or AI keys. Emails, tokens and paths with your user name are masked."
     }
   },
   "importReport": {
@@ -515,6 +537,7 @@
     "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
     "scenarioIdAuto": "Auto (ATS_001)",
+    "scenarioIdFixed": "The ID never changes once assigned: it travels as the @ATS_001 tag in automation.",
     "priority": "Priority",
     "status": "Status",
     "version": "Version",
@@ -751,6 +774,7 @@
       "confirm": "Import {{count}}",
       "importing": "Importing…",
       "doneToast": "Imported: {{created}} new, {{updated}} updated",
+      "skippedToast": "Not imported (they belong to deleted requirements and are never reused): {{keys}}",
       "error": "The CSV could not be imported"
     },
     "view": {
@@ -813,5 +837,18 @@
       "applying": "Applying…",
       "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
     }
+  },
+  "diagnostics": {
+    "export": "Export diagnostics",
+    "exporting": "Exporting…",
+    "exported": "Diagnostics saved to your downloads folder: {{file}}",
+    "failed": "The diagnostics could not be exported."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "This view failed. Your data is not lost: you can retry, reload the app or export diagnostics to report the problem.",
+    "retry": "Retry",
+    "reload": "Reload",
+    "details": "Technical details"
   }
 }

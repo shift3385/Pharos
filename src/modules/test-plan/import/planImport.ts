@@ -34,7 +34,8 @@ import type {
 export type { DetectionRow, ImportProgress } from "@shared/import/xlsx";
 
 export interface ImportResult {
-  input: TestPlanInput;
+  /** The parsed plan; the caller adds the signed-in `userId` when saving. */
+  input: Omit<TestPlanInput, "userId">;
   rows: DetectionRow[];
 }
 
@@ -218,7 +219,7 @@ export async function parsePlanXlsx(
     await yieldFrame();
   }
 
-  const input: TestPlanInput = {
+  const input: Omit<TestPlanInput, "userId"> = {
     title,
     version: version || "1.0",
     planDate: planDate || null,

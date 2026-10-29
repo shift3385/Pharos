@@ -213,6 +213,7 @@ export function TestCaseEditor({
 }) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const userId = user?.id ?? "";
   const toast = useToast();
   const [testCase, setTestCase] = useState<TestCase | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -233,7 +234,7 @@ export function TestCaseEditor({
     let cancelled = false;
     (async () => {
       if (caseId) {
-        const c = await testCaseApi.get(caseId);
+        const c = await testCaseApi.get(caseId, userId);
         if (c && !cancelled) {
           setTestCase(c);
           const f = fromCase(c);
@@ -258,7 +259,7 @@ export function TestCaseEditor({
     return () => {
       cancelled = true;
     };
-  }, [caseId, seed]);
+  }, [caseId, seed, userId]);
 
   const level = form.gherkinLevel;
   // Lowest level the current content can live in — you cannot pick below it.
@@ -405,6 +406,7 @@ export function TestCaseEditor({
       priority: form.priority,
       author,
       data,
+      userId,
     };
     try {
       if (testCase) await testCaseApi.update(testCase.id, input);
@@ -483,7 +485,7 @@ export function TestCaseEditor({
       setRevisions(null);
       return;
     }
-    setRevisions(testCase ? await testCaseApi.revisions(testCase.id) : []);
+    setRevisions(testCase ? await testCaseApi.revisions(testCase.id, userId) : []);
   }
 
   if (picking) {
@@ -497,6 +499,8 @@ export function TestCaseEditor({
         <input
           value={form.scenarioId}
           placeholder={t("testCase.scenarioIdAuto")}
+          readOnly={testCase != null}
+          title={testCase ? t("testCase.scenarioIdFixed") : undefined}
           onChange={(e) => update({ scenarioId: e.target.value })}
         />
       </label>

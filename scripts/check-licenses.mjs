@@ -7,6 +7,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isExcepted, optionalDepsReader } from "./license-policy.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const modulesDir = join(root, "node_modules");
@@ -84,6 +85,7 @@ if (!existsSync(modulesDir)) {
 const exceptions = JSON.parse(
   readFileSync(join(root, "scripts", "license-exceptions.json"), "utf8"),
 ).npm;
+const optionalDepsOf = optionalDepsReader(modulesDir);
 
 const forbidden = [];
 const excepted = [];
@@ -100,7 +102,7 @@ for (const { name, license } of iterPackages(modulesDir)) {
   if (verdict === "forbidden") {
     forbidden.push(`${name}: ${license}`);
   } else if (verdict === "warn") {
-    if (exceptions[name]?.license === license) {
+    if (isExcepted(name, license, exceptions, optionalDepsOf)) {
       excepted.push(`${name}: ${license}`);
     } else {
       forbidden.push(
@@ -112,7 +114,7 @@ for (const { name, license } of iterPackages(modulesDir)) {
 
 console.log(`Checked ${checked} installed packages.`);
 if (excepted.length) {
-  console.warn("\nWeak-copyleft accepted by name (scripts/license-exceptions.json):");
+  console.warn("\nWeak-copyleft accepted by scripts/license-exceptions.json:");
   excepted.forEach((w) => console.warn(`  - ${w}`));
 }
 if (unknown.length) {

@@ -4,6 +4,7 @@ import type { Pool } from "pg";
 import { buildApp } from "../src/app";
 import { createPool } from "../src/db/pool";
 import { runMigrations } from "../src/db/migrate";
+import { MAX_PUSH_DELTAS } from "../src/modules/sync/sync.schemas";
 import { TEST_DATABASE_URL, testEnv } from "./helpers";
 
 // BASE-06: login/register attempt limit, request body limits, and Fastify's
@@ -108,7 +109,7 @@ describe("request body limits", () => {
     expect(tooBig.json().code).toBe("payload_too_large");
   });
 
-  it("the default sync limit fits a full push batch (500 deltas, the server cap)", () => {
+  it("the default sync limit fits a full push batch (MAX_PUSH_DELTAS, the server cap)", () => {
     const delta = {
       entity: "test_case",
       entityId: "00000000-0000-4000-8000-000000000000",
@@ -118,7 +119,9 @@ describe("request body limits", () => {
       author: "00000000-0000-4000-8000-000000000001",
       hlc: "1761696000000:0000:device-0000000000000000",
     };
-    const batch = JSON.stringify({ deltas: Array(500).fill(delta) });
+    const batch = JSON.stringify({
+      deltas: Array(MAX_PUSH_DELTAS).fill(delta),
+    });
     expect(Buffer.byteLength(batch)).toBeLessThan(
       testEnv.SYNC_BODY_LIMIT_BYTES,
     );

@@ -128,8 +128,10 @@ fn validate_model(provider: Provider, model: &str) -> Result<(), String> {
     }
 }
 
+/// Keychain account of a provider's key; scoped per instance, so an E2E run
+/// never reads or overwrites the user's real keys (instance.rs).
 fn key_account(provider: &str) -> String {
-    format!("ai-key.{provider}")
+    crate::instance::account(&format!("ai-key.{provider}"))
 }
 
 fn read_key(provider: &str) -> Result<Option<String>, String> {

@@ -112,3 +112,14 @@
   border: none;
   border-radius: var(--radius-md);
 }
+
+.adm__version {
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+}
+.adm__btn--start {
+  align-self: flex-start;
+}
+.adm__btn:disabled {
+  opacity: 0.6;
+}

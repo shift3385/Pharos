@@ -127,6 +127,31 @@ session.
 | `cargo` not found / `npm run tauri dev` fails at once    | Open a new terminal after installing Rust; check the Visual Studio C++ workload                        |
 | Port 3000 or 1420 already in use                         | Another API/Vite is still running; close the old windows                                               |
 | Console shows `localhost:11434 … ERR_CONNECTION_REFUSED` | Ollama is not installed or not running; harmless — AI assist is simply disabled                        |
+| "This data comes from a newer version of Pharos"         | The local database was saved by a newer Pharos; install that version, or restore a backup (below)      |
+
+### Local data backups
+
+The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\pharos.db.enc`.
+
+Before a new version upgrades that database, the app saves an untouched,
+encrypted copy next to it: `pharos.db.enc.bak-<version>-<last migration>`. For
+example, `pharos.db.enc.bak-0.1.0-alpha.2-0011_sync_conflicts`.
+
+- Only the 3 newest copies are kept; older ones are deleted.
+- If the copy cannot be saved, the app upgrades nothing and says so.
+
+To go back to the data from before an upgrade:
+
+1. Close Pharos.
+2. Rename `pharos.db.enc` (keep it until you are sure you want to discard it).
+3. Copy the `.bak-…` file you want to `pharos.db.enc`.
+4. Open the Pharos version that wrote that copy.
+
+The copy is encrypted with the same key, kept in the Windows Credential
+Manager, so it only opens on the same Windows account.
+
+`0.1.0-alpha.1` does not check for newer data. Never open data upgraded by a
+later version with it; restore the matching `.bak` copy first.
 
 ## Scripts
 
@@ -141,7 +166,7 @@ Frontend (repository root):
 | `npm test`                     | Run the Vitest suite                                                                                              |
 | `npm run typecheck`            | TypeScript, no emit                                                                                               |
 | `npm run lint`                 | ESLint (0 warnings allowed)                                                                                       |
-| `npm run check:licenses`       | Fail on GPL/AGPL/SSPL dependencies                                                                                |
+| `npm run check:licenses`       | Fail on GPL/AGPL/SSPL dependencies, or weak copyleft not named in `scripts/license-exceptions.json`               |
 | `npm run check:version`        | Fail if the version differs across manifests                                                                      |
 | `npm run check:migrations`     | Fail on duplicate or unexplained missing migration numbers (registry: `scripts/migration-registry.json`)          |
 | `npm run test:scripts`         | `node:test` suite of the `scripts/` gates                                                                         |
@@ -150,6 +175,10 @@ Frontend (repository root):
 | `npm run check:rust`           | `cargo fmt --check` + `cargo clippy -D warnings` with the exact exceptions of `scripts/rust-gates.allowlist.json` |
 | `npm run version:set -- X.Y.Z` | Set the version in every manifest (releases only)                                                                 |
 | `npm run verify`               | typecheck + lint + licenses + version + migrations + script tests + tests                                         |
+| `npm run e2e`                  | Desktop smoke of the real binary (see below)                                                                      |
+| `npm run e2e:driver`           | Download the msedgedriver that matches WebView2                                                                   |
+| `npm run coverage`             | Frontend coverage report into `coverage/`                                                                         |
+| `npm run coverage:rust`        | Rust coverage report into `coverage/rust/`                                                                        |
 
 Backend (`server/`): `npm start`, `npm run dev` (auto-reload), `npm run migrate`,
 `npm run seed:test-user`, `npm test` (needs `pharos_test_db`), `npm run typecheck`.
@@ -171,6 +200,9 @@ is protected (see below).
 | `cargo-deny` | Ubuntu                 | `npm run check:deps`                                                     |
 | `workflows`  | Ubuntu                 | `zizmor` security lint of the workflows                                  |
 | `commits`    | Ubuntu (PRs only)      | `commitlint` on every commit of the PR                                   |
+
+The desktop E2E smoke and the coverage reports are not in CI yet (BASE-14,
+BASE-13); run them locally (below).
 
 The **Installer** workflow builds the Windows installer on every push to `main`
 and on `v*` tags, and publishes it as a run artifact (30 days). Download it
@@ -227,6 +259,111 @@ every variable above from `.env`, so set at least `JWT_ACCESS_SECRET` and
 `CORS_ORIGIN` there before `docker compose up`, and `TRUST_PROXY=true` behind a
 reverse proxy. The database-only setup (`docker compose up -d db`, `dev.bat`) is
 unaffected.
+
+## Logs and diagnostics
+
+The desktop app writes one log file per day, `pharos.YYYY-MM-DD.log` (JSON
+lines; the last 7 days are kept), in:
+
+```
+%LOCALAPPDATA%\com.pharos.desktop\logs
+```
+
+The level is `info`. For more detail, start the app with `PHAROS_LOG` set to
+an `EnvFilter` directive, e.g. `PHAROS_LOG=debug`. Logs never contain your
+data: only ids, command names, counts and error kinds, with emails, tokens and
+keys masked. A crash (panic) is also written straight to `pharos.panic.log` in
+the same folder. Frontend errors are logged too, at most 20 every 10 seconds.
+
+**To report a problem:** Administration → **Diagnóstico** → **Exportar
+diagnóstico** ("Export diagnostics"). It is also on the error screen that
+replaces a view that crashed. You get `pharos-diagnostic-<version>-<date>.zip`
+in your downloads folder, with `diagnostic.json` (app version, OS, WebView2,
+applied migrations, UI language and theme) and `logs/` (the recent logs,
+masked again). It never includes projects, plans, cases, requirements, your
+profile, the database, keys or tokens. In the web preview it holds only the
+frontend facts. It still works when the local database could not open: it then
+says why (`openError`) instead of listing the migrations.
+
+The installed version is shown at the foot of the sidebar and in
+Administration → Diagnóstico.
+
+## Desktop E2E smoke
+
+`npm run e2e` drives the **real desktop binary**: start → sign in with the test
+account → create a project → restart → the project and the session are still
+there (`e2e/specs/smoke.e2e.ts`). A second spec (`e2e/specs/diagnostics.e2e.ts`)
+checks the version in Administration, clicks "Exportar diagnóstico", opens the
+ZIP saved in your Downloads folder (set `PHAROS_E2E_DOWNLOADS` if yours is
+elsewhere), checks it holds no user data and deletes it. It runs WebdriverIO
+against
+[`tauri-driver`](https://v2.tauri.app/develop/tests/webdriver/), which drives
+the WebView2 window through Microsoft Edge WebDriver.
+
+One-time setup (Windows; the E2E needs **Node ≥ 22.19**, required by
+WebdriverIO 10):
+
+```
+cargo install tauri-driver --locked
+npm run e2e:driver
+```
+
+`npm run e2e:driver` downloads into `e2e/.bin/` the `msedgedriver` that matches
+your WebView2 runtime, from Microsoft. WebView2 updates itself, so re-run it
+when the smoke reports a version mismatch.
+
+Every run, with PostgreSQL and the API running (`cd server && npm start`):
+
+```
+npm run e2e
+```
+
+It checks the prerequisites and says how to fix a missing one, seeds the test
+account (`seed:test-user`, idempotent), builds the debug binary
+(`tauri build --debug --no-bundle`; skip it with `E2E_SKIP_BUILD=1`) and runs
+the specs. Results: the console, plus one JUnit file per spec
+(`e2e/results/e2e-<worker>.junit.xml`), the run's app logs in
+`e2e/results/app-logs/` and a screenshot of Administration → Diagnóstico.
+
+The smoke never touches your own data: each run sets `PHAROS_E2E_PROFILE`, so
+the debug binary uses its own data folder, log folder and keychain accounts
+(session and AI keys; a release build ignores the variable), and
+`WEBVIEW2_USER_DATA_FOLDER` gives WebView2 its own storage. Each spec starts
+signed out; at the end it deletes every project whose name starts with `E2E `
+on the test account (including leftovers of a failed run), syncs and signs
+out. The run then removes those folders and its Credential Manager entries.
+Only the local database key
+(`db-key.pharos` in the Credential Manager) is shared with the normal app: on a
+machine that never ran Pharos, the first E2E run creates it, and the app reuses
+it later.
+
+**For CI** (`windows-latest`, track B1): the runner already has WebView2. It
+needs Rust (MSVC), `cargo install tauri-driver --locked` (cache it),
+`npm run e2e:driver`, the PostgreSQL service started with `pharos_db` created,
+a `.env` made from `.env.example`, `cd server && npm run migrate`, the API in
+the background, then `npm run e2e`. Publish `e2e/results/` as an artifact. The
+session is cached in the Windows Credential Manager, which must be available
+to the runner's user.
+
+`npm install` / `npm ci` download no browser driver: the `edgedriver` and
+`geckodriver` packages that WebdriverIO pulls in only download when
+`EDGEDRIVER_AUTO_INSTALL` / `GECKODRIVER_AUTO_INSTALL` are set.
+
+License notes (dev-only E2E dependencies, not shipped in the app):
+`css-value@0.0.1` (via `webdriverio`) declares no license field, and
+`@promptbook/utils` (via `@wdio/utils` → `locate-app`) is CC-BY-4.0. Neither is
+copyleft; `npm run check:licenses` passes.
+
+## Coverage
+
+Coverage is a report, not a gate (no thresholds):
+
+- `npm run coverage` — Vitest + `@vitest/coverage-v8`. Summary in the console;
+  HTML in `coverage/index.html`, plus `lcov.info` and `coverage-summary.json`.
+- `npm run coverage:rust` — `cargo llvm-cov` over `src-tauri`. Summary in the
+  console; HTML in `coverage/rust/html/index.html`, plus `coverage/rust/lcov.info`.
+  One-time setup: `cargo install cargo-llvm-cov --locked` and
+  `rustup component add llvm-tools-preview`.
 
 ## Project layout
 

@@ -11,3 +11,13 @@ import { defaultSessionStore } from "./state/session-store";
 export async function getAccessToken(): Promise<string | null> {
   return (await defaultSessionStore.load())?.accessToken ?? null;
 }
+
+/** Token and user of the cached session, read together so a sync never mixes
+ *  one account's token with another's local changes (FIX-07). */
+export async function getSession(): Promise<{
+  accessToken: string;
+  userId: string;
+} | null> {
+  const s = await defaultSessionStore.load();
+  return s ? { accessToken: s.accessToken, userId: s.user.id } : null;
+}

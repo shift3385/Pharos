@@ -6,6 +6,7 @@ import {
   type TestSuggestion,
 } from "@modules/ai";
 import { planContextForProject } from "@modules/test-plan";
+import { useAuth } from "@modules/auth";
 import "@shared/ui/ConfirmDialog.css";
 import "./TestCase.css";
 
@@ -28,6 +29,8 @@ export function SuggestTestsModal({
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [phase, setPhase] = useState<Phase>("loading");
   const [items, setItems] = useState<TestSuggestion[]>([]);
   const [provenance, setProvenance] = useState<AiProvenance | null>(null);
@@ -37,7 +40,7 @@ export function SuggestTestsModal({
     let cancelled = false;
     (async () => {
       try {
-        const context = await planContextForProject(projectId);
+        const context = await planContextForProject(projectId, userId);
         const result = context
           ? await suggestTests(context, i18n.resolvedLanguage ?? "es")
           : null;
@@ -54,7 +57,7 @@ export function SuggestTestsModal({
     return () => {
       cancelled = true;
     };
-  }, [projectId, i18n.resolvedLanguage]);
+  }, [projectId, userId, i18n.resolvedLanguage]);
 
   function toggle(i: number) {
     setSelected((prev) => {

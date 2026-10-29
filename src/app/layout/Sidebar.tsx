@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "@app/navConfig";
 import { Logo } from "@shared/ui/Logo";
+import { APP_VERSION } from "@shared/version";
 
 /** Primary navigation rail (navy 900). Collapses to icons on narrow widths. */
 export function Sidebar() {
@@ -32,6 +33,13 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <span
+        className="sidebar__version"
+        data-testid="app-version"
+        title={t("app.version", { version: APP_VERSION })}
+      >
+        v{APP_VERSION}
+      </span>
     </aside>
   );
 }

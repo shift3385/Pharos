@@ -73,6 +73,7 @@ export function ProjectsPage() {
       const { exportProjectZip } = await import("../export/exportAll");
       const files = await exportProjectZip(
         project,
+        ownerId,
         t,
         i18n.resolvedLanguage ?? "es",
         onProgress(title),

@@ -18,6 +18,40 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - `npm run seed:test-user` (en `server/`) crea la cuenta local de pruebas del
   README en una base nueva o reseteada; no hace nada si ya existe y se niega a
   ejecutarse en producción.
+- **Requisitos y tarjetas del planificador se sincronizan (SYNC-04a):** un
+  requisito o un defecto creado en un equipo aparece en los demás, y los casos
+  vinculados a `REQ-xxx` resuelven allí. Mover una tarjeta de columna también
+  se sincroniza. Los adjuntos y las plantillas siguen siendo locales (SYNC-04b).
+- **La web avisa cuando pierde un conflicto (FIX-04):** si otro dispositivo
+  guardó una versión más reciente, la web muestra un aviso, conserva tu edición
+  y abre el mismo panel de conflictos que el escritorio para elegir versión.
+- **La web reintenta lo que no pudo enviar (FIX-04):** un cambio hecho con el
+  servidor caído queda en "Cambios pendientes" y se envía solo al volver.
+- **Copia antes de actualizar (SEC-06):** cuando una versión nueva va a
+  actualizar la base de datos local, antes guarda el archivo tal cual estaba,
+  cifrado, como `pharos.db.enc.bak-<versión>-<última migración>` en la carpeta
+  de datos de la app. Se conservan las 3 copias más recientes. Si la copia no se
+  puede guardar, la app no actualiza nada. Cómo restaurarla: README.
+- **Datos de una versión más nueva (SEC-06):** si abres Pharos con datos que
+  guardó una versión más reciente, la app muestra una pantalla que lo explica y
+  no abre ni modifica esos datos. Esta protección empieza en esta versión:
+  `0.1.0-alpha.1` no la tiene y abriría esos datos sin avisar. Para volver a
+  ella, restaura antes la copia `.bak`.
+- **Exportar diagnóstico (BASE-08):** en Administración → Diagnóstico, y en la
+  pantalla de error, un botón guarda en tu carpeta de descargas un `.zip` para
+  informar de un fallo: versión, sistema operativo, WebView2, migraciones
+  aplicadas y los registros recientes. Nunca incluye tus proyectos, casos,
+  perfil, base de datos, claves ni tokens; correos, tokens y rutas con tu
+  usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
+- **Registros de la app:** el escritorio guarda un log diario en
+  `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
+- **Pantalla de error:** si una vista falla, ya no queda la ventana en blanco:
+  aparece un aviso con "Reintentar", "Recargar" y "Exportar diagnóstico", y el
+  resto de la app sigue funcionando.
+- **Versión visible (UX-07):** la versión instalada aparece al pie de la barra
+  lateral y en Administración → Diagnóstico.
+- Para desarrollo: smoke E2E del binario real (`npm run e2e`, BASE-14) e
+  informes de cobertura (`npm run coverage`, `npm run coverage:rust`, BASE-13).
 - **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
   instalador NSIS como artefacto descargable. Las versiones alfa, beta y rc
   solo tienen instalador NSIS; las estables tendrán además MSI.
@@ -27,10 +61,59 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- **Cada sincronización lleva la versión de la app (SYNC-08):** el servidor
+  acepta su versión MENOR y la anterior; una app no admitida no escribe nada y,
+  desde esta versión, muestra "Actualiza la app para sincronizar".
+- El contador "Cambios pendientes" cuenta elementos, no ediciones: diez
+  ediciones del mismo caso son un cambio pendiente.
+- Un cambio que el servidor rechaza por su contenido (demasiado grande o no
+  válido) ya no bloquea la sincronización: se avisa, queda pendiente y el resto
+  se envía y se recibe.
+
+- **Los IDs de caso, requisito y defecto nunca se reutilizan (DAT-01,
+  ADR-0010):** si borras `ATS_003`, el siguiente caso es `ATS_004`, no otra vez
+  `ATS_003`, porque un tag `@ATS_003` en la automatización no debe pasar a
+  señalar otro caso. Antes, los casos sí reutilizaban el número del borrado.
+- **El ID de un caso no cambia una vez asignado (DAT-01):** el campo es de solo
+  lectura al editar un caso existente.
+- **Un ID escrito a mano no recupera el de un borrado (DAT-01):** crear un caso
+  o un requisito con el ID de uno borrado da error. Al importar requisitos por
+  CSV, las filas con la clave de un requisito borrado no se importan y se
+  avisa de cuáles son.
+- Los campos de auditoría "creado por" y "modificado por" de proyectos, planes y
+  casos guardan ahora el usuario que hizo el cambio (antes guardaban el ID del
+  propio registro o el nombre del autor). La actualización corrige los registros
+  existentes con el dueño del proyecto (FIX-06).
+
 - La configuración de IA anterior se migra sola: el modelo que tenías pasa a
   ser el modelo de Gemini.
 - "Probar conexión" muestra el mensaje real del proveedor cuando falla (clave
   incorrecta, modelo inexistente…).
+- La barra superior y la lateral quedan fijas: en páginas largas solo se
+  desplaza el contenido (antes se desplazaba toda la ventana).
+
+### Corregido
+
+- **Indicador atascado en "Pendiente" (FIX-01):** editar un requisito, una
+  tarjeta o una plantilla ya no deja el indicador en "Cambios pendientes" tras
+  sincronizar; solo cuenta lo que el sync envía.
+- **Conflictos en la web:** si otro equipo vuelve a cambiar un elemento en
+  conflicto, el panel muestra su versión más reciente, no una antigua.
+- **Deshacer el borrado de un proyecto:** si el borrado choca con una edición
+  en otro equipo y eliges "Usar la del servidor", el proyecto vuelve con sus
+  planes, casos, requisitos y tarjetas.
+- Lo que llega por sincronización (proyectos, planes, casos, requisitos y
+  tarjetas) registra como `created_by`/`updated_by` la cuenta dueña, no el
+  nombre de autor escrito a mano; un pull ya no reintroduce el fallo de FIX-06.
+- Un cambio hecho antes de que llegara su proyecto ya no se queda sin enviar en
+  silencio: se envía cuando llega el proyecto, y mientras tanto el indicador
+  lo dice.
+- **Sincronizaciones grandes (FIX-02, FIX-03):** con más de 500 documentos el
+  escritorio y la web reciben todo, página a página, y miles de cambios
+  pendientes se envían por lotes, con reintento, sin error 413.
+- **Borrar un proyecto (FIX-05):** sus planes, casos, requisitos y tarjetas
+  también desaparecen en los demás equipos. Los hijos de proyectos borrados
+  antes de esta versión se reparan solos en el servidor.
 
 ### Corregido
 
@@ -40,6 +123,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Seguridad
 
+- **Varias cuentas en el mismo equipo (FIX-07):** los cambios pendientes, el
+  cursor de sincronización y los conflictos son de cada cuenta. Al cambiar de
+  cuenta, la nueva nunca envía ni sobrescribe lo de la anterior. En la web, la
+  copia local de los datos se vacía al cerrar sesión y al entrar otra cuenta;
+  los cambios sin enviar de cada cuenta se conservan.
 - **Servidor endurecido (BASE-06):**
   - En producción el servidor no arranca con el secreto JWT de ejemplo, con un
     secreto de menos de 32 caracteres o con `CORS_ORIGIN=*`.
@@ -58,6 +146,19 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.
 - Un endpoint compatible personalizado debe usar `https` (http solo en
   `localhost`), para que la clave no viaje sin cifrar.
+- **Cada usuario solo ve y cambia lo suyo (FIX-08):** en un equipo con dos
+  cuentas, los casos, planes, requisitos y adjuntos de una no se pueden leer ni
+  modificar desde la otra. Borrar algo que no existe ya no deja un cambio
+  pendiente de sincronizar.
+
+### Cambios incompatibles
+
+- El servidor rechaza la sincronización de apps sin versión (`0.1.0-alpha.1`);
+  esas apps solo muestran "push 426". Hay que desplegar el servidor y la web
+  juntos y actualizar la app de escritorio: una app nueva contra un servidor
+  antiguo no puede enviar requisitos ni tarjetas. Al actualizar, cada cuenta
+  descarga sus datos una vez más desde el principio (sin pérdida). Migraciones
+  locales `0012` y `0013` y del servidor `0004` (ADR-0020).
 
 ## [0.1.0-alpha.1] - 2026-10-28
 

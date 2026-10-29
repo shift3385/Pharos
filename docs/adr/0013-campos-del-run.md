@@ -1,0 +1,263 @@
+# ADR-0013 · El Run nace con su contexto: entorno, build, commit, dataset, origen e identidad CTRF (RUN-00)
+
+- **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
+  respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
+  independiente (ver "Revisión"): precisiones de identidad, sin cambio de
+  decisión. Absorbe EJE-05 y los campos de TRZ-04. Bloquea EJE-01, EJE-02 e
+  ING-02..05.
+- **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
+
+## Contexto
+
+- **Contexto de ejecución.** El estudio del arte propone
+  `Run(run_id, project, plan_id?, build/commit, environment, trigger, source_tool)`
+  → `Shard` → `Result(case_id? | unlinked_key, attempt, status, flaky…)`. Un run
+  sin entorno, build ni dataset no permite reproducir ni informar.
+- **Lo que mostró el spike ING-01** (§3, §4):
+  - ningún formato trae un `run_id` común, así que lo asigna Pharos;
+  - el shard solo aparece en CTRF por shard o en el comando de subida;
+  - los reintentos solo están completos en Cucumber Messages y CTRF;
+  - resubir un archivo exige el hash del archivo para no duplicar;
+  - el estado se calcula ignorando los hooks.
+- **El tag de caso no identifica un test.** Un caso avanzado pone el mismo
+  `@<scenario_id>` en todos sus flujos (`src/modules/test-cases/ui/gherkin.ts`,
+  bucle `for (const flow of flows)`), así que un run produce N tests con la
+  misma clave de caso.
+- **Índices únicos.** Un `UNIQUE` sobre filas sincronizadas con ids aleatorios
+  hace fallar el pull entero cuando dos equipos escriben la "misma" fila. Le pasa
+  a dos equipos que registran el intento n del mismo elemento, o que importan el
+  mismo archivo en el mismo run. Es lo que [ADR-0010](0010-claves-entre-equipos.md)
+  aplazó y [ADR-0020](0020-sync-por-usuario-cascada-y-version.md) quitó.
+- **Resultados sin vínculo.** Un test sin tag va a una bandeja y se enlaza
+  después (ING-05). El enlace no puede modificar el resultado (ROADMAP §8).
+- **Riesgo.** `requirements` (`0010_traceability.sql`) solo tiene `priority`.
+  TRZ-04 pide probabilidad × impacto (ISTQB CTFL 4.0 §5.2).
+- **Ejecución manual.** Necesita saber qué se iba a ejecutar ("3 de 12"), no
+  solo qué se ejecutó.
+
+## Opciones
+
+| Opción                                                                                                        | A favor                        | En contra                                                      |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------- |
+| **A. Run mínimo** (proyecto, fecha, estado)                                                                   | Menos trabajo ahora            | Migraciones con datos reales; los runs históricos sin contexto |
+| **B. Run con todo el contexto desde el día 1**: columnas para lo que se filtra y `context` JSON para el resto | Informes y filtros desde 0.2.0 | Más campos opcionales en la UI del run manual                  |
+| **C. Contexto normalizado** (tablas `environments`, `builds`, `datasets`)                                     | Integridad y listas cerradas   | Mucha UI; desde CI llegan como texto libre                     |
+
+## Decisión: B
+
+La **configuración** (navegador × SO × dispositivo) sí es una entidad
+(ADR-0017). El entorno, el build y el dataset son texto.
+
+- **Run:** una ejecución contra un contexto. Su cabecera es LWW y solo se edita
+  mientras está `in_progress`. Tiene una clave visible `RUN-001`.
+- **Shard:** una subida o importación dentro de un Run.
+  - `id = UUIDv5(NS_RUN_SHARD, run_id ‖ source_file_sha256)`: el mismo archivo
+    en el mismo run da el mismo shard en cualquier equipo, así que resubirlo no
+    duplica nada.
+  - Guarda el informe en bruto como evidencia (ADR-0014).
+  - Los resultados manuales no tienen shard.
+- **Run item:** lo previsto, es decir, caso + revisión congelada + flujo + fila +
+  configuración + asignado. Lo crea la ejecución manual o el ciclo (ADR-0017).
+- **Result:** un intento, inmutable.
+- **`test_key` siempre presente** (identidad del test, haya caso o no):
+  - **importado**: ruta normalizada (`/`, relativa al repositorio) +
+    nombre del escenario o test + índice de fila (ING-01 §3);
+  - **manual**: `manual:<test_case_id>/<flow_id|->/<example_row_id|->`.
+
+  Sustituye a `unlinked_key`. Un resultado sin caso es simplemente uno con
+  `test_case_id` nulo.
+
+- **Clave natural** `(run_id, test_key, configuration_label, attempt)`. Es un
+  índice **no único**: la deduplicación la hacen los ids deterministas y la capa
+  de importación, nunca la base de datos.
+- **Ids de resultado:**
+  - **importado**:
+    `id = UUIDv5(NS_RESULT, shard_id ‖ test_key ‖ configuration_label ‖ attempt)`.
+    Dos equipos que importan el mismo archivo producen los mismos ids, y
+    `append_only` inserta solo si no existe;
+  - **manual**: UUID aleatorio. Dos equipos que registran a la vez "el intento 2"
+    del mismo elemento conservan los dos.
+- **Intento final:** el último de cada `(run_id, test_key, configuration_label)`,
+  ordenando por `coalesce(finished_at, started_at, shard.imported_at)`, después
+  por `attempt` y después por `hlc`. No se guarda: se deriva. `attempt` (desde 0)
+  es el número que da la herramienta o el orden local, y solo se muestra.
+- **Flaky:** se deriva cuando hay varios intentos (el final pasó y alguno
+  anterior falló). Cuando la herramienta solo envía el intento final (CTRF
+  `flaky`, `flakyFailure` de JUnit/Surefire), vale lo que diga
+  `attributes.flaky`.
+- **Estados de Result:** `passed | failed | blocked | skipped | other`, más
+  `raw_status` con el valor original. `blocked` solo lo usa la ejecución manual.
+- **StepResult:** se escribe a la vez que su Result y es igual de inmutable.
+  Referencia el `step_id` de ADR-0011 cuando lo hay.
+- **Enlace posterior (ING-05):** no toca el Result. Una regla
+  `unlinked_mapping (project_id, test_key → test_case_id)` vale para los
+  resultados pasados y futuros con ese `test_key`.
+  - `id = UUIDv5(NS_UNLINKED_MAPPING, project_id ‖ test_key)`: hay una regla por
+    clave en todos los equipos y el último cambio gana.
+  - El caso efectivo de un resultado es
+    `coalesce(results.test_case_id, mapping.test_case_id)`.
+- **Ejecución manual:**
+  - el estado de los pasos vive en un borrador local (`execution_drafts`, que no
+    se sincroniza) hasta cerrar el intento;
+  - al cerrarlo se escriben el Result y sus StepResult;
+  - para corregir hay que hacer un nuevo intento.
+- **Riesgo del requisito:**
+  - `risk_likelihood` y `risk_impact` son enteros de 1 a 5;
+  - `risk_level = likelihood × impact` (1–25) se deriva, no se guarda;
+  - las bandas se configuran por proyecto (por defecto: bajo ≤ 4, medio ≤ 12,
+    alto > 12).
+- **Estado en la matriz (EJE-04).** Para cada caso:
+  1. se toman sus resultados finales y se elige el run del más reciente por
+     `coalesce(result.finished_at, run.started_at)` (incluye runs en curso);
+  2. dentro de ese run, el estado es el peor entre los resultados finales del
+     caso (todos los flujos, filas y configuraciones) y las métricas vinculadas
+     con umbral (ADR-0012);
+  3. un resultado cuya `test_case_revision_id` no es la revisión vigente se marca
+     como **desactualizado**.
+
+  Se puede filtrar por ciclo, configuración y build.
+
+## Esquema (boceto)
+
+SQLite local. Ninguna tabla tiene índices `UNIQUE` aparte de la clave primaria
+(ADR-0011, "Clase de sync").
+
+```sql
+CREATE TABLE runs (
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
+  run_key TEXT NOT NULL,                    -- RUN-001 (DAT-01)
+  title TEXT NOT NULL,
+  trigger TEXT NOT NULL,                    -- manual | local | agent | ci | cloud | import
+  source_tool TEXT, source_tool_version TEXT,
+  test_plan_id TEXT, cycle_id TEXT, configuration_id TEXT,   -- ADR-0017
+  environment TEXT, build TEXT, commit_sha TEXT, branch TEXT, repository_url TEXT, ci_url TEXT,
+  dataset TEXT,                             -- nombre@versión o hash
+  context TEXT NOT NULL DEFAULT '{}',       -- variables permitidas, protocolVersion, config de la herramienta
+  status TEXT NOT NULL DEFAULT 'in_progress',     -- in_progress | completed | aborted
+  started_at TEXT, finished_at TEXT,
+  summary TEXT NOT NULL DEFAULT '{}',       -- recuentos en caché, recalculables
+  data TEXT NOT NULL DEFAULT '{}',          -- campos personalizados (ADR-0018)
+  created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL, deleted_at TEXT, revision INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE run_shards (                   -- append-only; id = UUIDv5(run_id ‖ source_file_sha256)
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
+  run_id TEXT NOT NULL REFERENCES runs (id),
+  shard_index INTEGER, shard_total INTEGER,
+  source_format TEXT NOT NULL,              -- cucumber_messages | ctrf | junit | playwright_json | pharos_run_json | sarif | k6 | axe
+  source_file_sha256 TEXT NOT NULL, source_attachment_id TEXT,
+  format_version TEXT,                      -- protocolVersion de Messages, specVersion de CTRF
+  imported_by TEXT NOT NULL, imported_at TEXT NOT NULL, hlc TEXT NOT NULL
+);
+CREATE INDEX run_shards_file_idx ON run_shards (run_id, source_file_sha256);   -- no único
+
+CREATE TABLE run_items (                    -- LWW
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
+  run_id TEXT NOT NULL REFERENCES runs (id),
+  test_case_id TEXT NOT NULL, test_case_revision_id TEXT NOT NULL,
+  flow_id TEXT, example_row_id TEXT, example_row INTEGER,
+  configuration_id TEXT, assignee TEXT, position INTEGER NOT NULL DEFAULT 0,
+  created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL, deleted_at TEXT, revision INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE results (                      -- append-only
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
+  run_id TEXT NOT NULL REFERENCES runs (id), shard_id TEXT, run_item_id TEXT,
+  test_key TEXT NOT NULL,                   -- identidad del test (importado o manual)
+  test_case_id TEXT, test_case_revision_id TEXT, case_revision INTEGER,
+  case_key TEXT,                            -- <scenario_id> tal como llegó en el tag (ATS_002)
+  flow_id TEXT,                             -- flujo de un caso avanzado (ADR-0011)
+  example_row_id TEXT, example_row INTEGER, example_values TEXT,
+  configuration_id TEXT, configuration_label TEXT,  -- proyecto de Playwright, navegador, dispositivo
+  attempt INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL, raw_status TEXT,
+  duration_ms INTEGER, started_at TEXT, finished_at TEXT,
+  error_message TEXT, error_trace TEXT,
+  executed_by TEXT NOT NULL,                -- user:<id> o la herramienta
+  external_id TEXT,                         -- testId de CTRF/Playwright: informativo, nunca clave
+  attributes TEXT NOT NULL DEFAULT '{}',    -- incluye flaky declarado por la herramienta
+  created_by TEXT NOT NULL, created_at TEXT NOT NULL, hlc TEXT NOT NULL
+);
+CREATE INDEX results_natural_idx ON results
+  (run_id, test_key, coalesce(configuration_label, ''), attempt);   -- no único
+CREATE INDEX results_case_idx ON results (test_case_id);
+
+CREATE TABLE step_results (                 -- append-only, dentro del documento de su Result
+  id TEXT PRIMARY KEY, result_id TEXT NOT NULL REFERENCES results (id),
+  position INTEGER NOT NULL, step_id TEXT,  -- ADR-0011
+  keyword TEXT, text TEXT NOT NULL,
+  status TEXT NOT NULL, actual TEXT, duration_ms INTEGER, gherkin_line INTEGER
+);
+
+CREATE TABLE unlinked_mappings (            -- LWW; id = UUIDv5(project_id ‖ test_key)
+  id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
+  test_key TEXT NOT NULL, test_case_id TEXT,  -- NULL = enlace retirado
+  created_by TEXT NOT NULL, updated_by TEXT NOT NULL, created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL, deleted_at TEXT, revision INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE execution_drafts (             -- solo local, no se sincroniza
+  run_item_id TEXT PRIMARY KEY, state TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+
+ALTER TABLE requirements ADD COLUMN risk_likelihood INTEGER;   -- 1..5; NULL = sin evaluar
+ALTER TABLE requirements ADD COLUMN risk_impact INTEGER;
+```
+
+Servidor: documentos `run`, `run_shard`, `run_item`, `result` (con sus
+`step_results` dentro) y `unlinked_mapping`. Las tablas reales llegan con INT-02
+(0.5.0).
+
+## Impacto en sync y migraciones
+
+- **Clases de sync:**
+  - LWW: `run`, `run_item` y `unlinked_mapping`;
+  - `append_only` (ADR-0011): `run_shard` y `result`;
+  - fuera del sync: `execution_drafts`.
+- **Dueño ([ADR-0020](0020-sync-por-usuario-cascada-y-version.md), regla 1):**
+  hasta 0.3.0, todas estas entidades derivan su dueño de `project_id` →
+  `projects.owner_id`. Por eso todas llevan `project_id`, incluso las que
+  cuelgan de un run.
+- **Claves `RUN-` y `CYC-` con DAT-01.** `key_counters.kind` tiene un `CHECK`
+  limitado a `case`, `requirement` y `defect` (migración `0016` de A2). La
+  migración de 0.2.0 **reconstruye** esa tabla (crear, copiar, borrar, renombrar;
+  es pequeña) para añadir `run` y `cycle`. Los bloques del servidor de ADR-0010
+  (`key_blocks`) deben aceptar esos tipos. Hay que coordinarlo con A2.
+- **Volumen.** Un resultado viaja como **un documento con sus pasos dentro**. El
+  push por lotes (FIX-03) y el pull paginado (FIX-02) son requisito previo.
+- **El servidor no recalcula nada.** Valida el esquema y aplica las reglas de
+  `append_only`.
+- **Migración solo aditiva**, salvo la reconstrucción de `key_counters`. Los
+  `risk_*` de un requisito que llega de un cliente sin esos campos conservan el
+  valor local (ADR-0011, compatibilidad).
+- **Tests de actualización:**
+  - abrir una base 0.1.0 crea las tablas y conserva requisitos y contadores;
+  - importar el mismo archivo en dos equipos y sincronizar deja una sola copia;
+  - dos intentos manuales simultáneos se conservan los dos y el pull no falla.
+
+## Decisiones del usuario (2026-10-28)
+
+1. El riesgo usa una escala de 1 a 5 por factor, con bandas configurables por
+   proyecto.
+2. En la ejecución manual, el estado de los pasos queda en un borrador local
+   hasta cerrar el intento.
+3. Los runs llevan la clave visible `RUN-001`, con el mecanismo de DAT-01.
+4. La matriz muestra el último resultado por fecha, con filtros de ciclo,
+   configuración y build. No se limita al ciclo activo por defecto.
+
+## Revisión (2026-10-28, tras la revisión independiente)
+
+Son precisiones; la decisión no cambia.
+
+- `test_key` siempre presente, que sustituye a `unlinked_key`.
+- `flow_id` y `example_row_id`.
+- Clave natural no única.
+- Ids deterministas para shards, resultados importados y reglas de enlace.
+- Intento final ordenado por tiempo, `attempt` y `hlc`.
+- Flaky tomado de la herramienta cuando solo llega el intento final.
+- Estado de la matriz: el run más reciente y, dentro de él, el peor resultado;
+  con marca de desactualizado.
+- `project_id` en todas las tablas por la regla del dueño de ADR-0020.
+- Reconstrucción de `key_counters` para `run` y `cycle`.

@@ -1,6 +1,8 @@
 //! Local planner repository + Tauri commands (spec §7). A per-project kanban of
 //! tasks, defects and test data. Cards move across columns; attachments are
-//! stored as blobs inside the encrypted database. Everything is owner-scoped.
+//! stored as blobs inside the encrypted database. Everything is owner-scoped,
+//! attachments included (FIX-08). Defect keys come from the project's key
+//! counter (DAT-01, ADR-0010).
 
 use base64::Engine as _;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -10,7 +12,9 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::keys::{self, KeyKind};
 use crate::oplog;
+use crate::project;
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
@@ -87,7 +91,7 @@ fn map_card(row: &rusqlite::Row) -> rusqlite::Result<PlannerCard> {
 }
 
 /// Cards of a project, owner-scoped, ordered for the board.
-fn list_cards(
+pub(crate) fn list_cards(
     conn: &Connection,
     project_id: &str,
     owner_id: &str,
@@ -131,9 +135,15 @@ fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, String> {
 }
 
 fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, String> {
+    if !project::owns(conn, &input.project_id, &input.owner_id)? {
+        return Err("project not found".to_string());
+    }
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
-    let status = input.status.clone().unwrap_or_else(|| "backlog".to_string());
+    let status = input
+        .status
+        .clone()
+        .unwrap_or_else(|| "backlog".to_string());
     // Append to the bottom of its column.
     let position: i64 = conn
         .query_row(
@@ -157,34 +167,32 @@ fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, St
             input.kind,
             input.title,
             status,
-            input.priority.clone().unwrap_or_else(|| "medium".to_string()),
+            input
+                .priority
+                .clone()
+                .unwrap_or_else(|| "medium".to_string()),
             position,
             data_str,
         ],
     )
     .map_err(|e| e.to_string())?;
     ensure_defect_key(conn, &id)?;
-    oplog::record(conn, "planner_card", &id, "upsert", "{}", 1, &input.owner_id)?;
+    oplog::record(
+        conn,
+        "planner_card",
+        &id,
+        "upsert",
+        "{}",
+        1,
+        &input.owner_id,
+    )?;
     Ok(id)
 }
 
-/// Next defect key within a project: highest `DEF-` suffix + 1, counting
-/// soft-deleted cards too so a key is never reused (the matrix shows it).
+/// Next defect key within a project, from its key counter, so a key is never
+/// reused (the matrix shows it).
 fn next_defect_key(conn: &Connection, project_id: &str) -> Result<String, String> {
-    let mut stmt = conn
-        .prepare("SELECT card_key FROM planner_cards WHERE project_id = ?1 AND card_key IS NOT NULL")
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map(params![project_id], |r| r.get::<_, String>(0))
-        .map_err(|e| e.to_string())?;
-    let mut max: u64 = 0;
-    for row in rows {
-        let key = row.map_err(|e| e.to_string())?;
-        if let Some(n) = key.strip_prefix(DEFECT_KEY_PREFIX).and_then(|s| s.parse::<u64>().ok()) {
-            max = max.max(n);
-        }
-    }
-    Ok(format!("{DEFECT_KEY_PREFIX}{:03}", max + 1))
+    keys::allocate(conn, KeyKind::Defect, project_id, DEFECT_KEY_PREFIX, 3)
 }
 
 /// Gives a defect its key the first time it is a defect (on create, or when a
@@ -213,20 +221,28 @@ fn ensure_defect_key(conn: &Connection, id: &str) -> Result<(), String> {
 
 fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<(), String> {
     let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
-    conn.execute(
-        "UPDATE planner_cards SET kind = ?2, title = ?3, priority = ?4, data = ?5, \
-         updated_by = ?6, updated_at = datetime('now'), revision = revision + 1 \
-         WHERE id = ?1 AND owner_id = ?6 AND deleted_at IS NULL",
-        params![
-            id,
-            input.kind,
-            input.title,
-            input.priority.clone().unwrap_or_else(|| "medium".to_string()),
-            data_str,
-            input.owner_id,
-        ],
-    )
-    .map_err(|e| e.to_string())?;
+    let changed = conn
+        .execute(
+            "UPDATE planner_cards SET kind = ?2, title = ?3, priority = ?4, data = ?5, \
+             updated_by = ?6, updated_at = datetime('now'), revision = revision + 1 \
+             WHERE id = ?1 AND owner_id = ?6 AND deleted_at IS NULL",
+            params![
+                id,
+                input.kind,
+                input.title,
+                input
+                    .priority
+                    .clone()
+                    .unwrap_or_else(|| "medium".to_string()),
+                data_str,
+                input.owner_id,
+            ],
+        )
+        .map_err(|e| e.to_string())?;
+    // A foreign or unknown card: nothing to key or journal.
+    if changed == 0 {
+        return Err("card not found".to_string());
+    }
     ensure_defect_key(conn, id)?;
     oplog::record(conn, "planner_card", id, "upsert", "{}", 0, &input.owner_id)?;
     Ok(())
@@ -234,20 +250,19 @@ fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<
 
 /// Persists the order of a column after a drag: every id gets its index as
 /// position and the target status (handles both moves and reorders).
-fn reorder(
-    conn: &Connection,
-    owner_id: &str,
-    status: &str,
-    ids: &[String],
-) -> Result<(), String> {
+fn reorder(conn: &Connection, owner_id: &str, status: &str, ids: &[String]) -> Result<(), String> {
     for (i, id) in ids.iter().enumerate() {
-        conn.execute(
+        let moved = conn.execute(
             "UPDATE planner_cards SET status = ?2, position = ?3, \
              updated_at = datetime('now'), revision = revision + 1 \
              WHERE id = ?1 AND owner_id = ?4 AND deleted_at IS NULL",
             params![id, status, i as i64, owner_id],
         )
         .map_err(|e| e.to_string())?;
+        // A move changes status/position, which sync carries (SYNC-04a).
+        if moved > 0 {
+            oplog::record(conn, "planner_card", id, "upsert", "{}", 0, owner_id)?;
+        }
     }
     Ok(())
 }
@@ -264,7 +279,10 @@ pub fn planner_list(
 }
 
 #[tauri::command]
-pub fn planner_create(db: State<Db>, input: PlannerCardInput) -> Result<Option<PlannerCard>, String> {
+pub fn planner_create(
+    db: State<Db>,
+    input: PlannerCardInput,
+) -> Result<Option<PlannerCard>, String> {
     let owner = input.owner_id.clone();
     let id = db.with_conn(|conn| insert_card(conn, &input))?;
     db.persist()?;
@@ -283,20 +301,24 @@ pub fn planner_update(
     db.with_conn(|conn| get_card(conn, &id, &owner))
 }
 
+/// Soft-deletes a card the user owns. An unknown or foreign id is an error and
+/// leaves no oplog row behind.
+fn delete_card(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
+    if !owns(conn, id, owner_id)? {
+        return Err("card not found".to_string());
+    }
+    conn.execute(
+        "UPDATE planner_cards SET deleted_at = datetime('now'), updated_by = ?2 WHERE id = ?1",
+        params![id, owner_id],
+    )
+    .map_err(|e| e.to_string())?;
+    oplog::record(conn, "planner_card", id, "delete", "{}", 0, owner_id)?;
+    Ok(())
+}
+
 #[tauri::command]
 pub fn planner_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
-    db.with_conn(|conn| {
-        if !owns(conn, &id, &owner_id)? {
-            return Err("card not found".to_string());
-        }
-        conn.execute(
-            "UPDATE planner_cards SET deleted_at = datetime('now') WHERE id = ?1",
-            params![id],
-        )
-        .map_err(|e| e.to_string())?;
-        oplog::record(conn, "planner_card", &id, "delete", "{}", 0, &owner_id)?;
-        Ok(())
-    })?;
+    db.with_conn(|conn| delete_card(conn, &id, &owner_id))?;
     db.persist()
 }
 
@@ -343,15 +365,22 @@ pub fn planner_attachment_add(
     }))
 }
 
-fn list_attachments(conn: &Connection, card_id: &str) -> Result<Vec<AttachmentSummary>, String> {
+/// Attachments of a live card the user owns (none for anyone else).
+pub(crate) fn list_attachments(
+    conn: &Connection,
+    card_id: &str,
+    owner_id: &str,
+) -> Result<Vec<AttachmentSummary>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, name, mime, length(bytes) FROM planner_attachments \
-             WHERE card_id = ?1 ORDER BY created_at",
+            "SELECT a.id, a.name, a.mime, length(a.bytes) FROM planner_attachments a \
+             JOIN planner_cards c ON c.id = a.card_id \
+             WHERE a.card_id = ?1 AND c.owner_id = ?2 AND c.deleted_at IS NULL \
+             ORDER BY a.created_at",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map(params![card_id], |r| {
+        .query_map(params![card_id, owner_id], |r| {
             Ok(AttachmentSummary {
                 id: r.get(0)?,
                 name: r.get(1)?,
@@ -364,44 +393,70 @@ fn list_attachments(conn: &Connection, card_id: &str) -> Result<Vec<AttachmentSu
         .map_err(|e| e.to_string())
 }
 
+/// Content of an attachment whose card the user owns.
+fn get_attachment(
+    conn: &Connection,
+    id: &str,
+    owner_id: &str,
+) -> Result<Option<AttachmentData>, String> {
+    conn.query_row(
+        "SELECT a.name, a.mime, a.bytes FROM planner_attachments a \
+         JOIN planner_cards c ON c.id = a.card_id \
+         WHERE a.id = ?1 AND c.owner_id = ?2 AND c.deleted_at IS NULL",
+        params![id, owner_id],
+        |r| {
+            let bytes: Vec<u8> = r.get(2)?;
+            Ok(AttachmentData {
+                name: r.get(0)?,
+                mime: r.get(1)?,
+                data_base64: B64.encode(bytes),
+            })
+        },
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
+/// Removes an attachment whose card the user owns.
+fn delete_attachment(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
+    let removed = conn
+        .execute(
+            "DELETE FROM planner_attachments WHERE id = ?1 AND card_id IN \
+             (SELECT id FROM planner_cards WHERE owner_id = ?2 AND deleted_at IS NULL)",
+            params![id, owner_id],
+        )
+        .map_err(|e| e.to_string())?;
+    if removed == 0 {
+        return Err("attachment not found".to_string());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn planner_attachment_list(
     db: State<Db>,
     card_id: String,
+    owner_id: String,
 ) -> Result<Vec<AttachmentSummary>, String> {
-    db.with_conn(|conn| list_attachments(conn, &card_id))
+    db.with_conn(|conn| list_attachments(conn, &card_id, &owner_id))
 }
 
 #[tauri::command]
 pub fn planner_attachment_get(
     db: State<Db>,
     id: String,
+    owner_id: String,
 ) -> Result<Option<AttachmentData>, String> {
-    db.with_conn(|conn| {
-        conn.query_row(
-            "SELECT name, mime, bytes FROM planner_attachments WHERE id = ?1",
-            params![id],
-            |r| {
-                let bytes: Vec<u8> = r.get(2)?;
-                Ok(AttachmentData {
-                    name: r.get(0)?,
-                    mime: r.get(1)?,
-                    data_base64: B64.encode(bytes),
-                })
-            },
-        )
-        .optional()
-        .map_err(|e| e.to_string())
-    })
+    db.with_conn(|conn| get_attachment(conn, &id, &owner_id))
 }
 
 #[tauri::command]
-pub fn planner_attachment_delete(db: State<Db>, id: String) -> Result<(), String> {
-    db.with_conn(|conn| {
-        conn.execute("DELETE FROM planner_attachments WHERE id = ?1", params![id])
-            .map_err(|e| e.to_string())?;
-        Ok(())
-    })?;
+pub fn planner_attachment_delete(
+    db: State<Db>,
+    id: String,
+    owner_id: String,
+) -> Result<(), String> {
+    db.with_conn(|conn| delete_attachment(conn, &id, &owner_id))?;
     db.persist()
 }
 
@@ -410,11 +465,81 @@ mod tests {
     use super::*;
 
     const OWNER: &str = "user-1";
+    const OTHER: &str = "user-2";
 
+    /// A database with project `p1`, owned by OWNER.
     fn conn() -> Connection {
         let c = Connection::open_in_memory().unwrap();
         crate::db::run_migrations(&c).unwrap();
+        let ws = ensure_workspace(&c).unwrap();
+        c.execute(
+            "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, \
+             created_at, updated_at) VALUES ('p1', ?1, ?2, 'P', ?2, ?2, datetime('now'), datetime('now'))",
+            params![ws, OWNER],
+        )
+        .unwrap();
         c
+    }
+
+    fn oplog_rows(c: &Connection) -> i64 {
+        c.query_row("SELECT count(*) FROM oplog", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    fn attach(c: &Connection, card_id: &str) -> String {
+        let id = Uuid::new_v4().to_string();
+        c.execute(
+            "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) VALUES (?1,?2,?3,?4,?5)",
+            params![id, card_id, "log.txt", "text/plain", b"hello".to_vec()],
+        )
+        .unwrap();
+        id
+    }
+
+    #[test]
+    fn another_user_can_neither_read_nor_modify_cards_or_attachments() {
+        let c = conn();
+        let card = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let file = attach(&c, &card);
+        let ops = oplog_rows(&c);
+
+        assert!(list_attachments(&c, &card, OTHER).unwrap().is_empty());
+        assert!(get_attachment(&c, &file, OTHER).unwrap().is_none());
+        assert!(delete_attachment(&c, &file, OTHER).is_err());
+        let mut theirs = input("task", "Hijacked", None);
+        theirs.owner_id = OTHER.to_string();
+        assert!(insert_card(&c, &theirs).is_err());
+        assert!(update_card(&c, &card, &theirs).is_err());
+        assert!(delete_card(&c, &card, OTHER).is_err());
+
+        assert_eq!(get_card(&c, &card, OWNER).unwrap().unwrap().title, "Bug");
+        assert_eq!(list_attachments(&c, &card, OWNER).unwrap().len(), 1);
+        assert!(get_attachment(&c, &file, OWNER).unwrap().is_some());
+        assert_eq!(oplog_rows(&c), ops);
+    }
+
+    #[test]
+    fn deleting_an_unknown_card_fails_without_an_oplog_row() {
+        let c = conn();
+        assert!(delete_card(&c, "no-such-card", OWNER).is_err());
+        assert!(update_card(&c, "no-such-card", &input("defect", "X", None)).is_err());
+        assert_eq!(oplog_rows(&c), 0);
+    }
+
+    #[test]
+    fn defect_keys_are_never_reused() {
+        let c = conn();
+        let d1 = insert_card(&c, &input("defect", "D1", None)).unwrap();
+        delete_card(&c, &d1, OWNER).unwrap();
+        let d2 = insert_card(&c, &input("defect", "D2", None)).unwrap();
+        assert_eq!(
+            get_card(&c, &d2, OWNER)
+                .unwrap()
+                .unwrap()
+                .card_key
+                .as_deref(),
+            Some("DEF-002")
+        );
     }
 
     fn input(kind: &str, title: &str, status: Option<&str>) -> PlannerCardInput {
@@ -462,7 +587,7 @@ mod tests {
     fn reorder_moves_between_columns() {
         let c = conn();
         let a = insert_card(&c, &input("task", "A", Some("backlog"))).unwrap();
-        reorder(&c, OWNER, "in_progress", &[a.clone()]).unwrap();
+        reorder(&c, OWNER, "in_progress", std::slice::from_ref(&a)).unwrap();
         let card = get_card(&c, &a, OWNER).unwrap().unwrap();
         assert_eq!(card.status, "in_progress");
         assert_eq!(card.position, 0);
@@ -472,17 +597,11 @@ mod tests {
     fn attachments_roundtrip_and_delete() {
         let c = conn();
         let a = insert_card(&c, &input("defect", "Bug", None)).unwrap();
-        let id = Uuid::new_v4().to_string();
-        c.execute(
-            "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) VALUES (?1,?2,?3,?4,?5)",
-            params![id, a, "log.txt", "text/plain", b"hello".to_vec()],
-        )
-        .unwrap();
-        let list = list_attachments(&c, &a).unwrap();
+        let id = attach(&c, &a);
+        let list = list_attachments(&c, &a, OWNER).unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].size, 5);
-        c.execute("DELETE FROM planner_attachments WHERE id = ?1", params![id])
-            .unwrap();
-        assert_eq!(list_attachments(&c, &a).unwrap().len(), 0);
+        delete_attachment(&c, &id, OWNER).unwrap();
+        assert_eq!(list_attachments(&c, &a, OWNER).unwrap().len(), 0);
     }
 }

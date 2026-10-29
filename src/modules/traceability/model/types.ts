@@ -43,6 +43,8 @@ export interface RequirementImportRow {
 export interface ImportSummary {
   created: number;
   updated: number;
+  /** Keys of deleted requirements in the file: never reused, not imported. */
+  skipped: string[];
 }
 
 /** A key must be usable as a Gherkin tag: no whitespace and no characters that
