@@ -330,6 +330,9 @@ account (`seed:test-user`, idempotent), builds the debug binary
 the specs. Results: the console, plus one JUnit file per spec
 (`e2e/results/e2e-<worker>.junit.xml`), the run's app logs in
 `e2e/results/app-logs/` and a screenshot of Administration → Diagnóstico.
+With `PHAROS_E2E_DRIVER_LOG=1`, `e2e/results/msedgedriver.log` also holds
+msedgedriver's verbose log (CI sets it); a run stopped halfway can then leave
+an `msedgedriver.exe` running.
 
 The smoke never touches your own data: each run sets `PHAROS_E2E_PROFILE`, so
 the debug binary uses its own data folder, log folder and keychain accounts
