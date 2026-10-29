@@ -35,8 +35,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # typecheck, lint (0 warnings), licenses, version, migrations, script tests, vitest
-      - run: npm run verify
+      # `npm run verify` split in two so vitest runs once: verify:static is
+      # typecheck, lint (0 warnings), licenses, version, migrations and script
+      # tests; `npm run coverage` is the vitest suite with the v8 report, and
+      # fails the job like `npm test` when a test fails.
+      - run: npm run verify:static
       # Coverage report on every PR (BASE-13): totals in the job summary, the
       # full report (HTML, lcov, json-summary) as an artifact. No PR comment,
       # so the workflow keeps `contents: read`. Rust coverage stays local

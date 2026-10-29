@@ -228,6 +228,7 @@ Frontend (repository root):
 | `npm run check:rust`           | `cargo fmt --check` + `cargo clippy -D warnings` with the exact exceptions of `scripts/rust-gates.allowlist.json` |
 | `npm run version:set -- X.Y.Z` | Set the version in every manifest (releases only)                                                                 |
 | `npm run verify`               | typecheck + lint + licenses + version + migrations + script tests + tests                                         |
+| `npm run verify:static`        | `verify` without the Vitest suite (CI runs it, then `npm run coverage`)                                           |
 | `npm run e2e`                  | Desktop smoke of the real binary (see below)                                                                      |
 | `npm run e2e:driver`           | Download the msedgedriver that matches WebView2                                                                   |
 | `npm run coverage`             | Frontend coverage report into `coverage/`                                                                         |
@@ -246,7 +247,7 @@ is protected (see below).
 
 | Check        | Runner                 | What it runs                                                             |
 | ------------ | ---------------------- | ------------------------------------------------------------------------ |
-| `client`     | Windows                | `npm ci`, `npm run verify`, `npm run coverage` (report, below)           |
+| `client`     | Windows                | `npm ci`, `npm run verify:static`, `npm run coverage` (tests + report)   |
 | `rust`       | Windows                | `npm run check:rust` equivalents (fmt, clippy) and `cargo test --locked` |
 | `server`     | Ubuntu + PostgreSQL 18 | `server/`: typecheck, license check, `npm test`                          |
 | `audit`      | Ubuntu                 | `npm run check:audit` (root and `server/`)                               |
@@ -263,7 +264,8 @@ is protected (see below).
 the totals (lines, statements, functions, branches) go to the run's job
 summary (the run page → `client` → Summary), and the full report (HTML, lcov,
 `coverage-summary.json`) is the `coverage-client` artifact (14 days). It is a
-report, not a gate, and it posts no PR comment, so the workflow keeps read-only
+report, not a gate (a failing test still fails the job: `npm run coverage` is
+the Vitest suite, run once), and it posts no PR comment, so the workflow keeps read-only
 permissions. Rust coverage is not in CI: `cargo llvm-cov` needs a second,
 instrumented build of the whole Tauri crate on top of the `rust` job's build,
 which costs about as much as that job again on a Windows runner. Run it locally

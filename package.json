@@ -29,7 +29,8 @@
     "check:deps": "cd src-tauri && cargo deny --config ../deny.toml check",
     "check:rust": "node scripts/rust-gates.mjs fmt && node scripts/rust-gates.mjs clippy",
     "version:set": "node scripts/version.mjs set",
-    "verify": "npm run typecheck && npm run lint && npm run check:licenses && npm run check:version && npm run check:migrations && npm run test:scripts && npm run test",
+    "verify:static": "npm run typecheck && npm run lint && npm run check:licenses && npm run check:version && npm run check:migrations && npm run test:scripts",
+    "verify": "npm run verify:static && npm run test",
     "prepare": "husky"
   },
   "dependencies": {
