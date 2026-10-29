@@ -137,6 +137,21 @@
       "empty": "La IA no devolvió texto.",
       "error": "No se pudo redactar con la IA"
     },
+    "structured": {
+      "thinking": "Pensando…",
+      "proposals": "Propuestas de la IA",
+      "addSelected": "Añadir {{count}}",
+      "nothingApplied": "No se aplicó nada.",
+      "error": {
+        "empty": "La IA respondió vacío.",
+        "refusal": "La IA no hizo propuestas.",
+        "invalid-json": "La respuesta de la IA no es un JSON válido.",
+        "invalid-schema": "La respuesta de la IA no tiene el formato esperado.",
+        "no-provider": "No hay IA disponible: configura un proveedor online u Ollama.",
+        "timeout": "La IA no respondió a tiempo.",
+        "provider": "El proveedor de IA devolvió un error."
+      }
+    },
     "provenance": {
       "pending": "IA · pendiente de revisión",
       "short": "IA · sin revisar",
@@ -408,6 +423,7 @@
     "environmentRequirements": "Requisitos de hardware y software",
     "tools": "Herramientas",
     "automationStrategy": "Estrategia de automatización",
+    "suggestRisks": "✨ Sugerir riesgos con IA",
     "testDataManagement": "Gestión de datos de prueba",
     "defectManagement": "Gestión de defectos",
     "roleCol": "Rol",
@@ -555,6 +571,7 @@
       "button": "Importar .xlsx",
       "title": "Importar caso desde .xlsx"
     },
+    "suggestPreconditions": "✨ Sugerir precondiciones",
     "suggest": {
       "button": "✨ Sugerir pruebas",
       "disabled": "Necesitas IA configurada y un plan en el proyecto",
@@ -759,6 +776,22 @@
       "low": "Baja",
       "medium": "Media",
       "high": "Alta"
+    },
+    "generate": {
+      "button": "Generar casos con IA desde {{key}}",
+      "title": "Generar casos desde {{key}}",
+      "intro": "La IA propondrá escenarios Gherkin y casos de prueba para este requisito. Los revisas y solo se crean los que aceptes, como borradores vinculados al requisito y marcados «IA · pendiente de revisión».",
+      "run": "Generar",
+      "loading": "Generando escenarios a partir del requisito…",
+      "retry": "Reintentar",
+      "gherkin": "Ver Gherkin",
+      "accept_one": "Crear 1 caso",
+      "accept_other": "Crear {{count}} casos",
+      "creating": "Creando…",
+      "doneToast_one": "1 caso creado y vinculado a {{key}}",
+      "doneToast_other": "{{count}} casos creados y vinculados a {{key}}",
+      "saveFailed_one": "No se pudo guardar 1 caso. Sigue seleccionado: vuelve a crearlo o cancela.",
+      "saveFailed_other": "No se pudieron guardar {{count}} casos. Siguen seleccionados: vuelve a crearlos o cancela."
     },
     "requirement": {
       "listTitle": "Requisitos",

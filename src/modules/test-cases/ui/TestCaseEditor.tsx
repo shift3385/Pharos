@@ -23,10 +23,12 @@ import { LevelPicker } from "./LevelPicker";
 import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
 import {
+  AiSuggestList,
   AssistButton,
   ProvenanceBadge,
   aiAvailable,
   markReviewed,
+  suggestPreconditions,
   withProvenance,
   type AiProvenance,
   type ProvenanceMap,
@@ -634,6 +636,37 @@ export function TestCaseEditor({
           <ListField
             items={form.preconditions}
             onChange={(v) => update({ preconditions: v })}
+          />
+          <AiSuggestList
+            available={aiReady}
+            buttonLabel={t("testCase.suggestPreconditions")}
+            run={() =>
+              suggestPreconditions(
+                [
+                  `Test case title: ${form.title}`,
+                  form.description.trim() && `Description: ${form.description.trim()}`,
+                  form.steps.filter((s) => s.trim()).length &&
+                    `Steps:\n${form.steps
+                      .filter((s) => s.trim())
+                      .map((s, i) => `${i + 1}. ${s}`)
+                      .join("\n")}`,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+                form.preconditions.filter((p) => p.trim()),
+                i18n.resolvedLanguage ?? "es",
+              )
+            }
+            renderItem={(p) => p}
+            provenance={form.aiProvenance.preconditions}
+            onAdd={(items, p) =>
+              update({
+                // Replace the empty starter row instead of keeping it.
+                preconditions: [...form.preconditions.filter((x) => x.trim()), ...items],
+                aiProvenance: withProvenance(form.aiProvenance, "preconditions", p),
+              })
+            }
+            onReview={() => review("preconditions")}
           />
 
           <p className="tp-field__grouplabel">{t("testCase.steps")}</p>

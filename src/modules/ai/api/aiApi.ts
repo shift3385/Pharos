@@ -243,17 +243,28 @@ export async function suggestTests(
   return { value: parseSuggestions(reply.value), provenance: reply.provenance };
 }
 
+/** Structured answers (ADR-0023) cap the temperature: a JSON object that must
+ *  match a schema gains nothing from creative sampling. */
+export const STRUCTURED_MAX_TEMPERATURE = 0.3;
+
+export function chatTemperature(configured: number, json: boolean): number {
+  return json ? Math.min(configured, STRUCTURED_MAX_TEMPERATURE) : configured;
+}
+
 /** Runs a chat completion through the resolved provider and records which
  *  provider + model produced the reply (IA-01). Throws "no-provider" when
  *  neither online nor offline AI is available (callers disable UI then).
  *  Online errors are the provider's own message (bad key, unknown model…). */
-export async function aiChatWithProvenance(messages: AiMessage[]): Promise<AiResult<string>> {
+export async function aiChatWithProvenance(
+  messages: AiMessage[],
+  { json = false }: { json?: boolean } = {},
+): Promise<AiResult<string>> {
   const config = loadConfig();
   const status = await aiStatus(config);
   const which = resolveProvider(config, status);
   const destination = destinationFor(which, config);
   if (!destination) throw new Error("no-provider");
-  const opts = { model: destination.model, temperature: config.temperature };
+  const opts = { model: destination.model, temperature: chatTemperature(config.temperature, json), json };
   const value =
     destination.provider === "ollama"
       ? await ollamaProvider(config.ollamaEndpoint).chat(messages, opts)
