@@ -64,18 +64,16 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Integración continua (BASE-01):** cada cambio pasa automáticamente los
   tests del cliente, del núcleo Rust y del servidor, el formato y el lint de
   Rust, y las auditorías de dependencias y de licencias.
-- **El smoke E2E corre en CI (BASE-14):** cada PR arranca el binario real en
-  Windows contra una API local y sube los resultados como artefacto. Aún no
-  bloquea la fusión.
 
 ### Cambiado
 
-- **Keychain probado (CORE-02):** la sesión guardada en el Administrador de
-  credenciales de Windows pasa por un único módulo con tests automáticos
-  contra el keychain real: guardar, leer, sobrescribir, borrar, texto Unicode,
-  el tamaño máximo que admite Windows y accesos simultáneos. Los tests
-  encontraron que, con varias operaciones a la vez, Windows podía conservar
-  una sesión ya borrada; ahora esas operaciones van de una en una.
+- **Keychain probado (CORE-02):** la sesión y las claves de IA guardadas en el
+  Administrador de credenciales de Windows pasan por un único módulo con tests
+  automáticos contra el keychain real: guardar, leer, sobrescribir, borrar,
+  texto Unicode, el tamaño máximo que admite Windows y accesos simultáneos.
+  Los tests mostraron que, si un mismo proceso usa el keychain desde varios
+  hilos a la vez, Windows puede perder un borrado. Ahora esas operaciones van
+  de una en una, también cuando la IA lee su clave mientras se guarda otra.
 - **Cada sincronización lleva la versión de la app (SYNC-08):** el servidor
   acepta su versión MENOR y la anterior; una app no admitida no escribe nada y,
   desde esta versión, muestra "Actualiza la app para sincronizar".

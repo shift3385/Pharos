@@ -1,16 +1,18 @@
 //! The OS keychain (Windows Credential Manager) behind `keyring` — CORE-02.
 //! Secrets kept outside the encrypted database live here, never in files,
-//! logs or sync (§4, ADR-0006): the cached session (lib.rs) uses these
-//! helpers; the AI keys (ai.rs) and the database key (db.rs) still call
-//! `keyring` directly with the same semantics. A missing entry is not an
-//! error: reading gives `None` and deleting succeeds.
+//! logs or sync (§4, ADR-0006): the cached session (lib.rs) and the AI keys
+//! (ai.rs) use these helpers; the database key (db.rs) still calls `keyring`
+//! directly, once at startup. A missing entry is not an error: reading gives
+//! `None` and deleting succeeds.
 //!
 //! Windows stores the secret as UTF-16 in a blob of at most 2560 bytes, so a
 //! secret holds at most 1280 UTF-16 code units; a longer one is refused.
 //!
 //! Calls are serialized: when one process writes and deletes credentials
 //! from several threads at once, Credential Manager loses some deletes (the
-//! entry comes back), and Tauri runs commands on a thread pool.
+//! entry comes back). Sync Tauri commands run on the main thread, but async
+//! ones (`ai_chat_online`, `ai_list_models`) read keys from the runtime's
+//! threads while the main thread may be writing or deleting one.
 
 use keyring::Entry;
 use std::sync::{Mutex, MutexGuard};
@@ -83,8 +85,8 @@ mod tests {
         }
     }
 
-    /// Writes and deletes from several threads at once (Tauri runs commands
-    /// on a thread pool). Without the lock, Credential Manager loses some
+    /// Writes and deletes from several threads at once (async commands run
+    /// beside the main thread). Without the lock, Credential Manager loses some
     /// deletes: the entry is back once the other threads have written.
     #[test]
     fn concurrent_writes_and_deletes_lose_nothing() {
