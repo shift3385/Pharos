@@ -16,7 +16,7 @@ export function Sidebar() {
           <span className="sidebar__brand-tagline">{t("app.tagline")}</span>
         </span>
       </div>
-      <nav className="sidebar__nav" aria-label={t("app.name")}>
+      <nav className="sidebar__nav" aria-label={t("a11y.mainNav")}>
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.id}

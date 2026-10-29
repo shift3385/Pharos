@@ -267,3 +267,10 @@
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
 }
+
+/* A list/table row plus its validation message (UX-01). */
+.tp-list-field__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

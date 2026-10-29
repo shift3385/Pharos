@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
+import { ErrorSummary, FormField } from "@shared/ui/FormField";
+import { useSaveGuard } from "@shared/ui/fieldProps";
+import { duplicateRows, required } from "@shared/validation";
 import { testCaseApi } from "../api/testCaseApi";
 import type { ExportableCase } from "../export/caseXlsx";
 import type { ImportedCase } from "../import/caseImport";
@@ -196,6 +199,23 @@ function buildGherkin(f: FormState): string {
     : toGherkin(f.title, formToData(f), f.scenarioId);
 }
 
+/** Number of warnings a case is saved with: repeated steps, list items and
+ *  Examples columns or rows. Shown in the save toast so they are not missed. */
+function caseWarnings(f: FormState): number {
+  const text = (v: string) => v;
+  const lists = (l: string[][]) => l.reduce((n, list) => n + duplicateRows(list, text).size, 0);
+  const examples = (ex: ExampleTable | undefined) =>
+    ex
+      ? duplicateRows(ex.headers, text).size +
+        duplicateRows(ex.rows, (r) => (r.some((c) => c.trim()) ? r.map((c) => c.trim()).join(" | ") : "")).size
+      : 0;
+  return (
+    lists([f.steps, f.preconditions, f.postconditions, f.acceptanceCriteria, f.background]) +
+    examples(f.examples) +
+    f.flows.reduce((n, fl) => n + lists([fl.steps, fl.preconditions ?? []]) + examples(fl.examples), 0)
+  );
+}
+
 export function TestCaseEditor({
   projectId,
   caseIdPrefix = "ATS_",
@@ -229,6 +249,9 @@ export function TestCaseEditor({
   // New cases start on the level picker; existing/imported cases skip it.
   const [picking, setPicking] = useState(caseId === null && !seed);
   const [aiReady, setAiReady] = useState(false);
+  // The title is the only rule that blocks saving a case (draft rule, ADR-0027).
+  const titleIssue = required(form.title);
+  const { guard, showSummary, summaryRef } = useSaveGuard(titleIssue !== null);
 
   useEffect(() => {
     void aiAvailable().then(setAiReady);
@@ -412,10 +435,15 @@ export function TestCaseEditor({
       data,
       userId,
     };
+    const warnings = caseWarnings(form);
     try {
       if (testCase) await testCaseApi.update(testCase.id, input);
       else await testCaseApi.create(input);
-      toast(t("testCase.savedToast"));
+      toast(
+        warnings > 0
+          ? `${t("testCase.savedToast")} ${t("validation.savedWithWarnings", { count: warnings })}`
+          : t("testCase.savedToast"),
+      );
       onClose();
     } finally {
       setSaving(false);
@@ -540,10 +568,9 @@ export function TestCaseEditor({
 
   const identityFields = (
     <>
-      <label className="tp-field">
-        <span>{t("testCase.fieldTitle")}</span>
-        <input value={form.title} onChange={(e) => update({ title: e.target.value })} />
-      </label>
+      <FormField id="tc-title" label={t("testCase.fieldTitle")} issue={titleIssue} required>
+        {(p) => <input {...p} value={form.title} onChange={(e) => update({ title: e.target.value })} />}
+      </FormField>
       <label className="tp-field">
         <span>{t("testCase.mappedUseCase")}</span>
         <input
@@ -639,6 +666,7 @@ export function TestCaseEditor({
         <>
           <p className="tp-field__grouplabel">{t("testCase.preconditions")}</p>
           <ListField
+            label={t("testCase.preconditions")}
             items={form.preconditions}
             onChange={(v) => update({ preconditions: v })}
           />
@@ -675,7 +703,11 @@ export function TestCaseEditor({
           />
 
           <p className="tp-field__grouplabel">{t("testCase.steps")}</p>
-          <SortableSteps steps={form.steps} onChange={(v) => update({ steps: v })} />
+          <SortableSteps
+            label={t("testCase.steps")}
+            steps={form.steps}
+            onChange={(v) => update({ steps: v })}
+          />
 
           <label className="tp-field">
             <span>{t("testCase.expectedResult")}</span>
@@ -712,11 +744,13 @@ export function TestCaseEditor({
 
           <p className="tp-field__grouplabel">{t("testCase.postconditions")}</p>
           <ListField
+            label={t("testCase.postconditions")}
             items={form.postconditions}
             onChange={(v) => update({ postconditions: v })}
           />
           <p className="tp-field__grouplabel">{t("testCase.acceptanceCriteria")}</p>
           <ListField
+            label={t("testCase.acceptanceCriteria")}
             items={form.acceptanceCriteria}
             onChange={(v) => update({ acceptanceCriteria: v })}
           />
@@ -778,15 +812,27 @@ export function TestCaseEditor({
           <button
             type="button"
             className="tp-editor__save"
-            onClick={save}
-            disabled={saving || !form.title}
+            onClick={() => guard(() => void save())}
+            disabled={saving}
           >
             {saving ? t("testCase.saving") : t("testCase.save")}
           </button>
         </div>
       </header>
 
-      {notice && <p className="tc-notice">✓ {notice}</p>}
+      {showSummary && (
+        <ErrorSummary
+          ref={summaryRef}
+          items={[{ label: t("testCase.fieldTitle"), issue: titleIssue!, fieldId: "tc-title" }]}
+        />
+      )}
+
+      {notice && (
+        <p className="tc-notice" role="status">
+          <span aria-hidden="true">✓ </span>
+          {notice}
+        </p>
+      )}
 
       {form.aiProvenance.case && (
         <div className="tc-ai-case">

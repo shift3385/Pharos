@@ -15,7 +15,8 @@
 export type Severity = "error" | "warning";
 
 export interface Issue {
-  /** i18n key under `validation.` (e.g. "required", "duplicateRow"). */
+  /** i18n key under `validation.` (e.g. "required", "duplicateRow"), or a
+   *  full key with a dot for a module's own wording ("traceability.…"). */
   code: string;
   severity: Severity;
   /** Interpolation values for the message. */

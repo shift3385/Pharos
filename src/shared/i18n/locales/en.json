@@ -656,7 +656,9 @@
       "removeColumn": "Remove column",
       "removeRow": "Remove row",
       "placeholders": "Placeholders detected in the steps",
-      "orphanColumns": "Columns without a placeholder in the steps: {{cols}}"
+      "orphanColumns": "Columns without a placeholder in the steps: {{cols}}",
+      "columnN": "Column {{n}}",
+      "actions": "Actions"
     },
     "derived": {
       "examples": "Examples",
@@ -709,7 +711,15 @@
     "exportFeatures": "Export .feature (all)",
     "exportFeaturesToast": "{{count}} .feature files exported to {{path}}",
     "exportProvisionalToast": "{{count}} case(s) still have a provisional key: their files have no ID tag yet. Sync and export again.",
-    "aiPendingCase": "AI-generated case"
+    "aiPendingCase": "AI-generated case",
+    "stepN": "Step {{n}}",
+    "drag": {
+      "help": "To reorder a step, press Space or Enter on its handle, move it with the up and down arrows, and press Space or Enter to drop it. Escape cancels.",
+      "start": "Picked up step {{n}}.",
+      "over": "Step {{n}} is over position {{to}}.",
+      "end": "Step {{n}} moved to position {{to}}.",
+      "cancel": "Move cancelled; step {{n}} is back in place."
+    }
   },
   "dashboard": {
     "title": "Welcome to Pharos",
@@ -871,7 +881,9 @@
       "importing": "Importing…",
       "doneToast": "Imported: {{created}} new, {{updated}} updated",
       "skippedToast": "Not imported (they belong to deleted requirements and are never reused): {{keys}}",
-      "error": "The CSV could not be imported"
+      "error": "The CSV could not be imported",
+      "preview": "Requirements preview",
+      "skipped": "Rows that will be skipped ({{count}})"
     },
     "view": {
       "requirements": "Requirements",
@@ -978,7 +990,11 @@
     "skipToContent": "Skip to content",
     "close": "Close",
     "currentStep": "current step",
-    "row": "Row {{n}}"
+    "row": "Row {{n}}",
+    "mainNav": "Main navigation",
+    "start": "Start",
+    "end": "End",
+    "date": "Date"
   },
   "validation": {
     "severity": {

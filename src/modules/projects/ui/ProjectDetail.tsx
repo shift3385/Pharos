@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
+import { ErrorSummary, FormField } from "@shared/ui/FormField";
+import { useSaveGuard } from "@shared/ui/fieldProps";
+import { numberInRange } from "@shared/validation";
 import { TestPlanPage } from "@modules/test-plan";
 import { TestCasesPage, projectTraceableCases, type RequirementOption } from "@modules/test-cases";
 import { PlannerBoard, type LinkableCase } from "@modules/planner";
@@ -119,9 +122,14 @@ function ProjectSettings({
   const { t } = useTranslation();
   const [name, setName] = useState(project.name);
   const [prefix, setPrefix] = useState(project.caseIdPrefix);
-  const [digits, setDigits] = useState(project.caseIdDigits);
+  // Kept as typed, so "" or 9 shows an error instead of being silently
+  // replaced; the digits shape every case ID, so a bad value blocks saving.
+  const [digitsText, setDigitsText] = useState(String(project.caseIdDigits));
+  const digitsIssue = numberInRange(digitsText, { min: 1, max: 8, integer: true });
+  const digits = digitsIssue ? project.caseIdDigits : Number(digitsText);
   const [saving, setSaving] = useState(false);
   const toast = useToast();
+  const { guard, showSummary, summaryRef } = useSaveGuard(digitsIssue !== null);
 
   async function save() {
     setSaving(true);
@@ -158,20 +166,28 @@ function ProjectSettings({
           {t("projects.prefixHint")} <code>{preview}</code>
         </span>
       </label>
-      <label className="tp-field">
-        <span>{t("projects.caseIdDigits")}</span>
-        <input
-          type="number"
-          min={1}
-          max={8}
-          value={digits}
-          onChange={(e) => setDigits(Math.max(1, Number(e.target.value) || 1))}
+      <FormField id="pj-digits" label={t("projects.caseIdDigits")} issue={digitsIssue} required>
+        {(p) => (
+          <input
+            {...p}
+            type="number"
+            min={1}
+            max={8}
+            value={digitsText}
+            onChange={(e) => setDigitsText(e.target.value)}
+          />
+        )}
+      </FormField>
+      {showSummary && digitsIssue && (
+        <ErrorSummary
+          ref={summaryRef}
+          items={[{ label: t("projects.caseIdDigits"), issue: digitsIssue, fieldId: "pj-digits" }]}
         />
-      </label>
+      )}
       <button
         type="button"
         className="tp-editor__save"
-        onClick={save}
+        onClick={() => guard(() => void save())}
         disabled={saving}
       >
         {saving ? t("projects.saving") : t("projects.save")}

@@ -14,8 +14,9 @@ export function Topbar() {
       <div className="topbar__spacer" />
       <div className="topbar__actions">
         {offline && (
-          <span className="topbar__offline" title={t("auth.offline")}>
-            ● {t("auth.offline")}
+          <span className="topbar__offline" role="status">
+            <span aria-hidden="true">● </span>
+            {t("auth.offline")}
           </span>
         )}
         <SyncIndicator />

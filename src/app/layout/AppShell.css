@@ -215,3 +215,8 @@
   position: relative;
   z-index: 1;
 }
+
+/* The skip-link target is a container, not a control: no focus ring. */
+.app-shell__content:focus {
+  outline: none;
+}

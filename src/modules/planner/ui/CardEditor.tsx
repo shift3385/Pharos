@@ -204,7 +204,7 @@ export function CardEditor({
         )}
 
         <p className="tp-field__grouplabel">{t("planner.labels")}</p>
-        <ListField items={labels} onChange={setLabels} />
+        <ListField label={t("planner.labels")} items={labels} onChange={setLabels} />
 
         <p className="tp-field__grouplabel">{t("planner.attachments")}</p>
         {!card ? (

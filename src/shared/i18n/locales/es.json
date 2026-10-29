@@ -656,7 +656,9 @@
       "removeColumn": "Quitar columna",
       "removeRow": "Quitar fila",
       "placeholders": "Placeholders detectados en los pasos",
-      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}"
+      "orphanColumns": "Columnas sin placeholder en los pasos: {{cols}}",
+      "columnN": "Columna {{n}}",
+      "actions": "Acciones"
     },
     "derived": {
       "examples": "Examples",
@@ -709,7 +711,15 @@
     "exportFeatures": "Exportar .feature (todos)",
     "exportFeaturesToast": "{{count}} archivos .feature exportados en {{path}}",
     "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
-    "aiPendingCase": "Caso generado por IA"
+    "aiPendingCase": "Caso generado por IA",
+    "stepN": "Paso {{n}}",
+    "drag": {
+      "help": "Para reordenar un paso, pulsa Espacio o Intro en su asa, muévelo con las flechas arriba y abajo, y pulsa Espacio o Intro para soltarlo. Escape cancela.",
+      "start": "Paso {{n}} seleccionado para mover.",
+      "over": "Paso {{n}} sobre la posición {{to}}.",
+      "end": "Paso {{n}} movido a la posición {{to}}.",
+      "cancel": "Movimiento cancelado; el paso {{n}} vuelve a su sitio."
+    }
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",
@@ -871,7 +881,9 @@
       "importing": "Importando…",
       "doneToast": "Importados: {{created}} nuevos, {{updated}} actualizados",
       "skippedToast": "No importados (son de requisitos borrados y no se reutilizan): {{keys}}",
-      "error": "No se pudo importar el CSV"
+      "error": "No se pudo importar el CSV",
+      "preview": "Vista previa de los requisitos",
+      "skipped": "Filas que se omitirán ({{count}})"
     },
     "view": {
       "requirements": "Requisitos",
@@ -978,7 +990,11 @@
     "skipToContent": "Saltar al contenido",
     "close": "Cerrar",
     "currentStep": "paso actual",
-    "row": "Fila {{n}}"
+    "row": "Fila {{n}}",
+    "mainNav": "Navegación principal",
+    "start": "Inicio",
+    "end": "Fin",
+    "date": "Fecha"
   },
   "validation": {
     "severity": {

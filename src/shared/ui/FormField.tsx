@@ -1,7 +1,7 @@
 import { forwardRef, useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Issue } from "@shared/validation";
-import { controlProps, type ControlProps } from "./fieldProps";
+import { controlProps, issueKey, type ControlProps } from "./fieldProps";
 import "./fields.css";
 
 /** The message under a field. The severity is spelled out for screen readers
@@ -12,7 +12,7 @@ export function FieldMessage({ id, issue }: { id: string; issue: Issue }) {
     <span id={id} className={`field-msg field-msg--${issue.severity}`}>
       <span aria-hidden="true">{issue.severity === "error" ? "✕ " : "⚠ "}</span>
       <span className="sr-only">{t(`validation.severity.${issue.severity}`)}: </span>
-      {t(`validation.${issue.code}`, issue.params)}
+      {t(issueKey(issue), issue.params)}
     </span>
   );
 }
@@ -97,7 +97,7 @@ export const ErrorSummary = forwardRef<HTMLDivElement, { items: SummaryItem[] }>
                 <strong>{item.label}</strong>
               )}
               {": "}
-              {t(`validation.${item.issue.code}`, item.issue.params)}
+              {t(issueKey(item.issue), item.issue.params)}
             </li>
           ))}
         </ul>

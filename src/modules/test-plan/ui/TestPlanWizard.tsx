@@ -15,6 +15,9 @@ import type {
   TestPlanInput,
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
+import { ErrorSummary, FieldMessage, FormField } from "@shared/ui/FormField";
+import { controlProps, useSaveGuard } from "@shared/ui/fieldProps";
+import { duplicateRow, duplicateRows, required, type Issue } from "@shared/validation";
 import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import {
@@ -45,20 +48,40 @@ import {
 import type { DetectionRow, ImportResult } from "../import/planImport";
 import "./TestPlan.css";
 
-/** Per-sprint validation: an end date before the start is an error; overlapping
- *  ranges are only a warning, since parallel sprints can be legitimate. */
-function sprintIssues(
-  sprints: ScheduleSprint[],
-): (null | "error" | "overlap")[] {
+/** Per-sprint validation: an end date before the start, or a range that
+ *  overlaps another sprint. Both are warnings (draft rule, ADR-0027): the plan
+ *  still saves, since a draft can be wrong for a while and parallel sprints
+ *  can be legitimate. */
+function sprintIssues(sprints: ScheduleSprint[]): (Issue | null)[] {
   return sprints.map((s, i) => {
-    if (s.start && s.end && s.end < s.start) return "error";
+    if (s.start && s.end && s.end < s.start)
+      return { code: "testPlan.sprintDateError", severity: "warning" };
     if (!s.start || !s.end) return null;
     const overlaps = sprints.some(
       (o, j) =>
         j !== i && o.start && o.end && o.start <= s.end && s.start <= o.end,
     );
-    return overlaps ? "overlap" : null;
+    return overlaps ? { code: "testPlan.sprintOverlap", severity: "warning" } : null;
   });
+}
+
+/** Number of warnings the plan is saved with: sprint dates and repeated rows
+ *  in its lists and tables. Shown in the save toast so they are not missed. */
+function planWarnings(f: FormState): number {
+  const text = (v: string) => v;
+  const pair = (a: string, b: string) => (a.trim() || b.trim() ? `${a.trim()} | ${b.trim()}` : "");
+  return (
+    sprintIssues(f.sprints).filter(Boolean).length +
+    duplicateRows(f.sprints, (x) => x.name).size +
+    duplicateRows(f.milestones, (x) => x.name).size +
+    [f.scopeIn, f.scopeOut, f.phases, f.deliverables].reduce(
+      (n, list) => n + duplicateRows(list, text).size,
+      0,
+    ) +
+    duplicateRows(f.roles, (r) => pair(r.role, r.responsibility)).size +
+    duplicateRows(f.risks, (r) => pair(r.risk, r.mitigation)).size +
+    duplicateRows(f.closureCriteria, (c) => pair(c.criterion, c.metric)).size
+  );
 }
 
 
@@ -154,6 +177,16 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     result: ImportResult | null;
   } | null>(null);
   const [aiReady, setAiReady] = useState(false);
+  // The title is the only rule that blocks saving a plan (draft rule).
+  const titleIssue = form ? required(form.title) : null;
+  const { guard, showSummary, summaryRef } = useSaveGuard(titleIssue !== null);
+  // Moving between steps puts the focus on the new step's heading (2.4.3).
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const stepMounted = useRef(false);
+  useEffect(() => {
+    if (stepMounted.current) headingRef.current?.focus();
+    stepMounted.current = true;
+  }, [step]);
 
   useEffect(() => {
     void aiAvailable().then(setAiReady);
@@ -271,10 +304,15 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       },
       userId,
     };
+    const warnings = planWarnings(form);
     try {
       if (plan) await testPlanApi.update(plan.id, input);
       else await testPlanApi.create(input);
-      toast(t("testPlan.savedToast"));
+      toast(
+        warnings > 0
+          ? `${t("testPlan.savedToast")} ${t("validation.savedWithWarnings", { count: warnings })}`
+          : t("testPlan.savedToast"),
+      );
       onClose();
     } finally {
       setSaving(false);
@@ -375,11 +413,20 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
       {
         id: "title",
         body: (
-          <TextField
+          <FormField
+            id="tp-title"
             label={t("testPlan.fieldTitle")}
-            value={form.title}
-            onChange={(v) => set("title", v)}
-          />
+            issue={required(form.title)}
+            required
+          >
+            {(p) => (
+              <input
+                {...p}
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
+              />
+            )}
+          </FormField>
         ),
       },
       // 2. Version / 3. Date / 4. Author
@@ -403,7 +450,10 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             <label className="tp-field">
               <span>{t("testPlan.author")}</span>
               <input
-                value={plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "")}
+                value={
+                  plan?.author ??
+                  (user ? `${user.firstName} ${user.lastName}` : "")
+                }
                 readOnly
               />
             </label>
@@ -436,9 +486,17 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         body: (
           <>
             <FieldLabel text={t("testPlan.scopeIn")} />
-            <ListField items={form.scopeIn} onChange={(v) => set("scopeIn", v)} />
+            <ListField
+              label={t("testPlan.scopeIn")}
+              items={form.scopeIn}
+              onChange={(v) => set("scopeIn", v)}
+            />
             <FieldLabel text={t("testPlan.scopeOut")} />
-            <ListField items={form.scopeOut} onChange={(v) => set("scopeOut", v)} />
+            <ListField
+              label={t("testPlan.scopeOut")}
+              items={form.scopeOut}
+              onChange={(v) => set("scopeOut", v)}
+            />
           </>
         ),
       },
@@ -447,6 +505,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         id: "types",
         body: (
           <CheckboxGroup
+            label={t("testPlan.step.types")}
             options={TEST_TYPES}
             selected={form.testTypes}
             onChange={(v) => set("testTypes", v)}
@@ -476,7 +535,10 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               <select
                 value={form.methodologyType}
                 onChange={(e) =>
-                  set("methodologyType", e.target.value as "agile" | "traditional")
+                  set(
+                    "methodologyType",
+                    e.target.value as "agile" | "traditional",
+                  )
                 }
               >
                 <option value="agile">{t("testPlan.agile")}</option>
@@ -500,6 +562,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                 </label>
                 <FieldLabel text={t("testPlan.ceremonies")} />
                 <CheckboxGroup
+                  label={t("testPlan.ceremonies")}
                   options={CEREMONIES}
                   selected={form.ceremonies}
                   onChange={(v) => set("ceremonies", v)}
@@ -509,10 +572,14 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                 {form.ceremonies.length > 0 && (
                   <div className="tp-freq" data-testid="ceremony-frequencies">
                     {form.ceremonies.map((c) => {
-                      const label = CEREMONIES.includes(c) ? t(`testPlan.ceremonyLabel.${c}`) : c;
+                      const label = CEREMONIES.includes(c)
+                        ? t(`testPlan.ceremonyLabel.${c}`)
+                        : c;
                       return (
                         <label key={c} className="tp-field">
-                          <span>{t("testPlan.frequencyFor", { ceremony: label })}</span>
+                          <span>
+                            {t("testPlan.frequencyFor", { ceremony: label })}
+                          </span>
                           <select
                             value={frequencyOf(c, form.ceremonyFrequency)}
                             onChange={(e) =>
@@ -537,7 +604,11 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             ) : (
               <>
                 <FieldLabel text={t("testPlan.phases")} />
-                <ListField items={form.phases} onChange={(v) => set("phases", v)} />
+                <ListField
+                  label={t("testPlan.phases")}
+                  items={form.phases}
+                  onChange={(v) => set("phases", v)}
+                />
               </>
             )}
           </>
@@ -548,6 +619,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         id: "levels",
         body: (
           <CheckboxGroup
+            label={t("testPlan.step.levels")}
             options={TEST_LEVELS}
             selected={form.testLevels}
             onChange={(v) => set("testLevels", v)}
@@ -561,6 +633,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         id: "deliverables",
         body: (
           <ListField
+            label={t("testPlan.step.deliverables")}
             items={form.deliverables}
             onChange={(v) => set("deliverables", v)}
           />
@@ -605,6 +678,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
           <>
             <FieldLabel text={t("testPlan.tools")} />
             <CheckboxGroup
+              label={t("testPlan.tools")}
               options={TOOLS}
               selected={form.tools}
               onChange={(v) => set("tools", v)}
@@ -654,6 +728,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         id: "roles",
         body: (
           <PairListField
+            label={t("testPlan.step.roles")}
             items={form.roles}
             keys={["role", "responsibility"]}
             labels={[t("testPlan.roleCol"), t("testPlan.responsibilityCol")]}
@@ -673,10 +748,18 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             <FieldLabel text={t("testPlan.sprints")} />
             {form.sprints.map((s, i) => {
               const issue = sprintIssues(form.sprints)[i];
+              const nameIssue = duplicateRow(
+                duplicateRows(form.sprints, (x) => x.name),
+                i,
+              );
+              const row = `${t("testPlan.sprints")} · ${t("a11y.row", { n: i + 1 })}`;
+              const id = `tp-sprint-${i}`;
               return (
-                <div key={i}>
+                <div key={i} role="group" aria-label={row}>
                   <div className="tp-sched-row">
                     <input
+                      {...controlProps(`${id}-name`, nameIssue)}
+                      aria-label={`${t("testPlan.sprintName")} · ${t("a11y.row", { n: i + 1 })}`}
                       placeholder={t("testPlan.sprintName")}
                       value={s.name}
                       onChange={(e) => {
@@ -687,7 +770,9 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                     />
                     <input
                       type="date"
-                      data-invalid={issue === "error"}
+                      {...controlProps(`${id}-start`, issue)}
+                      aria-label={`${t("a11y.start")} · ${t("a11y.row", { n: i + 1 })}`}
+                      data-invalid={issue?.code === "testPlan.sprintDateError"}
                       value={s.start}
                       onChange={(e) => {
                         const next = [...form.sprints];
@@ -697,7 +782,13 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                     />
                     <input
                       type="date"
-                      data-invalid={issue === "error"}
+                      {...controlProps(
+                        `${id}-end`,
+                        issue,
+                        issue ? `${id}-start-msg` : undefined,
+                      )}
+                      aria-label={`${t("a11y.end")} · ${t("a11y.row", { n: i + 1 })}`}
+                      data-invalid={issue?.code === "testPlan.sprintDateError"}
                       value={s.end}
                       onChange={(e) => {
                         const next = [...form.sprints];
@@ -708,22 +799,22 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                     <button
                       type="button"
                       className="tp-list-field__del"
+                      aria-label={`${t("common.delete")}: ${row}`}
                       onClick={() =>
-                        set("sprints", form.sprints.filter((_, j) => j !== i))
+                        set(
+                          "sprints",
+                          form.sprints.filter((_, j) => j !== i),
+                        )
                       }
                     >
                       ✕
                     </button>
                   </div>
-                  {issue === "error" && (
-                    <p className="tp-msg tp-msg--error">
-                      {t("testPlan.sprintDateError")}
-                    </p>
+                  {issue && (
+                    <FieldMessage id={`${id}-start-msg`} issue={issue} />
                   )}
-                  {issue === "overlap" && (
-                    <p className="tp-msg tp-msg--warn">
-                      {t("testPlan.sprintOverlap")}
-                    </p>
+                  {nameIssue && (
+                    <FieldMessage id={`${id}-name-msg`} issue={nameIssue} />
                   )}
                 </div>
               );
@@ -732,43 +823,68 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               type="button"
               className="tp-list-field__add"
               onClick={() =>
-                set("sprints", [...form.sprints, { name: "", start: "", end: "" }])
+                set("sprints", [
+                  ...form.sprints,
+                  { name: "", start: "", end: "" },
+                ])
               }
             >
               + {t("testPlan.addRow")}
             </button>
             <FieldLabel text={t("testPlan.milestones")} />
-            {form.milestones.map((m, i) => (
-              <div className="tp-sched-row" key={i}>
-                <input
-                  placeholder={t("testPlan.milestoneName")}
-                  value={m.name}
-                  onChange={(e) => {
-                    const next = [...form.milestones];
-                    next[i] = { ...m, name: e.target.value };
-                    set("milestones", next);
-                  }}
-                />
-                <input
-                  type="date"
-                  value={m.date}
-                  onChange={(e) => {
-                    const next = [...form.milestones];
-                    next[i] = { ...m, date: e.target.value };
-                    set("milestones", next);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="tp-list-field__del"
-                  onClick={() =>
-                    set("milestones", form.milestones.filter((_, j) => j !== i))
-                  }
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+            {form.milestones.map((m, i) => {
+              const nameIssue = duplicateRow(
+                duplicateRows(form.milestones, (x) => x.name),
+                i,
+              );
+              const row = `${t("testPlan.milestones")} · ${t("a11y.row", { n: i + 1 })}`;
+              return (
+                <div key={i} role="group" aria-label={row}>
+                  <div className="tp-sched-row">
+                    <input
+                      {...controlProps(`tp-milestone-${i}`, nameIssue)}
+                      aria-label={`${t("testPlan.milestoneName")} · ${t("a11y.row", { n: i + 1 })}`}
+                      placeholder={t("testPlan.milestoneName")}
+                      value={m.name}
+                      onChange={(e) => {
+                        const next = [...form.milestones];
+                        next[i] = { ...m, name: e.target.value };
+                        set("milestones", next);
+                      }}
+                    />
+                    <input
+                      type="date"
+                      aria-label={`${t("a11y.date")} · ${t("a11y.row", { n: i + 1 })}`}
+                      value={m.date}
+                      onChange={(e) => {
+                        const next = [...form.milestones];
+                        next[i] = { ...m, date: e.target.value };
+                        set("milestones", next);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="tp-list-field__del"
+                      aria-label={`${t("common.delete")}: ${row}`}
+                      onClick={() =>
+                        set(
+                          "milestones",
+                          form.milestones.filter((_, j) => j !== i),
+                        )
+                      }
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {nameIssue && (
+                    <FieldMessage
+                      id={`tp-milestone-${i}-msg`}
+                      issue={nameIssue}
+                    />
+                  )}
+                </div>
+              );
+            })}
             <button
               type="button"
               className="tp-list-field__add"
@@ -787,6 +903,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         body: (
           <>
             <PairListField
+              label={t("testPlan.step.risks")}
               items={form.risks}
               keys={["risk", "mitigation"]}
               labels={[t("testPlan.riskCol"), t("testPlan.mitigationCol")]}
@@ -815,8 +932,17 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                     ? {
                         ...f,
                         // Replace the empty starter row instead of keeping it.
-                        risks: [...f.risks.filter((r) => r.risk.trim() || r.mitigation.trim()), ...items],
-                        aiProvenance: withProvenance(f.aiProvenance, "risks", provenance),
+                        risks: [
+                          ...f.risks.filter(
+                            (r) => r.risk.trim() || r.mitigation.trim(),
+                          ),
+                          ...items,
+                        ],
+                        aiProvenance: withProvenance(
+                          f.aiProvenance,
+                          "risks",
+                          provenance,
+                        ),
                       }
                     : f,
                 )
@@ -842,6 +968,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         id: "closure",
         body: (
           <PairListField
+            label={t("testPlan.step.closure")}
             items={form.closureCriteria}
             keys={["criterion", "metric"]}
             labels={[t("testPlan.criterionCol"), t("testPlan.metricCol")]}
@@ -867,7 +994,8 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               context={[
                 `Title: ${form.title}`,
                 form.summary && `Summary: ${form.summary}`,
-                form.scopeIn.filter(Boolean).length && `In scope: ${form.scopeIn.filter(Boolean).join(", ")}`,
+                form.scopeIn.filter(Boolean).length &&
+                  `In scope: ${form.scopeIn.filter(Boolean).join(", ")}`,
               ]
                 .filter(Boolean)
                 .join("\n")}
@@ -956,12 +1084,22 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         <button
           type="button"
           className="tp-editor__save"
-          onClick={save}
-          disabled={saving || !form.title}
+          onClick={() => {
+            if (titleIssue) setStep(0);
+            guard(() => void save());
+          }}
+          disabled={saving}
         >
           {saving ? t("testPlan.saving") : t("testPlan.save")}
         </button>
       </header>
+
+      {showSummary && titleIssue && (
+        <ErrorSummary
+          ref={summaryRef}
+          items={[{ label: t("testPlan.fieldTitle"), issue: titleIssue, fieldId: "tp-title" }]}
+        />
+      )}
 
       {importState && (
         <ImportReportModal
@@ -990,6 +1128,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
               type="button"
               className="tp-wizard__step"
               data-active={i === step}
+              aria-current={i === step ? "step" : undefined}
               onClick={() => setStep(i)}
             >
               <span className="tp-wizard__step-n">{i + 1}</span>
@@ -999,7 +1138,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         </nav>
 
         <div className="tp-wizard__content">
-          <h2 className="tp-wizard__step-title">
+          <h2 ref={headingRef} className="tp-wizard__step-title" tabIndex={-1}>
             {step + 1}. {t(`testPlan.step.${current.id}`)}
           </h2>
           <div className="tp-wizard__fields">{current.body}</div>
@@ -1011,7 +1150,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
             >
               ← {t("testPlan.prev")}
             </button>
-            <span className="tp-wizard__progress">
+            <span className="tp-wizard__progress" aria-live="polite">
               {step + 1} / {steps.length}
             </span>
             <button

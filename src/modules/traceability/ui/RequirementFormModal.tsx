@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
+import { ErrorSummary, FormField } from "@shared/ui/FormField";
+import { useSaveGuard } from "@shared/ui/fieldProps";
+import { hasBlocking, required, type Issue } from "@shared/validation";
 import {
   REQUIREMENT_PRIORITIES,
   isValidRequirementKey,
@@ -30,6 +34,7 @@ export function RequirementFormModal({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const id = useId();
   const [draft, setDraft] = useState<RequirementDraft>({
     requirementKey: requirement?.requirementKey ?? "",
     title: requirement?.title ?? "",
@@ -39,15 +44,18 @@ export function RequirementFormModal({
   const [saving, setSaving] = useState(false);
   const isNew = requirement === null;
 
+  // The key is a stable ID, so a bad or repeated key blocks saving (draft rule).
   const key = draft.requirementKey.trim();
-  const keyError =
+  const keyIssue: Issue | null =
     isNew && key
       ? !isValidRequirementKey(key)
-        ? t("traceability.requirement.keyInvalid")
+        ? { code: "traceability.requirement.keyInvalid", severity: "error" }
         : existingKeys.includes(key)
-          ? t("traceability.requirement.keyDuplicate")
+          ? { code: "traceability.requirement.keyDuplicate", severity: "error" }
           : null
       : null;
+  const titleIssue = required(draft.title);
+  const { guard, showSummary, summaryRef } = useSaveGuard(hasBlocking([keyIssue, titleIssue]));
 
   async function submit() {
     setSaving(true);
@@ -59,73 +67,99 @@ export function RequirementFormModal({
   }
 
   return (
-    <div className="cd-overlay" role="dialog" aria-modal="true" onClick={onCancel}>
-      <div className="cd tr-modal" onClick={(e) => e.stopPropagation()}>
-        <h3 className="cd__title">
-          {isNew ? t("traceability.requirement.newTitle") : t("traceability.requirement.editTitle")}
-        </h3>
+    <Dialog
+      className="cd tr-modal"
+      labelledBy={`${id}-title`}
+      onClose={onCancel}
+      dismissable={!saving}
+    >
+      <h3 id={`${id}-title`} className="cd__title">
+        {isNew ? t("traceability.requirement.newTitle") : t("traceability.requirement.editTitle")}
+      </h3>
 
-        <label className="tp-field">
-          <span>{t("traceability.requirement.key")}</span>
+      {showSummary && (
+        <ErrorSummary
+          ref={summaryRef}
+          items={[
+            ...(keyIssue
+              ? [{ label: t("traceability.requirement.key"), issue: keyIssue, fieldId: `${id}-key` }]
+              : []),
+            ...(titleIssue
+              ? [{ label: t("traceability.requirement.title"), issue: titleIssue, fieldId: `${id}-name` }]
+              : []),
+          ]}
+        />
+      )}
+
+      <FormField
+        id={`${id}-key`}
+        label={t("traceability.requirement.key")}
+        hint={isNew ? t("traceability.requirement.keyHint") : t("traceability.requirement.keyLocked")}
+        issue={keyIssue}
+      >
+        {(p) => (
           <input
+            {...p}
             className="tr-mono"
             value={draft.requirementKey}
             placeholder={t("traceability.requirement.keyAuto")}
             readOnly={!isNew}
-            aria-invalid={keyError ? true : undefined}
             onChange={(e) => setDraft({ ...draft, requirementKey: e.target.value })}
           />
-          <span className={keyError ? "tr-error" : "tp-field__hint"}>
-            {keyError ??
-              (isNew ? t("traceability.requirement.keyHint") : t("traceability.requirement.keyLocked"))}
-          </span>
-        </label>
+        )}
+      </FormField>
 
-        <label className="tp-field">
-          <span>{t("traceability.requirement.title")}</span>
-          <input
-            value={draft.title}
-            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-          />
-        </label>
+      <FormField
+        id={`${id}-name`}
+        label={t("traceability.requirement.title")}
+        issue={titleIssue}
+        required
+      >
+        {(p) => (
+          <input {...p} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
+        )}
+      </FormField>
 
-        <label className="tp-field">
-          <span>{t("traceability.requirement.description")}</span>
+      <FormField label={t("traceability.requirement.description")}>
+        {(p) => (
           <textarea
+            {...p}
             rows={3}
             value={draft.description}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
           />
-        </label>
+        )}
+      </FormField>
 
-        <label className="tp-field">
-          <span>{t("traceability.requirement.priority")}</span>
+      <FormField label={t("traceability.requirement.priority")}>
+        {(p) => (
           <select
+            {...p}
             value={draft.priority}
             onChange={(e) => setDraft({ ...draft, priority: e.target.value as RequirementPriority })}
           >
-            {REQUIREMENT_PRIORITIES.map((p) => (
-              <option key={p} value={p}>
-                {t(`traceability.priorityLabel.${p}`)}
+            {REQUIREMENT_PRIORITIES.map((pr) => (
+              <option key={pr} value={pr}>
+                {t(`traceability.priorityLabel.${pr}`)}
               </option>
             ))}
           </select>
-        </label>
+        )}
+      </FormField>
 
-        <div className="cd__actions">
-          <button type="button" className="cd__cancel" onClick={onCancel}>
-            {t("common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="cd__confirm"
-            disabled={saving || !draft.title.trim() || keyError !== null}
-            onClick={() => void submit()}
-          >
-            {saving ? t("traceability.requirement.saving") : t("traceability.requirement.save")}
-          </button>
-        </div>
+      <div className="cd__actions">
+        <button type="button" className="cd__cancel" onClick={onCancel}>
+          {t("common.cancel")}
+        </button>
+        <button
+          type="button"
+          className="cd__confirm"
+          disabled={saving}
+          onClick={() => guard(() => void submit())}
+        >
+          {saving ? t("traceability.requirement.saving") : t("traceability.requirement.save")}
+        </button>
       </div>
-    </div>
+    </Dialog>
   );
 }

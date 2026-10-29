@@ -3,6 +3,11 @@ import type { Issue } from "@shared/validation";
 
 // Non-component helpers of the shared form pattern (FormField.tsx, UX-01).
 
+/** The i18n key of an issue's message. */
+export function issueKey(issue: Issue): string {
+  return issue.code.includes(".") ? issue.code : `validation.${issue.code}`;
+}
+
 /** Props a control receives from `FormField` so it is labelled, described and
  *  marked invalid the same way in every form (WCAG 1.3.1, 3.3.1, 4.1.2). */
 export interface ControlProps {
