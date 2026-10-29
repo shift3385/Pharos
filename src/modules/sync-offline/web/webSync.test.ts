@@ -187,6 +187,21 @@ describe("review fixes (web)", () => {
     expect(sent).toHaveLength(2);
   });
 
+  it("a key another document already uses is flagged and kept, not dropped (DAT-01)", async () => {
+    backend(async (deltas) =>
+      json({
+        accepted: deltas.length - 1,
+        conflicts: [],
+        keyConflicts: [{ entity: "test_case", entityId: "dup", key: "ATS_001", takenBy: "x" }],
+      }),
+    );
+    for (const id of ["ok", "dup"])
+      web.enqueue("user-A", { entity: "test_case", entityId: id, op: "upsert", payload: { id }, revision: 1, author: "A", hlc: web.nextWebHlc() });
+    const res = await web.flushOutbox();
+    expect(res).toEqual({ pushed: 1, conflicts: 0, skipped: 1 });
+    expect(web.loadOutbox("user-A").map((d) => [d.entityId, d.refused])).toEqual([["dup", true]]);
+  });
+
   it("an unsupported version stops the flush without scheduling retries", async () => {
     vi.useFakeTimers();
     try {

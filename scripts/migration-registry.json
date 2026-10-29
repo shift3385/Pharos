@@ -10,10 +10,7 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {
-      "0005": "A3 · key blocks (DAT-01)",
-      "0006": "A3 · document key index and dedupe (DAT-01)"
-    },
+    "reserved": {},
     "retired": {}
   }
 }

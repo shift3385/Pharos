@@ -13,6 +13,7 @@ import {
   batchDeltas,
   pullPages,
   sendIsolating,
+  SyncHttpError,
   syncRequest,
   withRetry,
   type RemoteDoc,
@@ -99,9 +100,51 @@ export async function syncPendingCount(): Promise<number> {
   return (await syncLocalState()).pending;
 }
 
-/** Runs one desktop sync cycle for the signed-in account: push its pending
- *  deltas in batches (each accepted batch is marked synced at once, rejected
- *  deltas become conflicts, deltas the server refuses for their content are
+/** A pushed key another live document of the project already uses (DAT-01). */
+export interface KeyConflictDoc {
+  entity: string;
+  entityId: string;
+  key: string;
+  takenBy: string;
+}
+
+/** Most lease requests per call to `/sync/key-blocks` (the server's limit). */
+const MAX_LEASE_REQUESTS = 300;
+
+/** Leases the key blocks this device needs and gives its provisional keys a
+ *  definitive one (DAT-01, ADR-0010). A server without the endpoint (404,
+ *  older than this app) is not an error: keys stay provisional until it has
+ *  it. */
+export async function leaseKeyBlocks(
+  token: string,
+  userId: string,
+  invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>,
+): Promise<void> {
+  const requests = (await invoke<unknown[] | undefined>("key_lease_requests", { userId })) ?? [];
+  const blocks: unknown[] = [];
+  try {
+    for (let i = 0; i < requests.length; i += MAX_LEASE_REQUESTS) {
+      const part = requests.slice(i, i + MAX_LEASE_REQUESTS);
+      const body = await withRetry(() =>
+        syncRequest<{ blocks?: unknown[] }>("/sync/key-blocks", token, {
+          method: "POST",
+          body: { requests: part },
+        }),
+      );
+      blocks.push(...(body.blocks ?? []));
+    }
+  } catch (e) {
+    if (!(e instanceof SyncHttpError && e.status === 404)) throw e;
+    console.warn("[sync] the server has no key blocks yet; keys stay provisional");
+  }
+  // Even with no new block, provisional keys may fit in a block leased before.
+  await invoke("key_blocks_apply", { userId, blocks });
+}
+
+/** Runs one desktop sync cycle for the signed-in account: lease key blocks
+ *  and finalize provisional keys (DAT-01), push its pending deltas in batches (each accepted batch is marked synced at once, rejected
+ *  deltas become conflicts, as do keys another document already has; deltas
+ *  the server refuses for their content are
  *  skipped and stay pending), then pull every page after its cursor. Throws
  *  on network/auth/version errors (after retries); callers toast. */
 export async function syncNow(): Promise<SyncResult> {
@@ -113,6 +156,10 @@ export async function syncNow(): Promise<SyncResult> {
   const { accessToken: token, userId } = session;
   const { invoke } = await import("@tauri-apps/api/core");
 
+  // Key blocks first (DAT-01): provisional keys get their definitive one
+  // before the push, so it carries them.
+  await leaseKeyBlocks(token, userId, invoke);
+
   // Push.
   const { deltas } = await invoke<{ deltas: PendingDelta[] }>("oplog_pending", {
     userId,
@@ -122,17 +169,22 @@ export async function syncNow(): Promise<SyncResult> {
   let skipped = 0;
   const send = (part: PendingDelta[]) =>
     withRetry(() =>
-      syncRequest<{ conflicts?: RemoteDoc[] }>("/sync/push", token, {
-        method: "POST",
-        body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
-      }),
+      syncRequest<{ conflicts?: RemoteDoc[]; keyConflicts?: KeyConflictDoc[] }>(
+        "/sync/push",
+        token,
+        {
+          method: "POST",
+          body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
+        },
+      ),
     );
   for (const batch of batchDeltas(deltas)) {
     // A delta the server refuses for its content (e.g. 413) is skipped and
     // stays pending; the other batches and the pull still run.
     const refused = await sendIsolating(batch, send, async (part, body) => {
       const rejected = body.conflicts ?? [];
-      const { accepted } = splitPushed(part, rejected);
+      const keyRejected = body.keyConflicts ?? [];
+      const { accepted } = splitPushed(part, [...rejected, ...keyRejected]);
       await invoke("oplog_mark_synced", { userId, deltas: accepted });
       // The server's versions of rejected deltas: applying them while the
       // local change is still pending records the conflict instead of
@@ -140,8 +192,13 @@ export async function syncNow(): Promise<SyncResult> {
       if (rejected.length > 0) {
         await invoke("apply_remote", { userId, docs: rejected });
       }
+      // A key another document already has (DAT-01): the row gets a
+      // provisional key and waits for the user in the conflict panel.
+      if (keyRejected.length > 0) {
+        await invoke("key_conflicts_record", { userId, items: keyRejected });
+      }
       pushed += accepted.length;
-      conflicts += rejected.length;
+      conflicts += rejected.length + keyRejected.length;
     });
     skipped += refused.length;
     for (const d of refused)
@@ -205,4 +262,41 @@ export async function resolveConflict(
     });
   }
   window.dispatchEvent(new CustomEvent("pharos:synced"));
+}
+
+/** A row of this device that lost its key to another document (DAT-01): it
+ *  has a provisional key until the user picks a new one. Desktop only. */
+export interface KeyConflict {
+  id: string;
+  entity: string;
+  entityId: string;
+  projectId: string;
+  title: string;
+  /** The key another document has. */
+  lostKey: string;
+  /** The provisional key it has meanwhile. */
+  currentKey: string;
+}
+
+/** Open key conflicts of the signed-in account (none on the web). */
+export async function listKeyConflicts(): Promise<KeyConflict[]> {
+  const session = await getSession();
+  if (!session || !isTauri()) return [];
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<KeyConflict[]>("key_conflicts_list", { userId: session.userId });
+}
+
+/** Gives the row `key`, or the next number of its project when omitted
+ *  (fails with `no-key-block` until a sync leases a block). Returns the key. */
+export async function resolveKeyConflict(id: string, key?: string): Promise<string> {
+  const session = await getSession();
+  if (!session) throw new Error("not-authenticated");
+  const { invoke } = await import("@tauri-apps/api/core");
+  const assigned = await invoke<string>("key_conflict_resolve", {
+    userId: session.userId,
+    id,
+    key: key ?? null,
+  });
+  window.dispatchEvent(new CustomEvent("pharos:synced"));
+  return assigned;
 }

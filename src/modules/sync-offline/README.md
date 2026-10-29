@@ -65,9 +65,23 @@ resolution can be added without a schema change.
   `SYNC_TOMBSTONE_DAYS` (30) the server clears the tombstone's payload, without
   a new `seq`. A record comes back only if another device still had it and the
   user chose "keep mine" in the conflict panel.
-- **Duplicate keys until DAT-01.** Two devices can number `REQ-004` offline.
-  Both requirements are kept (migration `0013` makes the local index
-  non-unique); creating one locally still rejects a duplicate key.
+- **Keys across devices (DAT-01, ADR-0010).** Case, requirement and defect
+  keys are unique per project between devices:
+  - every desktop sync starts with `leaseKeyBlocks`: `key_lease_requests` lists
+    the project/kind pairs with fewer than 10 numbers left,
+    `POST /sync/key-blocks` leases blocks of 50, and `key_blocks_apply` stores
+    them and gives provisional keys (`ATS_?KQZD`, created offline without a
+    block) their definitive one before the push. A server without the
+    endpoint (404) only leaves keys provisional;
+  - the server refuses an upsert whose key another live document of the
+    project has (`keyConflicts` in the push answer). `key_conflicts_record`
+    gives the row a provisional key and a key conflict;
+  - on a pull, a different local row holding the pulled key loses it the same
+    way (`sync.rs::write_doc`);
+  - a row with an open key conflict is not pushed. The conflict panel lists it
+    (`ui/KeyConflictList.tsx`): type a new key or take the next number
+    (`key_conflict_resolve`). The indicator counts it with the conflicts;
+  - the web keeps a refused key in its outbox, flagged like a refused delta.
 
 ## Web client (`web/webSync.ts`, ADR-0004)
 

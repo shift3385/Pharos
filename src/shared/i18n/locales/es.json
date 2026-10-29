@@ -170,7 +170,13 @@
       "keepRemote": "Usar la del servidor",
       "resolved": "Conflicto resuelto",
       "failed": "No se pudo resolver el conflicto",
-      "entity": { "project": "Proyecto", "test_plan": "Plan de pruebas", "test_case": "Caso de prueba", "requirement": "Requisito", "planner_card": "Tarjeta del planificador" },
+      "entity": {
+        "project": "Proyecto",
+        "test_plan": "Plan de pruebas",
+        "test_case": "Caso de prueba",
+        "requirement": "Requisito",
+        "planner_card": "Tarjeta del planificador"
+      },
       "fields": {
         "title": "Título",
         "name": "Nombre",
@@ -189,6 +195,18 @@
         "description": "Descripción",
         "kind": "Tipo",
         "position": "Posición"
+      },
+      "key": {
+        "title": "Claves repetidas",
+        "intro": "Otro elemento del proyecto ya tiene esta clave en el servidor. Mientras eliges otra, este lleva una clave provisional y no se sincroniza. Si algún caso enlazaba la clave antigua, revísalo.",
+        "lost": "Quería {{key}}",
+        "current": "Ahora: {{key}}",
+        "placeholder": "Nueva clave",
+        "use": "Usar esta clave",
+        "next": "Asignar la siguiente",
+        "assigned": "Clave asignada: {{key}}",
+        "noBlock": "Sincroniza antes para obtener números nuevos, o escribe una clave.",
+        "failed": "No se pudo usar esa clave: {{reason}}"
       }
     }
   },
@@ -643,6 +661,7 @@
     },
     "exportFeatures": "Exportar .feature (todos)",
     "exportFeaturesToast": "{{count}} archivos .feature exportados en features.zip",
+    "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
     "aiPendingCase": "Caso generado por IA"
   },
   "dashboard": {

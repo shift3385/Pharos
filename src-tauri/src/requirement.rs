@@ -18,7 +18,7 @@ use crate::oplog;
 use crate::project;
 
 pub(crate) const KEY_PREFIX: &str = "REQ-";
-const KEY_DIGITS: usize = 3;
+pub(crate) const KEY_DIGITS: usize = 3;
 const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
 
 #[derive(Serialize)]
@@ -87,7 +87,7 @@ fn map_requirement(row: &rusqlite::Row) -> rusqlite::Result<Requirement> {
 
 /// A key must be usable as a Gherkin tag: no whitespace and no characters that
 /// tag expressions treat specially.
-fn valid_key(key: &str) -> bool {
+pub(crate) fn valid_key(key: &str) -> bool {
     !key.is_empty()
         && key
             .chars()

@@ -170,7 +170,13 @@
       "keepRemote": "Use the server's",
       "resolved": "Conflict resolved",
       "failed": "Could not resolve the conflict",
-      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case", "requirement": "Requirement", "planner_card": "Planner card" },
+      "entity": {
+        "project": "Project",
+        "test_plan": "Test plan",
+        "test_case": "Test case",
+        "requirement": "Requirement",
+        "planner_card": "Planner card"
+      },
       "fields": {
         "title": "Title",
         "name": "Name",
@@ -189,6 +195,18 @@
         "description": "Description",
         "kind": "Kind",
         "position": "Position"
+      },
+      "key": {
+        "title": "Repeated keys",
+        "intro": "Another item of the project already has this key on the server. Until you pick another one, this item has a provisional key and does not sync. If a case linked the old key, review it.",
+        "lost": "Wanted {{key}}",
+        "current": "Now: {{key}}",
+        "placeholder": "New key",
+        "use": "Use this key",
+        "next": "Assign the next one",
+        "assigned": "Key assigned: {{key}}",
+        "noBlock": "Sync first to get new numbers, or type a key.",
+        "failed": "That key could not be used: {{reason}}"
       }
     }
   },
@@ -643,6 +661,7 @@
     },
     "exportFeatures": "Export .feature (all)",
     "exportFeaturesToast": "{{count}} .feature files exported in features.zip",
+    "exportProvisionalToast": "{{count}} case(s) still have a provisional key: their files have no ID tag yet. Sync and export again.",
     "aiPendingCase": "AI-generated case"
   },
   "dashboard": {

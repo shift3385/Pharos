@@ -38,3 +38,40 @@ export const pullSchema = z.object({
 });
 
 export type Delta = z.infer<typeof deltaSchema>;
+
+/** Human-readable keys (DAT-01, ADR-0010): the kind of key each keyed entity
+ *  carries and the payload field that holds it. */
+export const KEY_KINDS = ["case", "requirement", "defect"] as const;
+export type KeyKind = (typeof KEY_KINDS)[number];
+export const KEY_ENTITY: Record<KeyKind, string> = {
+  case: "test_case",
+  requirement: "requirement",
+  defect: "planner_card",
+};
+export const KEY_FIELD: Record<string, string> = {
+  test_case: "scenarioId",
+  requirement: "requirementKey",
+  planner_card: "cardKey",
+};
+
+/** Numbers per leased block; the desktop asks for another when fewer than 10
+ *  are left. */
+export const KEY_BLOCK_SIZE = 50;
+
+/** A provisional key (`ATS_?KQZD`) is local and never checked for duplicates. */
+export const isProvisionalKey = (key: string): boolean => key.includes("?");
+
+/** Lease of key blocks: per project and kind, the lowest number the device
+ *  may still use (`floor`: its own next number, so a project numbered before
+ *  its first push keeps its keys). */
+export const keyBlocksSchema = z.object({
+  requests: z
+    .array(
+      z.object({
+        projectId: z.string().min(1).max(200),
+        kind: z.enum(KEY_KINDS),
+        floor: z.number().int().positive().max(1e12).default(1),
+      }),
+    )
+    .max(300),
+});

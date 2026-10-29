@@ -1,5 +1,5 @@
 import type { TestCase } from "../model/types";
-import { flowsToGherkin, parseFeatureFlows, toGherkin } from "../ui/gherkin";
+import { flowsToGherkin, isProvisionalKey, parseFeatureFlows, toGherkin } from "../ui/gherkin";
 import { testCaseApi } from "../api/testCaseApi";
 import { buildCaseXlsx, type ExportableCase } from "./caseXlsx";
 
@@ -46,17 +46,23 @@ export function featureFileName(scenarioId: string): string {
 }
 
 /** Every case of a project as a .feature file with its ID and requirement
- *  tags (TRZ-03), for the batch export (spec §5.3 "en lote por proyecto"). */
+ *  tags (TRZ-03), for the batch export (spec §5.3 "en lote por proyecto").
+ *  `provisional` marks a case whose key is still provisional (DAT-01): its
+ *  file has no ID tag yet. */
 export async function projectFeatureFiles(
   projectId: string,
   userId: string,
   t: Translate,
-): Promise<{ name: string; content: string }[]> {
-  const out: { name: string; content: string }[] = [];
+): Promise<{ name: string; content: string; provisional: boolean }[]> {
+  const out: { name: string; content: string; provisional: boolean }[] = [];
   for (const s of await testCaseApi.list(projectId, userId)) {
     const full = await testCaseApi.get(s.id, userId);
     if (!full) continue;
-    out.push({ name: featureFileName(full.scenarioId), content: caseToExportable(full, t).gherkin });
+    out.push({
+      name: featureFileName(full.scenarioId),
+      content: caseToExportable(full, t).gherkin,
+      provisional: isProvisionalKey(full.scenarioId),
+    });
   }
   return out;
 }

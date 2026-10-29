@@ -30,11 +30,19 @@ function tagToken(value: string): string {
   return value.trim().replace(/^@+/, "").replace(/\s+/g, "_");
 }
 
-/** One tag line (`@a @b`) with the given indent, or nothing when empty. */
+/** A provisional key (`ATS_?KQZD`, DAT-01): created offline without a key
+ *  block, replaced by a definitive one on the next sync. It is never written
+ *  as a tag, so no automation repository ever depends on it (ADR-0010). */
+export function isProvisionalKey(key: string): boolean {
+  return key.includes("?");
+}
+
+/** One tag line (`@a @b`) with the given indent, or nothing when empty.
+ *  Provisional keys are left out. */
 function tagLine(indent: string, tags: (string | undefined)[]): string[] {
   const tokens: string[] = [];
   for (const t of tags) {
-    const token = t ? tagToken(t) : "";
+    const token = t && !isProvisionalKey(t) ? tagToken(t) : "";
     if (token && !tokens.includes(token)) tokens.push(token);
   }
   return tokens.length ? [`${indent}${tokens.map((t) => `@${t}`).join(" ")}`] : [];

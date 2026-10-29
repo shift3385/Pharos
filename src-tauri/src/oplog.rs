@@ -121,6 +121,21 @@ pub fn owner_of(
     Ok(owner.flatten().filter(|o| !o.is_empty()))
 }
 
+/// True when the server ever knew this entity: a sync base or a synced journal
+/// row exists for it, on any account of this device (SYNC-06, DAT-01).
+pub(crate) fn known_to_server(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM sync_base WHERE entity = ?1 AND entity_id = ?2
+         UNION ALL SELECT 1 FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NOT NULL
+         LIMIT 1",
+        params![entity, id],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+    .map(|r| r.is_some())
+}
+
 /// Appends a delta for an entity mutation. Called inside each repo's write, in
 /// the same connection/transaction, so the journal never diverges from the data.
 /// The row belongs to the entity's owner (FIX-07), so another account signed in
@@ -199,7 +214,7 @@ pub fn claim_unowned(conn: &Connection) -> Result<(), String> {
 
 /// Pending changes of one account: the distinct synced entities with unsynced
 /// rows, i.e. the deltas its next push would send (FIX-01, FIX-07) — plus its
-/// open conflicts.
+/// open conflicts (of version and of key).
 pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String> {
     claim_unowned(conn)?;
     let pending: i64 = conn
@@ -215,7 +230,8 @@ pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String>
         .map_err(|e| e.to_string())?;
     let conflicts: i64 = conn
         .query_row(
-            "SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL AND user_id = ?1",
+            "SELECT (SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL AND user_id = ?1)
+                  + (SELECT count(*) FROM key_conflicts WHERE resolved_at IS NULL AND user_id = ?1)",
             params![user_id],
             |r| r.get(0),
         )

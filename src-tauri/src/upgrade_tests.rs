@@ -201,6 +201,8 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
                 |r| r.get(0),
             )
             .unwrap();
+        // The project is known to the server, so it numbers from a leased block.
+        crate::keys::store_block(new, crate::keys::KeyKind::Case, &project_1, 1, 50)?;
         let key = crate::keys::allocate(new, crate::keys::KeyKind::Case, &project_1, "ATS_", 3)?;
         assert_eq!(key, "ATS_005");
         Ok(())

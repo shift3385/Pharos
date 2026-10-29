@@ -113,7 +113,7 @@ describe("sync", () => {
       await push(token, { payload: { title: "Login" }, revision: 1, hlc: H(100, "desk") });
       // The web edits online and pushes first (no base: LWW by HLC).
       const web = await push(token, { payload: { title: "Login (web)" }, revision: 2, hlc: H(200, "web") });
-      expect(web.json()).toEqual({ accepted: 1, conflicts: [] });
+      expect(web.json()).toEqual({ accepted: 1, conflicts: [], keyConflicts: [] });
       // The desktop edited offline from revision 1 and pushes on reconnect.
       const desk = await push(token, {
         payload: { title: "Login (desktop)" },
@@ -139,7 +139,7 @@ describe("sync", () => {
         baseRevision: 2,
         baseHlc: H(200, "web"),
       });
-      expect(resolved.json()).toEqual({ accepted: 1, conflicts: [] });
+      expect(resolved.json()).toEqual({ accepted: 1, conflicts: [], keyConflicts: [] });
     });
 
     it("accepts a retried push (same HLC) without reporting a conflict", async () => {
@@ -148,7 +148,7 @@ describe("sync", () => {
       const delta = { payload: { title: "v2" }, revision: 2, hlc: H(200, "desk"), baseRevision: 1, baseHlc: H(100, "desk") };
       expect((await push(token, delta)).json().accepted).toBe(1);
       // The response was lost; the client pushes the same delta again.
-      expect((await push(token, delta)).json()).toEqual({ accepted: 1, conflicts: [] });
+      expect((await push(token, delta)).json()).toEqual({ accepted: 1, conflicts: [], keyConflicts: [] });
     });
 
     it("pull carries the HLC of each document", async () => {
@@ -243,7 +243,7 @@ describe("sync", () => {
     }
     expect(accepted).toBe(2000);
     // A retried batch (lost response) is accepted again without conflicts.
-    expect((await pushBatch(token, cases(200, 1800))).json()).toEqual({ accepted: 200, conflicts: [] });
+    expect((await pushBatch(token, cases(200, 1800))).json()).toEqual({ accepted: 200, conflicts: [], keyConflicts: [] });
   });
 
   it("deleting a project deletes its plans, cases, requirements and cards (FIX-05, SYNC-04a)", async () => {
@@ -265,7 +265,7 @@ describe("sync", () => {
       doc("planner_card", "d1", "p1"),
       doc("test_case", "other", "p2"),
     ]);
-    expect(created.json()).toEqual({ accepted: 6, conflicts: [] });
+    expect(created.json()).toEqual({ accepted: 6, conflicts: [], keyConflicts: [] });
     const { cursor } = (await app.inject({ method: "GET", url: "/sync/pull?since=0", headers: auth(token) })).json();
 
     const delHlc = `${String(200).padStart(15, "0")}-00000-desk`;
@@ -287,7 +287,7 @@ describe("sync", () => {
     const late = await pushBatch(token, [
       { entity: "test_case", entityId: "c1", op: "delete", payload: {}, revision: 2, author: "A", hlc: `${String(150).padStart(15, "0")}-00000-desk`, baseRevision: 1, baseHlc: doc("x", "x", "").hlc },
     ]);
-    expect(late.json()).toEqual({ accepted: 1, conflicts: [] });
+    expect(late.json()).toEqual({ accepted: 1, conflicts: [], keyConflicts: [] });
   });
 
   it("an anonymous caller gets 401, not the server version", async () => {

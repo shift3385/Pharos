@@ -25,6 +25,7 @@ use tauri::State;
 
 use crate::db::Db;
 use crate::keys::{self, KeyKind};
+use crate::oplog;
 
 /// Retention bounds, the same as the Administration setting.
 const MIN_DAYS: i64 = 1;
@@ -63,18 +64,6 @@ fn exists(conn: &Connection, sql: &str, p: &[&dyn rusqlite::ToSql]) -> Result<bo
         .map(|r| r.is_some())
 }
 
-/// True when the server ever knew this entity: a sync base or a synced journal
-/// row exists for it, on any account of this device.
-fn known_to_server(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
-    exists(
-        conn,
-        "SELECT 1 FROM sync_base WHERE entity = ?1 AND entity_id = ?2
-         UNION ALL SELECT 1 FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NOT NULL
-         LIMIT 1",
-        &[&entity, &id],
-    )
-}
-
 /// True when the entity must wait: an open conflict, or a pending change the
 /// server has to receive first.
 fn held(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
@@ -90,7 +79,7 @@ fn held(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
         "SELECT 1 FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NULL",
         &[&entity, &id],
     )?;
-    Ok(pending && known_to_server(conn, entity, id)?)
+    Ok(pending && oplog::known_to_server(conn, entity, id)?)
 }
 
 /// Removes everything this device keeps about one entity besides its row.
@@ -168,22 +157,6 @@ const CHILDREN: [Child; 4] = [
     },
 ];
 
-fn prefix_for(conn: &Connection, kind: KeyKind, project_id: &str) -> Result<String, String> {
-    Ok(match kind {
-        KeyKind::Case => conn
-            .query_row(
-                "SELECT case_id_prefix FROM projects WHERE id = ?1",
-                params![project_id],
-                |r| r.get(0),
-            )
-            .optional()
-            .map_err(|e| e.to_string())?
-            .unwrap_or_else(|| "ATS_".to_string()),
-        KeyKind::Requirement => crate::requirement::KEY_PREFIX.to_string(),
-        KeyKind::Defect => crate::planner::DEFECT_KEY_PREFIX.to_string(),
-    })
-}
-
 fn purge_children(
     conn: &Connection,
     user: &str,
@@ -210,7 +183,7 @@ fn purge_children(
             continue;
         }
         if let Some((_, kind)) = child.key {
-            let prefix = prefix_for(conn, kind, &project_id)?;
+            let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
             keys::retire(conn, kind, &project_id, &prefix, &key)?;
         }
         if let Some((table, column)) = child.dependents {
@@ -326,7 +299,6 @@ pub fn purge_deleted(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::oplog;
 
     const A: &str = "user-a";
     const B: &str = "user-b";

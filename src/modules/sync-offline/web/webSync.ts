@@ -271,6 +271,12 @@ export function flushOutbox(): Promise<FlushResult> {
   return flushing;
 }
 
+/** What `/sync/push` answers: conflicts, and keys already used (DAT-01). */
+interface PushBody {
+  conflicts?: RemoteDoc[];
+  keyConflicts?: { entity: string; entityId: string }[];
+}
+
 async function doFlush(): Promise<FlushResult> {
   const session = await getSession();
   const total: FlushResult = { pushed: 0, conflicts: 0, skipped: 0 };
@@ -283,26 +289,40 @@ async function doFlush(): Promise<FlushResult> {
   const send = (part: WebDelta[]) =>
     withRetry(
       () =>
-        syncRequest<{ conflicts?: RemoteDoc[] }>("/sync/push", token, {
+        syncRequest<PushBody>("/sync/push", token, {
           method: "POST",
           body: { deltas: part.map(({ refused: _r, ...d }) => d) },
         }),
       [500, 1500],
     );
-  const settle = (part: WebDelta[], body: { conflicts?: RemoteDoc[] }) => {
+  const settle = (part: WebDelta[], body: PushBody) => {
     const rejected = new Map(
       (body.conflicts ?? []).map((c) => [entityKey(c), c]),
     );
+    // A key another document of the project already has (DAT-01): kept
+    // queued and flagged like a delta refused for its content.
+    const keyTaken = new Set((body.keyConflicts ?? []).map(entityKey));
     // Drop what was sent, unless the entity was edited again meanwhile (its
     // newer delta has another HLC and stays queued).
     const sent = new Map(part.map((d) => [entityKey(d), d.hlc]));
     writeJson(
       outboxKey(userId),
-      loadOutbox(userId).filter((d) => sent.get(entityKey(d)) !== d.hlc),
+      loadOutbox(userId)
+        .filter(
+          (d) => sent.get(entityKey(d)) !== d.hlc || keyTaken.has(entityKey(d)),
+        )
+        .map((d) =>
+          keyTaken.has(entityKey(d)) && sent.get(entityKey(d)) === d.hlc
+            ? { ...d, refused: true }
+            : d,
+        ),
     );
     for (const d of part) {
       const remote = rejected.get(entityKey(d));
-      if (remote) {
+      if (keyTaken.has(entityKey(d))) {
+        total.skipped++;
+        console.warn("[web push] key already used", d.entity, d.entityId);
+      } else if (remote) {
         observeHlc(remote.hlc);
         addConflict(userId, d, remote);
         total.conflicts++;
