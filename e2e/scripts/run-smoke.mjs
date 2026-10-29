@@ -4,10 +4,11 @@
 //   E2E_SKIP_BUILD=1 npm run e2e  reuse the last debug build
 //
 // Preflight fails fast with the fix for each missing prerequisite: the API
-// (and so PostgreSQL), tauri-driver, an msedgedriver matching WebView2, and the
-// seeded test account.
+// (and so PostgreSQL) of this checkout, tauri-driver, an msedgedriver matching
+// WebView2, and the seeded test account.
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { belongsTo, owners } from "../../scripts/api-port.mjs";
 import {
   driverVersion,
   e2eDir,
@@ -45,6 +46,19 @@ try {
 } catch (err) {
   fail(
     `the API at ${apiUrl} is not answering (${err.message}). Start PostgreSQL and \`cd server && npm start\`.`,
+  );
+}
+
+// An API left running by another checkout (a worktree, an earlier session)
+// answers /health too, but serves other code: the smoke would test that one.
+// `npm start` in this checkout stops it first (scripts/api-port.mjs).
+const port = Number(new URL(apiUrl).port || 80);
+const stale = owners(port).filter(
+  (o) => o.pharos && !belongsTo(o.commandLine, repoDir),
+);
+if (stale.length > 0) {
+  fail(
+    `the API on port ${port} belongs to another checkout (PID ${stale[0].pid}: ${stale[0].commandLine}). Start this checkout's API with \`cd server && npm start\`; it stops the other one first.`,
   );
 }
 

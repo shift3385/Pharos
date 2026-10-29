@@ -6,7 +6,9 @@
   "description": "Pharos backend — accounts, authentication and sync API.",
   "license": "UNLICENSED",
   "scripts": {
+    "predev": "node ../scripts/api-port.mjs free",
     "dev": "tsx watch src/server.ts",
+    "prestart": "node ../scripts/api-port.mjs free",
     "start": "tsx src/server.ts",
     "migrate": "tsx src/db/migrate-cli.ts",
     "test": "vitest run",

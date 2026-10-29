@@ -191,6 +191,13 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Corregido
 
+- **El puerto 3000 ya no se queda ocupado por una API vieja:** cerrar la
+  ventana o la tarea de `npm start` podía dejar vivo el proceso de la API, y la
+  siguiente no arrancaba o el escritorio y el E2E hablaban con la antigua.
+  Ahora `npm start` y `npm run dev` (en `server/`) detienen antes cualquier API
+  de Pharos que ocupe el puerto (de esta copia o de otro worktree) y, si es otro
+  programa, no lo tocan y dicen cuál es. `npm run e2e` rechaza una API que sea
+  de otra copia. `node scripts/api-port.mjs owner` muestra quién usa el puerto.
 - **Exportar a PDF ya funciona (EXP-02):** el plan y los casos en `.pdf` se
   quedaban sin generar, sin aviso, porque no se cargaban las fuentes del PDF
   ("Roboto-Medium.ttf"). Ahora se generan en la app y dentro de los ZIP.
