@@ -133,8 +133,13 @@
 /* ---- New-project inline form ---- */
 .pj-create {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   align-items: center;
+}
+/* The blank-name message takes its own line (UX-01). */
+.pj-create [role="alert"] {
+  flex-basis: 100%;
 }
 .pj-create input {
   flex: 1;

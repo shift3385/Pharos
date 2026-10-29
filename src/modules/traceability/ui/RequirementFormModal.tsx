@@ -55,7 +55,7 @@ export function RequirementFormModal({
           : null
       : null;
   const titleIssue = required(draft.title);
-  const { guard, showSummary, summaryRef } = useSaveGuard(hasBlocking([keyIssue, titleIssue]));
+  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(hasBlocking([keyIssue, titleIssue]));
 
   async function submit() {
     setSaving(true);
@@ -112,7 +112,7 @@ export function RequirementFormModal({
       <FormField
         id={`${id}-name`}
         label={t("traceability.requirement.title")}
-        issue={titleIssue}
+        issue={attempted ? titleIssue : null}
         required
       >
         {(p) => (

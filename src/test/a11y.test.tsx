@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { AdminPage } from "@modules/admin";
+import { LanguageToggle } from "@shared/i18n/LanguageToggle";
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
@@ -32,6 +33,33 @@ describe("app shell", () => {
       screen.getByRole("navigation", { name: "Main navigation" }),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+});
+
+describe("found in the live browser pass", () => {
+  it("the skip link focuses the content without touching the hash route", async () => {
+    window.location.hash = "#/projects";
+    renderWithProviders(
+      <AppShell>
+        <h1>Page</h1>
+      </AppShell>,
+    );
+    await userEvent.tab();
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(window.location.hash).toBe("#/projects");
+  });
+
+  it("the language menu is named by its visible code and closes with Escape", async () => {
+    renderWithProviders(<LanguageToggle />);
+    const trigger = screen.getByRole("button", { name: "EN, Language" });
+    await userEvent.click(trigger);
+    expect(screen.getByRole("list", { name: "Language" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+    await expectNoAxeViolations();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("list", { name: "Language" })).toBeNull();
+    expect(trigger).toHaveFocus();
   });
 });
 

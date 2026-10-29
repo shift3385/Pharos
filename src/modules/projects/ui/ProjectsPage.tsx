@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { FieldMessage } from "@shared/ui/FormField";
+import { controlProps } from "@shared/ui/fieldProps";
+import { required } from "@shared/validation";
 import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import { projectApi } from "../api/projectApi";
@@ -137,9 +140,15 @@ export function ProjectsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId]);
 
+  // A blank name is explained (and announced) instead of a disabled button.
+  const [nameTried, setNameTried] = useState(false);
+  const nameIssue = nameTried ? required(name) : null;
+
   async function create() {
     const trimmed = name.trim();
+    setNameTried(true);
     if (!trimmed) return;
+    setNameTried(false);
     const project = await projectApi.create({ name: trimmed, ownerId });
     setName("");
     setCreating(false);
@@ -185,13 +194,15 @@ export function ProjectsPage() {
       {creating && (
         <div className="pj-create">
           <input
+            {...controlProps("pj-new-name", nameIssue)}
+            aria-label={t("projects.namePlaceholder")}
             autoFocus
             value={name}
             placeholder={t("projects.namePlaceholder")}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && create()}
           />
-          <button type="button" className="tp__new" onClick={create} disabled={!name.trim()}>
+          <button type="button" className="tp__new" onClick={create}>
             {t("projects.create")}
           </button>
           <button
@@ -200,10 +211,16 @@ export function ProjectsPage() {
             onClick={() => {
               setCreating(false);
               setName("");
+              setNameTried(false);
             }}
           >
             {t("common.cancel")}
           </button>
+          {nameIssue && (
+            <span role="alert">
+              <FieldMessage id="pj-new-name-msg" issue={nameIssue} />
+            </span>
+          )}
         </div>
       )}
 

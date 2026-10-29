@@ -45,7 +45,7 @@ export function TemplateFormModal({
     setValues((prev) => ({ ...prev, [k]: v }));
   const id = useId();
   const nameIssue = required(values.name);
-  const { guard, showSummary, summaryRef } = useSaveGuard(nameIssue !== null);
+  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(nameIssue !== null);
 
   return (
     <Dialog className="cd tpl-form" labelledBy={`${id}-title`} onClose={onCancel}>
@@ -64,7 +64,7 @@ export function TemplateFormModal({
         id={`${id}-name`}
         className="tpl-form__field"
         label={t("templates.form.name")}
-        issue={nameIssue}
+        issue={attempted ? nameIssue : null}
         required
       >
         {(p) => (

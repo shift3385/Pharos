@@ -30,7 +30,8 @@ export function controlProps(id: string, issue: Issue | null | undefined, descri
 
 /** Save gate for the draft rule: `guard(save)` runs `save` unless something
  *  blocks it; then it shows the summary and moves the focus there. Warnings
- *  never reach this hook, so they never block. */
+ *  never reach this hook, so they never block. `attempted` lets a form hold
+ *  back a `required` error on a field nobody has filled in yet. */
 export function useSaveGuard(blocking: boolean) {
   const [attempt, setAttempt] = useState(0);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -41,6 +42,7 @@ export function useSaveGuard(blocking: boolean) {
 
   return {
     showSummary: attempt > 0 && blocking,
+    attempted: attempt > 0,
     summaryRef,
     guard(save: () => void) {
       if (blocking) setAttempt((n) => n + 1);

@@ -16,7 +16,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">
+      {/* The router lives in the URL hash, so following "#main-content" would
+          change the route: move the focus instead. */}
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
         {t("a11y.skipToContent")}
       </a>
       <div className="app-shell__bg" aria-hidden="true" />

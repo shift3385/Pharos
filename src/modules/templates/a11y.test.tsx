@@ -25,11 +25,12 @@ describe("template form", () => {
     );
     const name = screen.getByRole("textbox", { name: /Name/ });
     expect(name).toHaveFocus();
-    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name).not.toHaveAttribute("aria-invalid"); // not before a save attempt
     await expectNoAxeViolations();
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveFocus();
+    expect(name).toHaveAttribute("aria-invalid", "true");
     await userEvent.type(name, "Plan base");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSubmit).toHaveBeenCalledWith(

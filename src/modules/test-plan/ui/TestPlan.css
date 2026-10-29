@@ -405,18 +405,22 @@
   flex-direction: column;
   gap: var(--space-2);
   align-items: flex-start;
-  --rdp-accent-color: var(--color-navy-500);
-  --rdp-accent-background-color: var(--color-navy-100);
-  --rdp-today-color: var(--color-accent);
-  --rdp-range_start-color: var(--color-accent-contrast);
-  --rdp-range_end-color: var(--color-accent-contrast);
-  --rdp-range_start-background: var(--color-navy-500);
-  --rdp-range_end-background: var(--color-navy-500);
-  --rdp-range_middle-background-color: var(--color-navy-100);
   color: var(--color-text-primary);
 }
 
+/* react-day-picker declares its variables on .rdp-root, so the theme must set
+   them there too (on .tp-cal they were shadowed by the library defaults, a
+   1.7:1 blue "today" on dark). Today is navy, not amber: amber is 2.1:1 on
+   white and reserved for the primary action (spec §12.1, UX-05). */
 .tp-cal .rdp-root {
+  --rdp-accent-color: var(--color-navy-500);
+  --rdp-accent-background-color: var(--color-navy-100);
+  --rdp-today-color: var(--color-navy-500);
+  --rdp-range_start-color: var(--color-surface-1);
+  --rdp-range_end-color: var(--color-surface-1);
+  --rdp-range_start-background: var(--color-navy-500);
+  --rdp-range_end-background: var(--color-navy-500);
+  --rdp-range_middle-background-color: var(--color-navy-100);
   padding: var(--space-3);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);

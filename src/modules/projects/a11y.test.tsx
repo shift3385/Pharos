@@ -7,9 +7,25 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { ExportProgressModal } from "./ui/ExportProgressModal";
+import { ProjectsPage } from "./ui/ProjectsPage";
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
+});
+
+describe("new project", () => {
+  it("a blank name is announced instead of a disabled Create", async () => {
+    renderWithProviders(<ProjectsPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "New project" }));
+    const name = screen.getByRole("textbox", { name: "Project name" });
+    expect(name).toHaveFocus();
+    const create = screen.getByRole("button", { name: "Create" });
+    expect(create).toBeEnabled();
+    await userEvent.click(create);
+    expect(screen.getByRole("alert")).toHaveTextContent("This field is required.");
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    await expectNoAxeViolations();
+  });
 });
 
 describe("export progress", () => {
