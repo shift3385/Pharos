@@ -119,7 +119,7 @@
   border-radius: var(--radius-md);
 }
 .tpl__del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: var(--color-error);
 }
 

@@ -973,5 +973,28 @@
     "copiedHint": "Paste it into your password manager, then copy something else to clear the clipboard.",
     "savedCheck": "I have saved it somewhere safe",
     "close": "Close"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "close": "Close",
+    "currentStep": "current step",
+    "row": "Row {{n}}"
+  },
+  "validation": {
+    "severity": {
+      "error": "Error",
+      "warning": "Warning"
+    },
+    "required": "This field is required.",
+    "number": "Enter a number.",
+    "integer": "Enter a whole number.",
+    "min": "The minimum is {{min}}.",
+    "max": "The maximum is {{max}}.",
+    "dateOrder": "The end date is before the start date.",
+    "format": "Invalid format. Example: {{example}}.",
+    "duplicateRow": "Duplicate row: there is already one like it.",
+    "duplicateKey": "That ID already exists.",
+    "summary": "Cannot save: check {{count}} field(s).",
+    "savedWithWarnings": "Saved with {{count}} warning(s) to review."
   }
 }

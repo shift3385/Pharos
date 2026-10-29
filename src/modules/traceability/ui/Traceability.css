@@ -100,7 +100,7 @@
   border-radius: var(--radius-md);
 }
 .tr__delete:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: var(--color-error);
 }
 
@@ -137,11 +137,11 @@
 
 .tr-error {
   font-size: var(--fs-caption);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .tr-warn {
   font-size: var(--fs-caption);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .tr-modal {
@@ -251,7 +251,7 @@
   border-color: var(--color-warning);
 }
 .tr-stat--gap dd {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .tr-toggle {
   display: inline-flex;
@@ -274,11 +274,11 @@
   white-space: nowrap;
 }
 .tr-coverage--covered {
-  color: var(--color-success);
+  color: var(--color-success-text);
   border: 1px solid var(--color-success);
 }
 .tr-coverage--not_covered {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border: 1px solid var(--color-warning);
 }
 .tr-gaps {
@@ -297,7 +297,7 @@
 .tr-gaps__label {
   font-size: var(--fs-caption);
   font-weight: var(--fw-semibold);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .tr-gaps__item {
   display: inline-block;

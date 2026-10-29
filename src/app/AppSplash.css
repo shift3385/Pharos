@@ -61,7 +61,7 @@
 .db-recovery__input:focus {
   outline: none;
   border-color: var(--color-navy-500);
-  box-shadow: 0 0 0 3px var(--color-navy-100);
+  box-shadow: 0 0 0 2px var(--color-focus);
 }
 
 .db-recovery__hint {
@@ -73,7 +73,7 @@
 .db-recovery__error {
   margin: 0;
   font-size: var(--fs-ui);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .db-recovery__submit {

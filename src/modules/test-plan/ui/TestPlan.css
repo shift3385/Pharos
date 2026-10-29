@@ -80,7 +80,7 @@
 }
 
 .tp__item-del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: var(--color-error);
 }
 
@@ -161,7 +161,7 @@
 .tp-field textarea:focus {
   outline: none;
   border-color: var(--color-navy-500);
-  box-shadow: 0 0 0 3px var(--color-navy-100);
+  box-shadow: 0 0 0 2px var(--color-focus);
 }
 
 .tp-editor__actions {
@@ -360,7 +360,7 @@
 }
 
 .tp-list-field__del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: var(--color-error);
 }
 
@@ -500,11 +500,11 @@
 }
 
 .tp-msg--error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .tp-msg--warn {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .tp-sched-row input[data-invalid="true"] {
@@ -529,8 +529,8 @@
 
 .tp-confirm__yes {
   color: var(--color-surface-1);
-  background: var(--color-error);
-  border: 1px solid var(--color-error);
+  background: var(--color-error-text);
+  border: 1px solid var(--color-error-text);
 }
 
 .tp-confirm__no {

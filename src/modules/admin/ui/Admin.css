@@ -102,7 +102,7 @@
 }
 .adm__warn {
   font-size: var(--fs-caption);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .adm__bg-preview {
   width: 64px;

@@ -88,7 +88,7 @@
   color: var(--color-text-secondary);
 }
 .pl-card__kind--defect {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .pl-card__kind--test_data {
   color: var(--color-navy-500);
@@ -100,7 +100,7 @@
   font-size: var(--fs-caption);
 }
 .pl-card__del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .pl-card__title {
   text-align: left;
@@ -121,7 +121,7 @@
   color: var(--color-text-muted);
 }
 .pl-card__prio--critical {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .pl-card__label {
   padding: 0 var(--space-1);
@@ -184,7 +184,7 @@
   border: none;
 }
 .pl-attach__del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .pl-attach__input {
   font-size: var(--fs-ui);

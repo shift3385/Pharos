@@ -47,7 +47,7 @@
 .profile__field input:focus {
   outline: none;
   border-color: var(--color-navy-500);
-  box-shadow: 0 0 0 3px var(--color-navy-100);
+  box-shadow: 0 0 0 2px var(--color-focus);
 }
 
 .profile__save {
@@ -67,11 +67,11 @@
 
 .profile__status {
   font-size: var(--fs-ui);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .profile__status--error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .profile__audit {

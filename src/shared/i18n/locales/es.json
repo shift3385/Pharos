@@ -973,5 +973,28 @@
     "copiedHint": "Pégala en tu gestor de contraseñas y después copia otra cosa para vaciar el portapapeles.",
     "savedCheck": "Ya la he guardado en un lugar seguro",
     "close": "Cerrar"
+  },
+  "a11y": {
+    "skipToContent": "Saltar al contenido",
+    "close": "Cerrar",
+    "currentStep": "paso actual",
+    "row": "Fila {{n}}"
+  },
+  "validation": {
+    "severity": {
+      "error": "Error",
+      "warning": "Aviso"
+    },
+    "required": "Este campo es obligatorio.",
+    "number": "Escribe un número.",
+    "integer": "Escribe un número entero.",
+    "min": "El mínimo es {{min}}.",
+    "max": "El máximo es {{max}}.",
+    "dateOrder": "La fecha de fin es anterior a la de inicio.",
+    "format": "Formato no válido. Ejemplo: {{example}}.",
+    "duplicateRow": "Fila repetida: ya hay otra igual.",
+    "duplicateKey": "Ese ID ya existe.",
+    "summary": "No se puede guardar: revisa {{count}} campo(s).",
+    "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar."
   }
 }

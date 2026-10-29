@@ -27,7 +27,7 @@
 
 .recovery__error {
   font-size: var(--fs-ui);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .recovery__show {
