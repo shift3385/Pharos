@@ -22,6 +22,8 @@ import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
 import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
+import { saveFile } from "@shared/export/saveFile";
+import { unlessReported } from "@shared/ui/notify";
 import {
   AiSuggestList,
   AssistButton,
@@ -457,29 +459,32 @@ export function TestCaseEditor({
 
   async function exportXlsx() {
     const { exportCaseXlsx } = await import("../export/caseXlsx");
-    const name = await exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es");
-    setNotice(t("testCase.exportDone", { name }));
-    window.setTimeout(() => setNotice(null), 5000);
+    const name = await unlessReported(
+      exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es"),
+    );
+    if (name) showExportDone(name);
   }
 
   async function exportPdf() {
     const { exportCasePdf } = await import("../export/casePdf");
-    const name = await exportCasePdf(buildExportableCase(), t);
-    setNotice(t("testCase.exportDone", { name }));
-    window.setTimeout(() => setNotice(null), 5000);
+    const name = await unlessReported(exportCasePdf(buildExportableCase(), t));
+    if (name) showExportDone(name);
   }
 
-  function exportFeature() {
-    const content = buildGherkin(form);
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${form.scenarioId || "scenario"}.feature`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  async function exportFeature() {
+    const name = await unlessReported(
+      saveFile(
+        `${form.scenarioId || "scenario"}.feature`,
+        buildGherkin(form),
+        "text/plain;charset=utf-8",
+      ),
+    );
+    if (name) showExportDone(name);
+  }
+
+  function showExportDone(name: string) {
+    setNotice(t("testCase.exportDone", { name }));
+    window.setTimeout(() => setNotice(null), 5000);
   }
 
   async function toggleRevisions() {
@@ -767,7 +772,7 @@ export function TestCaseEditor({
           <button type="button" className="tp-wizard__revbtn" onClick={() => void exportPdf()}>
             {t("testCase.exportPdf")}
           </button>
-          <button type="button" className="tp-wizard__revbtn" onClick={exportFeature}>
+          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportFeature()}>
             {t("testCase.exportFeature")}
           </button>
           <button

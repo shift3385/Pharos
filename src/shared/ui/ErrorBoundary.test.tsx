@@ -93,7 +93,7 @@ describe("ErrorBoundary (BASE-08)", () => {
     );
     expect(
       await screen.findByText(
-        "Diagnóstico guardado en tu carpeta de descargas: pharos-diagnostic-x.zip",
+        "Diagnóstico guardado en pharos-diagnostic-x.zip",
       ),
     ).toBeInTheDocument();
   });

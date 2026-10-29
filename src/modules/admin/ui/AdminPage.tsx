@@ -2,9 +2,11 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/ui/Toast";
+import { ReportedError } from "@shared/ui/notify";
 import { exportDiagnostics, logClientError } from "@shared/diagnostics";
 import { APP_VERSION } from "@shared/version";
 import { applyBackground, loadSettings, saveSettings } from "../model/settings";
+import { DownloadFolderField } from "./DownloadFolderField";
 import "./Admin.css";
 
 /** Administration panel (spec §10): quick access to Templates and the AI engine,
@@ -23,8 +25,9 @@ export function AdminPage() {
     try {
       toast(t("diagnostics.exported", { file: await exportDiagnostics() }));
     } catch (e) {
+      if (e instanceof ReportedError) return;
       logClientError(e, "diagnostic export");
-      toast(t("diagnostics.failed"));
+      toast(t("diagnostics.failed"), "error");
     } finally {
       setExporting(false);
     }
@@ -127,16 +130,7 @@ export function AdminPage() {
           <span className="adm__hint">{t("admin.settings.retentionHint")}</span>
         </label>
 
-        <label className="adm__field">
-          <span className="adm__label">{t("admin.settings.download")}</span>
-          <input
-            type="text"
-            placeholder={t("admin.settings.downloadPlaceholder")}
-            value={settings.downloadLocation}
-            onChange={(e) => setSettings((s) => ({ ...s, downloadLocation: e.target.value }))}
-          />
-          <span className="adm__hint">{t("admin.settings.downloadHint")}</span>
-        </label>
+        <DownloadFolderField />
 
         <button type="button" className="adm__save" onClick={save}>
           {t("admin.settings.save")}

@@ -10,6 +10,7 @@
 // dropdown lists, so every exported value is one the dropdowns and formulas know.
 
 import ExcelJS from "exceljs";
+import { saveFile } from "@shared/export/saveFile";
 import templateEs from "../assets/matrix-template-es.xlsx?url";
 import templateEn from "../assets/matrix-template-en.xlsx?url";
 import type { ExecutionStatus, MatrixNote, TraceabilityMatrix } from "../model/matrix";
@@ -162,21 +163,9 @@ export async function buildMatrixXlsx(
 export const MATRIX_HEADER_ROW = HEADER_ROW;
 export const MATRIX_FIRST_ROW = FIRST_ROW;
 
-function triggerDownload(buffer: ArrayBuffer, filename: string) {
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-/** Builds and downloads the matrix of a project in the given language. The
+/** Builds and saves the matrix of a project in the given language. The
  *  document version is the plan's (1.0 when the project has no plan). */
 export async function exportMatrixXlsx(
   matrix: TraceabilityMatrix,
@@ -200,6 +189,5 @@ export async function exportMatrixXlsx(
     template,
   );
   const filename = `RTM_${projectName.replace(/[^\p{L}\p{N}_-]+/gu, "_")}.xlsx`;
-  triggerDownload(buffer, filename);
-  return filename;
+  return saveFile(filename, buffer, XLSX_MIME);
 }

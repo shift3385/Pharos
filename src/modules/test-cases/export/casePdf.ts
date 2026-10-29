@@ -2,7 +2,8 @@ import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
 import {
   baseDoc,
   dataTable,
-  downloadPdf,
+  pdfBytes,
+  savePdf,
   field,
   itemList,
   sectionHeader,
@@ -129,9 +130,15 @@ export function caseDocDefinition(c: ExportableCase, t: Translate): TDocumentDef
   return baseDoc(t("testCase.pdfKind"), content);
 }
 
-/** Builds the case PDF and triggers a download. Returns the file name. */
+/** File name of a case PDF. */
+export const casePdfName = (c: ExportableCase) => `${c.scenarioId || "case"}.pdf`;
+
+/** Builds the case PDF bytes (for the project ZIP, EXP-02). */
+export async function buildCasePdf(c: ExportableCase, t: Translate): Promise<Uint8Array> {
+  return pdfBytes(caseDocDefinition(c, t));
+}
+
+/** Builds the case PDF and saves it. Returns where (see saveFile). */
 export async function exportCasePdf(c: ExportableCase, t: Translate): Promise<string> {
-  const filename = `${c.scenarioId || "case"}.pdf`;
-  await downloadPdf(caseDocDefinition(c, t), filename);
-  return filename;
+  return savePdf(caseDocDefinition(c, t), casePdfName(c));
 }

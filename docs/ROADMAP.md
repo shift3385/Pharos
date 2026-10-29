@@ -111,7 +111,7 @@ Límites conocidos de FIX-08 (rama A2):
 | BASE-16 | Pre-commit ligero (`lint-staged`, `commitlint`)                                                                                                              | P2  | Hecho (B1, en main)                   | Un commit fuera de Conventional Commits se rechaza                         |
 | BASE-17 | Cuenta local de test reproducible (`npm run seed:test-user`)                                                                                                 | P1  | Hecho (`91f0b9a`)                     | Idempotente y bloqueada en producción                                      |
 | BASE-18 | Zod 4 en el servidor (aviso alto GHSA-mrhx-c7xc-m3w5), tras fusionar A1; excepción en la auditoría hasta el 2026-12-15                                       | P1  | Hecho (Q1)                            | `npm run check:audit` pasa sin excepciones en `server/`                    |
-| BASE-19 | `cargo fmt` y clippy limpios en los archivos de A1/A2; vaciar `scripts/rust-gates.allowlist.json`                                                            | P1  | Parcial: project.rs hecho (A3); falta planner.rs (U1) | La allowlist queda vacía y la CI sigue en verde                            |
+| BASE-19 | `cargo fmt` y clippy limpios en los archivos de A1/A2; vaciar `scripts/rust-gates.allowlist.json`                                                            | P1  | Hecho: project.rs (A3) y planner.rs (U1); allowlist vacía | La allowlist queda vacía y la CI sigue en verde                            |
 | BASE-20 | Avisos moderados: react-router 6 (redirección abierta, arreglado solo en v7) y `uuid` vía exceljs                                                            | P2  | Pendiente                             | `npm audit` de la raíz sin avisos moderados                                |
 
 ### C · Decisiones de modelo (bloquea empezar 0.2.0; cada una cierra con un ADR)
@@ -246,10 +246,10 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | UX-05  | Verificación WCAG 2.1 AA, incluido teclado y `aria` en los asistentes (Fase 9)                      | P0  | 0.1.0   |
 | UX-06  | Instalador Windows limpio + documentación final (Fase 9; requiere BASE-09)                          | P0  | 0.1.0   |
 | UX-01  | Validaciones transversales de formularios (números, requeridos, formatos, filas duplicadas)         | P1  | 0.1.0   |
-| UX-08  | Inicio real: búsqueda, último acceso y progreso de proyectos (spec §5); sin el texto de la "Fase 0" | P2  | 0.1.0   |
-| UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0   |
-| PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0   |
-| EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0   |
+| UX-08  | Inicio real: búsqueda, último acceso y progreso de proyectos (spec §5); sin el texto de la "Fase 0" | P2  | 0.1.0 · Hecho (U1) |
+| UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0 · Hecho (U1) |
+| PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0 · Hecho (U1) |
+| EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0 · Hecho (U1) |
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | —       |

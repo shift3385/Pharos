@@ -262,9 +262,15 @@
       "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido.",
       "retention": "Retención de elementos borrados (días)",
       "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera al siguiente sync. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
-      "download": "Carpeta de descargas",
-      "downloadPlaceholder": "Ruta de la carpeta (opcional)",
-      "downloadHint": "Preferencia; se aplicará a las exportaciones en una próxima versión.",
+      "download": "Carpeta de descarga",
+      "downloadCurrent": "Carpeta actual",
+      "downloadDefault": "Descargas del sistema",
+      "downloadChoose": "Elegir carpeta…",
+      "downloadReset": "Usar Descargas",
+      "downloadError": "No se pudo leer ni cambiar la carpeta de descarga.",
+      "downloadMissing": "La carpeta elegida ya no existe; mientras tanto se guarda en Descargas. Elige otra.",
+      "downloadHint": "Aquí se guardan todas las exportaciones y el diagnóstico. Nunca se sobrescribe un archivo: se añade « (2)».",
+      "downloadWebHint": "En la vista web el navegador decide dónde se guardan las descargas. La carpeta se elige en la app de escritorio.",
       "save": "Guardar ajustes"
     },
     "diagnostics": {
@@ -337,8 +343,9 @@
     "exportAll": "Exportar todo",
     "exporting": "Exportando…",
     "exportProject": "Exportar proyecto (ZIP)",
-    "exportedAllToast": "Exportados {{count}} archivos en un ZIP",
-    "exportedProjectToast": "«{{name}}»: {{count}} archivos exportados en un ZIP",
+    "exportedAllToast": "Exportados {{count}} archivos en {{path}}",
+    "exportedProjectToast": "«{{name}}»: {{count}} archivos exportados en {{path}}",
+    "pdfSkippedToast": "{{count}} PDF no se pudieron generar y no están en el ZIP: {{names}}",
     "exportBuilding": "Generando archivos… ({{done}}/{{total}})",
     "exportZipping": "Comprimiendo el ZIP…",
     "exportFinishing": "Finalizando…",
@@ -504,6 +511,15 @@
       "jmeter": "JMeter",
       "jira": "JIRA"
     },
+    "frequencyFor": "Frecuencia de {{ceremony}}",
+    "frequencyLabel": {
+      "daily": "a diario",
+      "twiceWeekly": "dos veces por semana",
+      "weekly": "semanal",
+      "biweekly": "cada dos semanas",
+      "perSprint": "una vez por sprint",
+      "monthly": "mensual"
+    },
     "ceremonyLabel": {
       "daily": "Diaria",
       "review": "Revisión",
@@ -581,7 +597,7 @@
       "create": "Crear {{count}}",
       "creating": "Creando…"
     },
-    "exportDone": "Descargado «{{name}}» en tu carpeta de Descargas.",
+    "exportDone": "Guardado en {{name}}",
     "keywords": "Palabras clave de Gherkin",
     "insertKeyword": "Insertar en el cursor",
     "scenarioId": "ID de escenario",
@@ -691,15 +707,29 @@
       "add": "Vincular un requisito…"
     },
     "exportFeatures": "Exportar .feature (todos)",
-    "exportFeaturesToast": "{{count}} archivos .feature exportados en features.zip",
+    "exportFeaturesToast": "{{count}} archivos .feature exportados en {{path}}",
     "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
     "aiPendingCase": "Caso generado por IA"
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",
+    "greeting": "Hola, {{name}}",
     "subtitle": "El faro que guía tus proyectos de pruebas a puerto seguro.",
-    "phaseLabel": "Fase 0 — Cimientos",
-    "body": "Estás viendo el esqueleto de la aplicación: navegación entre secciones, tema Faro Nocturno en variantes clara y oscura, e idioma español o inglés. Cada sección se construirá en su fase correspondiente."
+    "newProject": "Iniciar nuevo proyecto de pruebas",
+    "newProjectDesc": "Crea el proyecto y redacta su plan con el asistente.",
+    "continue": "Continuar proyecto existente",
+    "continueDesc": "Busca un proyecto en la lista y retómalo donde lo dejaste.",
+    "projectsTitle": "Tus proyectos",
+    "searchLabel": "Buscar proyecto",
+    "searchPlaceholder": "Buscar por nombre…",
+    "empty": "Aún no tienes proyectos. Empieza con «Iniciar nuevo proyecto de pruebas».",
+    "noMatch": "Ningún proyecto coincide con «{{query}}».",
+    "lastAccess": "Último acceso: {{date}}",
+    "neverOpened": "Sin abrir en este equipo · actualizado {{date}}",
+    "noPlan": "Sin plan",
+    "progressLabel": "Progreso de {{name}}",
+    "progress": "{{approved}} de {{total}} casos aprobados",
+    "noCases": "Sin casos todavía"
   },
   "section": {
     "comingInPhase": "Se implementará en la Fase {{phase}}",
@@ -904,10 +934,16 @@
       "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
     }
   },
+  "downloads": {
+    "saved": "Guardado en {{path}}",
+    "fallback": "No se pudo usar tu carpeta de descarga (no existe o no se puede escribir en ella). Se guardó en Descargas: {{path}}",
+    "failed": "No se pudo guardar «{{name}}»: {{reason}}",
+    "pdfFailed": "No se pudo generar el PDF «{{name}}»: {{reason}}"
+  },
   "diagnostics": {
     "export": "Exportar diagnóstico",
     "exporting": "Exportando…",
-    "exported": "Diagnóstico guardado en tu carpeta de descargas: {{file}}",
+    "exported": "Diagnóstico guardado en {{file}}",
     "failed": "No se pudo exportar el diagnóstico."
   },
   "errorBoundary": {

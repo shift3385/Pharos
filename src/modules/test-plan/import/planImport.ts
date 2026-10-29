@@ -15,7 +15,7 @@ import {
   toKey,
   type DetectionRow,
 } from "@shared/import/xlsx";
-import { CEREMONIES } from "../model/catalogs";
+import { CEREMONIES, CEREMONY_FREQUENCIES } from "../model/catalogs";
 import type {
   ClosureCriterion,
   RiskItem,
@@ -44,6 +44,7 @@ const TYPE_REV = reverse(tp(esLocale).typeLabel, tp(enLocale).typeLabel);
 const LEVEL_REV = reverse(tp(esLocale).levelLabel, tp(enLocale).levelLabel);
 const TOOL_REV = reverse(tp(esLocale).toolLabel, tp(enLocale).toolLabel);
 const STATUS_REV = reverse(tp(esLocale).statusLabel, tp(enLocale).statusLabel);
+const FREQUENCY_REV = reverse(tp(esLocale).frequencyLabel, tp(enLocale).frequencyLabel);
 
 type Kind = "text" | "listFree" | "catalog" | "status" | "methodology";
 
@@ -101,19 +102,37 @@ const STOP_TOKENS = new Set<string>([
 
 function parseMethodology(
   text: string,
-): Pick<TestPlanData, "methodologyType" | "sprintWeeks" | "ceremonies" | "phases"> {
+): Pick<
+  TestPlanData,
+  "methodologyType" | "sprintWeeks" | "ceremonies" | "ceremonyFrequency" | "phases"
+> {
   const n = norm(text);
   if (/(tradicional|traditional|v-?model)/.test(n)) {
     const after = text.split(/fases:|phases:/i)[1] ?? "";
     return { methodologyType: "traditional", phases: splitItems(after) };
   }
   const weeks = n.match(/(?:semanas?|weeks?)[^\d]*(\d+)/) ?? n.match(/(\d+)\s*(?:semanas?|weeks?)/);
-  const ceremonies = CEREMONIES.filter((k) => {
-    const es = norm(tp(esLocale).ceremonyLabel[k] ?? "");
-    const en = norm(tp(enLocale).ceremonyLabel[k] ?? "");
-    return (es && n.includes(es)) || (en && n.includes(en));
-  });
-  return { methodologyType: "agile", sprintWeeks: weeks ? Number(weeks[1]) : undefined, ceremonies };
+  const ceremonies: string[] = [];
+  const ceremonyFrequency: Record<string, string> = {};
+  for (const k of CEREMONIES) {
+    const labels = [tp(esLocale).ceremonyLabel[k], tp(enLocale).ceremonyLabel[k]]
+      .map((l) => norm(l ?? ""))
+      .filter((l) => l && n.includes(l));
+    if (!labels.length) continue;
+    ceremonies.push(k);
+    // Pharos exports write "<ceremony> (<frequency>)" (PLN-01).
+    for (const label of labels) {
+      const freq = n.slice(n.indexOf(label) + label.length).match(/^\s*\(([^)]*)\)/);
+      const key = freq ? FREQUENCY_REV.get(norm(freq[1])) : undefined;
+      if (key && CEREMONY_FREQUENCIES.includes(key)) ceremonyFrequency[k] = key;
+    }
+  }
+  return {
+    methodologyType: "agile",
+    sprintWeeks: weeks ? Number(weeks[1]) : undefined,
+    ceremonies,
+    ...(Object.keys(ceremonyFrequency).length ? { ceremonyFrequency } : {}),
+  };
 }
 
 const yieldFrame = () => new Promise<void>((r) => setTimeout(r, 24));

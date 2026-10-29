@@ -1,4 +1,7 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
+import i18n from "i18next";
+import { notify, ReportedError } from "../ui/notify";
+import { saveFile } from "./saveFile";
 
 /** Brand palette for generated documents. Values mirror the Faro Nocturno
  *  light-theme tokens in `shared/theme/tokens.css` (a PDF is content, not
@@ -146,14 +149,31 @@ export function baseDoc(kind: string, content: Content[]): TDocumentDefinitions 
 
 // Memoized pdfmake instance (the library + its font VFS are ~1 MB, so this
 // module is meant to be imported dynamically to stay out of the main bundle).
-let cached: Promise<PdfMake> | null = null;
+let cached: Promise<{ pdfMake: PdfMake; vfs?: Vfs }> | null = null;
+
+type Vfs = Record<string, string>;
 
 interface PdfMake {
-  vfs: Record<string, string>;
-  createPdf: (dd: TDocumentDefinitions) => { download: (name: string, cb?: () => void) => void };
+  createPdf: (
+    dd: TDocumentDefinitions,
+    tableLayouts?: unknown,
+    fonts?: unknown,
+    vfs?: Vfs,
+  ) => { getBuffer: (cb: (buffer: Uint8Array) => void) => void };
 }
 
-async function getPdfMake(): Promise<PdfMake> {
+/** The font VFS in any of the shapes `vfs_fonts` has been published with:
+ *  `{ pdfMake: { vfs } }`, `{ vfs }` or (0.2.x) the file map itself. */
+function vfsOf(mod: unknown): Vfs | undefined {
+  const m = mod as Record<string, unknown> | undefined;
+  if (!m || typeof m !== "object") return undefined;
+  const nested =
+    (m.pdfMake as { vfs?: Vfs } | undefined)?.vfs ?? (m.vfs as Vfs | undefined);
+  if (nested && typeof nested === "object") return nested;
+  return typeof m["Roboto-Regular.ttf"] === "string" ? (m as Vfs) : undefined;
+}
+
+async function getPdfMake(): Promise<{ pdfMake: PdfMake; vfs?: Vfs }> {
   if (!cached) {
     cached = (async () => {
       const [pdfMakeMod, fontsMod] = await Promise.all([
@@ -162,22 +182,77 @@ async function getPdfMake(): Promise<PdfMake> {
       ]);
       const pdfMake = ((pdfMakeMod as { default?: unknown }).default ??
         pdfMakeMod) as unknown as PdfMake;
-      const fonts = fontsMod as Record<string, unknown> & { default?: Record<string, unknown> };
+      // Passed to every createPdf: under an ESM bundler pdfmake does not set
+      // `window.pdfMake`, so vfs_fonts cannot register itself, and without the
+      // fonts pdfmake fails asynchronously ("Roboto-Medium.ttf not found").
       const vfs =
-        (fonts.pdfMake as { vfs?: Record<string, string> })?.vfs ??
-        (fonts.default?.pdfMake as { vfs?: Record<string, string> })?.vfs ??
-        (fonts.vfs as Record<string, string> | undefined) ??
-        (fonts.default as { vfs?: Record<string, string> })?.vfs;
-      if (vfs) pdfMake.vfs = vfs;
-      return pdfMake;
+        vfsOf(fontsMod) ?? vfsOf((fontsMod as { default?: unknown }).default);
+      return { pdfMake, vfs };
     })();
   }
   return cached;
 }
 
-/** Renders the document and triggers a browser download. */
-export async function downloadPdf(dd: TDocumentDefinitions, filename: string): Promise<string> {
-  const pdfMake = await getPdfMake();
-  await new Promise<void>((resolve) => pdfMake.createPdf(dd).download(filename, () => resolve()));
-  return filename;
+/** Longest a single document may take to render before it counts as failed. */
+export const PDF_TIMEOUT_MS = 60_000;
+
+/** pdfmake 0.2 reports some failures only as an unhandled rejection of its own
+ *  (a string such as "File 'x.ttf' not found…", or an error from its code),
+ *  never through the `getBuffer` callback. */
+function isPdfmakeFailure(reason: unknown): boolean {
+  if (typeof reason === "string") return true;
+  return reason instanceof Error && /pdfmake|pdfkit/i.test(reason.stack ?? "");
+}
+
+/** Renders the document to PDF bytes (for a ZIP or for saveFile). Rejects
+ *  instead of hanging when pdfmake fails asynchronously or takes longer than
+ *  `timeoutMs`. Documents are rendered one at a time by the callers. */
+export async function pdfBytes(
+  dd: TDocumentDefinitions,
+  timeoutMs = PDF_TIMEOUT_MS,
+): Promise<Uint8Array> {
+  const { pdfMake, vfs } = await getPdfMake();
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (!isPdfmakeFailure(e.reason)) return;
+      e.preventDefault();
+      done();
+      reject(e.reason instanceof Error ? e.reason : new Error(String(e.reason)));
+    };
+    const timer = window.setTimeout(() => {
+      done();
+      reject(new Error("PDF rendering timed out"));
+    }, timeoutMs);
+    const done = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    try {
+      pdfMake.createPdf(dd, undefined, undefined, vfs).getBuffer((buffer) => {
+        done();
+        resolve(buffer);
+      });
+    } catch (e) {
+      done();
+      reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  });
+}
+
+/** Renders the document and saves it; returns where (see saveFile). A PDF that
+ *  cannot be rendered shows an error toast and rejects with `ReportedError`. */
+export async function savePdf(
+  dd: TDocumentDefinitions,
+  filename: string,
+): Promise<string> {
+  let bytes: Uint8Array;
+  try {
+    bytes = await pdfBytes(dd);
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    notify(i18n.t("downloads.pdfFailed", { name: filename, reason }), "error");
+    throw new ReportedError(reason);
+  }
+  return saveFile(filename, bytes, "application/pdf");
 }

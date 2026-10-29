@@ -4,6 +4,7 @@
 // in a small in-memory buffer and the bundle carries only frontend facts.
 import { invoke } from "@tauri-apps/api/core";
 import i18n from "i18next";
+import { saveFile } from "../export/saveFile";
 import { APP_VERSION } from "../version";
 import { redact } from "./redact";
 
@@ -120,19 +121,10 @@ export async function buildDiagnosticZip(when = new Date()): Promise<Blob> {
   return zip.generateAsync({ type: "blob" });
 }
 
-/** Builds and downloads the bundle; returns the file name. */
+/** Builds the bundle and saves it in the download folder (UX-02); returns
+ *  where it went. */
 export async function exportDiagnostics(): Promise<string> {
   const when = new Date();
   const blob = await buildDiagnosticZip(when);
-  const name = diagnosticFileName(when);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoking right after click() can cancel the download before it starts.
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  return name;
+  return saveFile(diagnosticFileName(when), blob, "application/zip");
 }
