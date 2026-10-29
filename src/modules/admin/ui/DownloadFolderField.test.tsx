@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { ToastProvider } from "@shared/ui/Toast";
@@ -41,11 +41,19 @@ describe("DownloadFolderField (UX-02)", () => {
       missing: false,
     });
     renderField();
-    expect(await screen.findByTestId("download-dir")).toHaveTextContent(
-      "C:\\Users\\a\\Downloads (Descargas del sistema)",
+    // The field renders "—" first and fills in once `get` resolves: wait for
+    // the text, not just for the element.
+    await waitFor(() =>
+      expect(screen.getByTestId("download-dir")).toHaveTextContent(
+        "C:\\Users\\a\\Downloads (Descargas del sistema)",
+      ),
     );
     await user.click(screen.getByRole("button", { name: "Elegir carpeta…" }));
-    expect(screen.getByTestId("download-dir")).toHaveTextContent("D:\\Exports");
+    await waitFor(() =>
+      expect(screen.getByTestId("download-dir")).toHaveTextContent(
+        "D:\\Exports",
+      ),
+    );
     expect(
       screen.getByRole("button", { name: "Usar Descargas" }),
     ).toBeInTheDocument();
@@ -60,8 +68,10 @@ describe("DownloadFolderField (UX-02)", () => {
       "No se pudo leer ni cambiar la carpeta de descarga.",
     );
     await user.click(screen.getByRole("button", { name: "Elegir carpeta…" }));
-    expect(
-      screen.getByRole("button", { name: "Elegir carpeta…" }),
-    ).toBeEnabled();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Elegir carpeta…" }),
+      ).toBeEnabled(),
+    );
   });
 });
