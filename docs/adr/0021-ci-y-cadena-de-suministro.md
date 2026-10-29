@@ -60,9 +60,9 @@
     escritorio. `tauri-driver` se fija a una versión exacta (`2.1.0`) y vive
     en la caché de Rust, que se guarda aunque el smoke falle. Para que
     msedgedriver conecte en el runner, que corre elevado, la app abre ella
-    misma el puerto de DevTools con un perfil E2E (ADR-0022). **No es un
-    check obligatorio:** lo será, con decisión del usuario, cuando lleve un
-    tiempo en verde; no está en `.github/branch-protection.json`.
+    misma el puerto de DevTools con un perfil E2E (ADR-0022). **Es un
+    check obligatorio** desde el 2026-10-29, por decisión del usuario, tras
+    pasar en verde en CI: está en `.github/branch-protection.json`.
   - *Actualización (pista Q1):* **el driver del E2E se verifica.**
     `npm run e2e:driver` solo descarga `msedgedriver` de
     `msedgedriver.microsoft.com` (sin el CDN `azureedge.net` de respaldo,
