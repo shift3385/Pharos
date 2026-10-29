@@ -7,6 +7,7 @@ mod diag;
 mod hlc;
 mod instance;
 mod key_sync;
+mod keychain;
 mod keys;
 mod oplog;
 mod planner;
@@ -21,7 +22,6 @@ mod test_case;
 mod test_plan;
 
 use db::{Db, DbStatus};
-use keyring::Entry;
 use tauri::Manager;
 
 // The session is cached in the OS keychain (Windows Credential Manager) so the
@@ -32,30 +32,17 @@ const SESSION_ACCOUNT: &str = "session";
 
 #[tauri::command]
 fn session_save(data: String) -> Result<(), String> {
-    Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
-        .and_then(|entry| entry.set_password(&data))
-        .map_err(|e| e.to_string())
+    keychain::write(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT), &data)
 }
 
 #[tauri::command]
 fn session_load() -> Result<Option<String>, String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
-        .map_err(|e| e.to_string())?;
-    match entry.get_password() {
-        Ok(password) => Ok(Some(password)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(e.to_string()),
-    }
+    keychain::read(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
 }
 
 #[tauri::command]
 fn session_clear() -> Result<(), String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
-        .map_err(|e| e.to_string())?;
-    match entry.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(e.to_string()),
-    }
+    keychain::delete(KEYCHAIN_SERVICE, &instance::account(SESSION_ACCOUNT))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

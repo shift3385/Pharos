@@ -9,6 +9,7 @@ import {
   syncStatus,
   type LocalSyncState,
 } from "../api/syncApi";
+import { SyncFailureLog, logSyncFailure } from "../api/syncFailure";
 import { purgeDeleted } from "../api/purgeApi";
 import { SyncHttpError } from "../api/transport";
 import { ConflictPanel } from "./ConflictPanel";
@@ -33,12 +34,19 @@ export function SyncIndicator() {
   // Read the latest auth status inside stable event handlers.
   const authedRef = useRef(authStatus === "authenticated");
   authedRef.current = authStatus === "authenticated";
+  // Background failures go to the log once until they change (BASE-08).
+  const failures = useRef(new SyncFailureLog()).current;
 
   async function refresh() {
-    const s: LocalSyncState = await syncLocalState().catch(() => ({
-      pending: 0,
-      conflicts: 0,
-    }));
+    const s: LocalSyncState = await syncLocalState()
+      .then((state) => {
+        failures.clear("state");
+        return state;
+      })
+      .catch((e: unknown) => {
+        failures.report(e, "state");
+        return { pending: 0, conflicts: 0 };
+      });
     setPending(s.pending);
     setConflicts(s.conflicts);
     setOrphans(s.orphans ?? 0);
@@ -103,25 +111,29 @@ export function SyncIndicator() {
   }, [authStatus, user?.id]);
 
   /** Removes for good what was deleted more than the Administration retention
-   *  ago (SYNC-06). Best-effort: a failure only means it runs again later. */
+   *  ago (SYNC-06). Best-effort: a failure only means it runs again later; it
+   *  is logged once until it changes (BASE-08). */
   async function purge() {
     try {
       await purgeDeleted(loadSettings().retentionDays);
+      failures.clear("purge");
     } catch (e) {
-      console.warn("[purge] failed:", e);
+      failures.report(e, "purge");
     }
   }
 
-  /** Silent background sync (startup / reconnect). Errors are ignored here;
-   *  the manual button surfaces them. On the web a failed push stays in the
-   *  outbox and is retried. */
+  /** Silent background sync (startup / reconnect). The user is not told here;
+   *  the manual button surfaces errors. A failure is logged once until it
+   *  changes. On the web a failed push stays in the outbox and is retried. */
   async function autoSync() {
     if (!navigator.onLine || !authedRef.current) return;
     try {
       await syncAny();
+      failures.clear("auto");
       await purge();
-    } catch {
-      /* offline or transient — the indicator stays as-is */
+    } catch (e) {
+      // Offline or transient: the indicator stays as-is.
+      failures.report(e, "auto");
     }
     await refresh();
   }
@@ -150,9 +162,8 @@ export function SyncIndicator() {
           : t("sync.doneToast", { pushed, pulled }),
       );
     } catch (e) {
-      // Surface the underlying cause (missing command after an un-rebuilt app,
-      // HTTP status, network error…) for diagnosis.
-      console.error("[sync] failed:", e);
+      // The toast tells the user; the log keeps the cause for diagnosis.
+      logSyncFailure(e, "manual");
       toast(failure(e));
     } finally {
       setSyncing(false);

@@ -12,7 +12,6 @@
 
 use std::time::Duration;
 
-use keyring::Entry;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -134,22 +133,17 @@ fn key_account(provider: &str) -> String {
     crate::instance::account(&format!("ai-key.{provider}"))
 }
 
+/// Through `keychain`, whose lock also covers the async commands that read
+/// a key off the main thread (`ai_chat_online`, `ai_list_models`).
 fn read_key(provider: &str) -> Result<Option<String>, String> {
-    let entry = Entry::new(AI_SERVICE, &key_account(provider)).map_err(|e| e.to_string())?;
-    match entry.get_password() {
-        Ok(p) => Ok(Some(p)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(e.to_string()),
-    }
+    crate::keychain::read(AI_SERVICE, &key_account(provider))
 }
 
 /// Stores an AI provider's API key in the OS keychain.
 #[tauri::command]
 pub fn ai_key_set(provider: String, key: String) -> Result<(), String> {
     let provider = Provider::parse(&provider)?;
-    Entry::new(AI_SERVICE, &key_account(provider.id()))
-        .and_then(|e| e.set_password(key.trim()))
-        .map_err(|e| e.to_string())
+    crate::keychain::write(AI_SERVICE, &key_account(provider.id()), key.trim())
 }
 
 /// Whether a provider's key is configured (never returns the key itself).
@@ -163,11 +157,7 @@ pub fn ai_key_status(provider: String) -> Result<bool, String> {
 #[tauri::command]
 pub fn ai_key_clear(provider: String) -> Result<(), String> {
     let provider = Provider::parse(&provider)?;
-    let entry = Entry::new(AI_SERVICE, &key_account(provider.id())).map_err(|e| e.to_string())?;
-    match entry.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(e.to_string()),
-    }
+    crate::keychain::delete(AI_SERVICE, &key_account(provider.id()))
 }
 
 #[derive(Deserialize)]
