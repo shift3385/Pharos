@@ -147,6 +147,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- El smoke E2E del escritorio (`e2e`) es ahora un check obligatorio para
+  fusionar en `main`, junto a los otros siete (BASE-02, BASE-14).
 - Las exportaciones y el diagnóstico ya no los guarda el navegador interno en
   Descargas: los guarda la app en la carpeta de descarga, y el aviso dice la ruta
   (UX-02). El campo de texto "Carpeta de descargas" de Ajustes, que no se
