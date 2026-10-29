@@ -8,10 +8,15 @@ import "@shared/theme/tokens.css";
 import "@shared/theme/base.css";
 import "@shared/i18n";
 
+import { installGlobalErrorHandlers } from "@shared/diagnostics";
+import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
 import { ThemeProvider } from "@shared/theme/ThemeProvider";
 import { ToastProvider } from "@shared/ui/Toast";
 import { AuthProvider } from "@modules/auth";
 import { App } from "@app/App";
+
+// Uncaught errors and rejections go to the desktop log (BASE-08).
+installGlobalErrorHandlers();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -20,16 +25,18 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <HashRouter
-            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-          >
-            <App />
-          </HashRouter>
-        </AuthProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary variant="app">
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <HashRouter
+              future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+            >
+              <App />
+            </HashRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );

@@ -2,6 +2,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
+import { readFileSync } from "node:fs";
+
+// The single version source (scripts/version.mjs), inlined as a constant so
+// the bundle does not carry the whole package.json (UX-07).
+const { version } = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf8"),
+) as { version: string };
 
 // Tauri expects a fixed port and does not clear the terminal on rebuild.
 const host = process.env.TAURI_DEV_HOST;
@@ -9,6 +16,9 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+  },
   resolve: {
     alias: {
       "@app": fileURLToPath(new URL("./src/app", import.meta.url)),

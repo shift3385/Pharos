@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "QA test management suite"
+    "tagline": "QA test management suite",
+    "version": "Version {{version}}"
   },
   "common": {
     "loading": "Loading…",
@@ -159,7 +160,11 @@
       "keepRemote": "Use the server's",
       "resolved": "Conflict resolved",
       "failed": "Could not resolve the conflict",
-      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case" },
+      "entity": {
+        "project": "Project",
+        "test_plan": "Test plan",
+        "test_case": "Test case"
+      },
       "fields": {
         "title": "Title",
         "name": "Name",
@@ -203,6 +208,12 @@
       "downloadPlaceholder": "Folder path (optional)",
       "downloadHint": "Preference; it will apply to exports in a future release.",
       "save": "Save settings"
+    },
+    "diagnostics": {
+      "title": "Diagnostics",
+      "version": "Installed version",
+      "desc": "Creates a .zip to report a problem: app version, operating system, WebView2, applied migrations and the recent logs.",
+      "excludes": "It never includes your data: no projects, plans, cases or requirements, no profile, no database, keys, tokens or AI keys. Emails, tokens and paths with your user name are masked."
     }
   },
   "importReport": {
@@ -812,5 +823,18 @@
       "applying": "Applying…",
       "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
     }
+  },
+  "diagnostics": {
+    "export": "Export diagnostics",
+    "exporting": "Exporting…",
+    "exported": "Diagnostics saved: {{file}}",
+    "failed": "The diagnostics could not be exported."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "This view failed. Your data is not lost: you can retry, reload the app or export diagnostics to report the problem.",
+    "retry": "Retry",
+    "reload": "Reload",
+    "details": "Technical details"
   }
 }

@@ -2,17 +2,33 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/ui/Toast";
+import { exportDiagnostics, logClientError } from "@shared/diagnostics";
+import { APP_VERSION } from "@shared/version";
 import { applyBackground, loadSettings, saveSettings } from "../model/settings";
 import "./Admin.css";
 
 /** Administration panel (spec §10): quick access to Templates and the AI engine,
- *  plus app personalization (custom background) and preferences. */
+ *  app personalization (custom background) and preferences, and diagnostics
+ *  (installed version and "Exportar diagnóstico", BASE-08). */
 export function AdminPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
   const [settings, setSettings] = useState(loadSettings());
   const fileRef = useRef<HTMLInputElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportDiag() {
+    setExporting(true);
+    try {
+      toast(t("diagnostics.exported", { file: await exportDiagnostics() }));
+    } catch (e) {
+      logClientError(e, "diagnostic export");
+      toast(t("diagnostics.failed"));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function save() {
     saveSettings(settings);
@@ -48,9 +64,18 @@ export function AdminPage() {
 
       <div className="adm__cards">
         {sections.map((s) => (
-          <button key={s.key} type="button" className="adm__card" onClick={() => navigate(s.route)}>
-            <span className="adm__card-title">{t(`admin.section.${s.key}.title`)}</span>
-            <span className="adm__card-desc">{t(`admin.section.${s.key}.desc`)}</span>
+          <button
+            key={s.key}
+            type="button"
+            className="adm__card"
+            onClick={() => navigate(s.route)}
+          >
+            <span className="adm__card-title">
+              {t(`admin.section.${s.key}.title`)}
+            </span>
+            <span className="adm__card-desc">
+              {t(`admin.section.${s.key}.desc`)}
+            </span>
           </button>
         ))}
       </div>
@@ -61,14 +86,20 @@ export function AdminPage() {
         <div className="adm__field">
           <span className="adm__label">{t("admin.settings.background")}</span>
           <div className="adm__bg-row">
-            <button type="button" className="adm__btn" onClick={() => fileRef.current?.click()}>
+            <button
+              type="button"
+              className="adm__btn"
+              onClick={() => fileRef.current?.click()}
+            >
               {t("admin.settings.bgChoose")}
             </button>
             {settings.backgroundImage && (
               <button
                 type="button"
                 className="adm__btn"
-                onClick={() => setSettings((s) => ({ ...s, backgroundImage: "" }))}
+                onClick={() =>
+                  setSettings((s) => ({ ...s, backgroundImage: "" }))
+                }
               >
                 {t("admin.settings.bgClear")}
               </button>
@@ -76,12 +107,20 @@ export function AdminPage() {
             {settings.backgroundImage && (
               <span
                 className="adm__bg-preview"
-                style={{ backgroundImage: `url("${settings.backgroundImage}")` }}
+                style={{
+                  backgroundImage: `url("${settings.backgroundImage}")`,
+                }}
                 aria-hidden="true"
               />
             )}
           </div>
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => void pickBackground(e)} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => void pickBackground(e)}
+          />
         </div>
 
         <label className="adm__field">
@@ -94,7 +133,12 @@ export function AdminPage() {
             max={100}
             step={5}
             value={settings.backgroundOpacity}
-            onChange={(e) => setSettings((s) => ({ ...s, backgroundOpacity: Number(e.target.value) }))}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                backgroundOpacity: Number(e.target.value),
+              }))
+            }
           />
           <span className="adm__hint">{t("admin.settings.opacityHint")}</span>
         </label>
@@ -106,7 +150,12 @@ export function AdminPage() {
             min={1}
             max={3650}
             value={settings.retentionDays}
-            onChange={(e) => setSettings((s) => ({ ...s, retentionDays: Number(e.target.value) }))}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                retentionDays: Number(e.target.value),
+              }))
+            }
           />
           <span className="adm__hint">{t("admin.settings.retentionHint")}</span>
         </label>
@@ -117,13 +166,33 @@ export function AdminPage() {
             type="text"
             placeholder={t("admin.settings.downloadPlaceholder")}
             value={settings.downloadLocation}
-            onChange={(e) => setSettings((s) => ({ ...s, downloadLocation: e.target.value }))}
+            onChange={(e) =>
+              setSettings((s) => ({ ...s, downloadLocation: e.target.value }))
+            }
           />
           <span className="adm__hint">{t("admin.settings.downloadHint")}</span>
         </label>
 
         <button type="button" className="adm__save" onClick={save}>
           {t("admin.settings.save")}
+        </button>
+      </div>
+
+      <div className="adm__settings" data-testid="admin-diagnostics">
+        <h2 className="adm__settings-title">{t("admin.diagnostics.title")}</h2>
+        <div className="adm__field">
+          <span className="adm__label">{t("admin.diagnostics.version")}</span>
+          <span className="adm__version">{APP_VERSION}</span>
+        </div>
+        <p className="adm__hint">{t("admin.diagnostics.desc")}</p>
+        <p className="adm__hint">{t("admin.diagnostics.excludes")}</p>
+        <button
+          type="button"
+          className="adm__btn adm__btn--start"
+          onClick={() => void exportDiag()}
+          disabled={exporting}
+        >
+          {exporting ? t("diagnostics.exporting") : t("diagnostics.export")}
         </button>
       </div>
     </section>

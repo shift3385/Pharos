@@ -1,6 +1,9 @@
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
+  /* One row exactly the window's height: the content area scrolls inside it
+     instead of stretching the row (and the sidebar) past the window. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
 
@@ -160,6 +163,14 @@
   border-color: var(--color-navy-300);
 }
 
+.sidebar__version {
+  margin-top: auto;
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-metadata);
+  color: var(--color-on-navy-muted);
+}
+
 /* ---- Responsive: collapse sidebar to an icon rail ---- */
 @media (max-width: 768px) {
   .app-shell {
@@ -174,6 +185,10 @@
   }
   .sidebar__link {
     justify-content: center;
+  }
+  /* Too wide for the icon rail; Administration still shows it. */
+  .sidebar__version {
+    display: none;
   }
   .app-shell__content {
     padding: var(--space-4);

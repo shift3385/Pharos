@@ -21,6 +21,10 @@ src-tauri/gen/
 # Test / coverage
 coverage/
 
+# E2E: downloaded msedgedriver, JUnit results and app logs of the last run
+e2e/.bin/
+e2e/results/
+
 # Logs
 *.log
 npm-debug.log*

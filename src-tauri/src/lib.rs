@@ -3,7 +3,9 @@
 
 mod ai;
 mod db;
+mod diag;
 mod hlc;
+mod instance;
 mod oplog;
 mod planner;
 mod profile;
@@ -20,19 +22,20 @@ use tauri::Manager;
 
 // The session is cached in the OS keychain (Windows Credential Manager) so the
 // app can reopen offline without storing the refresh token in plain text (§4).
+// The account is `session`, or a per-run one for an E2E profile (instance.rs).
 const KEYCHAIN_SERVICE: &str = "pharos";
-const KEYCHAIN_ACCOUNT: &str = "session";
 
 #[tauri::command]
 fn session_save(data: String) -> Result<(), String> {
-    Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
+    Entry::new(KEYCHAIN_SERVICE, &instance::session_account())
         .and_then(|entry| entry.set_password(&data))
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn session_load() -> Result<Option<String>, String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).map_err(|e| e.to_string())?;
+    let entry =
+        Entry::new(KEYCHAIN_SERVICE, &instance::session_account()).map_err(|e| e.to_string())?;
     match entry.get_password() {
         Ok(password) => Ok(Some(password)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -42,7 +45,8 @@ fn session_load() -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn session_clear() -> Result<(), String> {
-    let entry = Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).map_err(|e| e.to_string())?;
+    let entry =
+        Entry::new(KEYCHAIN_SERVICE, &instance::session_account()).map_err(|e| e.to_string())?;
     match entry.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),
@@ -53,9 +57,18 @@ fn session_clear() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let data_dir = app.path().app_data_dir()?;
-            let database = Db::open(&data_dir)
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            app.manage(diag::init(instance::scoped_dir(app.path().app_log_dir()?)));
+            let data_dir = instance::scoped_dir(app.path().app_data_dir()?);
+            let started = std::time::Instant::now();
+            let database = Db::open(&data_dir).map_err(|e| {
+                tracing::error!(error = %diag::redact(&e), "local database failed to open");
+                std::io::Error::other(e)
+            })?;
+            tracing::info!(
+                elapsed_ms = started.elapsed().as_millis() as u64,
+                e2e_profile = instance::e2e_profile().is_some(),
+                "local database opened"
+            );
             app.manage(database);
             Ok(())
         })
@@ -117,7 +130,9 @@ pub fn run() {
             sync::sync_cursor_get,
             sync::sync_cursor_set,
             sync::sync_conflicts_list,
-            sync::sync_conflict_resolve
+            sync::sync_conflict_resolve,
+            diag::diag_log,
+            diag::diag_export
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

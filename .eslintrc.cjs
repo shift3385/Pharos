@@ -21,6 +21,8 @@ module.exports = {
     "node_modules",
     "src-tauri",
     "coverage",
+    "e2e/.bin",
+    "e2e/results",
     ".eslintrc.cjs",
   ],
   rules: {
