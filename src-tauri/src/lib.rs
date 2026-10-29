@@ -14,6 +14,7 @@ mod planner;
 mod profile;
 mod project;
 mod purge;
+mod recovery;
 mod requirement;
 mod sync;
 mod template;
@@ -55,8 +56,10 @@ pub fn run() {
             let started = std::time::Instant::now();
             // A database that cannot be opened (e.g. written by a newer Pharos,
             // SEC-06) does not abort startup: the UI asks `db_open_error` and
-            // shows why instead of the app silently failing to start. The
-            // failure is logged so a diagnostics export can explain it.
+            // shows why instead of the app silently failing to start; a missing
+            // or wrong key is answered with the recovery key (`db_recover`,
+            // SEC-03). The failure is logged so a diagnostics export can
+            // explain it.
             let open_error = match Db::open(&data_dir) {
                 Ok(database) => {
                     tracing::info!(
@@ -73,7 +76,10 @@ pub fn run() {
                     Some(e)
                 }
             };
-            app.manage(DbStatus { open_error });
+            app.manage(DbStatus {
+                open_error: std::sync::Mutex::new(open_error),
+                data_dir,
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -81,6 +87,8 @@ pub fn run() {
             session_load,
             session_clear,
             db::db_open_error,
+            db::db_recover,
+            db::recovery_key_export,
             profile::profile_get,
             profile::profile_upsert,
             project::project_list,

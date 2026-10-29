@@ -129,6 +129,7 @@ session.
 | Port 3000 or 1420 already in use                         | Another API/Vite is still running; close the old windows                                               |
 | Console shows `localhost:11434 … ERR_CONNECTION_REFUSED` | Ollama is not installed or not running; harmless — AI assist is simply disabled                        |
 | "This data comes from a newer version of Pharos"         | The local database was saved by a newer Pharos; install that version, or restore a backup (below)      |
+| "The local database key is missing"                      | The Credential Manager lost the key (new PC, reinstall); enter the recovery key (below)                |
 
 ### Local data backups
 
@@ -149,7 +150,39 @@ To go back to the data from before an upgrade:
 4. Open the Pharos version that wrote that copy.
 
 The copy is encrypted with the same key, kept in the Windows Credential
-Manager, so it only opens on the same Windows account.
+Manager, so it only opens on the same Windows account, or anywhere with the
+recovery key (below).
+
+### Recovery key (SEC-03)
+
+The key of the local database lives only in the Windows Credential Manager. If
+you lose it (new PC, reinstalled Windows, another account), the data cannot be
+decrypted without the **recovery key** ([ADR-0024](docs/adr/0024-clave-de-recuperacion.md)).
+
+- **Export it once:** Profile → Recovery key → Show recovery key. It is 56
+  characters in 14 groups of 4 (`XXXX-XXXX-…`). Write it on paper or store it
+  in a password manager, never next to the copy of your data: anyone with both
+  can read it. Pharos keeps no copy of it.
+- **A full backup** is `pharos.db.enc` (plus `evidence/` once evidence files
+  exist) and the recovery key. The `.bak-…` copies use the same key.
+
+To recover on another PC:
+
+1. Install Pharos and close it if it is open.
+2. Copy `pharos.db.enc` to `%APPDATA%\com.pharos.desktop\`.
+3. Open Pharos. It says the database key is missing (or that the stored key
+   does not open the database) and asks for the recovery key.
+4. Type it: case, spaces and hyphens do not matter. A typo is reported before
+   anything is changed. Once it opens, the key is stored in the Credential
+   Manager again and the next start opens normally. The key it replaces, if
+   any, is kept once as `db-key.prev`.
+
+If a valid recovery key is reported as not opening the database, either it is
+another key or the file is damaged (AES-GCM cannot tell them apart). With the
+right key, close Pharos, move `pharos.db.enc` aside and copy the newest
+`pharos.db.enc.bak-…` in its place as `pharos.db.enc`. Pharos never deletes a
+saved file it cannot decrypt: a lone `pharos.db.enc.new` (a first save that
+never finished) stays until it opens or you remove it.
 
 `0.1.0-alpha.1` does not check for newer data. Never open data upgraded by a
 later version with it; restore the matching `.bak` copy first.
@@ -340,7 +373,8 @@ out. The run then removes those folders and its Credential Manager entries.
 Only the local database key
 (`db-key.pharos` in the Credential Manager) is shared with the normal app: on a
 machine that never ran Pharos, the first E2E run creates it, and the app reuses
-it later.
+it later. Its recovery key (Profile → Recovery key) therefore also opens the
+E2E databases.
 
 **For CI** (`windows-latest`, track B1): the runner already has WebView2. It
 needs Rust (MSVC), `cargo install tauri-driver --locked` (cache it),
@@ -382,7 +416,7 @@ spikes are in `docs/spikes/`.
 
 Current version: **0.1.0-alpha.1**. The 0.1.0 milestone (planning and design +
 traceability) is implemented up to Phase 8; Phase 9 (accessibility audit,
-installer, final docs) and SEC-03 are open before 0.1.0 is released. Detailed
+installer, final docs) is open before 0.1.0 is released. Detailed
 progress lives in `PROGRESO.md` (outside this repo, in the planning workspace);
 the backlog lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
