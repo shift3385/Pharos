@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { aiAvailable } from "@modules/ai";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
 import { requirementApi } from "../api/requirementApi";
 import type { CsvImportResult } from "../import/requirementCsv";
 import type { Requirement } from "../model/types";
+import { GenerateCasesModal } from "./GenerateCasesModal";
 import { RequirementFormModal, type RequirementDraft } from "./RequirementFormModal";
 import { RequirementImportModal } from "./RequirementImportModal";
 import "./Traceability.css";
@@ -13,8 +15,17 @@ import "./Traceability.css";
 const byKey = (a: Requirement, b: Requirement) =>
   a.requirementKey.localeCompare(b.requirementKey, undefined, { numeric: true });
 
-/** Requirements of a project (TRZ-01): list, create/edit, delete and CSV import. */
-export function RequirementsPanel({ projectId }: { projectId: string }) {
+/** Requirements of a project (TRZ-01): list, create/edit, delete and CSV import,
+ *  plus test cases generated with AI from a requirement (IA-05). */
+export function RequirementsPanel({
+  projectId,
+  caseIdPrefix,
+  caseIdDigits,
+}: {
+  projectId: string;
+  caseIdPrefix?: string;
+  caseIdDigits?: number;
+}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const userId = user?.id ?? "";
@@ -27,6 +38,14 @@ export function RequirementsPanel({ projectId }: { projectId: string }) {
     null,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [aiReady, setAiReady] = useState(false);
+  const [generating, setGenerating] = useState<Requirement | null>(null);
+
+  useEffect(() => {
+    void aiAvailable()
+      .then(setAiReady)
+      .catch(() => setAiReady(false));
+  }, []);
 
   async function refresh() {
     setItems((await requirementApi.list(projectId, userId)).sort(byKey));
@@ -125,6 +144,20 @@ export function RequirementsPanel({ projectId }: { projectId: string }) {
               </button>
               <button
                 type="button"
+                className="tr__ai"
+                disabled={!aiReady}
+                aria-label={t("traceability.generate.button", { key: r.requirementKey })}
+                title={
+                  aiReady
+                    ? t("traceability.generate.button", { key: r.requirementKey })
+                    : t("ai.assist.unavailable")
+                }
+                onClick={() => setGenerating(r)}
+              >
+                ✨
+              </button>
+              <button
+                type="button"
                 className="tr__delete"
                 aria-label={t("traceability.requirement.delete", { key: r.requirementKey })}
                 title={t("traceability.requirement.delete", { key: r.requirementKey })}
@@ -154,6 +187,20 @@ export function RequirementsPanel({ projectId }: { projectId: string }) {
           existingKeys={keys}
           onConfirm={confirmImport}
           onCancel={() => setImporting(null)}
+        />
+      )}
+      {generating && (
+        <GenerateCasesModal
+          requirement={generating}
+          projectId={projectId}
+          caseIdPrefix={caseIdPrefix}
+          caseIdDigits={caseIdDigits}
+          onCreated={({ created, failed }) => {
+            if (created) toast(t("traceability.generate.doneToast", { count: created, key: generating.requirementKey }));
+            // Failed ones stay in the modal for a retry (it says so itself).
+            if (!failed) setGenerating(null);
+          }}
+          onClose={() => setGenerating(null)}
         />
       )}
       {deleting && (
