@@ -70,6 +70,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- **Keychain probado (CORE-02):** la sesión guardada en el Administrador de
+  credenciales de Windows pasa por un único módulo con tests automáticos
+  contra el keychain real: guardar, leer, sobrescribir, borrar, texto Unicode,
+  el tamaño máximo que admite Windows y accesos simultáneos. Los tests
+  encontraron que, con varias operaciones a la vez, Windows podía conservar
+  una sesión ya borrada; ahora esas operaciones van de una en una.
 - **Cada sincronización lleva la versión de la app (SYNC-08):** el servidor
   acepta su versión MENOR y la anterior; una app no admitida no escribe nada y,
   desde esta versión, muestra "Actualiza la app para sincronizar".
