@@ -135,6 +135,22 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    lleva la versión de la app. El servidor declara qué versiones acepta (como
    mínimo, su misma MENOR y la anterior) y rechaza las demás con un mensaje
    claro, sin escribir datos.
+   - **Excepción: la anterior solo en lectura** (decisión del usuario,
+     2026-10-28; ADR-0011). Una MENOR que cambia la forma de entidades
+     existentes acepta la MENOR anterior **solo en lectura**:
+     - el pull funciona;
+     - todo push se rechaza antes de escribir nada, con un mensaje claro
+       ("actualiza para enviar cambios");
+     - los cambios pendientes del cliente se conservan y se envían al
+       actualizar.
+
+     Así un cliente antiguo no puede reescribir una entidad perdiendo campos
+     que no conoce. La primera MENOR que lo aplica es 0.2 (casos con pasos con
+     id, campos personalizados, defectos como entidad).
+
+   - **Un campo que falta en un documento recibido conserva el valor local**, y
+     el cursor de pull vuelve a 0 en el primer sync de una MENOR que añade
+     entidades al conjunto que se aplica.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian
    de forma incompatible en una MENOR, con nota en el CHANGELOG.
 

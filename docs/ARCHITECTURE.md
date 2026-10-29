@@ -39,7 +39,7 @@ src/
   test/        # test utilities (renderWithProviders)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync
 server/        # backend API (Fastify): auth + sync document store
-docs/          # ARCHITECTURE.md, ROADMAP.md, GLOSARIO.md, referencias/, spikes/
+docs/          # ARCHITECTURE.md, ROADMAP.md, GLOSARIO.md, adr/, design/, referencias/, spikes/
 ```
 
 Modules with UI sections expose a `*Page` component. Cross-cutting modules:
@@ -57,6 +57,26 @@ keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`
 acyclic. The link itself lives in the case (`data.requirementKeys`) so it is
 revisioned and synced with the case, and travels as Gherkin tags (`@REQ-xxx` on
 the Feature, `@<case id>` on each Scenario — never the scenario name).
+
+**Execution model (decided for 0.2.0, not built yet).** Gate C closed on
+2026-10-28 with ADR-0011…0019; the design is in
+`docs/design/0.2.0-modelo-ejecucion.md`. In short:
+
+- Every execution, manual or imported, is a `run` with its context
+  (environment, build, commit, dataset, configuration).
+- A run holds four generic kinds: `result` (+ `step_result`), `finding`,
+  `metric` and `exploratory_session`. 0.2.0 stores results only; the other
+  kinds are fixed in the Pharos Run JSON schema and get their tables in
+  0.4.0/0.5.0. Cycles, configurations and custom fields may slip to 0.3.0.
+- Results are append-only and point to an immutable, synced
+  `test_case_revision` and to stable step ids.
+- Evidence lives encrypted outside the database (`evidence/`, addressed by
+  hash).
+- One write path (`journal::record`) feeds both the oplog and an append-only
+  `audit_log`.
+- Defects become their own `defects` module.
+- Sync gains an `append_only` class; from 0.3.0 the server is keyed by
+  workspace (ADR-0019).
 
 ## Design system — "Faro Nocturno" (spec §12.1)
 
