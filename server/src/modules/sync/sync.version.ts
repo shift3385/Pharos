@@ -53,3 +53,15 @@ export async function requireSupportedVersion(req: FastifyRequest, reply: Fastif
     accepted,
   });
 }
+
+/** Header with the sync features the client understands (DAT-01). */
+export const FEATURES_HEADER = "x-pharos-sync-features";
+
+/** True if the client reads `keyConflicts` in the push answer. Clients built
+ *  before DAT-01 send the same version string but not this header; they only
+ *  read `conflicts`, so a refused key would look accepted to them. */
+export function understandsKeyConflicts(req: FastifyRequest): boolean {
+  const raw = req.headers[FEATURES_HEADER];
+  const value = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
+  return value.split(",").map((f) => f.trim()).includes("key-conflicts");
+}

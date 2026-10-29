@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { readFileSync } from "node:fs";
 import { setupTestApp, truncateAll } from "./helpers";
-import { SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
+import { FEATURES_HEADER, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 
 let app: FastifyInstance;
 let pool: Pool;
@@ -29,9 +29,13 @@ async function tokenFor(email: string): Promise<string> {
   return res.json().accessToken as string;
 }
 
-const headers = (token: string) => ({ authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION });
+const headers = (token: string) => ({
+  authorization: `Bearer ${token}`,
+  [VERSION_HEADER]: SERVER_VERSION,
+  [FEATURES_HEADER]: "key-conflicts",
+});
 
-type Req = { projectId: string; kind: "case" | "requirement" | "defect"; floor?: number };
+type Req = { projectId: string; kind: "case" | "requirement" | "defect"; prefix?: string; floor?: number };
 async function lease(token: string, requests: Req[]) {
   const res = await app.inject({ method: "POST", url: "/sync/key-blocks", headers: headers(token), payload: { requests } });
   expect(res.statusCode).toBe(200);
@@ -82,10 +86,19 @@ describe("key blocks (DAT-01)", () => {
     starts.forEach((s, i) => expect(s).toBe(1 + i * 50));
   });
 
-  it("starts above the keys the server already stores for the project", async () => {
+  it("starts above the keys of the series the server already stores for the project", async () => {
     const token = await tokenFor("a@pharos.dev");
-    await push(token, [caseDelta("c1", "ATS_041"), caseDelta("c2", "TC-007"), caseDelta("c3", "ATS_?KQZD")]);
-    expect((await lease(token, [{ projectId: "p1", kind: "case" }])).blocks[0].start).toBe(42);
+    await push(token, [
+      caseDelta("c1", "ATS_041"),
+      caseDelta("c2", "TC-007"),
+      caseDelta("c3", "ATS_?KQZD"),
+      // A typed key of another series must not push the numbering.
+      caseDelta("c4", "JIRA-48213"),
+      caseDelta("c5", "ATS_X99"),
+    ]);
+    expect((await lease(token, [{ projectId: "p1", kind: "case", prefix: "ATS_" }])).blocks[0].start).toBe(42);
+    // Without a prefix only the device floor counts.
+    expect((await lease(token, [{ projectId: "p1", kind: "requirement", floor: 5 }])).blocks[0].start).toBe(5);
   });
 
   it("refuses blocks of a project owned by another account", async () => {
@@ -111,6 +124,31 @@ describe("duplicate keys on push (DAT-01)", () => {
     expect(res.keyConflicts).toEqual([{ entity: "test_case", entityId: "c2", key: "ATS_007", takenBy: "c1" }]);
     const stored = await pool.query("SELECT entity_id FROM documents WHERE entity = 'test_case' ORDER BY entity_id");
     expect(stored.rows.map((r) => r.entity_id)).toEqual(["c1", "c3"]);
+  });
+
+  it("answers 426 to a client that cannot read keyConflicts, instead of a silent refusal", async () => {
+    const token = await tokenFor("a@pharos.dev");
+    await push(token, [caseDelta("c1", "ATS_007")]);
+    // A client built before DAT-01: same version string, no features header.
+    const old = { authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION };
+    const res = await app.inject({
+      method: "POST",
+      url: "/sync/push",
+      headers: old,
+      payload: { deltas: [caseDelta("c2", "ATS_007")] },
+    });
+    expect(res.statusCode).toBe(426);
+    expect(res.json().code).toBe("unsupported_client_version");
+    const stored = await pool.query("SELECT entity_id FROM documents WHERE entity = 'test_case'");
+    expect(stored.rows.map((r) => r.entity_id)).toEqual(["c1"]);
+    // Without a key conflict it syncs as before.
+    const fine = await app.inject({
+      method: "POST",
+      url: "/sync/push",
+      headers: old,
+      payload: { deltas: [caseDelta("c3", "ATS_008")] },
+    });
+    expect(fine.statusCode).toBe(200);
   });
 
   it("lets an entity keep its own key; deleted and provisional keys never collide", async () => {

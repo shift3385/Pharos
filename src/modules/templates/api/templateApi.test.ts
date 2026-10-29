@@ -25,7 +25,7 @@ describe("templateApi browser fallback", () => {
     await templateApi.seed([seedItem]); // second seed is a no-op
     const list = await templateApi.list(U);
     expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ id: "builtin-plan-es", isBuiltin: true });
+    expect(list[0]).toMatchObject({ id: "builtin-plan-es", isBuiltin: true, isOwn: false });
   });
 
   it("creates, reads and updates a custom template", async () => {
@@ -38,7 +38,7 @@ describe("templateApi browser fallback", () => {
       },
       U,
     );
-    expect(created?.isBuiltin).toBe(false);
+    expect(created).toMatchObject({ isBuiltin: false, isOwn: true });
     const full = await templateApi.get(created!.id, U);
     expect(full?.dataBase64).toBe("QkJCQg==");
 

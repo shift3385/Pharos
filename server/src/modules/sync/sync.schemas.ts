@@ -70,6 +70,9 @@ export const keyBlocksSchema = z.object({
       z.object({
         projectId: z.string().min(1).max(200),
         kind: z.enum(KEY_KINDS),
+        // The key prefix of the series (`ATS_`, `REQ-`): only keys with it count
+        // for the floor. Empty: the device floor alone.
+        prefix: z.string().max(64).default(""),
         floor: z.number().int().positive().max(1e12).default(1),
       }),
     )

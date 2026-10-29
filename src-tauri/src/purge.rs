@@ -82,12 +82,14 @@ fn held(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
     Ok(pending && oplog::known_to_server(conn, entity, id)?)
 }
 
-/// Removes everything this device keeps about one entity besides its row.
+/// Removes everything this device keeps about one entity besides its row:
+/// journal, sync bases, conflicts of version and of key.
 fn forget(conn: &Connection, entity: &str, id: &str) -> Result<(), String> {
     for sql in [
         "DELETE FROM oplog WHERE entity = ?1 AND entity_id = ?2",
         "DELETE FROM sync_base WHERE entity = ?1 AND entity_id = ?2",
         "DELETE FROM sync_conflicts WHERE entity = ?1 AND entity_id = ?2",
+        "DELETE FROM key_conflicts WHERE entity = ?1 AND entity_id = ?2",
     ] {
         conn.execute(sql, params![entity, id])
             .map_err(|e| e.to_string())?;
@@ -540,6 +542,28 @@ mod tests {
         );
         assert_eq!(count(&c, "SELECT count(*) FROM planner_attachments"), 0);
         assert!(keys::taken(&c, KeyKind::Defect, "p1", "DEF-004").unwrap());
+    }
+
+    #[test]
+    fn a_purged_row_leaves_no_key_conflict_behind() {
+        // A never-pushed case lost its key on a pull, then was deleted.
+        let c = conn();
+        project(&c, "p1", A);
+        case(&c, "c1", "p1", "ATS_001", None);
+        oplog::record(&c, "test_case", "c1", "upsert", "{}", 1, "a").unwrap();
+        crate::key_sync::vacate(&c, A, "test_case", "c1", "remote").unwrap();
+        assert_eq!(oplog::sync_state(&c, A).unwrap().conflicts, 1);
+        c.execute(
+            "UPDATE test_cases SET deleted_at = datetime('now', '-40 days') WHERE id = 'c1'",
+            [],
+        )
+        .unwrap();
+        // Deleted: its key no longer matters (the delete itself can sync).
+        assert_eq!(oplog::sync_state(&c, A).unwrap().conflicts, 0);
+        assert!(crate::key_sync::list(&c, A).unwrap().is_empty());
+
+        assert_eq!(purge(&c, A, 30).unwrap().test_cases, 1);
+        assert_eq!(count(&c, "SELECT count(*) FROM key_conflicts"), 0);
     }
 
     #[test]

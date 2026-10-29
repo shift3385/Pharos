@@ -186,7 +186,7 @@ export function createSyncRepository(pool: Pool) {
      *  refused. */
     async leaseBlocks(
       userId: string,
-      requests: { projectId: string; kind: KeyKind; floor: number }[],
+      requests: { projectId: string; kind: KeyKind; prefix: string; floor: number }[],
     ): Promise<{ blocks: KeyBlock[]; refused: { projectId: string; kind: KeyKind }[] }> {
       const blocks: KeyBlock[] = [];
       const refused: { projectId: string; kind: KeyKind }[] = [];
@@ -199,14 +199,18 @@ export function createSyncRepository(pool: Pool) {
           refused.push({ projectId: r.projectId, kind: r.kind });
           continue;
         }
-        const stored = await pool.query<{ max: string | null }>(
-          `SELECT max(substring(${KEY_SQL} from '([0-9]{1,15})$')::bigint) AS max
-             FROM documents
-            WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3
-              AND position('?' IN coalesce(${KEY_SQL}, '')) = 0`,
-          [userId, KEY_ENTITY[r.kind], r.projectId],
-        );
-        const floor = Math.max(r.floor, Number(stored.rows[0]?.max ?? 0) + 1);
+        // Only keys of the series count: the prefix followed by digits only
+        // (a typed `JIRA-48213` must not push every later block that far).
+        const stored = r.prefix
+          ? await pool.query<{ max: string | null }>(
+              `SELECT max(CASE WHEN left(k, length($4)) = $4 AND substr(k, length($4) + 1) ~ '^[0-9]{1,15}$'
+                               THEN substr(k, length($4) + 1)::bigint END) AS max
+                 FROM (SELECT ${KEY_SQL} AS k FROM documents
+                        WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3) AS keyed`,
+              [userId, KEY_ENTITY[r.kind], r.projectId, r.prefix],
+            )
+          : null;
+        const floor = Math.max(r.floor, Number(stored?.rows[0]?.max ?? 0) + 1);
         const { rows } = await pool.query<{ next_value: string }>(
           `INSERT INTO key_blocks (project_id, kind, owner_id, next_value)
            VALUES ($1, $2, $3, $4::bigint + $5)

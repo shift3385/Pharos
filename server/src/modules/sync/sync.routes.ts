@@ -3,7 +3,7 @@ import type { TokenService } from "../auth/tokens";
 import { makeRequireAuth } from "../auth/middleware";
 import type { KeyConflict, RemoteDoc, SyncRepository } from "./sync.repository";
 import { keyBlocksSchema, pullSchema, pushSchema } from "./sync.schemas";
-import { requireSupportedVersion } from "./sync.version";
+import { requireSupportedVersion, SERVER_VERSION, understandsKeyConflicts } from "./sync.version";
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
  *  user, and only clients of a supported version are served (SYNC-08). A delta
@@ -27,10 +27,23 @@ export function syncRoutes(
     const userId = req.userId as string;
     const conflicts: RemoteDoc[] = [];
     const keyConflicts: KeyConflict[] = [];
+    const readsKeyConflicts = understandsKeyConflicts(req);
     for (const d of deltas) {
       const res = await repo.apply(userId, d);
       if ("current" in res) conflicts.push(res.current);
-      else if ("keyConflict" in res) keyConflicts.push(res.keyConflict);
+      else if ("keyConflict" in res) {
+        // A client built before DAT-01 would take the refused delta for an
+        // accepted one and drop it. Stop it instead: nothing is marked synced
+        // on its side, and what was stored so far is a no-op when it retries.
+        if (!readsKeyConflicts) {
+          return reply.code(426).send({
+            code: "unsupported_client_version",
+            message: `The key ${res.keyConflict.key} is already used by another item of the project. Update Pharos to sync this change.`,
+            serverVersion: SERVER_VERSION,
+          });
+        }
+        keyConflicts.push(res.keyConflict);
+      }
     }
     return reply.send({
       accepted: deltas.length - conflicts.length - keyConflicts.length,

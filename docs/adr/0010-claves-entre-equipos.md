@@ -169,7 +169,20 @@
     el escritorio (migración local `0017`) aplican la misma regla, así que
     todos los equipos acaban con las mismas claves. En local se prefiere antes
     la fila que el servidor ya conoce (con `sync_base`), porque es la que el
-    servidor tiene. Las demás reciben `-dup1`, `-dup2`…
+    servidor tiene. Las demás:
+    - una fila que el servidor no tiene recibe `-dup1`, `-dup2`… y se envía
+      con ella;
+    - una fila que el servidor ya tiene **no se renombra en local**: recibe una
+      clave provisional y un conflicto de clave. El equipo no puede saber qué
+      ve el servidor (otro equipo pudo borrar allí la fila que aquí gana), así
+      que renombrar sin más podía divergir en silencio (revisión del
+      2026-10-29). El pull trae la clave que decidió el servidor y cierra el
+      conflicto. Si el servidor había conservado la clave para esta fila, la
+      lápida de la que la tenía aquí se la devuelve (`holder_deleted`). Una
+      fila que el servidor nunca tuvo no recupera así una clave borrada
+      (regla 2).
+    - Las condiciones de la reparación y de los índices únicos son las mismas
+      (claves vivas no vacías), para que crear los índices no pueda fallar.
   - **Bloques** (`POST /sync/key-blocks`, tabla de servidor `key_blocks`):
     - una fila por `(project_id, kind)` con `owner_id`: solo la cuenta dueña del
       proyecto pide bloques (el proyecto de otra cuenta se rechaza en
@@ -177,8 +190,10 @@
       queda como dueño;
     - el bloque empieza en el mayor de: el siguiente número nunca entregado,
       el `floor` del equipo (su siguiente número, regla 3) y el mayor número
-      que el servidor guarda para ese proyecto (claves subidas antes de que
-      existieran los bloques);
+      de la serie que el servidor guarda para ese proyecto (claves subidas
+      antes de que existieran los bloques). Solo cuentan las claves que son
+      el `prefix` de la petición seguido de dígitos: una clave escrita a mano
+      como `JIRA-48213` no adelanta la numeración;
     - 50 números por bloque; el equipo pide otro cuando le quedan menos de 10,
       en cada sync, antes del push. Los números que sobran de un bloque se
       pierden (huecos).
@@ -195,6 +210,11 @@
       escritura del usuario; el índice de servidor `documents_key_idx` no es
       `UNIQUE` a propósito, para que el duplicado vuelva como conflicto y no
       como transacción fallida. Con TEN-01 el bloqueo debe ser por proyecto;
+    - solo recibe `keyConflicts` un cliente que declara entenderlo
+      (`x-pharos-sync-features: key-conflicts`). Un cliente anterior lleva la
+      misma versión (`0.1.0-alpha.1`), así que la versión no los distingue; si
+      no declara la capacidad, un choque de clave se responde con 426, para
+      que no tome el rechazo por aceptado y pierda el cambio;
     - en el pull, el documento del servidor conserva su clave: una fila local
       distinta que la tenía recibe una provisional y un **conflicto de clave**
       (tabla local `key_conflicts`);

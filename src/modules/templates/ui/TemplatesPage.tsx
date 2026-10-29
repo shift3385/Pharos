@@ -156,6 +156,14 @@ export function TemplatesPage() {
                             {t("templates.builtin")}
                           </span>
                         )}
+                        {!tpl.isBuiltin && !tpl.isOwn && (
+                          <span
+                            className="tpl__badge tpl__badge--builtin"
+                            title={t("templates.sharedHint")}
+                          >
+                            {t("templates.shared")}
+                          </span>
+                        )}
                       </span>
                       {tpl.description && <p className="tpl__desc">{tpl.description}</p>}
                     </div>
@@ -168,14 +176,16 @@ export function TemplatesPage() {
                       >
                         {t("templates.download")}
                       </button>
-                      <button
-                        type="button"
-                        className="tpl__btn"
-                        onClick={() => setForm({ mode: "edit", template: tpl })}
-                      >
-                        {t("common.edit")}
-                      </button>
-                      {!tpl.isBuiltin && (
+                      {tpl.isOwn && (
+                        <button
+                          type="button"
+                          className="tpl__btn"
+                          onClick={() => setForm({ mode: "edit", template: tpl })}
+                        >
+                          {t("common.edit")}
+                        </button>
+                      )}
+                      {tpl.isOwn && (
                         <button
                           type="button"
                           className="tpl__del"

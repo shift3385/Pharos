@@ -4,9 +4,10 @@
 -- the app and every account sees. Forward-only; no row is dropped.
 --
 -- Existing user templates have no recorded owner. On a device whose projects
--- all belong to one account (the usual case) they go to that account; on any
--- other device they stay NULL and the first account that opens Templates takes
--- them (template.rs, `claim_unowned`).
+-- all belong to one account (the usual case) they go to that account. On any
+-- other device they stay NULL: shared, every account sees them and none can
+-- edit or delete them (template.rs); downloading and importing one again
+-- gives an account its own editable copy.
 
 ALTER TABLE templates ADD COLUMN owner_id TEXT;
 

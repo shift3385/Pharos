@@ -330,3 +330,65 @@ fn audit_repair_leaves_rows_without_a_known_owner_alone() {
         .unwrap();
     assert_eq!(by, "orphan");
 }
+
+#[test]
+fn an_alpha_1_database_with_duplicate_and_empty_keys_still_opens() {
+    // DAT-01: two devices numbered offline before key blocks existed, and
+    // pulls that wrote '' keys. Migration 0017 must repair them, not fail on
+    // its unique indexes.
+    let old = fixture_image();
+    let (project, workspace): (String, String) = old
+        .query_row(
+            "SELECT id, workspace_id FROM projects WHERE owner_id = ?1",
+            params![USER_1],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    for (id, key) in [
+        ("dup-a", "ATS_900"),
+        ("dup-b", "ATS_900"),
+        ("empty-a", ""),
+        ("empty-b", ""),
+    ] {
+        old.execute(
+            "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, author, \
+             created_by, updated_by, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, 't', 'a', 'a', 'a', 'now', 'now')",
+            params![id, workspace, project, key],
+        )
+        .unwrap();
+    }
+    for id in ["card-a", "card-b"] {
+        old.execute(
+            "INSERT INTO planner_cards (id, workspace_id, project_id, owner_id, kind, card_key, title, \
+             created_by, updated_by, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?4, 'defect', 'DEF-900', 't', 'a', 'a', 'now', 'now')",
+            params![id, workspace, project, USER_1],
+        )
+        .unwrap();
+    }
+
+    run_migrations(&old).unwrap();
+    let keys: Vec<String> = old
+        .prepare("SELECT scenario_id FROM test_cases WHERE id LIKE 'dup-%' ORDER BY id")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert_eq!(keys, ["ATS_900", "ATS_900-dup1"]);
+    assert_eq!(
+        count(
+            &old,
+            "SELECT count(*) FROM test_cases WHERE scenario_id = '' AND deleted_at IS NULL"
+        ),
+        2
+    );
+    assert_eq!(
+        count(
+            &old,
+            "SELECT count(*) FROM planner_cards WHERE card_key LIKE 'DEF-900%'"
+        ),
+        2
+    );
+}

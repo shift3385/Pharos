@@ -19,7 +19,11 @@ const KEY = "pharos.templates";
 
 function loadAll(): TemplateData[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]") as TemplateData[];
+    // One browser profile, one user: every imported template is its own.
+    return (JSON.parse(localStorage.getItem(KEY) ?? "[]") as TemplateData[]).map((t) => ({
+      ...t,
+      isOwn: !t.isBuiltin,
+    }));
   } catch {
     return [];
   }
@@ -56,6 +60,7 @@ const browserApi = {
       usagePrompt: input.usagePrompt ?? "",
       version: input.version ?? "1.0",
       isBuiltin: false,
+      isOwn: true,
       dataBase64: input.dataBase64,
     };
     saveAll([...loadAll(), item]);
@@ -65,6 +70,7 @@ const browserApi = {
     const items = loadAll();
     const idx = items.findIndex((t) => t.id === id);
     if (idx < 0) return null;
+    if (items[idx].isBuiltin) throw new Error("built-in templates are read-only");
     items[idx] = {
       ...items[idx],
       name: meta.name,
@@ -95,6 +101,7 @@ const browserApi = {
         usagePrompt: s.usagePrompt ?? "",
         version: s.version ?? "1.0",
         isBuiltin: true,
+        isOwn: false,
         dataBase64: s.dataBase64,
       });
     }

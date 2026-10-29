@@ -318,6 +318,7 @@ fn open_conflict_id(
 /// or of key, DAT-01) are held back until it is resolved.
 fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
     oplog::claim_unowned(conn)?;
+    key_sync::close_stale(conn)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -555,6 +556,7 @@ fn write_doc(
             params![doc.entity_id, doc.revision],
         )
         .map_err(|e| e.to_string())?;
+        key_sync::holder_deleted(conn, &doc.entity, &doc.entity_id)?;
         return Ok(());
     }
 

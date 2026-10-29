@@ -26,12 +26,14 @@ use crate::oplog;
 const LOW_WATER: u64 = 10;
 
 /// One block this device needs: `floor` is its next number, so a project
-/// numbered before its first push keeps the keys it already has.
+/// numbered before its first push keeps the keys it already has. `prefix` lets
+/// the server count only the keys of this series (`JIRA-48213` is not one).
 #[derive(Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct LeaseRequest {
     pub(crate) project_id: String,
     pub(crate) kind: &'static str,
+    pub(crate) prefix: String,
     pub(crate) floor: u64,
 }
 
@@ -101,9 +103,11 @@ pub(crate) fn lease_requests(conn: &Connection, user: &str) -> Result<Vec<LeaseR
         for kind in KeyKind::ALL {
             let (left, next) = keys::remaining(conn, kind, &project_id)?;
             if left < LOW_WATER {
+                let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
                 out.push(LeaseRequest {
                     project_id: project_id.clone(),
                     kind: kind.as_str(),
+                    prefix,
                     floor: next,
                 });
             }
@@ -319,6 +323,72 @@ pub(crate) fn vacate(
     Ok(())
 }
 
+/// The server deleted `holder_id`, which held the key a synced row of this
+/// device lost in the local repair (migration 0017). The server kept that
+/// key for the row all along, so it gets it back (not journaled: it matches
+/// the server) and its conflict closes. A row the server never had keeps its
+/// conflict: a deleted key is never handed to another entity (ADR-0010).
+pub(crate) fn holder_deleted(
+    conn: &Connection,
+    entity: &str,
+    holder_id: &str,
+) -> Result<(), String> {
+    let Some(kind) = kind_of(entity) else {
+        return Ok(());
+    };
+    let (_, table, column) = kind.entity();
+    let open: Vec<(String, String, String)> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, entity_id, lost_key FROM key_conflicts
+                  WHERE entity = ?1 AND taken_by = ?2 AND resolved_at IS NULL",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params![entity, holder_id], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            })
+            .map_err(|e| e.to_string())?;
+        rows.collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?
+    };
+    for (id, entity_id, lost_key) in open {
+        if !oplog::known_to_server(conn, entity, &entity_id)? {
+            continue;
+        }
+        conn.execute(
+            &format!("UPDATE {table} SET {column} = ?2 WHERE id = ?1"),
+            params![entity_id, lost_key],
+        )
+        .map_err(|e| e.to_string())?;
+        conn.execute(
+            "UPDATE key_conflicts SET resolved_at = datetime('now'), resolution = 'remote' WHERE id = ?1",
+            params![id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Closes the open key conflicts of rows that were deleted or are gone: a
+/// deleted row needs no key, and its delete must still reach the server.
+pub(crate) fn close_stale(conn: &Connection) -> Result<(), String> {
+    for kind in KeyKind::ALL {
+        let (entity, table, _) = kind.entity();
+        conn.execute(
+            &format!(
+                "UPDATE key_conflicts SET resolved_at = datetime('now'), resolution = 'deleted'
+                  WHERE resolved_at IS NULL AND entity = ?1
+                    AND NOT EXISTS (SELECT 1 FROM {table} x WHERE x.id = key_conflicts.entity_id
+                                    AND x.deleted_at IS NULL)"
+            ),
+            params![entity],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 /// A pulled document gave this entity a definitive key: its key conflict, if
 /// any, is settled by the server.
 pub(crate) fn settled_by_server(conn: &Connection, entity: &str, id: &str) -> Result<(), String> {
@@ -347,6 +417,7 @@ pub(crate) fn record_rejected(
 }
 
 pub(crate) fn list(conn: &Connection, user: &str) -> Result<Vec<KeyConflict>, String> {
+    close_stale(conn)?;
     let open: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(
@@ -622,6 +693,7 @@ mod tests {
             LeaseRequest {
                 project_id: "p1".into(),
                 kind: "case",
+                prefix: "ATS_".into(),
                 floor: 8
             }
         );
@@ -762,9 +834,61 @@ mod tests {
         .unwrap();
         requirement(&c, "r2", "REQ-001");
         requirement(&c, "r1", "REQ-001");
+        // Two synced rows with the same key: the second one gets a conflict.
+        case(&c, "s1", "ATS_009", "{}");
+        case(&c, "s2", "ATS_009", "{}");
+        for id in ["s1", "s2"] {
+            c.execute(
+                "INSERT INTO sync_base (user_id, entity, entity_id, revision, hlc) VALUES (?1, 'test_case', ?2, 1, '')",
+                params![U, id],
+            )
+            .unwrap();
+        }
+        // Rows without a key (a pull without one writes ''): never a duplicate.
+        case(&c, "e1", "", "{}");
+        case(&c, "e2", "", "{}");
+        requirement(&c, "re1", "");
 
         c.execute_batch(include_str!("../migrations/0017_keys_and_purge.sql"))
             .unwrap();
+        let s2: String = c
+            .query_row(
+                "SELECT scenario_id FROM test_cases WHERE id = 's2'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(
+            s2.starts_with("ATS_009?") && keys::is_provisional(&s2),
+            "{s2}"
+        );
+        let open = list(&c, U).unwrap();
+        assert_eq!(
+            open.len(),
+            1,
+            "only the synced loser: the others were never on the server"
+        );
+        assert_eq!(
+            (open[0].entity_id.as_str(), open[0].lost_key.as_str()),
+            ("s2", "ATS_009")
+        );
+        // The server had deleted s1 and kept ATS_009 on s2: the tombstone of s1
+        // gives it back, nothing diverges.
+        c.execute(
+            "UPDATE test_cases SET deleted_at = 'now' WHERE id = 's1'",
+            [],
+        )
+        .unwrap();
+        holder_deleted(&c, "test_case", "s1").unwrap();
+        let s2: String = c
+            .query_row(
+                "SELECT scenario_id FROM test_cases WHERE id = 's2'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(s2, "ATS_009");
+        assert!(list(&c, U).unwrap().is_empty());
         let key = |sql: &str| -> String { c.query_row(sql, [], |r| r.get(0)).unwrap() };
         assert_eq!(
             key("SELECT scenario_id FROM test_cases WHERE id = 'c'"),

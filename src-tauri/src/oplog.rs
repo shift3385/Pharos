@@ -217,6 +217,7 @@ pub fn claim_unowned(conn: &Connection) -> Result<(), String> {
 /// open conflicts (of version and of key).
 pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String> {
     claim_unowned(conn)?;
+    crate::key_sync::close_stale(conn)?;
     let pending: i64 = conn
         .query_row(
             &format!(

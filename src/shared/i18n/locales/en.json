@@ -26,6 +26,8 @@
       "case": "Test cases"
     },
     "builtin": "Included",
+    "shared": "Shared",
+    "sharedHint": "Imported before accounts: every account on this device sees it and it is read-only. To edit it, download it and import it again.",
     "download": "Download .xlsx",
     "import": "Import template",
     "importedToast": "Template imported: “{{name}}”",

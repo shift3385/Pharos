@@ -75,12 +75,17 @@ resolution can be added without a schema change.
     endpoint (404) only leaves keys provisional;
   - the server refuses an upsert whose key another live document of the
     project has (`keyConflicts` in the push answer). `key_conflicts_record`
-    gives the row a provisional key and a key conflict;
+    gives the row a provisional key and a key conflict. Only clients that send
+    `x-pharos-sync-features: key-conflicts` (`transport.ts`) get that answer;
+    an older client gets 426 instead of a refusal it would take for accepted;
   - on a pull, a different local row holding the pulled key loses it the same
     way (`sync.rs::write_doc`);
   - a row with an open key conflict is not pushed. The conflict panel lists it
     (`ui/KeyConflictList.tsx`): type a new key or take the next number
-    (`key_conflict_resolve`). The indicator counts it with the conflicts;
+    (`key_conflict_resolve`). The indicator counts it with the conflicts. It
+    also closes when the server sends the row with a key, when the server
+    deletes the holder of a key a synced row lost (`holder_deleted`), or when
+    the row is deleted (its delete must still sync);
   - the web keeps a refused key in its outbox, flagged like a refused delta.
 
 ## Web client (`web/webSync.ts`, ADR-0004)
