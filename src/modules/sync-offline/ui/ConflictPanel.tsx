@@ -7,6 +7,7 @@ import {
   resolveConflict,
   type KeyConflict,
 } from "../api/syncApi";
+import { logSyncFailure } from "../api/syncFailure";
 import {
   conflictTitle,
   diffConflict,
@@ -39,8 +40,18 @@ export function ConflictPanel({
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load() {
-    setConflicts(await listConflicts().catch(() => []));
-    setKeyConflicts(await listKeyConflicts().catch(() => []));
+    setConflicts(
+      await listConflicts().catch((e: unknown) => {
+        logSyncFailure(e, "conflicts-list");
+        return [];
+      }),
+    );
+    setKeyConflicts(
+      await listKeyConflicts().catch((e: unknown) => {
+        logSyncFailure(e, "key-conflicts-list");
+        return [];
+      }),
+    );
   }
 
   useEffect(() => {
@@ -61,7 +72,7 @@ export function ConflictPanel({
       await load();
       onResolved();
     } catch (e) {
-      console.error("[sync] resolve failed:", e);
+      logSyncFailure(e, "conflict-resolve");
       toast(t("sync.conflict.failed"));
     } finally {
       setBusy(null);

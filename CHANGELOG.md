@@ -52,6 +52,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   usuario se enmascaran. Funciona aunque la base local no haya podido abrirse.
 - **Registros de la app:** el escritorio guarda un log diario en
   `%LOCALAPPDATA%\com.pharos.desktop\logs` (se conservan 7 días).
+- **Los fallos de sincronización quedan en el log (BASE-08):** además del aviso,
+  cada fallo deja una línea en el log que recoge "Exportar diagnóstico": al
+  sincronizar a mano o en segundo plano, al listar o resolver conflictos, y
+  los cambios que el servidor rechaza. Solo guarda el código HTTP y el tipo de
+  error, nunca el texto del servidor ni el contenido de tus datos. Un fallo que
+  se repite en segundo plano se anota una sola vez.
 - **Pantalla de error:** si una vista falla, ya no queda la ventana en blanco:
   aparece un aviso con "Reintentar", "Recargar" y "Exportar diagnóstico", y el
   resto de la app sigue funcionando.
@@ -94,6 +100,13 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
+- **Keychain probado (CORE-02):** la sesión y las claves de IA guardadas en el
+  Administrador de credenciales de Windows pasan por un único módulo con tests
+  automáticos contra el keychain real: guardar, leer, sobrescribir, borrar,
+  texto Unicode, el tamaño máximo que admite Windows y accesos simultáneos.
+  Los tests mostraron que, si un mismo proceso usa el keychain desde varios
+  hilos a la vez, Windows puede perder un borrado. Ahora esas operaciones van
+  de una en una, también cuando la IA lee su clave mientras se guarda otra.
 - **Cada sincronización lleva la versión de la app (SYNC-08):** el servidor
   acepta su versión MENOR y la anterior; una app no admitida no escribe nada y,
   desde esta versión, muestra "Actualiza la app para sincronizar".
@@ -183,6 +196,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     las llamadas a la IA).
   - fastify y sus dependencias.
   - vitest y vite (herramientas de desarrollo con avisos críticos).
+  - zod 4 en el servidor (BASE-18), que corrige el aviso alto
+    GHSA-mrhx-c7xc-m3w5. La auditoría de npm ya no tolera ningún aviso.
 - Licencias de Rust auditadas: solo permisivas, igual que en npm.
 - La clave de Gemini ya no viaja en la URL sino en una cabecera; las peticiones
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.
