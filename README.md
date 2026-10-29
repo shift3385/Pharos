@@ -117,6 +117,25 @@ run with `NODE_ENV=production`. The account exists only in your local
 After the first sign-in the desktop app can reopen offline from the cached
 session.
 
+### AI assist (optional)
+
+Pharos works fully without AI; every AI button is disabled with a notice until
+a provider is set up in the AI panel (one online provider with your own key,
+or Ollama offline). Before sending anything, each AI control says which
+provider and model will receive it. With AI you can:
+
+- draft plan and case fields ("Assist with AI"), including the plan's
+  automation strategy;
+- suggest risks with mitigation (plan step 17) and preconditions (case editor);
+- generate Gherkin scenarios and test cases from a requirement (✨ on each
+  requirement in the Traceability tab).
+
+Structured answers are JSON checked against a schema before use: an invalid
+answer or a refusal is reported and nothing is applied
+([ADR-0023](docs/adr/0023-salida-estructurada-ia.md)). Nothing is added until
+you accept it, and AI content stays marked "AI · pending review" with its
+provider and model until someone reviews it.
+
 ### Troubleshooting
 
 | Symptom                                                  | Cause / fix                                                                                            |

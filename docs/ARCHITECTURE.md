@@ -20,7 +20,11 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   (Anthropic), OpenRouter or any OpenAI-compatible endpoint. Calls run in Rust
   (`src-tauri/src/ai.rs`) so each key stays in the OS keychain; three wire
   formats (Gemini, OpenAI chat completions, Anthropic Messages) cover them.
-  Offline: Ollama, called from the frontend.
+  Offline: Ollama, called from the frontend. Structured answers (IA-05 cases
+  from a requirement, IA-10 risks and preconditions) reuse the same chat path
+  with a strict prompt and are validated with zod on the client before use
+  ([ADR-0023](adr/0023-salida-estructurada-ia.md)); the traceability module
+  creates the accepted cases through the test-cases public API.
 
 ## Modular monolith (spec §2)
 

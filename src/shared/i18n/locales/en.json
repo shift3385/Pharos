@@ -123,6 +123,21 @@
       "empty": "The AI returned no text.",
       "error": "Could not draft with AI"
     },
+    "structured": {
+      "thinking": "Thinking…",
+      "proposals": "AI proposals",
+      "addSelected": "Add {{count}}",
+      "nothingApplied": "Nothing was applied.",
+      "error": {
+        "empty": "The AI replied with nothing.",
+        "refusal": "The AI made no proposals.",
+        "invalid-json": "The AI's answer is not valid JSON.",
+        "invalid-schema": "The AI's answer does not have the expected format.",
+        "no-provider": "No AI available: set up an online provider or Ollama.",
+        "timeout": "The AI did not answer in time.",
+        "provider": "The AI provider returned an error."
+      }
+    },
     "provenance": {
       "pending": "AI · pending review",
       "short": "AI · not reviewed",
@@ -376,6 +391,7 @@
     "environmentRequirements": "Hardware and software requirements",
     "tools": "Tools",
     "automationStrategy": "Automation strategy",
+    "suggestRisks": "✨ Suggest risks with AI",
     "testDataManagement": "Test data management",
     "defectManagement": "Defect management",
     "roleCol": "Role",
@@ -523,6 +539,7 @@
       "button": "Import .xlsx",
       "title": "Import case from .xlsx"
     },
+    "suggestPreconditions": "✨ Suggest preconditions",
     "suggest": {
       "button": "✨ Suggest tests",
       "disabled": "You need AI configured and a plan in the project",
@@ -726,6 +743,19 @@
       "low": "Low",
       "medium": "Medium",
       "high": "High"
+    },
+    "generate": {
+      "button": "Generate cases with AI from {{key}}",
+      "title": "Generate cases from {{key}}",
+      "intro": "The AI will propose Gherkin scenarios and test cases for this requirement. You review them and only the ones you accept are created, as drafts linked to the requirement and marked “AI · pending review”.",
+      "run": "Generate",
+      "loading": "Generating scenarios from the requirement…",
+      "retry": "Retry",
+      "gherkin": "Show Gherkin",
+      "accept": "Create {{count}} cases",
+      "creating": "Creating…",
+      "doneToast": "Cases created and linked to {{key}}: {{count}}",
+      "failedToast": "{{count}} cases could not be saved"
     },
     "requirement": {
       "listTitle": "Requirements",

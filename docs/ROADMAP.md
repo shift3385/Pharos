@@ -219,8 +219,8 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ----- | ------------------------------------------------------------------------------------------------------------------------ | --- | ---------------------------------------------------------- | ------------------------------------------------------------ | ------------- |
 | IA-01 | Procedencia visible "IA · pendiente de revisión"                                                                         | P1  | 0.1.0                                                      | Hecho (`484e941`)                                            | —             |
 | IA-08 | Varios proveedores online con clave propia, uno activo, "Listar modelos" ([ADR-0007](adr/0007-varios-proveedores-ia.md)) | P1  | 0.1.0                                                      | Hecho (`91f0b9a`); falta validación nativa con claves reales | —             |
-| IA-05 | Gherkin y casos desde un requisito (salida JSON con esquema)                                                             | P1  | 0.1.0                                                      | Pendiente                                                    | TRZ-01, IA-01 |
-| IA-10 | Ayudas de IA que pide la spec §5.1/§5.3: riesgos, estrategia de automatización, precondiciones                           | P2  | 0.1.0                                                      | Pendiente                                                    | —             |
+| IA-05 | Gherkin y casos desde un requisito (salida JSON con esquema, [ADR-0023](adr/0023-salida-estructurada-ia.md))             | P1  | 0.1.0                                                      | Hecho (pista I1); falta validación nativa con claves reales  | TRZ-01, IA-01 |
+| IA-10 | Ayudas de IA que pide la spec §5.1/§5.3: riesgos, estrategia de automatización, precondiciones                           | P2  | 0.1.0                                                      | Hecho (pista I1); falta validación nativa con claves reales  | —             |
 | IA-02 | Detección de duplicados con embeddings locales                                                                           | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-03 | _Lint_ de oráculo (resultados esperados débiles)                                                                         | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-06 | Servidor MCP local (stdio)                                                                                               | P1  | 0.7.0                                                      | Pendiente                                                    | SEC-05        |
@@ -268,6 +268,9 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
 - **SEC-01/02:** guardar desde la app y comprobar que no quedan `.tmp` ni `.new`.
 - **IA-08:** probar con claves reales cada proveedor que vayas a usar (Gemini, OpenAI, Claude,
   OpenRouter o un endpoint compatible).
+- **IA-05 / IA-10:** con claves reales (y con Ollama), generar casos desde un requisito y
+  aceptar algunos (quedan vinculados en la matriz); sugerir riesgos, estrategia de
+  automatización y precondiciones. Anotar qué modelos devuelven JSON inválido a menudo.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario

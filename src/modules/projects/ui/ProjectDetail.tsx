@@ -92,7 +92,12 @@ export function ProjectDetail({
         />
       )}
       {tab === "traceability" && (
-        <TraceabilityPage projectId={projectId} projectName={project.name} />
+        <TraceabilityPage
+          projectId={projectId}
+          projectName={project.name}
+          caseIdPrefix={project.caseIdPrefix}
+          caseIdDigits={project.caseIdDigits}
+        />
       )}
       {tab === "planner" && (
         <PlannerBoard projectId={projectId} ownerId={ownerId} cases={linkableCases} />
