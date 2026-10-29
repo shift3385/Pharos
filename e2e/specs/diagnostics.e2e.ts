@@ -30,7 +30,11 @@ const resultsDir = fileURLToPath(new URL("../results/", import.meta.url));
 const downloadsDir =
   process.env.PHAROS_E2E_DOWNLOADS ?? join(homedir(), "Downloads");
 
-/** Bundles saved since `since` (ms), complete (no partial download left). */
+/**
+ * Bundles saved since `since` (ms). The app reserves the final name with an
+ * empty file and renames the written bundle over it (downloads.rs), so a
+ * match can still be 0 bytes: see `bundleSaved`.
+ */
 function savedBundles(since: number): string[] {
   if (!existsSync(downloadsDir)) return [];
   return readdirSync(downloadsDir)
@@ -41,6 +45,17 @@ function savedBundles(since: number): string[] {
     )
     .map((name) => join(downloadsDir, name))
     .filter((path) => statSync(path).mtimeMs >= since);
+}
+
+/**
+ * The bundle saved since `since` once the save has finished: the app shows
+ * "Diagnóstico guardado en …" only after `download_save` returned (after the
+ * rename), and the file is no longer the empty reservation.
+ */
+async function bundleSaved(since: number): Promise<string | null> {
+  const done = es.diagnostics.exported.split("{{")[0];
+  if (!(await $("body").getText()).includes(done)) return null;
+  return savedBundles(since).find((path) => statSync(path).size > 0) ?? null;
 }
 
 describe("Diagnostics on the desktop (BASE-08)", () => {
@@ -63,11 +78,16 @@ describe("Diagnostics on the desktop (BASE-08)", () => {
   it("saves a bundle without user data to Downloads", async () => {
     const since = Date.now() - 1000;
     await $(`button=${es.diagnostics.export}`).click();
-    await browser.waitUntil(async () => savedBundles(since).length > 0, {
-      timeout: 20_000,
-      timeoutMsg: `no pharos-diagnostic-*.zip appeared in ${downloadsDir}`,
-    });
-    const [path] = savedBundles(since);
+    let path: string | null = null;
+    await browser.waitUntil(
+      async () => (path = await bundleSaved(since)) !== null,
+      {
+        timeout: 20_000,
+        timeoutMsg: `no complete pharos-diagnostic-*.zip saved in ${downloadsDir}`,
+      },
+    );
+    if (!path)
+      throw new Error("unreachable: waitUntil returned without a bundle");
     try {
       const zip = await JSZip.loadAsync(readFileSync(path));
       const names = Object.keys(zip.files);
