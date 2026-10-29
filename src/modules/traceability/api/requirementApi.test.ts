@@ -21,7 +21,7 @@ describe("requirementApi (browser fallback)", () => {
   it("never reuses the key of a deleted requirement", async () => {
     const a = await requirementApi.create({ ...base, title: "A" });
     await requirementApi.remove(a!.id, USER);
-    expect(await requirementApi.list("p1")).toEqual([]);
+    expect(await requirementApi.list("p1", USER)).toEqual([]);
     const b = await requirementApi.create({ ...base, title: "B" });
     expect(b?.requirementKey).toBe("REQ-002");
   });
@@ -55,7 +55,7 @@ describe("requirementApi (browser fallback)", () => {
       { title: "  " },
     ]);
     expect(summary).toEqual({ created: 1, updated: 1 });
-    const list = await requirementApi.list("p1");
+    const list = await requirementApi.list("p1", USER);
     expect(list.map((r) => [r.requirementKey, r.title])).toEqual([
       ["REQ-001", "New"],
       ["REQ-002", "Fresh"],

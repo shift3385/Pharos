@@ -2,8 +2,11 @@ import { testPlanApi } from "../api/testPlanApi";
 
 /** Builds a compact context string from a project's test plan (title, summary,
  *  types, levels, scope) to feed the AI "suggest tests" flow. Null if no plan. */
-export async function planContextForProject(projectId: string): Promise<string | null> {
-  const plan = await testPlanApi.byProject(projectId);
+export async function planContextForProject(
+  projectId: string,
+  userId: string,
+): Promise<string | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return null;
   const d = plan.data ?? {};
   const lines: string[] = [`Title: ${plan.title}`];

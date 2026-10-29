@@ -39,8 +39,20 @@ function loadRevs(): StoredRevision[] {
   }
 }
 
-// Next id within a project: highest live suffix for the prefix + 1 (empty → 1),
-// mirroring the Rust logic so the browser preview matches the desktop app.
+// Next number per project, kept apart from the cases so the id of a deleted
+// case is never handed out again (DAT-01, ADR-0010), as in the Rust store.
+const COUNTER_KEY = "pharos.testCaseCounters";
+
+function loadCounters(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(COUNTER_KEY) ?? "{}") as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+// Next id within a project: the project's counter, never below the highest
+// live suffix for the prefix + 1 (empty project → 1).
 function nextScenarioId(
   cases: TestCase[],
   projectId: string,
@@ -54,7 +66,10 @@ function nextScenarioId(
     const n = Number(c.scenarioId.slice(prefix.length));
     if (Number.isInteger(n) && n > max) max = n;
   }
-  return `${prefix}${String(max + 1).padStart(digits, "0")}`;
+  const counters = loadCounters();
+  const next = Math.max(max + 1, counters[projectId] ?? 1);
+  localStorage.setItem(COUNTER_KEY, JSON.stringify({ ...counters, [projectId]: next + 1 }));
+  return `${prefix}${String(next).padStart(digits, "0")}`;
 }
 
 const browserApi = {
@@ -117,7 +132,7 @@ const browserApi = {
     localStorage.setItem(REV_KEY, JSON.stringify(revs));
     const updated: TestCase = {
       ...prev,
-      scenarioId: input.scenarioId?.trim() || prev.scenarioId,
+      scenarioId: prev.scenarioId,
       title: input.title,
       version: input.version ?? prev.version,
       status: input.status ?? prev.status,
@@ -153,19 +168,21 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user: the desktop store only returns or changes
+// cases of projects that user owns (FIX-08).
 export const testCaseApi = {
-  list: (projectId: string): Promise<TestCaseSummary[]> =>
-    isTauri() ? invoke("test_case_list", { projectId }) : browserApi.list(projectId),
-  get: (id: string): Promise<TestCase | null> =>
-    isTauri() ? invoke("test_case_get", { id }) : browserApi.get(id),
+  list: (projectId: string, userId: string): Promise<TestCaseSummary[]> =>
+    isTauri() ? invoke("test_case_list", { projectId, userId }) : browserApi.list(projectId),
+  get: (id: string, userId: string): Promise<TestCase | null> =>
+    isTauri() ? invoke("test_case_get", { id, userId }) : browserApi.get(id),
   create: (input: TestCaseInput): Promise<TestCase | null> =>
     isTauri() ? invoke("test_case_create", { input }) : browserApi.create(input),
   update: (id: string, input: TestCaseInput): Promise<TestCase | null> =>
     isTauri()
       ? invoke("test_case_update", { id, input })
       : browserApi.update(id, input),
-  remove: (id: string): Promise<void> =>
-    isTauri() ? invoke("test_case_delete", { id }) : browserApi.remove(id),
-  revisions: (id: string): Promise<RevisionSummary[]> =>
-    isTauri() ? invoke("test_case_revisions", { id }) : browserApi.revisions(id),
+  remove: (id: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("test_case_delete", { id, userId }) : browserApi.remove(id),
+  revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>
+    isTauri() ? invoke("test_case_revisions", { id, userId }) : browserApi.revisions(id),
 };

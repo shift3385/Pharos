@@ -12,3 +12,18 @@
   color: var(--color-text-secondary);
   font-size: var(--fs-ui);
 }
+
+.app-splash__title {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--fs-title-md);
+}
+
+.app-splash__detail {
+  max-width: 640px;
+  padding: 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-caption);
+  text-align: center;
+  word-break: break-word;
+}

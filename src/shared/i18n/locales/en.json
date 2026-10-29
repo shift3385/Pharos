@@ -3,6 +3,12 @@
     "name": "Pharos",
     "tagline": "QA test management suite"
   },
+  "dbError": {
+    "title": "The local database could not be opened",
+    "body": "Pharos has not modified any file. Close the app and try again; if it keeps happening, share this detail with support.",
+    "newerTitle": "This data comes from a newer version of Pharos",
+    "newerBody": "The local database was saved by a more recent version than this one. To avoid damaging it, Pharos neither opens nor modifies it. Install that version or a later one."
+  },
   "common": {
     "loading": "Loading…",
     "delete": "Delete",
@@ -514,6 +520,7 @@
     "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
     "scenarioIdAuto": "Auto (ATS_001)",
+    "scenarioIdFixed": "The ID never changes once assigned: it travels as the @ATS_001 tag in automation.",
     "priority": "Priority",
     "status": "Status",
     "version": "Version",

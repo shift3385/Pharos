@@ -125,9 +125,44 @@ persisted atomically to `pharos.db.enc` as an **AES-256-GCM** blob (pure-Rust
 RustCrypto, no OpenSSL). The 32-byte key is stored in the OS keychain. Schema is
 applied by a small forward-only migration runner (`src-tauri/migrations/`).
 
+Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
+
+- **Backup before migrating.** When an existing database has pending
+  migrations, the still-encrypted file is first copied to
+  `pharos.db.enc.bak-<app version>`. The migrated image is then saved at once.
+- **No silent downgrade.** A database whose `schema_migrations` lists a
+  migration this build does not ship was written by a newer Pharos. `Db::open`
+  refuses it with an error starting with `db-newer-than-app` before touching any
+  file. Startup does not abort: `setup` stores the error in `DbStatus`, and the
+  UI asks `db_open_error` and shows a blocking, translated screen.
+- **Upgrade test (BASE-04).** `src-tauri/src/upgrade_tests.rs` opens
+  `src-tauri/tests/fixtures/0.1.0-alpha.1/pharos.db.enc`, a database written by
+  the real 0.1.0-alpha.1 code. It checks that every row and column survives,
+  except the audit fields that migration 0015 repairs. The fixture's README
+  explains how it was generated.
+
 Every business entity is multi-user ready (spec §3): `workspace_id` + audit
 fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
-`revision`), filled automatically by the repository. The profile (`display_name`
+`revision`), filled automatically by the repository.
+
+- **Audit fields (FIX-06):** `created_by` and `updated_by` hold the signed-in
+  user's id.
+- **Owner checks (FIX-08):** every command that reads or changes a test plan,
+  test case, requirement or planner attachment takes the signed-in user
+  (`userId`, or `ownerId` in the planner). It only touches rows of projects that
+  user owns (`projects.owner_id`). A foreign or unknown id reads as nothing and
+  fails to change, without writing an oplog row.
+- **Human-readable keys (DAT-01, ADR-0010):** case, requirement and defect keys
+  come from `key_counters` (`src-tauri/src/keys.rs`):
+  - the counter only moves forward, so a key is never reused;
+  - a case's `scenario_id` is immutable, and a hand-typed key already used by
+    a live case is refused.
+  - Phase 2 of track A2 brings server-leased key blocks for several devices.
+    It also brings unique indexes on live case and defect keys (local migration
+    `0017`), together with the sync handling of a pulled key that collides with
+    a local one.
+
+The profile (`display_name`
 alias + mandatory `first_name`/`last_name`) is exposed to the client through
 typed Tauri commands (`profile_get`, `profile_upsert`); the browser falls back
 to localStorage for `vite dev`.

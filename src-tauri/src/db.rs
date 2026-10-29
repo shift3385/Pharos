@@ -7,6 +7,12 @@
 //! SQLite with `deserialize`/`serialize`. The encrypted file is replaced
 //! atomically (write `pharos.db.enc.new`, fsync, rename), so a crash mid-save
 //! leaves the previous copy intact.
+//!
+//! Data compatibility (SEC-06, VERSIONING §6): before applying pending
+//! migrations to an existing database the encrypted file is copied to
+//! `pharos.db.enc.bak-<app version>`, and a database that already carries
+//! migrations this build does not know (written by a newer Pharos) is refused
+//! without touching any file.
 
 use std::fs;
 use std::io::Write;
@@ -26,6 +32,11 @@ const KEYCHAIN_DB_KEY: &str = "db-key";
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
 const NONCE_LEN: usize = 12;
+/// Version stamped on the pre-migration backup (`pharos.db.enc.bak-<version>`).
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Prefix of the `Db::open` error for a database written by a newer Pharos. The
+/// UI matches it to show a translated, blocking message.
+pub const NEWER_DB_ERROR: &str = "db-newer-than-app";
 
 const MIGRATIONS: &[(&str, &str)] = &[
     ("0001_init.sql", include_str!("../migrations/0001_init.sql")),
@@ -69,6 +80,14 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "0011_sync_conflicts.sql",
         include_str!("../migrations/0011_sync_conflicts.sql"),
     ),
+    (
+        "0015_audit_actor_repair.sql",
+        include_str!("../migrations/0015_audit_actor_repair.sql"),
+    ),
+    (
+        "0016_key_counters.sql",
+        include_str!("../migrations/0016_key_counters.sql"),
+    ),
 ];
 
 pub struct Db {
@@ -86,21 +105,41 @@ impl Db {
     fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
         let enc_path = app_data_dir.join("pharos.db.enc");
-        recover_leftovers(app_data_dir, &enc_path, &key)?;
+        // Read the latest save without changing any file yet: a database from a
+        // newer version must be refused before anything on disk is touched.
+        let saved = latest_save(&enc_path, &key)?;
         let mut conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
-
-        if enc_path.exists() {
-            let blob = fs::read(&enc_path).map_err(|e| e.to_string())?;
-            let plain = decrypt(&key, &blob)?;
-            load_image(&mut conn, &plain)?;
+        if let Some((_, plain)) = &saved {
+            load_image(&mut conn, plain)?;
         }
 
+        let unknown = unknown_migrations(&conn)?;
+        if !unknown.is_empty() {
+            return Err(format!(
+                "{NEWER_DB_ERROR}: the local database was written by a newer version of \
+                 Pharos (unknown migrations: {}). It was not modified; install that \
+                 version or a later one to open it.",
+                unknown.join(", ")
+            ));
+        }
+        recover_leftovers(app_data_dir, &enc_path, &key)?;
+
+        let migrate_existing = saved.is_some() && !pending_migrations(&conn)?.is_empty();
+        if let Some((blob, _)) = saved.as_ref().filter(|_| migrate_existing) {
+            write_backup(&enc_path, blob)?;
+        }
         run_migrations(&conn)?;
-        Ok(Db {
+        let db = Db {
             conn: Mutex::new(conn),
             enc_path,
             key,
-        })
+        };
+        // Save the migrated image right away, so the backup and the file on
+        // disk are always exactly one upgrade apart.
+        if migrate_existing {
+            db.persist()?;
+        }
+        Ok(db)
     }
 
     /// Runs a closure with a locked connection.
@@ -108,13 +147,19 @@ impl Db {
         &self,
         f: impl FnOnce(&Connection) -> Result<T, String>,
     ) -> Result<T, String> {
-        let conn = self.conn.lock().map_err(|_| "db lock poisoned".to_string())?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "db lock poisoned".to_string())?;
         f(&conn)
     }
 
     /// Serializes the in-memory database and writes it encrypted to disk.
     pub fn persist(&self) -> Result<(), String> {
-        let conn = self.conn.lock().map_err(|_| "db lock poisoned".to_string())?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "db lock poisoned".to_string())?;
         let image = conn
             .serialize(DatabaseName::Main)
             .map_err(|e| e.to_string())?;
@@ -128,6 +173,45 @@ fn pending_path(enc_path: &Path) -> PathBuf {
     let mut name = enc_path.as_os_str().to_owned();
     name.push(".new");
     PathBuf::from(name)
+}
+
+/// Path of the copy kept before migrating: `pharos.db.enc.bak-<version>`.
+fn backup_path(enc_path: &Path) -> PathBuf {
+    let mut name = enc_path.as_os_str().to_owned();
+    name.push(format!(".bak-{APP_VERSION}"));
+    PathBuf::from(name)
+}
+
+/// Keeps the still-encrypted pre-migration blob. An existing backup of this
+/// version is left alone: it is the copy taken before this version first
+/// migrated the database.
+fn write_backup(enc_path: &Path, blob: &[u8]) -> Result<(), String> {
+    let path = backup_path(enc_path);
+    if path.exists() {
+        return Ok(());
+    }
+    write_atomic(&path, blob)
+}
+
+/// An encrypted blob and the plaintext image it decrypts to.
+type Saved = (Vec<u8>, Vec<u8>);
+
+/// Encrypted blob and plaintext image of the latest save: a complete
+/// `pharos.db.enc.new` (promoted later by `recover_leftovers`), or else
+/// `pharos.db.enc`. None on a fresh install. Reads only; changes no file.
+fn latest_save(enc_path: &Path, key: &[u8; 32]) -> Result<Option<Saved>, String> {
+    let pending = pending_path(enc_path);
+    if let Ok(blob) = fs::read(&pending) {
+        if let Ok(plain) = decrypt(key, &blob) {
+            return Ok(Some((blob, plain)));
+        }
+    }
+    if !enc_path.exists() {
+        return Ok(None);
+    }
+    let blob = fs::read(enc_path).map_err(|e| e.to_string())?;
+    let plain = decrypt(key, &blob)?;
+    Ok(Some((blob, plain)))
 }
 
 /// Writes `bytes` to `<path>.new`, fsyncs it and renames it over `path`, so the
@@ -241,25 +325,68 @@ pub(crate) fn run_migrations(conn: &Connection) -> Result<(), String> {
     )
     .map_err(|e| e.to_string())?;
 
-    for (name, sql) in MIGRATIONS {
-        let applied = conn
-            .query_row(
-                "SELECT 1 FROM schema_migrations WHERE name = ?1",
-                [name],
-                |_| Ok(()),
-            )
-            .optional()
-            .map_err(|e| e.to_string())?
-            .is_some();
-        if applied {
-            continue;
-        }
+    let pending = pending_migrations(conn)?;
+    for (name, sql) in MIGRATIONS.iter().filter(|(n, _)| pending.contains(n)) {
         conn.execute_batch(sql)
             .map_err(|e| format!("migration {name} failed: {e}"))?;
         conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
             .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// Names recorded in `schema_migrations` (none for a database without it).
+fn applied_migrations(conn: &Connection) -> Result<Vec<String>, String> {
+    let has_table = conn
+        .query_row(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'",
+            [],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?
+        .is_some();
+    if !has_table {
+        return Ok(Vec::new());
+    }
+    let mut stmt = conn
+        .prepare("SELECT name FROM schema_migrations ORDER BY name")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |r| r.get::<_, String>(0))
+        .map_err(|e| e.to_string())?;
+    rows.collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(|e| e.to_string())
+}
+
+/// Migrations applied to the database that this build does not ship: the
+/// database was written by a newer version of Pharos.
+fn unknown_migrations(conn: &Connection) -> Result<Vec<String>, String> {
+    Ok(applied_migrations(conn)?
+        .into_iter()
+        .filter(|name| !MIGRATIONS.iter().any(|(known, _)| known == name))
+        .collect())
+}
+
+/// Migrations of this build not yet applied to the database, in order.
+fn pending_migrations(conn: &Connection) -> Result<Vec<&'static str>, String> {
+    let applied = applied_migrations(conn)?;
+    Ok(MIGRATIONS
+        .iter()
+        .map(|(name, _)| *name)
+        .filter(|name| !applied.iter().any(|a| a == name))
+        .collect())
+}
+
+/// Why the local database could not be opened at startup (None when it
+/// opened). The app keeps running so the UI can explain it (SEC-06).
+pub struct DbStatus {
+    pub open_error: Option<String>,
+}
+
+#[tauri::command]
+pub fn db_open_error(status: tauri::State<DbStatus>) -> Option<String> {
+    status.open_error.clone()
 }
 
 fn load_or_create_key() -> Result<[u8; 32], String> {
@@ -428,7 +555,11 @@ mod tests {
             .unwrap();
         let image = src.serialize(DatabaseName::Main).unwrap();
         fs::write(dir.join("pharos.db.enc"), encrypt(&KEY, b"older").unwrap()).unwrap();
-        fs::write(dir.join("pharos.db.enc.new"), encrypt(&KEY, &image).unwrap()).unwrap();
+        fs::write(
+            dir.join("pharos.db.enc.new"),
+            encrypt(&KEY, &image).unwrap(),
+        )
+        .unwrap();
 
         let db = Db::open_with_key(&dir, KEY).unwrap();
         let v: String = db
@@ -438,7 +569,9 @@ mod tests {
             })
             .unwrap();
         assert_eq!(v, "newer");
-        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        // The promoted image had no migrations yet, so it was backed up first.
+        let backup = format!("pharos.db.enc.bak-{APP_VERSION}");
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc".to_string(), backup]);
         fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -459,4 +592,123 @@ mod tests {
         assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
         fs::remove_dir_all(&dir).unwrap();
     }
+
+    /// Writes `pharos.db.enc` as an older build would: only the migrations up
+    /// to `last` applied. Returns the encrypted bytes on disk.
+    fn write_db_migrated_until(dir: &Path, last: &str) -> Vec<u8> {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, \
+             applied_at TEXT NOT NULL DEFAULT (datetime('now')))",
+        )
+        .unwrap();
+        for (name, sql) in MIGRATIONS {
+            conn.execute_batch(sql).unwrap();
+            conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+                .unwrap();
+            if *name == last {
+                break;
+            }
+        }
+        ensure_workspace(&conn).unwrap();
+        let blob = encrypt(&KEY, &conn.serialize(DatabaseName::Main).unwrap()).unwrap();
+        fs::write(dir.join("pharos.db.enc"), &blob).unwrap();
+        blob
+    }
+
+    fn applied_count(db: &Db) -> usize {
+        db.with_conn(applied_migrations).unwrap().len()
+    }
+
+    #[test]
+    fn migrating_keeps_an_encrypted_backup_of_the_previous_file() {
+        let dir = temp_dir();
+        let before = write_db_migrated_until(&dir, "0011_sync_conflicts.sql");
+
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(applied_count(&db), MIGRATIONS.len());
+        drop(db);
+
+        let backup = format!("pharos.db.enc.bak-{APP_VERSION}");
+        assert_eq!(
+            file_names(&dir),
+            vec!["pharos.db.enc".to_string(), backup.clone()]
+        );
+        // The backup is the untouched encrypted file from before the upgrade…
+        let kept = fs::read(dir.join(&backup)).unwrap();
+        assert_eq!(kept, before);
+        let mut old = Connection::open_in_memory().unwrap();
+        load_image(&mut old, &decrypt(&KEY, &kept).unwrap()).unwrap();
+        assert_eq!(
+            pending_migrations(&old).unwrap().len(),
+            MIGRATIONS.len() - 11
+        );
+        // …and the migrated image was saved at once, so reopening migrates nothing.
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
+        assert_eq!(fs::read(dir.join(&backup)).unwrap(), before);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn no_backup_on_a_fresh_install_or_an_up_to_date_db() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        db.with_conn(ensure_workspace).unwrap();
+        db.persist().unwrap();
+        drop(db);
+        Db::open_with_key(&dir, KEY).unwrap();
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn refuses_a_db_from_a_newer_version_without_touching_it() {
+        let dir = temp_dir();
+        {
+            let db = Db::open_with_key(&dir, KEY).unwrap();
+            db.with_conn(|c| {
+                c.execute(
+                    "INSERT INTO schema_migrations (name) VALUES ('9999_from_the_future.sql')",
+                    [],
+                )
+                .map_err(|e| e.to_string())
+            })
+            .unwrap();
+            db.persist().unwrap();
+        }
+        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+
+        let err = Db::open_with_key(&dir, KEY).err().expect("must refuse");
+        assert!(err.starts_with(NEWER_DB_ERROR), "{err}");
+        assert!(err.contains("9999_from_the_future.sql"), "{err}");
+        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
+        assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn refuses_a_newer_pending_save_without_promoting_it() {
+        let dir = temp_dir();
+        write_db_migrated_until(&dir, "0011_sync_conflicts.sql");
+        let conn = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO schema_migrations (name) VALUES ('9999_from_the_future.sql')",
+            [],
+        )
+        .unwrap();
+        let newer = encrypt(&KEY, &conn.serialize(DatabaseName::Main).unwrap()).unwrap();
+        fs::write(dir.join("pharos.db.enc.new"), &newer).unwrap();
+        let before = fs::read(dir.join("pharos.db.enc")).unwrap();
+
+        assert!(Db::open_with_key(&dir, KEY).is_err());
+        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), before);
+        assert_eq!(fs::read(dir.join("pharos.db.enc.new")).unwrap(), newer);
+        fs::remove_dir_all(&dir).unwrap();
+    }
 }
+
+#[cfg(test)]
+#[path = "upgrade_tests.rs"]
+mod upgrade_tests;

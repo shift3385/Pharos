@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth, AuthScreen } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
 import { AppSplash } from "./AppSplash";
+import { DbErrorScreen } from "./DbErrorScreen";
+import { useDbOpenError } from "./dbStatus";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectsPage } from "@modules/projects";
 import { TemplatesPage } from "@modules/templates";
@@ -11,8 +13,10 @@ import { ProfilePage } from "@modules/profile";
 
 export function App() {
   const { status } = useAuth();
+  const dbError = useDbOpenError();
 
-  if (status === "loading") return <AppSplash />;
+  if (dbError) return <DbErrorScreen error={dbError} />;
+  if (status === "loading" || dbError === undefined) return <AppSplash />;
   if (status === "unauthenticated") return <AuthScreen />;
 
   return (

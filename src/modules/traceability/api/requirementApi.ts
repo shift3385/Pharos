@@ -159,11 +159,13 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user: the desktop store only returns or changes
+// requirements of projects that user owns (FIX-08).
 export const requirementApi = {
-  list: (projectId: string): Promise<Requirement[]> =>
-    isTauri() ? invoke("requirement_list", { projectId }) : browserApi.list(projectId),
-  get: (id: string): Promise<Requirement | null> =>
-    isTauri() ? invoke("requirement_get", { id }) : browserApi.get(id),
+  list: (projectId: string, userId: string): Promise<Requirement[]> =>
+    isTauri() ? invoke("requirement_list", { projectId, userId }) : browserApi.list(projectId),
+  get: (id: string, userId: string): Promise<Requirement | null> =>
+    isTauri() ? invoke("requirement_get", { id, userId }) : browserApi.get(id),
   create: (input: RequirementInput): Promise<Requirement | null> =>
     isTauri() ? invoke("requirement_create", { input }) : browserApi.create(input),
   update: (id: string, input: RequirementInput): Promise<Requirement | null> =>

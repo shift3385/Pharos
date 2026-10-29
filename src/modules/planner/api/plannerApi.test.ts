@@ -45,9 +45,9 @@ describe("plannerApi browser fallback", () => {
   it("stores and reads back an attachment", async () => {
     const a = await plannerApi.create(card("p1", "u1", "Bug"));
     await plannerApi.attachmentAdd(a!.id, "u1", "log.txt", "text/plain", btoa("hello"));
-    const list = await plannerApi.attachmentList(a!.id);
+    const list = await plannerApi.attachmentList(a!.id, "u1");
     expect(list).toHaveLength(1);
-    const data = await plannerApi.attachmentGet(list[0].id);
+    const data = await plannerApi.attachmentGet(list[0].id, "u1");
     expect(data?.name).toBe("log.txt");
     expect(atob(data!.dataBase64)).toBe("hello");
   });

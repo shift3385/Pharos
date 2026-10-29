@@ -18,8 +18,25 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - `npm run seed:test-user` (en `server/`) crea la cuenta local de pruebas del
   README en una base nueva o reseteada; no hace nada si ya existe y se niega a
   ejecutarse en producción.
+- **Copia antes de actualizar (SEC-06):** cuando una versión nueva va a
+  actualizar la base de datos local, antes guarda el archivo tal cual estaba,
+  cifrado, como `pharos.db.enc.bak-<versión>` en la carpeta de datos de la app.
+- **Datos de una versión más nueva (SEC-06):** si abres Pharos con datos que
+  guardó una versión más reciente, la app muestra una pantalla que lo explica y
+  no abre ni modifica esos datos.
 
 ### Cambiado
+
+- **Los IDs de caso, requisito y defecto nunca se reutilizan (DAT-01,
+  ADR-0010):** si borras `ATS_003`, el siguiente caso es `ATS_004`, no otra vez
+  `ATS_003`, porque un tag `@ATS_003` en la automatización no debe pasar a
+  señalar otro caso. Antes, los casos sí reutilizaban el número del borrado.
+- **El ID de un caso no cambia una vez asignado (DAT-01):** el campo es de solo
+  lectura al editar un caso existente.
+- Los campos de auditoría "creado por" y "modificado por" de proyectos, planes y
+  casos guardan ahora el usuario que hizo el cambio (antes guardaban el ID del
+  propio registro o el nombre del autor). La actualización corrige los registros
+  existentes con el dueño del proyecto (FIX-06).
 
 - La configuración de IA anterior se migra sola: el modelo que tenías pasa a
   ser el modelo de Gemini.
@@ -32,6 +49,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.
 - Un endpoint compatible personalizado debe usar `https` (http solo en
   `localhost`), para que la clave no viaje sin cifrar.
+- **Cada usuario solo ve y cambia lo suyo (FIX-08):** en un equipo con dos
+  cuentas, los casos, planes, requisitos y adjuntos de una no se pueden leer ni
+  modificar desde la otra. Borrar algo que no existe ya no deja un cambio
+  pendiente de sincronizar.
 
 ## [0.1.0-alpha.1] - 2026-10-28
 

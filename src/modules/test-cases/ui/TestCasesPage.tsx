@@ -30,6 +30,7 @@ export function TestCasesPage({
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const userId = user?.id ?? "";
   const toast = useToast();
   const [view, setView] = useState<View>({ kind: "list" });
   const [seed, setSeed] = useState<CaseImportResult["input"] | null>(null);
@@ -40,13 +41,13 @@ export function TestCasesPage({
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([aiAvailable(), projectHasPlan(projectId)]).then(([ai, plan]) => {
+    void Promise.all([aiAvailable(), projectHasPlan(projectId, userId)]).then(([ai, plan]) => {
       if (!cancelled) setCanSuggest(ai && plan);
     });
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [projectId, userId]);
 
   async function createSuggested(items: TestSuggestion[], provenance: AiProvenance) {
     const author = user ? `${user.firstName} ${user.lastName}` : "";
@@ -57,6 +58,7 @@ export function TestCasesPage({
         author,
         caseIdPrefix,
         caseIdDigits,
+        userId,
         // The whole case (title + description) came from the AI (IA-01).
         data: { description: s.description, gherkinLevel: "basic", aiProvenance: { case: provenance } },
       });
@@ -98,7 +100,7 @@ export function TestCasesPage({
       import("../export/batch"),
       import("jszip"),
     ]);
-    const files = await projectFeatureFiles(projectId, t);
+    const files = await projectFeatureFiles(projectId, userId, t);
     const zip = new JSZip();
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });

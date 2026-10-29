@@ -57,23 +57,27 @@ export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
 }
 
 /** Whether a project has a plan (cheap query for progress totals). */
-export async function projectHasPlan(projectId: string): Promise<boolean> {
-  return (await testPlanApi.byProject(projectId)) != null;
+export async function projectHasPlan(projectId: string, userId: string): Promise<boolean> {
+  return (await testPlanApi.byProject(projectId, userId)) != null;
 }
 
 /** Version of a project’s plan (null when it has none), e.g. for the version
  *  of documents derived from the plan such as the traceability matrix. */
-export async function projectPlanVersion(projectId: string): Promise<string | null> {
-  return (await testPlanApi.byProject(projectId))?.version ?? null;
+export async function projectPlanVersion(
+  projectId: string,
+  userId: string,
+): Promise<string | null> {
+  return (await testPlanApi.byProject(projectId, userId))?.version ?? null;
 }
 
 /** Builds the plan .xlsx buffer for a project (null if it has no plan). */
 export async function planWorkbookByProject(
   projectId: string,
+  userId: string,
   t: Translate,
   lang: string,
 ): Promise<{ name: string; buffer: ArrayBuffer } | null> {
-  const plan = await testPlanApi.byProject(projectId);
+  const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return null;
   const { filename, buffer } = await buildPlanXlsx(planToExportable(plan, t), lang);
   return { name: filename, buffer };

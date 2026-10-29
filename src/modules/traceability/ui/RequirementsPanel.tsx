@@ -29,13 +29,13 @@ export function RequirementsPanel({ projectId }: { projectId: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
-    setItems((await requirementApi.list(projectId)).sort(byKey));
+    setItems((await requirementApi.list(projectId, userId)).sort(byKey));
     setLoading(false);
   }
   useEffect(() => {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, userId]);
 
   const keys = items.map((r) => r.requirementKey);
 
