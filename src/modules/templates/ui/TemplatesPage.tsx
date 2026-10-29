@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
+import { useAuth } from "@modules/auth";
 import { templateApi } from "../api/templateApi";
 import { builtinSeeds, toBase64 } from "../model/builtins";
 import type { TemplateKind, TemplateSummary } from "../model/types";
@@ -20,6 +21,8 @@ type FormState =
 export function TemplatesPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -28,7 +31,7 @@ export function TemplatesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
-    setTemplates(await templateApi.list());
+    setTemplates(await templateApi.list(userId));
   }
 
   useEffect(() => {
@@ -39,7 +42,7 @@ export function TemplatesPage() {
       } catch {
         /* seeding is best-effort; listing still works */
       }
-      const list = await templateApi.list();
+      const list = await templateApi.list(userId);
       if (!cancelled) {
         setTemplates(list);
         setLoading(false);
@@ -48,12 +51,12 @@ export function TemplatesPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   async function download(tpl: TemplateSummary) {
     setBusy(tpl.id);
     try {
-      const full = await templateApi.get(tpl.id);
+      const full = await templateApi.get(tpl.id, userId);
       if (!full) return;
       const bin = atob(full.dataBase64);
       const bytes = new Uint8Array(bin.length);
@@ -90,7 +93,7 @@ export function TemplatesPage() {
         usagePrompt: values.usagePrompt,
         version: values.version,
         dataBase64: form.dataBase64,
-      });
+      }, userId);
       toast(t("templates.importedToast", { name: values.name }));
     } else {
       await templateApi.update(form.template.id, {
@@ -98,7 +101,7 @@ export function TemplatesPage() {
         description: values.description,
         usagePrompt: values.usagePrompt,
         version: values.version,
-      });
+      }, userId);
       toast(t("templates.updatedToast"));
     }
     setForm(null);
@@ -106,7 +109,7 @@ export function TemplatesPage() {
   }
 
   async function remove(tpl: TemplateSummary) {
-    await templateApi.remove(tpl.id);
+    await templateApi.remove(tpl.id, userId);
     await refresh();
   }
 

@@ -96,6 +96,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0016_key_counters.sql",
         include_str!("../migrations/0016_key_counters.sql"),
     ),
+    (
+        "0018_template_owner.sql",
+        include_str!("../migrations/0018_template_owner.sql"),
+    ),
 ];
 
 pub struct Db {

@@ -150,6 +150,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   cuentas, los casos, planes, requisitos y adjuntos de una no se pueden leer ni
   modificar desde la otra. Borrar algo que no existe ya no deja un cambio
   pendiente de sincronizar.
+- **Plantillas por usuario (FIX-08b):** una plantilla importada es de la cuenta
+  que la importó; otra cuenta del mismo equipo no la ve, no la descarga, no la
+  edita ni la borra. Las plantillas incluidas con la app las ven todas. Las
+  plantillas importadas antes de esta versión pasan a la única cuenta con
+  proyectos en el equipo; si hay varias, a la primera que abra Plantillas.
+  Editar o borrar una plantilla que no existe ya no deja un cambio pendiente.
 
 ### Cambios incompatibles
 

@@ -107,17 +107,20 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user (FIX-08b): the desktop store only lists, reads
+// or changes the built-in templates and that user's own. The browser fallback
+// ignores it until BASE-10 removes it.
 export const templateApi = {
-  list: (): Promise<TemplateSummary[]> =>
-    isTauri() ? invoke("template_list") : browserApi.list(),
-  get: (id: string): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_get", { id }) : browserApi.get(id),
-  create: (input: TemplateInput): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_create", { input }) : browserApi.create(input),
-  update: (id: string, meta: TemplateMeta): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_update", { id, meta }) : browserApi.update(id, meta),
-  remove: (id: string): Promise<void> =>
-    isTauri() ? invoke("template_delete", { id }) : browserApi.remove(id),
+  list: (userId: string): Promise<TemplateSummary[]> =>
+    isTauri() ? invoke("template_list", { userId }) : browserApi.list(),
+  get: (id: string, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_get", { id, userId }) : browserApi.get(id),
+  create: (input: TemplateInput, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_create", { input, userId }) : browserApi.create(input),
+  update: (id: string, meta: TemplateMeta, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_update", { id, meta, userId }) : browserApi.update(id, meta),
+  remove: (id: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("template_delete", { id, userId }) : browserApi.remove(id),
   seed: (items: TemplateSeedItem[]): Promise<void> =>
     isTauri() ? invoke("template_seed", { items }) : browserApi.seed(items),
 };

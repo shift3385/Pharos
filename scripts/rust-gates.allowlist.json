@@ -4,10 +4,6 @@
     {
       "file": "src-tauri/src/planner.rs",
       "owner": "A2 (merged; format when next touched)"
-    },
-    {
-      "file": "src-tauri/src/project.rs",
-      "owner": "A2 (merged; format when next touched)"
     }
   ],
   "clippy": []

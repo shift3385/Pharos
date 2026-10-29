@@ -263,7 +263,10 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   fails to change, without writing an oplog row.
   - A plan without a project is shown to nobody: the owner comes from the
     project, and the UI only reaches a plan through its project.
-  - Templates and the sync conflicts are not owner-scoped yet (FIX-08b, FIX-07).
+  - Templates (FIX-08b): a user template belongs to the account that imported
+    it (`templates.owner_id`, migration 0018); built-in ones (`owner_id` NULL)
+    are visible to every account and cannot be deleted. Sync conflicts, oplog
+    and cursor are per account since FIX-07.
   - The user id comes from the UI. This separates the accounts of one
     installation; it does not defend against a tampered frontend.
 - **Human-readable keys (DAT-01, ADR-0010):** case, requirement and defect keys
