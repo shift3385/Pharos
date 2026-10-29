@@ -1,17 +1,34 @@
-// Web sync client (spec §9 cross-cutting): in a plain browser (no Rust/local DB)
+// Web sync client (spec §9, ADR-0004): in a plain browser (no Rust/local DB)
 // the domain APIs read from and write to the backend document store, so the web
-// shows the same data as the desktop. Reads hydrate the existing localStorage
-// caches from a full pull; writes push a delta (fire-and-forget). The desktop is
-// unaffected (it keeps its Rust store + real sync).
-// Phase 8C: each web delta carries an HLC but no base, so the server resolves it
-// by last-write-wins (decision D1); if it loses, the web reloads the server copy.
+// shows the same data as the desktop. Reads hydrate the localStorage caches
+// from the backend; writes go through an outbox. The desktop is unaffected (it
+// keeps its Rust store + real sync).
+//
+// - Outbox (FIX-04): every web write is queued per account and pushed in
+//   batches. A push that fails for a transient reason stays queued and is
+//   retried (timer, reconnect, next write, "Sync now"); a delta the server
+//   refuses for its content is flagged and does not block the others.
+// - Conflicts (FIX-04): web deltas carry an HLC but no base, so the server
+//   resolves them by last-write-wins (decision D1). If the web loses, its edit
+//   is kept as a web conflict (both versions) and stays visible until the user
+//   picks one in the conflict panel; it is never overwritten silently. Later
+//   pulls keep the conflict's server side up to date.
+// - Pull (FIX-02): incremental from a per-account cursor, page by page.
+// - Per account (FIX-07): outbox, conflicts and cursor are keyed by user id,
+//   and the caches are emptied on sign-out and when another account syncs.
 
-import { getAccessToken } from "@modules/auth";
+import { getSession } from "@modules/auth";
 import { encodeHlc, parseHlc, recvHlc, tickHlc, type Hlc } from "../domain/hlc";
-
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3000";
+import type { ConflictResolution, SyncConflict } from "../domain/conflict";
+import {
+  batchDeltas,
+  isTransient,
+  pullPages,
+  sendIsolating,
+  syncRequest,
+  withRetry,
+  type RemoteDoc,
+} from "../api/transport";
 
 function isTauri(): boolean {
   return (
@@ -20,18 +37,66 @@ function isTauri(): boolean {
   );
 }
 
-export interface RemoteDoc {
+export type { RemoteDoc };
+
+/** Outcome of one sync cycle (desktop or web). */
+export interface SyncResult {
+  pushed: number;
+  pulled: number;
+  /** Deltas the server rejected in this cycle (now open conflicts). */
+  conflicts: number;
+  /** Deltas the server refused for their content (too large, invalid); they
+   *  stay pending and are reported to the user. */
+  skipped: number;
+}
+
+/** A web change waiting in the outbox (one per entity: the latest wins). */
+export interface WebDelta {
   entity: string;
   entityId: string;
-  payload: Record<string, unknown>;
+  op: "upsert" | "delete";
+  payload: object;
   revision: number;
   author: string;
-  deleted: boolean;
-  hlc?: string;
+  hlc: string;
+  /** Set when the server refused this delta for its content (too large,
+   *  invalid): it stays queued and visible, but is not sent again until the
+   *  entity is edited. */
+  refused?: boolean;
 }
+
+type WebConflict = SyncConflict & { author: string };
 
 const DEVICE_KEY = "pharos.deviceId";
 const HLC_KEY = "pharos.hlc";
+/** Account whose server data the caches hold (FIX-07). */
+const CACHE_OWNER_KEY = "pharos.sync.cacheOwner";
+const outboxKey = (userId: string) => `pharos.sync.outbox:${userId}`;
+const conflictsKey = (userId: string) => `pharos.sync.conflicts:${userId}`;
+const cursorKey = (userId: string) => `pharos.sync.cursor:${userId}`;
+
+/** Wait before retrying a transient outbox failure. */
+const RETRY_MS = 10_000;
+/** Flush rounds while new writes keep arriving during a flush. */
+const MAX_FLUSH_ROUNDS = 5;
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key: string, value: unknown) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+/** Tells the indicator the web pending/conflict counts changed. */
+function notify() {
+  window.dispatchEvent(new CustomEvent("pharos:sync-state"));
+}
 
 /** This browser's device id (HLC tie-break), created on first use. */
 function webDeviceId(): string {
@@ -81,52 +146,228 @@ const KEYS: Record<string, string> = {
   project: "pharos.projects",
   test_plan: "pharos.testPlans",
   test_case: "pharos.testCases",
+  requirement: "pharos.requirements",
+  planner_card: "pharos.plannerCards",
 };
 
-async function authHeader(): Promise<Record<string, string> | null> {
-  const token = await getAccessToken();
-  return token ? { authorization: `Bearer ${token}` } : null;
+/** Caches that keep deleted rows (with `deletedAt`): a requirement key is
+ *  never reused, so the numbering must still see it. */
+const KEEPS_TOMBSTONES = new Set(["requirement"]);
+
+const entityKey = (d: { entity: string; entityId: string }) =>
+  `${d.entity}:${d.entityId}`;
+
+export function loadOutbox(userId: string): WebDelta[] {
+  return readJson<WebDelta[]>(outboxKey(userId), []);
 }
 
-/** Pulls every document for the signed-in user (full pull, no browser cursor). */
-export async function webPull(): Promise<RemoteDoc[]> {
-  const h = await authHeader();
-  if (!h) return [];
-  const res = await fetch(`${API_URL}/sync/pull?since=0`, { headers: h });
-  if (!res.ok) throw new Error(`pull ${res.status}`);
-  const body = (await res.json()) as { docs?: RemoteDoc[] };
-  const docs = body.docs ?? [];
-  for (const d of docs) observeHlc(d.hlc);
-  return docs;
+export function webConflicts(userId: string): WebConflict[] {
+  return readJson<WebConflict[]>(conflictsKey(userId), []);
 }
 
-/** Pushes a single delta. Best-effort: callers fire-and-forget so a failure
- *  leaves the change in the local cache (kept by the merge on the next pull).
- *  Returns true when the server kept a newer version instead (LWW by HLC). */
-export async function webPush(
-  entity: string,
-  entityId: string,
-  op: "upsert" | "delete",
-  payload: object,
-  revision: number,
-  author: string,
-): Promise<boolean> {
-  const h = await authHeader();
-  if (!h) return false;
-  const hlc = nextWebHlc();
-  const res = await fetch(`${API_URL}/sync/push`, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...h },
-    body: JSON.stringify({
-      deltas: [{ entity, entityId, op, payload, revision, author, hlc }],
-    }),
+/** Web pending changes (queued deltas) and open web conflicts. */
+export function webLocalState(userId: string): {
+  pending: number;
+  conflicts: number;
+} {
+  return {
+    pending: loadOutbox(userId).length,
+    conflicts: webConflicts(userId).length,
+  };
+}
+
+/** Queues a web change; a newer change of the same entity replaces the queued
+ *  one (its payload is the full latest state), refused or not. */
+export function enqueue(userId: string, delta: WebDelta) {
+  const outbox = loadOutbox(userId).filter(
+    (d) => entityKey(d) !== entityKey(delta),
+  );
+  writeJson(outboxKey(userId), [...outbox, delta]);
+  notify();
+}
+
+type Side = SyncConflict["remote"];
+
+const sideOf = (doc: RemoteDoc): Side => ({
+  payload: doc.payload,
+  revision: doc.revision,
+  deleted: doc.deleted,
+  hlc: doc.hlc,
+});
+
+/** Records (or refreshes) the conflict between a web change the server
+ *  rejected and the version the server keeps. */
+function addConflict(userId: string, local: WebDelta, remote: RemoteDoc) {
+  const all = webConflicts(userId);
+  const existing = all.find((c) => entityKey(c) === entityKey(local));
+  if (existing) {
+    existing.remote = sideOf(remote);
+  } else {
+    all.push({
+      id: crypto.randomUUID(),
+      entity: local.entity,
+      entityId: local.entityId,
+      baseRevision: null,
+      local: {
+        payload: local.payload as Record<string, unknown>,
+        revision: local.revision,
+        deleted: local.op === "delete",
+        hlc: local.hlc,
+      },
+      remote: sideOf(remote),
+      detectedAt: new Date().toISOString(),
+      author: local.author,
+    });
+  }
+  writeJson(conflictsKey(userId), all);
+}
+
+/** A pulled document of an entity in conflict is the server's newest version:
+ *  the conflict's server side follows it, so neither choice in the panel acts
+ *  on a stale copy. Returns the conflicted entity keys. */
+function refreshConflicts(userId: string, docs: RemoteDoc[]): Set<string> {
+  const all = webConflicts(userId);
+  const open = new Map(all.map((c) => [entityKey(c), c]));
+  let changed = false;
+  for (const d of docs) {
+    const c = open.get(entityKey(d));
+    if (c && d.hlc !== c.remote.hlc) {
+      c.remote = sideOf(d);
+      changed = true;
+    }
+  }
+  if (changed) writeJson(conflictsKey(userId), all);
+  return new Set(open.keys());
+}
+
+let flushing: Promise<FlushResult> | null = null;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+interface FlushResult {
+  pushed: number;
+  conflicts: number;
+  skipped: number;
+}
+
+function scheduleRetry() {
+  if (retryTimer) return;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    void flushOutbox().catch(() => {
+      /* scheduled again inside when transient */
+    });
+  }, RETRY_MS);
+}
+
+/** Pushes the signed-in account's outbox in batches. Accepted deltas leave the
+ *  outbox; rejected ones become web conflicts (the edit is kept); deltas the
+ *  server refuses for their content are flagged and stay queued. A transient
+ *  failure schedules a retry; auth/version errors stop and are thrown. One
+ *  flush at a time; it repeats while writes arrive meanwhile. */
+export function flushOutbox(): Promise<FlushResult> {
+  flushing ??= doFlush().finally(() => {
+    flushing = null;
   });
-  if (!res.ok) throw new Error(`push ${res.status}`);
-  const body = (await res.json()) as { conflicts?: RemoteDoc[] };
-  return (body.conflicts?.length ?? 0) > 0;
+  return flushing;
 }
 
-/** Fire-and-forget push used inside the browser write fallbacks. */
+async function doFlush(): Promise<FlushResult> {
+  const session = await getSession();
+  const total: FlushResult = { pushed: 0, conflicts: 0, skipped: 0 };
+  if (!session) return total;
+  const { accessToken: token, userId } = session;
+  let deletedProject = false;
+  // Entries already tried in this flush (by entity + HLC): a refused one is not
+  // sent again until it is edited.
+  const tried = new Set<string>();
+  const send = (part: WebDelta[]) =>
+    withRetry(
+      () =>
+        syncRequest<{ conflicts?: RemoteDoc[] }>("/sync/push", token, {
+          method: "POST",
+          body: { deltas: part.map(({ refused: _r, ...d }) => d) },
+        }),
+      [500, 1500],
+    );
+  const settle = (part: WebDelta[], body: { conflicts?: RemoteDoc[] }) => {
+    const rejected = new Map(
+      (body.conflicts ?? []).map((c) => [entityKey(c), c]),
+    );
+    // Drop what was sent, unless the entity was edited again meanwhile (its
+    // newer delta has another HLC and stays queued).
+    const sent = new Map(part.map((d) => [entityKey(d), d.hlc]));
+    writeJson(
+      outboxKey(userId),
+      loadOutbox(userId).filter((d) => sent.get(entityKey(d)) !== d.hlc),
+    );
+    for (const d of part) {
+      const remote = rejected.get(entityKey(d));
+      if (remote) {
+        observeHlc(remote.hlc);
+        addConflict(userId, d, remote);
+        total.conflicts++;
+      } else {
+        total.pushed++;
+        if (d.entity === "project" && d.op === "delete") deletedProject = true;
+      }
+    }
+  };
+
+  for (let round = 0; round < MAX_FLUSH_ROUNDS; round++) {
+    const queue = loadOutbox(userId).filter(
+      (d) => !d.refused && !tried.has(`${entityKey(d)}@${d.hlc}`),
+    );
+    if (queue.length === 0) break;
+    for (const d of queue) tried.add(`${entityKey(d)}@${d.hlc}`);
+    for (const batch of batchDeltas(queue)) {
+      let refused: WebDelta[];
+      try {
+        refused = await sendIsolating(batch, send, settle);
+      } catch (e) {
+        if (isTransient(e)) scheduleRetry();
+        notify();
+        throw e;
+      }
+      if (refused.length > 0) {
+        const status = new Map(refused.map((d) => [entityKey(d), d.hlc]));
+        writeJson(
+          outboxKey(userId),
+          loadOutbox(userId).map((d) =>
+            status.get(entityKey(d)) === d.hlc ? { ...d, refused: true } : d,
+          ),
+        );
+        total.skipped += refused.length;
+        for (const d of refused)
+          console.warn("[web push] the server refused", d.entity, d.entityId);
+      }
+    }
+  }
+  if (retryTimer) {
+    clearTimeout(retryTimer);
+    retryTimer = null;
+  }
+  notify();
+  if (total.conflicts > 0) {
+    window.dispatchEvent(
+      new CustomEvent("pharos:sync-conflict", {
+        detail: { count: total.conflicts },
+      }),
+    );
+  }
+  if (total.skipped > 0) {
+    window.dispatchEvent(
+      new CustomEvent("pharos:sync-skipped", {
+        detail: { count: total.skipped },
+      }),
+    );
+  }
+  // The server cascaded the project's children (FIX-05): pull their tombstones.
+  if (deletedProject) void pullInto(session).catch(() => {});
+  return total;
+}
+
+/** Queues a web write and pushes it right away (fire-and-forget). Used inside
+ *  the browser write fallbacks; no-op on desktop (it has the oplog). */
 export function pushEntity(
   entity: string,
   entityId: string,
@@ -136,57 +377,210 @@ export function pushEntity(
   author: string,
 ): void {
   if (isTauri()) return;
-  void webPush(entity, entityId, op, payload, revision, author)
-    .then(async (lost) => {
-      if (!lost) return;
-      // Another device wrote a newer version: show the server's copy.
-      console.warn(
-        "[web push] a newer version exists on the server; reloading",
-        entity,
-        entityId,
-      );
-      await hydrateFromBackend();
-    })
-    .catch((e) => console.warn("[web push] failed:", e));
+  void (async () => {
+    const session = await getSession();
+    if (!session) return;
+    enqueue(session.userId, {
+      entity,
+      entityId,
+      op,
+      payload,
+      revision,
+      author,
+      hlc: nextWebHlc(),
+    });
+    await flushOutbox();
+  })().catch((e) => console.warn("[web push] queued, will retry:", e));
 }
 
 interface Row {
   id: string;
   revision?: number;
+  deletedAt?: string;
+  ownerId?: string;
+  projectId?: string;
 }
 
-/** Merges remote docs into a localStorage cache by id, last-write-wins by
- *  revision, keeping local-only rows (e.g. a write whose push has not landed). */
-function mergeInto(key: string, remote: RemoteDoc[]) {
-  let local: Row[] = [];
-  try {
-    local = JSON.parse(localStorage.getItem(key) ?? "[]") as Row[];
-  } catch {
-    /* ignore */
-  }
+/** Merges remote docs into a localStorage cache by id. The server copy wins,
+ *  except for entities held locally (queued in the outbox or in an open
+ *  conflict): their web edit stays visible until it is pushed or resolved. */
+function mergeInto(
+  entity: string,
+  remote: RemoteDoc[],
+  held: Set<string> = new Set(),
+) {
+  const key = KEYS[entity];
+  if (!key || remote.length === 0) return;
+  const local = readJson<Row[]>(key, []);
   const byId = new Map<string, Row>(local.map((x) => [x.id, x]));
   for (const d of remote) {
+    if (held.has(entityKey(d))) continue;
     if (d.deleted) {
-      byId.delete(d.entityId);
+      const existing = byId.get(d.entityId);
+      if (KEEPS_TOMBSTONES.has(entity) && existing) {
+        byId.set(d.entityId, {
+          ...existing,
+          deletedAt: existing.deletedAt ?? new Date().toISOString(),
+        });
+      } else {
+        byId.delete(d.entityId);
+      }
       continue;
     }
-    const existing = byId.get(d.entityId);
-    if (!existing || d.revision >= (existing.revision ?? 0)) {
-      byId.set(d.entityId, d.payload as unknown as Row);
-    }
+    byId.set(d.entityId, d.payload as unknown as Row);
   }
-  localStorage.setItem(key, JSON.stringify([...byId.values()]));
+  writeJson(key, [...byId.values()]);
 }
 
-/** Hydrates the browser caches from the backend (full pull). No-op on desktop.
- *  Returns the number of documents pulled. */
-export async function hydrateFromBackend(): Promise<number> {
-  if (isTauri()) return 0;
-  const docs = await webPull();
-  const byEntity: Record<string, RemoteDoc[]> = {};
-  for (const d of docs) (byEntity[d.entity] ??= []).push(d);
-  for (const [entity, key] of Object.entries(KEYS))
-    mergeInto(key, byEntity[entity] ?? []);
-  window.dispatchEvent(new CustomEvent("pharos:synced"));
-  return docs.length;
+/** Empties the browser caches of server data (not the outbox nor the
+ *  conflicts, which keep each account's unsent work). */
+export function clearWebCaches() {
+  for (const key of Object.values(KEYS)) localStorage.removeItem(key);
+  localStorage.removeItem(CACHE_OWNER_KEY);
+}
+
+/** Caches hold one account's data (FIX-07). When another account syncs they
+ *  are emptied first. Returns true when the caches were adopted from before
+ *  this version (no owner recorded), to rescue unsent rows after the pull. */
+function claimCaches(userId: string): boolean {
+  const owner = localStorage.getItem(CACHE_OWNER_KEY);
+  if (owner && owner !== userId) clearWebCaches();
+  localStorage.setItem(CACHE_OWNER_KEY, userId);
+  return owner === null;
+}
+
+/** Before this version a web write whose push failed lived only in the cache.
+ *  After the first full pull, rows of this account that the server does not
+ *  have are queued, so they are pushed instead of lost. */
+function rescueUnsent(userId: string, onServer: Set<string>) {
+  const projects = readJson<Row[]>(KEYS.project, []);
+  const mine = new Set(
+    projects.filter((p) => p.ownerId === userId).map((p) => p.id),
+  );
+  for (const [entity, key] of Object.entries(KEYS)) {
+    for (const row of readJson<Row[]>(key, [])) {
+      if (row.deletedAt || onServer.has(`${entity}:${row.id}`)) continue;
+      const owned =
+        entity === "project"
+          ? row.ownerId === userId
+          : row.projectId !== undefined && mine.has(row.projectId);
+      if (!owned) continue;
+      enqueue(userId, {
+        entity,
+        entityId: row.id,
+        op: "upsert",
+        payload: row,
+        revision: row.revision ?? 1,
+        author: "",
+        hlc: nextWebHlc(),
+      });
+    }
+  }
+}
+
+/** Entities whose web edit must not be replaced by a pull. */
+function heldKeys(userId: string, conflicted: Set<string>): Set<string> {
+  return new Set([...loadOutbox(userId).map(entityKey), ...conflicted]);
+}
+
+/** The account's pull cursor. If every cache is empty (site data cleared,
+ *  another account) it restarts at 0, so the caches are rebuilt. */
+function loadCursor(userId: string): string {
+  const cursor = readJson<string>(cursorKey(userId), "0");
+  const empty = Object.values(KEYS).every(
+    (k) => readJson<unknown[]>(k, []).length === 0,
+  );
+  return empty ? "0" : cursor;
+}
+
+/** Pulls every page after the account's cursor into the caches. */
+async function pullInto(session: {
+  accessToken: string;
+  userId: string;
+}): Promise<number> {
+  const { accessToken: token, userId } = session;
+  const adopted = claimCaches(userId);
+  const since = loadCursor(userId);
+  const seen = new Set<string>();
+  const pulled = await pullPages(token, since, (page) => {
+    const conflicted = refreshConflicts(userId, page.docs);
+    const held = heldKeys(userId, conflicted);
+    const byEntity: Record<string, RemoteDoc[]> = {};
+    for (const d of page.docs) {
+      observeHlc(d.hlc);
+      seen.add(entityKey(d));
+      (byEntity[d.entity] ??= []).push(d);
+    }
+    for (const [entity, docs] of Object.entries(byEntity))
+      mergeInto(entity, docs, held);
+    writeJson(cursorKey(userId), String(page.cursor));
+  });
+  if (adopted && since === "0") {
+    rescueUnsent(userId, seen);
+    if (loadOutbox(userId).length > 0) void flushOutbox().catch(() => {});
+  }
+  if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
+  return pulled;
+}
+
+/** Web sync cycle: push the outbox, then pull changes since the cursor into
+ *  the browser caches. No-op on desktop. Throws on network/auth/version
+ *  errors (the outbox keeps its deltas). */
+export async function hydrateFromBackend(): Promise<SyncResult> {
+  const none = { pushed: 0, pulled: 0, conflicts: 0, skipped: 0 };
+  if (isTauri()) return none;
+  const session = await getSession();
+  if (!session) return none;
+  const { pushed, conflicts, skipped } = await flushOutbox();
+  const pulled = await pullInto(session);
+  return { pushed, pulled, conflicts, skipped };
+}
+
+/** Resolves a web conflict for the whole entity. `local` pushes the web
+ *  version again with a newer HLC (it then wins last-write-wins); `remote`
+ *  takes the server version into the cache. */
+export async function resolveWebConflict(
+  userId: string,
+  id: string,
+  resolution: ConflictResolution,
+): Promise<void> {
+  const all = webConflicts(userId);
+  const c = all.find((x) => x.id === id);
+  if (!c) throw new Error("conflict not found");
+  writeJson(
+    conflictsKey(userId),
+    all.filter((x) => x.id !== id),
+  );
+  if (resolution === "local") {
+    observeHlc(c.remote.hlc);
+    enqueue(userId, {
+      entity: c.entity,
+      entityId: c.entityId,
+      op: c.local.deleted ? "delete" : "upsert",
+      payload: c.local.payload ?? { id: c.entityId },
+      revision: c.remote.revision + 1,
+      author: c.author,
+      hlc: nextWebHlc(),
+    });
+    await flushOutbox().catch(() => {
+      /* stays queued; retried */
+    });
+  } else {
+    mergeInto(c.entity, [
+      {
+        entity: c.entity,
+        entityId: c.entityId,
+        payload: c.remote.payload ?? {},
+        revision: c.remote.revision,
+        deleted: c.remote.deleted,
+        hlc: c.remote.hlc,
+      },
+    ]);
+  }
+  notify();
+}
+
+// Signing out empties the caches, so the next account never sees them.
+if (typeof window !== "undefined" && !isTauri()) {
+  window.addEventListener("pharos:signed-out", clearWebCaches);
 }

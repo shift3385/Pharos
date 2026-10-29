@@ -1,17 +1,32 @@
 // Offline sync client surface (Phase 8, spec §9). Reads the local oplog's pending
 // count for the status indicator and runs the delta push/pull against the
-// backend. The desktop holds the local DB + oplog, so sync is desktop-only.
+// backend. The desktop holds the local DB + oplog; in the browser the same
+// surface is served by `web/webSync.ts` (outbox + web conflicts).
 // Phase 8C: deltas carry their base + HLC; the server rejects diverged ones and
 // they are kept as conflicts for the conflict panel (never silently overwritten).
+// Everything runs for the signed-in account only (FIX-07); pushes go in batches
+// with retries (FIX-03) and pulls page until the server has no more (FIX-02).
 
-import { getAccessToken } from "@modules/auth";
+import { getSession } from "@modules/auth";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
+import {
+  batchDeltas,
+  pullPages,
+  sendIsolating,
+  syncRequest,
+  withRetry,
+  type RemoteDoc,
+} from "./transport";
+import {
+  hydrateFromBackend,
+  resolveWebConflict,
+  webConflicts,
+  webLocalState,
+  type SyncResult,
+} from "../web/webSync";
 
+export type { SyncResult };
 export type SyncStatus = "offline" | "conflicts" | "pending" | "synced";
-
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3000";
 
 /** One pending delta as built by Rust (`sync::Delta`). */
 export interface PendingDelta {
@@ -25,14 +40,6 @@ export interface PendingDelta {
   baseRevision: number | null;
   baseHlc: string | null;
   opIds: string[];
-}
-interface RemoteDoc {
-  entity: string;
-  entityId: string;
-  payload: Record<string, unknown>;
-  revision: number;
-  deleted: boolean;
-  hlc: string;
 }
 
 /** Pure status derivation for the indicator (testable). Open conflicts win
@@ -49,10 +56,10 @@ export function syncStatus(
 
 /** Splits a push into the deltas the server accepted and the rejected ones,
  *  matched by entity against the conflicts it returned (pure, testable). */
-export function splitPushed(
-  deltas: PendingDelta[],
+export function splitPushed<T extends { entity: string; entityId: string }>(
+  deltas: T[],
   conflicts: Pick<RemoteDoc, "entity" | "entityId">[],
-): { accepted: PendingDelta[]; rejected: PendingDelta[] } {
+): { accepted: T[]; rejected: T[] } {
   const key = (d: { entity: string; entityId: string }) =>
     `${d.entity}:${d.entityId}`;
   const conflicted = new Set(conflicts.map(key));
@@ -72,14 +79,19 @@ function isTauri(): boolean {
 export interface LocalSyncState {
   pending: number;
   conflicts: number;
+  /** Desktop: pending changes with no owner yet, which cannot sync. */
+  orphans?: number;
 }
 
-/** Local mutations not yet synced and open conflicts (both 0 in the browser
- *  fallback, which has no oplog). */
+/** The signed-in account's changes not yet synced and its open conflicts. */
 export async function syncLocalState(): Promise<LocalSyncState> {
-  if (!isTauri()) return { pending: 0, conflicts: 0 };
+  const session = await getSession();
+  if (!session) return { pending: 0, conflicts: 0 };
+  if (!isTauri()) return webLocalState(session.userId);
   const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<LocalSyncState>("oplog_pending_count");
+  return invoke<LocalSyncState>("oplog_pending_count", {
+    userId: session.userId,
+  });
 }
 
 /** Count of local mutations not yet synced to the backend. */
@@ -87,73 +99,91 @@ export async function syncPendingCount(): Promise<number> {
   return (await syncLocalState()).pending;
 }
 
-export interface SyncResult {
-  pushed: number;
-  pulled: number;
-  /** Deltas the server rejected in this cycle (now open conflicts). */
-  conflicts: number;
-}
-
-/** Runs one sync cycle: push pending local deltas, mark the accepted ones
- *  synced and record the rejected ones as conflicts, then pull remote changes
- *  since the stored cursor and apply them. Desktop-only (the local DB/oplog
- *  live in Rust). Throws on network/auth errors; callers toast. */
+/** Runs one desktop sync cycle for the signed-in account: push its pending
+ *  deltas in batches (each accepted batch is marked synced at once, rejected
+ *  deltas become conflicts, deltas the server refuses for their content are
+ *  skipped and stay pending), then pull every page after its cursor. Throws
+ *  on network/auth/version errors (after retries); callers toast. */
 export async function syncNow(): Promise<SyncResult> {
   if (!isTauri()) throw new Error("sync-desktop-only");
-  const token = await getAccessToken();
-  if (!token) throw new Error("not-authenticated");
+  // Token and user from one read: never push one account's changes with
+  // another account's token (FIX-07).
+  const session = await getSession();
+  if (!session) throw new Error("not-authenticated");
+  const { accessToken: token, userId } = session;
   const { invoke } = await import("@tauri-apps/api/core");
-  const authHeader = { authorization: `Bearer ${token}` };
 
   // Push.
-  const { deltas } = await invoke<{ deltas: PendingDelta[] }>("oplog_pending");
-  let accepted: PendingDelta[] = [];
-  let rejected: RemoteDoc[] = [];
-  if (deltas.length > 0) {
-    const res = await fetch(`${API_URL}/sync/push`, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...authHeader },
-      body: JSON.stringify({
-        deltas: deltas.map(({ opIds: _opIds, ...d }) => d),
-      }),
-    });
-    if (!res.ok) throw new Error(`push ${res.status}`);
-    const body = (await res.json()) as { conflicts?: RemoteDoc[] };
-    rejected = body.conflicts ?? [];
-    accepted = splitPushed(deltas, rejected).accepted;
-    await invoke("oplog_mark_synced", { deltas: accepted });
-    // The server's versions of rejected deltas: applying them while the local
-    // change is still pending records the conflict instead of overwriting.
-    if (rejected.length > 0) await invoke("apply_remote", { docs: rejected });
-  }
-
-  // Pull. The cursor lives in the local DB (wiped with the data), so an empty
-  // DB re-pulls everything.
-  const cursor = await invoke<string>("sync_cursor_get");
-  const res = await fetch(`${API_URL}/sync/pull?since=${cursor}`, {
-    headers: authHeader,
+  const { deltas } = await invoke<{ deltas: PendingDelta[] }>("oplog_pending", {
+    userId,
   });
-  if (!res.ok) throw new Error(`pull ${res.status}`);
-  const body = (await res.json()) as { docs: RemoteDoc[]; cursor: number };
-  if (body.docs.length > 0) {
-    await invoke("apply_remote", { docs: body.docs });
-    // Tell open pages to reload from the (now updated) local DB.
-    window.dispatchEvent(new CustomEvent("pharos:synced"));
+  let pushed = 0;
+  let conflicts = 0;
+  let skipped = 0;
+  const send = (part: PendingDelta[]) =>
+    withRetry(() =>
+      syncRequest<{ conflicts?: RemoteDoc[] }>("/sync/push", token, {
+        method: "POST",
+        body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
+      }),
+    );
+  for (const batch of batchDeltas(deltas)) {
+    // A delta the server refuses for its content (e.g. 413) is skipped and
+    // stays pending; the other batches and the pull still run.
+    const refused = await sendIsolating(batch, send, async (part, body) => {
+      const rejected = body.conflicts ?? [];
+      const { accepted } = splitPushed(part, rejected);
+      await invoke("oplog_mark_synced", { userId, deltas: accepted });
+      // The server's versions of rejected deltas: applying them while the
+      // local change is still pending records the conflict instead of
+      // overwriting.
+      if (rejected.length > 0) {
+        await invoke("apply_remote", { userId, docs: rejected });
+      }
+      pushed += accepted.length;
+      conflicts += rejected.length;
+    });
+    skipped += refused.length;
+    for (const d of refused)
+      console.warn("[sync] the server refused", d.entity, d.entityId);
   }
-  await invoke("sync_cursor_set", { value: String(body.cursor) });
 
-  return {
-    pushed: accepted.length,
-    pulled: body.docs.length,
-    conflicts: rejected.length,
-  };
+  // Pull. The cursor lives in the local DB (wiped with the data), one per
+  // account, so an empty DB re-pulls everything.
+  const cursor = await invoke<string>("sync_cursor_get", { userId });
+  const pulled = await pullPages(token, cursor, async (page) => {
+    if (page.docs.length > 0) {
+      await invoke("apply_remote", { userId, docs: page.docs });
+    }
+    await invoke("sync_cursor_set", { userId, value: String(page.cursor) });
+  });
+  // Tell open pages to reload from the (now updated) local DB.
+  if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
+  if (skipped > 0) {
+    window.dispatchEvent(
+      new CustomEvent("pharos:sync-skipped", { detail: { count: skipped } }),
+    );
+  }
+
+  return { pushed, pulled, conflicts, skipped };
 }
 
-/** Open conflicts, oldest first (desktop only; none in the browser). */
+/** One sync on either platform: the desktop cycle, or on the web the outbox
+ *  flush + incremental pull. */
+export async function syncAny(): Promise<SyncResult> {
+  if (isTauri()) return syncNow();
+  return hydrateFromBackend();
+}
+
+/** Open conflicts of the signed-in account, oldest first. */
 export async function listConflicts(): Promise<SyncConflict[]> {
-  if (!isTauri()) return [];
+  const session = await getSession();
+  if (!session) return [];
+  if (!isTauri()) return webConflicts(session.userId);
   const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<SyncConflict[]>("sync_conflicts_list");
+  return invoke<SyncConflict[]>("sync_conflicts_list", {
+    userId: session.userId,
+  });
 }
 
 /** Keeps one version of the entity. `local` re-bases this device's version on
@@ -162,7 +192,17 @@ export async function resolveConflict(
   id: string,
   resolution: ConflictResolution,
 ): Promise<void> {
-  const { invoke } = await import("@tauri-apps/api/core");
-  await invoke("sync_conflict_resolve", { id, resolution });
+  const session = await getSession();
+  if (!session) throw new Error("not-authenticated");
+  if (!isTauri()) {
+    await resolveWebConflict(session.userId, id, resolution);
+  } else {
+    const { invoke } = await import("@tauri-apps/api/core");
+    await invoke("sync_conflict_resolve", {
+      userId: session.userId,
+      id,
+      resolution,
+    });
+  }
   window.dispatchEvent(new CustomEvent("pharos:synced"));
 }

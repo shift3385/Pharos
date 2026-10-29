@@ -1,3 +1,4 @@
+import { pushEntity } from "@modules/sync-offline";
 import type {
   AttachmentData,
   AttachmentSummary,
@@ -15,7 +16,8 @@ function isTauri(): boolean {
 }
 
 // Browser fallback so the board works in `vite dev`. The real, encrypted store
-// (cards + attachment blobs) lives in Rust.
+// (cards + attachment blobs) lives in Rust. Card writes are pushed to the
+// backend (SYNC-04a); attachments stay local until SYNC-04b.
 const KEY = "pharos.plannerCards";
 const ATT_KEY = "pharos.plannerAttachments";
 
@@ -54,6 +56,12 @@ function nextDefectKey(cards: PlannerCard[], projectId: string): string {
   return `${DEFECT_KEY_PREFIX}${String(max + 1).padStart(3, "0")}`;
 }
 
+/** Sends a card's latest state (or its tombstone) to the backend. */
+function push(card: PlannerCard, op: "upsert" | "delete" = "upsert") {
+  const ownerId = (card as { ownerId?: string }).ownerId ?? "";
+  pushEntity("planner_card", card.id, op, card, card.revision, ownerId);
+}
+
 const browserApi = {
   async list(projectId: string, ownerId: string): Promise<PlannerCard[]> {
     return loadAll()
@@ -87,6 +95,7 @@ const browserApi = {
       revision: 1,
     } as PlannerCard & { ownerId: string };
     saveAll([...all, card]);
+    push(card);
     return card;
   },
   async update(id: string, input: PlannerCardInput): Promise<PlannerCard | null> {
@@ -106,10 +115,13 @@ const browserApi = {
       revision: all[idx].revision + 1,
     };
     saveAll(all);
+    push(all[idx]);
     return all[idx];
   },
   async remove(id: string): Promise<void> {
+    const card = loadAll().find((c) => c.id === id);
     saveAll(loadAll().filter((c) => c.id !== id));
+    if (card) push({ ...card, revision: card.revision + 1 }, "delete");
     saveAtt(loadAtt().filter((a) => a.cardId !== id));
   },
   async reorder(status: CardStatus, ids: string[]): Promise<void> {
@@ -119,9 +131,11 @@ const browserApi = {
       if (c) {
         c.status = status;
         c.position = i;
+        c.revision += 1;
       }
     });
     saveAll(all);
+    for (const c of all) if (ids.includes(c.id)) push(c);
   },
   async attachmentAdd(
     cardId: string,

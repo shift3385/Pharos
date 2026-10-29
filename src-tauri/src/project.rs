@@ -180,7 +180,7 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
 /// Soft-deletes a project and cascades the soft-delete to its plan, cases,
 /// planner cards and requirements so nothing is left orphaned (the hard-delete
 /// purge runs later).
-fn delete_project(conn: &Connection, id: &str, author: &str) -> Result<(), String> {
+pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Result<(), String> {
     for table in ["projects", "test_plans", "test_cases", "planner_cards", "requirements"] {
         let sql = format!(
             "UPDATE {table} SET deleted_at = datetime('now') \

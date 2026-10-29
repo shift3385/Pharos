@@ -25,6 +25,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0017](0017-ciclos-y-configuraciones.md)           | Ciclo de pruebas y matriz de configuraciones (CYC-01)                                | Aceptado | 2026-10-28 |
 | [0018](0018-campos-personalizados.md)              | Campos personalizados tipados por proyecto y tipo de caso (FLD-01)                   | Aceptado | 2026-10-28 |
 | [0019](0019-diseno-workspaces-compartidos.md)      | Diseño técnico de los workspaces compartidos con roles (TEN-01)                      | Aceptado | 2026-10-28 |
+| [0020](0020-sync-por-usuario-cascada-y-version.md) | Sync por usuario, cascada en el servidor y versión del cliente                       | Aceptado | 2026-10-28 |
 
 El 0010 (DAT-01, pista A2) y los 0020–0022 (pistas A1, B1 y B2) están en otras
 ramas; el coordinador los ordena al fusionar. Los ADR 0011 a 0019 son la compuerta C

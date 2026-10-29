@@ -1,11 +1,23 @@
 import { z } from "zod";
 
+/** Entities that sync (Phase 8B core + SYNC-04a requirements and planner
+ *  cards). Templates and attachments follow in SYNC-04b. */
+export const SYNCED_ENTITIES = ["project", "test_plan", "test_case", "requirement", "planner_card"] as const;
+
+/** Children removed with their project (FIX-05): their payload carries
+ *  `projectId`. */
+export const PROJECT_CHILDREN = ["test_plan", "test_case", "requirement", "planner_card"] as const;
+
+/** Most deltas per push and documents per pull page. Clients send batches
+ *  and page through pulls (FIX-02/03). */
+export const MAX_PUSH_DELTAS = 500;
+export const MAX_PULL_LIMIT = 500;
+
 /** A change pushed by a client: the full latest state of one entity, or a
- *  tombstone (op: "delete"). Only core entities sync in Phase 8B. Since 8C a
- *  delta carries its HLC and, from the desktop, the base version it was built
- *  on (for conflict detection). */
+ *  tombstone (op: "delete"). Since 8C a delta carries its HLC and, from the
+ *  desktop, the base version it was built on (for conflict detection). */
 export const deltaSchema = z.object({
-  entity: z.enum(["project", "test_plan", "test_case"]),
+  entity: z.enum(SYNCED_ENTITIES),
   entityId: z.string().min(1),
   op: z.enum(["upsert", "delete"]),
   payload: z.record(z.unknown()).default({}),
@@ -17,11 +29,12 @@ export const deltaSchema = z.object({
 });
 
 export const pushSchema = z.object({
-  deltas: z.array(deltaSchema).max(1000),
+  deltas: z.array(deltaSchema).max(MAX_PUSH_DELTAS),
 });
 
 export const pullSchema = z.object({
   since: z.coerce.number().int().nonnegative().default(0),
+  limit: z.coerce.number().int().min(1).max(MAX_PULL_LIMIT).default(MAX_PULL_LIMIT),
 });
 
 export type Delta = z.infer<typeof deltaSchema>;

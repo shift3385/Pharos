@@ -241,13 +241,17 @@ fn reorder(
     ids: &[String],
 ) -> Result<(), String> {
     for (i, id) in ids.iter().enumerate() {
-        conn.execute(
+        let moved = conn.execute(
             "UPDATE planner_cards SET status = ?2, position = ?3, \
              updated_at = datetime('now'), revision = revision + 1 \
              WHERE id = ?1 AND owner_id = ?4 AND deleted_at IS NULL",
             params![id, status, i as i64, owner_id],
         )
         .map_err(|e| e.to_string())?;
+        // A move changes status/position, which sync carries (SYNC-04a).
+        if moved > 0 {
+            oplog::record(conn, "planner_card", id, "upsert", "{}", 0, owner_id)?;
+        }
     }
     Ok(())
 }

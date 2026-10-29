@@ -4,10 +4,12 @@ import type { Delta } from "./sync.schemas";
 export interface StoredVersion {
   revision: number;
   hlc: string;
+  deleted?: boolean;
 }
 
-/** write: store the delta · noop: already stored (retried push) · conflict:
- *  reject it and send the stored version back to the client. */
+/** write: store the delta · noop: already stored (retried push, or deleting
+ *  what is already deleted) · conflict: reject it and send the stored version
+ *  back to the client. */
 export type Decision = "write" | "noop" | "conflict";
 
 type Versioned = Pick<Delta, "revision" | "hlc">;
@@ -25,10 +27,12 @@ export function isNewer(a: Versioned, b: StoredVersion): boolean {
  *  its base fast-forwards only if the server still holds exactly that base;
  *  otherwise both sides changed since then and it is a conflict for the user.
  *  A delta without a base (web client, or pending before the upgrade) falls
- *  back to last-write-wins. */
+ *  back to last-write-wins. Deleting what is already deleted (e.g. by a
+ *  project cascade, FIX-05) changes nothing and is not a conflict. */
 export function decide(current: StoredVersion | null, d: Delta): Decision {
   if (!current) return "write";
   if (d.hlc && current.hlc === d.hlc) return "noop";
+  if (d.op === "delete" && current.deleted) return "noop";
   if (d.baseRevision != null) {
     const baseHlc = d.baseHlc ?? "";
     return current.revision === d.baseRevision && current.hlc === baseHlc ? "write" : "conflict";
