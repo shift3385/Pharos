@@ -127,6 +127,24 @@ describe("domain API", () => {
     expect(gone.status).toBe(409);
   });
 
+  it("an item deleted elsewhere is its own refusal, not a version to overwrite", async () => {
+    const token = await tokenFor();
+    const p = await project(token);
+    await call(token, "DELETE", `/api/projects/${p.id}`);
+    const upd = await call(token, "PUT", `/api/projects/${p.id}`, { input: { name: "Mine" }, revision: 1 });
+    expect(upd).toMatchObject({ status: 409, body: { code: "deleted_elsewhere" } });
+    expect(upd.body.current).toBeUndefined();
+  });
+
+  it("writes timestamps in the desktop's form", async () => {
+    const token = await tokenFor();
+    const p = await project(token);
+    expect(p).toMatchObject({
+      createdAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/),
+      updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/),
+    });
+  });
+
   it("a web write wins over the version it replaced, by HLC", async () => {
     const token = await tokenFor();
     const future = "999999999999999-00000-desk";
@@ -235,13 +253,17 @@ describe("domain API", () => {
         { requirementKey: "REQ-002", title: "Back from the dead" },
         { title: "New one" },
         { title: "  " },
+        // The same key twice in one file: the second row updates the first.
+        { requirementKey: "IMP-1", title: "Imported" },
+        { requirementKey: "IMP-1", title: "Imported twice" },
       ],
     });
-    expect(imported.body).toEqual({ created: 1, updated: 1, skipped: ["REQ-002"] });
+    expect(imported.body).toEqual({ created: 2, updated: 2, skipped: ["REQ-002"] });
     const list = (await call(token, "GET", `/api/requirements?projectId=${p.id}`)).body;
-    expect(list.map((r: { requirementKey: string; title: string }) => [r.requirementKey, r.title])).toEqual([
-      ["REQ-001", "Pay v3"],
-      ["REQ-003", "New one"],
+    expect(list.map((r: { requirementKey: string; title: string; revision: number }) => [r.requirementKey, r.title, r.revision])).toEqual([
+      ["IMP-1", "Imported twice", 2],
+      ["REQ-001", "Pay v3", 3],
+      ["REQ-003", "New one", 1],
     ]);
   });
 
@@ -270,12 +292,11 @@ describe("domain API", () => {
       204,
     );
     const list = (await call(token, "GET", `/api/planner-cards?projectId=${p.id}`)).body;
-    expect(list.map((c: { id: string; status: string; position: number }) => [c.id, c.status, c.position])).toEqual([
-      // Same position: the older card first (`planner.rs`).
-      [t2.id, "done", 0],
-      [d1.id, "todo", 0],
-      [t1.id, "done", 1],
-    ]);
+    // Ordered by position (`planner.rs`); each column keeps the dragged order.
+    const cards = list as { id: string; status: string; position: number }[];
+    expect(cards.map((c) => c.position)).toEqual([0, 0, 1]);
+    expect(cards.filter((c) => c.status === "done").map((c) => c.id)).toEqual([t2.id, t1.id]);
+    expect(cards.find((c) => c.id === d1.id)).toMatchObject({ status: "todo", position: 0 });
   });
 
   it("edits the profile names but not the role", async () => {

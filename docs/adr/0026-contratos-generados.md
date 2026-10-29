@@ -63,5 +63,11 @@
   - Un campo que Rust deja de enviar y la UI lee, o que la UI deja de enviar y
     Rust necesita, rompe `tsc`.
   - `ts-rs` y sus dependencias pasan por `cargo deny` (licencias MIT/Apache).
-  - Las uniones estrechas del TS no se comprueban contra Rust (Rust tiene
-    `String`); si hace falta, el siguiente paso es un enum Rust.
+  - `Covers` comprueba los nombres de campo y los tipos básicos. Cuando los
+    dos lados son uniones de literales (un enum en ambos) exige la misma
+    unión; hoy Rust exporta `String` en esos campos, así que las uniones
+    estrechas del TS no se comprueban contra Rust. Si hace falta, el
+    siguiente paso es un enum Rust.
+  - Las fechas (`createdAt`, `updatedAt`) tienen la forma del escritorio,
+    `YYYY-MM-DD HH:MM:SS` en UTC, en los dos lados; `documents.json` lo
+    afirma en el test de Rust y en el del servidor.

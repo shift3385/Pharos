@@ -184,11 +184,19 @@
     "orphans": "{{count}} change(s) without a known project yet; they will be sent once it arrives",
     "web": {
       "staleWrite": "This item was changed elsewhere since you opened it. Your edit is still in the form: save again to replace that version, or close without saving to keep it.",
+      "deletedElsewhere": "This item was deleted elsewhere since you opened it. Your edit is still in the form: copy what you need before closing it.",
       "keyTaken": "That ID is already used by another item of the project. Choose another one or leave it empty to number it automatically.",
       "keyRetired": "That ID belonged to a deleted item and is never reused. Choose another one or leave it empty.",
       "invalidKey": "That ID is not valid. Use letters, digits and - _ . : only.",
       "desktopOnly": "Only available in the desktop app for now.",
-      "legacyLeftovers": "{{count}} item(s) from an older web version could not be sent to the server. They were saved to a file in your downloads."
+      "legacyLeftovers": "{{count}} item(s) from an older web version could not be sent to the server. Download them from the notice at the top.",
+      "legacyNotice": "{{count}} item(s) from an older web version not sent",
+      "legacyDownload": "Download",
+      "legacyDiscard": "Discard",
+      "legacySaved": "I saved the file",
+      "legacyDiscardTitle": "Items from an older web version",
+      "legacyDiscardConfirm": "Discard the {{count}} item(s) without downloading them? They cannot be recovered.",
+      "legacySavedConfirm": "Remove the {{count}} item(s) from this browser? Check first that the downloaded file is in your downloads."
     },
     "conflict": {
       "review": "Review conflicts",

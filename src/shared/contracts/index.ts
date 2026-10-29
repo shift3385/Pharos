@@ -16,10 +16,36 @@ type RequiredKeys<T> = {
   [K in keyof T]-?: object extends Pick<T, K> ? never : K;
 }[keyof T];
 
+/** A union of literal values (`"draft" | "approved"`, an enum), as opposed to a
+ *  plain `string` or `number`. */
+type IsLiteral<T> = [T] extends [string]
+  ? string extends T
+    ? false
+    : true
+  : [T] extends [number]
+    ? number extends T
+      ? false
+      : true
+    : false;
+
 /** Two field types are compatible when one fits in the other (null and
  *  undefined aside): `"draft" | "approved"` against `string`, a typed `data`
- *  against `unknown`. A string against a number is not. */
-type Compatible<A, B> = [A] extends [B] ? true : [B] extends [A] ? true : false;
+ *  against `unknown`. A string against a number is not. When both sides are
+ *  literal unions (an enum on both), they must be the same union: a value added
+ *  or renamed on one side breaks the contract. Today Rust exports `String`
+ *  for every such field, so only the field names and basic types are checked
+ *  against Rust (ADR-0026). */
+type Compatible<A, B> =
+  IsLiteral<A> extends true
+    ? IsLiteral<B> extends true
+      ? [A] extends [B]
+        ? [B] extends [A]
+          ? true
+          : false
+        : false
+      : OneFits<A, B>
+    : OneFits<A, B>;
+type OneFits<A, B> = [A] extends [B] ? true : [B] extends [A] ? true : false;
 
 /** The fields that break the contract: required by the consumer but absent
  *  from the producer, or present in both with incompatible types. */

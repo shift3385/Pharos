@@ -78,11 +78,18 @@ memory) and no history, and a desktop-only action says so in a toast.
   key never collides with a device's. A typed key that is taken (`key_taken`),
   belonged to a deleted item (`key_retired`) or is invalid (`invalid_key`) is
   refused at once with a toast, never queued.
+- **Deleted elsewhere.** Editing an item another device deleted answers 409
+  `deleted_elsewhere`, with its own toast; there is no version to replace.
 - **Old browser data.** On the account's first sync with this version,
-  `web/legacyWebData.ts` pushes what the old outbox still held, saves what the
-  server does not take (and the attachments and imported templates that only
-  lived in the browser) to `pharos-web-unsent-<date>.json`, and removes the old
-  store.
+  `web/legacyWebData.ts` pushes what the old outbox still held and sets aside,
+  under `pharos.legacy.unsent:<userId>`, what the server does not take plus the
+  attachments, imported templates and revision history that only lived in the
+  browser. A topbar notice (`ui/LegacyUnsentNotice.tsx`) downloads it as
+  `pharos-web-unsent-<date>.json`; it is removed only when the user confirms
+  the file is saved or discards it, since a browser download cannot be
+  confirmed. That browser-only data was per browser: an account takes the
+  attachments of cards in its outbox, and the rest only if the old caches were
+  its own (`pharos.sync.cacheOwner`, or none, as before FIX-07).
 
 **Home (UX-08, spec §5).** `app/dashboard` shows two actions (start a new
 project, continue one) and the user's projects with search, last access, plan
@@ -309,7 +316,10 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   project delete cascades as on `/sync/push`. Payloads have exactly the shape
   the desktop pushes (`sync.rs::read_payload`). Updates and deletes name the
   revision the client read; a newer one answers 409 `stale_write` with the
-  current version. Same auth and version check (426) as `/sync/*`.
+  current version, a deleted one 409 `deleted_elsewhere`. Timestamps use the
+  desktop's form, `YYYY-MM-DD HH:MM:SS` in UTC (older ISO ones are read
+  alike), and ties within a second sort by write order (`seq`). The shared
+  documents fixture asserts the form on both sides. Same auth and version check (426) as `/sync/*`.
   `PATCH /auth/me` changes the account's names (not its role).
 
 Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived

@@ -21,9 +21,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   Por ahora los adjuntos, tus propias plantillas y el historial de revisiones
   solo están en la app de escritorio; la web muestra las plantillas de PHAROS.
   La primera vez que sincronizas en la web con esta versión, los cambios que
-  una versión anterior dejó sin enviar se envían, y lo que el servidor no
-  acepta (y los adjuntos y plantillas que solo estaban en el navegador) se
-  descarga en `pharos-web-unsent-<fecha>.json`.
+  una versión anterior dejó sin enviar se envían. Lo que el servidor no acepta,
+  y los adjuntos, plantillas e historial que solo estaban en el navegador, se
+  guardan aparte: un aviso arriba ofrece "Descargar" (`pharos-web-unsent-<fecha>.json`)
+  y solo se borran cuando confirmas que guardaste el archivo o decides
+  descartarlos. Cada cuenta recibe solo lo suyo. Si un elemento se eliminó en
+  otro sitio mientras lo editabas, al guardar un aviso lo dice.
 - **Contratos generados (BASE-05, ADR-0026):** los tipos que la app de
   escritorio intercambia con la interfaz y con el servidor se generan desde
   Rust, y la CI falla si dejan de coincidir. Al comprobarlos, un caso abierto

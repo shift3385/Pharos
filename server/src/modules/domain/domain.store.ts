@@ -37,7 +37,7 @@ export interface DomainTx {
  *  read it (FIX-04). The client keeps its edit and shows the newer version. */
 export function staleWrite(current: RemoteDoc): AppError {
   return new AppError(409, "stale_write", "This item was changed elsewhere since you opened it.", {
-    current: current.deleted ? null : current.payload,
+    current: current.payload,
   });
 }
 

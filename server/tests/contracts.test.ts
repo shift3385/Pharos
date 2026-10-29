@@ -14,6 +14,9 @@ const fixture = (name: string) =>
 
 type H = { wallMs: number; counter: number; deviceId: string };
 
+/** The desktop's timestamp form (SQLite `datetime('now')`, UTC). */
+const TIMESTAMP = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+
 describe("HLC (shared fixture)", () => {
   const f = fixture("hlc.json");
   it("encodes, parses, orders, ticks and receives like the desktop and the client", () => {
@@ -76,6 +79,11 @@ describe("documents written by the web (shared fixture)", () => {
       expect(Object.keys(got!.payload).sort(), want.entity).toEqual(Object.keys(want.payload).sort());
       for (const [key, value] of Object.entries(want.payload)) {
         expect(kind(got!.payload[key]), `${want.entity}.${key}`).toBe(kind(value));
+      }
+      // One timestamp form on both sides: they sort as text.
+      for (const key of ["createdAt", "updatedAt"]) {
+        expect(got!.payload[key], `${want.entity}.${key}`).toMatch(TIMESTAMP);
+        expect(want.payload[key], `fixture ${want.entity}.${key}`).toMatch(TIMESTAMP);
       }
     }
   });

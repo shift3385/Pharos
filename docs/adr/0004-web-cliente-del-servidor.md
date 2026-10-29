@@ -34,7 +34,8 @@
     servidor responde 409 `stale_write` con su versión: se avisa, la edición
     sigue en el formulario y guardar de nuevo la reemplaza (FIX-04).
   - Desaparecen la bandeja de salida, los conflictos y las cachés web. Lo que
-    dejó una versión anterior se envía una vez y lo que no entra se descarga
-    en un archivo.
+    dejó una versión anterior se envía una vez; lo que no entra queda aparte
+    para su cuenta hasta que el usuario lo descarga y lo confirma, o lo
+    descarta.
   - Hasta SYNC-04b, adjuntos, plantillas propias e historial de revisiones son
     solo de escritorio; la web muestra las plantillas incluidas.

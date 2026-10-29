@@ -104,13 +104,22 @@ no pull: "Sync now" only reloads the open pages.
 - **Refusals the user can act on** (`key_taken`, `key_retired`, `invalid_key`,
   desktop-only features) are shown once as a toast and thrown as
   `ReportedError`.
+- **Deleted elsewhere.** 409 `deleted_elsewhere` has its own toast and
+  changes nothing remembered: saving again repeats it.
 - **Old browser data** (`web/legacyWebData.ts`). On the account's first sync
   with this version, the old outbox (`pharos.sync.outbox:<userId>`) is pushed
-  one last time; changes the server does not take, open web conflicts, and
-  attachments and imported templates that only lived in the browser go to
-  `pharos-web-unsent-<date>.json`; then the old caches, outbox, conflicts,
-  cursor and clock are removed. A network failure removes nothing. Other
-  accounts' outboxes wait until those accounts sign in.
+  one last time. Changes the server does not take, open web conflicts, and the
+  attachments, imported templates and revision history that only lived in the
+  browser are set aside in `pharos.legacy.unsent:<userId>` (written before
+  anything is removed); then the old caches, outbox, conflicts, cursor and
+  clock are removed. `ui/LegacyUnsentNotice.tsx` (topbar, web only) offers
+  "Download" (`pharos-web-unsent-<date>.json`) and removes the set only when
+  the user confirms the file is saved or discards it: a browser download
+  cannot tell it was saved. The browser-only data was kept per browser: an
+  account takes the attachments of the cards in its own outbox, and the rest
+  only if `pharos.sync.cacheOwner` is that account (or unset, data from
+  before FIX-07); the shared keys go when nothing is left. A network failure
+  changes nothing. Other accounts' outboxes wait until those accounts sign in.
 
 ## Failures in the local log (`api/syncFailure.ts`, BASE-08, ADR-0022)
 

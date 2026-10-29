@@ -2037,6 +2037,9 @@ mod tests {
         let user = fixture["userId"].as_str().unwrap();
         let c = conn();
         let ws = ensure_workspace(&c).unwrap();
+        // Timestamps are local, but in the one form both sides write and sort
+        // as text: `YYYY-MM-DD HH:MM:SS` (UTC).
+        let stamp = regex::Regex::new(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$").unwrap();
         for raw in fixture["docs"].as_array().unwrap() {
             let doc: RemoteDoc = serde_json::from_value(raw.clone()).unwrap();
             apply_doc(&c, &ws, user, &doc).unwrap();
@@ -2053,6 +2056,12 @@ mod tests {
             got_keys.sort();
             want_keys.sort();
             assert_eq!(got_keys, want_keys, "{} fields", doc.entity);
+            for key in ["createdAt", "updatedAt"] {
+                for (side, p) in [("stored", got), ("fixture", want)] {
+                    let v = p[key].as_str().unwrap_or_default();
+                    assert!(stamp.is_match(v), "{side} {}.{key} = {v}", doc.entity);
+                }
+            }
             for (key, value) in want {
                 if ["createdAt", "updatedAt", "workspaceId"].contains(&key.as_str()) {
                     continue;

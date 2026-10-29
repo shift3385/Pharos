@@ -59,6 +59,16 @@ describe("serverApi", () => {
     expect(sent(2).body.revision).toBe(3);
   });
 
+  it("an item deleted elsewhere has its own notice and is not taken as a newer version", async () => {
+    fetchMock.mockImplementationOnce(() => reply({ id: "p1", revision: 1 }));
+    fetchMock.mockImplementation(() => reply({ code: "deleted_elsewhere", message: "deleted" }, 409));
+    await serverApi.get("/api/projects/p1");
+    await expect(serverApi.put("/api/projects/p1", "p1", { name: "Mine" })).rejects.toBeInstanceOf(ReportedError);
+    await expect(serverApi.put("/api/projects/p1", "p1", { name: "Mine" })).rejects.toBeInstanceOf(ReportedError);
+    expect(toasts).toEqual([i18n.t("sync.web.deletedElsewhere"), i18n.t("sync.web.deletedElsewhere")]);
+    expect(sent(2).body.revision).toBe(1);
+  });
+
   it("shows key refusals once and passes other errors through", async () => {
     fetchMock.mockImplementationOnce(() => reply({ code: "key_taken", message: "taken" }, 409));
     await expect(serverApi.post("/api/test-cases", {})).rejects.toBeInstanceOf(ReportedError);

@@ -35,7 +35,20 @@ const notFound = (what: string) => new AppError(404, "not_found", `${what} not f
 const str = (p: Payload, key: string) => (typeof p[key] === "string" ? (p[key] as string) : "");
 const num = (p: Payload, key: string) => (typeof p[key] === "number" ? (p[key] as number) : 0);
 const byText = (key: string) => (a: Payload, b: Payload) => (str(a, key) < str(b, key) ? -1 : str(a, key) > str(b, key) ? 1 : 0);
-const newestFirst = (a: Payload, b: Payload) => byText("updatedAt")(b, a);
+
+/** Timestamps have the desktop's form, `YYYY-MM-DD HH:MM:SS` in UTC (SQLite
+ *  `datetime('now')`), on both sides, so they sort as text (BASE-05: the shared
+ *  fixture asserts it). Web documents written before this used ISO 8601;
+ *  `sortable` reads both alike. */
+export const timestamp = (at = new Date()) => at.toISOString().slice(0, 19).replace("T", " ");
+export const sortable = (s: string) => s.slice(0, 19).replace("T", " ");
+/** Orders documents by a timestamp; within the same second (the form has no
+ *  milliseconds), by write order (`seq`). */
+const byTime = (key: string) => (a: RemoteDoc, b: RemoteDoc) => {
+  const [x, y] = [sortable(str(a.payload, key)), sortable(str(b.payload, key))];
+  return x < y ? -1 : x > y ? 1 : a.seq - b.seq;
+};
+const newestFirst = (a: RemoteDoc, b: RemoteDoc) => byTime("updatedAt")(b, a);
 
 /** A requirement key: letters, digits and `- _ . :` (`requirement.rs`). */
 export const isValidKey = (key: string) => /^[A-Za-z0-9_.:-]+$/.test(key);
@@ -54,7 +67,7 @@ function current(doc: RemoteDoc | null, what: string, revision?: number): Remote
   if (!doc) throw notFound(what);
   if (doc.deleted) {
     if (revision === undefined) throw notFound(what);
-    throw staleWrite(doc);
+    throw new AppError(409, "deleted_elsewhere", `${what} was deleted elsewhere since you opened it.`);
   }
   if (revision !== undefined && doc.revision !== revision) throw staleWrite(doc);
   return doc;
@@ -81,7 +94,7 @@ async function nextKey(tx: DomainTx, projectId: string, kind: KeyKind, prefix: s
   return `${prefix}${pad(await tx.nextNumber(projectId, kind, prefix), digits)}`;
 }
 
-const now = () => new Date().toISOString();
+const now = () => timestamp();
 
 export function createDomainService(store: DomainStore) {
   const run = store.tx.bind(store);
@@ -155,10 +168,14 @@ export function createDomainService(store: DomainStore) {
     remove: remove("project", "Project"),
   };
 
-  /** Plans are reachable through their live project only (FIX-08). */
+  /** Plans are reachable through their live project only (FIX-08). Newest
+   *  first. */
   async function livePlans(tx: DomainTx) {
     const live = new Set((await tx.list("project")).map((d) => d.entityId));
-    return (await tx.list("test_plan")).map((d) => d.payload).filter((p) => live.has(str(p, "projectId")));
+    return (await tx.list("test_plan"))
+      .filter((d) => live.has(str(d.payload, "projectId")))
+      .sort(newestFirst)
+      .map((d) => d.payload);
   }
 
   function planPayload(prev: Payload, input: TestPlanInput): Payload {
@@ -177,7 +194,7 @@ export function createDomainService(store: DomainStore) {
   const testPlans = {
     list: (userId: string) =>
       run(userId, async (tx) =>
-        (await livePlans(tx)).sort(newestFirst).map((p) => ({
+        (await livePlans(tx)).map((p) => ({
           id: p.id,
           title: p.title,
           version: p.version,
@@ -189,7 +206,7 @@ export function createDomainService(store: DomainStore) {
     get: (userId: string, id: string) =>
       run(userId, async (tx) => (await livePlans(tx)).find((p) => p.id === id) ?? null),
     byProject: (userId: string, projectId: string) =>
-      run(userId, async (tx) => (await livePlans(tx)).filter((p) => p.projectId === projectId).sort(newestFirst)[0] ?? null),
+      run(userId, async (tx) => (await livePlans(tx)).find((p) => p.projectId === projectId) ?? null),
     create: (userId: string, input: TestPlanInput) =>
       run(userId, async (tx) => {
         await liveProject(tx, input.projectId);
@@ -273,7 +290,7 @@ export function createDomainService(store: DomainStore) {
 
   const priorityOf = (p?: string) => (p && PRIORITIES.includes(p) ? p : "medium");
 
-  async function insertRequirement(tx: DomainTx, projectId: string, input: Omit<RequirementInput, "projectId">) {
+  async function insertRequirement(tx: DomainTx, projectId: string, input: Omit<RequirementInput, "projectId">): Promise<RemoteDoc> {
     const typed = input.requirementKey?.trim();
     if (typed) await checkManualKey(tx, "requirement", projectId, typed, isValidKey(typed));
     const requirementKey = typed || (await nextKey(tx, projectId, "requirement", REQUIREMENT_PREFIX, REQUIREMENT_DIGITS));
@@ -290,11 +307,11 @@ export function createDomainService(store: DomainStore) {
       createdAt: at,
       updatedAt: at,
     };
-    return (await tx.put("requirement", id, payload, null)).payload;
+    return tx.put("requirement", id, payload, null);
   }
 
   /** The key is immutable: an update never changes it. */
-  async function patchRequirement(tx: DomainTx, doc: RemoteDoc, input: Omit<RequirementInput, "projectId">) {
+  async function patchRequirement(tx: DomainTx, doc: RemoteDoc, input: Omit<RequirementInput, "projectId">): Promise<RemoteDoc> {
     const payload = {
       ...doc.payload,
       title: input.title.trim(),
@@ -302,7 +319,7 @@ export function createDomainService(store: DomainStore) {
       priority: priorityOf(input.priority),
       updatedAt: now(),
     };
-    return (await tx.put("requirement", doc.entityId, payload, doc)).payload;
+    return tx.put("requirement", doc.entityId, payload, doc);
   }
 
   const requirements = {
@@ -320,10 +337,12 @@ export function createDomainService(store: DomainStore) {
     create: (userId: string, input: RequirementInput) =>
       run(userId, async (tx) => {
         await liveProject(tx, input.projectId);
-        return insertRequirement(tx, input.projectId, input);
+        return (await insertRequirement(tx, input.projectId, input)).payload;
       }),
     update: (userId: string, id: string, input: RequirementInput, revision?: number) =>
-      run(userId, async (tx) => patchRequirement(tx, current(await tx.get("requirement", id), "Requirement", revision), input)),
+      run(userId, async (tx) =>
+        (await patchRequirement(tx, current(await tx.get("requirement", id), "Requirement", revision), input)).payload,
+      ),
     remove: remove("requirement", "Requirement"),
     /** Upsert by key (`requirement.rs`): a row whose key a live requirement
      *  has updates it; a key of a deleted one is skipped and reported; the
@@ -332,19 +351,21 @@ export function createDomainService(store: DomainStore) {
       run(userId, async (tx) => {
         await liveProject(tx, projectId);
         const summary = { created: 0, updated: 0, skipped: [] as string[] };
+        // The live requirements by key, read once and kept current as rows
+        // update or create them (the import holds the user's write lock).
+        const byKey = new Map((await tx.list("requirement", projectId)).map((d) => [str(d.payload, "requirementKey"), d]));
         for (const row of rows) {
           if (!row.title.trim()) continue;
           const key = row.requirementKey?.trim();
-          const live = key
-            ? (await tx.list("requirement", projectId)).find((d) => d.payload.requirementKey === key)
-            : undefined;
+          const live = key ? byKey.get(key) : undefined;
           if (live) {
-            await patchRequirement(tx, live, row);
+            byKey.set(key!, await patchRequirement(tx, live, row));
             summary.updated++;
           } else if (key && (await tx.keyUse("requirement", projectId, key)) === "deleted") {
             summary.skipped.push(key);
           } else {
-            await insertRequirement(tx, projectId, row);
+            const created = await insertRequirement(tx, projectId, row);
+            byKey.set(str(created.payload, "requirementKey"), created);
             summary.created++;
           }
         }
@@ -352,7 +373,8 @@ export function createDomainService(store: DomainStore) {
       }),
   };
 
-  const byPosition = (a: Payload, b: Payload) => num(a, "position") - num(b, "position") || byText("createdAt")(a, b);
+  const byPosition = (a: RemoteDoc, b: RemoteDoc) =>
+    num(a.payload, "position") - num(b.payload, "position") || byTime("createdAt")(a, b);
 
   /** A defect gets its key the first time it is a defect and keeps it. */
   async function defectKey(tx: DomainTx, projectId: string, kind: string, existing: unknown) {
@@ -362,7 +384,7 @@ export function createDomainService(store: DomainStore) {
 
   const plannerCards = {
     list: (userId: string, projectId: string) =>
-      run(userId, async (tx) => (await tx.list("planner_card", projectId)).map((d) => d.payload).sort(byPosition)),
+      run(userId, async (tx) => (await tx.list("planner_card", projectId)).sort(byPosition).map((d) => d.payload)),
     create: (userId: string, input: PlannerCardInput) =>
       run(userId, async (tx) => {
         await liveProject(tx, input.projectId);

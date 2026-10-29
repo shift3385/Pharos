@@ -33,6 +33,8 @@ function remember(value: unknown) {
 /** Server refusals shown to the user, by error code. */
 const TOASTS: Record<string, string> = {
   stale_write: "sync.web.staleWrite",
+  // Nothing to replace: saving again would only repeat it.
+  deleted_elsewhere: "sync.web.deletedElsewhere",
   key_taken: "sync.web.keyTaken",
   key_retired: "sync.web.keyRetired",
   invalid_key: "sync.web.invalidKey",
