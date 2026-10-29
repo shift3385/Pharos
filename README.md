@@ -256,9 +256,8 @@ is protected (see below).
 | `e2e`        | Windows + PostgreSQL   | Desktop smoke `npm run e2e` against the API on `localhost:3000` (below)  |
 
 `e2e` (BASE-14) runs the desktop smoke on every pull request and push to
-`main`, in about 7 minutes with a warm cache (see "Desktop E2E smoke"). It is
-**not a required check yet**: making it one is a separate decision once it has
-stayed green for a while. The coverage reports are not in CI yet (BASE-13);
+`main`, in about 7 minutes with a warm cache (see "Desktop E2E smoke"). It is a
+**required check** of `main` since 2026-10-29, like the jobs above. The coverage reports are not in CI yet (BASE-13);
 run them locally (below).
 
 The **Installer** workflow builds the Windows installer on every push to `main`

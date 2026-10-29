@@ -8,7 +8,8 @@
       { "context": "audit", "app_id": 15368 },
       { "context": "cargo-deny", "app_id": 15368 },
       { "context": "workflows", "app_id": 15368 },
-      { "context": "commits", "app_id": 15368 }
+      { "context": "commits", "app_id": 15368 },
+      { "context": "e2e", "app_id": 15368 }
     ]
   },
   "enforce_admins": true,

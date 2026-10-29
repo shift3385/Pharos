@@ -1,6 +1,6 @@
 # Continuous integration (BASE-01). Every job name below is a required check of
-# the protected `main` branch (BASE-02, .github/branch-protection.json), except
-# `e2e`, which becomes required once it has proved stable (BASE-14).
+# the protected `main` branch (BASE-02, .github/branch-protection.json), `e2e`
+# included since 2026-10-29 (BASE-14).
 # Supply chain (ADR-0021): every action is pinned to a full commit SHA, with its
 # release in a comment; Dependabot keeps the pins current.
 name: CI
