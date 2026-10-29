@@ -36,9 +36,45 @@ export function webview2Version() {
   return null;
 }
 
-/** Version of the msedgedriver in e2e/.bin, or null if it is missing. */
+// Supply chain (ADR-0021): msedgedriver is a downloaded executable, so it must
+// carry a valid Authenticode signature from Microsoft before anything runs it.
+const MICROSOFT_SIGNER = /^CN=Microsoft Corporation,/;
+
+/** True for a valid Authenticode signature whose signer is Microsoft. */
+export function isMicrosoftSigned(status, subject) {
+  return status === "Valid" && MICROSOFT_SIGNER.test(subject ?? "");
+}
+
+/** Authenticode status and signer subject of `path` (PowerShell). */
+function authenticode(path) {
+  const script =
+    "$s = Get-AuthenticodeSignature -LiteralPath $env:PHAROS_SIGNED_FILE; " +
+    '"$($s.Status)|$($s.SignerCertificate.Subject)"';
+  const out = execFileSync("powershell.exe", ["-NoProfile", "-Command", script], {
+    encoding: "utf8",
+    env: { ...process.env, PHAROS_SIGNED_FILE: path },
+  }).trim();
+  const [status, subject = ""] = out.split("|");
+  return { status, subject };
+}
+
+/** Throws unless `path` is signed by Microsoft. */
+export function assertMicrosoftSigned(path) {
+  const { status, subject } = authenticode(path);
+  if (!isMicrosoftSigned(status, subject)) {
+    throw new Error(
+      `${path} is not signed by Microsoft (signature: ${status || "none"}${subject ? `, signer: ${subject}` : ""}).`,
+    );
+  }
+}
+
+/**
+ * Version of the msedgedriver in e2e/.bin, or null if it is missing. Throws if
+ * the file is not signed by Microsoft: it is never run in that case.
+ */
 export function driverVersion() {
   if (!existsSync(driverPath)) return null;
+  assertMicrosoftSigned(driverPath);
   const out = execFileSync(driverPath, ["--version"], { encoding: "utf8" });
   return out.match(/(\d+\.\d+\.\d+\.\d+)/)?.[1] ?? null;
 }

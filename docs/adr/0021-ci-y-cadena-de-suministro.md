@@ -52,6 +52,20 @@
     el servidor ya usa zod 4 y `scripts/audit-allowlist.json` está vacía.
   - **Imagen de Postgres de CI** fijada por etiqueta (`postgres:18`), no por
     digest: solo sirve para los tests y Dependabot no la actualizaría.
+  - *Actualización (pista Q1, BASE-14; en curso, falla):* job `e2e` en
+    `windows-latest` con el smoke del binario real. Usa el PostgreSQL que trae
+    la imagen del runner (los contenedores de servicio solo existen en Linux) y
+    la API en `localhost:3000`, el único puerto que admite la CSP del
+    escritorio. `tauri-driver` se fija a una versión exacta (`2.1.0`) y vive
+    en la caché de Rust, que se guarda aunque el smoke falle. **No es un check
+    obligatorio:** lo será, con decisión del usuario, cuando lleve un tiempo
+    en verde.
+  - *Actualización (pista Q1):* **el driver del E2E se verifica.**
+    `npm run e2e:driver` solo descarga `msedgedriver` de
+    `msedgedriver.microsoft.com` (sin el CDN `azureedge.net` de respaldo,
+    cuyo nombre podría retirarse y registrarlo otro). Antes de ejecutarlo,
+    también si ya estaba descargado, exige una firma Authenticode válida de
+    "Microsoft Corporation"; si no la tiene, se borra.
 - **Alternativas:**
   - Etiquetas de versión (`@v4`) en las acciones: se descartó por el riesgo
     de suministro.

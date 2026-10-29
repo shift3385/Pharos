@@ -2,7 +2,14 @@
 // tauri-driver (:4444), which starts the real Pharos binary and drives its
 // WebView2 through msedgedriver. Run it with `npm run e2e` (README → E2E).
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, rmdirSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  rmdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createConnection } from "node:net";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -68,6 +75,25 @@ function waitForPort(port: number, timeoutMs: number): Promise<void> {
     };
     attempt();
   });
+}
+
+/**
+ * The native driver tauri-driver starts. With `PHAROS_E2E_DRIVER_LOG` set (CI
+ * sets it), a wrapper adds `--verbose` and writes msedgedriver's log to
+ * `e2e/results/msedgedriver.log`: tauri-driver passes no flags of its own to
+ * the native driver. Locally, a run stopped halfway can leave that
+ * msedgedriver running.
+ */
+function nativeDriverCommand(): string {
+  if (!process.env.PHAROS_E2E_DRIVER_LOG) return nativeDriver;
+  const wrapper = join(e2eDir, ".bin", "msedgedriver-verbose.cmd");
+  const log = join(resultsDir, "msedgedriver.log");
+  writeFileSync(
+    wrapper,
+    `@"%~dp0msedgedriver.exe" %* --verbose "--log-path=${log}"
+`,
+  );
+  return wrapper;
 }
 
 /**
@@ -141,7 +167,7 @@ export const config: WebdriverIO.Config = {
     console.log(`E2E profile: ${runId}\nBinary: ${application}`);
     tauriDriver = spawn(
       process.env.TAURI_DRIVER ?? "tauri-driver",
-      ["--native-driver", nativeDriver],
+      ["--native-driver", nativeDriverCommand()],
       {
         stdio: ["ignore", "inherit", "inherit"],
       },

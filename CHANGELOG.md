@@ -156,6 +156,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   - vitest y vite (herramientas de desarrollo con avisos críticos).
   - zod 4 en el servidor (BASE-18), que corrige el aviso alto
     GHSA-mrhx-c7xc-m3w5. La auditoría de npm ya no tolera ningún aviso.
+- Para desarrollo: el driver del smoke E2E (`msedgedriver`) solo se descarga
+  del servidor de Microsoft y debe estar firmado por Microsoft antes de
+  ejecutarse.
 - Licencias de Rust auditadas: solo permisivas, igual que en npm.
 - La clave de Gemini ya no viaja en la URL sino en una cabecera; las peticiones
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.

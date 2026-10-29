@@ -1,5 +1,7 @@
 // Downloads the Microsoft Edge WebDriver that matches the installed WebView2
-// runtime into e2e/.bin (git-ignored), from Microsoft's official host.
+// runtime into e2e/.bin (git-ignored), from Microsoft's official host only.
+// The binary must carry a valid Authenticode signature from Microsoft before
+// it is run, also when it is already there (ADR-0021).
 //
 //   npm run e2e:driver
 //
@@ -14,10 +16,7 @@ import {
   webview2Version,
 } from "./edge-driver.mjs";
 
-const HOSTS = [
-  "https://msedgedriver.microsoft.com",
-  "https://msedgedriver.azureedge.net",
-];
+const HOST = "https://msedgedriver.microsoft.com";
 
 const version = webview2Version();
 if (!version) {
@@ -26,33 +25,31 @@ if (!version) {
   );
   process.exit(1);
 }
-if (driverVersion() === version) {
-  console.log(`msedgedriver ${version} already in ${binDir}`);
-  process.exit(0);
+try {
+  if (driverVersion() === version) {
+    console.log(`msedgedriver ${version} already in ${binDir}`);
+    process.exit(0);
+  }
+} catch (err) {
+  // Not signed by Microsoft: replace it.
+  console.warn(`${err.message} Downloading it again.`);
+  rmSync(driverPath, { force: true });
 }
 
 // curl.exe ships with Windows 10+ and retries a dropped connection, which
 // Node's fetch does not (the host is slow and sometimes resets).
 mkdirSync(binDir, { recursive: true });
 const zipPath = join(binDir, "edgedriver_win64.zip");
-let downloaded = false;
-for (const host of HOSTS) {
-  const url = `${host}/${version}/edgedriver_win64.zip`;
-  try {
-    execFileSync("curl.exe", ["-fsSL", "--retry", "3", "-o", zipPath, url], {
-      stdio: ["ignore", "inherit", "inherit"],
-    });
-    console.log(`Downloaded ${url}`);
-    downloaded = true;
-    break;
-  } catch {
-    console.warn(`${url} could not be downloaded`);
-  }
-}
-if (!downloaded) {
-  console.error(`No msedgedriver ${version} could be downloaded.`);
+const url = `${HOST}/${version}/edgedriver_win64.zip`;
+try {
+  execFileSync("curl.exe", ["-fsSL", "--retry", "3", "-o", zipPath, url], {
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+} catch {
+  console.error(`msedgedriver ${version} could not be downloaded from ${url}`);
   process.exit(1);
 }
+console.log(`Downloaded ${url}`);
 
 rmSync(driverPath, { force: true });
 execFileSync(
@@ -65,4 +62,10 @@ execFileSync(
   { stdio: "inherit" },
 );
 rmSync(zipPath, { force: true });
-console.log(`msedgedriver ${driverVersion()} ready in ${binDir}`);
+try {
+  console.log(`msedgedriver ${driverVersion()} ready in ${binDir}`);
+} catch (err) {
+  rmSync(driverPath, { force: true });
+  console.error(`${err.message} It was deleted.`);
+  process.exit(1);
+}

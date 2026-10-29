@@ -59,7 +59,12 @@ if (
 }
 
 const webview = webview2Version();
-const driver = driverVersion();
+let driver = null;
+try {
+  driver = driverVersion(); // checks Microsoft's signature before running it
+} catch (err) {
+  fail(`${err.message} Run \`npm run e2e:driver\` to download it again.`);
+}
 if (!webview) fail("WebView2 runtime not found.");
 if (!driver) fail("msedgedriver missing. Run `npm run e2e:driver`.");
 if (major(driver) !== major(webview)) {

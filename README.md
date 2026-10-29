@@ -200,9 +200,13 @@ is protected (see below).
 | `cargo-deny` | Ubuntu                 | `npm run check:deps`                                                     |
 | `workflows`  | Ubuntu                 | `zizmor` security lint of the workflows                                  |
 | `commits`    | Ubuntu (PRs only)      | `commitlint` on every commit of the PR                                   |
+| `e2e`        | Windows + PostgreSQL   | Desktop smoke `npm run e2e` against the API on `localhost:3000` (below)  |
 
-The desktop E2E smoke and the coverage reports are not in CI yet (BASE-14,
-BASE-13); run them locally (below).
+**`e2e` is in progress and failing** (BASE-14): on the runner, WebView2 does not
+open the DevTools port that msedgedriver needs (see "Desktop E2E smoke"). It is
+not a required check; it becomes one only after it has stayed green for a
+while. Until then, run the smoke locally. The coverage reports are not in CI
+yet (BASE-13); run them locally too (below).
 
 The **Installer** workflow builds the Windows installer on every push to `main`
 and on `v*` tags, and publishes it as a run artifact (30 days). Download it
@@ -312,8 +316,11 @@ npm run e2e:driver
 ```
 
 `npm run e2e:driver` downloads into `e2e/.bin/` the `msedgedriver` that matches
-your WebView2 runtime, from Microsoft. WebView2 updates itself, so re-run it
-when the smoke reports a version mismatch.
+your WebView2 runtime, from Microsoft's host (`msedgedriver.microsoft.com`)
+only. The driver must carry a valid Authenticode signature from Microsoft
+Corporation: it is checked after the download and before every use, and a file
+that fails the check is deleted, never run. WebView2 updates itself, so re-run
+it when the smoke reports a version mismatch.
 
 Every run, with PostgreSQL and the API running (`cd server && npm start`):
 
@@ -327,6 +334,9 @@ account (`seed:test-user`, idempotent), builds the debug binary
 the specs. Results: the console, plus one JUnit file per spec
 (`e2e/results/e2e-<worker>.junit.xml`), the run's app logs in
 `e2e/results/app-logs/` and a screenshot of Administration → Diagnóstico.
+With `PHAROS_E2E_DRIVER_LOG=1`, `e2e/results/msedgedriver.log` also holds
+msedgedriver's verbose log (CI sets it); a run stopped halfway can then leave
+an `msedgedriver.exe` running.
 
 The smoke never touches your own data: each run sets `PHAROS_E2E_PROFILE`, so
 the debug binary uses its own data folder, log folder and keychain accounts
@@ -340,13 +350,25 @@ Only the local database key
 machine that never ran Pharos, the first E2E run creates it, and the app reuses
 it later.
 
-**For CI** (`windows-latest`, track B1): the runner already has WebView2. It
-needs Rust (MSVC), `cargo install tauri-driver --locked` (cache it),
-`npm run e2e:driver`, the PostgreSQL service started with `pharos_db` created,
-a `.env` made from `.env.example`, `cd server && npm run migrate`, the API in
-the background, then `npm run e2e`. Publish `e2e/results/` as an artifact. The
-session is cached in the Windows Credential Manager, which must be available
-to the runner's user.
+**In CI (in progress, failing).** The `e2e` job (`.github/workflows/ci.yml`,
+on `windows-latest`, which already has WebView2) does the same. It starts the
+runner image's PostgreSQL service and creates `pharos_db`, writes `.env` from
+`.env.example`, runs `cd server && npm run migrate`, installs `tauri-driver`
+(kept in the Rust cache with the build, which is saved even when the smoke
+fails) and runs `npm run e2e:driver`. Then, in one step, it starts the API on
+`localhost:3000` in the background and runs `npm run e2e`: the runner kills
+whatever a step leaves running. The run's `e2e/results/` and the API logs are
+published as the `e2e-results` artifact (14 days), also when the smoke fails.
+Today every session fails with `DevToolsActivePort file doesn't exist`. Pharos
+and WebView2 start in the runner's interactive session and use the profile's
+WebView2 folder, but the WebView2 browser process starts without the
+`--remote-debugging-port` that msedgedriver passes in
+`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. The per-app registry policy
+(`HKCU\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`) is
+ignored too; only the arguments the app passes itself get through. The runner
+runs elevated (an administrator with UAC auto-elevation); locally the same
+variable works. A temporary diagnosis step shows the details and goes away
+once the job is green.
 
 `npm install` / `npm ci` download no browser driver: the `edgedriver` and
 `geckodriver` packages that WebdriverIO pulls in only download when
