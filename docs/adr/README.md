@@ -16,6 +16,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0007](0007-varios-proveedores-ia.md)              | Varios proveedores de IA, uno activo                                                 | Aceptado | 2026-10-28 |
 | [0008](0008-toolchain-msvc.md)                     | Toolchain de Rust MSVC                                                               | Aceptado | 2026-10-27 |
 | [0009](0009-versionado-semver.md)                  | Versionado SemVer con una sola versión                                               | Aceptado | 2026-10-28 |
+| [0010](0010-claves-entre-equipos.md)               | Claves de caso, requisito y defecto únicas entre equipos                             | Aceptado | 2026-10-28 |
 | [0011](0011-revision-del-caso-y-pasos-estables.md) | El resultado apunta a la revisión del caso y a pasos con ID estable (DAT-02)         | Aceptado | 2026-10-28 |
 | [0012](0012-tipos-de-resultado-genericos.md)       | Tipos de resultado genéricos: Result, Finding, Metric y sesión exploratoria (KND-01) | Aceptado | 2026-10-28 |
 | [0013](0013-campos-del-run.md)                     | El Run nace con su contexto e identidad CTRF (RUN-00)                                | Aceptado | 2026-10-28 |
@@ -27,8 +28,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0019](0019-diseno-workspaces-compartidos.md)      | Diseño técnico de los workspaces compartidos con roles (TEN-01)                      | Aceptado | 2026-10-28 |
 | [0020](0020-sync-por-usuario-cascada-y-version.md) | Sync por usuario, cascada en el servidor y versión del cliente                       | Aceptado | 2026-10-28 |
 
-El 0010 (DAT-01, pista A2) y los 0020–0022 (pistas A1, B1 y B2) están en otras
-ramas; el coordinador los ordena al fusionar. Los ADR 0011 a 0019 son la compuerta C
+Los 0021 y 0022 (pistas B1 y B2) se añaden al fusionar sus ramas. Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
 [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 Se aceptaron el 2026-10-28 con la opción y las respuestas recomendadas y se

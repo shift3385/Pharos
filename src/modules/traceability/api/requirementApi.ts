@@ -69,6 +69,10 @@ function insert(all: Stored[], input: RequirementInput): Stored {
     if (all.some((r) => live(r) && r.projectId === input.projectId && r.requirementKey === given)) {
       throw new Error(`duplicate requirement key: ${given}`);
     }
+    // ADR-0010: the key of a deleted requirement is never reused.
+    if (all.some((r) => r.projectId === input.projectId && r.requirementKey === given)) {
+      throw new Error(`requirement key ${given} belonged to a deleted requirement`);
+    }
   }
   const now = new Date().toISOString();
   const item: Stored = {
@@ -144,7 +148,7 @@ const browserApi = {
     rows: RequirementImportRow[],
   ): Promise<ImportSummary> {
     const all = loadAll();
-    const summary: ImportSummary = { created: 0, updated: 0 };
+    const summary: ImportSummary = { created: 0, updated: 0, skipped: [] };
     const touched: Stored[] = [];
     for (const row of rows) {
       if (!row.title.trim()) continue;
@@ -157,6 +161,8 @@ const browserApi = {
         all[idx] = patch(all[idx], input);
         touched.push(all[idx]);
         summary.updated++;
+      } else if (key && all.some((r) => r.projectId === projectId && r.requirementKey === key)) {
+        summary.skipped.push(key);
       } else {
         touched.push(insert(all, input));
         summary.created++;
@@ -173,11 +179,13 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user: the desktop store only returns or changes
+// requirements of projects that user owns (FIX-08).
 export const requirementApi = {
-  list: (projectId: string): Promise<Requirement[]> =>
-    isTauri() ? invoke("requirement_list", { projectId }) : browserApi.list(projectId),
-  get: (id: string): Promise<Requirement | null> =>
-    isTauri() ? invoke("requirement_get", { id }) : browserApi.get(id),
+  list: (projectId: string, userId: string): Promise<Requirement[]> =>
+    isTauri() ? invoke("requirement_list", { projectId, userId }) : browserApi.list(projectId),
+  get: (id: string, userId: string): Promise<Requirement | null> =>
+    isTauri() ? invoke("requirement_get", { id, userId }) : browserApi.get(id),
   create: (input: RequirementInput): Promise<Requirement | null> =>
     isTauri() ? invoke("requirement_create", { input }) : browserApi.create(input),
   update: (id: string, input: RequirementInput): Promise<Requirement | null> =>

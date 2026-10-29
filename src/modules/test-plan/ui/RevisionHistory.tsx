@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@modules/auth";
 import { testPlanApi } from "../api/testPlanApi";
 import type { RevisionSummary } from "../model/types";
 
@@ -11,17 +12,19 @@ export function RevisionHistory({
   onRestore?: (revisionId: string) => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [revisions, setRevisions] = useState<RevisionSummary[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    void testPlanApi.revisions(planId).then((r) => {
+    void testPlanApi.revisions(planId, userId).then((r) => {
       if (!cancelled) setRevisions(r);
     });
     return () => {
       cancelled = true;
     };
-  }, [planId]);
+  }, [planId, userId]);
 
   if (revisions.length === 0) {
     return <p className="tp__muted">{t("testPlan.noRevisions")}</p>;

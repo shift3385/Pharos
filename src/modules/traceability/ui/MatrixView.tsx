@@ -33,8 +33,8 @@ export function MatrixView({ projectId, projectName }: { projectId: string; proj
 
   async function refresh() {
     const [requirements, cases, cards] = await Promise.all([
-      requirementApi.list(projectId),
-      projectTraceableCases(projectId),
+      requirementApi.list(projectId, ownerId),
+      projectTraceableCases(projectId, ownerId),
       projectDefects(projectId, ownerId),
     ]);
     setData({
@@ -78,7 +78,7 @@ export function MatrixView({ projectId, projectName }: { projectId: string; proj
     for (const p of selected) byCase.set(p.caseId, [...(byCase.get(p.caseId) ?? []), p.requirementKey]);
     for (const [caseId, keys] of byCase) {
       const current = data?.cases.find((c) => c.id === caseId)?.requirementKeys ?? [];
-      await setCaseRequirementKeys(caseId, [...current, ...keys]);
+      await setCaseRequirementKeys(caseId, [...current, ...keys], ownerId);
     }
     toast(t("traceability.migrate.doneToast", { links: selected.length, creates: toCreate.length }));
     setMigrating(false);
@@ -90,7 +90,14 @@ export function MatrixView({ projectId, projectName }: { projectId: string; proj
     setExporting(true);
     try {
       const { exportMatrixXlsx } = await import("../export/matrixXlsx");
-      const name = await exportMatrixXlsx(matrix, projectId, projectName, i18n.resolvedLanguage ?? "es", t);
+      const name = await exportMatrixXlsx(
+        matrix,
+        projectId,
+        ownerId,
+        projectName,
+        i18n.resolvedLanguage ?? "es",
+        t,
+      );
       toast(t("traceability.matrix.exportedToast", { name }));
     } finally {
       setExporting(false);

@@ -127,10 +127,12 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
    pista que añade migraciones incluye una prueba de esa actualización.
 3. **Copia de seguridad antes de migrar (SEC-06).** Antes de aplicar
    migraciones pendientes, la app guarda la base cifrada como
-   `pharos.db.enc.bak-<versión>`.
+   `pharos.db.enc.bak-<versión>-<última migración>`. Conserva las 3 más
+   recientes. Si no puede guardarla, no migra.
 4. **Sin vuelta atrás silenciosa (SEC-06).** Una versión antigua que encuentra
    migraciones desconocidas en la base se niega a abrirla y lo explica. Nunca la
-   modifica.
+   modifica. Rige desde la primera versión posterior a `0.1.0-alpha.1`, que no
+   tiene esa comprobación: para volver a ella hay que restaurar la copia `.bak`.
 5. **Compatibilidad entre app y servidor (SYNC-08).** Cada petición de sync
    lleva la versión de la app. El servidor declara qué versiones acepta (como
    mínimo, su misma MENOR y la anterior) y rechaza las demás con un mensaje

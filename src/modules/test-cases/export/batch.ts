@@ -49,11 +49,12 @@ export function featureFileName(scenarioId: string): string {
  *  tags (TRZ-03), for the batch export (spec §5.3 "en lote por proyecto"). */
 export async function projectFeatureFiles(
   projectId: string,
+  userId: string,
   t: Translate,
 ): Promise<{ name: string; content: string }[]> {
   const out: { name: string; content: string }[] = [];
-  for (const s of await testCaseApi.list(projectId)) {
-    const full = await testCaseApi.get(s.id);
+  for (const s of await testCaseApi.list(projectId, userId)) {
+    const full = await testCaseApi.get(s.id, userId);
     if (!full) continue;
     out.push({ name: featureFileName(full.scenarioId), content: caseToExportable(full, t).gherkin });
   }
@@ -61,22 +62,23 @@ export async function projectFeatureFiles(
 }
 
 /** Number of cases in a project (cheap metadata query for progress totals). */
-export async function projectCaseCount(projectId: string): Promise<number> {
-  return (await testCaseApi.list(projectId)).length;
+export async function projectCaseCount(projectId: string, userId: string): Promise<number> {
+  return (await testCaseApi.list(projectId, userId)).length;
 }
 
 /** Builds an .xlsx buffer for every case of a project (for the batch ZIP).
  *  `onEach` fires with each file name as its workbook is built (for progress). */
 export async function projectCaseWorkbooks(
   projectId: string,
+  userId: string,
   t: Translate,
   lang: string,
   onEach?: (name: string) => void,
 ): Promise<{ name: string; buffer: ArrayBuffer }[]> {
-  const summaries = await testCaseApi.list(projectId);
+  const summaries = await testCaseApi.list(projectId, userId);
   const out: { name: string; buffer: ArrayBuffer }[] = [];
   for (const s of summaries) {
-    const full = await testCaseApi.get(s.id);
+    const full = await testCaseApi.get(s.id, userId);
     if (!full) continue;
     const { filename, buffer } = await buildCaseXlsx(caseToExportable(full, t), lang);
     out.push({ name: filename, buffer });

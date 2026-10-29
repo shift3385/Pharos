@@ -102,6 +102,7 @@ interface Props {
 export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const userId = user?.id ?? "";
   const toast = useToast();
   const [plan, setPlan] = useState<TestPlan | null>(null);
   const [step, setStep] = useState(0);
@@ -129,7 +130,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     let cancelled = false;
     (async () => {
       if (planId) {
-        const p = await testPlanApi.get(planId);
+        const p = await testPlanApi.get(planId, userId);
         if (p && !cancelled) {
           setPlan(p);
           const f = fromPlan(p);
@@ -145,7 +146,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [planId, t]);
+  }, [planId, userId, t]);
 
   const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
 
@@ -171,7 +172,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   // creates a new revision.
   async function restore(revisionId: string) {
     if (!form) return;
-    const rev = await testPlanApi.revisionDetail(revisionId);
+    const rev = await testPlanApi.revisionDetail(revisionId, userId);
     if (!rev) return;
     if (!window.confirm(t("testPlan.restoreConfirm"))) return;
     setForm(applyRevision(form, rev.title, rev.data));
@@ -234,6 +235,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         conclusion: form.conclusion,
         aiProvenance: form.aiProvenance,
       },
+      userId,
     };
     try {
       if (plan) await testPlanApi.update(plan.id, input);
@@ -1022,7 +1024,7 @@ function defaults(t: (k: string) => string): FormState {
 
 /** Builds a form from an imported plan input, reusing the defaults for any field
  *  the import did not detect (so undetected fields keep sensible defaults). */
-function fromInput(input: TestPlanInput, t: (k: string) => string): FormState {
+function fromInput(input: Omit<TestPlanInput, "userId">, t: (k: string) => string): FormState {
   const base = applyRevision(defaults(t), input.title, input.data);
   return {
     ...base,

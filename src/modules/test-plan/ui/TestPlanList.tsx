@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { testPlanApi } from "../api/testPlanApi";
 import type { TestPlanSummary } from "../model/types";
 import { DeleteButton } from "@shared/ui/fields";
+import { useAuth } from "@modules/auth";
 import "./TestPlan.css";
 
 interface Props {
@@ -12,20 +13,23 @@ interface Props {
 
 export function TestPlanList({ onNew, onOpen }: Props) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [plans, setPlans] = useState<TestPlanSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    setPlans(await testPlanApi.list());
+    setPlans(await testPlanApi.list(userId));
     setLoading(false);
   }
 
   useEffect(() => {
     void refresh();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   async function remove(id: string) {
-    await testPlanApi.remove(id);
+    await testPlanApi.remove(id, userId);
     void refresh();
   }
 

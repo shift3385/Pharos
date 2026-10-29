@@ -42,15 +42,15 @@ export function ProjectDetail({
 
   useEffect(() => {
     if (tab === "cases") {
-      void requirementApi.list(projectId).then((list) =>
+      void requirementApi.list(projectId, ownerId).then((list) =>
         setRequirements(list.map((r) => ({ requirementKey: r.requirementKey, title: r.title }))),
       );
     } else if (tab === "planner") {
-      void projectTraceableCases(projectId).then((list) =>
+      void projectTraceableCases(projectId, ownerId).then((list) =>
         setLinkableCases(list.map((c) => ({ id: c.id, scenarioId: c.scenarioId, title: c.title }))),
       );
     }
-  }, [tab, projectId]);
+  }, [tab, projectId, ownerId]);
 
   if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
 

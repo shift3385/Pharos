@@ -199,15 +199,18 @@ export const plannerApi = {
     isTauri()
       ? invoke("planner_attachment_add", { cardId, ownerId, name, mime, dataBase64 })
       : browserApi.attachmentAdd(cardId, name, mime, dataBase64),
-  attachmentList: (cardId: string): Promise<AttachmentSummary[]> =>
+  // Attachments are owner-scoped through their card (FIX-08).
+  attachmentList: (cardId: string, ownerId: string): Promise<AttachmentSummary[]> =>
     isTauri()
-      ? invoke("planner_attachment_list", { cardId })
+      ? invoke("planner_attachment_list", { cardId, ownerId })
       : browserApi.attachmentList(cardId),
-  attachmentGet: (id: string): Promise<AttachmentData | null> =>
-    isTauri() ? invoke("planner_attachment_get", { id }) : browserApi.attachmentGet(id),
-  attachmentDelete: (id: string): Promise<void> =>
+  attachmentGet: (id: string, ownerId: string): Promise<AttachmentData | null> =>
     isTauri()
-      ? invoke("planner_attachment_delete", { id })
+      ? invoke("planner_attachment_get", { id, ownerId })
+      : browserApi.attachmentGet(id),
+  attachmentDelete: (id: string, ownerId: string): Promise<void> =>
+    isTauri()
+      ? invoke("planner_attachment_delete", { id, ownerId })
       : browserApi.attachmentDelete(id),
 };
 

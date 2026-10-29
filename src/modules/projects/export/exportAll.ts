@@ -29,6 +29,7 @@ interface Counter {
 async function addProject(
   zip: JSZip,
   project: ProjectSummary,
+  ownerId: string,
   folder: string,
   t: Translate,
   lang: string,
@@ -41,7 +42,7 @@ async function addProject(
     onProgress?.({ phase: "building", done: counter.done, total: counter.total, label });
   };
 
-  const plan = await planWorkbookByProject(project.id, t, lang);
+  const plan = await planWorkbookByProject(project.id, ownerId, t, lang);
   if (plan) {
     zip.file(`${folder}/${sanitize(plan.name)}`, plan.buffer);
     files += 1;
@@ -49,7 +50,9 @@ async function addProject(
   }
   // The callback fires as each case workbook is built (drives the progress bar);
   // buffers are added to the zip afterwards (an instant, non-async step).
-  const workbooks = await projectCaseWorkbooks(project.id, t, lang, (name) => advance(name));
+  const workbooks = await projectCaseWorkbooks(project.id, ownerId, t, lang, (name) =>
+    advance(name),
+  );
   for (const c of workbooks) {
     zip.file(`${folder}/${sanitize(c.name)}`, c.buffer);
     files += 1;
@@ -75,14 +78,26 @@ async function finalizeZip(zip: JSZip, filename: string, onProgress?: OnProgress
  *  inside a folder named after the project. Returns the file count. */
 export async function exportProjectZip(
   project: ProjectSummary,
+  ownerId: string,
   t: Translate,
   lang: string,
   onProgress?: OnProgress,
 ): Promise<number> {
-  const total = (await projectHasPlan(project.id) ? 1 : 0) + (await projectCaseCount(project.id));
+  const total =
+    ((await projectHasPlan(project.id, ownerId)) ? 1 : 0) +
+    (await projectCaseCount(project.id, ownerId));
   const counter: Counter = { done: 0, total };
   const zip = new JSZip();
-  const files = await addProject(zip, project, sanitize(project.name), t, lang, counter, onProgress);
+  const files = await addProject(
+    zip,
+    project,
+    ownerId,
+    sanitize(project.name),
+    t,
+    lang,
+    counter,
+    onProgress,
+  );
   await finalizeZip(zip, `${sanitize(project.name)}.zip`, onProgress);
   return files;
 }
@@ -100,8 +115,8 @@ export async function exportAllProjects(
   // Pre-pass: count the artifacts so the progress bar has a total.
   let total = 0;
   for (const p of projects) {
-    total += (await projectHasPlan(p.id)) ? 1 : 0;
-    total += await projectCaseCount(p.id);
+    total += (await projectHasPlan(p.id, ownerId)) ? 1 : 0;
+    total += await projectCaseCount(p.id, ownerId);
   }
 
   const counter: Counter = { done: 0, total };
@@ -113,7 +128,7 @@ export async function exportAllProjects(
     let folder = sanitize(p.name);
     for (let n = 2; usedFolders.has(folder); n += 1) folder = `${sanitize(p.name)} (${n})`;
     usedFolders.add(folder);
-    files += await addProject(zip, p, folder, t, lang, counter, onProgress);
+    files += await addProject(zip, p, ownerId, folder, t, lang, counter, onProgress);
   }
 
   await finalizeZip(zip, "pharos-export.zip", onProgress);

@@ -116,7 +116,7 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
     conn.execute(
         "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, \
          case_id_digits, created_by, updated_by, created_at, updated_at, revision) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?1, ?1, datetime('now'), datetime('now'), 1)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?3, ?3, datetime('now'), datetime('now'), 1)",
         params![
             id,
             workspace_id,
@@ -131,8 +131,9 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
     Ok(id)
 }
 
-/// Guards mutations: only the owner may update or delete a project.
-fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, String> {
+/// Guards mutations: only the owner may update or delete a project. Plans,
+/// cases and requirements are owner-scoped through their project (FIX-08).
+pub(crate) fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, String> {
     conn.query_row(
         "SELECT 1 FROM projects WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
         params![id, owner_id],
@@ -161,8 +162,15 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
     let digits = input.case_id_digits.filter(|d| *d > 0).unwrap_or(DEFAULT_DIGITS);
     conn.execute(
         "UPDATE projects SET name = ?2, case_id_prefix = ?3, case_id_digits = ?4, \
-         updated_at = datetime('now'), updated_by = ?1, revision = ?5 WHERE id = ?1",
-        params![id, input.name, prefix, digits, revision + 1],
+         updated_at = datetime('now'), updated_by = ?6, revision = ?5 WHERE id = ?1",
+        params![
+            id,
+            input.name,
+            prefix,
+            digits,
+            revision + 1,
+            input.owner_id.clone().unwrap_or_default()
+        ],
     )
     .map_err(|e| e.to_string())?;
     oplog::record(
@@ -294,6 +302,24 @@ mod tests {
         assert_eq!(p.revision, 2);
         assert_eq!(p.name, "X renamed");
         assert_eq!(p.case_id_prefix, "FT");
+    }
+
+    fn audit(c: &Connection, id: &str) -> (String, String) {
+        c.query_row(
+            "SELECT created_by, updated_by FROM projects WHERE id = ?1",
+            params![id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn audit_fields_record_the_user_not_the_project() {
+        let c = conn();
+        let id = insert_project(&c, &input("Audit", None)).unwrap();
+        assert_eq!(audit(&c, &id), (OWNER.to_string(), OWNER.to_string()));
+        update_project(&c, &id, &input("Audit 2", None)).unwrap();
+        assert_eq!(audit(&c, &id), (OWNER.to_string(), OWNER.to_string()));
     }
 
     #[test]

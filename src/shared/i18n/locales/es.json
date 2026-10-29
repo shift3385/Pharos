@@ -3,6 +3,12 @@
     "name": "Pharos",
     "tagline": "Suite de gestión de pruebas QA"
   },
+  "dbError": {
+    "title": "No se pudo abrir la base de datos local",
+    "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
+    "newerTitle": "Estos datos son de una versión más nueva de Pharos",
+    "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior."
+  },
   "common": {
     "loading": "Cargando…",
     "delete": "Eliminar",
@@ -523,6 +529,7 @@
     "insertKeyword": "Insertar en el cursor",
     "scenarioId": "ID de escenario",
     "scenarioIdAuto": "Auto (ATS_001)",
+    "scenarioIdFixed": "El ID no cambia una vez asignado: viaja como tag @ATS_001 en la automatización.",
     "priority": "Prioridad",
     "status": "Estado",
     "version": "Versión",
@@ -759,6 +766,7 @@
       "confirm": "Importar {{count}}",
       "importing": "Importando…",
       "doneToast": "Importados: {{created}} nuevos, {{updated}} actualizados",
+      "skippedToast": "No importados (son de requisitos borrados y no se reutilizan): {{keys}}",
       "error": "No se pudo importar el CSV"
     },
     "view": {

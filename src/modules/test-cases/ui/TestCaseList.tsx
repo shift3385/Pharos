@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
+import { useAuth } from "@modules/auth";
 import { testCaseApi } from "../api/testCaseApi";
 import type { TestCaseSummary } from "../model/types";
 import "./TestCase.css";
@@ -24,20 +25,22 @@ export function TestCaseList({
   onOpen: (id: string) => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const [cases, setCases] = useState<TestCaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    setCases(await testCaseApi.list(projectId));
+    setCases(await testCaseApi.list(projectId, userId));
     setLoading(false);
   }
   useEffect(() => {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, userId]);
 
   async function remove(id: string) {
-    await testCaseApi.remove(id);
+    await testCaseApi.remove(id, userId);
     void refresh();
   }
 

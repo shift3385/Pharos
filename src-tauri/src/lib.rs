@@ -4,6 +4,7 @@
 mod ai;
 mod db;
 mod hlc;
+mod keys;
 mod oplog;
 mod planner;
 mod profile;
@@ -14,7 +15,7 @@ mod template;
 mod test_case;
 mod test_plan;
 
-use db::Db;
+use db::{Db, DbStatus};
 use keyring::Entry;
 use tauri::Manager;
 
@@ -54,15 +55,24 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
-            let database = Db::open(&data_dir)
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-            app.manage(database);
+            // A database that cannot be opened (e.g. written by a newer Pharos,
+            // SEC-06) does not abort startup: the UI asks `db_open_error` and
+            // shows why instead of the app silently failing to start.
+            let open_error = match Db::open(&data_dir) {
+                Ok(database) => {
+                    app.manage(database);
+                    None
+                }
+                Err(e) => Some(e),
+            };
+            app.manage(DbStatus { open_error });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             session_save,
             session_load,
             session_clear,
+            db::db_open_error,
             profile::profile_get,
             profile::profile_upsert,
             project::project_list,

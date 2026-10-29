@@ -137,14 +137,16 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user: the desktop store only returns or changes
+// plans of projects that user owns (FIX-08).
 export const testPlanApi = {
-  list: (): Promise<TestPlanSummary[]> =>
-    isTauri() ? invoke("test_plan_list") : browserApi.list(),
-  get: (id: string): Promise<TestPlan | null> =>
-    isTauri() ? invoke("test_plan_get", { id }) : browserApi.get(id),
-  byProject: (projectId: string): Promise<TestPlan | null> =>
+  list: (userId: string): Promise<TestPlanSummary[]> =>
+    isTauri() ? invoke("test_plan_list", { userId }) : browserApi.list(),
+  get: (id: string, userId: string): Promise<TestPlan | null> =>
+    isTauri() ? invoke("test_plan_get", { id, userId }) : browserApi.get(id),
+  byProject: (projectId: string, userId: string): Promise<TestPlan | null> =>
     isTauri()
-      ? invoke("test_plan_by_project", { projectId })
+      ? invoke("test_plan_by_project", { projectId, userId })
       : browserApi.byProject(projectId),
   create: (input: TestPlanInput): Promise<TestPlan | null> =>
     isTauri() ? invoke("test_plan_create", { input }) : browserApi.create(input),
@@ -152,12 +154,12 @@ export const testPlanApi = {
     isTauri()
       ? invoke("test_plan_update", { id, input })
       : browserApi.update(id, input),
-  remove: (id: string): Promise<void> =>
-    isTauri() ? invoke("test_plan_delete", { id }) : browserApi.remove(id),
-  revisions: (id: string): Promise<RevisionSummary[]> =>
-    isTauri() ? invoke("test_plan_revisions", { id }) : browserApi.revisions(id),
-  revisionDetail: (id: string): Promise<RevisionDetail | null> =>
+  remove: (id: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("test_plan_delete", { id, userId }) : browserApi.remove(id),
+  revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>
+    isTauri() ? invoke("test_plan_revisions", { id, userId }) : browserApi.revisions(id),
+  revisionDetail: (id: string, userId: string): Promise<RevisionDetail | null> =>
     isTauri()
-      ? invoke("test_plan_revision_get", { id })
+      ? invoke("test_plan_revision_get", { id, userId })
       : browserApi.revisionDetail(id),
 };
