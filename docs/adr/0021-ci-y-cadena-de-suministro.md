@@ -38,6 +38,10 @@
     dependencias de Tauri sin modificar: `cssparser`, `cssparser-macros`,
     `dtoa-short`, `option-ext` y `selectors`. Los `unic-*` sin mantenimiento se
     ignoran con motivo hasta que Tauri los sustituya.
+  - **La misma regla en npm:** el gate de licencias rechaza el copyleft débil
+    salvo los paquetes nombrados en `scripts/license-exceptions.json` (hoy
+    `lightningcss`, MPL-2.0, que vite 7 instala en `server/` a través de
+    vitest 4; no se distribuye).
   - **Actualizaciones mayores del tooling hechas ya:** vitest 2 → 4, vite 5 → 7
     y plugin-react 4 → 5; Node ≥ 22.12 (Node 20 está fuera de soporte). zod 4
     se aplaza a BASE-18, porque toca el esquema de sync de la pista A1, y queda

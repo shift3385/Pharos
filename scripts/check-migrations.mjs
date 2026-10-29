@@ -6,7 +6,10 @@
 //     track nor retired in scripts/migration-registry.json;
 //   - a retired number has a file;
 //   - (local) the files and the MIGRATIONS list in src-tauri/src/db.rs differ,
-//     or are listed out of order: an unregistered file would never run.
+//     are listed out of order, or an entry's name differs from the file it
+//     includes: an unregistered file would never run.
+// It warns (without failing) about reserved numbers that already have a file,
+// so that the reservation is removed from the registry.
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -14,11 +17,21 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const NAME = /^(\d{4})_[a-z0-9_]+\.sql$/;
 
-/** Names registered in db.rs, in declaration order. */
+/** Entries of db.rs MIGRATIONS, in declaration order: the name recorded in
+ *  schema_migrations and the file it includes. */
 export function parseRegistered(source) {
   return [
-    ...source.matchAll(/include_str!\(\s*"\.\.\/migrations\/([^"]+)"\s*\)/g),
-  ].map((m) => m[1]);
+    ...source.matchAll(
+      /\(\s*"([^"]+)"\s*,\s*include_str!\(\s*"\.\.\/migrations\/([^"]+)"\s*\)\s*,?\s*\)/g,
+    ),
+  ].map((m) => ({ name: m[1], file: m[2] }));
+}
+
+/** Reserved numbers that already have a file: the reservation is obsolete. */
+export function staleReservations({ files, reserved = {} }) {
+  return files
+    .map((f) => NAME.exec(f)?.[1])
+    .filter((num) => num && num in reserved);
 }
 
 /** Returns the list of problems found in one migrations directory. */
@@ -59,21 +72,28 @@ export function checkMigrations({
     }
   }
   if (registered) {
+    for (const { name, file } of registered) {
+      if (name !== file)
+        errors.push(
+          `${label}: db.rs registers "${name}" with include_str!("${file}"); the name must match the file`,
+        );
+    }
+    const included = registered.map((r) => r.file);
     const valid = [...byNumber.values()].flat().sort();
     for (const f of valid) {
-      if (!registered.includes(f))
+      if (!included.includes(f))
         errors.push(
           `${label}: ${f} is not registered in db.rs MIGRATIONS (it would never run)`,
         );
     }
-    for (const f of registered) {
+    for (const f of included) {
       if (!valid.includes(f))
         errors.push(
           `${label}: db.rs registers ${f}, which is not in the migrations directory`,
         );
     }
-    const ordered = [...registered].sort();
-    if (registered.join() !== ordered.join())
+    const ordered = [...included].sort();
+    if (included.join() !== ordered.join())
       errors.push(`${label}: db.rs MIGRATIONS is not in ascending order`);
   }
   return errors;
@@ -103,6 +123,11 @@ function main() {
     console.log(
       `${label}: ${files.filter((f) => f.endsWith(".sql")).length} migration(s) in ${cfg.dir}`,
     );
+    for (const num of staleReservations({ files, reserved: cfg.reserved })) {
+      console.warn(
+        `  ! ${label}: number ${num} is reserved but already has a file; remove the reservation`,
+      );
+    }
   }
   if (errors.length) {
     console.error("\nMigration check FAILED:");
@@ -113,6 +138,9 @@ function main() {
   return 0;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   process.exit(main());
 }

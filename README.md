@@ -52,7 +52,8 @@ Run from the repository root:
 
    The root install also enables the git hooks (husky): `commit-msg` rejects a
    message that is not a [Conventional Commit](docs/VERSIONING.md#4-commits-ramas-y-etiquetas),
-   and `pre-commit` runs ESLint on the staged `.ts`/`.tsx` files.
+   and `pre-commit` runs ESLint on the staged `.ts`/`.tsx` files. The `prepare`
+   script sets this up on every install, including a fresh clone.
 
 2. **Create `.env`** from the template: `copy .env.example .env`.
    - **Native PostgreSQL:** change the port in `DATABASE_URL` and
@@ -195,6 +196,12 @@ gh api -X PUT repos/shift3385/Pharos/branches/main/protection --input .github/br
 
 ## Production configuration (API)
 
+**`NODE_ENV` must be `production`** for any shared deployment. It defaults to
+`development`, where none of the checks below run. An API started without it on
+a non-loopback `HOST` (the default is `0.0.0.0`) logs a warning at start-up.
+The `api` service of `docker-compose.yml` and the server's `Dockerfile` already
+set it.
+
 With `NODE_ENV=production` the API **refuses to start** (exit code 1, with the
 reason) unless:
 
@@ -207,17 +214,19 @@ reason) unless:
 
 Optional limits (defaults in brackets):
 
-| Variable                  | Purpose                                                                    |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login` and `/auth/register` [10]          |
-| `LOGIN_RATE_LIMIT_WINDOW` | Window for that limit [`1 minute`]; above it the API answers 429           |
-| `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                 |
-| `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                           |
-| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs [false] |
+| Variable                  | Purpose                                                                                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `LOGIN_RATE_LIMIT_MAX`    | Attempts per client IP on `/auth/login` and `/auth/register` [10]                                                             |
+| `LOGIN_RATE_LIMIT_WINDOW` | Window for that limit: milliseconds or `30 seconds`, `1 minute`, `2 hours`… [`1 minute`]; above the limit the API answers 429 |
+| `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                                                                    |
+| `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                                                                              |
+| `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs [false]                                                    |
 
-The `api` service of `docker-compose.yml` runs in production mode. Set
-`JWT_ACCESS_SECRET` and `CORS_ORIGIN` in `.env` before `docker compose up`.
-The database-only setup (`docker compose up -d db`, `dev.bat`) is unaffected.
+The `api` service of `docker-compose.yml` runs in production mode. It reads
+every variable above from `.env`, so set at least `JWT_ACCESS_SECRET` and
+`CORS_ORIGIN` there before `docker compose up`, and `TRUST_PROXY=true` behind a
+reverse proxy. The database-only setup (`docker compose up -d db`, `dev.bat`) is
+unaffected.
 
 ## Project layout
 

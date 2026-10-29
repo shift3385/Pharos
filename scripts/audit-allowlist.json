@@ -1,11 +1,11 @@
 {
-  "$comment": "Known high/critical npm advisories tolerated by `npm run audit` (BASE-03, ADR-0021). Every entry needs a reason, the backlog item that removes it and an expiry date: after that date the gate fails again. Moderate/low advisories are reported but never fail the gate.",
+  "$comment": "Known high/critical npm advisories tolerated by `npm run check:audit` (BASE-03, ADR-0021). Every entry needs a reason, the backlog item that removes it and an expiry date: after that date the gate fails again. Moderate/low advisories are reported but never fail the gate.",
   "advisories": [
     {
       "id": "GHSA-mrhx-c7xc-m3w5",
       "package": "zod",
       "scope": "server",
-      "reason": "Fixed only in zod 4, a major upgrade that touches the sync schemas (track A1). Mitigated meanwhile by the request body limits (BASE-06) and the 1,000-delta cap on /sync/push.",
+      "reason": "Fixed only in zod 4, a major upgrade that touches the sync schemas (track A1). Mitigated meanwhile by the request body limits (BASE-06) and the cap on deltas per /sync/push (500).",
       "item": "BASE-18",
       "expires": "2026-12-15"
     }

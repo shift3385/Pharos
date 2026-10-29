@@ -127,8 +127,11 @@ jobs:
       - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
         with:
           tool: cargo-deny@0.20.2
-      # RustSec advisories, licenses (permissive only), bans and sources.
-      - run: cargo deny --manifest-path src-tauri/Cargo.toml --config deny.toml check
+      # RustSec advisories, licenses (permissive only), bans and sources. Run
+      # inside src-tauri so cargo uses the toolchain pinned there.
+      - name: cargo deny
+        working-directory: src-tauri
+        run: cargo deny --config ../deny.toml check
 
   workflows:
     name: workflows

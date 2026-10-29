@@ -79,8 +79,14 @@ if (!existsSync(modulesDir)) {
   process.exit(1);
 }
 
+// Weak copyleft is accepted only for packages named in license-exceptions.json
+// (the npm side of deny.toml's `exceptions`, ADR-0021).
+const exceptions = JSON.parse(
+  readFileSync(join(root, "scripts", "license-exceptions.json"), "utf8"),
+).npm;
+
 const forbidden = [];
-const warnings = [];
+const excepted = [];
 const unknown = [];
 let checked = 0;
 
@@ -94,20 +100,28 @@ for (const { name, license } of iterPackages(modulesDir)) {
   if (verdict === "forbidden") {
     forbidden.push(`${name}: ${license}`);
   } else if (verdict === "warn") {
-    warnings.push(`${name}: ${license}`);
+    if (exceptions[name]?.license === license) {
+      excepted.push(`${name}: ${license}`);
+    } else {
+      forbidden.push(
+        `${name}: ${license} (weak copyleft not listed in scripts/license-exceptions.json)`,
+      );
+    }
   }
 }
 
 console.log(`Checked ${checked} installed packages.`);
-if (warnings.length) {
-  console.warn("\nWeak-copyleft (review manually):");
-  warnings.forEach((w) => console.warn(`  - ${w}`));
+if (excepted.length) {
+  console.warn("\nWeak-copyleft accepted by name (scripts/license-exceptions.json):");
+  excepted.forEach((w) => console.warn(`  - ${w}`));
 }
 if (unknown.length) {
   console.warn(`\n${unknown.length} package(s) with no declared license field.`);
 }
 if (forbidden.length) {
-  console.error("\nFORBIDDEN licenses detected (GPL/AGPL/SSPL — spec §15):");
+  console.error(
+    "\nFORBIDDEN licenses detected (GPL/AGPL/SSPL, or unlisted weak copyleft — spec §15):",
+  );
   forbidden.forEach((f) => console.error(`  - ${f}`));
   process.exit(1);
 }

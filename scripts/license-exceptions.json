@@ -1,0 +1,13 @@
+{
+  "$comment": "Weak-copyleft npm packages (MPL, LGPL…) accepted by name, as deny.toml does for Cargo (ADR-0021). Used by scripts/check-licenses.mjs and server/scripts/check-licenses.mjs: any other weak-copyleft package fails the license gate until it is reviewed and listed here. Only unmodified dependencies qualify.",
+  "npm": {
+    "lightningcss": {
+      "license": "MPL-2.0",
+      "reason": "Optional CSS engine of vite 7, installed in server/ through vitest 4 (test tooling, never shipped)."
+    },
+    "lightningcss-win32-x64-msvc": {
+      "license": "MPL-2.0",
+      "reason": "Native Windows binary of lightningcss (test tooling, never shipped)."
+    }
+  }
+}

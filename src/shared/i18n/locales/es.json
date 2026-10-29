@@ -232,7 +232,7 @@
       "invalid_credentials": "Correo o contraseña incorrectos.",
       "email_in_use": "Ese correo ya está registrado.",
       "validation_error": "Revisa los datos introducidos.",
-      "rate_limited": "Demasiados intentos. Espera un minuto y vuelve a intentarlo.",
+      "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
       "network": "No se pudo conectar con el servidor.",
       "generic": "Algo salió mal. Inténtalo de nuevo."
     }

@@ -7,9 +7,13 @@ import { beforeAll, describe, expect, it } from "vitest";
 // valid development environment first (CI has no .env file).
 process.env.DATABASE_URL ??= "postgres://user:pass@127.0.0.1:1/unused";
 process.env.JWT_ACCESS_SECRET ??= "dev-only-secret-for-the-env-tests";
-let loadEnv: typeof import("../src/config/env").loadEnv;
+type Config = typeof import("../src/config/env");
+let loadEnv: Config["loadEnv"];
+let parseDurationMs: Config["parseDurationMs"];
+let startupWarnings: Config["startupWarnings"];
 beforeAll(async () => {
-  ({ loadEnv } = await import("../src/config/env"));
+  ({ loadEnv, parseDurationMs, startupWarnings } =
+    await import("../src/config/env"));
 });
 
 const serverDir = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -123,5 +127,29 @@ describe("environment (BASE-06)", () => {
     expect(res.stderr).toContain("Invalid environment configuration");
     expect(res.stderr).toContain("JWT_ACCESS_SECRET");
     expect(res.stderr).toContain("CORS_ORIGIN");
+  });
+  it("parses LOGIN_RATE_LIMIT_WINDOW as a duration and rejects nonsense", () => {
+    expect(parseDurationMs("60000")).toBe(60_000);
+    expect(parseDurationMs("30 seconds")).toBe(30_000);
+    expect(parseDurationMs("1 minute")).toBe(60_000);
+    expect(parseDurationMs("2h")).toBe(7_200_000);
+    expect(parseDurationMs("0")).toBeNull();
+    expect(parseDurationMs("soon")).toBeNull();
+    expect(parseDurationMs("5 fortnights")).toBeNull();
+    expect(loadEnv(production).LOGIN_RATE_LIMIT_WINDOW).toBe(60_000);
+    expect(() =>
+      loadEnv({ ...production, LOGIN_RATE_LIMIT_WINDOW: "a while" }),
+    ).toThrow(/LOGIN_RATE_LIMIT_WINDOW: "a while" is not a duration/);
+  });
+
+  it("warns when the API listens beyond loopback outside production", () => {
+    const dev = (HOST: string) =>
+      loadEnv({ NODE_ENV: "development", HOST, CORS_ORIGIN: "*" });
+    expect(startupWarnings(dev("0.0.0.0"))[0]).toMatch(
+      /NODE_ENV=development with HOST=0\.0\.0\.0: .*production checks .* are off/,
+    );
+    expect(startupWarnings(dev("127.0.0.1"))).toEqual([]);
+    expect(startupWarnings(dev("localhost"))).toEqual([]);
+    expect(startupWarnings(loadEnv(production))).toEqual([]);
   });
 });

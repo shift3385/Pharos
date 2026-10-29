@@ -22,7 +22,7 @@
     "check:migrations": "node scripts/check-migrations.mjs",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "check:audit": "node scripts/audit-gate.mjs",
-    "check:deps": "cargo deny --manifest-path src-tauri/Cargo.toml --config deny.toml check",
+    "check:deps": "cd src-tauri && cargo deny --config ../deny.toml check",
     "check:rust": "node scripts/rust-gates.mjs fmt && node scripts/rust-gates.mjs clippy",
     "version:set": "node scripts/version.mjs set",
     "verify": "npm run typecheck && npm run lint && npm run check:licenses && npm run check:version && npm run check:migrations && npm run test:scripts && npm run test",

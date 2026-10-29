@@ -44,8 +44,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   - En producción el servidor no arranca con el secreto JWT de ejemplo, con un
     secreto de menos de 32 caracteres o con `CORS_ORIGIN=*`.
   - Inicio de sesión y registro limitados a 10 intentos por minuto y por IP.
-    La app muestra "Demasiados intentos. Espera un minuto y vuelve a
-    intentarlo."
+    La app muestra "Demasiados intentos. Espera un momento y vuelve
+    a intentarlo."
   - Límite de tamaño de petición: 1 MiB en general y 8 MiB en la
     sincronización.
 - **Dependencias actualizadas (BASE-03):**

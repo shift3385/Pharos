@@ -25,7 +25,7 @@ export const testEnv: Env = {
   TRUST_PROXY: false,
   // Far above what one test file sends, so only the limit tests hit it.
   LOGIN_RATE_LIMIT_MAX: 1000,
-  LOGIN_RATE_LIMIT_WINDOW: "1 minute",
+  LOGIN_RATE_LIMIT_WINDOW: 60_000,
   BODY_LIMIT_BYTES: 1_048_576,
   SYNC_BODY_LIMIT_BYTES: 8_388_608,
 };

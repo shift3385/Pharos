@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkMigrations, parseRegistered } from "./check-migrations.mjs";
+import {
+  checkMigrations,
+  parseRegistered,
+  staleReservations,
+} from "./check-migrations.mjs";
+
+/** db.rs entries whose name matches the included file. */
+const reg = (names) => names.map((n) => ({ name: n, file: n }));
 
 const files = ["0001_init.sql", "0002_documents.sql", "0003_documents_hlc.sql"];
 
@@ -73,7 +80,7 @@ test("badly named .sql files fail; other files are ignored", () => {
 });
 
 test("local: files and db.rs registration must match, in order", () => {
-  const registered = ["0001_init.sql", "0002_documents.sql"];
+  const registered = reg(["0001_init.sql", "0002_documents.sql"]);
   const errors = checkMigrations({ label: "local", files, registered });
   assert.deepEqual(errors, [
     "local: 0003_documents_hlc.sql is not registered in db.rs MIGRATIONS (it would never run)",
@@ -81,13 +88,13 @@ test("local: files and db.rs registration must match, in order", () => {
   const extra = checkMigrations({
     label: "local",
     files,
-    registered: [...files, "0004_ghost.sql"],
+    registered: reg([...files, "0004_ghost.sql"]),
   });
   assert.match(extra[0], /registers 0004_ghost\.sql/);
   const unordered = checkMigrations({
     label: "local",
     files,
-    registered: [files[1], files[0], files[2]],
+    registered: reg([files[1], files[0], files[2]]),
   });
   assert.match(unordered[0], /not in ascending order/);
 });
@@ -101,7 +108,30 @@ test("parseRegistered reads include_str! entries, including multi-line ones", ()
     ),
 ];`;
   assert.deepEqual(parseRegistered(src), [
-    "0001_init.sql",
-    "0002_test_plans.sql",
+    { name: "0001_init.sql", file: "0001_init.sql" },
+    { name: "0002_test_plans.sql", file: "0002_test_plans.sql" },
   ]);
+});
+
+test("local: an entry whose name differs from its included file fails", () => {
+  const src = `("0002_documents.sql", include_str!("../migrations/0002_typo.sql")),`;
+  const registered = [
+    ...reg(["0001_init.sql"]),
+    ...parseRegistered(src),
+    ...reg(["0003_documents_hlc.sql"]),
+  ];
+  const errors = checkMigrations({ label: "local", files, registered });
+  assert.ok(
+    errors.includes(
+      'local: db.rs registers "0002_documents.sql" with include_str!("0002_typo.sql"); the name must match the file',
+    ),
+    errors.join("\n"),
+  );
+});
+
+test("reserved numbers that already have a file are reported", () => {
+  assert.deepEqual(
+    staleReservations({ files, reserved: { "0003": "A1", "0004": "A1" } }),
+    ["0003"],
+  );
 });

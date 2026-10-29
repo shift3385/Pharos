@@ -43,6 +43,13 @@ services:
       ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      # Limits (README, "Production configuration"). Behind a reverse proxy set
+      # TRUST_PROXY=true, or every client shares the proxy's login limit.
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
+      LOGIN_RATE_LIMIT_WINDOW: ${LOGIN_RATE_LIMIT_WINDOW:-1 minute}
+      BODY_LIMIT_BYTES: ${BODY_LIMIT_BYTES:-1048576}
+      SYNC_BODY_LIMIT_BYTES: ${SYNC_BODY_LIMIT_BYTES:-8388608}
     ports:
       - "3000:3000"
 

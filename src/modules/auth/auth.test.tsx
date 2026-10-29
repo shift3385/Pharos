@@ -113,7 +113,7 @@ describe("auth screen", () => {
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Demasiados intentos. Espera un minuto y vuelve a intentarlo.",
+      "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
     );
   });
 });

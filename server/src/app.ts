@@ -19,6 +19,9 @@ const RATE_LIMITED_ROUTES = ["/auth/login", "/auth/register"];
 
 const CLIENT_ERROR_CODES: Record<number, string> = {
   400: "bad_request",
+  401: "unauthorized",
+  403: "forbidden",
+  404: "not_found",
   413: "payload_too_large",
   415: "unsupported_media_type",
   429: "rate_limited",
@@ -100,7 +103,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
     const { statusCode: status, message } = error as FastifyError;
     if (status && status >= 400 && status < 500) {
       return reply.code(status).send({
-        code: CLIENT_ERROR_CODES[status] ?? "bad_request",
+        code: CLIENT_ERROR_CODES[status] ?? "client_error",
         message,
       });
     }

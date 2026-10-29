@@ -47,7 +47,11 @@ Un cambio está hecho cuando se cumplen todas estas condiciones, con evidencia:
   arreglos y los commits de release. El PR se fusiona con merge commit (el
   equivalente de `merge --no-ff`), con todos los checks en verde y sin push
   directo, tampoco de administradores.
-- Los hooks de git (husky) se instalan con `npm install`. `commit-msg`
+- Los hooks de git (husky) se instalan con `npm install`: el script `prepare`
+  apunta `core.hooksPath` a `.husky/_`, también en un clon nuevo. Ese ajuste
+  vive en el `.git/config` compartido por todos los worktrees; un worktree
+  creado antes de fusionar B1 no tiene `.husky/` hasta que hace rebase sobre
+  `main`. **Tras cada rebase sobre `main`, ejecuta `npm install`.** `commit-msg`
   rechaza un mensaje fuera de Conventional Commits y `pre-commit` pasa ESLint
   a los `.ts`/`.tsx` preparados. No uses `--no-verify`: la CI comprueba lo
   mismo.
@@ -59,7 +63,9 @@ Un cambio está hecho cuando se cumplen todas estas condiciones, con evidencia:
   en el mismo cambio que el plan de la pista (VERSIONING §6).
 - **Una dependencia nueva** debe pasar el gate de licencias (npm) o
   `cargo deny` (Rust). Una licencia nueva, aunque sea permisiva, se añade a
-  `deny.toml` de forma explícita.
+  `deny.toml` de forma explícita. El copyleft débil (MPL, LGPL…) solo se
+  acepta por nombre: en `deny.toml` (`exceptions`) para Cargo y en
+  `scripts/license-exceptions.json` para npm.
 
 ## Decisiones
 
