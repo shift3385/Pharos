@@ -2,8 +2,8 @@
 
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
-  independiente (ver "Revisión"). **⚠ Un punto requiere confirmación del
-  usuario:** la retención de evidencias, que sustituye a "no se borran nunca".
+  independiente (ver "Revisión"). La retención de evidencias, que sustituye a
+  "no se borran nunca", fue confirmado por el usuario el 2026-10-28.
   Bloquea EJE-02; SYNC-04b (0.4.0) depende de él.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
@@ -74,8 +74,8 @@
 - **Límite por archivo** configurable (pregunta 1).
 - **Recolección de basura.** Un blob se borra cuando ningún `attachment` vivo lo
   referencia y, con sync, después de que el servidor confirme que lo tiene.
-- **⚠ Retención por tipo (pendiente de confirmar; sustituye a "las evidencias de
-  resultados no se borran nunca").** Con 200 MB por archivo y trazas y vídeos
+- **Retención por tipo (confirmado por el usuario el 2026-10-28; sustituye a "las evidencias de resultados
+  no se borran nunca").** Con 200 MB por archivo y trazas y vídeos
   de CI a diario, guardarlo todo llena el disco sin límite. Por eso cada
   proyecto tiene una política por `kind`, configurable en Admin. Valores por
   defecto:
@@ -184,5 +184,5 @@ Endpoints:
   - `attachments` lleva `revision` y `updated_*`, como toda entidad LWW;
   - se documenta la vía de rotación de `evidence_key` para SEC-04/05;
   - el dueño se toma de `project_id`.
-- **⚠ Cambia una decisión aceptada:** se añade la retención por tipo, con sus
-  excepciones. Pendiente de confirmar.
+- **Cambio sobre lo aceptado, confirmado por el usuario el 2026-10-28:** se añade la retención por tipo, con
+  sus excepciones.

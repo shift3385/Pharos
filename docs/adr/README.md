@@ -31,8 +31,9 @@ ramas; el coordinador los ordena al fusionar. Los ADR 0011 a 0019 son la compuer
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
 [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 Se aceptaron el 2026-10-28 con la opción y las respuestas recomendadas y se
-revisaron ese mismo día tras la revisión independiente. Quedan tres puntos
-pendientes de confirmar (`docs/design/0.2.0-modelo-ejecucion.md` §7). Un ADR "Propuesto" todavía no obliga a nada: pasa a
+revisaron ese mismo día tras la revisión independiente. El usuario confirmó
+los tres cambios que introdujo la revisión (`docs/design/0.2.0-modelo-ejecucion.md`
+§7). Un ADR "Propuesto" todavía no obliga a nada: pasa a
 "Aceptado" cuando el usuario decide, con la opción elegida.
 
 Plantilla: copia la estructura de cualquier ADR (Contexto, Decisión,

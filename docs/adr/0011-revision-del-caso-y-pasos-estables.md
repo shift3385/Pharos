@@ -2,8 +2,8 @@
 
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
-  independiente de la rama (ver "Revisión"): **⚠ un punto requiere confirmación
-  del usuario**, la excepción a VERSIONING §6.5. Bloquea EJE-01/EJE-02.
+  independiente de la rama (ver "Revisión"). La excepción a VERSIONING §6.5
+  fue confirmado por el usuario el 2026-10-28. Bloquea EJE-01/EJE-02.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -162,7 +162,7 @@ reciba `steps: {id, text}[]` reescribe `data` sin ellos: pierde `data.custom` y
 los ids de paso. Si su push se aceptara, los ids se volverían a derivar por
 posición y los resultados antiguos apuntarían a pasos equivocados. Por eso:
 
-1. **⚠ Requiere confirmación del usuario (cambia VERSIONING §6.5).** El
+1. **Excepción a VERSIONING §6.5 (confirmado por el usuario el 2026-10-28).** El
    servidor 0.2 acepta clientes 0.1 **solo para leer**:
    - `pull` funciona;
    - todo `push` de un 0.1 se rechaza con
@@ -170,9 +170,8 @@ posición y los resultados antiguos apuntarían a pasos equivocados. Por eso:
      muestra "actualiza para enviar cambios";
    - sus cambios pendientes no se pierden: se envían al actualizar.
 
-   La regla general propuesta para §6.5 es: _"una MENOR que cambia la forma
-   de entidades existentes acepta la MENOR anterior solo en lectura"_.
-   VERSIONING.md se modifica cuando el usuario lo confirme.
+   La regla general queda escrita en VERSIONING §6.5: _"una MENOR que cambia
+   la forma de entidades existentes acepta la MENOR anterior solo en lectura"_.
 
 2. **Un campo que falta en el payload conserva el valor local.** Al aplicar un
    documento, `apply_doc` no pone el valor por defecto en las columnas o claves
@@ -215,5 +214,5 @@ posición y los resultados antiguos apuntarían a pasos equivocados. Por eso:
   - el campo que falta conserva el valor local;
   - el cursor vuelve a 0 en el primer sync;
   - nomenclatura `<scenario_id>` en lugar de `TC-xxx`.
-- **⚠ Cambia una regla aceptada:** el servidor 0.2 acepta clientes 0.1 solo en
-  lectura (excepción a VERSIONING §6.5). Pendiente de confirmar.
+- **Cambio sobre lo aceptado, confirmado por el usuario el 2026-10-28:** el servidor 0.2 acepta clientes 0.1
+  solo en lectura (excepción en VERSIONING §6.5).

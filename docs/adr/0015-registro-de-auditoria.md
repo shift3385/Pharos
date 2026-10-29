@@ -2,8 +2,7 @@
 
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
-  independiente (ver "Revisión"). **⚠ Un punto requiere confirmación del
-  usuario:** quién ve la auditoría.
+  independiente (ver "Revisión"). Quién ve la auditoría fue confirmado por el usuario el 2026-10-28.
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -128,13 +127,13 @@ auditan en el servidor.
 
 1. Hay cadena de hash desde 0.2.0. Evita un cambio de esquema cuando lleguen los
    paquetes normativos (DOC-03, Part 11) y permite redactar contenido.
-2. **⚠ Pendiente de confirmar (aclaración).** En 0.2.0 la auditoría la ve el
+2. **Aclaración confirmado por el usuario el 2026-10-28.** En 0.2.0 la auditoría la ve el
    propio usuario; desde 0.3.0, solo el **Test Manager** del workspace. La
    respuesta aceptada incluía también "Viewer con permiso de auditoría" a través
    del antiguo rol `auditor` de `project_members`, pero ADR-0019 no usa
    `project_members` y su tabla de permisos da la auditoría solo al Test
-   Manager. Se propone quedarse con esto último; un rol de auditor puede volver
-   con los roles por proyecto.
+   Manager. Queda esto último; un rol de auditor puede volver con los roles
+   por proyecto.
 
 ## Revisión (2026-10-28, tras la revisión independiente)
 
@@ -144,7 +143,7 @@ auditan en el servidor.
   - la redacción es una operación de servidor;
   - se define el dueño de un evento según la regla de ADR-0020;
   - FIX-06 ya está corregido en A2.
-- **⚠ Aclaración pendiente de confirmar:** quién ve la auditoría (decisión 2).
+- **Aclaración confirmado por el usuario el 2026-10-28:** quién ve la auditoría (decisión 2).
 - **Simplificación propuesta al usuario (no aplicada):** para las entidades con
   revisión (casos, ADR-0011), el evento podría apuntar a las revisiones de antes
   y después en lugar de copiar las diferencias. Se ahorra espacio y se pierde

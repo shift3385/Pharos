@@ -208,7 +208,7 @@ como dato de autoría, no de visibilidad.
 4. En 0.3.0 las invitaciones se hacen por enlace o código, sin correo. El SMTP
    llegará con el despliegue (0.5.0).
 5. Solo el Test Manager ve la auditoría (coherente con ADR-0015, decisión 2,
-   pendiente de confirmar).
+   confirmado por el usuario el 2026-10-28).
 
 ## Revisión (2026-10-28, tras la revisión independiente)
 

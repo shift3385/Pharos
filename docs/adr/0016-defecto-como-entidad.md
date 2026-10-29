@@ -136,9 +136,8 @@ Servidor: documentos `defect` y `defect_link` (LWW).
   `planner_cards.owner_id`.
 - **Tarjetas `defect` de clientes 0.1.** Las escritas antes de actualizar el
   servidor llegan por pull, y un cliente 0.2.0 las convierte al aplicarlas con la
-  misma función. Después, si se confirma que el servidor 0.2 acepta los 0.1 solo
-  en lectura (ADR-0011), un 0.1 ya no puede crear tarjetas `defect` nuevas en
-  el servidor.
+  misma función. Después, como el servidor 0.2 acepta los 0.1 solo en lectura
+  (ADR-0011), un 0.1 ya no puede crear tarjetas `defect` nuevas en el servidor.
 - **SYNC-04a (A1, 0.1.0)** sincroniza las tarjetas y los defectos tal como
   están hoy. DEF-01 no depende de ese diseño, pero su migración tiene que
   aceptar tarjetas ya sincronizadas.
