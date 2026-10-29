@@ -223,14 +223,15 @@ The QA tool tests itself at four levels:
 
 Coverage (BASE-13) is a report, not a gate: `npm run coverage`
 (`@vitest/coverage-v8`) and `npm run coverage:rust` (`cargo llvm-cov`, works
-with MSVC), both into `coverage/`.
+with MSVC), both into `coverage/`. CI publishes the frontend report on every PR
+(job summary and artifact of the `client` job); the Rust report stays local.
 
 The client, Rust core, backend and repository-gate suites run in GitHub Actions
 on every PR and push to `main` (`.github/workflows/ci.yml`). The same pipeline
 also runs `cargo deny` (RustSec, licenses) and `zizmor` on the workflows, and
 the Windows installer is built as a CI artifact (`installer.yml`). The desktop
-E2E smoke and the coverage reports run locally for now; their CI jobs are
-pending (BASE-13, BASE-14). Policy: [ADR-0021](adr/0021-ci-y-cadena-de-suministro.md).
+E2E smoke runs in the `e2e` job (BASE-14) and the frontend coverage report in
+`client` (BASE-13). Policy: [ADR-0021](adr/0021-ci-y-cadena-de-suministro.md).
 
 ## Backend (Phase 1+)
 
