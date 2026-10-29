@@ -359,16 +359,19 @@ fails) and runs `npm run e2e:driver`. Then, in one step, it starts the API on
 `localhost:3000` in the background and runs `npm run e2e`: the runner kills
 whatever a step leaves running. The run's `e2e/results/` and the API logs are
 published as the `e2e-results` artifact (14 days), also when the smoke fails.
-Today every session fails with `DevToolsActivePort file doesn't exist`. Pharos
-and WebView2 start in the runner's interactive session and use the profile's
-WebView2 folder, but the WebView2 browser process starts without the
-`--remote-debugging-port` that msedgedriver passes in
-`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. The per-app registry policy
+**Why Pharos opens the DevTools port itself.** msedgedriver asks WebView2 for
+a DevTools port through `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. On the CI
+runner, which runs elevated (an administrator with UAC auto-elevation), the
+WebView2 browser starts without that argument, and the per-app registry policy
 (`HKCU\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`) is
-ignored too; only the arguments the app passes itself get through. The runner
-runs elevated (an administrator with UAC auto-elevation); locally the same
-variable works. A temporary diagnosis step shows the details and goes away
-once the job is green.
+ignored too: only the arguments the app passes itself get through (locally the
+variable works). So with `PHAROS_E2E_PROFILE` set, a debug build adds
+`--remote-debugging-port=0` to its own WebView2 arguments; msedgedriver finds
+the port in `DevToolsActivePort` in the run's WebView2 folder. A release build
+never does, whatever the environment (ADR-0022). The main window is therefore
+built in `src-tauri/src/lib.rs` from its `tauri.conf.json` entry
+(`"create": false`), with the same title, sizes and CSP. Until the job is green,
+a temporary diagnosis step runs when the smoke fails.
 
 `npm install` / `npm ci` download no browser driver: the `edgedriver` and
 `geckodriver` packages that WebdriverIO pulls in only download when

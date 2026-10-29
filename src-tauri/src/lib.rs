@@ -46,6 +46,21 @@ fn session_clear() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
+            // The main window is built here from its tauri.conf.json entry
+            // (`create: false` there), first, as Tauri would build it, so an
+            // E2E profile of a debug build can add WebView2 arguments
+            // (instance.rs). Same config: label, title, sizes, CSP.
+            let config = app
+                .config()
+                .app
+                .windows
+                .first()
+                .ok_or("no window in tauri.conf.json")?;
+            let mut window = tauri::WebviewWindowBuilder::from_config(app.handle(), config)?;
+            if let Some(args) = instance::webview_browser_args() {
+                window = window.additional_browser_args(&args);
+            }
+            window.build()?;
             // Without a resolvable log dir Pharos runs without a log file.
             let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
             app.manage(diag::init(log_dir));

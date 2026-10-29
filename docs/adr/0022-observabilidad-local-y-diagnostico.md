@@ -57,6 +57,27 @@
     base local (`db-key`, de `db.rs`) se comparte con la app normal. El smoke
     borra al terminar las credenciales de su ejecución. Una compilación
     release ignora la variable.
+  - *Actualización (pista Q1, BASE-14; decisión del coordinador del
+    2026-10-29):* **puerto de DevTools solo para el perfil E2E.** La ventana
+    principal ya no la crea Tauri desde `tauri.conf.json` (`"create": false`),
+    sino `lib.rs` al empezar el `setup`, con
+    `WebviewWindowBuilder::from_config` sobre esa misma entrada: mismo label,
+    título, tamaños y CSP. Con un perfil E2E en una compilación debug,
+    `instance::webview_browser_args()` añade a los argumentos de WebView2
+    `--remote-debugging-port=0` (un puerto libre, que msedgedriver lee de
+    `DevToolsActivePort`), además de los que wry pone por defecto, porque
+    fijar argumentos propios los sustituye. Sin perfil, o en release (la
+    función solo devuelve algo bajo `cfg(debug_assertions)`; lo comprueba
+    `release_build_never_opens_a_devtools_port` con `cargo test --release`),
+    la ventana no recibe ningún argumento extra.
+    - **Por qué no basta lo de msedgedriver:** msedgedriver pide el puerto en
+      `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. En el runner de CI, un
+      administrador elevado (UAC con autoelevación) con WebView2 155, el
+      navegador de WebView2 arranca sin ese argumento, y tampoco aplica la
+      política por app
+      `HKCU\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`;
+      solo pasan los argumentos que pone la propia app. En local, sin elevar,
+      la variable sí funciona.
 - **Alternativas:**
   - `tauri-plugin-log` (crate `log` + fern): da API para el frontend, pero no
     ofrece campos estructurados como `tracing`, y el backlog pedía `tracing`.
