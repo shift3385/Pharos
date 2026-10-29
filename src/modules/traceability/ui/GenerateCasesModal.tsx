@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
 import {
   AiFailureNotice,
   aiDestination,
@@ -61,16 +62,6 @@ export function GenerateCasesModal({
   useEffect(() => {
     if (phase === "ready" || phase === "failed" || phase === "review") primaryRef.current?.focus();
   }, [phase]);
-
-  // Escape closes, except while cases are being saved.
-  useEffect(() => {
-    if (phase === "creating") return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [phase, onClose]);
 
   const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
   const key = requirement.requirementKey;
@@ -137,102 +128,108 @@ export function GenerateCasesModal({
   const busy = phase === "loading" || phase === "creating";
 
   return (
-    <div className="cd-overlay" role="dialog" aria-modal="true" aria-labelledby="tr-gen-title">
-      <div className="cd tr-gen">
-        <h3 id="tr-gen-title" className="cd__title">
-          {t("traceability.generate.title", { key })}
-        </h3>
-        <p className="cd__msg">
-          <span className="tr-key">{key}</span> {requirement.title}
-        </p>
-        {destination && (
-          <p className="tr-gen__hint">{t("ai.provenance.destination", { source: label(destination) })}</p>
-        )}
+    // Escape and the backdrop close it, except while cases are being saved.
+    <Dialog
+      className="cd tr-gen"
+      labelledBy="tr-gen-title"
+      onClose={onClose}
+      dismissable={phase !== "creating"}
+      initialFocus={primaryRef}
+    >
+      <h3 id="tr-gen-title" className="cd__title">
+        {t("traceability.generate.title", { key })}
+      </h3>
+      <p className="cd__msg">
+        <span className="tr-key">{key}</span> {requirement.title}
+      </p>
+      {destination && (
+        <p className="tr-gen__hint">{t("ai.provenance.destination", { source: label(destination) })}</p>
+      )}
 
-        {phase === "ready" && <p className="tr-gen__hint">{t("traceability.generate.intro")}</p>}
-        {/* Always present, so screen readers announce the change. */}
-        <p className="cd__msg tr-gen__status" role="status" aria-live="polite">
-          {phase === "loading"
-            ? t("traceability.generate.loading")
-            : phase === "creating"
-              ? t("traceability.generate.creating")
-              : ""}
+      {phase === "ready" && <p className="tr-gen__hint">{t("traceability.generate.intro")}</p>}
+      {/* Always present, so screen readers announce the change. */}
+      <p className="cd__msg tr-gen__status" role="status" aria-live="polite">
+        {phase === "loading"
+          ? t("traceability.generate.loading")
+          : phase === "creating"
+            ? t("traceability.generate.creating")
+            : ""}
+      </p>
+      {phase === "failed" && failure && <AiFailureNotice failure={failure} />}
+      {phase === "review" && saveFailed > 0 && (
+        <p className="tr-gen__failed" role="alert">
+          <span aria-hidden="true">⚠ </span>
+          {t("traceability.generate.saveFailed", { count: saveFailed })}
         </p>
-        {phase === "failed" && failure && <AiFailureNotice failure={failure} />}
-        {phase === "review" && saveFailed > 0 && (
-          <p className="tr-gen__failed" role="alert">
-            ⚠ {t("traceability.generate.saveFailed", { count: saveFailed })}
+      )}
+
+      {result && (phase === "review" || phase === "creating") && (
+        <>
+          <p className="tr-gen__hint">
+            {t("ai.provenance.pending")} · {label(result.provenance)}
           </p>
-        )}
-
-        {result && (phase === "review" || phase === "creating") && (
-          <>
-            <p className="tr-gen__hint">
-              {t("ai.provenance.pending")} · {label(result.provenance)}
-            </p>
-            <ul className="tr-gen__list">
-              {result.value.map((c, i) => (
-                <li key={i} className="tr-gen__row">
-                  <label className="tr-gen__check">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(i)}
-                      disabled={phase === "creating"}
-                      onChange={() => toggle(i)}
-                    />
-                    <span>
-                      <span className="tr-gen__name">
-                        {c.title}
-                        <span className="tr-gen__priority">{t(`testCase.priorityLabel.${c.priority}`)}</span>
-                      </span>
-                      {c.description && <span className="tr-gen__desc">{c.description}</span>}
+          <ul className="tr-gen__list">
+            {result.value.map((c, i) => (
+              <li key={i} className="tr-gen__row">
+                <label className="tr-gen__check">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(i)}
+                    disabled={phase === "creating"}
+                    onChange={() => toggle(i)}
+                  />
+                  <span>
+                    <span className="tr-gen__name">
+                      {c.title}
+                      <span className="tr-gen__priority">{t(`testCase.priorityLabel.${c.priority}`)}</span>
                     </span>
-                  </label>
-                  <details className="tr-gen__gherkin">
-                    <summary>{t("traceability.generate.gherkin")}</summary>
-                    <pre>{proposalGherkin(c, key)}</pre>
-                  </details>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+                    {c.description && <span className="tr-gen__desc">{c.description}</span>}
+                  </span>
+                </label>
+                <details className="tr-gen__gherkin">
+                  <summary>{t("traceability.generate.gherkin")}</summary>
+                  <pre>{proposalGherkin(c, key)}</pre>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
-        <div className="cd__actions">
-          <button type="button" className="cd__cancel" disabled={phase === "creating"} onClick={onClose}>
-            {t("common.cancel")}
+      <div className="cd__actions">
+        <button type="button" className="cd__cancel" disabled={phase === "creating"} onClick={onClose}>
+          {t("common.cancel")}
+        </button>
+        {(phase === "ready" || phase === "loading") && (
+          <button
+            ref={primaryRef}
+            type="button"
+            className="cd__confirm"
+            disabled={busy}
+            onClick={() => void generate()}
+          >
+            {phase === "loading" ? t("ai.structured.thinking") : t("traceability.generate.run")}
           </button>
-          {(phase === "ready" || phase === "loading") && (
-            <button
-              ref={primaryRef}
-              type="button"
-              className="cd__confirm"
-              disabled={busy}
-              onClick={() => void generate()}
-            >
-              {phase === "loading" ? t("ai.structured.thinking") : t("traceability.generate.run")}
-            </button>
-          )}
-          {phase === "failed" && (
-            <button ref={primaryRef} type="button" className="cd__confirm" onClick={() => void generate()}>
-              {t("traceability.generate.retry")}
-            </button>
-          )}
-          {(phase === "review" || phase === "creating") && (
-            <button
-              ref={primaryRef}
-              type="button"
-              className="cd__confirm"
-              disabled={busy || selected.size === 0}
-              onClick={() => void accept()}
-            >
-              {phase === "creating"
-                ? t("traceability.generate.creating")
-                : t("traceability.generate.accept", { count: selected.size })}
-            </button>
-          )}
-        </div>
+        )}
+        {phase === "failed" && (
+          <button ref={primaryRef} type="button" className="cd__confirm" onClick={() => void generate()}>
+            {t("traceability.generate.retry")}
+          </button>
+        )}
+        {(phase === "review" || phase === "creating") && (
+          <button
+            ref={primaryRef}
+            type="button"
+            className="cd__confirm"
+            disabled={busy || selected.size === 0}
+            onClick={() => void accept()}
+          >
+            {phase === "creating"
+              ? t("traceability.generate.creating")
+              : t("traceability.generate.accept", { count: selected.size })}
+          </button>
+        )}
       </div>
-    </div>
+    </Dialog>
   );
 }

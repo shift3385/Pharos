@@ -52,7 +52,12 @@
 }
 .home__action-desc {
   font-size: var(--fs-caption);
-  opacity: 0.85;
+  color: var(--color-text-secondary);
+}
+
+/* Full-strength text on amber: an opacity drops it under 4.5:1 (UX-05). */
+.home__action--primary .home__action-desc {
+  color: var(--color-accent-contrast);
 }
 
 .home__projects {
@@ -78,7 +83,7 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 

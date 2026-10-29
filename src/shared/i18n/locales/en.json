@@ -28,7 +28,8 @@
     "confirmDelete": "Yes, delete",
     "cancel": "Cancel",
     "noData": "No data",
-    "edit": "Edit"
+    "edit": "Edit",
+    "discardConfirm": "You have unsaved changes. Discard them?"
   },
   "templates": {
     "title": "Templates",
@@ -656,7 +657,9 @@
       "removeColumn": "Remove column",
       "removeRow": "Remove row",
       "placeholders": "Placeholders detected in the steps",
-      "orphanColumns": "Columns without a placeholder in the steps: {{cols}}"
+      "orphanColumns": "Columns without a placeholder in the steps: {{cols}}",
+      "columnN": "Column {{n}}",
+      "actions": "Actions"
     },
     "derived": {
       "examples": "Examples",
@@ -709,7 +712,17 @@
     "exportFeatures": "Export .feature (all)",
     "exportFeaturesToast": "{{count}} .feature files exported to {{path}}",
     "exportProvisionalToast": "{{count}} case(s) still have a provisional key: their files have no ID tag yet. Sync and export again.",
-    "aiPendingCase": "AI-generated case"
+    "aiPendingCase": "AI-generated case",
+    "stepN": "Step {{n}}",
+    "drag": {
+      "help": "To reorder a step, press Space or Enter on its handle, move it with the up and down arrows, and press Space or Enter to drop it. Escape cancels.",
+      "start": "Picked up step {{n}}.",
+      "over": "Step {{n}} is over position {{to}}.",
+      "end": "Step {{n}} moved to position {{to}}.",
+      "cancel": "Move cancelled; step {{n}} is back in place."
+    },
+    "gherkinEditor": "Gherkin editor",
+    "gherkinKeys": "Tab indents. To leave the editor from the keyboard, press Escape and then Tab."
   },
   "dashboard": {
     "title": "Welcome to Pharos",
@@ -798,7 +811,15 @@
     },
     "savedToast": "Card saved",
     "linkedCases": "Linked test cases",
-    "noCasesToLink": "This project has no test cases yet."
+    "noCasesToLink": "This project has no test cases yet.",
+    "drag": {
+      "handle": "Move card “{{card}}”",
+      "help": "To move a card, press Space or Enter on its handle, move it with the arrows (up and down in a column, left and right between columns) and press Space or Enter to drop it. Escape cancels.",
+      "start": "Picked up card “{{card}}”.",
+      "over": "Card “{{card}}” is over the {{column}} column.",
+      "end": "Card “{{card}}” moved to {{column}}.",
+      "cancel": "Move cancelled; card “{{card}}” is back in place."
+    }
   },
   "traceability": {
     "title": "Traceability",
@@ -871,7 +892,9 @@
       "importing": "Importing…",
       "doneToast": "Imported: {{created}} new, {{updated}} updated",
       "skippedToast": "Not imported (they belong to deleted requirements and are never reused): {{keys}}",
-      "error": "The CSV could not be imported"
+      "error": "The CSV could not be imported",
+      "preview": "Requirements preview",
+      "skipped": "Rows that will be skipped ({{count}})"
     },
     "view": {
       "requirements": "Requirements",
@@ -973,5 +996,32 @@
     "copiedHint": "Paste it into your password manager, then copy something else to clear the clipboard.",
     "savedCheck": "I have saved it somewhere safe",
     "close": "Close"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "close": "Close",
+    "currentStep": "current step",
+    "row": "Row {{n}}",
+    "mainNav": "Main navigation",
+    "start": "Start",
+    "end": "End",
+    "date": "Date"
+  },
+  "validation": {
+    "severity": {
+      "error": "Error",
+      "warning": "Warning"
+    },
+    "required": "This field is required.",
+    "number": "Enter a number.",
+    "integer": "Enter a whole number.",
+    "min": "The minimum is {{min}}.",
+    "max": "The maximum is {{max}}.",
+    "dateOrder": "The end date is before the start date.",
+    "format": "Invalid format. Example: {{example}}.",
+    "duplicateRow": "Duplicate row: there is already one like it.",
+    "duplicateKey": "That ID already exists.",
+    "summary": "Cannot save: check {{count}} field(s).",
+    "savedWithWarnings": "Saved with {{count}} warning(s) to review."
   }
 }

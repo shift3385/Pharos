@@ -117,7 +117,7 @@
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   background: var(--color-surface-2);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: var(--fs-caption);
   font-weight: var(--fw-medium);
 }
@@ -214,4 +214,9 @@
 .app-shell__main {
   position: relative;
   z-index: 1;
+}
+
+/* The skip-link target is a container, not a control: no focus ring. */
+.app-shell__content:focus {
+  outline: none;
 }

@@ -5,10 +5,65 @@
   gap: var(--space-1);
 }
 
-.tp-field > span:first-child {
+.tp-field > span:first-child,
+.tp-field__label {
   font-size: var(--fs-caption);
   font-weight: var(--fw-medium);
   color: var(--color-text-secondary);
+}
+
+.tp-field__req {
+  color: var(--color-error-text);
+}
+
+/* ---- Validation (UX-01, FormField.tsx) ---- */
+[aria-invalid="true"] {
+  border-color: var(--color-error) !important;
+}
+
+.field-msg {
+  font-size: var(--fs-metadata);
+  line-height: var(--lh-normal);
+}
+
+.field-msg--error {
+  color: var(--color-error-text);
+}
+
+.field-msg--warning {
+  color: var(--color-warning-text);
+}
+
+.field-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-error);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+}
+
+.field-summary__title {
+  font-weight: var(--fw-semibold);
+  color: var(--color-error-text);
+}
+
+.field-summary ul {
+  padding-left: var(--space-5);
+}
+
+.field-summary__link {
+  padding: 0;
+  font: inherit;
+  font-weight: var(--fw-medium);
+  color: var(--color-navy-500);
+  text-decoration: underline;
+  background: none;
+  border: none;
 }
 
 .tp-field input,
@@ -19,7 +74,7 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 
@@ -33,7 +88,7 @@
 .tp-field textarea:focus {
   outline: none;
   border-color: var(--color-navy-500);
-  box-shadow: 0 0 0 3px var(--color-navy-100);
+  box-shadow: 0 0 0 2px var(--color-focus);
 }
 
 .tp-field__grouplabel {
@@ -73,7 +128,7 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 
@@ -92,7 +147,7 @@
 }
 
 .tp-list-field__del:hover {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: var(--color-error);
 }
 
@@ -134,7 +189,7 @@
   font-size: var(--fs-ui);
   color: var(--color-text-primary);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 
@@ -203,12 +258,19 @@
 
 .tp-confirm__yes {
   color: var(--color-surface-1);
-  background: var(--color-error);
-  border: 1px solid var(--color-error);
+  background: var(--color-error-text);
+  border: 1px solid var(--color-error-text);
 }
 
 .tp-confirm__no {
   color: var(--color-text-secondary);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
+}
+
+/* A list/table row plus its validation message (UX-01). */
+.tp-list-field__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }

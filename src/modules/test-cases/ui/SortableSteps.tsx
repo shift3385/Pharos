@@ -1,29 +1,34 @@
 import {
   DndContext,
   closestCenter,
+  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { Announcements, DragEndEvent, UniqueIdentifier } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
 
 function SortableStep({
   id,
+  inputId,
   index,
   value,
   onChange,
   onRemove,
 }: {
   id: string;
+  inputId: string;
   index: number;
   value: string;
   onChange: (v: string) => void;
@@ -37,37 +42,63 @@ function SortableStep({
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
+  const name = t("testCase.stepN", { n: index + 1 });
   return (
-    <div ref={setNodeRef} style={style} className="tc-step">
-      <button
-        type="button"
-        className="tc-step__handle"
-        aria-label={t("testCase.dragStep")}
-        {...attributes}
-        {...listeners}
-      >
-        ⠿
-      </button>
-      <span className="tc-step__n">{index + 1}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} />
-      <DeleteButton needsConfirm={value.trim() !== ""} onDelete={onRemove} />
+    <div ref={setNodeRef} style={style}>
+      <div className="tc-step">
+        <button
+          type="button"
+          className="tc-step__handle"
+          {...attributes}
+          {...listeners}
+          aria-label={`${t("testCase.dragStep")}: ${name}`}
+        >
+          ⠿
+        </button>
+        <span className="tc-step__n" aria-hidden="true">
+          {index + 1}
+        </span>
+        <input
+          id={inputId}
+          aria-label={name}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <DeleteButton itemLabel={name} needsConfirm={value.trim() !== ""} onDelete={onRemove} />
+      </div>
     </div>
   );
 }
 
-/** Reorderable list of test steps (drag & drop, spec §5.3). */
+/** Reorderable list of test steps (drag & drop, spec §5.3). The handle also
+ *  works from the keyboard (Space to pick up, arrows to move, Space to drop,
+ *  Escape to cancel) and each move is announced (WCAG 2.1.1, UX-05). Steps
+ *  are not checked for repeats: "Click Next" twice is a normal test. */
 export function SortableSteps({
   steps,
   onChange,
+  label,
 }: {
   steps: string[];
   onChange: (next: string[]) => void;
+  label: string;
 }) {
   const { t } = useTranslation();
+  const baseId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const ids = steps.map((_, i) => String(i));
+  const n = (id: UniqueIdentifier) => Number(id) + 1;
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => t("testCase.drag.start", { n: n(active.id) }),
+    onDragOver: ({ active, over }) =>
+      over ? t("testCase.drag.over", { n: n(active.id), to: n(over.id) }) : undefined,
+    onDragEnd: ({ active, over }) =>
+      over ? t("testCase.drag.end", { n: n(active.id), to: n(over.id) }) : undefined,
+    onDragCancel: ({ active }) => t("testCase.drag.cancel", { n: n(active.id) }),
+  };
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -77,11 +108,15 @@ export function SortableSteps({
   }
 
   return (
-    <div className="tc-steps-field">
+    <div className="tc-steps-field" role="group" aria-label={label}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={onDragEnd}
+        accessibility={{
+          announcements,
+          screenReaderInstructions: { draggable: t("testCase.drag.help") },
+        }}
       >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="tc-steps">
@@ -89,6 +124,7 @@ export function SortableSteps({
               <SortableStep
                 key={i}
                 id={String(i)}
+                inputId={`${baseId}-${i}`}
                 index={i}
                 value={value}
                 onChange={(v) => {

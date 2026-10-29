@@ -60,10 +60,10 @@
 }
 .err-boundary__status {
   font-size: var(--fs-caption);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .err-boundary__status--error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 .err-boundary__details {
   font-size: var(--fs-caption);

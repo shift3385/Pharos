@@ -396,7 +396,11 @@ there (`e2e/specs/smoke.e2e.ts`). A second spec (`e2e/specs/diagnostics.e2e.ts`)
 checks the version in Administration, clicks "Exportar diagnóstico", opens the
 ZIP saved in your Downloads folder (an E2E profile has its own settings, so it
 never uses a download folder you chose; set `PHAROS_E2E_DOWNLOADS` if your
-Downloads folder is elsewhere), checks it holds no user data and deletes it. It runs WebdriverIO
+Downloads folder is elsewhere), checks it holds no user data and deletes it. A
+third spec (`e2e/specs/a11y.e2e.ts`, UX-05) injects axe-core into the window
+and fails on any WCAG 2.1 A/AA violation, colour contrast included, on the
+sign-in screen, Home, Projects, Templates, Administration, Profile, a project
+and the plan wizard, in the light and the dark theme. It runs WebdriverIO
 against
 [`tauri-driver`](https://v2.tauri.app/develop/tests/webdriver/), which drives
 the WebView2 window through Microsoft Edge WebDriver.

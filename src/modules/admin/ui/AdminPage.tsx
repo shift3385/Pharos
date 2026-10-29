@@ -7,6 +7,9 @@ import { exportDiagnostics, logClientError } from "@shared/diagnostics";
 import { APP_VERSION } from "@shared/version";
 import { applyBackground, loadSettings, saveSettings } from "../model/settings";
 import { DownloadFolderField } from "./DownloadFolderField";
+import { ErrorSummary, FieldMessage } from "@shared/ui/FormField";
+import { controlProps, useSaveGuard } from "@shared/ui/fieldProps";
+import { numberInRange } from "@shared/validation";
 import "./Admin.css";
 
 /** Administration panel (spec §10): quick access to Templates and the AI engine,
@@ -32,6 +35,10 @@ export function AdminPage() {
       setExporting(false);
     }
   }
+
+  // Retention outside 1–3650 days blocks saving the settings.
+  const retentionIssue = numberInRange(settings.retentionDays, { min: 1, max: 3650, integer: true });
+  const { guard, showSummary, summaryRef } = useSaveGuard(retentionIssue !== null);
 
   function save() {
     saveSettings(settings);
@@ -118,21 +125,39 @@ export function AdminPage() {
           <span className="adm__hint">{t("admin.settings.opacityHint")}</span>
         </label>
 
-        <label className="adm__field">
-          <span className="adm__label">{t("admin.settings.retention")}</span>
+        <div className="adm__field">
+          <label className="adm__label" htmlFor="adm-retention">
+            {t("admin.settings.retention")}
+          </label>
           <input
+            {...controlProps("adm-retention", retentionIssue, "adm-retention-hint")}
+            aria-required
             type="number"
             min={1}
             max={3650}
-            value={settings.retentionDays}
-            onChange={(e) => setSettings((s) => ({ ...s, retentionDays: Number(e.target.value) }))}
+            value={Number.isNaN(settings.retentionDays) ? "" : settings.retentionDays}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                retentionDays: e.target.value === "" ? Number.NaN : Number(e.target.value),
+              }))
+            }
           />
-          <span className="adm__hint">{t("admin.settings.retentionHint")}</span>
-        </label>
+          <span id="adm-retention-hint" className="adm__hint">
+            {t("admin.settings.retentionHint")}
+          </span>
+          {retentionIssue && <FieldMessage id="adm-retention-msg" issue={retentionIssue} />}
+        </div>
 
         <DownloadFolderField />
 
-        <button type="button" className="adm__save" onClick={save}>
+        {showSummary && retentionIssue && (
+          <ErrorSummary
+            ref={summaryRef}
+            items={[{ label: t("admin.settings.retention"), issue: retentionIssue, fieldId: "adm-retention" }]}
+          />
+        )}
+        <button type="button" className="adm__save" onClick={() => guard(save)}>
           {t("admin.settings.save")}
         </button>
       </div>
