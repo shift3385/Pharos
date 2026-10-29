@@ -76,14 +76,20 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   }
 
   it("a project and the plan wizard have no WCAG A/AA violations", async () => {
+    // A project without a plan opens straight into the plan wizard.
     await createProject(projectName);
-    expect(await violations()).toEqual([]);
-    await button(es.testPlan.new).click();
     await expect($(`h2*=${es.testPlan.step.title}`)).toBeDisplayed();
     expect(await violations()).toEqual([]);
   });
 
   it("the skip link is the first stop and moves to the content", async () => {
+    // Leave the unsaved wizard and reload, so Tab starts from the top.
+    await browser.execute(() => {
+      window.confirm = () => true;
+    });
+    await $('[data-testid="nav-dashboard"]').click();
+    await browser.refresh();
+    await expect($('[data-testid="app-version"]')).toBeDisplayed();
     await browser.keys(["Tab"]);
     const skip = $(`a=${es.a11y.skipToContent}`);
     await expect(skip).toBeFocused();
