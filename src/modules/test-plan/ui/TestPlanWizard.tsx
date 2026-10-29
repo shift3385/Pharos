@@ -177,16 +177,18 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     result: ImportResult | null;
   } | null>(null);
   const [aiReady, setAiReady] = useState(false);
-  // The title is the only rule that blocks saving a plan (draft rule).
-  const titleIssue = form ? required(form.title) : null;
-  const { guard, showSummary, summaryRef } = useSaveGuard(titleIssue !== null);
   // Moving between steps puts the focus on the new step's heading (2.4.3).
+  // Declared before the save guard: when a blocked save jumps to step 1, the
+  // guard's effect runs last and the error summary keeps the focus.
   const headingRef = useRef<HTMLHeadingElement>(null);
   const stepMounted = useRef(false);
   useEffect(() => {
     if (stepMounted.current) headingRef.current?.focus();
     stepMounted.current = true;
   }, [step]);
+  // The title is the only rule that blocks saving a plan (draft rule).
+  const titleIssue = form ? required(form.title) : null;
+  const { guard, showSummary, summaryRef } = useSaveGuard(titleIssue !== null);
 
   useEffect(() => {
     void aiAvailable().then(setAiReady);

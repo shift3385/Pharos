@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
+import { expectNoAxeViolations } from "@test/axe";
 import { RecoveryKeySection } from "./ui/RecoveryKeySection";
 
 vi.mock("./api/recoveryKeyApi", () => ({
@@ -60,6 +61,25 @@ describe("recovery key export (SEC-03)", () => {
     expect(document.body).not.toHaveTextContent("7K3M");
     expect(recoveryKeyApi.markShown).toHaveBeenCalledTimes(1);
     expect(screen.getByText(/Mostrada por última vez/)).toBeInTheDocument();
+  });
+
+  it("both dialogs pass axe; Escape cancels the question but not the key (UX-05)", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<RecoveryKeySection />);
+    const open = screen.getByRole("button", { name: "Mostrar clave de recuperación" });
+    await user.click(open);
+    expect(screen.getByRole("dialog", { name: "¿Mostrar la clave de recuperación?" })).toBeInTheDocument();
+    await expectNoAxeViolations();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(open).toHaveFocus();
+
+    await user.click(open);
+    await user.click(screen.getByRole("button", { name: "Mostrar" }));
+    await screen.findByTestId("recovery-key");
+    await expectNoAxeViolations();
+    await user.keyboard("{Escape}");
+    expect(screen.getByTestId("recovery-key")).toBeInTheDocument();
   });
 
   it("copies the key only when the user clicks Copy", async () => {

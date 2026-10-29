@@ -719,7 +719,9 @@
       "over": "Step {{n}} is over position {{to}}.",
       "end": "Step {{n}} moved to position {{to}}.",
       "cancel": "Move cancelled; step {{n}} is back in place."
-    }
+    },
+    "gherkinEditor": "Gherkin editor",
+    "gherkinKeys": "Tab indents. To leave the editor from the keyboard, press Escape and then Tab."
   },
   "dashboard": {
     "title": "Welcome to Pharos",

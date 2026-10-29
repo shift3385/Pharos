@@ -719,7 +719,9 @@
       "over": "Paso {{n}} sobre la posición {{to}}.",
       "end": "Paso {{n}} movido a la posición {{to}}.",
       "cancel": "Movimiento cancelado; el paso {{n}} vuelve a su sitio."
-    }
+    },
+    "gherkinEditor": "Editor Gherkin",
+    "gherkinKeys": "Tab sangra. Para salir del editor con el teclado, pulsa Escape y después Tab."
   },
   "dashboard": {
     "title": "Bienvenido a Pharos",
