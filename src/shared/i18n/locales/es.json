@@ -26,6 +26,8 @@
       "case": "Casos de prueba"
     },
     "builtin": "Incluida",
+    "shared": "Compartida",
+    "sharedHint": "Importada antes de las cuentas: la ven todas las cuentas de este equipo y es de solo lectura. Para editarla, descárgala e impórtala de nuevo.",
     "download": "Descargar .xlsx",
     "import": "Importar plantilla",
     "importedToast": "Plantilla importada: «{{name}}»",
@@ -170,7 +172,13 @@
       "keepRemote": "Usar la del servidor",
       "resolved": "Conflicto resuelto",
       "failed": "No se pudo resolver el conflicto",
-      "entity": { "project": "Proyecto", "test_plan": "Plan de pruebas", "test_case": "Caso de prueba", "requirement": "Requisito", "planner_card": "Tarjeta del planificador" },
+      "entity": {
+        "project": "Proyecto",
+        "test_plan": "Plan de pruebas",
+        "test_case": "Caso de prueba",
+        "requirement": "Requisito",
+        "planner_card": "Tarjeta del planificador"
+      },
       "fields": {
         "title": "Título",
         "name": "Nombre",
@@ -189,6 +197,18 @@
         "description": "Descripción",
         "kind": "Tipo",
         "position": "Posición"
+      },
+      "key": {
+        "title": "Claves repetidas",
+        "intro": "Otro elemento del proyecto ya tiene esta clave en el servidor. Mientras eliges otra, este lleva una clave provisional y no se sincroniza. Si algún caso enlazaba la clave antigua, revísalo.",
+        "lost": "Quería {{key}}",
+        "current": "Ahora: {{key}}",
+        "placeholder": "Nueva clave",
+        "use": "Usar esta clave",
+        "next": "Asignar la siguiente",
+        "assigned": "Clave asignada: {{key}}",
+        "noBlock": "Sincroniza antes para obtener números nuevos, o escribe una clave.",
+        "failed": "No se pudo usar esa clave: {{reason}}"
       }
     }
   },
@@ -214,7 +234,7 @@
       "opacity": "Opacidad del fondo",
       "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido.",
       "retention": "Retención de elementos borrados (días)",
-      "retentionHint": "Los elementos en la papelera se eliminan definitivamente tras estos días.",
+      "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera al siguiente sync. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
       "download": "Carpeta de descargas",
       "downloadPlaceholder": "Ruta de la carpeta (opcional)",
       "downloadHint": "Preferencia; se aplicará a las exportaciones en una próxima versión.",
@@ -643,6 +663,7 @@
     },
     "exportFeatures": "Exportar .feature (todos)",
     "exportFeaturesToast": "{{count}} archivos .feature exportados en features.zip",
+    "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
     "aiPendingCase": "Caso generado por IA"
   },
   "dashboard": {

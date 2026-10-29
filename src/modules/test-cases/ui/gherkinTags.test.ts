@@ -84,6 +84,13 @@ describe("Gherkin tags — rendering", () => {
     );
   });
 
+  it("never writes a provisional key as a tag (DAT-01)", () => {
+    const text = toGherkin("Login", { ...basic, requirementKeys: ["REQ-?ABCD", "REQ-014"] }, "TC-?KQZD");
+    expect(text).not.toContain("?");
+    expect(text).toContain("@REQ-014");
+    expect(text).toContain("  @smoke\n  Scenario: Login");
+  });
+
   it("tags a Scenario Outline at scenario level, not on Examples", () => {
     const text = toGherkin("Login rechazado", outline, "TC-002");
     expect(text).toContain("@REQ-014\nFeature: Login rechazado\n  @TC-002\n  Scenario Outline: Login rechazado");

@@ -203,6 +203,10 @@ fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<String, Strin
     }
     let scenario_id = match input.scenario_id.as_deref().map(str::trim) {
         Some(s) if !s.is_empty() => {
+            // `?` marks a provisional key (DAT-01); nobody types one.
+            if keys::is_provisional(s) {
+                return Err(format!("invalid scenario id: {s}"));
+            }
             if keys::taken_live(conn, KeyKind::Case, &input.project_id, s)? {
                 return Err(format!("duplicate scenario id: {s}"));
             }

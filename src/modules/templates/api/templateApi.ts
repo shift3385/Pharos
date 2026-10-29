@@ -19,7 +19,11 @@ const KEY = "pharos.templates";
 
 function loadAll(): TemplateData[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]") as TemplateData[];
+    // One browser profile, one user: every imported template is its own.
+    return (JSON.parse(localStorage.getItem(KEY) ?? "[]") as TemplateData[]).map((t) => ({
+      ...t,
+      isOwn: !t.isBuiltin,
+    }));
   } catch {
     return [];
   }
@@ -56,6 +60,7 @@ const browserApi = {
       usagePrompt: input.usagePrompt ?? "",
       version: input.version ?? "1.0",
       isBuiltin: false,
+      isOwn: true,
       dataBase64: input.dataBase64,
     };
     saveAll([...loadAll(), item]);
@@ -65,6 +70,7 @@ const browserApi = {
     const items = loadAll();
     const idx = items.findIndex((t) => t.id === id);
     if (idx < 0) return null;
+    if (items[idx].isBuiltin) throw new Error("built-in templates are read-only");
     items[idx] = {
       ...items[idx],
       name: meta.name,
@@ -95,6 +101,7 @@ const browserApi = {
         usagePrompt: s.usagePrompt ?? "",
         version: s.version ?? "1.0",
         isBuiltin: true,
+        isOwn: false,
         dataBase64: s.dataBase64,
       });
     }
@@ -107,17 +114,20 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return invoke<T>(cmd, args);
 }
 
+// `userId` is the signed-in user (FIX-08b): the desktop store only lists, reads
+// or changes the built-in templates and that user's own. The browser fallback
+// ignores it until BASE-10 removes it.
 export const templateApi = {
-  list: (): Promise<TemplateSummary[]> =>
-    isTauri() ? invoke("template_list") : browserApi.list(),
-  get: (id: string): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_get", { id }) : browserApi.get(id),
-  create: (input: TemplateInput): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_create", { input }) : browserApi.create(input),
-  update: (id: string, meta: TemplateMeta): Promise<TemplateData | null> =>
-    isTauri() ? invoke("template_update", { id, meta }) : browserApi.update(id, meta),
-  remove: (id: string): Promise<void> =>
-    isTauri() ? invoke("template_delete", { id }) : browserApi.remove(id),
+  list: (userId: string): Promise<TemplateSummary[]> =>
+    isTauri() ? invoke("template_list", { userId }) : browserApi.list(),
+  get: (id: string, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_get", { id, userId }) : browserApi.get(id),
+  create: (input: TemplateInput, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_create", { input, userId }) : browserApi.create(input),
+  update: (id: string, meta: TemplateMeta, userId: string): Promise<TemplateData | null> =>
+    isTauri() ? invoke("template_update", { id, meta, userId }) : browserApi.update(id, meta),
+  remove: (id: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("template_delete", { id, userId }) : browserApi.remove(id),
   seed: (items: TemplateSeedItem[]): Promise<void> =>
     isTauri() ? invoke("template_seed", { items }) : browserApi.seed(items),
 };
