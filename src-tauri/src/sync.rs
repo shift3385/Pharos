@@ -530,7 +530,9 @@ fn apply_doc(
     )
 }
 
-/// Overwrites the local row with a remote document's state.
+/// Overwrites the local row with a remote document's state. `created_by` and
+/// `updated_by` always get `user`, the account the document belongs to (its
+/// owner, ADR-0020), never the free-text `author` of the payload (FIX-06).
 fn write_doc(
     conn: &Connection,
     workspace_id: &str,
@@ -560,8 +562,6 @@ fn write_doc(
     };
     match doc.entity.as_str() {
         "project" => {
-            // created_by/updated_by are NOT NULL; use the owner as the actor.
-            let actor = p.get("ownerId").and_then(Value::as_str).unwrap_or("");
             conn.execute(
                 "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
                         created_by, updated_by, created_at, updated_at, revision, deleted_at)
@@ -577,18 +577,17 @@ fn write_doc(
                     field(p, "name"),
                     field(p, "caseIdPrefix"),
                     p.get("caseIdDigits").and_then(Value::as_i64).unwrap_or(3),
-                    actor,
+                    user,
                     doc.revision,
                 ],
             )
             .map_err(|e| e.to_string())?;
         }
         "test_plan" => {
-            let actor = field(p, "author");
             conn.execute(
                 "INSERT INTO test_plans (id, workspace_id, project_id, title, version, plan_date, author,
                         status, data, created_by, updated_by, created_at, updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?7, ?7, datetime('now'), datetime('now'), ?10, NULL)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?11, ?11, datetime('now'), datetime('now'), ?10, NULL)
                  ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id, title=excluded.title,
                         version=excluded.version, plan_date=excluded.plan_date, author=excluded.author,
                         status=excluded.status, data=excluded.data, updated_by=excluded.updated_by,
@@ -600,20 +599,20 @@ fn write_doc(
                     field(p, "title"),
                     field(p, "version"),
                     p.get("planDate").and_then(Value::as_str),
-                    actor,
+                    field(p, "author"),
                     field(p, "status"),
                     data_str("data"),
                     doc.revision,
+                    user,
                 ],
             )
             .map_err(|e| e.to_string())?;
         }
         "test_case" => {
-            // created_by/updated_by (NOT NULL) reuse the author param (?9).
             conn.execute(
                 "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, version, status,
                         priority, author, data, created_by, updated_by, created_at, updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?9, ?9, datetime('now'), datetime('now'), ?11, NULL)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?12, ?12, datetime('now'), datetime('now'), ?11, NULL)
                  ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id, scenario_id=excluded.scenario_id,
                         title=excluded.title, version=excluded.version, status=excluded.status,
                         priority=excluded.priority, author=excluded.author, data=excluded.data,
@@ -631,6 +630,7 @@ fn write_doc(
                     field(p, "author"),
                     data_str("data"),
                     doc.revision,
+                    user,
                 ],
             )
             .map_err(|e| e.to_string())?;
@@ -1590,6 +1590,90 @@ mod tests {
         let after = oplog::sync_state(&c, U1).unwrap();
         assert_eq!((after.pending, after.orphans), (1, 0));
         assert_eq!(build_pending(&c, U1).unwrap().deltas[0].entity_id, "c9");
+    }
+
+    // FIX-06 on pull (A2 review): pulled rows record the account as their
+    // actor, never the free-text author of the payload.
+    #[test]
+    fn pulled_rows_record_the_account_as_created_and_updated_by() {
+        let c = conn();
+        let ws = ensure_workspace(&c).unwrap();
+        let doc = |entity: &str, id: &str, payload: Value| RemoteDoc {
+            entity: entity.into(),
+            entity_id: id.into(),
+            payload,
+            revision: 1,
+            deleted: false,
+            hlc: WEB_HLC.into(),
+        };
+        let docs = [
+            doc(
+                "project",
+                "p1",
+                json!({ "id": "p1", "ownerId": U1, "name": "Checkout" }),
+            ),
+            doc(
+                "test_plan",
+                "tp1",
+                json!({ "id": "tp1", "projectId": "p1", "title": "Plan", "author": "Ada Lovelace" }),
+            ),
+            doc(
+                "test_case",
+                "c1",
+                json!({ "id": "c1", "projectId": "p1", "scenarioId": "ATS_001", "title": "Login", "author": "Ada Lovelace" }),
+            ),
+            doc(
+                "requirement",
+                "r1",
+                json!({ "id": "r1", "projectId": "p1", "requirementKey": "REQ-001", "title": "R" }),
+            ),
+            doc(
+                "planner_card",
+                "d1",
+                json!({ "id": "d1", "projectId": "p1", "ownerId": U1, "kind": "defect", "title": "Bug" }),
+            ),
+        ];
+        for d in &docs {
+            apply_doc(&c, &ws, U1, d).unwrap();
+        }
+        // An update pulled later keeps the account as the actor too.
+        let mut edited = doc(
+            "test_case",
+            "c1",
+            json!({ "id": "c1", "projectId": "p1", "scenarioId": "ATS_001", "title": "Login v2", "author": "Grace Hopper" }),
+        );
+        edited.revision = 2;
+        edited.hlc = "001740000000000-00000-web-device".into();
+        apply_doc(&c, &ws, U1, &edited).unwrap();
+
+        for (table, id) in [
+            ("projects", "p1"),
+            ("test_plans", "tp1"),
+            ("test_cases", "c1"),
+            ("requirements", "r1"),
+            ("planner_cards", "d1"),
+        ] {
+            let (created_by, updated_by): (String, String) = c
+                .query_row(
+                    &format!("SELECT created_by, updated_by FROM {table} WHERE id = ?1"),
+                    params![id],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .unwrap();
+            assert_eq!(
+                (created_by.as_str(), updated_by.as_str()),
+                (U1, U1),
+                "{table}"
+            );
+        }
+        // The author stays as the visible field it is.
+        assert_eq!(title(&c, "c1"), "Login v2");
+        let author: String = c
+            .query_row("SELECT author FROM test_cases WHERE id = 'c1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(author, "Grace Hopper");
     }
 
     // Review fix: conflicts are looked up per account too.

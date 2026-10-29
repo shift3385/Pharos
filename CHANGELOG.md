@@ -53,6 +53,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Deshacer el borrado de un proyecto:** si el borrado choca con una edición
   en otro equipo y eliges "Usar la del servidor", el proyecto vuelve con sus
   planes, casos, requisitos y tarjetas.
+- Lo que llega por sincronización (proyectos, planes, casos, requisitos y
+  tarjetas) registra como `created_by`/`updated_by` la cuenta dueña, no el
+  nombre de autor escrito a mano; un pull ya no reintroduce el fallo de FIX-06.
 - Un cambio hecho antes de que llegara su proyecto ya no se queda sin enviar en
   silencio: se envía cuando llega el proyecto, y mientras tanto el indicador
   lo dice.
