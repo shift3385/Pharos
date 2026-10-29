@@ -107,6 +107,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   lateral y en Administración → Diagnóstico.
 - Para desarrollo: smoke E2E del binario real (`npm run e2e`, BASE-14) e
   informes de cobertura (`npm run coverage`, `npm run coverage:rust`, BASE-13).
+- **El smoke E2E corre en CI (BASE-14):** cada PR y cada cambio en `main`
+  arrancan el binario real en Windows contra una API local (unos 7 minutos) y
+  suben los resultados como artefacto. Aún no bloquea la fusión. Para ello,
+  una compilación debug con perfil E2E abre ella misma el puerto de DevTools
+  de WebView2; una release nunca lo hace.
 - **Instalador de Windows desde CI (BASE-09):** cada cambio en `main` genera el
   instalador NSIS como artefacto descargable. Las versiones alfa, beta y rc
   solo tienen instalador NSIS; las estables tendrán además MSI.
@@ -247,6 +252,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   - vitest y vite (herramientas de desarrollo con avisos críticos).
   - zod 4 en el servidor (BASE-18), que corrige el aviso alto
     GHSA-mrhx-c7xc-m3w5. La auditoría de npm ya no tolera ningún aviso.
+- Para desarrollo: el driver del smoke E2E (`msedgedriver`) solo se descarga
+  del servidor de Microsoft y debe estar firmado por Microsoft antes de
+  ejecutarse.
 - Licencias de Rust auditadas: solo permisivas, igual que en npm.
 - La clave de Gemini ya no viaja en la URL sino en una cabecera; las peticiones
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.

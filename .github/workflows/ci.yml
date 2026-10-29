@@ -1,5 +1,6 @@
 # Continuous integration (BASE-01). Every job name below is a required check of
-# the protected `main` branch (BASE-02, .github/branch-protection.json).
+# the protected `main` branch (BASE-02, .github/branch-protection.json), except
+# `e2e`, which becomes required once it has proved stable (BASE-14).
 # Supply chain (ADR-0021): every action is pinned to a full commit SHA, with its
 # release in a comment; Dependabot keeps the pins current.
 name: CI
@@ -61,6 +62,94 @@ jobs:
       - name: cargo test
         working-directory: src-tauri
         run: cargo test --locked
+
+  # Desktop smoke of the real debug binary (BASE-14, README → "Desktop E2E
+  # smoke"): WebdriverIO → tauri-driver → msedgedriver → Pharos. The desktop
+  # CSP only allows the API at localhost:3000, so the API runs on this runner.
+  e2e:
+    name: e2e
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        working-directory: src-tauri
+        run: rustup toolchain install
+      # Also caches ~/.cargo/bin, so tauri-driver is built only on a cold cache.
+      # Saved when the smoke fails too: the build and tauri-driver are fine
+      # then, and a failing job would otherwise never warm the cache.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: src-tauri -> target
+          cache-on-failure: true
+      # The image ships PostgreSQL as a disabled Windows service (service
+      # containers need Linux runners); PGBIN, PGUSER and PGPASSWORD come
+      # from the image.
+      - name: Start PostgreSQL
+        run: |
+          $pg = Get-Service -Name 'postgresql*' | Select-Object -First 1
+          Set-Service -InputObject $pg -StartupType Manual -Status Running
+          & "$env:PGBIN\pg_isready.exe" --host=localhost --timeout=60
+          if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not start" }
+          & "$env:PGBIN\createdb.exe" --host=localhost pharos_db
+          if ($LASTEXITCODE -ne 0) { throw "createdb failed" }
+      - name: Write .env
+        shell: bash
+        run: |
+          url="postgres://${PGUSER}:${PGPASSWORD}@localhost:5432"
+          sed -e "s|^DATABASE_URL=.*|DATABASE_URL=${url}/pharos_db|" \
+              -e "s|^TEST_DATABASE_URL=.*|TEST_DATABASE_URL=${url}/pharos_test_db|" \
+              -e "s|^HOST=.*|HOST=localhost|" \
+              .env.example > .env
+      - run: npm ci
+      - run: npm ci
+        working-directory: server
+      - run: npm run migrate
+        working-directory: server
+      # A no-op when that exact version is already in the cache; a new pin
+      # replaces the cached one.
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --version 2.1.0 --locked
+      - run: npm run e2e:driver
+      # One step: the runner kills what a step leaves running when it ends, so
+      # the API lives exactly as long as the smoke. `npm run e2e` seeds the
+      # test account, builds the debug binary and runs WebdriverIO.
+      - name: Start the API on localhost:3000 and run the smoke
+        env:
+          # msedgedriver's verbose log, in e2e/results/ (README → E2E).
+          PHAROS_E2E_DRIVER_LOG: "1"
+        run: |
+          Start-Process -FilePath npm.cmd -ArgumentList 'start' -WorkingDirectory server `
+            -RedirectStandardOutput server/api.log -RedirectStandardError server/api.err.log
+          $up = $false
+          for ($i = 0; $i -lt 60 -and -not $up; $i++) {
+            try { Invoke-RestMethod http://localhost:3000/health | Out-Null; $up = $true } catch { Start-Sleep 1 }
+          }
+          if (-not $up) {
+            Get-Content server/api.log, server/api.err.log -ErrorAction SilentlyContinue
+            throw "The API did not answer on localhost:3000"
+          }
+          npm run e2e
+      - name: Upload the E2E results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-results
+          path: |
+            e2e/results/
+            server/api.log
+            server/api.err.log
+          if-no-files-found: warn
+          retention-days: 14
 
   server:
     name: server
