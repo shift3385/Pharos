@@ -55,6 +55,13 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   no abre ni modifica esos datos. Esta protección empieza en esta versión:
   `0.1.0-alpha.1` no la tiene y abriría esos datos sin avisar. Para volver a
   ella, restaura antes la copia `.bak`.
+- **Clave de recuperación (SEC-03):** en Perfil → Clave de recuperación puedes
+  ver, una vez y tras confirmar, la clave que abre tu base de datos local: 56
+  caracteres en 14 grupos de 4. Guárdala en papel o en un gestor de
+  contraseñas. Si pierdes el almacén de credenciales de Windows (PC nuevo,
+  Windows reinstalado), copia `pharos.db.enc` a la carpeta de datos, abre
+  Pharos y escribe la clave: tus datos vuelven y la clave queda guardada de
+  nuevo. Una errata se detecta antes de tocar nada (ADR-0024).
 - **Exportar diagnóstico (BASE-08):** en Administración → Diagnóstico, y en la
   pantalla de error, un botón guarda en tu carpeta de descargas un `.zip` para
   informar de un fallo: versión, sistema operativo, WebView2, migraciones
@@ -164,6 +171,15 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - El servidor respondía "error interno" (500) a peticiones mal formadas
   (JSON roto, cuerpo demasiado grande, tipo de contenido no admitido). Ahora
   responde con el error 4xx correspondiente.
+- **Clave que falta en el keychain (SEC-03):** si faltaba la clave de la base
+  local pero el archivo cifrado existía, la app creaba y guardaba una clave
+  nueva y luego no podía abrir los datos. Ahora no guarda nada y te pide la
+  clave de recuperación.
+- **Primer guardado que no se descifra (SEC-03):** si solo existía
+  `pharos.db.enc.new` y la clave no lo descifraba, la app lo borraba y empezaba
+  con una base vacía. Ahora lo conserva y te pide la clave de recuperación.
+  Una entrada del keychain dañada también lleva a la recuperación, y la clave
+  que se reemplaza se guarda una vez como `db-key.prev`.
 
 ### Seguridad
 

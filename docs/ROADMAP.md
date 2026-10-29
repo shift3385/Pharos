@@ -142,7 +142,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | ------- | -------------------------------------------------------------------------------------------------------------------- | --- | ------- | ----------------- | --------------- | ---------------------------------------------------------------------------------------------------- |
 | SEC-01  | BD en memoria (`serialize`/`deserialize`), sin `pharos.db.tmp`                                                       | P0  | 0.1.0   | Hecho (`54f1dde`) | —               | Nunca aparece un SQLite en claro en el directorio de datos                                           |
 | SEC-02  | Escritura atómica: `.enc.new` + `sync_all` + `rename`                                                                | P0  | 0.1.0   | Hecho (`54f1dde`) | —               | Matar el proceso a mitad del guardado no corrompe `pharos.db.enc`                                    |
-| SEC-03  | Clave de recuperación exportable e importable                                                                        | P0  | 0.1.0   | Pendiente         | SEC-01          | En otro PC, con el `.enc` y la clave, se recuperan los datos                                         |
+| SEC-03  | Clave de recuperación exportable e importable ([ADR-0024](adr/0024-clave-de-recuperacion.md))                        | P0  | 0.1.0   | Hecho (S1)        | SEC-01          | En otro PC, con el `.enc` y la clave, se recuperan los datos                                         |
 | SEC-06  | Copia `pharos.db.enc.bak-<versión>` antes de migrar; una versión antigua no abre una BD con migraciones desconocidas | P0  | 0.1.0   | Hecho (A2)        | SEC-01          | Test: migrar crea la copia; abrir con menos migraciones falla con mensaje claro sin tocar el archivo |
 | CORE-02 | Test automatizado del keychain                                                                                       | P2  | 0.1.0   | Pendiente         | —               | Test en verde                                                                                        |
 | SEC-04  | Spike de cifrado por página: sqlite3mc frente a SQLCipher                                                            | P1  | 0.3.0   | Pendiente         | —               | Informe con una opción que compila y su licencia                                                     |
@@ -266,6 +266,10 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
 - **Fase 9A:** panel de administración.
 - **Trazabilidad:** requisitos, matriz y tags en la app nativa; filtrado con playwright-bdd.
 - **SEC-01/02:** guardar desde la app y comprobar que no quedan `.tmp` ni `.new`.
+- **SEC-03:** en la app nativa, exportar la clave de recuperación desde Perfil; después
+  copiar `pharos.db.enc` a otro equipo (o borrar la entrada `db-key` del Administrador de
+  credenciales tras guardar una copia del `.enc`), abrir Pharos y recuperar los datos con
+  la clave. Probar también una errata y una clave de otro equipo.
 - **IA-08:** probar con claves reales cada proveedor que vayas a usar (Gemini, OpenAI, Claude,
   OpenRouter o un endpoint compatible).
 - **IA-05 / IA-10:** con claves reales (y con Ollama), generar casos desde un requisito y

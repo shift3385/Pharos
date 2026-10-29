@@ -30,6 +30,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0021](0021-ci-y-cadena-de-suministro.md)          | CI y cadena de suministro                                                            | Aceptado | 2026-10-28 |
 | [0022](0022-observabilidad-local-y-diagnostico.md) | Observabilidad local: logs, diagnóstico sin datos de usuario y perfil E2E            | Aceptado | 2026-10-28 |
 | [0023](0023-salida-estructurada-ia.md)             | Salida estructurada de la IA: prompt estricto y validación zod en el cliente         | Aceptado | 2026-10-29 |
+| [0024](0024-clave-de-recuperacion.md)              | Clave de recuperación de la BD local: la `db-key` en base32 con comprobación         | Aceptado | 2026-10-29 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

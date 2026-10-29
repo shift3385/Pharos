@@ -8,7 +8,19 @@
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
     "newerTitle": "Estos datos son de una versión más nueva de Pharos",
-    "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior."
+    "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior.",
+    "keyMissingTitle": "Falta la clave de la base de datos local",
+    "keyMismatchTitle": "La clave guardada no abre la base de datos local",
+    "keyBody": "Los datos siguen cifrados en este equipo, pero la clave no está en el almacén de credenciales del sistema (pasa en un PC nuevo o tras reinstalar Windows). Escribe la clave de recuperación que guardaste desde Perfil para abrirlos. Pharos no modifica ningún archivo hasta que la clave sea correcta.",
+    "recovery": {
+      "label": "Clave de recuperación",
+      "hint": "56 caracteres en grupos de 4. Da igual mayúsculas, espacios o guiones.",
+      "submit": "Abrir con la clave",
+      "opening": "Abriendo…",
+      "invalid": "La clave tiene un error de escritura: revisa cada grupo y vuelve a intentarlo.",
+      "wrong": "La clave es válida, pero no abre esta base de datos: es otra clave o el archivo está dañado. Comprueba que sea la de este equipo; si lo es, una copia pharos.db.enc.bak-… puede abrirse con ella (README, Clave de recuperación).",
+      "failed": "No se pudo abrir con la clave: {{detail}}"
+    }
   },
   "common": {
     "loading": "Cargando…",
@@ -904,5 +916,26 @@
     "retry": "Reintentar",
     "reload": "Recargar",
     "details": "Detalles técnicos"
+  },
+  "recoveryKey": {
+    "title": "Clave de recuperación",
+    "intro": "La base de datos local está cifrada y su clave vive solo en el almacén de credenciales de este equipo. Si lo pierdes (PC nuevo, Windows reinstalado), solo la clave de recuperación junto con tu copia de pharos.db.enc devuelve tus datos.",
+    "lastShown": "Mostrada por última vez: {{date}}",
+    "desktopOnly": "Disponible solo en la app de escritorio.",
+    "show": "Mostrar clave de recuperación",
+    "failed": "No se pudo leer la clave de recuperación.",
+    "confirmTitle": "¿Mostrar la clave de recuperación?",
+    "confirmBody": "Quien tenga esta clave y una copia de tus datos puede leerlos. Muéstrala solo cuando nadie mire tu pantalla.",
+    "confirm": "Mostrar",
+    "shownTitle": "Guarda esta clave ahora",
+    "guidePaper": "Escríbela en papel y guárdala en un lugar seguro, o",
+    "guideManager": "guárdala en un gestor de contraseñas.",
+    "guideRisk": "No la envíes por correo ni chat y no la guardes junto a la copia de tus datos.",
+    "guideBackup": "Para restaurar en otro equipo necesitas esta clave y una copia de pharos.db.enc (y de la carpeta evidence/ cuando exista). Pharos no puede recuperarla por ti.",
+    "copy": "Copiar al portapapeles",
+    "copied": "Copiada",
+    "copiedHint": "Pégala en tu gestor de contraseñas y después copia otra cosa para vaciar el portapapeles.",
+    "savedCheck": "Ya la he guardado en un lugar seguro",
+    "close": "Cerrar"
   }
 }
