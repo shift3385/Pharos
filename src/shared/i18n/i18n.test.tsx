@@ -19,14 +19,14 @@ describe("i18n (es default / en)", () => {
       </>,
     );
 
-    expect(screen.getByText("Bienvenido a Pharos")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hola, Quality" })).toBeInTheDocument();
     expect(screen.getByTestId("lang-trigger")).toHaveTextContent("ES");
 
     // Open the language dropdown, then pick English.
     await user.click(screen.getByTestId("lang-trigger"));
     await user.click(screen.getByTestId("lang-en"));
 
-    expect(screen.getByText("Welcome to Pharos")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hello, Quality" })).toBeInTheDocument();
     expect(document.documentElement.getAttribute("lang")).toBe("en");
     expect(localStorage.getItem("pharos.language")).toBe("en");
   });

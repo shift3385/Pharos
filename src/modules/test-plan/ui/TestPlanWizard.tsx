@@ -16,8 +16,10 @@ import type {
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
+import { unlessReported } from "@shared/ui/notify";
 import {
   CEREMONIES,
+  CEREMONY_FREQUENCIES,
   DELIVERABLE_KEYS,
   FUNCTIONAL_TYPES,
   NON_FUNCTIONAL_TYPES,
@@ -26,6 +28,7 @@ import {
   TEST_TYPES,
   TOOLS,
 } from "../model/catalogs";
+import { frequenciesFor, frequencyOf, methodologyText } from "../model/methodology";
 import { ScheduleCalendar } from "./ScheduleCalendar";
 import { RevisionHistory } from "./RevisionHistory";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
@@ -71,6 +74,7 @@ interface FormState {
   methodologyType: "agile" | "traditional";
   sprintWeeks: number;
   ceremonies: string[];
+  ceremonyFrequency: Record<string, string>;
   phases: string[];
   testLevels: string[];
   deliverables: string[];
@@ -241,6 +245,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
         methodologyType: form.methodologyType,
         sprintWeeks: form.sprintWeeks,
         ceremonies: form.ceremonies,
+        ceremonyFrequency: frequenciesFor(form.ceremonies, form.ceremonyFrequency),
         phases: clean(form.phases),
         testLevels: form.testLevels,
         deliverables: clean(form.deliverables),
@@ -283,13 +288,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     // Localize option lists (predefined keys → labels; custom values as-is).
     const loc = (arr: string[], known: string[], prefix: string) =>
       arr.map((k) => (known.includes(k) ? t(`${prefix}.${k}`) : k));
-    const methodology =
-      form.methodologyType === "agile"
-        ? `${t("testPlan.agile")} · ${t("testPlan.sprintWeeks")}: ${form.sprintWeeks} · ` +
-          `${t("testPlan.ceremonies")}: ${loc(form.ceremonies, CEREMONIES, "testPlan.ceremonyLabel").join(", ")}`
-        : `${t("testPlan.traditional")} · ${t("testPlan.phases")}: ${form.phases
-            .filter((p) => p.trim())
-            .join(", ")}`;
+    const methodology = methodologyText(form, t);
     return {
       filenameBase: form.title.trim() || "plan",
       version: form.version,
@@ -327,16 +326,18 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     const exportable = buildExportablePlan();
     if (!exportable) return;
     const { exportPlanXlsx } = await import("../export/planXlsx");
-    const name = await exportPlanXlsx(exportable, i18n.resolvedLanguage ?? "es");
-    toast(t("testPlan.exportedToast", { name }));
+    const name = await unlessReported(
+      exportPlanXlsx(exportable, i18n.resolvedLanguage ?? "es"),
+    );
+    if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
   async function exportPdf() {
     const exportable = buildExportablePlan();
     if (!exportable) return;
     const { exportPlanPdf } = await import("../export/planPdf");
-    const name = await exportPlanPdf(exportable, t);
-    toast(t("testPlan.exportedToast", { name }));
+    const name = await unlessReported(exportPlanPdf(exportable, t));
+    if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
   async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -505,6 +506,33 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
                   labelFor={(k) => t(`testPlan.ceremonyLabel.${k}`)}
                   variant="pills"
                 />
+                {form.ceremonies.length > 0 && (
+                  <div className="tp-freq" data-testid="ceremony-frequencies">
+                    {form.ceremonies.map((c) => {
+                      const label = CEREMONIES.includes(c) ? t(`testPlan.ceremonyLabel.${c}`) : c;
+                      return (
+                        <label key={c} className="tp-field">
+                          <span>{t("testPlan.frequencyFor", { ceremony: label })}</span>
+                          <select
+                            value={frequencyOf(c, form.ceremonyFrequency)}
+                            onChange={(e) =>
+                              set("ceremonyFrequency", {
+                                ...form.ceremonyFrequency,
+                                [c]: e.target.value,
+                              })
+                            }
+                          >
+                            {CEREMONY_FREQUENCIES.map((f) => (
+                              <option key={f} value={f}>
+                                {t(`testPlan.frequencyLabel.${f}`)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -1054,6 +1082,7 @@ function defaults(t: (k: string) => string): FormState {
     methodologyType: "agile",
     sprintWeeks: 2,
     ceremonies: ["daily", "review", "retrospective"],
+    ceremonyFrequency: frequenciesFor(["daily", "review", "retrospective"]),
     phases: [],
     testLevels: [],
     deliverables: DELIVERABLE_KEYS.map((k) => t(`testPlan.deliverableLabel.${k}`)),
@@ -1125,6 +1154,7 @@ function applyRevision(base: FormState, title: string, d: TestPlanData): FormSta
     methodologyType: d.methodologyType ?? "agile",
     sprintWeeks: d.sprintWeeks ?? 2,
     ceremonies: d.ceremonies ?? [],
+    ceremonyFrequency: frequenciesFor(d.ceremonies ?? [], d.ceremonyFrequency),
     phases: d.phases ?? [],
     testLevels: d.testLevels ?? [],
     deliverables: d.deliverables ?? [],
@@ -1160,6 +1190,7 @@ function fromPlan(p: TestPlan): FormState {
     methodologyType: d.methodologyType ?? "agile",
     sprintWeeks: d.sprintWeeks ?? 2,
     ceremonies: d.ceremonies ?? [],
+    ceremonyFrequency: frequenciesFor(d.ceremonies ?? [], d.ceremonyFrequency),
     phases: d.phases ?? [],
     testLevels: d.testLevels ?? [],
     deliverables: d.deliverables ?? [],

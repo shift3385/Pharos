@@ -4,6 +4,7 @@
 mod ai;
 mod db;
 mod diag;
+mod downloads;
 mod hlc;
 mod instance;
 mod key_sync;
@@ -52,6 +53,16 @@ pub fn run() {
             // Without a resolvable log dir Pharos runs without a log file.
             let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
             app.manage(diag::init(log_dir));
+            // Download folder for exports (UX-02), remembered per instance.
+            let prefs_file = app
+                .path()
+                .app_config_dir()
+                .ok()
+                .map(|dir| instance::scoped_dir(dir).join("downloads.json"));
+            app.manage(downloads::Downloads::load(
+                prefs_file,
+                app.path().download_dir().ok(),
+            ));
             let data_dir = instance::scoped_dir(app.path().app_data_dir()?);
             let started = std::time::Instant::now();
             // A database that cannot be opened (e.g. written by a newer Pharos,
@@ -151,7 +162,11 @@ pub fn run() {
             key_sync::key_conflicts_list,
             key_sync::key_conflict_resolve,
             diag::diag_log,
-            diag::diag_export
+            diag::diag_export,
+            downloads::download_dir_get,
+            downloads::download_dir_pick,
+            downloads::download_dir_reset,
+            downloads::download_save
         ])
         .run(tauri::generate_context!())
         .expect("error while running Pharos");

@@ -47,6 +47,22 @@ export const TOOLS = [
   "jira",
 ];
 export const CEREMONIES = ["daily", "review", "retrospective", "planning"];
+/** How often a ceremony is held (spec §5.1 step 8, PLN-01). */
+export const CEREMONY_FREQUENCIES = [
+  "daily",
+  "twiceWeekly",
+  "weekly",
+  "biweekly",
+  "perSprint",
+  "monthly",
+];
+/** Industry defaults (Scrum Guide): the daily every day, the rest once per sprint. */
+export const DEFAULT_CEREMONY_FREQUENCY: Record<string, string> = {
+  daily: "daily",
+  review: "perSprint",
+  retrospective: "perSprint",
+  planning: "perSprint",
+};
 export const DELIVERABLE_KEYS = [
   "testPlan",
   "testCasesScripts",

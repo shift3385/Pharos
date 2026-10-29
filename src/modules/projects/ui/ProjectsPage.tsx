@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
+import { unlessReported } from "@shared/ui/notify";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
+import { recordProjectAccess } from "../model/lastAccess";
 import type { ExportProgress } from "../export/exportAll";
 import { ProjectDetail } from "./ProjectDetail";
 import { ExportProgressModal, type ExportPhase } from "./ExportProgressModal";
@@ -26,10 +29,16 @@ export function ProjectsPage() {
   const { user } = useAuth();
   const toast = useToast();
   const ownerId = user?.id ?? "";
-  const [view, setView] = useState<View>({ kind: "list" });
+  // Home links here with ?open=<id> (continue a project) or ?new=1 (start one).
+  const [params, setParams] = useSearchParams();
+  const [view, setView] = useState<View>(() => {
+    const id = params.get("open");
+    if (id) recordProjectAccess(ownerId, id);
+    return id ? { kind: "detail", id } : { kind: "list" };
+  });
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(() => params.get("new") === "1");
   const [exporting, setExporting] = useState(false);
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState | null>(null);
@@ -47,18 +56,32 @@ export function ProjectsPage() {
       });
   }
 
+  /** PDFs that could not be rendered were left out of the ZIP: say which. */
+  function reportSkipped(skipped: string[]) {
+    if (!skipped.length) return;
+    toast(
+      t("projects.pdfSkippedToast", { count: skipped.length, names: skipped.join(", ") }),
+      "warning",
+    );
+  }
+
   async function exportAll() {
     setExporting(true);
     setProgress({ title: t("projects.exportAll"), phase: "building", done: 0, total: 0, label: "", percent: 0 });
     try {
       const { exportAllProjects } = await import("../export/exportAll");
-      const files = await exportAllProjects(
-        ownerId,
-        t,
-        i18n.resolvedLanguage ?? "es",
-        onProgress(t("projects.exportAll")),
+      const result = await unlessReported(
+        exportAllProjects(
+          ownerId,
+          t,
+          i18n.resolvedLanguage ?? "es",
+          onProgress(t("projects.exportAll")),
+        ),
       );
-      toast(t("projects.exportedAllToast", { count: files }));
+      if (result) {
+        toast(t("projects.exportedAllToast", { count: result.files, path: result.path }));
+        reportSkipped(result.skipped);
+      }
     } finally {
       setExporting(false);
       setProgress(null);
@@ -71,18 +94,34 @@ export function ProjectsPage() {
     setProgress({ title, phase: "building", done: 0, total: 0, label: "", percent: 0 });
     try {
       const { exportProjectZip } = await import("../export/exportAll");
-      const files = await exportProjectZip(
-        project,
-        ownerId,
-        t,
-        i18n.resolvedLanguage ?? "es",
-        onProgress(title),
+      const result = await unlessReported(
+        exportProjectZip(project, ownerId, t, i18n.resolvedLanguage ?? "es", onProgress(title)),
       );
-      toast(t("projects.exportedProjectToast", { name: project.name, count: files }));
+      if (result) {
+        toast(
+          t("projects.exportedProjectToast", {
+            name: project.name,
+            count: result.files,
+            path: result.path,
+          }),
+        );
+        reportSkipped(result.skipped);
+      }
     } finally {
       setExportingId(null);
       setProgress(null);
     }
+  }
+
+  // The link did its job; drop it so a reload or "back" shows the list.
+  useEffect(() => {
+    if (params.has("open") || params.has("new")) setParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function openProject(id: string) {
+    recordProjectAccess(ownerId, id);
+    setView({ kind: "detail", id });
   }
 
   async function refresh() {
@@ -105,7 +144,7 @@ export function ProjectsPage() {
     setName("");
     setCreating(false);
     await refresh();
-    if (project) setView({ kind: "detail", id: project.id });
+    if (project) openProject(project.id);
   }
 
   async function remove(id: string) {
@@ -179,7 +218,7 @@ export function ProjectsPage() {
               <button
                 type="button"
                 className="tp__item-open"
-                onClick={() => setView({ kind: "detail", id: p.id })}
+                onClick={() => openProject(p.id)}
               >
                 <span className="tp__item-title">
                   <span className="pj-folder" aria-hidden="true">

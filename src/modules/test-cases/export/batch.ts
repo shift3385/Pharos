@@ -2,6 +2,7 @@ import type { TestCase } from "../model/types";
 import { flowsToGherkin, isProvisionalKey, parseFeatureFlows, toGherkin } from "../ui/gherkin";
 import { testCaseApi } from "../api/testCaseApi";
 import { buildCaseXlsx, type ExportableCase } from "./caseXlsx";
+import { buildCasePdf, casePdfName } from "./casePdf";
 
 type Translate = (key: string) => string;
 
@@ -72,23 +73,46 @@ export async function projectCaseCount(projectId: string, userId: string): Promi
   return (await testCaseApi.list(projectId, userId)).length;
 }
 
-/** Builds an .xlsx buffer for every case of a project (for the batch ZIP).
- *  `onEach` fires with each file name as its workbook is built (for progress). */
-export async function projectCaseWorkbooks(
+/** Approved cases out of the cases that are not obsolete (Home progress, UX-08). */
+export async function projectCaseProgress(
+  projectId: string,
+  userId: string,
+): Promise<{ approved: number; total: number }> {
+  const live = (await testCaseApi.list(projectId, userId)).filter((c) => c.status !== "obsolete");
+  return { approved: live.filter((c) => c.status === "approved").length, total: live.length };
+}
+
+/** Files exported per case in the batch ZIP: its .xlsx and its .pdf (EXP-02). */
+export const FILES_PER_CASE = 2;
+
+/** Builds the .xlsx and .pdf of every case of a project (for the batch ZIP,
+ *  spec §5.4). `onEach` fires with each file name as it is built (progress).
+ *  A PDF that cannot be rendered is left out and passed to `onSkip`, so one
+ *  bad document never blocks the ZIP. */
+export async function projectCaseFiles(
   projectId: string,
   userId: string,
   t: Translate,
   lang: string,
   onEach?: (name: string) => void,
-): Promise<{ name: string; buffer: ArrayBuffer }[]> {
+  onSkip?: (name: string) => void,
+): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const summaries = await testCaseApi.list(projectId, userId);
-  const out: { name: string; buffer: ArrayBuffer }[] = [];
+  const out: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [];
   for (const s of summaries) {
     const full = await testCaseApi.get(s.id, userId);
     if (!full) continue;
-    const { filename, buffer } = await buildCaseXlsx(caseToExportable(full, t), lang);
+    const exportable = caseToExportable(full, t);
+    const { filename, buffer } = await buildCaseXlsx(exportable, lang);
     out.push({ name: filename, buffer });
     onEach?.(filename);
+    const pdfName = casePdfName(exportable);
+    try {
+      out.push({ name: pdfName, buffer: await buildCasePdf(exportable, t) });
+    } catch {
+      onSkip?.(pdfName);
+    }
+    onEach?.(pdfName);
   }
   return out;
 }

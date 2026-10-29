@@ -9,9 +9,11 @@ describe("navigation", () => {
     await i18n.changeLanguage("es");
   });
 
-  it("renders the dashboard at the root route", () => {
+  it("renders the Home at the root route, without the Fase 0 placeholder", () => {
     renderWithProviders(<App />, { route: "/" });
-    expect(screen.getByText("Bienvenido a Pharos")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hola, Quality" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Iniciar nuevo proyecto de pruebas/ })).toBeInTheDocument();
+    expect(screen.queryByText(/Fase 0/)).not.toBeInTheDocument();
   });
 
   it("navigates to empty module sections from the sidebar", async () => {
@@ -29,6 +31,6 @@ describe("navigation", () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("nav-dashboard"));
-    expect(screen.getByText("Bienvenido a Pharos")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hola, Quality" })).toBeInTheDocument();
   });
 });

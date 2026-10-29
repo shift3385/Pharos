@@ -4,6 +4,7 @@ import { useAuth } from "@modules/auth";
 import { projectDefects } from "@modules/planner";
 import { projectTraceableCases, setCaseRequirementKeys, type TraceableCase } from "@modules/test-cases";
 import { useToast } from "@shared/ui/Toast";
+import { unlessReported } from "@shared/ui/notify";
 import { requirementApi } from "../api/requirementApi";
 import { buildMatrix, defectLabel, type MatrixDefect, type MatrixRow } from "../model/matrix";
 import { proposeMigration, type MigrationProposal } from "../model/migration";
@@ -90,15 +91,10 @@ export function MatrixView({ projectId, projectName }: { projectId: string; proj
     setExporting(true);
     try {
       const { exportMatrixXlsx } = await import("../export/matrixXlsx");
-      const name = await exportMatrixXlsx(
-        matrix,
-        projectId,
-        ownerId,
-        projectName,
-        i18n.resolvedLanguage ?? "es",
-        t,
+      const name = await unlessReported(
+        exportMatrixXlsx(matrix, projectId, ownerId, projectName, i18n.resolvedLanguage ?? "es", t),
       );
-      toast(t("traceability.matrix.exportedToast", { name }));
+      if (name) toast(t("traceability.matrix.exportedToast", { name }));
     } finally {
       setExporting(false);
     }

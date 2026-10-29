@@ -335,7 +335,7 @@ once.
 **To report a problem:** Administration → **Diagnóstico** → **Exportar
 diagnóstico** ("Export diagnostics"). It is also on the error screen that
 replaces a view that crashed. You get `pharos-diagnostic-<version>-<date>.zip`
-in your downloads folder, with `diagnostic.json` (app version, OS, WebView2,
+in the download folder (see below), with `diagnostic.json` (app version, OS, WebView2,
 applied migrations, UI language and theme) and `logs/` (the recent logs,
 masked again). It never includes projects, plans, cases, requirements, your
 profile, the database, keys or tokens. In the web preview it holds only the
@@ -345,14 +345,44 @@ says why (`openError`) instead of listing the migrations.
 The installed version is shown at the foot of the sidebar and in
 Administration → Diagnóstico.
 
+## Exports and the download folder
+
+Every export (plan and case `.xlsx`/`.pdf`, `.feature` files, the project
+ZIP and the "export everything" ZIP, the traceability matrix, templates,
+planner attachments and the diagnostic bundle) is saved in the **download
+folder**. By default it is your Windows Downloads folder. To change it:
+Administration → Settings → **Carpeta de descarga** → **Elegir carpeta…**
+opens the Windows folder picker; **Usar Descargas** goes back to the default.
+The choice is saved at once (it is not part of "Guardar ajustes") in
+`%APPDATA%\com.pharos.desktop\downloads.json`.
+
+- A file is never overwritten: a second export with the same name is saved as
+  `name (2).ext`.
+- The confirmation message shows the full path of the saved file.
+- If the chosen folder is deleted, renamed or cannot be written (access denied,
+  disk full, Windows "Controlled folder access"), the file goes to Downloads and
+  a warning says so; the settings screen also flags a missing folder. If even
+  Downloads fails, an error message says why. Nothing fails silently.
+- Planner attachments are saved with Mark-of-the-Web, so Windows warns before
+  opening them, as with a browser download. Pharos' own exports are not marked.
+- The folder is a setting of this Windows account on this computer, shared by
+  every Pharos user who signs in here (ADR-0025).
+- If a PDF cannot be created, a ZIP is still saved without it and a warning
+  lists the missing PDFs.
+- The project ZIP and the global ZIP hold, for each project, the plan and
+  every case as both `.xlsx` and `.pdf`.
+- In the web preview (`npm run dev` in a browser) the browser decides where
+  downloads go.
+
 ## Desktop E2E smoke
 
 `npm run e2e` drives the **real desktop binary**: start → sign in with the test
 account → create a project → restart → the project and the session are still
 there (`e2e/specs/smoke.e2e.ts`). A second spec (`e2e/specs/diagnostics.e2e.ts`)
 checks the version in Administration, clicks "Exportar diagnóstico", opens the
-ZIP saved in your Downloads folder (set `PHAROS_E2E_DOWNLOADS` if yours is
-elsewhere), checks it holds no user data and deletes it. It runs WebdriverIO
+ZIP saved in your Downloads folder (an E2E profile has its own settings, so it
+never uses a download folder you chose; set `PHAROS_E2E_DOWNLOADS` if your
+Downloads folder is elsewhere), checks it holds no user data and deletes it. It runs WebdriverIO
 against
 [`tauri-driver`](https://v2.tauri.app/develop/tests/webdriver/), which drives
 the WebView2 window through Microsoft Edge WebDriver.

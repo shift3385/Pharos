@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { useToast } from "@shared/ui/Toast";
+import { saveFile } from "@shared/export/saveFile";
+import { unlessReported } from "@shared/ui/notify";
 import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai";
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
@@ -104,17 +106,11 @@ export function TestCasesPage({
     const zip = new JSZip();
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "features.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const path = await unlessReported(saveFile("features.zip", blob, "application/zip"));
+    if (!path) return;
     // A provisional key (DAT-01) is never written as a tag: say so.
     const provisional = files.filter((f) => f.provisional).length;
-    const done = t("testCase.exportFeaturesToast", { count: files.length });
+    const done = t("testCase.exportFeaturesToast", { count: files.length, path });
     toast(
       provisional > 0
         ? `${done}. ${t("testCase.exportProvisionalToast", { count: provisional })}`
