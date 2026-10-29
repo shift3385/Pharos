@@ -142,6 +142,8 @@
     "failed": "Could not sync (server unavailable?)",
     "conflicts": "Conflicts ({{count}})",
     "conflictToast": "Synced with {{count}} conflict(s) to review",
+    "unsupportedVersion": "This Pharos version is no longer supported by the server. Update the app to sync; your changes are kept.",
+    "webConflictToast": "Another device saved a newer version of {{count}} item(s). Your edit is kept: review it in Conflicts.",
     "conflict": {
       "review": "Review conflicts",
       "title": "Sync conflicts",
@@ -159,7 +161,7 @@
       "keepRemote": "Use the server's",
       "resolved": "Conflict resolved",
       "failed": "Could not resolve the conflict",
-      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case" },
+      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case", "requirement": "Requirement", "planner_card": "Planner card" },
       "fields": {
         "title": "Title",
         "name": "Name",
@@ -172,7 +174,12 @@
         "ownerId": "Owner",
         "planDate": "Plan date",
         "caseIdPrefix": "ID prefix",
-        "caseIdDigits": "ID digits"
+        "caseIdDigits": "ID digits",
+        "requirementKey": "Requirement key",
+        "cardKey": "Defect key",
+        "description": "Description",
+        "kind": "Kind",
+        "position": "Position"
       }
     }
   },

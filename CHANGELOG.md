@@ -18,20 +18,57 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - `npm run seed:test-user` (en `server/`) crea la cuenta local de pruebas del
   README en una base nueva o reseteada; no hace nada si ya existe y se niega a
   ejecutarse en producción.
+- **Requisitos y tarjetas del planificador se sincronizan (SYNC-04a):** un
+  requisito o un defecto creado en un equipo aparece en los demás, y los casos
+  vinculados a `REQ-xxx` resuelven allí. Mover una tarjeta de columna también
+  se sincroniza. Los adjuntos y las plantillas siguen siendo locales (SYNC-04b).
+- **La web avisa cuando pierde un conflicto (FIX-04):** si otro dispositivo
+  guardó una versión más reciente, la web muestra un aviso, conserva tu edición
+  y abre el mismo panel de conflictos que el escritorio para elegir versión.
+- **La web reintenta lo que no pudo enviar (FIX-04):** un cambio hecho con el
+  servidor caído queda en "Cambios pendientes" y se envía solo al volver.
 
 ### Cambiado
+
+- **Cada sincronización lleva la versión de la app (SYNC-08):** el servidor
+  acepta su versión MENOR y la anterior; una app más antigua recibe el mensaje
+  "Actualiza la app para sincronizar" y no se escribe nada.
+- El contador "Cambios pendientes" cuenta elementos, no ediciones: diez
+  ediciones del mismo caso son un cambio pendiente.
 
 - La configuración de IA anterior se migra sola: el modelo que tenías pasa a
   ser el modelo de Gemini.
 - "Probar conexión" muestra el mensaje real del proveedor cuando falla (clave
   incorrecta, modelo inexistente…).
 
+### Corregido
+
+- **Indicador atascado en "Pendiente" (FIX-01):** editar un requisito, una
+  tarjeta o una plantilla ya no deja el indicador en "Cambios pendientes" tras
+  sincronizar; solo cuenta lo que el sync envía.
+- **Sincronizaciones grandes (FIX-02, FIX-03):** con más de 500 documentos el
+  escritorio y la web reciben todo, página a página, y miles de cambios
+  pendientes se envían por lotes, con reintento, sin error 413.
+- **Borrar un proyecto (FIX-05):** sus planes, casos, requisitos y tarjetas
+  también desaparecen en los demás equipos. Los hijos de proyectos borrados
+  antes de esta versión se reparan solos en el servidor.
+
 ### Seguridad
 
+- **Varias cuentas en el mismo equipo (FIX-07):** los cambios pendientes, el
+  cursor de sincronización y los conflictos son de cada cuenta. Al cambiar de
+  cuenta, la nueva nunca envía ni sobrescribe lo de la anterior.
 - La clave de Gemini ya no viaja en la URL sino en una cabecera; las peticiones
   de IA tienen un tiempo máximo y sus errores nunca incluyen la URL ni la clave.
 - Un endpoint compatible personalizado debe usar `https` (http solo en
   `localhost`), para que la clave no viaje sin cifrar.
+
+### Cambios incompatibles
+
+- El servidor rechaza la sincronización de apps sin versión (`0.1.0-alpha.1`):
+  hay que actualizar la app y el servidor juntos. Al actualizar, cada cuenta
+  descarga sus datos una vez más desde el principio (sin pérdida). Migraciones
+  locales `0012` y `0013` y del servidor `0004` (ADR-0020).
 
 ## [0.1.0-alpha.1] - 2026-10-28
 

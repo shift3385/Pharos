@@ -21,9 +21,13 @@ fn now_ms() -> u64 {
 }
 
 fn state_get(conn: &Connection, key: &str) -> Result<Option<String>, String> {
-    conn.query_row("SELECT value FROM sync_state WHERE key = ?1", params![key], |r| r.get(0))
-        .optional()
-        .map_err(|e| e.to_string())
+    conn.query_row(
+        "SELECT value FROM sync_state WHERE key = ?1",
+        params![key],
+        |r| r.get(0),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
 }
 
 fn state_set(conn: &Connection, key: &str, value: &str) -> Result<(), String> {
@@ -71,8 +75,55 @@ pub fn observe_hlc(conn: &Connection, remote: &str) -> Result<(), String> {
     state_set(conn, "hlc_last", &merged)
 }
 
+/// Entities the sync pushes and pulls (Phase 8B + SYNC-04a). The pending count
+/// and the push are both built from this list, so the indicator only counts
+/// what a sync actually sends (FIX-01). Templates and attachments still write
+/// to the oplog and wait for SYNC-04b.
+pub const SYNCED: [&str; 5] = [
+    "project",
+    "test_plan",
+    "test_case",
+    "requirement",
+    "planner_card",
+];
+
+/// `SYNCED` as an SQL list literal, for `entity IN (...)`.
+pub fn synced_sql_list() -> String {
+    SYNCED
+        .iter()
+        .map(|e| format!("'{e}'"))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// The account an entity belongs to (FIX-07): its owner, or its project's owner.
+/// None when it cannot be derived (templates, rows without a project).
+pub fn owner_of(
+    conn: &Connection,
+    entity: &str,
+    entity_id: &str,
+) -> Result<Option<String>, String> {
+    let sql = match entity {
+        "project" => "SELECT owner_id FROM projects WHERE id = ?1",
+        "test_plan" => "SELECT p.owner_id FROM test_plans x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1",
+        "test_case" => "SELECT p.owner_id FROM test_cases x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1",
+        "requirement" => {
+            "SELECT p.owner_id FROM requirements x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
+        }
+        "planner_card" => "SELECT owner_id FROM planner_cards WHERE id = ?1",
+        _ => return Ok(None),
+    };
+    let owner: Option<Option<String>> = conn
+        .query_row(sql, params![entity_id], |r| r.get(0))
+        .optional()
+        .map_err(|e| e.to_string())?;
+    Ok(owner.flatten().filter(|o| !o.is_empty()))
+}
+
 /// Appends a delta for an entity mutation. Called inside each repo's write, in
 /// the same connection/transaction, so the journal never diverges from the data.
+/// The row belongs to the entity's owner (FIX-07), so another account signed in
+/// on this device never pushes it.
 pub fn record(
     conn: &Connection,
     entity: &str,
@@ -83,9 +134,10 @@ pub fn record(
     author: &str,
 ) -> Result<(), String> {
     let hlc = next_hlc(conn)?;
+    let user_id = owner_of(conn, entity, entity_id)?.unwrap_or_default();
     conn.execute(
-        "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), ?8)",
+        "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'), ?8, ?9)",
         params![
             Uuid::new_v4().to_string(),
             entity,
@@ -95,6 +147,7 @@ pub fn record(
             revision,
             author,
             hlc,
+            user_id,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -104,26 +157,39 @@ pub fn record(
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncState {
-    pending: i64,
+    pub(crate) pending: i64,
     /// Open conflicts waiting for the user in the conflict panel (Phase 8C).
-    conflicts: i64,
+    pub(crate) conflicts: i64,
 }
 
-/// Number of deltas not yet synced and of open conflicts — drives the status
-/// indicator.
+/// Pending changes of one account: the distinct synced entities with unsynced
+/// rows, i.e. the deltas its next push would send (FIX-01, FIX-07) — plus its
+/// open conflicts.
+pub fn sync_state(conn: &Connection, user_id: &str) -> Result<SyncState, String> {
+    let pending: i64 = conn
+        .query_row(
+            &format!(
+                "SELECT count(*) FROM (SELECT DISTINCT entity, entity_id FROM oplog
+                  WHERE synced_at IS NULL AND user_id = ?1 AND entity IN ({}))",
+                synced_sql_list()
+            ),
+            params![user_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    let conflicts: i64 = conn
+        .query_row(
+            "SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL AND user_id = ?1",
+            params![user_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(SyncState { pending, conflicts })
+}
+
+/// Pending changes and open conflicts of the signed-in account — drives the
+/// status indicator.
 #[tauri::command]
-pub fn oplog_pending_count(db: State<Db>) -> Result<SyncState, String> {
-    db.with_conn(|conn| {
-        let pending: i64 = conn
-            .query_row("SELECT count(*) FROM oplog WHERE synced_at IS NULL", [], |r| {
-                r.get(0)
-            })
-            .map_err(|e| e.to_string())?;
-        let conflicts: i64 = conn
-            .query_row("SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL", [], |r| {
-                r.get(0)
-            })
-            .map_err(|e| e.to_string())?;
-        Ok(SyncState { pending, conflicts })
-    })
+pub fn oplog_pending_count(db: State<Db>, user_id: String) -> Result<SyncState, String> {
+    db.with_conn(|conn| sync_state(conn, &user_id))
 }

@@ -48,4 +48,12 @@ describe("sync merge rule", () => {
     // A change with an HLC beats a legacy stored version.
     expect(decide({ revision: 9, hlc: "" }, delta({ revision: 1, hlc: H(1, 0, "a") }))).toBe("write");
   });
+
+  it("deleting what is already deleted (project cascade) is not a conflict", () => {
+    const cascaded = { revision: 2, hlc: H(300, 0, "desk"), deleted: true };
+    const stale = { op: "delete", revision: 2, hlc: H(200, 0, "desk"), baseRevision: 1, baseHlc: H(100, 0, "desk") };
+    expect(decide(cascaded, delta(stale))).toBe("noop");
+    // An edit of a deleted entity is still a conflict for the user.
+    expect(decide(cascaded, delta({ ...stale, op: "upsert" }))).toBe("conflict");
+  });
 });

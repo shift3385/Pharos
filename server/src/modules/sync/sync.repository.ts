@@ -1,6 +1,6 @@
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 import { decide } from "./sync.merge";
-import type { Delta } from "./sync.schemas";
+import { MAX_PULL_LIMIT, PROJECT_CHILDREN, type Delta } from "./sync.schemas";
 
 export interface RemoteDoc {
   entity: string;
@@ -17,6 +17,12 @@ export interface RemoteDoc {
  *  with the version the server keeps (sent back so the client can show it). */
 export type ApplyResult = { accepted: true } | { accepted: false; current: RemoteDoc };
 
+/** One pull page: documents after the cursor and whether more remain. */
+export interface PullPage {
+  docs: RemoteDoc[];
+  hasMore: boolean;
+}
+
 const COLS = "entity, entity_id, payload, revision, author, deleted, hlc, seq";
 
 function toDoc(r: Record<string, unknown>): RemoteDoc {
@@ -30,6 +36,21 @@ function toDoc(r: Record<string, unknown>): RemoteDoc {
     hlc: r.hlc as string,
     seq: Number(r.seq),
   };
+}
+
+/** Deleting a project deletes its plans, cases, requirements and planner
+ *  cards in the same transaction (FIX-05, ADR-0020), whichever client sent
+ *  it. Each child gets a tombstone with a new `seq`, so every device pulls it;
+ *  a device with a pending edit of that child sees a conflict, not a loss. */
+async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta): Promise<void> {
+  await client.query(
+    `UPDATE documents
+        SET deleted = true, revision = revision + 1, hlc = $3, author = $4,
+            updated_at = now(), seq = nextval('documents_seq')
+      WHERE user_id = $1 AND entity = ANY($5::text[]) AND NOT deleted
+        AND payload->>'projectId' = $2`,
+    [userId, d.entityId, d.hlc, d.author, [...PROJECT_CHILDREN]],
+  );
 }
 
 export function createSyncRepository(pool: Pool) {
@@ -63,6 +84,7 @@ export function createSyncRepository(pool: Pool) {
                    seq = nextval('documents_seq')`,
             [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc],
           );
+          if (d.entity === "project" && d.op === "delete") await cascadeProjectDelete(client, userId, d);
         }
         await client.query("COMMIT");
         return decision === "conflict" && current ? { accepted: false, current } : { accepted: true };
@@ -74,17 +96,18 @@ export function createSyncRepository(pool: Pool) {
       }
     },
 
-    /** Documents changed after `since` (exclusive), oldest first. */
-    async since(userId: string, since: number, limit = 500): Promise<RemoteDoc[]> {
+    /** One page of documents changed after `since` (exclusive), oldest first.
+     *  Reads one extra row to tell the client whether to ask again (FIX-02). */
+    async since(userId: string, since: number, limit = MAX_PULL_LIMIT): Promise<PullPage> {
       const { rows } = await pool.query(
         `SELECT ${COLS}
            FROM documents
           WHERE user_id = $1 AND seq > $2
           ORDER BY seq ASC
           LIMIT $3`,
-        [userId, since, limit],
+        [userId, since, limit + 1],
       );
-      return rows.map(toDoc);
+      return { docs: rows.slice(0, limit).map(toDoc), hasMore: rows.length > limit };
     },
   };
 }

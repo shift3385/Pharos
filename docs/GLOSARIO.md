@@ -96,6 +96,13 @@ files (`es`/`en`).
 | Base de sincronización      | `sync_base`                                              | última versión de cada entidad que coincide con el servidor                                                                |
 | Conflicto de sincronización | `sync_conflict` / `SyncConflict`                         | cambio local pendiente y cambio remoto divergentes desde la misma base (8C)                                                |
 | Resolución                  | `resolution`                                             | `local` (conservar la mía) / `remote` (usar la del servidor); SYNC-02 podrá añadir `merged`                                |
+| Entidades sincronizadas     | `SYNCED` / `SYNCED_ENTITIES`                             | project, test_plan, test_case, requirement, planner_card; lo único que cuenta como pendiente (FIX-01)                      |
+| Usuario del cambio          | `user_id` (oplog, sync_base, sync_conflicts)             | dueño de la entidad; `''` = sin dueño, nunca se envía (FIX-07, ADR-0020)                                                   |
+| Cursor de pull              | `cursor:<user_id>` / `pharos.sync.cursor:<userId>`       | último `seq` recibido, por cuenta; el pull pide páginas hasta `hasMore = false` (FIX-02)                                   |
+| Lote de push                | `batch`                                                  | hasta 200 deltas y ~512 KiB por petición; el servidor acepta 500 (FIX-03)                                                  |
+| Bandeja de salida (web)     | `outbox` / `pharos.sync.outbox:<userId>`                 | cambios web pendientes de enviar; se reintentan hasta que el servidor los acepta (FIX-04)                                  |
+| Conflicto web               | `WebConflict` / `pharos.sync.conflicts:<userId>`         | edición web que perdió LWW; se conserva junto a la del servidor hasta que se resuelve (FIX-04)                             |
+| Versión del cliente         | `x-pharos-version` / `APP_VERSION`                       | versión de la app en cada petición de sync; 426 `unsupported_client_version` si no se admite (SYNC-08)                     |
 
 > API JSON usa camelCase (`accessToken`, `displayName`); las columnas de BD usan snake_case (`access_token`, `display_name`). Mismo concepto, misma raíz.
 

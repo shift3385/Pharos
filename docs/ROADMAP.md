@@ -30,15 +30,15 @@
 
 ## 2. Estado real (2026-10-28)
 
-| Área                                                                            | Estado                                                         | Commits                         |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------- |
-| Fases 0–7: base, cuentas, BD cifrada, plan, casos, planificador, plantillas, IA | Implementado                                                   | `369d335`…`79a0185`             |
-| Fase 8: sync con oplog, HLC y panel de conflictos                               | Implementado, con 6 fallos verificados (compuerta A)           | `bf96ad6`, `fb70768`, `4fdd6a5` |
-| Fase 9A: administración                                                         | Implementado; resto de la Fase 9 pendiente                     | `2de8e8e`                       |
-| Trazabilidad: requisitos, matriz, tags                                          | Implementado                                                   | `484e941`                       |
-| BD sin texto plano y guardado atómico (SEC-01/02)                               | Hecho                                                          | `54f1dde`                       |
-| Varios proveedores de IA (IA-08) y cuenta de test (BASE-17)                     | Hecho                                                          | `91f0b9a`                       |
-| Tests                                                                           | Cliente 128 · Rust 62 · servidor 22. Sin CI ni E2E del binario | —                               |
+| Área                                                                            | Estado                                                                           | Commits                         |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------- |
+| Fases 0–7: base, cuentas, BD cifrada, plan, casos, planificador, plantillas, IA | Implementado                                                                     | `369d335`…`79a0185`             |
+| Fase 8: sync con oplog, HLC y panel de conflictos                               | Implementado, con 6 fallos verificados (compuerta A)                             | `bf96ad6`, `fb70768`, `4fdd6a5` |
+| Fase 9A: administración                                                         | Implementado; resto de la Fase 9 pendiente                                       | `2de8e8e`                       |
+| Trazabilidad: requisitos, matriz, tags                                          | Implementado                                                                     | `484e941`                       |
+| BD sin texto plano y guardado atómico (SEC-01/02)                               | Hecho                                                                            | `54f1dde`                       |
+| Varios proveedores de IA (IA-08) y cuenta de test (BASE-17)                     | Hecho                                                                            | `91f0b9a`                       |
+| Tests                                                                           | Cliente 147 · Rust 68 · servidor 29 (con la pista A1). Sin CI ni E2E del binario | —                               |
 
 Las validaciones nativas pendientes están en §6.
 
@@ -69,16 +69,16 @@ hito · **P1** paridad de mercado · **P2** diferenciador · **P3** escala.
 
 | ID       | Ítem                                                                                 | P   | Estado                                      | Criterio de aceptación                                                           |
 | -------- | ------------------------------------------------------------------------------------ | --- | ------------------------------------------- | -------------------------------------------------------------------------------- |
-| FIX-01   | El contador de pendientes solo cuenta lo que el sync envía                           | P0  | Pendiente                                   | Editar un requisito y sincronizar deja el indicador en "Sincronizado"            |
-| FIX-02   | Pull paginado: el escritorio repite hasta agotar; la web usa el cursor               | P0  | Pendiente                                   | 1.200 documentos llegan completos al escritorio y a la web                       |
-| FIX-03   | Push por lotes con reintento                                                         | P0  | Pendiente                                   | 2.000 cambios pendientes se envían sin error 413                                 |
-| FIX-04   | La web avisa al perder un conflicto, conserva la edición y reintenta un push fallido | P0  | Pendiente                                   | Conflicto simulado en la web: aviso visible y ningún texto perdido               |
-| FIX-05   | El borrado en cascada de un proyecto se sincroniza                                   | P0  | Pendiente                                   | Borrar un proyecto en A lo borra con sus planes, casos y requisitos en B         |
+| FIX-01   | El contador de pendientes solo cuenta lo que el sync envía                           | P0  | Hecho en la pista A1; falta revisión y QA   | Editar un requisito y sincronizar deja el indicador en "Sincronizado"            |
+| FIX-02   | Pull paginado: el escritorio repite hasta agotar; la web usa el cursor               | P0  | Hecho en la pista A1; falta revisión y QA   | 1.200 documentos llegan completos al escritorio y a la web                       |
+| FIX-03   | Push por lotes con reintento                                                         | P0  | Hecho en la pista A1; falta revisión y QA   | 2.000 cambios pendientes se envían sin error 413                                 |
+| FIX-04   | La web avisa al perder un conflicto, conserva la edición y reintenta un push fallido | P0  | Hecho en la pista A1; falta revisión y QA   | Conflicto simulado en la web: aviso visible y ningún texto perdido               |
+| FIX-05   | El borrado en cascada de un proyecto se sincroniza                                   | P0  | Hecho en la pista A1; falta revisión y QA   | Borrar un proyecto en A lo borra con sus planes, casos y requisitos en B         |
 | FIX-06   | `created_by`/`updated_by` guardan el usuario, no el id de la entidad                 | P0  | Pendiente                                   | Test de repositorio comprueba el autor en proyectos, planes y casos              |
-| FIX-07   | Oplog, cursor y `sync_base` separados por usuario en el mismo equipo                 | P0  | Pendiente                                   | Tras cambiar de cuenta, B no envía cambios pendientes de A                       |
+| FIX-07   | Oplog, cursor y `sync_base` separados por usuario en el mismo equipo                 | P0  | Hecho en la pista A1; falta revisión y QA   | Tras cambiar de cuenta, B no envía cambios pendientes de A                       |
 | FIX-08   | Todos los comandos comprueban el dueño (casos, planes, requisitos, adjuntos)         | P0  | Pendiente                                   | Test: otro usuario no lee ni modifica ninguna de esas entidades                  |
 | FIX-09   | Clave de Gemini en cabecera, timeout y errores sin URL                               | P0  | Hecho con IA-08 (`91f0b9a`)                 | Test de `ai.rs`: la clave nunca aparece en la URL ni en el error                 |
-| SYNC-04a | Sincronizar requisitos y tarjetas/defectos                                           | P0  | Pendiente                                   | Un requisito creado en A aparece en B y los vínculos de los casos resuelven      |
+| SYNC-04a | Sincronizar requisitos y tarjetas/defectos                                           | P0  | Hecho en la pista A1; falta revisión y QA   | Un requisito creado en A aparece en B y los vínculos de los casos resuelven      |
 | DAT-01   | IDs de caso, requisito y defecto únicos entre equipos                                | P0  | Pendiente (decisión de mecanismo en su ADR) | Dos equipos sin conexión crean casos y tras sincronizar no hay claves duplicadas |
 | SYNC-06  | Purga real de eliminados (o quitar el texto de Admin que la promete)                 | P1  | Pendiente                                   | Tras N días el registro desaparece y no resucita tras un pull                    |
 
@@ -137,18 +137,18 @@ También bloquean 0.1.0: SEC-03, SEC-06, SYNC-08, IA-05, UX-05, UX-06 y las vali
 
 ### Sincronización
 
-| ID       | Ítem                                                                                                 | P   | Versión | Estado                                     | Depende de | Criterio de aceptación                                            |
-| -------- | ---------------------------------------------------------------------------------------------------- | --- | ------- | ------------------------------------------ | ---------- | ----------------------------------------------------------------- |
-| SYNC-01  | HLC en el oplog                                                                                      | P1  | 0.1.0   | Hecho (`4fdd6a5`)                          | —          | LWW determinista con relojes desfasados                           |
-| SYNC-03  | Panel de conflictos (Fase 8C)                                                                        | P0  | 0.1.0   | Hecho (`4fdd6a5`); falta validación nativa | —          | Un conflicto simulado aparece y se resuelve a mano                |
-| SYNC-08  | Cada petición de sync lleva la versión de la app; el servidor rechaza las no soportadas sin escribir | P1  | 0.1.0   | Pendiente                                  | —          | Un cliente de una MENOR no soportada recibe un error claro        |
-| SYNC-04a | Ver compuerta A                                                                                      | P0  | 0.1.0   | Pendiente                                  | —          | —                                                                 |
-| SYNC-06  | Ver compuerta A                                                                                      | P1  | 0.1.0   | Pendiente                                  | —          | —                                                                 |
-| SYNC-05  | Paquetes de oplog firmados `.pharos-bundle` (modo aislado)                                           | P2  | 0.3.0   | Pendiente                                  | SYNC-01    | Exportar e importar por USB entre dos PCs sin servidor            |
-| SYNC-07  | Workspaces con roles, `project_members` activo ([ADR-0003](adr/0003-workspaces-compartidos.md))      | P1  | 0.3.0   | Pendiente                                  | TEN-01     | Un auditor ve el proyecto y no puede editarlo                     |
-| SYNC-04b | Sincronizar planificador y plantillas; adjuntos por hash fuera del oplog                             | P1  | 0.4.0   | Pendiente                                  | DAT-03     | Una tarjeta con adjunto creada en escritorio se ve en otro equipo |
-| SYNC-09  | Perfil, idioma y preferencias sincronizados (spec §10.3)                                             | P2  | 0.4.0   | Pendiente                                  | FIX-07     | Cambiar el idioma en un equipo se refleja en otro                 |
-| SYNC-02  | Fusión de conflictos por campo ([ADR-0002](adr/0002-conflictos-por-entidad.md))                      | P1  | 0.5.0   | Decidido: por entidad hasta 0.5.0          | SYNC-01    | Dos ediciones de campos distintos se fusionan sin preguntar       |
+| ID       | Ítem                                                                                                      | P   | Versión | Estado                                     | Depende de | Criterio de aceptación                                            |
+| -------- | --------------------------------------------------------------------------------------------------------- | --- | ------- | ------------------------------------------ | ---------- | ----------------------------------------------------------------- |
+| SYNC-01  | HLC en el oplog                                                                                           | P1  | 0.1.0   | Hecho (`4fdd6a5`)                          | —          | LWW determinista con relojes desfasados                           |
+| SYNC-03  | Panel de conflictos (Fase 8C)                                                                             | P0  | 0.1.0   | Hecho (`4fdd6a5`); falta validación nativa | —          | Un conflicto simulado aparece y se resuelve a mano                |
+| SYNC-08  | Cada petición de sync lleva la versión de la app; el servidor rechaza las no soportadas sin escribir      | P1  | 0.1.0   | Hecho en la pista A1; falta revisión y QA  | —          | Un cliente de una MENOR no soportada recibe un error claro        |
+| SYNC-04a | Ver compuerta A                                                                                           | P0  | 0.1.0   | Hecho en la pista A1; falta revisión y QA  | —          | —                                                                 |
+| SYNC-06  | Ver compuerta A                                                                                           | P1  | 0.1.0   | Pendiente                                  | —          | —                                                                 |
+| SYNC-05  | Paquetes de oplog firmados `.pharos-bundle` (modo aislado)                                                | P2  | 0.3.0   | Pendiente                                  | SYNC-01    | Exportar e importar por USB entre dos PCs sin servidor            |
+| SYNC-07  | Workspaces con roles, `project_members` activo ([ADR-0003](adr/0003-workspaces-compartidos.md))           | P1  | 0.3.0   | Pendiente                                  | TEN-01     | Un auditor ve el proyecto y no puede editarlo                     |
+| SYNC-04b | Sincronizar plantillas; adjuntos por hash fuera del oplog (las tarjetas del planificador van en SYNC-04a) | P1  | 0.4.0   | Pendiente                                  | DAT-03     | Una tarjeta con adjunto creada en escritorio se ve en otro equipo |
+| SYNC-09  | Perfil, idioma y preferencias sincronizados (spec §10.3)                                                  | P2  | 0.4.0   | Pendiente                                  | FIX-07     | Cambiar el idioma en un equipo se refleja en otro                 |
+| SYNC-02  | Fusión de conflictos por campo ([ADR-0002](adr/0002-conflictos-por-entidad.md))                           | P1  | 0.5.0   | Decidido: por entidad hasta 0.5.0          | SYNC-01    | Dos ediciones de campos distintos se fusionan sin preguntar       |
 
 ### Trazabilidad
 

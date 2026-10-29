@@ -142,6 +142,8 @@
     "failed": "No se pudo sincronizar (¿servidor no disponible?)",
     "conflicts": "Conflictos ({{count}})",
     "conflictToast": "Sincronizado con {{count}} conflicto(s) por revisar",
+    "unsupportedVersion": "Esta versión de Pharos ya no es compatible con el servidor. Actualiza la app para sincronizar; tus cambios se conservan.",
+    "webConflictToast": "Otro dispositivo guardó una versión más reciente de {{count}} elemento(s). Tu edición se conserva: revísala en Conflictos.",
     "conflict": {
       "review": "Revisar conflictos",
       "title": "Conflictos de sincronización",
@@ -159,7 +161,7 @@
       "keepRemote": "Usar la del servidor",
       "resolved": "Conflicto resuelto",
       "failed": "No se pudo resolver el conflicto",
-      "entity": { "project": "Proyecto", "test_plan": "Plan de pruebas", "test_case": "Caso de prueba" },
+      "entity": { "project": "Proyecto", "test_plan": "Plan de pruebas", "test_case": "Caso de prueba", "requirement": "Requisito", "planner_card": "Tarjeta del planificador" },
       "fields": {
         "title": "Título",
         "name": "Nombre",
@@ -172,7 +174,12 @@
         "ownerId": "Propietario",
         "planDate": "Fecha del plan",
         "caseIdPrefix": "Prefijo de IDs",
-        "caseIdDigits": "Dígitos de IDs"
+        "caseIdDigits": "Dígitos de IDs",
+        "requirementKey": "Clave del requisito",
+        "cardKey": "Clave del defecto",
+        "description": "Descripción",
+        "kind": "Tipo",
+        "position": "Posición"
       }
     }
   },

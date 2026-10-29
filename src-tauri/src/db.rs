@@ -27,7 +27,7 @@ const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
 const NONCE_LEN: usize = 12;
 
-const MIGRATIONS: &[(&str, &str)] = &[
+pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
     ("0001_init.sql", include_str!("../migrations/0001_init.sql")),
     (
         "0002_test_plans.sql",
@@ -68,6 +68,14 @@ const MIGRATIONS: &[(&str, &str)] = &[
     (
         "0011_sync_conflicts.sql",
         include_str!("../migrations/0011_sync_conflicts.sql"),
+    ),
+    (
+        "0012_sync_per_user.sql",
+        include_str!("../migrations/0012_sync_per_user.sql"),
+    ),
+    (
+        "0013_requirement_key_collisions.sql",
+        include_str!("../migrations/0013_requirement_key_collisions.sql"),
     ),
 ];
 

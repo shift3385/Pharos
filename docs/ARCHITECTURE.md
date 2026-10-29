@@ -101,11 +101,14 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
 `migrations/`) that the server also runs on start. Modules:
 
 - `auth` — accounts and sessions (below).
-- `sync` — per-user document store for the oplog: `POST /sync/push` (applies
-  deltas, last-write-wins by HLC; rejects a desktop delta whose base revision
-  the server no longer holds and returns its own version as a conflict) and
-  `GET /sync/pull?since=<seq>` (cursor-based). See
-  `src/modules/sync-offline/README.md`.
+- `sync` — per-user document store for the oplog: `POST /sync/push` (one
+  batch of up to 500 deltas; last-write-wins by HLC; rejects a desktop delta
+  whose base revision the server no longer holds and returns its own version as
+  a conflict; a project delete also tombstones its plans, cases, requirements
+  and planner cards) and `GET /sync/pull?since=<seq>` (pages of up to 500 with
+  `hasMore`). Every sync request must carry `x-pharos-version`; the server
+  serves its own MINOR and the previous one and answers others with 426
+  (ADR-0020). See `src/modules/sync-offline/README.md`.
 
 Auth: registration/login with **Argon2id** (`@node-rs/argon2`), a short-lived
 **JWT access token** (`jose`) plus an opaque **refresh token** stored hashed
@@ -153,7 +156,8 @@ to localStorage for `vite dev`.
   The rest of Phase 9 (accessibility audit, installer, final docs) is open.
 - **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
-  visible AI provenance. Requirements are not synced yet (backlog SYNC-04).
+  visible AI provenance. Requirements and planner cards sync since SYNC-04a;
+  templates and attachments follow in SYNC-04b.
 - **Roadmap and backlog:** `docs/ROADMAP.md` (replanned 2026-10-26 from the
   state-of-the-art study). Its target direction: Pharos as a local-first
   _control plane_ that orchestrates external frameworks (Playwright, Karate,
