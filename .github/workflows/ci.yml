@@ -112,23 +112,28 @@ jobs:
         working-directory: server
       - run: npm run migrate
         working-directory: server
-      - name: Start the API on localhost:3000
-        run: |
-          Start-Process -FilePath npm.cmd -ArgumentList 'start' -WorkingDirectory server `
-            -RedirectStandardOutput server/api.log -RedirectStandardError server/api.err.log
-          for ($i = 0; $i -lt 60; $i++) {
-            try { Invoke-RestMethod http://localhost:3000/health | Out-Null; exit 0 } catch { Start-Sleep 1 }
-          }
-          Get-Content server/api.log, server/api.err.log -ErrorAction SilentlyContinue
-          throw "The API did not answer on localhost:3000"
       - name: Install tauri-driver
         run: |
           if (-not (Get-Command tauri-driver -ErrorAction SilentlyContinue)) {
             cargo install tauri-driver --version 2.1.0 --locked
           }
       - run: npm run e2e:driver
-      # Seeds the test account, builds the debug binary, runs WebdriverIO.
-      - run: npm run e2e
+      # One step: the runner kills what a step leaves running when it ends, so
+      # the API lives exactly as long as the smoke. `npm run e2e` seeds the
+      # test account, builds the debug binary and runs WebdriverIO.
+      - name: Start the API on localhost:3000 and run the smoke
+        run: |
+          Start-Process -FilePath npm.cmd -ArgumentList 'start' -WorkingDirectory server `
+            -RedirectStandardOutput server/api.log -RedirectStandardError server/api.err.log
+          $up = $false
+          for ($i = 0; $i -lt 60 -and -not $up; $i++) {
+            try { Invoke-RestMethod http://localhost:3000/health | Out-Null; $up = $true } catch { Start-Sleep 1 }
+          }
+          if (-not $up) {
+            Get-Content server/api.log, server/api.err.log -ErrorAction SilentlyContinue
+            throw "The API did not answer on localhost:3000"
+          }
+          npm run e2e
       - name: Upload the E2E results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
