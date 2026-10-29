@@ -88,7 +88,11 @@ fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary
         .map_err(|e| e.to_string())
 }
 
-fn get_project(conn: &Connection, id: &str, owner_id: &str) -> Result<Option<Project>, String> {
+fn get_project(
+    conn: &Connection,
+    id: &str,
+    owner_id: &str,
+) -> Result<Option<Project>, String> {
     conn.query_row(
         "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits, \
          created_at, updated_at, revision FROM projects \
@@ -108,10 +112,7 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
         .clone()
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| DEFAULT_PREFIX.to_string());
-    let digits = input
-        .case_id_digits
-        .filter(|d| *d > 0)
-        .unwrap_or(DEFAULT_DIGITS);
+    let digits = input.case_id_digits.filter(|d| *d > 0).unwrap_or(DEFAULT_DIGITS);
     conn.execute(
         "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, \
          case_id_digits, created_by, updated_by, created_at, updated_at, revision) \
@@ -126,15 +127,7 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(
-        conn,
-        "project",
-        &id,
-        "upsert",
-        "{}",
-        1,
-        &input.owner_id.clone().unwrap_or_default(),
-    )?;
+    oplog::record(conn, "project", &id, "upsert", "{}", 1, &input.owner_id.clone().unwrap_or_default())?;
     Ok(id)
 }
 
@@ -166,10 +159,7 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
         .clone()
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| DEFAULT_PREFIX.to_string());
-    let digits = input
-        .case_id_digits
-        .filter(|d| *d > 0)
-        .unwrap_or(DEFAULT_DIGITS);
+    let digits = input.case_id_digits.filter(|d| *d > 0).unwrap_or(DEFAULT_DIGITS);
     conn.execute(
         "UPDATE projects SET name = ?2, case_id_prefix = ?3, case_id_digits = ?4, \
          updated_at = datetime('now'), updated_by = ?6, revision = ?5 WHERE id = ?1",
@@ -199,21 +189,11 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
 /// planner cards and requirements so nothing is left orphaned (the hard-delete
 /// purge runs later).
 pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Result<(), String> {
-    for table in [
-        "projects",
-        "test_plans",
-        "test_cases",
-        "planner_cards",
-        "requirements",
-    ] {
+    for table in ["projects", "test_plans", "test_cases", "planner_cards", "requirements"] {
         let sql = format!(
             "UPDATE {table} SET deleted_at = datetime('now') \
              WHERE {} = ?1 AND deleted_at IS NULL",
-            if table == "projects" {
-                "id"
-            } else {
-                "project_id"
-            }
+            if table == "projects" { "id" } else { "project_id" }
         );
         conn.execute(&sql, params![id]).map_err(|e| e.to_string())?;
     }
@@ -227,7 +207,11 @@ pub fn project_list(db: State<Db>, owner_id: String) -> Result<Vec<ProjectSummar
 }
 
 #[tauri::command]
-pub fn project_get(db: State<Db>, id: String, owner_id: String) -> Result<Option<Project>, String> {
+pub fn project_get(
+    db: State<Db>,
+    id: String,
+    owner_id: String,
+) -> Result<Option<Project>, String> {
     db.with_conn(|conn| get_project(conn, &id, &owner_id))
 }
 
