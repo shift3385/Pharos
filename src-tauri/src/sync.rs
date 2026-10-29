@@ -20,6 +20,8 @@ use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
 use crate::hlc;
+use crate::key_sync;
+use crate::keys;
 use crate::oplog::{self, SYNCED};
 
 fn table_for(entity: &str) -> Option<&'static str> {
@@ -67,7 +69,7 @@ pub struct Pending {
     deltas: Vec<Delta>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteDoc {
     entity: String,
@@ -312,10 +314,11 @@ fn open_conflict_id(
 
 /// Builds the pending deltas of one account: one per distinct synced entity
 /// changed since the last sync, carrying its live state (or a tombstone), its
-/// base and the oplog ids covered. Entities with an open conflict are held back
-/// until it is resolved.
+/// base and the oplog ids covered. Entities with an open conflict (of version
+/// or of key, DAT-01) are held back until it is resolved.
 fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
     oplog::claim_unowned(conn)?;
+    key_sync::close_stale(conn)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -328,6 +331,8 @@ fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
                    AND NOT EXISTS (SELECT 1 FROM sync_conflicts c WHERE c.user_id = o.user_id
                                    AND c.entity = o.entity AND c.entity_id = o.entity_id
                                    AND c.resolved_at IS NULL)
+                   AND NOT EXISTS (SELECT 1 FROM key_conflicts k WHERE k.entity = o.entity
+                                   AND k.entity_id = o.entity_id AND k.resolved_at IS NULL)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list()
             ))
@@ -551,6 +556,7 @@ fn write_doc(
             params![doc.entity_id, doc.revision],
         )
         .map_err(|e| e.to_string())?;
+        key_sync::holder_deleted(conn, &doc.entity, &doc.entity_id)?;
         return Ok(());
     }
 
@@ -560,6 +566,27 @@ fn write_doc(
             .map(|v| v.to_string())
             .unwrap_or_else(|| "{}".into())
     };
+    // Live keys are unique per project (DAT-01). The server has the last word:
+    // a different local row that holds the pulled key loses it, gets a
+    // provisional key and a key conflict for the user (ADR-0010).
+    let key_field = match doc.entity.as_str() {
+        "test_case" => Some("scenarioId"),
+        "requirement" => Some("requirementKey"),
+        "planner_card" => Some("cardKey"),
+        _ => None,
+    };
+    let pulled_key = key_field.map_or("", |f| field(p, f));
+    if key_field.is_some() {
+        if let Some(holder) = key_sync::holder(
+            conn,
+            &doc.entity,
+            field(p, "projectId"),
+            pulled_key,
+            &doc.entity_id,
+        )? {
+            key_sync::vacate(conn, user, &doc.entity, &holder, &doc.entity_id)?;
+        }
+    }
     match doc.entity.as_str() {
         "project" => {
             conn.execute(
@@ -636,15 +663,15 @@ fn write_doc(
             .map_err(|e| e.to_string())?;
         }
         "requirement" => {
-            // The key is immutable once created, so an update never changes it.
-            // A key already used by another live requirement of the project
-            // (two devices numbered offline) is kept as is: both stay until
-            // DAT-01 (migration 0013).
+            // A definitive key never changes, but the server's version wins:
+            // a provisional key replaced on another device, or a key renamed in
+            // the conflict panel there, arrives here (DAT-01).
             conn.execute(
                 "INSERT INTO requirements (id, workspace_id, project_id, requirement_key, title, description,
                         priority, created_by, updated_by, created_at, updated_at, revision, deleted_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, datetime('now'), datetime('now'), ?9, NULL)
-                 ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id, title=excluded.title,
+                 ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id,
+                        requirement_key=excluded.requirement_key, title=excluded.title,
                         description=excluded.description, priority=excluded.priority,
                         updated_by=excluded.updated_by, updated_at=datetime('now'),
                         revision=excluded.revision, deleted_at=NULL",
@@ -698,6 +725,10 @@ fn write_doc(
             .map_err(|e| e.to_string())?;
         }
         _ => {}
+    }
+    // The server gave this entity a definitive key: nothing left to resolve.
+    if key_field.is_some() && !pulled_key.is_empty() && !keys::is_provisional(pulled_key) {
+        key_sync::settled_by_server(conn, &doc.entity, &doc.entity_id)?;
     }
     Ok(())
 }
@@ -1012,7 +1043,7 @@ mod tests {
         c.execute(
             "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, version, status,
                     priority, author, data, created_by, updated_by, created_at, updated_at, revision)
-             VALUES (?1, ?2, 'p1', 'ATS_001', ?3, '1.0', 'draft', 'medium', 'Ada', '{}', 'Ada', 'Ada',
+             VALUES (?1, ?2, 'p1', ?1, ?3, '1.0', 'draft', 'medium', 'Ada', '{}', 'Ada', 'Ada',
                     datetime('now'), datetime('now'), 1)",
             params![id, ws, title],
         )
@@ -1042,7 +1073,7 @@ mod tests {
         RemoteDoc {
             entity: "test_case".into(),
             entity_id: id.into(),
-            payload: json!({ "id": id, "projectId": "p1", "scenarioId": "ATS_001", "title": title,
+            payload: json!({ "id": id, "projectId": "p1", "scenarioId": id, "title": title,
                              "version": "1.0", "status": "draft", "priority": "medium", "author": "Web",
                              "data": {} }),
             revision,
@@ -1316,13 +1347,16 @@ mod tests {
         assert!(build_pending(&b, U1).unwrap().deltas.is_empty());
     }
 
-    // SYNC-04a until DAT-01: a key numbered on two devices does not break the
-    // pull nor drop either requirement.
+    // DAT-01: a key numbered on two devices does not break the pull nor drop
+    // either requirement. The pulled one keeps the key (the server has the last
+    // word); the local one gets a provisional key and a key conflict, and is
+    // not pushed until the user picks a new key.
     #[test]
-    fn duplicate_requirement_key_keeps_both() {
+    fn a_pulled_key_wins_and_the_local_holder_gets_a_key_conflict() {
         let c = conn();
         let ws = project(&c, "p1", U1);
         insert_requirement(&c, "r-local", "p1", "REQ-004", "Local one");
+        oplog::record(&c, "requirement", "r-local", "upsert", "{}", 1, U1).unwrap();
         let doc = RemoteDoc {
             entity: "requirement".into(),
             entity_id: "r-remote".into(),
@@ -1333,15 +1367,72 @@ mod tests {
             hlc: WEB_HLC.into(),
         };
         apply_doc(&c, &ws, U1, &doc).unwrap();
-        let n: i64 = c
+        let key_of = |id: &str| -> String {
+            c.query_row(
+                "SELECT requirement_key FROM requirements WHERE id = ?1 AND deleted_at IS NULL",
+                [id],
+                |r| r.get(0),
+            )
+            .unwrap()
+        };
+        assert_eq!(key_of("r-remote"), "REQ-004");
+        let provisional = key_of("r-local");
+        assert!(provisional.starts_with("REQ-?"), "{provisional}");
+
+        let open = crate::key_sync::list(&c, U1).unwrap();
+        assert_eq!(open.len(), 1);
+        assert_eq!(
+            (open[0].entity_id.as_str(), open[0].lost_key.as_str()),
+            ("r-local", "REQ-004")
+        );
+        assert_eq!(oplog::sync_state(&c, U1).unwrap().conflicts, 1);
+        // Held back from the push until resolved.
+        assert!(build_pending(&c, U1)
+            .unwrap()
+            .deltas
+            .iter()
+            .all(|d| d.entity_id != "r-local"));
+
+        // The user picks a key: it is pushed with it.
+        crate::key_sync::resolve(&c, U1, &open[0].id, Some("REQ-104")).unwrap();
+        assert_eq!(key_of("r-local"), "REQ-104");
+        let pending = build_pending(&c, U1).unwrap();
+        let delta = pending
+            .deltas
+            .iter()
+            .find(|d| d.entity_id == "r-local")
+            .unwrap();
+        assert_eq!(delta.payload["requirementKey"], "REQ-104");
+        assert_eq!(oplog::sync_state(&c, U1).unwrap().conflicts, 0);
+    }
+
+    #[test]
+    fn a_key_conflict_is_settled_when_the_server_sends_the_entity_with_a_key() {
+        let c = conn();
+        let ws = project(&c, "p1", U1);
+        insert_requirement(&c, "r1", "p1", "REQ-001", "Mine");
+        c.execute("UPDATE oplog SET synced_at = 'now'", []).unwrap();
+        crate::key_sync::vacate(&c, U1, "requirement", "r1", "r2").unwrap();
+        assert_eq!(crate::key_sync::list(&c, U1).unwrap().len(), 1);
+        let doc = RemoteDoc {
+            entity: "requirement".into(),
+            entity_id: "r1".into(),
+            payload: json!({ "id": "r1", "projectId": "p1", "requirementKey": "REQ-001-dup1",
+                             "title": "Mine", "description": "", "priority": "low" }),
+            revision: 2,
+            deleted: false,
+            hlc: WEB_HLC.into(),
+        };
+        apply_doc(&c, &ws, U1, &doc).unwrap();
+        assert!(crate::key_sync::list(&c, U1).unwrap().is_empty());
+        let key: String = c
             .query_row(
-                "SELECT count(*) FROM requirements WHERE project_id = 'p1' AND requirement_key = 'REQ-004'
-                   AND deleted_at IS NULL",
+                "SELECT requirement_key FROM requirements WHERE id = 'r1'",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(n, 2);
+        assert_eq!(key, "REQ-001-dup1");
     }
 
     // FIX-05 on the receiving device: the server cascades a project delete into
@@ -1692,5 +1783,234 @@ mod tests {
         assert_eq!(build_pending(&c, U1).unwrap().deltas.len(), 1);
         assert!(list_conflicts(&c, U1).unwrap().is_empty());
         let _ = ws;
+    }
+
+    #[test]
+    fn a_purged_record_does_not_come_back_on_a_pull() {
+        // SYNC-06: a case deleted, pushed and purged after the retention.
+        let c = conn();
+        let ws = synced_case(&c, "c1", "Login");
+        c.execute(
+            "UPDATE test_cases SET deleted_at = datetime('now', '-40 days'), revision = 2 WHERE id = 'c1'",
+            [],
+        )
+        .unwrap();
+        oplog::record(&c, "test_case", "c1", "delete", "{}", 2, "Ada").unwrap();
+        let push = build_pending(&c, U1).unwrap();
+        let tombstone = as_remote(&push.deltas[0]);
+        assert!(tombstone.deleted);
+        mark_pushed(&c, U1, &[pushed(&push.deltas[0])]).unwrap();
+        assert_eq!(crate::purge::purge(&c, U1, 30).unwrap().test_cases, 1);
+
+        // The next pull (or a full re-pull from cursor 0) brings the tombstone
+        // the server keeps: nothing is written, nothing comes back.
+        for _ in 0..2 {
+            apply_doc(&c, &ws, U1, &tombstone).unwrap();
+            c.execute("DELETE FROM sync_base", []).unwrap();
+        }
+        let rows: i64 = c
+            .query_row("SELECT count(*) FROM test_cases WHERE id = 'c1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(rows, 0);
+        assert_eq!(open_conflicts(&c), 0);
+        assert!(build_pending(&c, U1).unwrap().deltas.is_empty());
+    }
+
+    /// The server side of DAT-01 as `server/src/modules/sync` does it: one
+    /// document per entity, blocks of 50 that never overlap, and a push whose
+    /// key another live document of the project has is refused.
+    #[derive(Default)]
+    struct FakeServer {
+        docs: Vec<RemoteDoc>,
+        next: HashMap<(String, String), u64>,
+    }
+
+    impl FakeServer {
+        fn lease(
+            &mut self,
+            reqs: Vec<crate::key_sync::LeaseRequest>,
+        ) -> Vec<crate::key_sync::KeyBlock> {
+            reqs.into_iter()
+                .map(|r| {
+                    let next = self
+                        .next
+                        .entry((r.project_id.clone(), r.kind.to_string()))
+                        .or_insert(1);
+                    let start = (*next).max(r.floor);
+                    *next = start + 50;
+                    crate::key_sync::KeyBlock {
+                        project_id: r.project_id,
+                        kind: r.kind.to_string(),
+                        start,
+                        end: start + 49,
+                    }
+                })
+                .collect()
+        }
+
+        fn key_of(doc: &RemoteDoc) -> &str {
+            doc.payload
+                .get("scenarioId")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+        }
+
+        /// None when accepted; the holder's id when the key is taken.
+        fn push(&mut self, doc: RemoteDoc) -> Option<String> {
+            let key = Self::key_of(&doc).to_string();
+            if doc.entity == "test_case" && !doc.deleted && !keys::is_provisional(&key) {
+                if let Some(holder) = self.docs.iter().find(|d| {
+                    d.entity == "test_case"
+                        && !d.deleted
+                        && d.entity_id != doc.entity_id
+                        && Self::key_of(d) == key
+                }) {
+                    return Some(holder.entity_id.clone());
+                }
+            }
+            self.docs
+                .retain(|d| !(d.entity == doc.entity && d.entity_id == doc.entity_id));
+            self.docs.push(doc);
+            None
+        }
+    }
+
+    /// One desktop sync cycle (`syncApi.ts::syncNow`): lease blocks and finalize
+    /// provisional keys, push (refused keys become key conflicts), pull all.
+    fn sync_device(dev: &Connection, server: &mut FakeServer, lease: bool) {
+        let ws = ensure_workspace(dev).unwrap();
+        if lease {
+            let blocks = server.lease(crate::key_sync::lease_requests(dev, U1).unwrap());
+            crate::key_sync::apply_blocks(dev, U1, &blocks).unwrap();
+            crate::key_sync::finalize(dev, U1).unwrap();
+        }
+        for d in build_pending(dev, U1).unwrap().deltas {
+            match server.push(as_remote(&d)) {
+                None => mark_pushed(dev, U1, &[pushed(&d)]).unwrap(),
+                Some(holder) => crate::key_sync::record_rejected(
+                    dev,
+                    U1,
+                    &[crate::key_sync::RejectedKey {
+                        entity: d.entity.clone(),
+                        entity_id: d.entity_id.clone(),
+                        taken_by: holder,
+                    }],
+                )
+                .unwrap(),
+            }
+        }
+        for doc in server.docs.clone() {
+            apply_doc(dev, &ws, U1, &doc).unwrap();
+        }
+    }
+
+    /// A case created as the repository does it, numbered by `keys::allocate`
+    /// or with a hand-typed key.
+    fn create_case(dev: &Connection, id: &str, manual: Option<&str>) {
+        let ws = ensure_workspace(dev).unwrap();
+        let key = match manual {
+            Some(k) => k.to_string(),
+            None => keys::allocate(dev, keys::KeyKind::Case, "p1", "ATS_", 3).unwrap(),
+        };
+        dev.execute(
+            "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, author, \
+             created_by, updated_by, created_at, updated_at) \
+             VALUES (?1, ?2, 'p1', ?3, ?1, 'Ada', ?4, ?4, datetime('now'), datetime('now'))",
+            params![id, ws, key, U1],
+        )
+        .unwrap();
+        oplog::record(dev, "test_case", id, "upsert", "{}", 1, U1).unwrap();
+    }
+
+    fn live_keys(dev: &Connection) -> Vec<String> {
+        let mut stmt = dev
+            .prepare(
+                "SELECT scenario_id FROM test_cases WHERE deleted_at IS NULL ORDER BY scenario_id",
+            )
+            .unwrap();
+        stmt.query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    // DAT-01 acceptance: two devices create cases offline and, after syncing,
+    // there are no duplicate keys.
+    #[test]
+    fn two_offline_devices_never_end_with_duplicate_keys() {
+        let mut server = FakeServer::default();
+        let a = conn();
+        let b = conn();
+
+        // A creates the project and numbers it freely before its first push.
+        let ws = ensure_workspace(&a).unwrap();
+        a.execute(
+            "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, \
+             created_at, updated_at) VALUES ('p1', ?1, ?2, 'Checkout', ?2, ?2, 'now', 'now')",
+            params![ws, U1],
+        )
+        .unwrap();
+        oplog::record(&a, "project", "p1", "upsert", "{}", 1, U1).unwrap();
+        create_case(&a, "a1", None);
+        create_case(&a, "a2", None);
+        assert_eq!(live_keys(&a), ["ATS_001", "ATS_002"]);
+        sync_device(&a, &mut server, true);
+
+        // B gets the project but no block (say its lease failed), then both
+        // work offline. B also types the same manual key as A.
+        sync_device(&b, &mut server, false);
+        for id in ["a3", "a4", "a5"] {
+            create_case(&a, id, None);
+        }
+        create_case(&a, "a-manual", Some("LOGIN-1"));
+        for id in ["b1", "b2"] {
+            create_case(&b, id, None);
+        }
+        create_case(&b, "b-manual", Some("LOGIN-1"));
+        assert!(
+            live_keys(&b)
+                .iter()
+                .filter(|k| keys::is_provisional(k))
+                .count()
+                == 2
+        );
+
+        // Both sync, in any order, until nothing changes.
+        sync_device(&a, &mut server, true);
+        sync_device(&b, &mut server, true);
+        sync_device(&a, &mut server, true);
+
+        // B's hand-typed key lost to A's: a key conflict the user resolves.
+        let open = crate::key_sync::list(&b, U1).unwrap();
+        assert_eq!(open.len(), 1);
+        assert_eq!(
+            (open[0].entity_id.as_str(), open[0].lost_key.as_str()),
+            ("b-manual", "LOGIN-1")
+        );
+        crate::key_sync::resolve(&b, U1, &open[0].id, Some("LOGIN-2")).unwrap();
+        sync_device(&b, &mut server, true);
+        sync_device(&a, &mut server, true);
+
+        for dev in [&a, &b] {
+            let keys = live_keys(dev);
+            assert_eq!(keys.len(), 9, "{keys:?}");
+            let mut unique = keys.clone();
+            unique.dedup();
+            assert_eq!(unique, keys, "no duplicate keys");
+            assert!(keys.iter().all(|k| !keys::is_provisional(k)), "{keys:?}");
+            assert!(keys.contains(&"LOGIN-1".to_string()) && keys.contains(&"LOGIN-2".to_string()));
+        }
+        assert_eq!(live_keys(&a), live_keys(&b), "both devices agree");
+        // A kept its first keys; nothing was renamed on its own.
+        let a_key: String = a
+            .query_row(
+                "SELECT scenario_id FROM test_cases WHERE id = 'a1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(a_key, "ATS_001");
     }
 }

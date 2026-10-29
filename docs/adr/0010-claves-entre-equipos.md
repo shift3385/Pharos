@@ -1,6 +1,7 @@
 # ADR-0010 · Claves de caso, requisito y defecto únicas entre equipos
 
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28; DAT-01, pista A2). Opción B.
+  Enmendado el 2026-10-29 (pista A3, fase 2 implementada): ver "Enmienda A3" al final.
 - **Contexto:**
   - Tres entidades tienen una clave visible que una persona lee, escribe en un
     informe y pega en el código de automatización:
@@ -159,3 +160,74 @@
     sincronizar no hay claves duplicadas") se cumple con la fase 2.
   - Con los workspaces (0.3.0), el contador del servidor pasa de "por usuario"
     a "por proyecto" sin cambiar el protocolo de bloques.
+
+- **Enmienda A3** (2026-10-29, pista A3; la fase 2 queda implementada). Lo que
+  cambia o se precisa respecto a lo anterior:
+  - **Duplicados que ya existían: se conserva la clave del id más bajo, no la
+    del más antiguo.** `created_at` no se puede comparar entre equipos: un pull
+    escribe la hora del equipo que lo recibe. El servidor (migración `0006`) y
+    el escritorio (migración local `0017`) aplican la misma regla, así que
+    todos los equipos acaban con las mismas claves. En local se prefiere antes
+    la fila que el servidor ya conoce (con `sync_base`), porque es la que el
+    servidor tiene. Las demás:
+    - una fila que el servidor no tiene recibe `-dup1`, `-dup2`… y se envía
+      con ella;
+    - una fila que el servidor ya tiene **no se renombra en local**: recibe una
+      clave provisional y un conflicto de clave. El equipo no puede saber qué
+      ve el servidor (otro equipo pudo borrar allí la fila que aquí gana), así
+      que renombrar sin más podía divergir en silencio (revisión del
+      2026-10-29). El pull trae la clave que decidió el servidor y cierra el
+      conflicto. Si el servidor había conservado la clave para esta fila, la
+      lápida de la que la tenía aquí se la devuelve (`holder_deleted`). Una
+      fila que el servidor nunca tuvo no recupera así una clave borrada
+      (regla 2).
+    - Las condiciones de la reparación y de los índices únicos son las mismas
+      (claves vivas no vacías), para que crear los índices no pueda fallar.
+  - **Bloques** (`POST /sync/key-blocks`, tabla de servidor `key_blocks`):
+    - una fila por `(project_id, kind)` con `owner_id`: solo la cuenta dueña del
+      proyecto pide bloques (el proyecto de otra cuenta se rechaza en
+      `refused`). El primero que pide bloques de un proyecto aún no subido
+      queda como dueño;
+    - el bloque empieza en el mayor de: el siguiente número nunca entregado,
+      el `floor` del equipo (su siguiente número, regla 3) y el mayor número
+      de la serie que el servidor guarda para ese proyecto (claves subidas
+      antes de que existieran los bloques). Solo cuentan las claves que son
+      el `prefix` de la petición seguido de dígitos: una clave escrita a mano
+      como `JIRA-48213` no adelanta la numeración;
+    - 50 números por bloque; el equipo pide otro cuando le quedan menos de 10,
+      en cada sync, antes del push. Los números que sobran de un bloque se
+      pierden (huecos).
+  - **Clave provisional:** `<prefijo>?<4 letras>` (`ATS_?KQZD`). Nunca termina
+    en dígitos, así que nunca parece un número de la serie. El `.feature` no la
+    escribe como tag y el export lo avisa. En el siguiente sync, tras recibir el
+    bloque, recibe la definitiva en una transacción que también reescribe los
+    `requirementKeys` de los casos del proyecto.
+    - Un proyecto que ya se sincronizó antes de esta versión no tiene bloque:
+      sus claves nuevas son provisionales hasta el primer sync con conexión.
+  - **Duplicado al recibir:**
+    - el push rechaza un upsert cuya clave usa otro documento vivo del mismo
+      proyecto (`keyConflicts`). La comprobación corre bajo el bloqueo de
+      escritura del usuario; el índice de servidor `documents_key_idx` no es
+      `UNIQUE` a propósito, para que el duplicado vuelva como conflicto y no
+      como transacción fallida. Con TEN-01 el bloqueo debe ser por proyecto;
+    - solo recibe `keyConflicts` un cliente que declara entenderlo
+      (`x-pharos-sync-features: key-conflicts`). Un cliente anterior lleva la
+      misma versión (`0.1.0-alpha.1`), así que la versión no los distingue; si
+      no declara la capacidad, un choque de clave se responde con 426, para
+      que no tome el rechazo por aceptado y pierda el cambio;
+    - en el pull, el documento del servidor conserva su clave: una fila local
+      distinta que la tenía recibe una provisional y un **conflicto de clave**
+      (tabla local `key_conflicts`);
+    - una fila con un conflicto de clave abierto no se envía. En el panel de
+      conflictos la persona escribe otra clave (ni usada ni la perdida) o toma
+      la siguiente del bloque. Si el servidor envía esa entidad con una clave
+      definitiva, el conflicto se cierra solo. Una clave definitiva nunca se
+      renombra sola;
+    - el pull aplica también `requirement_key`: puede cambiar por una clave
+      provisional sustituida o un conflicto resuelto en otro equipo.
+  - **En el servidor, una clave borrada no cuenta como duplicada.** El
+    escritorio sigue sin reutilizarla nunca: cuentan las filas borradas y las
+    purgadas (`retired_keys`, SYNC-06).
+  - **La web** numera con su caché hasta BASE-10. Si el servidor rechaza una
+    clave suya, el cambio queda en la bandeja de salida marcado como
+    rechazado, igual que un cambio demasiado grande.

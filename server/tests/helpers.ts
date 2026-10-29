@@ -28,6 +28,7 @@ export const testEnv: Env = {
   LOGIN_RATE_LIMIT_WINDOW: 60_000,
   BODY_LIMIT_BYTES: 1_048_576,
   SYNC_BODY_LIMIT_BYTES: 8_388_608,
+  SYNC_TOMBSTONE_DAYS: 30,
 };
 
 export async function setupTestApp(): Promise<{

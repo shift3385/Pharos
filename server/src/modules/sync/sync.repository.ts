@@ -1,6 +1,15 @@
 import type { Pool, PoolClient } from "pg";
 import { decide } from "./sync.merge";
-import { MAX_PULL_LIMIT, PROJECT_CHILDREN, type Delta } from "./sync.schemas";
+import {
+  isProvisionalKey,
+  KEY_BLOCK_SIZE,
+  KEY_ENTITY,
+  KEY_FIELD,
+  MAX_PULL_LIMIT,
+  PROJECT_CHILDREN,
+  type Delta,
+  type KeyKind,
+} from "./sync.schemas";
 
 export interface RemoteDoc {
   entity: string;
@@ -13,9 +22,33 @@ export interface RemoteDoc {
   seq: number;
 }
 
-/** Outcome of one pushed delta: accepted, or rejected as a conflict together
- *  with the version the server keeps (sent back so the client can show it). */
-export type ApplyResult = { accepted: true } | { accepted: false; current: RemoteDoc };
+/** A pushed key another live document of the project already uses (DAT-01). */
+export interface KeyConflict {
+  entity: string;
+  entityId: string;
+  key: string;
+  /** The document that holds the key. */
+  takenBy: string;
+}
+
+/** Outcome of one pushed delta: accepted; rejected as a conflict together with
+ *  the version the server keeps (sent back so the client can show it); or
+ *  rejected because its key is taken (DAT-01). */
+export type ApplyResult =
+  | { accepted: true }
+  | { accepted: false; current: RemoteDoc }
+  | { accepted: false; keyConflict: KeyConflict };
+
+/** A block of key numbers leased to a device, both ends included. */
+export interface KeyBlock {
+  projectId: string;
+  kind: KeyKind;
+  start: number;
+  end: number;
+}
+
+/** The key expression of `documents_key_idx` (migration 0006). */
+const KEY_SQL = "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey')";
 
 /** One pull page: documents after the cursor and whether more remain. */
 export interface PullPage {
@@ -62,6 +95,24 @@ async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta
   );
 }
 
+/** The live document of the same project that already uses the key of an
+ *  upsert (DAT-01), as a key conflict; null when the key is free, empty or
+ *  provisional. Runs under the user's write lock, so two pushes of the same key
+ *  cannot both pass. */
+async function takenKey(client: PoolClient, userId: string, d: Delta): Promise<KeyConflict | null> {
+  const field = KEY_FIELD[d.entity];
+  const key = field ? d.payload[field] : undefined;
+  if (d.op !== "upsert" || typeof key !== "string" || !key || isProvisionalKey(key)) return null;
+  const { rows } = await client.query<{ entity_id: string }>(
+    `SELECT entity_id FROM documents
+      WHERE user_id = $1 AND entity = $2 AND NOT deleted
+        AND payload->>'projectId' = $3 AND ${KEY_SQL} = $4 AND entity_id <> $5
+      LIMIT 1`,
+    [userId, d.entity, String(d.payload.projectId ?? ""), key, d.entityId],
+  );
+  return rows[0] ? { entity: d.entity, entityId: d.entityId, key, takenBy: rows[0].entity_id } : null;
+}
+
 export function createSyncRepository(pool: Pool) {
   return {
     /** Applies one delta under a row lock, following the merge rule in
@@ -80,6 +131,11 @@ export function createSyncRepository(pool: Pool) {
         const current = rows[0] ? toDoc(rows[0]) : null;
         const decision = decide(current, d);
         if (decision === "write") {
+          const keyConflict = await takenKey(client, userId, d);
+          if (keyConflict) {
+            await client.query("COMMIT");
+            return { accepted: false, keyConflict };
+          }
           await client.query(
             `INSERT INTO documents
                (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
@@ -118,6 +174,76 @@ export function createSyncRepository(pool: Pool) {
         [userId, since, limit + 1],
       );
       return { docs: rows.slice(0, limit).map(toDoc), hasMore: rows.length > limit };
+    },
+
+    /** Leases one block of key numbers per request (DAT-01, ADR-0010 rule 4).
+     *  The block starts at the highest of: the next number never handed out,
+     *  the device's own next number (`floor`, so keys numbered before the
+     *  project's first push stay valid) and the highest number this server
+     *  stores for the project (keys pushed before blocks existed). One
+     *  `INSERT … ON CONFLICT DO UPDATE … RETURNING` per request locks the row,
+     *  so concurrent leases never overlap. A project another account owns is
+     *  refused. */
+    async leaseBlocks(
+      userId: string,
+      requests: { projectId: string; kind: KeyKind; prefix: string; floor: number }[],
+    ): Promise<{ blocks: KeyBlock[]; refused: { projectId: string; kind: KeyKind }[] }> {
+      const blocks: KeyBlock[] = [];
+      const refused: { projectId: string; kind: KeyKind }[] = [];
+      for (const r of requests) {
+        const foreign = await pool.query(
+          `SELECT 1 FROM documents WHERE entity = 'project' AND entity_id = $1 AND user_id <> $2 LIMIT 1`,
+          [r.projectId, userId],
+        );
+        if (foreign.rowCount) {
+          refused.push({ projectId: r.projectId, kind: r.kind });
+          continue;
+        }
+        // Only keys of the series count: the prefix followed by digits only
+        // (a typed `JIRA-48213` must not push every later block that far).
+        const stored = r.prefix
+          ? await pool.query<{ max: string | null }>(
+              `SELECT max(CASE WHEN left(k, length($4)) = $4 AND substr(k, length($4) + 1) ~ '^[0-9]{1,15}$'
+                               THEN substr(k, length($4) + 1)::bigint END) AS max
+                 FROM (SELECT ${KEY_SQL} AS k FROM documents
+                        WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3) AS keyed`,
+              [userId, KEY_ENTITY[r.kind], r.projectId, r.prefix],
+            )
+          : null;
+        const floor = Math.max(r.floor, Number(stored?.rows[0]?.max ?? 0) + 1);
+        const { rows } = await pool.query<{ next_value: string }>(
+          `INSERT INTO key_blocks (project_id, kind, owner_id, next_value)
+           VALUES ($1, $2, $3, $4::bigint + $5)
+           ON CONFLICT (project_id, kind) DO UPDATE
+             SET next_value = GREATEST(key_blocks.next_value, $4::bigint) + $5, updated_at = now()
+             WHERE key_blocks.owner_id = $3
+           RETURNING next_value`,
+          [r.projectId, r.kind, userId, floor, KEY_BLOCK_SIZE],
+        );
+        if (!rows[0]) {
+          refused.push({ projectId: r.projectId, kind: r.kind });
+          continue;
+        }
+        const next = Number(rows[0].next_value);
+        blocks.push({ projectId: r.projectId, kind: r.kind, start: next - KEY_BLOCK_SIZE, end: next - 1 });
+      }
+      return { blocks, refused };
+    },
+
+    /** Clears the content of tombstones older than `days` days (SYNC-06):
+     *  what was deleted leaves the server, but the tombstone (entity, id,
+     *  deleted, revision, HLC) stays, so a device that pulls it later deletes
+     *  its copy and a purged record never comes back. `seq` is not bumped:
+     *  devices already have the tombstone and need nothing new. Returns how
+     *  many were cleared. */
+    async compactTombstones(days: number): Promise<number> {
+      const { rowCount } = await pool.query(
+        `UPDATE documents SET payload = '{}'::jsonb
+          WHERE deleted AND payload <> '{}'::jsonb
+            AND updated_at < now() - make_interval(days => $1)`,
+        [days],
+      );
+      return rowCount ?? 0;
     },
   };
 }

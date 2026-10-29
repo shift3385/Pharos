@@ -26,6 +26,8 @@
       "case": "Test cases"
     },
     "builtin": "Included",
+    "shared": "Shared",
+    "sharedHint": "Imported before accounts: every account on this device sees it and it is read-only. To edit it, download it and import it again.",
     "download": "Download .xlsx",
     "import": "Import template",
     "importedToast": "Template imported: “{{name}}”",
@@ -185,7 +187,13 @@
       "keepRemote": "Use the server's",
       "resolved": "Conflict resolved",
       "failed": "Could not resolve the conflict",
-      "entity": { "project": "Project", "test_plan": "Test plan", "test_case": "Test case", "requirement": "Requirement", "planner_card": "Planner card" },
+      "entity": {
+        "project": "Project",
+        "test_plan": "Test plan",
+        "test_case": "Test case",
+        "requirement": "Requirement",
+        "planner_card": "Planner card"
+      },
       "fields": {
         "title": "Title",
         "name": "Name",
@@ -204,6 +212,18 @@
         "description": "Description",
         "kind": "Kind",
         "position": "Position"
+      },
+      "key": {
+        "title": "Repeated keys",
+        "intro": "Another item of the project already has this key on the server. Until you pick another one, this item has a provisional key and does not sync. If a case linked the old key, review it.",
+        "lost": "Wanted {{key}}",
+        "current": "Now: {{key}}",
+        "placeholder": "New key",
+        "use": "Use this key",
+        "next": "Assign the next one",
+        "assigned": "Key assigned: {{key}}",
+        "noBlock": "Sync first to get new numbers, or type a key.",
+        "failed": "That key could not be used: {{reason}}"
       }
     }
   },
@@ -229,7 +249,7 @@
       "opacity": "Background opacity",
       "opacityHint": "Lower = more transparent. Affects only the background, not the content.",
       "retention": "Retention of deleted items (days)",
-      "retentionHint": "Items in the trash are permanently removed after this many days.",
+      "retentionHint": "What you delete is removed for good from this device after this many days. A deletion not yet synced waits for the next sync. The server has its own period and keeps a marker of what was deleted.",
       "download": "Downloads folder",
       "downloadPlaceholder": "Folder path (optional)",
       "downloadHint": "Preference; it will apply to exports in a future release.",
@@ -660,6 +680,7 @@
     },
     "exportFeatures": "Export .feature (all)",
     "exportFeaturesToast": "{{count}} .feature files exported in features.zip",
+    "exportProvisionalToast": "{{count}} case(s) still have a provisional key: their files have no ID tag yet. Sync and export again.",
     "aiPendingCase": "AI-generated case"
   },
   "dashboard": {

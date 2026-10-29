@@ -1,3 +1,4 @@
+| `SYNC_TOMBSTONE_DAYS`     | Days the server keeps the content of a deleted record before clearing it; the tombstone stays [30]; `0` = never clear      |
 # Pharos
 
 Desktop QA test-management suite (offline-first). Guides each testing project
@@ -271,6 +272,7 @@ Optional limits (defaults in brackets):
 | `LOGIN_RATE_LIMIT_WINDOW` | Window for that limit: milliseconds or `30 seconds`, `1 minute`, `2 hours`… [`1 minute`]; above the limit the API answers 429 |
 | `BODY_LIMIT_BYTES`        | Largest request body [1 MiB]; above it the API answers 413                                                                    |
 | `SYNC_BODY_LIMIT_BYTES`   | Largest body on `/sync/*` (push batches) [8 MiB]                                                                              |
+| `SYNC_TOMBSTONE_DAYS`     | Days the server keeps the content of a deleted record before clearing it (the tombstone stays) [30]; `0` = never clear        |
 | `TRUST_PROXY`             | `true` behind a reverse proxy, so the limit counts real client IPs [false]                                                    |
 
 The `api` service of `docker-compose.yml` runs in production mode. It reads

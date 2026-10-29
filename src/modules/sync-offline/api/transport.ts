@@ -11,6 +11,12 @@ export const API_URL =
 /** Header with the app version; the server rejects unsupported ones (426). */
 export const VERSION_HEADER = "x-pharos-version";
 
+/** Sync features this client understands. `key-conflicts` (DAT-01): it reads
+ *  `keyConflicts` in the push answer. A client without it gets 426 instead
+ *  of a refusal it would mistake for an accepted delta. */
+export const FEATURES_HEADER = "x-pharos-sync-features";
+export const SYNC_FEATURES = "key-conflicts";
+
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };
 
@@ -164,6 +170,7 @@ export async function syncRequest<T>(
     headers: {
       authorization: `Bearer ${token}`,
       [VERSION_HEADER]: APP_VERSION,
+      [FEATURES_HEADER]: SYNC_FEATURES,
       ...(init.body !== undefined ? { "content-type": "application/json" } : {}),
     },
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
