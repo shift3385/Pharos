@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { profileApi } from "../api/profileApi";
 import type { Profile } from "../model/types";
+import { RecoveryKeySection } from "./RecoveryKeySection";
 import "./ProfilePage.css";
 
 export function ProfilePage() {
@@ -129,6 +130,8 @@ export function ProfilePage() {
           </div>
         </dl>
       )}
+
+      <RecoveryKeySection />
     </section>
   );
 }

@@ -191,6 +191,13 @@ todavía. Cuando se implementen, cada fila puede pasar a la tabla de arriba. Dis
 | Filtro de logs             | `PHAROS_LOG`                             | directiva `EnvFilter` (p. ej. `debug`, `pharos_lib=debug`); por defecto `info`         |
 | Perfil E2E                 | `PHAROS_E2E_PROFILE`                     | solo debug: datos, logs y sesión del keychain aislados por ejecución del smoke         |
 | Cuenta del keychain        | `instance::account(base)`                | toda cuenta pasa por aquí: `base` o `<base>-e2e-<perfil>` (sesión, claves de IA)       |
+| Clave de la BD local       | `db-key` / `KeyStore` / `Keychain`       | 32 bytes en el keychain, compartida por todas las instancias; `KeyStore` en tests      |
+| Clave de recuperación      | `recovery key` / `recovery::encode`      | la `db-key` + comprobación, 56 caracteres base32 en 14 grupos de 4 (ADR-0024, SEC-03)  |
+| Recuperar la BD            | `db_recover` / `recoverDb`               | abre la BD con la clave de recuperación y la vuelve a guardar en el keychain           |
+| Clave reemplazada          | `db-key.prev`                            | la clave que sustituyó la última recuperación, guardada una vez en el keychain         |
+| Exportar clave             | `recovery_key_export` / `recoveryKeyApi` | muestra la clave una vez en Perfil, tras confirmar; nunca a logs ni sync               |
+| Errores de clave           | `db-key-missing` / `db-key-mismatch`     | la BD no abrió por la clave: falta en el keychain / no la descifra                     |
+| Errores de recuperación    | `recovery-key-invalid` / `-wrong`        | errata (falla la comprobación) / clave válida que no abre esta BD o archivo dañado     |
 | Error al abrir la BD       | `openError`                              | en `diagnostic.json` cuando la base local no abrió; redactado, sin migraciones         |
 | Log de panics              | `pharos.panic.log`                       | se escribe de forma síncrona en cada panic; viaja en el paquete de diagnóstico         |
 | Proyecto de prueba E2E     | `TEST_PROJECT_PREFIX` (`E2E `)           | los specs borran al final todo proyecto con este prefijo en la cuenta de test          |
