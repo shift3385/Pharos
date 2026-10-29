@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { downloadDir, type DownloadDirInfo } from "@shared/export/saveFile";
+import { logClientError } from "@shared/diagnostics";
 import { useToast } from "@shared/ui/Toast";
 
 /** Download folder for every export (UX-02). The folder is chosen only with
@@ -14,8 +15,15 @@ export function DownloadFolderField() {
   const [info, setInfo] = useState<DownloadDirInfo | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const fail = (e: unknown) => {
+    logClientError(e, "download folder");
+    toast(t("admin.settings.downloadError"), "error");
+  };
+
   useEffect(() => {
-    if (available) void downloadDir.get().then(setInfo);
+    if (available) downloadDir.get().then(setInfo, fail);
+    // `fail` only reads stable values; run once per availability.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [available]);
 
   async function run(action: () => Promise<DownloadDirInfo | null>) {
@@ -26,6 +34,8 @@ export function DownloadFolderField() {
         setInfo(next);
         toast(t("admin.saved"));
       }
+    } catch (e) {
+      fail(e);
     } finally {
       setBusy(false);
     }

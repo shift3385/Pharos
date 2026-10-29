@@ -20,6 +20,20 @@
   animation: toast-in 0.15s ease-out;
 }
 
+/* Warnings and errors: readable text on the surface, with the status color as
+ * a bar, so contrast holds in both themes. Long paths wrap. */
+.toast--warning,
+.toast--error {
+  max-width: min(560px, calc(100vw - 2 * var(--space-5)));
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border-left: 4px solid var(--color-warning);
+  overflow-wrap: anywhere;
+}
+.toast--error {
+  border-left-color: var(--color-error);
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

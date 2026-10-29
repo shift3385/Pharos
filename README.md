@@ -302,8 +302,16 @@ The choice is saved at once (it is not part of "Guardar ajustes") in
 - A file is never overwritten: a second export with the same name is saved as
   `name (2).ext`.
 - The confirmation message shows the full path of the saved file.
-- If the chosen folder is deleted or renamed, files go to Downloads and the
-  settings screen says the folder is missing until you choose another.
+- If the chosen folder is deleted, renamed or cannot be written (access denied,
+  disk full, Windows "Controlled folder access"), the file goes to Downloads and
+  a warning says so; the settings screen also flags a missing folder. If even
+  Downloads fails, an error message says why. Nothing fails silently.
+- Planner attachments are saved with Mark-of-the-Web, so Windows warns before
+  opening them, as with a browser download. Pharos' own exports are not marked.
+- The folder is a setting of this Windows account on this computer, shared by
+  every Pharos user who signs in here (ADR-0025).
+- If a PDF cannot be created, a ZIP is still saved without it and a warning
+  lists the missing PDFs.
 - The project ZIP and the global ZIP hold, for each project, the plan and
   every case as both `.xlsx` and `.pdf`.
 - In the web preview (`npm run dev` in a browser) the browser decides where

@@ -18,8 +18,14 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   selector de carpetas de Windows dónde se guardan todas las exportaciones y el
   diagnóstico; "Usar Descargas" vuelve a la carpeta de Descargas. Un archivo
   nunca se sobrescribe (se añade " (2)") y el aviso muestra la ruta completa.
+  Si la carpeta no existe o no se puede escribir en ella, el archivo va a
+  Descargas y un aviso lo dice; si no se puede guardar, un aviso de error
+  explica por qué. Los adjuntos del planificador se guardan marcados como
+  descargados de Internet, para que Windows avise antes de abrirlos.
 - **PDF en los ZIP (EXP-02):** el ZIP de un proyecto y el de "exportar todo"
-  incluyen ahora el plan y cada caso también en `.pdf`, junto al `.xlsx`.
+  incluyen ahora el plan y cada caso también en `.pdf`, junto al `.xlsx`. Si
+  un PDF no se puede generar, el ZIP se guarda sin él y un aviso dice cuál
+  falta.
 - **Frecuencia de las reuniones del equipo (PLN-01):** en el paso Metodología
   del asistente del plan, cada ceremonia ágil elegida (diaria, revisión,
   retrospectiva, planificación) tiene su frecuencia: a diario, dos veces por

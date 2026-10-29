@@ -23,6 +23,7 @@ import { LevelPicker } from "./LevelPicker";
 import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
 import { saveFile } from "@shared/export/saveFile";
+import { unlessReported } from "@shared/ui/notify";
 import {
   AssistButton,
   ProvenanceBadge,
@@ -456,24 +457,30 @@ export function TestCaseEditor({
 
   async function exportXlsx() {
     const { exportCaseXlsx } = await import("../export/caseXlsx");
-    const name = await exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es");
-    setNotice(t("testCase.exportDone", { name }));
-    window.setTimeout(() => setNotice(null), 5000);
+    const name = await unlessReported(
+      exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es"),
+    );
+    if (name) showExportDone(name);
   }
 
   async function exportPdf() {
     const { exportCasePdf } = await import("../export/casePdf");
-    const name = await exportCasePdf(buildExportableCase(), t);
-    setNotice(t("testCase.exportDone", { name }));
-    window.setTimeout(() => setNotice(null), 5000);
+    const name = await unlessReported(exportCasePdf(buildExportableCase(), t));
+    if (name) showExportDone(name);
   }
 
   async function exportFeature() {
-    const name = await saveFile(
-      `${form.scenarioId || "scenario"}.feature`,
-      buildGherkin(form),
-      "text/plain;charset=utf-8",
+    const name = await unlessReported(
+      saveFile(
+        `${form.scenarioId || "scenario"}.feature`,
+        buildGherkin(form),
+        "text/plain;charset=utf-8",
+      ),
     );
+    if (name) showExportDone(name);
+  }
+
+  function showExportDone(name: string) {
     setNotice(t("testCase.exportDone", { name }));
     window.setTimeout(() => setNotice(null), 5000);
   }

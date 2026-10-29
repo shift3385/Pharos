@@ -78,24 +78,30 @@ export async function projectPlanVersion(
 export const FILES_PER_PLAN = 2;
 
 /** Builds the plan .xlsx and .pdf for a project (empty if it has no plan),
- *  spec §5.4. `onEach` fires with each file name as it is built (progress). */
+ *  spec §5.4. `onEach` fires with each file name as it is built (progress).
+ *  A PDF that cannot be rendered is left out and passed to `onSkip`. */
 export async function projectPlanFiles(
   projectId: string,
   userId: string,
   t: Translate,
   lang: string,
   onEach?: (name: string) => void,
+  onSkip?: (name: string) => void,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return [];
   const exportable = planToExportable(plan, t);
   const { filename, buffer } = await buildPlanXlsx(exportable, lang);
   onEach?.(filename);
-  const pdfName = planPdfName(exportable);
-  const pdf = await buildPlanPdf(exportable, t);
-  onEach?.(pdfName);
-  return [
+  const files: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [
     { name: filename, buffer },
-    { name: pdfName, buffer: pdf },
   ];
+  const pdfName = planPdfName(exportable);
+  try {
+    files.push({ name: pdfName, buffer: await buildPlanPdf(exportable, t) });
+  } catch {
+    onSkip?.(pdfName);
+  }
+  onEach?.(pdfName);
+  return files;
 }

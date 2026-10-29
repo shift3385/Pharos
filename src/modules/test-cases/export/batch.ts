@@ -80,13 +80,16 @@ export async function projectCaseProgress(
 export const FILES_PER_CASE = 2;
 
 /** Builds the .xlsx and .pdf of every case of a project (for the batch ZIP,
- *  spec §5.4). `onEach` fires with each file name as it is built (progress). */
+ *  spec §5.4). `onEach` fires with each file name as it is built (progress).
+ *  A PDF that cannot be rendered is left out and passed to `onSkip`, so one
+ *  bad document never blocks the ZIP. */
 export async function projectCaseFiles(
   projectId: string,
   userId: string,
   t: Translate,
   lang: string,
   onEach?: (name: string) => void,
+  onSkip?: (name: string) => void,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const summaries = await testCaseApi.list(projectId, userId);
   const out: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [];
@@ -98,7 +101,11 @@ export async function projectCaseFiles(
     out.push({ name: filename, buffer });
     onEach?.(filename);
     const pdfName = casePdfName(exportable);
-    out.push({ name: pdfName, buffer: await buildCasePdf(exportable, t) });
+    try {
+      out.push({ name: pdfName, buffer: await buildCasePdf(exportable, t) });
+    } catch {
+      onSkip?.(pdfName);
+    }
     onEach?.(pdfName);
   }
   return out;

@@ -4,6 +4,7 @@ import { useAuth } from "@modules/auth";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { useToast } from "@shared/ui/Toast";
 import { saveFile } from "@shared/export/saveFile";
+import { unlessReported } from "@shared/ui/notify";
 import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai";
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
@@ -105,8 +106,8 @@ export function TestCasesPage({
     const zip = new JSZip();
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });
-    const path = await saveFile("features.zip", blob, "application/zip");
-    toast(t("testCase.exportFeaturesToast", { count: files.length, path }));
+    const path = await unlessReported(saveFile("features.zip", blob, "application/zip"));
+    if (path) toast(t("testCase.exportFeaturesToast", { count: files.length, path }));
   }
 
   function applyImport() {

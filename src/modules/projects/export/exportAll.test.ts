@@ -36,7 +36,9 @@ vi.mock("@modules/test-cases", () => ({
     _t: unknown,
     _l: string,
     onEach?: (n: string) => void,
+    onSkip?: (n: string) => void,
   ) => {
+    if (id === "b") onSkip?.(`${id}-ATS_002.pdf`);
     const files = [
       { name: `${id}-ATS_001.xlsx`, buffer: new Uint8Array([3]) },
       { name: `${id}-ATS_001.pdf`, buffer: new Uint8Array([4]) },
@@ -91,7 +93,7 @@ describe("project ZIPs (EXP-02, UX-02)", () => {
       "es",
       (p) => events.push(p),
     );
-    expect(result).toEqual({ files: 4, path: "D:\\Exports\\Alpha.zip" });
+    expect(result).toEqual({ files: 4, path: "D:\\Exports\\Alpha.zip", skipped: [] });
     expect(await unzip(saved[0].blob)).toEqual([
       "Alpha/",
       "Alpha/Plan.pdf",
@@ -109,6 +111,7 @@ describe("project ZIPs (EXP-02, UX-02)", () => {
     expect(result).toEqual({
       files: 6,
       path: "D:\\Exports\\pharos-export.zip",
+      skipped: ["Beta/b-ATS_002.pdf"],
     });
     const names = await unzip(saved[0].blob);
     expect(names.filter((n) => n.endsWith(".pdf"))).toEqual([

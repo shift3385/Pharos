@@ -220,6 +220,7 @@
       "downloadDefault": "Descargas del sistema",
       "downloadChoose": "Elegir carpeta…",
       "downloadReset": "Usar Descargas",
+      "downloadError": "No se pudo leer ni cambiar la carpeta de descarga.",
       "downloadMissing": "La carpeta elegida ya no existe; mientras tanto se guarda en Descargas. Elige otra.",
       "downloadHint": "Aquí se guardan todas las exportaciones y el diagnóstico. Nunca se sobrescribe un archivo: se añade « (2)».",
       "downloadWebHint": "En la vista web el navegador decide dónde se guardan las descargas. La carpeta se elige en la app de escritorio.",
@@ -297,6 +298,7 @@
     "exportProject": "Exportar proyecto (ZIP)",
     "exportedAllToast": "Exportados {{count}} archivos en {{path}}",
     "exportedProjectToast": "«{{name}}»: {{count}} archivos exportados en {{path}}",
+    "pdfSkippedToast": "{{count}} PDF no se pudieron generar y no están en el ZIP: {{names}}",
     "exportBuilding": "Generando archivos… ({{done}}/{{total}})",
     "exportZipping": "Comprimiendo el ZIP…",
     "exportFinishing": "Finalizando…",
@@ -867,7 +869,10 @@
     }
   },
   "downloads": {
-    "saved": "Guardado en {{path}}"
+    "saved": "Guardado en {{path}}",
+    "fallback": "No se pudo usar tu carpeta de descarga (no existe o no se puede escribir en ella). Se guardó en Descargas: {{path}}",
+    "failed": "No se pudo guardar «{{name}}»: {{reason}}",
+    "pdfFailed": "No se pudo generar el PDF «{{name}}»: {{reason}}"
   },
   "diagnostics": {
     "export": "Exportar diagnóstico",

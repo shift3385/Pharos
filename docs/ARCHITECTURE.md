@@ -161,23 +161,35 @@ and the diagnostic bundle) goes through `saveFile` (`@shared/export/saveFile`).
 
 - **Desktop:** the bytes travel as a raw IPC body to `download_save`
   (`src-tauri/src/downloads.rs`), with the name in the `x-pharos-filename`
-  header. Rust writes the file into the download folder: the one chosen in
-  Administration, or the OS Downloads folder when none was chosen or the
-  chosen one disappeared. The name is reduced to one safe component, an
-  existing file is never overwritten (`name (2).ext`) and the write is atomic
-  (`.part` + rename). The full path comes back for the confirmation message.
+  header. Rust (an `async` command, off the main thread) writes the file into
+  the download folder: the one chosen in Administration, or the OS Downloads
+  folder. When the chosen one is missing or cannot be written, the file goes to
+  Downloads and the result says `fallback`. The name is reduced to one safe
+  component (a long one is cut in the stem, keeping the extension). The final
+  name is reserved with `create_new` (`name (2).ext`…), so an existing file is
+  never overwritten, even by concurrent saves. The content goes to a unique
+  temp file, is fsynced and renamed over the reservation. The full path comes
+  back for the confirmation message. Planner attachments
+  (`x-pharos-untrusted: 1`) get Mark-of-the-Web (`Zone.Identifier`).
+- **Errors are never silent:** `saveFile` and `savePdf` show a toast through
+  `notify` (`@shared/ui/notify`, a window event the `ToastProvider` listens
+  to) for a fallback or a failure, and a failure rejects with `ReportedError`,
+  which callers skip with `unlessReported`. `pdfBytes` rejects instead of
+  hanging when pdfmake fails asynchronously or exceeds 60 s.
 - **Choosing the folder:** only the native picker (`download_dir_pick`, the
   `rfd` crate called from Rust, modal to the main window) can set it, so the
   webview can never name a path; the capability keeps `core:default` only, with
   no dialog or fs permission. It is stored in `downloads.json` under the
   instance's config dir (an E2E profile gets its own, see `instance.rs`). The
   picker is Windows-only (the shipped target); elsewhere it reports that it is
-  not available and files go to Downloads.
+  not available and files go to Downloads. The folder is per installation and
+  Windows account, not per Pharos user ([ADR-0025](adr/0025-carpeta-descarga-y-ultimo-acceso.md)).
 - **Web preview:** no Rust side, so `saveFile` falls back to the browser's
   own download.
 - **ZIPs (spec §5.4):** the project ZIP and the global ZIP carry, per project,
   the plan and every case as `.xlsx` **and** `.pdf`. `projects` builds them
-  from `projectPlanFiles` (`test-plan`) and `projectCaseFiles` (`test-cases`).
+  from `projectPlanFiles` (`test-plan`) and `projectCaseFiles` (`test-cases`);
+  a PDF that cannot be rendered is left out and reported (`skipped`).
 
 ## Testing
 

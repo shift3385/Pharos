@@ -16,6 +16,7 @@ import type {
 } from "../model/types";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
+import { unlessReported } from "@shared/ui/notify";
 import {
   CEREMONIES,
   CEREMONY_FREQUENCIES,
@@ -296,16 +297,18 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     const exportable = buildExportablePlan();
     if (!exportable) return;
     const { exportPlanXlsx } = await import("../export/planXlsx");
-    const name = await exportPlanXlsx(exportable, i18n.resolvedLanguage ?? "es");
-    toast(t("testPlan.exportedToast", { name }));
+    const name = await unlessReported(
+      exportPlanXlsx(exportable, i18n.resolvedLanguage ?? "es"),
+    );
+    if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
   async function exportPdf() {
     const exportable = buildExportablePlan();
     if (!exportable) return;
     const { exportPlanPdf } = await import("../export/planPdf");
-    const name = await exportPlanPdf(exportable, t);
-    toast(t("testPlan.exportedToast", { name }));
+    const name = await unlessReported(exportPlanPdf(exportable, t));
+    if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
   async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {

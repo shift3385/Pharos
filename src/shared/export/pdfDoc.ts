@@ -1,4 +1,6 @@
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces";
+import i18n from "i18next";
+import { notify, ReportedError } from "../ui/notify";
 import { saveFile } from "./saveFile";
 
 /** Brand palette for generated documents. Values mirror the Faro Nocturno
@@ -191,18 +193,66 @@ async function getPdfMake(): Promise<{ pdfMake: PdfMake; vfs?: Vfs }> {
   return cached;
 }
 
-/** Renders the document to PDF bytes (for a ZIP or for saveFile). */
-export async function pdfBytes(dd: TDocumentDefinitions): Promise<Uint8Array> {
-  const { pdfMake, vfs } = await getPdfMake();
-  return new Promise<Uint8Array>((resolve) =>
-    pdfMake.createPdf(dd, undefined, undefined, vfs).getBuffer(resolve),
-  );
+/** Longest a single document may take to render before it counts as failed. */
+export const PDF_TIMEOUT_MS = 60_000;
+
+/** pdfmake 0.2 reports some failures only as an unhandled rejection of its own
+ *  (a string such as "File 'x.ttf' not found…", or an error from its code),
+ *  never through the `getBuffer` callback. */
+function isPdfmakeFailure(reason: unknown): boolean {
+  if (typeof reason === "string") return true;
+  return reason instanceof Error && /pdfmake|pdfkit/i.test(reason.stack ?? "");
 }
 
-/** Renders the document and saves it; returns where (see saveFile). */
+/** Renders the document to PDF bytes (for a ZIP or for saveFile). Rejects
+ *  instead of hanging when pdfmake fails asynchronously or takes longer than
+ *  `timeoutMs`. Documents are rendered one at a time by the callers. */
+export async function pdfBytes(
+  dd: TDocumentDefinitions,
+  timeoutMs = PDF_TIMEOUT_MS,
+): Promise<Uint8Array> {
+  const { pdfMake, vfs } = await getPdfMake();
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (!isPdfmakeFailure(e.reason)) return;
+      e.preventDefault();
+      done();
+      reject(e.reason instanceof Error ? e.reason : new Error(String(e.reason)));
+    };
+    const timer = window.setTimeout(() => {
+      done();
+      reject(new Error("PDF rendering timed out"));
+    }, timeoutMs);
+    const done = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    try {
+      pdfMake.createPdf(dd, undefined, undefined, vfs).getBuffer((buffer) => {
+        done();
+        resolve(buffer);
+      });
+    } catch (e) {
+      done();
+      reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  });
+}
+
+/** Renders the document and saves it; returns where (see saveFile). A PDF that
+ *  cannot be rendered shows an error toast and rejects with `ReportedError`. */
 export async function savePdf(
   dd: TDocumentDefinitions,
   filename: string,
 ): Promise<string> {
-  return saveFile(filename, await pdfBytes(dd), "application/pdf");
+  let bytes: Uint8Array;
+  try {
+    bytes = await pdfBytes(dd);
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    notify(i18n.t("downloads.pdfFailed", { name: filename, reason }), "error");
+    throw new ReportedError(reason);
+  }
+  return saveFile(filename, bytes, "application/pdf");
 }

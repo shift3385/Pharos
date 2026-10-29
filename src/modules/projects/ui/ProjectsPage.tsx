@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
+import { unlessReported } from "@shared/ui/notify";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
 import { recordProjectAccess } from "../model/lastAccess";
@@ -55,18 +56,32 @@ export function ProjectsPage() {
       });
   }
 
+  /** PDFs that could not be rendered were left out of the ZIP: say which. */
+  function reportSkipped(skipped: string[]) {
+    if (!skipped.length) return;
+    toast(
+      t("projects.pdfSkippedToast", { count: skipped.length, names: skipped.join(", ") }),
+      "warning",
+    );
+  }
+
   async function exportAll() {
     setExporting(true);
     setProgress({ title: t("projects.exportAll"), phase: "building", done: 0, total: 0, label: "", percent: 0 });
     try {
       const { exportAllProjects } = await import("../export/exportAll");
-      const { files, path } = await exportAllProjects(
-        ownerId,
-        t,
-        i18n.resolvedLanguage ?? "es",
-        onProgress(t("projects.exportAll")),
+      const result = await unlessReported(
+        exportAllProjects(
+          ownerId,
+          t,
+          i18n.resolvedLanguage ?? "es",
+          onProgress(t("projects.exportAll")),
+        ),
       );
-      toast(t("projects.exportedAllToast", { count: files, path }));
+      if (result) {
+        toast(t("projects.exportedAllToast", { count: result.files, path: result.path }));
+        reportSkipped(result.skipped);
+      }
     } finally {
       setExporting(false);
       setProgress(null);
@@ -79,14 +94,19 @@ export function ProjectsPage() {
     setProgress({ title, phase: "building", done: 0, total: 0, label: "", percent: 0 });
     try {
       const { exportProjectZip } = await import("../export/exportAll");
-      const { files, path } = await exportProjectZip(
-        project,
-        ownerId,
-        t,
-        i18n.resolvedLanguage ?? "es",
-        onProgress(title),
+      const result = await unlessReported(
+        exportProjectZip(project, ownerId, t, i18n.resolvedLanguage ?? "es", onProgress(title)),
       );
-      toast(t("projects.exportedProjectToast", { name: project.name, count: files, path }));
+      if (result) {
+        toast(
+          t("projects.exportedProjectToast", {
+            name: project.name,
+            count: result.files,
+            path: result.path,
+          }),
+        );
+        reportSkipped(result.skipped);
+      }
     } finally {
       setExportingId(null);
       setProgress(null);

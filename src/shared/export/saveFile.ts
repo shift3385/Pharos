@@ -4,7 +4,13 @@
 // folder chosen with the native picker (or the OS Downloads folder) without
 // overwriting earlier files. In the web preview there is no Rust side, so the
 // browser's own download takes over.
+//
+// Problems are never silent: a save that had to go to Downloads instead of the
+// chosen folder, or that failed, shows a toast from here (`notify`), and a
+// failure rejects with a `ReportedError` that callers skip with `unlessReported`.
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "i18next";
+import { notify, ReportedError } from "../ui/notify";
 
 function isTauri(): boolean {
   return (
@@ -19,6 +25,19 @@ export interface DownloadDirInfo {
   path: string | null;
   custom: boolean;
   missing: boolean;
+}
+
+interface SaveResult {
+  path: string;
+  /** The chosen folder was missing or not writable: saved in Downloads. */
+  fallback: boolean;
+}
+
+export interface SaveOptions {
+  mime?: string;
+  /** Content that came from someone else (planner attachments): the saved
+   *  file gets Mark-of-the-Web, so Windows warns before opening it. */
+  untrusted?: boolean;
 }
 
 type Data = Blob | ArrayBuffer | Uint8Array | string;
@@ -51,20 +70,37 @@ function browserDownload(name: string, data: Data, mime?: string) {
 /**
  * Saves `data` as `name` and returns where it went: the full path in the
  * desktop app (it may carry a " (2)" suffix when the name was taken), or the
- * file name in the web preview.
+ * file name in the web preview. On failure it shows an error toast and
+ * rejects with a `ReportedError`.
  */
 export async function saveFile(
   name: string,
   data: Data,
-  mime?: string,
+  options: SaveOptions | string = {},
 ): Promise<string> {
+  const { mime, untrusted } =
+    typeof options === "string" ? { mime: options } : options;
   if (!isTauri()) {
     browserDownload(name, data, mime);
     return name;
   }
-  return invoke<string>("download_save", await toBytes(data), {
-    headers: { "x-pharos-filename": encodeURIComponent(name) },
-  });
+  let saved: SaveResult;
+  try {
+    const headers: Record<string, string> = {
+      "x-pharos-filename": encodeURIComponent(name),
+    };
+    if (untrusted) headers["x-pharos-untrusted"] = "1";
+    saved = await invoke<SaveResult>("download_save", await toBytes(data), {
+      headers,
+    });
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    notify(i18n.t("downloads.failed", { name, reason }), "error");
+    throw new ReportedError(reason);
+  }
+  if (saved.fallback)
+    notify(i18n.t("downloads.fallback", { path: saved.path }), "warning");
+  return saved.path;
 }
 
 /** Download folder settings (desktop only; the web preview has no folder). */

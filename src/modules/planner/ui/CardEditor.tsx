@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
 import { saveFile } from "@shared/export/saveFile";
+import { unlessReported } from "@shared/ui/notify";
 import { plannerApi } from "../api/plannerApi";
 import {
   CARD_KINDS,
@@ -103,8 +104,10 @@ export function CardEditor({
     const d = await plannerApi.attachmentGet(a.id, ownerId);
     if (!d) return;
     const bytes = Uint8Array.from(atob(d.dataBase64), (c) => c.charCodeAt(0));
-    const path = await saveFile(d.name, bytes, d.mime ?? undefined);
-    toast(t("downloads.saved", { path }));
+    const path = await unlessReported(
+      saveFile(d.name, bytes, { mime: d.mime ?? undefined, untrusted: true }),
+    );
+    if (path) toast(t("downloads.saved", { path }));
   }
 
   async function removeAttachment(id: string) {

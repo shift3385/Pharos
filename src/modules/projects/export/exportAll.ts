@@ -14,10 +14,12 @@ export type ExportProgress =
 
 type OnProgress = (p: ExportProgress) => void;
 
-/** What an export produced: files inside the ZIP and where the ZIP was saved. */
+/** What an export produced: files inside the ZIP, where the ZIP was saved,
+ *  and the PDFs that could not be rendered and were left out. */
 export interface ZipExport {
   files: number;
   path: string;
+  skipped: string[];
 }
 
 /** Keeps a name safe as a zip path segment. */
@@ -48,8 +50,10 @@ async function addProject(
   t: Translate,
   lang: string,
   counter: Counter,
+  skipped: string[],
   onProgress?: OnProgress,
 ): Promise<number> {
+  const skip = (name: string) => skipped.push(`${folder}/${name}`);
   const advance = (label: string) => {
     counter.done += 1;
     onProgress?.({ phase: "building", done: counter.done, total: counter.total, label });
@@ -57,8 +61,8 @@ async function addProject(
   // The callbacks fire as each file is built (drives the progress bar); buffers
   // are added to the zip afterwards (an instant, non-async step).
   const files = [
-    ...(await projectPlanFiles(project.id, ownerId, t, lang, advance)),
-    ...(await projectCaseFiles(project.id, ownerId, t, lang, advance)),
+    ...(await projectPlanFiles(project.id, ownerId, t, lang, advance, skip)),
+    ...(await projectCaseFiles(project.id, ownerId, t, lang, advance, skip)),
   ];
   for (const f of files) zip.file(`${folder}/${sanitize(f.name)}`, f.buffer);
   return files.length;
@@ -86,6 +90,7 @@ export async function exportProjectZip(
 ): Promise<ZipExport> {
   const counter: Counter = { done: 0, total: await projectFileCount(project.id, ownerId) };
   const zip = new JSZip();
+  const skipped: string[] = [];
   const files = await addProject(
     zip,
     project,
@@ -94,10 +99,11 @@ export async function exportProjectZip(
     t,
     lang,
     counter,
+    skipped,
     onProgress,
   );
   const path = await finalizeZip(zip, `${sanitize(project.name)}.zip`, onProgress);
-  return { files, path };
+  return { files, path, skipped };
 }
 
 /** Exports every project of the owner as a single ZIP: one folder per project
@@ -118,15 +124,16 @@ export async function exportAllProjects(
   const counter: Counter = { done: 0, total };
   const zip = new JSZip();
   let files = 0;
+  const skipped: string[] = [];
   const usedFolders = new Set<string>();
 
   for (const p of projects) {
     let folder = sanitize(p.name);
     for (let n = 2; usedFolders.has(folder); n += 1) folder = `${sanitize(p.name)} (${n})`;
     usedFolders.add(folder);
-    files += await addProject(zip, p, ownerId, folder, t, lang, counter, onProgress);
+    files += await addProject(zip, p, ownerId, folder, t, lang, counter, skipped, onProgress);
   }
 
   const path = await finalizeZip(zip, "pharos-export.zip", onProgress);
-  return { files, path };
+  return { files, path, skipped };
 }

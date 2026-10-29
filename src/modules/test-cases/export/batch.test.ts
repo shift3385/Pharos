@@ -3,12 +3,16 @@ import { projectCaseFiles, projectCaseProgress } from "./batch";
 
 // The .xlsx builder fetches the bundled template and pdfmake needs its font
 // VFS, neither available in jsdom: the builder is stubbed, and the PDF stub
-// records the document definition it was given (the real one per case).
+// records the document definition it was given (the real one per case). It
+// fails for the case titled `failTitle`.
 const pdfDocs: string[] = [];
+let failTitle: string | null = null;
 vi.mock("@shared/export/pdfDoc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@shared/export/pdfDoc")>()),
   pdfBytes: async (dd: unknown) => {
-    pdfDocs.push(JSON.stringify(dd));
+    const json = JSON.stringify(dd);
+    if (failTitle && json.includes(failTitle)) throw new Error("PDF rendering timed out");
+    pdfDocs.push(json);
     return new TextEncoder().encode("%PDF-1.3");
   },
 }));
@@ -61,6 +65,23 @@ describe("case files for the project ZIP (EXP-02, spec §5.4)", () => {
     );
     expect(pdfDocs).toHaveLength(3);
     expect(pdfDocs[0]).toContain("Case c1");
+  });
+});
+
+describe("a PDF that cannot be rendered", () => {
+  it("is left out and reported; the other files are still built", async () => {
+    failTitle = "Case c2";
+    const skipped: string[] = [];
+    const files = await projectCaseFiles("p1", "u1", t, "es", undefined, (n) => skipped.push(n));
+    failTitle = null;
+    expect(skipped).toEqual(["ATS_002.pdf"]);
+    expect(files.map((f) => f.name)).toEqual([
+      "ATS_001.xlsx",
+      "ATS_001.pdf",
+      "ATS_002.xlsx",
+      "ATS_003.xlsx",
+      "ATS_003.pdf",
+    ]);
   });
 });
 

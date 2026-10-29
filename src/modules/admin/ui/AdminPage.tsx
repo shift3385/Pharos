@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/ui/Toast";
+import { ReportedError } from "@shared/ui/notify";
 import { exportDiagnostics, logClientError } from "@shared/diagnostics";
 import { APP_VERSION } from "@shared/version";
 import { applyBackground, loadSettings, saveSettings } from "../model/settings";
@@ -24,8 +25,9 @@ export function AdminPage() {
     try {
       toast(t("diagnostics.exported", { file: await exportDiagnostics() }));
     } catch (e) {
+      if (e instanceof ReportedError) return;
       logClientError(e, "diagnostic export");
-      toast(t("diagnostics.failed"));
+      toast(t("diagnostics.failed"), "error");
     } finally {
       setExporting(false);
     }

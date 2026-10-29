@@ -220,6 +220,7 @@
       "downloadDefault": "system Downloads",
       "downloadChoose": "Choose folder…",
       "downloadReset": "Use Downloads",
+      "downloadError": "Could not read or change the download folder.",
       "downloadMissing": "The chosen folder no longer exists; files go to Downloads until you choose another.",
       "downloadHint": "Every export and the diagnostics bundle are saved here. A file is never overwritten: “ (2)” is added.",
       "downloadWebHint": "In the web preview the browser decides where downloads go. Choose the folder in the desktop app.",
@@ -297,6 +298,7 @@
     "exportProject": "Export project (ZIP)",
     "exportedAllToast": "Exported {{count}} files to {{path}}",
     "exportedProjectToast": "“{{name}}”: {{count}} files exported to {{path}}",
+    "pdfSkippedToast": "{{count}} PDFs could not be created and are not in the ZIP: {{names}}",
     "exportBuilding": "Generating files… ({{done}}/{{total}})",
     "exportZipping": "Compressing the ZIP…",
     "exportFinishing": "Finishing…",
@@ -867,7 +869,10 @@
     }
   },
   "downloads": {
-    "saved": "Saved to {{path}}"
+    "saved": "Saved to {{path}}",
+    "fallback": "Your download folder could not be used (missing or not writable). Saved to Downloads: {{path}}",
+    "failed": "Could not save “{{name}}”: {{reason}}",
+    "pdfFailed": "Could not create the PDF “{{name}}”: {{reason}}"
   },
   "diagnostics": {
     "export": "Export diagnostics",
