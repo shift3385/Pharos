@@ -165,7 +165,17 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   - Inside a project, the «Proyecto activo» group switches project and
     jumps between Plan, Casos, Planificador, Trazabilidad and Ajustes del
     proyecto. Each one has its own address (`#/projects/<id>/<section>`).
-- **Plantillas and Motor de IA** are under **Administración**.
+- **Administración** is one screen with grouped tabs
+  ([ADR-0031](docs/adr/0031-administracion-por-pestanas.md)): Recursos (**Motor de IA**, the
+  default, and **Plantillas**) · Aplicación (**General**) · Cuenta y datos (**Sincronización**,
+  **Seguridad**) · Soporte (**Diagnóstico**). Each tab has its address (`#/admin?tab=…`);
+  the old `#/templates` and `#/ai` links open their tab.
+  - **Motor de IA:** pick the online provider (Gemini, OpenAI, Claude, OpenRouter or an
+    OpenAI-compatible endpoint), its key, model and parameters, then **Guardar**. Parameters
+    the model does not accept are locked with a padlock and say why; for «Compatible» you
+    choose whether to send the temperature. Reasoning level/effort shows as "coming soon".
+  - **General:** theme (Claro, Oscuro or **Según el sistema**), language, custom background,
+    download folder and retention. The trash is "coming soon".
 - **Top bar:** where you are (breadcrumbs), search (Ctrl K), notifications and
   the light/dark switch. Search and notifications say "coming soon" until
   they get their data.

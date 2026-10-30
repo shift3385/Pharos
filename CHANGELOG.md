@@ -35,8 +35,30 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     texto.
   - Iconos de línea (Lucide), escala tipográfica con partición de palabras por sílabas,
     sin partir correos, rutas ni IDs, y respeto de «reducir movimiento».
+- **Administración rediseñada (RED-V4, [ADR-0031](docs/adr/0031-administracion-por-pestanas.md)):**
+  - Una sola pantalla con pestañas agrupadas: Recursos (Motor de IA, abierta por defecto, y
+    Plantillas) · Aplicación (General) · Cuenta y datos (Sincronización, Seguridad) · Soporte
+    (Diagnóstico). Cada pestaña tiene su dirección (`#/admin?tab=…`) y aparece en las migas.
+  - **Motor de IA:** proveedores con su logo; clave, modelo y parámetros según el modelo.
+    Lo que el modelo no admite queda bloqueado con un candado y explica por qué. En
+    «Compatible» eliges si se envía la temperatura. El nivel o esfuerzo de razonamiento
+    aparece como «Próximamente». «Probar conexión» dice cuánto tardó la respuesta.
+  - **General:** tema **«Según el sistema»** además de Claro y Oscuro, e idioma.
+  - **Sincronización:** estado, cuenta, conflictos y «Sincronizar ahora» en un solo sitio.
+  - **Seguridad:** la clave de recuperación.
+  - **Papelera:** aparece en General como «Próximamente» (llega con RED-W3).
+  - **Plantillas:** planes y casos por separado, con buscador y un menú «Más acciones» por
+    plantilla.
 
 ### Cambiado
+
+- **Motor de IA:** proveedor, modelo y parámetros se guardan con «Guardar». Antes cada cambio
+  se aplicaba al momento. Salir con cambios sin guardar pide confirmación.
+- **IA:** Claude y los modelos de razonamiento de OpenAI ya no reciben una temperatura que no
+  admiten. «Compatible» solo la envía si activas «Enviar».
+- `#/templates` y `#/ai` abren la pestaña correspondiente de Administración.
+- Eliminar una plantilla y descartar los cambios web sin enviar usan la confirmación
+  destructiva: solo se cierran con «Cancelar».
 
 - **Logo nuevo:** un faro con anillo abierto y haces de luz. Tiene versión compacta para
   tamaños pequeños y cambia también en el favicon y en los iconos de la app y del
