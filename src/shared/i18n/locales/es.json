@@ -411,8 +411,7 @@
       "cases_one": "1 caso",
       "cases_other": "{{count}} casos",
       "requirements_one": "1 requisito",
-      "requirements_other": "{{count}} requisitos",
-      "closesOn": "Cierre del ciclo: {{date}}"
+      "requirements_other": "{{count}} requisitos"
     }
   },
   "profile": {

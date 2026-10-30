@@ -46,11 +46,20 @@ export function SortMenu<V extends string>({
 
   return (
     <div className={`sort-menu ${className}`.trim()}>
-      <button type="button" className="sort-menu__trigger" {...menu.triggerProps}>
+      <button
+        type="button"
+        className="sort-menu__trigger"
+        {...menu.triggerProps}
+      >
         <ArrowDownUp size={15} aria-hidden="true" className="sort-menu__icon" />
         <span className="sort-menu__current">
-          {t("sortMenu.trigger", { label: label ?? t("sortMenu.label"), option: current?.label })}
+          {t("sortMenu.trigger", {
+            label: label ?? t("sortMenu.label"),
+            option: current?.label,
+          })}
         </span>
+        {/* The direction is part of the order: said, not shown. */}
+        <span className="sr-only"> · {t(`sortMenu.${direction}`)}</span>
         <ChevronDown size={15} aria-hidden="true" className="sort-menu__icon" />
       </button>
       <ResponsiveMenu
@@ -64,22 +73,32 @@ export function SortMenu<V extends string>({
         className="sort-menu__menu"
       >
         {breakpoint !== "mobile" && <MenuLabel>{title}</MenuLabel>}
-        {options.map((o) => (
-          <MenuItem
-            key={o.value}
-            icon={o.icon}
-            selected={o.value === value}
-            disabled={o.disabled}
-            title={o.title}
-            onSelect={() => onChange(o.value, direction)}
-          >
-            {o.label}
-          </MenuItem>
-        ))}
+        <div role="group" aria-label={title}>
+          {options.map((o) => (
+            <MenuItem
+              key={o.value}
+              icon={o.icon}
+              selected={o.value === value}
+              disabled={o.disabled}
+              title={o.title}
+              onSelect={() => onChange(o.value, direction)}
+            >
+              {o.label}
+            </MenuItem>
+          ))}
+        </div>
         <MenuSeparator />
-        <div className="sort-menu__dir" role="group" aria-label={t("sortMenu.direction")}>
+        <div
+          className="sort-menu__dir"
+          role="group"
+          aria-label={t("sortMenu.direction")}
+        >
           {(["desc", "asc"] as const).map((d) => (
-            <MenuItem key={d} selected={d === direction} onSelect={() => onChange(value, d)}>
+            <MenuItem
+              key={d}
+              selected={d === direction}
+              onSelect={() => onChange(value, d)}
+            >
               {t(`sortMenu.${d}`)}
             </MenuItem>
           ))}

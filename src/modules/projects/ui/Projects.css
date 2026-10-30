@@ -166,9 +166,6 @@
   flex-direction: column;
   gap: clamp(16px, 2cqi, 24px);
 }
-.pj-detail .tc-editor__top h1 {
-  font-size: var(--fs-title-sm);
-}
 .tc-editor__top {
   display: flex;
   align-items: center;

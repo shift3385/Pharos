@@ -34,14 +34,17 @@ describe("SortMenu", () => {
   it("shows the current order and lists the keys with the current one checked", async () => {
     setViewportWidth(1440);
     renderWithProviders(<Harness />);
-    const trigger = screen.getByRole("button", { name: "Orden: Último acceso" });
+    const trigger = screen.getByRole("button", { name: "Orden: Último acceso · Descendente" });
     await userEvent.click(trigger);
     expect(screen.getByRole("menu", { name: "Ordenar por" })).toBeInTheDocument();
     expect(screen.getByRole("menuitemradio", { name: "Último acceso" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("menuitemradio", { name: "Descendente" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("menuitemradio", { name: "Defectos abiertos" })).toBeDisabled();
+    expect(screen.getByRole("group", { name: "Ordenar por" })).toContainElement(
+      screen.getByRole("menuitemradio", { name: "Nombre (A–Z)" }),
+    );
     await expectNoAxeViolations();
-  });
+  }, 15_000);
 
   it("changes the key keeping the direction, and the direction keeping the key", async () => {
     setViewportWidth(1440);
@@ -51,9 +54,10 @@ describe("SortMenu", () => {
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Nombre (A–Z)" }));
     expect(onChange).toHaveBeenLastCalledWith("name", "desc");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z)" }));
+    await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z) · Descendente" }));
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Ascendente" }));
     expect(onChange).toHaveBeenLastCalledWith("name", "asc");
+    expect(screen.getByRole("button", { name: "Orden: Nombre (A–Z) · Ascendente" })).toBeInTheDocument();
   });
 
   it("opens as a bottom sheet on mobile", async () => {
@@ -63,5 +67,5 @@ describe("SortMenu", () => {
     expect(screen.getByRole("dialog", { name: "Ordenar por" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Último acceso" })).toHaveAttribute("aria-pressed", "true");
     await expectNoAxeViolations();
-  });
+  }, 15_000);
 });

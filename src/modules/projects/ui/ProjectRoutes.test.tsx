@@ -11,6 +11,7 @@ import { lastAccessMap } from "../model/lastAccess";
 // The sections are other modules' screens: only which one is shown matters here.
 vi.mock("@modules/test-plan", () => ({
   TestPlanPage: () => <p>sección plan</p>,
+  PLAN_SAVED_EVENT: "pharos:plan-saved",
   projectPlanStatus: async () => "reviewed",
 }));
 vi.mock("@modules/test-cases", () => ({
