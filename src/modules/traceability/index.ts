@@ -3,4 +3,5 @@
 // projects module composes them), so the module graph stays acyclic.
 export { TraceabilityPage } from "./ui/TraceabilityPage";
 export { requirementApi } from "./api/requirementApi";
+export { projectCoverage } from "./api/projectCoverage";
 export type { Requirement, RequirementPriority } from "./model/types";

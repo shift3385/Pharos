@@ -1109,5 +1109,22 @@
     "direction": "Direction",
     "desc": "Descending",
     "asc": "Ascending"
+  },
+  "table": {
+    "selectAll": "Select all rows",
+    "selectRow": "Select {{name}}",
+    "filter": {
+      "clear": "Clear filter"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b>",
+      "prev": "Previous page",
+      "next": "Next page",
+      "pagePrefix": "Page",
+      "compact": "Page {{page}} of {{pages}}",
+      "perPage": "Per page",
+      "perPageValue": "{{count}} per page"
+    }
   }
 }
