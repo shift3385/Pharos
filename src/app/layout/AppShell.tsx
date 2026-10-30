@@ -4,9 +4,11 @@ import { applyBackground } from "@modules/admin";
 import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
 import { isTauri } from "@shared/platform";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { ShellChromeProvider } from "@shared/ui/ShellChrome";
+import { useShellChrome } from "@shared/ui/useShellChrome";
 import { Sidebar } from "./Sidebar";
 import { BottomNav, MobileTopbar, ProjectPills, Topbar } from "./Topbar";
-import { useActiveProject, useSidebarToggle } from "./useShellState";
+import { useActiveProject, useSidebarToggle, type ActiveProject } from "./useShellState";
 import "./AppShell.css";
 
 /**
@@ -35,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     // One sync state for the whole shell: the sidebar foot, the strip and the
     // mobile user sheet only show it.
-    <SyncStatusProvider>
+    <ShellProviders>
       <div className="app-shell" data-layout={breakpoint}>
         {/* The router lives in the URL hash, so following "#main-content" would
           change the route: move the focus instead. */}
@@ -61,11 +63,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         <div className="app-shell__main">
           {mobile ? (
-            <MobileTopbar active={active} />
+            <ShellMobileTop active={active} />
           ) : (
             <Topbar active={active} />
           )}
-          {mobile && active && <ProjectPills active={active} />}
           {/* Web only: data an older web version left unsent (BASE-10). */}
           {!isTauri() && (
             <div className="shell-notice sync">
@@ -81,9 +82,37 @@ export function AppShell({ children }: { children: ReactNode }) {
               {children}
             </div>
           </main>
-          {mobile && <BottomNav />}
+          {mobile && <ShellBottomNav />}
         </div>
       </div>
+    </ShellProviders>
+  );
+}
+
+/** The shell's sync state and what screens may ask of it (ShellChrome). */
+function ShellProviders({ children }: { children: ReactNode }) {
+  return (
+    <SyncStatusProvider>
+      <ShellChromeProvider>{children}</ShellChromeProvider>
     </SyncStatusProvider>
   );
+}
+
+/** The mobile top bar and section pills, unless the screen hid them
+ *  (full-screen Gherkin editing, SPEC §7). */
+function ShellMobileTop({ active }: { active: ActiveProject | null }) {
+  const { mobileChromeHidden } = useShellChrome();
+  if (mobileChromeHidden) return null;
+  return (
+    <>
+      <MobileTopbar active={active} />
+      {active && <ProjectPills active={active} />}
+    </>
+  );
+}
+
+/** The mobile bottom bar, unless the screen hid it (Gherkin editing, SPEC §7). */
+function ShellBottomNav() {
+  const { mobileChromeHidden } = useShellChrome();
+  return mobileChromeHidden ? null : <BottomNav />;
 }

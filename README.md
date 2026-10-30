@@ -178,6 +178,12 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
 - **Plan de pruebas:** 19 steps. The step list is on the left in wide windows,
   a strip above the form in narrower ones, and «Ver pasos» on phones.
   «Revisiones», «Importar / Exportar» and «Guardar» are in the project header.
+- **Casos:** the list filters by state, priority and level and searches IDs,
+  titles and requirements. A case opens at its own address
+  (`#/projects/<id>/cases?case=<case>`); in the editor, ‹ › walk the list as
+  filtered and **Ctrl P** jumps to any case.
+- **Trazabilidad:** the matrix and «Mostrar solo huecos»; an uncovered
+  requirement offers «Generar casos con IA».
 - **Administración** is one screen with grouped tabs
   ([ADR-0031](docs/adr/0031-administracion-por-pestanas.md)): Recursos (**Motor de IA**, the
   default, and **Plantillas**) · Aplicación (**General**) · Cuenta y datos (**Sincronización**,

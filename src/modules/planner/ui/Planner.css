@@ -1,134 +1,324 @@
-/* Planner kanban (spec §7). Colors come from Faro Nocturno tokens only. */
+/* Planner kanban (spec §7, RED-V3). Colors come from Faro Nocturno tokens
+   only; views by [data-viewport] and container units, never a window @media. */
+.pl {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pl-head {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pl-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.pl-toolbar .ui-search {
+  max-width: 300px;
+}
+
 .pl-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(4, minmax(min(272px, 82cqi), 1fr));
+  gap: 14px;
   align-items: start;
   overflow-x: auto;
-  padding-bottom: var(--space-2);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding-bottom: 6px;
 }
 
 .pl-col {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  scroll-snap-align: start;
 }
+
 .pl-col[data-over="true"] {
   border-color: var(--color-navy-300);
 }
+
 .pl-col__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-1) var(--space-2);
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 2px 0 6px;
 }
+
+.pl-col__dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.pl-col[data-status="in_progress"] .pl-col__dot {
+  background: var(--color-info);
+}
+
+.pl-col[data-status="in_review"] .pl-col__dot {
+  background: var(--color-warning);
+}
+
+.pl-col[data-status="done"] .pl-col__dot {
+  background: var(--color-success);
+}
+
 .pl-col__title {
-  font-size: var(--fs-caption);
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13.5px;
   font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
+
 .pl-col__count {
-  min-width: 20px;
-  text-align: center;
-  font-size: var(--fs-metadata);
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
   background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  padding: 0 var(--space-1);
 }
+
+.pl-col__spacer {
+  flex: 1;
+}
+
+.pl-col__plus {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.pl-col__plus:hover {
+  background: var(--color-surface-1);
+}
+
 .pl-col__drop {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 10px;
   min-height: 40px;
 }
+
 .pl-col__add {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--fs-ui);
-  color: var(--color-navy-500);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-secondary);
   background: none;
-  border: 1px dashed var(--color-border);
+  border: 0;
   border-radius: var(--radius-md);
+}
+
+.pl-col__add:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+}
+
+.pl-col__empty {
+  padding: 10px 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 /* ---- Card ---- */
 .pl-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
+  gap: 9px;
+  min-width: 0;
+  padding: 12px;
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 10px;
+  box-shadow: var(--shadow-1);
   cursor: grab;
+  transition: border-color 150ms ease;
 }
-.pl-card[data-priority="high"] {
-  border-left-color: var(--color-warning);
+
+.pl-card:hover {
+  border-color: var(--color-navy-300);
 }
-.pl-card[data-priority="critical"] {
-  border-left-color: var(--color-error);
-}
+
 .pl-card__top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
 }
+
 .pl-card__kind {
-  padding: 0 var(--space-2);
-  font-size: var(--fs-metadata);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-2);
-  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
 }
+
 .pl-card__kind--defect {
   color: var(--color-error-text);
 }
+
 .pl-card__kind--test_data {
-  color: var(--color-navy-500);
+  color: var(--color-info-text);
 }
+
+.pl-card__key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.pl-card__spacer {
+  flex: 1;
+}
+
+/* Keyboard handle of a card (UX-05): Space picks it up, arrows move it. */
+.pl-card__handle,
 .pl-card__del {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  padding: 0;
   color: var(--color-text-muted);
   background: none;
   border: none;
-  font-size: var(--fs-caption);
+  border-radius: var(--radius-sm);
 }
+
+.pl-card__handle {
+  margin-left: -4px;
+  cursor: grab;
+}
+
 .pl-card__del:hover {
   color: var(--color-error-text);
+  background: var(--color-surface-2);
 }
+
 .pl-card__title {
-  text-align: left;
-  font-size: var(--fs-ui);
+  padding: 0;
+  font: inherit;
+  font-size: 13.5px;
   font-weight: var(--fw-medium);
+  line-height: 1.4;
+  text-align: start;
+  text-wrap: pretty;
   color: var(--color-text-primary);
   background: none;
   border: none;
+  cursor: pointer;
 }
-.pl-card__meta {
+
+.pl-card__title:hover {
+  color: var(--color-navy-500);
+  text-decoration: underline;
+}
+
+.pl-card__labels {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
-  align-items: center;
+  gap: 4px;
 }
-.pl-card__prio {
-  font-size: var(--fs-metadata);
+
+.pl-card__label {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 7px;
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.pl-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.pl-card__foot .flag {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.pl-card__links {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
-.pl-card__prio--critical {
-  color: var(--color-error-text);
+
+[data-viewport="mobile"] .pl-head .ui-btn {
+  width: 100%;
+  height: 44px;
 }
-.pl-card__label {
-  padding: 0 var(--space-1);
-  font-size: var(--fs-metadata);
-  color: var(--color-navy-500);
-  background: var(--color-navy-100);
-  border-radius: var(--radius-sm);
+
+[data-viewport="mobile"] .pl-toolbar .ui-search {
+  max-width: none;
+  flex-basis: 100%;
+}
+
+[data-viewport="mobile"] .pl-board {
+  margin-inline: -16px;
+  padding-inline: 16px;
+  scroll-padding-inline: 16px;
+}
+
+[data-viewport="mobile"] .pl-card__handle,
+[data-viewport="mobile"] .pl-card__del {
+  width: 36px;
+  height: 36px;
+}
+
+[data-viewport="mobile"] .pl-col__plus,
+[data-viewport="mobile"] .pl-col__add {
+  min-height: 44px;
 }
 
 /* ---- Card editor ---- */
@@ -191,14 +381,7 @@
   color: var(--color-text-secondary);
 }
 
-@media (max-width: 900px) {
-  .pl-board {
-    grid-template-columns: repeat(4, 240px);
-  }
-}
-
-/* Defect key (DEF-001) and defect ↔ test case links (traceability, TRZ-02). */
-.pl-card__key,
+/* Defect ↔ test case links (traceability, TRZ-02). */
 .pl-links__id {
   margin-right: var(--space-1);
   font-family: var(--font-mono);
@@ -223,14 +406,3 @@
   color: var(--color-text-primary);
 }
 
-/* Keyboard handle of a card (UX-05): Space picks it up, arrows move it. */
-.pl-card__handle {
-  padding: 0 var(--space-1);
-  font-size: var(--fs-ui);
-  line-height: 1;
-  color: var(--color-text-muted);
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: grab;
-}

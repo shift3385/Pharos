@@ -95,4 +95,12 @@ describe("Pagination", () => {
     await userEvent.click(within(menu).getByRole("menuitemradio", { name: "48 por página" }));
     expect(onSize).toHaveBeenCalledWith(48);
   });
+
+  it("moves back to the last page when the list shrank under it", () => {
+    setViewportWidth(1440);
+    const onPage = vi.fn();
+    render(<Pagination page={5} pageSize={10} total={23} onPageChange={onPage} />);
+    expect(onPage).toHaveBeenCalledWith(3);
+    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 21–23 de 23");
+  });
 });

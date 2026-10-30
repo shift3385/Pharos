@@ -1,0 +1,108 @@
+/* Action buttons (SPEC §4/§5): secondary, primary (amber, one per view),
+   small, ghost, destructive, and the square icon button. Tokens only. */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: background-color 120ms ease;
+}
+
+.ui-btn:hover:not(:disabled, [aria-disabled="true"]) {
+  background: var(--color-surface-2);
+}
+
+.ui-btn svg {
+  flex: none;
+}
+
+.ui-btn__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-btn--primary {
+  font-weight: var(--fw-semibold);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.ui-btn--primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--color-accent) 88%, var(--color-text-primary));
+}
+
+.ui-btn--small {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.ui-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.ui-btn--danger {
+  color: var(--color-error-text);
+  border-color: color-mix(in oklab, var(--color-error) 45%, transparent);
+}
+
+.ui-btn:disabled,
+.ui-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ui-iconbtn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.ui-iconbtn[data-active] {
+  border-color: var(--color-navy-500);
+  color: var(--color-navy-500);
+}
+
+.ui-iconbtn__count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--color-surface-1);
+  background: var(--color-navy-500);
+  border-radius: var(--radius-pill);
+}
+
+[data-viewport="mobile"] .ui-btn:not(.ui-btn--small) {
+  height: 44px;
+}
+
+[data-viewport="mobile"] .ui-iconbtn {
+  width: 44px;
+  height: 44px;
+}

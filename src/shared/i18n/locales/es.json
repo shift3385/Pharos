@@ -1065,7 +1065,107 @@
       "cancel": "Movimiento cancelado; el paso {{n}} vuelve a su sitio."
     },
     "gherkinEditor": "Editor Gherkin",
-    "gherkinKeys": "Tab sangra. Para salir del editor con el teclado, pulsa Escape y después Tab."
+    "gherkinKeys": "Tab sangra. Para salir del editor con el teclado, pulsa Escape y después Tab.",
+    "views": "Vista del caso",
+    "statusSheet": "Estado del caso",
+    "priorityHelp": {
+      "critical": "Bloquea una función clave o expone datos",
+      "high": "Afecta a un flujo principal",
+      "medium": "Afecta a un flujo secundario",
+      "low": "Detalle o mejora"
+    },
+    "statusHelp": {
+      "draft": "En redacción, aún no revisado",
+      "reviewed": "Revisado por otra persona",
+      "approved": "Listo para ejecutar",
+      "obsolete": "Ya no aplica; se conserva en el histórico"
+    },
+    "list": {
+      "all": "Todos",
+      "statusFilter": "Estado del caso",
+      "searchLabel": "Buscar casos",
+      "search": "Buscar por ID, título o requisito…",
+      "filters": "Filtros",
+      "col": {
+        "id": "ID",
+        "title": "Título",
+        "requirement": "Requisito",
+        "priority": "Prioridad",
+        "level": "Nivel",
+        "status": "Estado",
+        "execution": "Ejecución",
+        "edited": "Editado"
+      },
+      "noRequirement": "Sin requisito",
+      "more": "+{{count}}",
+      "notRun": "No ejecutado",
+      "executionSoon": "Próximamente: los resultados de ejecución llegan con la ingesta de ejecuciones.",
+      "executionSoonShort": "Próximamente",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> casos",
+      "noMatch": "Ningún caso coincide con la búsqueda o los filtros.",
+      "clearFilters": "Quitar filtros",
+      "bulk": "Acciones con los casos seleccionados",
+      "selected_one": "{{count}} seleccionado",
+      "selected_other": "{{count}} seleccionados",
+      "exportSelected": "Exportar .feature",
+      "deleteSelected": "Eliminar",
+      "clearSelection": "Quitar selección",
+      "deleteTitle_one": "¿Eliminar {{count}} caso?",
+      "deleteTitle_other": "¿Eliminar {{count}} casos?",
+      "deleteMessage_one": "El caso seleccionado se elimina del proyecto.",
+      "deleteMessage_other": "Los {{count}} casos seleccionados se eliminan del proyecto.",
+      "deleteConfirm": "Sí, eliminar",
+      "deletedToast_one": "{{count}} caso eliminado",
+      "deletedToast_other": "{{count}} casos eliminados",
+      "io": "Importar / Exportar",
+      "ioImport": "Importar",
+      "ioExport": "Exportar",
+      "importXlsxHint": "Crea un caso desde la plantilla .xlsx",
+      "exportFeaturesHint": "Escenarios Gherkin de todos los casos, para automatizar (ZIP)",
+      "suggest": "Sugerir casos con IA",
+      "offPage_one": "{{count}} en otra página",
+      "offPage_other": "{{count}} en otras páginas",
+      "andMore": "y {{count}} más",
+      "deleteFailed_one": "No se pudo eliminar {{count}} caso; sigue en la lista.",
+      "deleteFailed_other": "No se pudieron eliminar {{count}} casos; siguen en la lista."
+    },
+    "nav": {
+      "allCases": "Todos los casos",
+      "walk": "Recorrer los casos",
+      "prev": "Caso anterior",
+      "next": "Caso siguiente",
+      "prevShort": "Anterior",
+      "nextShort": "Siguiente",
+      "position": "{{n}} de {{total}}",
+      "filterAll": "Filtro: todos",
+      "filterOn": "Filtro: activo",
+      "goTo": "Ir a un caso…",
+      "goToShortcut": "Ctrl P",
+      "goToTitle": "Ir a un caso",
+      "goToHint": "↑ ↓ para moverte, Intro para abrir, Esc para cerrar.",
+      "more": "Más acciones del caso",
+      "state": {
+        "saved": "Guardado",
+        "dirty": "Cambios sin guardar",
+        "new": "Sin guardar"
+      },
+      "discardMessage": "Hay cambios sin guardar en este caso. Si sigues, se pierden.",
+      "notFoundTitle": "Caso no encontrado",
+      "notFound": "Este caso no existe o se ha eliminado. Vuelve a la lista para elegir otro.",
+      "goToShortcutMac": "⌘ P"
+    },
+    "gherkin": {
+      "copy": "Copiar el Gherkin",
+      "copied": "Gherkin copiado",
+      "synced": "Sincronizado",
+      "edit": "Editar",
+      "done": "Listo",
+      "editing": "editando",
+      "swipe": "Desliza el código hacia los lados para ver las líneas largas.",
+      "indent": "Sangrar"
+    }
   },
   "dashboard": {
     "title": "Inicio",
@@ -1275,7 +1375,25 @@
       "over": "Tarjeta «{{card}}» sobre la columna {{column}}.",
       "end": "Tarjeta «{{card}}» movida a {{column}}.",
       "cancel": "Movimiento cancelado; la tarjeta «{{card}}» vuelve a su sitio."
-    }
+    },
+    "filter": {
+      "all": "Todas",
+      "task": "Tareas",
+      "defect": "Defectos",
+      "test_data": "Datos de prueba",
+      "searchLabel": "Buscar tarjetas",
+      "search": "Buscar tarjetas…"
+    },
+    "newCardIn": "Nueva tarjeta en {{column}}",
+    "addCard": "Añadir tarjeta",
+    "cardCount_one": "{{count}} tarjeta",
+    "cardCount_other": "{{count}} tarjetas",
+    "linksTitle_one": "{{count}} caso de prueba vinculado",
+    "linksTitle_other": "{{count}} casos de prueba vinculados",
+    "deleteTitle": "¿Eliminar la tarjeta?",
+    "deleteMessage": "Se elimina «{{card}}» del planificador.",
+    "deleteConfirm": "Sí, eliminar",
+    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo."
   },
   "traceability": {
     "title": "Trazabilidad",
@@ -1324,7 +1442,10 @@
       "deleteTitle": "Eliminar requisito",
       "deleteWarning": "Se eliminará {{key}}. Su ID no se reutilizará: los casos que lo enlazan lo mostrarán como requisito desconocido.",
       "deleteConfirm": "Eliminar",
-      "deletedToast": "{{key}} eliminado"
+      "deletedToast": "{{key}} eliminado",
+      "cases": "Casos",
+      "actions": "Acciones",
+      "deleteFailed": "No se pudo eliminar {{key}}."
     },
     "import": {
       "button": "Importar CSV",
@@ -1358,7 +1479,7 @@
     },
     "matrix": {
       "title": "Matriz de trazabilidad",
-      "subtitle": "Requisito ↔ caso de prueba ↔ defecto, con los huecos de cobertura a la vista.",
+      "subtitle": "Cada requisito con los casos de prueba que lo verifican y los defectos encontrados. Los requisitos sin ningún caso aparecen en rojo.",
       "exportXlsx": "Exportar .xlsx",
       "exporting": "Exportando…",
       "exportedToast": "Matriz exportada: {{name}}",
@@ -1378,7 +1499,21 @@
         "defects": "Defectos",
         "coverage": "Cobertura",
         "notes": "Comentarios"
-      }
+      },
+      "generate": "Generar casos con IA",
+      "generateFrom": "desde {{key}}",
+      "noCase": "Ningún caso cubre este requisito.",
+      "linkedCases_one": "Casos vinculados · {{count}}",
+      "linkedCases_other": "Casos vinculados · {{count}}",
+      "onlyGapsHint": "Oculta los requisitos cubiertos y deja solo los que no tienen ningún caso de prueba",
+      "noGaps": "Todos los requisitos tienen al menos un caso. No hay huecos.",
+      "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> requisitos",
+      "kpi": {
+        "highPriority_one": "{{count}} de prioridad alta",
+        "highPriority_other": "{{count}} de prioridad alta",
+        "withCase": "con al menos un caso"
+      },
+      "onlyGapsCount": "Mostrar solo huecos ({{count}})"
     },
     "execution": {
       "passed": "Pasa",
@@ -1388,7 +1523,7 @@
     },
     "coverage": {
       "covered": "Cubierto",
-      "not_covered": "No cubierto"
+      "not_covered": "Sin cubrir"
     },
     "note": {
       "obsoleteCase": "Caso obsoleto (no cubre)",
@@ -1398,7 +1533,10 @@
       "title": "Huecos de trazabilidad",
       "casesWithoutRequirement": "Casos sin requisito",
       "unknownLinks": "Casos que enlazan un requisito inexistente",
-      "defectsWithoutCase": "Defectos sin caso vinculado"
+      "defectsWithoutCase": "Defectos sin caso vinculado",
+      "subtitle": "Lo que rompe la cadena requisito ↔ caso ↔ defecto",
+      "migrateHint_one": "{{count}} ID aparece en el texto libre de Trazabilidad de tus casos y puede convertirse en vínculo.",
+      "migrateHint_other": "{{count}} IDs aparecen en el texto libre de Trazabilidad de tus casos y pueden convertirse en vínculos."
     },
     "migrate": {
       "button": "Migrar trazabilidad ({{count}})",
@@ -1411,6 +1549,15 @@
       "apply": "Aplicar",
       "applying": "Aplicando…",
       "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
+    },
+    "io": {
+      "label": "Importar / Exportar",
+      "import": "Importar",
+      "export": "Exportar",
+      "importCsv": "Importar requisitos (.csv)",
+      "importHint": "Crea o actualiza requisitos por ID",
+      "exportXlsx": "Exportar matriz (.xlsx)",
+      "exportHint": "Requisitos, casos, estados y defectos"
     }
   },
   "downloads": {
@@ -1538,6 +1685,15 @@
       "compact": "Página {{page}} de {{pages}}",
       "perPage": "Por página",
       "perPageValue": "{{count}} por página"
-    }
+    },
+    "selectAllShort": "Seleccionar todo"
+  },
+  "sortMenu": {
+    "title": "Ordenar por",
+    "label": "Orden",
+    "trigger": "{{label}}: {{option}}",
+    "direction": "Dirección",
+    "desc": "Descendente",
+    "asc": "Ascendente"
   }
 }

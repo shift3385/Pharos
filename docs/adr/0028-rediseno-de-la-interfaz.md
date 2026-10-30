@@ -86,6 +86,16 @@
    enlaza encima de las tres páginas. Cada proyecto tiene su propia URL
    ([ADR-0029](0029-secciones-del-proyecto-en-la-url.md)).
 
+8. **Enmienda RED-V3 (2026-10-30): ranuras de la pantalla en el shell.** Una
+   pantalla puede pedir cosas al shell sin importar `src/app`:
+   - `ShellChromeProvider` (en `AppShell`) y `useHideMobileChrome`, en
+     `src/shared/ui`, ocultan la barra superior, las pastillas y la barra inferior del
+     móvil mientras se edita Gherkin a pantalla completa (SPEC §7/§8);
+   - la cabecera del proyecto es de V2 (`ProjectHeader`, `@modules/projects`);
+     cada sección pone sus botones con `useHeaderActions`
+     (`@shared/ui/headerActions`), sin importar `projects`.
+   Botones de acción (`ui-btn`) y buscador de lista (`ui-search`) también
+   son comunes, para que ningún módulo dependa del CSS de otro.
 9. **Enmienda RED-V3k (2026-10-30): router de datos y cambios sin guardar.**
    El `HashRouter` declarativo no permite retener una navegación, y el
    editor de casos (V3) y el borrador de IA (V4) pierden cambios con el

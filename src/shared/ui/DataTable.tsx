@@ -65,7 +65,9 @@ export function DataTable<T>({
   selection?: DataTableSelection<T>;
   sort?: SortState;
   onSortChange?: (sort: SortState) => void;
-  /** Marks a row, e.g. "gap" for an uncovered requirement (red). */
+  /** Marks a row, e.g. "gap" for an uncovered requirement (red). The tint is
+   *  not enough on its own (SPEC §10): the row must also say it in text, e.g.
+   *  a «Sin cubrir» pill. */
   rowTone?: (row: T) => "gap" | undefined;
   /** The mobile view of a row; without it the table scrolls sideways. */
   mobileCard?: (row: T) => ReactNode;
@@ -105,22 +107,40 @@ export function DataTable<T>({
         aria-label={t("table.selectRow", { name: selection.rowLabel(row) })}
       />
     );
+  const allCheckbox = selection && (
+    <HeaderCheckbox
+      checked={all}
+      indeterminate={chosen > 0 && !all}
+      disabled={rows.length === 0}
+      onChange={toggleAll}
+      label={t("table.selectAll")}
+    />
+  );
 
   if (rows.length === 0 && empty) return <div className={`dt-empty ${className}`.trim()}>{empty}</div>;
 
   if (view === "mobile" && mobileCard) {
     return (
-      <ul className={`dt-cards ${className}`.trim()} aria-label={label}>
-        {rows.map((row) => {
-          const id = getRowId(row);
-          return (
-            <li key={id} className="dt-card" data-tone={rowTone?.(row)}>
-              {rowCheckbox(row, id)}
-              <div className="dt-card__body">{mobileCard(row)}</div>
-            </li>
-          );
-        })}
-      </ul>
+      <div className={`dt-cards-wrap ${className}`.trim()}>
+        {selection && (
+          // «Seleccionar todo» also on mobile, above the cards.
+          <label className="dt-cards__all">
+            <span className="dt-touch">{allCheckbox}</span>
+            <span aria-hidden="true">{t("table.selectAllShort")}</span>
+          </label>
+        )}
+        <ul className="dt-cards" aria-label={label}>
+          {rows.map((row) => {
+            const id = getRowId(row);
+            return (
+              <li key={id} className="dt-card" data-tone={rowTone?.(row)}>
+                {selection && <span className="dt-touch">{rowCheckbox(row, id)}</span>}
+                <div className="dt-card__body">{mobileCard(row)}</div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     );
   }
 
@@ -136,13 +156,7 @@ export function DataTable<T>({
           <tr className="dt__row dt__row--head">
             {selection && (
               <th scope="col" className="dt__cell dt__cell--check">
-                <HeaderCheckbox
-                  checked={all}
-                  indeterminate={chosen > 0 && !all}
-                  disabled={rows.length === 0}
-                  onChange={toggleAll}
-                  label={t("table.selectAll")}
-                />
+                {allCheckbox}
               </th>
             )}
             {visible.map((c) => {
@@ -153,7 +167,15 @@ export function DataTable<T>({
                   scope="col"
                   className="dt__cell"
                   data-align={c.align}
-                  aria-sort={c.sortable ? (active ? (sort.dir === "asc" ? "ascending" : "descending") : "none") : undefined}
+                  aria-sort={
+                    c.sortable && onSortChange
+                      ? active
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                      : undefined
+                  }
                 >
                   {c.sortable && onSortChange ? (
                     <button
@@ -222,9 +244,10 @@ function HeaderCheckbox({
   label: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  // On every render, so it always matches the props.
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = indeterminate;
-  }, [indeterminate]);
+  });
   return (
     <input
       ref={ref}
@@ -232,7 +255,12 @@ function HeaderCheckbox({
       className="dt__check"
       checked={checked}
       disabled={disabled}
-      onChange={onChange}
+      onChange={(e) => {
+        // The click cleared «indeterminate»; a parent that rejects the change
+        // may not re-render, so put the current state back right away.
+        e.currentTarget.indeterminate = indeterminate;
+        onChange();
+      }}
       aria-label={label}
     />
   );
