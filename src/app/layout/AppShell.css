@@ -280,7 +280,7 @@
   flex: none;
   font-size: 10.5px;
   font-weight: var(--fw-semibold);
-  color: var(--color-navy-300);
+  color: var(--color-on-navy);
   background: color-mix(in srgb, var(--color-navy-300) 18%, transparent);
   border-radius: 7px;
 }
@@ -370,6 +370,13 @@
   color: var(--color-on-navy);
   background: var(--color-navy-500);
   border-radius: 50%;
+}
+
+/* Dark theme: navy 500 turns light, so the initials take the badge pair
+   (navy 500 on navy 100, ≥ 4.5:1 in both themes). */
+[data-theme="dark"] .user-menu__avatar {
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
 }
 
 .user-menu--rail .user-menu__trigger .user-menu__avatar {

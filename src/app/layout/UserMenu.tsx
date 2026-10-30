@@ -44,10 +44,12 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
         type="button"
         className="user-menu__trigger"
         {...menu.triggerProps}
-        aria-label={t("shell.userMenu", { name })}
         title={t("shell.userMenu", { name })}
         data-testid="user-menu-trigger"
       >
+        {/* Named by its content, so the visible name and email stay part of
+            the accessible name (WCAG 2.5.3). */}
+        <span className="sr-only">{t("shell.userMenu", { name })}</span>
         {avatar}
         {variant === "sidebar" && (
           <>

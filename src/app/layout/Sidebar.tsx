@@ -65,10 +65,10 @@ function ProjectSwitcher({ active }: { active: ActiveProject }) {
         type="button"
         className="sidebar__project"
         {...menu.triggerProps}
-        aria-label={t("shell.switchProject", { name })}
         title={name}
         data-testid="project-switcher"
       >
+        <span className="sr-only">{t("shell.switchProjectMenu")}: </span>
         <span className="sidebar__project-badge t-id">{active.project?.caseIdPrefix ?? ""}</span>
         <span className="sidebar__project-name">{name}</span>
         <ChevronsUpDown size={14} aria-hidden="true" />

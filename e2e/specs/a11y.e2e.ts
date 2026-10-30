@@ -13,6 +13,7 @@ import {
   ensureSignedOut,
   es,
   signIn,
+  userMenuTrigger,
 } from "../support";
 
 const require = createRequire(import.meta.url);
@@ -78,7 +79,10 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
       await $('[data-testid="admin-section-templates"]').click();
       await expect($(`h1=${es.templates.title}`)).toBeDisplayed();
       expect(await violations()).toEqual([]);
-      await go("profile", es.profile.title);
+      // Mi perfil lives in the user menu on the desktop (SPEC §7).
+      await userMenuTrigger().click();
+      await button(es.shell.myProfile).click();
+      await expect($(`h1=${es.profile.title}`)).toBeDisplayed();
       expect(await violations()).toEqual([]);
     });
   }

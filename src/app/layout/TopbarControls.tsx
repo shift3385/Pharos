@@ -42,7 +42,6 @@ export function SearchTrigger() {
         type="button"
         className="topbar__search"
         {...pop.triggerProps}
-        aria-label={t("shell.searchLabel")}
         aria-keyshortcuts="Control+K Meta+K"
         data-testid="search-trigger"
       >

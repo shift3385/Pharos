@@ -1076,7 +1076,6 @@
     "language": "Language",
     "activeProject": "Active project",
     "configuration": "Settings",
-    "switchProject": "Switch project (current: {{name}})",
     "switchProjectMenu": "Switch project",
     "searchProjects": "Search projects…",
     "seeAllProjects": "See all projects",
