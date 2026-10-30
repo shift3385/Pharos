@@ -1,26 +1,30 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, LogOut } from "lucide-react";
+import { Check, LogOut, Moon, Sun } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
+import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
+import { useTheme } from "@shared/theme/useTheme";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { profileApi } from "../api/profileApi";
 import type { Profile } from "../model/types";
-import { RecoveryKeySection } from "./RecoveryKeySection";
 import "./ProfilePage.css";
 
 /** Two-letter avatar from the display name (same rule as the user menu). */
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : name.trim().slice(0, 2);
+  const letters =
+    parts.length > 1 ? parts[0][0] + parts[1][0] : name.trim().slice(0, 2);
   return letters.toUpperCase();
 }
 
 /** Perfil (SPEC §8, `ScrPerfil.dc.html`): who you are (avatar, name, email,
- *  sync status), your alias and official name, preferences and the recovery
- *  key. On mobile «Cerrar sesión» lives here too (no user menu in the bar). */
+ *  sync status), your alias and official name, and your preferences (language
+ *  and theme). On mobile «Cerrar sesión» lives here too (no user menu in the
+ *  bar). The recovery key moved to Administración › Seguridad (RED-V4). */
 export function ProfilePage() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -62,8 +66,7 @@ export function ProfilePage() {
   }, [user]);
 
   const update =
-    (key: keyof typeof form) =>
-    (event: React.ChangeEvent<HTMLInputElement>) =>
+    (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) =>
       setForm((f) => ({ ...f, [key]: event.target.value }));
 
   async function onSubmit(event: FormEvent) {
@@ -78,7 +81,10 @@ export function ProfilePage() {
     }
   }
 
-  const fullName = [profile?.firstName ?? user?.firstName, profile?.lastName ?? user?.lastName]
+  const fullName = [
+    profile?.firstName ?? user?.firstName,
+    profile?.lastName ?? user?.lastName,
+  ]
     .filter(Boolean)
     .join(" ");
   const shownName = fullName || user?.displayName || "";
@@ -100,7 +106,9 @@ export function ProfilePage() {
             </span>
             <div className="profile__identity">
               <span className="profile__name">{shownName}</span>
-              {user && <TruncatedText className="profile__email" value={user.email} />}
+              {user && (
+                <TruncatedText className="profile__email" value={user.email} />
+              )}
               {mobile && (
                 <button
                   type="button"
@@ -148,11 +156,18 @@ export function ProfilePage() {
               </span>
             )}
             {status === "error" && (
-              <span className="profile__status profile__status--error" role="alert">
+              <span
+                className="profile__status profile__status--error"
+                role="alert"
+              >
                 {t("profile.error")}
               </span>
             )}
-            <button className="profile__save" type="submit" disabled={status === "saving"}>
+            <button
+              className="profile__save"
+              type="submit"
+              disabled={status === "saving"}
+            >
               <Check size={16} aria-hidden="true" />
               {status === "saving" ? t("profile.saving") : t("profile.save")}
             </button>
@@ -176,7 +191,7 @@ export function ProfilePage() {
           )}
         </form>
 
-        <RecoveryKeySection />
+        <Preferences />
       </div>
     </section>
   );
@@ -187,7 +202,10 @@ function Field({
   label,
   required,
   ...rest
-}: React.InputHTMLAttributes<HTMLInputElement> & { id: string; label: string }) {
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  label: string;
+}) {
   return (
     <div className="profile__field">
       <label htmlFor={id}>
@@ -201,5 +219,56 @@ function Field({
       </label>
       <input id={id} name={id} required={required} {...rest} />
     </div>
+  );
+}
+
+function Preferences() {
+  const { t, i18n } = useTranslation();
+  const { theme, setTheme } = useTheme();
+  const language = (i18n.resolvedLanguage ?? "es") as Language;
+  return (
+    <section
+      className="profile-card profile-prefs"
+      aria-labelledby="profile-prefs-title"
+    >
+      <h2 id="profile-prefs-title" className="profile-card__title">
+        {t("profile.preferences")}
+      </h2>
+      <div className="profile-pref">
+        <div className="profile-pref__text">
+          <span className="profile-pref__name">{t("profile.language")}</span>
+        </div>
+        <div className="profile-pref__control">
+          <SegmentedControl
+            label={t("profile.language")}
+            value={language}
+            onChange={(lng) => void i18n.changeLanguage(lng)}
+            options={SUPPORTED_LANGUAGES.map((lng) => ({
+              value: lng,
+              label: t(`language.${lng}`),
+            }))}
+            testId="profile-language"
+          />
+        </div>
+      </div>
+      <div className="profile-pref">
+        <div className="profile-pref__text">
+          <span className="profile-pref__name">{t("profile.theme")}</span>
+          <span className="profile-pref__help">{t("profile.themeHelp")}</span>
+        </div>
+        <div className="profile-pref__control">
+          <SegmentedControl
+            label={t("profile.theme")}
+            value={theme}
+            onChange={setTheme}
+            options={[
+              { value: "light", label: t("profile.themeLight"), icon: Sun },
+              { value: "dark", label: t("profile.themeDark"), icon: Moon },
+            ]}
+            testId="profile-theme"
+          />
+        </div>
+      </div>
+    </section>
   );
 }

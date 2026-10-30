@@ -433,7 +433,13 @@
     "auditTitle": "Auditoría",
     "createdAt": "Creado",
     "updatedAt": "Actualizado",
-    "revision": "Revisión"
+    "revision": "Revisión",
+    "preferences": "Preferencias",
+    "language": "Idioma",
+    "theme": "Tema",
+    "themeHelp": "Faro Nocturno, en claro u oscuro.",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro"
   },
   "testPlan": {
     "title": "Planes de prueba",

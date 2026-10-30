@@ -433,7 +433,13 @@
     "auditTitle": "Audit",
     "createdAt": "Created",
     "updatedAt": "Updated",
-    "revision": "Revision"
+    "revision": "Revision",
+    "preferences": "Preferences",
+    "language": "Language",
+    "theme": "Theme",
+    "themeHelp": "Faro Nocturno, light or dark.",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "testPlan": {
     "title": "Test plans",

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { ProfilePage } from "./ui/ProfilePage";
 import { setViewportWidth } from "@test/viewport";
+import { expectNoAxeViolations } from "@test/axe";
 
 vi.mock("./api/profileApi", () => ({
   profileApi: {
@@ -67,5 +68,33 @@ describe("profile page", () => {
     renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
     expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeInTheDocument();
+  });
+
+  it("changes language and theme from Preferencias", async () => {
+    const user = userEvent.setup();
+    setViewportWidth(1440);
+    renderWithProviders(<ProfilePage />);
+    await screen.findByDisplayValue("Quality");
+
+    const theme = screen.getByRole("radiogroup", { name: "Tema" });
+    const before = document.documentElement.getAttribute("data-theme");
+    const other = before === "dark" ? "Claro" : "Oscuro";
+    await user.click(within(theme).getByRole("radio", { name: other }));
+    expect(within(theme).getByRole("radio", { name: other })).toHaveAttribute("aria-checked", "true");
+    expect(document.documentElement.getAttribute("data-theme")).not.toBe(before);
+
+    const language = screen.getByRole("radiogroup", { name: "Idioma" });
+    expect(within(language).getByRole("radio", { name: "Español" })).toHaveAttribute("aria-checked", "true");
+    await user.click(within(language).getByRole("radio", { name: "English" }));
+    expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+    await i18n.changeLanguage("es");
+  });
+
+  it("no longer holds the recovery key (Administración › Seguridad) and passes axe", async () => {
+    setViewportWidth(390);
+    renderWithProviders(<ProfilePage />);
+    await screen.findByDisplayValue("Quality");
+    expect(screen.queryByRole("heading", { name: /clave de recuperación/i })).toBeNull();
+    await expectNoAxeViolations();
   });
 });

@@ -1,8 +1,20 @@
-/* The card itself is ProfilePage's `.profile-card`. */
+/* A self-contained card: Administración › Seguridad (V4) imports it as is. */
 .recovery {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: clamp(18px, 2.2cqi, 24px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.recovery__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
 }
 
 .recovery__text {
