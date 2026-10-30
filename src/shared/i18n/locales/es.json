@@ -382,8 +382,6 @@
     "exportFinishing": "Finalizando…",
     "empty": "Aún no hay proyectos. Crea el primero.",
     "namePlaceholder": "Nombre del proyecto",
-    "prefixMeta": "IDs",
-    "back": "Proyectos",
     "name": "Nombre del proyecto",
     "caseIdPrefix": "Prefijo de ID de caso",
     "caseIdDigits": "Dígitos del número",
@@ -414,6 +412,56 @@
       "requirements_one": "1 requisito",
       "requirements_other": "{{count}} requisitos",
       "closesOn": "Cierre del ciclo: {{date}}"
+    },
+    "list": {
+      "recentTitle": "Recientes",
+      "recentHint_one": "El último que abriste",
+      "recentHint_other": "Los {{count}} últimos que abriste",
+      "allTitle": "Todos los proyectos",
+      "search": "Buscar por nombre o prefijo…",
+      "filterLabel": "Estado del proyecto",
+      "filter": {
+        "all": "Todos",
+        "active": "En curso",
+        "closed": "Cerrados"
+      },
+      "filterSoon": "Próximamente: los proyectos aún no tienen estado abierto o cerrado.",
+      "sort": {
+        "access": "Último acceso",
+        "name": "Nombre (A–Z)",
+        "updated": "Última modificación",
+        "closure": "Cierre del ciclo",
+        "execution": "Progreso de ejecución",
+        "coverage": "Cobertura de requisitos",
+        "defects": "Defectos abiertos"
+      },
+      "sortSoon": {
+        "closure": "Ningún plan tiene fechas de cierre todavía.",
+        "execution": "Próximamente: llega con la ejecución de pruebas (0.2.0).",
+        "defects": "Próximamente."
+      },
+      "col": {
+        "project": "Proyecto",
+        "plan": "Plan",
+        "cases": "Casos",
+        "executed": "Ejecutado",
+        "coverage": "Cobertura",
+        "access": "Último acceso",
+        "actions": "Acciones"
+      },
+      "executedSoon": "La ejecución de pruebas llega en la versión 0.2.0.",
+      "executedShort": "— ejec.",
+      "noRequirements": "Sin requisitos que cubrir",
+      "percent": "{{value}} %",
+      "coverageShort": "{{value}} % cob.",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "never": "Nunca",
+      "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> proyectos",
+      "noMatch": "Ningún proyecto coincide con «{{query}}».",
+      "rowMenu": "Más acciones de {{name}}",
+      "moreActions": "Más acciones",
+      "open": "Abrir"
     }
   },
   "profile": {

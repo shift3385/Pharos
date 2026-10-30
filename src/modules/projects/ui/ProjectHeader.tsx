@@ -1,17 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { StatusPill } from "@shared/ui/StatusPill";
+import { planTone, prefixBadge } from "../model/projectTable";
 import { HeaderActionsContext } from "./projectHeaderActions";
 import "./ProjectHeader.css";
-
-/** Plan status → state colour (SPEC §4: Borrador neutral, Revisado info,
- *  Aprobado success, Obsoleto neutral struck through). */
-const PLAN_TONE: Record<string, string> = {
-  draft: "neutral",
-  reviewed: "info",
-  approved: "success",
-  obsolete: "neutral",
-};
 
 export interface ProjectHeaderInfo {
   name: string;
@@ -51,8 +44,7 @@ export function ProjectHeader({ info, actions }: { info: ProjectHeaderInfo; acti
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
   const status = info.planStatus ?? "none";
-  // «ATS_» → «ATS»: the badge shows the prefix without its separator.
-  const badge = info.caseIdPrefix.replace(/[^\p{L}\p{N}]+$/u, "").slice(0, 4);
+  const badge = prefixBadge(info.caseIdPrefix);
 
   if (mobile) {
     return (
@@ -75,14 +67,9 @@ export function ProjectHeader({ info, actions }: { info: ProjectHeaderInfo; acti
           {info.name}
         </h1>
         <div className="pj-header__meta">
-          <span
-            className="pj-header__status"
-            data-tone={PLAN_TONE[status] ?? "neutral"}
-            data-strike={status === "obsolete" || undefined}
-          >
-            <span className="pj-header__dot" aria-hidden="true" />
+          <StatusPill tone={planTone(info.planStatus)} dot strike={status === "obsolete"}>
             {t(`projects.header.plan.${status}`)}
-          </span>
+          </StatusPill>
           {info.meta.map((m, i) => (
             <span key={i} className="pj-header__meta-item">
               {m}

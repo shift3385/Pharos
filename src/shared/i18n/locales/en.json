@@ -382,8 +382,6 @@
     "exportFinishing": "Finishing…",
     "empty": "No projects yet. Create the first one.",
     "namePlaceholder": "Project name",
-    "prefixMeta": "IDs",
-    "back": "Projects",
     "name": "Project name",
     "caseIdPrefix": "Case id prefix",
     "caseIdDigits": "Number digits",
@@ -414,6 +412,56 @@
       "requirements_one": "1 requirement",
       "requirements_other": "{{count}} requirements",
       "closesOn": "Cycle closes: {{date}}"
+    },
+    "list": {
+      "recentTitle": "Recent",
+      "recentHint_one": "The last one you opened",
+      "recentHint_other": "The last {{count}} you opened",
+      "allTitle": "All projects",
+      "search": "Search by name or prefix…",
+      "filterLabel": "Project status",
+      "filter": {
+        "all": "All",
+        "active": "In progress",
+        "closed": "Closed"
+      },
+      "filterSoon": "Coming soon: projects have no open or closed status yet.",
+      "sort": {
+        "access": "Last opened",
+        "name": "Name (A–Z)",
+        "updated": "Last modified",
+        "closure": "Cycle close",
+        "execution": "Execution progress",
+        "coverage": "Requirement coverage",
+        "defects": "Open defects"
+      },
+      "sortSoon": {
+        "closure": "No plan has closing dates yet.",
+        "execution": "Coming soon: arrives with test execution (0.2.0).",
+        "defects": "Coming soon."
+      },
+      "col": {
+        "project": "Project",
+        "plan": "Plan",
+        "cases": "Cases",
+        "executed": "Executed",
+        "coverage": "Coverage",
+        "access": "Last opened",
+        "actions": "Actions"
+      },
+      "executedSoon": "Test execution arrives in version 0.2.0.",
+      "executedShort": "— exec.",
+      "noRequirements": "No requirements to cover",
+      "percent": "{{value}} %",
+      "coverageShort": "{{value}} % cov.",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "never": "Never",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> projects",
+      "noMatch": "No project matches “{{query}}”.",
+      "rowMenu": "More actions for {{name}}",
+      "moreActions": "More actions",
+      "open": "Open"
     }
   },
   "profile": {

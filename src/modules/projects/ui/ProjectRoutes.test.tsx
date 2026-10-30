@@ -22,6 +22,7 @@ vi.mock("@modules/planner", () => ({ PlannerBoard: () => <p>sección planificado
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
   requirementApi: { list: async () => [] },
+  projectCoverage: async () => null,
 }));
 
 const PROJECTS = {
