@@ -86,6 +86,16 @@
    enlaza encima de las tres páginas. Cada proyecto tiene su propia URL
    ([ADR-0029](0029-secciones-del-proyecto-en-la-url.md)).
 
+8. **Enmienda RED-V3 (2026-10-30): ranuras de la pantalla en el shell.** Una
+   pantalla puede pedir cosas al shell sin importar `src/app`:
+   - `ShellChromeProvider` (en `AppShell`) y `useHideBottomBar`, en
+     `src/shared/ui`, ocultan la barra inferior del móvil mientras se edita
+     Gherkin (SPEC §7);
+   - la cabecera del proyecto y sus acciones son la ranura de V2
+     (`ProjectHeader` / `useProjectHeaderActions`, `@modules/projects`).
+   Botones de acción (`ui-btn`) y buscador de lista (`ui-search`) también
+   son comunes, para que ningún módulo dependa del CSS de otro.
+
 ## Alternativas
 
 - **Rediseñar pantalla a pantalla sin fundamentos comunes:** cada pista

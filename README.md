@@ -165,6 +165,12 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   - Inside a project, the «Proyecto activo» group switches project and
     jumps between Plan, Casos, Planificador, Trazabilidad and Ajustes del
     proyecto. Each one has its own address (`#/projects/<id>/<section>`).
+- **Casos:** the list filters by state, priority and level and searches IDs,
+  titles and requirements. A case opens at its own address
+  (`#/projects/<id>/cases?case=<case>`); in the editor, ‹ › walk the list as
+  filtered and **Ctrl P** jumps to any case.
+- **Trazabilidad:** the matrix and «Mostrar solo huecos»; an uncovered
+  requirement offers «Generar casos con IA».
 - **Plantillas and Motor de IA** are under **Administración**.
 - **Top bar:** where you are (breadcrumbs), search (Ctrl K), notifications and
   the light/dark switch. Search and notifications say "coming soon" until

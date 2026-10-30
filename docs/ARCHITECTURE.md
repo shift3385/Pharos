@@ -273,6 +273,25 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     `label`, `showLabel`) only know tones; each module maps its own states and
     priorities to them.
   - Their texts live in the `table.*` i18n namespace.
+  - `buttons.css` (`ui-btn`, `--primary` amber once per view, `--small`,
+    `--ghost`, `--danger`, `ui-iconbtn`) and `.ui-search` (in
+    `filters.css`): the action buttons and list search field the screens
+    share, so no module styles itself with another module's CSS.
+- **Shell slots** (RED-V3, amendment to ADR-0028): a screen may ask things of
+  the shell around it without importing `src/app`. `ShellChromeProvider`
+  (`@shared/ui/ShellChrome`, provided once by `AppShell`) and
+  `useHideBottomBar(active)` (`@shared/ui/useShellChrome`) hide the mobile
+  bottom bar while Gherkin is edited (SPEC §7). The project header and its
+  actions are V2's slot (`ProjectHeader` / `useProjectHeaderActions`).
+- **Casos (RED-V3):** `TestCasesPage` owns the filters, order and page
+  (`model/caseList.ts`, pure) and keeps the open case in `?case=`
+  (`caseLink`), so the editor walks the same ordered list and «Atrás» works.
+  The editor keeps a snapshot of the loaded form to tell «Guardado» from
+  «Cambios sin guardar» and asks before leaving with changes.
+- **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
+  defects once for both views (Requisitos, Matriz) and owns their dialogs; the
+  views only render (`buildMatrix` stays the single source, also for
+  `projectCoverage`).
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
   their `--color-*-text` tone. Field boundaries use `--color-border-input`
   (≥ 3:1). Focus is `--color-focus` (navy on light, amber

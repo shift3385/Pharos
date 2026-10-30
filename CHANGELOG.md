@@ -35,6 +35,25 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     texto.
   - Iconos de línea (Lucide), escala tipográfica con partición de palabras por sílabas,
     sin partir correos, rutas ni IDs, y respeto de «reducir movimiento».
+- **Rediseño de Casos, Planificador y Trazabilidad (RED-V3):**
+  - **Casos · lista:** tabla con búsqueda por ID, título o requisito, estados con contador,
+    filtros de Prioridad y Nivel, selección múltiple (exportar .feature o eliminar con
+    confirmación) y paginación. En el móvil, tarjetas y un solo panel de filtros. La columna
+    Ejecución dice «No ejecutado» y su filtro llega con la ingesta de ejecuciones.
+  - **Casos · editor:** cada caso tiene su dirección (`?case=`), así que «Atrás» vuelve a la
+    lista. «‹ anterior · 142 de 240 · siguiente ›» recorre la lista con sus filtros, «Ir a un
+    caso…» (Ctrl P) busca cualquiera, y salir con cambios sin guardar pregunta antes.
+    Prioridad y Estado explican cada opción. Vistas Editor, Gherkin y Vista dividida (en el
+    móvil, Editor o Gherkin). En el móvil, el Gherkin se lee con desplazamiento lateral y se
+    edita a pantalla completa con una barra de palabras clave sobre el teclado; la barra
+    inferior se oculta mientras.
+  - **Trazabilidad:** indicadores, matriz de 9 columnas con los requisitos sin cubrir en rojo
+    y «Generar casos con IA» en ellos, «Mostrar solo huecos» con contador, tarjetas
+    etiquetadas en el móvil, paginación por requisito y huecos de la cadena con la migración
+    del texto libre. Menú Importar / Exportar (requisitos .csv, matriz .xlsx).
+  - **Planificador:** filtros por tipo con contador, búsqueda y prioridad; tarjetas con icono
+    y color de tipo, clave del defecto, etiquetas, bandera de prioridad y casos vinculados.
+  - Eliminar casos, requisitos o tarjetas pide confirmación y solo se cancela con «Cancelar».
 - **Rediseño, piezas de tabla comunes (RED-V3, para Casos, Trazabilidad y Proyectos):** tabla
   con selección múltiple, orden por columna y tarjetas en el móvil; paginación con «Por
   página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
