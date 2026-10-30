@@ -220,10 +220,14 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     the system/Android «Atrás») and shows the destructive `ConfirmDialog`
     «Descartar cambios» / «Seguir editando»; it also sets `beforeunload`
     while dirty. `ignore: true` lets query-string-only changes through (or
-    pass a predicate); by default they ask.
+    pass a predicate, evaluated per path or query change, never for hash-only
+    changes; keep it stable, module level or `useCallback`); by default they
+    ask.
   - `bypass(go)` lets the next location change through, sync or after an
     `await` (`navigate(-1)` included), for a navigation the screen starts on
-    purpose while still dirty (e.g. right after saving).
+    purpose while still dirty (e.g. right after saving). If `go` throws or
+    rejects (a failed save) the guard stays armed. Another location change
+    during the `await` ends the bypass early.
   - **One per screen:** React Router keeps one blocker per router (the last
     registered wins), so only the component that owns the form calls it; a
     second mounted guard warns in development.

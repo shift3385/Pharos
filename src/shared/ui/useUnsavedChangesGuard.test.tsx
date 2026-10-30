@@ -41,6 +41,33 @@ function Editor({ options }: { options?: UnsavedChangesOptions }) {
       >
         Guardar y volver
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          void Promise.resolve(
+            bypass(async () => {
+              await Promise.resolve();
+              throw new Error("save failed");
+            }),
+          ).catch(() => {})
+        }
+      >
+        Guardar con error
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          try {
+            void bypass(() => {
+              throw new Error("save failed");
+            });
+          } catch {
+            // the screen shows its own error
+          }
+        }}
+      >
+        Guardar con error inmediato
+      </button>
       {dialog}
     </>
   );
@@ -130,6 +157,22 @@ describe("useUnsavedChangesGuard (RED-V3k)", () => {
     await userEvent.click(screen.getAllByRole("button", { name: "Guardar y volver" })[0]);
     expect(await screen.findByText("Inicio")).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("a bypass whose go fails (sync or async) leaves the guard armed", async () => {
+    setup();
+    await type("x");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar con error" }));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await userEvent.click(screen.getByRole("link", { name: "Otra sección" }));
+    expect(screen.getByRole("alertdialog", { name: "¿Descartar los cambios?" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Seguir editando" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Guardar con error inmediato" }));
+    await userEvent.click(screen.getByRole("link", { name: "Otra sección" }));
+    expect(screen.getByRole("alertdialog", { name: "¿Descartar los cambios?" })).toBeInTheDocument();
   });
 
   it("a held navigation proceeds by itself when the screen turns clean", async () => {
