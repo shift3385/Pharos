@@ -6,8 +6,12 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+import "./headerActions.css";
 
-/** Set by `ProjectHeaderLayout`; null outside a project page. */
+/** Set by the page header that shows the actions (`ProjectHeaderLayout` in
+ *  @modules/projects); null outside one. It lives in shared/ui so the section
+ *  modules (test-plan, test-cases, planner, traceability) can use it without
+ *  importing projects, which composes them (the module graph stays acyclic). */
 export const HeaderActionsContext = createContext<Dispatch<SetStateAction<ReactNode>> | null>(
   null,
 );
@@ -18,7 +22,7 @@ export const HeaderActionsContext = createContext<Dispatch<SetStateAction<ReactN
  * page; the header shows the latest node and drops it when the page unmounts.
  * Outside a project page (tests of the section alone) it does nothing.
  */
-export function useProjectHeaderActions(node: ReactNode) {
+export function useHeaderActions(node: ReactNode) {
   const set = useContext(HeaderActionsContext);
   // Every render hands over the current node (its callbacks are this
   // render's). Only the header re-renders: the section is `children` of the

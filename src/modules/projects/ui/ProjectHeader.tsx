@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
-import { HeaderActionsContext } from "./projectHeaderActions";
+import { HeaderActionsContext } from "@shared/ui/headerActions";
 import "./ProjectHeader.css";
 
 /** Plan status → state colour (SPEC §4: Borrador neutral, Revisado info,
