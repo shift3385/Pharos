@@ -122,12 +122,6 @@ function removeRunCredentials() {
   }
 }
 
-/** Window the specs start with: the desktop layout (≥ 1280 px, full sidebar),
- *  the one users open by default. Set through WebDriver, so a CI runner whose
- *  screen is narrower still gets it (Windows lets a window exceed the screen).
- *  A spec that needs another layout resizes and restores it. */
-export const DESKTOP_WINDOW = { width: 1440, height: 900 } as const;
-
 const application = appBinary();
 let tauriDriver: ChildProcess | undefined;
 
@@ -159,16 +153,6 @@ export const config: WebdriverIO.Config = {
       },
     ],
   ],
-
-  before: async (_capabilities, _specs, browser) => {
-    await browser.setWindowSize(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
-  },
-
-  // A spec that restarts Pharos (reloadSession) gets the desktop window back.
-  onReload: async () => {
-    const { browser } = await import("@wdio/globals");
-    await browser.setWindowSize(DESKTOP_WINDOW.width, DESKTOP_WINDOW.height);
-  },
 
   onPrepare: async () => {
     if (!existsSync(application)) {

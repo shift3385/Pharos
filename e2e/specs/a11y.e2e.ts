@@ -13,6 +13,7 @@ import {
   ensureSignedOut,
   es,
   signIn,
+  setAppWindow,
   userMenuTrigger,
 } from "../support";
 
@@ -101,8 +102,9 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     });
     /** Role of the focused element. */
     const focusedRole = () => browser.execute(() => document.activeElement?.getAttribute("role") ?? "");
-    // Project switcher (the specs run at 1440 px: full sidebar): the search
-    // field first; Tab enters the list.
+    // Project switcher (full sidebar, desktop layout): the search field first;
+    // Tab enters the list.
+    await setAppWindow();
     const switcher = $('[data-testid="project-switcher"]');
     await switcher.click();
     await expect($(`input[aria-label="${es.shell.searchProjects}"]`)).toBeFocused();
@@ -127,7 +129,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   });
 
   it("at 900 px the sidebar is the icon strip and the user menu still works from the keyboard", async () => {
-    await browser.setWindowSize(900, 800);
+    await setAppWindow(900, 800, "tablet");
     try {
       await expect($("aside.sidebar")).toHaveAttribute("data-mode", "rail");
       await expect($('[data-testid="sync-compact"]')).toBeDisplayed();
@@ -144,7 +146,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
       await expect($(`h1=${es.admin.title}`)).toBeDisplayed();
       await expect(userMenuTrigger()).toBeFocused();
     } finally {
-      await browser.setWindowSize(1440, 900);
+      await setAppWindow();
     }
     await expect($("aside.sidebar")).toHaveAttribute("data-mode", "full");
   });

@@ -25,6 +25,31 @@ export const button = (text: string) => $(`button=${text}`);
  *  narrow the window to the icon strip. */
 export const versionBadge = () => $('[data-testid="app-version"]');
 export const projectRow = (name: string) => $(`li.tp__item*=${name}`);
+/**
+ * Sets the window to `width`×`height` and waits until Pharos reports the
+ * expected view on its root container (data-viewport). The specs start on the
+ * desktop layout (1440 px, full sidebar) even on a CI runner with a narrower
+ * screen; a size set too early (while the app window is still being created)
+ * may not hold, so each spec sets it itself.
+ */
+export async function setAppWindow(
+  width = 1440,
+  height = 900,
+  view: "desktop" | "tablet" | "mobile" = "desktop",
+) {
+  await browser.setWindowSize(width, height);
+  await browser.waitUntil(
+    async () =>
+      (await browser.execute(
+        () => document.querySelector<HTMLElement>(".viewport-root")?.dataset.viewport,
+      )) === view,
+    {
+      timeout: 10_000,
+      timeoutMsg: `the app did not reach the ${view} view at ${width}×${height}`,
+    },
+  );
+}
+
 /** The avatar that opens the user menu; it exists only inside the app shell. */
 export const userMenuTrigger = () => $('[data-testid="user-menu-trigger"]');
 
@@ -95,6 +120,8 @@ export async function signOut() {
  */
 export async function ensureSignedOut() {
   await $("body").waitForExist();
+  // Every spec (and the smoke after its restart) starts on the desktop layout.
+  await setAppWindow();
   await browser.waitUntil(
     async () =>
       (await button(es.auth.login).isExisting()) ||
