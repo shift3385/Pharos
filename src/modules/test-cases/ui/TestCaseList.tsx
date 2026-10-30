@@ -39,7 +39,7 @@ import {
   type StatusFilter,
 } from "../model/caseList";
 import type { GherkinLevel } from "../model/types";
-import { editedLabel, priorityTone, statusTone } from "./caseTones";
+import { editedLabel, priorityTone, stampLabel, statusTone } from "./caseTones";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
@@ -217,7 +217,7 @@ export function TestCaseList({
       width: "72px",
       sortable: true,
       cell: (c) => (
-        <span className="cl-muted" title={new Date(c.updatedAt).toLocaleString(lang)}>
+        <span className="cl-muted" title={stampLabel(c.updatedAt, lang)}>
           {editedLabel(c.updatedAt, lang, t("testCase.list.today"), t("testCase.list.yesterday"))}
         </span>
       ),

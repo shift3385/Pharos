@@ -63,7 +63,7 @@ import { GoToCaseDialog } from "./GoToCaseDialog";
 import { PriorityField, StatusField } from "./CaseMetaMenus";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
-import { statusTone } from "./caseTones";
+import { stampLabel, statusTone } from "./caseTones";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
@@ -1012,7 +1012,7 @@ export function TestCaseEditor({
                     {t("testCase.revShort")} {r.revision}
                   </span>
                   <span className="tp-revs__title">{r.title}</span>
-                  <span className="tp-revs__date">{r.createdAt}</span>
+                  <span className="tp-revs__date">{stampLabel(r.createdAt, i18n.resolvedLanguage ?? "es")}</span>
                 </li>
               ))}
             </ul>
