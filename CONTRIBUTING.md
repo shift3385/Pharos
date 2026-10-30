@@ -19,7 +19,7 @@ código.
 | Cambia cómo se instala, arranca, prueba o configura algo   | `README.md`                                   |
 | Cambia módulos, capas, flujos de datos o el stack          | `docs/ARCHITECTURE.md`                        |
 | Avanza, termina, añade o mueve trabajo del backlog         | `docs/ROADMAP.md` (estado e ID del ítem)      |
-| Lo nota quien usa la app                                   | `CHANGELOG.md`, sección `[Sin publicar]`      |
+| Lo nota quien usa la app                                   | Un fragmento en `changes/` (ADR-0032)         |
 | Introduce un identificador o concepto de dominio           | `docs/GLOSARIO.md` (antes de usarlo)          |
 | Toma una decisión de arquitectura o de producto            | Un ADR nuevo en `docs/adr/`                   |
 | Toca migraciones, formatos de datos o el protocolo de sync | Las reglas de `docs/VERSIONING.md` §6         |

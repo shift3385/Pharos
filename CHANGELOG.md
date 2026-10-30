@@ -3,7 +3,9 @@
 Todos los cambios relevantes de Pharos se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y
 el proyecto usa [Semantic Versioning](https://semver.org/lang/es/). Las reglas
-están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
+están en [`docs/VERSIONING.md`](docs/VERSIONING.md). Desde el 2026-10-30 los cambios
+nuevos se escriben como fragmentos en [`changes/`](changes/README.md) y se pasan aquí al
+publicar cada versión ([ADR-0032](docs/adr/0032-fragmentos-del-changelog.md)).
 
 ## [Sin publicar]
 

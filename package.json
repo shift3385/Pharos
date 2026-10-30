@@ -24,6 +24,9 @@
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:version": "node scripts/version.mjs check",
     "check:migrations": "node scripts/check-migrations.mjs",
+    "check:changelog": "node scripts/changelog.mjs check",
+    "changelog:preview": "node scripts/changelog.mjs preview",
+    "changelog:collect": "node scripts/changelog.mjs collect",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "check:audit": "node scripts/audit-gate.mjs",
     "check:deps": "cd src-tauri && cargo deny --config ../deny.toml check",
@@ -31,7 +34,7 @@
     "contracts": "node scripts/contracts.mjs generate",
     "check:contracts": "node scripts/contracts.mjs check",
     "version:set": "node scripts/version.mjs set",
-    "verify:static": "npm run typecheck && npm run lint && npm run check:licenses && npm run check:version && npm run check:migrations && npm run test:scripts",
+    "verify:static": "npm run typecheck && npm run lint && npm run check:licenses && npm run check:version && npm run check:changelog && npm run check:migrations && npm run test:scripts",
     "verify": "npm run verify:static && npm run test",
     "prepare": "husky"
   },
