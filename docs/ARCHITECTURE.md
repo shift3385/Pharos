@@ -197,7 +197,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   every section in `ProjectHeaderLayout`, which draws `ProjectHeader`:
   prefix badge, name (`h1`), plan status and a meta line (cases,
   requirements). Section pages draw no header of their own. To put buttons on
-  its right they call `useProjectHeaderActions(<…/>)`; the header shows the
+  its right they call `useHeaderActions(<…/>)` (`@shared/ui/headerActions`:
+  the section modules cannot import `projects`, which composes them); the header shows the
   latest node and drops it on unmount. Only the header re-renders, because
   the section is the provider's `children`. On mobile the shell's top bar
   already names the project: the card is not drawn, the `h1` stays

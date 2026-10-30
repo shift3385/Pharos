@@ -6,7 +6,7 @@ import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import { renderWithProviders } from "@test/utils";
 import { ProjectHeaderLayout, type ProjectHeaderInfo } from "./ProjectHeader";
-import { useProjectHeaderActions } from "./projectHeaderActions";
+import { useHeaderActions } from "@shared/ui/headerActions";
 
 const INFO: ProjectHeaderInfo = {
   name: "Portal Clientes v3",
@@ -18,7 +18,7 @@ const INFO: ProjectHeaderInfo = {
 /** A section page that puts a counter button in the header. */
 function Section() {
   const [n, setN] = useState(0);
-  useProjectHeaderActions(
+  useHeaderActions(
     <button type="button" className="pj-action" onClick={() => setN((v) => v + 1)}>
       Revisiones {n}
     </button>,

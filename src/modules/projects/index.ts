@@ -4,7 +4,6 @@ export { projectOverview, progressPercent, matchesQuery } from "./model/overview
 export type { ProjectOverview } from "./model/overview";
 export { ProjectDetailPage } from "./ui/ProjectDetail";
 export { ProjectHeader } from "./ui/ProjectHeader";
-export { useProjectHeaderActions } from "./ui/projectHeaderActions";
 export type { ProjectHeaderInfo } from "./ui/ProjectHeader";
 export {
   PROJECT_SECTIONS,
