@@ -239,6 +239,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
           {t("ai.mode")}
         </span>
         <SegmentedControl
+          className="adm-seg-wrap"
           label={t("ai.mode")}
           value={draft.mode}
           onChange={(mode) => update({ mode })}

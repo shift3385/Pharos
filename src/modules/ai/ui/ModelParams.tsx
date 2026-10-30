@@ -119,6 +119,7 @@ export function ModelParams({
             </div>
             {/* Locked until Pharos sends it (RED-W7): every option says why. */}
             <SegmentedControl
+              className="adm-seg-wrap"
               label={t(`ai.params.reasoning.${reasoning.kind}`)}
               value={reasoning.options[0]}
               onChange={() => {}}

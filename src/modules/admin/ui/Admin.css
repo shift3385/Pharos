@@ -623,8 +623,23 @@
   color: var(--color-warning-text);
 }
 
+/* Mobile: one compact row, so the bar never hides much of the screen. */
+[data-viewport="mobile"] .adm-savebar {
+  flex-wrap: nowrap;
+  padding: var(--space-2) var(--space-3);
+}
+
+[data-viewport="mobile"] .adm-savebar__state {
+  flex: 1 1 0;
+}
+
 [data-viewport="mobile"] .adm-savebar .adm-btn {
-  flex: 1 1 140px;
+  flex: 0 0 auto;
+}
+
+/* With nothing to save, only the (disabled) button stays: no idle hint. */
+[data-viewport="mobile"] .adm-savebar:not([data-dirty]) .adm-savebar__state {
+  display: none;
 }
 
 /* ---- Papelera («Próximamente», RED-W3) ---- */
@@ -670,4 +685,11 @@
   .adm-btn {
     transition-duration: 0ms;
   }
+}
+
+/* Segmented controls in Administración wrap instead of hiding options behind
+ * a sideways scroll (no clipped text, SPEC §3). */
+.segmented.adm-seg-wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
 }

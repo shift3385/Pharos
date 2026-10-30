@@ -126,9 +126,8 @@
 .ai-provider__sub {
   font-size: var(--fs-metadata);
   color: var(--color-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: var(--lh-tight);
+  hyphens: manual;
 }
 
 [data-theme="dark"] .ai-provider input:checked + .ai-provider__box {

@@ -63,6 +63,7 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
       <SettingsSection title={t("admin.general.appearance")} desc={t("admin.general.appearanceDesc")}>
         <SettingsRow label={t("admin.general.theme")} hint={t("admin.general.themeHint")}>
           <SegmentedControl
+            className="adm-seg-wrap"
             label={t("admin.general.theme")}
             size="lg"
             value={preference}
@@ -73,6 +74,7 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
 
         <SettingsRow label={t("admin.general.language")}>
           <SegmentedControl
+            className="adm-seg-wrap"
             label={t("admin.general.language")}
             size="lg"
             value={language}

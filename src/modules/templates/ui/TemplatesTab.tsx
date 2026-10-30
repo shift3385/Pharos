@@ -137,6 +137,7 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
     <div className="tpl">
       <div className="tpl__bar">
         <SegmentedControl
+          className="adm-seg-wrap"
           label={t("templates.kindLabel")}
           size="lg"
           value={kind}
