@@ -1067,7 +1067,13 @@
     "savedWithWarnings": "Saved with {{count}} warning(s) to review."
   },
   "dialog": {
-    "typeToConfirm": "Type «{{text}}» to confirm"
+    "typeToConfirm": "Type «{{text}}» to confirm",
+    "unsaved": {
+      "title": "Discard the changes?",
+      "message": "There are unsaved changes. If you leave, they are lost.",
+      "discard": "Discard changes",
+      "keep": "Keep editing"
+    }
   },
   "shell": {
     "collapseMenu": "Collapse menu",

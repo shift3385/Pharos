@@ -186,6 +186,17 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     (`/templates`, `/ai`) stay, and `isCurrent` keeps «Administración» marked
     on them. `AdminSectionNav` links the three pages until V4 replaces it
     (temporary).
+- **Data router** (RED-V3k, ADR-0028 §9): `main.tsx` creates a
+  `createHashRouter` with one splat route that renders `App`, which keeps
+  its own `<Routes>` unchanged. Being a data router, it lets a screen hold a
+  navigation: `useUnsavedChangesGuard(dirty, message?)` (`@shared/ui`) uses
+  `useBlocker` for every address change (links, sidebar, pills,
+  `navigate`/`setSearchParams`, the system/Android «Atrás») and shows the
+  destructive `ConfirmDialog` «Descartar cambios» / «Seguir editando»; it also
+  sets `beforeunload` while dirty. A navigation started on purpose right
+  after saving goes through its `bypass`. Tests render under the same kind of
+  router (`createMemoryRouter` in `@test/TestRouter`, used by
+  `renderWithProviders`).
 - **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
   `projectPath()`. `useActiveProject` (`useMatch`) feeds:
   - the «Proyecto activo» sidebar group (switcher + 5 sections). Inside a
