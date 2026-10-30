@@ -101,19 +101,15 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     });
     /** Role of the focused element. */
     const focusedRole = () => browser.execute(() => document.activeElement?.getAttribute("role") ?? "");
-    // Project switcher (full sidebar only; the icon strip, < 1280 px as on
-    // narrow CI screens, has none): the search field first; Tab enters the list.
+    // Project switcher (the specs run at 1440 px: full sidebar): the search
+    // field first; Tab enters the list.
     const switcher = $('[data-testid="project-switcher"]');
-    if (await switcher.isDisplayed()) {
-      await switcher.click();
-      await expect($(`input[aria-label="${es.shell.searchProjects}"]`)).toBeFocused();
-      await browser.keys(["Tab"]);
-      expect(await focusedRole()).toBe("menuitemradio");
-      await browser.keys(["Escape"]);
-      await expect(switcher).toBeFocused();
-    } else {
-      console.log("[a11y] icon-strip layout: the project switcher check is skipped");
-    }
+    await switcher.click();
+    await expect($(`input[aria-label="${es.shell.searchProjects}"]`)).toBeFocused();
+    await browser.keys(["Tab"]);
+    expect(await focusedRole()).toBe("menuitemradio");
+    await browser.keys(["Escape"]);
+    await expect(switcher).toBeFocused();
     // User menu: the first item, «Mi perfil».
     await userMenuTrigger().click();
     await expect(button(es.shell.myProfile)).toBeFocused();
@@ -128,6 +124,29 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     await browser.keys(["Enter"]);
     await expect($(`h1=${es.admin.title}`)).toBeDisplayed();
     await expect(userMenuTrigger()).toBeFocused();
+  });
+
+  it("at 900 px the sidebar is the icon strip and the user menu still works from the keyboard", async () => {
+    await browser.setWindowSize(900, 800);
+    try {
+      await expect($("aside.sidebar")).toHaveAttribute("data-mode", "rail");
+      await expect($('[data-testid="sync-compact"]')).toBeDisplayed();
+      expect(await violations()).toEqual([]);
+      await userMenuTrigger().click();
+      await expect(button(es.shell.myProfile)).toBeFocused();
+      await browser.keys(["Escape"]);
+      await expect(userMenuTrigger()).toBeFocused();
+      await browser.keys(["Enter"]);
+      await expect(button(es.shell.myProfile)).toBeFocused();
+      await browser.keys(["ArrowDown"]);
+      await expect(button(es.nav.admin)).toBeFocused();
+      await browser.keys(["Enter"]);
+      await expect($(`h1=${es.admin.title}`)).toBeDisplayed();
+      await expect(userMenuTrigger()).toBeFocused();
+    } finally {
+      await browser.setWindowSize(1440, 900);
+    }
+    await expect($("aside.sidebar")).toHaveAttribute("data-mode", "full");
   });
 
   it("the skip link is the first stop and moves to the content", async () => {

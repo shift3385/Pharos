@@ -21,7 +21,8 @@ const password = process.env.TEST_USER_PASSWORD ?? "supersecret1";
 export const button = (text: string) => $(`button=${text}`);
 /** The version at the sidebar foot. It is in the DOM in every layout but only
  *  visible in the full sidebar (≥ 1280 px): read its text, do not wait for it
- *  to be displayed. CI runners may have narrower screens (icon strip). */
+ *  to be displayed. The specs run at 1440 px (wdio.conf), but a spec may
+ *  narrow the window to the icon strip. */
 export const versionBadge = () => $('[data-testid="app-version"]');
 export const projectRow = (name: string) => $(`li.tp__item*=${name}`);
 /** The avatar that opens the user menu; it exists only inside the app shell. */
