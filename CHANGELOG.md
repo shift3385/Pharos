@@ -49,6 +49,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   - **Papelera:** aparece en General como «Próximamente» (llega con RED-W3).
   - **Plantillas:** planes y casos por separado, con buscador y un menú «Más acciones» por
     plantilla.
+- **Rediseño, piezas de tabla comunes (RED-V3, para Casos, Trazabilidad y Proyectos):** tabla
+  con selección múltiple, orden por columna y tarjetas en el móvil; paginación con «Por
+  página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
+  estado y banderas de prioridad con los colores del diseño; opciones de menú con una línea
+  que explica cada una.
 
 ### Cambiado
 

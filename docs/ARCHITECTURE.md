@@ -271,6 +271,30 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
     until that text is typed.
+  - `MenuItem description`: a second line that explains the option (its
+    accessible description, not its name). `MenuCheckItem`: a
+    `menuitemcheckbox` (a pressed toggle in a sheet) that keeps the menu open,
+    for multi-choice filters.
+- **Tables and filters** (`src/shared/ui`, SPEC §4/§8, RED-V3; also used by
+  Proyectos, RED-V2):
+  - `DataTable`: a semantic `<table>` laid out as a CSS grid (every row shares
+    the column tracks given as `width`). Optional multi-selection (header
+    checkbox with «indeterminate»), sortable headers (`aria-sort`; the parent
+    sorts), columns hidden below a view (`minView`) and, on mobile, a list of
+    cards (`mobileCard`). A row is never a link as a whole: its primary cell
+    holds the link or button, so it does not fight the checkbox.
+  - `Pagination`: «Mostrando 1–10 de 240», ‹ 1 2 3 … 24 › (`pageWindow`,
+    `pageWindow.ts`), an optional «Por página» menu (`pageSizes`), and
+    ‹ Página N de M › on mobile.
+  - `FilterChips`: one-of-N quick filters with counts (`aria-pressed`); an
+    option can be disabled with a `title` that says why («Próximamente»).
+  - `FilterMenuButton`: «Prioridad ▾» opening `MenuCheckItem`s (a sheet on
+    mobile) with a count and «Limpiar filtro»; disabled, it stays focusable
+    (`aria-disabled`) with its reason as tooltip.
+  - `StatusPill` (`tone`, `dot`, `strike`) and `PriorityFlag` (`tone`,
+    `label`, `showLabel`) only know tones; each module maps its own states and
+    priorities to them.
+  - Their texts live in the `table.*` i18n namespace.
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
   their `--color-*-text` tone. Field boundaries use `--color-border-input`
   (≥ 3:1). Focus is `--color-focus` (navy on light, amber
