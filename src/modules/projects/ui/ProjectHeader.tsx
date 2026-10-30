@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { planTone, prefixBadge } from "../model/projectTable";
-import { HeaderActionsContext } from "./projectHeaderActions";
+import { HeaderActionsContext } from "@shared/ui/headerActions";
 import "./ProjectHeader.css";
 
 export interface ProjectHeaderInfo {

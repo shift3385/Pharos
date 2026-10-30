@@ -47,7 +47,7 @@ import {
   type ProjectSort,
 } from "../model/projectTable";
 import { useProjectExport } from "./useProjectExport";
-import "./ProjectHeader.css";
+import "@shared/ui/headerActions.css";
 import "./Projects.css";
 
 const SORT_ICONS = {

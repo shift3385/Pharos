@@ -16,7 +16,7 @@ import { projectApi } from "../api/projectApi";
 import { deleteConfirmWord } from "../model/projectTable";
 import type { Project } from "../model/types";
 import { useProjectExport } from "./useProjectExport";
-import "./ProjectHeader.css";
+import "@shared/ui/headerActions.css";
 import "./Projects.css";
 
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8];
