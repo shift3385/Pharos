@@ -510,7 +510,9 @@
   align-items: center;
   gap: 12px;
   height: 64px;
-  padding: 0 clamp(16px, 2.6vw, 32px);
+  padding: 0 clamp(16px, 2.6cqi, 32px);
+  container-type: inline-size;
+  container-name: topbar;
   background-color: var(--color-surface-1);
   border-bottom: 1px solid var(--color-border);
 }
@@ -578,7 +580,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(320px, 30vw);
+  width: min(320px, 30cqi);
   height: 38px;
   padding: 0 12px;
   font: inherit;
@@ -683,9 +685,12 @@
   color: var(--color-text-secondary);
 }
 
-/* Strip widths: the sync status keeps its dot (its label stays in the
-   tooltip), so the breadcrumbs have room. */
-@media (max-width: 1279.98px) {
+/* The top bar compacts by its own width (it is a size container), so it
+   follows the sidebar being open, collapsed or a strip. Below 1100 px of bar
+   the sync status keeps its dot (its label stays in the tooltip) so the
+   breadcrumbs have room; below 900 px the search keeps only its icon and the
+   Ctrl K hint. */
+@container topbar (max-width: 1099.98px) {
   .topbar .sync__label {
     position: absolute;
     width: 1px;
@@ -696,8 +701,7 @@
   }
 }
 
-/* Narrow tablets: the search keeps only its icon and the Ctrl K hint. */
-@media (max-width: 1023.98px) {
+@container topbar (max-width: 899.98px) {
   .topbar__search {
     width: auto;
   }

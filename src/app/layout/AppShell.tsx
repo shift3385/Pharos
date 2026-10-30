@@ -11,11 +11,12 @@ import { useActiveProject, useSidebarCollapsed } from "./useShellState";
 import "./AppShell.css";
 
 /**
- * Top-level layout (SPEC §2): the app fills the window, the navigation stays
- * put and only the content scrolls.
- * - ≥ 1280 px: 248 px navy sidebar (collapsible to the 84 px strip) + 64 px top bar.
- * - 600–1279 px: 84 px icon strip + top bar.
- * - < 600 px: 56 px navy top bar + bottom bar.
+ * Top-level layout (SPEC §2, amended 2026-10-30): the app fills the window,
+ * the navigation stays put and only the content scrolls. The view follows the
+ * app container's width (`ViewportProvider`), not the window's:
+ * - ≥ 1024 px: 248 px navy sidebar (collapsible to the 84 px strip) + 64 px top bar.
+ * - 640–1023 px: 84 px icon strip + top bar.
+ * - < 640 px: 56 px navy top bar + bottom bar.
  * An optional user background sits behind the content. A skip link, first in
  * the tab order, jumps past the navigation to the main content (2.4.1).
  */

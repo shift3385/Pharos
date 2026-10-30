@@ -15,8 +15,17 @@
 
 html,
 body,
-#root {
+#root,
+.viewport-root {
   height: 100%;
+}
+
+/* The app container: `ViewportProvider` measures it and writes the view in
+   `data-viewport` (mobile < 640 px ≤ tablet < 1024 px ≤ desktop, SPEC §2
+   amended); CSS keys on that attribute, never on window media queries. */
+.viewport-root {
+  container-type: inline-size;
+  container-name: app;
 }
 
 body {

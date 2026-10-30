@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router";
 import i18n from "@shared/i18n";
 import { ThemeProvider } from "@shared/theme/ThemeProvider";
 import { AuthProvider } from "@modules/auth";
+import { ViewportProvider } from "@shared/ui/ViewportProvider";
 
 const FAKE_SESSION = {
   accessToken: "test-access-token",
@@ -37,7 +38,9 @@ export function renderWithProviders(
       <ThemeProvider>
         <I18nextProvider i18n={i18n}>
           <AuthProvider initialSession={authenticated ? FAKE_SESSION : null}>
-            <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+            <MemoryRouter initialEntries={[route]}>
+              <ViewportProvider>{children}</ViewportProvider>
+            </MemoryRouter>
           </AuthProvider>
         </I18nextProvider>
       </ThemeProvider>

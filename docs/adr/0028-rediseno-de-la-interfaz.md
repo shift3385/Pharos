@@ -44,12 +44,25 @@
    a los glifos Unicode, a las máscaras CSS y a los SVG en línea, empezando por
    el shell. Se importa icono a icono, para que el paquete solo incluya los que
    se usan. Los logos de proveedores de IA (Simple Icons) son cosa de V4.
-4. **Puntos de corte únicos (SPEC §2):** < 600 px móvil, 600–1279 px franja de
-   iconos de 84 px, ≥ 1280 px menú lateral de 248 px contraíble a la franja
-   (la elección se recuerda). `useBreakpoint` lee `matchMedia` de forma síncrona
-   en el primer render, para que la navegación no parpadee. CSS usa los mismos
-   límites. Solo se decide en el DOM lo que cambia de estructura (menú lateral
-   o barra inferior, desplegable u hoja).
+4. **Puntos de corte únicos, por el ancho del contenedor de la app** (SPEC §2,
+   enmendada el 2026-10-30 por
+   [`CAMBIO-vista-adaptativa`](../rediseno/cambios/CAMBIO-vista-adaptativa.md),
+   que sustituye los 600/1280 px originales):
+   - Tramos: < 640 px móvil; 640–1023 px franja de iconos de 84 px; ≥ 1024 px
+     menú lateral de 248 px, contraíble a la franja (la elección se recuerda).
+   - Se mide el contenedor raíz y no `window`, así la vista se adapta también
+     al estrechar la ventana o si la app va embebida.
+   - `ViewportProvider`, por encima de las rutas (también cubre el login),
+     observa ese contenedor con un `ResizeObserver` y da la vista por contexto
+     a `useBreakpoint`:
+     - mide el primer valor antes de pintar, para que la navegación no
+       parpadee;
+     - solo vuelve a pintar al cambiar de tramo;
+     - se desconecta al desmontar.
+   - El CSS usa el atributo `data-viewport` del contenedor o `@container`,
+     nunca media queries sobre la ventana.
+   - Solo se decide en el DOM lo que cambia de estructura: menú lateral o barra
+     inferior, desplegable u hoja.
 5. **Primitivas compartidas en `src/shared/ui`**, que usan todas las pistas:
    - `Popover`/`Menu` (SPEC §6/§10):
      - se cierran con un clic fuera, un scroll fuera y Escape;

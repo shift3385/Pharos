@@ -159,9 +159,9 @@ session.
 The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md),
 [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md)). The navigation is already the new one:
 
-- **Sidebar** (≥ 1280 px wide): Inicio, Proyectos and Administración.
+- **Sidebar** (app window ≥ 1024 px wide): Inicio, Proyectos and Administración.
   - «Contraer menú» shrinks it to an 84 px icon strip, and Pharos remembers
-    the choice. Between 600 and 1279 px it is always the strip.
+    the choice. Between 640 and 1023 px it is always the strip.
   - Inside a project, the «Proyecto activo» group switches project and
     jumps between Plan, Casos, Planificador, Trazabilidad and Ajustes del
     proyecto. Each one has its own address (`#/projects/<id>/<section>`).
@@ -171,7 +171,7 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   they get their data.
 - **User menu** (your initials at the sidebar foot): Mi perfil,
   Administración, Idioma and **Cerrar sesión**.
-- **Phones** (< 600 px): a navy top bar and a bottom bar (Inicio, Proyectos,
+- **Phones and narrow windows** (< 640 px): a navy top bar and a bottom bar (Inicio, Proyectos,
   Admin, Perfil). Your initials open the user menu as a sheet.
 
 ### Sync

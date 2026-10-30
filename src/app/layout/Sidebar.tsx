@@ -118,7 +118,7 @@ function ProjectSwitcher({ active }: { active: ActiveProject }) {
 
 /**
  * Navy navigation (SPEC §2/§7). `full` is the 248 px sidebar (≥ 1280 px);
- * `rail` is the 84 px icon strip (600–1279 px, or the sidebar collapsed on
+ * `rail` is the 84 px icon strip (640–1023 px, or the sidebar collapsed on
  * desktop). The «Proyecto activo» group only appears inside a project.
  */
 export function Sidebar({

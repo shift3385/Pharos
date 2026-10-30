@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
-import { setViewportWidth } from "@test/viewport";
+import { resizeViewport, setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import { AppShell } from "./AppShell";
 import { SIDEBAR_COLLAPSED_KEY } from "./useShellState";
@@ -32,7 +32,7 @@ describe("AppShell (SPEC §2/§7)", () => {
     await i18n.changeLanguage("es");
   });
 
-  describe("desktop (≥ 1280 px)", () => {
+  describe("desktop (≥ 1024 px)", () => {
     beforeEach(() => setViewportWidth(1440));
 
     it("shows the full sidebar: Inicio, Proyectos and Administración, no project group", () => {
@@ -149,7 +149,27 @@ describe("AppShell (SPEC §2/§7)", () => {
     });
   });
 
-  describe("tablet (600–1279 px)", () => {
+  describe("resizing the app container (CAMBIO-vista-adaptativa)", () => {
+    it("goes from the sidebar to the strip below 1024 px and to the mobile bars below 640 px", () => {
+      setViewportWidth(1440);
+      renderShell();
+      expect(sidebar()).toHaveAttribute("data-mode", "full");
+      resizeViewport(1024);
+      expect(sidebar()).toHaveAttribute("data-mode", "full");
+      resizeViewport(1023);
+      expect(sidebar()).toHaveAttribute("data-mode", "rail");
+      expect(screen.queryByTestId("sidebar-collapse")).not.toBeInTheDocument();
+      resizeViewport(640);
+      expect(sidebar()).toHaveAttribute("data-mode", "rail");
+      resizeViewport(639);
+      expect(sidebar()).toBeNull();
+      expect(document.querySelector(".bottom-nav")).not.toBeNull();
+      resizeViewport(1440);
+      expect(sidebar()).toHaveAttribute("data-mode", "full");
+    });
+  });
+
+  describe("tablet (640–1023 px)", () => {
     it("shows the icon strip, without the collapse button", () => {
       setViewportWidth(820);
       renderShell();
@@ -159,7 +179,7 @@ describe("AppShell (SPEC §2/§7)", () => {
     });
   });
 
-  describe("mobile (< 600 px)", () => {
+  describe("mobile (< 640 px)", () => {
     beforeEach(() => setViewportWidth(390));
 
     it("swaps the sidebar for the navy top bar and the bottom bar", () => {

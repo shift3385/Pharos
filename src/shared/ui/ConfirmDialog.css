@@ -113,16 +113,14 @@
   }
 }
 
-@media (max-width: 599px) {
-  .cd__cancel,
-  .cd__confirm {
-    flex: 1 1 120px;
-    min-width: 0;
-    height: 44px;
-  }
+[data-viewport="mobile"] .cd__cancel,
+[data-viewport="mobile"] .cd__confirm {
+  flex: 1 1 120px;
+  min-width: 0;
+  height: 44px;
+}
 
-  .cd__type-input {
-    height: 44px;
-    font-size: 15px;
-  }
+[data-viewport="mobile"] .cd__type-input {
+  height: 44px;
+  font-size: 15px;
 }

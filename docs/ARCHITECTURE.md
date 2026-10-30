@@ -154,11 +154,23 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 
 ## App shell and navigation (redesign, ADR-0028/0029)
 
-- **Breakpoints** (SPEC §2): < 600 px mobile, 600–1279 px tablet, ≥ 1280 px
-  desktop. `useBreakpoint` (`@shared/ui/useBreakpoint`) reads `matchMedia`
-  synchronously on the first render, so nothing flashes. Only structural
-  differences use it (sidebar or bottom bar, dropdown or bottom sheet); the
-  rest is CSS with the same limits.
+- **Views by container width** (SPEC §2, amended 2026-10-30 by
+  `docs/rediseno/cambios/CAMBIO-vista-adaptativa.md`): < 640 px mobile,
+  640–1023 px tablet, ≥ 1024 px desktop.
+  - The width is the app root's, not the window's. `ViewportProvider`
+    (`@shared/ui/ViewportProvider`, above the routes in `main.tsx`, so the
+    sign-in screen gets it too) wraps the app in `.viewport-root`.
+  - It measures that container synchronously before the first paint, so
+    nothing flashes. Then a `ResizeObserver` provides the band through
+    `useBreakpoint`, re-rendering only when the band changes and
+    disconnecting on unmount.
+  - CSS keys on the root's `data-viewport` attribute or on `@container`
+    (the root is `container-type: inline-size`; the top bar is its own
+    `topbar` container). No window media queries for layout.
+  - Only structural differences read the hook (sidebar or bottom bar,
+    dropdown or bottom sheet).
+  - Tests: `@test/viewport` mocks `ResizeObserver` (`setViewportWidth`,
+    `resizeViewport`).
 - **Layout** (`src/app/layout/AppShell.tsx`): full window height; the
   navigation stays put and only `<main>` scrolls. Content is centred, up to
   1600 px wide.
@@ -207,7 +219,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - `Menu` / `MenuItem` / `MenuLabel` / `MenuSeparator`: `role="menu"`,
     arrows, Home and End.
   - `BottomSheet` (on top of `Dialog`): handle, title, ✕ and ≥ 46 px options.
-  - `ResponsiveMenu`: a `Menu` from 600 px, a `BottomSheet` below, with the
+  - `ResponsiveMenu`: a `Menu` from 640 px, a `BottomSheet` below, with the
     same items.
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled

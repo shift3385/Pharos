@@ -100,10 +100,8 @@
 }
 
 /* Form fields: 15 px on mobile so iOS does not zoom on focus (SPEC §3). */
-@media (max-width: 599.98px) {
-  .screen-root input:not([type="checkbox"]):not([type="radio"]),
-  .screen-root select,
-  .screen-root textarea {
-    font-size: 15px;
-  }
+[data-viewport="mobile"] .screen-root input:not([type="checkbox"]):not([type="radio"]),
+[data-viewport="mobile"] .screen-root select,
+[data-viewport="mobile"] .screen-root textarea {
+  font-size: 15px;
 }

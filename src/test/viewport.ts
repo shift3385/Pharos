@@ -1,28 +1,43 @@
+import { act } from "@testing-library/react";
 import { vi } from "vitest";
 
-/** Makes `matchMedia` answer as if the window were `width` px wide, for the
- *  breakpoint queries of `useBreakpoint` (min-width / max-width only; other
- *  queries such as prefers-color-scheme do not match). Call it before
- *  rendering; `vi.unstubAllGlobals()` (setupTests) restores it. */
+type Callback = (entries: { contentRect: { width: number } }[]) => void;
+
+const observers = new Set<MockResizeObserver>();
+
+/** jsdom has no layout: this observer reports the width set by the test. */
+class MockResizeObserver {
+  constructor(private readonly callback: Callback) {}
+  observe() {
+    observers.add(this);
+  }
+  unobserve() {}
+  disconnect() {
+    observers.delete(this);
+  }
+  fire(width: number) {
+    this.callback([{ contentRect: { width } }]);
+  }
+}
+
+/** Sets the app container's width before rendering: `ViewportProvider` reads
+ *  it as its first measurement (jsdom gives the element no width, so it falls
+ *  back to `window.innerWidth`) and through the mocked `ResizeObserver`.
+ *  `vi.unstubAllGlobals()` (setupTests) restores both. */
 export function setViewportWidth(width: number) {
-  const matches = (query: string) => {
-    const limits = [...query.matchAll(/\((min|max)-width:\s*([\d.]+)px\)/g)];
-    return (
-      limits.length > 0 &&
-      limits.every(([, kind, px]) => (kind === "min" ? width >= Number(px) : width <= Number(px)))
-    );
-  };
-  vi.stubGlobal(
-    "matchMedia",
-    vi.fn((query: string) => ({
-      matches: matches(query),
-      media: query,
-      onchange: null,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  );
+  observers.clear();
+  vi.stubGlobal("innerWidth", width);
+  vi.stubGlobal("ResizeObserver", MockResizeObserver);
+}
+
+/** Resizes the container of an already rendered app, as a window or pane
+ *  resize would. */
+export function resizeViewport(width: number) {
+  vi.stubGlobal("innerWidth", width);
+  act(() => observers.forEach((o) => o.fire(width)));
+}
+
+/** How many ResizeObservers are still connected (for unmount checks). */
+export function liveObservers(): number {
+  return observers.size;
 }
