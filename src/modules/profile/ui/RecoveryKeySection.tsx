@@ -49,8 +49,8 @@ export function RecoveryKeySection() {
   }
 
   return (
-    <section className="recovery" aria-labelledby="recovery-title">
-      <h2 id="recovery-title" className="recovery__title">
+    <section className="recovery profile-card" aria-labelledby="recovery-title">
+      <h2 id="recovery-title" className="profile-card__title">
         {t("recoveryKey.title")}
       </h2>
       <p className="recovery__text">{t("recoveryKey.intro")}</p>

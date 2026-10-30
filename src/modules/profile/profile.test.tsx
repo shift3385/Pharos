@@ -3,6 +3,7 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { ProfilePage } from "./ui/ProfilePage";
+import { setViewportWidth } from "@test/viewport";
 
 vi.mock("./api/profileApi", () => ({
   profileApi: {
@@ -51,5 +52,20 @@ describe("profile page", () => {
     });
     expect(await screen.findByText("Guardado")).toBeInTheDocument();
     expect(screen.getByTestId("profile-revision")).toHaveTextContent("2");
+  });
+
+  it("shows who is signed in and keeps «Cerrar sesión» for mobile only", async () => {
+    setViewportWidth(1440);
+    const { unmount } = renderWithProviders(<ProfilePage />);
+    await screen.findByDisplayValue("Quality");
+    expect(screen.getByText("Quality Analyst")).toBeInTheDocument();
+    expect(screen.getByTitle("qa@pharos.dev")).toHaveTextContent("qa@pharos.dev");
+    expect(screen.queryByRole("button", { name: "Cerrar sesión" })).toBeNull();
+    unmount();
+
+    setViewportWidth(390);
+    renderWithProviders(<ProfilePage />);
+    await screen.findByDisplayValue("Quality");
+    expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeInTheDocument();
   });
 });
