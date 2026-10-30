@@ -246,6 +246,19 @@ describe("sync", () => {
     expect((await pushBatch(token, cases(200, 1800))).json()).toEqual({ accepted: 200, conflicts: [], keyConflicts: [] });
   });
 
+  it("a test data card pushed from the desktop reaches the web's board", async () => {
+    const token = await tokenFor();
+    const hlc = `${String(100).padStart(15, "0")}-00000-desk`;
+    const card = { id: "td1", projectId: "p1", kind: "test_data", title: "Users", status: "backlog", position: 0, data: {} };
+    const pushed = await pushBatch(token, [
+      { entity: "project", entityId: "p1", op: "upsert", payload: { id: "p1", name: "Checkout" }, revision: 1, author: "A", hlc },
+      { entity: "planner_card", entityId: "td1", op: "upsert", payload: card, revision: 1, author: "A", hlc },
+    ]);
+    expect(pushed.json()).toEqual({ accepted: 2, conflicts: [], keyConflicts: [] });
+    const board = await app.inject({ method: "GET", url: "/api/planner-cards?projectId=p1", headers: auth(token) });
+    expect(board.json()).toEqual([expect.objectContaining({ id: "td1", kind: "test_data" })]);
+  });
+
   it("deleting a project deletes its plans, cases, requirements and cards (FIX-05, SYNC-04a)", async () => {
     const token = await tokenFor();
     const doc = (entity: string, entityId: string, projectId: string) => ({

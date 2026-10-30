@@ -55,9 +55,12 @@ export const requirementImportSchema = z.object({
     .max(5000),
 });
 
+/** Card kinds, as in the desktop (`planner.rs`) and the client (`CARD_KINDS`). */
+export const CARD_KINDS = ["task", "defect", "test_data"] as const;
+
 export const plannerCardInputSchema = z.object({
   projectId: text(200).min(1),
-  kind: z.enum(["task", "defect"]),
+  kind: z.enum(CARD_KINDS),
   title: text(500),
   status: text(50).optional(),
   priority: text(50).optional(),
