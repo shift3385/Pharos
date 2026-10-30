@@ -69,14 +69,22 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
         placement={variant === "rail" ? "right-end" : "top-start"}
         className="user-menu__panel"
         header={
-          <div className="user-menu__head">
-            {avatar}
-            <span className="user-menu__who">
-              <span className="user-menu__name">{name}</span>
+          variant === "mobile" ? (
+            // The sheet's title already shows the name: the email and the
+            // sync status (in the top bar on larger screens) go below it.
+            <div className="user-menu__head user-menu__head--sheet">
               <TruncatedText className="user-menu__email" value={user.email} />
-            </span>
-            {variant === "mobile" && <SyncIndicator />}
-          </div>
+              <SyncIndicator />
+            </div>
+          ) : (
+            <div className="user-menu__head">
+              {avatar}
+              <span className="user-menu__who">
+                <span className="user-menu__name">{name}</span>
+                <TruncatedText className="user-menu__email" value={user.email} />
+              </span>
+            </div>
+          )
         }
       >
         <MenuItem icon={CircleUser} onSelect={() => navigate("/profile")}>
