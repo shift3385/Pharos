@@ -15,6 +15,7 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel,
   danger,
   variant = "default",
   confirmText,
@@ -25,6 +26,8 @@ export function ConfirmDialog({
   title: string;
   message: string;
   confirmLabel: string;
+  /** The safe choice's text; «Cancelar» by default. */
+  cancelLabel?: string;
   /** Error-coloured confirm button; implied by `variant="destructive"`. */
   danger?: boolean;
   variant?: "default" | "destructive";
@@ -75,7 +78,7 @@ export function ConfirmDialog({
           autoFocus={confirmText === undefined}
           onClick={onCancel}
         >
-          {t("common.cancel")}
+          {cancelLabel ?? t("common.cancel")}
         </button>
         <button
           type="button"
