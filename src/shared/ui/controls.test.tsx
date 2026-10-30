@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Moon, Sun } from "lucide-react";
@@ -93,7 +93,37 @@ describe("SegmentedControl", () => {
     expect(light).toHaveFocus();
     await user.keyboard("{End}");
     expect(dark).toHaveAttribute("aria-checked", "true");
+    await user.keyboard("{Home}");
+    expect(light).toHaveFocus();
+    expect(light).toHaveAttribute("aria-checked", "true");
+    // The disabled option's reason is in the accessibility tree, not only a tooltip.
+    expect(screen.getByRole("radio", { name: "Según el sistema" })).toHaveAccessibleDescription("Próximamente");
     await expectNoAxeViolations();
+  });
+
+  it("with a value that is not an enabled option, Tab enters on the first one and arrows start there", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <>
+        <button type="button">antes</button>
+        <SegmentedControl
+          label="Vista"
+          value="split"
+          onChange={onChange}
+          options={[
+            { value: "editor", label: "Editor" },
+            { value: "gherkin", label: "Gherkin" },
+            { value: "split", label: "Dividida", disabled: true, title: "Solo en escritorio" },
+          ]}
+        />
+      </>,
+    );
+    await user.click(screen.getByText("antes"));
+    await user.tab();
+    expect(screen.getByRole("radio", { name: "Editor" })).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(onChange).toHaveBeenLastCalledWith("gherkin");
   });
 });
 
@@ -117,29 +147,76 @@ function TabsHarness() {
 }
 
 describe("Tabs", () => {
-  it("follows the tabs pattern: one Tab stop, arrows select and skip disabled tabs", async () => {
+  it("follows the tabs pattern: one Tab stop; arrows reach disabled tabs but never select them", async () => {
     const user = userEvent.setup();
     render(<TabsHarness />);
-    const list = screen.getByRole("tablist", { name: "Secciones del Inicio" });
-    expect(list).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: "Secciones del Inicio" })).toBeInTheDocument();
     const summary = screen.getByRole("tab", { name: /Resumen/ });
+    const blocked = screen.getByRole("tab", { name: "Bloqueadas" });
     const tests = screen.getByRole("tab", { name: /Pruebas/ });
     expect(summary).toHaveAttribute("aria-selected", "true");
-    expect(summary).toHaveAccessibleName("Resumen 2 · 2 criterios no se cumplen");
+    // The bubble is read once, through its title.
+    expect(summary).toHaveAccessibleName("Resumen · 2 criterios no se cumplen");
     expect(screen.getByRole("tabpanel", { name: /Resumen/ })).toHaveTextContent("Panel summary");
 
+    // The disabled tab stays focusable and keeps its reason as description.
+    expect(blocked).toHaveAttribute("aria-disabled", "true");
+    expect(blocked).toHaveAccessibleDescription("Necesita ejecuciones");
     summary.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(blocked).toHaveFocus();
+    expect(summary).toHaveAttribute("aria-selected", "true");
+    await user.click(blocked);
+    expect(summary).toHaveAttribute("aria-selected", "true");
+
     await user.keyboard("{ArrowRight}");
     expect(tests).toHaveFocus();
     expect(tests).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Panel tests");
+    await user.keyboard("{Home}");
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{End}");
+    expect(tests).toHaveFocus();
+    expect(tests).toHaveAttribute("aria-selected", "true");
     await user.keyboard("{ArrowRight}");
     expect(summary).toHaveFocus();
-    expect(screen.getByRole("tab", { name: "Bloqueadas" })).toHaveAttribute("title", "Necesita ejecuciones");
     await expectNoAxeViolations();
   });
 
-  it("hides empty bubbles and links panels by id prefix", () => {
+  it("keeps a Tab stop when the value names a disabled or missing tab", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const items = [
+      { id: "a", label: "Uno" },
+      { id: "b", label: "Dos", disabled: true, title: "No disponible" },
+      { id: "c", label: "Tres" },
+    ];
+    const { rerender } = render(
+      <>
+        <button type="button">antes</button>
+        <Tabs label="Grupo" value="b" onChange={onChange} items={items} />
+      </>,
+    );
+    await user.click(screen.getByText("antes"));
+    await user.tab();
+    expect(screen.getByRole("tab", { name: "Uno" })).toHaveFocus();
+
+    rerender(
+      <>
+        <button type="button">antes</button>
+        <Tabs label="Grupo" value="zzz" onChange={onChange} items={items} />
+      </>,
+    );
+    expect(screen.getByRole("tab", { name: "Uno" })).toHaveAttribute("tabindex", "0");
+    // From the focused tab, not from the (missing) value: Left wraps to the last.
+    screen.getByRole("tab", { name: "Uno" }).focus();
+    await user.keyboard("{ArrowLeft}");
+    expect(screen.getByRole("tab", { name: "Tres" })).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith("c");
+  });
+
+  it("underline tabs: prefixed ids and test ids, a counter read as «(N)», no axe issues", async () => {
     render(
       <>
         <Tabs
@@ -148,12 +225,19 @@ describe("Tabs", () => {
           idPrefix="up-"
           value="a"
           onChange={() => {}}
-          items={[{ id: "a", label: "No ejecutadas", badge: { count: 0, tone: "muted" } }]}
+          items={[
+            { id: "a", label: "No ejecutadas", badge: { count: 3, tone: "muted" } },
+            { id: "b", label: "Re-test", badge: { count: 0, tone: "muted" }, disabled: true, title: "Próximamente" },
+          ]}
         />
         <div {...tabPanelProps("a", "up-")}>lista</div>
       </>,
     );
-    expect(screen.getByRole("tab", { name: "No ejecutadas" })).toHaveAttribute("aria-controls", "up-tabpanel-a");
-    expect(screen.getByRole("tabpanel", { name: "No ejecutadas" })).toHaveTextContent("lista");
+    const tab = screen.getByTestId("tab-up-a");
+    expect(tab).toHaveAccessibleName("No ejecutadas (3)");
+    expect(tab).toHaveAttribute("aria-controls", "up-tabpanel-a");
+    expect(screen.getByRole("tab", { name: "Re-test" })).toBeInTheDocument();
+    expect(screen.getByRole("tabpanel", { name: "No ejecutadas (3)" })).toHaveTextContent("lista");
+    await expectNoAxeViolations();
   });
 });
