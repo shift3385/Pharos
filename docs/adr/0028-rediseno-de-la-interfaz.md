@@ -96,6 +96,16 @@
      (`@shared/ui/headerActions`), sin importar `projects`.
    Botones de acción (`ui-btn`) y buscador de lista (`ui-search`) también
    son comunes, para que ningún módulo dependa del CSS de otro.
+9. **Enmienda RED-V3k (2026-10-30): router de datos y cambios sin guardar.**
+   El `HashRouter` declarativo no permite retener una navegación, y el
+   editor de casos (V3) y el borrador de IA (V4) pierden cambios con el
+   «Atrás» del sistema. `main.tsx` pasa a `createHashRouter` con una sola
+   ruta comodín que pinta `App`, que conserva sus `<Routes>`: el cambio es
+   mínimo y las rutas de las pistas no se tocan. Encima,
+   `useUnsavedChangesGuard` (`useBlocker` + `beforeunload` +
+   `ConfirmDialog`) es el único mecanismo para «Descartar cambios / Seguir
+   editando». Se descartó interceptar enlaces y duplicar la entrada del
+   historial: era frágil y dejaba un «Atrás» de más.
 
 ## Alternativas
 

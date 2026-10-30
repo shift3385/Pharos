@@ -284,6 +284,7 @@ el rediseño (no es un PARCHE según [`VERSIONING.md`](VERSIONING.md)) la decide
 | RED-V3i | Gherkin: resaltado por línea (línea activa y errores de sintaxis con su número) | P3  | Por decidir |
 | RED-V3j | Cabecera del proyecto: el contador «N casos · N requisitos» no se actualiza al crear o borrar casos o requisitos hasta recargar; reutilizar el patrón de evento de V2 (`PLAN_SAVED_EVENT`) para casos y requisitos | P2  | Por decidir |
 | RED-V3b | Contador de adjuntos en las tarjetas del Planificador (clip con número, como en el prototipo): el listado de tarjetas aún no trae cuántos adjuntos tiene cada una y pedirlos por tarjeta serían N lecturas. Añadir `attachmentCount` al listado (Rust y API) y pintarlo | P3  | Por decidir |
+| RED-V3k | Router de datos (`createHashRouter`) y `useUnsavedChangesGuard` compartido (`useBlocker` + `beforeunload` + «Descartar cambios / Seguir editando»), para el editor de casos (V3) y el borrador de IA (V4) | P1  | Por decidir |
 | RED-V4 | Administración por grupos (Motor de IA por defecto, Plantillas, General, Sincronización, Seguridad, Diagnóstico); sustituye al `AdminSectionNav` temporal de F1 y lleva Plantillas y Motor de IA dentro de sus pestañas | P1  | Por decidir |
 | RED-W1 | Búsqueda global (Ctrl K; en móvil, resultados agrupados en Casos, Requisitos y Proyectos)                   | P2  | 0.2.0   |
 | RED-W2 | Panel de notificaciones (por día, sin leer, acción directa, «Marcar todo como leído»)                       | P2  | 0.2.0   |

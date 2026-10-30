@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { HashRouter } from "react-router";
+import { RouterProvider, createHashRouter } from "react-router";
 
 // Side-effect imports: vendored fonts, design tokens, base styles, i18n init.
 import "@shared/fonts";
@@ -20,6 +20,21 @@ import { App } from "@app/App";
 // Uncaught errors and rejections go to the desktop log (BASE-08).
 installGlobalErrorHandlers();
 
+// A data router (RED-V3k) so screens can hold a navigation that would drop
+// unsaved changes (`useBlocker`, `useUnsavedChangesGuard`). One splat route
+// renders the app, which keeps declaring its own `<Routes>` unchanged.
+const router = createHashRouter([
+  {
+    path: "*",
+    element: (
+      // Measures the app container for every screen, sign-in included.
+      <ViewportProvider>
+        <App />
+      </ViewportProvider>
+    ),
+  },
+]);
+
 const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Root element #root not found");
@@ -31,12 +46,7 @@ ReactDOM.createRoot(rootElement).render(
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <HashRouter>
-              {/* Measures the app container for every screen, sign-in included. */}
-              <ViewportProvider>
-                <App />
-              </ViewportProvider>
-            </HashRouter>
+            <RouterProvider router={router} />
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

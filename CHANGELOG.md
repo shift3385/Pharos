@@ -9,6 +9,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Añadido
 
+- **Cambios sin guardar (RED-V3k):** salir de una pantalla con cambios sin guardar —con un
+  enlace, el menú lateral, las pastillas de sección, el «Atrás» del sistema o del móvil, o
+  cerrando la ventana— pregunta antes: «Descartar cambios» o «Seguir editando».
 - **Rediseño, fundamentos (RED-F1, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md)):**
   - El paquete del rediseño está en [`docs/rediseno/`](docs/rediseno/README.md). Su `SPEC.md`
     manda.
