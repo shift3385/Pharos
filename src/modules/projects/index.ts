@@ -1,6 +1,6 @@
 // Public API of the projects module (spec §5). Other modules import only this.
 export { ProjectsPage } from "./ui/ProjectsPage";
-export { projectOverview, progressPercent, matchesQuery } from "./model/overview";
+export { projectOverview, progressPercent } from "./model/overview";
 export type { ProjectOverview } from "./model/overview";
 export { ProjectDetailPage } from "./ui/ProjectDetail";
 export { ProjectHeader } from "./ui/ProjectHeader";

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { lastAccessMap, recordProjectAccess } from "./lastAccess";
-import { matchesQuery, progressPercent, projectOverview } from "./overview";
+import { progressPercent, projectOverview } from "./overview";
 
 vi.mock("@modules/test-plan", () => ({
   projectPlanStatus: async (id: string) => (id === "a" ? "approved" : null),
@@ -52,10 +52,8 @@ describe("project overview for the Home (UX-08)", () => {
     });
   });
 
-  it("computes progress and matches names loosely", () => {
+  it("computes progress", () => {
     expect(progressPercent({ approved: 1, total: 3 })).toBe(33);
     expect(progressPercent({ approved: 0, total: 0 })).toBe(0);
-    expect(matchesQuery("Pagos Móviles", " movil ")).toBe(true);
-    expect(matchesQuery("Checkout", "pago")).toBe(false);
   });
 });
