@@ -16,10 +16,10 @@ const root = () => document.querySelector(".viewport-root");
 describe("useBreakpoint (SPEC §2, amended: app container width)", () => {
   it.each([
     [320, "mobile"],
-    [639, "mobile"],
-    [640, "tablet"],
-    [1023, "tablet"],
-    [1024, "desktop"],
+    [599, "mobile"],
+    [600, "tablet"],
+    [1279, "tablet"],
+    [1280, "desktop"],
     [1440, "desktop"],
   ])("%i px of container is %s from the first render", (width, expected) => {
     setViewportWidth(width);
@@ -39,15 +39,15 @@ describe("useBreakpoint (SPEC §2, amended: app container width)", () => {
         <Probe />
       </ViewportProvider>,
     );
-    resizeViewport(1024);
+    resizeViewport(1280);
     expect(band()).toBe("desktop");
-    resizeViewport(1023);
+    resizeViewport(1279);
     expect(band()).toBe("tablet");
-    resizeViewport(640);
+    resizeViewport(600);
     expect(band()).toBe("tablet");
-    resizeViewport(639);
+    resizeViewport(599);
     expect(band()).toBe("mobile");
-    resizeViewport(1024);
+    resizeViewport(1280);
     expect(band()).toBe("desktop");
   });
 
@@ -59,9 +59,9 @@ describe("useBreakpoint (SPEC §2, amended: app container width)", () => {
       </ViewportProvider>,
     );
     const before = renders;
+    resizeViewport(1400);
     resizeViewport(1300);
-    resizeViewport(1100);
-    resizeViewport(1024);
+    resizeViewport(1280);
     expect(renders).toBe(before);
     resizeViewport(900);
     expect(renders).toBe(before + 1);

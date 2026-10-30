@@ -270,9 +270,9 @@ el rediseño (no es un PARCHE según [`VERSIONING.md`](VERSIONING.md)) la decide
 
 | ID     | Ítem                                                                                                         | P   | Versión |
 | ------ | ------------------------------------------------------------------------------------------------------------ | --- | ------- |
-| RED-F1 | Fundamentos: paquete en `docs/rediseno/`, logo nuevo (favicon e iconos nativos), Lucide, tipografía y ajuste de texto (SPEC §3), movimiento reducido (§9), `Popover`/`Menu`/`BottomSheet`/confirmación destructiva, shell con vista por el ancho del contenedor (< 640 / 640–1023 / ≥ 1024 px, enmienda CAMBIO-vista-adaptativa), menú lateral contraíble, barra superior e inferior, menú del usuario, secciones del proyecto en la URL ([ADR-0029](adr/0029-secciones-del-proyecto-en-la-url.md)) | P1  | Por decidir · Hecho (F1); falta la revisión visual del usuario |
+| RED-F1 | Fundamentos: paquete en `docs/rediseno/`, logo nuevo (favicon e iconos nativos), Lucide, tipografía y ajuste de texto (SPEC §3), movimiento reducido (§9), `Popover`/`Menu`/`BottomSheet`/confirmación destructiva, shell con vista por el ancho del contenedor (< 600 / 600–1279 / ≥ 1280 px, enmienda CAMBIO-vista-adaptativa), menú lateral contraíble, barra superior e inferior, menú del usuario, secciones del proyecto en la URL ([ADR-0029](adr/0029-secciones-del-proyecto-en-la-url.md)) | P1  | Por decidir · Hecho (F1); falta la revisión visual del usuario |
 | RED-V1 | Pantallas Login, Inicio (dashboard) y Perfil. Incluye, de la actualización 2026-10-30 ([`ACTUALIZACION-para-Claude-Code.md`](rediseno/cambios/ACTUALIZACION-para-Claude-Code.md) §2–3): maquetación de «Ejecuciones diarias» (cabecera con `flex-wrap` y «+18 % vs. anterior», etiqueta de día bajo su barra, un día sí y otro no en tablet y móvil con hoy en negrita, barras de 28 px como máximo, raya gris de 2 px en días sin datos, leyenda Pasa · Falla · Sin ejecuciones con el mes) y leyenda de «Ejecución por proyecto» (`gap: 6px 14px`, `nowrap`, cuadritos `flex: none`, título con `min-width: 0`) | P1  | Por decidir |
-| RED-V2 | Pantallas Proyectos, Ajustes del proyecto (eliminar escribiendo el prefijo) y Plan de pruebas                | P1  | Por decidir |
+| RED-V2 | Pantallas Proyectos, Ajustes del proyecto (eliminar escribiendo el prefijo) y Plan de pruebas. Incluye la navegación de los 19 pasos del Plan (actualización 2026-10-30 11:31, SPEC §8 y [`ACTUALIZACION-para-Claude-Code.md`](rediseno/cambios/ACTUALIZACION-para-Claude-Code.md) §5): desde 1360 px de contenedor, lista vertical `sticky` con `z-index: 2` y scroll propio; de 600 a 1359 px, stepper horizontal sobre el formulario con el paso actual centrado; por debajo de 600 px, barra compacta con «Ver pasos»; el panel Estado/Revisiones baja debajo del formulario si no cabe. También quitar la cabecera «← Proyectos <nombre>» que repite la barra superior | P1  | Por decidir |
 | RED-V3 | Pantallas Casos (lista y editor), Planificador y Trazabilidad                                                 | P1  | Por decidir |
 | RED-V4 | Administración por grupos (Motor de IA por defecto, Plantillas, General, Sincronización, Seguridad, Diagnóstico); sustituye al `AdminSectionNav` temporal de F1 y lleva Plantillas y Motor de IA dentro de sus pestañas | P1  | Por decidir |
 | RED-W1 | Búsqueda global (Ctrl K; en móvil, resultados agrupados en Casos, Requisitos y Proyectos)                   | P2  | 0.2.0   |
@@ -314,9 +314,9 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   con Espacio y flechas), un diálogo de IA, el panel de conflictos y la clave de
   recuperación, y guardar un plan con avisos y otro sin título. Los puntos abiertos están en
   `docs/accesibilidad/auditoria-wcag-0.1.0.md`.
-- **Rediseño F1 (RED-F1):** revisar las capturas del shell a 320, 390, 639, 640, 820, 1023,
-  1024, 1180 y 1440 px en claro y oscuro, y en la app nativa: estrechar la ventana (menú lateral
-  a iconos por debajo de 1024 px y vista móvil por debajo de 640 px, sin recargar), contraer el menú lateral y reabrir la app (se
+- **Rediseño F1 (RED-F1):** revisar las capturas del shell a 320, 390, 599, 600, 820, 1180,
+  1279, 1280 y 1440 px en claro y oscuro, y en la app nativa: estrechar la ventana (menú lateral
+  a iconos por debajo de 1280 px y vista móvil por debajo de 600 px, sin recargar), contraer el menú lateral y reabrir la app (se
   recuerda), entrar en un proyecto (grupo «Proyecto activo»), menú del usuario (idioma y
   cerrar sesión), y el icono nuevo en la barra de tareas y el instalador.
 - **Beta 0.1.0-beta.1 (R1, UX-06):** recorrer [`guia-beta.md`](guia-beta.md), que convierte

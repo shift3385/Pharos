@@ -18,8 +18,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     - Barra superior con migas, búsqueda (Ctrl K), notificaciones y cambio rápido de tema.
     - En el móvil, barra superior navy y barra inferior (Inicio, Proyectos, Admin, Perfil).
     - Menú del usuario con Mi perfil, Administración, Idioma y Cerrar sesión.
-  - La vista se elige por el ancho de la ventana de la app: por debajo de 640 px, móvil; de 640
-    a 1023 px, franja de iconos; desde 1024 px, menú lateral. Al estrechar la ventana cambia sin
+  - La vista se elige por el ancho de la ventana de la app: por debajo de 600 px, móvil; de 600
+    a 1279 px, franja de iconos; desde 1280 px, menú lateral. Al estrechar la ventana cambia sin
     recargar (enmienda «vista adaptativa» del diseño, 2026-10-30).
   - La búsqueda y las notificaciones avisan de que llegan en una próxima versión.
   - El estado de sincronización está al pie del menú lateral, sobre el usuario. En la franja de

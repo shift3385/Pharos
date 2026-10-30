@@ -21,24 +21,21 @@ Modelo a seguir para aplicar el rediseño en la app. Entrada: `RedisenoApp.dc.ht
 | `ScrPerfil.dc.html` | Perfil | — |
 | `LogoMark.dc.html`, `Marca.dc.html` | Logo nuevo y hoja de marca | `size`, `surface`, `detail` |
 | `logo/Logo.jsx`, `logo/Logo.examples.md` | Reemplazo del componente `Logo` en pharos-ds | — |
+| `cambios/CAMBIO-vista-adaptativa.md` | Detalle técnico del cambio de vista por ancho | — |
+| `cambios/ACTUALIZACION-para-Claude-Code.md` | Mensaje listo para pegar en Claude Code con los últimos cambios | — |
 | `assets/login-faro.jpg` | Foto del login (1024×572; usar ≥ 2400 px en producción) | — |
 | `gen/*.js` | Scripts de generación del diseño (no van a la app) | — |
 
-Todas las pantallas aceptan `device` (`desktop`, `tablet`, `mobile`), `theme` (`light`, `dark`), `userMenu` y `collapsed` (menú lateral contraído). Las props `*Open` solo sirven para mostrar estados en el lienzo; en la app son estado interno.
+Todas las pantallas aceptan `device` (`desktop`, `tablet`, `mobile`), `theme` (`light`, `dark`), `userMenu` y `collapsed` (menú lateral contraído). `device` es la vista **mínima**: cada pantalla mide su contenedor y baja de vista sola si no cabe (ver §2). Las props `*Open` solo sirven para mostrar estados en el lienzo; en la app son estado interno.
 
 ---
 
 ## 2. Puntos de corte y layout
 
-> **Enmienda 2026-10-30 (CAMBIO-vista-adaptativa).** Sustituye los valores de la tabla
-> siguiente (600 / 1280 px). Fuente:
-> [`cambios/CAMBIO-vista-adaptativa.md`](cambios/CAMBIO-vista-adaptativa.md).
-> - La vista se decide por el **ancho del contenedor raíz de la app**, no por el de `window`.
-> - Tramos: **< 640 px** móvil (sin menú lateral, cabecera móvil y barra inferior);
->   **640–1023 px** tablet (franja de iconos de 84 px); **≥ 1024 px** escritorio (menú lateral
->   de 248 px, contraíble).
-> - Un `device` forzado (mobile/tablet) nunca sube a una vista más ancha.
->
+> **Enmienda 2026-10-30 (vista adaptativa).** Los puntos de corte siguen siendo los de la tabla
+> (600 / 1280 px). Lo que cambia es **qué se mide**: el ancho del **contenedor raíz de la app**,
+> no el de `window`. Así la vista también se adapta al estrechar la ventana o si la app va
+> embebida. Fuente: [`cambios/CAMBIO-vista-adaptativa.md`](cambios/CAMBIO-vista-adaptativa.md).
 > En el código: `ViewportProvider` / `useBreakpoint` con `ResizeObserver`
 > ([ADR-0028](../adr/0028-rediseno-de-la-interfaz.md)).
 
@@ -48,6 +45,7 @@ Todas las pantallas aceptan `device` (`desktop`, `tablet`, `mobile`), `theme` (`
 | 600–1279 px | Franja de iconos 84 px | Contenido a todo el ancho |
 | ≥ 1280 px | Menú lateral 248 px (contraíble a 84 px) | Contenido máx. 1600 px, centrado |
 
+- **Detección automática:** cada pantalla observa el ancho de su contenedor raíz con `ResizeObserver` (no el de la ventana) y elige la vista según esta tabla; solo vuelve a pintar al cambiar de tramo. Un `device` forzado (`tablet`/`mobile`) nunca sube a una vista más ancha. En la app: hook `useBreakpoint(rootRef)` en el layout raíz que reparte `device` por contexto.
 - Toda la app ocupa el alto de la ventana: navegación fija, solo el contenido hace scroll.
 - Rejillas con `auto-fit/auto-fill` + `minmax(min(Npx,100%),1fr)` y filas con `flex-wrap`; nunca anchos fijos en cajas con texto.
 - Las unidades `cqi` se calculan sobre el contenedor raíz (`container-type: inline-size`).
@@ -147,9 +145,11 @@ Fuentes: **Inter** (UI) y **JetBrains Mono** (IDs, código, contadores). Número
 | Inicio · indicadores | Las 4 tarjetas son enlaces (Proyectos, casos pendientes, ejecución, defectos). Nota «Suma de tus N proyectos abiertos» solo si N > 1. |
 | Inicio · periodo | Hoy, 7, 14, 30 días, Este mes, ciclo actual/anterior, rango personalizado e interruptor **Comparar con el periodo anterior** (muestra/oculta las variaciones). |
 | Inicio · criterios de salida | Selector de proyecto con buscador, filtros Todos / En riesgo / Cumplen, orden por cierre. Cambia anillo, mensaje, fecha y criterios. Por defecto, el que cierra antes. |
+| Inicio · Ejecuciones diarias | Cabecera que salta de línea («+18 % vs. anterior»). Barras de máx. 28 px centradas; días sin datos con raya gris de 2 px. Etiquetas alineadas con su barra (`flex:1 1 0; min-width:0`, mismo `gap`); en tablet y móvil un día sí y otro no, contando desde hoy, y hoy en negrita. Leyenda Pasa · Falla · Sin ejecuciones + mes, con `flex-wrap` y elementos `nowrap`. |
 | Inicio · móvil | 3 pestañas (Resumen, Ejecución, Pruebas) con **burbujas**: rojo = problemas, navy = pendientes, sin burbuja = todo bien. |
 | Notificaciones | Panel 400 px (escritorio) / pantalla completa (móvil): agrupadas por día, no leídas con fondo y punto, acción directa, «Marcar todo como leído», Todas / Sin leer. |
 | Proyectos | Recientes (4) + tabla con búsqueda, filtros, **orden** (desplegable con dirección) y paginación. |
+| Plan · navegación de pasos | ≥ 1360 px: lista vertical fija a la izquierda (`sticky`, `z-index:2`, scroll propio, nunca salta de línea). 600–1359 px: **stepper horizontal** encima del formulario (Paso N de 19, título, progreso y tira desplazable de círculos: hechos ✓, actual como píldora con nombre, pendientes con número; el actual se centra solo). < 600 px: barra compacta + «Ver pasos». El panel Estado/Revisiones baja debajo del formulario si no cabe. |
 | Plan | 19 pasos, «Paso N de 19 · Guardado · 1 min» arriba, pie fijo en una línea («Siguiente: …» recortable). Paso 8 entregables ISO 29119-3 + «Otro». Paso 10: 10 herramientas + «Más herramientas (65)» + campo libre. Paso 14: generar sprints desde un rango. Menú **Importar / Exportar**. |
 | Casos · lista | Tabla completa con selección múltiple, filtros y paginación. |
 | Casos · editor | Navegación «‹ anterior | 142 de 240 | siguiente ›» + «Ir a un caso… (Ctrl P)». Vistas Editor / Gherkin / Dividida (móvil: solo Editor o Gherkin). Edición Gherkin en móvil con barra de palabras clave sobre el teclado. Prioridad y Estado con explicación de cada opción. |
@@ -204,4 +204,5 @@ Tamaños de uso: menú lateral 35 px · franja de iconos 38 px · barra móvil 3
 1. Reemplazar `Logo.jsx` y sus ejemplos con `logo/Logo.jsx` y `logo/Logo.examples.md`.
 2. Añadir `/* @kind font */` a `--fw-regular`, `--fw-medium`, `--fw-semibold`, `--lh-tight`, `--lh-normal` en `tokens/tokens.css`.
 3. Pasar a los archivos de idioma los textos nuevos o cambiados (p. ej. subtítulo de la matriz, textos de notificaciones, papelera, herramientas, entregables).
-4. Ejecutar `/design-sync`.
+4. Aplicar en la app lo de `cambios/ACTUALIZACION-para-Claude-Code.md` (vista automática, gráficas del Inicio, stepper del Plan).
+5. Ejecutar `/design-sync`.

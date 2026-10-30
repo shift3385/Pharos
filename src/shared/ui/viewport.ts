@@ -5,10 +5,10 @@ import { createContext } from "react";
  *  not the window's. */
 export type Breakpoint = "mobile" | "tablet" | "desktop";
 
-/** Below 640 px: mobile (top and bottom bars). From 640 to 1023 px: tablet
- *  (84 px icon strip). From 1024 px: desktop (248 px collapsible sidebar). */
-export const TABLET_MIN = 640;
-export const DESKTOP_MIN = 1024;
+/** Below 600 px: mobile (top and bottom bars). From 600 to 1279 px: tablet
+ *  (84 px icon strip). From 1280 px: desktop (248 px collapsible sidebar). */
+export const TABLET_MIN = 600;
+export const DESKTOP_MIN = 1280;
 
 export function bandFor(width: number): Breakpoint {
   if (width < TABLET_MIN) return "mobile";

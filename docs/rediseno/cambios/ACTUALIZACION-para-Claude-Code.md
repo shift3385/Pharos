@@ -7,9 +7,9 @@ Pega este mensaje en Claude Code:
 Actualiza la implementación con los últimos cambios del rediseño Pharos. Lee primero estos archivos del proyecto de diseño (son la fuente de verdad) y aplica lo que falte:
 
 1. `templates/rediseno-app/handoff/CAMBIO-vista-adaptativa.md`: la vista se elige por el ancho real del contenedor de la app.
-   - < 640 px → móvil: sin Sidebar, cabecera móvil, barra inferior y secciones por pestañas.
-   - 640–1023 px → tablet: Sidebar solo con iconos.
-   - ≥ 1024 px → escritorio.
+   - < 600 px → móvil: sin Sidebar, cabecera móvil, barra inferior y secciones por pestañas.
+   - 600–1279 px → tablet: Sidebar solo con iconos.
+   - ≥ 1280 px → escritorio.
    - Un `device` forzado (mobile/tablet) nunca sube a una vista más ancha.
    - Implementación: `ResizeObserver` sobre el contenedor raíz (no sobre `window`), re-render solo al cambiar de tramo y `disconnect()` al desmontar. Mejor como hook `useBreakpoint` en el layout raíz que dé `device` por contexto a todas las pantallas.
 
@@ -25,10 +25,16 @@ Actualiza la implementación con los últimos cambios del rediseño Pharos. Lee 
 
 4. Tokens (`tokens/tokens.css`): añade `/* @kind font */` a `--fw-regular`, `--fw-medium`, `--fw-semibold`, `--lh-tight` y `--lh-normal`.
 
-5. Pantallas afectadas por el punto 1: Inicio, Login, Proyectos, Ajustes de proyecto, Plan (19 pasos), Casos (lista y editor), Trazabilidad, Planificador, Administración y Perfil.
+5. Plan de pruebas · navegación de los 19 pasos (`templates/rediseno-app/ScrPlan.dc.html`). Antes, la lista vertical de pasos pasaba encima del contenido al hacer scroll (sticky sin z-index dentro de un flex con wrap).
+   - ≥ 1360 px de contenedor: lista vertical a la izquierda (`position: sticky; z-index: 2`, ancho `clamp(220px, 24cqi, 272px)`, scroll propio). Nunca baja de línea.
+   - 600–1359 px: stepper horizontal encima del formulario: «Paso N de 19 · X completados», título del paso, barra de progreso y una tira desplazable de círculos (hechos con check, el actual como píldora con número y nombre, pendientes con número). El paso actual queda centrado en la tira.
+   - < 600 px: barra compacta «Paso N de 19» + botón «Ver pasos» (sin cambios).
+   - El panel derecho (Estado del plan, Revisiones) baja debajo del formulario cuando no cabe (`flex: 1 1 260px`; formulario `flex: 999 1 400px`).
+
+6. Pantallas afectadas por el punto 1: Inicio, Login, Proyectos, Ajustes de proyecto, Plan (19 pasos), Casos (lista y editor), Trazabilidad, Planificador, Administración y Perfil.
 
 Comprobación:
-- Estrecha la ventana de escritorio: por debajo de 1024 px el Sidebar pasa a iconos; por debajo de 640 px se ve la vista móvil completa.
+- Estrecha la ventana de escritorio: por debajo de 1280 px el Sidebar pasa a iconos; por debajo de 600 px se ve la vista móvil completa.
 - La gráfica no se corta, los días quedan bajo su barra y la leyenda no se solapa.
 
 Cuando termines, ejecuta `/design-sync` para que el design system recoja los tokens corregidos.

@@ -170,7 +170,7 @@ describe("Menu (SPEC §6/§10)", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("is a dropdown from 640 px", async () => {
+  it("is a dropdown from 600 px", async () => {
     setViewportWidth(820);
     render(<Harness responsive />);
     await userEvent.click(screen.getByRole("button", { name: "Opciones" }));

@@ -3,7 +3,7 @@ import { ViewportContext, bandFor, type Breakpoint } from "./viewport";
 
 export type { Breakpoint } from "./viewport";
 
-/** The current view (mobile < 640 px ≤ tablet < 1024 px ≤ desktop), from the
+/** The current view (mobile < 600 px ≤ tablet < 1280 px ≤ desktop), from the
  *  app root's `ViewportProvider`, measured on the app container. Outside a
  *  provider (isolated component tests) it falls back to the window width.
  *  CSS keys on the root's `data-viewport`; read this only when the DOM itself

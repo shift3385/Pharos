@@ -32,7 +32,7 @@ describe("AppShell (SPEC §2/§7)", () => {
     await i18n.changeLanguage("es");
   });
 
-  describe("desktop (≥ 1024 px)", () => {
+  describe("desktop (≥ 1280 px)", () => {
     beforeEach(() => setViewportWidth(1440));
 
     it("shows the full sidebar: Inicio, Proyectos and Administración, no project group", () => {
@@ -192,18 +192,18 @@ describe("AppShell (SPEC §2/§7)", () => {
   });
 
   describe("resizing the app container (CAMBIO-vista-adaptativa)", () => {
-    it("goes from the sidebar to the strip below 1024 px and to the mobile bars below 640 px", () => {
+    it("goes from the sidebar to the strip below 1280 px and to the mobile bars below 600 px", () => {
       setViewportWidth(1440);
       renderShell();
       expect(sidebar()).toHaveAttribute("data-mode", "full");
-      resizeViewport(1024);
+      resizeViewport(1280);
       expect(sidebar()).toHaveAttribute("data-mode", "full");
-      resizeViewport(1023);
+      resizeViewport(1279);
       expect(sidebar()).toHaveAttribute("data-mode", "rail");
       expect(screen.queryByTestId("sidebar-collapse")).not.toBeInTheDocument();
-      resizeViewport(640);
+      resizeViewport(600);
       expect(sidebar()).toHaveAttribute("data-mode", "rail");
-      resizeViewport(639);
+      resizeViewport(599);
       expect(sidebar()).toBeNull();
       expect(document.querySelector(".bottom-nav")).not.toBeNull();
       resizeViewport(1440);
@@ -211,7 +211,7 @@ describe("AppShell (SPEC §2/§7)", () => {
     });
   });
 
-  describe("tablet (640–1023 px)", () => {
+  describe("tablet (600–1279 px)", () => {
     it("shows the icon strip, without the collapse button", () => {
       setViewportWidth(820);
       renderShell();
@@ -223,7 +223,7 @@ describe("AppShell (SPEC §2/§7)", () => {
     });
   });
 
-  describe("mobile (< 640 px)", () => {
+  describe("mobile (< 600 px)", () => {
     beforeEach(() => setViewportWidth(390));
 
     it("swaps the sidebar for the navy top bar and the bottom bar", () => {

@@ -46,9 +46,11 @@
    se usan. Los logos de proveedores de IA (Simple Icons) son cosa de V4.
 4. **Puntos de corte únicos, por el ancho del contenedor de la app** (SPEC §2,
    enmendada el 2026-10-30 por
-   [`CAMBIO-vista-adaptativa`](../rediseno/cambios/CAMBIO-vista-adaptativa.md),
-   que sustituye los 600/1280 px originales):
-   - Tramos: < 640 px móvil; 640–1023 px franja de iconos de 84 px; ≥ 1024 px
+   [`CAMBIO-vista-adaptativa`](../rediseno/cambios/CAMBIO-vista-adaptativa.md)).
+   Los valores siguen siendo los originales, 600/1280 px. La enmienda cambia lo
+   que se mide: el contenedor y no la ventana. Una versión intermedia del
+   diseño probó 640/1024 y la del 30 de octubre a las 11:31 volvió a 600/1280:
+   - Tramos: < 600 px móvil; 600–1279 px franja de iconos de 84 px; ≥ 1280 px
      menú lateral de 248 px, contraíble a la franja (la elección se recuerda).
    - Se mide el contenedor raíz y no `window`, así la vista se adapta también
      al estrechar la ventana o si la app va embebida.

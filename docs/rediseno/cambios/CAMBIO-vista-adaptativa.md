@@ -8,9 +8,9 @@ La vista se decide por el ancho del contenedor de la app (no del `window`, para 
 
 | Ancho del contenedor | Vista |
 |---|---|
-| < 640 px | mobile (sin Sidebar, header móvil, barra inferior, secciones por pestañas) |
-| 640–1023 px | tablet (Sidebar colapsado a iconos) |
-| ≥ 1024 px | desktop |
+| < 600 px | mobile (sin Sidebar, header móvil, barra inferior, secciones por pestañas) |
+| 600–1279 px | tablet (Sidebar colapsado a iconos) |
+| ≥ 1280 px | desktop |
 
 `device` forzado a `mobile` o `tablet` nunca sube a una vista más ancha; solo puede bajar.
 
@@ -19,7 +19,7 @@ La vista se decide por el ancho del contenedor de la app (no del `window`, para 
 // observar el contenedor raíz
 const ro = new ResizeObserver(([e]) => {
   const w = e.contentRect.width;
-  setBp(w < 640 ? 'm' : w < 1024 ? 't' : 'd'); // re-render solo al cambiar de tramo
+  setBp(w < 600 ? 'm' : w < 1280 ? 't' : 'd'); // re-render solo al cambiar de tramo
 });
 ro.observe(rootRef.current);   // disconnect() al desmontar
 
@@ -35,4 +35,4 @@ En la app real basta con un hook `useBreakpoint(rootRef)` en el layout raíz que
 Dashboard, Login, Proyectos, Ajustes de proyecto, Plan (19 pasos), Casos (lista y editor), Trazabilidad, Planificador, Administración, Perfil.
 
 ## Comprobación
-Estrechar la ventana de escritorio por debajo de 1024 px → Sidebar a iconos; por debajo de 640 px → vista móvil completa, la gráfica ocupa el ancho y no se corta.
+Estrechar la ventana de escritorio por debajo de 1280 px → Sidebar a iconos; por debajo de 600 px → vista móvil completa, la gráfica ocupa el ancho y no se corta.

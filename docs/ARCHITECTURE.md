@@ -155,8 +155,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 ## App shell and navigation (redesign, ADR-0028/0029)
 
 - **Views by container width** (SPEC §2, amended 2026-10-30 by
-  `docs/rediseno/cambios/CAMBIO-vista-adaptativa.md`): < 640 px mobile,
-  640–1023 px tablet, ≥ 1024 px desktop.
+  `docs/rediseno/cambios/CAMBIO-vista-adaptativa.md`): < 600 px mobile,
+  600–1279 px tablet, ≥ 1280 px desktop.
   - The width is the app root's, not the window's. `ViewportProvider`
     (`@shared/ui/ViewportProvider`, above the routes in `main.tsx`, so the
     sign-in screen gets it too) wraps the app in `.viewport-root`.
@@ -244,7 +244,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - `Menu` / `MenuItem` / `MenuLabel` / `MenuSeparator`: `role="menu"`,
     arrows, Home and End.
   - `BottomSheet` (on top of `Dialog`): handle, title, ✕ and ≥ 46 px options.
-  - `ResponsiveMenu`: a `Menu` from 640 px, a `BottomSheet` below, with the
+  - `ResponsiveMenu`: a `Menu` from 600 px, a `BottomSheet` below, with the
     same items.
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled

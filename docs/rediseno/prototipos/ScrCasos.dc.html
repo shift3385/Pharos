@@ -122,7 +122,7 @@ class Component extends DCLogic {
     document.removeEventListener('scroll', this._scroll, true);
     document.removeEventListener('keydown', this._key);
   }
-  _attach(el) { if (!el || el === this._el) return; this._el = el; this._ro && this._ro.disconnect(); this._ro = new ResizeObserver(([e]) => { const w = e.contentRect.width, b = w < 640 ? 'm' : w < 1024 ? 't' : 'd'; if (b !== (this.state && this.state.__bp)) this.setState({ __bp: b }); }); this._ro.observe(el); }
+  _attach(el) { if (!el || el === this._el) return; this._el = el; this._ro && this._ro.disconnect(); this._ro = new ResizeObserver(([e]) => { const w = e.contentRect.width, b = w < 600 ? 'm' : w < 1280 ? 't' : 'd'; if (b !== (this.state && this.state.__bp)) this.setState({ __bp: b }); }); this._ro.observe(el); }
   _dev(p) { const b = this.state && this.state.__bp; if (!b) return p; if (p === 'mobile' || b === 'm') return 'mobile'; if (p === 'tablet' || b === 't') return 'tablet'; return 'desktop'; }
   renderVals() {
     this._rootCb = this._rootCb || ((el) => this._attach(el));
