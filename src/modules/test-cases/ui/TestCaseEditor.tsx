@@ -55,10 +55,9 @@ import {
 import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
-import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useHideMobileChrome } from "@shared/ui/useShellChrome";
-import { useUnsavedGuard } from "./useUnsavedGuard";
+import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { CaseNavBar, CaseNavFooter, type CaseNav, type SaveState } from "./CaseNavBar";
 import { GoToCaseDialog } from "./GoToCaseDialog";
 import { PriorityField, StatusField } from "./CaseMetaMenus";
@@ -276,7 +275,6 @@ export function TestCaseEditor({
   // leaving with changes asks first.
   const [snapshot, setSnapshot] = useState<string | null>(null);
   const [goingTo, setGoingTo] = useState(false);
-  const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null);
   const [gherkinEditing, setGherkinEditing] = useState(false);
   const mobile = useBreakpoint() === "mobile";
   const view: Tab = mobile && tab === "split" ? "editor" : tab;
@@ -494,7 +492,8 @@ export function TestCaseEditor({
       } else {
         setSnapshot(JSON.stringify(form));
       }
-      onSaved?.(saved);
+      // Opening a new case by its id right after saving is not «leaving».
+      unsaved.bypass(() => onSaved?.(saved));
     } finally {
       setSaving(false);
     }
@@ -588,14 +587,11 @@ export function TestCaseEditor({
 
   const dirty = snapshot !== null && JSON.stringify(form) !== snapshot;
   const saveState: SaveState = !testCase ? "new" : dirty ? "dirty" : "saved";
-  /** Runs `go` now, or after «Descartar cambios» when there are any. */
-  const leave = (go: () => void) => {
-    if (dirty) setPendingLeave(() => go);
-    else go();
-  };
-  // The system «Atrás», links (sidebar, pills) and closing the window ask too.
-  useUnsavedGuard(dirty, (go) => setPendingLeave(() => go));
-  const goTo = (id: string) => leave(() => nav?.onGo(id));
+  // Every way out that changes the address (the bar's buttons, links, the
+  // sidebar and pills, the system «Atrás») and closing the window ask first
+  // while there are unsaved changes (RED-V3k).
+  const unsaved = useUnsavedChangesGuard(dirty, t("testCase.nav.discardMessage"));
+  const goTo = (id: string) => nav?.onGo(id);
 
   if (found === false) {
     return (
@@ -918,20 +914,7 @@ export function TestCaseEditor({
           onClose={() => setGoingTo(false)}
         />
       )}
-      {pendingLeave && (
-        <ConfirmDialog
-          variant="destructive"
-          title={t("testCase.nav.discardTitle")}
-          message={t("testCase.nav.discardMessage")}
-          confirmLabel={t("testCase.nav.discardConfirm")}
-          onCancel={() => setPendingLeave(null)}
-          onConfirm={() => {
-            const go = pendingLeave;
-            setPendingLeave(null);
-            go();
-          }}
-        />
-      )}
+      {unsaved.dialog}
     </>
   );
 
@@ -966,7 +949,7 @@ export function TestCaseEditor({
       <CaseNavBar
         nav={nav}
         saveState={saveState}
-        onBack={() => leave(onClose)}
+        onBack={onClose}
         onGo={goTo}
         onGoTo={() => setGoingTo(true)}
         more={

@@ -279,7 +279,7 @@ describe("Casos · review fixes (RED-V3)", () => {
     await userEvent.type(await screen.findByRole("textbox", { name: /Título/ }), " editado");
     await userEvent.click(screen.getByRole("link", { name: "Plan de pruebas" }));
     const dialog = screen.getByRole("alertdialog", { name: "¿Descartar los cambios?" });
-    await userEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Seguir editando" }));
     expect(screen.getByTestId("path")).toHaveTextContent("/projects/p1/cases");
     await userEvent.click(screen.getByRole("link", { name: "Plan de pruebas" }));
     await userEvent.click(
@@ -288,14 +288,8 @@ describe("Casos · review fixes (RED-V3)", () => {
     await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/projects/p1/plan"));
   }, 15_000);
 
-  it("asks before the system «Atrás» drops unsaved edits", async () => {
-    setViewportWidth(1440);
-    renderPage("/projects/p1/cases?case=c2");
-    await userEvent.type(await screen.findByRole("textbox", { name: /Título/ }), " editado");
-    fireEvent(window, new PopStateEvent("popstate"));
-    expect(await screen.findByRole("alertdialog", { name: "¿Descartar los cambios?" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue("Pago con tarjeta editado");
-  }, 15_000);
+  // The system «Atrás» (a history pop) is held by the same router blocker:
+  // see useUnsavedChangesGuard.test.tsx.
 
   it("a filter drops from the selection the cases it hides", async () => {
     setViewportWidth(1440);

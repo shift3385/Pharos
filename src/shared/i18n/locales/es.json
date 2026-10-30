@@ -851,9 +851,7 @@
         "dirty": "Cambios sin guardar",
         "new": "Sin guardar"
       },
-      "discardTitle": "¿Descartar los cambios?",
       "discardMessage": "Hay cambios sin guardar en este caso. Si sigues, se pierden.",
-      "discardConfirm": "Descartar cambios",
       "notFoundTitle": "Caso no encontrado",
       "notFound": "Este caso no existe o se ha eliminado. Vuelve a la lista para elegir otro.",
       "goToShortcutMac": "⌘ P"

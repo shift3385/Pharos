@@ -851,9 +851,7 @@
         "dirty": "Unsaved changes",
         "new": "Not saved"
       },
-      "discardTitle": "Discard the changes?",
       "discardMessage": "This case has unsaved changes. If you go on, they are lost.",
-      "discardConfirm": "Discard changes",
       "notFoundTitle": "Case not found",
       "notFound": "This case does not exist or was deleted. Go back to the list to pick another.",
       "goToShortcutMac": "⌘ P"
