@@ -94,8 +94,9 @@ funcionalidad: así las pistas paralelas no chocan.
 ## 5. Proceso de release
 
 1. **Cierre del hito.** Todas sus pistas están fusionadas y `main` está en verde.
-   Se ejecuta `npm run version:set -- X.Y.Z-beta.1` y se pasan las entradas de
-   `[Sin publicar]` del `CHANGELOG.md` a la nueva versión. Commit:
+   Se ejecuta `npm run version:set -- X.Y.Z-beta.1` y `npm run changelog:collect`
+   (pasa los fragmentos de `changes/` a `[Sin publicar]`, ADR-0032), y se pasan
+   las entradas de `[Sin publicar]` del `CHANGELOG.md` a la nueva versión. Commit:
    `chore(release): vX.Y.Z-beta.1`. Después, la etiqueta.
 2. **Validación del usuario** con los criterios de salida del hito. Cada
    corrección es una nueva `beta.N` o `rc.N`.
@@ -170,7 +171,9 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
 ## 7. CHANGELOG
 
 `CHANGELOG.md` sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
-Cada pista añade sus entradas en `[Sin publicar]`, agrupadas en:
+Cada pista escribe sus entradas en un fragmento propio en `changes/`
+(`changes/README.md`, ADR-0032); la release los pasa a `[Sin publicar]` con
+`npm run changelog:collect`. Las secciones son:
 
 - Añadido
 - Cambiado

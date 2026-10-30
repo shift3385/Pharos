@@ -38,6 +38,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0029](0029-secciones-del-proyecto-en-la-url.md)   | Secciones del proyecto en la URL (`/projects/:projectId/:section`)                   | Aceptado | 2026-10-30 |
 | [0030](0030-entregables-y-herramientas-como-catalogo.md) | Entregables y herramientas del plan como catálogo con claves                    | Aceptado | 2026-10-30 |
 | [0031](0031-administracion-por-pestanas.md)        | Administración por pestañas (`/admin?tab=`), tabla de capacidades de IA y logos inline | Aceptado | 2026-10-30 |
+| [0032](0032-fragmentos-del-changelog.md)           | Fragmentos del CHANGELOG en `changes/` para que los PRs en paralelo no choquen       | Aceptado | 2026-10-30 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
