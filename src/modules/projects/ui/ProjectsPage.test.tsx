@@ -80,11 +80,11 @@ describe("Proyectos (SPEC §8)", () => {
   it("orders by name and changes page", async () => {
     setViewportWidth(1440);
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: "Orden: Último acceso" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Orden: Último acceso · Descendente" }));
     expect(screen.getByRole("menuitemradio", { name: "Progreso de ejecución" })).toBeDisabled();
     expect(screen.getByRole("menuitemradio", { name: "Cierre del ciclo" })).toBeDisabled();
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Nombre (A–Z)" }));
-    await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z)" }));
+    await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z) · Descendente" }));
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Ascendente" }));
     const first = () => within(screen.getByRole("table")).getAllByRole("link")[0];
     expect(first()).toHaveTextContent("Portal Clientes v3");

@@ -52,7 +52,6 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
   const latest = useRef(0);
   // Cross-module options, loaded by this composing module so test-cases and
   // planner never depend on traceability (or on each other).
-  const [requirements, setRequirements] = useState<RequirementOption[]>([]);
   const [linkableCases, setLinkableCases] = useState<LinkableCase[]>([]);
 
   /** Loads the project; an answer that arrives after a newer request is
@@ -74,12 +73,7 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
 
   useEffect(() => {
     let live = true;
-    if (tab === "cases") {
-      void requirementApi.list(projectId, ownerId).then((list) => {
-        if (live)
-          setRequirements(list.map((r) => ({ requirementKey: r.requirementKey, title: r.title })));
-      });
-    } else if (tab === "planner") {
+    if (tab === "planner") {
       void projectTraceableCases(projectId, ownerId).then((list) => {
         if (live)
           setLinkableCases(list.map((c) => ({ id: c.id, scenarioId: c.scenarioId, title: c.title })));
@@ -98,11 +92,12 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
   const header: ProjectHeaderInfo = {
     name: project.name,
     caseIdPrefix: project.caseIdPrefix,
-    planStatus: facts?.planStatus ?? null,
+    // Unknown until loaded: the header shows no plan pill meanwhile.
+    planStatus: facts ? facts.planStatus : undefined,
     meta: facts
       ? [
           t("projects.header.cases", { count: facts.cases }),
-          t("projects.header.requirements", { count: facts.requirements }),
+          t("projects.header.requirements", { count: facts.requirements.length }),
           facts.closeDate &&
             t("projects.header.closesOn", { date: shortDate(facts.closeDate, i18n.resolvedLanguage) }),
         ].filter((m): m is string => Boolean(m))
@@ -118,7 +113,7 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
             projectId={projectId}
             caseIdPrefix={project.caseIdPrefix}
             caseIdDigits={project.caseIdDigits}
-            requirements={requirements}
+            requirements={facts?.requirements ?? []}
           />
         )}
         {tab === "traceability" && (
@@ -145,30 +140,38 @@ interface HeaderFacts {
   /** End of the test cycle from the plan schedule (YYYY-MM-DD). */
   closeDate: string | null;
   cases: number;
-  requirements: number;
+  /** Also the options of the cases section (loaded once, here). */
+  requirements: RequirementOption[];
 }
 
 /** What the header says about the project (plan status, counts). Reloaded
- *  when the section changes (a case or requirement may have been added), after
- *  a sync and after the plan is saved; a late answer for an older request is dropped. */
+ *  when the section changes (a case or requirement may have been added),
+ *  after a sync and after the plan is saved. Only the newest answer is kept;
+ *  a failed load keeps the last facts (the header stays as it was). */
 function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection) {
   const [facts, setFacts] = useState<HeaderFacts | null>(null);
+  const latest = useRef(0);
   useEffect(() => {
     let live = true;
     const load = async () => {
-      const [planStatus, closure, cases, requirements] = await Promise.all([
-        projectPlanStatus(projectId, ownerId),
-        projectPlanClosure(projectId, ownerId),
-        projectCaseCount(projectId, ownerId),
-        requirementApi.list(projectId, ownerId),
-      ]);
-      if (live)
+      const request = ++latest.current;
+      try {
+        const [planStatus, closure, cases, requirements] = await Promise.all([
+          projectPlanStatus(projectId, ownerId),
+          projectPlanClosure(projectId, ownerId),
+          projectCaseCount(projectId, ownerId),
+          requirementApi.list(projectId, ownerId),
+        ]);
+        if (!live || request !== latest.current) return;
         setFacts({
           planStatus,
           closeDate: closure?.closeDate ?? null,
           cases,
-          requirements: requirements.length,
+          requirements: requirements.map((r) => ({ requirementKey: r.requirementKey, title: r.title })),
         });
+      } catch {
+        // Offline or a failed query: keep what the header shows.
+      }
     };
     void load();
     window.addEventListener("pharos:synced", load);

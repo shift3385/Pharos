@@ -224,15 +224,33 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - the mobile header (back + section + project) and the section pills.
 - **Project header** (RED-V2, `@modules/projects`): `ProjectDetail` wraps
   every section in `ProjectHeaderLayout`, which draws `ProjectHeader`:
-  prefix badge, name (`h1`), plan status and a meta line (cases,
-  requirements). Section pages draw no header of their own. To put buttons on
-  its right they call `useHeaderActions(<…/>)` (`@shared/ui/headerActions`:
-  the section modules cannot import `projects`, which composes them); the header shows the
-  latest node and drops it on unmount. Only the header re-renders, because
-  the section is the provider's `children`. On mobile the shell's top bar
-  already names the project: the card is not drawn, the `h1` stays
-  `.sr-only` and only the actions row shows (`.pj-action` buttons share the
-  width; `data-natural` keeps its own).
+  - prefix badge, name (`h1`, cut with «…», with a `title` only when it is
+    cut), plan status (the shared `StatusPill`; no pill while the status is
+    still unknown, so «Sin plan» never flashes) and a meta line (cases,
+    requirements);
+  - the facts reload when the section changes, after a sync and after the plan
+    is saved (`PLAN_SAVED_EVENT` from `@modules/test-plan`); only the newest
+    answer is kept and a failed load keeps the last one. The requirements it
+    loads are also the cases section's options.
+
+  Section pages draw no header of their own. To put buttons on its right they
+  call `useHeaderActions(<…/>)` (`@shared/ui/headerActions`: the section
+  modules cannot import `projects`, which composes them):
+  - each caller registers with its own token, the last one wins, and a
+    caller's cleanup only clears its own node (going from section A to B never
+    wipes B's buttons);
+  - cost: every render of the calling page hands over a new node and the
+    header renders again; the page itself does not, because it is the
+    provider's `children` (it re-renders only for its own reasons or when
+    `ProjectDetail` does). Keep the node small, and never call the hook from
+    inside the header;
+  - `.header-action` (shared, `headerActions.css`) is the 40 px secondary
+    button (44 px on mobile).
+
+  On mobile the shell's top bar already names the project: the card is not
+  drawn and the `h1` stays `.sr-only`. With actions they show as a row (the
+  buttons share the width; `data-natural` keeps its own); without them nothing
+  else is drawn, so there is no empty row.
 
   `/projects?open=<id>` redirects there.
 - **Top bar** (`Topbar`, 64 px):
@@ -291,8 +309,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     until that text is typed.
   - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
     the sort keys as radio options (disabled ones keep a `title` with the
-    reason) and the direction (Descendente · Ascendente). Choosing a key keeps
-    the direction and vice versa.
+    reason) in a «Ordenar por» group, and the direction (Descendente ·
+    Ascendente), which is also part of the trigger's accessible name. Choosing a
+    key keeps the direction and vice versa.
   - `MenuItem description`: a second line that explains the option (its
     accessible description, not its name). `MenuCheckItem`: a
     `menuitemcheckbox` (a pressed toggle in a sheet) that keeps the menu open,

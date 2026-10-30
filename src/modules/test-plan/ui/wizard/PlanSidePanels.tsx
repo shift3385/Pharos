@@ -113,9 +113,9 @@ export function RevisionsDialog({
 export function RevisionsButton({ onClick }: { onClick: () => void }) {
   const { t } = useTranslation();
   return (
-    <button type="button" className="pj-action" onClick={onClick}>
+    <button type="button" className="header-action" onClick={onClick}>
       <History size={16} aria-hidden="true" />
-      <span className="pj-action__label">{t("testPlan.revisions")}</span>
+      <span className="header-action__label">{t("testPlan.revisions")}</span>
     </button>
   );
 }
@@ -137,9 +137,9 @@ export function PlanIoMenu({
   const title = t("testPlan.io.button");
   return (
     <>
-      <button type="button" className="pj-action" data-natural="" {...menu.triggerProps}>
+      <button type="button" className="header-action" data-natural="" {...menu.triggerProps}>
         <ArrowDownUp size={16} aria-hidden="true" />
-        <span className="pj-action__label">{title}</span>
+        <span className="header-action__label">{title}</span>
         <ChevronDown size={15} aria-hidden="true" />
       </button>
       <ResponsiveMenu

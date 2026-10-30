@@ -55,7 +55,7 @@ export function ScheduleStep({ form, set }: StepProps) {
             <span>{t("testPlan.sprintGen.to")}</span>
             <input type="date" disabled />
           </label>
-          <button type="button" className="pj-action" disabled title={t("testPlan.sprintGen.soonTitle")}>
+          <button type="button" className="header-action" disabled title={t("testPlan.sprintGen.soonTitle")}>
             {t("testPlan.sprintGen.button")}
           </button>
         </div>

@@ -276,19 +276,19 @@ function ProjectList() {
           {all.length > 0 && (
             <button
               type="button"
-              className="pj-action"
+              className="header-action"
               onClick={() => void exportAll()}
               disabled={busy}
             >
               <Download size={16} aria-hidden="true" />
-              <span className="pj-action__label">
+              <span className="header-action__label">
                 {busy ? t("projects.exporting") : t("projects.exportAll")}
               </span>
             </button>
           )}
           <button className="pj-primary" type="button" onClick={() => setCreating(true)}>
             <Plus size={16} aria-hidden="true" />
-            <span className="pj-action__label">{t("projects.new")}</span>
+            <span className="header-action__label">{t("projects.new")}</span>
           </button>
         </div>
       </header>
@@ -310,7 +310,7 @@ function ProjectList() {
           </button>
           <button
             type="button"
-            className="pj-action"
+            className="header-action"
             onClick={() => {
               setCreating(false);
               setName("");

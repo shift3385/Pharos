@@ -128,7 +128,7 @@ export function StepCompact({ current, completion, onGo }: NavProps) {
       </div>
       <button
         type="button"
-        className="pj-action"
+        className="header-action"
         data-natural=""
         aria-haspopup="dialog"
         aria-expanded={open}

@@ -117,7 +117,7 @@ export function ToolsStep({ value, onChange }: { value: string[]; onChange: (nex
               }
             }}
           />
-          <button type="button" className="pj-action" onClick={add}>
+          <button type="button" className="header-action" onClick={add}>
             <Plus size={16} aria-hidden="true" />
             {t("testPlan.toolsPicker.add")}
           </button>

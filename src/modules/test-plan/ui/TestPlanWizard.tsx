@@ -235,9 +235,9 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
           onExportPdf={() => void exportPdf()}
           onExportXlsx={() => void exportXlsx()}
         />
-        <button type="button" className="pj-action" data-primary="" onClick={trySave} disabled={saving}>
+        <button type="button" className="header-action" data-primary="" onClick={trySave} disabled={saving}>
           <Check size={16} aria-hidden="true" />
-          <span className="pj-action__label">{saving ? t("testPlan.saving") : t("testPlan.save")}</span>
+          <span className="header-action__label">{saving ? t("testPlan.saving") : t("testPlan.save")}</span>
         </button>
       </>
     ),
@@ -303,21 +303,21 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
             </div>
             <footer className="tpw__foot">
               {step > 0 ? (
-                <button type="button" className="pj-action" onClick={() => goTo(step - 1)}>
+                <button type="button" className="header-action" onClick={() => goTo(step - 1)}>
                   <ChevronLeft size={16} aria-hidden="true" />
-                  <span className="pj-action__label">{t("testPlan.prev")}</span>
+                  <span className="header-action__label">{t("testPlan.prev")}</span>
                 </button>
               ) : (
                 <span />
               )}
               {last ? (
-                <button type="button" className="pj-action tpw__next" data-primary="" onClick={trySave} disabled={saving}>
+                <button type="button" className="header-action tpw__next" data-primary="" onClick={trySave} disabled={saving}>
                   <Check size={16} aria-hidden="true" />
-                  <span className="pj-action__label">{t("testPlan.nav.finish")}</span>
+                  <span className="header-action__label">{t("testPlan.nav.finish")}</span>
                 </button>
               ) : (
-                <button type="button" className="pj-action tpw__next" onClick={() => goTo(step + 1)}>
-                  <span className="pj-action__label">
+                <button type="button" className="header-action tpw__next" onClick={() => goTo(step + 1)}>
+                  <span className="header-action__label">
                     {t("testPlan.nav.nextStep", { title: t(`testPlan.step.${STEP_IDS[step + 1]}`) })}
                   </span>
                   <ChevronRight size={16} aria-hidden="true" />

@@ -181,12 +181,12 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
         </div>
         <button
           type="button"
-          className="pj-action"
+          className="header-action"
           disabled={busy}
           onClick={() => void exportProject(project)}
         >
           <Download size={16} aria-hidden="true" />
-          <span className="pj-action__label">{t("projects.settings.exportZip")}</span>
+          <span className="header-action__label">{t("projects.settings.exportZip")}</span>
         </button>
       </section>
 
@@ -207,7 +207,7 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
         </div>
         <button type="button" className="pj-danger" onClick={() => void askDelete()}>
           <Trash2 size={16} aria-hidden="true" />
-          <span className="pj-action__label">{t("projects.deleteTitle")}</span>
+          <span className="header-action__label">{t("projects.deleteTitle")}</span>
         </button>
       </section>
 
