@@ -34,8 +34,15 @@ let mounted = 0;
  * while still dirty (e.g. opening a new case by its id right after saving,
  * possibly after an `await`) goes through `bypass(go)`: the next location
  * change is let through, sync or async, `navigate(-1)` included. The bypass
- * ends at that location change, or when the form becomes dirty again.
+ * ends at that location change, when the form becomes dirty again, or when
+ * `go` throws or rejects (a failed save keeps the guard armed). Edge case: a
+ * different location change during the `await` (another navigation the user
+ * starts meanwhile) ends the bypass early, so `go`'s own navigation then asks.
  * If the screen turns clean while a navigation is held, it proceeds.
+ *
+ * `ignore` is evaluated per navigation that changes the path or the query
+ * string (hash-only changes never ask). Pass a stable function (module level
+ * or `useCallback`): a new one each render re-registers the blocker.
  */
 export function useUnsavedChangesGuard(
   dirty: boolean,
@@ -100,7 +107,18 @@ export function useUnsavedChangesGuard(
 
   const bypass = useCallback((go: () => void | Promise<void>) => {
     skip.current = true;
-    return go();
+    // A `go` that fails (e.g. the save throws before navigating) must leave
+    // the guard armed: the changes are still unsaved.
+    const disarmFailed = (error: unknown) => {
+      skip.current = false;
+      throw error;
+    };
+    try {
+      const result = go();
+      return result instanceof Promise ? result.catch(disarmFailed) : result;
+    } catch (error) {
+      return disarmFailed(error);
+    }
   }, []);
 
   const dialog =
