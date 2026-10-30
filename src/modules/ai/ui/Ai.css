@@ -146,7 +146,10 @@
   gap: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--color-surface-2);
+  /* surface-1, not surface-2: the capability chips (StatusPill) only reach
+   * AA on it (capabilityChips.test.ts). */
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
 }
 
 .ai-params__caps {
@@ -169,6 +172,12 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Neutral chips (✗, locked) use primary text: secondary text on the muted
+ * tint is right at 4.5:1, with no margin (capabilityChips.test.ts). */
+.ai-chip.pill[data-tone="neutral"] {
+  --pill-text: var(--color-text-primary);
 }
 
 .ai-params__grid {
