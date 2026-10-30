@@ -1,5 +1,6 @@
 import type { TestPlan } from "../model/types";
-import { TEST_LEVELS, TEST_TYPES, TOOLS } from "../model/catalogs";
+import { TEST_LEVELS, TEST_TYPES } from "../model/catalogs";
+import { deliverableLabels, toolLabels } from "../model/catalogLabels";
 import { methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
@@ -32,10 +33,10 @@ export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
     testTypes: loc(d.testTypes, TEST_TYPES, "testPlan.typeLabel", t),
     methodology,
     testLevels: loc(d.testLevels, TEST_LEVELS, "testPlan.levelLabel", t),
-    deliverables: d.deliverables ?? [],
+    deliverables: deliverableLabels(d.deliverables, t),
     environmentConfig: d.environmentConfig ?? "",
     environmentRequirements: d.environmentRequirements ?? "",
-    tools: loc(d.tools, TOOLS, "testPlan.toolLabel", t),
+    tools: toolLabels(d.tools),
     automationStrategy: d.automationStrategy ?? "",
     testDataManagement: d.testDataManagement ?? "",
     defectManagement: d.defectManagement ?? "",

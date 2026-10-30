@@ -1,0 +1,758 @@
+/* Plan wizard (RED-V2, SPEC §8 «Plan», ScrPlan, ACTUALIZACION §5). The layout
+   follows the app container, never the window: `data-viewport` for the three
+   views; the 1360 px step-list threshold is measured on the same container
+   (`useWideApp`), so only one step navigation is rendered. */
+
+.tpw {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(16px, 2cqi, 24px);
+  min-width: 0;
+}
+
+.tpw__main {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: clamp(12px, 1.6cqi, 16px);
+  min-width: 0;
+}
+
+/* Form + side panel: the panel drops below the form when they do not fit. */
+.tpw__cols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: clamp(12px, 1.6cqi, 16px);
+  min-width: 0;
+}
+
+.tpw-card,
+.tpw__form {
+  min-width: 0;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.tpw__form {
+  display: flex;
+  flex: 999 1 400px;
+  flex-direction: column;
+  gap: 18px;
+  min-width: min(400px, 100%);
+  padding: clamp(18px, 2.2cqi, 28px) clamp(18px, 2.2cqi, 28px) 0;
+}
+
+.tpw__step-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tpw__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+}
+
+.tpw__status [data-dirty] {
+  color: var(--color-warning-text);
+}
+
+.tpw__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.tpw__title:focus {
+  outline: none;
+}
+
+.tpw__title:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tpw__desc {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.tpw__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* The footer stays in view and in one line; «Siguiente: …» clips. */
+.tpw__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 calc(-1 * clamp(18px, 2.2cqi, 28px));
+  padding: 12px clamp(18px, 2.2cqi, 28px);
+  background: var(--color-surface-1);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 12px 12px;
+}
+
+.tpw__foot > * {
+  min-width: 0;
+}
+
+.tpw__next {
+  flex: 0 1 auto;
+  max-width: 70%;
+}
+
+/* ---- Step navigation ---- */
+.tpw-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.tpw-progress {
+  display: block;
+  flex: none;
+  height: 6px;
+  overflow: hidden;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-pill);
+}
+
+.tpw-progress__bar {
+  display: block;
+  height: 100%;
+  background: var(--color-navy-500);
+  border-radius: var(--radius-pill);
+}
+
+.tpw-dot {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 11.5px;
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: 50%;
+}
+
+.tpw-dot[data-done] {
+  color: var(--color-success-text);
+  background: color-mix(in oklab, var(--color-success) 14%, transparent);
+  border-color: transparent;
+}
+
+.tpw-dot[data-current] {
+  color: var(--color-on-navy);
+  background: var(--color-navy-500);
+  border-color: var(--color-navy-500);
+}
+
+/* Vertical list, from 1360 px of app container (useWideApp): sticky above the content
+   (z-index 2), its own scroll, never wraps under the form. */
+.tpw-rail {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  width: clamp(220px, 24cqi, 272px);
+  max-height: calc(100dvh - var(--topbar-height, 64px) - 48px);
+  overflow-y: auto;
+  padding: 16px 12px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+
+.tpw-rail__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 6px;
+}
+
+.tpw-rail__title {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tpw-rail__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.tpw-rail__list,
+.tpw-strip__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tpw-rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tpw-rail__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  text-align: left;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.tpw-rail__step:hover {
+  background: var(--color-surface-2);
+}
+
+.tpw-rail__step[data-current] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+
+.tpw-rail__name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* Horizontal stepper, 600–1359 px: summary, title, progress and a strip of
+   circles that scrolls; the current step is a pill with its name. */
+.tpw-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.tpw-strip__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.tpw-strip__meta {
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+}
+
+.tpw-strip__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-semibold);
+}
+
+.tpw-strip__pct {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.tpw-strip__list {
+  display: flex;
+  gap: 6px;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tpw-strip__list > li {
+  flex: none;
+}
+
+.tpw-strip__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.tpw-strip__step[data-current] {
+  padding: 0 12px 0 4px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+
+.tpw-strip__name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile: «Paso N de 19 · X completados» + «Ver pasos». */
+.tpw-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.tpw-compact__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tpw-sheet-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ---- Side panel ---- */
+.tpw-side {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(260px, 100%);
+  max-width: 100%;
+}
+
+.tpw-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.tpw-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tpw-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+}
+
+.tpw-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0;
+  font-size: var(--fs-caption);
+}
+
+.tpw-facts dt {
+  color: var(--color-text-muted);
+}
+
+.tpw-facts dd {
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.tpw-side .tp-revs__item {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.tpw-revs-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.tpw-revs-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tpw-io-menu {
+  width: 280px;
+}
+
+/* ---- Step contents ---- */
+.tpw-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.tpw-group-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tpw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 14px;
+}
+
+.tpw-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 0;
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-navy-500);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.tpw-link:hover {
+  text-decoration: underline;
+}
+
+.tpw-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tpw-icon-btn:hover {
+  background: var(--color-surface-2);
+}
+
+[data-viewport="mobile"] .tpw-icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.tpw-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+[data-viewport="mobile"] .tpw-input {
+  height: 44px;
+  font-size: 15px;
+}
+
+.tpw-own {
+  flex: none;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-info-text);
+  background: color-mix(in oklab, var(--color-info) 14%, transparent);
+  border-radius: var(--radius-pill);
+}
+
+.tpw-count {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.tpw-badge {
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+/* Step 8: deliverables by group. */
+.tpw-deliv {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tpw-deliv__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 14px 20px;
+}
+
+.tpw-deliv__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tpw-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 36px;
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
+}
+
+[data-viewport="mobile"] .tpw-check {
+  min-height: 44px;
+}
+
+.tpw-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-navy-500);
+}
+
+.tpw-check__icon {
+  flex: none;
+  color: var(--color-navy-500);
+}
+
+.tpw-other {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tpw-other__label {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+}
+
+.tpw-other__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Step 10: tools. */
+.tpw-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tpw-tools__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tpw-tools__more {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border-radius: 10px;
+}
+
+.tpw-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: 9px;
+}
+
+.tpw-search:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.tpw-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+[data-viewport="mobile"] .tpw-search {
+  height: 44px;
+}
+
+/* Step 14: sprints from a range, not available yet (SPEC §4 disabled). */
+.tpw-soon {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border-input);
+  border-radius: 10px;
+}
+
+.tpw-soon__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+}
+
+.tpw-soon__title {
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
+.tpw-soon__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  opacity: 0.55;
+}
+
+.tpw-soon__row > .tp-field {
+  flex: 1 1 160px;
+}
+
+.tpw-soon__row :disabled {
+  cursor: not-allowed;
+}
+
+[data-viewport="mobile"] .tp-sched-row {
+  flex-wrap: wrap;
+}
+
+[data-viewport="mobile"] .tp-sched-row input {
+  flex: 1 1 140px;
+}
+
+/* Step 19: before finishing. */
+.tpw-finish {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--color-surface-2);
+  border-radius: 10px;
+}
+
+.tpw-finish__title {
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-semibold);
+}
+
+.tpw-finish__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+}
+
+.tpw-finish__missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tpw-ok {
+  color: var(--color-success-text);
+}
+
+.tpw-warn {
+  color: var(--color-warning-text);
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
-import { TestPlanPage, projectPlanStatus } from "@modules/test-plan";
+import { PLAN_SAVED_EVENT, TestPlanPage, projectPlanStatus } from "@modules/test-plan";
 import {
   TestCasesPage,
   projectCaseCount,
@@ -88,7 +88,7 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
   const facts = useHeaderFacts(projectId, ownerId, tab);
 
   if (project === null) return <Navigate to="/projects" replace />;
-  if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
+  if (!project) return <p className="pj-muted">{t("common.loading")}</p>;
 
   const header: ProjectHeaderInfo = {
     name: project.name,
@@ -140,8 +140,8 @@ interface HeaderFacts {
 }
 
 /** What the header says about the project (plan status, counts). Reloaded
- *  when the section changes (a case or requirement may have been added) and
- *  after a sync; a late answer for an older request is dropped. */
+ *  when the section changes (a case or requirement may have been added), after
+ *  a sync and after the plan is saved; a late answer for an older request is dropped. */
 function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection) {
   const [facts, setFacts] = useState<HeaderFacts | null>(null);
   useEffect(() => {
@@ -156,9 +156,11 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     };
     void load();
     window.addEventListener("pharos:synced", load);
+    window.addEventListener(PLAN_SAVED_EVENT, load);
     return () => {
       live = false;
       window.removeEventListener("pharos:synced", load);
+      window.removeEventListener(PLAN_SAVED_EVENT, load);
     };
   }, [projectId, ownerId, tab]);
   return facts;

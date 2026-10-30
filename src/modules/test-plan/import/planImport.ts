@@ -16,6 +16,7 @@ import {
   type DetectionRow,
 } from "@shared/import/xlsx";
 import { CEREMONIES, CEREMONY_FREQUENCIES } from "../model/catalogs";
+import { DELIVERABLE_REV, TOOL_REV } from "../model/catalogLabels";
 import type {
   ClosureCriterion,
   RiskItem,
@@ -42,7 +43,6 @@ export interface ImportResult {
 const tp = (loc: typeof esLocale) => loc.testPlan as unknown as Record<string, Record<string, string>>;
 const TYPE_REV = reverse(tp(esLocale).typeLabel, tp(enLocale).typeLabel);
 const LEVEL_REV = reverse(tp(esLocale).levelLabel, tp(enLocale).levelLabel);
-const TOOL_REV = reverse(tp(esLocale).toolLabel, tp(enLocale).toolLabel);
 const STATUS_REV = reverse(tp(esLocale).statusLabel, tp(enLocale).statusLabel);
 const FREQUENCY_REV = reverse(tp(esLocale).frequencyLabel, tp(enLocale).frequencyLabel);
 
@@ -69,7 +69,7 @@ const FIELDS: FieldSpec[] = [
   { id: "testTypes", labelKey: "testPlan.step.types", aliases: ["tipos de prueba", "test types"], dir: "below", kind: "catalog", rev: TYPE_REV },
   { id: "methodology", labelKey: "testPlan.methodology", aliases: ["metodologia agil (sprints, ceremonias, retrospectiva)", "agile methodology (sprints, ceremonies, retrospective)", "metodologia", "methodology"], dir: "below", kind: "methodology" },
   { id: "testLevels", labelKey: "testPlan.step.levels", aliases: ["niveles de prueba", "test levels"], dir: "below", kind: "catalog", rev: LEVEL_REV },
-  { id: "deliverables", labelKey: "testPlan.step.deliverables", aliases: ["entregables de prueba", "test deliverables"], dir: "below", kind: "listFree" },
+  { id: "deliverables", labelKey: "testPlan.step.deliverables", aliases: ["entregables de prueba", "test deliverables"], dir: "below", kind: "catalog", rev: DELIVERABLE_REV },
   { id: "environmentConfig", labelKey: "testPlan.environmentConfig", aliases: ["configuracion", "configuration"], dir: "below", kind: "text" },
   { id: "environmentRequirements", labelKey: "testPlan.environmentRequirements", aliases: ["requisitos de hardware y software", "hardware and software requirements"], dir: "below", kind: "text" },
   { id: "tools", labelKey: "testPlan.tools", aliases: ["herramientas de prueba", "test tools"], dir: "below", kind: "catalog", rev: TOOL_REV },

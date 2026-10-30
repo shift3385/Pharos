@@ -43,3 +43,19 @@
 [data-viewport="mobile"] .pj-action {
   height: 44px;
 }
+
+/* The view's one main action (SPEC §4: amber, once per view). */
+.pj-action[data-primary] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.pj-action[data-primary]:hover {
+  background: color-mix(in oklab, var(--color-accent) 88%, var(--color-text-primary));
+}
+
+.pj-action[data-primary] > svg {
+  color: currentColor;
+}
