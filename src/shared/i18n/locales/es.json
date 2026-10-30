@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "Suite de gestión de pruebas QA",
     "version": "Versión {{version}}"
   },
   "dbError": {
@@ -316,8 +315,26 @@
     "lastName": "Apellidos",
     "login": "Entrar",
     "register": "Registrarme",
-    "toRegister": "¿No tienes cuenta? Regístrate",
-    "toLogin": "¿Ya tienes cuenta? Inicia sesión",
+    "noAccount": "¿No tienes cuenta?",
+    "signUpLink": "Regístrate",
+    "haveAccount": "¿Ya tienes cuenta?",
+    "signInLink": "Inicia sesión",
+    "emailPlaceholder": "nombre@empresa.com",
+    "showPassword": "Mostrar contraseña",
+    "or": "o",
+    "google": "Continuar con Google",
+    "soon": "Próximamente",
+    "googleSoonTitle": "Inicio de sesión con Google: próximamente",
+    "encryptedNote": "Tus datos se guardan cifrados en este equipo.",
+    "languageLabel": "Idioma",
+    "brand": {
+      "label": "Pharos",
+      "eyebrow": "Gestión de pruebas QA",
+      "tagline": "El faro que guía tus proyectos de pruebas a puerto seguro.",
+      "point1": "Plan de pruebas conforme a ISO/IEC/IEEE 29119",
+      "point2": "Casos y Gherkin sincronizados en tiempo real",
+      "point3": "Trazabilidad requisito ↔ caso ↔ defecto"
+    },
     "loggingIn": "Entrando…",
     "logout": "Cerrar sesión",
     "offline": "Sin conexión",
@@ -329,14 +346,6 @@
       "network": "No se pudo conectar con el servidor.",
       "generic": "Algo salió mal. Inténtalo de nuevo."
     }
-  },
-  "topbar": {
-    "toggleTheme": "Cambiar tema claro u oscuro",
-    "language": "Idioma"
-  },
-  "theme": {
-    "light": "Claro",
-    "dark": "Oscuro"
   },
   "language": {
     "es": "Español",
@@ -427,7 +436,13 @@
     "auditTitle": "Auditoría",
     "createdAt": "Creado",
     "updatedAt": "Actualizado",
-    "revision": "Revisión"
+    "revision": "Revisión",
+    "preferences": "Preferencias",
+    "language": "Idioma",
+    "theme": "Tema",
+    "themeHelp": "Faro Nocturno, en claro u oscuro.",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro"
   },
   "testPlan": {
     "title": "Planes de prueba",
@@ -767,24 +782,137 @@
     "gherkinKeys": "Tab sangra. Para salir del editor con el teclado, pulsa Escape y después Tab."
   },
   "dashboard": {
-    "title": "Bienvenido a Pharos",
+    "title": "Inicio",
     "greeting": "Hola, {{name}}",
-    "subtitle": "El faro que guía tus proyectos de pruebas a puerto seguro.",
-    "newProject": "Iniciar nuevo proyecto de pruebas",
-    "newProjectDesc": "Crea el proyecto y redacta su plan con el asistente.",
-    "continue": "Continuar proyecto existente",
-    "continueDesc": "Busca un proyecto en la lista y retómalo donde lo dejaste.",
-    "projectsTitle": "Tus proyectos",
-    "searchLabel": "Buscar proyecto",
-    "searchPlaceholder": "Buscar por nombre…",
-    "empty": "Aún no tienes proyectos. Empieza con «Iniciar nuevo proyecto de pruebas».",
-    "noMatch": "Ningún proyecto coincide con «{{query}}».",
-    "lastAccess": "Último acceso: {{date}}",
-    "neverOpened": "Sin abrir en este equipo · actualizado {{date}}",
-    "noPlan": "Sin plan",
-    "progressLabel": "Progreso de {{name}}",
-    "progress": "{{approved}} de {{total}} casos aprobados",
-    "noCases": "Sin casos todavía"
+    "summary": "Tienes <b>{{pending}}</b> en {{projects}}.",
+    "pendingTests_one": "{{count}} prueba pendiente",
+    "pendingTests_other": "{{count}} pruebas pendientes",
+    "openProjects_one": "{{count}} proyecto abierto",
+    "openProjects_other": "{{count}} proyectos abiertos",
+    "summaryEmpty": "Aún no tienes proyectos. Crea el primero para empezar.",
+    "newProject": "Nuevo proyecto",
+    "sumNote": "Suma de tus <b>{{projects}}</b> · periodo: {{period}}",
+    "loading": "Cargando el Inicio…",
+    "kpi": {
+      "projects": "Proyectos abiertos",
+      "projectsTitle": "Ir a Proyectos",
+      "closing_one": "{{count}} cierra este mes",
+      "closing_other": "{{count}} cierran este mes",
+      "noneClosing": "Ninguno cierra este mes",
+      "pending": "Pruebas pendientes",
+      "pendingOf": "de {{total}}",
+      "pendingTitle": "Casos sin ejecutar en todos los proyectos abiertos",
+      "noRuns": "Sin ejecuciones registradas",
+      "rate": "Tasa de éxito",
+      "rateTitle": "Se calculará cuando registres ejecuciones (versión 0.2.0)",
+      "rateEmpty": "Sin ejecuciones todavía",
+      "defects": "Defectos abiertos",
+      "defectsTitle": "Defectos sin cerrar en el Planificador de tus proyectos",
+      "critical_one": "{{count}} crítico",
+      "critical_other": "{{count}} críticos",
+      "noCritical": "Ninguno crítico"
+    },
+    "period": {
+      "label": "Periodo",
+      "trigger": "Periodo de los datos",
+      "sheetTitle": "Periodo de los datos",
+      "today": "Hoy",
+      "7d": "Últimos 7 días",
+      "14d": "Últimos 14 días",
+      "30d": "Últimos 30 días",
+      "month": "Este mes",
+      "cycles": "Ciclo de pruebas",
+      "cycleCurrent": "Ciclo actual",
+      "cyclePrevious": "Ciclo anterior",
+      "custom": "Rango personalizado…",
+      "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
+      "compare": "Comparar con el periodo anterior",
+      "compareTitle": "Disponible cuando haya ejecuciones que comparar (versión 0.2.0)",
+      "lower": {
+        "today": "hoy",
+        "7d": "últimos 7 días",
+        "14d": "últimos 14 días",
+        "30d": "últimos 30 días",
+        "month": "este mes"
+      }
+    },
+    "exec": {
+      "title": "Ejecución por proyecto",
+      "subtitle": "Estado de los casos de prueba en cada proyecto abierto",
+      "pass": "Pasa",
+      "fail": "Falla",
+      "blocked": "Bloqueado",
+      "notRun": "No ejecutado",
+      "rowLabel": "{{name}}: {{executed}} de {{total}} casos ejecutados",
+      "noRuns": "Las ejecuciones llegan con la versión 0.2.0: por ahora ningún caso tiene resultado.",
+      "noCases": "Sin casos todavía",
+      "empty": "Sin proyectos abiertos."
+    },
+    "exit": {
+      "title": "Criterios de salida",
+      "subtitle": "Definidos en el plan de pruebas",
+      "choose": "Elegir proyecto",
+      "menuLabel": "Proyectos",
+      "search_one": "Buscar en {{count}} proyecto…",
+      "search_other": "Buscar entre {{count}} proyectos…",
+      "searchLabel": "Buscar proyecto",
+      "filters": "Filtrar proyectos",
+      "all": "Todos",
+      "risk": "En riesgo",
+      "ok": "Cumplen",
+      "filterSoon": "Necesita resultados de ejecución (versión 0.2.0)",
+      "byClose": "Por fecha de cierre",
+      "closes": "Cierra {{date}}",
+      "noDate": "Sin fecha de cierre",
+      "noMatch": "Ningún proyecto coincide con «{{query}}».",
+      "viewAll_one": "Ver el proyecto en Proyectos",
+      "viewAll_other": "Ver los {{count}} en Proyectos",
+      "executed": "ejecutado",
+      "ringLabel": "Porcentaje ejecutado: sin datos",
+      "headline": "Aún no hay ejecuciones",
+      "sub": "Los criterios se evaluarán cuando registres ejecuciones.",
+      "close": "Cierre: {{date}}",
+      "noData": "Sin datos",
+      "noCriteria": "El plan de este proyecto no define criterios de salida.",
+      "noPlan": "Este proyecto aún no tiene plan de pruebas.",
+      "openPlan": "Abrir el plan",
+      "empty": "Crea un proyecto para ver sus criterios de salida."
+    },
+    "daily": {
+      "title": "Ejecuciones diarias",
+      "subtitle": "Todos los proyectos · {{period}}",
+      "totalLabel": "Ejecuciones en el periodo",
+      "pass": "Pasa",
+      "fail": "Falla",
+      "none": "Sin ejecuciones",
+      "dayTitle": "{{date}}: sin ejecuciones",
+      "chartLabel": "Ejecuciones por día, {{period}}: sin ejecuciones registradas"
+    },
+    "upcoming": {
+      "title": "Próximas pruebas",
+      "subtitle": "Pendientes de ejecutar, por prioridad",
+      "viewAll": "Ver todas",
+      "filters": "Estado de las pruebas",
+      "notRun": "No ejecutadas",
+      "blocked": "Bloqueadas",
+      "retest": "Re-test",
+      "soonTitle": "Necesita resultados de ejecución (versión 0.2.0)",
+      "empty": "No hay casos pendientes. Crea casos en un proyecto para verlos aquí.",
+      "priority": {
+        "critical": "Prioridad crítica",
+        "high": "Prioridad alta",
+        "medium": "Prioridad media",
+        "low": "Prioridad baja"
+      }
+    },
+    "tabs": {
+      "label": "Secciones del Inicio",
+      "summary": "Resumen",
+      "execution": "Ejecución",
+      "tests": "Pruebas",
+      "pendingBubble_one": "{{count}} prueba pendiente",
+      "pendingBubble_other": "{{count}} pruebas pendientes"
+    }
   },
   "section": {
     "comingInPhase": "Se implementará en la Fase {{phase}}",

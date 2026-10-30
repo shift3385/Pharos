@@ -2,11 +2,21 @@ import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@test/utils";
-import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "./useTheme";
+
+/** Minimal consumer: the theme switches live in the shell and Perfil. */
+function ThemeProbe() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <button type="button" data-testid="theme-toggle" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+      {theme}
+    </button>
+  );
+}
 
 describe("theme (Faro Nocturno)", () => {
   it("reflects the active theme on <html data-theme>", () => {
-    renderWithProviders(<ThemeToggle />);
+    renderWithProviders(<ThemeProbe />);
     expect(document.documentElement.getAttribute("data-theme")).toMatch(
       /^(light|dark)$/,
     );
@@ -14,7 +24,7 @@ describe("theme (Faro Nocturno)", () => {
 
   it("toggles between light and dark and persists the choice", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<ThemeToggle />);
+    renderWithProviders(<ThemeProbe />);
 
     const before = document.documentElement.getAttribute("data-theme");
     await user.click(screen.getByTestId("theme-toggle"));
