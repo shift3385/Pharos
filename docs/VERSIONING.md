@@ -44,7 +44,7 @@ La numeración anterior de los hitos (`v0.0.N`) queda sustituida:
 
 | Hito (nombre anterior) | Contenido                                                                | Versión                                  |
 | ---------------------- | ------------------------------------------------------------------------ | ---------------------------------------- |
-| v0.0.1 + v0.0.2        | Planificación y diseño + trazabilidad                                    | **0.1.0** (hoy `main` = `0.1.0-beta.1`) |
+| v0.0.1 + v0.0.2        | Planificación y diseño + trazabilidad                                    | **0.1.0** (`v0.1.0-beta.1`; `main` pasó a `0.2.0-alpha.1` el 2026-10-30) |
 | v0.0.3                 | Ejecución manual + modelo Run/Result + importación JUnit/Cucumber/CTRF   | **0.2.0**                                |
 | v0.0.3.x               | `pharos-core`, SQLite en disco con cifrado por página, paquetes de oplog | **0.3.0**                                |
 | v0.0.4                 | Móvil Android                                                            | **0.4.0**                                |

@@ -7,6 +7,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## [Sin publicar]
 
+## [0.2.0-alpha.1] - 2026-10-30
+
+Primera alfa de 0.2.0: el rediseño completo de la interfaz (ola 4) sobre todo lo de
+`0.1.0-beta.1`. La ejecución de pruebas llega más adelante en 0.2.0.
+
 ### Añadido
 
 - **Base para avisar de cambios sin guardar (RED-V3k):** un mecanismo común que el editor de
@@ -628,6 +633,7 @@ validaciones nativas pendientes.
 - Corregida una fuga entre usuarios de la misma instalación: los proyectos son
   ahora propiedad de cada usuario.
 
-[Sin publicar]: https://github.com/shift3385/Pharos/compare/v0.1.0-beta.1...HEAD
+[Sin publicar]: https://github.com/shift3385/Pharos/compare/v0.2.0-alpha.1...HEAD
+[0.2.0-alpha.1]: https://github.com/shift3385/Pharos/compare/v0.1.0-beta.1...v0.2.0-alpha.1
 [0.1.0-beta.1]: https://github.com/shift3385/Pharos/compare/v0.1.0-alpha.1...v0.1.0-beta.1
 [0.1.0-alpha.1]: https://github.com/shift3385/Pharos/releases/tag/v0.1.0-alpha.1
