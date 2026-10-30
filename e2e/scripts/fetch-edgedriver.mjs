@@ -38,13 +38,17 @@ try {
 
 // curl.exe ships with Windows 10+ and retries a dropped connection, which
 // Node's fetch does not (the host is slow and sometimes resets).
+// Plain --retry skips connection errors such as "(55) Send failure: Connection
+// was aborted", which broke a CI run; --retry-all-errors retries those too.
 mkdirSync(binDir, { recursive: true });
 const zipPath = join(binDir, "edgedriver_win64.zip");
 const url = `${HOST}/${version}/edgedriver_win64.zip`;
 try {
-  execFileSync("curl.exe", ["-fsSL", "--retry", "3", "-o", zipPath, url], {
-    stdio: ["ignore", "inherit", "inherit"],
-  });
+  execFileSync(
+    "curl.exe",
+    ["-fsSL", "--retry", "5", "--retry-all-errors", "--retry-delay", "3", "-o", zipPath, url],
+    { stdio: ["ignore", "inherit", "inherit"] },
+  );
 } catch {
   console.error(`msedgedriver ${version} could not be downloaded from ${url}`);
   process.exit(1);
