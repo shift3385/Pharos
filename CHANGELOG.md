@@ -50,6 +50,31 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Cerrar sesión e Idioma** pasan al menú del usuario. El idioma ya no está en la barra
   superior.
 - La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
+- **Proyectos (RED-V2):** «Recientes» con los 4 últimos que abriste y «Todos los proyectos» en
+  una tabla con búsqueda por nombre o prefijo, orden (último acceso, nombre, última
+  modificación, cobertura de requisitos…) con dirección, y páginas de 12, 24 o 48. En el móvil
+  cada proyecto es una fila de dos líneas. Exportar y eliminar pasan a Ajustes del proyecto y
+  al menú «⋯» de cada fila. El % ejecutado, los filtros En curso / Cerrados y los órdenes sin
+  datos aparecen como «Próximamente».
+- **Ajustes del proyecto (RED-V2):** nombre, prefijo y dígitos con una vista previa de la
+  numeración, «Exportar proyecto (ZIP)» y «Eliminar proyecto». Para eliminar hay que escribir el
+  prefijo (o el nombre, si no hay prefijo). El diálogo dice cuántos planes, casos, requisitos y
+  tarjetas se pierden, y solo se cierra con «Cancelar».
+- **Plan de pruebas (RED-V2):**
+  - Arriba, «Paso N de 19 · Guardado · hace N min», y abajo un pie fijo en una línea
+    («Siguiente: …» o «Finalizar plan»).
+  - Los pasos se ven según el ancho: una lista vertical a la izquierda desde 1360 px, una tira
+    de pasos con el actual centrado desde 600 px, y una barra con «Ver pasos» en el móvil.
+  - «Estado del plan» y las últimas revisiones van junto al formulario, o debajo si no caben.
+  - «Revisiones», «Importar / Exportar» (un solo menú) y «Guardar» están en la cabecera.
+    Guardar ya no vuelve al paso 1.
+  - Paso 8: los entregables de ISO/IEC/IEEE 29119-3 por grupos, más los propios. Paso 10: las
+    10 herramientas más usadas, «Más herramientas (65)» con buscador y un campo libre. Paso 14:
+    «Generar sprints a partir de un rango», todavía «Próximamente». Paso 19: «Antes de
+    terminar» con los pasos que faltan. El paso 1 permite cambiar el estado del plan.
+  - Los entregables y las herramientas se guardan como claves, y se exportan en el idioma de
+    la exportación. Los planes anteriores se leen sin migración
+    ([ADR-0030](docs/adr/0030-entregables-y-herramientas-como-catalogo.md)).
 - **Cabecera del proyecto (RED-V2):** cada sección del proyecto empieza con una cabecera con
   el prefijo, el nombre, el estado del plan y el número de casos y requisitos. Sustituye a la
   barra «← Proyectos <nombre>», que repetía la barra superior del móvil.
