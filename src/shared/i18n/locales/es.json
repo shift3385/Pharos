@@ -1202,5 +1202,22 @@
       "perPage": "Por página",
       "perPageValue": "{{count}} por página"
     }
+  },
+  "table": {
+    "selectAll": "Seleccionar todas las filas",
+    "selectRow": "Seleccionar {{name}}",
+    "filter": {
+      "clear": "Limpiar filtro"
+    },
+    "pagination": {
+      "label": "Paginación",
+      "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b>",
+      "prev": "Página anterior",
+      "next": "Página siguiente",
+      "pagePrefix": "Página",
+      "compact": "Página {{page}} de {{pages}}",
+      "perPage": "Por página",
+      "perPageValue": "{{count}} por página"
+    }
   }
 }

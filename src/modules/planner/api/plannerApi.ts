@@ -55,3 +55,8 @@ export const plannerApi = {
 export async function projectDefects(projectId: string, ownerId: string): Promise<PlannerCard[]> {
   return (await plannerApi.list(projectId, ownerId)).filter((c) => c.kind === "defect");
 }
+
+/** How many cards a project's board has (all kinds and columns). */
+export async function projectCardCount(projectId: string, ownerId: string): Promise<number> {
+  return (await plannerApi.list(projectId, ownerId)).length;
+}
