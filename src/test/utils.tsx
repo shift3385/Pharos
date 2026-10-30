@@ -1,11 +1,10 @@
 import type { ReactElement, ReactNode } from "react";
 import { render } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { MemoryRouter } from "react-router";
 import i18n from "@shared/i18n";
 import { ThemeProvider } from "@shared/theme/ThemeProvider";
 import { AuthProvider } from "@modules/auth";
-import { ViewportProvider } from "@shared/ui/ViewportProvider";
+import { TestRouter } from "./TestRouter";
 
 const FAKE_SESSION = {
   accessToken: "test-access-token",
@@ -38,9 +37,7 @@ export function renderWithProviders(
       <ThemeProvider>
         <I18nextProvider i18n={i18n}>
           <AuthProvider initialSession={authenticated ? FAKE_SESSION : null}>
-            <MemoryRouter initialEntries={[route]}>
-              <ViewportProvider>{children}</ViewportProvider>
-            </MemoryRouter>
+            <TestRouter route={route}>{children}</TestRouter>
           </AuthProvider>
         </I18nextProvider>
       </ThemeProvider>
