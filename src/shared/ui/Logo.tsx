@@ -7,11 +7,15 @@ export function Logo({
   size = 32,
   surface = "light",
   title = "Pharos",
+  decorative,
 }: {
   size?: number;
   /** "navy" lightens the tower for navy backgrounds (sidebar, mobile bar). */
   surface?: "light" | "navy";
   title?: string;
+  /** Next to a visible "Pharos": hidden from screen readers, so the name is
+   *  not announced twice. */
+  decorative?: boolean;
 }) {
   const gold = "var(--color-accent)";
   const tower = surface === "navy" ? "var(--color-navy-300)" : "var(--color-navy-500)";
@@ -21,8 +25,9 @@ export function Logo({
       width={size}
       height={size}
       viewBox="0 0 48 48"
-      role="img"
-      aria-label={title}
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : title}
+      aria-hidden={decorative || undefined}
       className="app-logo"
       data-variant={compact ? "compact" : "full"}
       style={{ display: "block", flex: "none", overflow: "visible" }}

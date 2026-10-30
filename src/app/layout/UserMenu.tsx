@@ -7,6 +7,7 @@ import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { useTheme } from "@shared/theme/useTheme";
 import { MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { TruncatedText } from "@shared/ui/TruncatedText";
 
 function initials(name: string): string {
@@ -27,7 +28,8 @@ export function UserMenu({ variant }: { variant: "sidebar" | "rail" | "mobile" }
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
-  const menu = usePopover("menu");
+  // On mobile the menu is a bottom sheet, a dialog.
+  const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
   if (!user) return null;
 
   const name = user.displayName;

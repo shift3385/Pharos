@@ -51,8 +51,8 @@ export function Popover({
   className?: string;
   onKeyDown?: (e: ReactKeyboardEvent<HTMLDivElement>) => void;
   panelRef?: RefObject<HTMLDivElement>;
-  /** Element to focus once the panel is placed and visible (a hidden element
-   *  cannot take the focus, so this waits for the first measurement). */
+  /** Element to focus once the panel is placed. By default a `dialog`
+   *  popover focuses itself, so its content is next in the reading order. */
   initialFocus?: () => HTMLElement | null | undefined;
   children: ReactNode;
 }) {
@@ -66,13 +66,15 @@ export function Popover({
     const anchor = anchorRef.current;
     const panel = ref.current;
     if (!anchor || !panel) return;
-    setPosition(
-      computePosition(
-        anchor.getBoundingClientRect(),
-        { width: panel.offsetWidth, height: panel.scrollHeight },
-        placement,
-        { width: window.innerWidth, height: window.innerHeight },
-      ),
+    const next = computePosition(
+      anchor.getBoundingClientRect(),
+      { width: panel.offsetWidth, height: panel.scrollHeight },
+      placement,
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    // Same place → same object, so re-measuring never loops.
+    setPosition((prev) =>
+      prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next,
     );
   }, [anchorRef, ref, placement]);
 
@@ -84,12 +86,38 @@ export function Popover({
     place();
   }, [open, place]);
 
+  // The focus moves in once the panel is placed and shown (a layout effect of
+  // that commit: an element still being measured could refuse it).
   const placed = open && position !== null;
   const focusRef = useRef(initialFocus);
   focusRef.current = initialFocus;
+  useLayoutEffect(() => {
+    if (!placed) return;
+    const target = focusRef.current ? focusRef.current() : role === "dialog" ? ref.current : null;
+    target?.focus();
+  }, [placed, role, ref]);
+
+  // When it closes (a choice, Tab, Escape) with the focus inside, the focus
+  // goes back to the trigger instead of being lost with the panel. Tracked
+  // with focus events: by the time the cleanup runs the panel is gone.
+  const focusInside = useRef(false);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const anchor = anchorRef.current;
+    return () => {
+      if (focusInside.current) anchor?.focus();
+      focusInside.current = false;
+    };
+  }, [open, anchorRef]);
+
+  // Re-measured when its content changes size (e.g. a filtered list).
   useEffect(() => {
-    if (placed) focusRef.current?.()?.focus();
-  }, [placed]);
+    const panel = ref.current;
+    if (!open || !panel || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => place());
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, [open, ref, place]);
 
   useEffect(() => {
     if (!open) return;
@@ -136,9 +164,18 @@ export function Popover({
       data-pop=""
       data-placement={position?.direction ?? "down"}
       className={`popover ${className}`.trim()}
-      // Hidden for the first measurement so it never flashes in the wrong place.
-      style={position ? position.style : { visibility: "hidden", top: 0, left: 0 }}
+      tabIndex={role === "dialog" ? -1 : undefined}
+      // Transparent for the first measurement so it never flashes in the wrong
+      // place (not `visibility: hidden`, which would refuse the focus).
+      style={
+        position ? position.style : { opacity: 0, pointerEvents: "none", top: 0, left: 0 }
+      }
       onKeyDown={onKeyDown}
+      onFocus={() => (focusInside.current = true)}
+      onBlur={(e) => {
+        if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)))
+          focusInside.current = false;
+      }}
     >
       {children}
     </div>,

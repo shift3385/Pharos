@@ -30,8 +30,13 @@ function items(root: HTMLElement | null): HTMLElement[] {
 /** Arrow keys move through the items (looping) and Home/End jump to the ends
  * (SPEC §10). From a field in the header (e.g. the project search), Tab and
  * ↓ go to the first item and Shift+Tab from the first item goes back to it;
- * Tab from an item closes the menu. */
-function onMenuKeyDown(e: KeyboardEvent<HTMLElement>, close: () => void) {
+ * Tab from an item closes the menu, handing the focus to the trigger first so
+ * Tab continues from there. Home/End inside a text field move its caret. */
+function onMenuKeyDown(
+  e: KeyboardEvent<HTMLElement>,
+  close: () => void,
+  anchor: HTMLElement | null,
+) {
   const list = items(e.currentTarget);
   if (list.length === 0) return;
   const at = list.indexOf(document.activeElement as HTMLElement);
@@ -43,9 +48,13 @@ function onMenuKeyDown(e: KeyboardEvent<HTMLElement>, close: () => void) {
     } else if (at === 0 && e.shiftKey && field) {
       e.preventDefault();
       field.focus();
-    } else if (at >= 0) close();
+    } else if (at >= 0) {
+      anchor?.focus();
+      close();
+    }
     return;
   }
+  if (e.target instanceof HTMLInputElement && (e.key === "Home" || e.key === "End")) return;
   const go = (i: number) => {
     e.preventDefault();
     list[(i + list.length) % list.length].focus();
@@ -103,11 +112,20 @@ export function Menu({
       className={`menu ${className}`.trim()}
       panelRef={panelRef}
       initialFocus={firstFocus}
-      onKeyDown={(e) => onMenuKeyDown(e, onClose)}
+      onKeyDown={(e) => onMenuKeyDown(e, onClose, anchorRef.current)}
     >
       {header && <div className="menu__head">{header}</div>}
       <div role="menu" aria-label={label} className="menu__list">
-        <MenuContext.Provider value={{ close: onClose, kind: "menu" }}>
+        <MenuContext.Provider
+          // A choice hands the focus back to the trigger before the menu goes.
+          value={{
+            close: () => {
+              anchorRef.current?.focus();
+              onClose();
+            },
+            kind: "menu",
+          }}
+        >
           {children}
         </MenuContext.Provider>
       </div>
@@ -185,10 +203,13 @@ export function MenuSeparator() {
  * the backdrop or the ✕ closes it; choosing an option closes it.
  */
 export function BottomSheet({
+  id,
   title,
   onClose,
   children,
 }: {
+  /** Id for the trigger's `aria-controls`. */
+  id?: string;
   title: string;
   onClose: () => void;
   children: ReactNode;
@@ -197,6 +218,7 @@ export function BottomSheet({
   const titleId = useId();
   return (
     <Dialog
+      id={id}
       labelledBy={titleId}
       onClose={onClose}
       className="bs"
@@ -227,7 +249,10 @@ export function BottomSheet({
 }
 
 /** A `Menu` on tablet and desktop and a `BottomSheet` on mobile, with the same
- *  `MenuItem` children, so screens never branch on the breakpoint themselves. */
+ *  `MenuItem` children, so screens never branch on the breakpoint themselves.
+ *  The sheet takes the menu's `id`; pair it with
+ *  `usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu")` so the
+ *  trigger's `aria-haspopup` says what opens. */
 export function ResponsiveMenu({
   title,
   ...menu
@@ -236,7 +261,7 @@ export function ResponsiveMenu({
   if (breakpoint !== "mobile") return <Menu {...menu} />;
   if (!menu.open) return null;
   return (
-    <BottomSheet title={title} onClose={menu.onClose}>
+    <BottomSheet id={menu.id} title={title} onClose={menu.onClose}>
       {menu.header}
       {menu.children}
     </BottomSheet>

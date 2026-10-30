@@ -81,7 +81,7 @@ export function MobileTopbar({ active }: { active: ActiveProject | null }) {
         </>
       ) : (
         <span className="mtopbar__brand">
-          <Logo size={30} surface="navy" />
+          <Logo size={30} surface="navy" decorative />
           <span className="mtopbar__name">{t("app.name")}</span>
         </span>
       )}

@@ -24,6 +24,12 @@ describe("Logo (SPEC §11)", () => {
     expect(tower()).toHaveAttribute("fill", "var(--color-navy-300)");
   });
 
+  it("is hidden from screen readers when decorative (next to a visible name)", () => {
+    const { container } = render(<Logo decorative />);
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("takes its accessible name from title", () => {
     render(<Logo title="Inicio de Pharos" />);
     expect(screen.getByRole("img", { name: "Inicio de Pharos" })).toBeInTheDocument();

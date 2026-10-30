@@ -15,10 +15,15 @@ function Soon({ title, text }: { title: string; text: string }) {
   );
 }
 
+const IS_MAC =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
+
 /**
  * Global search trigger (SPEC §7): a field-like button with the Ctrl K hint
- * on tablet and desktop. Ctrl K (⌘K on macOS) opens it from anywhere. Until
- * global search exists (RED-W1) it opens a "coming soon" panel.
+ * (⌘K on macOS) on tablet and desktop. The shortcut opens it from anywhere,
+ * except while a dialog is open or when something else already handled the
+ * key. Until global search exists (RED-W1) it opens a "coming soon" panel,
+ * which takes the focus.
  */
 export function SearchTrigger() {
   const { t } = useTranslation();
@@ -27,10 +32,12 @@ export function SearchTrigger() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setOpen(true);
-      }
+      // Autofill can send a keydown without `key`.
+      if (e.defaultPrevented || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+      if (e.key?.toLowerCase() !== "k") return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      e.preventDefault();
+      setOpen(true);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -47,7 +54,7 @@ export function SearchTrigger() {
       >
         <Search size={15} aria-hidden="true" />
         <span className="topbar__search-text">{t("shell.searchPlaceholder")}</span>
-        <kbd className="topbar__kbd">{t("shell.searchShortcut")}</kbd>
+        <kbd className="topbar__kbd">{IS_MAC ? "⌘K" : t("shell.searchShortcut")}</kbd>
       </button>
       <Popover
         open={pop.open}

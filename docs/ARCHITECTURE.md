@@ -232,7 +232,15 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     - flips up when it does not fit below;
     - `max-height` is the visible room (at least 120 px);
     - shifts inwards with an 8 px margin;
-    - only one is open at a time.
+    - only one is open at a time;
+    - measured while transparent (not `visibility: hidden`, which would
+      refuse the focus); the focus moves in once it is placed (a `dialog`
+      popover focuses itself), and returns to the trigger after a choice, Tab
+      or Escape;
+    - re-measured when its content changes size;
+    - above dialogs (z-index 110 vs 100).
+  - Ctrl K / ⌘K opens search unless a dialog (`aria-modal`) is open or the
+    key was already handled.
   - `Menu` / `MenuItem` / `MenuLabel` / `MenuSeparator`: `role="menu"`,
     arrows, Home and End.
   - `BottomSheet` (on top of `Dialog`): handle, title, ✕ and ≥ 46 px options.

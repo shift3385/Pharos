@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import { Menu, MenuItem, MenuSeparator, ResponsiveMenu } from "./Menu";
 import { usePopover } from "./usePopover";
+import { useBreakpoint } from "./useBreakpoint";
 
 function Harness({
   name = "Opciones",
@@ -15,7 +16,8 @@ function Harness({
   onPick?: (v: string) => void;
   responsive?: boolean;
 }) {
-  const menu = usePopover("menu");
+  const breakpoint = useBreakpoint();
+  const menu = usePopover(responsive && breakpoint === "mobile" ? "dialog" : "menu");
   const props = {
     open: menu.open,
     onClose: menu.close,
@@ -91,6 +93,21 @@ describe("Menu (SPEC §6/§10)", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  it("after a choice or Tab the focus goes back to the trigger", async () => {
+    render(<Harness />);
+    const trigger = screen.getByRole("button", { name: "Opciones" });
+    await userEvent.click(trigger);
+    await userEvent.keyboard("{Enter}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    await userEvent.click(trigger);
+    // Tab on an item hands the focus to the trigger and closes; the browser's
+    // own Tab then continues from the trigger.
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Uno" }), { key: "Tab" });
+    expect(trigger).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+  });
+
   it("Escape closes it and gives the focus back to the trigger", async () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "Opciones" });
@@ -139,7 +156,11 @@ describe("Menu (SPEC §6/§10)", () => {
     const onPick = vi.fn();
     render(<Harness responsive onPick={onPick} />);
     await userEvent.click(screen.getByRole("button", { name: "Opciones" }));
-    expect(screen.getByRole("dialog", { name: "Opciones" })).toHaveClass("bs");
+    const sheet = screen.getByRole("dialog", { name: "Opciones" });
+    expect(sheet).toHaveClass("bs");
+    const trigger = screen.getByRole("button", { name: "Opciones" });
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(trigger).toHaveAttribute("aria-controls", sheet.id);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     const option = screen.getByRole("button", { name: "Dos" });
     expect(option).toHaveClass("menu__item--sheet");

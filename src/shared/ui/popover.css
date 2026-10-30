@@ -2,7 +2,8 @@
 
 .popover {
   position: fixed;
-  z-index: 90;
+  /* Above dialogs (100): a menu opened inside a dialog shows over it. */
+  z-index: 110;
   min-width: 200px;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -44,6 +45,10 @@
 }
 
 /* ---- Menu ---- */
+.popover[role="dialog"]:focus {
+  outline: none;
+}
+
 .menu {
   width: 240px;
   padding: 6px;

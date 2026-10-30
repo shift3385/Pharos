@@ -174,7 +174,8 @@ export function Sidebar({
     <aside className="sidebar" data-mode={mode} data-phase={phase}>
       <div className="sidebar__brand">
         {rail && toggle}
-        <Logo size={rail ? 38 : 35} surface="navy" />
+        {/* In the full sidebar the name is written next to it. */}
+        <Logo size={rail ? 38 : 35} surface="navy" decorative={!rail} />
         {!rail && <span className="sidebar__brand-name">{t("app.name")}</span>}
         {!rail && toggle}
       </div>

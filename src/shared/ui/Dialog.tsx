@@ -56,6 +56,7 @@ function focusables(root: HTMLElement): HTMLElement[] {
  *   `data-viewport`, so view-specific styles still apply.
  */
 export function Dialog({
+  id,
   labelledBy,
   label,
   describedBy,
@@ -68,6 +69,8 @@ export function Dialog({
   overlayClassName = "cd-overlay",
   children,
 }: {
+  /** Id of the dialog element (e.g. for a trigger's `aria-controls`). */
+  id?: string;
   labelledBy?: string;
   label?: string;
   describedBy?: string;
@@ -163,6 +166,7 @@ export function Dialog({
     >
       <div
         ref={ref}
+        id={id}
         className={className}
         role={role}
         aria-modal="true"

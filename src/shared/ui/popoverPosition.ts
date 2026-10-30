@@ -58,15 +58,18 @@ export function computePosition(
     : panel.height > below && above > below;
   const room = up ? above : below;
   const left = clampLeft(placement === "bottom-end" ? anchor.right - width : anchor.left);
+  // At least 120 px (or the whole window if smaller); when the room is less,
+  // the panel is pushed back inside the window instead of overflowing it.
+  const maxHeight = Math.max(Math.min(MIN_HEIGHT, viewport.height - EDGE * 2), room);
   const vertical = up
-    ? { bottom: viewport.height - anchor.top + GAP }
-    : { top: anchor.bottom + GAP };
+    ? { bottom: Math.min(viewport.height - anchor.top + GAP, viewport.height - EDGE - maxHeight) }
+    : { top: Math.min(anchor.bottom + GAP, viewport.height - EDGE - maxHeight) };
   return {
     direction: up ? "up" : "down",
     style: {
       ...vertical,
       left,
-      maxHeight: Math.max(MIN_HEIGHT, room),
+      maxHeight,
       maxWidth: viewport.width - EDGE * 2,
     },
   };

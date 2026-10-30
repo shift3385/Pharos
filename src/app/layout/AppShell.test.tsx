@@ -100,6 +100,19 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(screen.queryByRole("dialog", { name: "Buscar" })).not.toBeInTheDocument();
     });
 
+    it("Ctrl K does nothing while a dialog is open", async () => {
+      renderShell();
+      const modal = document.createElement("div");
+      modal.setAttribute("aria-modal", "true");
+      document.body.appendChild(modal);
+      fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+      expect(screen.queryByRole("dialog", { name: "Buscar" })).not.toBeInTheDocument();
+      modal.remove();
+      // A keydown without `key` (autofill) is ignored without failing.
+      fireEvent.keyDown(document, { ctrlKey: true });
+      expect(screen.queryByRole("dialog", { name: "Buscar" })).not.toBeInTheDocument();
+    });
+
     it("the bell opens the notifications placeholder", async () => {
       renderShell();
       await userEvent.click(screen.getByTestId("notifications-trigger"));
@@ -120,8 +133,8 @@ describe("AppShell (SPEC §2/§7)", () => {
       );
       expect(within(menu).getByRole("menuitem", { name: "Cerrar sesión" })).toBeInTheDocument();
       await userEvent.click(within(menu).getByRole("menuitemradio", { name: "English" }));
-      expect(i18n.resolvedLanguage).toBe("en");
-      expect(document.documentElement).toHaveAttribute("lang", "en");
+      await waitFor(() => expect(i18n.resolvedLanguage).toBe("en"));
+      await waitFor(() => expect(document.documentElement).toHaveAttribute("lang", "en"));
     });
 
     it("keeps Administración current on Plantillas and Motor de IA, with their temporary links", () => {
@@ -162,6 +175,10 @@ describe("AppShell (SPEC §2/§7)", () => {
         "aria-checked",
         "true",
       );
+      // Home/End move the caret in the field, not the focus.
+      await userEvent.type(search, "x{Home}");
+      expect(search).toHaveFocus();
+      await userEvent.clear(search);
       await userEvent.type(search, "banca");
       expect(screen.queryByRole("menuitemradio", { name: /Portal/ })).not.toBeInTheDocument();
       expect(screen.getByRole("menuitemradio", { name: /App Móvil Banca/ })).toBeInTheDocument();

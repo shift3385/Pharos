@@ -25,6 +25,12 @@ describe("computePosition (SPEC §6)", () => {
     expect(tall.style.maxHeight).toBe(800 - 140 - 6 - 8);
     const cramped = computePosition(rect(100, 30, 100, 740), { width: 240, height: 500 }, "bottom-start", viewport);
     expect(cramped.style.maxHeight).toBe(120);
+    // …pushed back inside the window instead of overflowing it.
+    const bottom = cramped.direction === "down"
+      ? Number(cramped.style.top) + 120
+      : 800 - Number(cramped.style.bottom);
+    expect(bottom).toBeLessThanOrEqual(800 - 8);
+    expect(Number(cramped.style.top ?? 8)).toBeGreaterThanOrEqual(8);
   });
 
   it("shifts inwards with an 8 px margin instead of leaving the window", () => {

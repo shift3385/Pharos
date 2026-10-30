@@ -95,6 +95,10 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   });
 
   it("menus take the focus once they are visible (SPEC §10)", async () => {
+    // The unsaved wizard may ask before leaving it: accept.
+    await browser.execute(() => {
+      window.confirm = () => true;
+    });
     /** Role of the focused element. */
     const focusedRole = () => browser.execute(() => document.activeElement?.getAttribute("role") ?? "");
     // Project switcher: the search field first; Tab enters the list.
@@ -108,6 +112,15 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     await userMenuTrigger().click();
     await expect(button(es.shell.myProfile)).toBeFocused();
     await browser.keys(["Escape"]);
+    await expect(userMenuTrigger()).toBeFocused();
+    // Keyboard only (WCAG 2.1.1): Enter opens, ↓ moves, Enter chooses, and the
+    // focus comes back to the trigger.
+    await browser.keys(["Enter"]);
+    await expect(button(es.shell.myProfile)).toBeFocused();
+    await browser.keys(["ArrowDown"]);
+    await expect(button(es.nav.admin)).toBeFocused();
+    await browser.keys(["Enter"]);
+    await expect($(`h1=${es.admin.title}`)).toBeDisplayed();
     await expect(userMenuTrigger()).toBeFocused();
   });
 
