@@ -169,7 +169,7 @@ describe("shared form parts", () => {
 
 describe("admin", () => {
   it("passes axe and blocks an out-of-range retention with a summary", async () => {
-    renderWithProviders(<AdminPage />);
+    renderWithProviders(<AdminPage />, { route: "/admin?tab=general" });
     await expectNoAxeViolations();
     const retention = screen.getByRole("spinbutton", {
       name: /Retention|Retención/,

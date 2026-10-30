@@ -1,129 +1,197 @@
+/* Administración → Plantillas (SPEC §8, ScrAdministracion tab="templates").
+ * Buttons and the segmented control (`adm-*`) come from Admin.css. */
+
 .tpl {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  max-width: 900px;
-}
-.tpl__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
   gap: var(--space-4);
-}
-.tpl__subtitle {
-  margin-top: var(--space-2);
-  color: var(--color-text-secondary);
-}
-.tpl__import {
-  flex-shrink: 0;
-  height: 40px;
-  padding: 0 var(--space-4);
-  font-weight: var(--fw-semibold);
-  color: var(--color-accent-contrast);
-  background: var(--color-accent);
-  border: none;
-  border-radius: var(--radius-md);
-  white-space: nowrap;
-}
-.tpl__muted {
-  color: var(--color-text-secondary);
-}
-.tpl__group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.tpl__group-title {
-  font-size: var(--fs-title-sm);
-  color: var(--color-text-primary);
-}
-.tpl__list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.tpl__card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.tpl__card-main {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.tpl__name {
-  font-weight: var(--fw-medium);
-  color: var(--color-text-primary);
-}
-.tpl__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.tpl__badge {
-  padding: 1px var(--space-2);
-  font-size: var(--fs-caption);
-  color: var(--color-navy-500);
-  background: var(--color-navy-100);
-  border-radius: var(--radius-pill);
-}
-.tpl__badge--builtin {
-  color: var(--color-accent-contrast);
-  background: var(--color-accent);
-}
-.tpl__ver {
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  color: var(--color-text-muted);
-}
-.tpl__desc {
-  color: var(--color-text-secondary);
-  font-size: var(--fs-caption);
-}
-.tpl__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-.tpl__btn {
-  height: 36px;
-  padding: 0 var(--space-3);
-  font-weight: var(--fw-medium);
-  color: var(--color-text-secondary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  white-space: nowrap;
-}
-.tpl__btn:hover:not(:disabled) {
-  color: var(--color-navy-500);
-  border-color: var(--color-navy-300);
-}
-.tpl__btn:disabled {
-  opacity: 0.6;
-}
-.tpl__del {
-  width: 36px;
-  height: 36px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.tpl__del:hover {
-  color: var(--color-error-text);
-  border-color: var(--color-error);
+  min-width: 0;
 }
 
-/* ---- Create / edit form modal ---- */
+.tpl__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.tpl__bar-spacer {
+  flex: 1 1 0;
+}
+
+.tpl__search {
+  flex: 1 1 220px;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-3);
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+.tpl__search:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.tpl__search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.tpl__import {
+  flex: 0 0 auto;
+}
+
+[data-viewport="mobile"] .tpl__search {
+  flex-basis: 100%;
+  max-width: none;
+  height: 44px;
+}
+
+[data-viewport="mobile"] .tpl__search input {
+  font-size: 15px;
+}
+
+[data-viewport="mobile"] .tpl__bar-spacer {
+  display: none;
+}
+
+.tpl__empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.tpl__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- Card ---- */
+.tpl-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.tpl-card:hover {
+  border-color: var(--color-navy-300);
+  box-shadow: var(--shadow-1);
+}
+
+.tpl-card__top,
+.tpl-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.tpl-card__spacer {
+  flex: 1;
+}
+
+.tpl-card__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+
+[data-theme="dark"] .tpl-card__icon {
+  color: var(--color-navy-300);
+  background: color-mix(in srgb, var(--color-navy-300) 16%, transparent);
+}
+
+.tpl-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.tpl-card__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  color: var(--color-text-primary);
+}
+
+.tpl-card__desc {
+  margin: 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+.tpl-card__ver {
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+
+.tpl-badge,
+.tpl-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  border-radius: var(--radius-pill);
+}
+
+.tpl-badge {
+  color: var(--color-info-text);
+  background: color-mix(in srgb, var(--color-info) 14%, transparent);
+}
+
+.tpl-badge--shared {
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-text-muted) 14%, transparent);
+  cursor: help;
+}
+
+.tpl-tag {
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Import / edit form (TemplateFormModal) ---- */
 .tpl-form {
   max-width: 520px;
 }

@@ -31,9 +31,9 @@ describe("navigation", () => {
     // Templates live under Administration (SPEC §7), not in the sidebar.
     expect(screen.queryByTestId("nav-templates")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("nav-admin"));
-    await user.click(screen.getByTestId("admin-section-templates"));
+    await user.click(screen.getByTestId("admin-tab-templates"));
     expect(
-      screen.getByRole("heading", { name: "Plantillas" }),
+      screen.getByRole("tabpanel", { name: "Plantillas" }),
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("nav-dashboard"));

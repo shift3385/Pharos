@@ -1,16 +1,13 @@
 import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router";
 import { applyBackground } from "@modules/admin";
 import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
 import { isTauri } from "@shared/platform";
-import { ADMIN, isCurrent } from "@app/navConfig";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { ShellChromeProvider } from "@shared/ui/ShellChrome";
 import { useShellChrome } from "@shared/ui/useShellChrome";
 import { Sidebar } from "./Sidebar";
 import { BottomNav, MobileTopbar, ProjectPills, Topbar } from "./Topbar";
-import { AdminSectionNav } from "./AdminSectionNav";
 import { useActiveProject, useSidebarToggle, type ActiveProject } from "./useShellState";
 import "./AppShell.css";
 
@@ -26,7 +23,6 @@ import "./AppShell.css";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
   const breakpoint = useBreakpoint();
   const { collapsed, phase, toggle } = useSidebarToggle();
   const active = useActiveProject();
@@ -83,7 +79,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             tabIndex={-1}
           >
             <div className="app-shell__page">
-              {isCurrent(ADMIN, pathname) && <AdminSectionNav />}
               {children}
             </div>
           </main>

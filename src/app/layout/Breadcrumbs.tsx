@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { projectPath } from "@modules/projects";
+import { adminTabFrom } from "@modules/admin";
 import type { ActiveProject } from "./useShellState";
 
 interface Crumb {
@@ -11,12 +12,12 @@ interface Crumb {
 }
 
 /** Where the user is (SPEC §7): «Pharos › Inicio», «Proyectos › <proyecto> ›
- *  Planificador», «Administración › Plantillas»… The last crumb is the
+ *  Planificador», «Administración › Motor de IA» (the tab)… The last crumb is the
  *  current page; long names end in «…» with the full name in `title`. */
 export function Breadcrumbs({ active }: { active: ActiveProject | null }) {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
-  const crumbs = trail(pathname, active, t);
+  const { pathname, search } = useLocation();
+  const crumbs = trail(pathname, search, active, t);
   return (
     <nav className="crumbs" aria-label={t("shell.breadcrumbs")}>
       <ol className="crumbs__list">
@@ -50,6 +51,7 @@ export function Breadcrumbs({ active }: { active: ActiveProject | null }) {
 
 function trail(
   pathname: string,
+  search: string,
   active: ActiveProject | null,
   t: (key: string) => string,
 ): Crumb[] {
@@ -63,9 +65,10 @@ function trail(
     ];
   }
   if (pathname.startsWith("/projects")) return [app, { label: t("nav.projects") }];
-  if (pathname.startsWith("/templates")) return [admin, { label: t("nav.templates") }];
-  if (pathname.startsWith("/ai")) return [admin, { label: t("nav.ai") }];
-  if (pathname.startsWith("/admin")) return [app, { label: t("nav.admin") }];
+  if (pathname.startsWith("/admin")) {
+    const tab = adminTabFrom(new URLSearchParams(search).get("tab"));
+    return [admin, { label: t(`admin.tabs.${tab}`) }];
+  }
   if (pathname.startsWith("/profile")) return [app, { label: t("nav.profile") }];
   return [app, { label: t("nav.dashboard") }];
 }

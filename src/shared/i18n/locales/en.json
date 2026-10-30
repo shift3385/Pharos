@@ -32,8 +32,6 @@
     "close": "Close"
   },
   "templates": {
-    "title": "Templates",
-    "subtitle": "Repository of plan and case templates. The PHAROS ones are included.",
     "kind": {
       "plan": "Test plans",
       "case": "Test cases"
@@ -58,22 +56,31 @@
       "usagePrompt": "Usage prompt (for the AI)",
       "usagePromptHint": "Describe what it is for and when the AI should suggest it.",
       "save": "Save"
-    }
+    },
+    "kindLabel": "Template type",
+    "search": "Search templates",
+    "searchPlaceholder": "Search templates…",
+    "noResults": "No template matches «{{query}}».",
+    "empty": {
+      "plan": "No plan templates yet. Import one (.xlsx).",
+      "case": "No case templates yet. Import one (.xlsx)."
+    },
+    "moreActions": "More actions: {{name}}",
+    "moreActionsShort": "More actions",
+    "readOnlyHint": "Read-only: download it and import it to get your own copy.",
+    "kindCount": "{{kind}} ({{count}})"
   },
   "ai": {
-    "title": "AI assistant",
-    "subtitle": "Pick the online provider with your own key (Gemini, OpenAI, Claude, OpenRouter or a compatible endpoint) and the offline one (Ollama). The app works without AI.",
     "test": "Test connection",
     "testing": "Testing…",
-    "mode": "Mode",
+    "mode": "Use",
     "modeOption": {
       "auto": "Automatic",
-      "online": "Online",
-      "offline": "Offline"
+      "online": "Online only",
+      "offline": "Local only"
     },
     "using": "Using",
     "provider": {
-      "offline": "Ollama (offline)",
       "none": "None"
     },
     "onlineProvider": "Provider",
@@ -87,14 +94,7 @@
     "keyWhere": "Get your key at",
     "baseUrl": "Base URL",
     "baseUrlHint": "E.g. https://api.groq.com/openai/v1 or http://localhost:1234/v1 (LM Studio). Must be https; http is only allowed for localhost.",
-    "endpointStatus": "Endpoint",
-    "endpointSet": "Configured",
-    "endpointNotSet": "Base URL missing",
     "keyOptional": "API key (optional)",
-    "tab": {
-      "online": "Online AI",
-      "offline": "Offline AI"
-    },
     "keyStatus": "API key",
     "keyConfigured": "Configured",
     "keyNotSet": "Not set",
@@ -110,20 +110,13 @@
     "modelsFound": "{{count}} models available: pick one in the Model field",
     "modelsNone": "The provider returned no models",
     "modelsFailed": "Could not list models: {{error}}",
-    "temperature": "Temperature",
-    "temperatureIgnored": "Claude's API does not accept a temperature setting, so this value is not sent.",
-    "ollamaStatus": "Ollama",
     "ollamaOffline": "Not detected (is it running?)",
-    "modelInstalled": "Model installed",
-    "modelMissing": "Model missing",
     "endpoint": "Endpoint",
     "downloadModel": "Download “{{model}}”",
-    "refresh": "Refresh status",
     "dontClose": "Don't close the app while the model downloads. If it closes, the download resumes when you reopen it (progress is not lost).",
     "modelReady": "Model downloaded and ready",
     "ollamaError": "Could not reach Ollama",
     "testPrompt": "Reply only with: OK",
-    "testOk": "Connection OK",
     "testEmpty": "The provider returned an empty reply",
     "testNoProvider": "No AI available: configure an online provider (key and model) or Ollama",
     "testFailedWith": "AI connection failed: {{error}}",
@@ -166,7 +159,79 @@
         "custom": "OpenAI-compatible",
         "ollama": "Ollama (local)"
       }
-    }
+    },
+    "save": "Save",
+    "saved": "AI settings saved",
+    "retry": "Retry",
+    "online": {
+      "title": "Online provider",
+      "desc": "Used when there is a connection.",
+      "state": {
+        "connected": "Connected",
+        "offline": "Offline",
+        "notSet": "Not configured"
+      }
+    },
+    "ollama": {
+      "desc": "Local model to work without internet.",
+      "state": {
+        "ready": "Ready",
+        "missing": "Model missing",
+        "offline": "Not detected"
+      },
+      "missingHint": "The model is missing: download it here or run «ollama pull {{model}}»."
+    },
+    "providerSub": {
+      "gemini": "Google",
+      "openai": "GPT",
+      "anthropic": "Anthropic",
+      "openrouter": "Multi-model",
+      "custom": "Own endpoint"
+    },
+    "keyHint": "Stored encrypted on this device. Never included in exports or diagnostics.",
+    "keyReplace": "Key saved · paste another to replace it",
+    "keyShow": "Show what you type",
+    "keyHide": "Hide what you type",
+    "listModelsNeedsKey": "Save the key (or the endpoint URL) first.",
+    "testSaveFirst": "Save your changes to test them.",
+    "responseIn": "Answered in {{ms}} ms",
+    "whereUsed": {
+      "title": "Where AI is used",
+      "body": "Suggesting risks and test types in the plan, generating cases from a requirement and completing steps in the editor."
+    },
+    "params": {
+      "supported": "Parameters this model accepts:",
+      "yes": "Accepts",
+      "no": "Does not accept",
+      "temperature": "Temperature",
+      "send": "Send",
+      "notSent": "Not sent",
+      "soon": "Coming soon",
+      "soonHint": "Coming soon: Pharos does not send this parameter yet.",
+      "compatUnknown": "There is no way to know which parameters an own endpoint accepts, so the temperature is optional.",
+      "note": {
+        "range": "From {{min}} to {{max}}. Lower = more predictable answers.",
+        "modelNoTemperature": "This model does not accept a temperature, so this value is not sent.",
+        "claudeNoTemperature": "The Claude API does not accept a temperature setting, so this value is not sent.",
+        "openrouter": "OpenRouter publishes which parameters each model accepts; the temperature is sent and the model may ignore it.",
+        "compat": "Turn it on only if your endpoint accepts it."
+      },
+      "reasoning": {
+        "level": "Thinking level",
+        "reasoningEffort": "Reasoning effort",
+        "effort": "Effort",
+        "option": {
+          "auto": "Auto",
+          "minimal": "Minimal",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
+      }
+    },
+    "providerCompat": "Compatible",
+    "keyDiscardConfirm": "You typed a key that is not saved. Switching provider discards it. Continue?",
+    "savedWithKey": "AI settings and key saved"
   },
   "sync": {
     "synced": "Synced",
@@ -259,19 +324,8 @@
   "admin": {
     "title": "Administration",
     "subtitle": "Templates, AI engine and application settings.",
-    "section": {
-      "templates": {
-        "title": "Templates",
-        "desc": "Repository of plan and case templates."
-      },
-      "ai": {
-        "title": "AI engine",
-        "desc": "Online provider with your key (Gemini, OpenAI, Claude, OpenRouter…) and offline (Ollama)."
-      }
-    },
     "saved": "Settings saved",
     "settings": {
-      "title": "Settings",
       "background": "Custom background",
       "bgChoose": "Choose image…",
       "bgClear": "Remove",
@@ -294,8 +348,63 @@
       "title": "Diagnostics",
       "version": "Installed version",
       "desc": "Creates a .zip to report a problem: app version, operating system, WebView2, applied migrations and the recent logs.",
-      "excludes": "It never includes your data: no projects, plans, cases or requirements, no profile, no database, keys, tokens or AI keys. Emails, tokens and paths with your user name are masked."
-    }
+      "excludes": "It never includes your data: no projects, plans, cases or requirements, no profile, no database, keys, tokens or AI keys. Emails, tokens and paths with your user name are masked.",
+      "subtitle": "To report a problem.",
+      "export": "Export diagnostics"
+    },
+    "tabs": {
+      "label": "Administration sections",
+      "ai": "AI engine",
+      "templates": "Templates",
+      "general": "General",
+      "sync": "Sync",
+      "security": "Security",
+      "diagnostics": "Diagnostics"
+    },
+    "groups": {
+      "resources": "Resources",
+      "application": "Application",
+      "account": "Account and data",
+      "support": "Support"
+    },
+    "general": {
+      "appearance": "Appearance",
+      "appearanceDesc": "How Pharos looks on this device.",
+      "theme": "Theme",
+      "themeHint": "Faro Nocturno, light or dark. «Match system» follows your device setting.",
+      "themeOption": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "Match system"
+      },
+      "language": "Language",
+      "storage": "Files and storage",
+      "storageDesc": "Where exports are saved and how long deleted items are kept.",
+      "appliedNow": "Theme and language apply right away."
+    },
+    "trash": {
+      "title": "Trash",
+      "soon": "Coming soon",
+      "desc": "Here you will see deleted items, restore them or empty the trash. Until then, deleted items are removed for good from this device after the retention days.",
+      "soonHint": "Coming soon: Pharos cannot show or restore deleted items yet.",
+      "restore": "Restore",
+      "empty": "Empty trash"
+    },
+    "sync": {
+      "title": "Sync",
+      "desc": "Your data lives on this device and syncs with the server.",
+      "status": "Status",
+      "account": "Account",
+      "conflicts": "Conflicts",
+      "conflictsHint": "Changes made on two devices at the same time.",
+      "review_one": "Review conflicts ({{count}})",
+      "review_other": "Review conflicts ({{count}})",
+      "noConflicts": "There are no conflicts to review.",
+      "now": "Sync now",
+      "syncing": "Syncing…"
+    },
+    "unsaved": "Unsaved changes",
+    "nothingToSave": "There are no changes to save."
   },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",
@@ -1551,13 +1660,7 @@
     "seeAllProjects": "See all projects",
     "noProjects": "No project matches.",
     "back": "Back to Projects",
-    "projectSections": "Project sections",
-    "adminSections": "Administration sections",
-    "adminSection": {
-      "ai": "AI engine",
-      "templates": "Templates",
-      "admin": "General"
-    }
+    "projectSections": "Project sections"
   },
   "sortMenu": {
     "title": "Sort by",

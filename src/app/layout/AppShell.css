@@ -947,36 +947,6 @@
   background: var(--color-navy-100);
 }
 
-/* ---- Administration sections (temporary, replaced in V4) ---- */
-.admin-sections {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  max-width: 100%;
-  margin-bottom: var(--space-5);
-  padding: 3px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.admin-sections__link {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 14px;
-  font-size: var(--fs-caption);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
-}
-
-.admin-sections__link[aria-current="page"] {
-  font-weight: var(--fw-semibold);
-  color: var(--color-text-primary);
-  background: var(--color-surface-1);
-  box-shadow: var(--shadow-1);
-}
-
 /* ---- Optional user background (Administration → custom background) ---- */
 .app-shell__bg {
   position: fixed;

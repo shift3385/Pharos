@@ -10,7 +10,6 @@ import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { profileApi } from "../api/profileApi";
-import { RecoveryKeySection } from "./RecoveryKeySection";
 import type { Profile } from "../model/types";
 import "./ProfilePage.css";
 
@@ -203,8 +202,6 @@ export function ProfilePage() {
         </form>
 
         <Preferences />
-
-        <RecoveryKeySection />
       </div>
     </section>
   );

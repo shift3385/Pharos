@@ -435,11 +435,13 @@ fn credentials(
 
 /// Calls the selected online provider with its stored key and returns the reply
 /// text. Errors are human-readable (missing key, provider message, timeout).
+/// `temperature: None` sends none: the frontend's capabilities table decides
+/// (an OpenAI-compatible endpoint may not accept it, ADR-0031).
 #[tauri::command]
 pub async fn ai_chat_online(
     provider: String,
     model: String,
-    temperature: f32,
+    temperature: Option<f32>,
     messages: Vec<AiMessage>,
     base_url: Option<String>,
 ) -> Result<String, String> {
@@ -447,7 +449,7 @@ pub async fn ai_chat_online(
     let model = model.trim();
     validate_model(provider, model)?;
     let (base, key) = credentials(provider, base_url.as_deref())?;
-    let temp = (provider != Provider::Anthropic).then_some(temperature);
+    let temp = temperature.filter(|_| provider != Provider::Anthropic);
 
     let call = chat_call(provider, &base, key.as_deref(), model, temp, &messages);
     let (status, val) = send(&call).await?;
@@ -781,7 +783,7 @@ mod tests {
         let reply = tauri::async_runtime::block_on(ai_chat_online(
             "custom".into(),
             "local-model".into(),
-            0.4,
+            Some(0.4),
             user_msg(),
             Some(base),
         ))
@@ -791,6 +793,22 @@ mod tests {
         assert!(req.starts_with("POST /v1/chat/completions"));
         assert!(req.contains(r#""model":"local-model""#));
         assert!(req.contains(r#""temperature""#));
+    }
+
+    #[test]
+    fn omits_the_temperature_when_none_is_given() {
+        let (base, requests) =
+            mock_server(vec![(200, r#"{"choices":[{"message":{"content":"OK"}}]}"#)]);
+        let reply = tauri::async_runtime::block_on(ai_chat_online(
+            "custom".into(),
+            "local-model".into(),
+            None,
+            user_msg(),
+            Some(base),
+        ))
+        .unwrap();
+        assert_eq!(reply, "OK");
+        assert!(!requests.recv().unwrap().contains(r#""temperature""#));
     }
 
     #[test]
@@ -805,7 +823,7 @@ mod tests {
         let reply = tauri::async_runtime::block_on(ai_chat_online(
             "custom".into(),
             "m".into(),
-            0.4,
+            Some(0.4),
             user_msg(),
             Some(base),
         ))
@@ -831,7 +849,7 @@ mod tests {
         let err = tauri::async_runtime::block_on(ai_chat_online(
             "custom".into(),
             "nope".into(),
-            0.4,
+            Some(0.4),
             user_msg(),
             Some(base),
         ))
@@ -851,7 +869,7 @@ mod tests {
         let err = tauri::async_runtime::block_on(ai_chat_online(
             "custom".into(),
             "m".into(),
-            0.4,
+            Some(0.4),
             user_msg(),
             Some(base),
         ))

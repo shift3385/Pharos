@@ -14,7 +14,7 @@ export function onlineProvider(provider: OnlineProviderId, baseUrl: string): AiP
       return invoke<string>("ai_chat_online", {
         provider,
         model: opts.model,
-        temperature: opts.temperature,
+        temperature: opts.temperature ?? null,
         messages,
         baseUrl: baseUrl.trim() || null,
       });

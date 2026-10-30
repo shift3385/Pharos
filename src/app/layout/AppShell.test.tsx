@@ -137,13 +137,18 @@ describe("AppShell (SPEC §2/§7)", () => {
       await waitFor(() => expect(document.documentElement).toHaveAttribute("lang", "en"));
     });
 
-    it("keeps Administración current on Plantillas and Motor de IA, with their temporary links", () => {
-      renderShell("/templates");
+    it("shows the Administration tab in the breadcrumbs (ADR-0031)", () => {
+      renderShell("/admin?tab=templates");
       expect(screen.getByTestId("nav-admin")).toHaveAttribute("aria-current", "page");
-      expect(screen.getByTestId("admin-section-templates")).toHaveAttribute("aria-current", "page");
       const crumbs = screen.getByRole("navigation", { name: "Ruta de navegación" });
       expect(within(crumbs).getByRole("link", { name: "Administración" })).toBeInTheDocument();
       expect(within(crumbs).getByText("Plantillas")).toHaveAttribute("aria-current", "page");
+    });
+
+    it("names Motor de IA, the default tab, when /admin has no tab", () => {
+      renderShell("/admin");
+      const crumbs = screen.getByRole("navigation", { name: "Ruta de navegación" });
+      expect(within(crumbs).getByText("Motor de IA")).toHaveAttribute("aria-current", "page");
     });
 
     it("inside a project shows the «Proyecto activo» group and the project in the breadcrumbs", async () => {

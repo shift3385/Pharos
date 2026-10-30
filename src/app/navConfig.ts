@@ -27,14 +27,9 @@ export interface NavItem {
 
 export const HOME: NavItem = { id: "dashboard", path: "/", icon: LayoutDashboard };
 export const PROJECTS: NavItem = { id: "projects", path: "/projects", icon: Folder };
-/** Templates and the AI engine live under Administration (SPEC §7); their
- *  routes stay until V4 moves them into its tabs. */
-export const ADMIN: NavItem = {
-  id: "admin",
-  path: "/admin",
-  icon: Settings2,
-  also: ["/templates", "/ai"],
-};
+/** Templates and the AI engine are tabs of Administration (SPEC §7,
+ *  ADR-0031); `/templates` and `/ai` redirect to `/admin?tab=…`. */
+export const ADMIN: NavItem = { id: "admin", path: "/admin", icon: Settings2 };
 export const PROFILE: NavItem = { id: "profile", path: "/profile", icon: CircleUser };
 
 /** Sidebar: Inicio and Proyectos on top, Administración under «Configuración». */

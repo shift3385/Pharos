@@ -67,6 +67,8 @@ describe("Diagnostics on the desktop (BASE-08)", () => {
 
   it("shows the version and the export action in Administration", async () => {
     await $('[data-testid="nav-admin"]').click();
+    // Diagnóstico is a tab of Administración (ADR-0031).
+    await $('[data-testid="admin-tab-diagnostics"]').click();
     const section = $('[data-testid="admin-diagnostics"]');
     await expect(section).toBeDisplayed();
     await expect(section).toHaveText(expect.stringContaining(pkg.version));

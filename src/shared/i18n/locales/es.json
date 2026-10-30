@@ -32,8 +32,6 @@
     "close": "Cerrar"
   },
   "templates": {
-    "title": "Plantillas",
-    "subtitle": "Repositorio de plantillas de plan y caso. Las de PHAROS vienen incluidas.",
     "kind": {
       "plan": "Planes de prueba",
       "case": "Casos de prueba"
@@ -58,22 +56,31 @@
       "usagePrompt": "Prompt de uso (para la IA)",
       "usagePromptHint": "Describe para qué sirve y cuándo la IA debería sugerirla.",
       "save": "Guardar"
-    }
+    },
+    "kindLabel": "Tipo de plantilla",
+    "search": "Buscar plantilla",
+    "searchPlaceholder": "Buscar plantilla…",
+    "noResults": "Ninguna plantilla coincide con «{{query}}».",
+    "empty": {
+      "plan": "Aún no hay plantillas de plan. Importa una (.xlsx).",
+      "case": "Aún no hay plantillas de caso. Importa una (.xlsx)."
+    },
+    "moreActions": "Más acciones: {{name}}",
+    "moreActionsShort": "Más acciones",
+    "readOnlyHint": "Solo lectura: descárgala e impórtala para tener tu propia copia.",
+    "kindCount": "{{kind}} ({{count}})"
   },
   "ai": {
-    "title": "Asistente de IA",
-    "subtitle": "Elige el proveedor online con tu propia clave (Gemini, OpenAI, Claude, OpenRouter o un endpoint compatible) y el offline (Ollama). La app funciona sin IA.",
     "test": "Probar conexión",
     "testing": "Probando…",
-    "mode": "Modo",
+    "mode": "Usar",
     "modeOption": {
       "auto": "Automático",
-      "online": "Online",
-      "offline": "Offline"
+      "online": "Solo online",
+      "offline": "Solo local"
     },
     "using": "En uso",
     "provider": {
-      "offline": "Ollama (offline)",
       "none": "Ninguno"
     },
     "onlineProvider": "Proveedor",
@@ -87,14 +94,7 @@
     "keyWhere": "Consigue tu clave en",
     "baseUrl": "URL base",
     "baseUrlHint": "Ej.: https://api.groq.com/openai/v1 o http://localhost:1234/v1 (LM Studio). Debe ser https; http solo se admite para localhost.",
-    "endpointStatus": "Endpoint",
-    "endpointSet": "Configurado",
-    "endpointNotSet": "Falta la URL base",
     "keyOptional": "API key (opcional)",
-    "tab": {
-      "online": "IA online",
-      "offline": "IA offline"
-    },
     "keyStatus": "Clave de API",
     "keyConfigured": "Configurada",
     "keyNotSet": "No configurada",
@@ -110,20 +110,13 @@
     "modelsFound": "{{count}} modelos disponibles: elige uno en el campo Modelo",
     "modelsNone": "El proveedor no devolvió modelos",
     "modelsFailed": "No se pudieron listar los modelos: {{error}}",
-    "temperature": "Temperatura",
-    "temperatureIgnored": "La API de Claude no admite ajustar la temperatura, así que este valor no se envía.",
-    "ollamaStatus": "Ollama",
     "ollamaOffline": "No detectado (¿está en ejecución?)",
-    "modelInstalled": "Modelo instalado",
-    "modelMissing": "Falta el modelo",
     "endpoint": "Endpoint",
     "downloadModel": "Descargar «{{model}}»",
-    "refresh": "Actualizar estado",
     "dontClose": "No cierres la app mientras se descarga el modelo. Si se cierra, la descarga se reanuda al volver a abrirla (no se pierde el progreso).",
     "modelReady": "Modelo descargado y listo",
     "ollamaError": "No se pudo contactar con Ollama",
     "testPrompt": "Responde solo con: OK",
-    "testOk": "Conexión correcta",
     "testEmpty": "El proveedor respondió vacío",
     "testNoProvider": "No hay IA disponible: configura un proveedor online (clave y modelo) u Ollama",
     "testFailedWith": "Falló la conexión con la IA: {{error}}",
@@ -166,7 +159,79 @@
         "custom": "Compatible con OpenAI",
         "ollama": "Ollama (local)"
       }
-    }
+    },
+    "save": "Guardar",
+    "saved": "Ajustes de IA guardados",
+    "retry": "Reintentar",
+    "online": {
+      "title": "Proveedor online",
+      "desc": "Se usa cuando hay conexión.",
+      "state": {
+        "connected": "Conectado",
+        "offline": "Sin conexión",
+        "notSet": "Sin configurar"
+      }
+    },
+    "ollama": {
+      "desc": "Modelo local para trabajar sin internet.",
+      "state": {
+        "ready": "Listo",
+        "missing": "Falta el modelo",
+        "offline": "No detectado"
+      },
+      "missingHint": "Falta el modelo: descárgalo aquí o ejecuta «ollama pull {{model}}»."
+    },
+    "providerSub": {
+      "gemini": "Google",
+      "openai": "GPT",
+      "anthropic": "Anthropic",
+      "openrouter": "Multi-modelo",
+      "custom": "Endpoint propio"
+    },
+    "keyHint": "Se guarda cifrada en este equipo. Nunca se incluye en exportaciones ni diagnósticos.",
+    "keyReplace": "Clave guardada · pega otra para sustituirla",
+    "keyShow": "Mostrar lo que escribes",
+    "keyHide": "Ocultar lo que escribes",
+    "listModelsNeedsKey": "Guarda primero la clave (o la URL del endpoint).",
+    "testSaveFirst": "Guarda los cambios para probarlos.",
+    "responseIn": "Respuesta en {{ms}} ms",
+    "whereUsed": {
+      "title": "Dónde se usa la IA",
+      "body": "Sugerir riesgos y tipos de prueba en el plan, generar casos desde un requisito y completar pasos en el editor."
+    },
+    "params": {
+      "supported": "Parámetros que admite este modelo:",
+      "yes": "Admite",
+      "no": "No admite",
+      "temperature": "Temperatura",
+      "send": "Enviar",
+      "notSent": "No se envía",
+      "soon": "Próximamente",
+      "soonHint": "Próximamente: Pharos aún no envía este parámetro.",
+      "compatUnknown": "No se puede saber qué parámetros acepta un endpoint propio, así que la temperatura es opcional.",
+      "note": {
+        "range": "De {{min}} a {{max}}. Más bajo = respuestas más predecibles.",
+        "modelNoTemperature": "Este modelo no admite temperatura, así que este valor no se envía.",
+        "claudeNoTemperature": "La API de Claude no admite ajustar la temperatura, así que este valor no se envía.",
+        "openrouter": "OpenRouter publica qué parámetros admite cada modelo; aquí se envía la temperatura y el modelo puede ignorarla.",
+        "compat": "Actívala solo si tu endpoint la acepta."
+      },
+      "reasoning": {
+        "level": "Nivel de razonamiento",
+        "reasoningEffort": "Esfuerzo de razonamiento",
+        "effort": "Esfuerzo",
+        "option": {
+          "auto": "Auto",
+          "minimal": "Mínimo",
+          "low": "Bajo",
+          "medium": "Medio",
+          "high": "Alto"
+        }
+      }
+    },
+    "providerCompat": "Compatible",
+    "keyDiscardConfirm": "Tienes una clave escrita sin guardar. Si cambias de proveedor, se descarta. ¿Continuar?",
+    "savedWithKey": "Ajustes de IA y clave guardados"
   },
   "sync": {
     "synced": "Sincronizado",
@@ -259,19 +324,8 @@
   "admin": {
     "title": "Administración",
     "subtitle": "Plantillas, motor de IA y ajustes de la aplicación.",
-    "section": {
-      "templates": {
-        "title": "Plantillas",
-        "desc": "Repositorio de plantillas de plan y caso."
-      },
-      "ai": {
-        "title": "Motor de IA",
-        "desc": "Proveedor online con tu clave (Gemini, OpenAI, Claude, OpenRouter…) y offline (Ollama)."
-      }
-    },
     "saved": "Ajustes guardados",
     "settings": {
-      "title": "Ajustes",
       "background": "Fondo personalizado",
       "bgChoose": "Elegir imagen…",
       "bgClear": "Quitar",
@@ -294,8 +348,63 @@
       "title": "Diagnóstico",
       "version": "Versión instalada",
       "desc": "Genera un .zip para informar de un fallo: versión de la app, sistema operativo, WebView2, migraciones aplicadas y los registros recientes.",
-      "excludes": "Nunca incluye tus datos: ni proyectos, planes, casos o requisitos, ni tu perfil, ni la base de datos, claves, tokens o claves de IA. Correos, tokens y rutas con tu usuario se enmascaran."
-    }
+      "excludes": "Nunca incluye tus datos: ni proyectos, planes, casos o requisitos, ni tu perfil, ni la base de datos, claves, tokens o claves de IA. Correos, tokens y rutas con tu usuario se enmascaran.",
+      "subtitle": "Para informar de un fallo.",
+      "export": "Exportar diagnóstico"
+    },
+    "tabs": {
+      "label": "Secciones de Administración",
+      "ai": "Motor de IA",
+      "templates": "Plantillas",
+      "general": "General",
+      "sync": "Sincronización",
+      "security": "Seguridad",
+      "diagnostics": "Diagnóstico"
+    },
+    "groups": {
+      "resources": "Recursos",
+      "application": "Aplicación",
+      "account": "Cuenta y datos",
+      "support": "Soporte"
+    },
+    "general": {
+      "appearance": "Apariencia",
+      "appearanceDesc": "Cómo se ve Pharos en este equipo.",
+      "theme": "Tema",
+      "themeHint": "Faro Nocturno, en claro u oscuro. «Según el sistema» sigue el ajuste de tu equipo.",
+      "themeOption": {
+        "light": "Claro",
+        "dark": "Oscuro",
+        "system": "Según el sistema"
+      },
+      "language": "Idioma",
+      "storage": "Archivos y almacenamiento",
+      "storageDesc": "Dónde se guardan las exportaciones y cuánto se conserva lo borrado.",
+      "appliedNow": "El tema y el idioma se aplican al momento."
+    },
+    "trash": {
+      "title": "Papelera",
+      "soon": "Próximamente",
+      "desc": "Aquí podrás ver lo borrado, restaurarlo o vaciar la papelera. Mientras tanto, lo borrado se elimina definitivamente de este equipo tras los días de retención.",
+      "soonHint": "Próximamente: Pharos aún no permite ver ni restaurar lo borrado.",
+      "restore": "Restaurar",
+      "empty": "Vaciar papelera"
+    },
+    "sync": {
+      "title": "Sincronización",
+      "desc": "Tus datos viven en este equipo y se sincronizan con el servidor.",
+      "status": "Estado",
+      "account": "Cuenta",
+      "conflicts": "Conflictos",
+      "conflictsHint": "Cambios hechos en dos equipos a la vez.",
+      "review_one": "Revisar conflictos ({{count}})",
+      "review_other": "Revisar conflictos ({{count}})",
+      "noConflicts": "No hay conflictos que revisar.",
+      "now": "Sincronizar ahora",
+      "syncing": "Sincronizando…"
+    },
+    "unsaved": "Cambios sin guardar",
+    "nothingToSave": "No hay cambios que guardar."
   },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",
@@ -1551,13 +1660,7 @@
     "seeAllProjects": "Ver todos los proyectos",
     "noProjects": "Ningún proyecto coincide.",
     "back": "Volver a Proyectos",
-    "projectSections": "Secciones del proyecto",
-    "adminSections": "Secciones de Administración",
-    "adminSection": {
-      "ai": "Motor de IA",
-      "templates": "Plantillas",
-      "admin": "General"
-    }
+    "projectSections": "Secciones del proyecto"
   },
   "sortMenu": {
     "title": "Ordenar por",

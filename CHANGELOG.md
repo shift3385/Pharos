@@ -59,6 +59,20 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   - **Planificador:** filtros por tipo con contador, búsqueda y prioridad; tarjetas con icono
     y color de tipo, clave del defecto, etiquetas, bandera de prioridad y casos vinculados.
   - Eliminar casos, requisitos o tarjetas pide confirmación y solo se cancela con «Cancelar».
+- **Administración rediseñada (RED-V4, [ADR-0031](docs/adr/0031-administracion-por-pestanas.md)):**
+  - Una sola pantalla con pestañas agrupadas: Recursos (Motor de IA, abierta por defecto, y
+    Plantillas) · Aplicación (General) · Cuenta y datos (Sincronización, Seguridad) · Soporte
+    (Diagnóstico). Cada pestaña tiene su dirección (`#/admin?tab=…`) y aparece en las migas.
+  - **Motor de IA:** proveedores con su logo; clave, modelo y parámetros según el modelo.
+    Lo que el modelo no admite queda bloqueado con un candado y explica por qué. En
+    «Compatible» eliges si se envía la temperatura. El nivel o esfuerzo de razonamiento
+    aparece como «Próximamente». «Probar conexión» dice cuánto tardó la respuesta.
+  - **General:** tema **«Según el sistema»** además de Claro y Oscuro, e idioma.
+  - **Sincronización:** estado, cuenta, conflictos y «Sincronizar ahora» en un solo sitio.
+  - **Seguridad:** la clave de recuperación, que sale de Perfil.
+  - **Papelera:** aparece en General como «Próximamente» (llega con RED-W3).
+  - **Plantillas:** planes y casos por separado, con buscador y un menú «Más acciones» por
+    plantilla.
 - **Rediseño, piezas de tabla comunes (RED-V3, para Casos, Trazabilidad y Proyectos):** tabla
   con selección múltiple, orden por columna y tarjetas en el móvil; paginación con «Por
   página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
@@ -82,9 +96,21 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     éxito, ejecuciones por día, si se cumple cada criterio, comparar periodos) lo dice en
     lugar de mostrar cifras hasta 0.2.0.
   - **Perfil:** tarjeta con tus datos y estado de sincronización, Preferencias (idioma y
-    tema) y la clave de recuperación con el estilo nuevo.
+    tema). La clave de recuperación pasa a Administración → Seguridad (RED-V4).
 
 ### Cambiado
+
+- **Motor de IA:** proveedor, modelo, parámetros, Ollama y la clave escrita se guardan con
+  «Guardar», en una barra fija al pie de la pestaña. Antes cada cambio se aplicaba al momento.
+  Cambiar de pestaña o de proveedor, o salir de Administración, con cambios sin guardar pide
+  confirmación.
+- **General:** «Guardar ajustes» está en una barra al pie que cubre las dos secciones y solo se
+  activa si hay cambios.
+- **IA:** Claude y los modelos de razonamiento de OpenAI ya no reciben una temperatura que no
+  admiten. «Compatible» solo la envía si activas «Enviar»; si ya la usabas, sigue enviándose.
+- `#/templates` y `#/ai` abren la pestaña correspondiente de Administración.
+- Eliminar una plantilla y descartar los cambios web sin enviar usan la confirmación
+  destructiva: solo se cierran con «Cancelar».
 
 - **Logo nuevo:** un faro con anillo abierto y haces de luz. Tiene versión compacta para
   tamaños pequeños y cambia también en el favicon y en los iconos de la app y del

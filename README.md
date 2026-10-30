@@ -184,7 +184,17 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   filtered and **Ctrl P** jumps to any case.
 - **Trazabilidad:** the matrix and «Mostrar solo huecos»; an uncovered
   requirement offers «Generar casos con IA».
-- **Plantillas and Motor de IA** are under **Administración**.
+- **Administración** is one screen with grouped tabs
+  ([ADR-0031](docs/adr/0031-administracion-por-pestanas.md)): Recursos (**Motor de IA**, the
+  default, and **Plantillas**) · Aplicación (**General**) · Cuenta y datos (**Sincronización**,
+  **Seguridad**) · Soporte (**Diagnóstico**). Each tab has its address (`#/admin?tab=…`);
+  the old `#/templates` and `#/ai` links open their tab.
+  - **Motor de IA:** pick the online provider (Gemini, OpenAI, Claude, OpenRouter or an
+    OpenAI-compatible endpoint), its key, model and parameters, then **Guardar**. Parameters
+    the model does not accept are locked with a padlock and say why; for «Compatible» you
+    choose whether to send the temperature. Reasoning level/effort shows as "coming soon".
+  - **General:** theme (Claro, Oscuro or **Según el sistema**), language, custom background,
+    download folder and retention. The trash is "coming soon".
 - **Top bar:** where you are (breadcrumbs), search (Ctrl K), notifications and
   the light/dark switch. Search and notifications say "coming soon" until
   they get their data.
@@ -199,8 +209,8 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   rate, the daily runs and whether each criterion is met say so instead of
   showing numbers. On phones the Home has three tabs (Resumen, Ejecución,
   Pruebas).
-- **Perfil:** your alias and official name, language and theme, the recovery
-  key (and «Cerrar sesión» on phones).
+- **Perfil:** your alias and official name, language and theme (and «Cerrar
+  sesión» on phones). The recovery key is in Administración → Seguridad.
 
 ### Sync
 
@@ -318,8 +328,7 @@ The key of the local database lives only in the Windows Credential Manager. If
 you lose it (new PC, reinstalled Windows, another account), the data cannot be
 decrypted without the **recovery key** ([ADR-0024](docs/adr/0024-clave-de-recuperacion.md)).
 
-- **Export it once:** Perfil → Recovery key → Show recovery key (it moves to
-  Administración → Seguridad with RED-V4). It is 56
+- **Export it once:** Administración → Seguridad → Show recovery key. It is 56
   characters in 14 groups of 4 (`XXXX-XXXX-…`). Write it on paper or store it
   in a password manager, never next to the copy of your data: anyone with both
   can read it. Pharos keeps no copy of it.
@@ -594,7 +603,7 @@ out. The run then removes those folders and its Credential Manager entries.
 Only the local database key
 (`db-key.pharos` in the Credential Manager) is shared with the normal app: on a
 machine that never ran Pharos, the first E2E run creates it, and the app reuses
-it later. Its recovery key (Profile → Recovery key) therefore also opens the
+it later. Its recovery key (Administración → Seguridad) therefore also opens the
 E2E databases.
 
 **In CI.** The `e2e` job (`.github/workflows/ci.yml`,

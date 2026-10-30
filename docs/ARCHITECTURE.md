@@ -232,10 +232,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - **Navigation model:** `src/app/navConfig.ts`.
   - The sidebar shows Inicio and Proyectos, then Administración under
     «Configuración».
-  - Plantillas and Motor de IA are reached from Administración. Their routes
-    (`/templates`, `/ai`) stay, and `isCurrent` keeps «Administración» marked
-    on them. `AdminSectionNav` links the three pages until V4 replaces it
-    (temporary).
+  - Plantillas and Motor de IA are tabs of Administración (ADR-0031):
+    `/templates` and `/ai` redirect to `/admin?tab=…`.
 - **Data router** (RED-V3k, ADR-0028 §9): `main.tsx` creates a
   `createHashRouter` with one splat route that renders `App`, which keeps
   its own `<Routes>` unchanged; `RouterProvider` comes from
@@ -264,6 +262,33 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     `@test/TestRouter`, used by `renderWithProviders`; with
     `RouterProvider` from `react-router`, because under Vitest
     `react-router/dom` loads a second copy of the router).
+- **Administración** (RED-V4, ADR-0031): `AdminPage` reads the tab from
+  `?tab=` (`adminTabFrom`, Motor de IA by default) and renders one panel.
+  - `AdminTabs`: one `tablist` grouped Recursos · Aplicación · Cuenta y
+    datos · Soporte, roving tabindex across groups, a strip that scrolls
+    sideways.
+  - Panels: `AiEngineTab` (`@modules/ai`), `TemplatesTab`
+    (`@modules/templates`), and `GeneralTab`, `SyncTab`, `SecurityTab`
+    (reuses `RecoveryKeySection` from `@modules/profile`), `DiagnosticsTab`
+    in `modules/admin/ui/tabs/`.
+  - Unsaved drafts (Motor de IA, General) report `dirty` to `AdminPage`:
+    switching tabs asks with its own confirm; leaving `/admin` or closing
+    the window goes through `useUnsavedChangesGuard(dirty, { ignore: true })`.
+  - `SyncTab` reads the shell's `SyncStatusProvider` through
+    `useSyncStatus()` (`@modules/sync-offline`); it never mounts another
+    provider.
+  - Shared look: `adm-*` classes in `Admin.css` (cards, rows, fields,
+    buttons); choices, switches and state pills are the shared
+    `SegmentedControl`, `Switch` and `StatusPill`.
+- **AI parameters** (ADR-0031): `ai/model/capabilities.ts` is the one table of
+  what each provider/model accepts (`capabilitiesFor`, `sendsTemperature`).
+  The Motor de IA tab draws its controls from it and `aiApi` decides from it
+  whether `temperature` is sent; Rust takes `temperature: Option<f32>`.
+  Reasoning is listed with `sent: false` (locked, "coming soon").
+- **Theme preference:** `ThemeProvider` keeps `preference`
+  (`light | dark | system`, stored in `pharos.theme`) and the resolved
+  `theme`; «system» follows `prefers-color-scheme` live. The topbar's
+  moon/sun sets an explicit mode.
 - **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
   `projectPath()`. `useActiveProject` (`useMatch`) feeds:
   - the «Proyecto activo» sidebar group (switcher + 5 sections). Inside a
