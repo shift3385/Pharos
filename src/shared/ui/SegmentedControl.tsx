@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { Fragment, useId, useRef, type KeyboardEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 import "./controls.css";
 
@@ -37,21 +37,31 @@ export function SegmentedControl<T extends string>({
   testId?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const reasonBase = useId();
   const enabled = options.filter((o) => !o.disabled);
   // The Tab stop: the selected option, or the first enabled one.
-  const stop = enabled.some((o) => o.value === value) ? value : enabled[0]?.value;
+  const stop = enabled.some((o) => o.value === value)
+    ? value
+    : enabled[0]?.value;
 
+  // From the focused option; -1 (none) counts as "before the first one".
   const move = (e: KeyboardEvent<HTMLDivElement>) => {
-    const at = enabled.findIndex((o) => o.value === value);
+    const focused = (e.target as HTMLElement).closest<HTMLElement>(
+      "[data-value]",
+    );
+    const at = enabled.findIndex((o) => o.value === focused?.dataset.value);
     const go = (i: number) => {
       e.preventDefault();
       const next = enabled[(i + enabled.length) % enabled.length];
       if (!next) return;
       onChange(next.value);
-      ref.current?.querySelector<HTMLElement>(`[data-value="${CSS.escape(next.value)}"]`)?.focus();
+      ref.current
+        ?.querySelector<HTMLElement>(`[data-value="${CSS.escape(next.value)}"]`)
+        ?.focus();
     };
     if (e.key === "ArrowRight" || e.key === "ArrowDown") go(at + 1);
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") go(at - 1);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+      go(at < 0 ? enabled.length - 1 : at - 1);
     else if (e.key === "Home") go(0);
     else if (e.key === "End") go(enabled.length - 1);
   };
@@ -65,26 +75,39 @@ export function SegmentedControl<T extends string>({
       onKeyDown={move}
       data-testid={testId}
     >
-      {options.map(({ value: v, label: text, icon: Icon, disabled, title }) => {
-        const checked = v === value;
-        return (
-          <button
-            key={v}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            tabIndex={v === stop ? 0 : -1}
-            disabled={disabled}
-            title={title}
-            data-value={v}
-            className="segmented__option"
-            onClick={() => onChange(v)}
-          >
-            {Icon && <Icon size={14} aria-hidden="true" />}
-            {text}
-          </button>
-        );
-      })}
+      {options.map(
+        ({ value: v, label: text, icon: Icon, disabled, title }, i) => {
+          const checked = v === value;
+          // A disabled option leaves the Tab order; its reason stays in the
+          // accessibility tree as its description (not only a mouse tooltip).
+          const reasonId = disabled && title ? `${reasonBase}-${i}` : undefined;
+          return (
+            <Fragment key={v}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                tabIndex={v === stop ? 0 : -1}
+                disabled={disabled}
+                title={title}
+                aria-describedby={reasonId}
+                data-value={v}
+                className="segmented__option"
+                onClick={() => onChange(v)}
+              >
+                {Icon && <Icon size={14} aria-hidden="true" />}
+                {text}
+              </button>
+              {/* Outside the button, so it describes the option without joining its name. */}
+              {reasonId && (
+                <span id={reasonId} className="sr-only">
+                  {title}
+                </span>
+              )}
+            </Fragment>
+          );
+        },
+      )}
     </div>
   );
 }
