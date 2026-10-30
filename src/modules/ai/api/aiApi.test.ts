@@ -130,7 +130,6 @@ describe("active online provider", () => {
 
   it("describes each provider: Claude ignores temperature, custom needs no key", () => {
     expect(ONLINE_PROVIDERS.map((p) => p.id)).toEqual(["gemini", "openai", "anthropic", "openrouter", "custom"]);
-    expect(providerInfo("anthropic").supportsTemperature).toBe(false);
     expect(providerInfo("custom").keyRequired).toBe(false);
     expect(providerInfo("custom").keyUrl).toBeNull();
     expect(providerInfo("openai").keyRequired).toBe(true);

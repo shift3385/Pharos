@@ -74,12 +74,13 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
       expect(await violations()).toEqual([]); // home
       await go("projects", es.projects.title);
       expect(await violations()).toEqual([]);
+      // Administración opens on Motor de IA; every tab is checked (ADR-0031).
       await go("admin", es.admin.title);
-      expect(await violations()).toEqual([]);
-      // Templates moved under Administration (SPEC §7).
-      await $('[data-testid="admin-section-templates"]').click();
-      await expect($(`h1=${es.templates.title}`)).toBeDisplayed();
-      expect(await violations()).toEqual([]);
+      for (const tab of ["ai", "templates", "general", "sync", "security", "diagnostics"] as const) {
+        await $(`[data-testid="admin-tab-${tab}"]`).click();
+        await expect($(`[role="tabpanel"][aria-label="${es.admin.tabs[tab]}"]`)).toBeDisplayed();
+        expect(await violations()).toEqual([]);
+      }
       // Mi perfil lives in the user menu on the desktop (SPEC §7).
       await userMenuTrigger().click();
       await button(es.shell.myProfile).click();

@@ -46,7 +46,8 @@ export function LegacyUnsentNotice() {
           title={t("sync.web.legacyDiscardTitle")}
           message={t(downloaded ? "sync.web.legacySavedConfirm" : "sync.web.legacyDiscardConfirm", { count })}
           confirmLabel={t(downloaded ? "sync.web.legacySaved" : "sync.web.legacyDiscard")}
-          danger={!downloaded}
+          // Discarding unsent work is destructive (SPEC §6): only «Cancelar» closes it.
+          variant={downloaded ? "default" : "destructive"}
           onConfirm={() => {
             setConfirming(false);
             void discardLegacyLeftovers();

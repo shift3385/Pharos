@@ -23,16 +23,14 @@ export interface OnlineProviderInfo {
   keyUrl: string | null;
   /** A local OpenAI-compatible server may not need a key. */
   keyRequired: boolean;
-  /** Claude's API rejects `temperature`, so the slider does not apply. */
-  supportsTemperature: boolean;
 }
 
 export const ONLINE_PROVIDERS: OnlineProviderInfo[] = [
-  { id: "gemini", keyUrl: "aistudio.google.com/apikey", keyRequired: true, supportsTemperature: true },
-  { id: "openai", keyUrl: "platform.openai.com/api-keys", keyRequired: true, supportsTemperature: true },
-  { id: "anthropic", keyUrl: "console.anthropic.com/settings/keys", keyRequired: true, supportsTemperature: false },
-  { id: "openrouter", keyUrl: "openrouter.ai/keys", keyRequired: true, supportsTemperature: true },
-  { id: "custom", keyUrl: null, keyRequired: false, supportsTemperature: true },
+  { id: "gemini", keyUrl: "aistudio.google.com/apikey", keyRequired: true },
+  { id: "openai", keyUrl: "platform.openai.com/api-keys", keyRequired: true },
+  { id: "anthropic", keyUrl: "console.anthropic.com/settings/keys", keyRequired: true },
+  { id: "openrouter", keyUrl: "openrouter.ai/keys", keyRequired: true },
+  { id: "custom", keyUrl: null, keyRequired: false },
 ];
 
 export function providerInfo(id: OnlineProviderId): OnlineProviderInfo {
@@ -49,6 +47,9 @@ export interface AiConfig {
   customBaseUrl: string;
   offlineModel: string;
   temperature: number;
+  /** «Compatible» only: send `temperature` (its endpoint may reject it). The
+   *  other providers follow the capabilities table (`capabilities.ts`). */
+  customSendTemperature: boolean;
   ollamaEndpoint: string;
 }
 
@@ -66,12 +67,14 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
   customBaseUrl: "",
   offlineModel: "llama3.2:3b",
   temperature: 0.7,
+  customSendTemperature: false,
   ollamaEndpoint: "http://localhost:11434",
 };
 
 export interface ChatOptions {
   model: string;
-  temperature: number;
+  /** Omitted = not sent (the model does not accept it, `capabilities.ts`). */
+  temperature?: number;
   /** The reply must be a JSON object (structured output, ADR-0023). Ollama
    *  enforces it natively; online providers rely on the prompt. */
   json?: boolean;

@@ -12,6 +12,7 @@ import {
   type ResolvedProvider,
 } from "../model/types";
 import { newProvenance } from "../model/provenance";
+import { sendsTemperature } from "../model/capabilities";
 import { onlineModels, onlineProvider } from "../providers/online";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
 import { isTauri } from "@shared/platform";
@@ -258,7 +259,10 @@ export async function aiChatWithProvenance(
   const which = resolveProvider(config, status);
   const destination = destinationFor(which, config);
   if (!destination) throw new Error("no-provider");
-  const opts = { model: destination.model, temperature: chatTemperature(config.temperature, json), json };
+  const temperature = chatTemperature(config.temperature, json);
+  // Online, only what the model accepts is sent (ADR-0031); Ollama always takes it.
+  const sendTemperature = destination.provider === "ollama" || sendsTemperature(config, destination.provider);
+  const opts = { model: destination.model, json, ...(sendTemperature ? { temperature } : {}) };
   const value =
     destination.provider === "ollama"
       ? await ollamaProvider(config.ollamaEndpoint).chat(messages, opts)

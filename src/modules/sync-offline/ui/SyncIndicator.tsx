@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { loadSettings } from "@modules/admin";
 import { useAuth } from "@modules/auth";
@@ -13,19 +13,8 @@ import { SyncFailureLog, logSyncFailure } from "../api/syncFailure";
 import { purgeDeleted } from "../api/purgeApi";
 import { SyncHttpError } from "../api/transport";
 import { ConflictPanel } from "./ConflictPanel";
+import { SyncStatusContext, type SyncStatusValue } from "./syncStatusContext";
 import "./SyncIndicator.css";
-
-interface SyncStatusValue {
-  status: ReturnType<typeof syncStatus>;
-  label: string;
-  title: string;
-  conflicts: number;
-  syncing: boolean;
-  runSync: () => void;
-  openConflicts: () => void;
-}
-
-const SyncStatusContext = createContext<SyncStatusValue | null>(null);
 
 /** Sync state and background work (spec §9): Synced / Pending changes (n) /
  *  Offline / Conflicts (n), the 5 s refresh, auto-sync at sign-in and on
@@ -191,6 +180,7 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     label,
     title,
     conflicts,
+    pending,
     syncing,
     runSync: () => void runSync(),
     openConflicts: () => setPanelOpen(true),

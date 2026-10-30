@@ -2,6 +2,8 @@
 // status indicator. 8B: backend push/pull. 8C: HLC + conflict panel.
 export const SYNC_OFFLINE_MODULE = "sync-offline" as const;
 export { SyncIndicator, SyncStatusProvider } from "./ui/SyncIndicator";
+export { useSyncStatus } from "./ui/syncStatusContext";
+export { ConflictPanel } from "./ui/ConflictPanel";
 // Web only: what an older web version left unsent (shown by the app shell).
 export { LegacyUnsentNotice } from "./ui/LegacyUnsentNotice";
 export { syncStatus, syncPendingCount, type SyncStatus } from "./api/syncApi";
