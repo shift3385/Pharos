@@ -57,8 +57,8 @@ describe("TemplatesTab", () => {
     expect(await screen.findAllByTestId("template-card")).toHaveLength(3);
     await waitFor(() => expect(onCount).toHaveBeenCalledWith(4));
     const kinds = screen.getByRole("radiogroup", { name: "Tipo de plantilla" });
-    expect(within(kinds).getByRole("radio", { name: "Planes de prueba 3" })).toBeChecked();
-    await user.click(within(kinds).getByRole("radio", { name: "Casos de prueba 1" }));
+    expect(within(kinds).getByRole("radio", { name: "Planes de prueba (3)" })).toBeChecked();
+    await user.click(within(kinds).getByRole("radio", { name: "Casos de prueba (1)" }));
     expect(screen.getAllByTestId("template-card")).toHaveLength(1);
     expect(screen.getByRole("heading", { name: "Casos de login" })).toBeInTheDocument();
   });

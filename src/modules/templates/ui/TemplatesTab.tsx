@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, Ellipsis, FileText, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -32,7 +33,6 @@ type FormState =
 export function TemplatesTab({ onCount }: { onCount?: (count: number) => void }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const uid = useId();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
@@ -134,25 +134,19 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
   return (
     <div className="tpl">
       <div className="tpl__bar">
-        <div className="adm-seg" role="radiogroup" aria-label={t("templates.kindLabel")}>
-          {KINDS.map((k) => (
-            <label key={k} className="adm-seg__opt">
-              <input
-                type="radio"
-                name={`${uid}-kind`}
-                value={k}
-                checked={kind === k}
-                onChange={() => setKind(k)}
-              />
-              <span>
-                {t(`templates.kind.${k}`)}
-                <span className="adm-seg__count u-num">
-                  {templates.filter((tpl) => tpl.kind === k).length}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
+        <SegmentedControl
+          label={t("templates.kindLabel")}
+          size="lg"
+          value={kind}
+          onChange={setKind}
+          options={KINDS.map((k) => ({
+            value: k,
+            label: t("templates.kindCount", {
+              kind: t(`templates.kind.${k}`),
+              count: templates.filter((tpl) => tpl.kind === k).length,
+            }),
+          }))}
+        />
         <span className="tpl__bar-spacer" />
         <div className="tpl__search">
           <Search size={16} aria-hidden="true" />

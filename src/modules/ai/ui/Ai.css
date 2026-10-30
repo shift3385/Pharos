@@ -167,22 +167,10 @@
   list-style: none;
 }
 
-.ai-chip {
+.ai-chip .pill__text {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 24px;
-  padding: 0 8px;
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-metadata);
-  white-space: nowrap;
-  color: var(--color-text-secondary);
-  background: color-mix(in srgb, var(--color-text-muted) 14%, transparent);
-}
-
-.ai-chip[data-ok="true"] {
-  color: var(--color-success-text);
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
 }
 
 .ai-params__grid {
@@ -210,7 +198,7 @@
   color: var(--color-text-muted);
 }
 
-.ai-param__head .adm-switch {
+.ai-param__switch {
   margin-left: auto;
 }
 

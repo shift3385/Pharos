@@ -196,9 +196,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - `SyncTab` reads the shell's `SyncStatusProvider` through
     `useSyncStatus()` (`@modules/sync-offline`); it never mounts another
     provider.
-  - Shared look: `adm-*` classes in `Admin.css`. The segmented control,
-    switch and status pill are plain markup (native radios/checkbox) until
-    the shared `SegmentedControl`, `Switch` and `StatusPill` land.
+  - Shared look: `adm-*` classes in `Admin.css` (cards, rows, fields,
+    buttons); choices, switches and state pills are the shared
+    `SegmentedControl`, `Switch` and `StatusPill`.
 - **AI parameters** (ADR-0031): `ai/model/capabilities.ts` is the one table of
   what each provider/model accepts (`capabilitiesFor`, `sendsTemperature`).
   The Motor de IA tab draws its controls from it and `aiApi` decides from it

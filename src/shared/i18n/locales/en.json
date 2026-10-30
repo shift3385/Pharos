@@ -68,7 +68,8 @@
     },
     "moreActions": "More actions: {{name}}",
     "moreActionsShort": "More actions",
-    "readOnlyHint": "Read-only: download it and import it to get your own copy."
+    "readOnlyHint": "Read-only: download it and import it to get your own copy.",
+    "kindCount": "{{kind}} ({{count}})"
   },
   "ai": {
     "test": "Test connection",

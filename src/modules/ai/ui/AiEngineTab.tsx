@@ -12,6 +12,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useToast } from "@shared/ui/Toast";
+import { StatusPill } from "@shared/ui/StatusPill";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { ErrorSummary, FieldMessage } from "@shared/ui/FormField";
 import { controlProps, useSaveGuard } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
@@ -221,23 +223,15 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   return (
     <div className="ai-tab">
       <div className="ai-tab__mode">
-        <div className="adm-seg" role="radiogroup" aria-labelledby={`${uid}-mode`}>
-          <span id={`${uid}-mode`} className="adm-seg__label">
-            {t("ai.mode")}
-          </span>
-          {modes.map((m) => (
-            <label key={m} className="adm-seg__opt">
-              <input
-                type="radio"
-                name={`${uid}-mode`}
-                value={m}
-                checked={draft.mode === m}
-                onChange={() => update({ mode: m })}
-              />
-              <span>{t(`ai.modeOption.${m}`)}</span>
-            </label>
-          ))}
-        </div>
+        <span className="adm-label" aria-hidden="true">
+          {t("ai.mode")}
+        </span>
+        <SegmentedControl
+          label={t("ai.mode")}
+          value={draft.mode}
+          onChange={(mode) => update({ mode })}
+          options={modes.map((m) => ({ value: m, label: t(`ai.modeOption.${m}`) }))}
+        />
         <span className="ai-tab__using">
           {t("ai.using")}:{" "}
           <strong>
@@ -256,10 +250,12 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               <p className="adm-hint">{t("ai.online.desc")}</p>
             </div>
             {onlineState && (
-              <span className={`adm-pill adm-pill--${onlineState === "connected" ? "success" : onlineState === "offline" ? "warning" : "neutral"}`}>
-                <span className="adm-pill__dot" aria-hidden="true" />
+              <StatusPill
+                dot
+                tone={onlineState === "connected" ? "success" : onlineState === "offline" ? "warning" : "neutral"}
+              >
                 {t(`ai.online.state.${onlineState}`)}
-              </span>
+              </StatusPill>
             )}
           </header>
 
@@ -468,10 +464,12 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                 <p className="adm-hint">{t("ai.ollama.desc")}</p>
               </div>
               {ollamaState && (
-                <span className={`adm-pill adm-pill--${ollamaState === "ready" ? "success" : ollamaState === "missing" ? "warning" : "neutral"}`}>
-                  <span className="adm-pill__dot" aria-hidden="true" />
+                <StatusPill
+                  dot
+                  tone={ollamaState === "ready" ? "success" : ollamaState === "missing" ? "warning" : "neutral"}
+                >
                   {t(`ai.ollama.state.${ollamaState}`)}
-                </span>
+                </StatusPill>
               )}
             </header>
             {ollamaState === "offline" && (

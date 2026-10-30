@@ -1,12 +1,11 @@
 /* Administración (SPEC §8, ScrAdministracion). Tokens only; layout follows
  * the app container (`data-viewport`, container queries), never the window.
  *
- * The `adm-*` classes (cards, rows, fields, buttons, segmented control,
- * switch, pills) are shared by every tab, including Motor de IA (ai module)
- * and Plantillas (templates module), which only render inside this page.
- * TEMPORARY: the segmented control, the switch and the pill are plain
- * markup until V1's SegmentedControl/Switch and V3's StatusPill land in
- * `src/shared/ui/`. */
+ * The `adm-*` classes (cards, rows, fields, buttons) are shared by every
+ * tab, including Motor de IA (ai module) and Plantillas (templates module),
+ * which only render inside this page. Segmented controls, switches and
+ * state pills are the shared `SegmentedControl`, `Switch` and
+ * `StatusPill`. */
 
 .adm {
   display: flex;
@@ -581,191 +580,6 @@
   display: none;
 }
 
-/* ---- Segmented control (TEMPORARY markup: native radios) ---- */
-.adm-seg {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px;
-  max-width: 100%;
-  padding: 3px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.adm-seg__label {
-  padding: 0 var(--space-2);
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-medium);
-  color: var(--color-text-secondary);
-}
-
-.adm-seg__opt {
-  position: relative;
-  display: inline-flex;
-  min-width: 0;
-}
-
-.adm-seg__opt input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.adm-seg__opt > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  height: 32px;
-  padding: 0 12px;
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-medium);
-  white-space: nowrap;
-  color: var(--color-text-secondary);
-  border-radius: 6px;
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    color 140ms ease;
-}
-
-.adm-seg__opt input:checked + span {
-  font-weight: var(--fw-semibold);
-  color: var(--color-text-primary);
-  background: var(--color-surface-1);
-  box-shadow: var(--shadow-1);
-}
-
-.adm-seg__opt input:focus-visible + span {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
-}
-
-.adm-seg__opt input:disabled + span {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.adm-seg__count {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-[data-viewport="mobile"] .adm-seg__opt > span {
-  height: 40px;
-}
-
-/* ---- Switch (TEMPORARY markup: native checkbox with role="switch") ---- */
-.adm-switch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  cursor: pointer;
-}
-
-.adm-switch input {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-}
-
-.adm-switch__track {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  border-radius: var(--radius-pill);
-  background: var(--color-border-input);
-  transition: background-color 150ms ease;
-}
-
-.adm-switch__track::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-surface-1);
-  box-shadow: var(--shadow-1);
-  transition: transform 150ms ease;
-}
-
-.adm-switch input:checked + .adm-switch__track {
-  background: var(--color-navy-500);
-}
-
-.adm-switch input:checked + .adm-switch__track::after {
-  transform: translateX(14px);
-}
-
-.adm-switch input:focus-visible + .adm-switch__track {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.adm-switch__label {
-  font-size: var(--fs-caption);
-  color: var(--color-text-secondary);
-}
-
-/* ---- Status pill (TEMPORARY until StatusPill) ---- */
-.adm-pill {
-  --pill: var(--color-text-muted);
-  --pill-text: var(--color-text-secondary);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 24px;
-  padding: 0 10px;
-  font-size: var(--fs-metadata);
-  font-weight: var(--fw-medium);
-  white-space: nowrap;
-  color: var(--pill-text);
-  background: color-mix(in srgb, var(--pill) 14%, transparent);
-  border-radius: var(--radius-pill);
-}
-
-.adm-pill__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--pill);
-}
-
-.adm-pill--success {
-  --pill: var(--color-success);
-  --pill-text: var(--color-success-text);
-}
-
-.adm-pill--warning {
-  --pill: var(--color-warning);
-  --pill-text: var(--color-warning-text);
-}
-
-.adm-pill--info {
-  --pill: var(--color-info);
-  --pill-text: var(--color-info-text);
-}
-
-.adm-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 8px;
-  font-size: 11px;
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.02em;
-  color: var(--color-info-text);
-  background: color-mix(in srgb, var(--color-info) 14%, transparent);
-  border-radius: var(--radius-pill);
-}
-
 /* ---- Papelera («Próximamente», RED-W3) ---- */
 .adm-trash {
   display: flex;
@@ -806,10 +620,7 @@
 /* Short and opacity-only when the user asks for less motion (SPEC §9). */
 @media (prefers-reduced-motion: reduce) {
   .adm-tab,
-  .adm-btn,
-  .adm-seg__opt > span,
-  .adm-switch__track,
-  .adm-switch__track::after {
+  .adm-btn {
     transition-duration: 0ms;
   }
 }

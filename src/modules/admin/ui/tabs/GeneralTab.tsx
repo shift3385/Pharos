@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImagePlus, Save } from "lucide-react";
 import { useToast } from "@shared/ui/Toast";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { useTheme } from "@shared/theme/useTheme";
 import type { ThemePreference } from "@shared/theme/theme-context";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
@@ -54,38 +55,24 @@ export function GeneralTab() {
   return (
     <div className="adm-stack">
       <SettingsSection title={t("admin.general.appearance")} desc={t("admin.general.appearanceDesc")}>
-        <SettingsRow label={t("admin.general.theme")} hint={t("admin.general.themeHint")} labelId="adm-theme-label">
-          <div className="adm-seg" role="radiogroup" aria-labelledby="adm-theme-label">
-            {THEMES.map((mode) => (
-              <label key={mode} className="adm-seg__opt">
-                <input
-                  type="radio"
-                  name="adm-theme"
-                  value={mode}
-                  checked={preference === mode}
-                  onChange={() => setPreference(mode)}
-                />
-                <span>{t(`admin.general.themeOption.${mode}`)}</span>
-              </label>
-            ))}
-          </div>
+        <SettingsRow label={t("admin.general.theme")} hint={t("admin.general.themeHint")}>
+          <SegmentedControl
+            label={t("admin.general.theme")}
+            size="lg"
+            value={preference}
+            onChange={setPreference}
+            options={THEMES.map((mode) => ({ value: mode, label: t(`admin.general.themeOption.${mode}`) }))}
+          />
         </SettingsRow>
 
-        <SettingsRow label={t("admin.general.language")} labelId="adm-language-label">
-          <div className="adm-seg" role="radiogroup" aria-labelledby="adm-language-label">
-            {SUPPORTED_LANGUAGES.map((lng) => (
-              <label key={lng} className="adm-seg__opt" lang={lng}>
-                <input
-                  type="radio"
-                  name="adm-language"
-                  value={lng}
-                  checked={language === lng}
-                  onChange={() => void i18n.changeLanguage(lng)}
-                />
-                <span>{t(`language.${lng}`)}</span>
-              </label>
-            ))}
-          </div>
+        <SettingsRow label={t("admin.general.language")}>
+          <SegmentedControl
+            label={t("admin.general.language")}
+            size="lg"
+            value={language}
+            onChange={(lng) => void i18n.changeLanguage(lng)}
+            options={SUPPORTED_LANGUAGES.map((lng) => ({ value: lng, label: t(`language.${lng}`) }))}
+          />
         </SettingsRow>
 
         <SettingsRow label={t("admin.settings.background")} labelId="adm-bg-label">

@@ -68,7 +68,8 @@
     },
     "moreActions": "Más acciones: {{name}}",
     "moreActionsShort": "Más acciones",
-    "readOnlyHint": "Solo lectura: descárgala e impórtala para tener tu propia copia."
+    "readOnlyHint": "Solo lectura: descárgala e impórtala para tener tu propia copia.",
+    "kindCount": "{{kind}} ({{count}})"
   },
   "ai": {
     "test": "Probar conexión",

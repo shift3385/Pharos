@@ -3,6 +3,7 @@ import { GitCompare, LogOut, RefreshCw } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { useSyncStatus } from "@modules/sync-offline";
 import { TruncatedText } from "@shared/ui/TruncatedText";
+import { StatusPill } from "@shared/ui/StatusPill";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
 
 const TONE = { synced: "success", pending: "info", offline: "neutral", conflicts: "warning" } as const;
@@ -21,10 +22,9 @@ export function SyncTab() {
       <SettingsSection title={t("admin.sync.title")} desc={t("admin.sync.desc")}>
         <SettingsRow label={t("admin.sync.status")}>
           {sync ? (
-            <span className={`adm-pill adm-pill--${TONE[sync.status]}`} data-testid="admin-sync-status">
-              <span className="adm-pill__dot" aria-hidden="true" />
+            <StatusPill dot tone={TONE[sync.status]} className="admin-sync-status">
               {sync.label}
-            </span>
+            </StatusPill>
           ) : (
             <span className="adm-hint">—</span>
           )}

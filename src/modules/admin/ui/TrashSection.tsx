@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { RotateCcw, Trash2 } from "lucide-react";
+import { StatusPill } from "@shared/ui/StatusPill";
 
 /**
  * Papelera (SPEC §8; RED-W3, wave 5). Nothing lists or restores deleted items
@@ -18,7 +19,7 @@ export function TrashSection() {
       <div className="adm-trash__text">
         <span id="adm-trash-title" className="adm-label">
           {t("admin.trash.title")}
-          <span className="adm-badge">{t("admin.trash.soon")}</span>
+          <StatusPill tone="info">{t("admin.trash.soon")}</StatusPill>
         </span>
         <span className="adm-hint">{t("admin.trash.desc")}</span>
       </div>

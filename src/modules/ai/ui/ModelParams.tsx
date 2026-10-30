@@ -1,5 +1,8 @@
 import { Check, Lock, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { StatusPill } from "@shared/ui/StatusPill";
+import { Switch } from "@shared/ui/Switch";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import type { ModelCapabilities } from "../model/capabilities";
 
 /**
@@ -39,16 +42,20 @@ export function ModelParams({
         <div className="ai-params__caps">
           <span className="adm-hint">{t("ai.params.supported")}</span>
           <ul className="ai-params__chips">
-            <li className="ai-chip" data-ok={!locked}>
-              {locked ? <X size={13} aria-hidden="true" /> : <Check size={13} aria-hidden="true" />}
-              <span className="sr-only">{locked ? t("ai.params.no") : t("ai.params.yes")}</span>
-              {t("ai.params.temperature")}
+            <li>
+              <StatusPill tone={locked ? "neutral" : "success"} className="ai-chip">
+                {locked ? <X size={13} aria-hidden="true" /> : <Check size={13} aria-hidden="true" />}
+                <span className="sr-only">{locked ? t("ai.params.no") : t("ai.params.yes")}</span>
+                {t("ai.params.temperature")}
+              </StatusPill>
             </li>
             {reasoning && (
-              <li className="ai-chip" data-ok={false} title={soon}>
-                <Lock size={13} aria-hidden="true" />
-                <span className="sr-only">{soon}:</span>
-                {t(`ai.params.reasoning.${reasoning.kind}`)}
+              <li>
+                <StatusPill tone="neutral" title={soon} className="ai-chip">
+                  <Lock size={13} aria-hidden="true" />
+                  <span className="sr-only">{soon}:</span>
+                  {t(`ai.params.reasoning.${reasoning.kind}`)}
+                </StatusPill>
               </li>
             )}
           </ul>
@@ -65,16 +72,14 @@ export function ModelParams({
               <Lock size={13} className="ai-param__lock" aria-hidden="true" />
             )}
             {optional && (
-              <label className="adm-switch">
-                <input
-                  type="checkbox"
-                  role="switch"
+              <span className="ai-param__switch">
+                <Switch
                   checked={sendTemperature}
-                  onChange={(e) => onSendTemperature(e.target.checked)}
+                  onChange={onSendTemperature}
+                  label={t("ai.params.send")}
+                  describedBy="ai-temperature-note"
                 />
-                <span className="adm-switch__track" aria-hidden="true" />
-                <span className="adm-switch__label">{t("ai.params.send")}</span>
-              </label>
+              </span>
             )}
           </div>
           <div className="ai-param__range">
@@ -107,26 +112,24 @@ export function ModelParams({
         {reasoning && (
           <div className="ai-param" data-locked>
             <div className="ai-param__head">
-              <span id="ai-reasoning-label" className="adm-label">
+              <span className="adm-label" aria-hidden="true">
                 {t(`ai.params.reasoning.${reasoning.kind}`)}
               </span>
               <Lock size={13} className="ai-param__lock" aria-hidden="true" />
             </div>
-            <div
-              className="adm-seg"
-              role="radiogroup"
-              aria-labelledby="ai-reasoning-label"
-              aria-describedby="ai-reasoning-note"
-              title={t("ai.params.soonHint")}
-            >
-              {reasoning.options.map((o, i) => (
-                <label key={o} className="adm-seg__opt">
-                  <input type="radio" name="ai-reasoning" value={o} disabled defaultChecked={i === 0} />
-                  <span>{t(`ai.params.reasoning.option.${o}`)}</span>
-                </label>
-              ))}
-            </div>
-            <span id="ai-reasoning-note" className="adm-hint">
+            {/* Locked until Pharos sends it (RED-W7): every option says why. */}
+            <SegmentedControl
+              label={t(`ai.params.reasoning.${reasoning.kind}`)}
+              value={reasoning.options[0]}
+              onChange={() => {}}
+              options={reasoning.options.map((o) => ({
+                value: o,
+                label: t(`ai.params.reasoning.option.${o}`),
+                disabled: true,
+                title: t("ai.params.soonHint"),
+              }))}
+            />
+            <span className="adm-hint">
               {t("ai.params.soonHint")}
             </span>
           </div>

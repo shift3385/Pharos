@@ -43,10 +43,14 @@ describe("AiEngineTab", () => {
     await user.type(model, "gemini-2.5-pro");
     expect(screen.getByRole("slider", { name: "Temperatura" })).toBeEnabled();
     const level = screen.getByRole("radiogroup", { name: "Nivel de razonamiento" });
-    expect(level).toHaveAttribute("title", expect.stringContaining("Próximamente"));
-    for (const radio of within(level).getAllByRole("radio")) expect(radio).toBeDisabled();
+    for (const radio of within(level).getAllByRole("radio")) {
+      expect(radio).toBeDisabled();
+      expect(radio).toHaveAttribute("title", expect.stringContaining("Próximamente"));
+    }
     // Never listed as accepted while it is not sent.
-    expect(screen.getByText("Nivel de razonamiento", { selector: "li" })).toHaveAttribute("data-ok", "false");
+    const chips = screen.getByText("Parámetros que admite este modelo:").nextElementSibling as HTMLElement;
+    expect(within(chips).getByText("Nivel de razonamiento").closest(".pill")).toHaveAttribute("data-tone", "neutral");
+    expect(within(chips).getByText("Temperatura").closest(".pill")).toHaveAttribute("data-tone", "success");
   });
 
   it("Claude locks the temperature with the reason in title and text", async () => {
