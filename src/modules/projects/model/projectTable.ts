@@ -142,3 +142,9 @@ export function coverageTone(ratio: number): "success" | "warning" | "error" {
 export function planTone(status: string | null): "neutral" | "info" | "success" {
   return status === "reviewed" ? "info" : status === "approved" ? "success" : "neutral";
 }
+
+/** What is typed to confirm the deletion (SPEC §8): the prefix without its
+ *  separator («PCL-» → «PCL»), or the name when the project has no prefix. */
+export function deleteConfirmWord(project: { name: string; caseIdPrefix: string }): string {
+  return project.caseIdPrefix.replace(/[^\p{L}\p{N}]+$/u, "").trim() || project.name.trim();
+}

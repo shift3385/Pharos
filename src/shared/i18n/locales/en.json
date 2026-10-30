@@ -462,6 +462,22 @@
       "rowMenu": "More actions for {{name}}",
       "moreActions": "More actions",
       "open": "Open"
+    },
+    "settings": {
+      "general": "General",
+      "generalDesc": "Name and numbering of the test cases.",
+      "exportDesc": "Test plan as PDF, cases as .xlsx and .feature, and the traceability matrix.",
+      "exportZip": "Export ZIP",
+      "lossLabel": "Will be deleted",
+      "lossPlans_one": "1 plan",
+      "lossPlans_other": "{{count}} plans",
+      "lossCases_one": "1 case",
+      "lossCases_other": "{{count}} cases",
+      "lossRequirements_one": "1 requirement",
+      "lossRequirements_other": "{{count}} requirements",
+      "lossCards_one": "1 card",
+      "lossCards_other": "{{count}} cards",
+      "deletedToast": "“{{name}}” deleted"
     }
   },
   "profile": {

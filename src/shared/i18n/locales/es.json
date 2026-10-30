@@ -462,6 +462,22 @@
       "rowMenu": "Más acciones de {{name}}",
       "moreActions": "Más acciones",
       "open": "Abrir"
+    },
+    "settings": {
+      "general": "General",
+      "generalDesc": "Nombre y numeración de los casos de prueba.",
+      "exportDesc": "Plan de pruebas en PDF, casos en .xlsx y .feature y la matriz de trazabilidad.",
+      "exportZip": "Exportar ZIP",
+      "lossLabel": "Se eliminará",
+      "lossPlans_one": "1 plan",
+      "lossPlans_other": "{{count}} planes",
+      "lossCases_one": "1 caso",
+      "lossCases_other": "{{count}} casos",
+      "lossRequirements_one": "1 requisito",
+      "lossRequirements_other": "{{count}} requisitos",
+      "lossCards_one": "1 tarjeta",
+      "lossCards_other": "{{count}} tarjetas",
+      "deletedToast": "«{{name}}» eliminado"
     }
   },
   "profile": {

@@ -12,13 +12,17 @@ import { lastAccessMap } from "../model/lastAccess";
 vi.mock("@modules/test-plan", () => ({
   TestPlanPage: () => <p>sección plan</p>,
   projectPlanStatus: async () => "reviewed",
+  projectHasPlan: async () => false,
 }));
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
   projectTraceableCases: async () => [],
   projectCaseCount: async () => 240,
 }));
-vi.mock("@modules/planner", () => ({ PlannerBoard: () => <p>sección planificador</p> }));
+vi.mock("@modules/planner", () => ({
+  PlannerBoard: () => <p>sección planificador</p>,
+  projectCardCount: async () => 0,
+}));
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
   requirementApi: { list: async () => [] },

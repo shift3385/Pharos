@@ -21,8 +21,6 @@ import { useAuth } from "@modules/auth";
 import { FieldMessage } from "@shared/ui/FormField";
 import { controlProps } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
-import { useToast } from "@shared/ui/Toast";
-import { unlessReported } from "@shared/ui/notify";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { Pagination } from "@shared/ui/Pagination";
 import { FilterChips } from "@shared/ui/FilterChips";
@@ -32,7 +30,6 @@ import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { projectApi } from "../api/projectApi";
-import type { ExportProgress } from "../export/exportAll";
 import { projectPath } from "../model/sections";
 import { projectRows } from "../model/projectRows";
 import {
@@ -49,18 +46,9 @@ import {
   type ProjectRow,
   type ProjectSort,
 } from "../model/projectTable";
-import { ExportProgressModal, type ExportPhase } from "./ExportProgressModal";
+import { useProjectExport } from "./useProjectExport";
 import "./ProjectHeader.css";
 import "./Projects.css";
-
-interface ProgressState {
-  title: string;
-  phase: ExportPhase;
-  done: number;
-  total: number;
-  label: string;
-  percent: number;
-}
 
 const SORT_ICONS = {
   access: Clock,
@@ -86,7 +74,6 @@ export function ProjectsPage() {
 function ProjectList() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const toast = useToast();
   const ownerId = user?.id ?? "";
   const navigate = useNavigate();
   const mobile = useBreakpoint() === "mobile";
@@ -94,8 +81,7 @@ function ProjectList() {
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
-  const [exporting, setExporting] = useState(false);
-  const [progress, setProgress] = useState<ProgressState | null>(null);
+  const { exportAll, exportProject, busy, progressModal } = useProjectExport();
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: ProjectSort; dir: SortDirection }>({
@@ -105,79 +91,16 @@ function ProjectList() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
-  function onProgress(title: string) {
-    return (p: ExportProgress) =>
-      setProgress((prev) => {
-        const base: ProgressState =
-          prev ?? { title, phase: "building", done: 0, total: 0, label: "", percent: 0 };
-        return p.phase === "zipping"
-          ? { ...base, title, phase: "zipping", percent: p.percent }
-          : { ...base, title, phase: "building", done: p.done, total: p.total, label: p.label };
-      });
-  }
-
-  /** PDFs that could not be rendered were left out of the ZIP: say which. */
-  function reportSkipped(skipped: string[]) {
-    if (!skipped.length) return;
-    toast(
-      t("projects.pdfSkippedToast", { count: skipped.length, names: skipped.join(", ") }),
-      "warning",
-    );
-  }
-
-  async function exportAll() {
-    setExporting(true);
-    setProgress({ title: t("projects.exportAll"), phase: "building", done: 0, total: 0, label: "", percent: 0 });
-    try {
-      const { exportAllProjects } = await import("../export/exportAll");
-      const result = await unlessReported(
-        exportAllProjects(
-          ownerId,
-          t,
-          i18n.resolvedLanguage ?? "es",
-          onProgress(t("projects.exportAll")),
-        ),
-      );
-      if (result) {
-        toast(t("projects.exportedAllToast", { count: result.files, path: result.path }));
-        reportSkipped(result.skipped);
-      }
-    } finally {
-      setExporting(false);
-      setProgress(null);
-    }
-  }
-
-  async function exportProject(row: ProjectRow) {
-    const project = await projectApi.get(row.id, ownerId);
-    if (!project) return;
-    const title = t("projects.exportProject");
-    setProgress({ title, phase: "building", done: 0, total: 0, label: "", percent: 0 });
-    try {
-      const { exportProjectZip } = await import("../export/exportAll");
-      const result = await unlessReported(
-        exportProjectZip(project, ownerId, t, i18n.resolvedLanguage ?? "es", onProgress(title)),
-      );
-      if (result) {
-        toast(
-          t("projects.exportedProjectToast", {
-            name: project.name,
-            count: result.files,
-            path: result.path,
-          }),
-        );
-        reportSkipped(result.skipped);
-      }
-    } finally {
-      setProgress(null);
-    }
-  }
-
   // The link did its job; drop it so a reload or "back" shows the list.
   useEffect(() => {
     if (params.has("new")) setParams({}, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function exportRow(row: ProjectRow) {
+    const project = await projectApi.get(row.id, ownerId);
+    if (project) await exportProject(project);
+  }
 
   async function refresh() {
     setRows(await projectRows(ownerId));
@@ -317,8 +240,8 @@ function ProjectList() {
           row={row}
           onOpen={() => navigate(projectPath(row.id))}
           onSettings={() => navigate(projectPath(row.id, "settings"))}
-          onExport={() => void exportProject(row)}
-          disabled={progress !== null}
+          onExport={() => void exportRow(row)}
+          disabled={busy}
         />
       ),
     },
@@ -355,11 +278,11 @@ function ProjectList() {
               type="button"
               className="pj-action"
               onClick={() => void exportAll()}
-              disabled={exporting}
+              disabled={busy}
             >
               <Download size={16} aria-hidden="true" />
               <span className="pj-action__label">
-                {exporting ? t("projects.exporting") : t("projects.exportAll")}
+                {busy ? t("projects.exporting") : t("projects.exportAll")}
               </span>
             </button>
           )}
@@ -547,16 +470,7 @@ function ProjectList() {
         </>
       )}
 
-      {progress && (
-        <ExportProgressModal
-          title={progress.title}
-          phase={progress.phase}
-          done={progress.done}
-          total={progress.total}
-          label={progress.label}
-          percent={progress.percent}
-        />
-      )}
+      {progressModal}
     </section>
   );
 }
