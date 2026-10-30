@@ -59,6 +59,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
   estado y banderas de prioridad con los colores del diseño; opciones de menú con una línea
   que explica cada una.
+- **Rediseño, controles comunes (RED-V1a, para Inicio, Perfil, Casos y Administración):**
+  interruptor, selector segmentado (una opción entre pocas, con flechas) y pestañas, en
+  formato de pastillas o subrayadas, con burbujas de contador y pestañas deshabilitadas que
+  explican el motivo.
 
 ### Cambiado
 

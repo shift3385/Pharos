@@ -58,20 +58,28 @@ export function Tabs({
   className?: string;
 }) {
   const enabled = items.filter((i) => !i.disabled);
+  // The one Tab stop: the selected tab, or the first enabled one when `value`
+  // names a disabled or missing tab.
+  const stop = enabled.some((i) => i.id === value) ? value : enabled[0]?.id;
 
+  // Arrows move from the focused tab over every tab, so a disabled one can be
+  // reached and its reason heard; only an enabled tab is selected.
   const move = (e: KeyboardEvent<HTMLDivElement>) => {
-    const at = enabled.findIndex((i) => i.id === value);
+    const focused = (e.target as HTMLElement).closest<HTMLElement>(
+      '[role="tab"]',
+    );
+    const from = items.findIndex((i) => tabId(i.id, idPrefix) === focused?.id);
     const go = (n: number) => {
       e.preventDefault();
-      const next = enabled[(n + enabled.length) % enabled.length];
+      const next = items[(n + items.length) % items.length];
       if (!next) return;
-      onChange(next.id);
+      if (!next.disabled) onChange(next.id);
       document.getElementById(tabId(next.id, idPrefix))?.focus();
     };
-    if (e.key === "ArrowRight") go(at + 1);
-    else if (e.key === "ArrowLeft") go(at - 1);
+    if (e.key === "ArrowRight") go(from < 0 ? 0 : from + 1);
+    else if (e.key === "ArrowLeft") go(from < 0 ? items.length - 1 : from - 1);
     else if (e.key === "Home") go(0);
-    else if (e.key === "End") go(enabled.length - 1);
+    else if (e.key === "End") go(items.length - 1);
   };
 
   return (
@@ -83,6 +91,7 @@ export function Tabs({
     >
       {items.map((item) => {
         const selected = item.id === value;
+        const { badge } = item;
         return (
           <button
             key={item.id}
@@ -91,18 +100,30 @@ export function Tabs({
             id={tabId(item.id, idPrefix)}
             aria-selected={selected}
             aria-controls={selected ? panelId(item.id, idPrefix) : undefined}
-            tabIndex={selected ? 0 : -1}
-            disabled={item.disabled}
+            tabIndex={item.id === stop ? 0 : -1}
+            // aria-disabled, not disabled: the tab stays focusable, so its
+            // reason (`title`, the accessible description) is reachable.
+            aria-disabled={item.disabled || undefined}
             title={item.title}
             className="tabs__tab"
-            data-testid={`tab-${item.id}`}
-            onClick={() => onChange(item.id)}
+            data-testid={`tab-${idPrefix}${item.id}`}
+            onClick={() => {
+              if (!item.disabled) onChange(item.id);
+            }}
           >
             <span className="tabs__label">{item.label}</span>
-            {item.badge && item.badge.count > 0 && (
-              <span className="tabs__badge" data-tone={item.badge.tone} title={item.badge.title}>
-                {item.badge.count}
-                {item.badge.title && <span className="sr-only"> · {item.badge.title}</span>}
+            {badge && badge.count > 0 && (
+              <span
+                className="tabs__badge"
+                data-tone={badge.tone}
+                title={badge.title}
+              >
+                {/* Read once, with context: the title (which says the count)
+                    or «(N)» after the label; the bubble itself is silent. */}
+                <span aria-hidden="true">{badge.count}</span>
+                <span className="sr-only">
+                  {badge.title ? ` · ${badge.title}` : ` (${badge.count})`}
+                </span>
               </span>
             )}
           </button>

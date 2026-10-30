@@ -324,6 +324,36 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   defects once for both views (Requisitos, Matriz) and owns their dialogs; the
   views only render (`buildMatrix` stays the single source, also for
   `projectCoverage`).
+- **Switches, segmented controls and tabs** (`src/shared/ui`, SPEC §4/§5/§9/§10,
+  RED-V1; also used by Casos, RED-V3, and Administración, RED-V4):
+  - `Switch`: a `role="switch"` button named by its visible `label` (or
+    `ariaLabel`); the knob slides in 150 ms and moves without sliding
+    with reduced motion; disabled, it keeps its reason in a `title`. It cannot live inside
+    a `role="menu"`: there, draw it on a `MenuItem`.
+  - `SegmentedControl<T>`: one choice out of a few as a pill track. A
+    `radiogroup` with a roving tabindex: Tab enters on the selected option,
+    arrows/Home/End move and select and skip disabled options (a disabled
+    option's `title` is also its `aria-describedby`); per option `icon`,
+    `disabled` and `title`; `size` sm/md/lg (md and lg are 44 px
+    tall on mobile).
+  - `Tabs`: the WAI-ARIA tabs pattern with automatic activation, `variant`
+    `segmented` (equal pills, e.g. the mobile Home) or `underline` (a strip
+    above a list), count bubbles (`badge` with tone `danger`, `navy` or
+    `muted`; read once, through its `title` or as «(N)»), and disabled tabs
+    (`aria-disabled`: still focusable with the arrows, never selected, so their
+    reason is heard). The Tab stop falls back to the first enabled tab. Panels use
+    `TabPanel`, or spread `tabPanelProps(id, idPrefix)` from
+    `@shared/ui/tabPanel` on your own element; `idPrefix` keeps two tab sets
+    on one page apart.
+  - Styles in `controls.css`; no i18n of their own (callers pass the texts).
+- **Read-only exports for the Home** (RED-V1; no writes):
+  - `projectPlanClosure(projectId, userId)` (`@modules/test-plan`) →
+    `{ closeDate, criteria } | null`: the latest sprint end or milestone of the
+    plan's schedule (only ISO `YYYY-MM-DD` dates count; raw text from an
+    imported plan is ignored; null without one) and its filled closure
+    criteria; null without a plan. V2 reuses it for «Cierre del ciclo».
+  - `projectLiveCases(projectId, userId)` (`@modules/test-cases`): the cases
+    that are not obsolete.
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
   their `--color-*-text` tone. Field boundaries use `--color-border-input`
   (≥ 3:1). Focus is `--color-focus` (navy on light, amber
