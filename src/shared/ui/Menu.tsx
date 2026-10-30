@@ -135,7 +135,9 @@ export function Menu({
 
 /** One option. `selected` (true/false) makes it a radio option with a ✓;
  *  `tone="danger"` colours destructive entries (e.g. «Cerrar sesión»). A
- *  disabled option keeps a `title` that explains why (SPEC §4). */
+ *  disabled option keeps a `title` that explains why (SPEC §4). A
+ *  `description` adds a second line that explains the option (e.g. what
+ *  «Crítica» means); it is the item's accessible description, not its name. */
 export function MenuItem({
   icon: Icon,
   onSelect,
@@ -144,6 +146,7 @@ export function MenuItem({
   title,
   tone,
   testId,
+  description,
   children,
 }: {
   icon?: LucideIcon;
@@ -153,9 +156,11 @@ export function MenuItem({
   title?: string;
   tone?: "danger";
   testId?: string;
+  description?: ReactNode;
   children: ReactNode;
 }) {
   const { close, kind } = useContext(MenuContext);
+  const descId = useId();
   const radio = selected !== undefined;
   const role = kind === "menu" ? (radio ? "menuitemradio" : "menuitem") : undefined;
   return (
@@ -164,11 +169,12 @@ export function MenuItem({
       role={role}
       aria-checked={kind === "menu" && radio ? selected : undefined}
       aria-pressed={kind === "sheet" && radio ? selected : undefined}
+      aria-describedby={description ? descId : undefined}
       data-menu-item=""
       data-selected={selected || undefined}
       data-tone={tone}
       data-testid={testId}
-      className={`menu__item${kind === "sheet" ? " menu__item--sheet" : ""}`}
+      className={itemClass(kind, description)}
       tabIndex={kind === "menu" ? -1 : undefined}
       disabled={disabled}
       title={title}
@@ -178,8 +184,83 @@ export function MenuItem({
       }}
     >
       {Icon && <Icon className="menu__icon" size={16} aria-hidden="true" />}
-      <span className="menu__text">{children}</span>
+      <ItemText description={description} descId={descId}>
+        {children}
+      </ItemText>
       {selected && <Check className="menu__check" size={16} aria-hidden="true" />}
+    </button>
+  );
+}
+
+const itemClass = (kind: MenuContextValue["kind"], description: ReactNode) =>
+  `menu__item${kind === "sheet" ? " menu__item--sheet" : ""}${description ? " menu__item--desc" : ""}`;
+
+/** The option's text and, below it, its explanation (hidden from the name and
+ *  exposed through `aria-describedby`). */
+function ItemText({
+  description,
+  descId,
+  children,
+}: {
+  description?: ReactNode;
+  descId: string;
+  children: ReactNode;
+}) {
+  if (!description) return <span className="menu__text">{children}</span>;
+  return (
+    <span className="menu__text menu__text--stack">
+      <span className="menu__title">{children}</span>
+      <span id={descId} className="menu__desc" aria-hidden="true">
+        {description}
+      </span>
+    </span>
+  );
+}
+
+/** A check option for multi-choice filters: `menuitemcheckbox` in a menu (a
+ *  pressed toggle in a sheet). Toggling keeps the menu open, so several
+ *  options can be chosen in a row. */
+export function MenuCheckItem({
+  checked,
+  onToggle,
+  disabled,
+  title,
+  description,
+  testId,
+  children,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  title?: string;
+  description?: ReactNode;
+  testId?: string;
+  children: ReactNode;
+}) {
+  const { kind } = useContext(MenuContext);
+  const descId = useId();
+  return (
+    <button
+      type="button"
+      role={kind === "menu" ? "menuitemcheckbox" : undefined}
+      aria-checked={kind === "menu" ? checked : undefined}
+      aria-pressed={kind === "sheet" ? checked : undefined}
+      aria-describedby={description ? descId : undefined}
+      data-menu-item=""
+      data-checked={checked || undefined}
+      data-testid={testId}
+      className={`${itemClass(kind, description)} menu__item--check`}
+      tabIndex={kind === "menu" ? -1 : undefined}
+      disabled={disabled}
+      title={title}
+      onClick={onToggle}
+    >
+      <span className="menu__box" aria-hidden="true">
+        {checked && <Check size={12} strokeWidth={3} />}
+      </span>
+      <ItemText description={description} descId={descId}>
+        {children}
+      </ItemText>
     </button>
   );
 }
