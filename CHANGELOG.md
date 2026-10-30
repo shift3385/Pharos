@@ -45,6 +45,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Cerrar sesión e Idioma** pasan al menú del usuario. El idioma ya no está en la barra
   superior.
 - La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
+- **Cabecera del proyecto (RED-V2):** cada sección del proyecto empieza con una cabecera con
+  el prefijo, el nombre, el estado del plan y el número de casos y requisitos. Sustituye a la
+  barra «← Proyectos <nombre>», que repetía la barra superior del móvil.
 
 ## [0.1.0-beta.1] - 2026-10-29
 
