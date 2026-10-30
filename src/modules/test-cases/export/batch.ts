@@ -49,14 +49,16 @@ export function featureFileName(scenarioId: string): string {
 /** Every case of a project as a .feature file with its ID and requirement
  *  tags (TRZ-03), for the batch export (spec §5.3 "en lote por proyecto").
  *  `provisional` marks a case whose key is still provisional (DAT-01): its
- *  file has no ID tag yet. */
+ *  file has no ID tag yet. `ids` limits it to those cases (the selection). */
 export async function projectFeatureFiles(
   projectId: string,
   userId: string,
   t: Translate,
+  ids?: ReadonlySet<string>,
 ): Promise<{ name: string; content: string; provisional: boolean }[]> {
   const out: { name: string; content: string; provisional: boolean }[] = [];
   for (const s of await testCaseApi.list(projectId, userId)) {
+    if (ids && !ids.has(s.id)) continue;
     const full = await testCaseApi.get(s.id, userId);
     if (!full) continue;
     out.push({

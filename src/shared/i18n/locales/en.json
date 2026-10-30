@@ -1065,7 +1065,107 @@
       "cancel": "Move cancelled; step {{n}} is back in place."
     },
     "gherkinEditor": "Gherkin editor",
-    "gherkinKeys": "Tab indents. To leave the editor from the keyboard, press Escape and then Tab."
+    "gherkinKeys": "Tab indents. To leave the editor from the keyboard, press Escape and then Tab.",
+    "views": "Case view",
+    "statusSheet": "Case status",
+    "priorityHelp": {
+      "critical": "Blocks a key function or exposes data",
+      "high": "Affects a main flow",
+      "medium": "Affects a secondary flow",
+      "low": "Detail or improvement"
+    },
+    "statusHelp": {
+      "draft": "Being written, not reviewed yet",
+      "reviewed": "Reviewed by someone else",
+      "approved": "Ready to run",
+      "obsolete": "No longer applies; kept in the history"
+    },
+    "list": {
+      "all": "All",
+      "statusFilter": "Case status",
+      "searchLabel": "Search cases",
+      "search": "Search by ID, title or requirement…",
+      "filters": "Filters",
+      "col": {
+        "id": "ID",
+        "title": "Title",
+        "requirement": "Requirement",
+        "priority": "Priority",
+        "level": "Level",
+        "status": "Status",
+        "execution": "Execution",
+        "edited": "Edited"
+      },
+      "noRequirement": "No requirement",
+      "more": "+{{count}}",
+      "notRun": "Not run",
+      "executionSoon": "Coming soon: execution results arrive with execution ingestion.",
+      "executionSoonShort": "Coming soon",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> cases",
+      "noMatch": "No case matches the search or the filters.",
+      "clearFilters": "Clear filters",
+      "bulk": "Actions on the selected cases",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "exportSelected": "Export .feature",
+      "deleteSelected": "Delete",
+      "clearSelection": "Clear selection",
+      "deleteTitle_one": "Delete {{count}} case?",
+      "deleteTitle_other": "Delete {{count}} cases?",
+      "deleteMessage_one": "The selected case is removed from the project.",
+      "deleteMessage_other": "The {{count}} selected cases are removed from the project.",
+      "deleteConfirm": "Yes, delete",
+      "deletedToast_one": "{{count}} case deleted",
+      "deletedToast_other": "{{count}} cases deleted",
+      "io": "Import / Export",
+      "ioImport": "Import",
+      "ioExport": "Export",
+      "importXlsxHint": "Creates a case from the .xlsx template",
+      "exportFeaturesHint": "Gherkin scenarios of every case, for automation (ZIP)",
+      "suggest": "Suggest cases with AI",
+      "offPage_one": "{{count}} on another page",
+      "offPage_other": "{{count}} on other pages",
+      "andMore": "and {{count}} more",
+      "deleteFailed_one": "{{count}} case could not be deleted; it stays in the list.",
+      "deleteFailed_other": "{{count}} cases could not be deleted; they stay in the list."
+    },
+    "nav": {
+      "allCases": "All cases",
+      "walk": "Walk through the cases",
+      "prev": "Previous case",
+      "next": "Next case",
+      "prevShort": "Previous",
+      "nextShort": "Next",
+      "position": "{{n}} of {{total}}",
+      "filterAll": "Filter: all",
+      "filterOn": "Filter: on",
+      "goTo": "Go to a case…",
+      "goToShortcut": "Ctrl P",
+      "goToTitle": "Go to a case",
+      "goToHint": "↑ ↓ to move, Enter to open, Esc to close.",
+      "more": "More case actions",
+      "state": {
+        "saved": "Saved",
+        "dirty": "Unsaved changes",
+        "new": "Not saved"
+      },
+      "discardMessage": "This case has unsaved changes. If you go on, they are lost.",
+      "notFoundTitle": "Case not found",
+      "notFound": "This case does not exist or was deleted. Go back to the list to pick another.",
+      "goToShortcutMac": "⌘ P"
+    },
+    "gherkin": {
+      "copy": "Copy the Gherkin",
+      "copied": "Gherkin copied",
+      "synced": "Synced",
+      "edit": "Edit",
+      "done": "Done",
+      "editing": "editing",
+      "swipe": "Swipe the code sideways to see long lines.",
+      "indent": "Indent"
+    }
   },
   "dashboard": {
     "title": "Home",
@@ -1275,7 +1375,25 @@
       "over": "Card “{{card}}” is over the {{column}} column.",
       "end": "Card “{{card}}” moved to {{column}}.",
       "cancel": "Move cancelled; card “{{card}}” is back in place."
-    }
+    },
+    "filter": {
+      "all": "All",
+      "task": "Tasks",
+      "defect": "Defects",
+      "test_data": "Test data",
+      "searchLabel": "Search cards",
+      "search": "Search cards…"
+    },
+    "newCardIn": "New card in {{column}}",
+    "addCard": "Add card",
+    "cardCount_one": "{{count}} card",
+    "cardCount_other": "{{count}} cards",
+    "linksTitle_one": "{{count}} linked test case",
+    "linksTitle_other": "{{count}} linked test cases",
+    "deleteTitle": "Delete the card?",
+    "deleteMessage": "«{{card}}» is removed from the planner.",
+    "deleteConfirm": "Yes, delete",
+    "deleteFailed": "The card could not be deleted. Try again."
   },
   "traceability": {
     "title": "Traceability",
@@ -1324,7 +1442,10 @@
       "deleteTitle": "Delete requirement",
       "deleteWarning": "{{key}} will be deleted. Its ID will not be reused: cases linking it will show it as an unknown requirement.",
       "deleteConfirm": "Delete",
-      "deletedToast": "{{key}} deleted"
+      "deletedToast": "{{key}} deleted",
+      "cases": "Cases",
+      "actions": "Actions",
+      "deleteFailed": "{{key}} could not be deleted."
     },
     "import": {
       "button": "Import CSV",
@@ -1358,7 +1479,7 @@
     },
     "matrix": {
       "title": "Traceability matrix",
-      "subtitle": "Requirement ↔ test case ↔ defect, with coverage gaps in plain sight.",
+      "subtitle": "Each requirement with the test cases that verify it and the defects found. Requirements without any case show in red.",
       "exportXlsx": "Export .xlsx",
       "exporting": "Exporting…",
       "exportedToast": "Matrix exported: {{name}}",
@@ -1378,7 +1499,21 @@
         "defects": "Defects",
         "coverage": "Coverage",
         "notes": "Comments"
-      }
+      },
+      "generate": "Generate cases with AI",
+      "generateFrom": "from {{key}}",
+      "noCase": "No case covers this requirement.",
+      "linkedCases_one": "Linked cases · {{count}}",
+      "linkedCases_other": "Linked cases · {{count}}",
+      "onlyGapsHint": "Hides the covered requirements and leaves only those without any test case",
+      "noGaps": "Every requirement has at least one case. No gaps.",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> requirements",
+      "kpi": {
+        "highPriority_one": "{{count}} high priority",
+        "highPriority_other": "{{count}} high priority",
+        "withCase": "with at least one case"
+      },
+      "onlyGapsCount": "Show only gaps ({{count}})"
     },
     "execution": {
       "passed": "Pass",
@@ -1398,7 +1533,10 @@
       "title": "Traceability gaps",
       "casesWithoutRequirement": "Cases without a requirement",
       "unknownLinks": "Cases linking a requirement that does not exist",
-      "defectsWithoutCase": "Defects without a linked case"
+      "defectsWithoutCase": "Defects without a linked case",
+      "subtitle": "What breaks the requirement ↔ case ↔ defect chain",
+      "migrateHint_one": "{{count}} ID appears in the free-text Traceability of your cases and can become a link.",
+      "migrateHint_other": "{{count}} IDs appear in the free-text Traceability of your cases and can become links."
     },
     "migrate": {
       "button": "Migrate traceability ({{count}})",
@@ -1411,6 +1549,15 @@
       "apply": "Apply",
       "applying": "Applying…",
       "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
+    },
+    "io": {
+      "label": "Import / Export",
+      "import": "Import",
+      "export": "Export",
+      "importCsv": "Import requirements (.csv)",
+      "importHint": "Creates or updates requirements by ID",
+      "exportXlsx": "Export matrix (.xlsx)",
+      "exportHint": "Requirements, cases, states and defects"
     }
   },
   "downloads": {
@@ -1538,6 +1685,15 @@
       "compact": "Page {{page}} of {{pages}}",
       "perPage": "Per page",
       "perPageValue": "{{count}} per page"
-    }
+    },
+    "selectAllShort": "Select all"
+  },
+  "sortMenu": {
+    "title": "Sort by",
+    "label": "Sort",
+    "trigger": "{{label}}: {{option}}",
+    "direction": "Direction",
+    "desc": "Descending",
+    "asc": "Ascending"
   }
 }

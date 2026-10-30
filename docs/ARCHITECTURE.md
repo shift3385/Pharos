@@ -390,6 +390,10 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     accessible description, not its name). `MenuCheckItem`: a
     `menuitemcheckbox` (a pressed toggle in a sheet) that keeps the menu open,
     for multi-choice filters.
+  - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
+    the sort keys as radio options (disabled ones keep a `title` with the
+    reason) and the direction (Descendente · Ascendente). Choosing a key keeps
+    the direction and vice versa.
 - **Tables and filters** (`src/shared/ui`, SPEC §4/§8, RED-V3; also used by
   Proyectos, RED-V2):
   - `DataTable`: a semantic `<table>` laid out as a CSS grid (every row shares
@@ -410,6 +414,42 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     `label`, `showLabel`) only know tones; each module maps its own states and
     priorities to them.
   - Their texts live in the `table.*` i18n namespace.
+  - `buttons.css` (`ui-btn`, `--primary` amber once per view, `--small`,
+    `--ghost`, `--danger`, `ui-iconbtn`) and `.ui-search` (in
+    `filters.css`): the action buttons and list search field the screens
+    share, so no module styles itself with another module's CSS.
+    **Known duplicate:** `.header-action` (`@shared/ui/headerActions.css`, V2)
+    draws the same secondary button as `.ui-btn`; ROADMAP RED-V3c unifies
+    them.
+- **Shell slots** (RED-V3, amendment to ADR-0028): a screen may ask things of
+  the shell around it without importing `src/app`. `ShellChromeProvider`
+  (`@shared/ui/ShellChrome`, provided once by `AppShell`) and
+  `useHideMobileChrome(active)` (`@shared/ui/useShellChrome`) hide the
+  mobile top bar, section pills and bottom bar while Gherkin is edited
+  full screen (SPEC §7/§8). The project header and its
+  actions are V2's slot (`ProjectHeader`; sections add buttons with
+  `useHeaderActions`, `@shared/ui/headerActions`).
+- **Casos (RED-V3):** `TestCasesPage` owns the filters, order and page
+  (`model/caseList.ts`, pure) and keeps the open case in `?case=`
+  (`caseLink`), so the editor walks the same ordered list and «Atrás» works.
+  The editor keeps a snapshot of the loaded form to tell «Guardado» from
+  «Cambios sin guardar» and asks before leaving with changes.
+- **Cross-module read APIs** used by other screens (each additive, with a
+  test):
+  - `projectDefects(projectId, ownerId)` (`@modules/planner`): the defect
+    cards of a project, for the traceability matrix;
+  - `projectCardCount(projectId, ownerId)` (`@modules/planner`): how many
+    cards a board has (Proyectos);
+  - `projectCoverage(projectId, ownerId)` (`@modules/traceability`): the
+    share of covered requirements by the matrix rule, `null` without
+    requirements (Proyectos);
+  - `caseLink(projectId, caseId)` (`@modules/test-cases`): the Casos route
+    with `?case=`. It repeats the shape of `projectPath(id, "cases")`
+    because projects depends on test-cases, not the other way.
+- **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
+  defects once for both views (Requisitos, Matriz) and owns their dialogs; the
+  views only render (`buildMatrix` stays the single source, also for
+  `projectCoverage`).
 - **Switches, segmented controls and tabs** (`src/shared/ui`, SPEC §4/§5/§9/§10,
   RED-V1; also used by Casos, RED-V3, and Administración, RED-V4):
   - `Switch`: a `role="switch"` button named by its visible `label` (or

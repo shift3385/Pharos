@@ -114,4 +114,36 @@ describe("DataTable", () => {
     expect(screen.getByText("Ningún caso coincide.")).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
+
+  it("selects all from the cards too on mobile", async () => {
+    setViewportWidth(390);
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar todas las filas" }));
+    expect(screen.getByRole("checkbox", { name: "Seleccionar Pago con tarjeta" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Seleccionar Reembolso parcial" })).toBeChecked();
+  });
+
+  it("keeps the header «indeterminate» when the parent rejects the change", async () => {
+    setViewportWidth(1440);
+    render(
+      <DataTable
+        rows={ROWS}
+        columns={COLUMNS}
+        getRowId={(r) => r.id}
+        label="Casos"
+        selection={{ selected: new Set(["a"]), onChange: () => {}, rowLabel: (r) => r.title }}
+      />,
+    );
+    const all = screen.getByRole("checkbox", { name: "Seleccionar todas las filas" }) as HTMLInputElement;
+    expect(all.indeterminate).toBe(true);
+    await userEvent.click(all);
+    expect(all.indeterminate).toBe(true);
+    expect(all.checked).toBe(false);
+  });
+
+  it("says no order (no aria-sort) when the parent cannot sort", () => {
+    setViewportWidth(1440);
+    render(<DataTable rows={ROWS} columns={COLUMNS} getRowId={(r) => r.id} label="Casos" />);
+    expect(screen.getByRole("columnheader", { name: "Título" })).not.toHaveAttribute("aria-sort");
+  });
 });

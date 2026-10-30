@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { MenuItem, ResponsiveMenu } from "./Menu";
@@ -44,6 +44,11 @@ export function Pagination({
   const from = total === 0 ? 0 : (current - 1) * pageSize + 1;
   const to = Math.min(current * pageSize, total);
   const isCompact = compact ?? mobile;
+  // A filter that shrinks the list can leave `page` past the end: tell the
+  // parent to move to the last page instead of showing an empty one.
+  useEffect(() => {
+    if (page !== current) onPageChange(current);
+  }, [page, current, onPageChange]);
 
   const go = (p: number) => {
     if (p >= 1 && p <= pages && p !== current) onPageChange(p);
