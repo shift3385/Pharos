@@ -42,7 +42,7 @@
 
 .cd__cancel,
 .cd__confirm {
-  height: 38px;
+  height: 40px;
   padding: 0 var(--space-4);
   font-weight: var(--fw-medium);
   border-radius: var(--radius-md);

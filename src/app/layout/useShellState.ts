@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMatch } from "react-router";
 import { useAuth } from "@modules/auth";
 import { isProjectSection, projectApi, type ProjectSection, type ProjectSummary } from "@modules/projects";
@@ -26,6 +26,55 @@ export function useSidebarCollapsed(): [boolean, (collapsed: boolean) => void] {
     }
   }, []);
   return [collapsed, set];
+}
+
+export type SidebarPhase = "idle" | "collapsing" | "expanding";
+
+/** Texts fade out (100 ms) before the 200 ms width change, and fade in after
+ *  it (SPEC §9). Without motion (reduced motion, or no `matchMedia` as in
+ *  tests) the switch is immediate. */
+const FADE_OUT_MS = 100;
+const EXPAND_MS = 340;
+
+function animated(): boolean {
+  return (
+    typeof window.matchMedia === "function" &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** The collapse/expand toggle with its animation phase. */
+export function useSidebarToggle(): {
+  collapsed: boolean;
+  phase: SidebarPhase;
+  toggle: () => void;
+} {
+  const [collapsed, setCollapsed] = useSidebarCollapsed();
+  const [phase, setPhase] = useState<SidebarPhase>("idle");
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const toggle = useCallback(() => {
+    window.clearTimeout(timer.current);
+    if (!animated()) {
+      setPhase("idle");
+      setCollapsed(!collapsed);
+      return;
+    }
+    if (!collapsed) {
+      setPhase("collapsing");
+      timer.current = window.setTimeout(() => {
+        setCollapsed(true);
+        setPhase("idle");
+      }, FADE_OUT_MS);
+    } else {
+      setCollapsed(false);
+      setPhase("expanding");
+      timer.current = window.setTimeout(() => setPhase("idle"), EXPAND_MS);
+    }
+  }, [collapsed, setCollapsed]);
+
+  return { collapsed, phase, toggle };
 }
 
 export interface ActiveProject {

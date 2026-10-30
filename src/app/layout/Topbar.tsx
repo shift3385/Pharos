@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 import { ChevronLeft, Search } from "lucide-react";
 import { useAuth } from "@modules/auth";
-import { SyncIndicator } from "@modules/sync-offline";
 import { projectPath } from "@modules/projects";
 import { PROJECT_NAV, BOTTOM_NAV, isCurrent } from "@app/navConfig";
 import { Logo } from "@shared/ui/Logo";
@@ -30,8 +29,8 @@ function OfflineBadge() {
 }
 
 /** Top bar for tablet and desktop (SPEC §7), 64 px: breadcrumbs, then the
- *  offline and sync status, search (Ctrl K), notifications and the light/dark
- *  quick switch. */
+ *  offline badge, search (Ctrl K), notifications and the light/dark quick
+ *  switch. The sync status lives in the sidebar foot. */
 export function Topbar({ active }: { active: ActiveProject | null }) {
   return (
     <header className="topbar">
@@ -39,7 +38,6 @@ export function Topbar({ active }: { active: ActiveProject | null }) {
       <span className="topbar__spacer" />
       <div className="topbar__actions">
         <OfflineBadge />
-        <SyncIndicator />
         <SearchTrigger />
         <NotificationsTrigger />
         <ThemeQuickToggle />

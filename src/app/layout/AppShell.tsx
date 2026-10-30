@@ -2,12 +2,14 @@ import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router";
 import { applyBackground } from "@modules/admin";
+import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
+import { isTauri } from "@shared/platform";
 import { ADMIN, isCurrent } from "@app/navConfig";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { Sidebar } from "./Sidebar";
 import { BottomNav, MobileTopbar, ProjectPills, Topbar } from "./Topbar";
 import { AdminSectionNav } from "./AdminSectionNav";
-import { useActiveProject, useSidebarCollapsed } from "./useShellState";
+import { useActiveProject, useSidebarToggle } from "./useShellState";
 import "./AppShell.css";
 
 /**
@@ -24,49 +26,69 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const breakpoint = useBreakpoint();
-  const [collapsed, setCollapsed] = useSidebarCollapsed();
+  const { collapsed, phase, toggle } = useSidebarToggle();
   const active = useActiveProject();
   useEffect(() => {
     applyBackground();
   }, []);
 
   const mobile = breakpoint === "mobile";
-  const rail = breakpoint === "tablet" || (breakpoint === "desktop" && collapsed);
+  const rail =
+    breakpoint === "tablet" || (breakpoint === "desktop" && collapsed);
 
   return (
-    <div className="app-shell" data-layout={breakpoint}>
-      {/* The router lives in the URL hash, so following "#main-content" would
+    // One sync state for the whole shell: the sidebar foot, the strip and the
+    // mobile user sheet only show it.
+    <SyncStatusProvider>
+      <div className="app-shell" data-layout={breakpoint}>
+        {/* The router lives in the URL hash, so following "#main-content" would
           change the route: move the focus instead. */}
-      <a
-        className="skip-link"
-        href="#main-content"
-        onClick={(e) => {
-          e.preventDefault();
-          document.getElementById("main-content")?.focus();
-        }}
-      >
-        {t("a11y.skipToContent")}
-      </a>
-      <div className="app-shell__bg" aria-hidden="true" />
-      {!mobile && (
-        <Sidebar
-          mode={rail ? "rail" : "full"}
-          collapsible={breakpoint === "desktop"}
-          onToggle={() => setCollapsed(!collapsed)}
-          active={active}
-        />
-      )}
-      <div className="app-shell__main">
-        {mobile ? <MobileTopbar active={active} /> : <Topbar active={active} />}
-        {mobile && active && <ProjectPills active={active} />}
-        <main id="main-content" className="app-shell__content screen-root" tabIndex={-1}>
-          <div className="app-shell__page">
-            {isCurrent(ADMIN, pathname) && <AdminSectionNav />}
-            {children}
-          </div>
-        </main>
-        {mobile && <BottomNav />}
+        <a
+          className="skip-link"
+          href="#main-content"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById("main-content")?.focus();
+          }}
+        >
+          {t("a11y.skipToContent")}
+        </a>
+        <div className="app-shell__bg" aria-hidden="true" />
+        {!mobile && (
+          <Sidebar
+            mode={rail ? "rail" : "full"}
+            collapsible={breakpoint === "desktop"}
+            onToggle={toggle}
+            phase={phase}
+            active={active}
+          />
+        )}
+        <div className="app-shell__main">
+          {mobile ? (
+            <MobileTopbar active={active} />
+          ) : (
+            <Topbar active={active} />
+          )}
+          {mobile && active && <ProjectPills active={active} />}
+          {/* Web only: data an older web version left unsent (BASE-10). */}
+          {!isTauri() && (
+            <div className="shell-notice sync">
+              <LegacyUnsentNotice />
+            </div>
+          )}
+          <main
+            id="main-content"
+            className="app-shell__content screen-root"
+            tabIndex={-1}
+          >
+            <div className="app-shell__page">
+              {isCurrent(ADMIN, pathname) && <AdminSectionNav />}
+              {children}
+            </div>
+          </main>
+          {mobile && <BottomNav />}
+        </div>
       </div>
-    </div>
+    </SyncStatusProvider>
   );
 }

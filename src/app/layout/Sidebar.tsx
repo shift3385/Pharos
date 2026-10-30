@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router";
 import { ArrowRight, ChevronsUpDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
-import { ADMIN, MAIN_NAV, PROJECT_NAV, isCurrent, type NavItem } from "@app/navConfig";
+import { ADMIN, MAIN_NAV, PROJECT_NAV, PROJECTS, isCurrent, type NavItem } from "@app/navConfig";
 import { projectPath } from "@modules/projects";
+import { SyncIndicator } from "@modules/sync-offline";
 import { Logo } from "@shared/ui/Logo";
 import { Menu, MenuItem } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { APP_VERSION } from "@shared/version";
 import { UserMenu } from "./UserMenu";
-import type { ActiveProject } from "./useShellState";
+import type { ActiveProject, SidebarPhase } from "./useShellState";
 
 type Mode = "full" | "rail";
 
@@ -83,6 +84,7 @@ function ProjectSwitcher({ active }: { active: ActiveProject }) {
         id={menu.id}
         label={t("shell.switchProjectMenu")}
         className="project-menu"
+        focusHeader
         header={
           <label className="project-menu__search">
             <Search size={15} aria-hidden="true" />
@@ -126,12 +128,15 @@ export function Sidebar({
   collapsible,
   onToggle,
   active,
+  phase = "idle",
 }: {
   mode: Mode;
   /** Desktop only: show the collapse / expand button. */
   collapsible: boolean;
   onToggle: () => void;
   active: ActiveProject | null;
+  /** Collapse/expand animation step (texts fade around the width change). */
+  phase?: SidebarPhase;
 }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
@@ -158,13 +163,15 @@ export function Sidebar({
       icon={item.icon}
       label={t(`nav.${item.id}`)}
       short={t(`nav.short.${item.id}`)}
-      current={isCurrent(item, pathname)}
+      // Inside a project only its section is current: «Proyectos» stays
+      // plain while the «Proyecto activo» group is shown (SPEC §7).
+      current={isCurrent(item, pathname) && !(active && item.id === PROJECTS.id)}
       testId={`nav-${item.id}`}
     />
   );
 
   return (
-    <aside className="sidebar" data-mode={mode}>
+    <aside className="sidebar" data-mode={mode} data-phase={phase}>
       <div className="sidebar__brand">
         {rail && toggle}
         <Logo size={rail ? 38 : 35} surface="navy" />
@@ -204,6 +211,8 @@ export function Sidebar({
       </nav>
 
       <div className="sidebar__foot">
+        {/* Sync status above the user (SPEC §7 prototype); only its dot in the strip. */}
+        <SyncIndicator variant={rail ? "compact" : "full"} />
         <span
           className="sidebar__version"
           data-testid="app-version"

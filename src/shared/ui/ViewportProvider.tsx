@@ -17,8 +17,9 @@ function widthOf(el: HTMLElement | null): number {
  *   navigation never flashes in the wrong layout;
  * - consumers re-render only when the band changes, and the observer is
  *   disconnected on unmount.
- * The container also carries `data-viewport` for CSS and is the size
- * container (`container-type: inline-size`) that `cqi` units resolve against.
+ * The container also carries `data-viewport` for CSS (mirrored on `<html>`
+ * for portaled dialogs) and is the size container (`container-type:
+ * inline-size`) that `cqi` units resolve against.
  */
 export function ViewportProvider({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -36,6 +37,12 @@ export function ViewportProvider({ children }: { children: ReactNode }) {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Mirrored on <html> for what is portaled out of the root (dialogs, sheets).
+  useLayoutEffect(() => {
+    document.documentElement.dataset.viewport = band;
+  }, [band]);
+  useLayoutEffect(() => () => void delete document.documentElement.dataset.viewport, []);
 
   return (
     <div ref={ref} className="viewport-root" data-viewport={band}>

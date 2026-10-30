@@ -49,6 +49,18 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(document.querySelector(".bottom-nav")).toBeNull();
     });
 
+    it("shows the sync status in the sidebar foot, not in the top bar", () => {
+      renderShell();
+      const foot = document.querySelector(".sidebar__foot") as HTMLElement;
+      expect(within(foot).getByRole("button", { name: "Sincronizar ahora" })).toBeInTheDocument();
+      expect(document.querySelector(".topbar .sync")).toBeNull();
+    });
+
+    it("marks «Proyectos» current on the project list", () => {
+      renderShell("/projects");
+      expect(screen.getByTestId("nav-projects")).toHaveAttribute("aria-current", "page");
+    });
+
     it("shows breadcrumbs, search, notifications and the theme switch in the top bar", () => {
       renderShell();
       const crumbs = screen.getByRole("navigation", { name: "Ruta de navegación" });
@@ -98,6 +110,8 @@ describe("AppShell (SPEC §2/§7)", () => {
       renderShell();
       await userEvent.click(screen.getByTestId("user-menu-trigger"));
       const menu = screen.getByRole("menu");
+      // The first item takes the focus, not the selected language.
+      expect(within(menu).getByRole("menuitem", { name: "Mi perfil" })).toHaveFocus();
       expect(within(menu).getByRole("menuitem", { name: "Mi perfil" })).toBeInTheDocument();
       expect(within(menu).getByRole("menuitem", { name: "Administración" })).toBeInTheDocument();
       expect(within(menu).getByRole("menuitemradio", { name: "Español" })).toHaveAttribute(
@@ -123,6 +137,9 @@ describe("AppShell (SPEC §2/§7)", () => {
       renderShell("/projects/p1/planner");
       expect(screen.getByText("Proyecto activo")).toBeInTheDocument();
       expect(screen.getByTestId("nav-project-planner")).toHaveAttribute("aria-current", "page");
+      // Only the section is current, not «Proyectos» as well (design review).
+      expect(screen.getByTestId("nav-projects")).not.toHaveAttribute("aria-current");
+      expect(document.querySelectorAll('.sidebar [aria-current="page"]')).toHaveLength(1);
       expect(screen.getByTestId("nav-project-plan")).toHaveAttribute("href", "/projects/p1/plan");
       const crumbs = screen.getByRole("navigation", { name: "Ruta de navegación" });
       expect(await within(crumbs).findByRole("link", { name: "Portal Clientes v3" })).toBeInTheDocument();
@@ -133,11 +150,19 @@ describe("AppShell (SPEC §2/§7)", () => {
       renderShell("/projects/p1/cases");
       const switcher = await screen.findByRole("button", { name: /Portal Clientes v3/ });
       await userEvent.click(switcher);
+      const search = screen.getByRole("searchbox", { name: "Buscar proyecto…" });
+      // The search field takes the focus; Tab enters the list and Shift+Tab
+      // goes back, without closing the menu.
+      expect(search).toHaveFocus();
+      await userEvent.tab();
+      expect(screen.getByRole("menuitemradio", { name: /Portal Clientes v3/ })).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(search).toHaveFocus();
       expect(screen.getByRole("menuitemradio", { name: /Portal Clientes v3/ })).toHaveAttribute(
         "aria-checked",
         "true",
       );
-      await userEvent.type(screen.getByRole("searchbox", { name: "Buscar proyecto…" }), "banca");
+      await userEvent.type(search, "banca");
       expect(screen.queryByRole("menuitemradio", { name: /Portal/ })).not.toBeInTheDocument();
       expect(screen.getByRole("menuitemradio", { name: /App Móvil Banca/ })).toBeInTheDocument();
     });
@@ -176,6 +201,8 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(sidebar()).toHaveAttribute("data-mode", "rail");
       expect(screen.queryByTestId("sidebar-collapse")).not.toBeInTheDocument();
       expect(screen.getByTestId("search-trigger")).toBeInTheDocument();
+      // Only the sync dot in the strip; it syncs on click.
+      expect(screen.getByTestId("sync-compact")).toHaveAccessibleName(/Sincronizar ahora/);
     });
   });
 
@@ -193,6 +220,11 @@ describe("AppShell (SPEC §2/§7)", () => {
         "Perfil",
       ]);
       expect(screen.getByTestId("nav-dashboard")).toHaveAttribute("aria-current", "page");
+    });
+
+    it("keeps «Proyectos» current in the bottom bar inside a project", () => {
+      renderShell("/projects/p1/plan");
+      expect(screen.getByTestId("nav-projects")).toHaveAttribute("aria-current", "page");
     });
 
     it("inside a project: back arrow, section title and the sections as pills", async () => {
@@ -216,6 +248,9 @@ describe("AppShell (SPEC §2/§7)", () => {
       await userEvent.click(screen.getByTestId("user-menu-trigger"));
       const sheet = await screen.findByRole("dialog");
       expect(sheet).toHaveClass("bs");
+      // Portaled out of the navy bar: its focus colour and stacking do not apply.
+      expect(sheet.closest(".mtopbar")).toBeNull();
+      expect(within(sheet).getByRole("button", { name: "Sincronizar ahora" })).toBeInTheDocument();
       expect(within(sheet).getByRole("button", { name: "Cerrar sesión" })).toBeInTheDocument();
       await waitFor(() => expect(within(sheet).getByRole("button", { name: "Español" })).toHaveAttribute("aria-pressed", "true"));
     });

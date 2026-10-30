@@ -53,22 +53,23 @@ function Harness({
 }
 
 describe("Menu (SPEC §6/§10)", () => {
-  it("opens from its trigger as a named menu, focusing the selected item", async () => {
+  it("opens from its trigger as a named menu, focusing the first item", async () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "Opciones" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("menu", { name: "Opciones" })).toBeInTheDocument();
-    const selected = screen.getByRole("menuitemradio", { name: "Dos" });
-    expect(selected).toHaveFocus();
-    expect(selected).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("menuitem", { name: "Uno" })).toHaveFocus();
+    expect(screen.getByRole("menuitemradio", { name: "Dos" })).toHaveAttribute("aria-checked", "true");
     await expectNoAxeViolations();
   });
 
   it("moves with the arrow keys, looping, and jumps with Home/End", async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole("button", { name: "Opciones" }));
+    await userEvent.keyboard("{ArrowDown}");
+    expect(screen.getByRole("menuitemradio", { name: "Dos" })).toHaveFocus();
     await userEvent.keyboard("{ArrowDown}");
     expect(screen.getByRole("menuitem", { name: "Tres" })).toHaveFocus();
     await userEvent.keyboard("{ArrowDown}");

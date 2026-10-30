@@ -22,6 +22,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     a 1023 px, franja de iconos; desde 1024 px, menú lateral. Al estrechar la ventana cambia sin
     recargar (enmienda «vista adaptativa» del diseño, 2026-10-30).
   - La búsqueda y las notificaciones avisan de que llegan en una próxima versión.
+  - El estado de sincronización está al pie del menú lateral, sobre el usuario. En la franja de
+    iconos es solo un punto, que sincroniza al pulsarlo.
   - Cada sección del proyecto tiene su propia dirección (`#/projects/<id>/<sección>`,
     [ADR-0029](docs/adr/0029-secciones-del-proyecto-en-la-url.md)). «Atrás» y recargar
     conservan el proyecto y la sección.

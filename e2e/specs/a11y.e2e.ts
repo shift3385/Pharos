@@ -94,6 +94,23 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     expect(await violations()).toEqual([]);
   });
 
+  it("menus take the focus once they are visible (SPEC §10)", async () => {
+    /** Role of the focused element. */
+    const focusedRole = () => browser.execute(() => document.activeElement?.getAttribute("role") ?? "");
+    // Project switcher: the search field first; Tab enters the list.
+    await $('[data-testid="project-switcher"]').click();
+    await expect($(`input[aria-label="${es.shell.searchProjects}"]`)).toBeFocused();
+    await browser.keys(["Tab"]);
+    expect(await focusedRole()).toBe("menuitemradio");
+    await browser.keys(["Escape"]);
+    await expect($('[data-testid="project-switcher"]')).toBeFocused();
+    // User menu: the first item, «Mi perfil».
+    await userMenuTrigger().click();
+    await expect(button(es.shell.myProfile)).toBeFocused();
+    await browser.keys(["Escape"]);
+    await expect(userMenuTrigger()).toBeFocused();
+  });
+
   it("the skip link is the first stop and moves to the content", async () => {
     // Leave the unsaved wizard and reload, so Tab starts from the top.
     await browser.execute(() => {

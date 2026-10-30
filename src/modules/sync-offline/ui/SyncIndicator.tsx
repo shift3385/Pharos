@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { loadSettings } from "@modules/admin";
 import { useAuth } from "@modules/auth";
@@ -12,16 +12,29 @@ import {
 import { SyncFailureLog, logSyncFailure } from "../api/syncFailure";
 import { purgeDeleted } from "../api/purgeApi";
 import { SyncHttpError } from "../api/transport";
-import { isTauri } from "@shared/platform";
 import { ConflictPanel } from "./ConflictPanel";
-import { LegacyUnsentNotice } from "./LegacyUnsentNotice";
 import "./SyncIndicator.css";
 
-/** Topbar status indicator (spec §9): Synced / Pending changes (n) / Offline,
- *  with a "Sync now" button, plus Conflicts (n) that opens the conflict panel
- *  (Phase 8C). Counts are the signed-in account's: from the local oplog on the
- *  desktop, from the outbox and web conflicts in the browser. */
-export function SyncIndicator() {
+interface SyncStatusValue {
+  status: ReturnType<typeof syncStatus>;
+  label: string;
+  title: string;
+  conflicts: number;
+  syncing: boolean;
+  runSync: () => void;
+  openConflicts: () => void;
+}
+
+const SyncStatusContext = createContext<SyncStatusValue | null>(null);
+
+/** Sync state and background work (spec §9): Synced / Pending changes (n) /
+ *  Offline / Conflicts (n), the 5 s refresh, auto-sync at sign-in and on
+ *  reconnect, the purge (SYNC-06) and the conflict panel (Phase 8C). Counts are
+ *  the signed-in account's: from the local oplog on the desktop, from the
+ *  outbox and web conflicts in the browser. Mount it **once** (the app shell
+ *  does): every `SyncIndicator` reads it, so moving the indicator between the
+ *  sidebar, the icon strip and the mobile sheet never runs the work twice. */
+export function SyncStatusProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const toast = useToast();
   const { status: authStatus, user } = useAuth();
@@ -173,36 +186,77 @@ export function SyncIndicator() {
     }
   }
 
+  const value: SyncStatusValue = {
+    status,
+    label,
+    title,
+    conflicts,
+    syncing,
+    runSync: () => void runSync(),
+    openConflicts: () => setPanelOpen(true),
+  };
   return (
-    <div className="sync" title={title}>
-      <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
-      <span className="sync__label">{label}</span>
-      {conflicts > 0 && (
-        <button
-          type="button"
-          className="sync__btn"
-          onClick={() => setPanelOpen(true)}
-        >
-          {t("sync.conflict.review")}
-        </button>
-      )}
-      {!isTauri() && <LegacyUnsentNotice />}
-      {status !== "offline" && (
-        <button
-          type="button"
-          className="sync__btn"
-          onClick={() => void runSync()}
-          disabled={syncing}
-        >
-          {syncing ? t("sync.syncing") : t("sync.now")}
-        </button>
-      )}
+    <SyncStatusContext.Provider value={value}>
+      {children}
       {panelOpen && (
         <ConflictPanel
           onClose={() => setPanelOpen(false)}
           // Push the kept version right away when online.
           onResolved={() => void autoSync()}
         />
+      )}
+    </SyncStatusContext.Provider>
+  );
+}
+
+/**
+ * Sync status (spec §9), read from `SyncStatusProvider`.
+ * - `full` (sidebar foot, mobile user sheet): dot, label, «Revisar
+ *   conflictos» when there are any, and «Sincronizar ahora».
+ * - `compact` (84 px icon strip): only the dot, as a button that syncs now;
+ *   its name and tooltip carry the status. With conflicts, it opens the panel.
+ */
+export function SyncIndicator({ variant = "full" }: { variant?: "full" | "compact" }) {
+  const { t } = useTranslation();
+  const sync = useContext(SyncStatusContext);
+  if (!sync) return null;
+  const { status, label, title, conflicts, syncing } = sync;
+
+  if (variant === "compact") {
+    const action = conflicts > 0 ? t("sync.conflict.review") : t("sync.now");
+    return (
+      <button
+        type="button"
+        className="sync sync--compact"
+        title={`${title} · ${action}`}
+        aria-label={`${label}. ${action}`}
+        data-testid="sync-compact"
+        disabled={(syncing || status === "offline") && conflicts === 0}
+        onClick={conflicts > 0 ? sync.openConflicts : sync.runSync}
+      >
+        <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="sync" title={title}>
+      <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
+      <span className="sync__label">{label}</span>
+      {conflicts > 0 && (
+        <button type="button" className="sync__btn" onClick={sync.openConflicts}>
+          {t("sync.conflict.review")}
+        </button>
+      )}
+      {status !== "offline" && (
+        <button
+          type="button"
+          className="sync__btn"
+          onClick={sync.runSync}
+          disabled={syncing}
+        >
+          {syncing ? t("sync.syncing") : t("sync.now")}
+        </button>
       )}
     </div>
   );

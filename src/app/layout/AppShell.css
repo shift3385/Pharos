@@ -86,8 +86,8 @@
 .sidebar__toggle {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex: none;
   color: var(--color-on-navy-muted);
   background: transparent;
@@ -216,7 +216,7 @@
   gap: 4px;
   padding: 8px 0 6px;
   font-size: 10.5px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .sidebar[data-mode="rail"] .sidebar__link[aria-current="page"] {
@@ -263,7 +263,7 @@
   color: var(--color-on-navy);
   background: var(--color-navy-700);
   border: 1px solid color-mix(in srgb, var(--color-on-navy) 6%, transparent);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .sidebar__project svg {
@@ -282,7 +282,7 @@
   font-weight: var(--fw-semibold);
   color: var(--color-on-navy);
   background: color-mix(in srgb, var(--color-navy-300) 18%, transparent);
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
 }
 
 .sidebar__project-name {
@@ -326,6 +326,70 @@
   outline-color: var(--color-focus-on-navy);
 }
 
+/* Sync status in the sidebar foot, on navy (prototype: «● Sincronizado»
+   above the user; only the dot in the strip). */
+.sidebar .sync {
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 0 8px;
+  font-size: var(--fs-metadata);
+  color: var(--color-on-navy-muted);
+}
+
+.sidebar .sync__btn {
+  height: 26px;
+  font-size: var(--fs-metadata);
+  color: var(--color-on-navy);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--color-on-navy) 16%, transparent);
+}
+
+.sidebar .sync__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-on-navy) 6%, transparent);
+  border-color: color-mix(in srgb, var(--color-on-navy) 24%, transparent);
+}
+
+.sidebar .sync--compact {
+  padding: 0;
+}
+
+/* Collapse / expand (SPEC §9): the texts fade out before the width closes,
+   and fade in only once it has opened, so they never show cut mid-way. */
+.sidebar[data-phase="collapsing"] :is(
+    .sidebar__label,
+    .sidebar__brand-name,
+    .sidebar__group-label,
+    .sidebar__project,
+    .sidebar__version,
+    .user-menu__who,
+    .user-menu__chev,
+    .sync__label,
+    .sync__btn
+  ) {
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.sidebar[data-phase="expanding"] :is(
+    .sidebar__label,
+    .sidebar__brand-name,
+    .sidebar__group-label,
+    .sidebar__project,
+    .sidebar__version,
+    .user-menu__who,
+    .user-menu__chev,
+    .sync__label,
+    .sync__btn
+  ) {
+  animation: sidebar-text-in 120ms ease 200ms both;
+}
+
+@keyframes sidebar-text-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* ---- User menu ---- */
 .user-menu__trigger {
   display: flex;
@@ -338,7 +402,7 @@
   color: inherit;
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .user-menu--sidebar .user-menu__trigger:hover {
@@ -589,7 +653,7 @@
   color: var(--color-text-muted);
   background: var(--color-bg-page);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .topbar__search:hover {
@@ -612,7 +676,7 @@
   color: var(--color-text-secondary);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .topbar__icon-btn {
@@ -625,7 +689,7 @@
   color: var(--color-text-secondary);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   transition:
     background-color 120ms ease,
     color 120ms ease;
@@ -686,21 +750,8 @@
 }
 
 /* The top bar compacts by its own width (it is a size container), so it
-   follows the sidebar being open, collapsed or a strip. Below 1100 px of bar
-   the sync status keeps its dot (its label stays in the tooltip) so the
-   breadcrumbs have room; below 900 px the search keeps only its icon and the
-   Ctrl K hint. */
-@container topbar (max-width: 1099.98px) {
-  .topbar .sync__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-  }
-}
-
+   follows the sidebar being open, collapsed or a strip: below 900 px of bar
+   the search keeps only its icon and the Ctrl K hint. */
 @container topbar (max-width: 899.98px) {
   .topbar__search {
     width: auto;
@@ -729,7 +780,12 @@
   padding-left: 4px;
 }
 
-.mtopbar :focus-visible {
+/* Only the bar's own controls sit on navy; anything that opens from it
+   (sheets, popovers) is portaled out and keeps the regular focus colour. */
+.mtopbar > :focus-visible,
+.mtopbar__search > :focus-visible,
+.mtopbar .user-menu__trigger:focus-visible,
+.mtopbar .topbar__icon-btn:focus-visible {
   outline-color: var(--color-focus-on-navy);
 }
 
@@ -793,7 +849,7 @@
   color: var(--color-on-navy);
   background: color-mix(in srgb, var(--color-on-navy) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-on-navy) 12%, transparent);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .mtopbar__search-input::placeholder {
@@ -901,7 +957,7 @@
   padding: 3px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .admin-sections__link {
@@ -932,4 +988,17 @@
   background-position: center;
   background-repeat: no-repeat;
   opacity: var(--app-bg-opacity, 0.3);
+}
+
+/* Web only: data an older web version left unsent (above the content). */
+.shell-notice {
+  flex: none;
+  flex-wrap: wrap;
+  padding: var(--space-2) clamp(16px, 2.6cqi, 32px);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.shell-notice:empty {
+  display: none;
 }

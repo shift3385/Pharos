@@ -188,24 +188,41 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     (temporary).
 - **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
   `projectPath()`. `useActiveProject` (`useMatch`) feeds:
-  - the «Proyecto activo» sidebar group (switcher + 5 sections);
+  - the «Proyecto activo» sidebar group (switcher + 5 sections). Inside a
+    project only the section is marked current; «Proyectos» is not (it stays
+    current in the mobile bottom bar);
   - the breadcrumbs;
   - the mobile header (back + section + project) and the section pills.
 
   `/projects?open=<id>` redirects there.
 - **Top bar** (`Topbar`, 64 px):
   - breadcrumbs;
-  - the offline badge and `SyncIndicator`;
+  - the offline badge;
   - search (Ctrl K / ⌘K);
   - notifications;
   - the light/dark quick switch (`data-testid="theme-toggle"`).
 
   Search and notifications open "coming soon" panels until RED-W1/W2.
+- **Sync status:**
+  - `SyncStatusProvider` (in `AppShell`, mounted once) holds the sync state
+    and the background work: refresh, auto-sync, purge and the conflict panel.
+  - `SyncIndicator` only shows it:
+    - `full` in the sidebar foot, above the user, and in the mobile user
+      sheet;
+    - `compact` (a dot that syncs on click) in the strip.
+  - Moving it between layouts never runs the work twice.
+  - The web-only `LegacyUnsentNotice` is a strip above the content.
 - **User menu** (`UserMenu`): Mi perfil, Administración, Idioma and Cerrar
   sesión (`data-testid="user-menu-trigger"`).
   - It opens up from the sidebar foot and to the right from the strip.
   - On mobile it is a bottom sheet that also holds the theme switch and the
     sync status.
+  - Menus focus their first item once they are visible (a hidden panel
+    cannot take the focus). The project switcher focuses its search field;
+    Tab and ↓ enter the list, and Shift+Tab returns.
+- **Collapse/expand:** the texts fade out (100 ms) before the width closes and
+  fade in after it opens (`data-phase` on the sidebar); immediate under
+  reduced motion.
 - **Shared primitives** (`src/shared/ui`, SPEC §6/§10):
   - `Popover` + `usePopover` (`popoverPosition.ts`):
     - rendered in a portal with `position: fixed`;
@@ -236,7 +253,10 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - **Dialogs:** every modal is a `Dialog` (`@shared/ui/Dialog`): focus moves
   in and returns to the opener, Tab stays inside, Escape and the backdrop close
   it unless it is not `dismissable` (while saving, an export in progress, the
-  recovery key on screen). Nested dialogs: only the innermost handles keys.
+  recovery key on screen). Nested dialogs: only the innermost (deepest in the
+  React tree) handles keys. Dialogs are portaled to `<body>`, so a bar or
+  container that opens one never clips or styles it; `<html data-viewport>`
+  keeps view-specific styles working.
   The opener is read on the first render (an `autoFocus` child would
   otherwise pose as it). A form passes `confirmClose`, so Escape and the
   backdrop ask before discarding typed changes.

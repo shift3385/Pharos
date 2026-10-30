@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useId,
   useRef,
   type KeyboardEvent,
@@ -28,12 +27,25 @@ function items(root: HTMLElement | null): HTMLElement[] {
   return root ? Array.from(root.querySelectorAll<HTMLElement>(ITEM)) : [];
 }
 
-/** Arrow keys move through the items (looping), Home/End jump to the ends and
- *  Tab closes the menu (SPEC §10). */
+/** Arrow keys move through the items (looping) and Home/End jump to the ends
+ * (SPEC §10). From a field in the header (e.g. the project search), Tab and
+ * ↓ go to the first item and Shift+Tab from the first item goes back to it;
+ * Tab from an item closes the menu. */
 function onMenuKeyDown(e: KeyboardEvent<HTMLElement>, close: () => void) {
   const list = items(e.currentTarget);
   if (list.length === 0) return;
   const at = list.indexOf(document.activeElement as HTMLElement);
+  const field = e.currentTarget.querySelector<HTMLElement>(".menu__head input");
+  if (e.key === "Tab") {
+    if (at < 0 && !e.shiftKey) {
+      e.preventDefault();
+      list[0].focus();
+    } else if (at === 0 && e.shiftKey && field) {
+      e.preventDefault();
+      field.focus();
+    } else if (at >= 0) close();
+    return;
+  }
   const go = (i: number) => {
     e.preventDefault();
     list[(i + list.length) % list.length].focus();
@@ -42,12 +54,12 @@ function onMenuKeyDown(e: KeyboardEvent<HTMLElement>, close: () => void) {
   else if (e.key === "ArrowUp") go(at < 0 ? list.length - 1 : at - 1);
   else if (e.key === "Home") go(0);
   else if (e.key === "End") go(list.length - 1);
-  else if (e.key === "Tab") close();
 }
 
 /**
  * Dropdown menu (SPEC §6/§10) on top of `Popover`: `role="menu"`, the focus
- * starts on the selected item (or the first) and the arrow keys move it;
+ * starts on the first item (or on the header field, `focusHeader`) once the
+ * menu is visible, and the arrow keys move it;
  * choosing an item closes the menu. Pair it with `usePopover()` for the
  * trigger. Items are `MenuItem`, `MenuLabel` and `MenuSeparator`.
  */
@@ -60,6 +72,7 @@ export function Menu({
   placement,
   className = "",
   header,
+  focusHeader,
   children,
 }: {
   open: boolean;
@@ -71,14 +84,14 @@ export function Menu({
   className?: string;
   /** Non-item content above the items (e.g. the user's name and email). */
   header?: ReactNode;
+  /** Start in the header's field (a search box) instead of the first item. */
+  focusHeader?: boolean;
   children: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const list = items(panelRef.current);
-    (list.find((el) => el.getAttribute("aria-checked") === "true") ?? list[0])?.focus();
-  }, [open]);
+  const firstFocus = () =>
+    (focusHeader && panelRef.current?.querySelector<HTMLElement>(".menu__head input")) ||
+    items(panelRef.current)[0];
 
   return (
     <Popover
@@ -89,9 +102,10 @@ export function Menu({
       id={id}
       className={`menu ${className}`.trim()}
       panelRef={panelRef}
+      initialFocus={firstFocus}
       onKeyDown={(e) => onMenuKeyDown(e, onClose)}
     >
-      {header}
+      {header && <div className="menu__head">{header}</div>}
       <div role="menu" aria-label={label} className="menu__list">
         <MenuContext.Provider value={{ close: onClose, kind: "menu" }}>
           {children}

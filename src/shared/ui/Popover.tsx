@@ -38,6 +38,7 @@ export function Popover({
   className = "",
   onKeyDown,
   panelRef: externalRef,
+  initialFocus,
   children,
 }: {
   open: boolean;
@@ -50,6 +51,9 @@ export function Popover({
   className?: string;
   onKeyDown?: (e: ReactKeyboardEvent<HTMLDivElement>) => void;
   panelRef?: RefObject<HTMLDivElement>;
+  /** Element to focus once the panel is placed and visible (a hidden element
+   *  cannot take the focus, so this waits for the first measurement). */
+  initialFocus?: () => HTMLElement | null | undefined;
   children: ReactNode;
 }) {
   const ownRef = useRef<HTMLDivElement>(null);
@@ -79,6 +83,13 @@ export function Popover({
     }
     place();
   }, [open, place]);
+
+  const placed = open && position !== null;
+  const focusRef = useRef(initialFocus);
+  focusRef.current = initialFocus;
+  useEffect(() => {
+    if (placed) focusRef.current?.()?.focus();
+  }, [placed]);
 
   useEffect(() => {
     if (!open) return;
