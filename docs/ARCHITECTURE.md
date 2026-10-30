@@ -115,7 +115,7 @@ export progress shared with the list.
 - `PlanSidePanels`: «Estado del plan», the latest revisions, the revisions
   dialog and the «Importar / Exportar» menu.
 
-Its header buttons go through `useHeaderActions`. Saving reloads the saved
+Its header buttons go through `useHeaderActions`. Leaving with unsaved changes asks first (`useUnsavedChangesGuard`; the wizard never navigates by itself after a save, so it needs no `bypass`). Saving reloads the saved
 plan in place, so the step stays put, and fires `PLAN_SAVED_EVENT`, which the
 project header listens to. Deliverables and tools are catalog keys
 (ADR-0030, `model/catalogLabels.ts`).

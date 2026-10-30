@@ -795,7 +795,8 @@
       "status": "Current status: {{status}}",
       "exportHint": "Export the plan from “Import / Export”, top right.",
       "missingLabel": "Steps not completed"
-    }
+    },
+    "leaveMessage": "The plan has unsaved changes. If you leave, they are lost; to keep them, press “Save” first."
   },
   "testCase": {
     "title": "Test cases",

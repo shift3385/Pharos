@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, screen, within } from "@testing-library/react";
+import { Link, useLocation } from "react-router";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { resizeViewport, setViewportWidth } from "@test/viewport";
@@ -224,5 +225,39 @@ describe("plan wizard · status panel (SPEC §8)", () => {
     const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
     expect(within(panel).getByText("v1.3")).toBeInTheDocument();
     expect(within(panel).getByRole("heading", { name: "Revisiones" })).toBeInTheDocument();
+  });
+});
+
+describe("plan wizard · leaving with unsaved changes (RED-V3k guard)", () => {
+  function Where() {
+    return <output data-testid="where">{useLocation().pathname}</output>;
+  }
+
+  it("asks before leaving, stays on «Seguir editando», and leaves freely once saved", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(
+      <>
+        <WithHeader>
+          <TestPlanWizard planId="plan1" projectId="p1" />
+        </WithHeader>
+        <Link to="/projects">salir</Link>
+        <Where />
+      </>,
+      { route: "/projects/p1/plan" },
+    );
+    await userEvent.type(await screen.findByRole("textbox", { name: /Título/ }), " v2");
+
+    await userEvent.click(screen.getByRole("link", { name: "salir" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "¿Descartar los cambios?" });
+    expect(dialog).toHaveTextContent("El plan tiene cambios sin guardar");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Seguir editando" }));
+    expect(screen.getByTestId("where")).toHaveTextContent("/projects/p1/plan");
+    expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue(`${PLAN.title} v2`);
+
+    await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Guardar" }));
+    expect(await screen.findByText(/^Guardado/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("link", { name: "salir" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent(/^\/projects$/);
   });
 });

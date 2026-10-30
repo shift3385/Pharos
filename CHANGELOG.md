@@ -91,7 +91,7 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     de pasos con el actual centrado desde 600 px, y una barra con «Ver pasos» en el móvil.
   - «Estado del plan» y las últimas revisiones van junto al formulario, o debajo si no caben.
   - «Revisiones», «Importar / Exportar» (un solo menú) y «Guardar» están en la cabecera.
-    Guardar ya no vuelve al paso 1.
+    Guardar ya no vuelve al paso 1. Salir del plan con cambios sin guardar pregunta antes.
   - Paso 8: los entregables de ISO/IEC/IEEE 29119-3 por grupos, más los propios. Paso 10: las
     10 herramientas más usadas, «Más herramientas (65)» con buscador y un campo libre. Paso 14:
     «Generar sprints a partir de un rango», todavía «Próximamente». Paso 19: «Antes de

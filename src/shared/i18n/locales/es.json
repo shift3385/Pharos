@@ -795,7 +795,8 @@
       "status": "Estado actual: {{status}}",
       "exportHint": "Exporta el plan desde «Importar / Exportar», arriba a la derecha.",
       "missingLabel": "Pasos sin completar"
-    }
+    },
+    "leaveMessage": "El plan tiene cambios sin guardar. Si sales, se pierden; para conservarlos, pulsa «Guardar» antes."
   },
   "testCase": {
     "title": "Casos de prueba",

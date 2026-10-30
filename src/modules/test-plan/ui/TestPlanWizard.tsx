@@ -10,6 +10,7 @@ import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { unlessReported } from "@shared/ui/notify";
 import { useToast } from "@shared/ui/Toast";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { required } from "@shared/validation";
 import { testPlanApi } from "../api/testPlanApi";
 import type { DetectionRow, ImportResult } from "../import/planImport";
@@ -137,6 +138,12 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
   }, [planId, userId]);
 
   const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
+  // Leaving with unsaved changes asks first (sidebar, pills, «Atrás», closing
+  // the window). Saving keeps the wizard on screen, so there is never a
+  // navigation of its own to let through (no `bypass`).
+  const { dialog: leaveDialog } = useUnsavedChangesGuard(dirty, {
+    message: t("testPlan.leaveMessage"),
+  });
   const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -360,6 +367,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
           onCancel={() => setImportState(null)}
         />
       )}
+      {leaveDialog}
       {plan && showRev && (
         <RevisionsDialog planId={plan.id} onRestore={(r) => void restore(r)} onClose={() => setShowRev(false)} />
       )}
