@@ -299,6 +299,23 @@ describe("domain API", () => {
     expect(cards.find((c) => c.id === d1.id)).toMatchObject({ status: "todo", position: 0 });
   });
 
+  it("planner cards: test data cards are created and edited, without a key", async () => {
+    const token = await tokenFor();
+    const p = await project(token);
+    const created = (
+      await call(token, "POST", "/api/planner-cards", { projectId: p.id, kind: "test_data", title: "Users", data: {} })
+    ).body;
+    expect(created).toMatchObject({ kind: "test_data", cardKey: null });
+    const edited = await call(token, "PUT", `/api/planner-cards/${created.id}`, {
+      input: { projectId: p.id, kind: "test_data", title: "Cards", data: {} },
+      revision: 1,
+    });
+    expect(edited.body).toMatchObject({ kind: "test_data", title: "Cards", cardKey: null });
+    const list = (await call(token, "GET", `/api/planner-cards?projectId=${p.id}`)).body;
+    expect(list.map((c: { kind: string }) => c.kind)).toEqual(["test_data"]);
+    expect((await call(token, "POST", "/api/planner-cards", { projectId: p.id, kind: "epic", title: "X", data: {} })).status).toBe(400);
+  });
+
   it("edits the profile names but not the role", async () => {
     const token = await tokenFor();
     const res = await call(token, "PATCH", "/auth/me", {

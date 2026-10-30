@@ -46,6 +46,7 @@ import {
   type ProvenanceMap,
 } from "@modules/ai";
 import type { DetectionRow, ImportResult } from "../import/planImport";
+import { PLAN_SAVED_EVENT } from "../model/events";
 import "./TestPlan.css";
 
 /** Per-sprint validation: an end date before the start, or a range that
@@ -315,6 +316,7 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
           ? `${t("testPlan.savedToast")} ${t("validation.savedWithWarnings", { count: warnings })}`
           : t("testPlan.savedToast"),
       );
+      window.dispatchEvent(new Event(PLAN_SAVED_EVENT));
       onClose();
     } finally {
       setSaving(false);

@@ -392,7 +392,6 @@
     "empty": "Aún no hay proyectos. Crea el primero.",
     "namePlaceholder": "Nombre del proyecto",
     "prefixMeta": "IDs",
-    "back": "Proyectos",
     "name": "Nombre del proyecto",
     "caseIdPrefix": "Prefijo de ID de caso",
     "caseIdDigits": "Dígitos del número",
@@ -409,7 +408,20 @@
     "deleteTitle": "Eliminar proyecto",
     "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
     "deleteConfirm": "Sí, eliminar todo",
-    "savedToast": "Ajustes actualizados"
+    "savedToast": "Ajustes actualizados",
+    "header": {
+      "plan": {
+        "draft": "Plan borrador",
+        "reviewed": "Plan revisado",
+        "approved": "Plan aprobado",
+        "obsolete": "Plan obsoleto",
+        "none": "Sin plan"
+      },
+      "cases_one": "1 caso",
+      "cases_other": "{{count}} casos",
+      "requirements_one": "1 requisito",
+      "requirements_other": "{{count}} requisitos"
+    }
   },
   "profile": {
     "title": "Perfil",
@@ -1216,6 +1228,14 @@
       "templates": "Plantillas",
       "admin": "General"
     }
+  },
+  "sortMenu": {
+    "title": "Ordenar por",
+    "label": "Orden",
+    "trigger": "{{label}}: {{option}}",
+    "direction": "Dirección",
+    "desc": "Descendente",
+    "asc": "Ascendente"
   },
   "table": {
     "selectAll": "Seleccionar todas las filas",
