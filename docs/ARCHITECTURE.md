@@ -188,15 +188,28 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     (temporary).
 - **Data router** (RED-V3k, ADR-0028 §9): `main.tsx` creates a
   `createHashRouter` with one splat route that renders `App`, which keeps
-  its own `<Routes>` unchanged. Being a data router, it lets a screen hold a
-  navigation: `useUnsavedChangesGuard(dirty, message?)` (`@shared/ui`) uses
-  `useBlocker` for every address change (links, sidebar, pills,
-  `navigate`/`setSearchParams`, the system/Android «Atrás») and shows the
-  destructive `ConfirmDialog` «Descartar cambios» / «Seguir editando»; it also
-  sets `beforeunload` while dirty. A navigation started on purpose right
-  after saving goes through its `bypass`. Tests render under the same kind of
-  router (`createMemoryRouter` in `@test/TestRouter`, used by
-  `renderWithProviders`).
+  its own `<Routes>` unchanged; `RouterProvider` comes from
+  `react-router/dom`. The route's `ErrorBoundary` is `RethrowRouteError`
+  (`@shared/ui/RethrowRouteError`), so a crash in the shell still reaches
+  `ErrorBoundary variant="app"` around the router (logged, «Exportar
+  diagnóstico») instead of React Router's default screen.
+  - `useUnsavedChangesGuard(dirty, message | { message, ignore })`
+    (`@shared/ui/useUnsavedChangesGuard`) uses `useBlocker` for every
+    address change (links, sidebar, pills, `navigate`/`setSearchParams`,
+    the system/Android «Atrás») and shows the destructive `ConfirmDialog`
+    «Descartar cambios» / «Seguir editando»; it also sets `beforeunload`
+    while dirty. `ignore: true` lets query-string-only changes through (or
+    pass a predicate); by default they ask.
+  - `bypass(go)` lets the next location change through, sync or after an
+    `await` (`navigate(-1)` included), for a navigation the screen starts on
+    purpose while still dirty (e.g. right after saving).
+  - **One per screen:** React Router keeps one blocker per router (the last
+    registered wins), so only the component that owns the form calls it; a
+    second mounted guard warns in development.
+  - Tests render under the same kind of router (`createMemoryRouter` in
+    `@test/TestRouter`, used by `renderWithProviders`; with
+    `RouterProvider` from `react-router`, because under Vitest
+    `react-router/dom` loads a second copy of the router).
 - **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
   `projectPath()`. `useActiveProject` (`useMatch`) feeds:
   - the «Proyecto activo» sidebar group (switcher + 5 sections). Inside a
