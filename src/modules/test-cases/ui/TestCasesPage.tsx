@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { useToast } from "@shared/ui/Toast";
@@ -8,16 +9,31 @@ import { unlessReported } from "@shared/ui/notify";
 import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai";
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
+import { projectTraceableCases } from "../api/traceLinks";
+import { CASE_PARAM } from "../model/caseLink";
+import {
+  CASE_PAGE_SIZES,
+  DEFAULT_SORT,
+  EMPTY_FILTERS,
+  filterCases,
+  sortCases,
+  type CaseFilters,
+  type CaseSort,
+  type ListedCase,
+} from "../model/caseList";
 import { TestCaseList } from "./TestCaseList";
-import { TestCaseEditor } from "./TestCaseEditor";
+import { TestCaseEditor, type CaseNav } from "./TestCaseEditor";
 import { SuggestTestsModal } from "./SuggestTestsModal";
 import type { CaseImportResult, DetectionRow } from "../import/caseImport";
 import type { RequirementOption } from "../model/types";
 
-type View = { kind: "list" } | { kind: "edit"; id: string | null };
+/** `?case=new` opens a new case; `?case=<id>` opens that case. */
+const NEW_CASE = "new";
 
-/** Test cases of a project (spec §5.3). Numbering uses the project's configured
- *  prefix/width; the list and editor are scoped to `projectId`. */
+/** Test cases of a project (spec §5.3, RED-V3). Numbering uses the project's
+ *  configured prefix/width; the list and editor are scoped to `projectId`. The
+ *  open case lives in the URL (`?case=`), so «Atrás» returns to the list and a
+ *  link (`caseLink`) opens a case directly. */
 export function TestCasesPage({
   projectId,
   caseIdPrefix = "ATS_",
@@ -34,14 +50,39 @@ export function TestCasesPage({
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const toast = useToast();
-  const [view, setView] = useState<View>({ kind: "list" });
+  const [params, setParams] = useSearchParams();
+  const open = params.get(CASE_PARAM);
   const [seed, setSeed] = useState<CaseImportResult["input"] | null>(null);
   const [canSuggest, setCanSuggest] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [cases, setCases] = useState<ListedCase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<CaseFilters>(EMPTY_FILTERS);
+  const [sort, setSort] = useState<CaseSort>(DEFAULT_SORT);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(CASE_PAGE_SIZES[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const latest = useRef(0);
+
+  /** Loads the cases, then their requirement links (one read per case), so
+   *  the table shows first and the Requisito column fills in after. */
+  async function refresh() {
+    const request = ++latest.current;
+    const summaries = await testCaseApi.list(projectId, userId);
+    if (request !== latest.current) return;
+    setCases((prev) => {
+      const keys = new Map(prev.map((c) => [c.id, c.requirementKeys]));
+      return summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] }));
+    });
+    setLoading(false);
+    const traced = await projectTraceableCases(projectId, userId);
+    if (request !== latest.current) return;
+    const keys = new Map(traced.map((c) => [c.id, c.requirementKeys]));
+    setCases(summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] })));
+  }
 
   useEffect(() => {
+    void refresh();
     let cancelled = false;
     void Promise.all([aiAvailable(), projectHasPlan(projectId, userId)]).then(([ai, plan]) => {
       if (!cancelled) setCanSuggest(ai && plan);
@@ -49,7 +90,33 @@ export function TestCasesPage({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userId]);
+
+  const ordered = useMemo(() => sortCases(filterCases(cases, filters), sort), [cases, filters, sort]);
+  // The walk order is frozen while the editor is open: saving a case that no
+  // longer matches the filters (e.g. its state) keeps it, and its neighbours,
+  // in «‹ anterior | N de M | siguiente ›» until the user leaves it.
+  const walk = useRef<string[] | null>(null);
+  if (open === null || open === NEW_CASE) walk.current = null;
+  else if (!loading && (!walk.current || (!walk.current.includes(open) && ordered.some((c) => c.id === open))))
+    walk.current = ordered.map((c) => c.id);
+  const pages = Math.max(1, Math.ceil(ordered.length / pageSize));
+  const current = Math.min(page, pages);
+  const visible = ordered.slice((current - 1) * pageSize, current * pageSize);
+
+  const openCase = (id: string | null) =>
+    setParams(
+      (p) => {
+        const next = new URLSearchParams(p);
+        if (id === null) next.delete(CASE_PARAM);
+        else next.set(CASE_PARAM, id);
+        return next;
+      },
+      // Moving between cases or closing one replaces the entry, so «Atrás»
+      // from the editor or after it goes back to what was before the list.
+      { replace: open !== null },
+    );
 
   async function createSuggested(items: TestSuggestion[], provenance: AiProvenance) {
     const author = user ? `${user.firstName} ${user.lastName}` : "";
@@ -65,7 +132,7 @@ export function TestCasesPage({
         data: { description: s.description, gherkinLevel: "basic", aiProvenance: { case: provenance } },
       });
     }
-    setRefreshKey((k) => k + 1);
+    void refresh();
   }
   const [importState, setImportState] = useState<{
     parsing: boolean;
@@ -96,13 +163,14 @@ export function TestCasesPage({
   }
 
   /** Batch .feature export (spec §5.3): one file per case, with its ID and
-   *  requirement tags, zipped under `features/`. */
-  async function exportFeatures() {
+   *  requirement tags, zipped under `features/`. `ids` limits it to the
+   *  selected cases. */
+  async function exportFeatures(ids?: ReadonlySet<string>) {
     const [{ projectFeatureFiles }, { default: JSZip }] = await Promise.all([
       import("../export/batch"),
       import("jszip"),
     ]);
-    const files = await projectFeatureFiles(projectId, userId, t);
+    const files = await projectFeatureFiles(projectId, userId, t, ids);
     const zip = new JSZip();
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });
@@ -118,25 +186,69 @@ export function TestCasesPage({
     );
   }
 
+  /** Deletes one by one; a failure does not stop the rest, is reported, and
+   *  the list is reloaded either way. */
+  async function removeCases(ids: ReadonlySet<string>) {
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await testCaseApi.remove(id, userId);
+      } catch {
+        failed++;
+      }
+    }
+    const done = ids.size - failed;
+    // One toast that says both, so the failure is never hidden behind the success.
+    const parts = [
+      done ? t("testCase.list.deletedToast", { count: done }) : "",
+      failed ? t("testCase.list.deleteFailed", { count: failed }) : "",
+    ].filter(Boolean);
+    toast(parts.join(". "), failed ? "error" : "success");
+    await refresh();
+  }
+
   function applyImport() {
     if (!importState?.result) return;
     setSeed(importState.result.input);
     setImportState(null);
-    setView({ kind: "edit", id: null });
+    openCase(NEW_CASE);
   }
 
-  if (view.kind === "edit") {
+  if (open !== null) {
+    const isNew = open === NEW_CASE;
+    const byId = new Map(cases.map((c) => [c.id, c]));
+    const list = (walk.current ?? []).map((id) => byId.get(id)).filter((c): c is ListedCase => Boolean(c));
+    const at = list.findIndex((c) => c.id === open);
+    const nav: CaseNav | undefined =
+      !isNew && at >= 0
+        ? {
+            position: at + 1,
+            total: list.length,
+            prev: list[at - 1],
+            next: list[at + 1],
+            filtered: list.length !== cases.length,
+            cases: list,
+            onGo: (id) => openCase(id),
+          }
+        : undefined;
     return (
       <TestCaseEditor
+        key={open}
         projectId={projectId}
         caseIdPrefix={caseIdPrefix}
         caseIdDigits={caseIdDigits}
-        caseId={view.id}
-        seed={view.id === null ? seed : null}
+        caseId={isNew ? null : open}
+        seed={isNew ? seed : null}
         requirements={requirements}
+        nav={nav}
+        onSaved={(saved) => {
+          void refresh();
+          if (isNew && saved) openCase(saved.id);
+        }}
         onClose={() => {
           setSeed(null);
-          setView({ kind: "list" });
+          openCase(null);
+          void refresh();
         }}
       />
     );
@@ -145,17 +257,35 @@ export function TestCasesPage({
   return (
     <>
       <TestCaseList
-        key={refreshKey}
         projectId={projectId}
+        cases={cases}
+        loading={loading}
+        visible={visible}
+        total={ordered.length}
+        matching={ordered}
+        filters={filters}
+        onFiltersChange={(f) => {
+          setFilters(f);
+          setPage(1);
+        }}
+        sort={sort}
+        onSortChange={setSort}
+        page={current}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(n) => {
+          setPageSize(n);
+          setPage(1);
+        }}
         canSuggest={canSuggest}
         onSuggest={() => setSuggesting(true)}
         onNew={() => {
           setSeed(null);
-          setView({ kind: "edit", id: null });
+          openCase(NEW_CASE);
         }}
         onImport={() => fileInputRef.current?.click()}
-        onExportFeatures={() => void exportFeatures()}
-        onOpen={(id) => setView({ kind: "edit", id })}
+        onExportFeatures={(ids) => void exportFeatures(ids)}
+        onDelete={removeCases}
       />
       <input
         ref={fileInputRef}

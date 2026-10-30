@@ -1,218 +1,144 @@
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { aiAvailable } from "@modules/ai";
-import { useAuth } from "@modules/auth";
-import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { useToast } from "@shared/ui/Toast";
-import { requirementApi } from "../api/requirementApi";
-import type { CsvImportResult } from "../import/requirementCsv";
+import { Pencil, Sparkles, Trash2 } from "lucide-react";
+import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { StatusPill } from "@shared/ui/StatusPill";
+import { PriorityFlag } from "@shared/ui/PriorityFlag";
+import type { TraceabilityMatrix } from "../model/matrix";
 import type { Requirement } from "../model/types";
-import { GenerateCasesModal } from "./GenerateCasesModal";
-import { RequirementFormModal, type RequirementDraft } from "./RequirementFormModal";
-import { RequirementImportModal } from "./RequirementImportModal";
+import { priorityTone } from "./traceTones";
+import "@shared/ui/buttons.css";
 import "./Traceability.css";
 
-const byKey = (a: Requirement, b: Requirement) =>
-  a.requirementKey.localeCompare(b.requirementKey, undefined, { numeric: true });
-
-/** Requirements of a project (TRZ-01): list, create/edit, delete and CSV import,
- *  plus test cases generated with AI from a requirement (IA-05). */
+/** Requirements of a project (TRZ-01, RED-V3): the test basis with how many
+ *  cases verify each one and whether it is covered; edit, delete and «Generar
+ *  casos con IA» (IA-05) per row. The page owns the data and the dialogs. */
 export function RequirementsPanel({
-  projectId,
-  caseIdPrefix,
-  caseIdDigits,
+  requirements,
+  matrix,
+  aiReady,
+  onEdit,
+  onDelete,
+  onGenerate,
 }: {
-  projectId: string;
-  caseIdPrefix?: string;
-  caseIdDigits?: number;
+  requirements: Requirement[];
+  matrix: TraceabilityMatrix;
+  aiReady: boolean;
+  onEdit: (r: Requirement) => void;
+  onDelete: (r: Requirement) => void;
+  onGenerate: (requirementKey: string) => void;
 }) {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const userId = user?.id ?? "";
-  const toast = useToast();
-  const [items, setItems] = useState<Requirement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Requirement | "new" | null>(null);
-  const [deleting, setDeleting] = useState<Requirement | null>(null);
-  const [importing, setImporting] = useState<{ fileName: string; result: CsvImportResult } | null>(
-    null,
+  const linked = (key: string) => matrix.rows.filter((r) => r.requirementKey === key && r.caseId).length;
+  const uncovered = new Set(matrix.gaps.uncoveredRequirements);
+
+  const actions = (r: Requirement) => {
+    const ai = t("traceability.generate.button", { key: r.requirementKey });
+    const del = t("traceability.requirement.delete", { key: r.requirementKey });
+    return (
+      <span className="tz-rowactions">
+        <button
+          type="button"
+          className="ui-iconbtn"
+          aria-label={ai}
+          aria-disabled={!aiReady || undefined}
+          title={aiReady ? ai : t("ai.assist.unavailable")}
+          onClick={() => {
+            if (aiReady) onGenerate(r.requirementKey);
+          }}
+        >
+          <Sparkles size={16} aria-hidden="true" />
+        </button>
+        <button type="button" className="ui-iconbtn tz-danger" aria-label={del} title={del} onClick={() => onDelete(r)}>
+          <Trash2 size={16} aria-hidden="true" />
+        </button>
+      </span>
+    );
+  };
+  const coverage = (r: Requirement) => {
+    const state = uncovered.has(r.requirementKey) ? "not_covered" : "covered";
+    return (
+      <StatusPill tone={state === "covered" ? "success" : "error"}>{t(`traceability.coverage.${state}`)}</StatusPill>
+    );
+  };
+  const open = (r: Requirement) => (
+    <button type="button" className="tz-open" title={r.title} onClick={() => onEdit(r)}>
+      <span className="tz-open__title">{r.title}</span>
+      <Pencil size={14} aria-hidden="true" />
+    </button>
   );
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [aiReady, setAiReady] = useState(false);
-  const [generating, setGenerating] = useState<Requirement | null>(null);
+  const flag = (r: Requirement) => (
+    <PriorityFlag tone={priorityTone(r.priority)} label={t(`traceability.priorityLabel.${r.priority}`)} showLabel />
+  );
 
-  useEffect(() => {
-    void aiAvailable()
-      .then(setAiReady)
-      .catch(() => setAiReady(false));
-  }, []);
-
-  async function refresh() {
-    setItems((await requirementApi.list(projectId, userId)).sort(byKey));
-    setLoading(false);
-  }
-  useEffect(() => {
-    void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, userId]);
-
-  const keys = items.map((r) => r.requirementKey);
-
-  async function save(draft: RequirementDraft) {
-    const input = {
-      projectId,
-      userId,
-      requirementKey: draft.requirementKey || undefined,
-      title: draft.title,
-      description: draft.description,
-      priority: draft.priority,
-    };
-    try {
-      if (editing && editing !== "new") await requirementApi.update(editing.id, input);
-      else await requirementApi.create(input);
-      toast(t("traceability.requirement.savedToast"));
-      setEditing(null);
-      await refresh();
-    } catch {
-      toast(t("traceability.requirement.saveError"));
-    }
-  }
-
-  async function remove(r: Requirement) {
-    await requirementApi.remove(r.id, userId);
-    setDeleting(null);
-    toast(t("traceability.requirement.deletedToast", { key: r.requirementKey }));
-    await refresh();
-  }
-
-  async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const { parseRequirementCsv } = await import("../import/requirementCsv");
-    setImporting({ fileName: file.name, result: parseRequirementCsv(await file.text()) });
-  }
-
-  async function confirmImport() {
-    if (!importing) return;
-    try {
-      const summary = await requirementApi.importRows(projectId, userId, importing.result.rows);
-      toast(t("traceability.import.doneToast", { created: summary.created, updated: summary.updated }));
-      if (summary.skipped.length) {
-        toast(t("traceability.import.skippedToast", { keys: summary.skipped.join(", ") }));
-      }
-      setImporting(null);
-      await refresh();
-    } catch {
-      toast(t("traceability.import.error"));
-    }
-  }
+  const columns: DataColumn<Requirement>[] = [
+    {
+      id: "key",
+      header: t("traceability.matrix.col.requirement"),
+      width: "96px",
+      cell: (r) => <span className="tr-key">{r.requirementKey}</span>,
+    },
+    {
+      id: "title",
+      header: t("traceability.matrix.col.requirementTitle"),
+      width: "minmax(0,2fr)",
+      cell: (r) => (
+        <span className="tz-reqcell">
+          {open(r)}
+          {r.description && (
+            <span className="tz-muted tz-clip" title={r.description}>
+              {r.description}
+            </span>
+          )}
+        </span>
+      ),
+    },
+    { id: "priority", header: t("traceability.matrix.col.priority"), width: "92px", cell: flag },
+    {
+      id: "cases",
+      header: t("traceability.requirement.cases"),
+      width: "72px",
+      align: "end",
+      cell: (r) => <span className="tz-num">{linked(r.requirementKey)}</span>,
+    },
+    { id: "coverage", header: t("traceability.matrix.col.coverage"), width: "104px", cell: coverage },
+    {
+      id: "actions",
+      header: <span className="sr-only">{t("traceability.requirement.actions")}</span>,
+      width: "92px",
+      align: "end",
+      cell: actions,
+    },
+  ];
 
   return (
-    <section className="tr">
-      <header className="tr__header">
-        <div>
-          <h2>{t("traceability.requirement.listTitle")}</h2>
-          <p className="tr__subtitle">{t("traceability.requirement.listSubtitle")}</p>
-        </div>
-        <div className="tr__actions">
-          <button className="tr__secondary" type="button" onClick={() => fileInputRef.current?.click()}>
-            {t("traceability.import.button")}
-          </button>
-          <button className="tr__primary" type="button" onClick={() => setEditing("new")}>
-            {t("traceability.requirement.new")}
-          </button>
-        </div>
-      </header>
-
-      {loading ? (
-        <p className="tr__muted">{t("common.loading")}</p>
-      ) : items.length === 0 ? (
-        <p className="tr__muted">{t("traceability.requirement.empty")}</p>
-      ) : (
-        <ul className="tr__list">
-          {items.map((r) => (
-            <li key={r.id} className="tr__item">
-              <button type="button" className="tr__item-open" onClick={() => setEditing(r)}>
-                <span className="tr__item-title">
-                  <span className="tr-key">{r.requirementKey}</span> {r.title}
-                  <span className={`tr-priority tr-priority--${r.priority}`}>
-                    {t(`traceability.priorityLabel.${r.priority}`)}
-                  </span>
-                </span>
-                {r.description && <span className="tr__item-meta">{r.description}</span>}
-              </button>
-              <button
-                type="button"
-                className="tr__ai"
-                disabled={!aiReady}
-                aria-label={t("traceability.generate.button", { key: r.requirementKey })}
-                title={
-                  aiReady
-                    ? t("traceability.generate.button", { key: r.requirementKey })
-                    : t("ai.assist.unavailable")
-                }
-                onClick={() => setGenerating(r)}
-              >
-                ✨
-              </button>
-              <button
-                type="button"
-                className="tr__delete"
-                aria-label={t("traceability.requirement.delete", { key: r.requirementKey })}
-                title={t("traceability.requirement.delete", { key: r.requirementKey })}
-                onClick={() => setDeleting(r)}
-              >
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <input ref={fileInputRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => void onImportFile(e)} />
-
-      {editing && (
-        <RequirementFormModal
-          requirement={editing === "new" ? null : editing}
-          existingKeys={keys}
-          onSave={save}
-          onCancel={() => setEditing(null)}
-        />
-      )}
-      {importing && (
-        <RequirementImportModal
-          fileName={importing.fileName}
-          result={importing.result}
-          existingKeys={keys}
-          onConfirm={confirmImport}
-          onCancel={() => setImporting(null)}
-        />
-      )}
-      {generating && (
-        <GenerateCasesModal
-          requirement={generating}
-          projectId={projectId}
-          caseIdPrefix={caseIdPrefix}
-          caseIdDigits={caseIdDigits}
-          onCreated={({ created, failed }) => {
-            if (created) toast(t("traceability.generate.doneToast", { count: created, key: generating.requirementKey }));
-            // Failed ones stay in the modal for a retry (it says so itself).
-            if (!failed) setGenerating(null);
-          }}
-          onClose={() => setGenerating(null)}
-        />
-      )}
-      {deleting && (
-        <ConfirmDialog
-          title={t("traceability.requirement.deleteTitle")}
-          message={t("traceability.requirement.deleteWarning", { key: deleting.requirementKey })}
-          confirmLabel={t("traceability.requirement.deleteConfirm")}
-          danger
-          onConfirm={() => void remove(deleting)}
-          onCancel={() => setDeleting(null)}
-        />
-      )}
+    <section className="tz-panel" aria-labelledby="tz-req-title">
+      <div className="tz-panel__head">
+        <h3 id="tz-req-title">{t("traceability.requirement.listTitle")}</h3>
+        <p className="tr__subtitle">{t("traceability.requirement.listSubtitle")}</p>
+      </div>
+      <DataTable
+        rows={requirements}
+        columns={columns}
+        getRowId={(r) => r.id}
+        label={t("traceability.requirement.listTitle")}
+        rowTone={(r) => (uncovered.has(r.requirementKey) ? "gap" : undefined)}
+        minWidth={720}
+        empty={t("traceability.requirement.empty")}
+        mobileCard={(r) => (
+          <div className="tz-reqcard">
+            <div className="tz-card__top">
+              <span className="tr-key">{r.requirementKey}</span>
+              {coverage(r)}
+            </div>
+            {open(r)}
+            <span className="tz-reqcard__meta">
+              {flag(r)}
+              <span>{t("traceability.matrix.linkedCases", { count: linked(r.requirementKey) })}</span>
+            </span>
+            {actions(r)}
+          </div>
+        )}
+      />
     </section>
   );
 }

@@ -25,11 +25,17 @@ vi.mock("@modules/ai", async (importOriginal) => ({
 vi.mock("@modules/test-cases", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@modules/test-cases")>()),
   createProposedCases,
+  projectTraceableCases: async () => [],
 }));
+vi.mock("@modules/planner", () => ({ projectDefects: async () => [] }));
+
+// The modal flows click through several steps with axe checks; under a loaded
+// runner they can pass the 5 s default, so they get an explicit timeout.
+const UI_TIMEOUT = 15_000;
 
 const { GenerateCasesModal } = await import("./GenerateCasesModal");
 const { requirementApi } = await import("../api/requirementApi");
-const { RequirementsPanel } = await import("./RequirementsPanel");
+const { TraceabilityPage } = await import("./TraceabilityPage");
 const { AiOutputError } = await import("@modules/ai");
 
 const requirement: Requirement = {
@@ -101,7 +107,7 @@ describe("GenerateCasesModal (IA-05)", () => {
         caseIdPrefix: "TC-",
       }),
     );
-  });
+  }, UI_TIMEOUT);
 
   it("an invalid answer is reported and nothing is created; retry asks again", async () => {
     ai.generate.mockRejectedValueOnce(new AiOutputError("invalid-schema", ["cases.0.then: Required"]));
@@ -119,7 +125,7 @@ describe("GenerateCasesModal (IA-05)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText("Locked account")).toBeInTheDocument();
     expect(ai.generate).toHaveBeenCalledTimes(2);
-  });
+  }, UI_TIMEOUT);
 
   it("cases that cannot be saved stay selected; Create retries only those", async () => {
     const three = [...cases, { ...cases[0], title: "Wrong password" }];
@@ -141,7 +147,7 @@ describe("GenerateCasesModal (IA-05)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create 1 case" }));
     await waitFor(() => expect(createProposedCases).toHaveBeenCalledTimes(2));
     expect(createProposedCases).toHaveBeenLastCalledWith(expect.objectContaining({ proposals: [cases[1]] }));
-  });
+  }, UI_TIMEOUT);
 
   it("focuses the primary action, announces progress and closes with Escape", async () => {
     const onClose = vi.fn();
@@ -154,7 +160,7 @@ describe("GenerateCasesModal (IA-05)", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Generating scenarios from the requirement");
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
-  });
+  }, UI_TIMEOUT);
 
   it("a timeout is reported as such", async () => {
     ai.generate.mockRejectedValueOnce("The AI provider did not answer in time");
@@ -162,36 +168,38 @@ describe("GenerateCasesModal (IA-05)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Generate" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("The AI did not answer in time.");
     expect(createProposedCases).not.toHaveBeenCalled();
-  });
+  }, UI_TIMEOUT);
 });
 
-describe("RequirementsPanel — AI button (IA-05)", () => {
+describe("Trazabilidad — AI button on an uncovered requirement (IA-05)", () => {
   beforeEach(() => {
     vi.spyOn(requirementApi, "list").mockResolvedValue([requirement]);
   });
 
   it("is disabled with a notice when no AI is available", async () => {
     ai.available.mockResolvedValue(false);
-    renderWithProviders(<RequirementsPanel projectId="p1" />);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="P" />);
     const button = await screen.findByRole("button", { name: "Generate cases with AI from REQ-007" });
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-disabled", "true");
     expect(button).toHaveAttribute("title", i18n.t("ai.assist.unavailable"));
-  });
+    await userEvent.click(button);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  }, UI_TIMEOUT);
 
   it("opens the generator when AI is available", async () => {
-    renderWithProviders(<RequirementsPanel projectId="p1" />);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="P" />);
     const button = await screen.findByRole("button", { name: "Generate cases with AI from REQ-007" });
-    await waitFor(() => expect(button).toBeEnabled());
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled"));
     await userEvent.click(button);
     expect(await screen.findByRole("dialog")).toHaveTextContent("Generate cases from REQ-007");
-  });
+  }, UI_TIMEOUT);
 
   it("when every save fails there is no success toast and the modal stays open", async () => {
     ai.generate.mockResolvedValue({ value: cases, provenance });
     createProposedCases.mockResolvedValueOnce({ created: 0, failed: 2, failedIndexes: [0, 1] });
-    renderWithProviders(<RequirementsPanel projectId="p1" />);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="P" />);
     const button = await screen.findByRole("button", { name: "Generate cases with AI from REQ-007" });
-    await waitFor(() => expect(button).toBeEnabled());
+    await waitFor(() => expect(button).not.toHaveAttribute("aria-disabled"));
     await userEvent.click(button);
     await userEvent.click(await screen.findByRole("button", { name: "Generate" }));
     await userEvent.click(await screen.findByRole("button", { name: "Create 2 cases" }));
@@ -199,5 +207,5 @@ describe("RequirementsPanel — AI button (IA-05)", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.queryByText(/created and linked/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create 2 cases" })).toBeEnabled();
-  });
+  }, UI_TIMEOUT);
 });

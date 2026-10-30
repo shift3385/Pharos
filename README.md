@@ -4,11 +4,12 @@ Desktop QA test-management suite (offline-first). Guides each testing project
 safely to port, following ISO/IEC/IEEE 29119, ISO/IEC 25010 and the ISTQB CTFL
 Syllabus v4.0.1.
 
-> **Version 0.1.0-beta.1** (first beta) — test plans, test cases with Gherkin,
-> templates, local planner, AI assist with several providers, offline sync with
-> conflict panel, exports, requirements with a traceability matrix, a recovery
-> key for the local data, and keyboard and screen-reader access (WCAG 2.1 AA).
-> No test execution yet (0.2.0). Beta testers: start with the
+> **Version 0.2.0-alpha.1** (first alpha of 0.2.0: the full interface redesign
+> on top of the 0.1.0 beta) — test plans, test cases with Gherkin, templates,
+> local planner, AI assist with several providers, offline sync with conflict
+> panel, exports, requirements with a traceability matrix, a recovery key for
+> the local data, and keyboard and screen-reader access (WCAG 2.1 AA). No test
+> execution yet (later in 0.2.0). Beta testers: start with the
 > [beta guide](docs/guia-beta.md) (Spanish). Roadmap and backlog:
 > [`docs/ROADMAP.md`](docs/ROADMAP.md) · changes:
 > [`CHANGELOG.md`](CHANGELOG.md) · versioning policy:
@@ -178,6 +179,12 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
 - **Plan de pruebas:** 19 steps. The step list is on the left in wide windows,
   a strip above the form in narrower ones, and «Ver pasos» on phones.
   «Revisiones», «Importar / Exportar» and «Guardar» are in the project header.
+- **Casos:** the list filters by state, priority and level and searches IDs,
+  titles and requirements. A case opens at its own address
+  (`#/projects/<id>/cases?case=<case>`); in the editor, ‹ › walk the list as
+  filtered and **Ctrl P** jumps to any case.
+- **Trazabilidad:** the matrix and «Mostrar solo huecos»; an uncovered
+  requirement offers «Generar casos con IA».
 - **Administración** is one screen with grouped tabs
   ([ADR-0031](docs/adr/0031-administracion-por-pestanas.md)): Recursos (**Motor de IA**, the
   default, and **Plantillas**) · Aplicación (**General**) · Cuenta y datos (**Sincronización**,
@@ -658,9 +665,11 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.1.0-beta.1**, the first beta of the 0.1.0 milestone
-(planning and design + traceability). Gates A and B of the baseline are closed
-and every item of the milestone is merged. Before `0.1.0` the user still has to
+Current version: **0.2.0-alpha.1**, the first alpha of 0.2.0. It carries the
+complete interface redesign (wave 4, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md))
+on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
+(planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the
+baseline are closed and every item of that milestone is merged. Before `0.1.0` the user still has to
 run the native validations of [`docs/ROADMAP.md` §6](docs/ROADMAP.md) (the
 [beta guide](docs/guia-beta.md) turns them into a checklist); each fix ships as
 a new `beta.N`. Known limitations of the beta:

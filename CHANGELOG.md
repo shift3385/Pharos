@@ -9,6 +9,11 @@ publicar cada versión ([ADR-0032](docs/adr/0032-fragmentos-del-changelog.md)).
 
 ## [Sin publicar]
 
+## [0.2.0-alpha.1] - 2026-10-30
+
+Primera alfa de 0.2.0: el rediseño completo de la interfaz (ola 4) sobre todo lo de
+`0.1.0-beta.1`. La ejecución de pruebas llega más adelante en 0.2.0.
+
 ### Añadido
 
 - **Base para avisar de cambios sin guardar (RED-V3k):** un mecanismo común que el editor de
@@ -42,6 +47,25 @@ publicar cada versión ([ADR-0032](docs/adr/0032-fragmentos-del-changelog.md)).
     texto.
   - Iconos de línea (Lucide), escala tipográfica con partición de palabras por sílabas,
     sin partir correos, rutas ni IDs, y respeto de «reducir movimiento».
+- **Rediseño de Casos, Planificador y Trazabilidad (RED-V3):**
+  - **Casos · lista:** tabla con búsqueda por ID, título o requisito, estados con contador,
+    filtros de Prioridad y Nivel, selección múltiple (exportar .feature o eliminar con
+    confirmación) y paginación. En el móvil, tarjetas y un solo panel de filtros. La columna
+    Ejecución dice «No ejecutado» y su filtro llega con la ingesta de ejecuciones.
+  - **Casos · editor:** cada caso tiene su dirección (`?case=`), así que «Atrás» vuelve a la
+    lista. «‹ anterior · 142 de 240 · siguiente ›» recorre la lista con sus filtros, «Ir a un
+    caso…» (Ctrl P) busca cualquiera, y salir con cambios sin guardar pregunta antes.
+    Prioridad y Estado explican cada opción. Vistas Editor, Gherkin y Vista dividida (en el
+    móvil, Editor o Gherkin). En el móvil, el Gherkin se lee con desplazamiento lateral y se
+    edita a pantalla completa con una barra de palabras clave sobre el teclado; la barra
+    inferior se oculta mientras.
+  - **Trazabilidad:** indicadores, matriz de 9 columnas con los requisitos sin cubrir en rojo
+    y «Generar casos con IA» en ellos, «Mostrar solo huecos» con contador, tarjetas
+    etiquetadas en el móvil, paginación por requisito y huecos de la cadena con la migración
+    del texto libre. Menú Importar / Exportar (requisitos .csv, matriz .xlsx).
+  - **Planificador:** filtros por tipo con contador, búsqueda y prioridad; tarjetas con icono
+    y color de tipo, clave del defecto, etiquetas, bandera de prioridad y casos vinculados.
+  - Eliminar casos, requisitos o tarjetas pide confirmación y solo se cancela con «Cancelar».
 - **Administración rediseñada (RED-V4, [ADR-0031](docs/adr/0031-administracion-por-pestanas.md)):**
   - Una sola pantalla con pestañas agrupadas: Recursos (Motor de IA, abierta por defecto, y
     Plantillas) · Aplicación (General) · Cuenta y datos (Sincronización, Seguridad) · Soporte
@@ -611,6 +635,7 @@ validaciones nativas pendientes.
 - Corregida una fuga entre usuarios de la misma instalación: los proyectos son
   ahora propiedad de cada usuario.
 
-[Sin publicar]: https://github.com/shift3385/Pharos/compare/v0.1.0-beta.1...HEAD
+[Sin publicar]: https://github.com/shift3385/Pharos/compare/v0.2.0-alpha.1...HEAD
+[0.2.0-alpha.1]: https://github.com/shift3385/Pharos/compare/v0.1.0-beta.1...v0.2.0-alpha.1
 [0.1.0-beta.1]: https://github.com/shift3385/Pharos/compare/v0.1.0-alpha.1...v0.1.0-beta.1
 [0.1.0-alpha.1]: https://github.com/shift3385/Pharos/releases/tag/v0.1.0-alpha.1

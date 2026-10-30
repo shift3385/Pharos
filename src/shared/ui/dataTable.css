@@ -121,12 +121,35 @@
   background: color-mix(in oklab, var(--color-error) 6%, transparent);
 }
 
-.dt-card .dt__check {
-  /* A bigger box for touch. */
+/* A 44 px touch target around the box (SPEC §5): the label/span takes the
+   tap and the box stays 20 px. */
+.dt-touch {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  margin: -12px -12px -12px -14px;
+}
+
+.dt-touch .dt__check {
   width: 20px;
   height: 20px;
-  margin: 2px 0;
-  flex: none;
+}
+
+.dt-cards__all {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 16px 4px 14px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dt-cards__all .dt-touch {
+  margin: 0 -12px 0 -14px;
 }
 
 .dt-card__body {
