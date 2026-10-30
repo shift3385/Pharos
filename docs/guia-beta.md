@@ -142,7 +142,7 @@ seguir.
 
 ### 4.6 Clave de recuperación (SEC-03)
 
-- [ ] Perfil → Clave de recuperación → **Mostrar clave de recuperación**:
+- [ ] Administración → Seguridad → **Mostrar clave de recuperación**:
       guárdala en papel o en un gestor de contraseñas.
 - [ ] Copiar `pharos.db.enc` a otro equipo (o, tras guardar una copia del
       `.enc`, borrar la entrada `db-key` del Administrador de credenciales),

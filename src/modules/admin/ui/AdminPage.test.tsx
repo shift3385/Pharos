@@ -98,6 +98,11 @@ describe("Administración", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("tab=general");
   });
 
+  it("Seguridad holds the recovery key (SEC-03), which left Perfil", () => {
+    renderAdmin("/admin?tab=security");
+    expect(screen.getByRole("heading", { name: "Clave de recuperación" })).toBeInTheDocument();
+  });
+
   it("Diagnóstico shows the version and the export action", () => {
     renderAdmin("/admin?tab=diagnostics");
     const section = screen.getByTestId("admin-diagnostics");

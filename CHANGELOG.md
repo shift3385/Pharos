@@ -45,7 +45,7 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     aparece como «Próximamente». «Probar conexión» dice cuánto tardó la respuesta.
   - **General:** tema **«Según el sistema»** además de Claro y Oscuro, e idioma.
   - **Sincronización:** estado, cuenta, conflictos y «Sincronizar ahora» en un solo sitio.
-  - **Seguridad:** la clave de recuperación.
+  - **Seguridad:** la clave de recuperación, que sale de Perfil.
   - **Papelera:** aparece en General como «Próximamente» (llega con RED-W3).
   - **Plantillas:** planes y casos por separado, con buscador y un menú «Más acciones» por
     plantilla.
