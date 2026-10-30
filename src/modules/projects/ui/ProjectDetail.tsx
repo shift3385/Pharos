@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
-import { PLAN_SAVED_EVENT, TestPlanPage, projectPlanStatus } from "@modules/test-plan";
+import {
+  PLAN_SAVED_EVENT,
+  TestPlanPage,
+  projectPlanClosure,
+  projectPlanStatus,
+} from "@modules/test-plan";
 import {
   TestCasesPage,
   projectCaseCount,
@@ -38,7 +43,7 @@ export function ProjectDetailPage() {
  *  scoped to this project (spec §5.1 — the project is the container). The open
  *  section comes from the URL. */
 export function ProjectDetail({ projectId, tab }: { projectId: string; tab: ProjectSection }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const ownerId = user?.id ?? "";
   // undefined while loading; null when it does not exist (deleted, maybe on
@@ -98,7 +103,9 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
       ? [
           t("projects.header.cases", { count: facts.cases }),
           t("projects.header.requirements", { count: facts.requirements }),
-        ]
+          facts.closeDate &&
+            t("projects.header.closesOn", { date: shortDate(facts.closeDate, i18n.resolvedLanguage) }),
+        ].filter((m): m is string => Boolean(m))
       : [],
   };
 
@@ -135,6 +142,8 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
 
 interface HeaderFacts {
   planStatus: string | null;
+  /** End of the test cycle from the plan schedule (YYYY-MM-DD). */
+  closeDate: string | null;
   cases: number;
   requirements: number;
 }
@@ -147,12 +156,19 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
   useEffect(() => {
     let live = true;
     const load = async () => {
-      const [planStatus, cases, requirements] = await Promise.all([
+      const [planStatus, closure, cases, requirements] = await Promise.all([
         projectPlanStatus(projectId, ownerId),
+        projectPlanClosure(projectId, ownerId),
         projectCaseCount(projectId, ownerId),
         requirementApi.list(projectId, ownerId),
       ]);
-      if (live) setFacts({ planStatus, cases, requirements: requirements.length });
+      if (live)
+        setFacts({
+          planStatus,
+          closeDate: closure?.closeDate ?? null,
+          cases,
+          requirements: requirements.length,
+        });
     };
     void load();
     window.addEventListener("pharos:synced", load);
@@ -164,4 +180,11 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     };
   }, [projectId, ownerId, tab]);
   return facts;
+}
+
+/** «7 nov» from a plan date (YYYY-MM-DD, read as a local day). */
+function shortDate(day: string, lang = "es"): string {
+  const d = new Date(`${day}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return day;
+  return new Intl.DateTimeFormat(lang, { day: "numeric", month: "short" }).format(d).replace(".", "");
 }

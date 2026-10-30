@@ -1,6 +1,6 @@
 // Rows of the Proyectos screen: every project of the user with what the table
 // shows. The projects module composes the other modules' public APIs.
-import { projectPlanStatus } from "@modules/test-plan";
+import { projectPlanClosure, projectPlanStatus } from "@modules/test-plan";
 import { projectCaseCount } from "@modules/test-cases";
 import { projectCoverage } from "@modules/traceability";
 import { projectApi } from "../api/projectApi";
@@ -12,8 +12,9 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
   const projects = await projectApi.list(ownerId);
   return Promise.all(
     projects.map(async (p): Promise<ProjectRow> => {
-      const [planStatus, cases, coverage] = await Promise.all([
+      const [planStatus, closure, cases, coverage] = await Promise.all([
         projectPlanStatus(p.id, ownerId),
+        projectPlanClosure(p.id, ownerId),
         projectCaseCount(p.id, ownerId),
         projectCoverage(p.id, ownerId),
       ]);
@@ -27,7 +28,7 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         planStatus,
         cases,
         coverage,
-        closeDate: null,
+        closeDate: closure?.closeDate ?? null,
       };
     }),
   );

@@ -69,6 +69,16 @@ describe("Proyectos table model", () => {
     ]);
   });
 
+  it("sorts by cycle close (from the plan schedule), unknown dates last", () => {
+    const rows = [
+      row({ name: "B", closeDate: "2026-12-01" }),
+      row({ name: "A", closeDate: null }),
+      row({ name: "C", closeDate: "2026-11-07" }),
+    ];
+    expect(names(sortProjects(rows, "closure", "asc"))).toEqual(["C", "B", "A"]);
+    expect(names(sortProjects(rows, "closure", "desc"))).toEqual(["B", "C", "A"]);
+  });
+
   it("paginates, clamping a page past the end to the last one", () => {
     const many = Array.from({ length: 30 }, (_, i) => i);
     expect(paginate(many, 1, 12).rows).toHaveLength(12);

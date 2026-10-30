@@ -14,6 +14,7 @@ vi.mock("@modules/test-plan", () => ({
   PLAN_SAVED_EVENT: "pharos:plan-saved",
   projectPlanStatus: async () => "reviewed",
   projectHasPlan: async () => false,
+  projectPlanClosure: async () => ({ closeDate: "2026-11-07", criteria: [] }),
 }));
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
@@ -86,6 +87,7 @@ describe("project routes (ADR-0029)", () => {
     expect(await screen.findByText("Plan revisado")).toBeInTheDocument();
     expect(screen.getByText("240 casos")).toBeInTheDocument();
     expect(screen.getByText("0 requisitos")).toBeInTheDocument();
+    expect(screen.getByText("Cierre del ciclo: 7 nov")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Proyectos/ })).not.toBeInTheDocument();
   });
 
