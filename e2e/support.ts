@@ -19,6 +19,9 @@ export const email = process.env.TEST_USER_EMAIL ?? "smoke@pharos.dev";
 const password = process.env.TEST_USER_PASSWORD ?? "supersecret1";
 
 export const button = (text: string) => $(`button=${text}`);
+/** The version at the sidebar foot. It is in the DOM in every layout but only
+ *  visible in the full sidebar (≥ 1280 px): read its text, do not wait for it
+ *  to be displayed. CI runners may have narrower screens (icon strip). */
 export const versionBadge = () => $('[data-testid="app-version"]');
 export const projectRow = (name: string) => $(`li.tp__item*=${name}`);
 /** The avatar that opens the user menu; it exists only inside the app shell. */
@@ -28,7 +31,7 @@ export async function signIn() {
   await $("#email").setValue(email);
   await $("#password").setValue(password);
   await button(es.auth.login).click();
-  await expect(versionBadge()).toBeDisplayed();
+  await expect(userMenuTrigger()).toBeDisplayed();
 }
 
 export async function openProjects() {
@@ -52,7 +55,10 @@ export async function createProject(name: string) {
 export async function syncNow() {
   const done = es.sync.doneToast.split("{{")[0];
   const failed = es.sync.failed;
-  await button(es.sync.now).click();
+  // Full sidebar: the «Sincronizar ahora» button; icon strip: the sync dot.
+  const full = button(es.sync.now);
+  if (await full.isDisplayed()) await full.click();
+  else await $('[data-testid="sync-compact"]').click();
   let outcome = "";
   await browser.waitUntil(
     async () => {
