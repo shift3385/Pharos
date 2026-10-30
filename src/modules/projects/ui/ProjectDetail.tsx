@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Navigate, useParams } from "react-router";
+import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { numberInRange } from "@shared/validation";
-import { TestPlanPage } from "@modules/test-plan";
-import { TestCasesPage, projectTraceableCases, type RequirementOption } from "@modules/test-cases";
+import { TestPlanPage, projectPlanStatus } from "@modules/test-plan";
+import {
+  TestCasesPage,
+  projectCaseCount,
+  projectTraceableCases,
+  type RequirementOption,
+} from "@modules/test-cases";
 import { PlannerBoard, type LinkableCase } from "@modules/planner";
 import { TraceabilityPage, requirementApi } from "@modules/traceability";
 import { projectApi } from "../api/projectApi";
@@ -18,6 +23,7 @@ import {
   projectPath,
   type ProjectSection,
 } from "../model/sections";
+import { ProjectHeaderLayout, type ProjectHeaderInfo } from "./ProjectHeader";
 import "./Projects.css";
 
 /** Route `/projects/:projectId/:section` (ADR-0029). A missing or unknown
@@ -82,47 +88,83 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
     };
   }, [tab, projectId, ownerId]);
 
+  const facts = useHeaderFacts(projectId, ownerId, tab);
+
   if (project === null) return <Navigate to="/projects" replace />;
   if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
 
+  const header: ProjectHeaderInfo = {
+    name: project.name,
+    caseIdPrefix: project.caseIdPrefix,
+    planStatus: facts?.planStatus ?? null,
+    meta: facts
+      ? [
+          t("projects.header.cases", { count: facts.cases }),
+          t("projects.header.requirements", { count: facts.requirements }),
+        ]
+      : [],
+  };
+
   return (
     <section className="pj-detail">
-      <header className="tc-editor__top">
-        <Link to="/projects" className="tp-editor__back">
-          ← {t("projects.back")}
-        </Link>
-        <h1>{project.name}</h1>
-        <span className="tc-editor__id">
-          {project.caseIdPrefix}
-          {"1".padStart(project.caseIdDigits, "0")}
-        </span>
-      </header>
-
-      {tab === "plan" && <TestPlanPage projectId={projectId} />}
-      {tab === "cases" && (
-        <TestCasesPage
-          projectId={projectId}
-          caseIdPrefix={project.caseIdPrefix}
-          caseIdDigits={project.caseIdDigits}
-          requirements={requirements}
-        />
-      )}
-      {tab === "traceability" && (
-        <TraceabilityPage
-          projectId={projectId}
-          projectName={project.name}
-          caseIdPrefix={project.caseIdPrefix}
-          caseIdDigits={project.caseIdDigits}
-        />
-      )}
-      {tab === "planner" && (
-        <PlannerBoard projectId={projectId} ownerId={ownerId} cases={linkableCases} />
-      )}
-      {tab === "settings" && (
-        <ProjectSettings project={project} onSaved={refresh} />
-      )}
+      <ProjectHeaderLayout info={header}>
+        {tab === "plan" && <TestPlanPage projectId={projectId} />}
+        {tab === "cases" && (
+          <TestCasesPage
+            projectId={projectId}
+            caseIdPrefix={project.caseIdPrefix}
+            caseIdDigits={project.caseIdDigits}
+            requirements={requirements}
+          />
+        )}
+        {tab === "traceability" && (
+          <TraceabilityPage
+            projectId={projectId}
+            projectName={project.name}
+            caseIdPrefix={project.caseIdPrefix}
+            caseIdDigits={project.caseIdDigits}
+          />
+        )}
+        {tab === "planner" && (
+          <PlannerBoard projectId={projectId} ownerId={ownerId} cases={linkableCases} />
+        )}
+        {tab === "settings" && (
+          <ProjectSettings project={project} onSaved={refresh} />
+        )}
+      </ProjectHeaderLayout>
     </section>
   );
+}
+
+interface HeaderFacts {
+  planStatus: string | null;
+  cases: number;
+  requirements: number;
+}
+
+/** What the header says about the project (plan status, counts). Reloaded
+ *  when the section changes (a case or requirement may have been added) and
+ *  after a sync; a late answer for an older request is dropped. */
+function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection) {
+  const [facts, setFacts] = useState<HeaderFacts | null>(null);
+  useEffect(() => {
+    let live = true;
+    const load = async () => {
+      const [planStatus, cases, requirements] = await Promise.all([
+        projectPlanStatus(projectId, ownerId),
+        projectCaseCount(projectId, ownerId),
+        requirementApi.list(projectId, ownerId),
+      ]);
+      if (live) setFacts({ planStatus, cases, requirements: requirements.length });
+    };
+    void load();
+    window.addEventListener("pharos:synced", load);
+    return () => {
+      live = false;
+      window.removeEventListener("pharos:synced", load);
+    };
+  }, [projectId, ownerId, tab]);
+  return facts;
 }
 
 function ProjectSettings({

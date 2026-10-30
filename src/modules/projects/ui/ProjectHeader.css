@@ -1,0 +1,156 @@
+/* Header of a project section (SPEC §3/§4/§8, ScrPlan/ScrAjustesProyecto). */
+.pj-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 16px;
+}
+
+.pj-header__badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 12px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-radius: 11px;
+}
+
+.pj-header__titles {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.pj-header__name {
+  margin: 0;
+  font-size: clamp(20px, 2.2cqi, 26px);
+  font-weight: var(--fw-semibold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.pj-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+/* «·» between the meta items, not before the first one after the status. */
+.pj-header__meta-item + .pj-header__meta-item::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--color-border-input);
+}
+
+.pj-header__status {
+  --tone: var(--color-text-muted);
+  --tone-text: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11.5px;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  color: var(--tone-text);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  border-radius: var(--radius-pill);
+}
+
+.pj-header__status[data-tone="info"] {
+  --tone: var(--color-info);
+  --tone-text: var(--color-info-text);
+}
+
+.pj-header__status[data-tone="success"] {
+  --tone: var(--color-success);
+  --tone-text: var(--color-success-text);
+}
+
+.pj-header__status[data-strike] {
+  text-decoration: line-through;
+}
+
+.pj-header__dot {
+  width: 6px;
+  height: 6px;
+  background: var(--tone);
+  border-radius: 50%;
+}
+
+.pj-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Mobile (SPEC §5): the row's buttons share the width and clip their text;
+   «Importar / Exportar» keeps its natural width (`data-natural`). */
+.pj-header--mobile .pj-header__actions {
+  flex: 1 1 100%;
+}
+
+.pj-header--mobile .pj-header__actions > * {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.pj-header--mobile .pj-header__actions > [data-natural] {
+  flex: 0 0 auto;
+}
+
+/* Secondary button for the header's actions (SPEC §5: 40 px, 44 px on
+   mobile), shared by every section that puts buttons there. */
+.pj-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.pj-action:hover {
+  background: var(--color-surface-2);
+}
+
+.pj-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pj-action > svg {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.pj-action__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-viewport="mobile"] .pj-action {
+  height: 44px;
+}

@@ -193,6 +193,16 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     current in the mobile bottom bar);
   - the breadcrumbs;
   - the mobile header (back + section + project) and the section pills.
+- **Project header** (RED-V2, `@modules/projects`): `ProjectDetail` wraps
+  every section in `ProjectHeaderLayout`, which draws `ProjectHeader`:
+  prefix badge, name (`h1`), plan status and a meta line (cases,
+  requirements). Section pages draw no header of their own. To put buttons on
+  its right they call `useProjectHeaderActions(<…/>)`; the header shows the
+  latest node and drops it on unmount. Only the header re-renders, because
+  the section is the provider's `children`. On mobile the shell's top bar
+  already names the project: the card is not drawn, the `h1` stays
+  `.sr-only` and only the actions row shows (`.pj-action` buttons share the
+  width; `data-natural` keeps its own).
 
   `/projects?open=<id>` redirects there.
 - **Top bar** (`Topbar`, 64 px):
@@ -249,6 +259,10 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
     until that text is typed.
+  - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
+    the sort keys as radio options (disabled ones keep a `title` with the
+    reason) and the direction (Descendente · Ascendente). Choosing a key keeps
+    the direction and vice versa.
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
   their `--color-*-text` tone. Field boundaries use `--color-border-input`
   (≥ 3:1). Focus is `--color-focus` (navy on light, amber
