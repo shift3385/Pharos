@@ -8,7 +8,7 @@
 <body>
 <x-dc>
 <helmet><script src="./ds-base.js"></script></helmet>
-<div data-theme="{{ theme }}" style="container-type:inline-size;display:flex;width:100%;height:100%;overflow:hidden;background:var(--color-surface-1);font-family:var(--font-sans);color:var(--color-text-primary);-webkit-font-smoothing:antialiased">
+<div ref="{{ rootRef }}" data-dc-root="1" data-theme="{{ theme }}" style="container-type:inline-size;display:flex;width:100%;height:100%;overflow:hidden;background:var(--color-surface-1);font-family:var(--font-sans);color:var(--color-text-primary);-webkit-font-smoothing:antialiased">
 <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}"><div style="flex:0 0 min(620px,48%);height:100%;overflow:auto;display:flex;flex-direction:column;padding:36px clamp(28px,4cqi,56px);box-sizing:border-box"><div style="display:flex;align-items:center;gap:10px"><dc-import name="LogoMark" size="{{ 40 }}" surface="light" hint-size="40px,40px"></dc-import><span style="font-size:22px;font-weight:600;letter-spacing:-0.01em">Pharos</span></div><div style="flex:1;display:flex;align-items:center;padding:32px 0"><div style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:28px">
 <div style="display:flex;flex-direction:column;gap:6px"><h1 style="margin:0;font-size:36px;font-weight:600;letter-spacing:-0.02em">Iniciar sesión</h1><span style="font-size:16px;color:var(--color-text-secondary)">¿No tienes cuenta? <a href="#" style="color:var(--color-navy-500);font-weight:600;text-decoration:none">Regístrate</a></span></div>
 <div style="display:flex;flex-direction:column;gap:16px"><div style="display:flex;flex-direction:column;gap:6px;flex:1 1 0;min-width:min(220px,100%)"><span style="font-size:14px;font-weight:500">Correo electrónico</span><div style="height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--color-border-input);border-radius:8px;background:var(--color-surface-1);font-size:14px;color:var(--color-text-muted);box-sizing:border-box;min-width:0;height:52px;font-size:15px"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">nombre@empresa.com</span></div></div><div style="display:flex;flex-direction:column;gap:6px;flex:1 1 0;min-width:min(220px,100%)"><span style="font-size:14px;font-weight:500">Contraseña</span><div style="height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--color-border-input);border-radius:8px;background:var(--color-surface-1);font-size:14px;color:var(--color-text-muted);box-sizing:border-box;min-width:0;height:52px;font-size:15px"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">••••••••</span><span style="width:16px;height:16px;flex:none;background:var(--color-text-muted);-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/eye.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/eye.svg) center/contain no-repeat;"></span></div></div></div>
@@ -31,9 +31,15 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;tablet&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;'desktop'|'tablet'|'mobile'&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;}}">
 class Component extends DCLogic {
+  componentDidMount() {
+    requestAnimationFrame(() => { if (!this._el) { const n = document.querySelectorAll('[data-dc-root]'); n.length === 1 && this._attach(n[0]); } });
+  }
+  _attach(el) { if (!el || el === this._el) return; this._el = el; this._ro && this._ro.disconnect(); this._ro = new ResizeObserver(([e]) => { const w = e.contentRect.width, b = w < 640 ? 'm' : w < 1024 ? 't' : 'd'; if (b !== (this.state && this.state.__bp)) this.setState({ __bp: b }); }); this._ro.observe(el); }
+  _dev(p) { const b = this.state && this.state.__bp; if (!b) return p; if (p === 'mobile' || b === 'm') return 'mobile'; if (p === 'tablet' || b === 't') return 'tablet'; return 'desktop'; }
   renderVals() {
-    const d = this.props.device ?? 'desktop';
-    return { theme: this.props.theme ?? 'light', isDesktop: d === 'desktop', isTablet: d === 'tablet', isMobile: d === 'mobile', notMobile: d !== 'mobile', notDesktop: d !== 'desktop' };
+    this._rootCb = this._rootCb || ((el) => this._attach(el));
+    const d = this._dev(this.props.device ?? 'desktop');
+    return { rootRef: this._rootCb,  theme: this.props.theme ?? 'light', isDesktop: d === 'desktop', isTablet: d === 'tablet', isMobile: d === 'mobile', notMobile: d !== 'mobile', notDesktop: d !== 'desktop' };
   }
 }
 </script>

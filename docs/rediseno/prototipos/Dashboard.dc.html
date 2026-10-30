@@ -8,7 +8,7 @@
 <body>
 <x-dc>
 <helmet><script src="./ds-base.js"></script></helmet>
-<div data-theme="{{ theme }}" lang="es" style="overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto;position:relative;container-type:inline-size;display:flex;width:100%;height:100%;overflow:hidden;background:var(--color-bg-page);font-family:var(--font-sans);color:var(--color-text-primary);font-size:14px;-webkit-font-smoothing:antialiased">
+<div ref="{{ rootRef }}" data-dc-root="1" data-theme="{{ theme }}" lang="es" style="overflow-wrap:break-word;hyphens:auto;-webkit-hyphens:auto;position:relative;container-type:inline-size;display:flex;width:100%;height:100%;overflow:hidden;background:var(--color-bg-page);font-family:var(--font-sans);color:var(--color-text-primary);font-size:14px;-webkit-font-smoothing:antialiased">
 <sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ true }}"><aside style="width:var(--sidebar-width);flex:none;height:100%;overflow:visible;position:relative;z-index:10;background:var(--color-navy-900);color:var(--color-on-navy);display:flex;flex-direction:column;padding:20px 14px 14px;gap:20px;box-sizing:border-box;scrollbar-width:none">
 <div style="display:flex;align-items:center;gap:10px;padding:0 6px"><dc-import name="LogoMark" size="{{ 35 }}" surface="navy" hint-size="35px,35px"></dc-import><span style="font-weight:600;font-size:17px;letter-spacing:-0.01em">Pharos</span><span style="flex:1"></span><button onClick="{{ toggleSide }}" title="Contraer menú" aria-label="Contraer menú" style="width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(255,255,255,0.10);background:transparent;border-radius:8px;color:var(--color-on-navy-muted);cursor:pointer"><span style="width:16px;height:16px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/panel-left-close.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/panel-left-close.svg) center/contain no-repeat;"></span></button></div>
 <nav style="display:flex;flex-direction:column;gap:18px;flex:1"><div style="display:flex;flex-direction:column;gap:2px"><a href="#" style="display:flex;align-items:center;gap:12px;height:38px;padding:0 12px;border-radius:8px;background:rgba(255,255,255,0.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);color:var(--color-on-navy);text-decoration:none;font-weight:500;position:relative"><span style="position:absolute;left:-14px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--color-navy-300)"></span><span style="width:18px;height:18px;flex:none;background:var(--color-navy-300);-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/layout-dashboard.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/layout-dashboard.svg) center/contain no-repeat;"></span>Inicio</a><a href="#" style="display:flex;align-items:center;gap:12px;height:38px;padding:0 12px;border-radius:8px;color:var(--color-on-navy-muted);text-decoration:none" style-hover="background:rgba(255,255,255,0.04);color:var(--color-on-navy)"><span style="width:18px;height:18px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/folder.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/folder.svg) center/contain no-repeat;"></span>Proyectos</a></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-on-navy-muted);opacity:0.8;padding:0 12px 6px">Configuración</span><a href="#" style="display:flex;align-items:center;gap:12px;height:38px;padding:0 12px;border-radius:8px;color:var(--color-on-navy-muted);text-decoration:none" style-hover="background:rgba(255,255,255,0.04);color:var(--color-on-navy)"><span style="width:18px;height:18px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/settings-2.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/settings-2.svg) center/contain no-repeat;"></span>Administración</a></div></nav>
@@ -55,8 +55,8 @@
 </sc-if>
 <div style="display:flex;flex-wrap:wrap;gap:clamp(12px,1.6cqi,20px);align-items:stretch">
 <sc-if value="{{ showEjec }}" hint-placeholder-val="{{ true }}"><section style="flex:2 1 520px;min-width:0;background:var(--color-surface-1);border:1px solid var(--color-border);border-radius:12px;padding:clamp(16px,1.8cqi,22px);display:flex;flex-direction:column;gap:18px">
-<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px"><div style="flex:1 1 200px;display:flex;flex-direction:column;gap:2px"><h2 style="margin:0;font-size:15px;font-weight:600">Ejecución por proyecto</h2><span style="font-size:13px;color:var(--color-text-secondary)">Estado de los casos de prueba en cada proyecto abierto</span></div>
-<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--color-text-secondary)"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-success)"></span>Pasa</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-error)"></span>Falla</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-warning)"></span>Bloqueado</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-border)"></span>No ejecutado</span></div></div>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px"><div style="flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:2px"><h2 style="margin:0;font-size:15px;font-weight:600">Ejecución por proyecto</h2><span style="font-size:13px;color:var(--color-text-secondary)">Estado de los casos de prueba en cada proyecto abierto</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;line-height:16px;color:var(--color-text-secondary)"><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:var(--color-success)"></span>Pasa</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:var(--color-error)"></span>Falla</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:var(--color-warning)"></span>Bloqueado</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:var(--color-border)"></span>No ejecutado</span></div></div>
 <div style="display:flex;flex-direction:column;gap:16px">
 <sc-for list="{{ projects }}" as="p" hint-placeholder-count="5">
 <div style="display:flex;flex-direction:column;gap:7px">
@@ -87,21 +87,21 @@
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:clamp(12px,1.6cqi,20px);align-items:stretch">
 <sc-if value="{{ showEjec }}" hint-placeholder-val="{{ true }}"><section style="flex:1 1 380px;min-width:0;background:var(--color-surface-1);border:1px solid var(--color-border);border-radius:12px;padding:clamp(16px,1.8cqi,22px);display:flex;flex-direction:column;gap:16px">
-<div style="display:flex;align-items:flex-start;gap:12px"><div style="flex:1;display:flex;flex-direction:column;gap:2px"><h2 style="margin:0;font-size:15px;font-weight:600">Ejecuciones diarias</h2><span style="font-size:13px;color:var(--color-text-secondary)">Todos los proyectos · últimos 14 días</span></div><div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:20px;font-weight:600;font-variant-numeric:tabular-nums">412</span><sc-if value="{{ compareOn }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:var(--color-success-text)">+18 % vs. periodo anterior</span></sc-if></div></div>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 16px"><div style="flex:1 1 180px;min-width:0;display:flex;flex-direction:column;gap:2px"><h2 style="margin:0;font-size:15px;font-weight:600">Ejecuciones diarias</h2><span style="font-size:13px;color:var(--color-text-secondary)">Todos los proyectos · últimos 14 días</span></div><div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font-size:20px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums">412</span><sc-if value="{{ compareOn }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;white-space:nowrap;color:var(--color-success-text)">+18 % vs. anterior</span></sc-if></div></div>
 <div style="display:flex;gap:10px;height:180px">
 <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:var(--color-text-muted);font-variant-numeric:tabular-nums;padding-bottom:20px;text-align:right;width:20px"><span>50</span><span>25</span><span>0</span></div>
 <div style="flex:1;display:flex;flex-direction:column;min-width:0">
-<div style="flex:1;display:flex;align-items:flex-end;gap:clamp(4px,0.8cqi,10px);border-bottom:1px solid var(--color-border);background:linear-gradient(var(--color-border) 1px,transparent 1px) 0 0/100% 50%">
+<div style="flex:1;display:flex;align-items:flex-end;gap:clamp(2px,0.6cqi,8px);border-bottom:1px solid var(--color-border);background:linear-gradient(var(--color-border) 1px,transparent 1px) 0 0/100% 50%">
 <sc-for list="{{ trend }}" as="d" hint-placeholder-count="14">
-<div title="{{ d.title }}" style="flex:1;height:100%;min-width:0"><svg viewBox="0 0 10 100" preserveAspectRatio="none" style="display:block;width:100%;height:100%"><rect x="0" width="10" y="{{ d.passY }}" height="{{ d.passN }}" style="fill:var(--color-navy-500)"></rect><rect x="0" width="10" y="{{ d.failY }}" height="{{ d.failN }}" style="fill:var(--color-error)"></rect></svg></div>
+<div title="{{ d.title }}" style="flex:1 1 0;height:100%;min-width:0;display:flex;justify-content:center"><svg viewBox="0 0 10 100" preserveAspectRatio="none" style="display:block;width:100%;max-width:28px;height:100%"><rect x="0" width="10" y="98" height="{{ d.emptyN }}" style="fill:var(--color-border-strong, var(--color-border))"></rect><rect x="0" width="10" y="{{ d.passY }}" height="{{ d.passN }}" style="fill:var(--color-navy-500)"></rect><rect x="0" width="10" y="{{ d.failY }}" height="{{ d.failN }}" style="fill:var(--color-error)"></rect></svg></div>
 </sc-for>
 </div>
-<div style="display:flex;gap:clamp(4px,0.8cqi,10px);height:20px;align-items:flex-end;font-size:10.5px;color:var(--color-text-muted)">
-<sc-for list="{{ trend }}" as="d" hint-placeholder-count="14"><span style="flex:1;text-align:center">{{ d.label }}</span></sc-for>
+<div style="display:flex;gap:clamp(2px,0.6cqi,8px);height:20px;align-items:flex-end;font-size:11px;line-height:1;color:var(--color-text-muted);font-variant-numeric:tabular-nums">
+<sc-for list="{{ trend }}" as="d" hint-placeholder-count="14"><sc-if value="{{ d.today }}" hint-placeholder-val="{{ false }}"><span style="flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;font-weight:600;color:var(--color-text-primary)">{{ d.label }}</span></sc-if><sc-if value="{{ d.notToday }}" hint-placeholder-val="{{ true }}"><span style="flex:1 1 0;min-width:0;text-align:center;white-space:nowrap">{{ d.label }}</span></sc-if></sc-for>
 </div>
 </div>
 </div>
-<div style="display:flex;gap:14px;font-size:12px;color:var(--color-text-secondary)"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-navy-500)"></span>Pasa</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:var(--color-error)"></span>Falla</span></div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;color:var(--color-text-secondary)"><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:var(--color-navy-500)"></span>Pasa</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:8px;flex:none;border-radius:2px;background:var(--color-error)"></span>Falla</span><span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:8px;height:2px;flex:none;background:var(--color-border-strong, var(--color-border))"></span>Sin ejecuciones</span><span style="margin-left:auto;white-space:nowrap;color:var(--color-text-muted)">Octubre</span></div>
 </section></sc-if>
 
 <sc-if value="{{ showPruebas }}" hint-placeholder-val="{{ true }}"><section style="flex:1 1 380px;min-width:0;background:var(--color-surface-1);border:1px solid var(--color-border);border-radius:12px;padding:clamp(16px,1.8cqi,22px) 0 8px;display:flex;flex-direction:column;gap:10px">
@@ -133,6 +133,7 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;device&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;tablet&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;desktop&quot;,&quot;tsType&quot;:&quot;'desktop'|'tablet'|'mobile'&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;mobileSection&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;resumen&quot;,&quot;ejecucion&quot;,&quot;pruebas&quot;,&quot;proyectos&quot;],&quot;default&quot;:&quot;resumen&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;userMenu&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;searchOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;rangeOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;notifOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
   componentDidMount() {
+    requestAnimationFrame(() => { if (!this._el) { const n = document.querySelectorAll('[data-dc-root]'); n.length === 1 && this._attach(n[0]); } });
     this._placeMenus = () => requestAnimationFrame(() => {
       document.querySelectorAll('[data-menu]').forEach((el) => {
         const root = el.closest('[data-theme]'); const par = el.offsetParent || el.parentElement; if (!root || !par) return;
@@ -161,12 +162,16 @@ class Component extends DCLogic {
   }
   componentDidUpdate() { this._placeMenus && this._placeMenus(); }
   componentWillUnmount() {
+    this._ro && this._ro.disconnect();
     document.removeEventListener('mousedown', this._down, true);
     document.removeEventListener('scroll', this._scroll, true);
     document.removeEventListener('keydown', this._key);
   }
+  _attach(el) { if (!el || el === this._el) return; this._el = el; this._ro && this._ro.disconnect(); this._ro = new ResizeObserver(([e]) => { const w = e.contentRect.width, b = w < 640 ? 'm' : w < 1024 ? 't' : 'd'; if (b !== (this.state && this.state.__bp)) this.setState({ __bp: b }); }); this._ro.observe(el); }
+  _dev(p) { const b = this.state && this.state.__bp; if (!b) return p; if (p === 'mobile' || b === 'm') return 'mobile'; if (p === 'tablet' || b === 't') return 'tablet'; return 'desktop'; }
   renderVals() {
-    const device = this.props.device ?? 'desktop';
+    this._rootCb = this._rootCb || ((el) => this._attach(el));
+    const device = this._dev(this.props.device ?? 'desktop');
     const I = 'https://unpkg.com/lucide-static@0.460.0/icons/';
     const raw = [
       { key: 'PCL', name: 'Portal Clientes v3', pass: 182, fail: 14, blocked: 6, total: 240, approved: 228, coverage: 92, plan: 'Aprobado', last: 'Hoy, 09:42' },
@@ -179,7 +184,7 @@ class Component extends DCLogic {
     const planDot = { Aprobado: 'var(--color-success)', Revisado: 'var(--color-info)', Borrador: 'var(--color-text-muted)' };
     const projects = raw.map(p => {
       const executed = p.pass + p.fail + p.blocked;
-      return { ...p, executed, execPct: Math.round(pct(executed, p.total)) + ' %',
+      return { rootRef: this._rootCb,  ...p, executed, execPct: Math.round(pct(executed, p.total)) + ' %',
         passW: pct(p.pass, p.total) + '%', failW: pct(p.fail, p.total) + '%', blockW: pct(p.blocked, p.total) + '%',
         apprN: pct(p.approved, p.total),
         passN: pct(p.pass, p.total), failN: pct(p.fail, p.total), blockN: pct(p.blocked, p.total),
@@ -239,7 +244,7 @@ class Component extends DCLogic {
     const days = [[18,2],[24,3],[31,5],[12,1],[0,0],[0,0],[28,4],[35,6],[41,3],[38,7],[22,2],[0,0],[0,0],[44,5]];
     const labels = ['16','17','18','19','20','21','22','23','24','25','26','27','28','29'];
     const trend = days.map(([p, f], i) => ({ passN: p * 2, passY: 100 - p * 2, failN: f * 2, failY: Math.max(0, 100 - p * 2 - f * 2 - (f ? 1.5 : 0)),
-      label: (device === 'mobile' && i % 2) ? '' : labels[i], title: labels[i] + ' oct · ' + p + ' pasan, ' + f + ' fallan' }));
+      label: (device !== 'desktop' && (13 - i) % 2) ? '' : labels[i], emptyN: p + f ? 0 : 2, today: i === 13, notToday: i !== 13, title: (p + f ? '' : 'Sin ejecuciones · ') + labels[i] + ' oct · ' + p + ' pasan, ' + f + ' fallan' }));
     const pc = { 'Crítica': 'var(--color-error)', 'Alta': 'var(--color-warning)', 'Media': 'var(--color-info)' };
     const queue = [
       { id: 'PCL-0142', title: 'Pago con tarjeta guardada y 3-D Secure', project: 'Portal Clientes v3', priority: 'Crítica', req: 'REQ-031' },

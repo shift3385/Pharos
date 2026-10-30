@@ -30,6 +30,18 @@ Todas las pantallas aceptan `device` (`desktop`, `tablet`, `mobile`), `theme` (`
 
 ## 2. Puntos de corte y layout
 
+> **Enmienda 2026-10-30 (CAMBIO-vista-adaptativa).** Sustituye los valores de la tabla
+> siguiente (600 / 1280 px). Fuente:
+> [`cambios/CAMBIO-vista-adaptativa.md`](cambios/CAMBIO-vista-adaptativa.md).
+> - La vista se decide por el **ancho del contenedor raíz de la app**, no por el de `window`.
+> - Tramos: **< 640 px** móvil (sin menú lateral, cabecera móvil y barra inferior);
+>   **640–1023 px** tablet (franja de iconos de 84 px); **≥ 1024 px** escritorio (menú lateral
+>   de 248 px, contraíble).
+> - Un `device` forzado (mobile/tablet) nunca sube a una vista más ancha.
+>
+> En el código: `ViewportProvider` / `useBreakpoint` con `ResizeObserver`
+> ([ADR-0028](../adr/0028-rediseno-de-la-interfaz.md)).
+
 | Ancho | Navegación | Notas |
 |---|---|---|
 | < 600 px | Barra superior navy 56 px + barra inferior (Inicio, Proyectos, Admin, Perfil) | Padding de página 16 px |
