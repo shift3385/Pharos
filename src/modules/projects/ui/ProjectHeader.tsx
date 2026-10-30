@@ -5,9 +5,18 @@ import {
   HeaderActionsContext,
   useHeaderActionsSlot,
 } from "@shared/ui/headerActions";
-import { StatusPill } from "@shared/ui/StatusPill";
-import { planTone, prefixBadge } from "../model/projectTable";
+import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import "./ProjectHeader.css";
+
+/** Plan status → state colour (SPEC §4: Borrador neutral, Revisado info,
+ *  Aprobado success, Obsoleto neutral struck through). */
+const PLAN_TONE: Record<string, PillTone> = {
+  draft: "neutral",
+  reviewed: "info",
+  approved: "success",
+  obsolete: "neutral",
+  none: "neutral",
+};
 
 export interface ProjectHeaderInfo {
   name: string;
@@ -71,7 +80,8 @@ export function ProjectHeader({
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
   const name = useTitleWhenTruncated<HTMLHeadingElement>(info.name);
-  const badge = prefixBadge(info.caseIdPrefix);
+  // «ATS_» → «ATS»: the badge shows the prefix without its separator.
+  const badge = info.caseIdPrefix.replace(/[^\p{L}\p{N}]+$/u, "").slice(0, 4);
 
   if (mobile) {
     // Without actions only the hidden heading is left: no empty row (gap).
@@ -104,7 +114,7 @@ export function ProjectHeader({
         <div className="pj-header__meta">
           {status && (
             <StatusPill
-              tone={planTone(info.planStatus ?? null)}
+              tone={PLAN_TONE[status] ?? "neutral"}
               dot
               strike={status === "obsolete"}
             >

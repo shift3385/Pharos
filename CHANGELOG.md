@@ -40,6 +40,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
   estado y banderas de prioridad con los colores del diseño; opciones de menú con una línea
   que explica cada una.
+- **Rediseño, controles comunes (RED-V1a, para Inicio, Perfil, Casos y Administración):**
+  interruptor, selector segmentado (una opción entre pocas, con flechas) y pestañas, en
+  formato de pastillas o subrayadas, con burbujas de contador y pestañas deshabilitadas que
+  explican el motivo.
 
 ### Cambiado
 
@@ -78,6 +82,15 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Cabecera del proyecto (RED-V2):** cada sección del proyecto empieza con una cabecera con
   el prefijo, el nombre, el estado del plan y el número de casos y requisitos. Sustituye a la
   barra «← Proyectos <nombre>», que repetía la barra superior del móvil.
+
+### Corregido
+
+- **Web:** el servidor ya acepta tarjetas del planificador de tipo «Datos de prueba»
+  (`test_data`). Antes solo admitía tarea y defecto, así que en la web no se podían crear ni
+  editar.
+- **Fechas de guardado:** «Guardado · hace N min», «Actualizado» y las revisiones del plan se
+  mostraban con la hora UTC como si fuera local (cinco horas de diferencia en América). Las
+  fechas guardadas sin zona se leen ahora como UTC.
 
 ## [0.1.0-beta.1] - 2026-10-29
 
