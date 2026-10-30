@@ -193,6 +193,16 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     current in the mobile bottom bar);
   - the breadcrumbs;
   - the mobile header (back + section + project) and the section pills.
+- **Project header** (RED-V2, `@modules/projects`): `ProjectDetail` wraps
+  every section in `ProjectHeaderLayout`, which draws `ProjectHeader`:
+  prefix badge, name (`h1`), plan status and a meta line (cases,
+  requirements). Section pages draw no header of their own. To put buttons on
+  its right they call `useProjectHeaderActions(<…/>)`; the header shows the
+  latest node and drops it on unmount. Only the header re-renders, because
+  the section is the provider's `children`. On mobile the shell's top bar
+  already names the project: the card is not drawn, the `h1` stays
+  `.sr-only` and only the actions row shows (`.pj-action` buttons share the
+  width; `data-natural` keeps its own).
 
   `/projects?open=<id>` redirects there.
 - **Top bar** (`Topbar`, 64 px):
@@ -253,6 +263,10 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     accessible description, not its name). `MenuCheckItem`: a
     `menuitemcheckbox` (a pressed toggle in a sheet) that keeps the menu open,
     for multi-choice filters.
+  - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
+    the sort keys as radio options (disabled ones keep a `title` with the
+    reason) and the direction (Descendente · Ascendente). Choosing a key keeps
+    the direction and vice versa.
 - **Tables and filters** (`src/shared/ui`, SPEC §4/§8, RED-V3; also used by
   Proyectos, RED-V2):
   - `DataTable`: a semantic `<table>` laid out as a CSS grid (every row shares
@@ -282,7 +296,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   (`@shared/ui/ShellChrome`, provided once by `AppShell`) and
   `useHideBottomBar(active)` (`@shared/ui/useShellChrome`) hide the mobile
   bottom bar while Gherkin is edited (SPEC §7). The project header and its
-  actions are V2's slot (`ProjectHeader` / `useProjectHeaderActions`).
+  actions are V2's slot (`ProjectHeader`; sections add buttons with
+  `useHeaderActions`, `@shared/ui/headerActions`).
 - **Casos (RED-V3):** `TestCasesPage` owns the filters, order and page
   (`model/caseList.ts`, pure) and keeps the open case in `?case=`
   (`caseLink`), so the editor walks the same ordered list and «Atrás» works.
