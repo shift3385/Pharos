@@ -136,8 +136,14 @@ and keeps your edit; saving again replaces the newer version.
 
 ### Signing in
 
+The login screen (redesign RED-V1) shows the lighthouse photo next to the form
+from 600 px wide, and as a header over the form on phones, where the login
+never scrolls. «Continuar con Google» is shown disabled until Google sign-in
+ships; the language is picked at the foot of the form (or the photo header on
+phones).
+
 On a fresh database there are no accounts: use **"Sign up"** ("Regístrate")
-on the login screen, or create the local test account with:
+under the title, or create the local test account with:
 
 ```
 cd server && npm run seed:test-user
@@ -183,6 +189,15 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   Administración, Idioma and **Cerrar sesión**.
 - **Phones and narrow windows** (< 600 px): a navy top bar and a bottom bar (Inicio, Proyectos,
   Admin, Perfil). Your initials open the user menu as a sheet.
+- **Inicio** (RED-V1): your open projects, pending tests and open defects
+  (from the Planner) as cards that take you there; execution by project,
+  exit criteria from each plan (with a project picker), daily runs and the
+  next tests by priority. Run results arrive with 0.2.0: until then the pass
+  rate, the daily runs and whether each criterion is met say so instead of
+  showing numbers. On phones the Home has three tabs (Resumen, Ejecución,
+  Pruebas).
+- **Perfil:** your alias and official name, language and theme (and «Cerrar
+  sesión» on phones). The recovery key is in Administración → Seguridad.
 
 ### Sync
 

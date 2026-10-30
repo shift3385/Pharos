@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "QA test management suite",
     "version": "Version {{version}}"
   },
   "dbError": {
@@ -425,8 +424,26 @@
     "lastName": "Last name",
     "login": "Sign in",
     "register": "Sign up",
-    "toRegister": "No account? Sign up",
-    "toLogin": "Already have an account? Sign in",
+    "noAccount": "Don't have an account?",
+    "signUpLink": "Sign up",
+    "haveAccount": "Already have an account?",
+    "signInLink": "Sign in",
+    "emailPlaceholder": "name@company.com",
+    "showPassword": "Show password",
+    "or": "or",
+    "google": "Continue with Google",
+    "soon": "Coming soon",
+    "googleSoonTitle": "Sign in with Google: coming soon",
+    "encryptedNote": "Your data is stored encrypted on this device.",
+    "languageLabel": "Language",
+    "brand": {
+      "label": "Pharos",
+      "eyebrow": "QA test management",
+      "tagline": "The lighthouse that guides your test projects to a safe harbor.",
+      "point1": "Test plan compliant with ISO/IEC/IEEE 29119",
+      "point2": "Cases and Gherkin kept in sync in real time",
+      "point3": "Traceability requirement ↔ case ↔ defect"
+    },
     "loggingIn": "Signing in…",
     "logout": "Sign out",
     "offline": "Offline",
@@ -438,14 +455,6 @@
       "network": "Could not reach the server.",
       "generic": "Something went wrong. Please try again."
     }
-  },
-  "topbar": {
-    "toggleTheme": "Toggle light or dark theme",
-    "language": "Language"
-  },
-  "theme": {
-    "light": "Light",
-    "dark": "Dark"
   },
   "language": {
     "es": "Español",
@@ -536,7 +545,13 @@
     "auditTitle": "Audit",
     "createdAt": "Created",
     "updatedAt": "Updated",
-    "revision": "Revision"
+    "revision": "Revision",
+    "preferences": "Preferences",
+    "language": "Language",
+    "theme": "Theme",
+    "themeHelp": "Faro Nocturno, light or dark.",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "testPlan": {
     "title": "Test plans",
@@ -876,24 +891,137 @@
     "gherkinKeys": "Tab indents. To leave the editor from the keyboard, press Escape and then Tab."
   },
   "dashboard": {
-    "title": "Welcome to Pharos",
+    "title": "Home",
     "greeting": "Hello, {{name}}",
-    "subtitle": "The lighthouse that guides your testing projects safely to port.",
-    "newProject": "Start a new test project",
-    "newProjectDesc": "Create the project and write its plan with the wizard.",
-    "continue": "Continue an existing project",
-    "continueDesc": "Find a project in the list and pick it up where you left it.",
-    "projectsTitle": "Your projects",
-    "searchLabel": "Search projects",
-    "searchPlaceholder": "Search by name…",
-    "empty": "You have no projects yet. Begin with “Start a new test project”.",
-    "noMatch": "No project matches “{{query}}”.",
-    "lastAccess": "Last opened: {{date}}",
-    "neverOpened": "Not opened on this device · updated {{date}}",
-    "noPlan": "No plan",
-    "progressLabel": "Progress of {{name}}",
-    "progress": "{{approved}} of {{total}} cases approved",
-    "noCases": "No cases yet"
+    "summary": "You have <b>{{pending}}</b> across {{projects}}.",
+    "pendingTests_one": "{{count}} pending test",
+    "pendingTests_other": "{{count}} pending tests",
+    "openProjects_one": "{{count}} open project",
+    "openProjects_other": "{{count}} open projects",
+    "summaryEmpty": "You have no projects yet. Create the first one to get started.",
+    "newProject": "New project",
+    "sumNote": "Total of your <b>{{projects}}</b> · period: {{period}}",
+    "loading": "Loading Home…",
+    "kpi": {
+      "projects": "Open projects",
+      "projectsTitle": "Go to Projects",
+      "closing_one": "{{count}} closes this month",
+      "closing_other": "{{count}} close this month",
+      "noneClosing": "None closes this month",
+      "pending": "Pending tests",
+      "pendingOf": "of {{total}}",
+      "pendingTitle": "Cases not yet run across all open projects",
+      "noRuns": "No runs recorded",
+      "rate": "Pass rate",
+      "rateTitle": "Calculated once you record runs (version 0.2.0)",
+      "rateEmpty": "No runs yet",
+      "defects": "Open defects",
+      "defectsTitle": "Defects not closed in the Planner of your projects",
+      "critical_one": "{{count}} critical",
+      "critical_other": "{{count}} critical",
+      "noCritical": "None critical"
+    },
+    "period": {
+      "label": "Period",
+      "trigger": "Data period",
+      "sheetTitle": "Data period",
+      "today": "Today",
+      "7d": "Last 7 days",
+      "14d": "Last 14 days",
+      "30d": "Last 30 days",
+      "month": "This month",
+      "cycles": "Test cycle",
+      "cycleCurrent": "Current cycle",
+      "cyclePrevious": "Previous cycle",
+      "custom": "Custom range…",
+      "soonTitle": "Coming soon: will use the plan’s cycles and ranges",
+      "compare": "Compare with the previous period",
+      "compareTitle": "Available once there are runs to compare (version 0.2.0)",
+      "lower": {
+        "today": "today",
+        "7d": "last 7 days",
+        "14d": "last 14 days",
+        "30d": "last 30 days",
+        "month": "this month"
+      }
+    },
+    "exec": {
+      "title": "Execution by project",
+      "subtitle": "Status of the test cases in each open project",
+      "pass": "Pass",
+      "fail": "Fail",
+      "blocked": "Blocked",
+      "notRun": "Not run",
+      "rowLabel": "{{name}}: {{executed}} of {{total}} cases run",
+      "noRuns": "Runs arrive with version 0.2.0: no case has a result yet.",
+      "noCases": "No cases yet",
+      "empty": "No open projects."
+    },
+    "exit": {
+      "title": "Exit criteria",
+      "subtitle": "Defined in the test plan",
+      "choose": "Choose project",
+      "menuLabel": "Projects",
+      "search_one": "Search {{count}} project…",
+      "search_other": "Search {{count}} projects…",
+      "searchLabel": "Search project",
+      "filters": "Filter projects",
+      "all": "All",
+      "risk": "At risk",
+      "ok": "Met",
+      "filterSoon": "Needs run results (version 0.2.0)",
+      "byClose": "By closing date",
+      "closes": "Closes {{date}}",
+      "noDate": "No closing date",
+      "noMatch": "No project matches “{{query}}”.",
+      "viewAll_one": "See the project in Projects",
+      "viewAll_other": "See all {{count}} in Projects",
+      "executed": "run",
+      "ringLabel": "Percentage run: no data",
+      "headline": "No runs yet",
+      "sub": "The criteria are evaluated once you record runs.",
+      "close": "Closes: {{date}}",
+      "noData": "No data",
+      "noCriteria": "This project’s plan defines no exit criteria.",
+      "noPlan": "This project has no test plan yet.",
+      "openPlan": "Open the plan",
+      "empty": "Create a project to see its exit criteria."
+    },
+    "daily": {
+      "title": "Daily runs",
+      "subtitle": "All projects · {{period}}",
+      "totalLabel": "Runs in the period",
+      "pass": "Pass",
+      "fail": "Fail",
+      "none": "No runs",
+      "dayTitle": "{{date}}: no runs",
+      "chartLabel": "Runs per day, {{period}}: no runs recorded"
+    },
+    "upcoming": {
+      "title": "Upcoming tests",
+      "subtitle": "Waiting to be run, by priority",
+      "viewAll": "See all",
+      "filters": "Test status",
+      "notRun": "Not run",
+      "blocked": "Blocked",
+      "retest": "Re-test",
+      "soonTitle": "Needs run results (version 0.2.0)",
+      "empty": "No pending cases. Create cases in a project to see them here.",
+      "priority": {
+        "critical": "Critical priority",
+        "high": "High priority",
+        "medium": "Medium priority",
+        "low": "Low priority"
+      }
+    },
+    "tabs": {
+      "label": "Home sections",
+      "summary": "Summary",
+      "execution": "Execution",
+      "tests": "Tests",
+      "pendingBubble_one": "{{count}} pending test",
+      "pendingBubble_other": "{{count}} pending tests"
+    }
   },
   "section": {
     "comingInPhase": "Coming in Phase {{phase}}",

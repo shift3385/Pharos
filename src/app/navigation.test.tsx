@@ -15,7 +15,7 @@ describe("navigation", () => {
   it("renders the Home at the root route, without the Fase 0 placeholder", () => {
     renderWithProviders(<App />, { route: "/" });
     expect(screen.getByRole("heading", { name: "Hola, Quality" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Iniciar nuevo proyecto de pruebas/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nuevo proyecto" })).toBeInTheDocument();
     expect(screen.queryByText(/Fase 0/)).not.toBeInTheDocument();
   });
 
