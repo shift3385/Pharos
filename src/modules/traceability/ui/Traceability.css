@@ -618,3 +618,14 @@
   width: 44px;
   height: 44px;
 }
+
+/* An uncovered requirement: «Generar casos con IA» spans the ID caso, Caso de
+   prueba and Estado de prueba columns (their cells are empty there). */
+.tz-matrix .dt__row[data-tone="gap"] > .dt__cell:nth-child(4),
+.tz-matrix .dt__row[data-tone="gap"] > .dt__cell:nth-child(6) {
+  display: none;
+}
+
+.tz-matrix .dt__row[data-tone="gap"] > .dt__cell:nth-child(5) {
+  grid-column: 4 / span 3;
+}

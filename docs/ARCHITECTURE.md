@@ -292,6 +292,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     `--ghost`, `--danger`, `ui-iconbtn`) and `.ui-search` (in
     `filters.css`): the action buttons and list search field the screens
     share, so no module styles itself with another module's CSS.
+    **Known duplicate:** `.pj-action` (`@shared/ui/headerActions.css`, V2)
+    draws the same secondary button as `.ui-btn`; ROADMAP RED-V3c unifies
+    them.
 - **Shell slots** (RED-V3, amendment to ADR-0028): a screen may ask things of
   the shell around it without importing `src/app`. `ShellChromeProvider`
   (`@shared/ui/ShellChrome`, provided once by `AppShell`) and
@@ -304,6 +307,18 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   (`caseLink`), so the editor walks the same ordered list and «Atrás» works.
   The editor keeps a snapshot of the loaded form to tell «Guardado» from
   «Cambios sin guardar» and asks before leaving with changes.
+- **Cross-module read APIs** used by other screens (each additive, with a
+  test):
+  - `projectDefects(projectId, ownerId)` (`@modules/planner`): the defect
+    cards of a project, for the traceability matrix;
+  - `projectCardCount(projectId, ownerId)` (`@modules/planner`): how many
+    cards a board has (Proyectos);
+  - `projectCoverage(projectId, ownerId)` (`@modules/traceability`): the
+    share of covered requirements by the matrix rule, `null` without
+    requirements (Proyectos);
+  - `caseLink(projectId, caseId)` (`@modules/test-cases`): the Casos route
+    with `?case=`. It repeats the shape of `projectPath(id, "cases")`
+    because projects depends on test-cases, not the other way.
 - **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
   defects once for both views (Requisitos, Matriz) and owns their dialogs; the
   views only render (`buildMatrix` stays the single source, also for

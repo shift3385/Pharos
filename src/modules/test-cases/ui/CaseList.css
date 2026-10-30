@@ -675,3 +675,28 @@
   height: 40px;
   font-size: 13px;
 }
+
+/* Mobile: «Todos los casos» keeps its name but shows only the arrow, so the
+   save state, more actions and «Guardar» fit in one row. */
+[data-viewport="mobile"] .tc-nav__back .ui-btn__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+[data-viewport="mobile"] .tc-nav__back {
+  width: 44px;
+  padding: 0;
+}
+
+[data-viewport="mobile"] .tc-nav__state .ui-btn__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1256,7 +1256,8 @@
       "compact": "Página {{page}} de {{pages}}",
       "perPage": "Por página",
       "perPageValue": "{{count}} por página"
-    }
+    },
+    "selectAllShort": "Seleccionar todo"
   },
   "sortMenu": {
     "title": "Ordenar por",
