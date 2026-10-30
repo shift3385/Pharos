@@ -35,6 +35,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     texto.
   - Iconos de línea (Lucide), escala tipográfica con partición de palabras por sílabas,
     sin partir correos, rutas ni IDs, y respeto de «reducir movimiento».
+- **Rediseño, piezas de tabla comunes (RED-V3, para Casos, Trazabilidad y Proyectos):** tabla
+  con selección múltiple, orden por columna y tarjetas en el móvil; paginación con «Por
+  página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
+  estado y banderas de prioridad con los colores del diseño; opciones de menú con una línea
+  que explica cada una.
 
 ### Cambiado
 

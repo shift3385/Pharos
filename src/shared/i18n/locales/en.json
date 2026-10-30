@@ -383,6 +383,7 @@
     "empty": "No projects yet. Create the first one.",
     "namePlaceholder": "Project name",
     "prefixMeta": "IDs",
+    "back": "Projects",
     "name": "Project name",
     "caseIdPrefix": "Case id prefix",
     "caseIdDigits": "Number digits",
@@ -1109,5 +1110,22 @@
     "direction": "Direction",
     "desc": "Descending",
     "asc": "Ascending"
+  },
+  "table": {
+    "selectAll": "Select all rows",
+    "selectRow": "Select {{name}}",
+    "filter": {
+      "clear": "Clear filter"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b>",
+      "prev": "Previous page",
+      "next": "Next page",
+      "pagePrefix": "Page",
+      "compact": "Page {{page}} of {{pages}}",
+      "perPage": "Per page",
+      "perPageValue": "{{count}} per page"
+    }
   }
 }

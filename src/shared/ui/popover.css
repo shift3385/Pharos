@@ -217,3 +217,57 @@
     transform: translateY(100%);
   }
 }
+
+/* ---- Options with an explanation and check options ---- */
+.menu__item--desc {
+  align-items: flex-start;
+  padding-block: 8px;
+}
+
+.menu__item--desc .menu__icon,
+.menu__item--desc .menu__check,
+.menu__item--desc .menu__box {
+  margin-top: 2px;
+}
+
+.menu__text--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+}
+
+.menu__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__desc {
+  font-size: 12px;
+  font-weight: var(--fw-regular);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.menu__item[data-selected] .menu__desc {
+  color: currentColor;
+}
+
+.menu__box {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  /* The check mark: light on navy-500 in light, dark on it in dark. */
+  color: var(--color-surface-1);
+  border: 1.5px solid var(--color-border-input);
+  border-radius: 4px;
+}
+
+.menu__item[data-checked] .menu__box {
+  background: var(--color-navy-500);
+  border-color: var(--color-navy-500);
+}
