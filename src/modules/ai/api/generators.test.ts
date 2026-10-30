@@ -157,14 +157,15 @@ describe("cases from a requirement (IA-05) — online provider, mocked", () => {
     expect(result.value[0].given).toEqual(["a registered user"]);
     expect(result.value[0].when).toEqual(["the user signs in with a valid password"]);
     expect(result.value[1]).toMatchObject({ description: "", given: [], priority: "critical" });
-    // Structured calls cap the temperature; the requirement reaches the provider.
+    // Claude takes no temperature (capabilities table): none is sent. The
+    // requirement reaches the provider.
     const call = invoke.mock.calls.find(([cmd]) => cmd === "ai_chat_online")?.[1] as {
       provider: string;
-      temperature: number;
+      temperature: number | null;
       messages: { content: string }[];
     };
     expect(call.provider).toBe("anthropic");
-    expect(call.temperature).toBe(0.3);
+    expect(call.temperature).toBeNull();
     expect(call.messages[1].content).toContain("REQ-007");
   });
 

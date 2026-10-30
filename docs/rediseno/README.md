@@ -63,7 +63,7 @@ Usar siempre `var(--…)` de `ds/tokens/tokens.css`. Valores (tema claro / oscur
 
 ## Assets
 - **Iconos:** Lucide (`lucide-static@0.460.0`), trazo de línea. Usar la librería de iconos Lucide del proyecto (o añadirla) en lugar de máscaras CSS.
-- **Logos de proveedores de IA:** Simple Icons (`simple-icons@13.21.0`): googlegemini, openai, claude, ollama. OpenRouter sin logo disponible (icono `route` provisional).
+- **Logos de proveedores de IA:** Simple Icons (`simple-icons@13.21.0` en el prototipo): googlegemini, openai, claude, ollama. OpenRouter sin logo disponible (icono `route` provisional). La app usa `simple-icons@15.22.0`, la última con el icono de OpenAI ([ADR-0031](../adr/0031-administracion-por-pestanas.md)).
 - **Foto del login:** `prototipos/assets/login-faro.jpg` (1024×572). En producción usar la misma imagen a ≥ 2400 px.
 - **Logo de Pharos:** `logo/Logo.jsx`.
 

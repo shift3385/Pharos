@@ -7,9 +7,7 @@ import { DbErrorScreen } from "./DbErrorScreen";
 import { useDbOpenError } from "./dbStatus";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { ProjectDetailPage, ProjectsPage } from "@modules/projects";
-import { TemplatesPage } from "@modules/templates";
-import { AiPage } from "@modules/ai";
-import { AdminPage } from "@modules/admin";
+import { AdminPage, adminPath } from "@modules/admin";
 import { ProfilePage } from "@modules/profile";
 
 export function App() {
@@ -31,8 +29,9 @@ export function App() {
           <Route path="/projects" element={<ProjectsPage />} />
           {/* A project and its section live in the URL (ADR-0029). */}
           <Route path="/projects/:projectId/:section?" element={<ProjectDetailPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/ai" element={<AiPage />} />
+          {/* Plantillas and Motor de IA are Administration tabs (ADR-0031). */}
+          <Route path="/templates" element={<Navigate to={adminPath("templates")} replace />} />
+          <Route path="/ai" element={<Navigate to={adminPath("ai")} replace />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

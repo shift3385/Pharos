@@ -103,13 +103,13 @@ describe("profile page", () => {
     await i18n.changeLanguage("es");
   });
 
-  it("keeps the recovery key until Administración › Seguridad has it, and passes axe", async () => {
+  it("passes axe; the recovery key lives in Administración › Seguridad now", async () => {
     setViewportWidth(390);
     renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
     expect(
-      screen.getByRole("heading", { name: "Clave de recuperación" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Clave de recuperación" }),
+    ).not.toBeInTheDocument();
     await expectNoAxeViolations();
   });
 });

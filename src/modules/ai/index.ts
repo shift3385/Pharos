@@ -1,5 +1,5 @@
 // Public API of the ai module (spec §8).
-export { AiPage } from "./ui/AiPage";
+export { AiEngineTab } from "./ui/AiEngineTab";
 export { AssistButton } from "./ui/AssistButton";
 export { AiSuggestList } from "./ui/AiSuggestList";
 export { AiFailureNotice } from "./ui/AiFailureNotice";

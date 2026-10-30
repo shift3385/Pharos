@@ -112,6 +112,15 @@ describe("ai config persistence", () => {
     expect(cfg.onlineModels.gemini).toBe(DEFAULT_AI_CONFIG.onlineModels.gemini);
     expect(normalizeConfig("garbage")).toEqual(DEFAULT_AI_CONFIG);
   });
+
+  it("«Compatible» keeps sending the temperature for configs saved before «Enviar» (ADR-0031)", () => {
+    // A stored config without the field: the old behaviour (always sent).
+    expect(normalizeConfig({ onlineProvider: "custom", customBaseUrl: "https://x/v1" }).customSendTemperature).toBe(true);
+    // No stored config: a new user starts with it off.
+    expect(normalizeConfig({}).customSendTemperature).toBe(false);
+    // An explicit choice always wins.
+    expect(normalizeConfig({ onlineProvider: "custom", customSendTemperature: false }).customSendTemperature).toBe(false);
+  });
 });
 
 describe("active online provider", () => {
@@ -130,7 +139,6 @@ describe("active online provider", () => {
 
   it("describes each provider: Claude ignores temperature, custom needs no key", () => {
     expect(ONLINE_PROVIDERS.map((p) => p.id)).toEqual(["gemini", "openai", "anthropic", "openrouter", "custom"]);
-    expect(providerInfo("anthropic").supportsTemperature).toBe(false);
     expect(providerInfo("custom").keyRequired).toBe(false);
     expect(providerInfo("custom").keyUrl).toBeNull();
     expect(providerInfo("openai").keyRequired).toBe(true);

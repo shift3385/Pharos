@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Folder, FolderOpen } from "lucide-react";
 import { downloadDir, type DownloadDirInfo } from "@shared/export/saveFile";
 import { logClientError } from "@shared/diagnostics";
 import { useToast } from "@shared/ui/Toast";
+import { SettingsRow } from "./SettingsSection";
 
 /** Download folder for every export (UX-02). The folder is chosen only with
  *  the native picker and is stored by the desktop app right away (it is not
@@ -42,45 +44,46 @@ export function DownloadFolderField() {
   }
 
   const shown = info?.path ?? "";
+  const full = `${shown || "—"}${info && !info.custom ? ` (${t("admin.settings.downloadDefault")})` : ""}`;
   return (
-    <div
-      className="adm__field"
-      role="group"
-      aria-labelledby="adm-download-label"
+    <SettingsRow
+      label={t("admin.settings.download")}
+      labelId="adm-download-label"
+      hint={available ? t("admin.settings.downloadHint") : t("admin.settings.downloadWebHint")}
     >
-      <span id="adm-download-label" className="adm__label">
-        {t("admin.settings.download")}
-      </span>
-      {available ? (
-        <>
-          <output
-            className="adm__path"
-            data-testid="download-dir"
-            aria-label={t("admin.settings.downloadCurrent")}
-          >
-            {shown || "—"}
-            {info &&
-              !info.custom &&
-              ` (${t("admin.settings.downloadDefault")})`}
-          </output>
+      {available && (
+        <div className="adm-folder" role="group" aria-labelledby="adm-download-label">
+          <div className="adm-path">
+            {/* A path never breaks (SPEC §3): one line, «…», full value in title. */}
+            <output
+              className="u-truncate"
+              data-testid="download-dir"
+              aria-label={t("admin.settings.downloadCurrent")}
+              title={full}
+            >
+              {full}
+            </output>
+            <Folder size={16} aria-hidden="true" />
+          </div>
           {info?.missing && (
-            <span className="adm__warn" role="alert">
+            <span className="adm-warn" role="alert">
               {t("admin.settings.downloadMissing")}
             </span>
           )}
-          <div className="adm__bg-row">
+          <div className="adm-inline">
             <button
               type="button"
-              className="adm__btn"
+              className="adm-btn adm-btn--secondary"
               disabled={busy}
               onClick={() => void run(downloadDir.pick)}
             >
+              <FolderOpen size={16} aria-hidden="true" />
               {t("admin.settings.downloadChoose")}
             </button>
             {info?.custom && (
               <button
                 type="button"
-                className="adm__btn"
+                className="adm-btn adm-btn--ghost"
                 disabled={busy}
                 onClick={() => void run(downloadDir.reset)}
               >
@@ -88,11 +91,8 @@ export function DownloadFolderField() {
               </button>
             )}
           </div>
-          <span className="adm__hint">{t("admin.settings.downloadHint")}</span>
-        </>
-      ) : (
-        <span className="adm__hint">{t("admin.settings.downloadWebHint")}</span>
+        </div>
       )}
-    </div>
+    </SettingsRow>
   );
 }

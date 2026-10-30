@@ -1,135 +1,695 @@
+/* Administración (SPEC §8, ScrAdministracion). Tokens only; layout follows
+ * the app container (`data-viewport`, container queries), never the window.
+ *
+ * The `adm-*` classes (cards, rows, fields, buttons) are shared by every
+ * tab, including Motor de IA (ai module) and Plantillas (templates module),
+ * which only render inside this page. Segmented controls, switches and
+ * state pills are the shared `SegmentedControl`, `Switch` and
+ * `StatusPill`. */
+
 .adm {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  max-width: 800px;
+  gap: clamp(16px, 2cqi, 24px);
+  min-width: 0;
 }
-.adm__subtitle {
-  margin-top: var(--space-2);
-  color: var(--color-text-secondary);
-}
-.adm__cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-3);
-}
-.adm__card {
+
+.adm__header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: var(--space-4);
-  text-align: left;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  gap: var(--space-1);
+  min-width: 0;
 }
-.adm__card:hover {
-  border-color: var(--color-navy-300);
+
+.adm__header h1 {
+  margin: 0;
 }
-.adm__card-title {
-  font-weight: var(--fw-semibold);
-  color: var(--color-text-primary);
-}
-.adm__card-desc {
-  font-size: var(--fs-caption);
+
+.adm__subtitle {
+  margin: 0;
+  max-width: 720px;
+  font-size: var(--fs-ui);
   color: var(--color-text-secondary);
 }
 
-.adm__settings {
+.adm__panel {
+  min-width: 0;
+}
+
+.adm__panel:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
+}
+
+/* ---- Grouped tabs: one strip that scrolls sideways ---- */
+.adm-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  margin: 0 -4px;
+  padding: 0 4px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.adm-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* The end that hides tabs fades out, so the strip reads as scrollable. */
+.adm-tabs[data-fade-end] {
+  mask-image: linear-gradient(to right, currentColor calc(100% - 40px), transparent);
+}
+
+.adm-tabs[data-fade-start] {
+  mask-image: linear-gradient(to right, transparent, currentColor 40px);
+}
+
+.adm-tabs[data-fade-start][data-fade-end] {
+  mask-image: linear-gradient(to right, transparent, currentColor 40px, currentColor calc(100% - 40px), transparent);
+}
+
+.adm-tabs__group {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.adm-tabs__sep {
+  position: absolute;
+  left: -9px;
+  bottom: 6px;
+  width: 1px;
+  height: 24px;
+  background: var(--color-border);
+}
+
+.adm-tabs__label {
+  padding-left: 4px;
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.adm-tabs__row {
+  display: flex;
+  gap: 6px;
+}
+
+.adm-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
+}
+
+.adm-tab:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-navy-300);
+}
+
+.adm-tab[aria-selected="true"] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-on-navy);
+  background: var(--color-navy-900);
+  border-color: var(--color-navy-900);
+}
+
+[data-theme="dark"] .adm-tab[aria-selected="true"] {
+  color: var(--color-navy-900);
+  background: var(--color-navy-500);
+  border-color: var(--color-navy-500);
+}
+
+.adm-tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.adm-tab__count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+
+.adm-tab[aria-selected="true"] .adm-tab__count {
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  color: inherit;
+}
+
+[data-viewport="mobile"] .adm-tab {
+  height: 44px;
+}
+
+/* ---- Cards and rows ---- */
+.adm-stack {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-5);
+  min-width: 0;
+}
+
+.adm-card {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: clamp(16px, 2.2cqi, 24px);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
-.adm__settings-title {
-  font-size: var(--fs-title-sm);
-  color: var(--color-text-primary);
-}
-.adm__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+
+.adm-card--info {
+  flex-direction: row;
+  align-items: flex-start;
   gap: var(--space-3);
+  background: var(--color-surface-2);
 }
-.adm__field {
+
+.adm-card__icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-info-text);
+}
+
+.adm-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-3);
+}
+
+.adm-card__titles {
+  flex: 1 1 220px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
 }
-.adm__label {
+
+.adm-card__titles h2 {
+  margin: 0;
+}
+
+.adm-card__titles p {
+  margin: 0;
+}
+
+.adm-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-5);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.adm-rows > .adm-row:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.adm-row__text {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-row__control {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+@container (min-width: 720px) {
+  .adm-row__text {
+    flex: 0 1 38%;
+  }
+}
+
+.adm-label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-ui);
   font-weight: var(--fw-medium);
   color: var(--color-text-primary);
 }
-.adm__hint {
+
+.adm-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.adm-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+.adm-note svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-success-text);
+}
+
+.adm-warn {
   font-size: var(--fs-caption);
-  color: var(--color-text-muted);
+  color: var(--color-warning-text);
 }
-.adm__field input {
-  height: 38px;
-  padding: 0 var(--space-3);
-  font-size: var(--fs-ui);
-  color: var(--color-text-primary);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
+
+.adm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
-.adm__bg-row {
+
+.adm-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.adm-inline--fill {
+  width: 100%;
+}
+
+.adm-inline > .adm-input,
+.adm-inline > .adm-input--with-btn {
+  flex: 1 1 220px;
+}
+
+.adm-folder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.adm-path {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-.adm__btn {
-  height: 36px;
+  min-height: 40px;
   padding: 0 var(--space-3);
-  font-weight: var(--fw-medium);
-  color: var(--color-text-secondary);
+  min-width: 0;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
-.adm__btn:hover {
-  color: var(--color-navy-500);
-  border-color: var(--color-navy-300);
+
+.adm-path output {
+  flex: 1;
+  min-width: 0;
 }
-.adm__path {
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  color: var(--color-text-primary);
-  overflow-wrap: anywhere;
+
+.adm-path svg {
+  flex: none;
+  color: var(--color-text-muted);
 }
-.adm__warn {
-  font-size: var(--fs-caption);
-  color: var(--color-error-text);
+
+.adm-account {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: var(--fs-ui);
 }
-.adm__bg-preview {
-  width: 64px;
-  height: 36px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background-size: cover;
-  background-position: center;
+
+.adm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
 }
-.adm__save {
-  align-self: flex-start;
+
+.adm-actions__spacer {
+  flex: 1 1 0;
+}
+
+/* ---- Inputs ---- */
+.adm-input,
+.adm-input--with-btn {
+  min-width: 0;
   height: 40px;
-  padding: 0 var(--space-5);
-  font-weight: var(--fw-semibold);
-  color: var(--color-accent-contrast);
-  background: var(--color-accent);
-  border: none;
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
 }
 
-.adm__version {
-  font-family: var(--font-mono);
+.adm-input {
+  padding: 0 var(--space-3);
+  width: 100%;
+}
+
+.adm-input--number {
+  width: 120px;
+}
+
+.adm-input--with-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 var(--space-3);
+}
+
+.adm-input--with-btn input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.adm-input:focus-visible,
+.adm-input--with-btn:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+[data-viewport="mobile"] .adm-input,
+[data-viewport="mobile"] .adm-input--with-btn {
+  height: 44px;
+  font-size: 15px;
+}
+
+.adm-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 40px;
+}
+
+.adm-range input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-navy-500);
+}
+
+.adm-range__value {
+  flex: none;
+  min-width: 4ch;
+  text-align: right;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+}
+
+.adm-bg-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-size: cover;
+  background-position: center;
+}
+
+/* ---- Buttons ---- */
+.adm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 40px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.adm-btn svg {
+  flex: none;
+}
+
+.adm-btn:focus-visible,
+.adm-icon-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.adm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.adm-btn--primary {
+  font-weight: var(--fw-semibold);
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+}
+
+.adm-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 88%, var(--color-text-primary));
+}
+
+.adm-btn--secondary {
   color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border-color: var(--color-border-input);
 }
-.adm__btn--start {
-  align-self: flex-start;
+
+.adm-btn--secondary:hover:not(:disabled) {
+  background: var(--color-surface-2);
 }
-.adm__btn:disabled {
-  opacity: 0.6;
+
+.adm-btn--ghost {
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.adm-btn--ghost:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.adm-btn--ghost-danger,
+.adm-btn--danger-outline {
+  color: var(--color-error-text);
+  background: transparent;
+}
+
+.adm-btn--danger-outline {
+  border-color: var(--color-error-text);
+}
+
+.adm-btn--ghost-danger:hover:not(:disabled),
+.adm-btn--danger-outline:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+.adm-btn--sm {
+  height: 32px;
+  padding: 0 var(--space-2);
+  font-size: var(--fs-caption);
+}
+
+.adm-icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.adm-icon-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+}
+
+[data-viewport="mobile"] .adm-btn {
+  height: 44px;
+}
+
+[data-viewport="mobile"] .adm-btn--sm {
+  height: 36px;
+}
+
+[data-viewport="mobile"] .adm-icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+/* On mobile the buttons of a row share the width (SPEC §5). */
+[data-viewport="mobile"] .adm-actions .adm-btn,
+[data-viewport="mobile"] .adm-trash__actions .adm-btn {
+  flex: 1 1 120px;
+}
+
+[data-viewport="mobile"] .adm-actions__spacer {
+  display: none;
+}
+
+/* ---- Save bar: one per tab, stuck to the bottom of the scroll area ---- */
+.adm-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+.adm-savebar__state {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+.adm-savebar[data-dirty] .adm-savebar__state {
+  font-weight: var(--fw-medium);
+  color: var(--color-warning-text);
+}
+
+/* Mobile: one compact row, so the bar never hides much of the screen. */
+[data-viewport="mobile"] .adm-savebar {
+  flex-wrap: nowrap;
+  padding: var(--space-2) var(--space-3);
+}
+
+[data-viewport="mobile"] .adm-savebar__state {
+  flex: 1 1 0;
+}
+
+[data-viewport="mobile"] .adm-savebar .adm-btn {
+  flex: 0 0 auto;
+}
+
+/* With nothing to save, only the (disabled) button stays: no idle hint. */
+[data-viewport="mobile"] .adm-savebar:not([data-dirty]) .adm-savebar__state {
+  display: none;
+}
+
+/* ---- Papelera («Próximamente», RED-W3) ---- */
+.adm-trash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.adm-trash__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border-radius: var(--radius-md);
+}
+
+.adm-trash__text {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-trash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Short and opacity-only when the user asks for less motion (SPEC §9). */
+@media (prefers-reduced-motion: reduce) {
+  .adm-tab,
+  .adm-btn {
+    transition-duration: 0ms;
+  }
+}
+
+/* Segmented controls in Administración wrap instead of hiding options behind
+ * a sideways scroll (no clipped text, SPEC §3). */
+.segmented.adm-seg-wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
 }
