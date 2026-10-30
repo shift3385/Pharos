@@ -1304,7 +1304,13 @@
     "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar."
   },
   "dialog": {
-    "typeToConfirm": "Escribe «{{text}}» para confirmar"
+    "typeToConfirm": "Escribe «{{text}}» para confirmar",
+    "unsaved": {
+      "title": "¿Descartar los cambios?",
+      "message": "Hay cambios sin guardar. Si sales, se pierden.",
+      "discard": "Descartar cambios",
+      "keep": "Seguir editando"
+    }
   },
   "shell": {
     "collapseMenu": "Contraer menú",

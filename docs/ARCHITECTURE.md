@@ -205,6 +205,34 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     «Configuración».
   - Plantillas and Motor de IA are tabs of Administración (ADR-0031):
     `/templates` and `/ai` redirect to `/admin?tab=…`.
+- **Data router** (RED-V3k, ADR-0028 §9): `main.tsx` creates a
+  `createHashRouter` with one splat route that renders `App`, which keeps
+  its own `<Routes>` unchanged; `RouterProvider` comes from
+  `react-router/dom`. The route's `ErrorBoundary` is `RethrowRouteError`
+  (`@shared/ui/RethrowRouteError`), so a crash in the shell still reaches
+  `ErrorBoundary variant="app"` around the router (logged, «Exportar
+  diagnóstico») instead of React Router's default screen.
+  - `useUnsavedChangesGuard(dirty, message | { message, ignore })`
+    (`@shared/ui/useUnsavedChangesGuard`) uses `useBlocker` for every
+    address change (links, sidebar, pills, `navigate`/`setSearchParams`,
+    the system/Android «Atrás») and shows the destructive `ConfirmDialog`
+    «Descartar cambios» / «Seguir editando»; it also sets `beforeunload`
+    while dirty. `ignore: true` lets query-string-only changes through (or
+    pass a predicate, evaluated per path or query change, never for hash-only
+    changes; keep it stable, module level or `useCallback`); by default they
+    ask.
+  - `bypass(go)` lets the next location change through, sync or after an
+    `await` (`navigate(-1)` included), for a navigation the screen starts on
+    purpose while still dirty (e.g. right after saving). If `go` throws or
+    rejects (a failed save) the guard stays armed. Another location change
+    during the `await` ends the bypass early.
+  - **One per screen:** React Router keeps one blocker per router (the last
+    registered wins), so only the component that owns the form calls it; a
+    second mounted guard warns in development.
+  - Tests render under the same kind of router (`createMemoryRouter` in
+    `@test/TestRouter`, used by `renderWithProviders`; with
+    `RouterProvider` from `react-router`, because under Vitest
+    `react-router/dom` loads a second copy of the router).
 - **Administración** (RED-V4, ADR-0031): `AdminPage` reads the tab from
   `?tab=` (`adminTabFrom`, Motor de IA by default) and renders one panel.
   - `AdminTabs`: one `tablist` grouped Recursos · Aplicación · Cuenta y
