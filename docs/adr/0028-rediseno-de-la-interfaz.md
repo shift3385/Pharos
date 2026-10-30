@@ -140,6 +140,11 @@
   logo es el único glifo que no es de Lucide (Lucide no trae marcas): un SVG
   monocromo en `currentColor`. Al activar el inicio con Google se usará el
   logo oficial según su guía de marca.
+- **Periodo en la pestaña «Ejecución» del Inicio móvil.** El prototipo solo
+  lo pone en «Resumen», pero el único widget al que afecta («Ejecuciones
+  diarias») está en «Ejecución». Por decisión del usuario, en el móvil el
+  selector aparece en las dos pestañas, encima de la gráfica en
+  «Ejecución», con el mismo estado.
 - **Selector de idioma en el login móvil.** El prototipo móvil no lo tiene; sin
   él no se podría cambiar de idioma antes de entrar, así que va en la cabecera
   de la foto.

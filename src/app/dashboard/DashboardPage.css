@@ -997,6 +997,13 @@ a.home-kpi:hover {
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Mobile «Ejecución»: the period selector above «Ejecuciones diarias». */
+.home-period-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -4px;
+}
+
 .home__panel {
   display: flex;
   flex-direction: column;

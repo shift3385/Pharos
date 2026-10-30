@@ -323,6 +323,36 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(screen.getByTestId("home-daily")).toBeInTheDocument();
   });
 
+  it("on mobile the period is also chosen in «Ejecución», sharing the state with «Resumen»", async () => {
+    const user = userEvent.setup();
+    setViewportWidth(390);
+    renderHome();
+    await user.click(await screen.findByRole("tab", { name: "Ejecución" }));
+    const trigger = screen.getByTestId("home-period");
+    expect(trigger).toHaveAccessibleName(
+      "Periodo de los datos: Últimos 14 días",
+    );
+    // It sits above the chart it changes.
+    expect(
+      trigger.compareDocumentPosition(screen.getByTestId("home-daily")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(trigger);
+    const sheet = screen.getByRole("dialog", { name: "Periodo de los datos" });
+    await user.click(
+      within(sheet).getByRole("button", { name: "Últimos 7 días" }),
+    );
+    expect(
+      screen.getByTestId("home-daily").querySelectorAll(".home-chart__col"),
+    ).toHaveLength(7);
+
+    await user.click(screen.getByRole("tab", { name: "Resumen" }));
+    expect(screen.getByTestId("home-period")).toHaveTextContent(
+      "Últimos 7 días",
+    );
+  });
+
   it("passes axe on desktop and in each mobile tab", async () => {
     const user = userEvent.setup();
     const { unmount } = renderHome();

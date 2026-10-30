@@ -53,7 +53,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     defectos abiertos del Planificador), periodo de los datos, «Ejecución por proyecto»,
     «Criterios de salida» del plan con selector de proyecto (búsqueda y orden por cierre),
     «Ejecuciones diarias» y «Próximas pruebas» por prioridad, que abren el caso. En el móvil,
-    tres pestañas (Resumen, Ejecución, Pruebas). Lo que depende de ejecuciones (tasa de
+    tres pestañas (Resumen, Ejecución, Pruebas); el periodo se elige también en «Ejecución»,
+    junto a la gráfica a la que afecta. Lo que depende de ejecuciones (tasa de
     éxito, ejecuciones por día, si se cumple cada criterio, comparar periodos) lo dice en
     lugar de mostrar cifras hasta 0.2.0.
   - **Perfil:** tarjeta con tus datos y estado de sincronización, Preferencias (idioma y

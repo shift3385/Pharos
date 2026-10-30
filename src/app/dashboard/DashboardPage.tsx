@@ -241,6 +241,11 @@ export function DashboardPage() {
           {tab === "execution" && (
             <>
               {exec}
+              {/* The chart is the widget the period changes, so the selector
+                  is here too (user's decision); same state as in Resumen. */}
+              <div className="home-period-row">
+                <PeriodSelector value={period} onChange={choosePeriod} />
+              </div>
               {daily}
             </>
           )}
