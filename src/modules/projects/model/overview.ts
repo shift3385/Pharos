@@ -50,10 +50,3 @@ export async function projectOverview(
   );
   return rows.sort((a, b) => recency(b).localeCompare(recency(a)));
 }
-
-/** Case-insensitive, accent-insensitive name match for the Home search. */
-export function matchesQuery(name: string, query: string): boolean {
-  const fold = (s: string) =>
-    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  return fold(name).includes(fold(query.trim()));
-}

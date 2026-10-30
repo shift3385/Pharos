@@ -3,7 +3,6 @@
 // rows are loaded by `projectRows`.
 
 import type { SortDirection } from "@shared/ui/SortMenu";
-import { matchesQuery } from "./overview";
 
 export interface ProjectRow {
   id: string;
@@ -50,6 +49,12 @@ export function recentProjects(rows: ProjectRow[], count = RECENT_COUNT): Projec
     .filter((r) => r.lastAccess)
     .sort((a, b) => (b.lastAccess ?? "").localeCompare(a.lastAccess ?? ""))
     .slice(0, count);
+}
+
+/** Case- and accent-insensitive `query` inside `text`. */
+export function matchesQuery(text: string, query: string): boolean {
+  const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return fold(text).includes(fold(query.trim()));
 }
 
 /** Name or prefix, ignoring case and accents. */

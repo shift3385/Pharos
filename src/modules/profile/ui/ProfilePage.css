@@ -1,47 +1,162 @@
+/* Perfil (SPEC §3/§5/§8, ScrPerfil.dc.html). Layout keys on `data-viewport`. */
+
 .profile {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  max-width: 520px;
+  gap: clamp(16px, 2cqi, 24px);
+}
+
+.profile__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.profile__header h1 {
+  margin: 0;
 }
 
 .profile__subtitle {
-  margin-top: var(--space-2);
+  margin: 0;
+  max-width: 720px;
+  font-size: 14px;
   color: var(--color-text-secondary);
+}
+
+.profile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 880px;
+}
+
+/* Cards shared by the sections of this page. */
+.profile-card {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: clamp(18px, 2.2cqi, 24px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.profile-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
 }
 
 .profile__form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-1);
+  gap: 20px;
+}
+
+.profile__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile__avatar {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-navy-500);
+  color: var(--color-on-navy);
+  font-size: 22px;
+  font-weight: var(--fw-semibold);
+}
+
+/* Same contrast fix as the user menu's avatar in dark mode. */
+[data-theme="dark"] .profile__avatar {
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+
+.profile__identity {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile__name {
+  font-size: 18px;
+  font-weight: var(--fw-semibold);
+}
+
+.profile__email {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.profile__logout {
+  align-self: flex-start;
+  margin-top: 8px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid
+    color-mix(in oklab, var(--color-error) 35%, var(--color-border));
+  border-radius: 9px;
+  background: transparent;
+  color: var(--color-error-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.profile__logout:hover {
+  background: color-mix(in oklab, var(--color-error) 8%, transparent);
+}
+
+.profile__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 .profile__field {
+  flex: 1 1 0;
+  min-width: min(220px, 100%);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 6px;
 }
 
-.profile__field span {
-  font-size: var(--fs-caption);
+.profile__field label {
+  font-size: 13px;
   font-weight: var(--fw-medium);
-  color: var(--color-text-secondary);
+}
+
+.profile__req {
+  color: var(--color-error-text);
 }
 
 .profile__field input {
   height: 40px;
-  padding: 0 var(--space-3);
-  font-family: inherit;
-  font-size: var(--fs-ui);
+  min-width: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 14px;
   color: var(--color-text-primary);
-  background: var(--color-surface-2);
+  background: var(--color-surface-1);
   border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
+  transition: border-color 120ms ease;
 }
 
 .profile__field input:focus {
@@ -50,23 +165,48 @@
   box-shadow: 0 0 0 2px var(--color-focus);
 }
 
+[data-viewport="mobile"] .profile__field input {
+  height: 44px;
+  font-size: 15px; /* no iOS zoom (SPEC §3) */
+}
+
+.profile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .profile__save {
-  align-self: flex-start;
   height: 40px;
-  padding: 0 var(--space-5);
-  font-weight: var(--fw-semibold);
-  color: var(--color-accent-contrast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
   background: var(--color-accent);
-  border: none;
-  border-radius: var(--radius-md);
+  color: var(--color-accent-contrast);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+[data-viewport="mobile"] .profile__save {
+  height: 44px;
 }
 
 .profile__save:disabled {
   opacity: 0.6;
+  cursor: progress;
 }
 
 .profile__status {
-  font-size: var(--fs-ui);
+  font-size: 13px;
   color: var(--color-success-text);
 }
 
@@ -74,26 +214,76 @@
   color: var(--color-error-text);
 }
 
+/* Audit trail: a quiet metadata line under the form. */
 .profile__audit {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
-.profile__audit dt {
-  font-size: var(--fs-metadata);
-  color: var(--color-text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.profile__audit div {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
 }
 
 .profile__audit dd {
-  margin-top: var(--space-1);
+  margin: 0;
   font-family: var(--font-mono);
-  font-size: var(--fs-caption);
   color: var(--color-text-secondary);
+}
+
+/* ---- Preferencias: one row per setting, text left, control right ---- */
+.profile-prefs {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 6px;
+}
+
+.profile-pref {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-pref:last-child {
+  border-bottom: 0;
+}
+
+.profile-pref__text {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-pref__name {
+  font-size: 13.5px;
+  font-weight: var(--fw-medium);
+}
+
+.profile-pref__help {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.profile-pref__control {
+  flex: 1.4 1 280px;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile__field input,
+  .profile__logout {
+    transition: none;
+  }
 }

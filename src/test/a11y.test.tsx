@@ -11,7 +11,8 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { AdminPage } from "@modules/admin";
-import { LanguageToggle } from "@shared/i18n/LanguageToggle";
+import { AuthScreen } from "@modules/auth";
+import { setViewportWidth } from "@test/viewport";
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
@@ -50,16 +51,30 @@ describe("found in the live browser pass", () => {
     expect(window.location.hash).toBe("#/projects");
   });
 
-  it("the language menu is named by its visible code and closes with Escape", async () => {
-    renderWithProviders(<LanguageToggle />);
-    const trigger = screen.getByRole("button", { name: "EN, Language" });
+});
+
+describe("login (RED-V1)", () => {
+  it("passes axe on desktop and names the language menu by the visible language", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<AuthScreen />, { authenticated: false });
+    await expectNoAxeViolations();
+    const trigger = screen.getByRole("button", { name: /^Language: ?English$/ });
     await userEvent.click(trigger);
-    expect(screen.getByRole("list", { name: "Language" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("menu", { name: "Language" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true");
     await expectNoAxeViolations();
     await userEvent.keyboard("{Escape}");
-    expect(screen.queryByRole("list", { name: "Language" })).toBeNull();
+    expect(screen.queryByRole("menu", { name: "Language" })).toBeNull();
     expect(trigger).toHaveFocus();
+  });
+
+  it("passes axe on mobile, also in the sign-up form", async () => {
+    setViewportWidth(390);
+    renderWithProviders(<AuthScreen />, { authenticated: false });
+    await expectNoAxeViolations();
+    await userEvent.click(screen.getByRole("button", { name: "Sign up" }));
+    expect(screen.getByRole("heading", { name: "Create account" })).toBeInTheDocument();
+    await expectNoAxeViolations();
   });
 });
 
