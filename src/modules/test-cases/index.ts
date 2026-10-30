@@ -1,5 +1,6 @@
 // Public API of the test-cases module (spec §5.3).
 export { TestCasesPage } from "./ui/TestCasesPage";
+export { caseLink } from "./model/caseLink";
 export {
   FILES_PER_CASE,
   projectCaseFiles,
