@@ -24,16 +24,23 @@ interface ProgressState {
   percent: number;
 }
 
+/** Route `/projects`. Old links may still carry `?open=<id>`: a project now
+ *  has its own URL (ADR-0029), so they redirect there without loading the list. */
 export function ProjectsPage() {
+  const [params] = useSearchParams();
+  const openParam = params.get("open");
+  if (openParam) return <Navigate to={projectPath(openParam)} replace />;
+  return <ProjectList />;
+}
+
+function ProjectList() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const toast = useToast();
   const ownerId = user?.id ?? "";
   const navigate = useNavigate();
-  // Old links may still carry ?open=<id> (a project now has its own URL,
-  // ADR-0029); Home links here with ?new=1 to start one.
+  // Home links here with ?new=1 to start one.
   const [params, setParams] = useSearchParams();
-  const openParam = params.get("open");
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
@@ -154,8 +161,6 @@ export function ProjectsPage() {
     await projectApi.remove(id, ownerId);
     void refresh();
   }
-
-  if (openParam) return <Navigate to={projectPath(openParam)} replace />;
 
   return (
     <section className="tp">

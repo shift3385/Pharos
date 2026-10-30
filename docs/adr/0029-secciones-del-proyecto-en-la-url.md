@@ -29,8 +29,17 @@
 - El shell lee la ruta con `useMatch` (`useActiveProject`) y carga la lista de
   proyectos para el selector y los nombres. La recarga al entrar en un
   proyecto y con cada `pharos:synced`.
-- Los enlaces antiguos `/projects?open=<id>` redirigen a `/projects/<id>/plan`.
-  Inicio ya enlaza directamente a la ruta nueva.
+- Los enlaces antiguos `/projects?open=<id>` redirigen a `/projects/<id>/plan`
+  sin cargar antes la lista. Inicio ya enlaza directamente a la ruta nueva.
+- La página del proyecto lleva `key={projectId}`:
+  - cambiar de proyecto desde el selector, aunque sea dentro de la misma
+    sección, monta un espacio nuevo;
+  - ningún formulario conserva los datos del proyecto anterior. Si los
+    conservara, guardar en Ajustes escribiría los datos de A en B;
+  - una respuesta lenta del proyecto anterior se descarta.
+- Un proyecto que no existe vuelve a la lista. Puede ser un `projectId`
+  desconocido o un proyecto borrado, quizá en otro equipo y recién
+  sincronizado. El último acceso solo se registra si el proyecto existe.
 
 ## Alternativas
 

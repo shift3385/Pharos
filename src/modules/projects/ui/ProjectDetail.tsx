@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
@@ -21,12 +21,14 @@ import {
 import "./Projects.css";
 
 /** Route `/projects/:projectId/:section` (ADR-0029). A missing or unknown
- *  section opens the plan. */
+ *  section opens the plan. Keyed by the project: switching project (e.g. from
+ *  the sidebar switcher while in Ajustes) mounts a fresh workspace, so no
+ *  form or option of the previous project is shown, or saved, for the new one. */
 export function ProjectDetailPage() {
   const { projectId, section } = useParams();
   if (!projectId) return <Navigate to="/projects" replace />;
   if (!isProjectSection(section)) return <Navigate to={projectPath(projectId)} replace />;
-  return <ProjectDetail projectId={projectId} tab={section} />;
+  return <ProjectDetail key={projectId} projectId={projectId} tab={section} />;
 }
 
 /** A project's workspace: its test plan, its test cases and its settings, all
@@ -36,35 +38,51 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
   const { t } = useTranslation();
   const { user } = useAuth();
   const ownerId = user?.id ?? "";
-  const [project, setProject] = useState<Project | null>(null);
+  // undefined while loading; null when it does not exist (deleted, maybe on
+  // another device and just synced): then the list is shown instead.
+  const [project, setProject] = useState<Project | null | undefined>(undefined);
+  const latest = useRef(0);
   // Cross-module options, loaded by this composing module so test-cases and
   // planner never depend on traceability (or on each other).
   const [requirements, setRequirements] = useState<RequirementOption[]>([]);
   const [linkableCases, setLinkableCases] = useState<LinkableCase[]>([]);
 
+  /** Loads the project; an answer that arrives after a newer request is
+   *  dropped, so a slow response never overwrites newer data. */
   async function refresh() {
-    setProject(await projectApi.get(projectId, ownerId));
+    const request = ++latest.current;
+    const found = await projectApi.get(projectId, ownerId);
+    if (request === latest.current) setProject(found);
   }
+  // The last access is recorded only for a project that exists.
+  const exists = Boolean(project);
   useEffect(() => {
-    recordProjectAccess(ownerId, projectId);
-  }, [ownerId, projectId]);
+    if (exists) recordProjectAccess(ownerId, projectId);
+  }, [exists, ownerId, projectId]);
   useEffect(() => {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, ownerId]);
 
   useEffect(() => {
+    let live = true;
     if (tab === "cases") {
-      void requirementApi.list(projectId, ownerId).then((list) =>
-        setRequirements(list.map((r) => ({ requirementKey: r.requirementKey, title: r.title }))),
-      );
+      void requirementApi.list(projectId, ownerId).then((list) => {
+        if (live)
+          setRequirements(list.map((r) => ({ requirementKey: r.requirementKey, title: r.title })));
+      });
     } else if (tab === "planner") {
-      void projectTraceableCases(projectId, ownerId).then((list) =>
-        setLinkableCases(list.map((c) => ({ id: c.id, scenarioId: c.scenarioId, title: c.title }))),
-      );
+      void projectTraceableCases(projectId, ownerId).then((list) => {
+        if (live)
+          setLinkableCases(list.map((c) => ({ id: c.id, scenarioId: c.scenarioId, title: c.title })));
+      });
     }
+    return () => {
+      live = false;
+    };
   }, [tab, projectId, ownerId]);
 
+  if (project === null) return <Navigate to="/projects" replace />;
   if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
 
   return (
