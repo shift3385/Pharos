@@ -24,8 +24,8 @@ function initials(name: string): string {
 
 /** Perfil (SPEC §8, `ScrPerfil.dc.html`): who you are (avatar, name, email,
  *  sync status), your alias and official name, and your preferences (language
- *  and theme). On mobile «Cerrar sesión» lives here too (no user menu in the
- *  bar). The recovery key stays here until Administración › Seguridad mounts
+ *  and theme). On mobile «Cerrar sesión» is also here, as in the prototype
+ *  (the avatar in the mobile bar opens the user menu too). The recovery key stays here until Administración › Seguridad mounts
  *  it (RED-V4), which then removes it from this page. */
 export function ProfilePage() {
   const { t, i18n } = useTranslation();

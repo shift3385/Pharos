@@ -16,10 +16,19 @@ const portal: HomeProject = {
   id: "p-pcl",
   name: "Portal Clientes v3",
   key: "PCL",
-  recency: "2026-10-28T10:00:00Z",
   cases: [
-    { id: "c1", scenarioId: "PCL-0002", title: "Pago con tarjeta", priority: "medium" },
-    { id: "c2", scenarioId: "PCL-0001", title: "Login con 2FA", priority: "critical" },
+    {
+      id: "c1",
+      scenarioId: "PCL-0002",
+      title: "Pago con tarjeta",
+      priority: "medium",
+    },
+    {
+      id: "c2",
+      scenarioId: "PCL-0001",
+      title: "Login con 2FA",
+      priority: "critical",
+    },
   ],
   closeDate: "2026-11-07",
   hasPlan: true,
@@ -31,8 +40,14 @@ const banca: HomeProject = {
   id: "p-amb",
   name: "App Móvil Banca",
   key: "AMB",
-  recency: "2026-10-20T10:00:00Z",
-  cases: [{ id: "c3", scenarioId: "AMB-0001", title: "Consulta de saldo", priority: "high" }],
+  cases: [
+    {
+      id: "c3",
+      scenarioId: "AMB-0001",
+      title: "Consulta de saldo",
+      priority: "high",
+    },
+  ],
   closeDate: "2026-10-31",
   hasPlan: true,
   criteria: [],
@@ -43,7 +58,6 @@ const erp: HomeProject = {
   id: "p-erp",
   name: "Migración ERP",
   key: "ERP",
-  recency: "2026-10-01T10:00:00Z",
   cases: [],
   closeDate: null,
   hasPlan: false,
@@ -79,16 +93,24 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
 
   it("greets, sums the pending tests and shows the note only with several projects", async () => {
     renderHome();
-    expect(screen.getByRole("heading", { level: 1, name: "Hola, Quality" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Hola, Quality" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Jueves, 29 de octubre")).toBeInTheDocument();
     expect(
-      await screen.findByText((_, el) => el?.textContent === "Tienes 3 pruebas pendientes en 3 proyectos abiertos."),
+      await screen.findByText(
+        (_, el) =>
+          el?.textContent ===
+          "Tienes 3 pruebas pendientes en 3 proyectos abiertos.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/· periodo: últimos 14 días/)).toBeInTheDocument();
 
     load.mockResolvedValueOnce([portal]);
     renderHome();
-    await waitFor(() => expect(screen.getAllByTestId("kpi-projects")).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.getAllByTestId("kpi-projects")).toHaveLength(2),
+    );
     expect(screen.getAllByText(/· periodo:/)).toHaveLength(1);
   });
 
@@ -103,8 +125,12 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
 
     const rate = screen.getByTestId("kpi-rate");
     expect(rate.tagName).toBe("DIV");
-    expect(rate).toHaveAttribute("aria-disabled", "true");
-    expect(rate).toHaveAttribute("title", "Se calculará cuando registres ejecuciones (versión 0.2.0)");
+    expect(rate).not.toHaveAttribute("aria-disabled");
+    expect(rate).toHaveTextContent("Sin ejecuciones todavía");
+    expect(rate).toHaveAttribute(
+      "title",
+      "Se calculará cuando registres ejecuciones (versión 0.2.0)",
+    );
     expect(rate).toHaveTextContent("—");
 
     await user.click(projects);
@@ -115,31 +141,47 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     load.mockResolvedValueOnce([portal]);
     renderHome();
     await waitFor(() =>
-      expect(screen.getByTestId("kpi-pending")).toHaveAttribute("href", "/projects/p-pcl/cases"),
+      expect(screen.getByTestId("kpi-pending")).toHaveAttribute(
+        "href",
+        "/projects/p-pcl/cases",
+      ),
     );
-    expect(screen.getByTestId("kpi-defects")).toHaveAttribute("href", "/projects/p-pcl/planner");
+    expect(screen.getByTestId("kpi-defects")).toHaveAttribute(
+      "href",
+      "/projects/p-pcl/planner",
+    );
   });
 
   it("chooses the period from a menu, remembers it and keeps the unavailable ones disabled", async () => {
     const user = userEvent.setup();
     renderHome();
     const trigger = screen.getByTestId("home-period");
-    expect(trigger).toHaveAccessibleName("Periodo de los datos: Últimos 14 días");
+    expect(trigger).toHaveAccessibleName(
+      "Periodo de los datos: Últimos 14 días",
+    );
     await user.click(trigger);
     const menu = screen.getByRole("menu", { name: "Periodo" });
-    expect(within(menu).getByRole("menuitemradio", { name: "Últimos 14 días" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(within(menu).getByRole("menuitem", { name: "Ciclo actual" })).toBeDisabled();
+    expect(
+      within(menu).getByRole("menuitemradio", { name: "Últimos 14 días" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      within(menu).getByRole("menuitem", { name: "Ciclo actual" }),
+    ).toBeDisabled();
     const compare = screen.getByTestId("period-compare");
     expect(compare).toBeDisabled();
-    expect(compare).toHaveAttribute("title", "Disponible cuando haya ejecuciones que comparar (versión 0.2.0)");
+    expect(compare).toHaveAttribute(
+      "title",
+      "Disponible cuando haya ejecuciones que comparar (versión 0.2.0)",
+    );
 
-    await user.click(within(menu).getByRole("menuitemradio", { name: "Últimos 7 días" }));
+    await user.click(
+      within(menu).getByRole("menuitemradio", { name: "Últimos 7 días" }),
+    );
     expect(trigger).toHaveTextContent("Últimos 7 días");
     expect(localStorage.getItem("pharos.home.period")).toBe("7d");
-    expect(screen.getByTestId("home-daily").querySelectorAll(".home-chart__col")).toHaveLength(7);
+    expect(
+      screen.getByTestId("home-daily").querySelectorAll(".home-chart__col"),
+    ).toHaveLength(7);
   });
 
   it("on mobile the period opens as a bottom sheet", async () => {
@@ -147,25 +189,33 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     setViewportWidth(390);
     renderHome();
     await user.click(screen.getByTestId("home-period"));
-    expect(screen.getByRole("dialog", { name: "Periodo de los datos" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Periodo de los datos" }),
+    ).toBeInTheDocument();
   });
 
   it("shows every day label on desktop and every other one from today elsewhere", async () => {
     renderHome();
     const labels = () =>
-      Array.from(screen.getByTestId("home-daily").querySelectorAll(".home-chart__label"));
+      Array.from(
+        screen.getByTestId("home-daily").querySelectorAll(".home-chart__label"),
+      );
     expect(labels().filter((l) => l.textContent)).toHaveLength(14);
     const today = labels().at(-1)!;
     expect(today).toHaveTextContent("29");
     expect(today).toHaveAttribute("data-today");
-    expect(screen.getByTestId("home-daily").querySelectorAll(".home-chart__nodata")).toHaveLength(14);
+    expect(
+      screen.getByTestId("home-daily").querySelectorAll(".home-chart__nodata"),
+    ).toHaveLength(14);
     expect(screen.getByText("Octubre")).toBeInTheDocument();
   });
 
   it("alternates the day labels on tablet, keeping today", () => {
     setViewportWidth(820);
     renderHome();
-    const labels = Array.from(screen.getByTestId("home-daily").querySelectorAll(".home-chart__label"));
+    const labels = Array.from(
+      screen.getByTestId("home-daily").querySelectorAll(".home-chart__label"),
+    );
     expect(labels.filter((l) => l.textContent)).toHaveLength(7);
     expect(labels.at(-1)).toHaveTextContent("29");
     expect(labels.at(-2)).toHaveTextContent("");
@@ -177,14 +227,20 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     const picker = await screen.findByTestId("exit-picker");
     await waitFor(() => expect(picker).toHaveTextContent("App Móvil Banca"));
     expect(screen.getByText("Cierre: 31 oct")).toBeInTheDocument();
-    expect(screen.getByText("El plan de este proyecto no define criterios de salida.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "El plan de este proyecto no define criterios de salida.",
+      ),
+    ).toBeInTheDocument();
 
     await user.click(picker);
     const search = screen.getByTestId("exit-search");
     expect(search).toHaveFocus();
     expect(screen.getByRole("button", { name: "En riesgo" })).toBeDisabled();
     await user.type(search, "zzz");
-    expect(screen.getByRole("status")).toHaveTextContent("Ningún proyecto coincide con «zzz».");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Ningún proyecto coincide con «zzz».",
+    );
     await user.clear(search);
     await user.type(search, "portal");
     await user.click(screen.getByTestId("exit-choice-p-pcl"));
@@ -207,7 +263,19 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     ]);
     expect(rows[0]).toHaveAccessibleName(/^Prioridad crítica/);
     await user.click(rows[0]);
-    expect(screen.getByTestId("route")).toHaveTextContent("/projects/p-pcl/cases?case=c2");
+    expect(screen.getByTestId("route")).toHaveTextContent(
+      "/projects/p-pcl/cases?case=c2",
+    );
+  });
+
+  it("shows «—» for a project without cases instead of 0 / 0", async () => {
+    renderHome();
+    const rows = within(await screen.findByTestId("home-exec")).getAllByRole(
+      "listitem",
+    );
+    const erpRow = rows.find((r) => r.textContent?.includes("Migración ERP"))!;
+    expect(erpRow).toHaveTextContent("—");
+    expect(erpRow).not.toHaveTextContent("0 / 0");
   });
 
   it("starts a new project through the projects page", async () => {
@@ -220,7 +288,11 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
   it("says so without projects", async () => {
     load.mockResolvedValueOnce([]);
     renderHome();
-    expect(await screen.findByText("Aún no tienes proyectos. Crea el primero para empezar.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Aún no tienes proyectos. Crea el primero para empezar.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Sin proyectos abiertos.")).toBeInTheDocument();
   });
 
@@ -229,15 +301,22 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     setViewportWidth(390);
     renderHome();
     const tabs = screen.getByRole("tablist", { name: "Secciones del Inicio" });
-    const testsTab = await within(tabs).findByRole("tab", { name: "Pruebas · 3 pruebas pendientes" });
-    expect(within(tabs).getByRole("tab", { name: "Resumen" })).toHaveAttribute("aria-selected", "true");
+    const testsTab = await within(tabs).findByRole("tab", {
+      name: "Pruebas · 3 pruebas pendientes",
+    });
+    expect(within(tabs).getByRole("tab", { name: "Resumen" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     expect(screen.getByTestId("kpi-projects")).toBeInTheDocument();
     expect(screen.queryByTestId("home-upcoming")).toBeNull();
 
     await user.click(testsTab);
     expect(screen.getByTestId("home-upcoming")).toBeInTheDocument();
     expect(screen.queryByTestId("kpi-projects")).toBeNull();
-    expect(screen.getByRole("heading", { level: 1, name: "Inicio" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Inicio" }),
+    ).toBeInTheDocument();
 
     await user.click(within(tabs).getByRole("tab", { name: "Ejecución" }));
     expect(screen.getByTestId("home-exec")).toBeInTheDocument();

@@ -158,6 +158,7 @@ export function DashboardPage() {
       projects={list}
       selected={exitProject}
       onSelect={setExitId}
+      today={today}
     />
   );
   const daily = <DailyExecutionsChart period={period} today={today} />;

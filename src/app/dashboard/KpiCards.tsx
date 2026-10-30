@@ -14,7 +14,7 @@ import type { HomeKpis, HomeProject } from "./model/homeData";
 
 /** The four indicators of the Home (SPEC §8 «Inicio · indicadores»). They are
  *  links; «Tasa de éxito» has nowhere to go until runs exist (RED-W6), so it
- *  is a plain card marked disabled with the reason in its title. */
+ *  is a plain card whose visible note says why. */
 export function KpiCards({
   kpis,
   projects,
@@ -88,7 +88,7 @@ function Kpi({
   noteTone,
   testId,
 }: {
-  /** Without a destination the card is shown disabled. */
+  /** Without a destination the card is not a link (its note says why). */
   to?: string;
   icon: LucideIcon;
   label: string;
@@ -125,8 +125,7 @@ function Kpi({
     </Link>
   ) : (
     <div
-      className="home-kpi"
-      aria-disabled="true"
+      className="home-kpi home-kpi--static"
       title={title}
       data-testid={testId}
     >

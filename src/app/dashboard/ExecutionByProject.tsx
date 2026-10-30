@@ -69,8 +69,22 @@ export function ExecutionByProject({ projects }: { projects: HomeProject[] }) {
                   >
                     {p.name}
                   </Link>
-                  <span className="home-exec__count">0 / {p.cases.length}</span>
-                  <span className="home-exec__pct">{percent}</span>
+                  {p.cases.length ? (
+                    <>
+                      <span className="home-exec__count">
+                        0 / {p.cases.length}
+                      </span>
+                      <span className="home-exec__pct">{percent}</span>
+                    </>
+                  ) : (
+                    // No cases: nothing to run, no ratio to show.
+                    <span
+                      className="home-exec__pct"
+                      title={t("dashboard.exec.noCases")}
+                    >
+                      —
+                    </span>
+                  )}
                 </span>
                 <span
                   className="home-exec__bar"

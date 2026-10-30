@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "Suite de gestión de pruebas QA",
     "version": "Versión {{version}}"
   },
   "dbError": {
@@ -347,14 +346,6 @@
       "network": "No se pudo conectar con el servidor.",
       "generic": "Algo salió mal. Inténtalo de nuevo."
     }
-  },
-  "topbar": {
-    "toggleTheme": "Cambiar tema claro u oscuro",
-    "language": "Idioma"
-  },
-  "theme": {
-    "light": "Claro",
-    "dark": "Oscuro"
   },
   "language": {
     "es": "Español",
@@ -842,6 +833,7 @@
       "notRun": "No ejecutado",
       "rowLabel": "{{name}}: {{executed}} de {{total}} casos ejecutados",
       "noRuns": "Las ejecuciones llegan con la versión 0.2.0: por ahora ningún caso tiene resultado.",
+      "noCases": "Sin casos todavía",
       "empty": "Sin proyectos abiertos."
     },
     "exit": {
@@ -849,7 +841,8 @@
       "subtitle": "Definidos en el plan de pruebas",
       "choose": "Elegir proyecto",
       "menuLabel": "Proyectos",
-      "search": "Buscar entre {{count}} proyectos…",
+      "search_one": "Buscar en {{count}} proyecto…",
+      "search_other": "Buscar entre {{count}} proyectos…",
       "searchLabel": "Buscar proyecto",
       "filters": "Filtrar proyectos",
       "all": "Todos",
@@ -860,7 +853,8 @@
       "closes": "Cierra {{date}}",
       "noDate": "Sin fecha de cierre",
       "noMatch": "Ningún proyecto coincide con «{{query}}».",
-      "viewAll": "Ver los {{count}} en Proyectos",
+      "viewAll_one": "Ver el proyecto en Proyectos",
+      "viewAll_other": "Ver los {{count}} en Proyectos",
       "executed": "ejecutado",
       "ringLabel": "Porcentaje ejecutado: sin datos",
       "headline": "Aún no hay ejecuciones",

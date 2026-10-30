@@ -200,11 +200,7 @@ a.home-kpi:hover {
   box-shadow: var(--shadow-2);
 }
 
-.home-kpi[aria-disabled="true"] {
-  cursor: not-allowed;
-}
-
-.home-kpi[aria-disabled="true"] .home-kpi__value {
+.home-kpi--static .home-kpi__value {
   color: var(--color-text-muted);
 }
 
@@ -625,7 +621,7 @@ a.home-kpi:hover {
   cursor: pointer;
 }
 
-.home-chip[aria-pressed="true"] {
+.home-chip--current {
   border-color: transparent;
   background: var(--color-navy-900);
   color: var(--color-on-navy);

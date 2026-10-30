@@ -21,10 +21,12 @@ export function ExitCriteriaCard({
   projects,
   selected,
   onSelect,
+  today,
 }: {
   projects: HomeProject[];
   selected: HomeProject | null;
   onSelect: (id: string) => void;
+  today: Date;
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage;
@@ -43,6 +45,7 @@ export function ExitCriteriaCard({
             projects={projects}
             selected={selected}
             onSelect={onSelect}
+            today={today}
           />
         )}
       </div>
@@ -117,16 +120,18 @@ function ExitProjectPicker({
   projects,
   selected,
   onSelect,
+  today,
 }: {
   projects: HomeProject[];
   selected: HomeProject;
   onSelect: (id: string) => void;
+  today: Date;
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
   const [query, setQuery] = useState("");
-  const choices = exitCriteriaChoices(projects, query);
+  const choices = exitCriteriaChoices(projects, query, today);
   const soon = t("dashboard.exit.filterSoon");
   const close = () => {
     menu.close();
@@ -184,26 +189,15 @@ function ExitProjectPicker({
               role="group"
               aria-label={t("dashboard.exit.filters")}
             >
-              <button type="button" className="home-chip" aria-pressed="true">
+              {/* Today every project is listed: «Todos» is the count, not a toggle. */}
+              <span className="home-chip home-chip--current">
                 {t("dashboard.exit.all")}
                 <span className="home-chip__count">{projects.length}</span>
-              </button>
-              <button
-                type="button"
-                className="home-chip"
-                aria-pressed="false"
-                disabled
-                title={soon}
-              >
+              </span>
+              <button type="button" className="home-chip" disabled title={soon}>
                 {t("dashboard.exit.risk")}
               </button>
-              <button
-                type="button"
-                className="home-chip"
-                aria-pressed="false"
-                disabled
-                title={soon}
-              >
+              <button type="button" className="home-chip" disabled title={soon}>
                 {t("dashboard.exit.ok")}
               </button>
             </div>

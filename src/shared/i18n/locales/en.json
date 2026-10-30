@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Pharos",
-    "tagline": "QA test management suite",
     "version": "Version {{version}}"
   },
   "dbError": {
@@ -347,14 +346,6 @@
       "network": "Could not reach the server.",
       "generic": "Something went wrong. Please try again."
     }
-  },
-  "topbar": {
-    "toggleTheme": "Toggle light or dark theme",
-    "language": "Language"
-  },
-  "theme": {
-    "light": "Light",
-    "dark": "Dark"
   },
   "language": {
     "es": "Español",
@@ -842,6 +833,7 @@
       "notRun": "Not run",
       "rowLabel": "{{name}}: {{executed}} of {{total}} cases run",
       "noRuns": "Runs arrive with version 0.2.0: no case has a result yet.",
+      "noCases": "No cases yet",
       "empty": "No open projects."
     },
     "exit": {
@@ -849,7 +841,8 @@
       "subtitle": "Defined in the test plan",
       "choose": "Choose project",
       "menuLabel": "Projects",
-      "search": "Search {{count}} projects…",
+      "search_one": "Search {{count}} project…",
+      "search_other": "Search {{count}} projects…",
       "searchLabel": "Search project",
       "filters": "Filter projects",
       "all": "All",
@@ -860,7 +853,8 @@
       "closes": "Closes {{date}}",
       "noDate": "No closing date",
       "noMatch": "No project matches “{{query}}”.",
-      "viewAll": "See all {{count}} in Projects",
+      "viewAll_one": "See the project in Projects",
+      "viewAll_other": "See all {{count}} in Projects",
       "executed": "run",
       "ringLabel": "Percentage run: no data",
       "headline": "No runs yet",
