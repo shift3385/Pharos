@@ -1,4 +1,4 @@
-import type { TestPlan } from "../model/types";
+import type { ClosureCriterion, TestPlan } from "../model/types";
 import { TEST_LEVELS, TEST_TYPES } from "../model/catalogs";
 import { deliverableLabels, toolLabels } from "../model/catalogLabels";
 import { methodologyText } from "../model/methodology";
@@ -64,6 +64,24 @@ export async function projectPlanStatus(
   userId: string,
 ): Promise<string | null> {
   return (await testPlanApi.byProject(projectId, userId))?.status ?? null;
+}
+
+/** Closing date and exit criteria of a project’s plan, for the Home (RED-V1):
+ *  the date is the latest sprint end or milestone of the schedule (null when
+ *  the schedule has none); null when the project has no plan. Read-only. */
+export async function projectPlanClosure(
+  projectId: string,
+  userId: string,
+): Promise<{ closeDate: string | null; criteria: ClosureCriterion[] } | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
+  if (!plan) return null;
+  const dates = [
+    ...(plan.data.sprints ?? []).map((s) => s.end),
+    ...(plan.data.milestones ?? []).map((m) => m.date),
+  ].filter(Boolean);
+  const closeDate = dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
+  const criteria = (plan.data.closureCriteria ?? []).filter((c) => c.criterion.trim());
+  return { closeDate, criteria };
 }
 
 /** Version of a project’s plan (null when it has none), e.g. for the version
