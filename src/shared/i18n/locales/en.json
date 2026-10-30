@@ -492,7 +492,6 @@
     "empty": "No projects yet. Create the first one.",
     "namePlaceholder": "Project name",
     "prefixMeta": "IDs",
-    "back": "Projects",
     "name": "Project name",
     "caseIdPrefix": "Case id prefix",
     "caseIdDigits": "Number digits",
@@ -509,7 +508,20 @@
     "deleteTitle": "Delete project",
     "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
     "deleteConfirm": "Yes, delete everything",
-    "savedToast": "Settings updated"
+    "savedToast": "Settings updated",
+    "header": {
+      "plan": {
+        "draft": "Draft plan",
+        "reviewed": "Reviewed plan",
+        "approved": "Approved plan",
+        "obsolete": "Obsolete plan",
+        "none": "No plan"
+      },
+      "cases_one": "1 case",
+      "cases_other": "{{count}} cases",
+      "requirements_one": "1 requirement",
+      "requirements_other": "{{count}} requirements"
+    }
   },
   "profile": {
     "title": "Profile",
@@ -1191,6 +1203,14 @@
     "noProjects": "No project matches.",
     "back": "Back to Projects",
     "projectSections": "Project sections"
+  },
+  "sortMenu": {
+    "title": "Sort by",
+    "label": "Sort",
+    "trigger": "{{label}}: {{option}}",
+    "direction": "Direction",
+    "desc": "Descending",
+    "asc": "Ascending"
   },
   "table": {
     "selectAll": "Select all rows",
