@@ -64,6 +64,7 @@ import { PriorityField, StatusField } from "./CaseMetaMenus";
 import { SegmentedControl } from "./SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
 import { statusTone } from "./caseTones";
+import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
 
@@ -875,12 +876,12 @@ export function TestCaseEditor({
   const saveButton = (
     <button
       type="button"
-      className="cl-btn cl-btn--primary"
+      className="ui-btn ui-btn--primary"
       onClick={() => guard(() => void save())}
       disabled={saving}
     >
       <Save size={16} aria-hidden="true" />
-      <span className="cl-btn__text">{saving ? t("testCase.saving") : t("testCase.save")}</span>
+      <span className="ui-btn__text">{saving ? t("testCase.saving") : t("testCase.save")}</span>
     </button>
   );
 
@@ -921,7 +922,7 @@ export function TestCaseEditor({
           <h2 id="tc-edit-title" className="tc-mobile-edit__title" title={form.title}>
             {form.title}
           </h2>
-          <button type="button" className="cl-btn cl-btn--primary cl-btn--small" onClick={() => setGherkinEditing(false)}>
+          <button type="button" className="ui-btn ui-btn--primary ui-btn--small" onClick={() => setGherkinEditing(false)}>
             {t("testCase.gherkin.done")}
           </button>
         </div>
@@ -1049,7 +1050,7 @@ function MoreActions({
   const label = t("testCase.nav.more");
   return (
     <>
-      <button type="button" className="cl-iconbtn" title={label} aria-label={label} {...menu.triggerProps}>
+      <button type="button" className="ui-iconbtn" title={label} aria-label={label} {...menu.triggerProps}>
         <MoreHorizontal size={18} aria-hidden="true" />
       </button>
       <ResponsiveMenu

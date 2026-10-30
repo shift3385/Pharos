@@ -5,6 +5,7 @@ import Prism from "prismjs";
 import "prismjs/components/prism-gherkin";
 import { ArrowLeftRight, Copy, FileCode, PencilLine } from "lucide-react";
 import { useToast } from "@shared/ui/Toast";
+import "@shared/ui/buttons.css";
 
 // Keyword palette (spec §5.3 "autocompletado de palabras clave"): clicking a chip
 // inserts the keyword at the caret. Text includes the trailing space/colon so it
@@ -214,7 +215,7 @@ export function GherkinReadView({
   return (
     <div className="tc-gherkin tc-gherkin--read">
       <FileBar fileName={fileName} status={status} value={value}>
-        <button type="button" className="cl-btn cl-btn--small" onClick={onEdit}>
+        <button type="button" className="ui-btn ui-btn--small" onClick={onEdit}>
           <PencilLine size={15} aria-hidden="true" />
           {t("testCase.gherkin.edit")}
         </button>

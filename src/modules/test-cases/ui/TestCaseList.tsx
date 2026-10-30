@@ -39,6 +39,7 @@ import {
 } from "../model/caseList";
 import type { GherkinLevel } from "../model/types";
 import { editedLabel, priorityTone, statusTone } from "./caseTones";
+import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
 
@@ -232,7 +233,7 @@ export function TestCaseList({
           <ImportExportMenu onImport={onImport} onExportFeatures={() => onExportFeatures()} hasCases={cases.length > 0} />
           <button
             type="button"
-            className="cl-btn"
+            className="ui-btn"
             onClick={() => {
               if (canSuggest) onSuggest();
             }}
@@ -240,11 +241,11 @@ export function TestCaseList({
             title={canSuggest ? undefined : t("testCase.suggest.disabled")}
           >
             <Sparkles size={16} aria-hidden="true" />
-            <span className="cl-btn__text">{t("testCase.list.suggest")}</span>
+            <span className="ui-btn__text">{t("testCase.list.suggest")}</span>
           </button>
-          <button type="button" className="cl-btn cl-btn--primary" onClick={onNew}>
+          <button type="button" className="ui-btn ui-btn--primary" onClick={onNew}>
             <Plus size={16} aria-hidden="true" />
-            <span className="cl-btn__text">{t("testCase.new")}</span>
+            <span className="ui-btn__text">{t("testCase.new")}</span>
           </button>
         </div>
       </header>
@@ -309,19 +310,19 @@ export function TestCaseList({
             <span className="cl-bulk__count" aria-live="polite">
               {t("testCase.list.selected", { count: selected.size })}
             </span>
-            <button type="button" className="cl-btn cl-btn--small" onClick={() => onExportFeatures(selected)}>
+            <button type="button" className="ui-btn ui-btn--small" onClick={() => onExportFeatures(selected)}>
               <Download size={15} aria-hidden="true" />
               {t("testCase.list.exportSelected")}
             </button>
             <button
               type="button"
-              className="cl-btn cl-btn--small cl-btn--danger"
+              className="ui-btn ui-btn--small ui-btn--danger"
               onClick={() => setConfirmDelete(true)}
             >
               <Trash2 size={15} aria-hidden="true" />
               {t("testCase.list.deleteSelected")}
             </button>
-            <button type="button" className="cl-btn cl-btn--small cl-btn--ghost" onClick={() => setSelected(new Set())}>
+            <button type="button" className="ui-btn ui-btn--small ui-btn--ghost" onClick={() => setSelected(new Set())}>
               <X size={15} aria-hidden="true" />
               {t("testCase.list.clearSelection")}
             </button>
@@ -350,7 +351,7 @@ export function TestCaseList({
                   {filtered && (
                     <button
                       type="button"
-                      className="cl-btn cl-btn--small"
+                      className="ui-btn ui-btn--small"
                       onClick={() => onFiltersChange({ ...filters, query: "", status: "all", priorities: new Set(), levels: new Set() })}
                     >
                       {t("testCase.list.clearFilters")}
@@ -414,7 +415,7 @@ function ImportExportMenu({
   const label = t("testCase.list.io");
   return (
     <>
-      <button type="button" className="cl-btn cl-btn--io" {...menu.triggerProps}>
+      <button type="button" className="ui-btn ui-btn--io" {...menu.triggerProps}>
         <ArrowLeftRight size={16} aria-hidden="true" />
         {label}
       </button>
@@ -472,7 +473,7 @@ function MobileFilters({
     <>
       <button
         type="button"
-        className="cl-iconbtn"
+        className="ui-iconbtn"
         aria-haspopup="dialog"
         aria-expanded={open}
         data-active={active > 0 || undefined}
@@ -481,7 +482,7 @@ function MobileFilters({
       >
         <ListFilter size={18} aria-hidden="true" />
         <span className="sr-only">{t("testCase.list.filters")}</span>
-        {active > 0 && <span className="cl-iconbtn__count">{active}</span>}
+        {active > 0 && <span className="ui-iconbtn__count">{active}</span>}
       </button>
       {open && (
         <BottomSheet title={t("testCase.list.filters")} onClose={() => setOpen(false)}>

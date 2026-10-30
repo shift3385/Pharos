@@ -993,7 +993,9 @@
       "deleteTitle": "Delete requirement",
       "deleteWarning": "{{key}} will be deleted. Its ID will not be reused: cases linking it will show it as an unknown requirement.",
       "deleteConfirm": "Delete",
-      "deletedToast": "{{key}} deleted"
+      "deletedToast": "{{key}} deleted",
+      "cases": "Cases",
+      "actions": "Actions"
     },
     "import": {
       "button": "Import CSV",
@@ -1027,7 +1029,7 @@
     },
     "matrix": {
       "title": "Traceability matrix",
-      "subtitle": "Requirement ↔ test case ↔ defect, with coverage gaps in plain sight.",
+      "subtitle": "Each requirement with the test cases that verify it and the defects found. Requirements without any case show in red.",
       "exportXlsx": "Export .xlsx",
       "exporting": "Exporting…",
       "exportedToast": "Matrix exported: {{name}}",
@@ -1047,6 +1049,19 @@
         "defects": "Defects",
         "coverage": "Coverage",
         "notes": "Comments"
+      },
+      "generate": "Generate cases with AI",
+      "generateFrom": "from {{key}}",
+      "noCase": "No case covers this requirement.",
+      "linkedCases_one": "Linked cases · {{count}}",
+      "linkedCases_other": "Linked cases · {{count}}",
+      "onlyGapsHint": "Hides the covered requirements and leaves only those without any test case",
+      "noGaps": "Every requirement has at least one case. No gaps.",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> requirements",
+      "kpi": {
+        "highPriority_one": "{{count}} high priority",
+        "highPriority_other": "{{count}} high priority",
+        "withCase": "with at least one case"
       }
     },
     "execution": {
@@ -1067,7 +1082,10 @@
       "title": "Traceability gaps",
       "casesWithoutRequirement": "Cases without a requirement",
       "unknownLinks": "Cases linking a requirement that does not exist",
-      "defectsWithoutCase": "Defects without a linked case"
+      "defectsWithoutCase": "Defects without a linked case",
+      "subtitle": "What breaks the requirement ↔ case ↔ defect chain",
+      "migrateHint_one": "{{count}} ID appears in the free-text Traceability of your cases and can become a link.",
+      "migrateHint_other": "{{count}} IDs appear in the free-text Traceability of your cases and can become links."
     },
     "migrate": {
       "button": "Migrate traceability ({{count}})",
@@ -1080,6 +1098,15 @@
       "apply": "Apply",
       "applying": "Applying…",
       "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
+    },
+    "io": {
+      "label": "Import / Export",
+      "import": "Import",
+      "export": "Export",
+      "importCsv": "Import requirements (.csv)",
+      "importHint": "Creates or updates requirements by ID",
+      "exportXlsx": "Export matrix (.xlsx)",
+      "exportHint": "Requirements, cases, states and defects"
     }
   },
   "downloads": {

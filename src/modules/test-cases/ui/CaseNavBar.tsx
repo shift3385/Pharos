@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronLeft, ChevronRight, CircleDot, CloudCheck, Search } from "lucide-react";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import type { ListedCase } from "../model/caseList";
+import "@shared/ui/buttons.css";
 
 /** Where the open case sits in the list the user came from (its filters and
  *  order), for «‹ anterior | 142 de 240 | siguiente ›». */
@@ -45,9 +46,9 @@ export function CaseNavBar({
   const mobile = useBreakpoint() === "mobile";
   return (
     <div className="tc-nav">
-      <button type="button" className="cl-btn cl-btn--ghost tc-nav__back" onClick={onBack}>
+      <button type="button" className="ui-btn ui-btn--ghost tc-nav__back" onClick={onBack}>
         <ArrowLeft size={16} aria-hidden="true" />
-        <span className="cl-btn__text">{t("testCase.nav.allCases")}</span>
+        <span className="ui-btn__text">{t("testCase.nav.allCases")}</span>
       </button>
       {nav && !mobile && (
         <>
@@ -82,7 +83,7 @@ export function CaseNavBar({
           </span>
           <button type="button" className="tc-nav__goto" onClick={onGoTo}>
             <Search size={15} aria-hidden="true" />
-            <span className="cl-btn__text">{t("testCase.nav.goTo")}</span>
+            <span className="ui-btn__text">{t("testCase.nav.goTo")}</span>
             <kbd className="tc-nav__kbd">{t("testCase.nav.goToShortcut")}</kbd>
           </button>
         </>
@@ -94,7 +95,7 @@ export function CaseNavBar({
         ) : (
           <CircleDot size={15} aria-hidden="true" />
         )}
-        <span className="cl-btn__text">{t(`testCase.nav.state.${saveState}`)}</span>
+        <span className="ui-btn__text">{t(`testCase.nav.state.${saveState}`)}</span>
       </span>
       {more}
       {save}
@@ -109,7 +110,7 @@ export function CaseNavFooter({ nav, onGo }: { nav: CaseNav; onGo: (id: string) 
     <nav className="tc-navfoot" aria-label={t("testCase.nav.walk")}>
       <button
         type="button"
-        className="cl-btn"
+        className="ui-btn"
         disabled={!nav.prev}
         onClick={() => nav.prev && onGo(nav.prev.id)}
       >
@@ -119,7 +120,7 @@ export function CaseNavFooter({ nav, onGo }: { nav: CaseNav; onGo: (id: string) 
       <span className="tc-navfoot__pos">{t("testCase.nav.position", { n: nav.position, total: nav.total })}</span>
       <button
         type="button"
-        className="cl-btn"
+        className="ui-btn"
         disabled={!nav.next}
         onClick={() => nav.next && onGo(nav.next.id)}
       >

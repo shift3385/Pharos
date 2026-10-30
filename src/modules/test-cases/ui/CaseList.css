@@ -1,105 +1,6 @@
 /* Casos · lista and editor chrome (SPEC §2–§5, §8; RED-V3). Tokens only; the
    view comes from [data-viewport] / @container, never a window @media. */
 
-/* ---- Buttons ---- */
-.cl-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 0;
-  height: 40px;
-  padding: 0 14px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: var(--fw-medium);
-  white-space: nowrap;
-  color: var(--color-text-primary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  transition: background-color 120ms ease;
-}
-
-.cl-btn:hover:not(:disabled, [aria-disabled="true"]) {
-  background: var(--color-surface-2);
-}
-
-.cl-btn svg {
-  flex: none;
-}
-
-.cl-btn__text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cl-btn--primary {
-  font-weight: var(--fw-semibold);
-  color: var(--color-accent-contrast);
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
-.cl-btn--primary:hover:not(:disabled) {
-  background: color-mix(in oklab, var(--color-accent) 88%, var(--color-text-primary));
-}
-
-.cl-btn--small {
-  height: 34px;
-  padding: 0 10px;
-}
-
-.cl-btn--ghost {
-  background: transparent;
-  border-color: transparent;
-}
-
-.cl-btn--danger {
-  color: var(--color-error-text);
-  border-color: color-mix(in oklab, var(--color-error) 45%, transparent);
-}
-
-.cl-btn:disabled,
-.cl-btn[aria-disabled="true"] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cl-iconbtn {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 38px;
-  height: 38px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-}
-
-.cl-iconbtn[data-active] {
-  border-color: var(--color-navy-500);
-  color: var(--color-navy-500);
-}
-
-.cl-iconbtn__count {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 18px;
-  color: var(--color-surface-1);
-  background: var(--color-navy-500);
-  border-radius: var(--radius-pill);
-}
-
 /* ---- List ---- */
 .cl {
   display: flex;
@@ -314,12 +215,12 @@
   width: 100%;
 }
 
-[data-viewport="mobile"] .cl-actions .cl-btn {
+[data-viewport="mobile"] .cl-actions .ui-btn {
   flex: 1 1 120px;
   height: 44px;
 }
 
-[data-viewport="mobile"] .cl-actions .cl-btn--io {
+[data-viewport="mobile"] .cl-actions .ui-btn--io {
   flex: 0 0 auto;
 }
 
@@ -334,11 +235,6 @@
 
 [data-viewport="mobile"] .cl-search input {
   font-size: 15px;
-}
-
-[data-viewport="mobile"] .cl-iconbtn {
-  width: 44px;
-  height: 44px;
 }
 
 [data-viewport="mobile"] .cl-card-box {
@@ -589,7 +485,7 @@
   border-top: 1px solid var(--color-border);
 }
 
-.tc-navfoot .cl-btn {
+.tc-navfoot .ui-btn {
   height: 44px;
 }
 
