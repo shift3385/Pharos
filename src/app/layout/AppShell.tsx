@@ -6,6 +6,8 @@ import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
 import { isTauri } from "@shared/platform";
 import { ADMIN, isCurrent } from "@app/navConfig";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { ShellChromeProvider } from "@shared/ui/ShellChrome";
+import { useShellChrome } from "@shared/ui/useShellChrome";
 import { Sidebar } from "./Sidebar";
 import { BottomNav, MobileTopbar, ProjectPills, Topbar } from "./Topbar";
 import { AdminSectionNav } from "./AdminSectionNav";
@@ -39,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     // One sync state for the whole shell: the sidebar foot, the strip and the
     // mobile user sheet only show it.
-    <SyncStatusProvider>
+    <ShellProviders>
       <div className="app-shell" data-layout={breakpoint}>
         {/* The router lives in the URL hash, so following "#main-content" would
           change the route: move the focus instead. */}
@@ -86,9 +88,24 @@ export function AppShell({ children }: { children: ReactNode }) {
               {children}
             </div>
           </main>
-          {mobile && <BottomNav />}
+          {mobile && <ShellBottomNav />}
         </div>
       </div>
+    </ShellProviders>
+  );
+}
+
+/** The shell's sync state and what screens may ask of it (ShellChrome). */
+function ShellProviders({ children }: { children: ReactNode }) {
+  return (
+    <SyncStatusProvider>
+      <ShellChromeProvider>{children}</ShellChromeProvider>
     </SyncStatusProvider>
   );
+}
+
+/** The mobile bottom bar, unless the screen hid it (Gherkin editing, SPEC §7). */
+function ShellBottomNav() {
+  const { bottomBarHidden } = useShellChrome();
+  return bottomBarHidden ? null : <BottomNav />;
 }

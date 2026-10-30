@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Columns2, FileCode, MoreHorizontal, PencilLine, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
@@ -51,10 +52,24 @@ import {
   userScenarioTags,
   type TagContext,
 } from "./gherkin";
+import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
+import { usePopover } from "@shared/ui/usePopover";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { StatusPill } from "@shared/ui/StatusPill";
+import { useHideBottomBar } from "@shared/ui/useShellChrome";
+import { CaseNavBar, CaseNavFooter, type CaseNav, type SaveState } from "./CaseNavBar";
+import { GoToCaseDialog } from "./GoToCaseDialog";
+import { PriorityField, StatusField } from "./CaseMetaMenus";
+import { SegmentedControl } from "./SegmentedControl";
+import { GherkinReadView } from "./GherkinEditor";
+import { statusTone } from "./caseTones";
 import "./TestCase.css";
+import "./CaseList.css";
+
+export type { CaseNav } from "./CaseNavBar";
 
 type Tab = "split" | "editor" | "gherkin";
-const TABS: Tab[] = ["split", "editor", "gherkin"];
 
 interface FormState {
   gherkinLevel: GherkinLevel;
@@ -223,6 +238,8 @@ export function TestCaseEditor({
   caseId,
   seed = null,
   requirements = [],
+  nav,
+  onSaved,
   onClose,
 }: {
   projectId: string;
@@ -233,6 +250,10 @@ export function TestCaseEditor({
   seed?: ImportedCase | null;
   /** The project's requirements, for the requirement links picker. */
   requirements?: RequirementOption[];
+  /** Position in the list the user came from (existing cases). */
+  nav?: CaseNav;
+  /** After a save; a new case gets its id here (the page then opens it). */
+  onSaved?: (saved: TestCase | null) => void;
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -249,6 +270,15 @@ export function TestCaseEditor({
   // New cases start on the level picker; existing/imported cases skip it.
   const [picking, setPicking] = useState(caseId === null && !seed);
   const [aiReady, setAiReady] = useState(false);
+  // The form as last loaded or saved: «Guardado» vs «Cambios sin guardar», and
+  // leaving with changes asks first.
+  const [snapshot, setSnapshot] = useState<string | null>(null);
+  const [goingTo, setGoingTo] = useState(false);
+  const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null);
+  const [gherkinEditing, setGherkinEditing] = useState(false);
+  const mobile = useBreakpoint() === "mobile";
+  const view: Tab = mobile && tab === "split" ? "editor" : tab;
+  useHideBottomBar(mobile && gherkinEditing && view === "gherkin");
   // The title is the only rule that blocks saving a case (draft rule, ADR-0027).
   const titleIssue = required(form.title);
   const { guard, showSummary, attempted, summaryRef } = useSaveGuard(titleIssue !== null);
@@ -266,6 +296,7 @@ export function TestCaseEditor({
           setTestCase(c);
           const f = fromCase(c);
           setForm(f);
+          setSnapshot(JSON.stringify(f));
           setGherkin(buildGherkin(f));
         }
       } else if (seed && !cancelled) {
@@ -362,6 +393,7 @@ export function TestCaseEditor({
     const f = { ...emptyForm(), gherkinLevel: chosen, title: t("testCase.defaultTitle") };
     if (chosen === "advanced") f.flows = [newFlow(t("testCase.flow.mainName"))];
     setForm(f);
+    setSnapshot(JSON.stringify(f));
     setGherkin(buildGherkin(f));
     setPicking(false);
   };
@@ -437,14 +469,24 @@ export function TestCaseEditor({
     };
     const warnings = caseWarnings(form);
     try {
-      if (testCase) await testCaseApi.update(testCase.id, input);
-      else await testCaseApi.create(input);
+      const saved = testCase
+        ? await testCaseApi.update(testCase.id, input)
+        : await testCaseApi.create(input);
       toast(
         warnings > 0
           ? `${t("testCase.savedToast")} ${t("validation.savedWithWarnings", { count: warnings })}`
           : t("testCase.savedToast"),
       );
-      onClose();
+      if (saved) {
+        setTestCase(saved);
+        const f = fromCase(saved);
+        setForm(f);
+        setSnapshot(JSON.stringify(f));
+        setGherkin(buildGherkin(f));
+      } else {
+        setSnapshot(JSON.stringify(form));
+      }
+      onSaved?.(saved);
     } finally {
       setSaving(false);
     }
@@ -523,45 +565,80 @@ export function TestCaseEditor({
     setRevisions(testCase ? await testCaseApi.revisions(testCase.id, userId) : []);
   }
 
+  // Ctrl P / ⌘P: «Ir a un caso…» (SPEC §8), unless a dialog is open.
+  useEffect(() => {
+    if (!nav) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "p" || e.altKey || e.shiftKey) return;
+      if (e.defaultPrevented || document.querySelector("[aria-modal='true']")) return;
+      e.preventDefault();
+      setGoingTo(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [nav]);
+
+  const dirty = snapshot !== null && JSON.stringify(form) !== snapshot;
+  const saveState: SaveState = !testCase ? "new" : dirty ? "dirty" : "saved";
+  /** Runs `go` now, or after «Descartar cambios» when there are any. */
+  const leave = (go: () => void) => {
+    if (dirty || (!testCase && snapshot !== null)) setPendingLeave(() => go);
+    else go();
+  };
+  const goTo = (id: string) => leave(() => nav?.onGo(id));
+
   if (picking) {
     return <LevelPicker onPick={pickLevel} onCancel={onClose} />;
   }
 
+  const fileName = `${form.scenarioId || "scenario"}.feature`;
+  const levelSelect = (
+    <label className="tc-meta">
+      <span className="tc-meta__label">{t("testCase.level.label")}</span>
+      <select
+        className="tc-meta__select"
+        value={level}
+        onChange={(e) => changeLevel(e.target.value as GherkinLevel)}
+        title={
+          requiredLevel !== "basic"
+            ? t("testCase.level.locked", {
+                level: t(`testCase.level.${requiredLevel}.name`),
+              })
+            : undefined
+        }
+      >
+        {(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => (
+          <option key={l} value={l} disabled={levelRank(l) < levelRank(requiredLevel)}>
+            {t(`testCase.level.${l}.name`)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
   const metaGrid = (
-    <div className="tc-form__grid">
-      <label className="tp-field">
-        <span>{t("testCase.scenarioId")}</span>
+    <div className="tc-meta-row">
+      <PriorityField value={form.priority} onChange={(v) => update({ priority: v })} />
+      <StatusField value={form.status} onChange={(v) => update({ status: v })} />
+      {levelSelect}
+      <label className="tc-meta tc-meta--narrow">
+        <span className="tc-meta__label">{t("testCase.version")}</span>
         <input
+          className="tc-meta__input"
+          value={form.version}
+          onChange={(e) => update({ version: e.target.value })}
+        />
+      </label>
+      <label className="tc-meta">
+        <span className="tc-meta__label">{t("testCase.scenarioId")}</span>
+        <input
+          className="tc-meta__input tc-meta__input--mono"
           value={form.scenarioId}
           placeholder={t("testCase.scenarioIdAuto")}
           readOnly={testCase != null}
           title={testCase ? t("testCase.scenarioIdFixed") : undefined}
           onChange={(e) => update({ scenarioId: e.target.value })}
         />
-      </label>
-      <label className="tp-field">
-        <span>{t("testCase.priority")}</span>
-        <select value={form.priority} onChange={(e) => update({ priority: e.target.value })}>
-          {["low", "medium", "high", "critical"].map((p) => (
-            <option key={p} value={p}>
-              {t(`testCase.priorityLabel.${p}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="tp-field">
-        <span>{t("testCase.status")}</span>
-        <select value={form.status} onChange={(e) => update({ status: e.target.value })}>
-          {["draft", "reviewed", "approved", "obsolete"].map((s) => (
-            <option key={s} value={s}>
-              {t(`testCase.statusLabel.${s}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="tp-field">
-        <span>{t("testCase.version")}</span>
-        <input value={form.version} onChange={(e) => update({ version: e.target.value })} />
       </label>
     </div>
   );
@@ -571,6 +648,11 @@ export function TestCaseEditor({
       <FormField id="tc-title" label={t("testCase.fieldTitle")} issue={attempted ? titleIssue : null} required>
         {(p) => <input {...p} value={form.title} onChange={(e) => update({ title: e.target.value })} />}
       </FormField>
+      <RequirementLinks
+        value={form.requirementKeys}
+        options={requirements}
+        onChange={(v) => update({ requirementKeys: v })}
+      />
       <label className="tp-field">
         <span>{t("testCase.mappedUseCase")}</span>
         <input
@@ -578,11 +660,6 @@ export function TestCaseEditor({
           onChange={(e) => update({ mappedUseCase: e.target.value })}
         />
       </label>
-      <RequirementLinks
-        value={form.requirementKeys}
-        options={requirements}
-        onChange={(v) => update({ requirementKeys: v })}
-      />
       <label className="tp-field">
         <span>{t("testCase.otherReferences")}</span>
         <input
@@ -760,64 +837,139 @@ export function TestCaseEditor({
     </div>
   );
 
-  const gherkinView = <GherkinEditor value={gherkin} onChange={onGherkinInput} />;
+  const synced = t("testCase.gherkin.synced");
+  const gherkinView = mobile ? (
+    <GherkinReadView
+      value={gherkin}
+      fileName={fileName}
+      status={synced}
+      onEdit={() => setGherkinEditing(true)}
+    />
+  ) : (
+    <GherkinEditor value={gherkin} onChange={onGherkinInput} fileName={fileName} status={synced} />
+  );
 
-  return (
-    <section className={`tc-editor${tab === "split" ? " tc-editor--wide" : ""}`}>
-      <header className="tc-editor__top">
-        <button type="button" className="tp-editor__back" onClick={onClose}>
-          ← {t("testCase.back")}
-        </button>
-        <h1>{testCase ? t("testCase.editTitle") : t("testCase.newTitle")}</h1>
-        {form.scenarioId && <span className="tc-editor__id">{form.scenarioId}</span>}
-        <div className="tc-editor__actions">
-          <label className="tc-editor__level">
-            <span>{t("testCase.level.label")}</span>
-            <select
-              value={level}
-              onChange={(e) => changeLevel(e.target.value as GherkinLevel)}
-              title={
-                requiredLevel !== "basic"
-                  ? t("testCase.level.locked", {
-                      level: t(`testCase.level.${requiredLevel}.name`),
-                    })
-                  : undefined
-              }
-            >
-              {(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => (
-                <option
-                  key={l}
-                  value={l}
-                  disabled={levelRank(l) < levelRank(requiredLevel)}
-                >
-                  {t(`testCase.level.${l}.name`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          {testCase && (
-            <button type="button" className="tp-wizard__revbtn" onClick={toggleRevisions}>
-              {t("testCase.revisions")}
-            </button>
-          )}
-          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportXlsx()}>
-            {t("testCase.exportXlsx")}
-          </button>
-          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportPdf()}>
-            {t("testCase.exportPdf")}
-          </button>
-          <button type="button" className="tp-wizard__revbtn" onClick={() => void exportFeature()}>
-            {t("testCase.exportFeature")}
-          </button>
-          <button
-            type="button"
-            className="tp-editor__save"
-            onClick={() => guard(() => void save())}
-            disabled={saving}
-          >
-            {saving ? t("testCase.saving") : t("testCase.save")}
+  const views = mobile
+    ? [
+        { value: "editor" as Tab, label: t("testCase.tab.editor"), icon: PencilLine },
+        { value: "gherkin" as Tab, label: t("testCase.tab.gherkin"), icon: FileCode },
+      ]
+    : [
+        { value: "editor" as Tab, label: t("testCase.tab.editor") },
+        { value: "gherkin" as Tab, label: t("testCase.tab.gherkin") },
+        { value: "split" as Tab, label: t("testCase.tab.split"), icon: Columns2 },
+      ];
+  const viewSwitch = (
+    <SegmentedControl
+      label={t("testCase.views")}
+      options={views}
+      value={view}
+      onChange={(v) => {
+        setTab(v);
+        setGherkinEditing(false);
+      }}
+      size={mobile ? "md" : "sm"}
+    />
+  );
+
+  const saveButton = (
+    <button
+      type="button"
+      className="cl-btn cl-btn--primary"
+      onClick={() => guard(() => void save())}
+      disabled={saving}
+    >
+      <Save size={16} aria-hidden="true" />
+      <span className="cl-btn__text">{saving ? t("testCase.saving") : t("testCase.save")}</span>
+    </button>
+  );
+
+  const dialogs = (
+    <>
+      {goingTo && nav && (
+        <GoToCaseDialog
+          cases={nav.cases}
+          currentId={testCase?.id}
+          onGo={goTo}
+          onClose={() => setGoingTo(false)}
+        />
+      )}
+      {pendingLeave && (
+        <ConfirmDialog
+          variant="destructive"
+          title={t("testCase.nav.discardTitle")}
+          message={t("testCase.nav.discardMessage")}
+          confirmLabel={t("testCase.nav.discardConfirm")}
+          onCancel={() => setPendingLeave(null)}
+          onConfirm={() => {
+            const go = pendingLeave;
+            setPendingLeave(null);
+            go();
+          }}
+        />
+      )}
+    </>
+  );
+
+  // Mobile Gherkin editing (SPEC §7/§8): the code fills the screen, the
+  // keyword bar sits over the keyboard and the bottom bar hides.
+  if (mobile && gherkinEditing && view === "gherkin") {
+    return (
+      <section className="tc-editor tc-editor--gherkin-edit" aria-labelledby="tc-edit-title">
+        <div className="tc-mobile-edit__top">
+          <span className="cl-id">{form.scenarioId}</span>
+          <h2 id="tc-edit-title" className="tc-mobile-edit__title" title={form.title}>
+            {form.title}
+          </h2>
+          <button type="button" className="cl-btn cl-btn--primary cl-btn--small" onClick={() => setGherkinEditing(false)}>
+            {t("testCase.gherkin.done")}
           </button>
         </div>
+        {viewSwitch}
+        <GherkinEditor
+          value={gherkin}
+          onChange={onGherkinInput}
+          fileName={`${fileName} · ${t("testCase.gherkin.editing")}`}
+          status={t("testCase.gherkin.levelStatus", { level: t(`testCase.level.${requiredLevel}.name`) })}
+          keyboardBar
+        />
+        {dialogs}
+      </section>
+    );
+  }
+
+  return (
+    <section className="tc-editor" data-view={view} aria-labelledby="tc-head-title">
+      <CaseNavBar
+        nav={nav}
+        saveState={saveState}
+        onBack={() => leave(onClose)}
+        onGo={goTo}
+        onGoTo={() => setGoingTo(true)}
+        more={
+          <MoreActions
+            hasCase={testCase != null}
+            onRevisions={() => void toggleRevisions()}
+            onXlsx={() => void exportXlsx()}
+            onPdf={() => void exportPdf()}
+            onFeature={() => void exportFeature()}
+          />
+        }
+        save={saveButton}
+      />
+
+      <header className="tc-head">
+        <div className="tc-head__ids">
+          {form.scenarioId && <span className="cl-id">{form.scenarioId}</span>}
+          <StatusPill tone={statusTone(form.status)} strike={form.status === "obsolete"}>
+            {t(`testCase.statusLabel.${form.status}`)}
+          </StatusPill>
+          <span className="tc-head__level">{t(`testCase.level.${level}.name`)}</span>
+        </div>
+        <h2 id="tc-head-title" className="tc-head__title">
+          {form.title.trim() || (testCase ? t("testCase.editTitle") : t("testCase.newTitle"))}
+        </h2>
+        {viewSwitch}
       </header>
 
       {showSummary && (
@@ -862,30 +1014,58 @@ export function TestCaseEditor({
         </div>
       )}
 
-      <nav className="tc-tabs" role="tablist">
-        {TABS.map((tabId) => (
-          <button
-            key={tabId}
-            type="button"
-            role="tab"
-            className="tc-tabs__tab"
-            data-active={tab === tabId}
-            onClick={() => setTab(tabId)}
-          >
-            {t(`testCase.tab.${tabId}`)}
-          </button>
-        ))}
-      </nav>
-
-      {tab === "editor" && editor}
-      {tab === "gherkin" && gherkinView}
-      {tab === "split" && (
+      {view === "editor" && <div className="tc-body">{editor}</div>}
+      {view === "gherkin" && <div className="tc-body">{gherkinView}</div>}
+      {view === "split" && (
         <div className="tc-split">
-          <div className="tc-split__pane">{editor}</div>
-          <div className="tc-split__divider" aria-hidden="true" />
+          <div className="tc-split__pane tc-body">{editor}</div>
           <div className="tc-split__pane tc-split__pane--gherkin">{gherkinView}</div>
         </div>
       )}
+
+      {mobile && nav && <CaseNavFooter nav={nav} onGo={goTo} />}
+      {dialogs}
     </section>
+  );
+}
+
+/** Revisions and the per-case exports, out of the way in one menu. */
+function MoreActions({
+  hasCase,
+  onRevisions,
+  onXlsx,
+  onPdf,
+  onFeature,
+}: {
+  hasCase: boolean;
+  onRevisions: () => void;
+  onXlsx: () => void;
+  onPdf: () => void;
+  onFeature: () => void;
+}) {
+  const { t } = useTranslation();
+  const mobile = useBreakpoint() === "mobile";
+  const menu = usePopover(mobile ? "dialog" : "menu");
+  const label = t("testCase.nav.more");
+  return (
+    <>
+      <button type="button" className="cl-iconbtn" title={label} aria-label={label} {...menu.triggerProps}>
+        <MoreHorizontal size={18} aria-hidden="true" />
+      </button>
+      <ResponsiveMenu
+        open={menu.open}
+        onClose={menu.close}
+        anchorRef={menu.anchorRef}
+        id={menu.id}
+        label={label}
+        title={label}
+        placement="bottom-end"
+      >
+        {hasCase && <MenuItem onSelect={onRevisions}>{t("testCase.revisions")}</MenuItem>}
+        <MenuItem onSelect={onXlsx}>{t("testCase.exportXlsx")}</MenuItem>
+        <MenuItem onSelect={onPdf}>{t("testCase.exportPdf")}</MenuItem>
+        <MenuItem onSelect={onFeature}>{t("testCase.exportFeature")}</MenuItem>
+      </ResponsiveMenu>
+    </>
   );
 }
