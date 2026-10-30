@@ -33,8 +33,13 @@
   `AdminSectionNav` desaparece.
 - `AiPage` y `TemplatesPage` pasan a ser `AiEngineTab` y `TemplatesTab`, sin
   `h1` propio. Siguen en sus módulos.
-- Salir de Motor de IA con cambios sin guardar pide confirmación al cambiar de
-  pestaña o al cerrar la ventana (`beforeunload`).
+- Motor de IA y General tienen una sola barra de guardado por pestaña, fija
+  al pie del área que se desplaza, con «Guardar» como acción ámbar. Solo se
+  activa con cambios.
+- Salir de una pestaña con cambios sin guardar pide confirmación al cambiar de
+  pestaña o al cerrar la ventana (`beforeunload`). Salir de `/admin` por la
+  navegación del shell todavía no avisa: `HashRouter` no admite `useBlocker`;
+  lo cubrirá el `useUnsavedChangesGuard` común.
 
 ### Tabla de capacidades
 
@@ -45,8 +50,12 @@
   - `sendsTemperature(config)` decide si una llamada online envía la
     temperatura.
 - La temperatura de cada fila es `supported`, `unsupported` u `optional`:
-  - `unsupported`: Claude, y los modelos de razonamiento de OpenAI (`o*`, `gpt-5*`);
+  - `unsupported`: Claude, y los modelos de razonamiento de OpenAI (`o*`, `gpt-5*`
+    salvo `gpt-5-chat*`);
   - `optional`: «Compatible», con el interruptor «Enviar» (`customSendTemperature`).
+    Una configuración guardada antes de existir el interruptor no tiene el campo:
+    se toma como `true`, porque antes la temperatura siempre se enviaba. Solo
+    una configuración nueva empieza en `false`.
 - Rust deja de decidir por proveedor: `ai_chat_online` recibe
   `temperature: Option<f32>`, y `None` no la envía. Sigue ignorándola para
   Anthropic como red de seguridad, y sigue reintentando sin temperatura si un
@@ -91,10 +100,11 @@
   `capabilities.ts`. Ningún componente decide qué se envía.
 - Las llamadas online a Claude y a los modelos de razonamiento de OpenAI ya no
   envían una temperatura que el proveedor ignora o rechaza.
-- Provider, modelo, parámetros y Ollama son un borrador hasta pulsar «Guardar».
-  La clave sigue guardándose en el llavero con su propio botón, porque nunca
-  llega al frontend. Por eso no se muestran sus últimos caracteres como en el
-  prototipo.
+- Proveedor, modelo, parámetros, Ollama y una clave escrita son un borrador
+  hasta pulsar «Guardar». «Guardar» lleva la clave al llavero y el resto a la
+  configuración; «Guardar clave» guarda solo la clave. Cambiar de proveedor con
+  una clave escrita pide confirmación. La clave nunca vuelve al frontend, así
+  que no se muestran sus últimos caracteres como en el prototipo.
 - La Papelera (RED-W3) aparece en General como «Próximamente», sin datos
   inventados. Cuando llegue, «Vaciar papelera» confirmará con
   `ConfirmDialog variant="destructive"`.

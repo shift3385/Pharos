@@ -61,10 +61,13 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Cambiado
 
-- **Motor de IA:** proveedor, modelo y parámetros se guardan con «Guardar». Antes cada cambio
-  se aplicaba al momento. Salir con cambios sin guardar pide confirmación.
+- **Motor de IA:** proveedor, modelo, parámetros, Ollama y la clave escrita se guardan con
+  «Guardar», en una barra fija al pie de la pestaña. Antes cada cambio se aplicaba al momento.
+  Cambiar de pestaña o de proveedor con cambios sin guardar pide confirmación.
+- **General:** «Guardar ajustes» está en una barra al pie que cubre las dos secciones y solo se
+  activa si hay cambios.
 - **IA:** Claude y los modelos de razonamiento de OpenAI ya no reciben una temperatura que no
-  admiten. «Compatible» solo la envía si activas «Enviar».
+  admiten. «Compatible» solo la envía si activas «Enviar»; si ya la usabas, sigue enviándose.
 - `#/templates` y `#/ai` abren la pestaña correspondiente de Administración.
 - Eliminar una plantilla y descartar los cambios web sin enviar usan la confirmación
   destructiva: solo se cierran con «Cancelar».

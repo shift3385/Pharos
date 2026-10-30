@@ -113,7 +113,7 @@ seguir.
       `.feature` exportado es válido (Fase 4).
 - [ ] Exportar el plan y un caso a `.pdf` y `.xlsx` (Fase 6).
 - [ ] Importar un plan y casos desde `.xlsx` y usar una plantilla (Fase 6).
-- [ ] Elegir una carpeta de descarga en Administración → Ajustes y exportar el
+- [ ] Elegir una carpeta de descarga en Administración → General y exportar el
       ZIP del proyecto: lleva el plan y cada caso en `.xlsx` y `.pdf`
       (UX-02, EXP-02).
 - [ ] Panel de administración: ajustes, retención, fondo, accesos (Fase 9A).
@@ -135,7 +135,7 @@ seguir.
       puedes elegir versión (Fase 8C).
 - [ ] Borrar un proyecto en un equipo: en el otro desaparece con sus planes,
       casos, requisitos y tarjetas (FIX-05).
-- [ ] Purga (SYNC-06): en Administración → Ajustes, pon la retención de
+- [ ] Purga (SYNC-06): en Administración → General, pon la retención de
       elementos borrados en el mínimo (1 día) y guarda. Borra un caso ya
       sincronizado y, pasado un día, sincroniza: el caso se purga y no vuelve.
       Después restablece la retención (30 por defecto).
