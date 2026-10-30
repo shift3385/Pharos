@@ -1,4 +1,4 @@
-import type { TestCase } from "../model/types";
+import type { TestCase, TestCaseSummary } from "../model/types";
 import { flowsToGherkin, isProvisionalKey, parseFeatureFlows, toGherkin } from "../ui/gherkin";
 import { testCaseApi } from "../api/testCaseApi";
 import { buildCaseXlsx, type ExportableCase } from "./caseXlsx";
@@ -80,6 +80,14 @@ export async function projectCaseProgress(
 ): Promise<{ approved: number; total: number }> {
   const live = (await testCaseApi.list(projectId, userId)).filter((c) => c.status !== "obsolete");
   return { approved: live.filter((c) => c.status === "approved").length, total: live.length };
+}
+
+/** Cases of a project that are not obsolete, for the Home queue (RED-V1). */
+export async function projectLiveCases(
+  projectId: string,
+  userId: string,
+): Promise<TestCaseSummary[]> {
+  return (await testCaseApi.list(projectId, userId)).filter((c) => c.status !== "obsolete");
 }
 
 /** Files exported per case in the batch ZIP: its .xlsx and its .pdf (EXP-02). */
