@@ -40,6 +40,10 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
   estado y banderas de prioridad con los colores del diseño; opciones de menú con una línea
   que explica cada una.
+- **Rediseño, controles comunes (RED-V1a, para Inicio, Perfil, Casos y Administración):**
+  interruptor, selector segmentado (una opción entre pocas, con flechas) y pestañas, en
+  formato de pastillas o subrayadas, con burbujas de contador y pestañas deshabilitadas que
+  explican el motivo.
 - **Rediseño de Login, Inicio y Perfil (RED-V1):**
   - **Login:** foto del faro con el lema y tres puntos de la marca junto al formulario; en el
     móvil, la foto arriba y el formulario debajo, sin scroll al iniciar sesión.
@@ -54,7 +58,6 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     lugar de mostrar cifras hasta 0.2.0.
   - **Perfil:** tarjeta con tus datos y estado de sincronización, Preferencias (idioma y
     tema) y la clave de recuperación con el estilo nuevo.
-  - Controles comunes nuevos: interruptor, selector segmentado y pestañas con burbujas.
 
 ### Cambiado
 

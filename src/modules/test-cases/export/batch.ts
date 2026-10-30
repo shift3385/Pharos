@@ -73,21 +73,21 @@ export async function projectCaseCount(projectId: string, userId: string): Promi
   return (await testCaseApi.list(projectId, userId)).length;
 }
 
-/** Approved cases out of the cases that are not obsolete (Home progress, UX-08). */
-export async function projectCaseProgress(
-  projectId: string,
-  userId: string,
-): Promise<{ approved: number; total: number }> {
-  const live = (await testCaseApi.list(projectId, userId)).filter((c) => c.status !== "obsolete");
-  return { approved: live.filter((c) => c.status === "approved").length, total: live.length };
-}
-
 /** Cases of a project that are not obsolete, for the Home queue (RED-V1). */
 export async function projectLiveCases(
   projectId: string,
   userId: string,
 ): Promise<TestCaseSummary[]> {
   return (await testCaseApi.list(projectId, userId)).filter((c) => c.status !== "obsolete");
+}
+
+/** Approved cases out of the cases that are not obsolete (Home progress, UX-08). */
+export async function projectCaseProgress(
+  projectId: string,
+  userId: string,
+): Promise<{ approved: number; total: number }> {
+  const live = await projectLiveCases(projectId, userId);
+  return { approved: live.filter((c) => c.status === "approved").length, total: live.length };
 }
 
 /** Files exported per case in the batch ZIP: its .xlsx and its .pdf (EXP-02). */

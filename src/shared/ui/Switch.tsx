@@ -3,11 +3,13 @@ import "./controls.css";
 
 /**
  * On/off switch (SPEC §9 «Interruptores», §10): a `button` with
- * `role="switch"` and `aria-checked`; the knob slides in 150 ms (only fades
- * with reduced motion). With `label` the visible text names it; without it,
- * name it with `aria-label` through `ariaLabel`. A disabled switch keeps a
- * `title` with the reason (SPEC §4).
+ * `role="switch"` and `aria-checked`; the knob slides in 150 ms (with
+ * reduced motion it moves without sliding). It is named by the visible
+ * `label` or, without one, by `ariaLabel`: one of the two is required. A
+ * disabled switch keeps a `title` with the reason (SPEC §4).
  */
+type SwitchName = { label: string; ariaLabel?: never } | { ariaLabel: string; label?: never };
+
 export function Switch({
   checked,
   onChange,
@@ -18,11 +20,9 @@ export function Switch({
   title,
   describedBy,
   testId,
-}: {
+}: SwitchName & {
   checked: boolean;
   onChange: (checked: boolean) => void;
-  label?: string;
-  ariaLabel?: string;
   id?: string;
   disabled?: boolean;
   title?: string;

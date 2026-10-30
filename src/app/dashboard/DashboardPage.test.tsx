@@ -229,7 +229,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     setViewportWidth(390);
     renderHome();
     const tabs = screen.getByRole("tablist", { name: "Secciones del Inicio" });
-    const testsTab = await within(tabs).findByRole("tab", { name: /^Pruebas 3/ });
+    const testsTab = await within(tabs).findByRole("tab", { name: "Pruebas · 3 pruebas pendientes" });
     expect(within(tabs).getByRole("tab", { name: "Resumen" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByTestId("kpi-projects")).toBeInTheDocument();
     expect(screen.queryByTestId("home-upcoming")).toBeNull();
