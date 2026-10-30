@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act } from "react";
 import { renderWithProviders, i18n } from "@test/utils";
 import { fakeServer } from "@test/server";
 import { DashboardPage } from "@app/dashboard/DashboardPage";
-import { LanguageToggle } from "./LanguageToggle";
 
 describe("i18n (es default / en)", () => {
   beforeEach(async () => {
@@ -14,20 +13,12 @@ describe("i18n (es default / en)", () => {
   });
 
   it("renders Spanish by default and switches all copy to English", async () => {
-    const user = userEvent.setup();
-    renderWithProviders(
-      <>
-        <LanguageToggle />
-        <DashboardPage />
-      </>,
-    );
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByRole("heading", { name: "Hola, Quality" })).toBeInTheDocument();
-    expect(screen.getByTestId("lang-trigger")).toHaveTextContent("ES");
 
-    // Open the language dropdown, then pick English.
-    await user.click(screen.getByTestId("lang-trigger"));
-    await user.click(screen.getByTestId("lang-en"));
+    // What the language menus (user menu, Login, Perfil) call.
+    await act(() => i18n.changeLanguage("en"));
 
     expect(screen.getByRole("heading", { name: "Hello, Quality" })).toBeInTheDocument();
     expect(document.documentElement.getAttribute("lang")).toBe("en");
