@@ -1,0 +1,239 @@
+/* Data table, mobile cards and pagination (SPEC §3–§5, §8). Tokens only. */
+
+.dt-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.dt {
+  display: block;
+  width: 100%;
+  min-width: var(--dt-min, 0);
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dt thead,
+.dt tbody {
+  display: block;
+}
+
+.dt__row {
+  display: grid;
+  grid-template-columns: var(--dt-cols);
+  gap: 14px;
+  align-items: center;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color 120ms ease;
+}
+
+.dt__row--head {
+  padding-block: 10px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.dt tbody .dt__row:hover,
+.dt__row[data-selected] {
+  background: var(--color-surface-2);
+}
+
+.dt__row[data-tone="gap"] {
+  background: color-mix(in oklab, var(--color-error) 6%, transparent);
+}
+
+.dt__cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  font-weight: inherit;
+  text-align: start;
+}
+
+.dt__cell[data-align="end"] {
+  justify-content: flex-end;
+  text-align: end;
+}
+
+.dt__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+}
+
+.dt__sort svg {
+  flex: none;
+  opacity: 0.6;
+}
+
+.dt__sort[data-active] {
+  color: var(--color-text-primary);
+}
+
+.dt__sort[data-active] svg {
+  opacity: 1;
+}
+
+.dt__check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--color-navy-500);
+}
+
+.dt-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+/* ---- Mobile cards ---- */
+.dt-cards {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dt-card[data-tone="gap"] {
+  background: color-mix(in oklab, var(--color-error) 6%, transparent);
+}
+
+.dt-card .dt__check {
+  /* A bigger box for touch. */
+  width: 20px;
+  height: 20px;
+  margin: 2px 0;
+  flex: none;
+}
+
+.dt-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Pagination ---- */
+.pg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+.pg__summary {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.pg__summary b {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
+.pg__spacer {
+  flex: 1;
+}
+
+.pg__pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pg__btn {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: background-color 120ms ease;
+}
+
+.pg__btn:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.pg__btn[aria-current="page"] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-on-navy);
+  background: var(--color-navy-900);
+  border-color: var(--color-navy-900);
+}
+
+.pg__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pg__gap {
+  width: 24px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.pg__compact {
+  padding: 0 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.pg__size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.pg__size-menu {
+  width: 180px;
+}
+
+[data-viewport="mobile"] .pg {
+  padding: 12px 16px;
+}
+
+[data-viewport="mobile"] .pg__btn,
+[data-viewport="mobile"] .pg__size {
+  min-width: 44px;
+  height: 44px;
+}

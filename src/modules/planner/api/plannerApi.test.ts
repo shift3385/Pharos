@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeServer } from "@test/server";
 import { DesktopOnlyError } from "@shared/platform";
-import { plannerApi } from "./plannerApi";
+import { plannerApi, projectCardCount } from "./plannerApi";
 
 const invoke = vi.fn();
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
@@ -52,5 +52,14 @@ describe("plannerApi", () => {
     onDesktop();
     await plannerApi.attachmentList("k1", "u1");
     expect(invoke).toHaveBeenCalledWith("planner_attachment_list", { cardId: "k1", ownerId: "u1" });
+  });
+});
+
+describe("projectCardCount", () => {
+  it("counts every card of the project, of any kind", async () => {
+    onDesktop();
+    invoke.mockResolvedValue([{ kind: "task" }, { kind: "defect" }, { kind: "test_data" }]);
+    expect(await projectCardCount("p1", "u1")).toBe(3);
+    expect(invoke).toHaveBeenCalledWith("planner_list", { projectId: "p1", ownerId: "u1" });
   });
 });
