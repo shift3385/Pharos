@@ -17,11 +17,14 @@ describe("model capabilities (ADR-0031)", () => {
     expect(capabilitiesFor("openai", "o3-mini").temperature.support).toBe("unsupported");
     expect(capabilitiesFor("openai", "gpt-4o").temperature.support).toBe("supported");
     expect(capabilitiesFor("openai", "gpt-4o").reasoning).toBeNull();
+    // gpt-5-chat is not a reasoning model.
+    expect(capabilitiesFor("openai", "gpt-5-chat-latest").temperature.support).toBe("supported");
   });
 
   it("Gemini 2.5+ has a reasoning level; older models do not", () => {
     expect(capabilitiesFor("gemini", "gemini-2.5-pro").reasoning?.options).toEqual(["auto", "low", "high"]);
     expect(capabilitiesFor("gemini", "gemini-2.0-flash").reasoning).toBeNull();
+    expect(capabilitiesFor("gemini", "gemini-flash-latest").reasoning?.kind).toBe("level");
   });
 
   it("Compatible makes the temperature optional", () => {

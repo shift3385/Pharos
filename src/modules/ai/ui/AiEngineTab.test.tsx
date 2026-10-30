@@ -12,11 +12,13 @@ import { setViewportWidth } from "@test/viewport";
 const api = vi.hoisted(() => ({
   status: vi.fn(async () => ({ onlineKeySet: true, online: true, ollamaReachable: false, ollamaModelReady: false })),
   chat: vi.fn(async () => "OK"),
+  keySet: vi.fn(async () => {}),
 }));
 vi.mock("../api/aiApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../api/aiApi")>()),
   aiStatus: api.status,
   aiChat: api.chat,
+  aiKeys: { set: api.keySet, status: async () => true, clear: async () => {} },
 }));
 
 const { AiEngineTab } = await import("./AiEngineTab");
@@ -25,6 +27,7 @@ const { loadConfig } = await import("../api/aiApi");
 beforeEach(async () => {
   await i18n.changeLanguage("es");
   localStorage.clear();
+  api.keySet.mockClear();
 });
 
 async function renderTab() {
@@ -97,7 +100,37 @@ describe("AiEngineTab", () => {
   it("«Probar conexión» shows how long the answer took", async () => {
     const { user } = await renderTab();
     await user.click(screen.getByRole("button", { name: /Probar conexión/ }));
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/Respuesta en \d+ ms/));
+    expect(await screen.findByText(/Respuesta en \d+ ms/)).toBeInTheDocument();
+  });
+
+  it("a typed key is unsaved work: «Guardar» stores it with the rest", async () => {
+    const { user, onDirty } = await renderTab();
+    await user.type(screen.getByLabelText(/Clave de API/), "sk-test");
+    expect(onDirty).toHaveBeenLastCalledWith(true);
+    expect(screen.getByTestId("ai-save")).toBeEnabled();
+    const model = screen.getByRole("combobox", { name: "Modelo" });
+    await user.clear(model);
+    await user.type(model, "gemini-2.5-pro");
+    await user.click(screen.getByTestId("ai-save"));
+    await waitFor(() => expect(api.keySet).toHaveBeenCalledWith("gemini", "sk-test"));
+    expect(loadConfig().onlineModels.gemini).toBe("gemini-2.5-pro");
+    expect(screen.getByLabelText(/Clave de API/)).toHaveValue("");
+    expect(onDirty).toHaveBeenLastCalledWith(false);
+  });
+
+  it("changing provider with a typed key asks first and can keep it", async () => {
+    const { user } = await renderTab();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    await user.type(screen.getByLabelText(/Clave de API/), "sk-test");
+    await user.click(screen.getByRole("radio", { name: /^OpenAI/ }));
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(screen.getByRole("radio", { name: /^Gemini/ })).toBeChecked();
+    expect(screen.getByLabelText(/Clave de API/)).toHaveValue("sk-test");
+    confirm.mockReturnValue(true);
+    await user.click(screen.getByRole("radio", { name: /^OpenAI/ }));
+    expect(screen.getByRole("radio", { name: /^OpenAI/ })).toBeChecked();
+    expect(screen.getByLabelText(/Clave de API/)).toHaveValue("");
+    expect(api.keySet).not.toHaveBeenCalled();
   });
 
   it.each([390, 1440])("passes axe at %i px", async (width) => {

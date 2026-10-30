@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { AiEngineTab } from "@modules/ai";
@@ -16,24 +16,31 @@ import "./Admin.css";
  * grouped tabs — Recursos (Motor de IA, Plantillas) · Aplicación (General) ·
  * Cuenta y datos (Sincronización, Seguridad) · Soporte (Diagnóstico). The tab
  * lives in the URL (`/admin?tab=…`, Motor de IA by default); `/templates` and
- * `/ai` redirect here. Leaving Motor de IA with unsaved changes asks first.
+ * `/ai` redirect here. Leaving a tab with unsaved changes asks first.
  */
 export function AdminPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const tab = adminTabFrom(params.get("tab"));
-  const [aiDirty, setAiDirty] = useState(false);
+  // The current tab has unsaved changes (Motor de IA, General).
+  const [dirty, setDirty] = useState(false);
   const storedCount = useTemplateCount();
   const [templateCount, setTemplateCount] = useState<number | undefined>();
+
+  // An unknown `?tab=` shows Motor de IA; the URL says so too.
+  const raw = params.get("tab");
+  useEffect(() => {
+    if (raw !== null && raw !== tab) setParams({ tab }, { replace: true });
+  }, [raw, tab, setParams]);
 
   const select = useCallback(
     (next: AdminTab) => {
       if (next === tab) return;
-      if (tab === "ai" && aiDirty && !window.confirm(t("common.discardConfirm"))) return;
-      setAiDirty(false);
+      if (dirty && !window.confirm(t("common.discardConfirm"))) return;
+      setDirty(false);
       setParams({ tab: next }, { replace: true });
     },
-    [tab, aiDirty, setParams, t],
+    [tab, dirty, setParams, t],
   );
 
   return (
@@ -53,9 +60,9 @@ export function AdminPage() {
         aria-label={t(`admin.tabs.${tab}`)}
         tabIndex={0}
       >
-        {tab === "ai" && <AiEngineTab onDirtyChange={setAiDirty} />}
+        {tab === "ai" && <AiEngineTab onDirtyChange={setDirty} />}
         {tab === "templates" && <TemplatesTab onCount={setTemplateCount} />}
-        {tab === "general" && <GeneralTab />}
+        {tab === "general" && <GeneralTab onDirtyChange={setDirty} />}
         {tab === "sync" && <SyncTab />}
         {tab === "security" && <SecurityTab />}
         {tab === "diagnostics" && <DiagnosticsTab />}

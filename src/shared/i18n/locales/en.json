@@ -230,7 +230,9 @@
         }
       }
     },
-    "providerCompat": "Compatible"
+    "providerCompat": "Compatible",
+    "keyDiscardConfirm": "You typed a key that is not saved. Switching provider discards it. Continue?",
+    "savedWithKey": "AI settings and key saved"
   },
   "sync": {
     "synced": "Synced",
@@ -378,7 +380,8 @@
       },
       "language": "Language",
       "storage": "Files and storage",
-      "storageDesc": "Where exports are saved and how long deleted items are kept."
+      "storageDesc": "Where exports are saved and how long deleted items are kept.",
+      "appliedNow": "Theme and language apply right away."
     },
     "trash": {
       "title": "Trash",
@@ -400,7 +403,9 @@
       "noConflicts": "There are no conflicts to review.",
       "now": "Sync now",
       "syncing": "Syncing…"
-    }
+    },
+    "unsaved": "Unsaved changes",
+    "nothingToSave": "There are no changes to save."
   },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",

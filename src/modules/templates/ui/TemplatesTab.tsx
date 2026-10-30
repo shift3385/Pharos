@@ -107,6 +107,8 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
         dataBase64: form.dataBase64,
       }, userId);
       toast(t("templates.importedToast", { name: values.name }));
+      // Show the new template: its kind may not be the one on screen.
+      setKind(values.kind);
     } else {
       await templateApi.update(form.template.id, {
         name: values.name,

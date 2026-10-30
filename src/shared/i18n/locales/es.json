@@ -230,7 +230,9 @@
         }
       }
     },
-    "providerCompat": "Compatible"
+    "providerCompat": "Compatible",
+    "keyDiscardConfirm": "Tienes una clave escrita sin guardar. Si cambias de proveedor, se descarta. ¿Continuar?",
+    "savedWithKey": "Ajustes de IA y clave guardados"
   },
   "sync": {
     "synced": "Sincronizado",
@@ -378,7 +380,8 @@
       },
       "language": "Idioma",
       "storage": "Archivos y almacenamiento",
-      "storageDesc": "Dónde se guardan las exportaciones y cuánto se conserva lo borrado."
+      "storageDesc": "Dónde se guardan las exportaciones y cuánto se conserva lo borrado.",
+      "appliedNow": "El tema y el idioma se aplican al momento."
     },
     "trash": {
       "title": "Papelera",
@@ -400,7 +403,9 @@
       "noConflicts": "No hay conflictos que revisar.",
       "now": "Sincronizar ahora",
       "syncing": "Sincronizando…"
-    }
+    },
+    "unsaved": "Cambios sin guardar",
+    "nothingToSave": "No hay cambios que guardar."
   },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",

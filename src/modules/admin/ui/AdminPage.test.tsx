@@ -54,9 +54,27 @@ describe("Administración", () => {
     expect(await screen.findByRole("heading", { name: "Proveedor online" })).toBeInTheDocument();
   });
 
-  it("an unknown tab falls back to Motor de IA", () => {
+  it("an unknown tab falls back to Motor de IA and the URL says so", async () => {
     renderAdmin("/admin?tab=nope");
     expect(screen.getByRole("tab", { name: "Motor de IA" })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/admin?tab=ai"));
+  });
+
+  it("General saves only with changes, and leaving with them asks first", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderAdmin("/admin?tab=general");
+    const save = screen.getByRole("button", { name: "Guardar ajustes" });
+    expect(save).toBeDisabled();
+    const retention = screen.getByRole("spinbutton", { name: /Retención/ });
+    await user.clear(retention);
+    await user.type(retention, "45");
+    expect(save).toBeEnabled();
+    await user.click(screen.getByTestId("admin-tab-sync"));
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("where")).toHaveTextContent("tab=general");
+    await user.click(save);
+    expect(save).toBeDisabled();
   });
 
   it("/templates and /ai redirect to their tabs", async () => {

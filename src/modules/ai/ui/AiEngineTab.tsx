@@ -57,8 +57,10 @@ type TestResult = { ok: true; ms: number } | { ok: false; message: string };
  * Administración → Motor de IA (SPEC §8, ScrAdministracion `tab="ai"`): the
  * online provider with its key, model and parameters (from the capabilities
  * table, ADR-0031), the local Ollama model, and where AI is used. Provider,
- * model, parameters and Ollama settings are a draft saved with «Guardar»;
- * the key goes straight to the keychain with its own button.
+ * model, parameters, Ollama settings and a typed key are a draft saved with
+ * «Guardar» in the tab's save bar (the key goes to the keychain, never to the
+ * config). «Guardar clave» stores only the key. Changing provider with a typed
+ * key, or leaving the tab with any draft, asks first.
  */
 export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
   const { t } = useTranslation();
@@ -75,7 +77,10 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   const [models, setModels] = useState<string[]>([]);
   const [listing, setListing] = useState(false);
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const configDirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  // A key typed but not stored is unsaved work too.
+  const keyDirty = keyInput.trim() !== "";
+  const dirty = configDirty || keyDirty;
   const provider = draft.onlineProvider;
   const info = providerInfo(provider);
   const model = draft.onlineModels[provider];
@@ -124,6 +129,8 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
 
   async function selectProvider(id: OnlineProviderId) {
     if (id === provider) return;
+    // The typed key belongs to the current provider: switching drops it.
+    if (keyDirty && !window.confirm(t("ai.keyDiscardConfirm"))) return;
     const next = { ...draft, onlineProvider: id };
     setDraft(next);
     setKeyInput("");
@@ -132,13 +139,18 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     await refreshStatus(next);
   }
 
-  function save() {
+  async function save() {
+    if (keyDirty) {
+      await aiKeys.set(provider, keyInput.trim());
+      setKeyInput("");
+      setShowKey(false);
+    }
     saveConfig(draft);
     const fresh = loadConfig();
     setSaved(fresh);
     setDraft(fresh);
-    toast(t("ai.saved"));
-    void refreshStatus(fresh);
+    toast(keyDirty ? t("ai.savedWithKey") : t("ai.saved"));
+    await refreshStatus(fresh);
   }
 
   async function saveKey() {
@@ -439,17 +451,6 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               )}
               {test && !test.ok && <span className="ai-test__err">{test.message}</span>}
             </span>
-            <span className="adm-actions__spacer" />
-            <button
-              type="button"
-              className="adm-btn adm-btn--primary"
-              data-testid="ai-save"
-              onClick={() => guard(save)}
-              disabled={!dirty}
-            >
-              <Save size={16} aria-hidden="true" />
-              {t("ai.save")}
-            </button>
           </div>
         </section>
 
@@ -561,6 +562,24 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
             </div>
           </section>
         </div>
+      </div>
+
+      {/* One save for the whole tab, always in view (SPEC §8). */}
+      <div className="adm-savebar" data-dirty={dirty || undefined}>
+        <span className="adm-savebar__state" role="status">
+          {dirty ? t("admin.unsaved") : ""}
+        </span>
+        <button
+          type="button"
+          className="adm-btn adm-btn--primary"
+          data-testid="ai-save"
+          onClick={() => guard(() => void save())}
+          disabled={!dirty}
+          title={dirty ? undefined : t("admin.nothingToSave")}
+        >
+          <Save size={16} aria-hidden="true" />
+          {t("ai.save")}
+        </button>
       </div>
     </div>
   );

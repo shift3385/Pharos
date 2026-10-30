@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImagePlus, Save } from "lucide-react";
 import { useToast } from "@shared/ui/Toast";
@@ -19,12 +19,15 @@ const THEMES: ThemePreference[] = ["light", "dark", "system"];
 /** Administración → General (SPEC §8): appearance (theme with «Según el
  *  sistema», language, custom background) and files and storage (download
  *  folder, retention, Papelera). Theme and language apply at once, like the
- *  topbar's; background and retention are saved with «Guardar ajustes». */
-export function GeneralTab() {
+ *  topbar's; background, opacity and retention are a draft saved with
+ *  «Guardar ajustes» in the save bar under both sections. */
+export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const { preference, setPreference } = useTheme();
-  const [settings, setSettings] = useState(loadSettings());
+  const [saved, setSaved] = useState(loadSettings);
+  const [settings, setSettings] = useState(saved);
+  const dirty = JSON.stringify(settings) !== JSON.stringify(saved);
   const fileRef = useRef<HTMLInputElement>(null);
   const language = (i18n.resolvedLanguage ?? "es") as Language;
 
@@ -32,9 +35,12 @@ export function GeneralTab() {
   const retentionIssue = numberInRange(settings.retentionDays, { min: 1, max: 3650, integer: true });
   const { guard, showSummary, summaryRef } = useSaveGuard(retentionIssue !== null);
 
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
+
   function save() {
     saveSettings(settings);
     const fresh = loadSettings();
+    setSaved(fresh);
     setSettings(fresh);
     applyBackground(fresh);
     toast(t("admin.saved"));
@@ -155,20 +161,30 @@ export function GeneralTab() {
 
         <TrashSection />
 
-        {showSummary && retentionIssue && (
-          <ErrorSummary
-            ref={summaryRef}
-            items={[{ label: t("admin.settings.retention"), issue: retentionIssue, fieldId: "adm-retention" }]}
-          />
-        )}
-        <div className="adm-actions">
-          <span className="adm-actions__spacer" />
-          <button type="button" className="adm-btn adm-btn--primary" onClick={() => guard(save)}>
-            <Save size={16} aria-hidden="true" />
-            {t("admin.settings.save")}
-          </button>
-        </div>
       </SettingsSection>
+
+      {showSummary && retentionIssue && (
+        <ErrorSummary
+          ref={summaryRef}
+          items={[{ label: t("admin.settings.retention"), issue: retentionIssue, fieldId: "adm-retention" }]}
+        />
+      )}
+      {/* Covers both sections; theme and language already applied. */}
+      <div className="adm-savebar" data-dirty={dirty || undefined}>
+        <span className="adm-savebar__state" role="status">
+          {dirty ? t("admin.unsaved") : t("admin.general.appliedNow")}
+        </span>
+        <button
+          type="button"
+          className="adm-btn adm-btn--primary"
+          onClick={() => guard(save)}
+          disabled={!dirty}
+          title={dirty ? undefined : t("admin.nothingToSave")}
+        >
+          <Save size={16} aria-hidden="true" />
+          {t("admin.settings.save")}
+        </button>
+      </div>
     </div>
   );
 }

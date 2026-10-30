@@ -60,7 +60,8 @@ interface Rule {
 const RULES: Rule[] = [
   {
     provider: "gemini",
-    model: /^gemini-(2\.5|[3-9])/i,
+    // 2.5 and later, and the `gemini-*-latest` aliases (they follow the newest).
+    model: /^gemini-((2\.5|[3-9])|.*-latest$)/i,
     caps: {
       temperature: temperature("supported", "ai.params.note.range"),
       reasoning: reasoning("level", ["auto", "low", "high"]),
@@ -71,9 +72,10 @@ const RULES: Rule[] = [
     caps: { temperature: temperature("supported", "ai.params.note.range"), reasoning: null },
   },
   {
-    // Reasoning models only accept the default temperature.
+    // Reasoning models only accept the default temperature; `gpt-5-chat*` is
+    // not a reasoning model and takes it.
     provider: "openai",
-    model: /^(o\d|gpt-5)/i,
+    model: /^(o\d|gpt-5(?!-chat))/i,
     caps: {
       temperature: temperature("unsupported", "ai.params.note.modelNoTemperature"),
       reasoning: reasoning("reasoningEffort", ["minimal", "low", "medium", "high"]),

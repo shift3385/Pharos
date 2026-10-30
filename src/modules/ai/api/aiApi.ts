@@ -38,7 +38,13 @@ export function normalizeConfig(stored: unknown): AiConfig {
   const provider = ONLINE_PROVIDERS.some((p) => p.id === raw.onlineProvider)
     ? (raw.onlineProvider as OnlineProviderId)
     : DEFAULT_AI_CONFIG.onlineProvider;
-  return { ...DEFAULT_AI_CONFIG, ...rest, onlineProvider: provider, onlineModels: models };
+  // Configs saved before «Enviar» existed always sent the temperature to a
+  // compatible endpoint: keep doing so. Only a new config starts with it off.
+  const customSendTemperature =
+    typeof raw.customSendTemperature === "boolean"
+      ? raw.customSendTemperature
+      : Object.keys(raw).length > 0;
+  return { ...DEFAULT_AI_CONFIG, ...rest, onlineProvider: provider, onlineModels: models, customSendTemperature };
 }
 
 export function loadConfig(): AiConfig {

@@ -57,6 +57,19 @@
   display: none;
 }
 
+/* The end that hides tabs fades out, so the strip reads as scrollable. */
+.adm-tabs[data-fade-end] {
+  mask-image: linear-gradient(to right, currentColor calc(100% - 40px), transparent);
+}
+
+.adm-tabs[data-fade-start] {
+  mask-image: linear-gradient(to right, transparent, currentColor 40px);
+}
+
+.adm-tabs[data-fade-start][data-fade-end] {
+  mask-image: linear-gradient(to right, transparent, currentColor 40px, currentColor calc(100% - 40px), transparent);
+}
+
 .adm-tabs__group {
   flex: none;
   display: flex;
@@ -578,6 +591,40 @@
 
 [data-viewport="mobile"] .adm-actions__spacer {
   display: none;
+}
+
+/* ---- Save bar: one per tab, stuck to the bottom of the scroll area ---- */
+.adm-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+.adm-savebar__state {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+.adm-savebar[data-dirty] .adm-savebar__state {
+  font-weight: var(--fw-medium);
+  color: var(--color-warning-text);
+}
+
+[data-viewport="mobile"] .adm-savebar .adm-btn {
+  flex: 1 1 140px;
 }
 
 /* ---- Papelera («Próximamente», RED-W3) ---- */

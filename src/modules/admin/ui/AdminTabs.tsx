@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import {
   LayoutTemplate,
@@ -39,6 +39,26 @@ export function AdminTabs({
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Which ends of the strip hide tabs, so they fade and show it scrolls.
+  const [edges, setEdges] = useState({ start: false, end: false });
+  const measure = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const start = el.scrollLeft > 1;
+    const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+    setEdges((e) => (e.start === start && e.end === end ? e : { start, end }));
+  }, []);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure]);
+
   // Keep the current pill visible in the scrolling strip.
   useEffect(() => {
     const el = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
@@ -66,6 +86,9 @@ export function AdminTabs({
       role="tablist"
       aria-label={t("admin.tabs.label")}
       onKeyDown={onKeyDown}
+      onScroll={measure}
+      data-fade-start={edges.start || undefined}
+      data-fade-end={edges.end || undefined}
     >
       {ADMIN_TAB_GROUPS.map(({ group, tabs }, gi) => (
         <div key={group} className="adm-tabs__group" role="none">
