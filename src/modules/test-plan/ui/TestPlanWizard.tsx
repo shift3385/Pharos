@@ -33,6 +33,7 @@ import { StepCompact, StepRail, StepStrip } from "./wizard/StepNav";
 import { PlanIoMenu, PlanStatusPanel, RevisionsButton, RevisionsDialog } from "./wizard/PlanSidePanels";
 import type { StepProps } from "./wizard/stepProps";
 import { useWideApp } from "./wizard/useWideApp";
+import { parseStamp } from "@shared/time/stamp";
 import "./TestPlan.css";
 import "./TestPlanWizard.css";
 
@@ -270,7 +271,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
       ? t("testPlan.saveState.saved", { when: when(savedAt) })
       : t("testPlan.saveState.never");
   const updated = savedAt
-    ? new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" }).format(new Date(savedAt))
+    ? new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" }).format(parseStamp(savedAt))
     : null;
 
   return (
@@ -358,7 +359,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
 
 /** «ahora mismo», «hace 5 min», «hace 2 h», else the date. */
 function relativeTime(iso: string, lang: string, now: string): string {
-  const then = new Date(iso).getTime();
+  const then = parseStamp(iso).getTime();
   if (Number.isNaN(then)) return iso;
   const minutes = Math.round((Date.now() - then) / 60_000);
   if (minutes < 1) return now;

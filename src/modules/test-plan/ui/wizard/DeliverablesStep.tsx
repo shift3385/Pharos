@@ -46,9 +46,7 @@ export function DeliverablesStep({
               own.map((v) => (
                 <span key={v} className="tpw-check tpw-check--own">
                   <Check size={16} className="tpw-check__icon" aria-hidden="true" />
-                  <span className="u-truncate" title={v}>
-                    {v}
-                  </span>
+                  <span className="tpw-check__text">{v}</span>
                   <span className="tpw-own">{t("testPlan.deliverables.own")}</span>
                   <button
                     type="button"

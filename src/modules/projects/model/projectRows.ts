@@ -3,6 +3,7 @@
 import { projectPlanClosure, projectPlanStatus } from "@modules/test-plan";
 import { projectCaseCount } from "@modules/test-cases";
 import { projectCoverage } from "@modules/traceability";
+import { parseStamp } from "@shared/time/stamp";
 import { projectApi } from "../api/projectApi";
 import { lastAccessMap } from "./lastAccess";
 import type { ProjectRow } from "./projectTable";
@@ -23,7 +24,8 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         name: p.name,
         caseIdPrefix: p.caseIdPrefix,
         caseIdDigits: p.caseIdDigits,
-        updatedAt: p.updatedAt,
+        // ISO with its zone, comparable with the last access.
+        updatedAt: parseStamp(p.updatedAt).toISOString(),
         lastAccess: access[p.id] ?? null,
         planStatus,
         cases,

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { testPlanApi } from "../api/testPlanApi";
 import type { RevisionSummary } from "../model/types";
+import { parseStamp } from "@shared/time/stamp";
 
 /** A plan's revisions, newest first; `limit` shows only the latest ones (the
  *  side panel), `onRestore` adds «Restaurar» to each (the dialog). */
@@ -35,7 +36,7 @@ export function RevisionHistory({
   }
 
   const date = (iso: string) => {
-    const d = new Date(iso);
+    const d = parseStamp(iso);
     return Number.isNaN(d.getTime())
       ? iso
       : new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: "medium", timeStyle: "short" }).format(d);

@@ -73,13 +73,10 @@
   text-wrap: balance;
 }
 
+/* Focused by the wizard when the step changes (2.4.3): a reading target
+   (tabIndex -1), not a control, so no focus ring. */
 .tpw__title:focus {
   outline: none;
-}
-
-.tpw__title:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
 }
 
 .tpw__desc {
@@ -755,4 +752,46 @@
 
 .tpw-warn {
   color: var(--color-warning-text);
+}
+
+/* An own deliverable wraps (it is text, not an ID: SPEC §3). */
+.tpw-check__text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tpw-side .tp__muted {
+  margin: 0;
+  font-size: var(--fs-caption);
+}
+
+/* Inside the scrolling panel the rows keep their height. */
+.tpw-tools__more > * {
+  flex: none;
+}
+
+/* Phones: seven 44 px day cells do not fit in 320 px. Smaller cells, and
+   the calendar may scroll sideways rather than push the page wider. */
+.tp-cal {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+[data-viewport="mobile"] .tp-cal .rdp-root {
+  --rdp-day-width: 36px;
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-height: 34px;
+}
+
+/* Phones: «Anterior» keeps its word; «Siguiente: …» takes the rest and
+   clips. */
+[data-viewport="mobile"] .tpw__foot > :first-child {
+  flex: none;
+}
+
+[data-viewport="mobile"] .tpw__next {
+  flex: 1 1 auto;
+  max-width: none;
 }
