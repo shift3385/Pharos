@@ -4,7 +4,8 @@ export {
   FILES_PER_PLAN,
   projectPlanFiles,
   projectHasPlan,
-  projectPlanStatus, projectPlanClosure,
+  projectPlanStatus,
+  projectPlanClosure,
   projectPlanVersion,
 } from "./export/batch";
 export { exportPlanPdf } from "./export/planPdf";

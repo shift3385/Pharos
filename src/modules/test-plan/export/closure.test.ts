@@ -8,21 +8,31 @@ vi.mock("../api/testPlanApi", () => ({
     byProject: async (projectId: string) =>
       projectId === "none"
         ? null
-        : projectId === "empty"
-          ? { data: {} }
-          : {
+        : projectId === "imported"
+          ? {
               data: {
                 sprints: [
-                  { name: "S1", start: "2026-11-03", end: "2026-11-14" },
-                  { name: "S2", start: "2026-11-17", end: "2026-11-28" },
+                  { name: "S1", start: "03/11/2026", end: "14/11/2026" },
+                  { name: "S2", start: "2026-11-17", end: "2026-11-21" },
                 ],
-                milestones: [{ name: "Go-live", date: "2026-11-21" }],
-                closureCriteria: [
-                  { criterion: "% de casos ejecutados", metric: "≥ 95 %" },
-                  { criterion: "  ", metric: "" },
-                ],
+                milestones: [{ name: "Go-live", date: "Nov 28" }],
               },
-            },
+            }
+          : projectId === "empty"
+            ? { data: {} }
+            : {
+                data: {
+                  sprints: [
+                    { name: "S1", start: "2026-11-03", end: "2026-11-14" },
+                    { name: "S2", start: "2026-11-17", end: "2026-11-28" },
+                  ],
+                  milestones: [{ name: "Go-live", date: "2026-11-21" }],
+                  closureCriteria: [
+                    { criterion: "% de casos ejecutados", metric: "≥ 95 %" },
+                    { criterion: "  ", metric: "" },
+                  ],
+                },
+              },
   },
 }));
 
@@ -34,8 +44,17 @@ describe("plan closure for the Home (RED-V1)", () => {
     });
   });
 
+  it("ignores dates that are not ISO (raw text from an imported plan)", async () => {
+    expect((await projectPlanClosure("imported", "u1"))?.closeDate).toBe(
+      "2026-11-21",
+    );
+  });
+
   it("has no date without a schedule and nothing without a plan", async () => {
-    expect(await projectPlanClosure("empty", "u1")).toEqual({ closeDate: null, criteria: [] });
+    expect(await projectPlanClosure("empty", "u1")).toEqual({
+      closeDate: null,
+      criteria: [],
+    });
     expect(await projectPlanClosure("none", "u1")).toBeNull();
   });
 });

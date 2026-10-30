@@ -65,6 +65,8 @@ export async function projectPlanStatus(
   return (await testPlanApi.byProject(projectId, userId))?.status ?? null;
 }
 
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
 /** Closing date and exit criteria of a project’s plan, for the Home (RED-V1):
  *  the date is the latest sprint end or milestone of the schedule (null when
  *  the schedule has none); null when the project has no plan. Read-only. */
@@ -74,10 +76,12 @@ export async function projectPlanClosure(
 ): Promise<{ closeDate: string | null; criteria: ClosureCriterion[] } | null> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return null;
+  // Only ISO dates (YYYY-MM-DD) compare as text; an imported plan may keep
+  // the raw cell text («14/11/2026», «Nov 28»), which is ignored here.
   const dates = [
     ...(plan.data.sprints ?? []).map((s) => s.end),
     ...(plan.data.milestones ?? []).map((m) => m.date),
-  ].filter(Boolean);
+  ].filter((d) => ISO_DAY.test(d ?? ""));
   const closeDate = dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
   const criteria = (plan.data.closureCriteria ?? []).filter((c) => c.criterion.trim());
   return { closeDate, criteria };
