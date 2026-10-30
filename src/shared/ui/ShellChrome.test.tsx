@@ -3,15 +3,15 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ShellChromeProvider } from "./ShellChrome";
-import { useHideBottomBar, useShellChrome } from "./useShellChrome";
+import { useHideMobileChrome, useShellChrome } from "./useShellChrome";
 
 function Bar() {
-  const { bottomBarHidden } = useShellChrome();
-  return bottomBarHidden ? null : <nav aria-label="Barra inferior" />;
+  const { mobileChromeHidden } = useShellChrome();
+  return mobileChromeHidden ? null : <nav aria-label="Barra inferior" />;
 }
 function Screen() {
   const [editing, setEditing] = useState(false);
-  useHideBottomBar(editing);
+  useHideMobileChrome(editing);
   return (
     <button type="button" onClick={() => setEditing((e) => !e)}>
       {editing ? "Listo" : "Editar"}
@@ -20,7 +20,7 @@ function Screen() {
 }
 
 describe("ShellChrome (SPEC §7)", () => {
-  it("a screen hides the bottom bar while it asks to, and it comes back after", async () => {
+  it("a screen hides the mobile chrome while it asks to, and it comes back after", async () => {
     const { unmount } = render(
       <ShellChromeProvider>
         <Screen />

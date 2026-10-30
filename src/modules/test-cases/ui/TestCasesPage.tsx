@@ -94,6 +94,13 @@ export function TestCasesPage({
   }, [projectId, userId]);
 
   const ordered = useMemo(() => sortCases(filterCases(cases, filters), sort), [cases, filters, sort]);
+  // The walk order is frozen while the editor is open: saving a case that no
+  // longer matches the filters (e.g. its state) keeps it, and its neighbours,
+  // in «‹ anterior | N de M | siguiente ›» until the user leaves it.
+  const walk = useRef<string[] | null>(null);
+  if (open === null || open === NEW_CASE) walk.current = null;
+  else if (!loading && (!walk.current || (!walk.current.includes(open) && ordered.some((c) => c.id === open))))
+    walk.current = ordered.map((c) => c.id);
   const pages = Math.max(1, Math.ceil(ordered.length / pageSize));
   const current = Math.min(page, pages);
   const visible = ordered.slice((current - 1) * pageSize, current * pageSize);
@@ -179,9 +186,24 @@ export function TestCasesPage({
     );
   }
 
+  /** Deletes one by one; a failure does not stop the rest, is reported, and
+   *  the list is reloaded either way. */
   async function removeCases(ids: ReadonlySet<string>) {
-    for (const id of ids) await testCaseApi.remove(id, userId);
-    toast(t("testCase.list.deletedToast", { count: ids.size }));
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await testCaseApi.remove(id, userId);
+      } catch {
+        failed++;
+      }
+    }
+    const done = ids.size - failed;
+    // One toast that says both, so the failure is never hidden behind the success.
+    const parts = [
+      done ? t("testCase.list.deletedToast", { count: done }) : "",
+      failed ? t("testCase.list.deleteFailed", { count: failed }) : "",
+    ].filter(Boolean);
+    toast(parts.join(". "), failed ? "error" : "success");
     await refresh();
   }
 
@@ -194,16 +216,18 @@ export function TestCasesPage({
 
   if (open !== null) {
     const isNew = open === NEW_CASE;
-    const at = ordered.findIndex((c) => c.id === open);
+    const byId = new Map(cases.map((c) => [c.id, c]));
+    const list = (walk.current ?? []).map((id) => byId.get(id)).filter((c): c is ListedCase => Boolean(c));
+    const at = list.findIndex((c) => c.id === open);
     const nav: CaseNav | undefined =
       !isNew && at >= 0
         ? {
             position: at + 1,
-            total: ordered.length,
-            prev: ordered[at - 1],
-            next: ordered[at + 1],
-            filtered: ordered.length !== cases.length,
-            cases: ordered,
+            total: list.length,
+            prev: list[at - 1],
+            next: list[at + 1],
+            filtered: list.length !== cases.length,
+            cases: list,
             onGo: (id) => openCase(id),
           }
         : undefined;
@@ -238,6 +262,7 @@ export function TestCasesPage({
         loading={loading}
         visible={visible}
         total={ordered.length}
+        matching={ordered}
         filters={filters}
         onFiltersChange={(f) => {
           setFilters(f);

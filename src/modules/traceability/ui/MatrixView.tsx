@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router";
+import { caseLink } from "@modules/test-cases";
+import { Switch } from "@shared/ui/Switch";
 import { Trans, useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
@@ -51,6 +54,7 @@ function groupRows(rows: MatrixRow[]): Group[] {
  * pagination by requirement and the chain gaps with the free-text migration.
  */
 export function MatrixView({
+  projectId,
   matrix,
   requirements,
   aiReady,
@@ -58,6 +62,7 @@ export function MatrixView({
   onGenerate,
   onMigrate,
 }: {
+  projectId: string;
   matrix: TraceabilityMatrix;
   requirements: Requirement[];
   aiReady: boolean;
@@ -115,6 +120,15 @@ export function MatrixView({
       </span>
     </button>
   );
+  /** The case ID opens it in Casos. */
+  const caseKey = (r: MatrixRow) =>
+    r.caseId && r.scenarioId ? (
+      <Link className="tr-mono tz-caselink" to={caseLink(projectId, r.caseId)} title={r.caseTitle}>
+        {r.scenarioId}
+      </Link>
+    ) : (
+      <span className="tr-mono">—</span>
+    );
   const notes = (r: MatrixRow) =>
     r.notes.length ? r.notes.map((n) => t(`traceability.note.${n}`)).join(" · ") : "—";
   const defects = (r: MatrixRow) => (r.defectKeys.length ? r.defectKeys.join(", ") : "—");
@@ -154,7 +168,7 @@ export function MatrixView({
       id: "case",
       header: t("traceability.matrix.col.case"),
       width: "84px",
-      cell: (l) => <span className="tr-mono">{l.row.scenarioId ?? "—"}</span>,
+      cell: (l) => caseKey(l.row),
     },
     {
       id: "caseTitle",
@@ -235,7 +249,7 @@ export function MatrixView({
               {linked.map((r) => (
                 <li key={r.caseId} className="tz-case">
                   <p className="tz-case__name">
-                    <span className="tr-mono">{r.scenarioId}</span> {r.caseTitle}
+                    {caseKey(r)} {r.caseTitle}
                   </p>
                   <dl className="tz-card__fields">
                     <dt>{t("traceability.matrix.col.execution")}</dt>
@@ -265,20 +279,17 @@ export function MatrixView({
   return (
     <div className="tz-matrix">
       <div className="tz-toolbar">
-        <button
-          type="button"
-          className="tz-gaps-toggle"
-          aria-pressed={onlyGaps}
-          title={t("traceability.matrix.onlyGapsHint")}
-          onClick={() => {
-            setOnlyGaps((v) => !v);
-            setPage(1);
-          }}
-        >
-          <span className="tz-switch" aria-hidden="true" />
-          {t("traceability.matrix.onlyGaps")}
-          <span className="tz-gaps-toggle__count">{summary.uncovered}</span>
-        </button>
+        <div className="tz-gaps-toggle" data-on={onlyGaps || undefined}>
+          <Switch
+            checked={onlyGaps}
+            onChange={(v) => {
+              setOnlyGaps(v);
+              setPage(1);
+            }}
+            label={t("traceability.matrix.onlyGapsCount", { count: summary.uncovered })}
+            title={t("traceability.matrix.onlyGapsHint")}
+          />
+        </div>
       </div>
 
       <dl className="tz-kpis">

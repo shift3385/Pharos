@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Bug, Database, Flag, GripVertical, Link2, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { useToast } from "@shared/ui/Toast";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -88,6 +89,7 @@ export function PlannerBoard({
   const [cards, setCards] = useState<PlannerCard[]>([]);
   const [editing, setEditing] = useState<EditView | null>(null);
   const [deleting, setDeleting] = useState<PlannerCard | null>(null);
+  const toast = useToast();
   const [kind, setKind] = useState<"all" | CardKind>("all");
   const [query, setQuery] = useState("");
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
@@ -174,7 +176,11 @@ export function PlannerBoard({
 
   async function remove(card: PlannerCard) {
     setDeleting(null);
-    await plannerApi.remove(card.id, ownerId);
+    try {
+      await plannerApi.remove(card.id, ownerId);
+    } catch {
+      toast(t("planner.deleteFailed"));
+    }
     void refresh();
   }
 

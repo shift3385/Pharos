@@ -298,8 +298,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - **Shell slots** (RED-V3, amendment to ADR-0028): a screen may ask things of
   the shell around it without importing `src/app`. `ShellChromeProvider`
   (`@shared/ui/ShellChrome`, provided once by `AppShell`) and
-  `useHideBottomBar(active)` (`@shared/ui/useShellChrome`) hide the mobile
-  bottom bar while Gherkin is edited (SPEC §7). The project header and its
+  `useHideMobileChrome(active)` (`@shared/ui/useShellChrome`) hide the
+  mobile top bar, section pills and bottom bar while Gherkin is edited
+  full screen (SPEC §7/§8). The project header and its
   actions are V2's slot (`ProjectHeader`; sections add buttons with
   `useHeaderActions`, `@shared/ui/headerActions`).
 - **Casos (RED-V3):** `TestCasesPage` owns the filters, order and page

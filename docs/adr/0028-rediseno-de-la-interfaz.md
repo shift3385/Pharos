@@ -88,9 +88,9 @@
 
 8. **Enmienda RED-V3 (2026-10-30): ranuras de la pantalla en el shell.** Una
    pantalla puede pedir cosas al shell sin importar `src/app`:
-   - `ShellChromeProvider` (en `AppShell`) y `useHideBottomBar`, en
-     `src/shared/ui`, ocultan la barra inferior del móvil mientras se edita
-     Gherkin (SPEC §7);
+   - `ShellChromeProvider` (en `AppShell`) y `useHideMobileChrome`, en
+     `src/shared/ui`, ocultan la barra superior, las pastillas y la barra inferior del
+     móvil mientras se edita Gherkin a pantalla completa (SPEC §7/§8);
    - la cabecera del proyecto es de V2 (`ProjectHeader`, `@modules/projects`);
      cada sección pone sus botones con `useHeaderActions`
      (`@shared/ui/headerActions`), sin importar `projects`.

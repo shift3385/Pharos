@@ -824,7 +824,12 @@
       "ioExport": "Exportar",
       "importXlsxHint": "Crea un caso desde la plantilla .xlsx",
       "exportFeaturesHint": "Escenarios Gherkin de todos los casos, para automatizar (ZIP)",
-      "suggest": "Sugerir casos con IA"
+      "suggest": "Sugerir casos con IA",
+      "offPage_one": "{{count}} en otra página",
+      "offPage_other": "{{count}} en otras páginas",
+      "andMore": "y {{count}} más",
+      "deleteFailed_one": "No se pudo eliminar {{count}} caso; sigue en la lista.",
+      "deleteFailed_other": "No se pudieron eliminar {{count}} casos; siguen en la lista."
     },
     "nav": {
       "allCases": "Todos los casos",
@@ -848,7 +853,10 @@
       },
       "discardTitle": "¿Descartar los cambios?",
       "discardMessage": "Hay cambios sin guardar en este caso. Si sigues, se pierden.",
-      "discardConfirm": "Descartar cambios"
+      "discardConfirm": "Descartar cambios",
+      "notFoundTitle": "Caso no encontrado",
+      "notFound": "Este caso no existe o se ha eliminado. Vuelve a la lista para elegir otro.",
+      "goToShortcutMac": "⌘ P"
     },
     "gherkin": {
       "copy": "Copiar el Gherkin",
@@ -858,8 +866,7 @@
       "done": "Listo",
       "editing": "editando",
       "swipe": "Desliza el código hacia los lados para ver las líneas largas.",
-      "indent": "Sangrar",
-      "levelStatus": "Nivel detectado: {{level}}"
+      "indent": "Sangrar"
     }
   },
   "dashboard": {
@@ -974,7 +981,8 @@
     "linksTitle_other": "{{count}} casos de prueba vinculados",
     "deleteTitle": "¿Eliminar la tarjeta?",
     "deleteMessage": "Se elimina «{{card}}» del planificador.",
-    "deleteConfirm": "Sí, eliminar"
+    "deleteConfirm": "Sí, eliminar",
+    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo."
   },
   "traceability": {
     "title": "Trazabilidad",
@@ -1025,7 +1033,8 @@
       "deleteConfirm": "Eliminar",
       "deletedToast": "{{key}} eliminado",
       "cases": "Casos",
-      "actions": "Acciones"
+      "actions": "Acciones",
+      "deleteFailed": "No se pudo eliminar {{key}}."
     },
     "import": {
       "button": "Importar CSV",
@@ -1092,7 +1101,8 @@
         "highPriority_one": "{{count}} de prioridad alta",
         "highPriority_other": "{{count}} de prioridad alta",
         "withCase": "con al menos un caso"
-      }
+      },
+      "onlyGapsCount": "Mostrar solo huecos ({{count}})"
     },
     "execution": {
       "passed": "Pasa",

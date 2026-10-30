@@ -213,65 +213,26 @@
 .tz-gaps-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 40px;
+  min-height: 40px;
   padding: 0 12px;
-  font: inherit;
   font-size: 13px;
   font-weight: var(--fw-medium);
-  white-space: nowrap;
-  color: var(--color-text-primary);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
-.tz-gaps-toggle[aria-pressed="true"] {
+.tz-gaps-toggle[data-on] {
   border-color: var(--color-error);
 }
 
-.tz-switch {
-  position: relative;
-  width: 30px;
-  height: 18px;
-  flex: none;
-  background: var(--color-border-input);
-  border-radius: var(--radius-pill);
-  transition: background-color 150ms ease;
+.tz-caselink {
+  color: var(--color-navy-500);
+  text-decoration: none;
 }
 
-.tz-switch::after {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  background: var(--color-surface-1);
-  border-radius: 50%;
-  content: "";
-  transition: transform 150ms ease;
-}
-
-.tz-gaps-toggle[aria-pressed="true"] .tz-switch {
-  background: var(--color-error);
-}
-
-.tz-gaps-toggle[aria-pressed="true"] .tz-switch::after {
-  transform: translateX(12px);
-}
-
-.tz-gaps-toggle__count {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  line-height: 20px;
-  text-align: center;
-  color: var(--color-error-text);
-  background: color-mix(in oklab, var(--color-error) 14%, transparent);
-  border-radius: var(--radius-pill);
+.tz-caselink:hover {
+  text-decoration: underline;
 }
 
 .tz-kpis {
@@ -605,7 +566,7 @@
 }
 
 [data-viewport="mobile"] .tz-gaps-toggle {
-  height: 44px;
+  min-height: 44px;
 }
 
 [data-viewport="mobile"] .tz-panel {

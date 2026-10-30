@@ -22,6 +22,7 @@ vi.mock("@modules/test-cases", () => ({
     { id: "c3", scenarioId: "PCL-0170", title: "Alta de dirección", status: "draft", requirementKeys: [], traceability: "" },
   ],
   setCaseRequirementKeys: vi.fn(),
+  caseLink: (p: string, c: string) => `/projects/${p}/cases?case=${c}`,
 }));
 vi.mock("@modules/planner", () => ({
   projectDefects: async () => [
@@ -64,6 +65,7 @@ describe("Trazabilidad (RED-V3)", () => {
     // 2 rows for REQ-031 (two cases) + one for each uncovered requirement.
     expect(within(table).getAllByRole("row")).toHaveLength(5);
     expect(within(table).getByText("DEF-018")).toBeInTheDocument();
+    expect(within(table).getByRole("link", { name: "PCL-0142" })).toHaveAttribute("href", "/projects/p1/cases?case=c1");
     expect(within(table).getByText("Defecto abierto")).toBeInTheDocument();
     expect(within(table).getAllByText("Sin cubrir")).toHaveLength(2);
     expect(within(table).getByRole("button", { name: "Generar casos con IA desde REQ-047" })).toBeInTheDocument();
@@ -77,10 +79,10 @@ describe("Trazabilidad (RED-V3)", () => {
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {
     setViewportWidth(1440);
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
-    const toggle = await screen.findByRole("button", { name: "Mostrar solo huecos 2" });
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    const toggle = await screen.findByRole("switch", { name: "Mostrar solo huecos (2)" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     await userEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(toggle).toHaveAttribute("aria-checked", "true");
     const table = screen.getByRole("table");
     expect(within(table).getAllByRole("row")).toHaveLength(3);
     expect(within(table).queryByText("REQ-031")).not.toBeInTheDocument();

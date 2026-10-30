@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Link } from "react-router";
 import {
@@ -56,6 +56,7 @@ export function TestCaseList({
   loading,
   visible,
   total,
+  matching,
   filters,
   onFiltersChange,
   sort,
@@ -79,6 +80,8 @@ export function TestCaseList({
   visible: ListedCase[];
   /** Cases that match the filters. */
   total: number;
+  /** Every case that matches the filters, in order (all pages). */
+  matching: ListedCase[];
   filters: CaseFilters;
   onFiltersChange: (f: CaseFilters) => void;
   sort: CaseSort;
@@ -100,6 +103,18 @@ export function TestCaseList({
   const mobile = view === "mobile";
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // A filter never leaves cases selected that it hides: the selection keeps
+  // only the cases that still match (other pages included).
+  useEffect(() => {
+    const keep = new Set(matching.map((c) => c.id));
+    setSelected((prev) => {
+      const next = new Set([...prev].filter((id) => keep.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [matching]);
+  const shownIds = new Set(visible.map((c) => c.id));
+  const offPage = [...selected].filter((id) => !shownIds.has(id)).length;
+  const selectedKeys = matching.filter((c) => selected.has(c.id)).map((c) => c.scenarioId);
   const counts = statusCounts(cases, filters);
   const lang = i18n.resolvedLanguage ?? "es";
   const filtered = filters.query !== "" || filters.status !== "all" || filters.priorities.size > 0 || filters.levels.size > 0;
@@ -184,7 +199,7 @@ export function TestCaseList({
     {
       id: "level",
       header: t("testCase.list.col.level"),
-      width: "minmax(0,1fr)",
+      width: "minmax(124px,1fr)",
       minView: "desktop",
       cell: (c) => <span className="cl-ellipsis">{t(`testCase.level.${c.gherkinLevel}.name`)}</span>,
     },
@@ -316,6 +331,7 @@ export function TestCaseList({
           <div className="cl-bulk" role="region" aria-label={t("testCase.list.bulk")}>
             <span className="cl-bulk__count" aria-live="polite">
               {t("testCase.list.selected", { count: selected.size })}
+              {offPage > 0 && <span className="cl-bulk__off"> · {t("testCase.list.offPage", { count: offPage })}</span>}
             </span>
             <button type="button" className="ui-btn ui-btn--small" onClick={() => onExportFeatures(selected)}>
               <Download size={15} aria-hidden="true" />
@@ -399,7 +415,13 @@ export function TestCaseList({
             setSelected(new Set());
             void onDelete(ids);
           }}
-        />
+        >
+          {/* What goes, listed: cases on other pages included. */}
+          <p className="cl-delete-list">
+            {selectedKeys.slice(0, 12).join(", ")}
+            {selectedKeys.length > 12 && ` ${t("testCase.list.andMore", { count: selectedKeys.length - 12 })}`}
+          </p>
+        </ConfirmDialog>
       )}
     </section>
   );

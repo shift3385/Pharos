@@ -824,7 +824,12 @@
       "ioExport": "Export",
       "importXlsxHint": "Creates a case from the .xlsx template",
       "exportFeaturesHint": "Gherkin scenarios of every case, for automation (ZIP)",
-      "suggest": "Suggest cases with AI"
+      "suggest": "Suggest cases with AI",
+      "offPage_one": "{{count}} on another page",
+      "offPage_other": "{{count}} on other pages",
+      "andMore": "and {{count}} more",
+      "deleteFailed_one": "{{count}} case could not be deleted; it stays in the list.",
+      "deleteFailed_other": "{{count}} cases could not be deleted; they stay in the list."
     },
     "nav": {
       "allCases": "All cases",
@@ -848,7 +853,10 @@
       },
       "discardTitle": "Discard the changes?",
       "discardMessage": "This case has unsaved changes. If you go on, they are lost.",
-      "discardConfirm": "Discard changes"
+      "discardConfirm": "Discard changes",
+      "notFoundTitle": "Case not found",
+      "notFound": "This case does not exist or was deleted. Go back to the list to pick another.",
+      "goToShortcutMac": "⌘ P"
     },
     "gherkin": {
       "copy": "Copy the Gherkin",
@@ -858,8 +866,7 @@
       "done": "Done",
       "editing": "editing",
       "swipe": "Swipe the code sideways to see long lines.",
-      "indent": "Indent",
-      "levelStatus": "Detected level: {{level}}"
+      "indent": "Indent"
     }
   },
   "dashboard": {
@@ -974,7 +981,8 @@
     "linksTitle_other": "{{count}} linked test cases",
     "deleteTitle": "Delete the card?",
     "deleteMessage": "«{{card}}» is removed from the planner.",
-    "deleteConfirm": "Yes, delete"
+    "deleteConfirm": "Yes, delete",
+    "deleteFailed": "The card could not be deleted. Try again."
   },
   "traceability": {
     "title": "Traceability",
@@ -1025,7 +1033,8 @@
       "deleteConfirm": "Delete",
       "deletedToast": "{{key}} deleted",
       "cases": "Cases",
-      "actions": "Actions"
+      "actions": "Actions",
+      "deleteFailed": "{{key}} could not be deleted."
     },
     "import": {
       "button": "Import CSV",
@@ -1092,7 +1101,8 @@
         "highPriority_one": "{{count}} high priority",
         "highPriority_other": "{{count}} high priority",
         "withCase": "with at least one case"
-      }
+      },
+      "onlyGapsCount": "Show only gaps ({{count}})"
     },
     "execution": {
       "passed": "Pass",

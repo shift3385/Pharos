@@ -62,6 +62,19 @@
   color: var(--color-navy-500);
 }
 
+.cl-bulk__off {
+  font-weight: var(--fw-regular);
+  color: var(--color-text-secondary);
+}
+
+.cl-delete-list {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
 .cl-empty,
 .cl-nomatch {
   padding: 32px 20px;
@@ -699,4 +712,22 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Full-screen Gherkin editing on mobile: the shell's bars are hidden
+   (useHideMobileChrome) and «Listo» stays on top while the code scrolls. */
+.tc-editor--gherkin-edit .tc-mobile-edit__top {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  margin: -16px -16px 0;
+  padding: 10px 16px;
+  background: var(--color-surface-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* iOS zooms into fields under 16 px: the code is 16 px while editing. */
+.tc-gherkin--mobile .tc-gherkin__ta,
+.tc-gherkin--mobile .tc-gherkin__pre {
+  font-size: 16px !important;
 }

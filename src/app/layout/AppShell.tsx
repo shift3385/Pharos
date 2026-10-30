@@ -11,7 +11,7 @@ import { useShellChrome } from "@shared/ui/useShellChrome";
 import { Sidebar } from "./Sidebar";
 import { BottomNav, MobileTopbar, ProjectPills, Topbar } from "./Topbar";
 import { AdminSectionNav } from "./AdminSectionNav";
-import { useActiveProject, useSidebarToggle } from "./useShellState";
+import { useActiveProject, useSidebarToggle, type ActiveProject } from "./useShellState";
 import "./AppShell.css";
 
 /**
@@ -67,11 +67,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         <div className="app-shell__main">
           {mobile ? (
-            <MobileTopbar active={active} />
+            <ShellMobileTop active={active} />
           ) : (
             <Topbar active={active} />
           )}
-          {mobile && active && <ProjectPills active={active} />}
           {/* Web only: data an older web version left unsent (BASE-10). */}
           {!isTauri() && (
             <div className="shell-notice sync">
@@ -104,8 +103,21 @@ function ShellProviders({ children }: { children: ReactNode }) {
   );
 }
 
+/** The mobile top bar and section pills, unless the screen hid them
+ *  (full-screen Gherkin editing, SPEC §7). */
+function ShellMobileTop({ active }: { active: ActiveProject | null }) {
+  const { mobileChromeHidden } = useShellChrome();
+  if (mobileChromeHidden) return null;
+  return (
+    <>
+      <MobileTopbar active={active} />
+      {active && <ProjectPills active={active} />}
+    </>
+  );
+}
+
 /** The mobile bottom bar, unless the screen hid it (Gherkin editing, SPEC §7). */
 function ShellBottomNav() {
-  const { bottomBarHidden } = useShellChrome();
-  return bottomBarHidden ? null : <BottomNav />;
+  const { mobileChromeHidden } = useShellChrome();
+  return mobileChromeHidden ? null : <BottomNav />;
 }

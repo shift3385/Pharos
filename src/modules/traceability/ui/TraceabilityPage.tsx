@@ -132,9 +132,13 @@ export function TraceabilityPage({
   }
 
   async function remove(r: Requirement) {
-    await requirementApi.remove(r.id, userId);
     setDeleting(null);
-    toast(t("traceability.requirement.deletedToast", { key: r.requirementKey }));
+    try {
+      await requirementApi.remove(r.id, userId);
+      toast(t("traceability.requirement.deletedToast", { key: r.requirementKey }));
+    } catch {
+      toast(t("traceability.requirement.deleteFailed", { key: r.requirementKey }));
+    }
     await refresh();
   }
 
@@ -237,6 +241,7 @@ export function TraceabilityPage({
         />
       ) : (
         <MatrixView
+          projectId={projectId}
           matrix={matrix}
           requirements={data.requirements}
           aiReady={aiReady}

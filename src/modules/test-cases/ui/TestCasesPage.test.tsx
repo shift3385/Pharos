@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Route, Routes, useLocation } from "react-router";
+import { Link, Route, Routes, useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
@@ -42,6 +42,11 @@ vi.mock("@modules/ai", async (orig) => ({
   aiAvailable: () => Promise.resolve(false),
 }));
 vi.mock("@modules/test-plan", () => ({ projectHasPlan: () => Promise.resolve(false) }));
+const toast = vi.fn();
+vi.mock("@shared/ui/Toast", async (orig) => ({
+  ...(await orig<typeof import("@shared/ui/Toast")>()),
+  useToast: () => toast,
+}));
 
 const summary = (n: number, over: Partial<TestCaseSummary> = {}): TestCaseSummary => ({
   id: `c${n}`,
@@ -76,14 +81,20 @@ const full = (s: TestCaseSummary): TestCase => ({
 });
 
 function Where() {
-  const { search } = useLocation();
-  return <output data-testid="search">{search}</output>;
+  const { pathname, search } = useLocation();
+  return (
+    <>
+      <output data-testid="search">{search}</output>
+      <output data-testid="path">{pathname}</output>
+      <Link to="/projects/p1/plan">Plan de pruebas</Link>
+    </>
+  );
 }
 function renderPage(route = "/projects/p1/cases") {
   return renderWithProviders(
     <Routes>
       <Route
-        path="/projects/:projectId/:section"
+        path="/projects/:projectId/cases"
         element={
           <>
             <TestCasesPage projectId="p1" caseIdPrefix="PCL-" />
@@ -91,6 +102,7 @@ function renderPage(route = "/projects/p1/cases") {
           </>
         }
       />
+      <Route path="/projects/:projectId/plan" element={<Where />} />
     </Routes>,
     { route },
   );
@@ -248,4 +260,72 @@ describe("Casos · editor navigation (RED-V3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Listo" }));
     expect(screen.queryByRole("toolbar", { name: "Palabras clave de Gherkin" })).not.toBeInTheDocument();
   }, 15_000);
+});
+
+describe("Casos · review fixes (RED-V3)", () => {
+  it("an unknown or deleted ?case= shows «Caso no encontrado», not an empty editor that would create a case", async () => {
+    setViewportWidth(1440);
+    get.mockResolvedValue(null);
+    renderPage("/projects/p1/cases?case=borrado");
+    expect(await screen.findByRole("heading", { name: "Caso no encontrado" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Guardar/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Todos los casos" }));
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+  });
+
+  it("asks before a link elsewhere drops unsaved edits", async () => {
+    setViewportWidth(1440);
+    renderPage("/projects/p1/cases?case=c2");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Título/ }), " editado");
+    await userEvent.click(screen.getByRole("link", { name: "Plan de pruebas" }));
+    const dialog = screen.getByRole("alertdialog", { name: "¿Descartar los cambios?" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByTestId("path")).toHaveTextContent("/projects/p1/cases");
+    await userEvent.click(screen.getByRole("link", { name: "Plan de pruebas" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Descartar cambios" }),
+    );
+    await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/projects/p1/plan"));
+  }, 15_000);
+
+  it("asks before the system «Atrás» drops unsaved edits", async () => {
+    setViewportWidth(1440);
+    renderPage("/projects/p1/cases?case=c2");
+    await userEvent.type(await screen.findByRole("textbox", { name: /Título/ }), " editado");
+    fireEvent(window, new PopStateEvent("popstate"));
+    expect(await screen.findByRole("alertdialog", { name: "¿Descartar los cambios?" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue("Pago con tarjeta editado");
+  }, 15_000);
+
+  it("a filter drops from the selection the cases it hides", async () => {
+    setViewportWidth(1440);
+    renderPage();
+    await screen.findByRole("table");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar PCL-1 Descarga de factura" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar PCL-2 Pago con tarjeta" }));
+    expect(screen.getByText("2 seleccionados")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Borrador 1" }));
+    expect(await screen.findByText("1 seleccionado")).toBeInTheDocument();
+  });
+
+  it("a failed deletion is reported and the list reloads", async () => {
+    setViewportWidth(1440);
+    remove.mockImplementation((id: string) => (id === "c1" ? Promise.reject(new Error("409")) : Promise.resolve()));
+    renderPage();
+    await screen.findByRole("table");
+    const calls = list.mock.calls.length;
+    await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar PCL-1 Descarga de factura" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar PCL-3 Reembolso parcial" }));
+    await userEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toHaveTextContent("PCL-1, PCL-3");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, eliminar" }));
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith(
+        "1 caso eliminado. No se pudo eliminar 1 caso; sigue en la lista.",
+        "error",
+      ),
+    );
+    await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(calls));
+  });
 });

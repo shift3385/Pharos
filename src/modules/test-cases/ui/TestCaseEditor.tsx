@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Columns2, FileCode, MoreHorizontal, PencilLine, Save } from "lucide-react";
+import { ArrowLeft, Columns2, FileCode, MoreHorizontal, PencilLine, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
@@ -57,7 +57,8 @@ import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { StatusPill } from "@shared/ui/StatusPill";
-import { useHideBottomBar } from "@shared/ui/useShellChrome";
+import { useHideMobileChrome } from "@shared/ui/useShellChrome";
+import { useUnsavedGuard } from "./useUnsavedGuard";
 import { CaseNavBar, CaseNavFooter, type CaseNav, type SaveState } from "./CaseNavBar";
 import { GoToCaseDialog } from "./GoToCaseDialog";
 import { PriorityField, StatusField } from "./CaseMetaMenus";
@@ -279,7 +280,9 @@ export function TestCaseEditor({
   const [gherkinEditing, setGherkinEditing] = useState(false);
   const mobile = useBreakpoint() === "mobile";
   const view: Tab = mobile && tab === "split" ? "editor" : tab;
-  useHideBottomBar(mobile && gherkinEditing && view === "gherkin");
+  useHideMobileChrome(mobile && gherkinEditing && view === "gherkin");
+  // undefined while an existing case loads; null when it does not exist.
+  const [found, setFound] = useState<boolean | undefined>(caseId ? undefined : true);
   // The title is the only rule that blocks saving a case (draft rule, ADR-0027).
   const titleIssue = required(form.title);
   const { guard, showSummary, attempted, summaryRef } = useSaveGuard(titleIssue !== null);
@@ -292,8 +295,10 @@ export function TestCaseEditor({
     let cancelled = false;
     (async () => {
       if (caseId) {
-        const c = await testCaseApi.get(caseId, userId);
-        if (c && !cancelled) {
+        const c = await testCaseApi.get(caseId, userId).catch(() => null);
+        if (cancelled) return;
+        setFound(Boolean(c));
+        if (c) {
           setTestCase(c);
           const f = fromCase(c);
           setForm(f);
@@ -312,6 +317,8 @@ export function TestCaseEditor({
           revision: 0,
         } as TestCase);
         setForm(f);
+        // Nothing of it is saved yet: leaving asks first.
+        setSnapshot(JSON.stringify(emptyForm()));
         setGherkin(buildGherkin(f));
       }
     })();
@@ -583,10 +590,26 @@ export function TestCaseEditor({
   const saveState: SaveState = !testCase ? "new" : dirty ? "dirty" : "saved";
   /** Runs `go` now, or after «Descartar cambios» when there are any. */
   const leave = (go: () => void) => {
-    if (dirty || (!testCase && snapshot !== null)) setPendingLeave(() => go);
+    if (dirty) setPendingLeave(() => go);
     else go();
   };
+  // The system «Atrás», links (sidebar, pills) and closing the window ask too.
+  useUnsavedGuard(dirty, (go) => setPendingLeave(() => go));
   const goTo = (id: string) => leave(() => nav?.onGo(id));
+
+  if (found === false) {
+    return (
+      <section className="tc-editor tc-missing" aria-labelledby="tc-missing-title">
+        <h2 id="tc-missing-title">{t("testCase.nav.notFoundTitle")}</h2>
+        <p>{t("testCase.nav.notFound")}</p>
+        <button type="button" className="ui-btn" onClick={onClose}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t("testCase.nav.allCases")}
+        </button>
+      </section>
+    );
+  }
+  if (found === undefined) return <p className="tp__muted">{t("common.loading")}</p>;
 
   if (picking) {
     return <LevelPicker onPick={pickLevel} onCancel={onClose} />;
@@ -931,7 +954,6 @@ export function TestCaseEditor({
           value={gherkin}
           onChange={onGherkinInput}
           fileName={`${fileName} · ${t("testCase.gherkin.editing")}`}
-          status={t("testCase.gherkin.levelStatus", { level: t(`testCase.level.${requiredLevel}.name`) })}
           keyboardBar
         />
         {dialogs}

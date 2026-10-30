@@ -22,6 +22,9 @@ export interface CaseNav {
 
 export type SaveState = "saved" | "dirty" | "new";
 
+/** macOS/iOS name the shortcut ⌘ P (the editor listens to Ctrl and ⌘). */
+const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+
 /** The editor's top bar (SPEC §8): back to the list, previous / N de M /
  *  next, «Ir a un caso… Ctrl P», the save state, more actions and «Guardar».
  *  On mobile the walk moves to `CaseNavFooter`. */
@@ -84,7 +87,7 @@ export function CaseNavBar({
           <button type="button" className="tc-nav__goto" onClick={onGoTo}>
             <Search size={15} aria-hidden="true" />
             <span className="ui-btn__text">{t("testCase.nav.goTo")}</span>
-            <kbd className="tc-nav__kbd">{t("testCase.nav.goToShortcut")}</kbd>
+            <kbd className="tc-nav__kbd">{t(isMac() ? "testCase.nav.goToShortcutMac" : "testCase.nav.goToShortcut")}</kbd>
           </button>
         </>
       )}
