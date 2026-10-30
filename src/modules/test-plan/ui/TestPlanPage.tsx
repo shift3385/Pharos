@@ -27,5 +27,13 @@ export function TestPlanPage({ projectId }: { projectId: string }) {
   if (loading) return <p className="tp__muted">{t("common.loading")}</p>;
 
   // planId null → the wizard creates the plan for this project; otherwise edits.
-  return <TestPlanWizard planId={planId} projectId={projectId} onClose={refresh} />;
+  // A created plan keeps the wizard mounted (same step) and gives it its id;
+  // without a plan back, the page reloads it.
+  return (
+    <TestPlanWizard
+      planId={planId}
+      projectId={projectId}
+      onSaved={(plan) => (plan ? setPlanId(plan.id) : void refresh())}
+    />
+  );
 }

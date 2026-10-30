@@ -72,3 +72,9 @@
 .pj-header--mobile .pj-header__actions > [data-natural] {
   flex: 0 0 auto;
 }
+
+/* «Importar / Exportar» (natural width) goes last, so the buttons that share
+   the width stay together on the first row. */
+.pj-header--mobile .pj-header__actions > [data-natural] {
+  order: 1;
+}
