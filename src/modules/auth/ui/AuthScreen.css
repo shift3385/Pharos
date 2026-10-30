@@ -500,6 +500,18 @@
   .auth-hero__tagline {
     display: none;
   }
+
+  /* With an error showing (up to two lines, e.g. rate_limited), the note
+     gives way so the login still never scrolls. */
+  .auth-form:has(.auth-form__error) .auth-form__note {
+    display: none;
+  }
+}
+
+.auth--mobile .auth-form__error {
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 /* The sheet keeps its natural height; it only scrolls inside when it cannot
