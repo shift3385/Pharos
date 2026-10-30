@@ -944,7 +944,24 @@
       "over": "Tarjeta «{{card}}» sobre la columna {{column}}.",
       "end": "Tarjeta «{{card}}» movida a {{column}}.",
       "cancel": "Movimiento cancelado; la tarjeta «{{card}}» vuelve a su sitio."
-    }
+    },
+    "filter": {
+      "all": "Todas",
+      "task": "Tareas",
+      "defect": "Defectos",
+      "test_data": "Datos de prueba",
+      "searchLabel": "Buscar tarjetas",
+      "search": "Buscar tarjetas…"
+    },
+    "newCardIn": "Nueva tarjeta en {{column}}",
+    "addCard": "Añadir tarjeta",
+    "cardCount_one": "{{count}} tarjeta",
+    "cardCount_other": "{{count}} tarjetas",
+    "linksTitle_one": "{{count}} caso de prueba vinculado",
+    "linksTitle_other": "{{count}} casos de prueba vinculados",
+    "deleteTitle": "¿Eliminar la tarjeta?",
+    "deleteMessage": "Se elimina «{{card}}» del planificador.",
+    "deleteConfirm": "Sí, eliminar"
   },
   "traceability": {
     "title": "Trazabilidad",

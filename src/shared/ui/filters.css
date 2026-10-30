@@ -118,3 +118,45 @@
 [data-viewport="mobile"] .fmb {
   height: 44px;
 }
+
+/* Search field of a list toolbar (SPEC §5: 40 px, 44 px and 15 px text on mobile). */
+.ui-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-width: 0;
+  max-width: 360px;
+  height: 40px;
+  padding: 0 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: 10px;
+}
+
+.ui-search:focus-within {
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+
+.ui-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+[data-viewport="mobile"] .ui-search {
+  max-width: none;
+  height: 44px;
+}
+
+[data-viewport="mobile"] .ui-search input {
+  font-size: 15px;
+}

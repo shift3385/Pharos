@@ -944,7 +944,24 @@
       "over": "Card “{{card}}” is over the {{column}} column.",
       "end": "Card “{{card}}” moved to {{column}}.",
       "cancel": "Move cancelled; card “{{card}}” is back in place."
-    }
+    },
+    "filter": {
+      "all": "All",
+      "task": "Tasks",
+      "defect": "Defects",
+      "test_data": "Test data",
+      "searchLabel": "Search cards",
+      "search": "Search cards…"
+    },
+    "newCardIn": "New card in {{column}}",
+    "addCard": "Add card",
+    "cardCount_one": "{{count}} card",
+    "cardCount_other": "{{count}} cards",
+    "linksTitle_one": "{{count}} linked test case",
+    "linksTitle_other": "{{count}} linked test cases",
+    "deleteTitle": "Delete the card?",
+    "deleteMessage": "«{{card}}» is removed from the planner.",
+    "deleteConfirm": "Yes, delete"
   },
   "traceability": {
     "title": "Traceability",

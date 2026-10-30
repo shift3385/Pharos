@@ -252,7 +252,7 @@ export function TestCaseList({
 
       <div className="cl-card-box">
         <div className="cl-toolbar">
-          <label className="cl-search">
+          <label className="ui-search">
             <Search size={16} aria-hidden="true" />
             <span className="sr-only">{t("testCase.list.searchLabel")}</span>
             <input

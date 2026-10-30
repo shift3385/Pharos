@@ -18,16 +18,46 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DeleteButton } from "@shared/ui/fields";
+import { Bug, Database, Flag, GripVertical, Link2, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { FilterChips } from "@shared/ui/FilterChips";
+import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
+import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { plannerApi } from "../api/plannerApi";
 import {
+  CARD_KINDS,
+  CARD_PRIORITIES,
   CARD_STATUSES,
+  type CardKind,
   type CardStatus,
   type LinkableCase,
   type PlannerCard,
 } from "../model/types";
 import { CardEditor } from "./CardEditor";
+import "@shared/ui/buttons.css";
+import "@shared/ui/filters.css";
 import "./Planner.css";
+
+const KIND_ICON = { task: SquareCheck, defect: Bug, test_data: Database } as const;
+const PRIORITY_TONE: Record<string, FlagTone> = { critical: "error", high: "warning", medium: "info", low: "muted" };
+
+const fold = (v: string) =>
+  v
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+
+/** A card matches the kind chip, the search (title, key, labels) and the
+ *  chosen priorities (none = any). */
+function matches(card: PlannerCard, kind: string, query: string, priorities: ReadonlySet<string>): boolean {
+  const q = fold(query.trim());
+  return (
+    (kind === "all" || card.kind === kind) &&
+    (priorities.size === 0 || priorities.has(card.priority)) &&
+    (!q || [card.title, card.cardKey ?? "", ...(card.data.labels ?? [])].some((v) => fold(v).includes(q)))
+  );
+}
 
 type EditView = { card: PlannerCard | null; status: CardStatus };
 
@@ -56,6 +86,11 @@ export function PlannerBoard({
   const { t } = useTranslation();
   const [cards, setCards] = useState<PlannerCard[]>([]);
   const [editing, setEditing] = useState<EditView | null>(null);
+  const [deleting, setDeleting] = useState<PlannerCard | null>(null);
+  const [kind, setKind] = useState<"all" | CardKind>("all");
+  const [query, setQuery] = useState("");
+  const [priorities, setPriorities] = useState<Set<string>>(new Set());
+  const mobile = useBreakpoint() === "mobile";
   // The mouse drags the whole card; the keyboard moves it with the card's
   // handle (Space, arrows across rows and columns, Space), announced in the UI
   // language (WCAG 2.1.1, UX-05).
@@ -87,7 +122,11 @@ export function PlannerBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, ownerId]);
 
-  const byStatus = useMemo(() => group(cards), [cards]);
+  const byStatus = useMemo(
+    () => group(cards.filter((c) => matches(c, kind, query, priorities))),
+    [cards, kind, query, priorities],
+  );
+  const kindCount = (k: CardKind | "all") => cards.filter((c) => matches(c, k, query, priorities)).length;
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -118,8 +157,9 @@ export function PlannerBoard({
     }
   }
 
-  async function remove(id: string) {
-    await plannerApi.remove(id, ownerId);
+  async function remove(card: PlannerCard) {
+    setDeleting(null);
+    await plannerApi.remove(card.id, ownerId);
     void refresh();
   }
 
@@ -140,26 +180,78 @@ export function PlannerBoard({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragEnd={onDragEnd}
-      accessibility={{ announcements, screenReaderInstructions: { draggable: t("planner.drag.help") } }}
-    >
-      <div className="pl-board">
-        {CARD_STATUSES.map((status) => (
-          <Column
-            key={status}
-            status={status}
-            title={t(`planner.column.${status}`)}
-            cards={byStatus[status]}
-            onNew={() => setEditing({ card: null, status })}
-            onOpen={(card) => setEditing({ card, status })}
-            onDelete={remove}
+    <div className="pl">
+      <header className="pl-head">
+        <button
+          type="button"
+          className="ui-btn ui-btn--primary"
+          onClick={() => setEditing({ card: null, status: "backlog" })}
+        >
+          <Plus size={16} aria-hidden="true" />
+          <span className="ui-btn__text">{t("planner.newCard")}</span>
+        </button>
+      </header>
+      <div className="pl-toolbar">
+        <FilterChips
+          label={t("planner.kind")}
+          options={[
+            { value: "all", label: t("planner.filter.all"), count: kindCount("all") },
+            ...CARD_KINDS.map((k) => ({ value: k, label: t(`planner.filter.${k}`), count: kindCount(k) })),
+          ]}
+          value={kind}
+          onChange={(v) => setKind(v as "all" | CardKind)}
+        />
+        <label className="ui-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="sr-only">{t("planner.filter.searchLabel")}</span>
+          <input
+            type="search"
+            value={query}
+            placeholder={t("planner.filter.search")}
+            onChange={(e) => setQuery(e.target.value)}
           />
-        ))}
+        </label>
+        {!mobile && (
+          <FilterMenuButton
+            label={t("planner.priority")}
+            icon={Flag}
+            options={[...CARD_PRIORITIES].reverse().map((p) => ({ value: p, label: t(`planner.priorityLabel.${p}`) }))}
+            selected={priorities}
+            onChange={setPriorities}
+          />
+        )}
       </div>
-    </DndContext>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragEnd={onDragEnd}
+        accessibility={{ announcements, screenReaderInstructions: { draggable: t("planner.drag.help") } }}
+      >
+        <div className="pl-board">
+          {CARD_STATUSES.map((status) => (
+            <Column
+              key={status}
+              status={status}
+              title={t(`planner.column.${status}`)}
+              cards={byStatus[status]}
+              onNew={() => setEditing({ card: null, status })}
+              onOpen={(card) => setEditing({ card, status })}
+              onDelete={setDeleting}
+            />
+          ))}
+        </div>
+      </DndContext>
+      {deleting && (
+        <ConfirmDialog
+          variant="destructive"
+          title={t("planner.deleteTitle")}
+          message={t("planner.deleteMessage", { card: deleting.title })}
+          confirmLabel={t("planner.deleteConfirm")}
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => void remove(deleting)}
+        />
+      )}
+    </div>
   );
 }
 
@@ -176,30 +268,37 @@ function Column({
   cards: PlannerCard[];
   onNew: () => void;
   onOpen: (card: PlannerCard) => void;
-  onDelete: (id: string) => void;
+  onDelete: (card: PlannerCard) => void;
 }) {
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const add = t("planner.newCardIn", { column: title });
   return (
-    <section className="pl-col" data-over={isOver} aria-labelledby={`pl-col-${status}`}>
+    <section className="pl-col" data-status={status} data-over={isOver} aria-labelledby={`pl-col-${status}`}>
       <header className="pl-col__head">
-        <span id={`pl-col-${status}`} className="pl-col__title">
+        <span className="pl-col__dot" aria-hidden="true" />
+        <h3 id={`pl-col-${status}`} className="pl-col__title">
           {title}
+        </h3>
+        <span className="pl-col__count">
+          <span className="sr-only">{t("planner.cardCount", { count: cards.length })}</span>
+          <span aria-hidden="true">{cards.length}</span>
         </span>
-        <span className="pl-col__count">{cards.length}</span>
+        <span className="pl-col__spacer" />
+        <button type="button" className="pl-col__plus" title={add} aria-label={add} onClick={onNew}>
+          <Plus size={16} aria-hidden="true" />
+        </button>
       </header>
       <div ref={setNodeRef} className="pl-col__drop">
-        <SortableContext
-          items={cards.map((c) => c.id)}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
             <Card key={card.id} card={card} onOpen={onOpen} onDelete={onDelete} />
           ))}
         </SortableContext>
       </div>
       <button type="button" className="pl-col__add" onClick={onNew}>
-        + {t("planner.newCard")}
+        <Plus size={15} aria-hidden="true" />
+        {t("planner.addCard")}
       </button>
     </section>
   );
@@ -212,7 +311,7 @@ function Card({
 }: {
   card: PlannerCard;
   onOpen: (card: PlannerCard) => void;
-  onDelete: (id: string) => void;
+  onDelete: (card: PlannerCard) => void;
 }) {
   const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -225,14 +324,11 @@ function Card({
   // The card itself only takes the mouse drag; the keyboard drag and the
   // sortable role live on the handle, so the card holds no nested controls.
   const { onKeyDown, ...pointer } = listeners ?? {};
+  const Icon = KIND_ICON[card.kind];
+  const links = card.data.testCaseIds?.length ?? 0;
+  const del = `${t("common.delete")}: ${card.title}`;
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="pl-card"
-      data-priority={card.priority}
-      {...pointer}
-    >
+    <article ref={setNodeRef} style={style} className="pl-card" data-priority={card.priority} {...pointer}>
       <div className="pl-card__top">
         <button
           type="button"
@@ -241,17 +337,24 @@ function Card({
           onKeyDown={onKeyDown as KeyboardEventHandler<HTMLButtonElement> | undefined}
           aria-label={t("planner.drag.handle", { card: card.title })}
         >
-          ⠿
+          <GripVertical size={14} aria-hidden="true" />
         </button>
         <span className={`pl-card__kind pl-card__kind--${card.kind}`}>
+          <Icon size={13} aria-hidden="true" />
           {t(`planner.kindLabel.${card.kind}`)}
         </span>
-        <span
+        <span className="pl-card__spacer" />
+        {card.cardKey && <span className="pl-card__key">{card.cardKey}</span>}
+        <button
+          type="button"
           className="pl-card__del"
+          aria-label={del}
+          title={del}
           onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onDelete(card)}
         >
-          <DeleteButton itemLabel={card.title} needsConfirm onDelete={() => onDelete(card.id)} />
-        </span>
+          <Trash2 size={14} aria-hidden="true" />
+        </button>
       </div>
       <button
         type="button"
@@ -259,19 +362,31 @@ function Card({
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => onOpen(card)}
       >
-        {card.cardKey && <span className="pl-card__key">{card.cardKey}</span>}
         {card.title}
       </button>
-      <div className="pl-card__meta">
-        <span className={`pl-card__prio pl-card__prio--${card.priority}`}>
-          {t(`planner.priorityLabel.${card.priority}`)}
-        </span>
-        {(card.data.labels ?? []).map((l) => (
-          <span key={l} className="pl-card__label">
-            {l}
+      {(card.data.labels ?? []).length > 0 && (
+        <div className="pl-card__labels">
+          {(card.data.labels ?? []).map((l) => (
+            <span key={l} className="pl-card__label" title={l}>
+              {l}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="pl-card__foot">
+        <PriorityFlag
+          tone={PRIORITY_TONE[card.priority] ?? "muted"}
+          label={t(`planner.priorityLabel.${card.priority}`)}
+          showLabel
+        />
+        {links > 0 && (
+          <span className="pl-card__links" title={t("planner.linksTitle", { count: links })}>
+            <Link2 size={13} aria-hidden="true" />
+            <span className="sr-only">{t("planner.linksTitle", { count: links })}</span>
+            <span aria-hidden="true">{links}</span>
           </span>
-        ))}
+        )}
       </div>
-    </div>
+    </article>
   );
 }
