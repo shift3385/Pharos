@@ -36,10 +36,13 @@
 - Motor de IA y General tienen una sola barra de guardado por pestaña, fija
   al pie del área que se desplaza, con «Guardar» como acción ámbar. Solo se
   activa con cambios.
-- Salir de una pestaña con cambios sin guardar pide confirmación al cambiar de
-  pestaña o al cerrar la ventana (`beforeunload`). Salir de `/admin` por la
-  navegación del shell todavía no avisa: `HashRouter` no admite `useBlocker`;
-  lo cubrirá el `useUnsavedChangesGuard` común.
+- Salir con cambios sin guardar pide confirmación:
+  - al cambiar de pestaña, con la confirmación propia de `AdminPage`;
+  - al salir de `/admin` (menú lateral, menú del usuario, barra inferior,
+    búsqueda, «Atrás») o al cerrar la ventana, con el
+    `useUnsavedChangesGuard(dirty, { ignore: true })` común (RED-V3k, router
+    de datos). `ignore: true` deja pasar los cambios de `?tab=`, así que
+    cambiar de pestaña no pregunta dos veces.
 
 ### Tabla de capacidades
 

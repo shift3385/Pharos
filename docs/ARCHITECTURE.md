@@ -242,6 +242,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     (`@modules/templates`), and `GeneralTab`, `SyncTab`, `SecurityTab`
     (reuses `RecoveryKeySection` from `@modules/profile`), `DiagnosticsTab`
     in `modules/admin/ui/tabs/`.
+  - Unsaved drafts (Motor de IA, General) report `dirty` to `AdminPage`:
+    switching tabs asks with its own confirm; leaving `/admin` or closing
+    the window goes through `useUnsavedChangesGuard(dirty, { ignore: true })`.
   - `SyncTab` reads the shell's `SyncStatusProvider` through
     `useSyncStatus()` (`@modules/sync-offline`); it never mounts another
     provider.

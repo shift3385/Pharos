@@ -100,15 +100,8 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // AdminPage guards leaving with unsaved changes (useUnsavedChangesGuard).
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
-
-  // Closing the window with unsaved changes asks first.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
 
   // Reflect the module-level download so it survives navigating away and back.
   useEffect(() => {

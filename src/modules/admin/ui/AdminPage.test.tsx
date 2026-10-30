@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Navigate, Route, Routes, useLocation } from "react-router";
+import { Link, Navigate, Route, Routes, useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { setViewportWidth } from "@test/viewport";
@@ -24,7 +24,10 @@ function renderAdmin(route = "/admin") {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/templates" element={<Navigate to={adminPath("templates")} replace />} />
         <Route path="/ai" element={<Navigate to={adminPath("ai")} replace />} />
+        <Route path="/projects" element={<h1>Proyectos</h1>} />
       </Routes>
+      {/* Stands in for the shell's navigation (sidebar, bottom bar). */}
+      <Link to="/projects">Ir a Proyectos</Link>
       <Where />
     </>,
     { route },
@@ -119,6 +122,29 @@ describe("Administración", () => {
   it("Seguridad holds the recovery key (SEC-03), which left Perfil", () => {
     renderAdmin("/admin?tab=security");
     expect(screen.getByRole("heading", { name: "Clave de recuperación" })).toBeInTheDocument();
+  });
+
+  it("leaving Administración with unsaved changes asks; switching tabs does not ask twice", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderAdmin();
+    await user.click(await screen.findByRole("radio", { name: /^OpenAI/ }));
+
+    await user.click(screen.getByRole("link", { name: "Ir a Proyectos" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "¿Descartar los cambios?" });
+    await user.click(within(dialog).getByRole("button", { name: "Seguir editando" }));
+    expect(screen.getByTestId("where")).toHaveTextContent("/admin");
+    expect(screen.getByRole("radio", { name: /^OpenAI/ })).toBeChecked();
+
+    // A tab switch asks once (its own confirm), never the leave dialog.
+    await user.click(screen.getByTestId("admin-tab-general"));
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent("tab=general");
+
+    // Clean now: leaving does not ask.
+    await user.click(screen.getByRole("link", { name: "Ir a Proyectos" }));
+    expect(await screen.findByRole("heading", { name: "Proyectos" })).toBeInTheDocument();
   });
 
   it("Diagnóstico shows the version and the export action", () => {

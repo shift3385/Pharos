@@ -83,7 +83,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 - **Motor de IA:** proveedor, modelo, parámetros, Ollama y la clave escrita se guardan con
   «Guardar», en una barra fija al pie de la pestaña. Antes cada cambio se aplicaba al momento.
-  Cambiar de pestaña o de proveedor con cambios sin guardar pide confirmación.
+  Cambiar de pestaña o de proveedor, o salir de Administración, con cambios sin guardar pide
+  confirmación.
 - **General:** «Guardar ajustes» está en una barra al pie que cubre las dos secciones y solo se
   activa si hay cambios.
 - **IA:** Claude y los modelos de razonamiento de OpenAI ya no reciben una temperatura que no

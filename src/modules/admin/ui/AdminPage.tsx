@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { AiEngineTab } from "@modules/ai";
 import { TemplatesTab, useTemplateCount } from "@modules/templates";
+import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { ADMIN_PANEL_ID, adminTabFrom, type AdminTab } from "../model/tabs";
 import { AdminTabs } from "./AdminTabs";
 import { GeneralTab } from "./tabs/GeneralTab";
@@ -16,7 +17,8 @@ import "./Admin.css";
  * grouped tabs — Recursos (Motor de IA, Plantillas) · Aplicación (General) ·
  * Cuenta y datos (Sincronización, Seguridad) · Soporte (Diagnóstico). The tab
  * lives in the URL (`/admin?tab=…`, Motor de IA by default); `/templates` and
- * `/ai` redirect here. Leaving a tab with unsaved changes asks first.
+ * `/ai` redirect here. Leaving a tab, or the screen, with unsaved changes
+ * asks first.
  */
 export function AdminPage() {
   const { t } = useTranslation();
@@ -26,6 +28,11 @@ export function AdminPage() {
   const [dirty, setDirty] = useState(false);
   const storedCount = useTemplateCount();
   const [templateCount, setTemplateCount] = useState<number | undefined>();
+
+  // Leaving Administración (sidebar, user menu, bottom bar, «Atrás», closing
+  // the window) with unsaved changes asks first. `?tab=` changes go through:
+  // switching tabs asks on its own, below.
+  const { dialog } = useUnsavedChangesGuard(dirty, { ignore: true });
 
   // An unknown `?tab=` shows Motor de IA; the URL says so too.
   const raw = params.get("tab");
@@ -67,6 +74,7 @@ export function AdminPage() {
         {tab === "security" && <SecurityTab />}
         {tab === "diagnostics" && <DiagnosticsTab />}
       </div>
+      {dialog}
     </div>
   );
 }
