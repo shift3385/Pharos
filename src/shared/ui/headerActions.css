@@ -1,11 +1,10 @@
-/* Buttons for a page header's actions (useHeaderActions). */
 /* Secondary button (SPEC §5: 40 px, 44 px on mobile), shared by every
    section that puts buttons in the project header. */
-.pj-action {
+.header-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   height: 40px;
   padding: 0 14px;
   font: inherit;
@@ -20,26 +19,26 @@
   transition: background-color 120ms ease;
 }
 
-.pj-action:hover {
+.header-action:hover {
   background: var(--color-surface-2);
 }
 
-.pj-action:disabled {
+.header-action:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.pj-action > svg {
+.header-action > svg {
   flex: none;
   color: var(--color-text-secondary);
 }
 
-.pj-action__label {
+.header-action__label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-[data-viewport="mobile"] .pj-action {
+[data-viewport="mobile"] .header-action {
   height: 44px;
 }

@@ -91,14 +91,35 @@ memory) and no history, and a desktop-only action says so in a toast.
   attachments of cards in its outbox, and the rest only if the old caches were
   its own (`pharos.sync.cacheOwner`, or none, as before FIX-07).
 
-**Home (UX-08, spec §5).** `app/dashboard` shows two actions (start a new
-project, continue one) and the user's projects with search, last access, plan
-status and progress, from `projectOverview` (`projects`), which reads the plan
-status and case counts through the `test-plan` and `test-cases` public APIs.
-Progress is approved cases over non-obsolete cases until the run model (0.2.0)
-gives execution progress. The last access is device-local metadata kept in
-`localStorage` per user (`pharos.projects.lastAccess.<userId>`): project ids
-and timestamps only, outside the database and sync on purpose.
+**Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
+the redesign. `model/loadHome.ts` reads only public read APIs, one project
+list and three reads per project, most recently updated first:
+`projectApi.list` (case-id prefix → key), `projectLiveCases` (`test-cases`),
+`projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
+closure criteria) and `projectDefects` (`planner`: open = not `done`).
+`model/homeData.ts` aggregates it as pure functions (KPIs, the queue by
+priority, the exit-criteria choices and default, the period days and which day
+labels show). The widgets — `KpiCards`, `PeriodSelector`,
+`ExecutionByProject`, `ExitCriteriaCard`, `DailyExecutionsChart`,
+`UpcomingTests` — never invent run data: until the run model (0.2.0, RED-W6)
+every case is "not run", and the pass rate, the daily runs and the criteria
+show an explicit empty state ([ADR-0028](adr/0028-rediseno-de-la-interfaz.md)).
+On mobile the page is three `Tabs`. The chosen period is a per-device
+convenience in `localStorage` (`pharos.home.period`). The last access is
+device-local metadata kept in `localStorage` per user
+(`pharos.projects.lastAccess.<userId>`): project ids and timestamps only,
+outside the database and sync on purpose.
+
+**Login and Perfil (RED-V1).** `modules/auth/ui/AuthScreen` is the redesigned
+login: from 600 px a form column beside `assets/login-faro.jpg` (the
+prototype's 1024 px photo; production should ship a ≥ 2400 px version); below
+600 px the photo is a header and the form a sheet sized with `cqh` units on a
+`container-type: size` root, so the login never scrolls (the longer sign-up
+form scrolls inside the sheet). The Google button is a disabled placeholder
+with a monochrome inline mark (Lucide has no brand icons). `modules/profile`
+shows identity, name and Preferencias (`SegmentedControl` for language and
+theme) and the recovery key; `RecoveryKeySection` is also exported, so that
+Administración › Seguridad (RED-V4) can mount it and take it out of Perfil.
 
 **Traceability (0.1.0).** `traceability` owns requirements (`REQ-xxx`, stable
 keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`,
@@ -219,15 +240,33 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - the mobile header (back + section + project) and the section pills.
 - **Project header** (RED-V2, `@modules/projects`): `ProjectDetail` wraps
   every section in `ProjectHeaderLayout`, which draws `ProjectHeader`:
-  prefix badge, name (`h1`), plan status and a meta line (cases,
-  requirements). Section pages draw no header of their own. To put buttons on
-  its right they call `useHeaderActions(<…/>)` (`@shared/ui/headerActions`:
-  the section modules cannot import `projects`, which composes them); the header shows the
-  latest node and drops it on unmount. Only the header re-renders, because
-  the section is the provider's `children`. On mobile the shell's top bar
-  already names the project: the card is not drawn, the `h1` stays
-  `.sr-only` and only the actions row shows (`.pj-action` buttons share the
-  width; `data-natural` keeps its own).
+  - prefix badge, name (`h1`, cut with «…», with a `title` only when it is
+    cut), plan status (the shared `StatusPill`; no pill while the status is
+    still unknown, so «Sin plan» never flashes) and a meta line (cases,
+    requirements);
+  - the facts reload when the section changes, after a sync and after the plan
+    is saved (`PLAN_SAVED_EVENT` from `@modules/test-plan`); only the newest
+    answer is kept and a failed load keeps the last one. The requirements it
+    loads are also the cases section's options.
+
+  Section pages draw no header of their own. To put buttons on its right they
+  call `useHeaderActions(<…/>)` (`@shared/ui/headerActions`: the section
+  modules cannot import `projects`, which composes them):
+  - each caller registers with its own token, the last one wins, and a
+    caller's cleanup only clears its own node (going from section A to B never
+    wipes B's buttons);
+  - cost: every render of the calling page hands over a new node and the
+    header renders again; the page itself does not, because it is the
+    provider's `children` (it re-renders only for its own reasons or when
+    `ProjectDetail` does). Keep the node small, and never call the hook from
+    inside the header;
+  - `.header-action` (shared, `headerActions.css`) is the 40 px secondary
+    button (44 px on mobile).
+
+  On mobile the shell's top bar already names the project: the card is not
+  drawn and the `h1` stays `.sr-only`. With actions they show as a row (the
+  buttons share the width; `data-natural` keeps its own); without them nothing
+  else is drawn, so there is no empty row.
 
   `/projects?open=<id>` redirects there.
 - **Top bar** (`Topbar`, 64 px):
@@ -284,6 +323,11 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
     until that text is typed.
+  - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
+    the sort keys as radio options (disabled ones keep a `title` with the
+    reason) in a «Ordenar por» group, and the direction (Descendente ·
+    Ascendente), which is also part of the trigger's accessible name. Choosing a
+    key keeps the direction and vice versa.
   - `MenuItem description`: a second line that explains the option (its
     accessible description, not its name). `MenuCheckItem`: a
     `menuitemcheckbox` (a pressed toggle in a sheet) that keeps the menu open,
@@ -316,7 +360,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
     `--ghost`, `--danger`, `ui-iconbtn`) and `.ui-search` (in
     `filters.css`): the action buttons and list search field the screens
     share, so no module styles itself with another module's CSS.
-    **Known duplicate:** `.pj-action` (`@shared/ui/headerActions.css`, V2)
+    **Known duplicate:** `.header-action` (`@shared/ui/headerActions.css`, V2)
     draws the same secondary button as `.ui-btn`; ROADMAP RED-V3c unifies
     them.
 - **Shell slots** (RED-V3, amendment to ADR-0028): a screen may ask things of

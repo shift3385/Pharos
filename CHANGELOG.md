@@ -68,6 +68,21 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   interruptor, selector segmentado (una opción entre pocas, con flechas) y pestañas, en
   formato de pastillas o subrayadas, con burbujas de contador y pestañas deshabilitadas que
   explican el motivo.
+- **Rediseño de Login, Inicio y Perfil (RED-V1):**
+  - **Login:** foto del faro con el lema y tres puntos de la marca junto al formulario; en el
+    móvil, la foto arriba y el formulario debajo, sin scroll al iniciar sesión.
+    «Regístrate» bajo el título, mostrar u ocultar la contraseña, «Continuar con Google»
+    deshabilitado («Próximamente») y el idioma al pie.
+  - **Inicio:** indicadores que llevan a su sitio (proyectos abiertos, pruebas pendientes,
+    defectos abiertos del Planificador), periodo de los datos, «Ejecución por proyecto»,
+    «Criterios de salida» del plan con selector de proyecto (búsqueda y orden por cierre),
+    «Ejecuciones diarias» y «Próximas pruebas» por prioridad, que abren el caso. En el móvil,
+    tres pestañas (Resumen, Ejecución, Pruebas); el periodo se elige también en «Ejecución»,
+    junto a la gráfica a la que afecta. Lo que depende de ejecuciones (tasa de
+    éxito, ejecuciones por día, si se cumple cada criterio, comparar periodos) lo dice en
+    lugar de mostrar cifras hasta 0.2.0.
+  - **Perfil:** tarjeta con tus datos y estado de sincronización, Preferencias (idioma y
+    tema) y la clave de recuperación con el estilo nuevo.
 
 ### Cambiado
 
@@ -78,9 +93,17 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Cerrar sesión e Idioma** pasan al menú del usuario. El idioma ya no está en la barra
   superior.
 - La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
+- El Inicio ya no lista los proyectos con buscador: están en Proyectos, y el Inicio
+  enlaza a cada uno desde «Ejecución por proyecto».
 - **Cabecera del proyecto (RED-V2):** cada sección del proyecto empieza con una cabecera con
   el prefijo, el nombre, el estado del plan y el número de casos y requisitos. Sustituye a la
   barra «← Proyectos <nombre>», que repetía la barra superior del móvil.
+
+### Corregido
+
+- **Web:** el servidor ya acepta tarjetas del planificador de tipo «Datos de prueba»
+  (`test_data`). Antes solo admitía tarea y defecto, así que en la web no se podían crear ni
+  editar.
 
 ## [0.1.0-beta.1] - 2026-10-29
 

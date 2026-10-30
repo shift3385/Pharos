@@ -7,8 +7,11 @@ export function AppSplash() {
   const { t } = useTranslation();
   return (
     <div className="app-splash">
-      <Logo size={48} />
-      <p className="app-splash__text">{t("common.loading")}</p>
+      <span className="app-splash__brand">
+        <Logo size={48} decorative />
+        Pharos
+      </span>
+      <p className="app-splash__text" role="status">{t("common.loading")}</p>
     </div>
   );
 }

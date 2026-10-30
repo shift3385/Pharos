@@ -6,14 +6,14 @@ import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import type { TestCase, TestCaseSummary } from "../model/types";
-import { useState, type ReactNode } from "react";
-import { HeaderActionsContext } from "@shared/ui/headerActions";
+import type { ReactNode } from "react";
+import { HeaderActionsContext, useHeaderActionsSlot } from "@shared/ui/headerActions";
 import { TestCasesPage } from "./TestCasesPage";
 
 function FakeHeader({ children }: { children: ReactNode }) {
-  const [actions, setActions] = useState<ReactNode>(null);
+  const { actions, slot } = useHeaderActionsSlot();
   return (
-    <HeaderActionsContext.Provider value={setActions}>
+    <HeaderActionsContext.Provider value={slot}>
       <header data-testid="project-header">{actions}</header>
       {children}
     </HeaderActionsContext.Provider>
