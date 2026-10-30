@@ -1,174 +1,76 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@modules/auth";
-import { testPlanApi } from "../api/testPlanApi";
-import type { ExportablePlan } from "../export/planXlsx";
-import type {
-  RoleItem,
-  RiskItem,
-  ClosureCriterion,
-  ScheduleMilestone,
-  ScheduleSprint,
-  TestPlan,
-  TestPlanData,
-  TestPlanInput,
-} from "../model/types";
-import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
-import { ErrorSummary, FieldMessage, FormField } from "@shared/ui/FormField";
-import { controlProps, useSaveGuard } from "@shared/ui/fieldProps";
-import { duplicateRow, duplicateRows, required, type Issue } from "@shared/validation";
-import { useToast } from "@shared/ui/Toast";
-import { unlessReported } from "@shared/ui/notify";
-import {
-  CEREMONIES,
-  CEREMONY_FREQUENCIES,
-  DELIVERABLE_KEYS,
-  FUNCTIONAL_TYPES,
-  NON_FUNCTIONAL_TYPES,
-  ROLE_KEYS,
-  TEST_LEVELS,
-  TEST_TYPES,
-  TOOLS,
-} from "../model/catalogs";
-import { frequenciesFor, frequencyOf, methodologyText } from "../model/methodology";
-import { ScheduleCalendar } from "./ScheduleCalendar";
-import { RevisionHistory } from "./RevisionHistory";
+import { aiAvailable, markReviewed, withProvenance, type AiProvenance } from "@modules/ai";
+import { ErrorSummary } from "@shared/ui/FormField";
+import { useSaveGuard } from "@shared/ui/fieldProps";
+import { useHeaderActions } from "@shared/ui/headerActions";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
-import {
-  AiSuggestList,
-  AssistButton,
-  aiAvailable,
-  markReviewed,
-  suggestRisks,
-  withProvenance,
-  type AiProvenance,
-  type ProvenanceMap,
-} from "@modules/ai";
+import { unlessReported } from "@shared/ui/notify";
+import { useToast } from "@shared/ui/Toast";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
+import { required } from "@shared/validation";
+import { testPlanApi } from "../api/testPlanApi";
 import type { DetectionRow, ImportResult } from "../import/planImport";
+import type { TestPlan } from "../model/types";
 import { PLAN_SAVED_EVENT } from "../model/events";
+import {
+  applyRevision,
+  defaults,
+  fromInput,
+  fromPlan,
+  planWarnings,
+  toExportable,
+  toInput,
+  type AssistedField,
+  type FormState,
+  type ReviewableField,
+} from "./wizard/formState";
+import { STEP_IDS, stepCompletion } from "./wizard/steps";
+import { StepBody } from "./wizard/StepBody";
+import { StepCompact, StepRail, StepStrip } from "./wizard/StepNav";
+import { PlanIoMenu, PlanStatusPanel, RevisionsButton, RevisionsDialog } from "./wizard/PlanSidePanels";
+import type { StepProps } from "./wizard/stepProps";
+import { useWideApp } from "./wizard/useWideApp";
+import { parseStamp } from "@shared/time/stamp";
 import "./TestPlan.css";
-
-/** Per-sprint validation: an end date before the start, or a range that
- *  overlaps another sprint. Both are warnings (draft rule, ADR-0027): the plan
- *  still saves, since a draft can be wrong for a while and parallel sprints
- *  can be legitimate. */
-function sprintIssues(sprints: ScheduleSprint[]): (Issue | null)[] {
-  return sprints.map((s, i) => {
-    if (s.start && s.end && s.end < s.start)
-      return { code: "testPlan.sprintDateError", severity: "warning" };
-    if (!s.start || !s.end) return null;
-    const overlaps = sprints.some(
-      (o, j) =>
-        j !== i && o.start && o.end && o.start <= s.end && s.start <= o.end,
-    );
-    return overlaps ? { code: "testPlan.sprintOverlap", severity: "warning" } : null;
-  });
-}
-
-/** Number of warnings the plan is saved with: sprint dates and repeated rows
- *  in its lists and tables. Shown in the save toast so they are not missed. */
-function planWarnings(f: FormState): number {
-  const text = (v: string) => v;
-  const pair = (a: string, b: string) => (a.trim() || b.trim() ? `${a.trim()} | ${b.trim()}` : "");
-  return (
-    sprintIssues(f.sprints).filter(Boolean).length +
-    duplicateRows(f.sprints, (x) => x.name).size +
-    duplicateRows(f.milestones, (x) => x.name).size +
-    [f.scopeIn, f.scopeOut, f.phases, f.deliverables].reduce(
-      (n, list) => n + duplicateRows(list, text).size,
-      0,
-    ) +
-    duplicateRows(f.roles, (r) => pair(r.role, r.responsibility)).size +
-    duplicateRows(f.risks, (r) => pair(r.risk, r.mitigation)).size +
-    duplicateRows(f.closureCriteria, (c) => pair(c.criterion, c.metric)).size
-  );
-}
-
-
-interface FormState {
-  title: string;
-  version: string;
-  planDate: string;
-  status: string;
-  summary: string;
-  scopeIn: string[];
-  scopeOut: string[];
-  testTypes: string[];
-  methodologyType: "agile" | "traditional";
-  sprintWeeks: number;
-  ceremonies: string[];
-  ceremonyFrequency: Record<string, string>;
-  phases: string[];
-  testLevels: string[];
-  deliverables: string[];
-  environmentConfig: string;
-  environmentRequirements: string;
-  tools: string[];
-  automationStrategy: string;
-  testDataManagement: string;
-  defectManagement: string;
-  roles: RoleItem[];
-  sprints: ScheduleSprint[];
-  milestones: ScheduleMilestone[];
-  risks: RiskItem[];
-  communicationPlan: string;
-  closureCriteria: ClosureCriterion[];
-  purpose: string;
-  conclusion: string;
-  /** AI provenance of the assisted fields (IA-01). */
-  aiProvenance: ProvenanceMap;
-}
-
-/** Fields the wizard can draft with AI (keys of the provenance map). */
-type AssistedField =
-  | "summary"
-  | "environmentConfig"
-  | "environmentRequirements"
-  | "automationStrategy"
-  | "purpose"
-  | "conclusion";
-/** Assisted fields plus the list the AI can add rows to (IA-10). */
-type ReviewableField = AssistedField | "risks";
-
-/** What the AI aids of the plan need to know about it (IA-10): title,
- *  summary, scope, types, levels and tools. */
-function planBrief(form: FormState): string {
-  const list = (label: string, items: string[]) =>
-    items.filter(Boolean).length ? `${label}: ${items.filter(Boolean).join(", ")}` : "";
-  return [
-    `Title: ${form.title}`,
-    form.summary.trim() && `Summary: ${form.summary.trim()}`,
-    list("In scope", form.scopeIn),
-    list("Out of scope", form.scopeOut),
-    list("Test types", form.testTypes),
-    list("Test levels", form.testLevels),
-    list("Tools", form.tools),
-    `Methodology: ${form.methodologyType}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
+import "./TestPlanWizard.css";
 
 interface Props {
   planId: string | null;
   projectId?: string | null;
-  onClose: () => void;
+  /** After each save, with the saved plan (null when none came back, so the
+   *  page reloads it). A new plan gets its id here, so a later reload or a
+   *  language change never mistakes it for a plan still to be created. */
+  onSaved?: (plan: TestPlan | null) => void;
 }
 
-export function TestPlanWizard({ planId, projectId, onClose }: Props) {
+/**
+ * The plan's 19-step wizard (spec §5.1, SPEC §8 «Plan», ScrPlan): step
+ * navigation that follows the container's width, «Paso N de 19 · Guardado ·
+ * hace N min» above the step, a one-line footer («Siguiente: …»), «Estado del
+ * plan» and the latest revisions beside the form, and «Revisiones»,
+ * «Importar / Exportar» and «Guardar» in the project header.
+ */
+export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const toast = useToast();
+  const view = useBreakpoint();
+  const wide = useWideApp();
   const [plan, setPlan] = useState<TestPlan | null>(null);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [showRev, setShowRev] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
-  // Snapshot of the form as loaded, to detect unsaved changes (C1).
+  // Snapshot of the form as loaded or saved, to detect unsaved changes (C1).
   const initialRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [, setTick] = useState(0);
   const [importState, setImportState] = useState<{
     fileName: string;
     parsing: boolean;
@@ -194,20 +96,37 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
   useEffect(() => {
     void aiAvailable().then(setAiReady);
   }, []);
+  // «hace N min» stays current.
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // The language only changes labels: reading it through a ref keeps a
+  // language switch from reloading (and resetting) the form.
+  const tRef = useRef(t);
+  tRef.current = t;
+  // The plan the form holds, so a planId that names it is not fetched again.
+  const loadedId = useRef<string | null>(null);
+
+  function load(p: TestPlan) {
+    loadedId.current = p.id;
+    setPlan(p);
+    const f = fromPlan(p, tRef.current);
+    setForm(f);
+    initialRef.current = JSON.stringify(f);
+    setSavedAt(p.updatedAt);
+  }
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (planId) {
+        if (planId === loadedId.current) return;
         const p = await testPlanApi.get(planId, userId);
-        if (p && !cancelled) {
-          setPlan(p);
-          const f = fromPlan(p);
-          setForm(f);
-          initialRef.current = JSON.stringify(f);
-        }
-      } else if (!cancelled) {
-        const f = defaults(t);
+        if (p && !cancelled) load(p);
+      } else if (!cancelled && loadedId.current === null) {
+        const f = defaults(tRef.current);
         setForm(f);
         initialRef.current = JSON.stringify(f);
       }
@@ -215,9 +134,17 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [planId, userId, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, userId]);
 
   const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
+  // Leaving with unsaved changes asks first (sidebar, pills, «Atrás», closing
+  // the window). Saving keeps the wizard on screen, so there is never a
+  // navigation of its own to let through (no `bypass`).
+  const { dialog: leaveDialog } = useUnsavedChangesGuard(dirty, {
+    message: t("testPlan.leaveMessage"),
+  });
+  const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -249,136 +176,45 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     setStep(0);
   }
 
-  // Leaving with unsaved changes asks first (C1).
-  const close = () => {
-    if (dirty && !window.confirm(t("testPlan.discardConfirm"))) return;
-    onClose();
-  };
-
   async function save() {
     if (!form) return;
     setSaving(true);
-    const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
-    // Drop empty entries so blank rows are not persisted (user feedback).
-    const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
-    // Auto-bump the version when editing, unless the user set it by hand (A2).
-    const version =
-      plan && form.version === plan.version
-        ? nextVersion(form.version)
-        : form.version;
-    const input: TestPlanInput = {
-      projectId: plan?.projectId ?? projectId ?? null,
-      title: form.title.trim(),
-      version,
-      planDate: form.planDate || null,
-      status: form.status,
-      author,
-      data: {
-        summary: form.summary,
-        scopeIn: clean(form.scopeIn),
-        scopeOut: clean(form.scopeOut),
-        testTypes: form.testTypes,
-        methodologyType: form.methodologyType,
-        sprintWeeks: form.sprintWeeks,
-        ceremonies: form.ceremonies,
-        ceremonyFrequency: frequenciesFor(form.ceremonies, form.ceremonyFrequency),
-        phases: clean(form.phases),
-        testLevels: form.testLevels,
-        deliverables: clean(form.deliverables),
-        environmentConfig: form.environmentConfig,
-        environmentRequirements: form.environmentRequirements,
-        tools: form.tools,
-        automationStrategy: form.automationStrategy,
-        testDataManagement: form.testDataManagement,
-        defectManagement: form.defectManagement,
-        roles: form.roles.filter(
-          (r) => r.role.trim() || r.responsibility.trim(),
-        ),
-        sprints: form.sprints.filter((s) => s.name.trim() || s.start || s.end),
-        milestones: form.milestones.filter((m) => m.name.trim() || m.date),
-        risks: form.risks.filter((r) => r.risk.trim() || r.mitigation.trim()),
-        communicationPlan: form.communicationPlan,
-        closureCriteria: form.closureCriteria.filter(
-          (c) => c.criterion.trim() || c.metric.trim(),
-        ),
-        purpose: form.purpose,
-        conclusion: form.conclusion,
-        aiProvenance: form.aiProvenance,
-      },
-      userId,
-    };
+    const input = toInput(form, { plan, projectId: projectId ?? null, author, userId });
     const warnings = planWarnings(form);
     try {
-      if (plan) await testPlanApi.update(plan.id, input);
-      else await testPlanApi.create(input);
+      const saved = plan ? await testPlanApi.update(plan.id, input) : await testPlanApi.create(input);
       toast(
         warnings > 0
           ? `${t("testPlan.savedToast")} ${t("validation.savedWithWarnings", { count: warnings })}`
           : t("testPlan.savedToast"),
       );
       window.dispatchEvent(new Event(PLAN_SAVED_EVENT));
-      onClose();
+      // Stay on this step with the saved plan (its new version and revision).
+      if (saved) load(saved);
+      onSaved?.(saved);
     } finally {
       setSaving(false);
     }
   }
 
-  /** Maps the current (possibly unsaved) form to the export shape, shared by the
-   *  .xlsx and .pdf exporters so both stay in sync. */
-  function buildExportablePlan(): ExportablePlan | null {
-    if (!form) return null;
-    // Localize option lists (predefined keys → labels; custom values as-is).
-    const loc = (arr: string[], known: string[], prefix: string) =>
-      arr.map((k) => (known.includes(k) ? t(`${prefix}.${k}`) : k));
-    const methodology = methodologyText(form, t);
-    return {
-      filenameBase: form.title.trim() || "plan",
-      version: form.version,
-      planDate: form.planDate,
-      author: plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : ""),
-      status: t(`testPlan.statusLabel.${form.status}`),
-      summary: form.summary,
-      purpose: form.purpose,
-      scopeIn: form.scopeIn,
-      scopeOut: form.scopeOut,
-      testTypes: loc(form.testTypes, TEST_TYPES, "testPlan.typeLabel"),
-      methodology,
-      testLevels: loc(form.testLevels, TEST_LEVELS, "testPlan.levelLabel"),
-      deliverables: form.deliverables,
-      environmentConfig: form.environmentConfig,
-      environmentRequirements: form.environmentRequirements,
-      tools: loc(form.tools, TOOLS, "testPlan.toolLabel"),
-      automationStrategy: form.automationStrategy,
-      testDataManagement: form.testDataManagement,
-      defectManagement: form.defectManagement,
-      communicationPlan: form.communicationPlan,
-      conclusion: form.conclusion,
-      roles: form.roles.filter((r) => r.role.trim() || r.responsibility.trim()),
-      sprints: form.sprints
-        .filter((s) => s.name.trim() || s.start || s.end)
-        .map((s) => ({ name: s.name, range: [s.start, s.end].filter(Boolean).join(" → ") })),
-      risks: form.risks.filter((r) => r.risk.trim() || r.mitigation.trim()),
-      closureCriteria: form.closureCriteria.filter(
-        (c) => c.criterion.trim() || c.metric.trim(),
-      ),
-    };
-  }
+  const trySave = () => {
+    if (titleIssue) setStep(0);
+    guard(() => void save());
+  };
 
   async function exportXlsx() {
-    const exportable = buildExportablePlan();
-    if (!exportable) return;
+    if (!form) return;
     const { exportPlanXlsx } = await import("../export/planXlsx");
     const name = await unlessReported(
-      exportPlanXlsx(exportable, i18n.resolvedLanguage ?? "es"),
+      exportPlanXlsx(toExportable(form, author, t), i18n.resolvedLanguage ?? "es"),
     );
     if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
   async function exportPdf() {
-    const exportable = buildExportablePlan();
-    if (!exportable) return;
+    if (!form) return;
     const { exportPlanPdf } = await import("../export/planPdf");
-    const name = await unlessReported(exportPlanPdf(exportable, t));
+    const name = await unlessReported(exportPlanPdf(toExportable(form, author, t), t));
     if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
@@ -386,12 +222,11 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-selecting the same file
     if (!file) return;
-    const authorFallback = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
     setImportState({ fileName: file.name, parsing: true, done: 0, total: 0, rows: [], result: null });
     try {
       const { parsePlanXlsx } = await import("../import/planImport");
       const buffer = await file.arrayBuffer();
-      const result = await parsePlanXlsx(buffer, file.name, authorFallback, (p) =>
+      const result = await parsePlanXlsx(buffer, file.name, author, (p) =>
         setImportState((prev) =>
           prev ? { ...prev, done: p.done, total: p.total, rows: [...prev.rows, p.row] } : prev,
         ),
@@ -410,700 +245,116 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
     toast(t("testPlan.import.applied"));
   }
 
-  const steps: { id: string; body: ReactNode }[] = useMemo(() => {
-    if (!form) return [];
-    return [
-      // 1. Title
-      {
-        id: "title",
-        body: (
-          <FormField
-            id="tp-title"
-            label={t("testPlan.fieldTitle")}
-            issue={attempted ? required(form.title) : null}
-            required
-          >
-            {(p) => (
-              <input
-                {...p}
-                value={form.title}
-                onChange={(e) => set("title", e.target.value)}
-              />
-            )}
-          </FormField>
-        ),
-      },
-      // 2. Version / 3. Date / 4. Author
-      {
-        id: "meta",
-        body: (
-          <>
-            <TextField
-              label={t("testPlan.version")}
-              value={form.version}
-              onChange={(v) => set("version", v)}
-            />
-            <label className="tp-field">
-              <span>{t("testPlan.date")}</span>
-              <input
-                type="date"
-                value={form.planDate}
-                onChange={(e) => set("planDate", e.target.value)}
-              />
-            </label>
-            <label className="tp-field">
-              <span>{t("testPlan.author")}</span>
-              <input
-                value={
-                  plan?.author ??
-                  (user ? `${user.firstName} ${user.lastName}` : "")
-                }
-                readOnly
-              />
-            </label>
-          </>
-        ),
-      },
-      // 5. Summary
-      {
-        id: "summary",
-        body: (
-          <>
-            <AreaField
-              label={t("testPlan.summary")}
-              value={form.summary}
-              onChange={(v) => set("summary", v)}
-            />
-            <AssistButton
-              available={aiReady}
-              instruction="the Summary (introduction) section of a software test plan"
-              notes={form.summary}
-              context={`Test plan title: ${form.title}`}
-              {...aiProps("summary")}
-            />
-          </>
-        ),
-      },
-      // 6. Scope in / out
-      {
-        id: "scope",
-        body: (
-          <>
-            <FieldLabel text={t("testPlan.scopeIn")} />
-            <ListField
-              label={t("testPlan.scopeIn")}
-              items={form.scopeIn}
-              onChange={(v) => set("scopeIn", v)}
-            />
-            <FieldLabel text={t("testPlan.scopeOut")} />
-            <ListField
-              label={t("testPlan.scopeOut")}
-              items={form.scopeOut}
-              onChange={(v) => set("scopeOut", v)}
-            />
-          </>
-        ),
-      },
-      // 7. Test types
-      {
-        id: "types",
-        body: (
-          <CheckboxGroup
-            label={t("testPlan.step.types")}
-            options={TEST_TYPES}
-            selected={form.testTypes}
-            onChange={(v) => set("testTypes", v)}
-            labelFor={(k) => t(`testPlan.typeLabel.${k}`)}
-            allowCustom
-            variant="pills"
-            groups={[
-              {
-                title: t("testPlan.typeGroup.functional"),
-                options: FUNCTIONAL_TYPES,
-              },
-              {
-                title: t("testPlan.typeGroup.nonFunctional"),
-                options: NON_FUNCTIONAL_TYPES,
-              },
-            ]}
-          />
-        ),
-      },
-      // 8. Methodology
-      {
-        id: "methodology",
-        body: (
-          <>
-            <label className="tp-field">
-              <span>{t("testPlan.methodology")}</span>
-              <select
-                value={form.methodologyType}
-                onChange={(e) =>
-                  set(
-                    "methodologyType",
-                    e.target.value as "agile" | "traditional",
-                  )
-                }
-              >
-                <option value="agile">{t("testPlan.agile")}</option>
-                <option value="traditional">{t("testPlan.traditional")}</option>
-              </select>
-            </label>
-            {form.methodologyType === "agile" ? (
-              <>
-                <label className="tp-field">
-                  <span>{t("testPlan.sprintWeeks")}</span>
-                  <select
-                    value={form.sprintWeeks}
-                    onChange={(e) => set("sprintWeeks", Number(e.target.value))}
-                  >
-                    {[1, 2, 3, 4].map((w) => (
-                      <option key={w} value={w}>
-                        {w}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <FieldLabel text={t("testPlan.ceremonies")} />
-                <CheckboxGroup
-                  label={t("testPlan.ceremonies")}
-                  options={CEREMONIES}
-                  selected={form.ceremonies}
-                  onChange={(v) => set("ceremonies", v)}
-                  labelFor={(k) => t(`testPlan.ceremonyLabel.${k}`)}
-                  variant="pills"
-                />
-                {form.ceremonies.length > 0 && (
-                  <div className="tp-freq" data-testid="ceremony-frequencies">
-                    {form.ceremonies.map((c) => {
-                      const label = CEREMONIES.includes(c)
-                        ? t(`testPlan.ceremonyLabel.${c}`)
-                        : c;
-                      return (
-                        <label key={c} className="tp-field">
-                          <span>
-                            {t("testPlan.frequencyFor", { ceremony: label })}
-                          </span>
-                          <select
-                            value={frequencyOf(c, form.ceremonyFrequency)}
-                            onChange={(e) =>
-                              set("ceremonyFrequency", {
-                                ...form.ceremonyFrequency,
-                                [c]: e.target.value,
-                              })
-                            }
-                          >
-                            {CEREMONY_FREQUENCIES.map((f) => (
-                              <option key={f} value={f}>
-                                {t(`testPlan.frequencyLabel.${f}`)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <FieldLabel text={t("testPlan.phases")} />
-                <ListField
-                  label={t("testPlan.phases")}
-                  items={form.phases}
-                  onChange={(v) => set("phases", v)}
-                />
-              </>
-            )}
-          </>
-        ),
-      },
-      // 9. Test levels
-      {
-        id: "levels",
-        body: (
-          <CheckboxGroup
-            label={t("testPlan.step.levels")}
-            options={TEST_LEVELS}
-            selected={form.testLevels}
-            onChange={(v) => set("testLevels", v)}
-            labelFor={(k) => t(`testPlan.levelLabel.${k}`)}
-            variant="pills"
-          />
-        ),
-      },
-      // 10. Deliverables
-      {
-        id: "deliverables",
-        body: (
-          <ListField
-            label={t("testPlan.step.deliverables")}
-            items={form.deliverables}
-            onChange={(v) => set("deliverables", v)}
-          />
-        ),
-      },
-      // 11. Environment
-      {
-        id: "environment",
-        body: (
-          <>
-            <AreaField
-              label={t("testPlan.environmentConfig")}
-              value={form.environmentConfig}
-              onChange={(v) => set("environmentConfig", v)}
-            />
-            <AssistButton
-              available={aiReady}
-              instruction="the test environment configuration description of a software test plan"
-              notes={form.environmentConfig}
-              context={`Test plan title: ${form.title}`}
-              {...aiProps("environmentConfig")}
-            />
-            <AreaField
-              label={t("testPlan.environmentRequirements")}
-              value={form.environmentRequirements}
-              onChange={(v) => set("environmentRequirements", v)}
-            />
-            <AssistButton
-              available={aiReady}
-              instruction="the hardware and software requirements of a software test plan's test environment"
-              notes={form.environmentRequirements}
-              context={`Test plan title: ${form.title}`}
-              {...aiProps("environmentRequirements")}
-            />
-          </>
-        ),
-      },
-      // 12. Tools & automation
-      {
-        id: "tools",
-        body: (
-          <>
-            <FieldLabel text={t("testPlan.tools")} />
-            <CheckboxGroup
-              label={t("testPlan.tools")}
-              options={TOOLS}
-              selected={form.tools}
-              onChange={(v) => set("tools", v)}
-              labelFor={(k) => t(`testPlan.toolLabel.${k}`)}
-              allowCustom
-              variant="pills"
-            />
-            <AreaField
-              label={t("testPlan.automationStrategy")}
-              value={form.automationStrategy}
-              onChange={(v) => set("automationStrategy", v)}
-            />
-            <AssistButton
-              available={aiReady}
-              instruction="the test automation strategy of a software test plan: what to automate first, at which levels, with which of the chosen tools, and what stays manual"
-              notes={form.automationStrategy}
-              context={planBrief(form)}
-              {...aiProps("automationStrategy")}
-            />
-          </>
-        ),
-      },
-      // 13. Test data management
-      {
-        id: "testData",
-        body: (
-          <AreaField
-            label={t("testPlan.testDataManagement")}
-            value={form.testDataManagement}
-            onChange={(v) => set("testDataManagement", v)}
-          />
-        ),
-      },
-      // 14. Defect management
-      {
-        id: "defects",
-        body: (
-          <AreaField
-            label={t("testPlan.defectManagement")}
-            value={form.defectManagement}
-            onChange={(v) => set("defectManagement", v)}
-          />
-        ),
-      },
-      // 15. Roles & responsibilities
-      {
-        id: "roles",
-        body: (
-          <PairListField
-            label={t("testPlan.step.roles")}
-            items={form.roles}
-            keys={["role", "responsibility"]}
-            labels={[t("testPlan.roleCol"), t("testPlan.responsibilityCol")]}
-            onChange={(v) => set("roles", v)}
-          />
-        ),
-      },
-      // 16. Schedule (calendar UI arrives in task 25)
-      {
-        id: "schedule",
-        body: (
-          <>
-            <ScheduleCalendar
-              sprints={form.sprints}
-              onAdd={(s) => set("sprints", [...form.sprints, s])}
-            />
-            <FieldLabel text={t("testPlan.sprints")} />
-            {form.sprints.map((s, i) => {
-              const issue = sprintIssues(form.sprints)[i];
-              const nameIssue = duplicateRow(
-                duplicateRows(form.sprints, (x) => x.name),
-                i,
-              );
-              const row = `${t("testPlan.sprints")} · ${t("a11y.row", { n: i + 1 })}`;
-              const id = `tp-sprint-${i}`;
-              return (
-                <div key={i} role="group" aria-label={row}>
-                  <div className="tp-sched-row">
-                    <input
-                      {...controlProps(`${id}-name`, nameIssue)}
-                      aria-label={`${t("testPlan.sprintName")} · ${t("a11y.row", { n: i + 1 })}`}
-                      placeholder={t("testPlan.sprintName")}
-                      value={s.name}
-                      onChange={(e) => {
-                        const next = [...form.sprints];
-                        next[i] = { ...s, name: e.target.value };
-                        set("sprints", next);
-                      }}
-                    />
-                    <input
-                      type="date"
-                      {...controlProps(`${id}-start`, issue)}
-                      aria-label={`${t("a11y.start")} · ${t("a11y.row", { n: i + 1 })}`}
-                      data-invalid={issue?.code === "testPlan.sprintDateError"}
-                      value={s.start}
-                      onChange={(e) => {
-                        const next = [...form.sprints];
-                        next[i] = { ...s, start: e.target.value };
-                        set("sprints", next);
-                      }}
-                    />
-                    <input
-                      type="date"
-                      {...controlProps(
-                        `${id}-end`,
-                        issue,
-                        issue ? `${id}-start-msg` : undefined,
-                      )}
-                      aria-label={`${t("a11y.end")} · ${t("a11y.row", { n: i + 1 })}`}
-                      data-invalid={issue?.code === "testPlan.sprintDateError"}
-                      value={s.end}
-                      onChange={(e) => {
-                        const next = [...form.sprints];
-                        next[i] = { ...s, end: e.target.value };
-                        set("sprints", next);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="tp-list-field__del"
-                      aria-label={`${t("common.delete")}: ${row}`}
-                      onClick={() =>
-                        set(
-                          "sprints",
-                          form.sprints.filter((_, j) => j !== i),
-                        )
-                      }
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  {issue && (
-                    <FieldMessage id={`${id}-start-msg`} issue={issue} />
-                  )}
-                  {nameIssue && (
-                    <FieldMessage id={`${id}-name-msg`} issue={nameIssue} />
-                  )}
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              className="tp-list-field__add"
-              onClick={() =>
-                set("sprints", [
-                  ...form.sprints,
-                  { name: "", start: "", end: "" },
-                ])
-              }
-            >
-              + {t("testPlan.addRow")}
-            </button>
-            <FieldLabel text={t("testPlan.milestones")} />
-            {form.milestones.map((m, i) => {
-              const nameIssue = duplicateRow(
-                duplicateRows(form.milestones, (x) => x.name),
-                i,
-              );
-              const row = `${t("testPlan.milestones")} · ${t("a11y.row", { n: i + 1 })}`;
-              return (
-                <div key={i} role="group" aria-label={row}>
-                  <div className="tp-sched-row">
-                    <input
-                      {...controlProps(`tp-milestone-${i}`, nameIssue)}
-                      aria-label={`${t("testPlan.milestoneName")} · ${t("a11y.row", { n: i + 1 })}`}
-                      placeholder={t("testPlan.milestoneName")}
-                      value={m.name}
-                      onChange={(e) => {
-                        const next = [...form.milestones];
-                        next[i] = { ...m, name: e.target.value };
-                        set("milestones", next);
-                      }}
-                    />
-                    <input
-                      type="date"
-                      aria-label={`${t("a11y.date")} · ${t("a11y.row", { n: i + 1 })}`}
-                      value={m.date}
-                      onChange={(e) => {
-                        const next = [...form.milestones];
-                        next[i] = { ...m, date: e.target.value };
-                        set("milestones", next);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="tp-list-field__del"
-                      aria-label={`${t("common.delete")}: ${row}`}
-                      onClick={() =>
-                        set(
-                          "milestones",
-                          form.milestones.filter((_, j) => j !== i),
-                        )
-                      }
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  {nameIssue && (
-                    <FieldMessage
-                      id={`tp-milestone-${i}-msg`}
-                      issue={nameIssue}
-                    />
-                  )}
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              className="tp-list-field__add"
-              onClick={() =>
-                set("milestones", [...form.milestones, { name: "", date: "" }])
-              }
-            >
-              + {t("testPlan.addRow")}
-            </button>
-          </>
-        ),
-      },
-      // 17. Risks
-      {
-        id: "risks",
-        body: (
-          <>
-            <PairListField
-              label={t("testPlan.step.risks")}
-              items={form.risks}
-              keys={["risk", "mitigation"]}
-              labels={[t("testPlan.riskCol"), t("testPlan.mitigationCol")]}
-              onChange={(v) => set("risks", v)}
-            />
-            <AiSuggestList
-              available={aiReady}
-              buttonLabel={t("testPlan.suggestRisks")}
-              run={() =>
-                suggestRisks(
-                  planBrief(form),
-                  form.risks.map((r) => r.risk).filter((r) => r.trim()),
-                  i18n.resolvedLanguage ?? "es",
-                )
-              }
-              renderItem={(r) => (
-                <>
-                  {r.risk}
-                  <span className="assist__pick-sub">{r.mitigation}</span>
-                </>
-              )}
-              provenance={form.aiProvenance.risks}
-              onAdd={(items, provenance) =>
-                setForm((f) =>
-                  f
-                    ? {
-                        ...f,
-                        // Replace the empty starter row instead of keeping it.
-                        risks: [
-                          ...f.risks.filter(
-                            (r) => r.risk.trim() || r.mitigation.trim(),
-                          ),
-                          ...items,
-                        ],
-                        aiProvenance: withProvenance(
-                          f.aiProvenance,
-                          "risks",
-                          provenance,
-                        ),
-                      }
-                    : f,
-                )
-              }
-              onReview={review("risks")}
-            />
-          </>
-        ),
-      },
-      // 18. Communication plan
-      {
-        id: "communication",
-        body: (
-          <AreaField
-            label={t("testPlan.communicationPlan")}
-            value={form.communicationPlan}
-            onChange={(v) => set("communicationPlan", v)}
-          />
-        ),
-      },
-      // 19. Closure criteria
-      {
-        id: "closure",
-        body: (
-          <PairListField
-            label={t("testPlan.step.closure")}
-            items={form.closureCriteria}
-            keys={["criterion", "metric"]}
-            labels={[t("testPlan.criterionCol"), t("testPlan.metricCol")]}
-            onChange={(v) => set("closureCriteria", v)}
-          />
-        ),
-      },
-      // 20. Purpose
-      {
-        id: "purpose",
-        body: (
-          <>
-            <AreaField
-              label={t("testPlan.purpose")}
-              hint={t("testPlan.purposeHint")}
-              value={form.purpose}
-              onChange={(v) => set("purpose", v)}
-            />
-            <AssistButton
-              available={aiReady}
-              instruction="the Purpose section of a software test plan"
-              notes={form.purpose}
-              context={[
-                `Title: ${form.title}`,
-                form.summary && `Summary: ${form.summary}`,
-                form.scopeIn.filter(Boolean).length &&
-                  `In scope: ${form.scopeIn.filter(Boolean).join(", ")}`,
-              ]
-                .filter(Boolean)
-                .join("\n")}
-              {...aiProps("purpose")}
-            />
-          </>
-        ),
-      },
-      // 21. Conclusion
-      {
-        id: "conclusion",
-        body: (
-          <>
-            <AreaField
-              label={t("testPlan.conclusion")}
-              value={form.conclusion}
-              onChange={(v) => set("conclusion", v)}
-            />
-            <AssistButton
-              available={aiReady}
-              instruction="the Conclusion section (summary and next steps) of a software test plan"
-              notes={form.conclusion}
-              context={`Test plan title: ${form.title}`}
-              {...aiProps("conclusion")}
-            />
-          </>
-        ),
-      },
-    ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, t, plan, user, aiReady, attempted]);
+  useHeaderActions(
+    form && (
+      <>
+        {plan && <RevisionsButton onClick={() => setShowRev(true)} />}
+        <PlanIoMenu
+          onImport={() => fileInputRef.current?.click()}
+          onExportPdf={() => void exportPdf()}
+          onExportXlsx={() => void exportXlsx()}
+        />
+        <button type="button" className="header-action" data-primary="" onClick={trySave} disabled={saving}>
+          <Check size={16} aria-hidden="true" />
+          <span className="header-action__label">{saving ? t("testPlan.saving") : t("testPlan.save")}</span>
+        </button>
+      </>
+    ),
+  );
 
   if (!form) return <p className="tp__muted">{t("common.loading")}</p>;
 
-  const current = steps[step];
+  const completion = stepCompletion(form);
+  const id = STEP_IDS[step];
+  const last = step === STEP_IDS.length - 1;
+  const goTo = (i: number) => setStep(Math.min(Math.max(i, 0), STEP_IDS.length - 1));
+  const nav = { current: step, completion, onGo: goTo };
+  const stepProps: StepProps = {
+    form,
+    set,
+    setForm,
+    aiReady,
+    aiProps,
+    review,
+    attempted,
+    author,
+    completion,
+    goTo,
+  };
+  const lang = i18n.resolvedLanguage ?? "es";
+  const when = (iso: string) => relativeTime(iso, lang, t("testPlan.saveState.now"));
+  const saveState = dirty
+    ? t("testPlan.saveState.unsaved")
+    : savedAt
+      ? t("testPlan.saveState.saved", { when: when(savedAt) })
+      : t("testPlan.saveState.never");
+  const updated = savedAt
+    ? new Intl.DateTimeFormat(lang, { dateStyle: "medium", timeStyle: "short" }).format(parseStamp(savedAt))
+    : null;
 
   return (
-    <section className="tp-wizard">
-      <header className="tp-wizard__top">
-        <button type="button" className="tp-editor__back" onClick={close}>
-          ← {t("testPlan.back")}
-        </button>
-        <h1>{plan ? t("testPlan.editTitle") : t("testPlan.newTitle")}</h1>
-        {plan && (
-          <span className="tp-editor__rev">
-            {t("testPlan.revShort")} {plan.revision}
-          </span>
-        )}
-        {plan && (
-          <button
-            type="button"
-            className="tp-wizard__revbtn"
-            onClick={() => setShowRev((v) => !v)}
-          >
-            {t("testPlan.revisions")}
-          </button>
-        )}
-        <button
-          type="button"
-          className="tp-wizard__revbtn"
-          onClick={() => void exportXlsx()}
-        >
-          {t("testPlan.exportXlsx")}
-        </button>
-        <button
-          type="button"
-          className="tp-wizard__revbtn"
-          onClick={() => void exportPdf()}
-        >
-          {t("testPlan.exportPdf")}
-        </button>
-        <button
-          type="button"
-          className="tp-wizard__revbtn"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {t("testPlan.import.button")}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx"
-          hidden
-          onChange={(e) => void onImportFile(e)}
-        />
-        <button
-          type="button"
-          className="tp-editor__save"
-          onClick={() => {
-            if (titleIssue) setStep(0);
-            guard(() => void save());
-          }}
-          disabled={saving}
-        >
-          {saving ? t("testPlan.saving") : t("testPlan.save")}
-        </button>
-      </header>
-
-      {showSummary && titleIssue && (
-        <ErrorSummary
-          ref={summaryRef}
-          items={[{ label: t("testPlan.fieldTitle"), issue: titleIssue, fieldId: "tp-title" }]}
-        />
-      )}
+    <section className="tpw" data-testid="plan-wizard">
+      <input ref={fileInputRef} type="file" accept=".xlsx" hidden onChange={(e) => void onImportFile(e)} />
+      {view === "desktop" && wide && <StepRail {...nav} />}
+      <div className="tpw__main">
+        {view === "mobile" ? <StepCompact {...nav} /> : !(view === "desktop" && wide) && <StepStrip {...nav} />}
+        <div className="tpw__cols">
+          <div className="tpw__form">
+            <div className="tpw__step-head">
+              <p className="tpw__status">
+                <span>{t("testPlan.nav.stepOf", { n: step + 1, total: STEP_IDS.length })}</span>
+                <span aria-hidden="true">·</span>
+                <span data-dirty={dirty || undefined}>{saveState}</span>
+              </p>
+              <h2 ref={headingRef} className="tpw__title" tabIndex={-1}>
+                {t(`testPlan.step.${id}`)}
+              </h2>
+              <p className="tpw__desc">{t(`testPlan.stepDesc.${id}`)}</p>
+            </div>
+            {showSummary && titleIssue && (
+              <ErrorSummary
+                ref={summaryRef}
+                items={[{ label: t("testPlan.fieldTitle"), issue: titleIssue, fieldId: "tp-title" }]}
+              />
+            )}
+            <div className="tpw__fields tp-wizard__fields">
+              <StepBody id={id} {...stepProps} />
+            </div>
+            <footer className="tpw__foot">
+              {step > 0 ? (
+                <button type="button" className="header-action" onClick={() => goTo(step - 1)}>
+                  <ChevronLeft size={16} aria-hidden="true" />
+                  <span className="header-action__label">{t("testPlan.prev")}</span>
+                </button>
+              ) : (
+                <span />
+              )}
+              {last ? (
+                <button type="button" className="header-action tpw__next" data-primary="" onClick={trySave} disabled={saving}>
+                  <Check size={16} aria-hidden="true" />
+                  <span className="header-action__label">{t("testPlan.nav.finish")}</span>
+                </button>
+              ) : (
+                <button type="button" className="header-action tpw__next" onClick={() => goTo(step + 1)}>
+                  <span className="header-action__label">
+                    {t("testPlan.nav.nextStep", { title: t(`testPlan.step.${STEP_IDS[step + 1]}`) })}
+                  </span>
+                  <ChevronRight size={16} aria-hidden="true" />
+                </button>
+              )}
+            </footer>
+          </div>
+          {/* Beside the form when both fit, below it otherwise (SPEC §8). */}
+          <PlanStatusPanel
+            plan={plan}
+            status={form.status}
+            version={form.version}
+            author={author}
+            updated={updated}
+            onShowRevisions={() => setShowRev(true)}
+          />
+        </div>
+      </div>
 
       {importState && (
         <ImportReportModal
@@ -1116,241 +367,22 @@ export function TestPlanWizard({ planId, projectId, onClose }: Props) {
           onCancel={() => setImportState(null)}
         />
       )}
-
+      {leaveDialog}
       {plan && showRev && (
-        <div className="tp-revs-panel">
-          <h3>{t("testPlan.revisions")}</h3>
-          <RevisionHistory planId={plan.id} onRestore={restore} />
-        </div>
+        <RevisionsDialog planId={plan.id} onRestore={(r) => void restore(r)} onClose={() => setShowRev(false)} />
       )}
-
-      <div className="tp-wizard__body">
-        <nav className="tp-wizard__steps" aria-label={t("testPlan.steps")}>
-          {steps.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              className="tp-wizard__step"
-              data-active={i === step}
-              aria-current={i === step ? "step" : undefined}
-              onClick={() => setStep(i)}
-            >
-              <span className="tp-wizard__step-n">{i + 1}</span>
-              {t(`testPlan.step.${s.id}`)}
-            </button>
-          ))}
-        </nav>
-
-        <div className="tp-wizard__content">
-          <h2 ref={headingRef} className="tp-wizard__step-title" tabIndex={-1}>
-            {step + 1}. {t(`testPlan.step.${current.id}`)}
-          </h2>
-          <div className="tp-wizard__fields">{current.body}</div>
-          <div className="tp-wizard__nav">
-            <button
-              type="button"
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-            >
-              ← {t("testPlan.prev")}
-            </button>
-            <span className="tp-wizard__progress" aria-live="polite">
-              {step + 1} / {steps.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
-              disabled={step === steps.length - 1}
-            >
-              {t("testPlan.next")} →
-            </button>
-          </div>
-        </div>
-      </div>
     </section>
   );
 }
 
-function FieldLabel({ text }: { text: string }) {
-  return <p className="tp-field__grouplabel">{text}</p>;
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="tp-field">
-      <span>{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} />
-    </label>
-  );
-}
-
-function AreaField({
-  label,
-  value,
-  onChange,
-  hint,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  hint?: string;
-}) {
-  return (
-    <label className="tp-field">
-      <span>{label}</span>
-      {hint && <span className="tp-field__hint">{hint}</span>}
-      <textarea rows={4} value={value} onChange={(e) => onChange(e.target.value)} />
-    </label>
-  );
-}
-
-function defaults(t: (k: string) => string): FormState {
-  return {
-    title: t("testPlan.defaultTitle"),
-    version: "1.0",
-    planDate: new Date().toISOString().slice(0, 10),
-    status: "draft",
-    summary: "",
-    scopeIn: [],
-    scopeOut: [],
-    testTypes: [],
-    methodologyType: "agile",
-    sprintWeeks: 2,
-    ceremonies: ["daily", "review", "retrospective"],
-    ceremonyFrequency: frequenciesFor(["daily", "review", "retrospective"]),
-    phases: [],
-    testLevels: [],
-    deliverables: DELIVERABLE_KEYS.map((k) => t(`testPlan.deliverableLabel.${k}`)),
-    environmentConfig: "",
-    environmentRequirements: "",
-    tools: [],
-    automationStrategy: "",
-    testDataManagement: "",
-    defectManagement: "",
-    roles: ROLE_KEYS.map((k) => ({
-      role: t(`testPlan.roleName.${k}`),
-      responsibility: "",
-    })),
-    sprints: [],
-    milestones: [],
-    risks: [],
-    communicationPlan: "",
-    closureCriteria: [
-      {
-        criterion: t("testPlan.closureDefault.executed"),
-        metric: t("testPlan.closureDefault.executedMetric"),
-      },
-      {
-        criterion: t("testPlan.closureDefault.defects"),
-        metric: t("testPlan.closureDefault.defectsMetric"),
-      },
-      {
-        criterion: t("testPlan.closureDefault.coverage"),
-        metric: t("testPlan.closureDefault.coverageMetric"),
-      },
-    ],
-    purpose: "",
-    conclusion: "",
-    aiProvenance: {},
-  };
-}
-
-/** Builds a form from an imported plan input, reusing the defaults for any field
- *  the import did not detect (so undetected fields keep sensible defaults). */
-function fromInput(input: Omit<TestPlanInput, "userId">, t: (k: string) => string): FormState {
-  const base = applyRevision(defaults(t), input.title, input.data);
-  return {
-    ...base,
-    version: input.version ?? "1.0",
-    planDate: input.planDate ?? "",
-    status: input.status ?? "draft",
-  };
-}
-
-/** Bumps the last dotted segment of a version (`1.0` → `1.1`, `1.9` → `1.10`). */
-function nextVersion(v: string): string {
-  const parts = v.split(".");
-  const n = Number(parts[parts.length - 1]);
-  if (!Number.isInteger(n)) return v;
-  parts[parts.length - 1] = String(n + 1);
-  return parts.join(".");
-}
-
-/** Overwrites the 21-field content of `base` with a revision's title + data,
- *  keeping version/date/status (not snapshotted). */
-function applyRevision(base: FormState, title: string, d: TestPlanData): FormState {
-  return {
-    ...base,
-    title,
-    summary: d.summary ?? "",
-    scopeIn: d.scopeIn ?? [],
-    scopeOut: d.scopeOut ?? [],
-    testTypes: d.testTypes ?? [],
-    methodologyType: d.methodologyType ?? "agile",
-    sprintWeeks: d.sprintWeeks ?? 2,
-    ceremonies: d.ceremonies ?? [],
-    ceremonyFrequency: frequenciesFor(d.ceremonies ?? [], d.ceremonyFrequency),
-    phases: d.phases ?? [],
-    testLevels: d.testLevels ?? [],
-    deliverables: d.deliverables ?? [],
-    environmentConfig: d.environmentConfig ?? "",
-    environmentRequirements: d.environmentRequirements ?? "",
-    tools: d.tools ?? [],
-    automationStrategy: d.automationStrategy ?? "",
-    testDataManagement: d.testDataManagement ?? "",
-    defectManagement: d.defectManagement ?? "",
-    roles: d.roles ?? [],
-    sprints: d.sprints ?? [],
-    milestones: d.milestones ?? [],
-    risks: d.risks ?? [],
-    communicationPlan: d.communicationPlan ?? "",
-    closureCriteria: d.closureCriteria ?? [],
-    purpose: d.purpose ?? "",
-    conclusion: d.conclusion ?? "",
-    aiProvenance: d.aiProvenance ?? {},
-  };
-}
-
-function fromPlan(p: TestPlan): FormState {
-  const d = p.data ?? {};
-  return {
-    title: p.title,
-    version: p.version,
-    planDate: p.planDate ?? "",
-    status: p.status,
-    summary: d.summary ?? "",
-    scopeIn: d.scopeIn ?? [],
-    scopeOut: d.scopeOut ?? [],
-    testTypes: d.testTypes ?? [],
-    methodologyType: d.methodologyType ?? "agile",
-    sprintWeeks: d.sprintWeeks ?? 2,
-    ceremonies: d.ceremonies ?? [],
-    ceremonyFrequency: frequenciesFor(d.ceremonies ?? [], d.ceremonyFrequency),
-    phases: d.phases ?? [],
-    testLevels: d.testLevels ?? [],
-    deliverables: d.deliverables ?? [],
-    environmentConfig: d.environmentConfig ?? "",
-    environmentRequirements: d.environmentRequirements ?? "",
-    tools: d.tools ?? [],
-    automationStrategy: d.automationStrategy ?? "",
-    testDataManagement: d.testDataManagement ?? "",
-    defectManagement: d.defectManagement ?? "",
-    roles: d.roles ?? [],
-    sprints: d.sprints ?? [],
-    milestones: d.milestones ?? [],
-    risks: d.risks ?? [],
-    communicationPlan: d.communicationPlan ?? "",
-    closureCriteria: d.closureCriteria ?? [],
-    purpose: d.purpose ?? "",
-    conclusion: d.conclusion ?? "",
-    aiProvenance: d.aiProvenance ?? {},
-  };
+/** «ahora mismo», «hace 5 min», «hace 2 h», else the date. */
+function relativeTime(iso: string, lang: string, now: string): string {
+  const then = parseStamp(iso).getTime();
+  if (Number.isNaN(then)) return iso;
+  const minutes = Math.round((Date.now() - then) / 60_000);
+  if (minutes < 1) return now;
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto", style: "short" });
+  if (minutes < 60) return rtf.format(-minutes, "minute");
+  if (minutes < 24 * 60) return rtf.format(-Math.round(minutes / 60), "hour");
+  return new Intl.DateTimeFormat(lang, { dateStyle: "medium" }).format(new Date(then));
 }

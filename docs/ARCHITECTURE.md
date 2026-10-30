@@ -91,6 +91,35 @@ memory) and no history, and a desktop-only action says so in a toast.
   attachments of cards in its outbox, and the rest only if the old caches were
   its own (`pharos.sync.cacheOwner`, or none, as before FIX-07).
 
+**Proyectos (RED-V2).** `ProjectsPage` loads `projectRows` (projects with
+plan status, case count and requirement coverage, through the `test-plan`,
+`test-cases` and `traceability` public APIs) and builds the screen from pure
+functions in `model/projectTable.ts` (recent, search, sort with nulls last,
+pages). The table is the shared `DataTable` + `Pagination` + `FilterChips` +
+`SortMenu`. Ajustes del proyecto is `ProjectSettings`: the delete dialog is
+`ConfirmDialog variant="destructive"` with `confirmText` set to the prefix
+without its separator (`deleteConfirmWord`), and `useProjectExport` holds the
+export progress shared with the list.
+
+**Plan wizard (RED-V2).** `TestPlanWizard` composes `ui/wizard/*`:
+- `formState.ts`: the form and its pure conversions (from a plan, an import or
+  a revision; to the saved input and the export shape);
+- `steps.ts`: the 19 step ids and `stepCompletion` (a step is complete when its
+  main field has content);
+- `StepBody` and one component per large step (`DeliverablesStep`,
+  `ToolsStep`, `ScheduleStep`, `FinishStep`);
+- `StepNav`: one navigation is rendered, chosen by the app container's width.
+  `StepRail` (sticky, `z-index: 2`, its own scroll) from 1360 px, measured by
+  `useWideApp` on `.viewport-root` like `ViewportProvider`; `StepStrip`
+  (current step centred) from 600 px; `StepCompact` + a `BottomSheet` below;
+- `PlanSidePanels`: «Estado del plan», the latest revisions, the revisions
+  dialog and the «Importar / Exportar» menu.
+
+Its header buttons go through `useHeaderActions`. Leaving with unsaved changes asks first (`useUnsavedChangesGuard`; the wizard never navigates by itself after a save, so it needs no `bypass`). Saving reloads the saved
+plan in place, so the step stays put, and fires `PLAN_SAVED_EVENT`, which the
+project header listens to. Deliverables and tools are catalog keys
+(ADR-0030, `model/catalogLabels.ts`).
+
 **Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
 the redesign. `model/loadHome.ts` reads only public read APIs, one project
 list and three reads per project, most recently updated first:
@@ -806,7 +835,7 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
 - **Phase 3 — Test plan:** `test_plans` (+ `test_plan_revisions`) with promoted
   columns + a JSON `data` blob for the 21-field content (spec §5.1); Rust repo +
   Tauri commands (list/get/create/update/delete/revisions); client test-plan
-  module — plan list/CRUD, a stepped wizard, a react-day-picker schedule
+  module — plan CRUD, a stepped wizard, a react-day-picker schedule
   calendar, and a revision-history panel. (The `cargo test` launch failure
   noted at the time was specific to the GNU toolchain and is gone with MSVC.)
 - **Phases 4–8 and 9A:** implemented — test cases, planner, templates/export,

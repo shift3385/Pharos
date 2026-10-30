@@ -13,16 +13,22 @@ vi.mock("@modules/test-plan", () => ({
   TestPlanPage: () => <p>sección plan</p>,
   PLAN_SAVED_EVENT: "pharos:plan-saved",
   projectPlanStatus: async () => "reviewed",
+  projectHasPlan: async () => false,
+  projectPlanClosure: async () => ({ closeDate: "2026-11-07", criteria: [] }),
 }));
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
   projectTraceableCases: async () => [],
   projectCaseCount: async () => 240,
 }));
-vi.mock("@modules/planner", () => ({ PlannerBoard: () => <p>sección planificador</p> }));
+vi.mock("@modules/planner", () => ({
+  PlannerBoard: () => <p>sección planificador</p>,
+  projectCardCount: async () => 0,
+}));
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
   requirementApi: { list: async () => [] },
+  projectCoverage: async () => null,
 }));
 
 const PROJECTS = {
@@ -81,6 +87,7 @@ describe("project routes (ADR-0029)", () => {
     expect(await screen.findByText("Plan revisado")).toBeInTheDocument();
     expect(screen.getByText("240 casos")).toBeInTheDocument();
     expect(screen.getByText("0 requisitos")).toBeInTheDocument();
+    expect(screen.getByText("Cierre del ciclo: 7 nov")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Proyectos/ })).not.toBeInTheDocument();
   });
 

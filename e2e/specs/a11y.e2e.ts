@@ -97,10 +97,6 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   });
 
   it("menus take the focus once they are visible (SPEC §10)", async () => {
-    // The unsaved wizard may ask before leaving it: accept.
-    await browser.execute(() => {
-      window.confirm = () => true;
-    });
     /** Role of the focused element. */
     const focusedRole = () => browser.execute(() => document.activeElement?.getAttribute("role") ?? "");
     // Project switcher (full sidebar, desktop layout): the search field first;
@@ -153,10 +149,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   });
 
   it("the skip link is the first stop and moves to the content", async () => {
-    // Leave the unsaved wizard and reload, so Tab starts from the top.
-    await browser.execute(() => {
-      window.confirm = () => true;
-    });
+    // Leave the wizard and reload, so Tab starts from the top.
     await $('[data-testid="nav-dashboard"]').click();
     await browser.refresh();
     await expect(userMenuTrigger()).toBeDisplayed();
@@ -168,10 +161,6 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   });
 
   after(async () => {
-    // The wizard leaves an unsaved plan: leave without the "discard?" prompt.
-    await browser.execute(() => {
-      window.confirm = () => true;
-    });
     await $(`[data-testid="nav-projects"]`).click();
     await $('[data-testid="nav-dashboard"]').click();
     await useTheme("light").catch(() => {});

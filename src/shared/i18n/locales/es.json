@@ -500,7 +500,6 @@
     "exportFinishing": "Finalizando…",
     "empty": "Aún no hay proyectos. Crea el primero.",
     "namePlaceholder": "Nombre del proyecto",
-    "prefixMeta": "IDs",
     "name": "Nombre del proyecto",
     "caseIdPrefix": "Prefijo de ID de caso",
     "caseIdDigits": "Dígitos del número",
@@ -529,7 +528,76 @@
       "cases_one": "1 caso",
       "cases_other": "{{count}} casos",
       "requirements_one": "1 requisito",
-      "requirements_other": "{{count}} requisitos"
+      "requirements_other": "{{count}} requisitos",
+      "closesOn": "Cierre del ciclo: {{date}}"
+    },
+    "list": {
+      "recentTitle": "Recientes",
+      "recentHint_one": "El último que abriste",
+      "recentHint_other": "Los {{count}} últimos que abriste",
+      "allTitle": "Todos los proyectos",
+      "search": "Buscar por nombre o prefijo…",
+      "filterLabel": "Estado del proyecto",
+      "filter": {
+        "all": "Todos",
+        "active": "En curso",
+        "closed": "Cerrados"
+      },
+      "filterSoon": "Próximamente: los proyectos aún no tienen estado abierto o cerrado.",
+      "sort": {
+        "access": "Último acceso",
+        "name": "Nombre (A–Z)",
+        "updated": "Última modificación",
+        "closure": "Cierre del ciclo",
+        "execution": "Progreso de ejecución",
+        "coverage": "Cobertura de requisitos",
+        "defects": "Defectos abiertos"
+      },
+      "sortSoon": {
+        "closure": "Ningún plan tiene fechas de cierre todavía.",
+        "execution": "Próximamente: llega con la ejecución de pruebas (0.2.0).",
+        "defects": "Próximamente."
+      },
+      "col": {
+        "project": "Proyecto",
+        "plan": "Plan",
+        "cases": "Casos",
+        "executed": "Ejecutado",
+        "coverage": "Cobertura",
+        "access": "Último acceso",
+        "actions": "Acciones"
+      },
+      "executedSoon": "La ejecución de pruebas llega en la versión 0.2.0.",
+      "executedShort": "— ejec.",
+      "noRequirements": "Sin requisitos que cubrir",
+      "percent": "{{value}} %",
+      "coverageShort": "{{value}} % cob.",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "never": "Nunca",
+      "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> proyectos",
+      "noMatch": "Ningún proyecto coincide con «{{query}}».",
+      "rowMenu": "Más acciones de {{name}}",
+      "moreActions": "Más acciones",
+      "open": "Abrir"
+    },
+    "settings": {
+      "general": "General",
+      "generalDesc": "Nombre y numeración de los casos de prueba.",
+      "exportDesc": "Plan de pruebas en PDF, casos en .xlsx y .feature y la matriz de trazabilidad.",
+      "exportZip": "Exportar ZIP",
+      "lossLabel": "Se eliminará",
+      "lossPlans_one": "1 plan",
+      "lossPlans_other": "{{count}} planes",
+      "lossCases_one": "1 caso",
+      "lossCases_other": "{{count}} casos",
+      "lossRequirements_one": "1 requisito",
+      "lossRequirements_other": "{{count}} requisitos",
+      "lossCards_one": "1 tarjeta",
+      "lossCards_other": "{{count}} tarjetas",
+      "deletedToast": "«{{name}}» eliminado",
+      "deleteCheckFailed": "No se pudo comprobar qué se eliminaría. Inténtalo de nuevo.",
+      "deleteFailed": "No se pudo eliminar «{{name}}». Inténtalo de nuevo."
     }
   },
   "profile": {
@@ -554,15 +622,7 @@
     "themeDark": "Oscuro"
   },
   "testPlan": {
-    "title": "Planes de prueba",
-    "subtitle": "Crea, edita y versiona tus planes de prueba.",
-    "new": "Nuevo plan",
-    "empty": "Aún no hay planes. Crea el primero.",
-    "delete": "Eliminar",
     "defaultTitle": "Nuevo plan de pruebas",
-    "newTitle": "Nuevo plan",
-    "editTitle": "Editar plan",
-    "back": "Volver",
     "revShort": "rev.",
     "fieldTitle": "Título",
     "version": "Versión",
@@ -572,12 +632,9 @@
     "purpose": "Propósito",
     "conclusion": "Conclusión",
     "save": "Guardar",
-    "exportXlsx": "Exportar .xlsx",
-    "exportPdf": "Exportar .pdf",
     "pdfKind": "Plan de Pruebas",
     "rangeCol": "Rango",
     "import": {
-      "button": "Importar .xlsx",
       "title": "Importar plan desde .xlsx",
       "applied": "Plan importado. Revisa y guarda para confirmar.",
       "error": "No se pudo leer el archivo. Prueba con un .xlsx sin comentarios de celda."
@@ -617,9 +674,7 @@
     "addRow": "Añadir fila",
     "other": "Otro",
     "otherPlaceholder": "Especifica otro…",
-    "steps": "Pasos",
     "prev": "Anterior",
-    "next": "Siguiente",
     "addSprintFromRange": "Añadir sprint del rango",
     "revisions": "Revisiones",
     "noRevisions": "Sin revisiones anteriores.",
@@ -669,15 +724,6 @@
       "system": "Sistema",
       "acceptance": "Aceptación"
     },
-    "toolLabel": {
-      "selenium": "Selenium",
-      "playwright": "Playwright",
-      "cypress": "Cypress",
-      "appium": "Appium",
-      "postman": "Postman",
-      "jmeter": "JMeter",
-      "jira": "JIRA"
-    },
     "frequencyFor": "Frecuencia de {{ceremony}}",
     "frequencyLabel": {
       "daily": "a diario",
@@ -701,7 +747,14 @@
       "defectReports": "Informes de defectos",
       "uatSignoff": "Sign-off de UAT",
       "testData": "Datos de prueba",
-      "incidentReports": "Informes de incidentes"
+      "incidentReports": "Informes de incidentes",
+      "testDesignSpec": "Especificación de diseño de pruebas",
+      "testProcedures": "Procedimientos de prueba",
+      "testDataReadiness": "Informe de preparación de datos",
+      "testEnvRequirements": "Requisitos del entorno de pruebas",
+      "testEnvReadiness": "Informe de preparación del entorno",
+      "executionLog": "Registro de ejecución y resultados",
+      "traceabilityMatrix": "Matriz de trazabilidad"
     },
     "roleName": {
       "testManager": "Responsable de Pruebas",
@@ -719,7 +772,6 @@
     "sprintOverlap": "Este sprint se solapa con otro.",
     "restore": "Restaurar",
     "restoreConfirm": "¿Restaurar el contenido de esta revisión? Reemplazará lo que tienes ahora sin guardar.",
-    "discardConfirm": "Tienes cambios sin guardar. ¿Salir y descartarlos?",
     "closureDefault": {
       "executed": "% de casos ejecutados",
       "executedMetric": "≥ 95%",
@@ -728,7 +780,132 @@
       "coverage": "Cobertura de requisitos",
       "coverageMetric": "≥ 90%"
     },
-    "savedToast": "Plan de pruebas guardado"
+    "savedToast": "Plan de pruebas guardado",
+    "stepDesc": {
+      "title": "Nombre del documento y estado de aprobación.",
+      "meta": "Datos de control del documento que aparecen en la portada del PDF.",
+      "summary": "Introducción breve: qué se prueba y por qué.",
+      "scope": "Qué entra y qué queda fuera de las pruebas.",
+      "types": "Selecciona qué tipos de prueba cubre este plan. Puedes añadir tipos propios.",
+      "methodology": "Cómo se organiza el trabajo de pruebas.",
+      "levels": "En qué niveles se ejecutarán las pruebas.",
+      "deliverables": "Documentos y artefactos que produce el equipo de pruebas.",
+      "environment": "Configuración y requisitos del entorno donde se ejecuta.",
+      "tools": "Herramientas del proyecto y estrategia de automatización.",
+      "testData": "Cómo se crean, protegen y renuevan los datos de prueba.",
+      "defects": "Cómo se registran, priorizan y cierran los defectos.",
+      "roles": "Quién hace qué en el proceso de pruebas.",
+      "schedule": "Sprints e hitos del ciclo de pruebas.",
+      "risks": "Riesgos que pueden afectar a las pruebas y cómo se mitigan.",
+      "communication": "Cómo y cuándo se informa del avance.",
+      "closure": "Condiciones que deben cumplirse para cerrar el ciclo.",
+      "purpose": "Objetivo general del plan de pruebas.",
+      "conclusion": "Cierre del documento antes de exportar o aprobar."
+    },
+    "nav": {
+      "label": "Pasos del plan",
+      "stepOf": "Paso {{n}} de {{total}}",
+      "completed_one": "{{count}} completado",
+      "completed_other": "{{count}} completados",
+      "progress": "{{done}} de {{total}} pasos",
+      "wizard": "Asistente ISO/IEC/IEEE 29119",
+      "showSteps": "Ver pasos",
+      "nextStep": "Siguiente: {{title}}",
+      "finish": "Finalizar plan",
+      "done": "completado",
+      "current": "paso actual"
+    },
+    "saveState": {
+      "unsaved": "Cambios sin guardar",
+      "never": "Sin guardar todavía",
+      "saved": "Guardado · {{when}}",
+      "now": "ahora mismo"
+    },
+    "io": {
+      "button": "Importar / Exportar",
+      "import": "Importar",
+      "export": "Exportar",
+      "importXlsx": "Importar .xlsx",
+      "importXlsxDesc": "Rellena el plan desde una plantilla",
+      "exportPdf": "Exportar .pdf",
+      "exportPdfDesc": "Documento listo para firmar",
+      "exportXlsx": "Exportar .xlsx",
+      "exportXlsxDesc": "Editable en Excel"
+    },
+    "panel": {
+      "title": "Estado del plan",
+      "status": "Estado",
+      "version": "Versión",
+      "author": "Autor",
+      "updated": "Actualizado",
+      "seeAll": "Ver todas",
+      "latest": "Últimas revisiones"
+    },
+    "deliverables": {
+      "hint": "Marca lo que se entregará al cerrar el ciclo. La lista sigue la documentación de ISO/IEC/IEEE 29119-3.",
+      "other": "Otro entregable",
+      "otherPlaceholder": "Especifica otro…",
+      "add": "Añadir",
+      "otherHint": "Se añade a «Aceptación y otros» marcado como Propio. Puedes quitarlo cuando quieras.",
+      "own": "Propio",
+      "remove": "Quitar {{name}}"
+    },
+    "deliverableGroup": {
+      "management": "Gestión de pruebas",
+      "specification": "Especificación",
+      "dataEnvironment": "Datos y entorno",
+      "execution": "Ejecución y resultados",
+      "acceptance": "Aceptación y otros"
+    },
+    "toolsPicker": {
+      "selected_one": "1 seleccionada",
+      "selected_other": "{{count}} seleccionadas",
+      "top": "Más usadas en QA",
+      "more": "Más herramientas ({{count}})",
+      "less": "Ver menos",
+      "search": "Buscar entre {{count}} herramientas…",
+      "noMatch": "Ninguna herramienta coincide con «{{query}}».",
+      "notListed": "¿No está en la lista?",
+      "customPlaceholder": "Escribe el nombre de la herramienta…",
+      "add": "Añadir",
+      "own": "Propia",
+      "remove": "Quitar {{name}}"
+    },
+    "toolCategory": {
+      "web": "Automatización web",
+      "mobile": "Móvil",
+      "api": "API y contratos",
+      "performance": "Rendimiento",
+      "security": "Seguridad",
+      "accessibility": "Accesibilidad",
+      "unit": "Unitarias",
+      "bdd": "BDD",
+      "visual": "Regresión visual",
+      "devices": "Nubes de dispositivos",
+      "management": "Gestión de pruebas",
+      "tracking": "Defectos y trabajo",
+      "cicd": "CI/CD",
+      "data": "Datos y mocks"
+    },
+    "sprintGen": {
+      "title": "Generar sprints a partir de un rango",
+      "desc_one": "Divide el periodo en sprints de {{count}} semana (duración del paso 6, Metodología) y los añade a la tabla.",
+      "desc_other": "Divide el periodo en sprints de {{count}} semanas (duración del paso 6, Metodología) y los añade a la tabla.",
+      "from": "Desde",
+      "to": "Hasta",
+      "button": "Generar sprints",
+      "soon": "Próximamente",
+      "soonTitle": "Próximamente: generar sprints desde un rango llega en una versión futura."
+    },
+    "finish": {
+      "title": "Antes de terminar",
+      "progress": "{{done}} de {{total}} pasos completos",
+      "allDone": "Todos los pasos tienen contenido.",
+      "status": "Estado actual: {{status}}",
+      "exportHint": "Exporta el plan desde «Importar / Exportar», arriba a la derecha.",
+      "missingLabel": "Pasos sin completar"
+    },
+    "leaveMessage": "El plan tiene cambios sin guardar. Si sales, se pierden; para conservarlos, pulsa «Guardar» antes."
   },
   "testCase": {
     "title": "Casos de prueba",
