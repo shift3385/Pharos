@@ -106,6 +106,14 @@
    `ConfirmDialog`) es el único mecanismo para «Descartar cambios / Seguir
    editando». Se descartó interceptar enlaces y duplicar la entrada del
    historial: era frágil y dejaba un «Atrás» de más.
+   - La ruta comodín tiene `ErrorBoundary: RethrowRouteError`: un fallo en el
+     shell sigue llegando a nuestro `ErrorBoundary variant="app"` (registro
+     y «Exportar diagnóstico»), no a la pantalla en inglés del router.
+   - **Un guardián por pantalla:** React Router admite un solo bloqueador por
+     router (gana el último). Solo lo usa el componente dueño del formulario;
+     si se montan dos, avisa en desarrollo.
+   - `bypass` deja pasar la siguiente navegación (también tras un `await`);
+     `ignore` decide si un cambio solo del query string cuenta como salir.
 
 ## Alternativas
 

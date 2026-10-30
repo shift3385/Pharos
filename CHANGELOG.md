@@ -9,9 +9,11 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ### Añadido
 
-- **Cambios sin guardar (RED-V3k):** salir de una pantalla con cambios sin guardar —con un
-  enlace, el menú lateral, las pastillas de sección, el «Atrás» del sistema o del móvil, o
-  cerrando la ventana— pregunta antes: «Descartar cambios» o «Seguir editando».
+- **Base para avisar de cambios sin guardar (RED-V3k):** un mecanismo común que el editor de
+  casos (V3) y el borrador de IA (V4) usarán para preguntar «Descartar cambios» o «Seguir
+  editando» antes de salir con un enlace, el menú lateral, las pastillas de sección, el
+  «Atrás» del sistema o del móvil, o cerrando la ventana. Un fallo en el marco de la app
+  sigue mostrando la pantalla de error de Pharos con «Exportar diagnóstico».
 - **Rediseño, fundamentos (RED-F1, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md)):**
   - El paquete del rediseño está en [`docs/rediseno/`](docs/rediseno/README.md). Su `SPEC.md`
     manda.
