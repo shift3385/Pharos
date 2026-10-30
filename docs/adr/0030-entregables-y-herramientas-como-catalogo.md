@@ -52,6 +52,28 @@
 - **Herramientas en i18n como antes:** 75 marcas repetidas en dos idiomas, con
   el mismo texto. Descartado.
 
+## Clientes anteriores (VERSIONING §6)
+
+Un cliente anterior (hasta `0.1.0-beta.1`) que recibe por sync un plan
+guardado con claves:
+
+- **No pierde datos.** `data` es JSON libre: lee las listas tal cual y, si
+  guarda el plan, las devuelve sin cambios (claves y entradas propias).
+- **Muestra claves en vez de etiquetas:**
+  - un entregable aparece como texto libre con su clave (`traceabilityMatrix`
+    en lugar de «Matriz de trazabilidad»);
+  - una herramienta del catálogo nuevo aparece como herramienta propia con su
+    clave (`github-actions`). Las 7 claves que ya conocía siguen con su nombre.
+
+  Sus exportaciones muestran lo mismo.
+- **No hace falta el modo solo lectura** de VERSIONING §6.5: la forma de la
+  entidad no cambia (siguen siendo listas de texto), así que un cliente
+  anterior no puede borrar nada que no conozca.
+
+Se **acepta** esta degradación visual del cliente anterior, que dura hasta que
+se actualiza. Al abrir el plan con la versión nueva, todo se ve con sus
+etiquetas.
+
 ## Consecuencias
 
 - Un plan antiguo se abre con sus casillas marcadas. Las entradas que no

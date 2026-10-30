@@ -64,19 +64,28 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
 
   /** Counts what the deletion takes with it, then asks. */
   async function askDelete() {
-    const [plan, cases, requirements, cards] = await Promise.all([
-      projectHasPlan(project.id, owner),
-      projectCaseCount(project.id, owner),
-      requirementApi.list(project.id, owner),
-      projectCardCount(project.id, owner),
-    ]);
-    setLoss({ plans: plan ? 1 : 0, cases, requirements: requirements.length, cards });
-    setConfirming(true);
+    try {
+      const [plan, cases, requirements, cards] = await Promise.all([
+        projectHasPlan(project.id, owner),
+        projectCaseCount(project.id, owner),
+        requirementApi.list(project.id, owner),
+        projectCardCount(project.id, owner),
+      ]);
+      setLoss({ plans: plan ? 1 : 0, cases, requirements: requirements.length, cards });
+      setConfirming(true);
+    } catch {
+      toast(t("projects.settings.deleteCheckFailed"), "error");
+    }
   }
 
   async function remove() {
     setConfirming(false);
-    await projectApi.remove(project.id, owner);
+    try {
+      await projectApi.remove(project.id, owner);
+    } catch {
+      toast(t("projects.settings.deleteFailed", { name: project.name }), "error");
+      return;
+    }
     toast(t("projects.settings.deletedToast", { name: project.name }));
     navigate("/projects", { replace: true });
   }

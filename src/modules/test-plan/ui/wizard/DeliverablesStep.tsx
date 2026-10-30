@@ -2,7 +2,8 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Plus, X } from "lucide-react";
 import { DELIVERABLE_GROUPS } from "../../model/catalogs";
-import { isCatalogDeliverable } from "../../model/catalogLabels";
+import { toKey } from "@shared/import/xlsx";
+import { DELIVERABLE_REV, isCatalogDeliverable } from "../../model/catalogLabels";
 
 /**
  * Step 8 (RED-V2): the ISO/IEC/IEEE 29119-3 deliverables as checkboxes by
@@ -23,7 +24,8 @@ export function DeliverablesStep({
   const toggle = (key: string) =>
     onChange(value.includes(key) ? value.filter((v) => v !== key) : [...value, key]);
   const add = () => {
-    const v = draft.trim();
+    // A catalog label (es or en) ticks that entry instead of adding a copy.
+    const v = draft.trim() && toKey(draft, DELIVERABLE_REV);
     if (v && !value.some((x) => x.toLowerCase() === v.toLowerCase())) onChange([...value, v]);
     setDraft("");
   };

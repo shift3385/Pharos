@@ -46,7 +46,9 @@ const LEVEL_REV = reverse(tp(esLocale).levelLabel, tp(enLocale).levelLabel);
 const STATUS_REV = reverse(tp(esLocale).statusLabel, tp(enLocale).statusLabel);
 const FREQUENCY_REV = reverse(tp(esLocale).frequencyLabel, tp(enLocale).frequencyLabel);
 
-type Kind = "text" | "listFree" | "catalog" | "status" | "methodology";
+// "catalogLines": one item per line, mapped to catalog keys (deliverables:
+// an own one may contain commas, so it is not split on them).
+type Kind = "text" | "listFree" | "catalog" | "catalogLines" | "status" | "methodology";
 
 interface FieldSpec {
   id: string;
@@ -69,7 +71,7 @@ const FIELDS: FieldSpec[] = [
   { id: "testTypes", labelKey: "testPlan.step.types", aliases: ["tipos de prueba", "test types"], dir: "below", kind: "catalog", rev: TYPE_REV },
   { id: "methodology", labelKey: "testPlan.methodology", aliases: ["metodologia agil (sprints, ceremonias, retrospectiva)", "agile methodology (sprints, ceremonies, retrospective)", "metodologia", "methodology"], dir: "below", kind: "methodology" },
   { id: "testLevels", labelKey: "testPlan.step.levels", aliases: ["niveles de prueba", "test levels"], dir: "below", kind: "catalog", rev: LEVEL_REV },
-  { id: "deliverables", labelKey: "testPlan.step.deliverables", aliases: ["entregables de prueba", "test deliverables"], dir: "below", kind: "catalog", rev: DELIVERABLE_REV },
+  { id: "deliverables", labelKey: "testPlan.step.deliverables", aliases: ["entregables de prueba", "test deliverables"], dir: "below", kind: "catalogLines", rev: DELIVERABLE_REV },
   { id: "environmentConfig", labelKey: "testPlan.environmentConfig", aliases: ["configuracion", "configuration"], dir: "below", kind: "text" },
   { id: "environmentRequirements", labelKey: "testPlan.environmentRequirements", aliases: ["requisitos de hardware y software", "hardware and software requirements"], dir: "below", kind: "text" },
   { id: "tools", labelKey: "testPlan.tools", aliases: ["herramientas de prueba", "test tools"], dir: "below", kind: "catalog", rev: TOOL_REV },
@@ -197,8 +199,10 @@ export async function parsePlanXlsx(
         prev = list.length ? preview(list.join(", ")) : undefined;
         break;
       }
-      case "catalog": {
-        const list = splitItems(raw).map((it) => toKey(it, spec.rev!));
+      case "catalog":
+      case "catalogLines": {
+        const items = spec.kind === "catalogLines" ? splitLines(raw) : splitItems(raw);
+        const list = items.map((it) => toKey(it, spec.rev!));
         (data as Record<string, unknown>)[spec.id] = list;
         filled = list.length > 0;
         prev = list.length ? preview(list.join(", ")) : undefined;

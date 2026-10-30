@@ -32,4 +32,12 @@ export const deliverableLabels = (list: string[] | undefined, t: Translate) =>
     isCatalogDeliverable(d) ? t(`testPlan.deliverableLabel.${d}`) : d,
   );
 
-export const toolLabels = (list: string[] | undefined) => (list ?? []).map(toolName);
+export const toolLabels = (list: string[] | undefined) =>
+  normalizeTools(list ?? []).map(toolName);
+
+/** Tools typed as text before the catalog («Jest», «GitHub Actions») become
+ *  its keys; the rest stay as the team's own. Order is kept and repeats are
+ *  dropped (ADR-0030). */
+export function normalizeTools(list: string[]): string[] {
+  return [...new Set(list.map((d) => toKey(d, TOOL_REV)).filter(Boolean))];
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { DELIVERABLE_GROUPS, DELIVERABLE_KEYS, MORE_TOOLS, TOOL_NAMES, TOP_TOOLS, toolName } from "./catalogs";
-import { deliverableLabels, normalizeDeliverables, toolLabels } from "./catalogLabels";
+import { deliverableLabels, normalizeDeliverables, normalizeTools, toolLabels } from "./catalogLabels";
 import { defaults } from "../ui/wizard/formState";
 import { STEP_IDS, stepCompletion } from "../ui/wizard/steps";
 import i18n from "@shared/i18n";
@@ -41,6 +41,17 @@ describe("plan catalogs (ADR-0030)", () => {
       "Informe propio",
     ]);
     expect(toolLabels(["github-actions", "Allure Report"])).toEqual(["GitHub Actions", "Allure Report"]);
+  });
+});
+
+describe("tools typed before the catalog", () => {
+  it("become catalog keys, case aside, and are not exported twice", () => {
+    expect(normalizeTools(["Jest", "GitHub Actions", "jest", "Allure Report"])).toEqual([
+      "jest",
+      "github-actions",
+      "Allure Report",
+    ]);
+    expect(toolLabels(["github-actions", "GitHub Actions"])).toEqual(["GitHub Actions"]);
   });
 });
 

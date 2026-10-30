@@ -78,6 +78,13 @@ export async function signIn() {
 export async function openProjects() {
   await $('[data-testid="nav-projects"]').click();
   await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
+  await projectListLoaded();
+}
+
+/** The list has loaded: the table (or its «no match» row) or, in an account
+ *  without projects, the empty state, which has no search box. */
+async function projectListLoaded() {
+  await $(".pj-table, .pj-empty").waitForExist({ timeoutMsg: "the project list never loaded" });
 }
 
 /** Creates a project; the app then opens it, titled with its name. */
@@ -149,6 +156,9 @@ export async function ensureSignedOut() {
 /** Names of the projects whose name starts with `TEST_PROJECT_PREFIX`,
  *  searched for in the list so they are all on its first page. */
 async function testProjectTitles(): Promise<string[]> {
+  await projectListLoaded();
+  // No projects left: no search box and nothing to delete.
+  if (await $(".pj-empty").isExisting()) return [];
   await $(`input[placeholder="${es.projects.list.search}"]`).setValue(TEST_PROJECT_PREFIX);
   const titles = await $$("a.pj-row__link .pj-row__name").map((el) => el.getText());
   return titles.map((t) => t.trim()).filter((name) => name.startsWith(TEST_PROJECT_PREFIX));

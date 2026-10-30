@@ -57,8 +57,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Proyectos (RED-V2):** «Recientes» con los 4 últimos que abriste y «Todos los proyectos» en
   una tabla con búsqueda por nombre o prefijo, orden (último acceso, nombre, última
   modificación, cobertura de requisitos…) con dirección, y páginas de 12, 24 o 48. En el móvil
-  cada proyecto es una fila de dos líneas. Exportar y eliminar pasan a Ajustes del proyecto y
-  al menú «⋯» de cada fila. El % ejecutado, los filtros En curso / Cerrados y los órdenes sin
+  cada proyecto es una fila de dos líneas. Eliminar pasa a Ajustes del proyecto; el menú «⋯»
+  de cada fila abre el proyecto, sus ajustes o lo exporta en ZIP. El % ejecutado, los filtros En curso / Cerrados y los órdenes sin
   datos aparecen como «Próximamente».
 - **Ajustes del proyecto (RED-V2):** nombre, prefijo y dígitos con una vista previa de la
   numeración, «Exportar proyecto (ZIP)» y «Eliminar proyecto». Para eliminar hay que escribir el

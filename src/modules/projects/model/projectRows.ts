@@ -24,8 +24,7 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         name: p.name,
         caseIdPrefix: p.caseIdPrefix,
         caseIdDigits: p.caseIdDigits,
-        // ISO with its zone, comparable with the last access.
-        updatedAt: parseStamp(p.updatedAt).toISOString(),
+        updatedAt: isoStamp(p.updatedAt),
         lastAccess: access[p.id] ?? null,
         planStatus,
         cases,
@@ -34,4 +33,11 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
       };
     }),
   );
+}
+
+/** ISO with its zone, comparable with the last access. A value that is not
+ *  a date is kept as it is, so one bad row never stops the list loading. */
+function isoStamp(value: string): string {
+  const date = parseStamp(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }

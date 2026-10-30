@@ -477,7 +477,9 @@
       "lossRequirements_other": "{{count}} requirements",
       "lossCards_one": "1 card",
       "lossCards_other": "{{count}} cards",
-      "deletedToast": "“{{name}}” deleted"
+      "deletedToast": "“{{name}}” deleted",
+      "deleteCheckFailed": "Could not check what would be deleted. Try again.",
+      "deleteFailed": "Could not delete “{{name}}”. Try again."
     }
   },
   "profile": {

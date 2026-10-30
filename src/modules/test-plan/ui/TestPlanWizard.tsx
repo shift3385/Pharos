@@ -40,8 +40,10 @@ import "./TestPlanWizard.css";
 interface Props {
   planId: string | null;
   projectId?: string | null;
-  /** Called after a save the wizard could not reload itself (no plan back). */
-  onSaved?: () => void;
+  /** After each save, with the saved plan (null when none came back, so the
+   *  page reloads it). A new plan gets its id here, so a later reload or a
+   *  language change never mistakes it for a plan still to be created. */
+  onSaved?: (plan: TestPlan | null) => void;
 }
 
 /**
@@ -99,9 +101,17 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
     return () => window.clearInterval(id);
   }, []);
 
+  // The language only changes labels: reading it through a ref keeps a
+  // language switch from reloading (and resetting) the form.
+  const tRef = useRef(t);
+  tRef.current = t;
+  // The plan the form holds, so a planId that names it is not fetched again.
+  const loadedId = useRef<string | null>(null);
+
   function load(p: TestPlan) {
+    loadedId.current = p.id;
     setPlan(p);
-    const f = fromPlan(p, t);
+    const f = fromPlan(p, tRef.current);
     setForm(f);
     initialRef.current = JSON.stringify(f);
     setSavedAt(p.updatedAt);
@@ -111,10 +121,11 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
     let cancelled = false;
     (async () => {
       if (planId) {
+        if (planId === loadedId.current) return;
         const p = await testPlanApi.get(planId, userId);
         if (p && !cancelled) load(p);
-      } else if (!cancelled) {
-        const f = defaults(t);
+      } else if (!cancelled && loadedId.current === null) {
+        const f = defaults(tRef.current);
         setForm(f);
         initialRef.current = JSON.stringify(f);
       }
@@ -123,7 +134,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, userId, t]);
+  }, [planId, userId]);
 
   const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
   const author = plan?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
@@ -173,7 +184,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
       window.dispatchEvent(new Event(PLAN_SAVED_EVENT));
       // Stay on this step with the saved plan (its new version and revision).
       if (saved) load(saved);
-      else onSaved?.();
+      onSaved?.(saved);
     } finally {
       setSaving(false);
     }
@@ -326,16 +337,15 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
               )}
             </footer>
           </div>
-          {view === "desktop" && (
-            <PlanStatusPanel
-              plan={plan}
-              status={form.status}
-              version={form.version}
-              author={author}
-              updated={updated}
-              onShowRevisions={() => setShowRev(true)}
-            />
-          )}
+          {/* Beside the form when both fit, below it otherwise (SPEC §8). */}
+          <PlanStatusPanel
+            plan={plan}
+            status={form.status}
+            version={form.version}
+            author={author}
+            updated={updated}
+            onShowRevisions={() => setShowRev(true)}
+          />
         </div>
       </div>
 

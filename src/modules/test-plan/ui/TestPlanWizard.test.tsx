@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { resizeViewport, setViewportWidth } from "@test/viewport";
@@ -185,5 +185,44 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     const panel = screen.getByRole("complementary", { name: "Estado del plan" });
     expect(within(panel).getByText("Revisado")).toBeInTheDocument();
     expect(within(panel).getByText("v1.3")).toBeInTheDocument();
+  });
+});
+
+describe("plan wizard · a new plan (review of V2)", () => {
+  it("after the first save a language change keeps the form, and the next save updates", async () => {
+    setViewportWidth(1440);
+    const created = { ...structuredClone(PLAN), id: "new-plan", title: "Mi plan nuevo" };
+    vi.mocked(testPlanApi.create).mockImplementation(async (input) => ({
+      ...created,
+      ...input,
+      data: input.data,
+    }));
+    vi.mocked(testPlanApi.create).mockClear();
+    renderWizard(null);
+    const title = await screen.findByRole("textbox", { name: /Título/ });
+    await userEvent.clear(title);
+    await userEvent.type(title, "Mi plan nuevo");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(testPlanApi.create).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/^Guardado/)).toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage("en"));
+    expect(screen.getByRole("textbox", { name: /Title/ })).toHaveValue("Mi plan nuevo");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(testPlanApi.create).toHaveBeenCalledTimes(1);
+    expect(testPlanApi.update).toHaveBeenCalledWith(
+      "new-plan",
+      expect.objectContaining({ title: "Mi plan nuevo" }),
+    );
+  });
+});
+
+describe("plan wizard · status panel (SPEC §8)", () => {
+  it.each([900, 390])("shows «Estado del plan» and the revisions at %i px too (below the form when it does not fit)", async (width) => {
+    setViewportWidth(width);
+    renderWizard();
+    const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
+    expect(within(panel).getByText("v1.3")).toBeInTheDocument();
+    expect(within(panel).getByRole("heading", { name: "Revisiones" })).toBeInTheDocument();
   });
 });

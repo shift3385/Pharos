@@ -15,7 +15,12 @@ import type {
   TestPlanInput,
 } from "../../model/types";
 import { DEFAULT_DELIVERABLES, ROLE_KEYS, TEST_LEVELS, TEST_TYPES } from "../../model/catalogs";
-import { deliverableLabels, normalizeDeliverables, toolLabels } from "../../model/catalogLabels";
+import {
+  deliverableLabels,
+  normalizeDeliverables,
+  normalizeTools,
+  toolLabels,
+} from "../../model/catalogLabels";
 import { frequenciesFor, methodologyText } from "../../model/methodology";
 
 type Translate = (key: string) => string;
@@ -188,7 +193,7 @@ export function applyRevision(base: FormState, title: string, d: TestPlanData): 
     deliverables: normalizeDeliverables(d.deliverables ?? []),
     environmentConfig: d.environmentConfig ?? "",
     environmentRequirements: d.environmentRequirements ?? "",
-    tools: d.tools ?? [],
+    tools: normalizeTools(d.tools ?? []),
     automationStrategy: d.automationStrategy ?? "",
     testDataManagement: d.testDataManagement ?? "",
     defectManagement: d.defectManagement ?? "",

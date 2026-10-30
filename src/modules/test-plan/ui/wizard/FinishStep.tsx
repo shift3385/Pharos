@@ -8,7 +8,10 @@ import type { StepProps } from "./stepProps";
 export function FinishStep({ form, completion, goTo }: StepProps) {
   const { t } = useTranslation();
   const done = completion.filter(Boolean).length;
-  const missing = STEP_IDS.map((id, i) => ({ id, i })).filter(({ i }) => !completion[i]);
+  // The conclusion is the step on screen: it is not listed as missing.
+  const missing = STEP_IDS.map((id, i) => ({ id, i })).filter(
+    ({ id, i }) => !completion[i] && id !== "conclusion",
+  );
   return (
     <section className="tpw-finish" aria-labelledby="tpw-finish-title">
       <h3 id="tpw-finish-title" className="tpw-finish__title">
