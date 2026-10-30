@@ -51,6 +51,12 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   superior.
 - La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
 
+### Corregido
+
+- **Web:** el servidor ya acepta tarjetas del planificador de tipo «Datos de prueba»
+  (`test_data`). Antes solo admitía tarea y defecto, así que en la web no se podían crear ni
+  editar.
+
 ## [0.1.0-beta.1] - 2026-10-29
 
 Primera beta de 0.1.0. Cierra las compuertas A y B de la línea base y todo el
