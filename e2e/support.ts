@@ -37,17 +37,31 @@ export async function setAppWindow(
   height = 900,
   view: "desktop" | "tablet" | "mobile" = "desktop",
 ) {
-  await browser.setWindowSize(width, height);
-  await browser.waitUntil(
-    async () =>
-      (await browser.execute(
-        () => document.querySelector<HTMLElement>(".viewport-root")?.dataset.viewport,
-      )) === view,
-    {
-      timeout: 10_000,
-      timeoutMsg: `the app did not reach the ${view} view at ${width}×${height}`,
-    },
-  );
+  const measure = () =>
+    browser.execute(() => ({
+      view: document.querySelector<HTMLElement>(".viewport-root")?.dataset.viewport,
+      root: document.querySelector<HTMLElement>(".viewport-root")?.clientWidth,
+      inner: window.innerWidth,
+    }));
+  let last: Awaited<ReturnType<typeof measure>> | undefined;
+  try {
+    // The first resize of a run can be lost while the app window is still
+    // appearing (a cold WebView on CI): re-send it until the view matches.
+    await browser.waitUntil(
+      async () => {
+        await browser.setWindowSize(width, height);
+        last = await measure();
+        return last.view === view;
+      },
+      { timeout: 30_000, interval: 1_000 },
+    );
+  } catch {
+    const size = await browser.getWindowSize().catch(() => undefined);
+    throw new Error(
+      `the app did not reach the ${view} view at ${width}×${height}: ` +
+        `window ${JSON.stringify(size)}, measured ${JSON.stringify(last)}`,
+    );
+  }
 }
 
 /** The avatar that opens the user menu; it exists only inside the app shell. */
