@@ -203,31 +203,32 @@ export function DashboardPage() {
         {tab !== "summary" && (
           <h1 className="sr-only">{t("dashboard.title")}</h1>
         )}
-        <Tabs
-          label={t("dashboard.tabs.label")}
-          variant="segmented"
-          idPrefix="home-"
-          value={tab}
-          onChange={(id: string) => setTab(id as MobileTab)}
-          className="home-tabs"
-          items={[
-            { id: "summary", label: t("dashboard.tabs.summary") },
-            { id: "execution", label: t("dashboard.tabs.execution") },
-            {
-              id: "tests",
-              label: t("dashboard.tabs.tests"),
-              badge: kpis.pending
-                ? {
-                    count: kpis.pending,
-                    tone: "navy",
-                    title: t("dashboard.tabs.pendingBubble", {
+        <div className="home-tabs-bar">
+          <Tabs
+            label={t("dashboard.tabs.label")}
+            variant="segmented"
+            idPrefix="home-"
+            value={tab}
+            onChange={(id: string) => setTab(id as MobileTab)}
+            items={[
+              { id: "summary", label: t("dashboard.tabs.summary") },
+              { id: "execution", label: t("dashboard.tabs.execution") },
+              {
+                id: "tests",
+                label: t("dashboard.tabs.tests"),
+                badge: kpis.pending
+                  ? {
                       count: kpis.pending,
-                    }),
-                  }
-                : undefined,
-            },
-          ]}
-        />
+                      tone: "navy",
+                      title: t("dashboard.tabs.pendingBubble", {
+                        count: kpis.pending,
+                      }),
+                    }
+                  : undefined,
+              },
+            ]}
+          />
+        </div>
         <div className="home__panel" {...tabPanelProps(tab, "home-")}>
           {tab === "summary" && (
             <>

@@ -490,6 +490,18 @@
   text-shadow: 0 2px 16px color-mix(in srgb, var(--color-navy-900) 60%, transparent);
 }
 
+/* Short phones (≈ 480 px), and the longer sign-up form: the photo header
+   keeps only the brand bar. */
+.auth--mobile[data-mode="register"] .auth-hero__tagline {
+  display: none;
+}
+
+@container (max-height: 560px) {
+  .auth-hero__tagline {
+    display: none;
+  }
+}
+
 /* The sheet keeps its natural height; it only scrolls inside when it cannot
    fit (the sign-up form on short screens; SPEC §8 exception, ADR-0028). */
 .auth-sheet {

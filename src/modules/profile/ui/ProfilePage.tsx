@@ -28,7 +28,16 @@ function initials(name: string): string {
  *  bar). The recovery key stays here until Administración › Seguridad mounts
  *  it (RED-V4), which then removes it from this page. */
 export function ProfilePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const when = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? iso
+      : new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(d);
+  };
   const { user, logout } = useAuth();
   const mobile = useBreakpoint() === "mobile";
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -179,11 +188,11 @@ export function ProfilePage() {
             <dl className="profile__audit" aria-label={t("profile.auditTitle")}>
               <div>
                 <dt>{t("profile.createdAt")}</dt>
-                <dd>{profile.createdAt}</dd>
+                <dd title={profile.createdAt}>{when(profile.createdAt)}</dd>
               </div>
               <div>
                 <dt>{t("profile.updatedAt")}</dt>
-                <dd>{profile.updatedAt}</dd>
+                <dd title={profile.updatedAt}>{when(profile.updatedAt)}</dd>
               </div>
               <div>
                 <dt>{t("profile.revision")}</dt>
