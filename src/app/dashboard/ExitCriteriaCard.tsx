@@ -6,6 +6,7 @@ import { projectPath } from "@modules/projects";
 import { MenuItem, MenuLabel, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { StatusPill } from "@shared/ui/StatusPill";
 import {
   exitCriteriaChoices,
   shortDate,
@@ -99,9 +100,9 @@ export function ExitCriteriaCard({
                   {c.metric && (
                     <span className="home-exit__metric t-id">{c.metric}</span>
                   )}
-                  <span className="home-pill" data-tone="neutral">
+                  <StatusPill tone="neutral">
                     {t("dashboard.exit.noData")}
-                  </span>
+                  </StatusPill>
                 </li>
               ))}
             </ul>

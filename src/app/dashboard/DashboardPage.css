@@ -389,23 +389,6 @@ a.home-kpi:hover {
   font-size: 13px;
 }
 
-.home-pill {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: var(--fw-semibold);
-  white-space: nowrap;
-}
-
-.home-pill[data-tone="neutral"] {
-  background: color-mix(in oklab, var(--color-text-muted) 14%, transparent);
-  color: var(--color-text-secondary);
-}
-
 /* ---- Legend (ACTUALIZACION §2–3) ---- */
 .home-legend {
   margin: 0;
@@ -977,22 +960,6 @@ a.home-kpi:hover {
   width: 16px;
   height: 16px;
   display: inline-flex;
-}
-
-.home-queue__flag[data-tone="error"] {
-  color: var(--color-error);
-}
-
-.home-queue__flag[data-tone="warning"] {
-  color: var(--color-warning);
-}
-
-.home-queue__flag[data-tone="info"] {
-  color: var(--color-info);
-}
-
-.home-queue__flag[data-tone="muted"] {
-  color: var(--color-text-muted);
 }
 
 .home-queue__main {

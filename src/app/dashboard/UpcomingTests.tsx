@@ -1,11 +1,13 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Flag } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { projectPath } from "@modules/projects";
+import { caseLink } from "@modules/test-cases";
+import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
 import { tabPanelProps } from "@shared/ui/tabPanel";
 import { upcomingTests, type HomeProject } from "./model/homeData";
 
-const PRIORITY_TONE: Record<string, string> = {
+const PRIORITY_TONE: Record<string, FlagTone> = {
   critical: "error",
   high: "warning",
   medium: "info",
@@ -13,9 +15,8 @@ const PRIORITY_TONE: Record<string, string> = {
 };
 
 /** «Próximas pruebas» (SPEC §8): the pending cases by priority (real: no case
- *  has been run yet). «Bloqueadas» and «Re-test» need run results (RED-W6).
- *  There is no route to a single case yet, so a row opens its project's
- *  cases. */
+ *  has been run yet); a row opens the case in its project's Casos.
+ *  «Bloqueadas» and «Re-test» need run results (RED-W6). */
 export function UpcomingTests({
   projects,
   filters,
@@ -65,20 +66,15 @@ export function UpcomingTests({
               return (
                 <li key={r.id}>
                   <Link
-                    to={projectPath(r.projectId, "cases")}
+                    to={caseLink(r.projectId, r.id)}
                     className="home-queue__row"
                   >
                     {tone ? (
-                      <span
+                      <PriorityFlag
+                        tone={tone}
+                        label={t(`dashboard.upcoming.priority.${r.priority}`)}
                         className="home-queue__flag"
-                        data-tone={tone}
-                        title={t(`dashboard.upcoming.priority.${r.priority}`)}
-                      >
-                        <Flag size={16} aria-hidden="true" />
-                        <span className="sr-only">
-                          {t(`dashboard.upcoming.priority.${r.priority}`)}:{" "}
-                        </span>
-                      </span>
+                      />
                     ) : (
                       <span className="home-queue__flag" aria-hidden="true" />
                     )}
