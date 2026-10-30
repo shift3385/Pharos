@@ -564,7 +564,8 @@ npm run e2e:driver
 
 `npm run e2e:driver` downloads into `e2e/.bin/` the `msedgedriver` that matches
 your WebView2 runtime, from Microsoft's host (`msedgedriver.microsoft.com`)
-only. The driver must carry a valid Authenticode signature from Microsoft
+only. A dropped connection is retried up to five times, three seconds apart.
+The driver must carry a valid Authenticode signature from Microsoft
 Corporation: it is checked after the download and before every use, and a file
 that fails the check is deleted, never run. WebView2 updates itself, so re-run
 it when the smoke reports a version mismatch.
