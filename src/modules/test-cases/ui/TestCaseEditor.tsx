@@ -61,7 +61,7 @@ import { useHideBottomBar } from "@shared/ui/useShellChrome";
 import { CaseNavBar, CaseNavFooter, type CaseNav, type SaveState } from "./CaseNavBar";
 import { GoToCaseDialog } from "./GoToCaseDialog";
 import { PriorityField, StatusField } from "./CaseMetaMenus";
-import { SegmentedControl } from "./SegmentedControl";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
 import { statusTone } from "./caseTones";
 import "@shared/ui/buttons.css";

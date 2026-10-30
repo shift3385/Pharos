@@ -6,7 +6,19 @@ import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import type { TestCase, TestCaseSummary } from "../model/types";
+import { useState, type ReactNode } from "react";
+import { HeaderActionsContext } from "@shared/ui/headerActions";
 import { TestCasesPage } from "./TestCasesPage";
+
+function FakeHeader({ children }: { children: ReactNode }) {
+  const [actions, setActions] = useState<ReactNode>(null);
+  return (
+    <HeaderActionsContext.Provider value={setActions}>
+      <header data-testid="project-header">{actions}</header>
+      {children}
+    </HeaderActionsContext.Provider>
+  );
+}
 
 const list = vi.fn();
 const get = vi.fn();
@@ -153,6 +165,21 @@ describe("Casos · lista (RED-V3)", () => {
   }, 15_000);
 });
 
+it("puts its buttons in the project header (V2's slot) and clears them in the editor", async () => {
+  setViewportWidth(1440);
+  renderWithProviders(
+    <FakeHeader>
+      <TestCasesPage projectId="p1" />
+    </FakeHeader>,
+  );
+  const header = screen.getByTestId("project-header");
+  expect(await within(header).findByRole("button", { name: "Nuevo caso" })).toBeInTheDocument();
+  expect(within(header).getByRole("button", { name: "Importar / Exportar" })).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "Nuevo caso" })).toHaveLength(1);
+  await userEvent.click(within(header).getByRole("button", { name: "Nuevo caso" }));
+  await waitFor(() => expect(within(header).queryByRole("button", { name: "Nuevo caso" })).not.toBeInTheDocument());
+});
+
 describe("Casos · editor navigation (RED-V3)", () => {
   it("opens from ?case= and walks the list order", async () => {
     setViewportWidth(1440);
@@ -211,9 +238,9 @@ describe("Casos · editor navigation (RED-V3)", () => {
   it("on mobile offers only Editor and Gherkin, and editing Gherkin shows the keyword bar", async () => {
     setViewportWidth(390);
     renderPage("/projects/p1/cases?case=c2");
-    const views = await screen.findByRole("group", { name: "Vista del caso" });
-    expect(within(views).getAllByRole("button").map((b) => b.textContent)).toEqual(["Editor", "Gherkin"]);
-    await userEvent.click(within(views).getByRole("button", { name: "Gherkin" }));
+    const views = await screen.findByRole("radiogroup", { name: "Vista del caso" });
+    expect(within(views).getAllByRole("radio").map((b) => b.textContent)).toEqual(["Editor", "Gherkin"]);
+    await userEvent.click(within(views).getByRole("radio", { name: "Gherkin" }));
     await userEvent.click(screen.getByRole("button", { name: "Editar" }));
     const bar = screen.getByRole("toolbar", { name: "Palabras clave de Gherkin" });
     expect(within(bar).getByRole("button", { name: "Sangrar" })).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeftRight, Download, Plus, Upload } from "lucide-react";
 import { aiAvailable } from "@modules/ai";
@@ -6,6 +6,7 @@ import { useAuth } from "@modules/auth";
 import { projectDefects } from "@modules/planner";
 import { projectTraceableCases, setCaseRequirementKeys, type TraceableCase } from "@modules/test-cases";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
@@ -189,11 +190,11 @@ export function TraceabilityPage({
     if (name) toast(t("traceability.matrix.exportedToast", { name }));
   }
 
-  return (
-    <div className="tz">
-      <header className="tz-head">
-        <h2 className="sr-only">{t("traceability.title")}</h2>
-        <div className="tz-actions">
+  // The section's buttons go to the project header (V2's slot); outside a
+  // project page they keep their own row.
+  const inHeader = useContext(HeaderActionsContext) !== null;
+  const actions = (
+    <>
           <ImportExportMenu
             onImport={() => fileInputRef.current?.click()}
             onExport={() => void exportXlsx()}
@@ -203,8 +204,14 @@ export function TraceabilityPage({
             <Plus size={16} aria-hidden="true" />
             <span className="ui-btn__text">{t("traceability.requirement.new")}</span>
           </button>
-        </div>
-      </header>
+    </>
+  );
+  useHeaderActions(actions);
+
+  return (
+    <div className="tz">
+      <h2 className="sr-only">{t("traceability.title")}</h2>
+      {!inHeader && <div className="tz-actions">{actions}</div>}
 
       <FilterChips
         label={t("traceability.title")}
@@ -312,7 +319,7 @@ function ImportExportMenu({
   const label = t("traceability.io.label");
   return (
     <>
-      <button type="button" className="ui-btn ui-btn--io" {...menu.triggerProps}>
+      <button type="button" className="ui-btn ui-btn--io" data-natural {...menu.triggerProps}>
         <ArrowLeftRight size={16} aria-hidden="true" />
         {label}
       </button>

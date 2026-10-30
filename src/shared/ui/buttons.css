@@ -98,6 +98,10 @@
   border-radius: var(--radius-pill);
 }
 
+[data-viewport="mobile"] .ui-btn:not(.ui-btn--small) {
+  height: 44px;
+}
+
 [data-viewport="mobile"] .ui-iconbtn {
   width: 44px;
   height: 44px;

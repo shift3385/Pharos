@@ -91,8 +91,9 @@
    - `ShellChromeProvider` (en `AppShell`) y `useHideBottomBar`, en
      `src/shared/ui`, ocultan la barra inferior del móvil mientras se edita
      Gherkin (SPEC §7);
-   - la cabecera del proyecto y sus acciones son la ranura de V2
-     (`ProjectHeader` / `useProjectHeaderActions`, `@modules/projects`).
+   - la cabecera del proyecto es de V2 (`ProjectHeader`, `@modules/projects`);
+     cada sección pone sus botones con `useHeaderActions`
+     (`@shared/ui/headerActions`), sin importar `projects`.
    Botones de acción (`ui-btn`) y buscador de lista (`ui-search`) también
    son comunes, para que ningún módulo dependa del CSS de otro.
 

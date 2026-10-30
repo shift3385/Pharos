@@ -340,10 +340,6 @@
   text-wrap: balance;
 }
 
-.tc-seg[data-size="sm"] .chips__chip {
-  height: 30px;
-}
-
 .tc-body {
   min-width: 0;
   padding: 20px;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Link } from "react-router";
 import {
@@ -25,6 +25,7 @@ import { BottomSheet, MenuCheckItem, MenuItem, MenuLabel, MenuSeparator, Respons
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { caseLink } from "../model/caseLink";
 import {
   CASE_LEVELS,
@@ -223,13 +224,11 @@ export function TestCaseList({
     </div>
   );
 
-  return (
-    <section className="cl" aria-labelledby="cl-title">
-      <header className="cl-head">
-        <h2 id="cl-title" className="sr-only">
-          {t("testCase.title")}
-        </h2>
-        <div className="cl-actions">
+  // The section's buttons go to the project header (V2's slot); outside a
+  // project page (the list on its own) they keep their own row.
+  const inHeader = useContext(HeaderActionsContext) !== null;
+  const actions = (
+    <>
           <ImportExportMenu onImport={onImport} onExportFeatures={() => onExportFeatures()} hasCases={cases.length > 0} />
           <button
             type="button"
@@ -247,8 +246,16 @@ export function TestCaseList({
             <Plus size={16} aria-hidden="true" />
             <span className="ui-btn__text">{t("testCase.new")}</span>
           </button>
-        </div>
-      </header>
+    </>
+  );
+  useHeaderActions(actions);
+
+  return (
+    <section className="cl" aria-labelledby="cl-title">
+      <h2 id="cl-title" className="sr-only">
+        {t("testCase.title")}
+      </h2>
+      {!inHeader && <div className="cl-actions">{actions}</div>}
 
       <div className="cl-card-box">
         <div className="cl-toolbar">
@@ -415,7 +422,7 @@ function ImportExportMenu({
   const label = t("testCase.list.io");
   return (
     <>
-      <button type="button" className="ui-btn ui-btn--io" {...menu.triggerProps}>
+      <button type="button" className="ui-btn ui-btn--io" data-natural {...menu.triggerProps}>
         <ArrowLeftRight size={16} aria-hidden="true" />
         {label}
       </button>

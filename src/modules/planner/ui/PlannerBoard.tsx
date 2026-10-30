@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEventHandler } from "react";
+import { useContext, useEffect, useMemo, useState, type KeyboardEventHandler } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Bug, Database, Flag, GripVertical, Link2, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
 import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
@@ -127,6 +128,20 @@ export function PlannerBoard({
     [cards, kind, query, priorities],
   );
   const kindCount = (k: CardKind | "all") => cards.filter((c) => matches(c, k, query, priorities)).length;
+  // «Nueva tarjeta» goes to the project header (V2's slot) while the board
+  // shows; outside a project page it keeps its own row.
+  const inHeader = useContext(HeaderActionsContext) !== null;
+  const newCard = (
+    <button
+      type="button"
+      className="ui-btn ui-btn--primary"
+      onClick={() => setEditing({ card: null, status: "backlog" })}
+    >
+      <Plus size={16} aria-hidden="true" />
+      <span className="ui-btn__text">{t("planner.newCard")}</span>
+    </button>
+  );
+  useHeaderActions(editing ? null : newCard);
 
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -181,16 +196,7 @@ export function PlannerBoard({
 
   return (
     <div className="pl">
-      <header className="pl-head">
-        <button
-          type="button"
-          className="ui-btn ui-btn--primary"
-          onClick={() => setEditing({ card: null, status: "backlog" })}
-        >
-          <Plus size={16} aria-hidden="true" />
-          <span className="ui-btn__text">{t("planner.newCard")}</span>
-        </button>
-      </header>
+      {!inHeader && <div className="pl-head">{newCard}</div>}
       <div className="pl-toolbar">
         <FilterChips
           label={t("planner.kind")}
