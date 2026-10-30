@@ -16,7 +16,6 @@ const project = (over: Partial<HomeProject>): HomeProject => ({
   id: "p",
   name: "P",
   key: "P",
-  recency: "2026-10-28T00:00:00Z",
   cases: [],
   closeDate: null,
   hasPlan: false,
@@ -78,15 +77,39 @@ describe("home data (RED-V1)", () => {
   });
 
   it("lists the exit-criteria projects by closing date and filters by name or key", () => {
-    expect(exitCriteriaChoices([erp, portal, banca]).map((p) => p.key)).toEqual(
-      ["AMB", "PCL", "ERP"],
-    );
     expect(
-      exitCriteriaChoices([erp, portal, banca], "movil").map((p) => p.key),
+      exitCriteriaChoices([erp, portal, banca], "", today).map((p) => p.key),
+    ).toEqual(["AMB", "PCL", "ERP"]);
+    expect(
+      exitCriteriaChoices([erp, portal, banca], "movil", today).map(
+        (p) => p.key,
+      ),
     ).toEqual(["AMB"]);
     expect(
-      exitCriteriaChoices([erp, portal, banca], "pcl").map((p) => p.key),
+      exitCriteriaChoices([erp, portal, banca], "pcl", today).map((p) => p.key),
     ).toEqual(["PCL"]);
+  });
+
+  it("puts projects that already closed last, most recently closed first", () => {
+    const closedLong = {
+      ...erp,
+      id: "x1",
+      key: "OLD",
+      closeDate: "2026-09-01",
+    };
+    const closedRecent = {
+      ...erp,
+      id: "x2",
+      key: "REC",
+      closeDate: "2026-10-20",
+    };
+    expect(
+      exitCriteriaChoices(
+        [closedLong, erp, closedRecent, portal, banca],
+        "",
+        today,
+      ).map((p) => p.key),
+    ).toEqual(["AMB", "PCL", "ERP", "REC", "OLD"]);
   });
 
   it("defaults to the project that closes first from today", () => {

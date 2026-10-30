@@ -16,8 +16,6 @@ export interface HomeProject {
   name: string;
   /** Short key from the case-id prefix («PCL-» → «PCL»). */
   key: string;
-  /** Last access on this device, else last update (most recent first). */
-  recency: string;
   cases: HomeCase[];
   /** Plan schedule end (YYYY-MM-DD) or null; `hasPlan` false without a plan. */
   closeDate: string | null;
@@ -102,23 +100,29 @@ export function upcomingTests(projects: HomeProject[], limit = 5): QueueRow[] {
   return rows.slice(0, limit).map(({ order: _order, ...row }) => row);
 }
 
-/** Projects for the exit-criteria picker, by closing date (soonest first,
- *  undated last), filtered by name or key (accent- and case-insensitive). */
+/** Projects for the exit-criteria picker by closing date (upcoming soonest
+ *  first, then undated, then past), filtered by name or key (accent- and case-insensitive). */
 export function exitCriteriaChoices(
   projects: HomeProject[],
-  query = "",
+  query: string,
+  today: Date,
 ): HomeProject[] {
+  const day = isoDay(today);
+  // Upcoming first (soonest first), then undated, then already closed (most
+  // recently closed first).
+  const group = (p: HomeProject) =>
+    !p.closeDate ? 1 : p.closeDate >= day ? 0 : 2;
   const fold = (s: string) =>
     s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const q = fold(query.trim());
   return projects
     .filter((p) => !q || fold(p.name).includes(q) || fold(p.key).includes(q))
     .sort((a, b) => {
-      if (a.closeDate && b.closeDate)
-        return a.closeDate.localeCompare(b.closeDate);
-      if (a.closeDate) return -1;
-      if (b.closeDate) return 1;
-      return 0;
+      const g = group(a) - group(b);
+      if (g || !a.closeDate || !b.closeDate) return g;
+      return group(a) === 2
+        ? b.closeDate.localeCompare(a.closeDate)
+        : a.closeDate.localeCompare(b.closeDate);
     });
 }
 
@@ -129,7 +133,7 @@ export function defaultExitProject(
   today: Date,
 ): HomeProject | null {
   const day = isoDay(today);
-  const upcoming = exitCriteriaChoices(projects).filter(
+  const upcoming = exitCriteriaChoices(projects, "", today).filter(
     (p) => p.closeDate && p.closeDate >= day,
   );
   return upcoming[0] ?? projects.find((p) => p.hasPlan) ?? projects[0] ?? null;

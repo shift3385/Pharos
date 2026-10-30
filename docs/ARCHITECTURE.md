@@ -92,8 +92,8 @@ memory) and no history, and a desktop-only action says so in a toast.
   its own (`pharos.sync.cacheOwner`, or none, as before FIX-07).
 
 **Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
-the redesign. `model/loadHome.ts` reads, per project and in the Projects order
-(`projectOverview`, last access first), only public read APIs:
+the redesign. `model/loadHome.ts` reads only public read APIs, one project
+list and three reads per project, most recently updated first:
 `projectApi.list` (case-id prefix → key), `projectLiveCases` (`test-cases`),
 `projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
 closure criteria) and `projectDefects` (`planner`: open = not `done`).

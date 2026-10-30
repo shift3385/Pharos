@@ -1,19 +1,18 @@
-import { projectApi, projectOverview } from "@modules/projects";
+import { projectApi } from "@modules/projects";
 import { projectLiveCases } from "@modules/test-cases";
 import { projectPlanClosure } from "@modules/test-plan";
 import { projectDefects } from "@modules/planner";
 import { projectKey, type HomeProject } from "./homeData";
 
-/** Reads everything the Home shows, per project and most recent first
- *  (read-only; the same order as the Projects list). */
+/** Reads everything the Home shows (read-only): one project list, then three
+ *  reads per project (live cases, plan closure, planner defects). Projects
+ *  come most recently updated first. */
 export async function loadHome(ownerId: string): Promise<HomeProject[]> {
-  const [overview, summaries] = await Promise.all([
-    projectOverview(ownerId),
-    projectApi.list(ownerId),
-  ]);
-  const prefix = new Map(summaries.map((s) => [s.id, s.caseIdPrefix]));
+  const projects = [...(await projectApi.list(ownerId))].sort((a, b) =>
+    b.updatedAt.localeCompare(a.updatedAt),
+  );
   return Promise.all(
-    overview.map(async (p): Promise<HomeProject> => {
+    projects.map(async (p): Promise<HomeProject> => {
       const [cases, closure, defects] = await Promise.all([
         projectLiveCases(p.id, ownerId),
         projectPlanClosure(p.id, ownerId),
@@ -23,8 +22,7 @@ export async function loadHome(ownerId: string): Promise<HomeProject[]> {
       return {
         id: p.id,
         name: p.name,
-        key: projectKey(prefix.get(p.id) ?? ""),
-        recency: p.lastAccess ?? p.updatedAt,
+        key: projectKey(p.caseIdPrefix),
         cases: cases.map((c) => ({
           id: c.id,
           scenarioId: c.scenarioId,
