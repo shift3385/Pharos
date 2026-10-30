@@ -24,7 +24,8 @@ export const button = (text: string) => $(`button=${text}`);
  *  to be displayed. The specs run at 1440 px (wdio.conf), but a spec may
  *  narrow the window to the icon strip. */
 export const versionBadge = () => $('[data-testid="app-version"]');
-export const projectRow = (name: string) => $(`li.tp__item*=${name}`);
+/** A project's link in the «Todos los proyectos» table (RED-V2). */
+export const projectRow = (name: string) => $(`a.pj-row__link*=${name}`);
 /**
  * Sets the window to `width`×`height` and waits until Pharos reports the
  * expected view on its root container (data-viewport). The specs start on the
@@ -77,6 +78,13 @@ export async function signIn() {
 export async function openProjects() {
   await $('[data-testid="nav-projects"]').click();
   await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
+  await projectListLoaded();
+}
+
+/** The list has loaded: the table (or its «no match» row) or, in an account
+ *  without projects, the empty state, which has no search box. */
+async function projectListLoaded() {
+  await $(".pj-table, .pj-empty").waitForExist({ timeoutMsg: "the project list never loaded" });
 }
 
 /** Creates a project; the app then opens it, titled with its name. */
@@ -145,17 +153,28 @@ export async function ensureSignedOut() {
   if (await userMenuTrigger().isExisting()) await signOut();
 }
 
-/** Titles of the projects whose name starts with `TEST_PROJECT_PREFIX`. */
+/** Names of the projects whose name starts with `TEST_PROJECT_PREFIX`,
+ *  searched for in the list so they are all on its first page. */
 async function testProjectTitles(): Promise<string[]> {
-  const titles = await $$("li.tp__item .tp__item-title").map((el) =>
-    el.getText(),
-  );
-  return (
-    titles
-      // Drop the folder glyph ("▸ ") in front of the name.
-      .map((title) => title.replace(/^[^\p{L}\p{N}]+/u, "").trim())
-      .filter((name) => name.startsWith(TEST_PROJECT_PREFIX))
-  );
+  await projectListLoaded();
+  // No projects left: no search box and nothing to delete.
+  if (await $(".pj-empty").isExisting()) return [];
+  await $(`input[placeholder="${es.projects.list.search}"]`).setValue(TEST_PROJECT_PREFIX);
+  const titles = await $$("a.pj-row__link .pj-row__name").map((el) => el.getText());
+  return titles.map((t) => t.trim()).filter((name) => name.startsWith(TEST_PROJECT_PREFIX));
+}
+
+/** Deletes a project from its Ajustes (RED-V2): the dialog asks to type the
+ *  prefix without its separator, or the name when it has no prefix. */
+async function deleteProject(name: string) {
+  await $(`button[aria-label="${es.projects.list.rowMenu.replace("{{name}}", name)}"]`).click();
+  await $(`[role="menuitem"]=${es.projects.tab.settings}`).click();
+  const prefix = String(await $("#pj-prefix").getValue());
+  const word = prefix.replace(/[^\p{L}\p{N}]+$/u, "").trim() || name.trim();
+  await button(es.projects.deleteTitle).click();
+  await $('[role="alertdialog"] input').setValue(word);
+  await button(es.projects.deleteConfirm).click();
+  await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
 }
 
 /**
@@ -170,10 +189,8 @@ export async function cleanUp() {
     await openProjects();
     const names = await testProjectTitles();
     for (const name of names) {
-      await projectRow(name)
-        .$(`button[aria-label="${es.common.delete}"]`)
-        .click();
-      await button(es.projects.deleteConfirm).click();
+      await deleteProject(name);
+      await testProjectTitles();
       await expect(projectRow(name)).not.toBeExisting();
     }
     if (names.length > 0) await syncNow();

@@ -1,113 +1,480 @@
-/* Projects module. Shell/list/tabs classes are kept local (like the other
-   modules) so the page styles without importing another module's CSS. */
-.tp {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  max-width: 900px;
+/* Projects module (RED-V2, ScrProyectos / ScrAjustesProyecto). Layout follows
+   the app container (`data-viewport`, `cqi`), never the window. */
+
+/* ---- Shared bits ---- */
+.pj-muted {
+  color: var(--color-text-muted);
 }
-.tp__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
+
+.pj-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
-.tp__subtitle {
-  margin-top: var(--space-2);
+
+.pj-num {
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
 }
-.tp__muted {
-  color: var(--color-text-secondary);
+
+.pj-count {
+  padding: 1px 7px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
 }
-.tp__new {
+
+.pj-badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  font-size: 10.5px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-radius: 9px;
+}
+
+.pj-badge[data-size="sm"] {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.pj-coverage {
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pj-coverage[data-tone="success"] {
+  color: var(--color-success-text);
+}
+
+.pj-coverage[data-tone="warning"] {
+  color: var(--color-warning-text);
+}
+
+.pj-coverage[data-tone="error"] {
+  color: var(--color-error-text);
+}
+
+.pj-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  background: var(--color-text-muted);
+  border-radius: 50%;
+}
+
+.pj-dot[data-tone="info"] {
+  background: var(--color-info);
+}
+
+.pj-dot[data-tone="success"] {
+  background: var(--color-success);
+}
+
+/* An empty progress bar: execution arrives with 0.2.0. */
+.pj-bar {
+  display: block;
+  height: 6px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-pill);
+}
+
+/* The view's one main action (SPEC §4: amber, once per view). */
+.pj-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 40px;
-  padding: 0 var(--space-4);
+  padding: 0 16px;
+  font: inherit;
+  font-size: var(--fs-caption);
   font-weight: var(--fw-semibold);
   color: var(--color-accent-contrast);
-  background: var(--color-accent);
-  border: none;
-  border-radius: var(--radius-md);
   white-space: nowrap;
-}
-.tp__list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.tp__item {
-  display: flex;
-  gap: var(--space-2);
-}
-.tp__item-open {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-3) var(--space-4);
-  text-align: left;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-.tp__item-open:hover {
-  border-color: var(--color-navy-300);
-}
-.tp__item-title {
-  font-weight: var(--fw-medium);
-  color: var(--color-text-primary);
-}
-.tp__item-meta {
-  font-size: var(--fs-caption);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-}
-.pj-folder {
-  color: var(--color-navy-500);
+  background: var(--color-accent);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
-.pj-header-actions {
+.pj-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-viewport="mobile"] .pj-primary {
+  height: 44px;
+}
+
+.pj-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.pj-icon-btn:hover {
+  background: var(--color-surface-2);
+}
+
+[data-viewport="mobile"] .pj-icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.pj-input {
+  height: 40px;
+  min-width: 0;
+  padding: 0 12px;
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+[data-viewport="mobile"] .pj-input {
+  height: 44px;
+  font-size: 15px;
+}
+
+.pj-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.pj-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+}
+
+/* ---- Page ---- */
+.pj-page {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2cqi, 24px);
+}
+
+.pj-page__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.pj-page__titles {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pj-page__title {
+  margin: 0;
+  font-size: clamp(22px, 2.4cqi, 28px);
+  font-weight: var(--fw-semibold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.pj-page__subtitle {
+  max-width: 720px;
+  margin: 0;
+  font-size: var(--fs-ui);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.pj-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Mobile (SPEC §5): the row's buttons share the width and clip their text. */
+[data-viewport="mobile"] .pj-page__actions {
+  flex: 1 1 100%;
+}
+
+[data-viewport="mobile"] .pj-page__actions > * {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.pj-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border: 1px dashed var(--color-border-input);
+  border-radius: 12px;
+}
+
+/* ---- New project ---- */
+.pj-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.pj-create .pj-input {
+  flex: 1 1 240px;
+}
+
+.pj-create__msg {
+  flex: 1 1 100%;
+}
+
+/* ---- Recientes ---- */
+.pj-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pj-recent__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: clamp(10px, 1.4cqi, 16px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pj-recent__card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  height: 100%;
+  padding: 16px;
+  color: inherit;
+  text-decoration: none;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.pj-recent__card:hover {
+  border-color: var(--color-navy-300);
+  box-shadow: var(--shadow-2);
+}
+
+.pj-recent__top,
+.pj-recent__foot {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-}
-.pj-export {
-  height: 40px;
-  padding: 0 var(--space-4);
-  font-weight: var(--fw-medium);
-  color: var(--color-text-secondary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  white-space: nowrap;
-}
-.pj-export:hover:not(:disabled) {
-  border-color: var(--color-navy-300);
-  color: var(--color-navy-500);
-}
-.pj-export:disabled {
-  opacity: 0.6;
+  gap: 10px;
+  min-width: 0;
 }
 
-/* Per-row "export this project" action (mirrors the delete button). */
-.pj-export-row {
-  width: 38px;
-  flex-shrink: 0;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+.pj-recent__foot {
+  justify-content: space-between;
+}
+
+.pj-recent__titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pj-recent__name {
   font-size: var(--fs-ui);
-}
-.pj-export-row:hover:not(:disabled) {
-  color: var(--color-navy-500);
-  border-color: var(--color-navy-300);
-}
-.pj-export-row:disabled {
-  opacity: 0.6;
+  font-weight: var(--fw-semibold);
 }
 
-/* ---- Export progress modal ---- */
+.pj-recent__exec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pj-recent__exec-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ---- Todos los proyectos ---- */
+.pj-all {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.pj-all__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+[data-viewport="mobile"] .pj-all__toolbar {
+  padding: 14px 16px;
+}
+
+.pj-all__heading {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pj-search {
+  display: flex;
+  flex: 0 1 260px;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  min-width: 0;
+  padding: 0 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: 9px;
+  box-sizing: border-box;
+}
+
+.pj-search:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.pj-search > svg {
+  flex: none;
+}
+
+.pj-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+[data-viewport="mobile"] .pj-search {
+  flex: 1 1 100%;
+  height: 44px;
+}
+
+[data-viewport="mobile"] .pj-search input {
+  font-size: 15px;
+}
+
+.pj-table {
+  border-top: 1px solid var(--color-border);
+}
+
+.pj-row__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: inherit;
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+}
+
+.pj-row__link:hover .pj-row__name {
+  text-decoration: underline;
+}
+
+.pj-pagination {
+  padding: 14px 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Mobile row: badge, name, «Aprobado · — ejec. · Hoy, 09:42», chevron. */
+.pj-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.pj-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pj-card__name {
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-medium);
+}
+
+.pj-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pj-card__chevron {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+/* ---- Project detail (container of the sections) ---- */
+.pj-detail {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2cqi, 24px);
+}
+
+/* ---- Export progress (ExportProgressModal) ---- */
 .pj-progress {
   width: 100%;
   height: 10px;
@@ -115,12 +482,14 @@
   background: var(--color-surface-2);
   border-radius: var(--radius-pill);
 }
+
 .pj-progress__bar {
   height: 100%;
   background: var(--color-accent);
   border-radius: var(--radius-pill);
   transition: width 0.2s ease;
 }
+
 .pj-progress__file {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
@@ -130,106 +499,180 @@
   white-space: nowrap;
 }
 
-/* ---- New-project inline form ---- */
-.pj-create {
+/* ---- Ajustes del proyecto ---- */
+.pj-settings {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.6cqi, 16px);
+  max-width: 880px;
+}
+
+.pj-card-box {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  padding: clamp(18px, 2.2cqi, 24px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.pj-card-box--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.pj-card-box--danger {
+  border-color: color-mix(in oklab, var(--color-error) 35%, var(--color-border));
+}
+
+.pj-card-box__head,
+.pj-card-box__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pj-card-box__text {
+  flex: 1 1 260px;
+}
+
+.pj-card-box__desc {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.pj-card-box__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--color-navy-500);
+  background: var(--color-surface-2);
+  border-radius: 10px;
+}
+
+.pj-card-box--danger .pj-card-box__icon {
+  color: var(--color-error-text);
+  background: color-mix(in oklab, var(--color-error) 12%, transparent);
+}
+
+.pj-settings .tp-field,
+.pj-settings .ff {
+  min-width: 0;
+}
+
+.pj-settings__row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-/* The blank-name message takes its own line (UX-01). */
-.pj-create [role="alert"] {
-  flex-basis: 100%;
-}
-.pj-create input {
-  flex: 1;
-  height: 40px;
-  padding: 0 var(--space-3);
-  font-size: var(--fs-ui);
-  color: var(--color-text-primary);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-md);
-}
-.pj-create__cancel {
-  height: 40px;
-  padding: 0 var(--space-3);
-  color: var(--color-text-secondary);
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  gap: 14px;
 }
 
-/* ---- Project detail (container of plan + cases + settings) ---- */
-.pj-detail {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(16px, 2cqi, 24px);
+.pj-settings__row > * {
+  flex: 1 1 0;
+  min-width: min(220px, 100%);
 }
-.tc-editor__top {
+
+.pj-settings .pj-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pj-settings__preview {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-}
-.tc-editor__id {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--color-navy-100);
-  color: var(--color-navy-500);
-  font-family: var(--font-mono);
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
   font-size: var(--fs-caption);
-}
-.tp-editor__back {
-  background: none;
-  border: none;
-  color: var(--color-navy-500);
-  font-size: var(--fs-ui);
-}
-.tp-editor__save {
-  align-self: flex-start;
-  height: 40px;
-  padding: 0 var(--space-5);
-  font-weight: var(--fw-semibold);
-  color: var(--color-accent-contrast);
-  background: var(--color-accent);
-  border: none;
-  border-radius: var(--radius-md);
-}
-.tp-editor__save:disabled {
-  opacity: 0.6;
-}
-
-/* ---- Tabs (plan | cases | settings) ---- */
-.tc-tabs {
-  display: flex;
-  gap: var(--space-1);
-  padding: 2px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  align-self: flex-start;
-}
-.tc-tabs__tab {
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--fs-ui);
-  font-weight: var(--fw-medium);
   color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-}
-.tc-tabs__tab[data-active="true"] {
-  background: var(--color-surface-1);
-  color: var(--color-navy-500);
-  box-shadow: var(--shadow-1);
+  background: var(--color-surface-2);
+  border-radius: 10px;
 }
 
-.tc-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.pj-settings__preview > svg {
+  flex: none;
+  color: var(--color-text-muted);
 }
-.tc-form code {
-  font-family: var(--font-mono);
-  color: var(--color-navy-500);
+
+.pj-settings__preview code {
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.pj-settings__preview code[data-strong] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
+.pj-settings__preview code[data-faint] {
+  color: var(--color-text-muted);
+}
+
+.pj-settings__save {
+  display: flex;
+  justify-content: flex-end;
+}
+
+[data-viewport="mobile"] .pj-settings__save > *,
+[data-viewport="mobile"] .pj-card-box--row > button {
+  flex: 1 1 100%;
+}
+
+/* Outside the confirmation the destructive button is outlined (SPEC §4). */
+.pj-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-error-text);
+  white-space: nowrap;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-error-text);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.pj-danger:hover {
+  background: color-mix(in oklab, var(--color-error) 10%, var(--color-surface-1));
+}
+
+[data-viewport="mobile"] .pj-danger {
+  height: 44px;
+}
+
+/* What the deletion takes with it, as chips in the dialog. */
+.pj-loss {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pj-loss li {
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-error-text);
+  background: color-mix(in oklab, var(--color-error) 10%, transparent);
+  border-radius: var(--radius-pill);
 }

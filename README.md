@@ -171,6 +171,13 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   - Inside a project, the «Proyecto activo» group switches project and
     jumps between Plan, Casos, Planificador, Trazabilidad and Ajustes del
     proyecto. Each one has its own address (`#/projects/<id>/<section>`).
+- **Proyectos:** the 4 projects you opened last, then every project in a table
+  with search, order and pages. A project's **Ajustes** holds its name and case
+  numbering, «Exportar proyecto (ZIP)» and «Eliminar proyecto» (type the prefix
+  to confirm).
+- **Plan de pruebas:** 19 steps. The step list is on the left in wide windows,
+  a strip above the form in narrower ones, and «Ver pasos» on phones.
+  «Revisiones», «Importar / Exportar» and «Guardar» are in the project header.
 - **Casos:** the list filters by state, priority and level and searches IDs,
   titles and requirements. A case opens at its own address
   (`#/projects/<id>/cases?case=<case>`); in the editor, ‹ › walk the list as

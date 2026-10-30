@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
-import { useToast } from "@shared/ui/Toast";
-import { ErrorSummary, FormField } from "@shared/ui/FormField";
-import { useSaveGuard } from "@shared/ui/fieldProps";
-import { numberInRange } from "@shared/validation";
-import { PLAN_SAVED_EVENT, TestPlanPage, projectPlanStatus } from "@modules/test-plan";
+import {
+  PLAN_SAVED_EVENT,
+  TestPlanPage,
+  projectPlanClosure,
+  projectPlanStatus,
+} from "@modules/test-plan";
 import {
   TestCasesPage,
   projectCaseCount,
@@ -24,6 +25,7 @@ import {
   type ProjectSection,
 } from "../model/sections";
 import { ProjectHeaderLayout, type ProjectHeaderInfo } from "./ProjectHeader";
+import { ProjectSettings } from "./ProjectSettings";
 import "./Projects.css";
 
 /** Route `/projects/:projectId/:section` (ADR-0029). A missing or unknown
@@ -41,7 +43,7 @@ export function ProjectDetailPage() {
  *  scoped to this project (spec §5.1 — the project is the container). The open
  *  section comes from the URL. */
 export function ProjectDetail({ projectId, tab }: { projectId: string; tab: ProjectSection }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const ownerId = user?.id ?? "";
   // undefined while loading; null when it does not exist (deleted, maybe on
@@ -85,7 +87,7 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
   const facts = useHeaderFacts(projectId, ownerId, tab);
 
   if (project === null) return <Navigate to="/projects" replace />;
-  if (!project) return <p className="tp__muted">{t("common.loading")}</p>;
+  if (!project) return <p className="pj-muted">{t("common.loading")}</p>;
 
   const header: ProjectHeaderInfo = {
     name: project.name,
@@ -96,7 +98,9 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
       ? [
           t("projects.header.cases", { count: facts.cases }),
           t("projects.header.requirements", { count: facts.requirements.length }),
-        ]
+          facts.closeDate &&
+            t("projects.header.closesOn", { date: shortDate(facts.closeDate, i18n.resolvedLanguage) }),
+        ].filter((m): m is string => Boolean(m))
       : [],
   };
 
@@ -133,6 +137,8 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
 
 interface HeaderFacts {
   planStatus: string | null;
+  /** End of the test cycle from the plan schedule (YYYY-MM-DD). */
+  closeDate: string | null;
   cases: number;
   /** Also the options of the cases section (loaded once, here). */
   requirements: RequirementOption[];
@@ -150,14 +156,16 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     const load = async () => {
       const request = ++latest.current;
       try {
-        const [planStatus, cases, requirements] = await Promise.all([
+        const [planStatus, closure, cases, requirements] = await Promise.all([
           projectPlanStatus(projectId, ownerId),
+          projectPlanClosure(projectId, ownerId),
           projectCaseCount(projectId, ownerId),
           requirementApi.list(projectId, ownerId),
         ]);
         if (!live || request !== latest.current) return;
         setFacts({
           planStatus,
+          closeDate: closure?.closeDate ?? null,
           cases,
           requirements: requirements.map((r) => ({ requirementKey: r.requirementKey, title: r.title })),
         });
@@ -177,86 +185,9 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
   return facts;
 }
 
-function ProjectSettings({
-  project,
-  onSaved,
-}: {
-  project: Project;
-  onSaved: () => void;
-}) {
-  const { t } = useTranslation();
-  const [name, setName] = useState(project.name);
-  const [prefix, setPrefix] = useState(project.caseIdPrefix);
-  // Kept as typed, so "" or 9 shows an error instead of being silently
-  // replaced; the digits shape every case ID, so a bad value blocks saving.
-  const [digitsText, setDigitsText] = useState(String(project.caseIdDigits));
-  const digitsIssue = numberInRange(digitsText, { min: 1, max: 8, integer: true });
-  const digits = digitsIssue ? project.caseIdDigits : Number(digitsText);
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
-  const { guard, showSummary, summaryRef } = useSaveGuard(digitsIssue !== null);
-
-  async function save() {
-    setSaving(true);
-    try {
-      await projectApi.update(project.id, {
-        ownerId: project.ownerId,
-        name: name.trim() || project.name,
-        caseIdPrefix: prefix,
-        caseIdDigits: digits,
-      });
-      toast(t("projects.savedToast"));
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const preview = `${prefix || "ATS_"}${"1".padStart(digits, "0")}`;
-
-  return (
-    <div className="tc-form" style={{ maxWidth: 520 }}>
-      <label className="tp-field">
-        <span>{t("projects.name")}</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} />
-      </label>
-      <label className="tp-field">
-        <span>{t("projects.caseIdPrefix")}</span>
-        <input
-          value={prefix}
-          placeholder="ATS_"
-          onChange={(e) => setPrefix(e.target.value)}
-        />
-        <span className="tp-field__hint">
-          {t("projects.prefixHint")} <code>{preview}</code>
-        </span>
-      </label>
-      <FormField id="pj-digits" label={t("projects.caseIdDigits")} issue={digitsIssue} required>
-        {(p) => (
-          <input
-            {...p}
-            type="number"
-            min={1}
-            max={8}
-            value={digitsText}
-            onChange={(e) => setDigitsText(e.target.value)}
-          />
-        )}
-      </FormField>
-      {showSummary && digitsIssue && (
-        <ErrorSummary
-          ref={summaryRef}
-          items={[{ label: t("projects.caseIdDigits"), issue: digitsIssue, fieldId: "pj-digits" }]}
-        />
-      )}
-      <button
-        type="button"
-        className="tp-editor__save"
-        onClick={() => guard(() => void save())}
-        disabled={saving}
-      >
-        {saving ? t("projects.saving") : t("projects.save")}
-      </button>
-    </div>
-  );
+/** «7 nov» from a plan date (YYYY-MM-DD, read as a local day). */
+function shortDate(day: string, lang = "es"): string {
+  const d = new Date(`${day}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return day;
+  return new Intl.DateTimeFormat(lang, { day: "numeric", month: "short" }).format(d).replace(".", "");
 }

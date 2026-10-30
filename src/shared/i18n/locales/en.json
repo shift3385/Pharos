@@ -391,7 +391,6 @@
     "exportFinishing": "Finishing…",
     "empty": "No projects yet. Create the first one.",
     "namePlaceholder": "Project name",
-    "prefixMeta": "IDs",
     "name": "Project name",
     "caseIdPrefix": "Case id prefix",
     "caseIdDigits": "Number digits",
@@ -420,7 +419,76 @@
       "cases_one": "1 case",
       "cases_other": "{{count}} cases",
       "requirements_one": "1 requirement",
-      "requirements_other": "{{count}} requirements"
+      "requirements_other": "{{count}} requirements",
+      "closesOn": "Cycle closes: {{date}}"
+    },
+    "list": {
+      "recentTitle": "Recent",
+      "recentHint_one": "The last one you opened",
+      "recentHint_other": "The last {{count}} you opened",
+      "allTitle": "All projects",
+      "search": "Search by name or prefix…",
+      "filterLabel": "Project status",
+      "filter": {
+        "all": "All",
+        "active": "In progress",
+        "closed": "Closed"
+      },
+      "filterSoon": "Coming soon: projects have no open or closed status yet.",
+      "sort": {
+        "access": "Last opened",
+        "name": "Name (A–Z)",
+        "updated": "Last modified",
+        "closure": "Cycle close",
+        "execution": "Execution progress",
+        "coverage": "Requirement coverage",
+        "defects": "Open defects"
+      },
+      "sortSoon": {
+        "closure": "No plan has closing dates yet.",
+        "execution": "Coming soon: arrives with test execution (0.2.0).",
+        "defects": "Coming soon."
+      },
+      "col": {
+        "project": "Project",
+        "plan": "Plan",
+        "cases": "Cases",
+        "executed": "Executed",
+        "coverage": "Coverage",
+        "access": "Last opened",
+        "actions": "Actions"
+      },
+      "executedSoon": "Test execution arrives in version 0.2.0.",
+      "executedShort": "— exec.",
+      "noRequirements": "No requirements to cover",
+      "percent": "{{value}} %",
+      "coverageShort": "{{value}} % cov.",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "never": "Never",
+      "summary": "Showing <b>{{from}}–{{to}}</b> of <b>{{total}}</b> projects",
+      "noMatch": "No project matches “{{query}}”.",
+      "rowMenu": "More actions for {{name}}",
+      "moreActions": "More actions",
+      "open": "Open"
+    },
+    "settings": {
+      "general": "General",
+      "generalDesc": "Name and numbering of the test cases.",
+      "exportDesc": "Test plan as PDF, cases as .xlsx and .feature, and the traceability matrix.",
+      "exportZip": "Export ZIP",
+      "lossLabel": "Will be deleted",
+      "lossPlans_one": "1 plan",
+      "lossPlans_other": "{{count}} plans",
+      "lossCases_one": "1 case",
+      "lossCases_other": "{{count}} cases",
+      "lossRequirements_one": "1 requirement",
+      "lossRequirements_other": "{{count}} requirements",
+      "lossCards_one": "1 card",
+      "lossCards_other": "{{count}} cards",
+      "deletedToast": "“{{name}}” deleted",
+      "deleteCheckFailed": "Could not check what would be deleted. Try again.",
+      "deleteFailed": "Could not delete “{{name}}”. Try again."
     }
   },
   "profile": {
@@ -445,15 +513,7 @@
     "themeDark": "Dark"
   },
   "testPlan": {
-    "title": "Test plans",
-    "subtitle": "Create, edit and version your test plans.",
-    "new": "New plan",
-    "empty": "No plans yet. Create the first one.",
-    "delete": "Delete",
     "defaultTitle": "New test plan",
-    "newTitle": "New plan",
-    "editTitle": "Edit plan",
-    "back": "Back",
     "revShort": "rev.",
     "fieldTitle": "Title",
     "version": "Version",
@@ -463,12 +523,9 @@
     "purpose": "Purpose",
     "conclusion": "Conclusion",
     "save": "Save",
-    "exportXlsx": "Export .xlsx",
-    "exportPdf": "Export .pdf",
     "pdfKind": "Test Plan",
     "rangeCol": "Range",
     "import": {
-      "button": "Import .xlsx",
       "title": "Import plan from .xlsx",
       "applied": "Plan imported. Review and save to confirm.",
       "error": "Could not read the file. Try a .xlsx without cell comments."
@@ -508,9 +565,7 @@
     "addRow": "Add row",
     "other": "Other",
     "otherPlaceholder": "Specify other…",
-    "steps": "Steps",
     "prev": "Previous",
-    "next": "Next",
     "addSprintFromRange": "Add sprint from range",
     "revisions": "Revisions",
     "noRevisions": "No previous revisions.",
@@ -560,15 +615,6 @@
       "system": "System",
       "acceptance": "Acceptance"
     },
-    "toolLabel": {
-      "selenium": "Selenium",
-      "playwright": "Playwright",
-      "cypress": "Cypress",
-      "appium": "Appium",
-      "postman": "Postman",
-      "jmeter": "JMeter",
-      "jira": "JIRA"
-    },
     "frequencyFor": "{{ceremony}} frequency",
     "frequencyLabel": {
       "daily": "every day",
@@ -592,7 +638,14 @@
       "defectReports": "Defect reports",
       "uatSignoff": "UAT sign-off",
       "testData": "Test data",
-      "incidentReports": "Incident reports"
+      "incidentReports": "Incident reports",
+      "testDesignSpec": "Test design specification",
+      "testProcedures": "Test procedures",
+      "testDataReadiness": "Test data readiness report",
+      "testEnvRequirements": "Test environment requirements",
+      "testEnvReadiness": "Test environment readiness report",
+      "executionLog": "Test execution log and results",
+      "traceabilityMatrix": "Traceability matrix"
     },
     "roleName": {
       "testManager": "Test Manager",
@@ -610,7 +663,6 @@
     "sprintOverlap": "This sprint overlaps another one.",
     "restore": "Restore",
     "restoreConfirm": "Restore this revision's content? It will replace what you have now, unsaved.",
-    "discardConfirm": "You have unsaved changes. Leave and discard them?",
     "closureDefault": {
       "executed": "% of cases executed",
       "executedMetric": "≥ 95%",
@@ -619,7 +671,132 @@
       "coverage": "Requirements coverage",
       "coverageMetric": "≥ 90%"
     },
-    "savedToast": "Test plan saved"
+    "savedToast": "Test plan saved",
+    "stepDesc": {
+      "title": "Document name and approval status.",
+      "meta": "Document control data shown on the PDF cover.",
+      "summary": "A short introduction: what is tested and why.",
+      "scope": "What is in and out of the testing.",
+      "types": "Choose the test types this plan covers. You can add your own.",
+      "methodology": "How the testing work is organised.",
+      "levels": "At which levels the tests will run.",
+      "deliverables": "Documents and artefacts the test team produces.",
+      "environment": "Setup and requirements of the environment where it runs.",
+      "tools": "The project's tools and automation strategy.",
+      "testData": "How test data is created, protected and refreshed.",
+      "defects": "How defects are logged, prioritised and closed.",
+      "roles": "Who does what in the testing process.",
+      "schedule": "Sprints and milestones of the test cycle.",
+      "risks": "Risks that can affect testing and how they are mitigated.",
+      "communication": "How and when progress is reported.",
+      "closure": "Conditions to meet before closing the cycle.",
+      "purpose": "The overall goal of the test plan.",
+      "conclusion": "Closing words before exporting or approving."
+    },
+    "nav": {
+      "label": "Plan steps",
+      "stepOf": "Step {{n}} of {{total}}",
+      "completed_one": "{{count}} completed",
+      "completed_other": "{{count}} completed",
+      "progress": "{{done}} of {{total}} steps",
+      "wizard": "ISO/IEC/IEEE 29119 wizard",
+      "showSteps": "Show steps",
+      "nextStep": "Next: {{title}}",
+      "finish": "Finish plan",
+      "done": "completed",
+      "current": "current step"
+    },
+    "saveState": {
+      "unsaved": "Unsaved changes",
+      "never": "Not saved yet",
+      "saved": "Saved · {{when}}",
+      "now": "just now"
+    },
+    "io": {
+      "button": "Import / Export",
+      "import": "Import",
+      "export": "Export",
+      "importXlsx": "Import .xlsx",
+      "importXlsxDesc": "Fill in the plan from a template",
+      "exportPdf": "Export .pdf",
+      "exportPdfDesc": "A document ready to sign",
+      "exportXlsx": "Export .xlsx",
+      "exportXlsxDesc": "Editable in Excel"
+    },
+    "panel": {
+      "title": "Plan status",
+      "status": "Status",
+      "version": "Version",
+      "author": "Author",
+      "updated": "Updated",
+      "seeAll": "See all",
+      "latest": "Latest revisions"
+    },
+    "deliverables": {
+      "hint": "Tick what will be delivered when the cycle closes. The list follows the ISO/IEC/IEEE 29119-3 documentation.",
+      "other": "Other deliverable",
+      "otherPlaceholder": "Name another…",
+      "add": "Add",
+      "otherHint": "It is added to “Acceptance and other” marked as Own. You can remove it at any time.",
+      "own": "Own",
+      "remove": "Remove {{name}}"
+    },
+    "deliverableGroup": {
+      "management": "Test management",
+      "specification": "Specification",
+      "dataEnvironment": "Data and environment",
+      "execution": "Execution and results",
+      "acceptance": "Acceptance and other"
+    },
+    "toolsPicker": {
+      "selected_one": "1 selected",
+      "selected_other": "{{count}} selected",
+      "top": "Most used in QA",
+      "more": "More tools ({{count}})",
+      "less": "Show less",
+      "search": "Search {{count}} tools…",
+      "noMatch": "No tool matches “{{query}}”.",
+      "notListed": "Not on the list?",
+      "customPlaceholder": "Type the tool's name…",
+      "add": "Add",
+      "own": "Own",
+      "remove": "Remove {{name}}"
+    },
+    "toolCategory": {
+      "web": "Web automation",
+      "mobile": "Mobile",
+      "api": "API and contracts",
+      "performance": "Performance",
+      "security": "Security",
+      "accessibility": "Accessibility",
+      "unit": "Unit",
+      "bdd": "BDD",
+      "visual": "Visual regression",
+      "devices": "Device clouds",
+      "management": "Test management",
+      "tracking": "Defects and work",
+      "cicd": "CI/CD",
+      "data": "Data and mocks"
+    },
+    "sprintGen": {
+      "title": "Generate sprints from a range",
+      "desc_one": "Splits the period into {{count}}-week sprints (length from step 6, Methodology) and adds them to the table.",
+      "desc_other": "Splits the period into {{count}}-week sprints (length from step 6, Methodology) and adds them to the table.",
+      "from": "From",
+      "to": "To",
+      "button": "Generate sprints",
+      "soon": "Coming soon",
+      "soonTitle": "Coming soon: generating sprints from a range arrives in a future version."
+    },
+    "finish": {
+      "title": "Before you finish",
+      "progress": "{{done}} of {{total}} steps complete",
+      "allDone": "Every step has content.",
+      "status": "Current status: {{status}}",
+      "exportHint": "Export the plan from “Import / Export”, top right.",
+      "missingLabel": "Steps not completed"
+    },
+    "leaveMessage": "The plan has unsaved changes. If you leave, they are lost; to keep them, press “Save” first."
   },
   "testCase": {
     "title": "Test cases",
