@@ -10,6 +10,7 @@ import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { TruncatedText } from "@shared/ui/TruncatedText";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { profileApi } from "../api/profileApi";
+import { RecoveryKeySection } from "./RecoveryKeySection";
 import type { Profile } from "../model/types";
 import "./ProfilePage.css";
 
@@ -24,7 +25,8 @@ function initials(name: string): string {
 /** Perfil (SPEC §8, `ScrPerfil.dc.html`): who you are (avatar, name, email,
  *  sync status), your alias and official name, and your preferences (language
  *  and theme). On mobile «Cerrar sesión» lives here too (no user menu in the
- *  bar). The recovery key moved to Administración › Seguridad (RED-V4). */
+ *  bar). The recovery key stays here until Administración › Seguridad mounts
+ *  it (RED-V4), which then removes it from this page. */
 export function ProfilePage() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -192,6 +194,8 @@ export function ProfilePage() {
         </form>
 
         <Preferences />
+
+        <RecoveryKeySection />
       </div>
     </section>
   );

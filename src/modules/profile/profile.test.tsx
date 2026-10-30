@@ -60,14 +60,18 @@ describe("profile page", () => {
     const { unmount } = renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
     expect(screen.getByText("Quality Analyst")).toBeInTheDocument();
-    expect(screen.getByTitle("qa@pharos.dev")).toHaveTextContent("qa@pharos.dev");
+    expect(screen.getByTitle("qa@pharos.dev")).toHaveTextContent(
+      "qa@pharos.dev",
+    );
     expect(screen.queryByRole("button", { name: "Cerrar sesión" })).toBeNull();
     unmount();
 
     setViewportWidth(390);
     renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
-    expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Cerrar sesión" }),
+    ).toBeInTheDocument();
   });
 
   it("changes language and theme from Preferencias", async () => {
@@ -80,21 +84,32 @@ describe("profile page", () => {
     const before = document.documentElement.getAttribute("data-theme");
     const other = before === "dark" ? "Claro" : "Oscuro";
     await user.click(within(theme).getByRole("radio", { name: other }));
-    expect(within(theme).getByRole("radio", { name: other })).toHaveAttribute("aria-checked", "true");
-    expect(document.documentElement.getAttribute("data-theme")).not.toBe(before);
+    expect(within(theme).getByRole("radio", { name: other })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(document.documentElement.getAttribute("data-theme")).not.toBe(
+      before,
+    );
 
     const language = screen.getByRole("radiogroup", { name: "Idioma" });
-    expect(within(language).getByRole("radio", { name: "Español" })).toHaveAttribute("aria-checked", "true");
+    expect(
+      within(language).getByRole("radio", { name: "Español" }),
+    ).toHaveAttribute("aria-checked", "true");
     await user.click(within(language).getByRole("radio", { name: "English" }));
-    expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Preferences" }),
+    ).toBeInTheDocument();
     await i18n.changeLanguage("es");
   });
 
-  it("no longer holds the recovery key (Administración › Seguridad) and passes axe", async () => {
+  it("keeps the recovery key until Administración › Seguridad has it, and passes axe", async () => {
     setViewportWidth(390);
     renderWithProviders(<ProfilePage />);
     await screen.findByDisplayValue("Quality");
-    expect(screen.queryByRole("heading", { name: /clave de recuperación/i })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Clave de recuperación" }),
+    ).toBeInTheDocument();
     await expectNoAxeViolations();
   });
 });

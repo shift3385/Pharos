@@ -118,7 +118,8 @@ prototype's 1024 px photo; production should ship a ≥ 2400 px version); below
 form scrolls inside the sheet). The Google button is a disabled placeholder
 with a monochrome inline mark (Lucide has no brand icons). `modules/profile`
 shows identity, name and Preferencias (`SegmentedControl` for language and
-theme); `RecoveryKeySection` is exported for Administración › Seguridad.
+theme) and the recovery key; `RecoveryKeySection` is also exported, so that
+Administración › Seguridad (RED-V4) can mount it and take it out of Perfil.
 
 **Shared controls (RED-V1, used by V3/V4).** `@shared/ui/Switch` (role switch),
 `@shared/ui/SegmentedControl` (radiogroup, roving tabindex, per-option

@@ -147,5 +147,7 @@
   `SegmentedControl` y `Tabs` (V3 y V4 los usan). Dentro de un menú,
   «Comparar con el periodo anterior» es una opción con el interruptor dibujado:
   un `role="switch"` no puede vivir en un `role="menu"`.
-- **Clave de recuperación.** Sale de Perfil hacia Administración › Seguridad
-  (RED-V4); `RecoveryKeySection` se exporta desde `@modules/profile`.
+- **Clave de recuperación.** Su sitio en el rediseño es Administración ›
+  Seguridad (RED-V4). Sigue en Perfil hasta que V4 la monte allí, para no
+  depender del orden de las fusiones; `RecoveryKeySection` se exporta desde
+  `@modules/profile` y el PR de V4 la quita de Perfil.

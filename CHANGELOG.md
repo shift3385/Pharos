@@ -52,8 +52,8 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
     tres pestañas (Resumen, Ejecución, Pruebas). Lo que depende de ejecuciones (tasa de
     éxito, ejecuciones por día, si se cumple cada criterio, comparar periodos) lo dice en
     lugar de mostrar cifras hasta 0.2.0.
-  - **Perfil:** tarjeta con tus datos y estado de sincronización, y Preferencias (idioma y
-    tema).
+  - **Perfil:** tarjeta con tus datos y estado de sincronización, Preferencias (idioma y
+    tema) y la clave de recuperación con el estilo nuevo.
   - Controles comunes nuevos: interruptor, selector segmentado y pestañas con burbujas.
 
 ### Cambiado
@@ -65,7 +65,6 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Cerrar sesión e Idioma** pasan al menú del usuario. El idioma ya no está en la barra
   superior.
 - La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
-- **Clave de recuperación:** pasa de Perfil a Administración › Seguridad.
 - El Inicio ya no lista los proyectos con buscador: están en Proyectos, y el Inicio
   enlaza a cada uno desde «Ejecución por proyecto».
 

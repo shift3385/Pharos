@@ -186,8 +186,8 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   rate, the daily runs and whether each criterion is met say so instead of
   showing numbers. On phones the Home has three tabs (Resumen, Ejecución,
   Pruebas).
-- **Perfil:** your alias and official name, language and theme (and «Cerrar
-  sesión» on phones).
+- **Perfil:** your alias and official name, language and theme, the recovery
+  key (and «Cerrar sesión» on phones).
 
 ### Sync
 
@@ -305,8 +305,8 @@ The key of the local database lives only in the Windows Credential Manager. If
 you lose it (new PC, reinstalled Windows, another account), the data cannot be
 decrypted without the **recovery key** ([ADR-0024](docs/adr/0024-clave-de-recuperacion.md)).
 
-- **Export it once:** Administración → Seguridad → Recovery key → Show
-  recovery key (it was under Perfil before the redesign, RED-V1/RED-V4). It is 56
+- **Export it once:** Perfil → Recovery key → Show recovery key (it moves to
+  Administración → Seguridad with RED-V4). It is 56
   characters in 14 groups of 4 (`XXXX-XXXX-…`). Write it on paper or store it
   in a password manager, never next to the copy of your data: anyone with both
   can read it. Pharos keeps no copy of it.
