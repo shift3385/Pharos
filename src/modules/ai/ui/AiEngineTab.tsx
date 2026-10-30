@@ -274,7 +274,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                     <ProviderLogo provider={p.id} />
                   </span>
                   <span className="ai-provider__text">
-                    <span className="ai-provider__name">{providerLabel(p.id)}</span>
+                    <span className="ai-provider__name">{p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}</span>
                     <span className="ai-provider__sub">{t(`ai.providerSub.${p.id}`)}</span>
                   </span>
                 </span>

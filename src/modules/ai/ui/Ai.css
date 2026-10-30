@@ -49,10 +49,9 @@
 /* ---- Provider picker: radio cards ---- */
 .ai-providers {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(132px, 100%), 1fr));
   gap: var(--space-2);
 }
-
 .ai-provider {
   position: relative;
   display: flex;

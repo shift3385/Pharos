@@ -122,8 +122,8 @@
 
 [data-theme="dark"] .adm-tab[aria-selected="true"] {
   color: var(--color-navy-900);
-  background: var(--color-navy-100);
-  border-color: var(--color-navy-100);
+  background: var(--color-navy-500);
+  border-color: var(--color-navy-500);
 }
 
 .adm-tab:focus-visible {

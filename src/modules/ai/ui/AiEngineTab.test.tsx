@@ -64,7 +64,7 @@ describe("AiEngineTab", () => {
 
   it("«Compatible» makes the temperature optional with «Enviar» and needs its URL to save", async () => {
     const { user } = await renderTab();
-    await user.click(screen.getByRole("radio", { name: /^Compatible con OpenAI/ }));
+    await user.click(screen.getByRole("radio", { name: /^Compatible/ }));
     const slider = screen.getByRole("slider", { name: "Temperatura" });
     expect(slider).toBeDisabled();
     await user.click(screen.getByRole("switch", { name: "Enviar" }));
