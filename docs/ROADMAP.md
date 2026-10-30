@@ -38,10 +38,11 @@
 | Trazabilidad: requisitos, matriz, tags                                          | Implementado                                                                     | `484e941`                       |
 | BD sin texto plano y guardado atómico (SEC-01/02)                               | Hecho                                                                            | `54f1dde`                       |
 | Varios proveedores de IA (IA-08) y cuenta de test (BASE-17)                     | Hecho                                                                            | `91f0b9a`                       |
-| Tests                                                                           | Cliente 422 · Rust 244 · servidor 90 · scripts 40. CI con 8 checks obligatorios, E2E incluido | —                   |
+| Tests                                                                           | Cliente 473 · Rust 244 · servidor 90 · scripts 40. CI con 8 checks obligatorios, E2E incluido | —                   |
 | Segunda ola: compuerta A cerrada, SEC-03, IA-05/IA-10, Inicio real, carpeta de descarga, PDFs en ZIPs, logs de sync, zod 4 | Hecho (A3, S1, Q1, I1, U1) | `b969824`, `b75e757`, `c000a53`, `24535c4`, `0eab0a1` |
 | Tercera ola: compuerta B cerrada, WCAG 2.1 AA y validación común de formularios (UX-05/UX-01), web como cliente puro del servidor y contratos generados (BASE-10/BASE-05), react-router 7 y cobertura en cada PR (BASE-20/BASE-13), E2E obligatorio | Hecho (X1, W1, D1, Q1) | `f1cac23`, `1f93e15`, `446dd7e`, `95958e6` |
 | Fase 9: documentación final, guía de la beta y release `0.1.0-beta.1` (UX-06) | Hecho (R1); falta la validación nativa (§6) | — |
+| Cuarta ola (4a): fundamentos del rediseño — logo, Lucide, tipografía, primitivas y shell (RED-F1, [ADR-0028](adr/0028-rediseno-de-la-interfaz.md)) | Hecho (F1); falta la revisión visual del usuario (§6) | — |
 
 Las validaciones nativas pendientes están en §6.
 
@@ -255,9 +256,31 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0 · Hecho (U1) |
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
-| UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | —       |
+| UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | Absorbido por el rediseño (RED-*) |
 | UX-09  | "Exportar diagnóstico" también en la pantalla de BD que no abre (`DbErrorScreen`); hoy solo queda el log (R1) | P2  | 0.1.x   |
 | DEU-01 | Backend compilado con `tsc` para producción                                                         | P2  | 0.5.0   |
+
+### Rediseño de la interfaz
+
+Paquete en [`docs/rediseno/`](rediseno/README.md); la SPEC manda
+([ADR-0028](adr/0028-rediseno-de-la-interfaz.md)). Ola 4a = F1; ola 4b = V1–V4 en paralelo
+sobre los fundamentos de F1; ola 5 = funciones que necesitan datos de 0.2.0 (hasta entonces
+el shell solo pinta sus disparadores con un aviso de "próximamente"). La versión en que sale
+el rediseño (no es un PARCHE según [`VERSIONING.md`](VERSIONING.md)) la decide el usuario.
+
+| ID     | Ítem                                                                                                         | P   | Versión |
+| ------ | ------------------------------------------------------------------------------------------------------------ | --- | ------- |
+| RED-F1 | Fundamentos: paquete en `docs/rediseno/`, logo nuevo (favicon e iconos nativos), Lucide, tipografía y ajuste de texto (SPEC §3), movimiento reducido (§9), `Popover`/`Menu`/`BottomSheet`/confirmación destructiva, shell con vista por el ancho del contenedor (< 600 / 600–1279 / ≥ 1280 px, enmienda CAMBIO-vista-adaptativa), menú lateral contraíble, barra superior e inferior, menú del usuario, secciones del proyecto en la URL ([ADR-0029](adr/0029-secciones-del-proyecto-en-la-url.md)) | P1  | Por decidir · Hecho (F1); falta la revisión visual del usuario |
+| RED-V1 | Pantallas Login, Inicio (dashboard) y Perfil. Incluye, de la actualización 2026-10-30 ([`ACTUALIZACION-para-Claude-Code.md`](rediseno/cambios/ACTUALIZACION-para-Claude-Code.md) §2–3): maquetación de «Ejecuciones diarias» (cabecera con `flex-wrap` y «+18 % vs. anterior», etiqueta de día bajo su barra, un día sí y otro no en tablet y móvil con hoy en negrita, barras de 28 px como máximo, raya gris de 2 px en días sin datos, leyenda Pasa · Falla · Sin ejecuciones con el mes) y leyenda de «Ejecución por proyecto» (`gap: 6px 14px`, `nowrap`, cuadritos `flex: none`, título con `min-width: 0`) | P1  | Por decidir |
+| RED-V2 | Pantallas Proyectos, Ajustes del proyecto (eliminar escribiendo el prefijo) y Plan de pruebas. Incluye la navegación de los 19 pasos del Plan (actualización 2026-10-30 11:31, SPEC §8 y [`ACTUALIZACION-para-Claude-Code.md`](rediseno/cambios/ACTUALIZACION-para-Claude-Code.md) §5): desde 1360 px de contenedor, lista vertical `sticky` con `z-index: 2` y scroll propio; de 600 a 1359 px, stepper horizontal sobre el formulario con el paso actual centrado; por debajo de 600 px, barra compacta con «Ver pasos»; el panel Estado/Revisiones baja debajo del formulario si no cabe. También quitar la cabecera «← Proyectos <nombre>» que repite la barra superior | P1  | Por decidir |
+| RED-V3 | Pantallas Casos (lista y editor), Planificador y Trazabilidad                                                 | P1  | Por decidir |
+| RED-V4 | Administración por grupos (Motor de IA por defecto, Plantillas, General, Sincronización, Seguridad, Diagnóstico); sustituye al `AdminSectionNav` temporal de F1 y lleva Plantillas y Motor de IA dentro de sus pestañas | P1  | Por decidir |
+| RED-W1 | Búsqueda global (Ctrl K; en móvil, resultados agrupados en Casos, Requisitos y Proyectos)                   | P2  | 0.2.0   |
+| RED-W2 | Panel de notificaciones (por día, sin leer, acción directa, «Marcar todo como leído»)                       | P2  | 0.2.0   |
+| RED-W3 | Papelera con contador, desglose, restaurar y vaciar                                                          | P2  | 0.2.0   |
+| RED-W4 | Inicio: periodo y «Comparar con el periodo anterior»                                                         | P2  | 0.2.0   |
+| RED-W5 | Plan, paso 14: generar sprints desde un rango                                                                | P2  | 0.2.0   |
+| RED-W6 | Métricas de ejecución en Inicio (tasa de éxito, ejecuciones diarias, criterios de salida): los datos reales de la gráfica «Ejecuciones diarias» y de «Ejecución por proyecto», cuya maquetación hace RED-V1; requiere la ingesta de 0.2.0 | P2  | 0.2.0   |
 
 ## 6. Validaciones del usuario pendientes
 
@@ -291,6 +314,11 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   con Espacio y flechas), un diálogo de IA, el panel de conflictos y la clave de
   recuperación, y guardar un plan con avisos y otro sin título. Los puntos abiertos están en
   `docs/accesibilidad/auditoria-wcag-0.1.0.md`.
+- **Rediseño F1 (RED-F1):** revisar las capturas del shell a 320, 390, 599, 600, 820, 1180,
+  1279, 1280 y 1440 px en claro y oscuro, y en la app nativa: estrechar la ventana (menú lateral
+  a iconos por debajo de 1280 px y vista móvil por debajo de 600 px, sin recargar), contraer el menú lateral y reabrir la app (se
+  recuerda), entrar en un proyecto (grupo «Proyecto activo»), menú del usuario (idioma y
+  cerrar sesión), y el icono nuevo en la barra de tareas y el instalador.
 - **Beta 0.1.0-beta.1 (R1, UX-06):** recorrer [`guia-beta.md`](guia-beta.md), que convierte
   esta lista en casillas, con el instalador NSIS del CI en un Windows 11 limpio: instalar
   (aviso de SmartScreen: el instalador no está firmado), primer arranque y WebView2, versión

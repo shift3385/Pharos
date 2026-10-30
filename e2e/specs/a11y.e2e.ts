@@ -13,6 +13,8 @@ import {
   ensureSignedOut,
   es,
   signIn,
+  setAppWindow,
+  userMenuTrigger,
 } from "../support";
 
 const require = createRequire(import.meta.url);
@@ -41,6 +43,14 @@ async function violations(): Promise<string[]> {
   });
 }
 
+/** Sets the theme with the top bar's moon/sun switch. */
+async function useTheme(theme: "light" | "dark") {
+  if ((await $("html").getAttribute("data-theme")) !== theme) {
+    await $('[data-testid="theme-toggle"]').click();
+  }
+  await expect($("html")).toHaveAttribute("data-theme", theme);
+}
+
 async function go(nav: string, heading: string) {
   await $(`[data-testid="nav-${nav}"]`).click();
   await expect($(`h1=${heading}`)).toBeDisplayed();
@@ -58,19 +68,22 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
 
   for (const theme of ["light", "dark"] as const) {
     it(`the main screens have no WCAG A/AA violations (${theme} theme)`, async () => {
-      if (!(await $('[data-testid="app-version"]').isExisting())) await signIn();
-      const toggle = $(`button[aria-label="${es.theme[theme]}"]`);
-      await toggle.click();
-      await expect($("html")).toHaveAttribute("data-theme", theme);
+      if (!(await userMenuTrigger().isExisting())) await signIn();
+      await useTheme(theme);
 
       expect(await violations()).toEqual([]); // home
       await go("projects", es.projects.title);
       expect(await violations()).toEqual([]);
-      await go("templates", es.templates.title);
-      expect(await violations()).toEqual([]);
       await go("admin", es.admin.title);
       expect(await violations()).toEqual([]);
-      await go("profile", es.profile.title);
+      // Templates moved under Administration (SPEC §7).
+      await $('[data-testid="admin-section-templates"]').click();
+      await expect($(`h1=${es.templates.title}`)).toBeDisplayed();
+      expect(await violations()).toEqual([]);
+      // Mi perfil lives in the user menu on the desktop (SPEC §7).
+      await userMenuTrigger().click();
+      await button(es.shell.myProfile).click();
+      await expect($(`h1=${es.profile.title}`)).toBeDisplayed();
       expect(await violations()).toEqual([]);
     });
   }
@@ -82,6 +95,62 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     expect(await violations()).toEqual([]);
   });
 
+  it("menus take the focus once they are visible (SPEC §10)", async () => {
+    // The unsaved wizard may ask before leaving it: accept.
+    await browser.execute(() => {
+      window.confirm = () => true;
+    });
+    /** Role of the focused element. */
+    const focusedRole = () => browser.execute(() => document.activeElement?.getAttribute("role") ?? "");
+    // Project switcher (full sidebar, desktop layout): the search field first;
+    // Tab enters the list.
+    await setAppWindow();
+    const switcher = $('[data-testid="project-switcher"]');
+    await switcher.click();
+    await expect($(`input[aria-label="${es.shell.searchProjects}"]`)).toBeFocused();
+    await browser.keys(["Tab"]);
+    expect(await focusedRole()).toBe("menuitemradio");
+    await browser.keys(["Escape"]);
+    await expect(switcher).toBeFocused();
+    // User menu: the first item, «Mi perfil».
+    await userMenuTrigger().click();
+    await expect(button(es.shell.myProfile)).toBeFocused();
+    await browser.keys(["Escape"]);
+    await expect(userMenuTrigger()).toBeFocused();
+    // Keyboard only (WCAG 2.1.1): Enter opens, ↓ moves, Enter chooses, and the
+    // focus comes back to the trigger.
+    await browser.keys(["Enter"]);
+    await expect(button(es.shell.myProfile)).toBeFocused();
+    await browser.keys(["ArrowDown"]);
+    await expect(button(es.nav.admin)).toBeFocused();
+    await browser.keys(["Enter"]);
+    await expect($(`h1=${es.admin.title}`)).toBeDisplayed();
+    await expect(userMenuTrigger()).toBeFocused();
+  });
+
+  it("at 900 px the sidebar is the icon strip and the user menu still works from the keyboard", async () => {
+    await setAppWindow(900, 800, "tablet");
+    try {
+      await expect($("aside.sidebar")).toHaveAttribute("data-mode", "rail");
+      await expect($('[data-testid="sync-compact"]')).toBeDisplayed();
+      expect(await violations()).toEqual([]);
+      await userMenuTrigger().click();
+      await expect(button(es.shell.myProfile)).toBeFocused();
+      await browser.keys(["Escape"]);
+      await expect(userMenuTrigger()).toBeFocused();
+      await browser.keys(["Enter"]);
+      await expect(button(es.shell.myProfile)).toBeFocused();
+      await browser.keys(["ArrowDown"]);
+      await expect(button(es.nav.admin)).toBeFocused();
+      await browser.keys(["Enter"]);
+      await expect($(`h1=${es.admin.title}`)).toBeDisplayed();
+      await expect(userMenuTrigger()).toBeFocused();
+    } finally {
+      await setAppWindow();
+    }
+    await expect($("aside.sidebar")).toHaveAttribute("data-mode", "full");
+  });
+
   it("the skip link is the first stop and moves to the content", async () => {
     // Leave the unsaved wizard and reload, so Tab starts from the top.
     await browser.execute(() => {
@@ -89,7 +158,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     });
     await $('[data-testid="nav-dashboard"]').click();
     await browser.refresh();
-    await expect($('[data-testid="app-version"]')).toBeDisplayed();
+    await expect(userMenuTrigger()).toBeDisplayed();
     await browser.keys(["Tab"]);
     const skip = $(`a=${es.a11y.skipToContent}`);
     await expect(skip).toBeFocused();
@@ -104,7 +173,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     });
     await $(`[data-testid="nav-projects"]`).click();
     await $('[data-testid="nav-dashboard"]').click();
-    await $(`button[aria-label="${es.theme.light}"]`).click().catch(() => {});
+    await useTheme("light").catch(() => {});
     await cleanUp();
   });
 });

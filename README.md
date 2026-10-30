@@ -154,6 +154,26 @@ run with `NODE_ENV=production`. The account exists only in your local
 After the first sign-in the desktop app can reopen offline from the cached
 session.
 
+### Finding your way around
+
+The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md),
+[ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md)). The navigation is already the new one:
+
+- **Sidebar** (app window ≥ 1280 px wide): Inicio, Proyectos and Administración.
+  - «Contraer menú» shrinks it to an 84 px icon strip, and Pharos remembers
+    the choice. Between 600 and 1279 px it is always the strip.
+  - Inside a project, the «Proyecto activo» group switches project and
+    jumps between Plan, Casos, Planificador, Trazabilidad and Ajustes del
+    proyecto. Each one has its own address (`#/projects/<id>/<section>`).
+- **Plantillas and Motor de IA** are under **Administración**.
+- **Top bar:** where you are (breadcrumbs), search (Ctrl K), notifications and
+  the light/dark switch. Search and notifications say "coming soon" until
+  they get their data.
+- **User menu** (your initials at the sidebar foot): Mi perfil,
+  Administración, Idioma and **Cerrar sesión**.
+- **Phones and narrow windows** (< 600 px): a navy top bar and a bottom bar (Inicio, Proyectos,
+  Admin, Perfil). Your initials open the user menu as a sheet.
+
 ### Sync
 
 The desktop app works on its local database and sends and receives changes in
@@ -208,7 +228,12 @@ Pharos targets WCAG 2.1 AA (UX-05, [ADR-0027](docs/adr/0027-accesibilidad-y-vali
 - everything works with the keyboard; "Saltar al contenido" is the first Tab
   stop;
 - dialogs keep the focus inside, close with Escape and give the focus back to
-  the button that opened them;
+  the button that opened them. Destructive confirmations close only with
+  «Cancelar»;
+- menus open with their button, move with the arrow keys and close with
+  Escape, a click outside or a scroll outside;
+- with "reduce motion" on in the system, nothing slides; only short fades
+  remain;
 - case steps and planner cards are reordered with Space on the handle and
   the arrow keys, and each move is announced;
 - forms explain every problem next to the field and in a summary that

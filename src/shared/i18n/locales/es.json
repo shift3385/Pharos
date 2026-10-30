@@ -29,7 +29,8 @@
     "cancel": "Cancelar",
     "noData": "Sin datos",
     "edit": "Editar",
-    "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?"
+    "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?",
+    "close": "Cerrar"
   },
   "templates": {
     "title": "Plantillas",
@@ -350,7 +351,20 @@
     "templates": "Plantillas",
     "ai": "Motor de IA",
     "admin": "Administración",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "short": {
+      "dashboard": "Inicio",
+      "projects": "Proyectos",
+      "admin": "Admin",
+      "profile": "Perfil",
+      "project": {
+        "plan": "Plan",
+        "cases": "Casos",
+        "planner": "Tablero",
+        "traceability": "Trazab.",
+        "settings": "Proyecto"
+      }
+    }
   },
   "projects": {
     "title": "Proyectos",
@@ -379,7 +393,7 @@
     "tab": {
       "plan": "Plan de pruebas",
       "cases": "Casos de prueba",
-      "settings": "Ajustes",
+      "settings": "Ajustes del proyecto",
       "planner": "Planificador",
       "traceability": "Trazabilidad"
     },
@@ -1039,5 +1053,40 @@
     "duplicateKey": "Ese ID ya existe.",
     "summary": "No se puede guardar: revisa {{count}} campo(s).",
     "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar."
+  },
+  "dialog": {
+    "typeToConfirm": "Escribe «{{text}}» para confirmar"
+  },
+  "shell": {
+    "collapseMenu": "Contraer menú",
+    "expandMenu": "Expandir menú",
+    "breadcrumbs": "Ruta de navegación",
+    "searchLabel": "Buscar",
+    "searchPlaceholder": "Buscar casos, requisitos…",
+    "searchShortcut": "Ctrl K",
+    "searchSoon": "La búsqueda global de casos, requisitos y proyectos llega en una próxima versión.",
+    "searchClose": "Cerrar la búsqueda",
+    "searchClear": "Borrar la búsqueda",
+    "notifications": "Notificaciones",
+    "notificationsSoon": "Las notificaciones llegan en una próxima versión.",
+    "themeToDark": "Cambiar a tema oscuro",
+    "themeToLight": "Cambiar a tema claro",
+    "userMenu": "Menú de usuario de {{name}}",
+    "myProfile": "Mi perfil",
+    "language": "Idioma",
+    "activeProject": "Proyecto activo",
+    "configuration": "Configuración",
+    "switchProjectMenu": "Cambiar de proyecto",
+    "searchProjects": "Buscar proyecto…",
+    "seeAllProjects": "Ver todos los proyectos",
+    "noProjects": "Ningún proyecto coincide.",
+    "back": "Volver a Proyectos",
+    "projectSections": "Secciones del proyecto",
+    "adminSections": "Secciones de Administración",
+    "adminSection": {
+      "ai": "Motor de IA",
+      "templates": "Plantillas",
+      "admin": "General"
+    }
   }
 }

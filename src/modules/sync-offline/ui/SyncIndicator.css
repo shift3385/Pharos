@@ -39,3 +39,21 @@
 .sync__dot--conflicts {
   background: var(--color-warning);
 }
+
+/* Compact variant (icon strip): the dot is a button that syncs now. */
+.sync--compact {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+}
+.sync--compact .sync__dot {
+  width: 10px;
+  height: 10px;
+}
+.sync--compact:disabled {
+  cursor: default;
+}

@@ -6,12 +6,14 @@ import { HashRouter } from "react-router";
 import "@shared/fonts";
 import "@shared/theme/tokens.css";
 import "@shared/theme/base.css";
+import "@shared/theme/typography.css";
 import "@shared/i18n";
 
 import { installGlobalErrorHandlers } from "@shared/diagnostics";
 import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
 import { ThemeProvider } from "@shared/theme/ThemeProvider";
 import { ToastProvider } from "@shared/ui/Toast";
+import { ViewportProvider } from "@shared/ui/ViewportProvider";
 import { AuthProvider } from "@modules/auth";
 import { App } from "@app/App";
 
@@ -30,7 +32,10 @@ ReactDOM.createRoot(rootElement).render(
         <ToastProvider>
           <AuthProvider>
             <HashRouter>
-              <App />
+              {/* Measures the app container for every screen, sign-in included. */}
+              <ViewportProvider>
+                <App />
+              </ViewportProvider>
             </HashRouter>
           </AuthProvider>
         </ToastProvider>

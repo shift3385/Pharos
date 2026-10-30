@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { FieldMessage } from "@shared/ui/FormField";
@@ -10,9 +10,8 @@ import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
-import { recordProjectAccess } from "../model/lastAccess";
 import type { ExportProgress } from "../export/exportAll";
-import { ProjectDetail } from "./ProjectDetail";
+import { projectPath } from "../model/sections";
 import { ExportProgressModal, type ExportPhase } from "./ExportProgressModal";
 import "./Projects.css";
 
@@ -25,20 +24,23 @@ interface ProgressState {
   percent: number;
 }
 
-type View = { kind: "list" } | { kind: "detail"; id: string };
-
+/** Route `/projects`. Old links may still carry `?open=<id>`: a project now
+ *  has its own URL (ADR-0029), so they redirect there without loading the list. */
 export function ProjectsPage() {
+  const [params] = useSearchParams();
+  const openParam = params.get("open");
+  if (openParam) return <Navigate to={projectPath(openParam)} replace />;
+  return <ProjectList />;
+}
+
+function ProjectList() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const toast = useToast();
   const ownerId = user?.id ?? "";
-  // Home links here with ?open=<id> (continue a project) or ?new=1 (start one).
+  const navigate = useNavigate();
+  // Home links here with ?new=1 to start one.
   const [params, setParams] = useSearchParams();
-  const [view, setView] = useState<View>(() => {
-    const id = params.get("open");
-    if (id) recordProjectAccess(ownerId, id);
-    return id ? { kind: "detail", id } : { kind: "list" };
-  });
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
@@ -118,13 +120,12 @@ export function ProjectsPage() {
 
   // The link did its job; drop it so a reload or "back" shows the list.
   useEffect(() => {
-    if (params.has("open") || params.has("new")) setParams({}, { replace: true });
+    if (params.has("new")) setParams({}, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function openProject(id: string) {
-    recordProjectAccess(ownerId, id);
-    setView({ kind: "detail", id });
+    navigate(projectPath(id));
   }
 
   async function refresh() {
@@ -159,12 +160,6 @@ export function ProjectsPage() {
   async function remove(id: string) {
     await projectApi.remove(id, ownerId);
     void refresh();
-  }
-
-  if (view.kind === "detail") {
-    return (
-      <ProjectDetail projectId={view.id} onClose={() => setView({ kind: "list" })} />
-    );
   }
 
   return (

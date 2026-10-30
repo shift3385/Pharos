@@ -19,14 +19,59 @@ export const email = process.env.TEST_USER_EMAIL ?? "smoke@pharos.dev";
 const password = process.env.TEST_USER_PASSWORD ?? "supersecret1";
 
 export const button = (text: string) => $(`button=${text}`);
+/** The version at the sidebar foot. It is in the DOM in every layout but only
+ *  visible in the full sidebar (≥ 1280 px): read its text, do not wait for it
+ *  to be displayed. The specs run at 1440 px (wdio.conf), but a spec may
+ *  narrow the window to the icon strip. */
 export const versionBadge = () => $('[data-testid="app-version"]');
 export const projectRow = (name: string) => $(`li.tp__item*=${name}`);
+/**
+ * Sets the window to `width`×`height` and waits until Pharos reports the
+ * expected view on its root container (data-viewport). The specs start on the
+ * desktop layout (1440 px, full sidebar) even on a CI runner with a narrower
+ * screen; a size set too early (while the app window is still being created)
+ * may not hold, so each spec sets it itself.
+ */
+export async function setAppWindow(
+  width = 1440,
+  height = 900,
+  view: "desktop" | "tablet" | "mobile" = "desktop",
+) {
+  const measure = () =>
+    browser.execute(() => ({
+      view: document.querySelector<HTMLElement>(".viewport-root")?.dataset.viewport,
+      root: document.querySelector<HTMLElement>(".viewport-root")?.clientWidth,
+      inner: window.innerWidth,
+    }));
+  let last: Awaited<ReturnType<typeof measure>> | undefined;
+  try {
+    // The first resize of a run can be lost while the app window is still
+    // appearing (a cold WebView on CI): re-send it until the view matches.
+    await browser.waitUntil(
+      async () => {
+        await browser.setWindowSize(width, height);
+        last = await measure();
+        return last.view === view;
+      },
+      { timeout: 30_000, interval: 1_000 },
+    );
+  } catch {
+    const size = await browser.getWindowSize().catch(() => undefined);
+    throw new Error(
+      `the app did not reach the ${view} view at ${width}×${height}: ` +
+        `window ${JSON.stringify(size)}, measured ${JSON.stringify(last)}`,
+    );
+  }
+}
+
+/** The avatar that opens the user menu; it exists only inside the app shell. */
+export const userMenuTrigger = () => $('[data-testid="user-menu-trigger"]');
 
 export async function signIn() {
   await $("#email").setValue(email);
   await $("#password").setValue(password);
   await button(es.auth.login).click();
-  await expect(versionBadge()).toBeDisplayed();
+  await expect(userMenuTrigger()).toBeDisplayed();
 }
 
 export async function openProjects() {
@@ -50,7 +95,10 @@ export async function createProject(name: string) {
 export async function syncNow() {
   const done = es.sync.doneToast.split("{{")[0];
   const failed = es.sync.failed;
-  await button(es.sync.now).click();
+  // Full sidebar: the «Sincronizar ahora» button; icon strip: the sync dot.
+  const full = button(es.sync.now);
+  if (await full.isDisplayed()) await full.click();
+  else await $('[data-testid="sync-compact"]').click();
   let outcome = "";
   await browser.waitUntil(
     async () => {
@@ -73,7 +121,9 @@ export async function syncNow() {
 /** Projects the specs create start with this, so leftovers are recognisable. */
 export const TEST_PROJECT_PREFIX = "E2E ";
 
+/** «Cerrar sesión» lives in the user menu (SPEC §7). */
 export async function signOut() {
+  await userMenuTrigger().click();
   await button(es.auth.logout).click();
   await expect(button(es.auth.login)).toBeDisplayed();
 }
@@ -84,13 +134,15 @@ export async function signOut() {
  */
 export async function ensureSignedOut() {
   await $("body").waitForExist();
+  // Every spec (and the smoke after its restart) starts on the desktop layout.
+  await setAppWindow();
   await browser.waitUntil(
     async () =>
       (await button(es.auth.login).isExisting()) ||
-      (await button(es.auth.logout).isExisting()),
+      (await userMenuTrigger().isExisting()),
     { timeoutMsg: "neither the sign-in screen nor the app shell appeared" },
   );
-  if (await button(es.auth.logout).isExisting()) await signOut();
+  if (await userMenuTrigger().isExisting()) await signOut();
 }
 
 /** Titles of the projects whose name starts with `TEST_PROJECT_PREFIX`. */
@@ -126,6 +178,6 @@ export async function cleanUp() {
     }
     if (names.length > 0) await syncNow();
   } finally {
-    if (await button(es.auth.logout).isExisting()) await signOut();
+    if (await userMenuTrigger().isExisting()) await signOut();
   }
 }

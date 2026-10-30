@@ -14,6 +14,10 @@ beforeEach(async () => {
   await i18n.changeLanguage("en");
 });
 
+// axe over the full editor is slow under a loaded CI runner: an explicit
+// timeout keeps these from flaking at the 5 s default.
+const AXE_TIMEOUT = 15_000;
+
 describe("case editor", () => {
   it("the level picker and the editor pass axe", async () => {
     renderWithProviders(
@@ -25,7 +29,7 @@ describe("case editor", () => {
     );
     await screen.findByRole("textbox", { name: /Title/ });
     await expectNoAxeViolations();
-  });
+  }, AXE_TIMEOUT);
 
   it("steps have names and keyboard-reorder instructions", async () => {
     renderWithProviders(
@@ -44,7 +48,7 @@ describe("case editor", () => {
       /Duplicate row/,
     );
     await expectNoAxeViolations();
-  });
+  }, AXE_TIMEOUT);
 
   it("Examples cells are named by column and row; repeats are listed", async () => {
     renderWithProviders(
@@ -65,5 +69,5 @@ describe("case editor", () => {
       screen.getByRole("textbox", { name: "Column 2" }),
     ).toHaveAccessibleDescription(/Duplicate row/);
     await expectNoAxeViolations();
-  });
+  }, AXE_TIMEOUT);
 });

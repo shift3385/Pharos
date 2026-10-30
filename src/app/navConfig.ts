@@ -1,24 +1,59 @@
+import {
+  CircleUser,
+  FileText,
+  Folder,
+  GitFork,
+  LayoutDashboard,
+  ListChecks,
+  Settings2,
+  SlidersHorizontal,
+  SquareKanban,
+  type LucideIcon,
+} from "lucide-react";
+import type { ProjectSection } from "@modules/projects";
+
 /**
- * Navigation model for the app shell. Each entry maps to a domain module
- * section. `phase` is the implementation phase where the section gets real
- * content (spec §16); it drives the "coming in phase N" badge on empty pages.
+ * Navigation model of the app shell (SPEC §7). Labels come from i18n:
+ * `nav.<id>` (full) and `nav.short.<id>` (icon strip and bottom bar).
  */
 export interface NavItem {
-  /** i18n key under `nav.*` and test id suffix. */
+  /** i18n key suffix and test id suffix (`nav-<id>`). */
   id: string;
   path: string;
-  /** Decorative glyph shown in the sidebar. */
-  icon: string;
-  phase?: number;
+  icon: LucideIcon;
+  /** Other routes that keep this entry marked as current. */
+  also?: string[];
 }
 
-// The test plan and test cases live inside a project (spec §5.1), so they are no
-// longer top-level sidebar entries — you reach them by opening a project.
-export const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", path: "/", icon: "⌂" },
-  { id: "projects", path: "/projects", icon: "◫", phase: 3 },
-  { id: "templates", path: "/templates", icon: "❏", phase: 6 },
-  { id: "ai", path: "/ai", icon: "✦", phase: 7 },
-  { id: "admin", path: "/admin", icon: "⚙", phase: 9 },
-  { id: "profile", path: "/profile", icon: "◉" },
+export const HOME: NavItem = { id: "dashboard", path: "/", icon: LayoutDashboard };
+export const PROJECTS: NavItem = { id: "projects", path: "/projects", icon: Folder };
+/** Templates and the AI engine live under Administration (SPEC §7); their
+ *  routes stay until V4 moves them into its tabs. */
+export const ADMIN: NavItem = {
+  id: "admin",
+  path: "/admin",
+  icon: Settings2,
+  also: ["/templates", "/ai"],
+};
+export const PROFILE: NavItem = { id: "profile", path: "/profile", icon: CircleUser };
+
+/** Sidebar: Inicio and Proyectos on top, Administración under «Configuración». */
+export const MAIN_NAV: NavItem[] = [HOME, PROJECTS];
+/** Mobile bottom bar (SPEC §2): Inicio, Proyectos, Admin, Perfil. */
+export const BOTTOM_NAV: NavItem[] = [HOME, PROJECTS, ADMIN, PROFILE];
+
+/** The «Proyecto activo» group, shown only inside a project. */
+export const PROJECT_NAV: { section: ProjectSection; icon: LucideIcon }[] = [
+  { section: "plan", icon: FileText },
+  { section: "cases", icon: ListChecks },
+  { section: "planner", icon: SquareKanban },
+  { section: "traceability", icon: GitFork },
+  { section: "settings", icon: SlidersHorizontal },
 ];
+
+/** Whether `pathname` belongs to a navigation entry. */
+export function isCurrent(item: NavItem, pathname: string): boolean {
+  const owns = (path: string) =>
+    path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`);
+  return owns(item.path) || (item.also ?? []).some(owns);
+}

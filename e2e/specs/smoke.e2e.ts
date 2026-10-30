@@ -13,6 +13,7 @@ import {
   pkg,
   projectRow,
   signIn,
+  userMenuTrigger,
   versionBadge,
 } from "../support";
 
@@ -29,7 +30,8 @@ describe("Pharos desktop smoke (BASE-14)", () => {
 
   it("signs in with the seeded test account", async () => {
     await signIn();
-    await expect(versionBadge()).toHaveText(`v${pkg.version}`);
+    // In the DOM in every layout, visible only in the full sidebar.
+    expect(await versionBadge().getProperty("textContent")).toBe(`v${pkg.version}`);
   });
 
   it("creates a project", async () => {
@@ -38,7 +40,7 @@ describe("Pharos desktop smoke (BASE-14)", () => {
 
   it("keeps the session and the project after a restart", async () => {
     await browser.reloadSession(); // closes Pharos and starts it again
-    await expect(versionBadge()).toBeDisplayed(); // signed in from the cached session
+    await expect(userMenuTrigger()).toBeDisplayed(); // signed in from the cached session
     await openProjects();
     await expect(projectRow(projectName)).toBeDisplayed();
   });

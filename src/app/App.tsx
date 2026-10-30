@@ -6,7 +6,7 @@ import { AppSplash } from "./AppSplash";
 import { DbErrorScreen } from "./DbErrorScreen";
 import { useDbOpenError } from "./dbStatus";
 import { DashboardPage } from "./dashboard/DashboardPage";
-import { ProjectsPage } from "@modules/projects";
+import { ProjectDetailPage, ProjectsPage } from "@modules/projects";
 import { TemplatesPage } from "@modules/templates";
 import { AiPage } from "@modules/ai";
 import { AdminPage } from "@modules/admin";
@@ -29,6 +29,8 @@ export function App() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          {/* A project and its section live in the URL (ADR-0029). */}
+          <Route path="/projects/:projectId/:section?" element={<ProjectDetailPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/ai" element={<AiPage />} />
           <Route path="/admin" element={<AdminPage />} />

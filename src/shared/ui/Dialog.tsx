@@ -1,4 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import "./ConfirmDialog.css";
 
 const FOCUSABLE = [
@@ -10,15 +19,20 @@ const FOCUSABLE = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
-/** Open dialogs in opening order. The top one, which handles Tab and Escape,
- *  is the latest that has no open dialog nested inside it (a child's effect
- *  runs before its parent's, so nesting cannot rely on order alone). */
-const stack: HTMLElement[] = [];
+/** Open dialogs in opening order, with their nesting depth in the React
+ *  tree. Dialogs are portaled, so a nested one is no longer inside its parent
+ *  in the DOM, and a child's effect runs before its parent's: the top one,
+ *  which handles Tab and Escape, is the deepest, and among equals the latest. */
+const stack: { el: HTMLElement; depth: number }[] = [];
+const DialogDepth = createContext(0);
 
 function isTop(el: HTMLElement): boolean {
-  const open = stack.filter((d) => !d.querySelector("[aria-modal='true']"));
-  return open[open.length - 1] === el;
+  const deepest = Math.max(...stack.map((d) => d.depth));
+  const top = stack.filter((d) => d.depth === deepest);
+  return top[top.length - 1]?.el === el;
 }
+
+
 
 function focusables(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
@@ -36,8 +50,13 @@ function focusables(root: HTMLElement): HTMLElement[] {
  *   not `dismissable` (e.g. while it saves) or has no `onClose`. A form
  *   passes `confirmClose` so typed data is never thrown away without asking.
  * - It is named by its title (`labelledBy`) or by `label`.
+ * - It is portaled to `<body>`, not rendered where it is declared, so a
+ *   dialog opened from a bar or the content is never clipped, stacked under
+ *   it or styled by it (e.g. the navy bar's focus colour). `<html>` carries
+ *   `data-viewport`, so view-specific styles still apply.
  */
 export function Dialog({
+  id,
   labelledBy,
   label,
   describedBy,
@@ -50,6 +69,8 @@ export function Dialog({
   overlayClassName = "cd-overlay",
   children,
 }: {
+  /** Id of the dialog element (e.g. for a trigger's `aria-controls`). */
+  id?: string;
   labelledBy?: string;
   label?: string;
   describedBy?: string;
@@ -65,6 +86,7 @@ export function Dialog({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const depth = useContext(DialogDepth) + 1;
   const closeRef = useRef<(() => void) | undefined>(undefined);
   closeRef.current = dismissable ? onClose : undefined;
   const confirmRef = useRef(confirmClose);
@@ -86,7 +108,8 @@ export function Dialog({
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    stack.push(root);
+    const entry = { el: root, depth };
+    stack.push(entry);
 
     if (!root.contains(document.activeElement)) {
       const target = initialFocus?.current ?? focusables(root)[0] ?? root;
@@ -124,7 +147,7 @@ export function Dialog({
 
     return () => {
       document.removeEventListener("keydown", onKey);
-      stack.splice(stack.indexOf(root), 1);
+      stack.splice(stack.indexOf(entry), 1);
       // The opener may be gone (e.g. the row the dialog just deleted): then the
       // main content takes the focus rather than leaving it on <body>.
       if (opener?.isConnected) opener.focus();
@@ -134,7 +157,7 @@ export function Dialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
+  return createPortal(
     <div
       className={overlayClassName}
       onMouseDown={(e) => {
@@ -143,6 +166,7 @@ export function Dialog({
     >
       <div
         ref={ref}
+        id={id}
         className={className}
         role={role}
         aria-modal="true"
@@ -151,8 +175,9 @@ export function Dialog({
         aria-describedby={describedBy}
         tabIndex={-1}
       >
-        {children}
+        <DialogDepth.Provider value={depth}>{children}</DialogDepth.Provider>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
