@@ -40,6 +40,21 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
   página»; filtros rápidos con contador; menús de filtro con varias opciones; pastillas de
   estado y banderas de prioridad con los colores del diseño; opciones de menú con una línea
   que explica cada una.
+- **Rediseño de Login, Inicio y Perfil (RED-V1):**
+  - **Login:** foto del faro con el lema y tres puntos de la marca junto al formulario; en el
+    móvil, la foto arriba y el formulario debajo, sin scroll al iniciar sesión.
+    «Regístrate» bajo el título, mostrar u ocultar la contraseña, «Continuar con Google»
+    deshabilitado («Próximamente») y el idioma al pie.
+  - **Inicio:** indicadores que llevan a su sitio (proyectos abiertos, pruebas pendientes,
+    defectos abiertos del Planificador), periodo de los datos, «Ejecución por proyecto»,
+    «Criterios de salida» del plan con selector de proyecto (búsqueda y orden por cierre),
+    «Ejecuciones diarias» y «Próximas pruebas» por prioridad, que abren el caso. En el móvil,
+    tres pestañas (Resumen, Ejecución, Pruebas). Lo que depende de ejecuciones (tasa de
+    éxito, ejecuciones por día, si se cumple cada criterio, comparar periodos) lo dice en
+    lugar de mostrar cifras hasta 0.2.0.
+  - **Perfil:** tarjeta con tus datos y estado de sincronización, y Preferencias (idioma y
+    tema).
+  - Controles comunes nuevos: interruptor, selector segmentado y pestañas con burbujas.
 
 ### Cambiado
 
@@ -50,6 +65,9 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 - **Cerrar sesión e Idioma** pasan al menú del usuario. El idioma ya no está en la barra
   superior.
 - La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
+- **Clave de recuperación:** pasa de Perfil a Administración › Seguridad.
+- El Inicio ya no lista los proyectos con buscador: están en Proyectos, y el Inicio
+  enlaza a cada uno desde «Ejecución por proyecto».
 
 ## [0.1.0-beta.1] - 2026-10-29
 

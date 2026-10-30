@@ -91,14 +91,40 @@ memory) and no history, and a desktop-only action says so in a toast.
   attachments of cards in its outbox, and the rest only if the old caches were
   its own (`pharos.sync.cacheOwner`, or none, as before FIX-07).
 
-**Home (UX-08, spec §5).** `app/dashboard` shows two actions (start a new
-project, continue one) and the user's projects with search, last access, plan
-status and progress, from `projectOverview` (`projects`), which reads the plan
-status and case counts through the `test-plan` and `test-cases` public APIs.
-Progress is approved cases over non-obsolete cases until the run model (0.2.0)
-gives execution progress. The last access is device-local metadata kept in
-`localStorage` per user (`pharos.projects.lastAccess.<userId>`): project ids
-and timestamps only, outside the database and sync on purpose.
+**Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
+the redesign. `model/loadHome.ts` reads, per project and in the Projects order
+(`projectOverview`, last access first), only public read APIs:
+`projectApi.list` (case-id prefix → key), `projectLiveCases` (`test-cases`),
+`projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
+closure criteria) and `projectDefects` (`planner`: open = not `done`).
+`model/homeData.ts` aggregates it as pure functions (KPIs, the queue by
+priority, the exit-criteria choices and default, the period days and which day
+labels show). The widgets — `KpiCards`, `PeriodSelector`,
+`ExecutionByProject`, `ExitCriteriaCard`, `DailyExecutionsChart`,
+`UpcomingTests` — never invent run data: until the run model (0.2.0, RED-W6)
+every case is "not run", and the pass rate, the daily runs and the criteria
+show an explicit empty state ([ADR-0028](adr/0028-rediseno-de-la-interfaz.md)).
+On mobile the page is three `Tabs`. The chosen period is a per-device
+convenience in `localStorage` (`pharos.home.period`). The last access is
+device-local metadata kept in `localStorage` per user
+(`pharos.projects.lastAccess.<userId>`): project ids and timestamps only,
+outside the database and sync on purpose.
+
+**Login and Perfil (RED-V1).** `modules/auth/ui/AuthScreen` is the redesigned
+login: from 600 px a form column beside `assets/login-faro.jpg` (the
+prototype's 1024 px photo; production should ship a ≥ 2400 px version); below
+600 px the photo is a header and the form a sheet sized with `cqh` units on a
+`container-type: size` root, so the login never scrolls (the longer sign-up
+form scrolls inside the sheet). The Google button is a disabled placeholder
+with a monochrome inline mark (Lucide has no brand icons). `modules/profile`
+shows identity, name and Preferencias (`SegmentedControl` for language and
+theme); `RecoveryKeySection` is exported for Administración › Seguridad.
+
+**Shared controls (RED-V1, used by V3/V4).** `@shared/ui/Switch` (role switch),
+`@shared/ui/SegmentedControl` (radiogroup, roving tabindex, per-option
+disabled, sizes sm/md/lg) and `@shared/ui/Tabs` (WAI-ARIA tabs, segmented or
+underline, count bubbles; panels through `TabPanel` or
+`tabPanelProps` from `@shared/ui/tabPanel`).
 
 **Traceability (0.1.0).** `traceability` owns requirements (`REQ-xxx`, stable
 keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`,

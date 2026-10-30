@@ -113,3 +113,39 @@
   menú antes de cerrar sesión.
 - `lucide-react` entra en las dependencias de producción y pasa la comprobación
   de licencias (ISC).
+
+## Enmienda 2026-10-30 · Login, Inicio y Perfil (RED-V1)
+
+- **Estados vacíos honestos hasta 0.2.0.** Las piezas del Inicio que dependen de
+  resultados de ejecución (RED-W6) tienen ya su maquetación final, pero no
+  enseñan cifras inventadas:
+  - «Tasa de éxito» es una tarjeta sin enlace, deshabilitada, con el motivo en
+    su `title`;
+  - «Ejecución por proyecto» muestra 0 ejecutados de N y la barra entera «No
+    ejecutado»;
+  - «Ejecuciones diarias» pinta la raya gris de «sin datos» en cada día;
+  - cada criterio de salida dice «Sin datos», y los filtros «En riesgo» y
+    «Cumplen» están deshabilitados;
+  - los ciclos, el rango personalizado y «Comparar» (RED-W4) aparecen
+    deshabilitados con su motivo.
+  Lo que ya existe se muestra real: proyectos, casos vivos, fecha de cierre y
+  criterios del plan, y defectos abiertos del Planificador.
+- **Foto del login.** `src/modules/auth/ui/assets/login-faro.jpg` es la del
+  prototipo (1024 × 572). En producción debe usarse la misma imagen a ≥ 2400 px.
+- **Login sin scroll en el móvil.** Por debajo de 600 px el login mide su alto
+  (`container-type: size`, unidades `cqh`) y nunca hace scroll. **Excepción:**
+  el formulario de registro (cinco campos) puede hacer scroll dentro de su hoja;
+  la cabecera con la foto se queda en su alto mínimo.
+- **Google.** El botón «Continuar con Google» es un marcador deshabilitado. Su
+  logo es el único glifo que no es de Lucide (Lucide no trae marcas): un SVG
+  monocromo en `currentColor`. Al activar el inicio con Google se usará el
+  logo oficial según su guía de marca.
+- **Selector de idioma en el login móvil.** El prototipo móvil no lo tiene; sin
+  él no se podría cambiar de idioma antes de entrar, así que va en la cabecera
+  de la foto.
+- **Controles comunes nuevos** en `src/shared/ui`: `Switch`,
+  `SegmentedControl` y `Tabs` (V3 y V4 los usan). Dentro de un menú,
+  «Comparar con el periodo anterior» es una opción con el interruptor dibujado:
+  un `role="switch"` no puede vivir en un `role="menu"`.
+- **Clave de recuperación.** Sale de Perfil hacia Administración › Seguridad
+  (RED-V4); `RecoveryKeySection` se exporta desde `@modules/profile`.
