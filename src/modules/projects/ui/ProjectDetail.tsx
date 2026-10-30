@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
@@ -11,25 +12,31 @@ import { PlannerBoard, type LinkableCase } from "@modules/planner";
 import { TraceabilityPage, requirementApi } from "@modules/traceability";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
+import { recordProjectAccess } from "../model/lastAccess";
+import {
+  isProjectSection,
+  projectPath,
+  type ProjectSection,
+} from "../model/sections";
 import "./Projects.css";
 
-type Tab = "plan" | "cases" | "traceability" | "planner" | "settings";
-const TABS: Tab[] = ["plan", "cases", "traceability", "planner", "settings"];
+/** Route `/projects/:projectId/:section` (ADR-0029). A missing or unknown
+ *  section opens the plan. */
+export function ProjectDetailPage() {
+  const { projectId, section } = useParams();
+  if (!projectId) return <Navigate to="/projects" replace />;
+  if (!isProjectSection(section)) return <Navigate to={projectPath(projectId)} replace />;
+  return <ProjectDetail projectId={projectId} tab={section} />;
+}
 
 /** A project's workspace: its test plan, its test cases and its settings, all
- *  scoped to this project (spec §5.1 — the project is the container). */
-export function ProjectDetail({
-  projectId,
-  onClose,
-}: {
-  projectId: string;
-  onClose: () => void;
-}) {
+ *  scoped to this project (spec §5.1 — the project is the container). The open
+ *  section comes from the URL. */
+export function ProjectDetail({ projectId, tab }: { projectId: string; tab: ProjectSection }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const ownerId = user?.id ?? "";
   const [project, setProject] = useState<Project | null>(null);
-  const [tab, setTab] = useState<Tab>("plan");
   // Cross-module options, loaded by this composing module so test-cases and
   // planner never depend on traceability (or on each other).
   const [requirements, setRequirements] = useState<RequirementOption[]>([]);
@@ -38,6 +45,9 @@ export function ProjectDetail({
   async function refresh() {
     setProject(await projectApi.get(projectId, ownerId));
   }
+  useEffect(() => {
+    recordProjectAccess(ownerId, projectId);
+  }, [ownerId, projectId]);
   useEffect(() => {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,30 +70,15 @@ export function ProjectDetail({
   return (
     <section className="pj-detail">
       <header className="tc-editor__top">
-        <button type="button" className="tp-editor__back" onClick={onClose}>
+        <Link to="/projects" className="tp-editor__back">
           ← {t("projects.back")}
-        </button>
+        </Link>
         <h1>{project.name}</h1>
         <span className="tc-editor__id">
           {project.caseIdPrefix}
           {"1".padStart(project.caseIdDigits, "0")}
         </span>
       </header>
-
-      <nav className="tc-tabs" role="tablist">
-        {TABS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            className="tc-tabs__tab"
-            data-active={tab === id}
-            onClick={() => setTab(id)}
-          >
-            {t(`projects.tab.${id}`)}
-          </button>
-        ))}
-      </nav>
 
       {tab === "plan" && <TestPlanPage projectId={projectId} />}
       {tab === "cases" && (

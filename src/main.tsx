@@ -6,6 +6,7 @@ import { HashRouter } from "react-router";
 import "@shared/fonts";
 import "@shared/theme/tokens.css";
 import "@shared/theme/base.css";
+import "@shared/theme/typography.css";
 import "@shared/i18n";
 
 import { installGlobalErrorHandlers } from "@shared/diagnostics";

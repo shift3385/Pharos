@@ -28,7 +28,10 @@ describe("navigation", () => {
       screen.getByRole("heading", { name: "Proyectos" }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByTestId("nav-templates"));
+    // Templates live under Administration (SPEC §7), not in the sidebar.
+    expect(screen.queryByTestId("nav-templates")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("nav-admin"));
+    await user.click(screen.getByTestId("admin-section-templates"));
     expect(
       screen.getByRole("heading", { name: "Plantillas" }),
     ).toBeInTheDocument();

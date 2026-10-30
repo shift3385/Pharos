@@ -21,6 +21,8 @@ const password = process.env.TEST_USER_PASSWORD ?? "supersecret1";
 export const button = (text: string) => $(`button=${text}`);
 export const versionBadge = () => $('[data-testid="app-version"]');
 export const projectRow = (name: string) => $(`li.tp__item*=${name}`);
+/** The avatar that opens the user menu; it exists only inside the app shell. */
+export const userMenuTrigger = () => $('[data-testid="user-menu-trigger"]');
 
 export async function signIn() {
   await $("#email").setValue(email);
@@ -73,7 +75,9 @@ export async function syncNow() {
 /** Projects the specs create start with this, so leftovers are recognisable. */
 export const TEST_PROJECT_PREFIX = "E2E ";
 
+/** «Cerrar sesión» lives in the user menu (SPEC §7). */
 export async function signOut() {
+  await userMenuTrigger().click();
   await button(es.auth.logout).click();
   await expect(button(es.auth.login)).toBeDisplayed();
 }
@@ -87,10 +91,10 @@ export async function ensureSignedOut() {
   await browser.waitUntil(
     async () =>
       (await button(es.auth.login).isExisting()) ||
-      (await button(es.auth.logout).isExisting()),
+      (await userMenuTrigger().isExisting()),
     { timeoutMsg: "neither the sign-in screen nor the app shell appeared" },
   );
-  if (await button(es.auth.logout).isExisting()) await signOut();
+  if (await userMenuTrigger().isExisting()) await signOut();
 }
 
 /** Titles of the projects whose name starts with `TEST_PROJECT_PREFIX`. */
@@ -126,6 +130,6 @@ export async function cleanUp() {
     }
     if (names.length > 0) await syncNow();
   } finally {
-    if (await button(es.auth.logout).isExisting()) await signOut();
+    if (await userMenuTrigger().isExisting()) await signOut();
   }
 }

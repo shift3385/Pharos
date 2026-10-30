@@ -34,8 +34,8 @@ vi.mock("@modules/projects", async (importOriginal) => ({
 }));
 
 function ProjectsProbe() {
-  const { search } = useLocation();
-  return <p data-testid="projects-route">{search}</p>;
+  const { pathname, search } = useLocation();
+  return <p data-testid="projects-route">{pathname + search}</p>;
 }
 
 function renderHome() {
@@ -43,6 +43,7 @@ function renderHome() {
     <Routes>
       <Route path="/" element={<DashboardPage />} />
       <Route path="/projects" element={<ProjectsProbe />} />
+      <Route path="/projects/:projectId/:section" element={<ProjectsProbe />} />
     </Routes>,
   );
 }
@@ -89,12 +90,12 @@ describe("Home (UX-08, spec §5)", () => {
     );
   });
 
-  it("opens a project and starts a new one through the projects page", async () => {
+  it("opens a project at its own route and starts a new one through the projects page", async () => {
     const user = userEvent.setup();
     renderHome();
     await user.click(await screen.findByRole("button", { name: /Checkout/ }));
     expect(screen.getByTestId("projects-route")).toHaveTextContent(
-      "?open=p-checkout",
+      "/projects/p-checkout/plan",
     );
   });
 

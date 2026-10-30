@@ -29,7 +29,8 @@
     "cancel": "Cancel",
     "noData": "No data",
     "edit": "Edit",
-    "discardConfirm": "You have unsaved changes. Discard them?"
+    "discardConfirm": "You have unsaved changes. Discard them?",
+    "close": "Close"
   },
   "templates": {
     "title": "Templates",
@@ -350,7 +351,20 @@
     "templates": "Templates",
     "ai": "AI engine",
     "admin": "Administration",
-    "profile": "Profile"
+    "profile": "Profile",
+    "short": {
+      "dashboard": "Home",
+      "projects": "Projects",
+      "admin": "Admin",
+      "profile": "Profile",
+      "project": {
+        "plan": "Plan",
+        "cases": "Cases",
+        "planner": "Board",
+        "traceability": "Trace",
+        "settings": "Project"
+      }
+    }
   },
   "projects": {
     "title": "Projects",
@@ -379,7 +393,7 @@
     "tab": {
       "plan": "Test plan",
       "cases": "Test cases",
-      "settings": "Settings",
+      "settings": "Project settings",
       "planner": "Planner",
       "traceability": "Traceability"
     },
@@ -1039,5 +1053,41 @@
     "duplicateKey": "That ID already exists.",
     "summary": "Cannot save: check {{count}} field(s).",
     "savedWithWarnings": "Saved with {{count}} warning(s) to review."
+  },
+  "dialog": {
+    "typeToConfirm": "Type «{{text}}» to confirm"
+  },
+  "shell": {
+    "collapseMenu": "Collapse menu",
+    "expandMenu": "Expand menu",
+    "breadcrumbs": "Breadcrumb",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Search cases, requirements…",
+    "searchShortcut": "Ctrl K",
+    "searchSoon": "Global search across cases, requirements and projects is coming in a future version.",
+    "searchClose": "Close search",
+    "searchClear": "Clear search",
+    "notifications": "Notifications",
+    "notificationsSoon": "Notifications are coming in a future version.",
+    "themeToDark": "Switch to dark theme",
+    "themeToLight": "Switch to light theme",
+    "userMenu": "User menu for {{name}}",
+    "myProfile": "My profile",
+    "language": "Language",
+    "activeProject": "Active project",
+    "configuration": "Settings",
+    "switchProject": "Switch project (current: {{name}})",
+    "switchProjectMenu": "Switch project",
+    "searchProjects": "Search projects…",
+    "seeAllProjects": "See all projects",
+    "noProjects": "No project matches.",
+    "back": "Back to Projects",
+    "projectSections": "Project sections",
+    "adminSections": "Administration sections",
+    "adminSection": {
+      "ai": "AI engine",
+      "templates": "Templates",
+      "admin": "General"
+    }
   }
 }

@@ -7,6 +7,40 @@ están en [`docs/VERSIONING.md`](docs/VERSIONING.md).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Rediseño, fundamentos (RED-F1, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md)):**
+  - El paquete del rediseño está en [`docs/rediseno/`](docs/rediseno/README.md). Su `SPEC.md`
+    manda.
+  - Navegación nueva:
+    - Menú lateral de 248 px que se contrae a una franja de iconos de 84 px. Pharos recuerda la
+      elección.
+    - Barra superior con migas, búsqueda (Ctrl K), notificaciones y cambio rápido de tema.
+    - En el móvil, barra superior navy y barra inferior (Inicio, Proyectos, Admin, Perfil).
+    - Menú del usuario con Mi perfil, Administración, Idioma y Cerrar sesión.
+  - La búsqueda y las notificaciones avisan de que llegan en una próxima versión.
+  - Cada sección del proyecto tiene su propia dirección (`#/projects/<id>/<sección>`,
+    [ADR-0029](docs/adr/0029-secciones-del-proyecto-en-la-url.md)). «Atrás» y recargar
+    conservan el proyecto y la sección.
+  - Dentro de un proyecto, el grupo «Proyecto activo» cambia de proyecto y de sección.
+  - Desplegables comunes: se cierran con clic fuera, scroll fuera o Escape, se recolocan
+    para no salirse de la pantalla y se recorren con las flechas. En el móvil son hojas
+    desde abajo.
+  - Confirmación destructiva que solo se cierra con «Cancelar» y puede pedir escribir un
+    texto.
+  - Iconos de línea (Lucide), escala tipográfica con partición de palabras por sílabas,
+    sin partir correos, rutas ni IDs, y respeto de «reducir movimiento».
+
+### Cambiado
+
+- **Logo nuevo:** un faro con anillo abierto y haces de luz. Tiene versión compacta para
+  tamaños pequeños y cambia también en el favicon y en los iconos de la app y del
+  instalador.
+- **Plantillas y Motor de IA** pasan a Administración. Ya no están en el menú lateral.
+- **Cerrar sesión e Idioma** pasan al menú del usuario. El idioma ya no está en la barra
+  superior.
+- La pestaña de ajustes del proyecto se llama «Ajustes del proyecto».
+
 ## [0.1.0-beta.1] - 2026-10-29
 
 Primera beta de 0.1.0. Cierra las compuertas A y B de la línea base y todo el

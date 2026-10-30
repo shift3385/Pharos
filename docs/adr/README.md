@@ -34,6 +34,8 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0025](0025-carpeta-descarga-y-ultimo-acceso.md)   | Carpeta de descarga escrita desde Rust y último acceso local                         | Aceptado | 2026-10-29 |
 | [0026](0026-contratos-generados.md)                | Contratos TS ↔ Rust ↔ servidor generados con `ts-rs` y fixtures de sync compartidas  | Aceptado | 2026-10-29 |
 | [0027](0027-accesibilidad-y-validacion-de-formularios.md) | Accesibilidad WCAG 2.1 AA y validación común de formularios                   | Aceptado | 2026-10-29 |
+| [0028](0028-rediseno-de-la-interfaz.md)            | Rediseño de la interfaz: alcance, olas, SPEC como fuente de verdad y Lucide          | Aceptado | 2026-10-30 |
+| [0029](0029-secciones-del-proyecto-en-la-url.md)   | Secciones del proyecto en la URL (`/projects/:projectId/:section`)                   | Aceptado | 2026-10-30 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

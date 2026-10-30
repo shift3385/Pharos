@@ -1,0 +1,109 @@
+/*
+ * Redesign type scale and text wrapping (SPEC §3). Tokens only.
+ *
+ * Every screen root wraps text the same way: words hyphenate by syllable in
+ * the page language (<html lang>, kept in sync by i18n), long words never
+ * overflow, paragraphs wrap "pretty" and big headings "balance". `cqi` sizes
+ * resolve against the screen root (`container-type: inline-size`).
+ */
+.screen-root {
+  container-type: inline-size;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+.screen-root p {
+  text-wrap: pretty;
+}
+
+.screen-root h1,
+.screen-root h2 {
+  text-wrap: balance;
+}
+
+/* ---- Scale (SPEC §3) ---- */
+.t-page-title {
+  font-size: clamp(22px, 2.4cqi, 28px);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.t-project-title {
+  font-size: clamp(20px, 2.2cqi, 26px);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.t-step-title {
+  font-size: 19px;
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+}
+
+.t-card-title {
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+}
+
+.t-ui {
+  font-size: var(--fs-ui);
+}
+
+.t-meta {
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+
+/* Group label in capitals; 10.5 px is the floor, for the icon strip only. */
+.t-group-label {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.t-kpi {
+  font-size: clamp(20px, 1.9cqi, 24px);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* IDs and code: monospace, never hyphenated. */
+.t-id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-medium);
+  hyphens: manual;
+}
+
+/* Numbers that line up in columns and counters. */
+.u-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Emails, paths, IDs and file names never break (SPEC §3): one line, an
+   ellipsis, and the full value in `title` (see TruncatedText). */
+.u-truncate {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
+/* Form fields: 15 px on mobile so iOS does not zoom on focus (SPEC §3). */
+@media (max-width: 599.98px) {
+  .screen-root input:not([type="checkbox"]):not([type="radio"]),
+  .screen-root select,
+  .screen-root textarea {
+    font-size: 15px;
+  }
+}

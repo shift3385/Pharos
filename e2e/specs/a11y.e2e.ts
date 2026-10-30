@@ -41,6 +41,14 @@ async function violations(): Promise<string[]> {
   });
 }
 
+/** Sets the theme with the top bar's moon/sun switch. */
+async function useTheme(theme: "light" | "dark") {
+  if ((await $("html").getAttribute("data-theme")) !== theme) {
+    await $('[data-testid="theme-toggle"]').click();
+  }
+  await expect($("html")).toHaveAttribute("data-theme", theme);
+}
+
 async function go(nav: string, heading: string) {
   await $(`[data-testid="nav-${nav}"]`).click();
   await expect($(`h1=${heading}`)).toBeDisplayed();
@@ -59,16 +67,16 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   for (const theme of ["light", "dark"] as const) {
     it(`the main screens have no WCAG A/AA violations (${theme} theme)`, async () => {
       if (!(await $('[data-testid="app-version"]').isExisting())) await signIn();
-      const toggle = $(`button[aria-label="${es.theme[theme]}"]`);
-      await toggle.click();
-      await expect($("html")).toHaveAttribute("data-theme", theme);
+      await useTheme(theme);
 
       expect(await violations()).toEqual([]); // home
       await go("projects", es.projects.title);
       expect(await violations()).toEqual([]);
-      await go("templates", es.templates.title);
-      expect(await violations()).toEqual([]);
       await go("admin", es.admin.title);
+      expect(await violations()).toEqual([]);
+      // Templates moved under Administration (SPEC §7).
+      await $('[data-testid="admin-section-templates"]').click();
+      await expect($(`h1=${es.templates.title}`)).toBeDisplayed();
       expect(await violations()).toEqual([]);
       await go("profile", es.profile.title);
       expect(await violations()).toEqual([]);
@@ -104,7 +112,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
     });
     await $(`[data-testid="nav-projects"]`).click();
     await $('[data-testid="nav-dashboard"]').click();
-    await $(`button[aria-label="${es.theme.light}"]`).click().catch(() => {});
+    await useTheme("light").catch(() => {});
     await cleanUp();
   });
 });

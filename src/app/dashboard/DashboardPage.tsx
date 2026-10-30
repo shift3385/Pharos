@@ -6,6 +6,7 @@ import {
   matchesQuery,
   progressPercent,
   projectOverview,
+  projectPath,
   type ProjectOverview,
 } from "@modules/projects";
 import "./DashboardPage.css";
@@ -48,7 +49,7 @@ export function DashboardPage() {
       timeStyle: "short",
     }).format(new Date(iso));
 
-  const open = (id: string) => navigate(`/projects?open=${encodeURIComponent(id)}`);
+  const open = (id: string) => navigate(projectPath(id));
 
   return (
     <section className="home">

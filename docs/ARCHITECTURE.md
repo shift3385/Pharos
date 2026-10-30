@@ -137,7 +137,81 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   color. This keeps additional themes swappable later.
 - Typography: **Inter** (UI/titles) + **JetBrains Mono** (code/Gherkin/IDs),
   self-hosted via `@fontsource` (OFL, no font CDN — the app is offline).
-- Responsive from day 1 (sidebar collapses to an icon rail ≤768px).
+- Icons: **Lucide** (`lucide-react`, ISC), imported one by one (ADR-0028).
+  No Unicode glyphs, CSS masks or inline SVG icons in new code.
+- Logo: `@shared/ui/Logo` (`size`, `surface="light" | "navy"`): the full mark
+  from 28 px, the compact one below. The favicon (`index.html`) and the native
+  icons (`src-tauri/icons/README.md`) are generated from it.
+- Type scale and text wrapping (SPEC §3) in `src/shared/theme/typography.css`:
+  `.screen-root` (the shell's `<main>`) sets `container-type: inline-size`
+  (so `cqi` works), `hyphens: auto` in the `<html lang>` language (kept in
+  sync by i18n), `overflow-wrap` and `text-wrap`. Classes `.t-page-title`,
+  `.t-card-title`, `.t-group-label`, `.t-kpi`, `.t-id`, `.u-num`
+  (tabular numbers) and `.u-truncate` / `TruncatedText` for emails, paths and
+  IDs that must never break.
+- Motion (SPEC §9): 120–220 ms. Under `prefers-reduced-motion: reduce`,
+  `base.css` removes all movement and keeps only ≤ 100 ms opacity fades.
+
+## App shell and navigation (redesign, ADR-0028/0029)
+
+- **Breakpoints** (SPEC §2): < 600 px mobile, 600–1279 px tablet, ≥ 1280 px
+  desktop. `useBreakpoint` (`@shared/ui/useBreakpoint`) reads `matchMedia`
+  synchronously on the first render, so nothing flashes. Only structural
+  differences use it (sidebar or bottom bar, dropdown or bottom sheet); the
+  rest is CSS with the same limits.
+- **Layout** (`src/app/layout/AppShell.tsx`): full window height; the
+  navigation stays put and only `<main>` scrolls. Content is centred, up to
+  1600 px wide.
+  - **Desktop:** `Sidebar` is 248 px, navy 900, and collapses to the 84 px
+    strip. The choice is kept in `localStorage` (`pharos.sidebar.collapsed`).
+  - **Tablet:** always the strip.
+  - **Mobile:** a 56 px navy `MobileTopbar` and a `BottomNav` (Inicio,
+    Proyectos, Admin, Perfil).
+- **Navigation model:** `src/app/navConfig.ts`.
+  - The sidebar shows Inicio and Proyectos, then Administración under
+    «Configuración».
+  - Plantillas and Motor de IA are reached from Administración. Their routes
+    (`/templates`, `/ai`) stay, and `isCurrent` keeps «Administración» marked
+    on them. `AdminSectionNav` links the three pages until V4 replaces it
+    (temporary).
+- **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
+  `projectPath()`. `useActiveProject` (`useMatch`) feeds:
+  - the «Proyecto activo» sidebar group (switcher + 5 sections);
+  - the breadcrumbs;
+  - the mobile header (back + section + project) and the section pills.
+
+  `/projects?open=<id>` redirects there.
+- **Top bar** (`Topbar`, 64 px):
+  - breadcrumbs;
+  - the offline badge and `SyncIndicator`;
+  - search (Ctrl K / ⌘K);
+  - notifications;
+  - the light/dark quick switch (`data-testid="theme-toggle"`).
+
+  Search and notifications open "coming soon" panels until RED-W1/W2.
+- **User menu** (`UserMenu`): Mi perfil, Administración, Idioma and Cerrar
+  sesión (`data-testid="user-menu-trigger"`).
+  - It opens up from the sidebar foot and to the right from the strip.
+  - On mobile it is a bottom sheet that also holds the theme switch and the
+    sync status.
+- **Shared primitives** (`src/shared/ui`, SPEC §6/§10):
+  - `Popover` + `usePopover` (`popoverPosition.ts`):
+    - rendered in a portal with `position: fixed`;
+    - trigger and panel carry `data-pop`;
+    - closes on a click outside, a scroll outside and Escape (the focus returns
+      to the trigger);
+    - flips up when it does not fit below;
+    - `max-height` is the visible room (at least 120 px);
+    - shifts inwards with an 8 px margin;
+    - only one is open at a time.
+  - `Menu` / `MenuItem` / `MenuLabel` / `MenuSeparator`: `role="menu"`,
+    arrows, Home and End.
+  - `BottomSheet` (on top of `Dialog`): handle, title, ✕ and ≥ 46 px options.
+  - `ResponsiveMenu`: a `Menu` from 600 px, a `BottomSheet` below, with the
+    same items.
+  - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
+    Escape or the backdrop). `confirmText` keeps the confirm button disabled
+    until that text is typed.
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
   their `--color-*-text` tone. Field boundaries use `--color-border-input`
   (≥ 3:1). Focus is `--color-focus` (navy on light, amber
@@ -155,7 +229,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   otherwise pose as it). A form passes `confirmClose`, so Escape and the
   backdrop ask before discarding typed changes.
 - **Shell:** a skip link is the first Tab stop and jumps to
-  `<main id="main-content">`; the sidebar is the "Main navigation" landmark.
+  `<main id="main-content">`; the sidebar (or the mobile bottom bar) is the
+  "Main navigation" landmark and the breadcrumbs another `nav`. Icon-only
+  buttons have `aria-label` and `title`; menus move with the arrow keys.
 - **Forms:** rules are pure functions in `@shared/validation` returning an
   `Issue` (`code`, `severity`). `FormField` / `FieldMessage` render them with
   `aria-invalid` (errors only) and `aria-describedby`. `ListField`,

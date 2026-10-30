@@ -64,3 +64,65 @@
   color: var(--color-surface-1);
   background: var(--color-error-text);
 }
+
+.cd__confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* "Type the prefix to confirm" (SPEC §8, ConfirmDialog `confirmText`). */
+.cd__type {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+.cd__type-input {
+  height: 40px;
+  padding: 0 var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+/* Dialog motion (SPEC §9): backdrop fades in 160 ms; the box scales from .98
+   and fades in 180 ms. base.css reduces both to a short fade. */
+.cd-overlay {
+  animation: cd-fade 160ms ease;
+}
+
+.cd {
+  animation: cd-pop 180ms ease;
+}
+
+@keyframes cd-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes cd-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@media (max-width: 599px) {
+  .cd__cancel,
+  .cd__confirm {
+    flex: 1 1 120px;
+    min-width: 0;
+    height: 44px;
+  }
+
+  .cd__type-input {
+    height: 44px;
+    font-size: 15px;
+  }
+}
