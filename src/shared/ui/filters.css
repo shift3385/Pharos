@@ -1,0 +1,120 @@
+/* Quick filters (chips) and filter menu buttons (SPEC §4, §5). Tokens only. */
+
+.chips {
+  display: inline-flex;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.chips__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.chips__chip:hover {
+  color: var(--color-text-primary);
+}
+
+.chips__chip[aria-pressed="true"] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  box-shadow: var(--shadow-1);
+}
+
+.chips__chip[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chips__count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+[data-viewport="mobile"] .chips__chip {
+  height: 36px;
+}
+
+.fmb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: background-color 120ms ease;
+}
+
+.fmb:hover {
+  background: var(--color-surface-2);
+}
+
+.fmb[data-active] {
+  border-color: var(--color-navy-500);
+}
+
+.fmb[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fmb[aria-disabled="true"]:hover {
+  background: var(--color-surface-1);
+}
+
+.fmb__icon,
+.fmb__chevron {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.fmb__count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-radius: var(--radius-pill);
+}
+
+.fmb__menu {
+  width: 280px;
+}
+
+[data-viewport="mobile"] .fmb {
+  height: 44px;
+}
