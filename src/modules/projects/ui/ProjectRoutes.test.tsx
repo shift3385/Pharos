@@ -9,10 +9,15 @@ import { projectApi } from "../api/projectApi";
 import { lastAccessMap } from "../model/lastAccess";
 
 // The sections are other modules' screens: only which one is shown matters here.
-vi.mock("@modules/test-plan", () => ({ TestPlanPage: () => <p>sección plan</p> }));
+vi.mock("@modules/test-plan", () => ({
+  TestPlanPage: () => <p>sección plan</p>,
+  PLAN_SAVED_EVENT: "pharos:plan-saved",
+  projectPlanStatus: async () => "reviewed",
+}));
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
   projectTraceableCases: async () => [],
+  projectCaseCount: async () => 240,
 }));
 vi.mock("@modules/planner", () => ({ PlannerBoard: () => <p>sección planificador</p> }));
 vi.mock("@modules/traceability", () => ({
@@ -68,6 +73,15 @@ describe("project routes (ADR-0029)", () => {
     renderAt("/projects/a");
     expect(await screen.findByText("sección plan")).toBeInTheDocument();
     expect(where()).toBe("/projects/a/plan");
+  });
+
+  it("heads every section with the project, without the old «← Proyectos» bar", async () => {
+    renderAt("/projects/a/settings");
+    expect(await screen.findByRole("heading", { level: 1, name: "Proyecto A" })).toBeInTheDocument();
+    expect(await screen.findByText("Plan revisado")).toBeInTheDocument();
+    expect(screen.getByText("240 casos")).toBeInTheDocument();
+    expect(screen.getByText("0 requisitos")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Proyectos/ })).not.toBeInTheDocument();
   });
 
   it("an unknown section opens the plan", async () => {

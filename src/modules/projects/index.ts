@@ -3,6 +3,8 @@ export { ProjectsPage } from "./ui/ProjectsPage";
 export { projectOverview, progressPercent, matchesQuery } from "./model/overview";
 export type { ProjectOverview } from "./model/overview";
 export { ProjectDetailPage } from "./ui/ProjectDetail";
+export { ProjectHeader } from "./ui/ProjectHeader";
+export type { ProjectHeaderInfo } from "./ui/ProjectHeader";
 export {
   PROJECT_SECTIONS,
   DEFAULT_PROJECT_SECTION,
