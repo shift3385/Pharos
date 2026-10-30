@@ -4,7 +4,7 @@ export {
   FILES_PER_CASE,
   projectCaseFiles,
   projectCaseCount,
-  projectCaseProgress,
+  projectCaseProgress, projectLiveCases,
 } from "./export/batch";
 export { exportCasePdf } from "./export/casePdf";
 export { projectTraceableCases, setCaseRequirementKeys } from "./api/traceLinks";
