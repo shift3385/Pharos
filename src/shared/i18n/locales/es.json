@@ -927,8 +927,6 @@
       "removeMilestone": "Quitar hito",
       "invalidDate": "Fecha no válida. Usa dd/mm/aaaa.",
       "missingDate": "Falta la fecha. Escríbela como dd/mm/aaaa.",
-      "startAfterEnd": "El inicio es posterior al fin.",
-      "endBeforeStart": "El fin es anterior al inicio.",
       "overlap": "Se solapa con «{{name}}». Ajusta las fechas (es un aviso: el plan se guarda igualmente).",
       "duration": "Dura {{days}} días; la Metodología (paso 6) indica {{expected}} días."
     },

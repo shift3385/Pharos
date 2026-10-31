@@ -927,8 +927,6 @@
       "removeMilestone": "Remove milestone",
       "invalidDate": "Invalid date. Use dd/mm/yyyy.",
       "missingDate": "The date is missing. Type it as dd/mm/yyyy.",
-      "startAfterEnd": "The start is after the end.",
-      "endBeforeStart": "The end is before the start.",
       "overlap": "Overlaps «{{name}}». Adjust the dates (this is a warning: the plan still saves).",
       "duration": "Lasts {{days}} days; the Methodology (step 6) says {{expected}} days."
     },

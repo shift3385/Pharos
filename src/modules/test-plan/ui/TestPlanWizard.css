@@ -870,7 +870,8 @@
 /* Amber and red tints mix in sRGB: in oklch they turn purple on the dark
    surface. */
 .tps-band[data-band="alt"],
-.tps-swatch[data-band="alt"] {
+.tps-swatch[data-band="alt"],
+.tps-legend__band[data-band="alt"] {
   background: color-mix(in srgb, var(--color-accent) 26%, var(--color-surface-1));
 }
 
@@ -1141,6 +1142,43 @@
 @media (prefers-reduced-motion: reduce) {
   .tps-row {
     transition: none;
+  }
+}
+
+/* Windows high contrast: fills are dropped, so bands, the marked ends, today
+   and the diamonds are drawn with system colors. */
+@media (forced-colors: active) {
+  .tps-band,
+  .tps-legend__band,
+  .tps-swatch {
+    border: 1px solid CanvasText;
+  }
+
+  .tps-band[data-band="active"],
+  .tps-band[data-band="preview"],
+  .tps-band[data-band="overlap"] {
+    border: 2px solid Highlight;
+  }
+
+  .tps-band[data-band="overlap"] {
+    border-style: dashed;
+  }
+
+  .tps-num[data-filled] {
+    color: HighlightText;
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+
+  .tps-num[data-today] {
+    outline: 1px dashed CanvasText;
+  }
+
+  .tps-diamond,
+  .tps-legend__diamond,
+  .tps-swatch--diamond {
+    background: CanvasText;
+    forced-color-adjust: none;
   }
 }
 

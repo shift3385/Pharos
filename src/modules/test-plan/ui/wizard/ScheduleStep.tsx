@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarRange, ChevronLeft, ChevronRight, Diamond, Plus } from "lucide-react";
-import { duplicateRow, duplicateRows, type Issue } from "@shared/validation";
+import { duplicateRow, duplicateRows } from "@shared/validation";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import type { ScheduleMilestone, ScheduleSprint } from "../../model/types";
 import {
@@ -30,6 +30,10 @@ const TWO_MONTHS_MIN = 640;
 const DRAG_MIN = 560;
 /** Sprint length when step 6 gives none (traditional plan): two weeks. */
 const DEFAULT_DAYS = 14;
+
+/** A mouse or pen is the primary pointer (without `matchMedia`, assume so). */
+const finePointer = () =>
+  typeof window.matchMedia !== "function" || window.matchMedia("(pointer: fine)").matches;
 
 const viewOf = (iso: string): CalendarView => {
   const d = parseIso(iso) ?? new Date();
@@ -63,7 +67,6 @@ export function ScheduleStep({ form, setForm }: StepProps) {
   const [drag, setDrag] = useState<Drag | null>(null);
   const dragged = useRef(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [bad, setBad] = useState<Record<string, Issue>>({});
   const [view, setView] = useState<CalendarView>(() => {
     const first = [
       ...form.sprints.filter(isDrawable).map((s) => s.start),
@@ -89,22 +92,29 @@ export function ScheduleStep({ form, setForm }: StepProps) {
   }, []);
 
   const months: 1 | 2 = !mobile && width >= TWO_MONTHS_MIN ? 2 : 1;
-  const canDrag = !mobile && width >= DRAG_MIN;
+  // Dragging needs a precise pointer (mouse, pen): on a touch screen the
+  // finger scrolls the page instead, so tablets edit dates in the rows.
+  const canDrag = !mobile && width >= DRAG_MIN && finePointer();
 
-  // A drag ends wherever the pointer is released; Esc cancels a range.
+  // A drag ends wherever the pointer is released. Only a release on a day is
+  // followed by that day's click, which must not count as a new click.
   useEffect(() => {
     if (!drag) return;
-    const up = () => {
-      dragged.current = true;
+    const up = (e: PointerEvent) => {
+      dragged.current = e.target instanceof Element && e.target.closest("[data-day]") !== null;
       setDrag(null);
     };
     document.addEventListener("pointerup", up);
     return () => document.removeEventListener("pointerup", up);
   }, [drag]);
+  // Esc cancels a range being marked, only while the focus is in this step
+  // (not in a dialog or menu opened over it).
   useEffect(() => {
     if (!anchor) return;
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      const focus = document.activeElement;
+      const here = !focus || focus === document.body || rootRef.current?.contains(focus);
+      if (e.key === "Escape" && here) {
         setAnchor(null);
         setHover(null);
       }
@@ -196,29 +206,37 @@ export function ScheduleStep({ form, setForm }: StepProps) {
   }
 
   const draft = (key: string, v: string) => setDrafts((d) => ({ ...d, [key]: v }));
-  /** Applies a typed date if it is valid; else keeps the text and says why. */
-  function commit(key: string, text: string, apply: (iso: string) => Issue | null) {
-    const iso = fromDisplay(text);
-    const problem: Issue | null = iso
-      ? apply(iso)
-      : { code: "testPlan.schedule.invalidDate", severity: "warning" };
+  /** Applies what was typed, always: a real day as ISO, an empty field clears
+   *  the date, anything else is kept as written. The row's warning (invalid
+   *  date, end before start…) then says what is wrong, the plan counts as
+   *  changed and the save toast counts the warning; nothing typed is held back
+   *  unsaved. `focusId` is where the focus goes (Enter: the same field). */
+  function commit(key: string, text: string, apply: (value: string) => void, focusId: string | null) {
+    // Nothing typed since the last commit (a blur right after Enter): no-op.
+    if (!(key in drafts)) return;
+    const t = text.trim();
+    const value = t === "" ? "" : (fromDisplay(t) ?? t);
+    apply(value);
     setDrafts((d) => {
-      if (problem) return d;
       const { [key]: _, ...rest } = d;
       return rest;
     });
-    setBad((b) => {
-      const { [key]: _, ...rest } = b;
-      return problem ? { ...rest, [key]: problem } : rest;
-    });
-    if (iso && !problem) reveal(iso);
+    keepFocus.current = focusId;
+    if (isIsoDay(value)) reveal(value);
   }
-  const removeKeys = (id: string) => {
-    const drop = <V,>(o: Record<string, V>) =>
-      Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith(`${id}:`)));
-    setDrafts(drop);
-    setBad(drop);
-  };
+  const removeKeys = (id: string) =>
+    setDrafts((o) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith(`${id}:`))));
+
+  // Rows are sorted by date: a committed date can move its row, and moving a
+  // node drops its focus. Put the focus back where the user left it.
+  const keepFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const id = keepFocus.current;
+    if (!id) return;
+    keepFocus.current = null;
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) el.focus();
+  });
 
   const issues = sprintIssues(sorted, expected);
   const names = duplicateRows(sorted, (x) => x.name);
@@ -328,7 +346,9 @@ export function ScheduleStep({ form, setForm }: StepProps) {
         />
         <ul className="tps-legend" aria-label={t("testPlan.schedule.legend")}>
           <li>
+            {/* Consecutive sprints alternate the two fills. */}
             <span className="tps-legend__band" data-band="base" aria-hidden="true" />
+            <span className="tps-legend__band" data-band="alt" aria-hidden="true" />
             {t("testPlan.schedule.modeSprint")}
           </li>
           <li>
@@ -356,7 +376,7 @@ export function ScheduleStep({ form, setForm }: StepProps) {
         {sorted.length === 0 && <p className="tps-empty">{t("testPlan.schedule.noSprints")}</p>}
         {sorted.map((s, i) => {
           const id = `tps-${s.id}`;
-          const issue = bad[`${s.id}:start`] ?? bad[`${s.id}:end`] ?? issues[i];
+          const issue = issues[i];
           const nameIssue = duplicateRow(names, i);
           const row = s.name || `${t("testPlan.sprints")} · ${t("a11y.row", { n: i + 1 })}`;
           const msgIds = [issue && `${id}-msg`, nameIssue && `${id}-name-msg`].filter(Boolean).join(" ") || undefined;
@@ -404,13 +424,8 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                     issue={issue && issue.code !== "testPlan.schedule.duration" ? issue : null}
                     describedBy={msgIds}
                     onDraft={(v) => draft(`${s.id}:start`, v)}
-                    onCommit={(v) =>
-                      commit(`${s.id}:start`, v, (iso) => {
-                        if (isIsoDay(s.end) && iso > s.end)
-                          return { code: "testPlan.schedule.startAfterEnd", severity: "warning" };
-                        patchSprint(s.id, { start: iso });
-                        return null;
-                      })
+                    onCommit={(v, focusId) =>
+                      commit(`${s.id}:start`, v, (start) => patchSprint(s.id, { start }), focusId)
                     }
                   />
                   <span className="tps-range__arrow" aria-hidden="true">
@@ -423,13 +438,8 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                     issue={issue && issue.code !== "testPlan.schedule.duration" ? issue : null}
                     describedBy={msgIds}
                     onDraft={(v) => draft(`${s.id}:end`, v)}
-                    onCommit={(v) =>
-                      commit(`${s.id}:end`, v, (iso) => {
-                        if (isIsoDay(s.start) && iso < s.start)
-                          return { code: "testPlan.schedule.endBeforeStart", severity: "warning" };
-                        patchSprint(s.id, { end: iso });
-                        return null;
-                      })
+                    onCommit={(v, focusId) =>
+                      commit(`${s.id}:end`, v, (end) => patchSprint(s.id, { end }), focusId)
                     }
                   />
                 </div>
@@ -460,7 +470,7 @@ export function ScheduleStep({ form, setForm }: StepProps) {
         {mSorted.length === 0 && <p className="tps-empty">{t("testPlan.schedule.noMilestones")}</p>}
         {mSorted.map((m, i) => {
           const id = `tps-${m.id}`;
-          const issue = bad[`${m.id}:date`] ?? mIssues[i];
+          const issue = mIssues[i];
           const nameIssue = duplicateRow(mNames, i);
           const row = m.name || `${t("testPlan.milestones")} · ${t("a11y.row", { n: i + 1 })}`;
           return (
@@ -502,11 +512,8 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                   issue={issue}
                   describedBy={issue ? `${id}-msg` : undefined}
                   onDraft={(v) => draft(`${m.id}:date`, v)}
-                  onCommit={(v) =>
-                    commit(`${m.id}:date`, v, (iso) => {
-                      patchMilestone(m.id, { date: iso });
-                      return null;
-                    })
+                  onCommit={(v, focusId) =>
+                    commit(`${m.id}:date`, v, (date) => patchMilestone(m.id, { date }), focusId)
                   }
                 />
                 <DeleteButton

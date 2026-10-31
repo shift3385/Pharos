@@ -183,21 +183,79 @@ describe("step 14 · Cronograma (RED-W5)", () => {
     expect(day("2027-01-13")).toHaveFocus();
   });
 
-  it("row dates and the calendar edit the same sprint; a bad date says why and changes nothing", async () => {
+  it("row dates and the calendar edit the same sprint; what is typed is applied, with its warning", async () => {
     renderStep();
     await openStep14();
-    const [first] = sprintRows();
-    const end = within(first).getByRole("textbox", { name: /^Fin/ });
-    await userEvent.clear(end);
-    await userEvent.type(end, "31/02/2026{Enter}");
-    expect(within(first).getByText("Fecha no válida. Usa dd/mm/aaaa.")).toBeInTheDocument();
-    expect(day("2026-11-15")).toHaveAccessibleName(/Sprint 1 · Login/);
+    const end = () => within(sprintRows()[0]).getByRole("textbox", { name: /^Fin/ });
 
-    await userEvent.clear(end);
-    await userEvent.type(end, "13/11/2026{Enter}");
-    expect(within(sprintRows()[0]).queryByText(/Fecha no válida/)).not.toBeInTheDocument();
+    // Not a real day: kept as typed, warned, not drawn, and saved as typed
+    // (nothing is held back unsaved, S3).
+    await userEvent.clear(end());
+    await userEvent.type(end(), "31/02/2026{Enter}");
+    expect(within(sprintRows()[0]).getByText("Fecha no válida. Usa dd/mm/aaaa.")).toBeInTheDocument();
+    expect(end()).toHaveValue("31/02/2026");
+    expect(day("2026-11-05")).not.toHaveAccessibleName(/Sprint 1/);
+    expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument();
+    expect((await save()).data.sprints?.[0].end).toBe("31/02/2026");
+
+    // End before start: applied, and the row says so.
+    await userEvent.clear(end());
+    await userEvent.type(end(), "01/11/2026{Enter}");
+    expect(within(sprintRows()[0]).getByText("La fecha de fin es anterior a la de inicio.")).toBeInTheDocument();
+
+    // A typed ISO day works too; the band follows.
+    await userEvent.clear(end());
+    await userEvent.type(end(), "2026-11-13{Enter}");
+    expect(end()).toHaveValue("13/11/2026");
+    expect(within(sprintRows()[0]).queryByText(/Fecha no válida|anterior/)).not.toBeInTheDocument();
     expect(day("2026-11-13")).toHaveAccessibleName(/Sprint 1 · Login.*fin/);
     expect(day("2026-11-14")).not.toHaveAccessibleName(/Sprint 1/);
+
+    // An empty field clears the date.
+    await userEvent.clear(end());
+    await userEvent.keyboard("{Enter}");
+    expect(within(sprintRows()[0]).getByText("Falta la fecha. Escríbela como dd/mm/aaaa.")).toBeInTheDocument();
+    expect((await save()).data.sprints?.[0].end).toBe("");
+  });
+
+  it("a row that moves when its date is re-sorted keeps the focus", async () => {
+    renderStep();
+    await openStep14();
+    const start = within(sprintRows()[0]).getByRole("textbox", { name: /^Inicio/ });
+    await userEvent.clear(start);
+    await userEvent.type(start, "20/11/2026{Enter}");
+    // Sprint 1 now starts after Sprint 2: second row, same field, still focused.
+    const moved = within(sprintRows()[1]).getByRole("textbox", { name: /^Inicio/ });
+    expect(moved).toHaveValue("20/11/2026");
+    expect(moved).toHaveFocus();
+  });
+
+  it("a legacy dd/mm/aaaa date (old import) reads as a real date and the plan stays unchanged", async () => {
+    renderStep({
+      ...PLAN,
+      data: {
+        ...PLAN.data,
+        sprints: [{ name: "Importado", start: "02/11/2026", end: "15/11/2026" }],
+        milestones: [{ name: "Go-live", date: "1/12/2026" }],
+      },
+    });
+    await openStep14();
+    expect(day("2026-11-02")).toHaveAccessibleName(/Importado, del 02\/11\/2026 al 15\/11\/2026, inicio/);
+    expect(day("2026-12-01")).toHaveAccessibleName(/Hito: Go-live/);
+    expect(screen.queryByText(/Fecha no válida/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Cambios sin guardar")).not.toBeInTheDocument();
+  });
+
+  it("Esc cancels a range only while the focus is in the step", async () => {
+    renderStep();
+    await openStep14();
+    await userEvent.click(day("2026-12-07"));
+    screen.getByRole("button", { name: "Guardar" }).focus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByText(/Inicio: 07\/12\/2026/)).toBeInTheDocument();
+    day("2026-12-07").focus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByText(/Inicio: 07\/12\/2026/)).not.toBeInTheDocument();
   });
 
   it("an overlap is a warning in words, with an icon, and the plan still saves", async () => {
@@ -224,6 +282,43 @@ describe("step 14 · Cronograma (RED-W5)", () => {
     fireEvent.pointerOver(day("2026-11-18"));
     fireEvent.pointerUp(document);
     expect(within(sprintRows()[0]).getByRole("textbox", { name: /^Fin/ })).toHaveValue("18/11/2026");
+    // Released outside a day: no click follows, so the next click counts.
+    await userEvent.click(day("2026-12-07"));
+    expect(screen.getByText(/Inicio: 07\/12\/2026/)).toBeInTheDocument();
+  });
+
+  it("a release on a day ends the drag without counting as a click there", async () => {
+    renderStep();
+    await openStep14();
+    await userEvent.click(day("2026-11-05"));
+    fireEvent.pointerDown(day("2026-11-15"), { button: 0 });
+    fireEvent.pointerOver(day("2026-12-03"));
+    fireEvent.pointerUp(day("2026-12-03"));
+    fireEvent.click(day("2026-12-03"));
+    expect(within(sprintRows()[0]).getByRole("textbox", { name: /^Fin/ })).toHaveValue("03/12/2026");
+    expect(screen.queryByText(/Inicio: 03\/12\/2026/)).not.toBeInTheDocument();
+  });
+
+  it("touch never drags: a coarse pointer gets no drag handles, and a finger on a handle does nothing", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q !== "(pointer: fine)", media: q, addEventListener() {}, removeEventListener() {} }));
+    renderStep();
+    await openStep14();
+    expect(screen.getByText("Haz clic en el día de inicio y después en el de fin para crear un sprint.")).toBeInTheDocument();
+    await userEvent.click(day("2026-11-05"));
+    expect(day("2026-11-15")).not.toHaveAttribute("data-drag");
+  });
+
+  it("a finger on a drag handle of a hybrid screen does nothing", async () => {
+    renderStep();
+    await openStep14();
+    await userEvent.click(day("2026-11-05"));
+    // jsdom has no PointerEvent: a mouse event that says it is a finger.
+    const touch = new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 });
+    Object.defineProperty(touch, "pointerType", { value: "touch" });
+    fireEvent(day("2026-11-15"), touch);
+    fireEvent.pointerOver(day("2026-11-18"));
+    fireEvent.pointerUp(document);
+    expect(within(sprintRows()[0]).getByRole("textbox", { name: /^Fin/ })).toHaveValue("15/11/2026");
   });
 
   it("a removed row disappears from the calendar", async () => {

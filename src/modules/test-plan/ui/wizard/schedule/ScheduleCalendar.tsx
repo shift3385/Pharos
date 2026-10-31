@@ -228,7 +228,8 @@ export function ScheduleCalendar(props: Props) {
                         onFocus={() => props.onFocusDay(day)}
                         onPointerEnter={() => props.onHoverDay(day)}
                         onPointerDown={(e: PointerEvent<HTMLDivElement>) => {
-                          if (!draggable || e.button > 0) return;
+                          // A finger scrolls; only a mouse or pen drags.
+                          if (!draggable || e.button > 0 || e.pointerType === "touch") return;
                           e.preventDefault();
                           props.onDragStart(s!.id, s!.start === day ? "start" : "end");
                         }}

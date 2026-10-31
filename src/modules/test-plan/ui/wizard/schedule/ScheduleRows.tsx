@@ -18,7 +18,9 @@ export function RowMessage({ id, issue }: { id: string; issue: Issue }) {
   );
 }
 
-/** A dd/mm/aaaa date field: the text is a draft until blur or Enter. */
+/** A dd/mm/aaaa date field: the text is a draft until blur or Enter.
+ *  `onCommit` gets where the focus goes next: the next control on blur, the
+ *  same field on Enter. */
 export function DateField({
   id,
   label,
@@ -34,7 +36,7 @@ export function DateField({
   issue: Issue | null;
   describedBy?: string;
   onDraft: (v: string) => void;
-  onCommit: (v: string) => void;
+  onCommit: (v: string, focusId: string | null) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -48,11 +50,11 @@ export function DateField({
       data-invalid={issue ? true : undefined}
       value={value}
       onChange={(e) => onDraft(e.target.value)}
-      onBlur={(e) => onCommit(e.target.value)}
+      onBlur={(e) => onCommit(e.target.value, (e.relatedTarget as HTMLElement | null)?.id || null)}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          e.currentTarget.blur();
+          onCommit(e.currentTarget.value, id);
         }
       }}
     />
