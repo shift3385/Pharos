@@ -1353,7 +1353,12 @@
     "labels": "Labels",
     "attachments": "Attachments",
     "attachAfterSave": "Save the card first to add attachments.",
-    "attachTooLarge": "“{{name}}” exceeds the 10 MB limit.",
+    "attachTooLarge": "“{{name}}” exceeds the {{mb}} MB limit.",
+    "attachLimit": "Up to {{mb}} MB per file. Files are kept encrypted on this device.",
+    "attachFailed": "Could not attach “{{name}}”: {{reason}}",
+    "attachMissing": "This file is not on this device (the data folder was copied without its evidence folder, or the file expired).",
+    "attachUnreadable": "This file cannot be opened: it is damaged or was encrypted with another key.",
+    "attachNewer": "This file was saved by a newer version of Pharos.",
     "kindLabel": {
       "task": "Task",
       "defect": "Defect",

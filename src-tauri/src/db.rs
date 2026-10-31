@@ -20,6 +20,11 @@
 //! Windows), opening fails with `KEY_MISSING_ERROR` instead of silently
 //! storing a new key, and `db_recover` opens the file with the recovery key and
 //! stores it in the keychain again.
+//!
+//! Evidence (DAT-03, ADR-0014): attachment contents live next to the database
+//! in `evidence/` (evidence.rs), keyed from the same key; `Db` owns that store,
+//! migration 0023 moves the old planner attachment BLOBs into it, and
+//! `persist_and_collect` removes files only after the save that released them.
 
 use std::fs;
 use std::io::Write;
@@ -34,6 +39,7 @@ use keyring::Entry;
 use rusqlite::serialize::OwnedData;
 use rusqlite::{Connection, DatabaseName, OptionalExtension};
 
+use crate::evidence::{self, EvidenceStore};
 use crate::recovery;
 
 const KEYCHAIN_SERVICE: &str = "pharos";
@@ -127,12 +133,26 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0019_audit_log.sql",
         include_str!("../migrations/0019_audit_log.sql"),
     ),
+    (
+        "0022_evidence.sql",
+        include_str!("../migrations/0022_evidence.sql"),
+    ),
+    (
+        "0023_planner_attachments_out.sql",
+        include_str!("../migrations/0023_planner_attachments_out.sql"),
+    ),
 ];
+
+/// Migration whose SQL runs only after Rust moved the planner attachment BLOBs
+/// into the evidence store (DAT-03, ADR-0014); the image is vacuumed after it.
+const PLANNER_ATTACHMENTS_OUT: &str = "0023_planner_attachments_out.sql";
 
 pub struct Db {
     conn: Mutex<Connection>,
     enc_path: PathBuf,
     key: [u8; 32],
+    /// `evidence/` next to the database, keyed from `key` (ADR-0014).
+    evidence: EvidenceStore,
 }
 
 /// Where the database key is kept: the OS keychain in the app, memory in tests.
@@ -296,22 +316,26 @@ impl Db {
             ));
         }
         recover_leftovers(app_data_dir, &enc_path, &key)?;
+        let store = EvidenceStore::new(app_data_dir, &key);
+        store.clean_tmp();
 
         let migrate_existing = saved.is_some() && !pending_migrations(&conn)?.is_empty();
         if let Some((blob, _)) = saved.as_ref().filter(|_| migrate_existing) {
             let last = applied_migrations(&conn)?.pop();
             write_backup(&enc_path, blob, last.as_deref())?;
         }
-        run_migrations(&conn)?;
+        run_migrations_with(&conn, Some(&store))?;
         let db = Db {
             conn: Mutex::new(conn),
             enc_path,
             key,
+            evidence: store,
         };
         // Save the migrated image right away, so the backup and the file on
-        // disk are always exactly one upgrade apart.
-        if migrate_existing {
-            db.persist()?;
+        // disk are always exactly one upgrade apart; then finish the evidence
+        // deletions an earlier run saved but did not complete (ADR-0014).
+        if migrate_existing || db.with_conn(evidence::has_pending_deletions)? {
+            db.persist_and_collect()?;
         }
         Ok(db)
     }
@@ -341,12 +365,39 @@ impl Db {
         self.with_conn(|conn| in_tx(conn, f))
     }
 
+    /// The evidence store of this database (ADR-0014).
+    pub(crate) fn evidence(&self) -> &EvidenceStore {
+        &self.evidence
+    }
+
+    /// Saves, then removes the evidence files that save released, then saves
+    /// the removal of their rows: all under one lock, so every `deleting` row
+    /// `collect` sees is in the image just written. No other transaction can
+    /// release a content between the save and the removal, and a failed save
+    /// removes nothing. Use it instead of `persist` after a change that may
+    /// release evidence.
+    pub(crate) fn persist_and_collect(&self) -> Result<(), String> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "db lock poisoned".to_string())?;
+        self.save(&conn)?;
+        if evidence::collect(&conn, &self.evidence)? > 0 {
+            self.save(&conn)?;
+        }
+        Ok(())
+    }
+
     /// Serializes the in-memory database and writes it encrypted to disk.
     pub fn persist(&self) -> Result<(), String> {
         let conn = self
             .conn
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
+        self.save(&conn)
+    }
+
+    fn save(&self, conn: &Connection) -> Result<(), String> {
         let image = conn
             .serialize(DatabaseName::Main)
             .map_err(|e| e.to_string())?;
@@ -601,7 +652,20 @@ pub(crate) fn ensure_workspace(conn: &Connection) -> Result<String, String> {
     Ok(id)
 }
 
+/// Applies pending migrations to a connection without an evidence store
+/// (tests, fresh in-memory databases): it fails if planner attachments would
+/// have to be moved.
+#[cfg(test)]
 pub(crate) fn run_migrations(conn: &Connection) -> Result<(), String> {
+    run_migrations_with(conn, None)
+}
+
+/// Applies pending migrations; `store` receives the planner attachment BLOBs
+/// before 0023 drops them (ADR-0014).
+pub(crate) fn run_migrations_with(
+    conn: &Connection,
+    store: Option<&EvidenceStore>,
+) -> Result<(), String> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS schema_migrations (
             name TEXT PRIMARY KEY,
@@ -611,11 +675,21 @@ pub(crate) fn run_migrations(conn: &Connection) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     let pending = pending_migrations(conn)?;
+    let mut vacuum = false;
     for (name, sql) in MIGRATIONS.iter().filter(|(n, _)| pending.contains(n)) {
+        if *name == PLANNER_ATTACHMENTS_OUT {
+            evidence::migrate_planner_attachments(conn, store)
+                .map_err(|e| format!("migration {name} failed: {e}"))?;
+            vacuum = true;
+        }
         conn.execute_batch(sql)
             .map_err(|e| format!("migration {name} failed: {e}"))?;
         conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
             .map_err(|e| e.to_string())?;
+    }
+    // The dropped BLOBs leave free pages: compact so the saved image shrinks.
+    if vacuum {
+        conn.execute_batch("VACUUM").map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -961,6 +1035,40 @@ mod tests {
         drop(db);
         Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn evidence_is_removed_only_after_the_save_that_released_it() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let stored = db
+            .evidence()
+            .put(&b"evidence"[..], evidence::MAX_FILE_BYTES)
+            .unwrap();
+        db.with_conn(|c| {
+            evidence::record_blob(c, &stored, None)?;
+            evidence::release(c, &stored.sha256)
+        })
+        .unwrap();
+        // A save that fails (its temp path is taken by a folder) removes nothing.
+        fs::create_dir(dir.join("pharos.db.enc.new")).unwrap();
+        assert!(db.persist_and_collect().is_err());
+        assert!(db.evidence().exists(&stored.sha256));
+        fs::remove_dir(dir.join("pharos.db.enc.new")).unwrap();
+        // Once it is saved, the file goes, and so does its row (saved too).
+        db.persist_and_collect().unwrap();
+        assert!(!db.evidence().exists(&stored.sha256));
+        drop(db);
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let rows: i64 = db
+            .with_conn(|c| {
+                c.query_row("SELECT count(*) FROM blobs", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(rows, 0);
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 

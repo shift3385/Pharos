@@ -11,7 +11,8 @@
 //!
 //! The diagnostic bundle carries the app version, OS, WebView2, applied
 //! migrations and the recent logs (redacted again). It never carries the
-//! database, keys, tokens, the profile or any entity content. It still works
+//! database, keys, tokens, the profile or any entity content, nor any evidence
+//! (ADR-0014): of `evidence/` it only counts files, never names, hashes or bytes. It still works
 //! when the database failed to open: it then reports why, without migrations.
 
 use std::fs;
@@ -387,6 +388,38 @@ struct DatabaseInfo {
     /// Why the local database is not open; absent when it is.
     #[serde(skip_serializing_if = "Option::is_none")]
     open_error: Option<String>,
+    /// Counts of the evidence store; absent when the database is not open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    evidence: Option<EvidenceInfo>,
+}
+
+/// Evidence store counts (ADR-0014): numbers only.
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct EvidenceInfo {
+    /// Contents the database knows, by local state (`present`, `deleting`…).
+    by_state: std::collections::BTreeMap<String, i64>,
+    /// `.pev` files no `blobs` row knows. Never swept automatically: a number
+    /// above 0 points at an interrupted write or a database moved aside.
+    unreferenced_files: usize,
+}
+
+fn evidence_info(
+    conn: &Connection,
+    store: &crate::evidence::EvidenceStore,
+) -> Result<EvidenceInfo, String> {
+    let mut stmt = conn
+        .prepare("SELECT local_state, count(*) FROM blobs GROUP BY local_state")
+        .map_err(|e| e.to_string())?;
+    let by_state = stmt
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .map_err(|e| e.to_string())?
+        .collect::<rusqlite::Result<_>>()
+        .map_err(|e| e.to_string())?;
+    Ok(EvidenceInfo {
+        by_state,
+        unreferenced_files: store.unreferenced_files(conn)?,
+    })
 }
 
 #[derive(Serialize, Debug)]
@@ -479,6 +512,7 @@ fn recent_logs(log_dir: &Path) -> Vec<LogFile> {
 /// then carries `open_error` instead of the migrations.
 fn build_bundle(
     conn: Option<&Connection>,
+    evidence: Option<EvidenceInfo>,
     open_error: Option<String>,
     log_dir: Option<&Path>,
     client: ClientInfo,
@@ -491,12 +525,14 @@ fn build_bundle(
             pending_audit_events: Some(crate::audit::pending_count(conn)?),
             rejected_audit_events: Some(crate::audit::rejected_count(conn)?),
             open_error: None,
+            evidence,
         },
         None => DatabaseInfo {
             migrations: Vec::new(),
             pending_audit_events: None,
             rejected_audit_events: None,
             open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
+            evidence: None,
         },
     };
     Ok(DiagnosticBundle {
@@ -569,10 +605,11 @@ pub fn diag_export(
     let webview = tauri::webview_version().unwrap_or_else(|_| "unknown".to_string());
     let log_dir = diag.log_dir.as_deref();
     let bundle = match app.try_state::<Db>() {
-        Some(db) => {
-            db.with_conn(|conn| build_bundle(Some(conn), None, log_dir, client, webview))?
-        }
-        None => build_bundle(None, diag.db_open_error(), log_dir, client, webview)?,
+        Some(db) => db.with_conn(|conn| {
+            let evidence = evidence_info(conn, db.evidence())?;
+            build_bundle(Some(conn), Some(evidence), None, log_dir, client, webview)
+        })?,
+        None => build_bundle(None, None, diag.db_open_error(), log_dir, client, webview)?,
     };
     tracing::info!(
         logs = bundle.logs.len(),
@@ -804,8 +841,15 @@ mod tests {
             language: "es".into(),
             theme: "dark".into(),
         };
-        let bundle =
-            build_bundle(Some(&conn), None, Some(&dir), client, "156.0.0.0".into()).unwrap();
+        let bundle = build_bundle(
+            Some(&conn),
+            None,
+            None,
+            Some(&dir),
+            client,
+            "156.0.0.0".into(),
+        )
+        .unwrap();
         let json = serde_json::to_string(&bundle).unwrap();
 
         for marker in [
@@ -830,6 +874,7 @@ mod tests {
         let bundle = build_bundle(
             Some(&conn),
             None,
+            None,
             Some(Path::new("does-not-exist")),
             ClientInfo::default(),
             "unknown".into(),
@@ -841,8 +886,15 @@ mod tests {
         // AUD-01: pending audit events are counted (no ids, no content).
         assert_eq!(bundle.manifest.database.pending_audit_events, Some(0));
         assert_eq!(bundle.manifest.database.rejected_audit_events, Some(0));
-        let no_log_dir =
-            build_bundle(Some(&conn), None, None, ClientInfo::default(), "x".into()).unwrap();
+        let no_log_dir = build_bundle(
+            Some(&conn),
+            None,
+            None,
+            None,
+            ClientInfo::default(),
+            "x".into(),
+        )
+        .unwrap();
         assert!(no_log_dir.logs.is_empty());
     }
 
@@ -853,6 +905,7 @@ mod tests {
         write_log(&dir, "pharos.2026-10-28.log", &["boot".to_string()]);
         let error = format!(r"decrypt failed for C:\Users\anabel\AppData\pharos.db.enc ({EMAIL})");
         let bundle = build_bundle(
+            None,
             None,
             Some(error),
             Some(&dir),
@@ -868,7 +921,8 @@ mod tests {
         assert!(!open_error.contains("anabel") && !open_error.contains(EMAIL));
         assert_eq!(bundle.logs.len(), 1, "logs still travel");
 
-        let unknown = build_bundle(None, None, None, ClientInfo::default(), "x".into()).unwrap();
+        let unknown =
+            build_bundle(None, None, None, None, ClientInfo::default(), "x".into()).unwrap();
         assert_eq!(
             unknown.manifest.database.open_error.as_deref(),
             Some("database not open")

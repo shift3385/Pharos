@@ -1,10 +1,10 @@
 //! Local planner repository + Tauri commands (spec §7). A per-project kanban of
-//! tasks, defects and test data. Cards move across columns; attachments are
-//! stored as blobs inside the encrypted database. Everything is owner-scoped,
+//! tasks, defects and test data. Cards move across columns; attachment contents
+//! live encrypted in the evidence store (`evidence/`, ADR-0014) and their rows in
+//! `attachments` (`owner_entity = 'planner_card'`). Everything is owner-scoped,
 //! attachments included (FIX-08). Defect keys come from the project's key
 //! counter (DAT-01, ADR-0010).
 
-use base64::Engine as _;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -13,14 +13,13 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::audit::sha256_hex;
-use crate::db::{ensure_workspace, Db};
+use crate::db::{ensure_workspace, in_tx, Db};
+use crate::downloads::{Downloads, SaveResult};
+use crate::evidence;
 use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
 use crate::project;
 
-const B64: base64::engine::general_purpose::GeneralPurpose =
-    base64::engine::general_purpose::STANDARD;
 pub(crate) const DEFECT_KEY_PREFIX: &str = "DEF-";
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -66,15 +65,6 @@ pub struct AttachmentSummary {
     name: String,
     mime: Option<String>,
     size: i64,
-}
-
-#[cfg_attr(test, derive(TS), ts(export))]
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AttachmentData {
-    name: String,
-    mime: Option<String>,
-    data_base64: String,
 }
 
 fn empty_object() -> Value {
@@ -396,35 +386,84 @@ pub fn planner_reorder(
     db.persist()
 }
 
-#[tauri::command]
+/// Attaches a finished upload (`evidence_upload_*`) to a card the user owns.
+/// The upload is sealed off the lock, moved into the store under it (so a
+/// concurrent `collect` cannot remove it before its row exists), and the row,
+/// its `blobs` entry and the `link` event are written in one transaction.
+#[tauri::command(async)]
 pub fn planner_attachment_add(
-    db: State<Db>,
+    db: State<'_, Db>,
+    uploads: State<'_, evidence::Uploads>,
     card_id: String,
     owner_id: String,
+    upload_id: String,
     name: String,
     mime: Option<String>,
-    data_base64: String,
 ) -> Result<Option<AttachmentSummary>, String> {
-    let bytes = B64.decode(data_base64).map_err(|e| e.to_string())?;
+    let mut upload = uploads.take(&upload_id)?;
+    upload.seal()?;
     let id = Uuid::new_v4().to_string();
-    db.with_tx(|conn| {
-        add_attachment(
-            conn,
-            &id,
-            &card_id,
-            &owner_id,
-            &name,
-            mime.as_deref(),
-            &bytes,
-        )
+    let stored = db.with_conn(|conn| {
+        let card = NewAttachment {
+            id: &id,
+            card_id: &card_id,
+            owner_id: &owner_id,
+            name: &name,
+            mime: mime.as_deref(),
+        };
+        attach_upload(conn, db.evidence(), upload, &card)
     })?;
     db.persist()?;
     Ok(Some(AttachmentSummary {
         id,
         name,
         mime,
-        size: bytes.len() as i64,
+        size: stored.size as i64,
     }))
+}
+
+/// The row `attach_upload` writes for an upload.
+struct NewAttachment<'a> {
+    id: &'a str,
+    card_id: &'a str,
+    owner_id: &'a str,
+    name: &'a str,
+    mime: Option<&'a str>,
+}
+
+/// Moves a sealed upload into the store and attaches it, under the database
+/// lock (`conn`). If attaching fails, the file is removed only when this
+/// upload wrote it and nothing knows that content: a copy that was already
+/// stored (another attachment's, or one a moved-aside database needs) stays.
+fn attach_upload(
+    conn: &Connection,
+    store: &evidence::EvidenceStore,
+    upload: evidence::BlobWriter,
+    new: &NewAttachment,
+) -> Result<evidence::Stored, String> {
+    if !owns(conn, new.card_id, new.owner_id)? {
+        return Err("card not found".to_string());
+    }
+    let committed = upload.commit(store)?;
+    let stored = committed.stored;
+    let added = in_tx(conn, |tx| {
+        add_attachment(
+            tx,
+            new.id,
+            new.card_id,
+            new.owner_id,
+            new.name,
+            new.mime,
+            &stored,
+        )
+    });
+    if let Err(e) = added {
+        if committed.wrote && !evidence::is_known(conn, &stored.sha256)? {
+            store.remove(&stored.sha256)?;
+        }
+        return Err(e);
+    }
+    Ok(stored)
 }
 
 /// Attachments of a live card the user owns (none for anyone else).
@@ -435,10 +474,11 @@ pub(crate) fn list_attachments(
 ) -> Result<Vec<AttachmentSummary>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT a.id, a.name, a.mime, length(a.bytes) FROM planner_attachments a \
-             JOIN planner_cards c ON c.id = a.card_id \
-             WHERE a.card_id = ?1 AND c.owner_id = ?2 AND c.deleted_at IS NULL \
-             ORDER BY a.created_at",
+            "SELECT a.id, a.name, a.mime, a.size FROM attachments a \
+             JOIN planner_cards c ON c.id = a.owner_id \
+             WHERE a.owner_entity = 'planner_card' AND a.owner_id = ?1 AND a.deleted_at IS NULL \
+             AND c.owner_id = ?2 AND c.deleted_at IS NULL \
+             ORDER BY a.created_at, a.rowid",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
@@ -455,23 +495,35 @@ pub(crate) fn list_attachments(
         .map_err(|e| e.to_string())
 }
 
-/// Content of an attachment whose card the user owns.
-fn get_attachment(
+/// A live attachment of a live card the user owns.
+struct OwnedAttachment {
+    card_id: String,
+    name: String,
+    mime: Option<String>,
+    size: i64,
+    sha256: String,
+    purged: bool,
+}
+
+fn owned_attachment(
     conn: &Connection,
     id: &str,
     owner_id: &str,
-) -> Result<Option<AttachmentData>, String> {
+) -> Result<Option<OwnedAttachment>, String> {
     conn.query_row(
-        "SELECT a.name, a.mime, a.bytes FROM planner_attachments a \
-         JOIN planner_cards c ON c.id = a.card_id \
-         WHERE a.id = ?1 AND c.owner_id = ?2 AND c.deleted_at IS NULL",
+        "SELECT a.owner_id, a.name, a.mime, a.size, a.sha256, a.blob_purged_at IS NOT NULL \
+         FROM attachments a JOIN planner_cards c ON c.id = a.owner_id \
+         WHERE a.id = ?1 AND a.owner_entity = 'planner_card' AND a.deleted_at IS NULL \
+         AND c.owner_id = ?2 AND c.deleted_at IS NULL",
         params![id, owner_id],
         |r| {
-            let bytes: Vec<u8> = r.get(2)?;
-            Ok(AttachmentData {
-                name: r.get(0)?,
-                mime: r.get(1)?,
-                data_base64: B64.encode(bytes),
+            Ok(OwnedAttachment {
+                card_id: r.get(0)?,
+                name: r.get(1)?,
+                mime: r.get(2)?,
+                size: r.get(3)?,
+                sha256: r.get(4)?,
+                purged: r.get(5)?,
             })
         },
     )
@@ -479,15 +531,8 @@ fn get_attachment(
     .map_err(|e| e.to_string())
 }
 
-/// What the audit keeps of an attachment: never its bytes.
-fn attachment_fact(id: &str, name: &str, mime: Option<&str>, bytes: &[u8]) -> Value {
-    serde_json::json!({
-        "id": id, "name": name, "mime": mime, "size": bytes.len(), "sha256": sha256_hex(bytes),
-    })
-}
-
-/// Attaches a file to a card the user owns. Attachments do not sync yet
-/// (SYNC-04b, ADR-0014), so this is an audit event without an oplog row.
+/// Attaches stored content to a card the user owns. Attachments do not sync
+/// yet (SYNC-04b, ADR-0014), so this is an audit event without an oplog row.
 pub(crate) fn add_attachment(
     conn: &Connection,
     id: &str,
@@ -495,21 +540,46 @@ pub(crate) fn add_attachment(
     owner_id: &str,
     name: &str,
     mime: Option<&str>,
-    bytes: &[u8],
+    stored: &evidence::Stored,
 ) -> Result<(), String> {
-    if !owns(conn, card_id, owner_id)? {
+    let card: Option<(String, String)> = conn
+        .query_row(
+            "SELECT workspace_id, project_id FROM planner_cards \
+             WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
+            params![card_id, owner_id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    let Some((workspace_id, project_id)) = card else {
         return Err("card not found".to_string());
-    }
+    };
+    evidence::record_blob(conn, stored, mime)?;
     conn.execute(
-        "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) \
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![id, card_id, name, mime, bytes],
+        "INSERT INTO attachments (id, workspace_id, project_id, sha256, size, mime, name, \
+         owner_entity, owner_id, kind, created_by, updated_by, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'planner_card', ?8, 'evidence', ?9, ?9, \
+                 strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        params![
+            id,
+            workspace_id,
+            project_id,
+            stored.sha256,
+            stored.size as i64,
+            mime,
+            name,
+            card_id,
+            owner_id
+        ],
     )
     .map_err(|e| e.to_string())?;
     let mut changes = serde_json::Map::new();
     changes.insert(
         "attachment".into(),
-        serde_json::json!([null, attachment_fact(id, name, mime, bytes)]),
+        serde_json::json!([
+            null,
+            evidence::attachment_fact(id, name, mime, stored.size as i64, &stored.sha256)
+        ]),
     );
     journal::record_event(
         conn,
@@ -522,33 +592,41 @@ pub(crate) fn add_attachment(
     )
 }
 
-/// Removes an attachment whose card the user owns.
+/// Removes an attachment whose card the user owns (soft delete, so the row
+/// can sync later); its content is released when nothing else uses it and
+/// its file goes with the next `collect`.
 pub(crate) fn delete_attachment(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
-    let found: Option<(String, String, Option<String>, Vec<u8>)> = conn
-        .query_row(
-            "SELECT card_id, name, mime, bytes FROM planner_attachments WHERE id = ?1 AND card_id IN \
-             (SELECT id FROM planner_cards WHERE owner_id = ?2 AND deleted_at IS NULL)",
-            params![id, owner_id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
-        )
-        .optional()
-        .map_err(|e| e.to_string())?;
-    let Some((card_id, name, mime, bytes)) = found else {
+    let Some(found) = owned_attachment(conn, id, owner_id)? else {
         return Err("attachment not found".to_string());
     };
-    conn.execute("DELETE FROM planner_attachments WHERE id = ?1", params![id])
-        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE attachments SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), \
+         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), updated_by = ?2, \
+         revision = revision + 1 WHERE id = ?1",
+        params![id, owner_id],
+    )
+    .map_err(|e| e.to_string())?;
+    evidence::release(conn, &found.sha256)?;
     let mut changes = serde_json::Map::new();
     changes.insert(
         "attachment".into(),
-        serde_json::json!([attachment_fact(id, &name, mime.as_deref(), &bytes), null]),
+        serde_json::json!([
+            evidence::attachment_fact(
+                id,
+                &found.name,
+                found.mime.as_deref(),
+                found.size,
+                &found.sha256
+            ),
+            null
+        ]),
     );
     journal::record_event(
         conn,
         Actor::user(owner_id),
         Action::Unlink,
         "planner_card",
-        &card_id,
+        &found.card_id,
         changes,
         None,
     )
@@ -563,13 +641,36 @@ pub fn planner_attachment_list(
     db.with_conn(|conn| list_attachments(conn, &card_id, &owner_id))
 }
 
-#[tauri::command]
-pub fn planner_attachment_get(
-    db: State<Db>,
+/// Saves an attachment into the download folder (with Mark-of-the-Web),
+/// decrypted block by block straight to disk: the bytes never pass through
+/// the webview and the file is never whole in memory. The content is checked
+/// against its sha256 before the saved file gets its name.
+#[tauri::command(async)]
+pub fn planner_attachment_save(
+    db: State<'_, Db>,
+    downloads: State<'_, Downloads>,
     id: String,
     owner_id: String,
-) -> Result<Option<AttachmentData>, String> {
-    db.with_conn(|conn| get_attachment(conn, &id, &owner_id))
+) -> Result<SaveResult, String> {
+    let found = db
+        .with_conn(|conn| owned_attachment(conn, &id, &owner_id))?
+        .ok_or("attachment not found")?;
+    if found.purged {
+        return Err(format!(
+            "{}: the file was removed by the retention policy",
+            evidence::EVIDENCE_MISSING
+        ));
+    }
+    // Fail before reserving a name in the download folder.
+    db.evidence().open(&found.sha256)?;
+    let saved = downloads.save_with(&found.name, true, &|out| {
+        db.evidence().copy_to(&found.sha256, out).map(drop)
+    })?;
+    tracing::info!(
+        bytes = found.size,
+        "attachment saved to the download folder"
+    );
+    Ok(saved)
 }
 
 #[tauri::command]
@@ -579,7 +680,7 @@ pub fn planner_attachment_delete(
     owner_id: String,
 ) -> Result<(), String> {
     db.with_tx(|conn| delete_attachment(conn, &id, &owner_id))?;
-    db.persist()
+    db.persist_and_collect()
 }
 
 #[cfg(test)]
@@ -608,11 +709,21 @@ mod tests {
             .unwrap()
     }
 
+    /// Attaches "hello" (its content is not stored: these tests are about rows).
     fn attach(c: &Connection, card_id: &str) -> String {
         let id = Uuid::new_v4().to_string();
-        c.execute(
-            "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) VALUES (?1,?2,?3,?4,?5)",
-            params![id, card_id, "log.txt", "text/plain", b"hello".to_vec()],
+        let stored = evidence::Stored {
+            sha256: crate::audit::sha256_hex(b"hello"),
+            size: 5,
+        };
+        add_attachment(
+            c,
+            &id,
+            card_id,
+            OWNER,
+            "log.txt",
+            Some("text/plain"),
+            &stored,
         )
         .unwrap();
         id
@@ -626,7 +737,7 @@ mod tests {
         let ops = oplog_rows(&c);
 
         assert!(list_attachments(&c, &card, OTHER).unwrap().is_empty());
-        assert!(get_attachment(&c, &file, OTHER).unwrap().is_none());
+        assert!(owned_attachment(&c, &file, OTHER).unwrap().is_none());
         assert!(delete_attachment(&c, &file, OTHER).is_err());
         let mut theirs = input("task", "Hijacked", None);
         theirs.owner_id = OTHER.to_string();
@@ -636,7 +747,7 @@ mod tests {
 
         assert_eq!(get_card(&c, &card, OWNER).unwrap().unwrap().title, "Bug");
         assert_eq!(list_attachments(&c, &card, OWNER).unwrap().len(), 1);
-        assert!(get_attachment(&c, &file, OWNER).unwrap().is_some());
+        assert!(owned_attachment(&c, &file, OWNER).unwrap().is_some());
         assert_eq!(oplog_rows(&c), ops);
     }
 
@@ -725,5 +836,74 @@ mod tests {
         assert_eq!(list[0].size, 5);
         delete_attachment(&c, &id, OWNER).unwrap();
         assert_eq!(list_attachments(&c, &a, OWNER).unwrap().len(), 0);
+        // Soft-deleted (the row can sync later); its content is released.
+        let state: String = c
+            .query_row(
+                "SELECT b.local_state FROM attachments a JOIN blobs b ON b.sha256 = a.sha256 \
+                 WHERE a.id = ?1 AND a.deleted_at IS NOT NULL",
+                params![id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(state, "deleting");
+    }
+
+    #[test]
+    fn a_failed_attach_removes_only_a_file_it_wrote() {
+        let dir = std::env::temp_dir().join(format!("pharos-attach-{}", Uuid::new_v4()));
+        let store = evidence::EvidenceStore::new(&dir, &[3u8; 32]);
+        let c = conn();
+        let card = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let existing = attach(&c, &card); // takes the id the failing attach reuses
+        let upload = |bytes: &[u8]| {
+            let mut w = store.writer(evidence::MAX_FILE_BYTES).unwrap();
+            w.write(bytes).unwrap();
+            w.seal().unwrap();
+            w
+        };
+        let new = |name: &'static str| NewAttachment {
+            id: &existing,
+            card_id: &card,
+            owner_id: OWNER,
+            name,
+            mime: None,
+        };
+        // Content already on disk (and unknown to this database): the failed
+        // attach found it there and must leave it alone.
+        let foreign = store
+            .put(&b"foreign"[..], evidence::MAX_FILE_BYTES)
+            .unwrap();
+        assert!(attach_upload(&c, &store, upload(b"foreign"), &new("a")).is_err());
+        assert!(store.exists(&foreign.sha256));
+        // A content this attach wrote and nothing knows: removed.
+        let fresh = crate::audit::sha256_hex(b"fresh");
+        assert!(attach_upload(&c, &store, upload(b"fresh"), &new("b")).is_err());
+        assert!(!store.exists(&fresh));
+        // And a working attach keeps its file.
+        let ok = NewAttachment {
+            id: "ok",
+            card_id: &card,
+            owner_id: OWNER,
+            name: "ok.txt",
+            mime: None,
+        };
+        let stored = attach_upload(&c, &store, upload(b"fresh"), &ok).unwrap();
+        assert!(store.exists(&stored.sha256));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn attachments_of_a_deleted_card_are_hidden_but_keep_their_content() {
+        let c = conn();
+        let a = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let id = attach(&c, &a);
+        delete_card(&c, &a, OWNER).unwrap();
+        assert!(list_attachments(&c, &a, OWNER).unwrap().is_empty());
+        assert!(owned_attachment(&c, &id, OWNER).unwrap().is_none());
+        // The card may come back through a conflict: nothing is released.
+        let state: String = c
+            .query_row("SELECT local_state FROM blobs", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(state, "present");
     }
 }

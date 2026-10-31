@@ -15,13 +15,15 @@ export function isTauri(): boolean {
 }
 
 /** Calls a command of the desktop core (Tauri `invoke`, loaded on demand so
- *  the web build never needs it). */
+ *  the web build never needs it). `args` may be raw bytes, with headers in
+ *  `options` (chunked uploads). */
 export async function invoke<T>(
   cmd: string,
-  args?: Record<string, unknown>,
+  args?: Record<string, unknown> | Uint8Array,
+  options?: { headers: Record<string, string> },
 ): Promise<T> {
   const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
-  return tauriInvoke<T>(cmd, args);
+  return options ? tauriInvoke<T>(cmd, args, options) : tauriInvoke<T>(cmd, args);
 }
 
 /** What only the desktop has until the server stores it too (SYNC-04b):

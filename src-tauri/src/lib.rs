@@ -8,6 +8,7 @@ mod audit_tests;
 mod db;
 mod diag;
 mod downloads;
+mod evidence;
 mod hlc;
 mod instance;
 mod journal;
@@ -73,6 +74,7 @@ pub fn run() {
             // Without a resolvable log dir Pharos runs without a log file.
             let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
             app.manage(diag::init(log_dir));
+            app.manage(evidence::Uploads::default());
             // Download folder for exports (UX-02), remembered per instance.
             let prefs_file = app
                 .path()
@@ -152,9 +154,12 @@ pub fn run() {
             planner::planner_update,
             planner::planner_delete,
             planner::planner_reorder,
+            evidence::evidence_upload_begin,
+            evidence::evidence_upload_chunk,
+            evidence::evidence_upload_cancel,
             planner::planner_attachment_add,
             planner::planner_attachment_list,
-            planner::planner_attachment_get,
+            planner::planner_attachment_save,
             planner::planner_attachment_delete,
             template::template_list,
             template::template_get,

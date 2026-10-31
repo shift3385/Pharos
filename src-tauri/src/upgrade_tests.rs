@@ -1,8 +1,9 @@
 //! Upgrade tests (BASE-04, VERSIONING §6): a database written by the previous
 //! release must open with HEAD without losing anything. The fixture under
 //! `tests/fixtures/0.1.0-alpha.1/` was written by the real 0.1.0-alpha.1 code
-//! (see its README); this module also covers the data migrations 0015 (FIX-06)
-//! and the key counters of 0016 (DAT-01).
+//! (see its README); this module also covers the data migrations 0015 (FIX-06),
+//! the key counters of 0016 (DAT-01) and the move of the planner attachments
+//! into the evidence store, 0022–0023 (DAT-03, ADR-0014).
 
 use std::fs;
 use std::path::PathBuf;
@@ -151,6 +152,9 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     db.with_conn(|new| {
         assert_eq!(pending_migrations(new)?.len(), 0);
         for table in tables(&old) {
+            if table == "planner_attachments" {
+                continue; // moved to the evidence store: checked below
+            }
             let cols = columns(&old, &table);
             let before = rows(&old, &table, &cols);
             let after = rows(new, &table, &cols);
@@ -159,6 +163,7 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
                 assert_eq!(&after[..before.len()], &before[..]);
                 continue;
             }
+
             assert_eq!(after.len(), before.len(), "row count of {table}");
             for ((rowid, old_values), (new_rowid, new_values)) in before.iter().zip(&after) {
                 assert_eq!(rowid, new_rowid, "{table}");
@@ -210,10 +215,24 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     .unwrap();
     drop(db);
 
-    // The migrated file was saved: reopening migrates nothing and keeps one backup.
+    // The migrated file was saved: reopening migrates nothing and keeps one
+    // backup, next to the evidence folder.
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
-    assert_eq!(fs::read_dir(&dir).unwrap().count(), 2);
+    assert_attachments_moved(&old, &db);
+    let mut names: Vec<String> = fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names,
+        [
+            "evidence".to_string(),
+            "pharos.db.enc".to_string(),
+            format!("pharos.db.enc.bak-{APP_VERSION}-0011_sync_conflicts"),
+        ]
+    );
     fs::remove_dir_all(&dir).unwrap();
 }
 
@@ -368,7 +387,9 @@ fn an_alpha_1_database_with_duplicate_and_empty_keys_still_opens() {
         .unwrap();
     }
 
-    run_migrations(&old).unwrap();
+    let dir = temp_dir();
+    run_migrations_with(&old, Some(&EvidenceStore::new(&dir, &FIXTURE_KEY))).unwrap();
+    fs::remove_dir_all(&dir).unwrap();
     let keys: Vec<String> = old
         .prepare("SELECT scenario_id FROM test_cases WHERE id LIKE 'dup-%' ORDER BY id")
         .unwrap()
@@ -482,8 +503,12 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
 
     db.with_conn(|new| {
         assert_eq!(pending_migrations(new)?.len(), 0);
-        // Nothing changes: no migration since 0018 rewrites a row.
+        // Nothing changes: no migration since 0018 rewrites a row (the
+        // attachment BLOBs move to the evidence store: checked below).
         for table in tables(&old) {
+            if table == "planner_attachments" {
+                continue;
+            }
             let cols = columns(&old, &table);
             let before = rows(&old, &table, &cols);
             let after = rows(new, &table, &cols);
@@ -508,6 +533,8 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
         );
         // The cursor advanced by 0.2.0-alpha.1 restarts once (VERSIONING §6.5).
         assert_eq!(crate::sync::cursor_get(new, USER_1)?, "0");
+        // DAT-03: no attachment is pushed, as before (SYNC-04b).
+        assert!(!pending_before.0.iter().any(|(e, _)| e == "attachment"));
 
         // The first audited change starts the account's chain at 1.
         let case: String = new
@@ -534,5 +561,425 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
 
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
+    assert_attachments_moved(&old, &db);
     fs::remove_dir_all(&dir).unwrap();
+}
+
+// ---- DAT-03: planner attachments move into the evidence store (0022–0023) ----
+
+/// One `planner_attachments` row of an old image.
+struct OldAttachment {
+    id: String,
+    card_id: String,
+    name: String,
+    mime: Option<String>,
+    bytes: Vec<u8>,
+    created_at: String,
+    /// The card's owner; None for a row whose card is gone.
+    owner: Option<String>,
+}
+
+fn old_attachments(old: &Connection) -> Vec<OldAttachment> {
+    let mut stmt = old
+        .prepare(
+            "SELECT a.id, a.card_id, a.name, a.mime, a.bytes, a.created_at, c.owner_id \
+             FROM planner_attachments a LEFT JOIN planner_cards c ON c.id = a.card_id \
+             ORDER BY a.rowid",
+        )
+        .unwrap();
+    let rows = stmt
+        .query_map([], |r| {
+            Ok(OldAttachment {
+                id: r.get(0)?,
+                card_id: r.get(1)?,
+                name: r.get(2)?,
+                mime: r.get(3)?,
+                bytes: r.get(4)?,
+                created_at: r.get(5)?,
+                owner: r.get(6)?,
+            })
+        })
+        .unwrap();
+    rows.collect::<rusqlite::Result<_>>().unwrap()
+}
+
+fn read_evidence(db: &Db, sha256: &str) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut out = Vec::new();
+    db.evidence()
+        .open(sha256)?
+        .read_to_end(&mut out)
+        .map_err(|e| e.to_string())?;
+    Ok(out)
+}
+
+/// Every old attachment with a card is an `attachments` row with the same id,
+/// name, mime, size and date, created by the card's owner, and its content
+/// opens byte for byte; rows without a card are gone; the old table is dropped.
+fn assert_attachments_moved(old: &Connection, db: &Db) {
+    let olds = old_attachments(old);
+    let kept: Vec<&OldAttachment> = olds.iter().filter(|a| a.owner.is_some()).collect();
+    db.with_conn(|c| {
+        assert!(!tables(c).contains(&"planner_attachments".to_string()));
+        assert_eq!(
+            count(c, "SELECT count(*) FROM attachments"),
+            kept.len() as i64
+        );
+        for a in &kept {
+            let row = c
+                .query_row(
+                    "SELECT owner_entity, owner_id, name, mime, size, sha256, created_at, \
+                     created_by, kind FROM attachments WHERE id = ?1 AND deleted_at IS NULL",
+                    params![a.id],
+                    |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, String>(2)?,
+                            r.get::<_, Option<String>>(3)?,
+                            r.get::<_, i64>(4)?,
+                            r.get::<_, String>(5)?,
+                            r.get::<_, String>(6)?,
+                            r.get::<_, String>(7)?,
+                            r.get::<_, String>(8)?,
+                        ))
+                    },
+                )
+                .unwrap();
+            assert_eq!(row.0, "planner_card");
+            assert_eq!(row.1, a.card_id);
+            assert_eq!((&row.2, &row.3), (&a.name, &a.mime));
+            assert_eq!(row.4, a.bytes.len() as i64);
+            assert_eq!(row.5, crate::audit::sha256_hex(&a.bytes));
+            assert_eq!(row.6, a.created_at);
+            assert_eq!(Some(&row.7), a.owner.as_ref());
+            assert_eq!(row.8, "evidence");
+            assert!(read_evidence(db, &row.5).unwrap() == a.bytes, "{}", a.id);
+        }
+        // One `present` row per distinct content.
+        let distinct: std::collections::HashSet<String> = kept
+            .iter()
+            .map(|a| crate::audit::sha256_hex(&a.bytes))
+            .collect();
+        assert_eq!(
+            count(
+                c,
+                "SELECT count(*) FROM blobs WHERE local_state = 'present'"
+            ),
+            distinct.len() as i64
+        );
+        Ok(())
+    })
+    .unwrap();
+}
+
+/// `.pev` files under `<dir>/evidence` (not `tmp/`), and files left in `tmp/`.
+fn evidence_files(dir: &Path) -> (usize, usize) {
+    let (mut pev, mut tmp) = (0, 0);
+    for entry in fs::read_dir(dir.join("evidence"))
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        let inner = fs::read_dir(entry.path())
+            .into_iter()
+            .flatten()
+            .flatten()
+            .count();
+        if entry.file_name() == "tmp" {
+            tmp += inner;
+        } else {
+            pev += inner;
+        }
+    }
+    (pev, tmp)
+}
+
+/// A copy of a fixture image with more attachments: a 12 MB file on a live
+/// card, a duplicate of the fixture's own attachment, a soft-deleted card with
+/// an attachment and a row whose card is gone. The fixture files are never
+/// changed: the copy lives in memory and in a temp dir.
+fn extended(image: Connection) -> Connection {
+    let (card, workspace, project): (String, String, String) = image
+        .query_row(
+            "SELECT id, workspace_id, project_id FROM planner_cards \
+             WHERE owner_id = ?1 AND kind = 'defect' AND deleted_at IS NULL",
+            params![USER_1],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .unwrap();
+    let original: Vec<u8> = image
+        .query_row(
+            "SELECT bytes FROM planner_attachments WHERE card_id = ?1",
+            params![card],
+            |r| r.get(0),
+        )
+        .unwrap();
+    image
+        .execute(
+            "INSERT INTO planner_cards (id, workspace_id, project_id, owner_id, kind, title, \
+             created_by, updated_by, created_at, updated_at, deleted_at) \
+             VALUES ('gone-card', ?1, ?2, ?3, 'task', 'Deleted', ?3, ?3, 'now', 'now', \
+                     datetime('now', '-2 days'))",
+            params![workspace, project, USER_1],
+        )
+        .unwrap();
+    let big = crate::evidence::tests::sample(12 * 1024 * 1024 + 3);
+    // The orphan needs the foreign key off, as a database written without
+    // enforcement could hold it.
+    image.execute_batch("PRAGMA foreign_keys = OFF").unwrap();
+    for (id, card_id, name, bytes) in [
+        ("big", card.as_str(), "trace.zip", big),
+        ("dup", card.as_str(), "log copy.txt", original),
+        ("on-deleted", "gone-card", "old.png", b"png".to_vec()),
+        ("orphan", "no-such-card", "lost.bin", b"lost".to_vec()),
+    ] {
+        image
+            .execute(
+                "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) \
+                 VALUES (?1, ?2, ?3, 'application/octet-stream', ?4)",
+                params![id, card_id, name, bytes],
+            )
+            .unwrap();
+    }
+    image.execute_batch("PRAGMA foreign_keys = ON").unwrap();
+    image
+}
+
+fn write_image(dir: &Path, image: &Connection) -> Vec<u8> {
+    let blob = encrypt(&FIXTURE_KEY, &image.serialize(DatabaseName::Main).unwrap()).unwrap();
+    fs::write(dir.join("pharos.db.enc"), &blob).unwrap();
+    blob
+}
+
+fn saved_image_len(dir: &Path) -> usize {
+    decrypt(&FIXTURE_KEY, &fs::read(dir.join("pharos.db.enc")).unwrap())
+        .unwrap()
+        .len()
+}
+
+#[test]
+fn both_fixtures_move_big_duplicate_and_deleted_card_attachments_and_shrink() {
+    for image in [fixture_image(), fixture_020a1_image()] {
+        let old = extended(image);
+        let before = old.serialize(DatabaseName::Main).unwrap().len();
+        let dir = temp_dir();
+        write_image(&dir, &old);
+
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        assert_attachments_moved(&old, &db);
+        db.with_conn(|c| {
+            // The orphan is gone; the deleted card's file stays, hidden.
+            assert_eq!(
+                count(c, "SELECT count(*) FROM attachments WHERE id = 'orphan'"),
+                0
+            );
+            assert!(crate::planner::list_attachments(c, "gone-card", USER_1)?.is_empty());
+            // The duplicate shares the original's content.
+            assert_eq!(
+                count(c, "SELECT count(DISTINCT sha256) FROM attachments"),
+                count(c, "SELECT count(*) FROM attachments") - 1
+            );
+            Ok(())
+        })
+        .unwrap();
+        drop(db);
+        assert_eq!(
+            evidence_files(&dir),
+            (3, 0),
+            "original, big, png; nothing left in tmp"
+        );
+        // The image no longer carries the bytes (12 MB of them).
+        let after = saved_image_len(&dir);
+        assert!(
+            before > 12 * 1024 * 1024 && after < 1024 * 1024,
+            "{after} vs {before}"
+        );
+        // Reopening changes nothing.
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        assert_attachments_moved(&old, &db);
+        drop(db);
+        assert_eq!(evidence_files(&dir), (3, 0));
+        fs::remove_dir_all(&dir).unwrap();
+    }
+}
+
+#[test]
+fn a_migration_cut_midway_or_before_0023_resumes_without_duplicates() {
+    let old = extended(fixture_020a1_image());
+    let movable = old_attachments(&old)
+        .iter()
+        .filter(|a| a.owner.is_some())
+        .count();
+    // After one row; then after the whole Rust step, right before 0023 runs.
+    for fail_after in [1, movable] {
+        let dir = temp_dir();
+        let original = write_image(&dir, &old);
+        crate::evidence::FAIL_AFTER.with(|f| f.set(Some(fail_after)));
+        let err = Db::open_with_key(&dir, FIXTURE_KEY).err().unwrap();
+        crate::evidence::FAIL_AFTER.with(|f| f.set(None));
+        assert!(err.contains("injected migration failure"), "{err}");
+        // Nothing of the database changed on disk; the backup is there.
+        assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), original);
+        assert!(fs::read_dir(&dir).unwrap().any(|e| e
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .starts_with("pharos.db.enc.bak-")));
+        assert!(evidence_files(&dir).0 >= 1);
+
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        assert_attachments_moved(&old, &db);
+        drop(db);
+        assert_eq!(evidence_files(&dir), (3, 0), "fail_after {fail_after}");
+        fs::remove_dir_all(&dir).unwrap();
+    }
+}
+
+#[test]
+fn a_database_saved_between_the_rust_step_and_0023_finishes_cleanly() {
+    // Defensive: no save happens between them, but an image with 0022 applied
+    // and the rows already copied must finish without duplicating anything.
+    let old = extended(fixture_020a1_image());
+    let dir = temp_dir();
+    let store = EvidenceStore::new(&dir, &FIXTURE_KEY);
+    let mut mid = Connection::open_in_memory().unwrap();
+    load_image(&mut mid, &old.serialize(DatabaseName::Main).unwrap()).unwrap();
+    for (name, sql) in MIGRATIONS {
+        if *name == PLANNER_ATTACHMENTS_OUT {
+            break;
+        }
+        if applied_migrations(&mid).unwrap().iter().any(|a| a == name) {
+            continue;
+        }
+        mid.execute_batch(sql).unwrap();
+        mid.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+            .unwrap();
+    }
+    crate::evidence::migrate_planner_attachments(&mid, Some(&store)).unwrap();
+    let copied = count(&mid, "SELECT count(*) FROM attachments");
+    write_image(&dir, &mid);
+    // One of the copied files was cut short: the rerun stores it again.
+    let (big_sha, big_size): (String, i64) = mid
+        .query_row(
+            "SELECT sha256, size FROM attachments WHERE id = 'big'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert!(store.is_stored(&big_sha, big_size as u64));
+    let big = store.path_for(&big_sha).unwrap();
+    let len = fs::metadata(&big).unwrap().len();
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&big)
+        .unwrap()
+        .set_len(len / 2)
+        .unwrap();
+    assert!(!store.is_stored(&big_sha, big_size as u64));
+
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    assert_attachments_moved(&old, &db);
+    assert_eq!(
+        db.with_conn(|c| Ok(count(c, "SELECT count(*) FROM attachments")))
+            .unwrap(),
+        copied
+    );
+    drop(db);
+    assert_eq!(evidence_files(&dir), (3, 0));
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_wrong_key_migrates_nothing_and_touches_no_evidence() {
+    let dir = temp_dir();
+    let original = write_image(&dir, &extended(fixture_020a1_image()));
+    let err = Db::open_with_key(&dir, [0x11; 32]).err().unwrap();
+    assert_eq!(err, DECRYPT_ERROR);
+    assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), original);
+    assert!(!dir.join("evidence").exists());
+    assert_eq!(fs::read_dir(&dir).unwrap().count(), 1);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_migrated_database_is_newer_than_0_2_0_alpha_1() {
+    // 0.2.0-alpha.1 refuses a database with migrations it does not know
+    // (`NEWER_DB_ERROR`, SEC-06), so it never runs on one without
+    // planner_attachments. Its known set is 0001–0018, as in its fixture.
+    let known = applied_migrations(&fixture_020a1_image()).unwrap();
+    let dir = temp_dir();
+    write_image(&dir, &fixture_020a1_image());
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    let applied = db.with_conn(applied_migrations).unwrap();
+    let unknown_to_it: Vec<&String> = applied.iter().filter(|m| !known.contains(m)).collect();
+    for m in ["0022_evidence.sql", "0023_planner_attachments_out.sql"] {
+        assert!(unknown_to_it.iter().any(|u| u.as_str() == m), "{m}");
+    }
+    drop(db);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+/// A keychain stand-in for `Db::recover` on "another PC".
+struct EmptyStore(std::cell::RefCell<Option<[u8; 32]>>);
+
+impl KeyStore for EmptyStore {
+    fn load(&self) -> Result<Option<[u8; 32]>, String> {
+        Ok(*self.0.borrow())
+    }
+    fn store(&self, key: &[u8; 32]) -> Result<(), String> {
+        *self.0.borrow_mut() = Some(*key);
+        Ok(())
+    }
+    fn keep_previous(&self, _key: &[u8; 32]) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+fn copy_dir(from: &Path, to: &Path) {
+    fs::create_dir_all(to).unwrap();
+    for entry in fs::read_dir(from).unwrap().flatten() {
+        let target = to.join(entry.file_name());
+        if entry.path().is_dir() {
+            copy_dir(&entry.path(), &target);
+        } else {
+            fs::copy(entry.path(), target).unwrap();
+        }
+    }
+}
+
+#[test]
+fn the_recovery_key_opens_the_evidence_on_another_pc_and_a_missing_folder_is_reported() {
+    let old = fixture_020a1_image();
+    let here = temp_dir();
+    write_image(&here, &old);
+    let recovery = Db::open_with_key(&here, FIXTURE_KEY)
+        .unwrap()
+        .recovery_key();
+
+    // A full backup (pharos.db.enc + evidence/) restored elsewhere.
+    let there = temp_dir();
+    fs::copy(here.join("pharos.db.enc"), there.join("pharos.db.enc")).unwrap();
+    copy_dir(&here.join("evidence"), &there.join("evidence"));
+    let keychain = EmptyStore(std::cell::RefCell::new(None));
+    let db = Db::recover(&there, &keychain, &recovery).unwrap();
+    assert_attachments_moved(&old, &db);
+    drop(db);
+
+    // Only the database copied: it opens, and the file is reported missing.
+    let bare = temp_dir();
+    fs::copy(here.join("pharos.db.enc"), bare.join("pharos.db.enc")).unwrap();
+    let db = Db::open_with_key(&bare, FIXTURE_KEY).unwrap();
+    let sha: String = db
+        .with_conn(|c| {
+            c.query_row("SELECT sha256 FROM attachments LIMIT 1", [], |r| r.get(0))
+                .map_err(|e| e.to_string())
+        })
+        .unwrap();
+    let err = read_evidence(&db, &sha).unwrap_err();
+    assert!(err.starts_with(crate::evidence::EVIDENCE_MISSING), "{err}");
+    drop(db);
+    for dir in [here, there, bare] {
+        fs::remove_dir_all(dir).unwrap();
+    }
 }

@@ -3,7 +3,10 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0020": "E2 step 2 (revisions and stable steps, ADR-0011)",
+      "0021": "E2 step 2 (revisions and stable steps, ADR-0011)"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013"
     }

@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
-import { saveFile } from "@shared/export/saveFile";
-import { unlessReported } from "@shared/ui/notify";
-import { plannerApi } from "../api/plannerApi";
+import { saveVia } from "@shared/export/saveFile";
+import { notify, unlessReported } from "@shared/ui/notify";
+import { MAX_ATTACHMENT_MB, plannerApi } from "../api/plannerApi";
 import {
   CARD_KINDS,
   CARD_PRIORITIES,
@@ -16,18 +16,19 @@ import {
   type PlannerCard,
 } from "../model/types";
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB per attachment
+const MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve((r.result as string).split(",")[1] ?? "");
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
+/** The text for an evidence store error (evidence.rs prefixes). */
+function explainEvidence(t: (key: string, o?: Record<string, unknown>) => string, reason: string) {
+  if (reason.startsWith("evidence-missing")) return t("planner.attachMissing");
+  if (reason.startsWith("evidence-unreadable")) return t("planner.attachUnreadable");
+  if (reason.startsWith("evidence-newer-than-app")) return t("planner.attachNewer");
+  if (reason.startsWith("evidence-too-large")) return t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB });
+  return reason;
 }
 
-/** Create/edit a planner card, including its attachments (stored encrypted). */
+/** Create/edit a planner card, including its attachments (stored encrypted in
+ *  the evidence store, ADR-0014). */
 export function CardEditor({
   projectId,
   ownerId,
@@ -90,22 +91,27 @@ export function CardEditor({
     if (!files || !card) return;
     for (const file of Array.from(files)) {
       if (file.size > MAX_BYTES) {
-        alert(t("planner.attachTooLarge", { name: file.name }));
+        alert(t("planner.attachTooLarge", { name: file.name, mb: MAX_ATTACHMENT_MB }));
         continue;
       }
-      const b64 = await fileToBase64(file);
-      await plannerApi.attachmentAdd(card.id, ownerId, file.name, file.type || null, b64);
+      try {
+        await plannerApi.attachmentAdd(card.id, ownerId, file);
+      } catch (e) {
+        const reason = explainEvidence(t, e instanceof Error ? e.message : String(e));
+        notify(t("planner.attachFailed", { name: file.name, reason }), "error");
+      }
     }
     setAttachments(await plannerApi.attachmentList(card.id, ownerId));
     if (fileRef.current) fileRef.current.value = "";
   }
 
   async function download(a: AttachmentSummary) {
-    const d = await plannerApi.attachmentGet(a.id, ownerId);
-    if (!d) return;
-    const bytes = Uint8Array.from(atob(d.dataBase64), (c) => c.charCodeAt(0));
     const path = await unlessReported(
-      saveFile(d.name, bytes, { mime: d.mime ?? undefined, untrusted: true }),
+      saveVia(
+        a.name,
+        () => plannerApi.attachmentSave(a.id, ownerId),
+        (reason) => explainEvidence(t, reason),
+      ),
     );
     if (path) toast(t("downloads.saved", { path }));
   }
@@ -240,8 +246,12 @@ export function CardEditor({
               type="file"
               multiple
               className="pl-attach__input"
+              aria-describedby="pl-attach-limit"
               onChange={(e) => void addFiles(e.target.files)}
             />
+            <p id="pl-attach-limit" className="tp-field__hint">
+              {t("planner.attachLimit", { mb: MAX_ATTACHMENT_MB })}
+            </p>
           </div>
         )}
       </div>

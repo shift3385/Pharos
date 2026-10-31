@@ -1,7 +1,6 @@
 // Barrel of the generated contracts (BASE-05). Written by hand: ts-rs writes
 // one file per type in generated/. `npm run check:contracts` fails if a file is
 // missing here.
-export type * from "./generated/AttachmentData";
 export type * from "./generated/AttachmentSummary";
 export type * from "./generated/Conflict";
 export type * from "./generated/ConflictSide";
