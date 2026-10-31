@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script></helmet>
+<div ref="{{ rootRef }}" style="display:flex;flex-direction:column;gap:20px;min-width:0;font-family:Inter,system-ui,sans-serif;color:var(--color-text-primary)">
+<div style="display:flex;flex-direction:column;gap:14px;padding:clamp(12px,2cqi,18px);border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface-1);min-width:0">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0">
+<div role="radiogroup" aria-label="Qué añadir" style="display:inline-flex;gap:2px;padding:3px;border-radius:10px;background:var(--color-surface-2);border:1px solid var(--color-border)"><button role="radio" aria-checked="{{ isSprint }}" onClick="{{ setSprint }}" style="{{ segSprint }}"><span style="width:15px;height:15px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar-range.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/calendar-range.svg) center/contain no-repeat"></span>Sprint</button><button role="radio" aria-checked="{{ isHito }}" onClick="{{ setHito }}" style="{{ segHito }}"><span style="width:15px;height:15px;flex:none;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/diamond.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/diamond.svg) center/contain no-repeat"></span>Hito</button></div>
+<button onClick="{{ nextSprint }}" title="{{ nextTitle }}" style="height:38px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface-1);color:var(--color-text-primary);font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:var(--color-surface-2)"><span style="width:15px;height:15px;flex:none;background:var(--color-navy-500);-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/plus.svg) center/contain no-repeat"></span>Siguiente sprint</button>
+<span style="flex:1"></span>
+<div style="display:flex;align-items:center;gap:4px"><button onClick="{{ prevMonth }}" aria-label="Mes anterior" style="width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--color-navy-500);cursor:pointer" style-hover="background:var(--color-surface-2)"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-left.svg) center/contain no-repeat"></span></button><button onClick="{{ nextMonth }}" aria-label="Mes siguiente" style="width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--color-navy-500);cursor:pointer" style-hover="background:var(--color-surface-2)"><span style="width:18px;height:18px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/chevron-right.svg) center/contain no-repeat"></span></button></div>
+</div>
+<span style="font-size:12.5px;color:var(--color-text-secondary);text-wrap:pretty;min-height:18px">{{ hint }}</span>
+<div style="display:flex;flex-wrap:wrap;gap:clamp(16px,3cqi,32px);min-width:0">
+<sc-for list="{{ months }}" as="mo" hint-placeholder-count="2"><div style="flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:15px;font-weight:600;padding:0 4px 4px;text-transform:capitalize">{{ mo.label }}</span>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:11.5px;font-weight:500;color:var(--color-text-muted);text-align:center"><span>lu</span><span>ma</span><span>mi</span><span>ju</span><span>vi</span><span>sá</span><span>do</span></div>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px">
+<sc-for list="{{ mo.cells }}" as="c" hint-placeholder-count="35"><div title="{{ c.title }}" onClick="{{ c.onClick }}" onMouseEnter="{{ c.onEnter }}" onMouseDown="{{ c.onDown }}" style="{{ c.cell }}"><span style="{{ c.band }}"></span><span style="{{ c.num }}">{{ c.n }}</span><sc-if value="{{ c.hito }}" hint-placeholder-val="{{ false }}"><span style="{{ c.dia }}"></span></sc-if></div></sc-for>
+</div></div></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--color-text-secondary);padding-top:10px;border-top:1px solid var(--color-border)"><span style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:10px;border-radius:5px;background:var(--color-navy-100)"></span>Sprint</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;transform:rotate(45deg);background:var(--color-accent)"></span>Hito</span><span style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--color-accent)"></span>Hoy</span><span style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:10px;border-radius:5px;background:color-mix(in oklch,var(--color-error) 18%,var(--color-surface-1))"></span>Solapamiento</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13.5px;font-weight:600">Sprints</span><span style="font-size:12.5px;color:var(--color-text-muted)">{{ sprintCount }}</span></div>
+<sc-if value="{{ noSprints }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--color-text-muted);padding:12px;border:1px dashed var(--color-border);border-radius:10px">Sin sprints. Marca un rango en el calendario o usa «Siguiente sprint».</span></sc-if>
+<sc-for list="{{ sprintRows }}" as="r" hint-placeholder-count="2"><div onMouseEnter="{{ r.onEnter }}" onMouseLeave="{{ r.onLeave }}" onFocus="{{ r.onEnter }}" style="{{ r.row }}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0">
+<span style="{{ r.sw }}"></span>
+<input aria-label="Nombre del sprint" value="{{ r.name }}" onChange="{{ r.onName }}" style="flex:1 1 200px;min-width:0;height:38px;padding:0 12px;border:1px solid var(--color-border-input);border-radius:8px;background:var(--color-surface-1);color:var(--color-text-primary);font:inherit;font-size:13.5px;box-sizing:border-box">
+<div style="flex:1 1 230px;display:flex;align-items:center;gap:6px;min-width:0"><input aria-label="Inicio (dd/mm/aaaa)" placeholder="dd/mm/aaaa" inputmode="numeric" value="{{ r.sVal }}" onChange="{{ r.onS }}" onBlur="{{ r.onSBlur }}" onKeyDown="{{ r.onKey }}" style="{{ r.sStyle }}"><span style="font-size:13px;color:var(--color-text-muted)">→</span><input aria-label="Fin (dd/mm/aaaa)" placeholder="dd/mm/aaaa" inputmode="numeric" value="{{ r.eVal }}" onChange="{{ r.onE }}" onBlur="{{ r.onEBlur }}" onKeyDown="{{ r.onKey }}" style="{{ r.eStyle }}"></div>
+<button onClick="{{ r.onDel }}" title="Quitar sprint" aria-label="Quitar sprint" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-1);color:var(--color-text-muted);cursor:pointer" style-hover="background:var(--color-surface-2)"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center/contain no-repeat"></span></button>
+</div>
+<sc-if value="{{ r.hasMsg }}" hint-placeholder-val="{{ false }}"><span style="{{ r.msgStyle }}">{{ r.msg }}</span></sc-if>
+</div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13.5px;font-weight:600">Hitos</span><span style="font-size:12.5px;color:var(--color-text-muted)">{{ hitoCount }}</span></div>
+<sc-if value="{{ noHitos }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--color-text-muted);padding:12px;border:1px dashed var(--color-border);border-radius:10px">Sin hitos. Elige «Hito» y haz clic en un día del calendario.</span></sc-if>
+<sc-for list="{{ hitoRows }}" as="r" hint-placeholder-count="3"><div onMouseEnter="{{ r.onEnter }}" onMouseLeave="{{ r.onLeave }}" onFocus="{{ r.onEnter }}" style="{{ r.row }}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0">
+<span style="width:9px;height:9px;margin:0 2px;flex:none;transform:rotate(45deg);background:var(--color-accent)"></span>
+<input aria-label="Nombre del hito" value="{{ r.name }}" onChange="{{ r.onName }}" style="flex:1 1 200px;min-width:0;height:38px;padding:0 12px;border:1px solid var(--color-border-input);border-radius:8px;background:var(--color-surface-1);color:var(--color-text-primary);font:inherit;font-size:13.5px;box-sizing:border-box">
+<input aria-label="Fecha (dd/mm/aaaa)" placeholder="dd/mm/aaaa" inputmode="numeric" value="{{ r.dVal }}" onChange="{{ r.onD }}" onBlur="{{ r.onDBlur }}" onKeyDown="{{ r.onKey }}" style="{{ r.dStyle }}">
+<button onClick="{{ r.onDel }}" title="Quitar hito" aria-label="Quitar hito" style="width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:8px;background:var(--color-surface-1);color:var(--color-text-muted);cursor:pointer" style-hover="background:var(--color-surface-2)"><span style="width:16px;height:16px;background:currentColor;-webkit-mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center/contain no-repeat;mask:url(https://unpkg.com/lucide-static@0.460.0/icons/x.svg) center/contain no-repeat"></span></button>
+</div>
+<sc-if value="{{ r.hasMsg }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--color-error-text);padding-left:20px">{{ r.msg }}</span></sc-if>
+</div></sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1000},&quot;mobile&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { mode: 'sprint', vy: 2026, vm: 10, anchor: null, hover: null, sel: null, hl: null, drag: null, drafts: {}, bad: {}, w: 900, seq: 10,
+    sprints: [{ id: 's1', name: 'Sprint 21 · Pagos', start: '2026-11-02', end: '2026-11-15' }, { id: 's2', name: 'Sprint 22 · Facturas', start: '2026-11-16', end: '2026-11-29' }],
+    hitos: [{ id: 'h1', name: 'Congelación de código', date: '2026-11-12' }, { id: 'h2', name: 'Inicio de UAT', date: '2026-11-19' }, { id: 'h3', name: 'Salida a producción', date: '2026-12-01' }] };
+  componentDidMount() {
+    this._up = () => { if (this.state.drag) { this._dragged = true; this.setState({ drag: null }); } };
+    this._key = (e) => { if (e.key === 'Escape' && this.state.anchor) this.setState({ anchor: null, hover: null }); };
+    document.addEventListener('mouseup', this._up); document.addEventListener('keydown', this._key);
+  }
+  componentWillUnmount() { document.removeEventListener('mouseup', this._up); document.removeEventListener('keydown', this._key); this._ro && this._ro.disconnect(); }
+  _attach(el) { if (!el || el === this._el) return; this._el = el; this._ro && this._ro.disconnect(); this._ro = new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (Math.abs(w - this.state.w) > 4) this.setState({ w }); }); this._ro.observe(el); }
+  _u() {
+    if (this.__u) return this.__u;
+    const K = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const P = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+    const F = (k) => { const [y, m, d] = k.split('-'); return d + '/' + m + '/' + y; };
+    const add = (k, n) => { const d = P(k); d.setDate(d.getDate() + n); return K(d); };
+    const diff = (a, b) => Math.round((P(b) - P(a)) / 864e5);
+    const parse = (s) => { const m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s || ''); if (!m) return null; const d = new Date(+m[3], +m[2] - 1, +m[1]); return d.getMonth() === +m[2] - 1 ? K(d) : null; };
+    return (this.__u = { K, P, F, add, diff, parse });
+  }
+  _jump(k) {
+    const { P } = this._u(); const d = P(k); const s = this.state; const two = this._two;
+    const a = s.vy * 12 + s.vm, t = d.getFullYear() * 12 + d.getMonth();
+    if (t < a || t > a + (two ? 1 : 0)) this.setState({ vy: d.getFullYear(), vm: d.getMonth() });
+  }
+  _nextName() { let mx = 0; this.state.sprints.forEach((x) => { const m = /Sprint\s+(\d+)/i.exec(x.name); if (m) mx = Math.max(mx, +m[1]); }); return 'Sprint ' + (mx ? mx + 1 : this.state.sprints.length + 1); }
+  _addSprint(a, b) { const id = 's' + this.state.seq; this.setState((s) => ({ seq: s.seq + 1, sprints: [...s.sprints, { id, name: this._nextName(), start: a, end: b }], sel: id, anchor: null, hover: null })); }
+  _updS(id, patch) { this.setState((s) => ({ sprints: s.sprints.map((x) => (x.id === id ? { ...x, ...patch } : x)) })); }
+  _updH(id, patch) { this.setState((s) => ({ hitos: s.hitos.map((x) => (x.id === id ? { ...x, ...patch } : x)) })); }
+  _draft(key, v) { this.setState((s) => ({ drafts: { ...s.drafts, [key]: v } })); }
+  _commit(key, val, ok) {
+    const { parse } = this._u(); const v = parse(val); const res = v ? ok(v) : 'Fecha no válida. Usa dd/mm/aaaa.';
+    this.setState((s) => { const d = { ...s.drafts }, b = { ...s.bad }; if (res === true) { delete d[key]; delete b[key]; } else b[key] = res; return { drafts: d, bad: b }; });
+  }
+  renderVals() {
+    this._rootCb = this._rootCb || ((el) => this._attach(el));
+    const { K, P, F, add, diff } = this._u(); const s = this.state; const DUR = 14; const today = '2026-10-31';
+    const mobile = !!this.props.mobile || s.w < 560; const two = !mobile && s.w >= 640; this._two = two;
+    const sp = [...s.sprints].sort((a, b) => (a.start < b.start ? -1 : 1));
+    const over = {}; sp.forEach((a) => sp.forEach((b) => { if (a !== b && a.start <= b.end && b.start <= a.end) over[a.id] = b.name; }));
+    const prev = s.anchor && s.hover ? (s.anchor < s.hover ? [s.anchor, s.hover] : [s.hover, s.anchor]) : null;
+    const MN = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const tint = (c, p) => 'color-mix(in oklch,' + c + ' ' + p + '%,var(--color-surface-1))';
+    const fill = (x, i) => (over[x.id] ? tint('var(--color-error)', 18) : (s.sel === x.id || s.hl === x.id) ? tint('var(--color-navy-500)', 28) : i % 2 ? tint('var(--color-accent)', 26) : 'var(--color-navy-100)');
+    const months = [];
+    for (let mi = 0; mi < (two ? 2 : 1); mi++) {
+      const first = new Date(s.vy, s.vm + mi, 1); const y = first.getFullYear(), m = first.getMonth();
+      const lead = (first.getDay() + 6) % 7; const days = new Date(y, m + 1, 0).getDate(); const cells = [];
+      for (let i = 0; i < lead; i++) cells.push({ n: '', title: '', hito: false, cell: { height: 40 }, band: { display: 'none' }, num: {}, dia: {} });
+      for (let dn = 1; dn <= days; dn++) {
+        const k = K(new Date(y, m, dn)); const col = (lead + dn - 1) % 7;
+        const x = sp.find((q) => q.start <= k && k <= q.end); const idx = x ? sp.indexOf(x) : -1;
+        const hs = s.hitos.filter((h) => h.date === k); const act = x && (s.sel === x.id || s.hl === x.id);
+        const inPrev = prev && prev[0] <= k && k <= prev[1];
+        const isStart = (x && x.start === k) || (inPrev && prev[0] === k), isEnd = (x && x.end === k) || (inPrev && prev[1] === k);
+        const bg = inPrev ? tint('var(--color-navy-500)', 16) : x ? fill(x, idx) : 'transparent';
+        const capL = isStart || col === 0 || dn === 1, capR = isEnd || col === 6 || dn === days;
+        const edge = x && (x.start === k || x.end === k); const drag = !mobile && act && edge;
+        const filled = s.anchor === k || (act && edge) || (inPrev && (prev[0] === k || prev[1] === k));
+        const hAct = hs.some((h) => s.sel === h.id || s.hl === h.id);
+        cells.push({
+          n: dn, hito: hs.length > 0,
+          title: [x ? x.name + ' · ' + F(x.start) + ' – ' + F(x.end) : '', ...hs.map((h) => '◆ ' + h.name)].filter(Boolean).join('\n'),
+          cell: { height: 40, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: drag ? 'ew-resize' : 'pointer', userSelect: 'none' },
+          band: { position: 'absolute', left: 0, right: 0, top: 3, bottom: 3, background: bg, borderTopLeftRadius: capL ? 17 : 0, borderBottomLeftRadius: capL ? 17 : 0, borderTopRightRadius: capR ? 17 : 0, borderBottomRightRadius: capR ? 17 : 0, outline: over[x && x.id] && edge ? '1.5px solid var(--color-error)' : 'none', outlineOffset: -1.5 },
+          num: { position: 'relative', width: 32, height: 32, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 13.5, fontWeight: edge || filled ? 700 : 400, background: filled ? 'var(--color-navy-500)' : 'transparent', color: filled ? '#fff' : 'var(--color-text-primary)', boxShadow: k === today && !filled ? 'inset 0 0 0 1.5px var(--color-accent)' : 'none' },
+          dia: { position: 'absolute', bottom: hAct ? 1 : 2, left: '50%', width: hAct ? 9 : 7, height: hAct ? 9 : 7, marginLeft: hAct ? -4.5 : -3.5, transform: 'rotate(45deg)', background: 'var(--color-accent)', boxShadow: hAct ? '0 0 0 2px var(--color-navy-500)' : 'none' },
+          onEnter: () => { if (this.state.anchor) this.setState({ hover: k }); const d = this.state.drag; if (d) { const q = this.state.sprints.find((z) => z.id === d.id); if (q) this._updS(q.id, d.edge === 'start' ? { start: k <= q.end ? k : q.end } : { end: k >= q.start ? k : q.start }); } },
+          onDown: (e) => { if (drag) { e.preventDefault(); this._dragged = false; this.setState({ drag: { id: x.id, edge: x.start === k ? 'start' : 'end' } }); } },
+          onClick: () => {
+            if (this._dragged) { this._dragged = false; return; }
+            const st = this.state;
+            if (st.mode === 'hito') { if (hs.length) this.setState({ sel: st.sel === hs[0].id ? null : hs[0].id }); else { const id = 'h' + st.seq; this.setState((q) => ({ seq: q.seq + 1, hitos: [...q.hitos, { id, name: 'Hito ' + (q.hitos.length + 1), date: k }], sel: id })); } return; }
+            if (!st.anchor) { if (x) this.setState({ sel: st.sel === x.id ? null : x.id }); else this.setState({ anchor: k, hover: k, sel: null }); return; }
+            const a = st.anchor < k ? st.anchor : k, b = st.anchor < k ? k : st.anchor; this._addSprint(a, b);
+          }
+        });
+      }
+      months.push({ label: MN[m] + ' ' + y, cells });
+    }
+    const inS = (base) => ({ flex: '1 1 0', minWidth: 0, height: 38, padding: '0 10px', border: '1px solid ' + (base ? 'var(--color-error)' : 'var(--color-border-input)'), borderRadius: 8, background: 'var(--color-surface-1)', color: 'var(--color-text-primary)', font: 'inherit', fontSize: 13.5, fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box' });
+    const rowBox = (on) => ({ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, borderRadius: 10, border: '1px solid ' + (on ? 'var(--color-navy-300)' : 'var(--color-border)'), background: on ? tint('var(--color-navy-500)', 6) : 'var(--color-surface-1)', transition: 'border-color .15s, background .15s', minWidth: 0 });
+    const onKey = (e) => { if (e.key === 'Enter') e.target.blur(); };
+    const sprintRows = sp.map((x, i) => {
+      const dur = diff(x.start, x.end) + 1; const bs = s.bad[x.id + 's'], be = s.bad[x.id + 'e'];
+      const msg = bs || be || (over[x.id] ? 'Se solapa con «' + over[x.id] + '». Ajusta las fechas.' : dur !== DUR ? 'Dura ' + dur + ' días; la Metodología (paso 6) indica 14 días (2 semanas).' : '');
+      const err = !!(bs || be || over[x.id]);
+      return {
+        name: x.name, sVal: s.drafts[x.id + 's'] ?? F(x.start), eVal: s.drafts[x.id + 'e'] ?? F(x.end), onKey,
+        row: rowBox(s.sel === x.id || s.hl === x.id),
+        sw: { width: 12, height: 12, flex: 'none', margin: '0 2px', borderRadius: 4, background: fill({ id: '_' }, i) },
+        sStyle: inS(bs), eStyle: inS(be), hasMsg: !!msg, msg,
+        msgStyle: { fontSize: 12, paddingLeft: 20, color: err ? 'var(--color-error-text)' : 'var(--color-warning-text)', textWrap: 'pretty' },
+        onName: (e) => this._updS(x.id, { name: e.target.value }),
+        onS: (e) => this._draft(x.id + 's', e.target.value), onE: (e) => this._draft(x.id + 'e', e.target.value),
+        onSBlur: (e) => this._commit(x.id + 's', e.target.value, (v) => { const q = this.state.sprints.find((z) => z.id === x.id); if (v > q.end) return 'El inicio es posterior al fin.'; this._updS(x.id, { start: v }); this._jump(v); return true; }),
+        onEBlur: (e) => this._commit(x.id + 'e', e.target.value, (v) => { const q = this.state.sprints.find((z) => z.id === x.id); if (v < q.start) return 'El fin es anterior al inicio.'; this._updS(x.id, { end: v }); this._jump(v); return true; }),
+        onDel: () => this.setState((q) => ({ sprints: q.sprints.filter((z) => z.id !== x.id), sel: q.sel === x.id ? null : q.sel, hl: null })),
+        onEnter: () => { if (this.state.hl !== x.id) { this.setState({ hl: x.id }); this._jump(x.start); } },
+        onLeave: () => this.setState({ hl: null })
+      };
+    });
+    const hs = [...s.hitos].sort((a, b) => (a.date < b.date ? -1 : 1));
+    const hitoRows = hs.map((h) => {
+      const b = s.bad[h.id + 'd'];
+      return {
+        name: h.name, dVal: s.drafts[h.id + 'd'] ?? F(h.date), onKey, row: rowBox(s.sel === h.id || s.hl === h.id),
+        dStyle: { ...inS(b), flex: '0 1 140px' }, hasMsg: !!b, msg: b || '',
+        onName: (e) => this._updH(h.id, { name: e.target.value }), onD: (e) => this._draft(h.id + 'd', e.target.value),
+        onDBlur: (e) => this._commit(h.id + 'd', e.target.value, (v) => { this._updH(h.id, { date: v }); this._jump(v); return true; }),
+        onDel: () => this.setState((q) => ({ hitos: q.hitos.filter((z) => z.id !== h.id), sel: q.sel === h.id ? null : q.sel, hl: null })),
+        onEnter: () => { if (this.state.hl !== h.id) { this.setState({ hl: h.id }); this._jump(h.date); } },
+        onLeave: () => this.setState({ hl: null })
+      };
+    });
+    const last = sp.length ? sp.reduce((m, x) => (x.end > m ? x.end : m), sp[0].end) : today;
+    const nStart = add(last, 1), nEnd = add(nStart, DUR - 1);
+    const seg = (on) => ({ height: 32, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 12px', border: 0, borderRadius: 8, font: 'inherit', fontSize: 13, fontWeight: on ? 600 : 500, cursor: 'pointer', background: on ? 'var(--color-surface-1)' : 'transparent', color: on ? 'var(--color-navy-500)' : 'var(--color-text-secondary)', boxShadow: on ? 'var(--shadow-1)' : 'none' });
+    const hint = s.anchor ? 'Inicio: ' + F(s.anchor) + '. Haz clic en el día de fin. Esc para cancelar.'
+      : s.mode === 'hito' ? 'Haz clic en un día para añadir un hito. Haz clic en un hito para seleccionarlo.'
+      : 'Haz clic en el día de inicio y después en el de fin para crear un sprint.' + (mobile ? '' : ' Selecciona un sprint y arrastra sus extremos para cambiar las fechas.');
+    return {
+      rootRef: this._rootCb, months, hint, sprintRows, hitoRows,
+      isSprint: s.mode === 'sprint', isHito: s.mode === 'hito', segSprint: seg(s.mode === 'sprint'), segHito: seg(s.mode === 'hito'),
+      setSprint: () => this.setState({ mode: 'sprint' }), setHito: () => this.setState({ mode: 'hito', anchor: null, hover: null }),
+      prevMonth: () => this.setState((q) => { const d = new Date(q.vy, q.vm - 1, 1); return { vy: d.getFullYear(), vm: d.getMonth() }; }),
+      nextMonth: () => this.setState((q) => { const d = new Date(q.vy, q.vm + 1, 1); return { vy: d.getFullYear(), vm: d.getMonth() }; }),
+      nextTitle: 'Añade ' + this._nextName() + ': ' + F(nStart) + ' – ' + F(nEnd) + ' (14 días, paso 6)',
+      nextSprint: () => { this._addSprint(nStart, nEnd); this._jump(nStart); },
+      sprintCount: sp.length + (sp.length === 1 ? ' sprint' : ' sprints'), hitoCount: hs.length + (hs.length === 1 ? ' hito' : ' hitos'),
+      noSprints: sp.length === 0, noHitos: hs.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

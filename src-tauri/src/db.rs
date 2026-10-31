@@ -150,6 +150,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0023_planner_attachments_out.sql"),
     ),
     (
+        "0024_execution.sql",
+        include_str!("../migrations/0024_execution.sql"),
+    ),
+    (
         "0026_case_fields.sql",
         include_str!("../migrations/0026_case_fields.sql"),
     ),

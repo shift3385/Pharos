@@ -40,3 +40,18 @@ Comprobación:
 Cuando termines, ejecuta `/design-sync` para que el design system recoja los tokens corregidos.
 
 ---
+
+
+## Paso 14 · Cronograma (nuevo)
+Referencia: `templates/rediseno-app/Cronograma.dc.html`. Sustituye la UI actual del paso 14: elimina el calendario fijo, el selector de fecha nativo de cada fila, los botones «Añadir fila» / «+ Añadir sprint del rango» y el bloque «Próximamente». Comportamiento completo en README §8 (fila «Plan · paso 14»). Modelo: `sprints[{id,name,start,end}]`, `hitos[{id,name,date}]`, fechas ISO; duración esperada = semanas del paso 6 × 7.
+
+
+## Login / Registro · doble scroll (bug)
+Síntoma: en "Crear cuenta" aparecen dos barras de scroll (la de la columna del formulario y la de la página entera, que arrastra también la imagen).
+Causa: el contenedor raíz crece más que la ventana (min-height:100vh + padding/márgenes, o 100vh en lugar de 100dvh) y además la columna del formulario tiene su propio overflow:auto.
+Arreglo (referencia: `templates/rediseno-app/Login.dc.html`, enlace «Regístrate»):
+1. Raíz de la pantalla de auth: `height:100dvh; overflow:hidden; display:flex` y `html,body{height:100%;margin:0;overflow:hidden}` solo en esta ruta.
+2. Columna del formulario: `height:100%; overflow-y:auto` → es el ÚNICO scroll. Contenido centrado con `flex:1;display:flex;align-items:center` (si cabe se centra, si no cabe scrolla desde arriba sin cortar).
+3. Panel de imagen: `height:100%; overflow:hidden`, nunca scrolla.
+4. Registro más compacto para que quepa sin scroll en ~800 px de alto: Nombre y Apellidos en la misma fila (`flex-wrap:wrap`, cada uno `flex:1 1 180px`), inputs de 46 px, separación 14 px entre campos y 20 px entre bloques, título 32 px.
+5. Móvil: la hoja inferior pasa a `flex:0 1 auto; min-height:0; overflow-y:auto`; la cabecera con la foto se encoge hasta su mínimo y solo scrolla la hoja.

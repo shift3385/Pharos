@@ -423,6 +423,10 @@ export function createDomainService(store: DomainStore) {
       title: input.title.trim(),
       description: input.description ?? "",
       priority: priorityOf(input.priority),
+      // Risk (RUN-00): not assessed until the desktop sets it; an update
+      // keeps it (`patchRequirement` spreads the stored payload).
+      riskLikelihood: null,
+      riskImpact: null,
       createdAt: at,
       updatedAt: at,
     };

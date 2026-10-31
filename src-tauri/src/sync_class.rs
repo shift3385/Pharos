@@ -32,6 +32,18 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
         insert_if_absent: crate::revisions::insert_if_absent,
         owner: crate::revisions::owner,
     },
+    AppendOnly {
+        entity: crate::runs::RUN_SHARD,
+        read: crate::runs::shard_payload,
+        insert_if_absent: crate::runs::shard_insert_if_absent,
+        owner: crate::runs::shard_owner,
+    },
+    AppendOnly {
+        entity: crate::runs::RESULT,
+        read: crate::runs::result_payload,
+        insert_if_absent: crate::runs::result_insert_if_absent,
+        owner: crate::runs::result_owner,
+    },
 ];
 
 /// Version of the set of entities this build applies on pull. A pull cursor
@@ -39,9 +51,10 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// moved the cursor past documents it did not apply. Bump it with every entity
 /// added to `oplog::SYNCED` or `APPEND_ONLY`.
 /// 1: audit_event (AUD-01). 2: test_case_revision and the stable-steps shape
-/// of test cases (DAT-02). 3: custom_field and the case type / automation
-/// status of test cases (FLD-01).
-pub const APPLIED_SET_VERSION: i64 = 3;
+/// of test cases (DAT-02). 3: run, run_item, unlinked_mapping, run_shard and
+/// result (EJE-01). 4: custom_field and the case type / automation status of
+/// test cases (FLD-01).
+pub const APPLIED_SET_VERSION: i64 = 4;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

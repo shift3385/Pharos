@@ -193,16 +193,36 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
-     `complete-payload`, `stable-steps`, `custom-fields`). Un cliente que aún
-     no ha visto `stable-steps` en las respuestas del servidor no le envía casos
-     ni revisiones, ni definiciones de campos sin `custom-fields` (los retiene y
-     el diagnóstico los cuenta). El servidor conserva el tipo de caso, el estado
-     de automatización y `data.custom` de un caso que envía un cliente sin
-     `custom-fields`.
+     `complete-payload`, `stable-steps`, `runs`, `custom-fields`). Un cliente que
+     aún no ha visto `stable-steps` en las respuestas del servidor no le envía
+     casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
+     modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
+     resultados, ni le pide bloques de claves `run` (EJE-01), y sin
+     `custom-fields` no le envía definiciones de campos (FLD-01).
+   - **Una funcionalidad que añade campos a una entidad existente** los
+     protege de quien no la conoce: el push de un cliente sin ella conserva
+     esos campos aunque envíe su estado completo (`FEATURE_KEYS` del servidor,
+     y `FEATURE_DATA_KEYS` para claves dentro de `data`; hoy,
+     `riskLikelihood`/`riskImpact` del requisito con `runs`, y `caseType`,
+     `automationStatus` y `data.custom` del caso con `custom-fields`). Las
+     entidades nuevas solo llegan en el pull a quien la envía.
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
+   - **Una clave nueva dentro de un blob opaco no necesita puerta** si se
+     cumplen las tres: el escritorio y el servidor guardan el blob tal cual sin
+     leer esa parte; todo cliente que aún puede hacer push la conoce; y el
+     lector nuevo tolera su ausencia. Es el caso de los ids de sprints e hitos
+     dentro de `data` del plan (RED-W5): desde `stable-steps` todo cliente
+     publicado anterior está en solo lectura, en su pull guarda `data` sin
+     tocar (los ids siguen en su disco) y la app actual da ids deterministas a
+     los planes que no los tienen al leerlos.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian
    de forma incompatible en una MENOR, con nota en el CHANGELOG.
+   - **Pharos Run JSON** lleva `schemaVersion` SemVer propio (hoy `1.0.0`,
+     `src/shared/contracts/pharos-run/`, JSON Schema en
+     `docs/formats/pharos-run-1.schema.json`). Un campo nuevo opcional sube la
+     MENOR del formato; un cambio incompatible sube su MAYOR, y un lector
+     rechaza una MAYOR que no conoce con un mensaje claro.
 
 ## 7. CHANGELOG
 

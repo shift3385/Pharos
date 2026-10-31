@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0.0",
+  "run": {
+    "title": "Nightly checkout",
+    "trigger": "ci",
+    "sourceTool": "playwright",
+    "sourceToolVersion": "1.64.1",
+    "environment": "staging",
+    "build": "2026.10.31-3",
+    "commitSha": "4b1c9e0",
+    "branch": "main",
+    "ciUrl": "https://ci.example.test/runs/42",
+    "dataset": "users@3",
+    "startedAt": "2026-10-31T02:00:00Z",
+    "finishedAt": "2026-10-31T02:09:30Z",
+    "context": { "node": "20.18.0" }
+  },
+  "shards": [
+    {
+      "ref": "s1",
+      "shardIndex": 1,
+      "shardTotal": 2,
+      "sourceFormat": "ctrf",
+      "sourceFileSha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "formatVersion": "0.2.0",
+      "rawReportRef": "a-raw"
+    }
+  ],
+  "results": [
+    {
+      "name": "Pay with a saved card",
+      "status": "failed",
+      "duration": 1200,
+      "rawStatus": "failed",
+      "filePath": "features/pay.feature",
+      "testKey": "features/pay.feature::Pay with a saved card",
+      "caseKey": "TC-0001",
+      "flowId": "F1",
+      "configurationLabel": "chromium",
+      "attempt": 0,
+      "shardRef": "s1",
+      "message": "Expected 200, got 500",
+      "steps": [
+        { "text": "the cart has one item", "keyword": "Given", "status": "passed", "stepId": "A1B2C3D4" },
+        { "text": "I pay", "keyword": "When", "status": "failed", "stepId": "E5F6G7H8", "actual": "500", "attachments": ["a-shot"] }
+      ],
+      "attachments": ["a-trace"]
+    },
+    {
+      "name": "Pay with a saved card",
+      "status": "passed",
+      "testKey": "features/pay.feature::Pay with a saved card",
+      "configurationLabel": "chromium",
+      "attempt": 1,
+      "shardRef": "s1",
+      "toolSpecific": { "worker": 3 }
+    }
+  ],
+  "findings": [
+    {
+      "ruleId": "color-contrast",
+      "severity": "medium",
+      "rawSeverity": "serious",
+      "message": "Elements must have sufficient color contrast",
+      "location": { "url": "https://staging.example.test/cart", "selector": "#pay" },
+      "fingerprint": "sha256:0f1e",
+      "standardRefs": ["WCAG2.2:1.4.3"],
+      "shardRef": "s1"
+    }
+  ],
+  "metrics": [
+    { "name": "http_req_duration", "aggregation": "p95", "value": 420.5, "unit": "ms", "threshold": "p(95)<500", "passed": true },
+    { "name": "mutation_score", "value": 71.2, "unit": "%", "passed": null }
+  ],
+  "exploratorySession": {
+    "charter": "Explore saved cards with expired dates",
+    "areas": ["checkout"],
+    "timeboxMinutes": 60,
+    "tester": "user:11111111-1111-4111-8111-111111111111",
+    "startedAt": "2026-10-31T10:00:00Z",
+    "notes": [{ "kind": "bug", "text": "Expired card is accepted", "at": "2026-10-31T10:12:00Z", "attachments": ["a-shot"] }]
+  },
+  "attachments": [
+    { "ref": "a-raw", "name": "ctrf.json", "contentType": "application/json", "kind": "raw_report" },
+    { "ref": "a-shot", "name": "pay.png", "contentType": "image/png", "kind": "screenshot", "size": 20480 },
+    { "ref": "a-trace", "name": "trace.zip", "kind": "trace", "path": "test-results/trace.zip" }
+  ]
+}

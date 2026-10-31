@@ -28,6 +28,7 @@ mod requirement;
 mod revisions;
 #[cfg(test)]
 mod revisions_sync_tests;
+mod runs;
 mod steps;
 mod sync;
 mod sync_class;
@@ -162,6 +163,16 @@ pub fn run() {
             requirement::requirement_update,
             requirement::requirement_delete,
             requirement::requirement_import,
+            requirement::requirement_risk_set,
+            runs::run_create,
+            runs::run_update,
+            runs::run_get,
+            runs::run_list,
+            runs::run_items_add,
+            runs::run_items_list,
+            runs::result_record,
+            runs::results_list,
+            runs::unlinked_mapping_set,
             planner::planner_list,
             planner::planner_create,
             planner::planner_update,

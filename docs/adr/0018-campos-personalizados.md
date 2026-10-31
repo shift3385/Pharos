@@ -179,9 +179,9 @@ plan (contrastadas con Jira, Xray, Zephyr, TestRail y Azure Test Plans):
   trae `custom` conserva el guardado (`{}` lo vacía): la importación y la IA
   no lo conocen.
 - **Sync.** `custom_field` es `lww` y es hijo del proyecto (la cascada lo
-  borra); `APPLIED_SET_VERSION = 3` (el paso 4 también lo sube: el que se
-  fusione segundo toma el número siguiente). Funcionalidad nueva
-  **`custom-fields`**:
+  borra); `APPLIED_SET_VERSION = 4` (el 3 es del paso 4, fusionado antes). Funcionalidad nueva
+  **`custom-fields`** (las claves que protege están en `FEATURE_KEYS` y
+  `FEATURE_DATA_KEYS` del servidor, el mecanismo general del paso 4):
   - el escritorio retiene las definiciones hasta que el servidor de la cuenta
     la lista (un servidor anterior rechazaría todo el lote por una entidad que
     no conoce); el diagnóstico las cuenta (`heldBackFields`);

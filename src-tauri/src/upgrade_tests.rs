@@ -675,6 +675,29 @@ fn pending_entities(conn: &Connection, user: &str) -> Vec<(String, String)> {
     out
 }
 
+/// `pending_entities` of an image before migrating, from its journal: the
+/// distinct entities of the account with unsynced changes and no open
+/// conflict of version or key, as a push groups them.
+fn pending_in_old_image(conn: &Connection, user: &str) -> Vec<(String, String)> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT DISTINCT o.entity, o.entity_id FROM oplog o
+              WHERE o.synced_at IS NULL AND o.user_id = ?1
+                AND o.entity IN ('project', 'test_plan', 'test_case', 'requirement', 'planner_card')
+                AND NOT EXISTS (SELECT 1 FROM sync_conflicts c WHERE c.user_id = o.user_id
+                                AND c.entity = o.entity AND c.entity_id = o.entity_id
+                                AND c.resolved_at IS NULL)
+                AND NOT EXISTS (SELECT 1 FROM key_conflicts k WHERE k.entity = o.entity
+                                AND k.entity_id = o.entity_id AND k.resolved_at IS NULL)
+              ORDER BY 1, 2",
+        )
+        .unwrap();
+    stmt.query_map([user], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap()
+}
+
 #[test]
 fn the_fixture_really_is_a_0_2_0_alpha_1_database() {
     let old = fixture_020a1_image();
@@ -721,21 +744,11 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
     let dir = temp_dir();
     fs::write(dir.join("pharos.db.enc"), FIXTURE_020A1).unwrap();
     let old = fixture_020a1_image();
-    // What 0.2.0-alpha.1 would push, measured on a copy: the probe records a
-    // server with stable-steps, which `old` must not get.
-    let probe = fixture_020a1_image();
-    crate::sync::assume_stable_steps_server(&probe);
-    // HEAD reads the case fields of 0026 for a payload; the probe only counts
-    // entities, so it gets the empty columns.
-    probe
-        .execute_batch(
-            "ALTER TABLE test_cases ADD COLUMN case_type TEXT;
-             ALTER TABLE test_cases ADD COLUMN automation_status TEXT;",
-        )
-        .unwrap();
+    // What 0.2.0-alpha.1 would push, read straight from its journal: HEAD's
+    // push builder reads columns (risk_*, 0024) this image does not have yet.
     let pending_before = (
-        pending_entities(&probe, USER_1),
-        pending_entities(&probe, USER_2),
+        pending_in_old_image(&old, USER_1),
+        pending_in_old_image(&old, USER_2),
     );
 
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
@@ -1851,4 +1864,141 @@ fn a_case_edited_while_read_only_gets_its_custom_values_back() {
     .unwrap();
     drop(db);
     fs::remove_dir_all(&dir).unwrap();
+}
+
+// ---- 0024: execution tables (EJE-01, RUN-00) ----------------------------------
+
+/// `key_counters` or `retired_keys` rows of an image, sorted, as text.
+fn key_rows(conn: &Connection, table: &str) -> Vec<Vec<String>> {
+    if !tables(conn).iter().any(|t| t == table) {
+        return Vec::new();
+    }
+    let cols = columns(conn, table);
+    let mut out: Vec<Vec<String>> = rows(conn, table, &cols)
+        .into_iter()
+        .map(|(_, r)| r.iter().map(|v| format!("{v:?}")).collect())
+        .collect();
+    out.sort();
+    out
+}
+
+#[test]
+fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
+    // Key-table rows the rebuild must carry over: the 0.2.0-alpha.1 image has
+    // both tables (0016/0017); a counter and a retired key of each new-ish
+    // kind are added to be sure there is something to copy.
+    let mut key_rows_checked = 0;
+    for image in [
+        fixture_image as fn() -> Connection,
+        fixture_020a1_image as fn() -> Connection,
+    ] {
+        let dir = temp_dir();
+        let old = image();
+        if tables(&old).iter().any(|t| t == "retired_keys") {
+            old.execute_batch(
+                "INSERT OR IGNORE INTO key_counters (project_id, kind, next_value, block_end)
+                     VALUES ('p-upgrade', 'defect', 8, 57);
+                 INSERT OR IGNORE INTO retired_keys (project_id, kind, key)
+                     VALUES ('p-upgrade', 'case', 'ATS_099');",
+            )
+            .unwrap();
+        }
+        assert!(
+            count(&old, "SELECT count(*) FROM requirements") > 0,
+            "the fixture has requirements to keep"
+        );
+        write_image(&dir, &old);
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        db.with_conn(|new| {
+            for t in [
+                "runs",
+                "run_items",
+                "run_shards",
+                "results",
+                "step_results",
+                "unlinked_mappings",
+                "execution_drafts",
+            ] {
+                assert!(tables(new).iter().any(|x| x == t), "{t} missing");
+                assert_eq!(count(new, &format!("SELECT count(*) FROM {t}")), 0, "{t}");
+            }
+            // Requirements keep every row, not yet assessed.
+            assert_eq!(
+                count(new, "SELECT count(*) FROM requirements"),
+                count(&old, "SELECT count(*) FROM requirements")
+            );
+            assert_eq!(
+                count(
+                    new,
+                    "SELECT count(*) FROM requirements
+                      WHERE risk_likelihood IS NOT NULL OR risk_impact IS NOT NULL"
+                ),
+                0
+            );
+            // The rebuilt key tables keep every row (rows of 0016/0017; the
+            // 0.1.0 image migrates through them first).
+            for t in ["key_counters", "retired_keys"] {
+                let before = key_rows(&old, t);
+                if !before.is_empty() {
+                    assert_eq!(key_rows(new, t), before, "{t}");
+                }
+            }
+            // The new kinds' keys are there with their values.
+            if tables(&old).iter().any(|t| t == "retired_keys") {
+                assert_eq!(
+                    count(
+                        new,
+                        "SELECT count(*) FROM key_counters WHERE project_id = 'p-upgrade'
+                            AND next_value = 8 AND block_end = 57"
+                    ),
+                    1
+                );
+                assert_eq!(
+                    count(new, "SELECT count(*) FROM retired_keys WHERE key = 'ATS_099'"),
+                    1
+                );
+            }
+            // ...and accept the new kinds; risk stays in 1..5.
+            new.execute(
+                "INSERT INTO key_counters (project_id, kind, next_value) VALUES ('px', 'run', 1), ('px', 'cycle', 1)",
+                [],
+            )
+            .map_err(|e| e.to_string())?;
+            new.execute(
+                "INSERT INTO retired_keys (project_id, kind, key) VALUES ('px', 'run', 'RUN-001')",
+                [],
+            )
+            .map_err(|e| e.to_string())?;
+            assert!(new
+                .execute(
+                    "INSERT INTO key_counters (project_id, kind, next_value) VALUES ('px', 'sprint', 1)",
+                    []
+                )
+                .is_err());
+            assert!(new
+                .execute("UPDATE requirements SET risk_impact = 6", [])
+                .map(|n| n == 0)
+                .unwrap_or(true));
+            Ok(())
+        })
+        .unwrap();
+        for t in ["key_counters", "retired_keys"] {
+            if !key_rows(&old, t).is_empty() {
+                key_rows_checked += 1;
+            }
+        }
+        // Reopening changes nothing.
+        drop(db);
+        let again = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        again
+            .with_conn(|c| {
+                assert_eq!(pending_migrations(c)?.len(), 0);
+                Ok(())
+            })
+            .unwrap();
+    }
+    assert!(
+        key_rows_checked >= 2,
+        "both key tables were checked with rows in them"
+    );
 }

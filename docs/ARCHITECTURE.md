@@ -121,6 +121,45 @@ plan in place, so the step stays put, and fires `PLAN_SAVED_EVENT`, which the
 project header listens to. Deliverables and tools are catalog keys
 (ADR-0030, `model/catalogLabels.ts`).
 
+**Plan schedule, step 14 «Cronograma» (RED-W5).** `ScheduleStep` holds one
+calendar (`wizard/schedule/ScheduleCalendar.tsx`, its own month grid, two
+months from 640 px of step width) and the rows below
+(`wizard/schedule/ScheduleRows.tsx`); both edit `form.sprints` and
+`form.milestones`. The calendar is a WAI-ARIA grid with one tab stop
+(arrows, Home/End, PageUp/PageDown, Enter/Space, Esc); bands and diamonds are
+drawn `aria-hidden` and every day's label says the same in words. Band ends
+drag with pointer events only with a fine pointer (`(pointer: fine)`, from
+560 px; never a finger, which scrolls); the row dates are the keyboard and
+touch way to do it. A row date (dd/mm/aaaa or ISO) is applied on blur or
+Enter whatever it says: a real day as ISO, empty clears it, anything else is
+kept as typed with its warning, so nothing typed stays unsaved; the focus
+stays put when the row re-sorts. Rules live in `model/schedule.ts` and `formState.sprintIssues`: missing
+or invalid date, end before start, overlap, and a length other than the step 6
+sprint weeks × 7 (agile plans only). All are warnings (ADR-0027): the plan
+still saves; an overlap is drawn in error colors but says «es un aviso» with
+an icon.
+
+Data: sprints are `{ id, name, start, end }` and milestones
+`{ id, name, date }` inside the plan's `data`, dates ISO `YYYY-MM-DD`. Rust
+(`test_plan.rs`, `sync.rs`) and the server (`domain.schemas.ts`) keep
+`data` as an opaque blob and never read these lists, so there is no
+migration: `normalizeSchedule` gives ids on read, in the one TS path both
+clients take (`formState.applyRevision` / `fromPlan`). A row without a unique
+id gets `crockford32(fmix64(fnv1a64("<planId>:sprints|milestones:<index>")))`
+(8 characters, `:<n>` appended while taken), so every device reads an
+unsaved legacy plan, or restores a legacy revision, with the same ids; the
+first save persists them. New rows (calendar, «Siguiente sprint», an .xlsx
+import) get random ids, so a deleted row's id is never reused. Nothing is
+dropped: unknown fields stay, a legacy dd/mm/aaaa day (old imports) reads as
+ISO, and any other date that is not ISO stays as written (shown as invalid,
+not drawn). The wizard's unsaved-changes check compares against this same
+normalized form, so reading never marks a plan changed. Exports map sprints to
+`{ name, range }`, so ids never reach .xlsx or .pdf. **Old clients:** every
+released build gets 426 on push since `stable-steps` (DAT-02), so none can
+write a plan back without its ids; on pull they store `data` as received
+(`serde_json::Value`), so the ids survive on their disk too. No sync feature
+gate is needed (VERSIONING §6.5).
+
 **Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
 the redesign. `model/loadHome.ts` reads only public read APIs, one project
 list and three reads per project, most recently updated first:
@@ -145,7 +184,12 @@ login: from 600 px a form column beside `assets/login-faro.jpg` (the
 prototype's 1024 px photo; production should ship a ≥ 2400 px version); below
 600 px the photo is a header and the form a sheet sized with `cqh` units on a
 `container-type: size` root, so the login never scrolls (the longer sign-up
-form scrolls inside the sheet). The Google button is a disabled placeholder
+form scrolls inside the sheet). One scroll at most (RED-V1c): the root is
+`100dvh` with `overflow: hidden`, `html.auth-route` locks html and body while
+the screen is mounted, and only `.auth-col` (the sheet on mobile) scrolls;
+`.auth-col` is `position: relative` so its `sr-only` texts cannot stretch
+the page. Sign-up is compact (Nombre and Apellidos in `.auth-form__row`,
+46 px inputs) and fits at ~800 px. The Google button is a disabled placeholder
 with a monochrome inline mark (Lucide has no brand icons). `modules/profile`
 shows identity, name and Preferencias (`SegmentedControl` for language and
 theme) and the recovery key; `RecoveryKeySection` is also exported, so that
@@ -160,7 +204,7 @@ acyclic. The link itself lives in the case (`data.requirementKeys`) so it is
 revisioned and synced with the case, and travels as Gherkin tags (`@REQ-xxx` on
 the Feature, `@<case id>` on each Scenario — never the scenario name).
 
-**Execution model (decided for 0.2.0, not built yet).** Gate C closed on
+**Execution model (decided for 0.2.0; the tables are built, the UI is not).** Gate C closed on
 2026-10-28 with ADR-0011…0019; the design is in
 `docs/design/0.2.0-modelo-ejecucion.md`. In short:
 
@@ -170,6 +214,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   `metric` and `exploratory_session`. 0.2.0 stores results only; the other
   kinds are fixed in the Pharos Run JSON schema and get their tables in
   0.4.0/0.5.0. Cycles, configurations and custom fields may slip to 0.3.0.
+  The run tables, the results and the Pharos Run JSON 1.0.0 schema are
+  **built in E3 (step 4, EJE-01)**, see "Runs and results" below; the manual
+  execution UI is step 7.
 - Results are append-only and point to an immutable, synced
   `test_case_revision` and to stable step ids — the revisions and the ids are
   **built in E2 (DAT-02)**, see "Case revisions and stable steps" below.
@@ -180,6 +227,65 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - Defects become their own `defects` module.
 - Sync gains an `append_only` class (**built in E1**: `audit_event` is the
   first entity); from 0.3.0 the server is keyed by workspace (ADR-0019).
+
+**Runs and results (EJE-01, RUN-00, KND-01; ADR-0012, ADR-0013).** Migration
+0024 and `src-tauri/src/runs.rs`, no UI yet:
+
+- **Tables.** `runs` (header with its context: trigger, tool, environment,
+  build, commit, branch, CI URL, dataset, `context` JSON; status
+  `in_progress | completed | aborted`; key `RUN-001`), `run_items` (case + the
+  revision frozen when the item is added + flow + Outline row), `run_shards`,
+  `results` (one attempt each, status `passed | failed | blocked | skipped |
+  other` + `raw_status`, `test_key` always present), `step_results` (pointing
+  at the stable `step_id`), `unlinked_mappings` (`test_key → case`, ING-05) and
+  the local `execution_drafts` (step 7). Requirements gain
+  `risk_likelihood`/`risk_impact` (1..5).
+- **No foreign key to `runs`** from a synced table (only `step_results →
+  results`): a pull can bring a result before its run, and the bundled SQLite
+  enforces foreign keys. The repository checks the links. No UNIQUE index but
+  the live run key.
+- **Immutable.** Triggers refuse any change to the content of a shard, a result
+  or a step result (only `workspace_id`/`project_id` may move, ADR-0019). The
+  purge is the only code that deletes them (a test greps for it): with their
+  run, once none of them is still pending for the server, together with their
+  journal rows; and stale ones whose run never came and whose project is gone.
+  A correction is a new attempt.
+- **Ids by kind.** A run item's flow must be a flow of the frozen revision, its
+  row a row of that flow (or of the case), and a step result's `step_id` a step
+  of that flow (the main flow: preconditions, Background and steps; a flow:
+  Background and its own lists). A case with an open key conflict cannot be
+  frozen. The server's size limits are checked before writing.
+- **Commands.** `run_create`, `run_update` (only while `in_progress`, else
+  `run-closed`), `run_get`, `run_list`, `run_items_add` (one oplog row per item
+  and one audit event), `run_items_list`, `result_record` (a manual attempt of
+  a run item: the result, its steps, the oplog row and one `execute` audit
+  event in one transaction; a `step_id`, flow or row that is not in the frozen
+  revision is refused), `results_list` and `unlinked_mapping_set`;
+  `requirement_risk_set` for the risk.
+- **Derived, never stored** (`runs/derive.rs`): the final attempt of each
+  `(run, test_key, configuration_label)` by
+  `coalesce(finished_at, started_at, shard.imported_at)`, then `attempt`, then
+  HLC; flaky (the final attempt passed after a failed one, or
+  `attributes.flaky` from the tool); the worst status;
+  `risk_level = likelihood × impact` and its band (defaults ≤ 4 / ≤ 12 / > 12;
+  per-project bands come with TRZ-04).
+- **Deterministic ids** (`runs/ids.rs`, TS twin in
+  `src/shared/contracts/pharos-run/ids.ts`, shared vectors
+  `src-tauri/tests/fixtures/run-id-vectors.json`): UUIDv5 over the JCS of
+  `[run, sha256]` (shard), `[shard, test_key, label, attempt]` (imported
+  result) and `[project, test_key]` (mapping). Manual attempts use random ids:
+  two simultaneous attempts are both kept.
+- **Sync.** `run`, `run_item` and `unlinked_mapping` are lww (`oplog::SYNCED`);
+  `run_shard` and `result` (its steps inside) are append-only (`sync_class.rs`;
+  `APPLIED_SET_VERSION` 3). All of them, and `run` key blocks, wait for a
+  server that lists `runs` (`sync::server_takes_runs`; the diagnostics count
+  them in `heldBackRuns`). A project delete soft-deletes runs, items and
+  mappings here and tombstones all five on the server.
+- **Pharos Run JSON 1.0.0** (`src/shared/contracts/pharos-run/`): zod schema,
+  `parsePharosRun` and the generated JSON Schema
+  `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
+  `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
+  validated only. The importers of step 9 produce it.
 
 **Journal and audit log (AUD-01, ADR-0015).** Every audited mutation goes
 through `src-tauri/src/journal.rs`:
@@ -765,23 +871,32 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `x-pharos-version`; the server serves its own MINOR and the previous one and
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
-  `append-only`, `complete-payload`, `stable-steps`, `custom-fields`). A
+  `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`). A
   test_case upsert from a client without `custom-fields` keeps the stored
-  `caseType`, `automationStatus` and `data.custom`; read-only clients pull
-  the first two in `data.__caseFields` (FLD-01). A push from a client
+  `caseType`, `automationStatus` (`FEATURE_KEYS`) and `data.custom`
+  (`FEATURE_DATA_KEYS`); read-only clients pull the first two in
+  `data.__caseFields` (FLD-01). A push from a client
   without `stable-steps` (0.1.x, 0.2.0-alpha.1) is refused with 426
   `read_only_client_version` before anything is stored, and its pulls carry
   test cases with text steps (`flattenCaseData`), the stable lists kept in
   `data.__stableSteps` so their upgrade restores the same ids and hash: older
   clients may only read (VERSIONING §6.5, DAT-02). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
   `append_only` (`APPEND_ONLY_ENTITIES` in `sync.schemas.ts`, today
-  `audit_event` and `test_case_revision`; for the latter `createdAt`,
-  `createdBy` and `hlc` are outside the compared content): op `append`, inserted if absent, the same content again is a
+  `audit_event`, `test_case_revision`, `run_shard` and `result`; for the last
+  three `createdAt`/`importedAt`, `createdBy`/`importedBy` and `hlc` are
+  outside the compared content): op `append`, inserted if absent, the same content again is a
   no-op, other content under the same id is refused in `appendRejected`
   (`content_changed`) and the stored one stays, and an `audit_event` that claims
   `deviceId "web"` is refused too (`reserved_chain`: only the server writes the
   web chain, AUD-01b); only the location keys (`workspaceId`, `projectId`) may
-  change; never a conflict, never tombstoned by a project delete. Only a client
+  change; never a conflict. A project delete tombstones shards and results
+  (with runs, run items and mappings), not revisions or audit events
+  (SYNC-11); a shard or result first pushed after its project was deleted is
+  stored as a tombstone. The execution entities only reach clients that send `runs`, and
+  only those may push them (else 400 `runs_unsupported`); a requirement upsert
+  from a client without `runs` keeps `riskLikelihood`/`riskImpact`
+  (`FEATURE_KEYS`) even with `complete-payload`. The server validates their
+  shape (`EXECUTION_PAYLOADS`); it does not interpret them. Only a client
   that sends `append-only` may push them, pulls them and gets `features` in the
   answers; older clients get exactly the previous answers. An upsert from a
   client that does not send `complete-payload` (0.1.x, 0.2.0-alpha.1) keeps
@@ -1042,7 +1157,7 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
     Sync conflicts, oplog and cursor are per account since FIX-07.
   - The user id comes from the UI. This separates the accounts of one
     installation; it does not defend against a tampered frontend.
-- **Human-readable keys (DAT-01, ADR-0010):** case, requirement and defect keys
+- **Human-readable keys (DAT-01, ADR-0010):** case, requirement, defect and run keys
   come from `key_counters` (`src-tauri/src/keys.rs`):
   - the counter only moves forward, so a key is never reused;
   - a case's `scenario_id` is immutable;
@@ -1093,8 +1208,8 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
 - **Phase 3 — Test plan:** `test_plans` (+ `test_plan_revisions`) with promoted
   columns + a JSON `data` blob for the 21-field content (spec §5.1); Rust repo +
   Tauri commands (list/get/create/update/delete/revisions); client test-plan
-  module — plan CRUD, a stepped wizard, a react-day-picker schedule
-  calendar, and a revision-history panel. (The `cargo test` launch failure
+  module — plan CRUD, a stepped wizard, a schedule calendar (react-day-picker
+  then; its own grid since RED-W5), and a revision-history panel. (The `cargo test` launch failure
   noted at the time was specific to the GNU toolchain and is gone with MSVC.)
 - **Phases 4–8 and 9A:** implemented — test cases, planner, templates/export,
   AI, oplog + push/pull sync with HLC and the conflict panel (8C), admin hub.

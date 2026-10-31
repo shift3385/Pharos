@@ -233,7 +233,16 @@ describe("web audit (AUD-01b)", () => {
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({ action: "delete", entity: "project", entityId: p.id });
     expect(JSON.parse(events[0].summary!)).toEqual({
-      cascade: { custom_fields: 0, planner_cards: 0, requirements: 1, test_cases: 2, test_plans: 0 },
+      cascade: {
+        custom_fields: 0,
+        planner_cards: 0,
+        requirements: 1,
+        test_cases: 2,
+        test_plans: 0,
+        runs: 0,
+        run_items: 0,
+        unlinked_mappings: 0,
+      },
     });
     expect(changesOf(events[0])).toMatchObject({ name: ["Checkout", null] });
     // The events themselves are not children: the delete leaves them live.

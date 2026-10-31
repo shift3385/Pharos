@@ -64,6 +64,7 @@ export const SERVER_FEATURES = [
   "key-conflicts",
   "append-only",
   "stable-steps",
+  "runs",
   "custom-fields",
 ] as const;
 
@@ -108,13 +109,18 @@ export function sendsStableSteps(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("stable-steps");
 }
 
-/** True if the client knows custom fields and the case fields (FLD-01,
- *  ADR-0018): it may push `custom_field` documents (it only does once this
- *  server lists `custom-fields`) and sends `caseType`, `automationStatus`
- *  and `data.custom` with every case. A client without it would drop them
- *  from a case it saves: its test_case upserts keep the stored ones. */
-export function knowsCustomFields(req: FastifyRequest): boolean {
-  return clientFeatures(req).includes("custom-fields");
+/** True if the client knows the execution entities (EJE-01, ADR-0013): runs,
+ *  run items, unlinked mappings, shards and results, the risk keys of a
+ *  requirement and `run` key blocks. Without it a client never sees them on
+ *  pull, and its requirement upserts keep the risk the server has. */
+export function understandsRuns(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("runs");
+}
+
+/** Features of `SERVER_FEATURES` the client did not send. */
+export function missingFeatures(req: FastifyRequest): string[] {
+  const sent = clientFeatures(req);
+  return SERVER_FEATURES.filter((f) => !sent.includes(f));
 }
 
 /** 426 for a push of a read-only client (VERSIONING §6.5), before anything

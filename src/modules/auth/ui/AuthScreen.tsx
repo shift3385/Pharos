@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, FileText, GitFork, ListChecks, Lock } from "lucide-react";
@@ -34,10 +34,20 @@ function errorMessageKey(error: unknown): string {
 /** Sign in / sign up (SPEC §8, `Login.dc.html`). From 600 px: the form column
  *  next to the lighthouse photo with the brand points. Below: the photo as a
  *  header and the form as a sheet whose sizes follow the screen height, so the
- *  login never scrolls (only the longer sign-up form scrolls inside the sheet). */
+ *  login never scrolls (only the longer sign-up form scrolls inside the sheet).
+ *  One scroll at most (update 2026-10-31): the screen takes 100dvh and the page
+ *  itself never scrolls; only the form column (the sheet on mobile) does, and
+ *  the photo never. */
 export function AuthScreen() {
   const mobile = useBreakpoint() === "mobile";
   const [mode, setMode] = useState<Mode>("login");
+
+  // html and body stop scrolling only while this screen is shown.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("auth-route");
+    return () => root.classList.remove("auth-route");
+  }, []);
 
   const form = <AuthForm mode={mode} onModeChange={setMode} />;
 
@@ -174,22 +184,24 @@ function AuthForm({ mode, onModeChange }: { mode: Mode; onModeChange: (m: Mode) 
       <div className="auth-form__fields">
         {isRegister && (
           <>
-            <Field
-              id="firstName"
-              label={t("auth.firstName")}
-              value={form.firstName}
-              onChange={update("firstName")}
-              autoComplete="given-name"
-              required
-            />
-            <Field
-              id="lastName"
-              label={t("auth.lastName")}
-              value={form.lastName}
-              onChange={update("lastName")}
-              autoComplete="family-name"
-              required
-            />
+            <div className="auth-form__row">
+              <Field
+                id="firstName"
+                label={t("auth.firstName")}
+                value={form.firstName}
+                onChange={update("firstName")}
+                autoComplete="given-name"
+                required
+              />
+              <Field
+                id="lastName"
+                label={t("auth.lastName")}
+                value={form.lastName}
+                onChange={update("lastName")}
+                autoComplete="family-name"
+                required
+              />
+            </div>
             <Field
               id="displayName"
               label={t("auth.displayName")}
