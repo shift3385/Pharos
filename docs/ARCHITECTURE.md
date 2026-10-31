@@ -120,6 +120,45 @@ plan in place, so the step stays put, and fires `PLAN_SAVED_EVENT`, which the
 project header listens to. Deliverables and tools are catalog keys
 (ADR-0030, `model/catalogLabels.ts`).
 
+**Plan schedule, step 14 «Cronograma» (RED-W5).** `ScheduleStep` holds one
+calendar (`wizard/schedule/ScheduleCalendar.tsx`, its own month grid, two
+months from 640 px of step width) and the rows below
+(`wizard/schedule/ScheduleRows.tsx`); both edit `form.sprints` and
+`form.milestones`. The calendar is a WAI-ARIA grid with one tab stop
+(arrows, Home/End, PageUp/PageDown, Enter/Space, Esc); bands and diamonds are
+drawn `aria-hidden` and every day's label says the same in words. Band ends
+drag with pointer events only with a fine pointer (`(pointer: fine)`, from
+560 px; never a finger, which scrolls); the row dates are the keyboard and
+touch way to do it. A row date (dd/mm/aaaa or ISO) is applied on blur or
+Enter whatever it says: a real day as ISO, empty clears it, anything else is
+kept as typed with its warning, so nothing typed stays unsaved; the focus
+stays put when the row re-sorts. Rules live in `model/schedule.ts` and `formState.sprintIssues`: missing
+or invalid date, end before start, overlap, and a length other than the step 6
+sprint weeks × 7 (agile plans only). All are warnings (ADR-0027): the plan
+still saves; an overlap is drawn in error colors but says «es un aviso» with
+an icon.
+
+Data: sprints are `{ id, name, start, end }` and milestones
+`{ id, name, date }` inside the plan's `data`, dates ISO `YYYY-MM-DD`. Rust
+(`test_plan.rs`, `sync.rs`) and the server (`domain.schemas.ts`) keep
+`data` as an opaque blob and never read these lists, so there is no
+migration: `normalizeSchedule` gives ids on read, in the one TS path both
+clients take (`formState.applyRevision` / `fromPlan`). A row without a unique
+id gets `crockford32(fmix64(fnv1a64("<planId>:sprints|milestones:<index>")))`
+(8 characters, `:<n>` appended while taken), so every device reads an
+unsaved legacy plan, or restores a legacy revision, with the same ids; the
+first save persists them. New rows (calendar, «Siguiente sprint», an .xlsx
+import) get random ids, so a deleted row's id is never reused. Nothing is
+dropped: unknown fields stay, a legacy dd/mm/aaaa day (old imports) reads as
+ISO, and any other date that is not ISO stays as written (shown as invalid,
+not drawn). The wizard's unsaved-changes check compares against this same
+normalized form, so reading never marks a plan changed. Exports map sprints to
+`{ name, range }`, so ids never reach .xlsx or .pdf. **Old clients:** every
+released build gets 426 on push since `stable-steps` (DAT-02), so none can
+write a plan back without its ids; on pull they store `data` as received
+(`serde_json::Value`), so the ids survive on their disk too. No sync feature
+gate is needed (VERSIONING §6.5).
+
 **Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
 the redesign. `model/loadHome.ts` reads only public read APIs, one project
 list and three reads per project, most recently updated first:
@@ -144,7 +183,12 @@ login: from 600 px a form column beside `assets/login-faro.jpg` (the
 prototype's 1024 px photo; production should ship a ≥ 2400 px version); below
 600 px the photo is a header and the form a sheet sized with `cqh` units on a
 `container-type: size` root, so the login never scrolls (the longer sign-up
-form scrolls inside the sheet). The Google button is a disabled placeholder
+form scrolls inside the sheet). One scroll at most (RED-V1c): the root is
+`100dvh` with `overflow: hidden`, `html.auth-route` locks html and body while
+the screen is mounted, and only `.auth-col` (the sheet on mobile) scrolls;
+`.auth-col` is `position: relative` so its `sr-only` texts cannot stretch
+the page. Sign-up is compact (Nombre and Apellidos in `.auth-form__row`,
+46 px inputs) and fits at ~800 px. The Google button is a disabled placeholder
 with a monochrome inline mark (Lucide has no brand icons). `modules/profile`
 shows identity, name and Preferencias (`SegmentedControl` for language and
 theme) and the recovery key; `RecoveryKeySection` is also exported, so that
@@ -1069,8 +1113,8 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
 - **Phase 3 — Test plan:** `test_plans` (+ `test_plan_revisions`) with promoted
   columns + a JSON `data` blob for the 21-field content (spec §5.1); Rust repo +
   Tauri commands (list/get/create/update/delete/revisions); client test-plan
-  module — plan CRUD, a stepped wizard, a react-day-picker schedule
-  calendar, and a revision-history panel. (The `cargo test` launch failure
+  module — plan CRUD, a stepped wizard, a schedule calendar (react-day-picker
+  then; its own grid since RED-W5), and a revision-history panel. (The `cargo test` launch failure
   noted at the time was specific to the GNU toolchain and is gone with MSVC.)
 - **Phases 4–8 and 9A:** implemented — test cases, planner, templates/export,
   AI, oplog + push/pull sync with HLC and the conflict panel (8C), admin hub.

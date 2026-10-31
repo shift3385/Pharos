@@ -22,6 +22,12 @@ import {
   toolLabels,
 } from "../../model/catalogLabels";
 import { frequenciesFor, methodologyText } from "../../model/methodology";
+import {
+  isIsoDay,
+  normalizeSchedule,
+  overlaps,
+  sprintDays,
+} from "../../model/schedule";
 
 type Translate = (key: string) => string;
 
@@ -72,20 +78,47 @@ export type AssistedField =
 /** Assisted fields plus the list the AI can add rows to (IA-10). */
 export type ReviewableField = AssistedField | "risks";
 
-/** Per-sprint validation: an end date before the start, or a range that
- *  overlaps another sprint. Both are warnings (draft rule, ADR-0027): the plan
- *  still saves, since a draft can be wrong for a while and parallel sprints
- *  can be legitimate. */
-export function sprintIssues(sprints: ScheduleSprint[]): (Issue | null)[] {
-  return sprints.map((s, i) => {
-    if (s.start && s.end && s.end < s.start)
-      return { code: "testPlan.sprintDateError", severity: "warning" };
-    if (!s.start || !s.end) return null;
-    const overlaps = sprints.some(
-      (o, j) => j !== i && o.start && o.end && o.start <= s.end && s.start <= o.end,
-    );
-    return overlaps ? { code: "testPlan.sprintOverlap", severity: "warning" } : null;
+/** Days a sprint should last: the sprint weeks of step 6 × 7 in an agile
+ *  plan, else none (a traditional plan has no sprint length). */
+export function expectedSprintDays(f: Pick<FormState, "methodologyType" | "sprintWeeks">): number | null {
+  return f.methodologyType === "agile" && f.sprintWeeks > 0 ? f.sprintWeeks * 7 : null;
+}
+
+/** Per-sprint validation (step 14, RED-W5), first problem only: a missing or
+ *  invalid date (legacy rows), an end before the start, an overlap with
+ *  another sprint, or a length other than the step 6 sprint (agile only).
+ *  All are warnings (draft rule, ADR-0027): the plan still saves, since a
+ *  draft can be wrong for a while and parallel sprints can be legitimate. */
+export function sprintIssues(sprints: ScheduleSprint[], expectedDays: number | null = null): (Issue | null)[] {
+  const over = overlaps(sprints);
+  return sprints.map((s): Issue | null => {
+    if (!s.start || !s.end) return { code: "testPlan.schedule.missingDate", severity: "warning" };
+    if (!isIsoDay(s.start) || !isIsoDay(s.end))
+      return { code: "testPlan.schedule.invalidDate", severity: "warning" };
+    if (s.end < s.start) return { code: "testPlan.sprintDateError", severity: "warning" };
+    const other = over.get(s.id);
+    if (other !== undefined)
+      return { code: "testPlan.schedule.overlap", severity: "warning", params: { name: other } };
+    const days = sprintDays(s);
+    if (expectedDays && days !== expectedDays)
+      return {
+        code: "testPlan.schedule.duration",
+        severity: "warning",
+        params: { days, expected: expectedDays, weeks: expectedDays / 7 },
+      };
+    return null;
   });
+}
+
+/** Per-milestone validation: a missing or invalid date (warnings). */
+export function milestoneIssues(milestones: ScheduleMilestone[]): (Issue | null)[] {
+  return milestones.map((m) =>
+    !m.date
+      ? { code: "testPlan.schedule.missingDate", severity: "warning" }
+      : !isIsoDay(m.date)
+        ? { code: "testPlan.schedule.invalidDate", severity: "warning" }
+        : null,
+  );
 }
 
 /** Number of warnings the plan is saved with: sprint dates and repeated rows
@@ -94,7 +127,8 @@ export function planWarnings(f: FormState): number {
   const text = (v: string) => v;
   const pair = (a: string, b: string) => (a.trim() || b.trim() ? `${a.trim()} | ${b.trim()}` : "");
   return (
-    sprintIssues(f.sprints).filter(Boolean).length +
+    sprintIssues(f.sprints, expectedSprintDays(f)).filter(Boolean).length +
+    milestoneIssues(f.milestones).filter(Boolean).length +
     duplicateRows(f.sprints, (x) => x.name).size +
     duplicateRows(f.milestones, (x) => x.name).size +
     [f.scopeIn, f.scopeOut, f.phases, f.deliverables].reduce(
@@ -175,8 +209,15 @@ export function defaults(t: Translate): FormState {
 }
 
 /** Overwrites the content of `base` with a title and plan data (a revision or
- *  an import), keeping version/date/status (not snapshotted). */
-export function applyRevision(base: FormState, title: string, d: TestPlanData): FormState {
+ *  an import), keeping version/date/status (not snapshotted). `planId` gives
+ *  legacy sprints and milestones their derived ids (null: random ones). */
+export function applyRevision(
+  base: FormState,
+  title: string,
+  d: TestPlanData,
+  planId: string | null = null,
+): FormState {
+  const schedule = normalizeSchedule(planId, d);
   return {
     ...base,
     title,
@@ -198,8 +239,8 @@ export function applyRevision(base: FormState, title: string, d: TestPlanData): 
     testDataManagement: d.testDataManagement ?? "",
     defectManagement: d.defectManagement ?? "",
     roles: d.roles ?? [],
-    sprints: d.sprints ?? [],
-    milestones: d.milestones ?? [],
+    sprints: schedule.sprints,
+    milestones: schedule.milestones,
     risks: d.risks ?? [],
     communicationPlan: d.communicationPlan ?? "",
     closureCriteria: d.closureCriteria ?? [],
@@ -223,7 +264,7 @@ export function fromInput(input: Omit<TestPlanInput, "userId">, t: Translate): F
 
 export function fromPlan(p: TestPlan, t: Translate): FormState {
   return {
-    ...applyRevision(defaults(t), p.title, p.data ?? {}),
+    ...applyRevision(defaults(t), p.title, p.data ?? {}, p.id),
     version: p.version,
     planDate: p.planDate ?? "",
     status: p.status,

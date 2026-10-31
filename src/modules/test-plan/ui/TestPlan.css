@@ -155,21 +155,18 @@
 }
 
 .tp-list-field__row,
-.tp-pair-field__row,
-.tp-sched-row {
+.tp-pair-field__row {
   display: flex;
   gap: var(--space-2);
 }
 
-.tp-pair-field__row input,
-.tp-sched-row input {
+.tp-pair-field__row input {
   flex: 1;
   min-width: 0;
 }
 
 .tp-list-field__row input,
-.tp-pair-field__row input,
-.tp-sched-row input {
+.tp-pair-field__row input {
   height: 38px;
   padding: 0 var(--space-3);
   font-family: inherit;
@@ -222,39 +219,6 @@
   color: var(--color-text-primary);
 }
 
-/* ---- Schedule calendar (react-day-picker) ---- */
-.tp-cal {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  align-items: flex-start;
-  color: var(--color-text-primary);
-}
-
-/* react-day-picker declares its variables on .rdp-root, so the theme must set
-   them there too (on .tp-cal they were shadowed by the library defaults, a
-   1.7:1 blue "today" on dark). Today is navy, not amber: amber is 2.1:1 on
-   white and reserved for the primary action (spec §12.1, UX-05). */
-.tp-cal .rdp-root {
-  --rdp-accent-color: var(--color-navy-500);
-  --rdp-accent-background-color: var(--color-navy-100);
-  --rdp-today-color: var(--color-navy-500);
-  --rdp-range_start-color: var(--color-surface-1);
-  --rdp-range_end-color: var(--color-surface-1);
-  --rdp-range_start-background: var(--color-navy-500);
-  --rdp-range_end-background: var(--color-navy-500);
-  --rdp-range_middle-background-color: var(--color-navy-100);
-  padding: var(--space-3);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.tp-cal__sprint:not(.rdp-selected) {
-  font-weight: var(--fw-semibold);
-  color: var(--color-navy-500);
-}
-
 .tp-revs {
   list-style: none;
   display: flex;
@@ -299,9 +263,6 @@
   background: var(--color-surface-2);
 }
 
-.tp-sched-row input[data-invalid="true"] {
-  border-color: var(--color-error);
-}
 
 /* ---- Inline delete confirmation ---- */
 .tp-confirm {

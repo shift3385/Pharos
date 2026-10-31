@@ -538,6 +538,36 @@ mod tests {
         assert_eq!(detail.data, serde_json::json!({}));
     }
 
+    /// RED-W5: sprint and milestone ids live inside `data`, which this core
+    /// keeps as an opaque blob. A legacy schedule (no ids) and the 0.2.0 one
+    /// come back byte for byte from the plan, its revisions and the payload
+    /// that is pushed, so no client can lose an id on the way.
+    #[test]
+    fn schedule_ids_inside_data_are_kept_verbatim() {
+        let c = conn();
+        let p = project(&c, USER);
+        let legacy = serde_json::json!({
+            "sprints": [{"name": "Sprint 1", "start": "2026-11-02", "end": "2026-11-15"}],
+            "milestones": [{"name": "Go-live", "date": "Nov 28"}]
+        });
+        let with_ids = serde_json::json!({
+            "sprints": [{"id": "46M66PSM", "name": "Sprint 1", "start": "2026-11-02", "end": "2026-11-15"}],
+            "milestones": [{"id": "E0GRRHE2", "name": "Go-live", "date": "Nov 28", "extra": 1}]
+        });
+        let id = insert_plan(&c, &input(&p, "Plan", legacy.clone())).unwrap();
+        update_plan(&c, &id, &input(&p, "Plan", with_ids.clone())).unwrap();
+
+        assert_eq!(get_plan(&c, &id, USER).unwrap().unwrap().data, with_ids);
+        let revisions = list_revisions(&c, &id, USER).unwrap();
+        let detail = get_revision(&c, &revisions[0].id, USER).unwrap().unwrap();
+        assert_eq!(detail.data, legacy);
+        // What the push sends (and what the web API returns) for this plan.
+        let (payload, _, _) = crate::sync::read_payload(&c, "test_plan", &id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(payload["data"], with_ids);
+    }
+
     #[test]
     fn soft_delete_hides_from_list_and_get() {
         let c = conn();

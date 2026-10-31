@@ -196,6 +196,14 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      revisiones (los retiene y el diagnóstico los cuenta).
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
+   - **Una clave nueva dentro de un blob opaco no necesita puerta** si se
+     cumplen las tres: el escritorio y el servidor guardan el blob tal cual sin
+     leer esa parte; todo cliente que aún puede hacer push la conoce; y el
+     lector nuevo tolera su ausencia. Es el caso de los ids de sprints e hitos
+     dentro de `data` del plan (RED-W5): desde `stable-steps` todo cliente
+     publicado anterior está en solo lectura, en su pull guarda `data` sin
+     tocar (los ids siguen en su disco) y la app actual da ids deterministas a
+     los planes que no los tienen al leerlos.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian
    de forma incompatible en una MENOR, con nota en el CHANGELOG.
 

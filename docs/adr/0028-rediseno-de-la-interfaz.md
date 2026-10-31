@@ -165,6 +165,10 @@
   (`container-type: size`, unidades `cqh`) y nunca hace scroll. **Excepción:**
   el formulario de registro (cinco campos) puede hacer scroll dentro de su hoja;
   la cabecera con la foto se queda en su alto mínimo.
+  **Actualización 2026-10-31 (RED-V1c):** en ningún ancho hay dos scrolls. La
+  pantalla mide `100dvh` y la página no se desplaza; solo lo hace la columna
+  del formulario (en el móvil, la hoja) y la foto nunca. El registro es más
+  compacto (Nombre y Apellidos en una fila) y cabe sin scroll a unos 800 px.
 - **Google.** El botón «Continuar con Google» es un marcador deshabilitado. Su
   logo es el único glifo que no es de Lucide (Lucide no trae marcas): un SVG
   monocromo en `currentColor`. Al activar el inicio con Google se usará el

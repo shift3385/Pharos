@@ -155,16 +155,6 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     expect(within(top).getByRole("button", { name: "k6" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("step 14: generating sprints from a range is shown disabled, «Próximamente»", async () => {
-    setViewportWidth(1440);
-    renderWizard();
-    await screen.findByText("Paso 1 de 19");
-    await goToStep(14);
-    const soon = screen.getByRole("region", { name: "Generar sprints a partir de un rango" });
-    expect(within(soon).getByText("Próximamente")).toBeInTheDocument();
-    expect(within(soon).getByRole("button", { name: "Generar sprints" })).toBeDisabled();
-  });
-
   it("step 19 lists the missing steps and links to them", async () => {
     setViewportWidth(1440);
     renderWizard();

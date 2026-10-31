@@ -17,11 +17,12 @@ import {
 } from "@shared/import/xlsx";
 import { CEREMONIES, CEREMONY_FREQUENCIES } from "../model/catalogs";
 import { DELIVERABLE_REV, TOOL_REV } from "../model/catalogLabels";
+import { fromDisplay } from "../model/schedule";
 import type {
   ClosureCriterion,
   RiskItem,
   RoleItem,
-  ScheduleSprint,
+  StoredSprint,
   TestPlanData,
   TestPlanInput,
 } from "../model/types";
@@ -231,8 +232,12 @@ export async function parsePlanXlsx(
     const raw = readTable(ws, hit, STOP_TOKENS).filter((p) => p.left || p.right);
     if (spec.id === "roles") data.roles = raw.map((p): RoleItem => ({ role: p.left, responsibility: p.right }));
     else if (spec.id === "sprints")
-      data.sprints = raw.map((p): ScheduleSprint => {
-        const [start = "", end = ""] = p.right.split(/→|-{1,2}>|\bto\b/).map((s) => s.trim());
+      data.sprints = raw.map((p): StoredSprint => {
+        // A dd/mm/aaaa date becomes ISO; anything else is kept as written.
+        const [start = "", end = ""] = p.right
+          .split(/→|-{1,2}>|\bto\b/)
+          .map((s) => s.trim())
+          .map((s) => fromDisplay(s) ?? s);
         return { name: p.left, start, end };
       });
     else if (spec.id === "risks") data.risks = raw.map((p): RiskItem => ({ risk: p.left, mitigation: p.right }));
