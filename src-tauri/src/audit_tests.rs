@@ -20,6 +20,7 @@ const V: &str = "22222222-2222-4222-8222-222222222222";
 fn conn() -> Connection {
     let c = Connection::open_in_memory().unwrap();
     run_migrations(&c).unwrap();
+    crate::sync::assume_stable_steps_server(&c);
     c
 }
 
@@ -210,10 +211,20 @@ fn an_update_records_the_field_diff_and_its_actor() {
         ),
     )
     .unwrap();
-    assert_eq!(
-        last_changes(&c),
-        json!({"title": ["Pay", "Pay by card"], "data.steps": [["a"], ["a", "b"]], "data.note": [null, "n"]})
-    );
+    // Steps are stored with their stable ids (DAT-02): the diff carries them.
+    let changes = last_changes(&c);
+    let texts = |v: &Value| -> Vec<String> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["text"].as_str().unwrap().to_string())
+            .collect()
+    };
+    assert_eq!(texts(&changes["data.steps"][0]), ["a"]);
+    assert_eq!(texts(&changes["data.steps"][1]), ["a", "b"]);
+    assert_eq!(changes["title"], json!(["Pay", "Pay by card"]));
+    assert_eq!(changes["data.note"], json!([null, "n"]));
+    assert_eq!(changes.as_object().unwrap().len(), 3);
     let (actor, project_id, key, at): (String, String, String, String) = c
         .query_row(
             "SELECT actor, project_id, entity_key, at FROM audit_log ORDER BY rowid DESC LIMIT 1",
@@ -238,7 +249,14 @@ fn an_update_that_changes_nothing_keeps_the_oplog_row_but_writes_no_event() {
     let id = new_case(&c, &p, U);
     let before = events(&c);
     let ops = count(&c, "SELECT count(*) FROM oplog WHERE entity = 'test_case'");
-    test_case::update_case(&c, &id, &case_input(&p, U, "Pay", json!({"steps": ["a"]}))).unwrap();
+    // The editor sends back what it read, step ids included.
+    let stored: String = c
+        .query_row("SELECT data FROM test_cases WHERE id = ?1", [&id], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    let stored: Value = serde_json::from_str(&stored).unwrap();
+    test_case::update_case(&c, &id, &case_input(&p, U, "Pay", stored)).unwrap();
     assert_eq!(events(&c), before);
     assert_eq!(
         count(&c, "SELECT count(*) FROM oplog WHERE entity = 'test_case'"),
@@ -494,13 +512,10 @@ fn two_accounts_on_one_device_have_separate_complete_chains() {
     assert_eq!(chain_ok(&c, U), 3);
     assert_eq!(chain_ok(&c, V), 2);
     // Each account pushes only its own, and they link among themselves.
-    let pending =
-        |user: &str| serde_json::to_value(sync::build_pending_append(&c, user).unwrap()).unwrap();
-    let u = pending(U);
-    let deltas = u["deltas"].as_array().unwrap();
+    let deltas = pushed_events(&c, U);
     assert_eq!(deltas.len(), 3);
     assert!(deltas.iter().all(|d| d["payload"]["chainOwner"] == U));
-    assert_eq!(pending(V)["deltas"].as_array().unwrap().len(), 2);
+    assert_eq!(pushed_events(&c, V).len(), 2);
 }
 
 #[test]
@@ -643,9 +658,16 @@ fn reordering_200_cards_stays_fast() {
 // ---- sync: append_only ---------------------------------------------------
 
 /// The `audit_event` documents a device would push for `user`.
+/// The audit events of the append-only push (case revisions travel there too).
 fn pushed_events(c: &Connection, user: &str) -> Vec<Value> {
     let pending = serde_json::to_value(sync::build_pending_append(c, user).unwrap()).unwrap();
-    pending["deltas"].as_array().unwrap().clone()
+    pending["deltas"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|d| d["entity"] == "audit_event")
+        .cloned()
+        .collect()
 }
 
 fn as_doc(delta: &Value) -> sync::RemoteDoc {
@@ -816,8 +838,14 @@ fn a_key_cleared_on_one_device_is_cleared_on_the_other() {
     for d in &second {
         sync::apply_doc(&b, &ws_b, U, d).unwrap();
     }
-    assert_eq!(data_of(&b), json!({"steps": ["a"]}));
-    assert_eq!(data_of(&a), json!({"steps": ["a"]}));
+    let expected = data_of(&a);
+    assert_eq!(expected["steps"][0]["text"], "a");
+    assert_eq!(
+        expected.as_object().unwrap().len(),
+        1,
+        "only steps are left"
+    );
+    assert_eq!(data_of(&b), expected);
     // And B's next push sends nothing back: it has no pending change.
     assert!(
         serde_json::to_value(sync::build_pending(&b, U).unwrap()).unwrap()["deltas"]
@@ -1092,6 +1120,7 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     ("sync::sync_cursor_get", "read"),
     ("sync::sync_cursor_set", "sync bookkeeping"),
+    ("sync::sync_server_features_set", "sync bookkeeping"),
     ("sync::sync_conflicts_list", "read"),
     (
         "purge::purge_deleted",

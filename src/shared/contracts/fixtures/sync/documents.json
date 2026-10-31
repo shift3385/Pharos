@@ -57,7 +57,14 @@
         "status": "approved",
         "priority": "high",
         "author": "QA",
-        "data": { "gherkinLevel": "basic", "steps": ["open the cart", "pay"], "requirementKeys": ["REQ-001"] },
+        "data": {
+          "gherkinLevel": "basic",
+          "steps": [
+            { "id": "A1B2C3D4", "text": "open the cart" },
+            { "id": "E5F6G7H8", "text": "pay", "expected": "the order is paid" }
+          ],
+          "requirementKeys": ["REQ-001"]
+        },
         "createdAt": "2026-10-29 10:00:00",
         "updatedAt": "2026-10-29 10:10:00",
         "revision": 3

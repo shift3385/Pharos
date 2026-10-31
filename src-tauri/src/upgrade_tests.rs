@@ -1,8 +1,8 @@
 //! Upgrade tests (BASE-04, VERSIONING §6): a database written by the previous
 //! release must open with HEAD without losing anything. The fixture under
 //! `tests/fixtures/0.1.0-alpha.1/` was written by the real 0.1.0-alpha.1 code
-//! (see its README); this module also covers the data migrations 0015 (FIX-06)
-//! and the key counters of 0016 (DAT-01).
+//! (see its README); this module also covers the data migrations 0015 (FIX-06),
+//! the key counters of 0016 (DAT-01) and the stable steps of 0021 (DAT-02).
 
 use std::fs;
 use std::path::PathBuf;
@@ -81,6 +81,219 @@ fn count(conn: &Connection, sql: &str) -> i64 {
     conn.query_row(sql, [], |r| r.get(0)).unwrap()
 }
 
+/// Tables an upgrade may only append to: the migration record, the revision
+/// rows of 0021 (one per case) and the oplog rows that push them.
+const GROWS: [&str; 3] = ["schema_migrations", "test_case_revisions", "oplog"];
+
+/// JSON columns 0021 rewrites into the stable-steps shape (DAT-02).
+fn stable_steps_column(table: &str, column: &str) -> bool {
+    matches!(
+        (table, column),
+        ("test_cases", "data") | ("sync_conflicts", "local_payload" | "remote_payload")
+    )
+}
+
+fn text(v: &Value) -> String {
+    match v {
+        Value::Text(s) => s.clone(),
+        other => panic!("not text: {other:?}"),
+    }
+}
+
+fn json_of(v: &Value) -> serde_json::Value {
+    serde_json::from_str(&text(v)).unwrap()
+}
+
+/// Every string of a JSON value.
+fn strings(v: &serde_json::Value, out: &mut Vec<String>) {
+    match v {
+        serde_json::Value::String(s) => out.push(s.clone()),
+        serde_json::Value::Array(items) => items.iter().for_each(|i| strings(i, out)),
+        serde_json::Value::Object(map) => map.values().for_each(|i| strings(i, out)),
+        _ => {}
+    }
+}
+
+/// 0021 rewrote `old` (a case `data` or a conflict payload) into `new`:
+/// exactly the deterministic normalization, and not a character lost. Every
+/// old string is still a string of the new value, or inside the canonical
+/// JSON text of an element that had no text of its own.
+fn assert_stable_rewrite(
+    table: &str,
+    case_id: &str,
+    old: &serde_json::Value,
+    new: &serde_json::Value,
+) {
+    let mut expected = old.clone();
+    if table == "test_cases" {
+        crate::steps::normalize_case_data(case_id, &mut expected);
+    } else {
+        crate::revisions::normalize_payload(case_id, &mut expected);
+    }
+    assert_eq!(new, &expected, "{table} of {case_id}");
+    let (mut before, mut after) = (Vec::new(), Vec::new());
+    strings(old, &mut before);
+    strings(new, &mut after);
+    for s in before {
+        let escaped = serde_json::to_string(&s).unwrap();
+        let inner = &escaped[1..escaped.len() - 1];
+        assert!(
+            after.iter().any(|a| a == &s || a.contains(inner)),
+            "{table} of {case_id} lost {s:?}"
+        );
+    }
+}
+
+/// Compares every table of `old` with `new` after an upgrade: rows keep their
+/// values, except the audit fields of FIX-06 (`repaired`, when `repairs`) and
+/// the stable-steps rewrite of 0021; the tables in `GROWS` only gain rows.
+fn assert_rows_kept(old: &Connection, new: &Connection, repairs: bool) {
+    let mut rewritten = 0;
+    for table in tables(old) {
+        let cols = columns(old, &table);
+        let before = rows(old, &table, &cols);
+        let after = rows(new, &table, &cols);
+        if GROWS.contains(&table.as_str()) {
+            assert!(after.len() >= before.len(), "{table} lost rows");
+        } else {
+            assert_eq!(after.len(), before.len(), "row count of {table}");
+        }
+        let case_col = cols
+            .iter()
+            .position(|c| c == "entity_id")
+            .or_else(|| cols.iter().position(|c| c == "id"));
+        for ((rowid, old_values), (new_rowid, new_values)) in before.iter().zip(&after) {
+            assert_eq!(rowid, new_rowid, "{table}");
+            for (i, col) in cols.iter().enumerate() {
+                if repairs && repaired(&table, col) {
+                    continue;
+                }
+                if stable_steps_column(&table, col) && old_values[i] != new_values[i] {
+                    let case_id = text(&old_values[case_col.unwrap()]);
+                    assert_stable_rewrite(
+                        &table,
+                        &case_id,
+                        &json_of(&old_values[i]),
+                        &json_of(&new_values[i]),
+                    );
+                    rewritten += 1;
+                    continue;
+                }
+                // The clock only moves forward: 0021 stamps the revision rows.
+                if table == "sync_state"
+                    && col == "value"
+                    && old_values[0] == Value::Text("hlc_last".into())
+                {
+                    assert!(
+                        text(&new_values[i]) >= text(&old_values[i]),
+                        "the HLC went back"
+                    );
+                    continue;
+                }
+                assert_eq!(old_values[i], new_values[i], "{table}.{col} of row {rowid}");
+            }
+        }
+    }
+    assert!(rewritten > 0, "the fixture has steps to migrate");
+}
+
+/// Every step and row id of a case data, in visiting order.
+fn step_ids(data: &serde_json::Value) -> Vec<String> {
+    let mut ids = Vec::new();
+    let mut list = |v: &serde_json::Value| {
+        for el in v.as_array().into_iter().flatten() {
+            ids.push(
+                el["id"]
+                    .as_str()
+                    .expect("every step and row has an id")
+                    .to_string(),
+            );
+        }
+    };
+    for key in ["preconditions", "background", "steps"] {
+        list(&data[key]);
+    }
+    list(&data["examples"]["rows"]);
+    for flow in data["flows"].as_array().into_iter().flatten() {
+        list(&flow["preconditions"]);
+        list(&flow["steps"]);
+        list(&flow["examples"]["rows"]);
+    }
+    ids
+}
+
+type Snapshot = Vec<(String, Vec<(i64, Vec<Value>)>)>;
+
+fn snapshot(c: &Connection) -> Snapshot {
+    tables(c)
+        .into_iter()
+        .map(|t| {
+            let cols = columns(c, &t);
+            let r = rows(c, &t, &cols);
+            (t, r)
+        })
+        .collect()
+}
+
+/// The state 0021 leaves (DAT-02): every case, deleted ones too, has stable
+/// unique ids and the row of its current revision; live cases with an owner
+/// have that row queued for the push; running the step again changes nothing.
+fn assert_stable_steps(new: &Connection) {
+    let cases: Vec<(String, String, bool, bool)> = new
+        .prepare(
+            "SELECT c.id, c.data, c.deleted_at IS NULL, p.owner_id IS NOT NULL
+               FROM test_cases c LEFT JOIN projects p ON p.id = c.project_id ORDER BY c.id",
+        )
+        .unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert!(!cases.is_empty());
+    for (id, data, live, owned) in &cases {
+        let mut data: serde_json::Value = serde_json::from_str(data).unwrap();
+        assert!(
+            !crate::steps::normalize_case_data(id, &mut data),
+            "{id} is stable"
+        );
+        let ids = step_ids(&data);
+        let unique: std::collections::HashSet<&String> = ids.iter().collect();
+        assert_eq!(unique.len(), ids.len(), "ids of {id} are unique");
+        let (rev_id, sha) = crate::revisions::current_id(new, id).unwrap().unwrap();
+        let stored: String = new
+            .query_row(
+                "SELECT content_sha256 FROM test_case_revisions WHERE id = ?1",
+                [&rev_id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(stored, sha, "current revision of {id}");
+        let queued = count(
+            new,
+            &format!(
+                "SELECT count(*) FROM oplog WHERE entity = 'test_case_revision'                  AND entity_id = '{rev_id}' AND user_id <> ''"
+            ),
+        );
+        assert_eq!(
+            queued,
+            i64::from(*live && *owned),
+            "push of the revision of {id}"
+        );
+    }
+    assert_eq!(
+        count(
+            new,
+            "SELECT count(*) FROM test_case_revisions WHERE content_sha256 IS NOT NULL"
+        ),
+        cases.len() as i64,
+        "one current row per case, no other hashed row"
+    );
+    // Idempotent: a second run changes no row anywhere.
+    let before = snapshot(new);
+    crate::revisions::migrate_stable_steps(new).unwrap();
+    assert_eq!(snapshot(new), before);
+}
+
 #[test]
 fn the_fixture_really_is_an_alpha_1_database() {
     let old = fixture_image();
@@ -150,25 +363,8 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
 
     db.with_conn(|new| {
         assert_eq!(pending_migrations(new)?.len(), 0);
-        for table in tables(&old) {
-            let cols = columns(&old, &table);
-            let before = rows(&old, &table, &cols);
-            let after = rows(new, &table, &cols);
-            if table == "schema_migrations" {
-                // Old entries stay; the upgrade only appends.
-                assert_eq!(&after[..before.len()], &before[..]);
-                continue;
-            }
-            assert_eq!(after.len(), before.len(), "row count of {table}");
-            for ((rowid, old_values), (new_rowid, new_values)) in before.iter().zip(&after) {
-                assert_eq!(rowid, new_rowid, "{table}");
-                for (i, col) in cols.iter().enumerate() {
-                    if !repaired(&table, col) {
-                        assert_eq!(old_values[i], new_values[i], "{table}.{col} of row {rowid}");
-                    }
-                }
-            }
-        }
+        assert_rows_kept(&old, new, true);
+        assert_stable_steps(new);
 
         // FIX-06: every audit field now names the owner of the row's project.
         for sql in [
@@ -467,9 +663,13 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
     let dir = temp_dir();
     fs::write(dir.join("pharos.db.enc"), FIXTURE_020A1).unwrap();
     let old = fixture_020a1_image();
+    // What 0.2.0-alpha.1 would push, measured on a copy: the probe records a
+    // server with stable-steps, which `old` must not get.
+    let probe = fixture_020a1_image();
+    crate::sync::assume_stable_steps_server(&probe);
     let pending_before = (
-        pending_entities(&old, USER_1),
-        pending_entities(&old, USER_2),
+        pending_entities(&probe, USER_1),
+        pending_entities(&probe, USER_2),
     );
 
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
@@ -482,17 +682,19 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
 
     db.with_conn(|new| {
         assert_eq!(pending_migrations(new)?.len(), 0);
-        // Nothing changes: no migration since 0018 rewrites a row.
-        for table in tables(&old) {
-            let cols = columns(&old, &table);
-            let before = rows(&old, &table, &cols);
-            let after = rows(new, &table, &cols);
-            if table == "schema_migrations" {
-                assert_eq!(&after[..before.len()], &before[..]);
-                continue;
-            }
-            assert_eq!(after, before, "{table}");
-        }
+        // Nothing changes but the stable-steps rewrite of 0021 and its rows.
+        assert_rows_kept(&old, new, false);
+        assert_stable_steps(new);
+        // Until the server lists stable-steps, the pending cases wait (DAT-02).
+        assert!(
+            crate::sync::held_back_cases(new)? > 0,
+            "the fixture has pending cases"
+        );
+        assert!(pending_entities(new, USER_1)
+            .iter()
+            .all(|(e, _)| e != "test_case"));
+        crate::sync::assume_stable_steps_server(new);
+        assert_eq!(crate::sync::held_back_cases(new)?, 0);
         // The audit log starts empty: nothing is backfilled (ADR-0015).
         assert_eq!(count(new, "SELECT count(*) FROM audit_log"), 0);
         // Both accounts' pending changes still push as before, open conflicts stay.
@@ -535,4 +737,140 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
     fs::remove_dir_all(&dir).unwrap();
+}
+
+// ---- DAT-02: cases of every Gherkin level, as 0.1 wrote them ---------------
+
+#[test]
+fn every_gherkin_level_written_by_0_1_migrates_to_stable_ids_without_loss() {
+    // The fixtures only hold basic cases, so outline, advanced (flows,
+    // background, featureSource) and odd shapes are added to the alpha.1
+    // image the way the 0.1 editor stored them, plus an open conflict.
+    let old = fixture_image();
+    let (project, workspace): (String, String) = old
+        .query_row(
+            "SELECT id, workspace_id FROM projects WHERE owner_id = ?1",
+            params![USER_1],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    let outline = serde_json::json!({
+        "gherkinLevel": "outline",
+        "preconditions": ["the user <user> exists"],
+        "steps": ["I log in as <user>", "I open the cart"],
+        "expectedResult": "I see <result>",
+        "examples": {"headers": ["user", "result"], "rows": [["ana", "ok"], ["bob", "denied"], ["ana", "ok"]]}
+    });
+    let advanced = serde_json::json!({
+        "gherkinLevel": "advanced",
+        "background": ["the shop is open", "prices in EUR"],
+        "flows": [
+            {"id": "f-main", "name": "Pay", "preconditions": ["a cart"], "steps": ["I pay", "I confirm"],
+             "expectedResult": "paid", "tags": ["smoke"]},
+            {"id": "f-alt", "name": "Declined", "steps": ["I pay with <card>"], "expectedResult": "declined",
+             "examples": {"headers": ["card"], "rows": [["expired"], ["stolen"]]}},
+            {"name": "No id", "steps": ["retry"], "expectedResult": ""}
+        ],
+        "featureSource": "Feature: Checkout\n  Background:\n    Given the shop is open\n  Scenario: Pay\n    When I pay\n"
+    });
+    let odd = serde_json::json!({"steps": ["", "  spaced  ", "ünïcödé €", {"given": "g"}, 3], "notes": "kept"});
+    for (id, data) in [
+        ("lvl-outline", &outline),
+        ("lvl-advanced", &advanced),
+        ("lvl-odd", &odd),
+    ] {
+        old.execute(
+            "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, author, data, \
+             created_by, updated_by, created_at, updated_at) \
+             VALUES (?1, ?2, ?3, ?1, 't', 'a', ?4, ?5, ?5, 'now', 'now')",
+            params![id, workspace, project, data.to_string(), USER_1],
+        )
+        .unwrap();
+    }
+    old.execute(
+        "INSERT INTO sync_conflicts (id, entity, entity_id, local_payload, remote_payload, detected_at) \
+         VALUES ('cf-lvl', 'test_case', 'lvl-outline', ?1, ?2, 'now')",
+        params![
+            serde_json::json!({"title": "t", "data": outline}).to_string(),
+            serde_json::json!({"title": "t2", "data": {"steps": ["remote step"]}}).to_string()
+        ],
+    )
+    .unwrap();
+
+    let new = Connection::open_in_memory().unwrap();
+    let image = old.serialize(rusqlite::DatabaseName::Main).unwrap();
+    let mut new = new;
+    load_image(&mut new, &image).unwrap();
+    run_migrations(&new).unwrap();
+
+    assert_rows_kept(&old, &new, true);
+    assert_stable_steps(&new);
+
+    let data_of = |id: &str| -> serde_json::Value {
+        let s: String = new
+            .query_row("SELECT data FROM test_cases WHERE id = ?1", [id], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        serde_json::from_str(&s).unwrap()
+    };
+    let texts = |v: &serde_json::Value| -> Vec<String> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["text"].as_str().unwrap().to_string())
+            .collect()
+    };
+    // Outline: steps, preconditions and every row (duplicates too) have ids.
+    let o = data_of("lvl-outline");
+    assert_eq!(
+        texts(&o["steps"]),
+        ["I log in as <user>", "I open the cart"]
+    );
+    assert_eq!(texts(&o["preconditions"]), ["the user <user> exists"]);
+    let rows = o["examples"]["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[2]["values"], serde_json::json!(["ana", "ok"]));
+    assert_ne!(rows[0]["id"], rows[2]["id"]);
+    assert_eq!(o["expectedResult"], "I see <result>");
+    // Advanced: flows keep their ids (one is derived), the raw Gherkin is untouched.
+    let a = data_of("lvl-advanced");
+    assert_eq!(
+        texts(&a["background"]),
+        ["the shop is open", "prices in EUR"]
+    );
+    assert_eq!(a["flows"][0]["id"], "f-main");
+    assert_eq!(a["flows"][1]["id"], "f-alt");
+    assert!(a["flows"][2]["id"].as_str().is_some_and(|s| s.len() == 8));
+    assert_eq!(texts(&a["flows"][0]["steps"]), ["I pay", "I confirm"]);
+    assert_eq!(
+        a["flows"][1]["examples"]["rows"][1]["values"],
+        serde_json::json!(["stolen"])
+    );
+    assert_eq!(a["flows"][0]["tags"], serde_json::json!(["smoke"]));
+    assert_eq!(a["featureSource"], advanced["featureSource"]);
+    // Odd shapes: empty and spaced texts stay as they were; an object is kept
+    // as its canonical JSON; other keys are untouched.
+    let d = data_of("lvl-odd");
+    assert_eq!(
+        texts(&d["steps"]),
+        ["", "  spaced  ", "ünïcödé €", r#"{"given":"g"}"#, "3"]
+    );
+    assert_eq!(d["notes"], "kept");
+    // Two devices that migrate the same case get the same ids.
+    let mut again = outline.clone();
+    crate::steps::normalize_case_data("lvl-outline", &mut again);
+    assert_eq!(again, o);
+    // The open conflict's two sides were migrated too.
+    let (local, remote): (String, String) = new
+        .query_row(
+            "SELECT local_payload, remote_payload FROM sync_conflicts WHERE id = 'cf-lvl'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    let local: serde_json::Value = serde_json::from_str(&local).unwrap();
+    let remote: serde_json::Value = serde_json::from_str(&remote).unwrap();
+    assert_eq!(local["data"], o);
+    assert_eq!(texts(&remote["data"]["steps"]), ["remote step"]);
 }

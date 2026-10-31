@@ -127,7 +127,24 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0019_audit_log.sql",
         include_str!("../migrations/0019_audit_log.sql"),
     ),
+    (
+        "0020_test_case_revisions.sql",
+        include_str!("../migrations/0020_test_case_revisions.sql"),
+    ),
+    (
+        "0021_stable_steps.sql",
+        include_str!("../migrations/0021_stable_steps.sql"),
+    ),
 ];
+
+/// Data migrations written in Rust (VERSIONING §6.1), run right after the SQL
+/// of the migration they are named after, in the same savepoint. Each one is
+/// deterministic and idempotent.
+type RustStep = fn(&Connection) -> Result<(), String>;
+const RUST_STEPS: &[(&str, RustStep)] = &[(
+    "0021_stable_steps.sql",
+    crate::revisions::migrate_stable_steps,
+)];
 
 pub struct Db {
     conn: Mutex<Connection>,
@@ -612,10 +629,28 @@ pub(crate) fn run_migrations(conn: &Connection) -> Result<(), String> {
 
     let pending = pending_migrations(conn)?;
     for (name, sql) in MIGRATIONS.iter().filter(|(n, _)| pending.contains(n)) {
-        conn.execute_batch(sql)
-            .map_err(|e| format!("migration {name} failed: {e}"))?;
-        conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+        // One savepoint per migration: its SQL, its Rust step and its record
+        // land together or not at all.
+        conn.execute_batch("SAVEPOINT migration")
             .map_err(|e| e.to_string())?;
+        let applied = (|| {
+            conn.execute_batch(sql)
+                .map_err(|e| format!("migration {name} failed: {e}"))?;
+            if let Some((_, step)) = RUST_STEPS.iter().find(|(n, _)| n == name) {
+                step(conn).map_err(|e| format!("migration {name} failed: {e}"))?;
+            }
+            conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+                .map_err(|e| e.to_string())?;
+            Ok::<(), String>(())
+        })();
+        match applied {
+            Ok(()) => conn.execute_batch("RELEASE migration"),
+            Err(e) => {
+                let _ = conn.execute_batch("ROLLBACK TO migration; RELEASE migration");
+                return Err(e);
+            }
+        }
+        .map_err(|e| e.to_string())?;
     }
     Ok(())
 }

@@ -184,6 +184,9 @@ fn set_key(
         )
         .before(before),
     )?;
+    if entity == "test_case" {
+        crate::revisions::ensure_current(conn, id, user, true)?;
+    }
     if let KeyKind::Requirement = kind {
         relink_requirement(conn, actor, user, project_id, old, new)?;
     }
@@ -248,6 +251,7 @@ fn relink_requirement(
             )
             .before(before),
         )?;
+        crate::revisions::ensure_current(conn, &id, user, true)?;
     }
     Ok(())
 }
@@ -354,6 +358,9 @@ pub(crate) fn vacate(
         params![id, provisional],
     )
     .map_err(|e| e.to_string())?;
+    if entity == "test_case" {
+        crate::revisions::ensure_current_local(conn, id)?;
+    }
     conn.execute(
         "INSERT OR IGNORE INTO key_conflicts (id, user_id, entity, entity_id, project_id, lost_key, \
          taken_by, detected_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'))",
@@ -401,6 +408,9 @@ pub(crate) fn holder_deleted(
             params![entity_id, lost_key],
         )
         .map_err(|e| e.to_string())?;
+        if entity == "test_case" {
+            crate::revisions::ensure_current_local(conn, &entity_id)?;
+        }
         conn.execute(
             "UPDATE key_conflicts SET resolved_at = datetime('now'), resolution = 'remote' WHERE id = ?1",
             params![id],
@@ -643,6 +653,7 @@ mod tests {
     fn conn() -> Connection {
         let c = Connection::open_in_memory().unwrap();
         crate::db::run_migrations(&c).unwrap();
+        crate::sync::assume_stable_steps_server(&c);
         c
     }
 
@@ -813,7 +824,7 @@ mod tests {
         let journaled: i64 = c
             .query_row(
                 "SELECT count(DISTINCT entity_id) FROM oplog WHERE synced_at IS NULL \
-                 AND entity <> 'audit_event'",
+                 AND entity NOT IN ('audit_event', 'test_case_revision')",
                 [],
                 |r| r.get(0),
             )
@@ -922,6 +933,13 @@ mod tests {
             (open[0].entity_id.as_str(), open[0].lost_key.as_str()),
             ("s2", "ATS_009")
         );
+        // The app runs every later migration before it syncs again.
+        for (name, sql) in crate::db::MIGRATIONS.iter() {
+            if *name > "0017_keys_and_purge.sql" {
+                c.execute_batch(sql).unwrap();
+            }
+        }
+        crate::revisions::migrate_stable_steps(&c).unwrap();
         // The server had deleted s1 and kept ATS_009 on s2: the tombstone of s1
         // gives it back, nothing diverges.
         c.execute(

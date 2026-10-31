@@ -21,6 +21,10 @@ mod project;
 mod purge;
 mod recovery;
 mod requirement;
+mod revisions;
+#[cfg(test)]
+mod revisions_sync_tests;
+mod steps;
 mod sync;
 mod sync_class;
 mod template;
@@ -174,6 +178,7 @@ pub fn run() {
             sync::apply_remote,
             sync::sync_cursor_get,
             sync::sync_cursor_set,
+            sync::sync_server_features_set,
             sync::sync_conflicts_list,
             sync::sync_conflict_resolve,
             purge::purge_deleted,

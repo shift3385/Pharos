@@ -1,0 +1,12 @@
+-- Stable step and row ids (DAT-02, ADR-0011). The work is in Rust, right
+-- after this file and in the same savepoint (`db.rs`, RUST_STEPS ->
+-- `steps_migration::run`):
+--   * every case's `data` (deleted ones too) gets `{id, text}` steps in
+--     preconditions, background, steps and flows, and `{id, values}` Outline
+--     rows, with ids derived from the case id, the list and the position, so
+--     two devices migrate a case to the same ids; nothing is lost;
+--   * the test_case payloads kept in open sync conflicts get the same;
+--   * every case gets the row of its current revision, queued for the push.
+-- `revision` does not move and no test_case change is journaled. Running the
+-- step again changes nothing.
+SELECT 1;

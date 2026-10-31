@@ -23,7 +23,9 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# float_roundtrip: parse floats exactly, so the JCS hash of a case revision
+# (DAT-02) matches the one JavaScript computes for the same JSON.
+serde_json = { version = "1", features = ["float_roundtrip"] }
 # Secure session cache in the Windows Credential Manager (spec §4).
 keyring = { version = "3", features = ["windows-native"] }
 # Local encrypted SQLite: plain SQLite (compiles with gcc, no OpenSSL) + pure-Rust
@@ -32,7 +34,10 @@ keyring = { version = "3", features = ["windows-native"] }
 rusqlite = { version = "0.32", features = ["bundled", "serialize"] }
 aes-gcm = "0.10"
 base64 = "0.22"
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "v5"] }
+# RFC 8785 (JCS) numbers in ECMAScript form, for the content hash of a case
+# revision (DAT-02, ADR-0011): the server hashes the same JSON in JavaScript.
+ryu-js = "1"
 # Online AI provider calls (Gemini). Reuse the reqwest version already in the
 # tree; default TLS avoids OpenSSL (originally required by the GNU toolchain —
 # see the Phase 2 spike). `json` for request/response bodies.
