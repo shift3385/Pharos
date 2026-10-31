@@ -3,4 +3,4 @@
 /**
  * Rows removed by one purge, per kind.
  */
-export type PurgeSummary = { projects: number, testPlans: number, testCases: number, requirements: number, plannerCards: number, templates: number, };
+export type PurgeSummary = { projects: number, testPlans: number, testCases: number, requirements: number, plannerCards: number, customFields: number, templates: number, };

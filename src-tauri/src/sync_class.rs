@@ -39,8 +39,9 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// moved the cursor past documents it did not apply. Bump it with every entity
 /// added to `oplog::SYNCED` or `APPEND_ONLY`.
 /// 1: audit_event (AUD-01). 2: test_case_revision and the stable-steps shape
-/// of test cases (DAT-02).
-pub const APPLIED_SET_VERSION: i64 = 2;
+/// of test cases (DAT-02). 3: custom_field and the case type / automation
+/// status of test cases (FLD-01).
+pub const APPLIED_SET_VERSION: i64 = 3;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

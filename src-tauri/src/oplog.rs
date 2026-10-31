@@ -85,16 +85,18 @@ pub fn observe_hlc(conn: &Connection, remote: &str) -> Result<(), String> {
     state_set(conn, "hlc_last", &merged)
 }
 
-/// Entities the sync pushes and pulls (Phase 8B + SYNC-04a). The pending count
+/// Entities the sync pushes and pulls (Phase 8B + SYNC-04a, custom fields of
+/// FLD-01). The pending count
 /// and the push are both built from this list, so the indicator only counts
 /// what a sync actually sends (FIX-01). Templates and attachments still write
 /// to the oplog and wait for SYNC-04b.
-pub const SYNCED: [&str; 5] = [
+pub const SYNCED: [&str; 6] = [
     "project",
     "test_plan",
     "test_case",
     "requirement",
     "planner_card",
+    "custom_field",
 ];
 
 /// `SYNCED` as an SQL list literal, for `entity IN (...)`.
@@ -121,6 +123,9 @@ pub fn owner_of(
             "SELECT p.owner_id FROM requirements x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
         }
         "planner_card" => "SELECT owner_id FROM planner_cards WHERE id = ?1",
+        "custom_field" => {
+            "SELECT p.owner_id FROM custom_fields x JOIN projects p ON p.id = x.project_id WHERE x.id = ?1"
+        }
         "template" => "SELECT owner_id FROM templates WHERE id = ?1",
         // Append-only entities say it themselves (sync_class registry).
         _ => {

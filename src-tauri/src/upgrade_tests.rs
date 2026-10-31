@@ -725,6 +725,14 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
     // server with stable-steps, which `old` must not get.
     let probe = fixture_020a1_image();
     crate::sync::assume_stable_steps_server(&probe);
+    // HEAD reads the case fields of 0026 for a payload; the probe only counts
+    // entities, so it gets the empty columns.
+    probe
+        .execute_batch(
+            "ALTER TABLE test_cases ADD COLUMN case_type TEXT;
+             ALTER TABLE test_cases ADD COLUMN automation_status TEXT;",
+        )
+        .unwrap();
     let pending_before = (
         pending_entities(&probe, USER_1),
         pending_entities(&probe, USER_2),
@@ -1631,6 +1639,213 @@ fn a_case_edited_while_read_only_keeps_the_ids_of_the_steps_it_did_not_touch() {
             .cloned()
             .unwrap();
         assert_eq!(delta["payload"]["data"]["steps"][0]["id"], "K3J8W2Z5");
+        Ok(())
+    })
+    .unwrap();
+    drop(db);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+// ---- FLD-01: case type, automation status and custom fields ---------------
+
+/// Every hashed revision row hashes to its stored content, and no case has a
+/// case type or automation status: 0026–0027 leave every revision written by
+/// 0021 valid (ADR-0018 amendment, NULL = never set).
+fn assert_revisions_untouched_by_case_fields(c: &Connection) {
+    assert_eq!(
+        count(
+            c,
+            "SELECT count(*) FROM test_cases WHERE case_type IS NOT NULL OR automation_status IS NOT NULL"
+        ),
+        0
+    );
+    type Row = (String, String, i64, [String; 5], String, String);
+    let rows: Vec<Row> = c
+        .prepare(
+            "SELECT id, test_case_id, revision, scenario_id, title, version, status, priority, data,
+                    content_sha256 FROM test_case_revisions WHERE content_sha256 IS NOT NULL",
+        )
+        .unwrap()
+        .query_map([], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                [r.get(3)?, r.get(4)?, r.get(5)?, r.get(6)?, r.get(7)?],
+                r.get(8)?,
+                r.get(9)?,
+            ))
+        })
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert!(!rows.is_empty(), "the fixture has cases");
+    for (id, case, revision, [scenario, title, version, status, priority], data, sha) in rows {
+        let data: serde_json::Value = serde_json::from_str(&data).unwrap();
+        let content = crate::steps::revision_content(
+            &scenario, &title, &version, &status, &priority, None, None, &data,
+        );
+        assert_eq!(crate::steps::content_sha256(&content), sha, "{id}");
+        assert_eq!(crate::steps::revision_id(&case, revision, &sha), id);
+    }
+    // One current row per case, the one 0021 wrote: nothing was added.
+    assert_eq!(
+        count(
+            c,
+            "SELECT count(*) FROM test_case_revisions WHERE content_sha256 IS NOT NULL"
+        ),
+        count(c, "SELECT count(*) FROM test_cases")
+    );
+}
+
+#[test]
+fn both_fixtures_open_with_case_fields_unset_and_every_revision_hash_unchanged() {
+    for image in [fixture_image(), fixture_020a1_image()] {
+        let dir = temp_dir();
+        write_image(&dir, &image);
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        db.with_conn(|c| {
+            assert_revisions_untouched_by_case_fields(c);
+            assert_eq!(count(c, "SELECT count(*) FROM custom_fields"), 0);
+            // Every case reads as never set through the owner-scoped command.
+            let (project, user): (String, String) = c
+                .query_row(
+                    "SELECT p.id, p.owner_id FROM projects p JOIN test_cases t ON t.project_id = p.id
+                      WHERE p.owner_id IS NOT NULL AND t.deleted_at IS NULL LIMIT 1",
+                    [],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .unwrap();
+            let listed = serde_json::to_value(crate::test_case::list_cases(c, &project, &user)?)
+                .unwrap();
+            assert!(!listed.as_array().unwrap().is_empty());
+            for case in listed.as_array().unwrap() {
+                assert_eq!(case["caseType"], serde_json::Value::Null);
+                assert_eq!(case["automationStatus"], serde_json::Value::Null);
+                assert!(case["custom"].as_object().unwrap().is_empty());
+            }
+            Ok(())
+        })
+        .unwrap();
+        drop(db);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+}
+
+#[test]
+fn a_case_pulled_by_a_read_only_client_gets_its_case_type_back_and_the_server_revision() {
+    let image = fixture_020a1_image();
+    // Another device set `checklist`; the server sent this read-only app the
+    // flattened case with the stash of both lists and the case fields.
+    let mut server = server_case_data();
+    server["custom"] = serde_json::json!({"browser": "OPT00001"});
+    let mut pulled = flattened(&server);
+    pulled[crate::custom_fields::STASH_KEY] =
+        serde_json::json!({"caseType": "checklist", "automationStatus": "automated"});
+    add_pulled_case(&image, "fld-case", 4, &pulled);
+    let dir = temp_dir();
+    write_image(&dir, &image);
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    db.with_conn(|c| {
+        assert_eq!(data_of(c, "fld-case"), server, "same data as on the server");
+        let cols: (Option<String>, Option<String>) = c
+            .query_row(
+                "SELECT case_type, automation_status FROM test_cases WHERE id = 'fld-case'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(cols, (Some("checklist".into()), Some("automated".into())));
+        let content = crate::steps::revision_content(
+            &scenario_of("fld-case"),
+            "Pay",
+            "1.0",
+            "draft",
+            "medium",
+            Some("checklist"),
+            Some("automated"),
+            &server,
+        );
+        let want =
+            crate::steps::revision_id("fld-case", 4, &crate::steps::content_sha256(&content));
+        let rows: Vec<String> = c
+            .prepare(
+                "SELECT id FROM test_case_revisions
+                  WHERE test_case_id = 'fld-case' AND content_sha256 IS NOT NULL",
+            )
+            .map_err(|e| e.to_string())?
+            .query_map([], |r| r.get(0))
+            .map_err(|e| e.to_string())?
+            .collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?;
+        assert_eq!(rows, vec![want], "only the revision the server has");
+        assert_eq!(
+            count(
+                c,
+                "SELECT count(*) FROM oplog WHERE entity = 'test_case_revision'
+                   AND entity_id IN (SELECT id FROM test_case_revisions WHERE test_case_id = 'fld-case')"
+            ),
+            1,
+            "one row queued: the one the server has, a no-op there"
+        );
+        Ok(())
+    })
+    .unwrap();
+    drop(db);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_case_edited_while_read_only_gets_its_custom_values_back() {
+    let image = fixture_020a1_image();
+    let mut server = server_case_data();
+    server["custom"] = serde_json::json!({"points": 3});
+    let pulled = flattened(&server);
+    add_pulled_case(&image, "fld-edit", 5, &pulled);
+    // The old editor rebuilt `data` without `custom`; its `update_case`
+    // copied the pulled state to the history.
+    let mut edited = pulled.clone();
+    let obj = edited.as_object_mut().unwrap();
+    obj.remove(crate::steps::STASH_KEY);
+    obj.remove("custom");
+    edited["notes"] = serde_json::json!("edited offline");
+    image
+        .execute(
+            "INSERT INTO test_case_revisions (id, test_case_id, revision, title, data, created_at, created_by)
+             VALUES ('old-fld', 'fld-edit', 5, 'Pay', ?1, '2026-10-30 11:00:00', ?2)",
+            params![pulled.to_string(), USER_1],
+        )
+        .unwrap();
+    image
+        .execute(
+            "UPDATE test_cases SET data = ?1, revision = 6 WHERE id = 'fld-edit'",
+            params![edited.to_string()],
+        )
+        .unwrap();
+    image
+        .execute(
+            "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id)
+             VALUES ('op-fld', 'test_case', 'fld-edit', 'upsert', '{}', 6, ?1, '2026-10-30 11:00:00',
+                     '001793000000001-00000-dev', ?1)",
+            params![USER_1],
+        )
+        .unwrap();
+    let dir = temp_dir();
+    write_image(&dir, &image);
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    db.with_conn(|c| {
+        let data = data_of(c, "fld-edit");
+        assert_eq!(data["custom"], serde_json::json!({"points": 3}));
+        assert_eq!(data["notes"], "edited offline", "the offline edit stays");
+        assert_eq!(
+            count(
+                c,
+                "SELECT count(*) FROM test_case_revisions
+                  WHERE test_case_id = 'fld-edit' AND revision = 6 AND content_sha256 IS NOT NULL"
+            ),
+            1,
+            "one current row for revision 6, with the values back"
+        );
         Ok(())
     })
     .unwrap();

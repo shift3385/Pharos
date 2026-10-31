@@ -56,6 +56,8 @@
         "version": "1.0",
         "status": "approved",
         "priority": "high",
+        "caseType": "standard",
+        "automationStatus": "to_automate",
         "author": "QA",
         "data": {
           "gherkinLevel": "basic",
@@ -63,7 +65,8 @@
             { "id": "A1B2C3D4", "text": "open the cart" },
             { "id": "E5F6G7H8", "text": "pay", "expected": "the order is paid" }
           ],
-          "requirementKeys": ["REQ-001"]
+          "requirementKeys": ["REQ-001"],
+          "custom": { "browser": "OPT00001" }
         },
         "createdAt": "2026-10-29 10:00:00",
         "updatedAt": "2026-10-29 10:10:00",
@@ -107,6 +110,32 @@
         "priority": "medium",
         "position": 0,
         "data": { "severity": "major" },
+        "createdAt": "2026-10-29 10:00:00",
+        "updatedAt": "2026-10-29 10:00:00",
+        "revision": 1
+      }
+    },
+    {
+      "entity": "custom_field",
+      "entityId": "49d39e0c-c1b9-53ab-936f-c996e60b80a6",
+      "revision": 1,
+      "deleted": false,
+      "hlc": "001730000000005-00000-dev-a",
+      "payload": {
+        "id": "49d39e0c-c1b9-53ab-936f-c996e60b80a6",
+        "workspaceId": "local",
+        "projectId": "p-fixture",
+        "entity": "test_case",
+        "fieldKey": "browser",
+        "label": "Browser",
+        "description": "",
+        "fieldType": "select",
+        "options": [{ "id": "OPT00001", "label": "Chrome", "archived": false }],
+        "required": false,
+        "defaultValue": null,
+        "appliesToCaseTypes": null,
+        "position": 0,
+        "archivedAt": null,
         "createdAt": "2026-10-29 10:00:00",
         "updatedAt": "2026-10-29 10:00:00",
         "revision": 1

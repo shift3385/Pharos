@@ -17,6 +17,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
+use crate::custom_fields;
 use crate::db::{ensure_workspace, Db};
 use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
@@ -34,6 +35,13 @@ pub struct TestCaseSummary {
     status: String,
     priority: String,
     gherkin_level: String,
+    /// `standard | checklist`; None = never set (reads as standard, FLD-01).
+    case_type: Option<String>,
+    /// `manual | to_automate | automated`; None = never set (reads as manual).
+    automation_status: Option<String>,
+    /// `data.custom` (ADR-0018), for the list's custom field filters.
+    #[cfg_attr(test, ts(type = "Record<string, unknown>"))]
+    custom: Value,
     /// Some AI-generated content is still pending human review (IA-01).
     ai_pending: bool,
     updated_at: String,
@@ -63,6 +71,8 @@ pub struct TestCase {
     version: String,
     status: String,
     priority: String,
+    case_type: Option<String>,
+    automation_status: Option<String>,
     author: String,
     #[cfg_attr(test, ts(type = "unknown"))]
     data: Value,
@@ -92,6 +102,10 @@ pub struct TestCaseInput {
     version: Option<String>,
     status: Option<String>,
     priority: Option<String>,
+    /// None on create → `standard`; None on update keeps the stored value.
+    case_type: Option<String>,
+    /// None on create → `manual`; None on update keeps the stored value.
+    automation_status: Option<String>,
     /// Name printed on the document; not an id.
     author: String,
     #[serde(default = "empty_object")]
@@ -108,7 +122,8 @@ fn empty_object() -> Value {
 /// Live case `?1` of a live project owned by `?2`.
 const SELECT_CASE: &str =
     "SELECT c.id, c.workspace_id, c.project_id, c.scenario_id, c.title, c.version, \
-    c.status, c.priority, c.author, c.data, c.created_at, c.updated_at, c.revision \
+    c.status, c.priority, c.case_type, c.automation_status, c.author, c.data, c.created_at, \
+    c.updated_at, c.revision \
     FROM test_cases c JOIN projects p ON p.id = c.project_id \
     WHERE c.id = ?1 AND p.owner_id = ?2 AND c.deleted_at IS NULL AND p.deleted_at IS NULL";
 
@@ -123,6 +138,8 @@ fn map_case(row: &rusqlite::Row) -> rusqlite::Result<TestCase> {
         version: row.get("version")?,
         status: row.get("status")?,
         priority: row.get("priority")?,
+        case_type: row.get("case_type")?,
+        automation_status: row.get("automation_status")?,
         author: row.get("author")?,
         data: serde_json::from_str(&data_str).unwrap_or_else(|_| empty_object()),
         created_at: row.get("created_at")?,
@@ -176,7 +193,8 @@ pub(crate) fn list_cases(
     }
     let mut stmt = conn
         .prepare(
-            "SELECT id, scenario_id, title, status, priority, data, updated_at, revision \
+            "SELECT id, scenario_id, title, status, priority, case_type, automation_status, data, \
+             updated_at, revision \
              FROM test_cases WHERE project_id = ?1 AND deleted_at IS NULL ORDER BY scenario_id",
         )
         .map_err(|e| e.to_string())?;
@@ -196,6 +214,13 @@ pub(crate) fn list_cases(
                 status: r.get("status")?,
                 priority: r.get("priority")?,
                 gherkin_level,
+                case_type: r.get("case_type")?,
+                automation_status: r.get("automation_status")?,
+                custom: data
+                    .get("custom")
+                    .filter(|c| c.is_object())
+                    .cloned()
+                    .unwrap_or_else(empty_object),
                 ai_pending: ai_pending(&data),
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
@@ -239,14 +264,24 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
     };
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
-    let mut data = input.data.clone();
-    steps::normalize_new_case_data(&mut data);
+    // A new case gets explicit values (ADR-0018: only a new entity gets the
+    // defaults).
+    let case_type = input.case_type.as_deref().unwrap_or("standard");
+    let automation = input.automation_status.as_deref().unwrap_or("manual");
+    let data = prepare_data(
+        conn,
+        &input.project_id,
+        case_type,
+        automation,
+        &input.data,
+        None,
+    )?;
     let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, \
          version, status, priority, author, data, created_by, updated_by, created_at, \
-         updated_at, revision) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, \
-         ?11, datetime('now'), datetime('now'), 1)",
+         updated_at, revision, case_type, automation_status) VALUES (?1, ?2, ?3, ?4, ?5, \
+         ?6, ?7, ?8, ?9, ?10, ?11, ?11, datetime('now'), datetime('now'), 1, ?12, ?13)",
         params![
             id,
             workspace_id,
@@ -262,6 +297,8 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
             input.author,
             data_str,
             input.user_id,
+            case_type,
+            automation,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -291,22 +328,35 @@ pub(crate) fn update_case(
     if !owns(conn, id, &input.user_id)? {
         return Err("test case not found".to_string());
     }
-    let revision: i64 = conn
+    type Stored = (i64, String, Option<String>, Option<String>, String);
+    let (revision, project_id, stored_type, stored_automation, stored_data): Stored = conn
         .query_row(
-            "SELECT revision FROM test_cases WHERE id = ?1",
+            "SELECT revision, project_id, case_type, automation_status, data \
+             FROM test_cases WHERE id = ?1",
             params![id],
-            |r| r.get(0),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
         )
         .map_err(|e| e.to_string())?;
+    // A caller that does not send the case fields keeps them (FLD-01): the
+    // editor sends them, an older caller (import, AI) does not know them.
+    let case_type = input.case_type.clone().or(stored_type);
+    let automation = input.automation_status.clone().or(stored_automation);
+    let previous = serde_json::from_str::<Value>(&stored_data).ok();
+    let data = prepare_data(
+        conn,
+        &project_id,
+        case_type.as_deref().unwrap_or("standard"),
+        automation.as_deref().unwrap_or("manual"),
+        &input.data,
+        previous.as_ref(),
+    )?;
 
     let before = journal::snapshot(conn, "test_case", id)?;
-    let mut data = input.data.clone();
-    steps::normalize_new_case_data(&mut data);
     let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE test_cases SET title = ?2, version = ?3, status = ?4, priority = ?5, \
          author = ?6, data = ?7, updated_at = datetime('now'), updated_by = ?9, \
-         revision = ?8 WHERE id = ?1",
+         revision = ?8, case_type = ?10, automation_status = ?11 WHERE id = ?1",
         params![
             id,
             input.title,
@@ -320,6 +370,8 @@ pub(crate) fn update_case(
             data_str,
             revision + 1,
             input.user_id,
+            case_type,
+            automation,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -339,6 +391,34 @@ pub(crate) fn update_case(
     )?;
     revisions::ensure_current(conn, id, user, true)?;
     Ok(())
+}
+
+/// What a save stores in `data`: stable step ids (DAT-02), the server's stash
+/// for read-only clients gone, and `data.custom` checked against the project's
+/// definitions (FLD-01). An update whose `data` has no `custom` keeps the
+/// stored one: only the editor knows the fields, and it always sends them
+/// (`{}` clears them).
+fn prepare_data(
+    conn: &Connection,
+    project_id: &str,
+    case_type: &str,
+    automation: &str,
+    input: &Value,
+    previous: Option<&Value>,
+) -> Result<Value, String> {
+    custom_fields::check_case_fields(Some(case_type), Some(automation))?;
+    let mut data = input.clone();
+    steps::normalize_new_case_data(&mut data);
+    custom_fields::take_stash(&mut data);
+    if let (Some(obj), Some(kept)) = (data.as_object_mut(), previous.and_then(|p| p.get("custom")))
+    {
+        if !obj.contains_key("custom") {
+            obj.insert("custom".into(), kept.clone());
+        }
+    }
+    let rules = custom_fields::case_rules(conn, project_id)?;
+    custom_fields::validate_values(&rules, case_type, &mut data, previous)?;
+    Ok(data)
 }
 
 /// Soft-deletes a case the user owns. An unknown or foreign id is an error and
@@ -483,6 +563,8 @@ mod tests {
             version: None,
             status: None,
             priority: None,
+            case_type: None,
+            automation_status: None,
             author: "Ada Lovelace".to_string(),
             data: serde_json::json!({}),
             user_id: USER.to_string(),

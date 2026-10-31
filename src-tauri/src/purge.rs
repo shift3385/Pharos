@@ -43,6 +43,7 @@ pub struct PurgeSummary {
     pub(crate) test_cases: usize,
     pub(crate) requirements: usize,
     pub(crate) planner_cards: usize,
+    pub(crate) custom_fields: usize,
     pub(crate) templates: usize,
 }
 
@@ -53,6 +54,7 @@ impl PurgeSummary {
             + self.test_cases
             + self.requirements
             + self.planner_cards
+            + self.custom_fields
             + self.templates
     }
 }
@@ -135,7 +137,7 @@ struct Child {
     dependents: Option<&'static str>,
 }
 
-const CHILDREN: [Child; 4] = [
+const CHILDREN: [Child; 5] = [
     Child {
         entity: "test_plan",
         table: "test_plans",
@@ -162,6 +164,13 @@ const CHILDREN: [Child; 4] = [
         dependents: Some(
             "DELETE FROM attachments WHERE owner_entity = 'planner_card' AND owner_id = ?1",
         ),
+    },
+    // Only a project's cascade deletes a field (FLD-01): it goes with it.
+    Child {
+        entity: "custom_field",
+        table: "custom_fields",
+        key: None,
+        dependents: None,
     },
 ];
 
@@ -270,16 +279,17 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
         return Err("not-authenticated".into());
     }
     let days = days.clamp(MIN_DAYS, MAX_DAYS);
-    let mut counts = [0usize; 4];
+    let mut counts = [0usize; 5];
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
         *n = purge_children(conn, user, days, child)?;
     }
-    let [test_plans, test_cases, requirements, planner_cards] = counts;
+    let [test_plans, test_cases, requirements, planner_cards, custom_fields] = counts;
     Ok(PurgeSummary {
         test_plans,
         test_cases,
         requirements,
         planner_cards,
+        custom_fields,
         projects: purge_projects(conn, user, days)?,
         templates: purge_templates(conn, user, days)?,
     })

@@ -31,14 +31,36 @@ struct CaseState {
     version: String,
     status: String,
     priority: String,
+    case_type: Option<String>,
+    automation_status: Option<String>,
     data: Value,
     revision: i64,
 }
 
-fn case_state(conn: &Connection, case_id: &str) -> Result<Option<CaseState>, String> {
+/// True once 0026 added the case type columns. The 0021 data step runs on
+/// older schemas, where both are None (what they hashed as before FLD-01).
+fn has_case_fields(conn: &Connection) -> Result<bool, String> {
     conn.query_row(
-        "SELECT workspace_id, project_id, scenario_id, title, version, status, priority, data, revision
-           FROM test_cases WHERE id = ?1",
+        "SELECT 1 FROM pragma_table_info('test_cases') WHERE name = 'case_type'",
+        [],
+        |_| Ok(()),
+    )
+    .optional()
+    .map(|r| r.is_some())
+    .map_err(|e| e.to_string())
+}
+
+fn case_state(conn: &Connection, case_id: &str) -> Result<Option<CaseState>, String> {
+    let fields = if has_case_fields(conn)? {
+        "case_type, automation_status"
+    } else {
+        "NULL, NULL"
+    };
+    conn.query_row(
+        &format!(
+            "SELECT workspace_id, project_id, scenario_id, title, version, status, priority, data,
+                    revision, {fields} FROM test_cases WHERE id = ?1"
+        ),
         params![case_id],
         |r| {
             Ok((
@@ -50,6 +72,8 @@ fn case_state(conn: &Connection, case_id: &str) -> Result<Option<CaseState>, Str
                     version: r.get(4)?,
                     status: r.get(5)?,
                     priority: r.get(6)?,
+                    case_type: r.get(9)?,
+                    automation_status: r.get(10)?,
                     data: Value::Null,
                     revision: r.get(8)?,
                 },
@@ -59,15 +83,17 @@ fn case_state(conn: &Connection, case_id: &str) -> Result<Option<CaseState>, Str
     )
     .optional()
     .map_err(|e| e.to_string())?
-    .map_or(Ok(None), |(mut state, data)| match serde_json::from_str(&data) {
-        Ok(value) => {
-            state.data = value;
-            Ok(Some(state))
-        }
-        // Not JSON: no content to fix in an immutable row. Logged, skipped.
-        Err(_) => {
-            tracing::warn!(case_id, "case data is not JSON: no revision row written");
-            Ok(None)
+    .map_or(Ok(None), |(mut state, data)| {
+        match serde_json::from_str(&data) {
+            Ok(value) => {
+                state.data = value;
+                Ok(Some(state))
+            }
+            // Not JSON: no content to fix in an immutable row. Logged, skipped.
+            Err(_) => {
+                tracing::warn!(case_id, "case data is not JSON: no revision row written");
+                Ok(None)
+            }
         }
     })
 }
@@ -104,8 +130,8 @@ fn content_of(c: &CaseState) -> Value {
         &c.version,
         &c.status,
         &c.priority,
-        None,
-        None,
+        c.case_type.as_deref(),
+        c.automation_status.as_deref(),
         &c.data,
     )
 }
@@ -142,7 +168,7 @@ pub fn ensure_current(
             "INSERT OR IGNORE INTO test_case_revisions (id, test_case_id, revision, title, data,
                     created_at, created_by, workspace_id, project_id, scenario_id, version, status,
                     priority, case_type, automation_status, content_sha256, hlc)
-             VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), ?6, ?7, ?8, ?9, ?10, ?11, ?12, NULL, NULL, ?13, ?14)",
+             VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
             params![
                 id,
                 case_id,
@@ -156,6 +182,8 @@ pub fn ensure_current(
                 c.version,
                 c.status,
                 c.priority,
+                c.case_type,
+                c.automation_status,
                 sha,
                 hlc,
             ],

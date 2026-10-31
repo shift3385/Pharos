@@ -1,0 +1,15 @@
+-- Case fields kept for read-only clients (FLD-01, ADR-0018). The work is in
+-- Rust, right after this file and in the same savepoint (`db.rs`, RUST_STEPS
+-- -> `custom_fields::migrate_restore`):
+--   * a case pulled by a 0.1.x / 0.2.0-alpha.1 app carries
+--     `data.__caseFields = {caseType, automationStatus}`, which the server
+--     added because those apps have no column for them: the columns get the
+--     values and the stash is removed;
+--   * a case those apps saved while read-only lost `data.custom` (their editor
+--     rebuilds `data`); it gets it back from its previous state, which their
+--     `update_case` copied to the history;
+--   * when that changed the case's content, the revision row that 0021 wrote
+--     for the old content in this same upgrade, not pushed yet, is replaced.
+-- `revision` does not move and no test_case change is journaled. Running the
+-- step again changes nothing.
+SELECT 1;

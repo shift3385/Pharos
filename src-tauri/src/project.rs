@@ -215,7 +215,7 @@ pub(crate) fn update_project(
 }
 
 /// Soft-deletes a project and cascades the soft-delete to its plan, cases,
-/// planner cards and requirements so nothing is left orphaned (the hard-delete
+/// planner cards, requirements and custom fields so nothing is left orphaned (the hard-delete
 /// purge runs later). One audit event for the project, with how many children
 /// went with it (ADR-0015: the event reflects the intent, not each row).
 pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Result<(), String> {
@@ -227,6 +227,7 @@ pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Resul
         "test_cases",
         "planner_cards",
         "requirements",
+        "custom_fields",
     ] {
         let sql = format!(
             "UPDATE {table} SET deleted_at = datetime('now') \
