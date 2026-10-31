@@ -10,6 +10,7 @@ import { PlannerBoard } from "./PlannerBoard";
 const list = vi.fn();
 const remove = vi.fn();
 vi.mock("../api/plannerApi", () => ({
+  MAX_ATTACHMENT_MB: 200,
   plannerApi: {
     list: (...a: unknown[]) => list(...a),
     remove: (...a: unknown[]) => remove(...a),

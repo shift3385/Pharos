@@ -75,7 +75,9 @@ pub fn derive_id(case_id: &str, list: &str, index: usize, used: &mut HashSet<Str
 
 /// RFC 8785 (JCS) canonical JSON: keys sorted by UTF-16 code units, numbers in
 /// ECMAScript form, strings escaped as JSON requires and nothing more. An
-/// integer beyond 2^53 is written exactly (JavaScript would round it).
+/// integer beyond ±(2^53 - 1) is written as JavaScript reads and writes it
+/// (the nearest double), so the server computes the same text. Within the
+/// audit subset (`audit::jcs`) both give the same output.
 pub fn jcs(value: &Value) -> String {
     let mut out = String::new();
     write_jcs(value, &mut out);
@@ -90,10 +92,9 @@ fn write_jcs(value: &Value, out: &mut String) {
             out.push_str(&serde_json::to_string(value).unwrap_or_default())
         }
         Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
+            const MAX_SAFE: i64 = (1 << 53) - 1;
+            if let Some(i) = n.as_i64().filter(|i| (-MAX_SAFE..=MAX_SAFE).contains(i)) {
                 out.push_str(&i.to_string());
-            } else if let Some(u) = n.as_u64() {
-                out.push_str(&u.to_string());
             } else {
                 let f = n.as_f64().unwrap_or(0.0);
                 out.push_str(ryu_js::Buffer::new().format_finite(f));
@@ -407,6 +408,13 @@ mod tests {
             );
             assert_eq!(id, v["id"].as_str().unwrap());
         }
+    }
+
+    #[test]
+    fn the_audit_subset_has_the_same_canonical_form() {
+        let v = json!({"b": [1, -9007199254740991i64, null, true], "a": {"z": "é
+", "y": 1.0}});
+        assert_eq!(crate::audit::jcs(&v).unwrap(), jcs(&v));
     }
 
     #[test]

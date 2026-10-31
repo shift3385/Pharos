@@ -30,9 +30,16 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 keyring = { version = "3", features = ["windows-native"] }
 # Local encrypted SQLite: plain SQLite (compiles with gcc, no OpenSSL) + pure-Rust
 # AES-256-GCM encryption at rest, key kept in the OS keychain (spec §16 Phase 2).
-# `serialize` moves the database image to/from memory so plaintext never hits disk.
-rusqlite = { version = "0.32", features = ["bundled", "serialize"] }
-aes-gcm = "0.10"
+# `serialize` moves the database image to/from memory so plaintext never hits disk;
+# `blob` reads the old planner attachment BLOBs in blocks while moving them out.
+rusqlite = { version = "0.32", features = ["bundled", "serialize", "blob"] }
+# `stream`: the evidence files (`evidence/*.pev`, ADR-0014) are encrypted and
+# decrypted in 64 KiB blocks (STREAM construction), never whole in memory.
+aes-gcm = { version = "0.10", features = ["stream"] }
+# Evidence keys and file names (ADR-0014): HKDF-SHA256 derives them from the
+# database key; HMAC-SHA256 of the content hash names each file.
+hkdf = "0.12"
+hmac = "0.12"
 base64 = "0.22"
 uuid = { version = "1", features = ["v4", "v5"] }
 # RFC 8785 (JCS) numbers in ECMAScript form, for the content hash of a case

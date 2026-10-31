@@ -172,7 +172,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
 - Results are append-only and point to an immutable, synced
   `test_case_revision` and to stable step ids.
 - Evidence lives encrypted outside the database (`evidence/`, addressed by
-  hash).
+  hash) — **built in E2 (DAT-03)**, see "Evidence store" below.
 - One write path (`journal::record`) feeds both the oplog and an append-only
   `audit_log` — **built in E1 (AUD-01)**, see "Journal and audit log" below.
 - Defects become their own `defects` module.
@@ -210,8 +210,27 @@ through `src-tauri/src/journal.rs`:
   device and is never pushed. So does the event of a `user:` actor without an id (a change
   made signed out).
 - Pulls create no event (they arrive as the other device's events); resolving a
-  conflict does (`resolve_conflict`). Web edits leave no audit trail yet
-  (AUD-01b, 0.2.0, wave E2). There is no audit UI yet (Admin > Auditoría comes later).
+  conflict does (`resolve_conflict`). There is no audit UI yet (Admin > Auditoría comes later).
+- **Web edits (AUD-01b)** are audited by the server
+  (`server/src/modules/audit/`). `DomainTx.put` writes, in the same
+  transaction and under the user's write lock, one `audit_event` document
+  per domain write with the journal's rules (`audit.diff.ts` ports
+  `journal::diff` and `location`): create, update or delete with the diff,
+  nothing for a no-diff update or a refused write (409/404), one `import`
+  event for a requirement import (its rows are `folded`), one `delete` with
+  the cascade counts for a project delete. The events form the chain
+  `("web", "web", user)`: `deviceId "web"`, `chainWorkspaceId "web"`,
+  `origin "local"` (a new origin would fail the desktop's CHECK), an empty
+  `workspaceId` so each desktop files them under its own workspace. Its head
+  lives in `audit_chain_heads` (server migration 0007). `audit.chain.ts` is
+  a port of `audit.rs` (JCS subset, `hashOf`, `verifyChain`); the shared
+  vectors `src/shared/contracts/fixtures/audit/chain.json` (canonical forms,
+  refusals and a web chain as `/sync/pull` returns it) are asserted by both
+  `cargo test` and the server tests. Desktops with `append-only` pull the
+  events unchanged and `audit::verify_chain(conn, "web", "web", user)`
+  verifies them. `/sync/push` is not audited (devices push their own events)
+  and refuses an `audit_event` with `deviceId "web"` (`appendRejected`,
+  `reserved_chain`), so only the server extends that chain.
 - Each event with an owner rides an oplog row `entity = 'audit_event'`,
   outside `oplog::SYNCED`, so it is not in the "pending changes" badge; the
   exported diagnostics carry `pendingAuditEvents` (all accounts) so a server
@@ -628,8 +647,10 @@ Local only — nothing is sent anywhere.
 ## Exports and the download folder (UX-02, EXP-02)
 
 Every file the app hands to the user (plan and case `.xlsx`/`.pdf`,
-`.feature` files, project ZIPs, the matrix, templates, planner attachments
-and the diagnostic bundle) goes through `saveFile` (`@shared/export/saveFile`).
+`.feature` files, project ZIPs, the matrix, templates and the diagnostic
+bundle) goes through `saveFile` (`@shared/export/saveFile`). Planner attachments
+go through `saveVia` with the same toasts: Rust streams them from the evidence
+store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
 
 - **Desktop:** the bytes travel as a raw IPC body to `download_save`
   (`src-tauri/src/downloads.rs`), with the name in the `x-pharos-filename`
@@ -745,8 +766,10 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `append-only`). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
   `append_only` (`APPEND_ONLY_ENTITIES` in `sync.schemas.ts`, today
   `audit_event`): op `append`, inserted if absent, the same content again is a
-  no-op, other content under the same id is refused in `appendRejected` and the
-  stored one stays; only the location keys (`workspaceId`, `projectId`) may
+  no-op, other content under the same id is refused in `appendRejected`
+  (`content_changed`) and the stored one stays, and an `audit_event` that claims
+  `deviceId "web"` is refused too (`reserved_chain`: only the server writes the
+  web chain, AUD-01b); only the location keys (`workspaceId`, `projectId`) may
   change; never a conflict, never tombstoned by a project delete. Only a client
   that sends `append-only` may push them, pulls them and gets `features` in the
   answers; older clients get exactly the previous answers. An upsert from a
@@ -864,6 +887,80 @@ Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
   `tests/fixtures/0.2.0-alpha.1/`, is the previous published minor: it must open
   with every row unchanged, its pending changes still push, its cursor restarts
   once and its audit log starts empty.
+
+**Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**
+Attachment contents live outside the database, in `<data dir>/evidence/`
+(`src-tauri/src/evidence.rs`), so saving the database never depends on their
+size, and a file is never held whole in memory while it is written or read.
+(The migration below reads BLOBs that are already part of the in-memory image,
+and its `VACUUM` can briefly double that image.)
+
+- **Data folder = `pharos.db.enc` + `evidence/`.** Backups, recovery and the
+  "newer version" check cover both. The store is created only after the
+  database decrypts and passes that check, so a wrong key or a newer database
+  never touches `evidence/`.
+- **Tables (0022).**
+  - `blobs` (local, never synced): one row per content by plaintext `sha256`,
+    with `local_state` `present | remote_only | missing | deleting`.
+  - `attachments`: one use of a content (`owner_entity`/`owner_id`, `kind`,
+    name, mime, size, `blob_purged_at`). Shaped as an LWW entity, but not
+    registered for sync yet (step 7 or SYNC-04b).
+  - `evidence_retention`: per-project overrides of the retention by kind.
+- **Files.** `evidence/<2 hex>/<hmac>.pev`, with
+  `hmac = HMAC-SHA256(name key, sha256)`.
+  - Keys come from `db_key` by HKDF-SHA256 (`"pharos-evidence-v1"`, then the
+    `"name"` and `"file"` subkeys): no keychain entry, and the recovery key
+    opens them.
+  - `.pev` v1: a 16-byte header (`PEV1`, version, block size, nonce prefix)
+    and AES-256-GCM STREAM in 64 KiB blocks, with the header as associated
+    data. Reading re-hashes the plaintext and fails on a mismatch. A version
+    above 1 is `evidence-newer-than-app`.
+- **Writes.** `BlobWriter` encrypts and hashes block by block into
+  `evidence/tmp/<uuid>.pev.new`. `seal` writes the last block and fsyncs, off
+  the database lock; `commit` renames it under the lock. It drops the new copy
+  only when an intact one is already stored (expected length
+  `16 + size + 16 × max(1, ⌈size / 64 KiB⌉)` and a valid header); a truncated or
+  foreign copy is replaced, also when a migration resumes. `commit` reports
+  whether it wrote, so a failed attach removes only a file it wrote. `tmp/` is
+  emptied at open.
+- **Ordering with `Db::persist`.** A file is written before the database that
+  references it is saved, and removed only after the database that no longer
+  references it is saved.
+  - Releasing a content marks it `deleting` in the same transaction.
+    `Db::persist_and_collect` saves and then, under the same lock, removes the
+    files and rows of those contents and saves again: every `deleting` row it
+    sees is in the image just written, and a failed save removes nothing. At
+    open it finishes deletions an earlier run saved. A content referenced again
+    meanwhile goes back to `present`.
+  - `.pev` files no row knows are only **counted** (diagnostic bundle), never
+    swept: they may belong to a database the user moved aside.
+- **UI path.** Uploads go in raw 4 MiB chunks (`evidence_upload_begin`,
+  `_chunk`, `_cancel`, held in the managed `Uploads`); `planner_attachment_add`
+  then attaches the upload. At most 8 are open; one idle for 10 minutes (a
+  webview reload mid-upload) is dropped to make room, a chunk always gets its
+  slot back, and a second chunk of an upload that is being written is refused. `planner_attachment_save` decrypts straight into
+  the download folder (`Downloads::save_with`, Mark-of-the-Web). The bytes
+  never cross the webview as base64. Limit: 200 MB per file (`MAX_FILE_BYTES`).
+- **Retention and purge.** `purge_deleted` also:
+  - purges soft-deleted planner attachments past the retention;
+  - runs `evidence::expire`: per-kind days (defaults in `DEFAULT_RETENTION`;
+    only `run_shard` evidence can expire until step 7 brings the ADR's result
+    exceptions). Expiry sets `blob_purged_at` and writes a `redact` audit event;
+  - releases every content no live attachment needs.
+
+  Deleting an attachment is a soft delete plus an immediate release. Deleting
+  a card releases nothing, because the card may come back.
+- **Migration (0022 → Rust → 0023).** `run_migrations_with` calls
+  `evidence::migrate_planner_attachments` before 0023 drops
+  `planner_attachments`. Each BLOB is read with SQLite incremental BLOB I/O,
+  stored, and becomes an `attachments` row with the same id; the image is then
+  vacuumed. Nothing but `.pev` files reaches disk before the final save, which
+  comes after the SEC-06 backup, so a cut run repeats to the same end state:
+  rows already moved are skipped and stored contents are not rewritten. Rows
+  whose card is gone are dropped (the backup keeps them).
+- **Never synced, never logged.** No `attachments` row reaches the oplog:
+  `journal::record_event` writes the `link`/`unlink` audit event with
+  `{id, name, mime, size, sha256}`. Logs carry counts and error kinds only.
 
 Every business entity is multi-user ready (spec §3): `workspace_id` + audit
 fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,

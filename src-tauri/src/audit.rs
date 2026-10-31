@@ -25,8 +25,8 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 /// RFC 8785 (JCS) for the subset audit headers use: objects with ASCII keys,
-/// strings, integers, booleans and null. Anything else (a float, a non-ASCII
-/// key) is an error instead of a silently different canonical form, so a
+/// strings, integers within ±(2^53 - 1), booleans and null. Anything else (a
+/// fraction, a larger integer, a non-ASCII key) is an error instead of a silently different canonical form, so a
 /// header field added later cannot drift from another implementation.
 pub fn jcs(value: &Value) -> Result<String, String> {
     let mut out = String::new();
@@ -41,14 +41,7 @@ fn write_jcs(value: &Value, out: &mut String) -> Result<(), String> {
             // \b \f \n \r \t or lowercase \u00xx) and nothing else.
             out.push_str(&serde_json::to_string(value).map_err(|e| e.to_string())?);
         }
-        Value::Number(n) => {
-            if !(n.is_i64() || n.is_u64()) {
-                return Err(format!(
-                    "jcs: non-integer number {n} is outside the audit subset"
-                ));
-            }
-            out.push_str(&n.to_string());
-        }
+        Value::Number(n) => out.push_str(&safe_integer(n)?.to_string()),
         Value::Array(items) => {
             out.push('[');
             for (i, item) in items.iter().enumerate() {
@@ -81,6 +74,29 @@ fn write_jcs(value: &Value, out: &mut String) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// Largest integer every JSON parser holds exactly (2^53 - 1): the server's
+/// JCS (`audit.chain.ts`) reads numbers as IEEE doubles.
+const MAX_SAFE_INTEGER: i64 = (1 << 53) - 1;
+
+/// A number of the audit subset: an integer within ±(2^53 - 1). A JSON number
+/// written with a fraction or exponent but an integral value (`1.0`, `1e2`) is
+/// that integer, as RFC 8785 and the server read it; anything else is an
+/// error, so both implementations accept and refuse the same values.
+fn safe_integer(n: &serde_json::Number) -> Result<i64, String> {
+    let value = if let Some(i) = n.as_i64() {
+        Some(i)
+    } else if n.is_u64() {
+        None
+    } else {
+        n.as_f64()
+            .filter(|f| f.is_finite() && f.fract() == 0.0 && f.abs() <= MAX_SAFE_INTEGER as f64)
+            .map(|f| f as i64)
+    };
+    value
+        .filter(|i| i.abs() <= MAX_SAFE_INTEGER)
+        .ok_or_else(|| format!("jcs: number {n} is outside the audit subset"))
 }
 
 /// One audit event, as stored in `audit_log`.

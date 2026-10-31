@@ -47,14 +47,20 @@ export type ApplyResult =
   | { accepted: false; keyConflict: KeyConflict }
   | { accepted: false; appendRejected: AppendRejected };
 
-/** A pushed append-only document whose id the server already holds with other
- *  content (AUD-01): it is never overwritten. Only a bug or tampering on the
- *  device produces one. */
+/** A pushed append-only document the server refuses (AUD-01): its id is
+ *  already held with other content (`content_changed`; it is never
+ *  overwritten), or it claims the server's own web audit chain
+ *  (`reserved_chain`, AUD-01b: only the server writes device "web"). Only a
+ *  bug or tampering on the device produces one. */
 export interface AppendRejected {
   entity: string;
   entityId: string;
-  reason: "content_changed";
+  reason: "content_changed" | "reserved_chain";
 }
+
+/** The device id of the audit chain the server writes for web edits
+ *  (`audit.store.ts`). */
+export const WEB_AUDIT_DEVICE = "web";
 
 /** A block of key numbers leased to a device, both ends included. */
 export interface KeyBlock {
@@ -101,16 +107,30 @@ export const LOCK_USER_SQL = "SELECT pg_advisory_xact_lock(hashtext($1))";
  *  a device with a pending edit of that child sees a conflict, not a loss.
  *  A child's HLC never goes backwards (a newer child edit keeps its HLC), so
  *  a stale web upsert cannot win last-write-wins against the tombstone. */
-async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta): Promise<void> {
-  await client.query(
+async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta): Promise<Record<string, number>> {
+  const { rows } = await client.query<{ entity: string }>(
     `UPDATE documents
         SET deleted = true, revision = revision + 1, hlc = GREATEST(hlc, $3), author = $4,
             updated_at = now(), seq = nextval('documents_seq')
       WHERE user_id = $1 AND entity = ANY($5::text[]) AND NOT deleted
-        AND payload->>'projectId' = $2`,
+        AND payload->>'projectId' = $2
+      RETURNING entity`,
     [userId, d.entityId, d.hlc, d.author, [...PROJECT_CHILDREN]],
   );
+  const counts: Record<string, number> = Object.fromEntries(PROJECT_CHILDREN.map((e) => [CASCADE_KEY[e], 0]));
+  for (const r of rows) counts[CASCADE_KEY[r.entity as (typeof PROJECT_CHILDREN)[number]]]++;
+  return counts;
 }
+
+/** How a cascade counts each child: the desktop's table names
+ *  (`project.rs`), so a web project delete reads like a desktop one in the
+ *  audit log. */
+const CASCADE_KEY: Record<(typeof PROJECT_CHILDREN)[number], string> = {
+  test_plan: "test_plans",
+  test_case: "test_cases",
+  requirement: "requirements",
+  planner_card: "planner_cards",
+};
 
 /** The live document of the same project that already uses the key of an
  *  upsert (DAT-01), as a key conflict; null when the key is free, empty or
@@ -149,14 +169,16 @@ const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN
 /** Stores a delta as the user's latest version of the entity (with a new
  *  `seq`) and cascades a project delete to its children. The caller holds the
  *  user's write lock and has already decided that the delta wins. `merge`:
- *  keep the keys the delta left out (only for old clients, above). */
+ *  keep the keys the delta left out (only for old clients, above). Returns the
+ *  payload stored and, for a project delete, how many children it removed
+ *  (the web's audit event reads both, AUD-01b). */
 export async function storeDoc(
   client: PoolClient,
   userId: string,
   d: Delta,
   opts: { merge: boolean } = { merge: false },
-): Promise<void> {
-  await client.query(
+): Promise<{ payload: Record<string, unknown>; cascade: Record<string, number> | null }> {
+  const { rows } = await client.query<{ payload: Record<string, unknown> }>(
     `INSERT INTO documents
        (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
@@ -168,10 +190,12 @@ export async function storeDoc(
            deleted = EXCLUDED.deleted,
            hlc = EXCLUDED.hlc,
            updated_at = now(),
-           seq = nextval('documents_seq')`,
+           seq = nextval('documents_seq')
+     RETURNING payload`,
     [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc],
   );
-  if (d.entity === "project" && d.op === "delete") await cascadeProjectDelete(client, userId, d);
+  const cascade = d.entity === "project" && d.op === "delete" ? await cascadeProjectDelete(client, userId, d) : null;
+  return { payload: rows[0].payload, cascade };
 }
 
 /** `payload` without its location and bookkeeping keys: the immutable
@@ -279,7 +303,11 @@ export function createSyncRepository(pool: Pool) {
         await client.query("BEGIN");
         await client.query(LOCK_USER_SQL, [userId]);
         if (isAppendOnly(d.entity)) {
-          const result = await storeAppend(client, userId, d);
+          // A pushed event may never extend or fork the server's web chain.
+          const result: ApplyResult =
+            d.entity === "audit_event" && d.payload.deviceId === WEB_AUDIT_DEVICE
+              ? { accepted: false, appendRejected: { entity: d.entity, entityId: d.entityId, reason: "reserved_chain" } }
+              : await storeAppend(client, userId, d);
           await client.query("COMMIT");
           return result;
         }

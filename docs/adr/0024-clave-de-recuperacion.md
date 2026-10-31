@@ -61,8 +61,8 @@
     al cerrar se olvida. Solo se guarda la fecha en que se mostró, en
     `localStorage`, nunca la clave.
 - **Modelo de amenazas:**
-  - **Protege de:** perder el keychain. Con el `.enc` (y `evidence/` cuando
-    exista) y la clave de recuperación se recuperan los datos en otro equipo.
+  - **Protege de:** perder el keychain. Con el `.enc`, `evidence/` (desde
+    0.2.0, DAT-03) y la clave de recuperación se recuperan los datos en otro equipo.
   - **No protege de:** alguien que tenga la clave de recuperación y una copia
     de los datos, que puede leerlos. Por eso la guía pide no guardarlas juntas.
     Tampoco de perder las dos cosas: Pharos no tiene copia de la clave.
@@ -88,8 +88,8 @@
   - **Sin comprobación.** Una errata solo se vería como "clave incorrecta", sin
     distinguirla de otra clave. Se descartó.
 - **Consecuencias:**
-  - Una copia de seguridad completa son `pharos.db.enc` (más `evidence/` cuando
-    exista) y la clave de recuperación (README, "Local data backups").
+  - Una copia de seguridad completa son `pharos.db.enc`, `evidence/` (desde
+    0.2.0, DAT-03) y la clave de recuperación (README, "Local data backups").
   - Las copias `pharos.db.enc.bak-…` (SEC-06) usan la misma clave, así que la
     misma clave de recuperación las abre.
   - Rotar `db-key` (SEC-05) invalida las claves de recuperación exportadas: la

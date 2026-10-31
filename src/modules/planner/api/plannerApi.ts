@@ -1,7 +1,7 @@
 import { desktopOnly, serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
+import type { SaveResult } from "@shared/export/saveFile";
 import type {
-  AttachmentData,
   AttachmentSummary,
   CardStatus,
   PlannerCard,
@@ -10,11 +10,32 @@ import type {
 
 const path = (id: string) => `/api/planner-cards/${encodeURIComponent(id)}`;
 
-// The desktop reads and writes its encrypted local store (cards + attachment
-// blobs, Rust); the web is a client of the server, which applies the same
-// rules (BASE-10, ADR-0004): positions per column, defect keys never reused.
-// Attachments stay on the desktop until the server stores them (SYNC-04b): the
-// web lists none and cannot add one.
+// The desktop reads and writes its encrypted local store (cards in the
+// database, attachment contents in the evidence store, ADR-0014); the web is a
+// client of the server, which applies the same rules (BASE-10, ADR-0004):
+// positions per column, defect keys never reused. Attachments stay on the
+// desktop until the server stores them (SYNC-04b): the web lists none and
+// cannot add one.
+
+/** Largest attachment (ADR-0014; the Rust side enforces it too). */
+export const MAX_ATTACHMENT_MB = 200;
+/** Bytes per upload call: a file is sent in raw chunks, never whole. */
+export const UPLOAD_CHUNK = 4 * 1024 * 1024;
+
+/** Sends `file` to the evidence store in raw chunks; returns the upload id. */
+async function upload(file: Blob): Promise<string> {
+  const uploadId = await invoke<string>("evidence_upload_begin", { size: file.size });
+  try {
+    for (let offset = 0; offset < file.size; offset += UPLOAD_CHUNK) {
+      const chunk = new Uint8Array(await file.slice(offset, offset + UPLOAD_CHUNK).arrayBuffer());
+      await invoke("evidence_upload_chunk", chunk, { headers: { "x-pharos-upload": uploadId } });
+    }
+  } catch (e) {
+    await invoke("evidence_upload_cancel", { uploadId }).catch(() => undefined);
+    throw e;
+  }
+  return uploadId;
+}
 export const plannerApi = {
   list: (projectId: string, ownerId: string): Promise<PlannerCard[]> =>
     isTauri()
@@ -30,23 +51,25 @@ export const plannerApi = {
     isTauri()
       ? invoke("planner_reorder", { ownerId, status, ids })
       : serverApi.post("/api/planner-cards/reorder", { status, ids }),
-  attachmentAdd: async (
-    cardId: string,
-    ownerId: string,
-    name: string,
-    mime: string | null,
-    dataBase64: string,
-  ): Promise<AttachmentSummary | null> =>
-    isTauri()
-      ? invoke("planner_attachment_add", { cardId, ownerId, name, mime, dataBase64 })
-      : desktopOnly("attachments"),
+  attachmentAdd: async (cardId: string, ownerId: string, file: File): Promise<AttachmentSummary | null> => {
+    if (!isTauri()) return desktopOnly("attachments");
+    const uploadId = await upload(file);
+    return invoke("planner_attachment_add", {
+      cardId,
+      ownerId,
+      uploadId,
+      name: file.name,
+      mime: file.type || null,
+    });
+  },
   // Attachments are owner-scoped through their card (FIX-08).
   attachmentList: (cardId: string, ownerId: string): Promise<AttachmentSummary[]> =>
     isTauri()
       ? invoke("planner_attachment_list", { cardId, ownerId })
       : Promise.resolve([]),
-  attachmentGet: (id: string, ownerId: string): Promise<AttachmentData | null> =>
-    isTauri() ? invoke("planner_attachment_get", { id, ownerId }) : Promise.resolve(null),
+  /** Rust decrypts it straight into the download folder (Mark-of-the-Web). */
+  attachmentSave: async (id: string, ownerId: string): Promise<SaveResult> =>
+    isTauri() ? invoke("planner_attachment_save", { id, ownerId }) : desktopOnly("attachments"),
   attachmentDelete: async (id: string, ownerId: string): Promise<void> =>
     isTauri() ? invoke("planner_attachment_delete", { id, ownerId }) : desktopOnly("attachments"),
 };

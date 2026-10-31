@@ -33,6 +33,8 @@ const jcsInputs = [
     n: null,
   },
   { nested: { b: [1, { z: 1, a: 2 }], a: [] } },
+  // Beyond 2^53 - 1 an integer is what JavaScript reads: the nearest double.
+  JSON.parse('{"big":[9007199254740991,-9007199254740991,9007199254740993,12345678901234567890,1.0]}'),
 ];
 
 const derived = [

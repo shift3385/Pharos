@@ -1353,7 +1353,12 @@
     "labels": "Etiquetas",
     "attachments": "Adjuntos",
     "attachAfterSave": "Guarda la tarjeta para poder añadir adjuntos.",
-    "attachTooLarge": "«{{name}}» supera el límite de 10 MB.",
+    "attachTooLarge": "«{{name}}» supera el límite de {{mb}} MB.",
+    "attachLimit": "Hasta {{mb}} MB por archivo. Se guardan cifrados en este equipo.",
+    "attachFailed": "No se pudo adjuntar «{{name}}»: {{reason}}",
+    "attachMissing": "Este archivo no está en este equipo (se copió la carpeta de datos sin su carpeta de evidencias, o el archivo caducó).",
+    "attachUnreadable": "Este archivo no se puede abrir: está dañado o se cifró con otra clave.",
+    "attachNewer": "Este archivo lo guardó una versión más nueva de Pharos.",
     "kindLabel": {
       "task": "Tarea",
       "defect": "Defecto",
