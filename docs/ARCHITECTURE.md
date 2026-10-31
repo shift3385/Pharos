@@ -210,8 +210,27 @@ through `src-tauri/src/journal.rs`:
   device and is never pushed. So does the event of a `user:` actor without an id (a change
   made signed out).
 - Pulls create no event (they arrive as the other device's events); resolving a
-  conflict does (`resolve_conflict`). Web edits leave no audit trail yet
-  (AUD-01b, 0.2.0, wave E2). There is no audit UI yet (Admin > Auditoría comes later).
+  conflict does (`resolve_conflict`). There is no audit UI yet (Admin > Auditoría comes later).
+- **Web edits (AUD-01b)** are audited by the server
+  (`server/src/modules/audit/`). `DomainTx.put` writes, in the same
+  transaction and under the user's write lock, one `audit_event` document
+  per domain write with the journal's rules (`audit.diff.ts` ports
+  `journal::diff` and `location`): create, update or delete with the diff,
+  nothing for a no-diff update or a refused write (409/404), one `import`
+  event for a requirement import (its rows are `folded`), one `delete` with
+  the cascade counts for a project delete. The events form the chain
+  `("web", "web", user)`: `deviceId "web"`, `chainWorkspaceId "web"`,
+  `origin "local"` (a new origin would fail the desktop's CHECK), an empty
+  `workspaceId` so each desktop files them under its own workspace. Its head
+  lives in `audit_chain_heads` (server migration 0007). `audit.chain.ts` is
+  a port of `audit.rs` (JCS subset, `hashOf`, `verifyChain`); the shared
+  vectors `src/shared/contracts/fixtures/audit/chain.json` (canonical forms,
+  refusals and a web chain as `/sync/pull` returns it) are asserted by both
+  `cargo test` and the server tests. Desktops with `append-only` pull the
+  events unchanged and `audit::verify_chain(conn, "web", "web", user)`
+  verifies them. `/sync/push` is not audited (devices push their own events)
+  and refuses an `audit_event` with `deviceId "web"` (`appendRejected`,
+  `reserved_chain`), so only the server extends that chain.
 - Each event with an owner rides an oplog row `entity = 'audit_event'`,
   outside `oplog::SYNCED`, so it is not in the "pending changes" badge; the
   exported diagnostics carry `pendingAuditEvents` (all accounts) so a server
@@ -747,8 +766,10 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `append-only`). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
   `append_only` (`APPEND_ONLY_ENTITIES` in `sync.schemas.ts`, today
   `audit_event`): op `append`, inserted if absent, the same content again is a
-  no-op, other content under the same id is refused in `appendRejected` and the
-  stored one stays; only the location keys (`workspaceId`, `projectId`) may
+  no-op, other content under the same id is refused in `appendRejected`
+  (`content_changed`) and the stored one stays, and an `audit_event` that claims
+  `deviceId "web"` is refused too (`reserved_chain`: only the server writes the
+  web chain, AUD-01b); only the location keys (`workspaceId`, `projectId`) may
   change; never a conflict, never tombstoned by a project delete. Only a client
   that sends `append-only` may push them, pulls them and gets `features` in the
   answers; older clients get exactly the previous answers. An upsert from a
