@@ -3,14 +3,19 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0024": "E3 step 4 (EJE-01/RUN-00): execution tables, risk_*, key_counters rebuild",
+      "0025": "E3 step 4: spare; retired if unused"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013"
     }
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0008": "E3 step 4 (EJE-01/RUN-00): key_blocks accepts run and cycle"
+    },
     "retired": {}
   }
 }
