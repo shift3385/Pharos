@@ -261,3 +261,67 @@ Son precisiones; la decisión no cambia.
   con marca de desactualizado.
 - `project_id` en todas las tablas por la regla del dueño de ADR-0020.
 - Reconstrucción de `key_counters` para `run` y `cycle`.
+
+## Implementación (E3, paso 4, 2026-10-31)
+
+El esquema, los repositorios, el sync y las derivaciones están en el código
+(migración local `0024_execution.sql`, `src-tauri/src/runs.rs`, servidor
+`0008_key_blocks_runs.sql`). La UI llega con EJE-02 (paso 7). Precisiones sobre
+el boceto:
+
+- **Una sola migración** (0024): las seis tablas, `execution_drafts`, los
+  `risk_*` y la reconstrucción de las claves. 0025 se retiró sin usar.
+- **Sin claves foráneas hacia `runs`** en las tablas sincronizadas (solo
+  `step_results → results`): un pull puede traer un resultado antes que su run,
+  cuyo encabezado editado tiene un `seq` más nuevo, y el SQLite incluido aplica
+  las claves foráneas (la misma lección que 0020). El repositorio comprueba los
+  vínculos.
+- **Inmutabilidad en la base:** triggers impiden cambiar el contenido de
+  `run_shards`, `results` y `step_results`; solo pueden cambiar
+  `workspace_id`/`project_id` (ADR-0019). La purga es el único código que los
+  borra, junto con su run.
+- **También se reconstruye `retired_keys`**, que tiene el mismo `CHECK` que
+  `key_counters` (0017) y hace falta para purgar runs. Ambas admiten `run` y
+  `cycle`; en el servidor, `key_blocks` también (0008), y el índice de claves
+  de `documents` cubre `runKey`.
+- **Ids deterministas:** UUIDv5 sobre el JCS de las partes como arreglo JSON
+  (`[run, sha256]`, `[shard, test_key, configuration_label, attempt]`,
+  `[proyecto, test_key]`), para que ningún separador dentro de un `test_key`
+  produzca choques. Gemelos en Rust (`runs/ids.rs`) y TS
+  (`src/shared/contracts/pharos-run/ids.ts`) con vectores compartidos.
+- **El intento manual** lo registra `result_record` sobre un elemento del run:
+  el `test_key` es `manual:<caso>/<flujo|->/<fila|->`, `attempt` es el siguiente
+  número de ese test en el run, y un `step_id`, flujo o fila que no esté en la
+  revisión congelada se rechaza. Solo con el run `in_progress`.
+- **El riesgo** tiene su propio comando (`requirement_risk_set`, 1..5 o nulo),
+  para no cambiar el `RequirementInput` que envía el editor.
+- **Bandas por proyecto aplazadas a TRZ-04** (decisión del usuario,
+  2026-10-31). Por ahora solo existe la función pura con las bandas por defecto
+  (≤ 4 bajo, ≤ 12 medio, > 12 alto). Guardarlas ya cambiaría la forma del
+  proyecto que se sincroniza sin una UI para editarlas. Como `risk_level` se
+  deriva, añadir el almacenamiento después no exige migrar datos.
+- **Sin `run_delete` en 0.2:** un run se borra con la cascada de su proyecto.
+  El paso 7 decide el borrado con su UI (borrado lógico con evento); los
+  resultados nunca se borran.
+- **Sync:** `run`, `run_item` y `unlinked_mapping` son LWW; `run_shard` y
+  `result` (con sus pasos dentro) son `append_only`, y para ellos `createdAt`/
+  `importedAt`, `createdBy`/`importedBy` y `hlc` quedan fuera del contenido
+  comparado, así que dos equipos que importan el mismo archivo convergen.
+  `APPLIED_SET_VERSION = 3`.
+- **Funcionalidad de sync `runs`** (decisión del usuario, 2026-10-31):
+  - un escritorio retiene sus entidades de ejecución y no pide bloques `run`
+    hasta que el servidor de esa cuenta lista `runs` (un servidor anterior
+    rechazaría todo el push o toda la petición de bloques);
+  - el servidor solo envía esas entidades a quien manda `runs` (los demás
+    reciben exactamente la respuesta de antes) y rechaza su push sin ella
+    (400 `runs_unsupported`);
+  - el push de un requisito desde un cliente sin `runs` conserva
+    `riskLikelihood`/`riskImpact` aunque envíe su estado completo;
+  - al actualizar, el reinicio del cursor trae lo que el cliente antiguo se
+    saltó.
+- **Cascada:** borrar un proyecto borra (lógicamente) sus runs, elementos y
+  reglas en el escritorio, y en el servidor pone lápida también a shards y
+  resultados (a diferencia de las revisiones, SYNC-11). Los recuentos del
+  evento de auditoría son los de las tablas del escritorio.
+- **El servidor valida, no interpreta:** comprueba los campos obligatorios y
+  los estados de los documentos de ejecución (`EXECUTION_PAYLOADS`).
