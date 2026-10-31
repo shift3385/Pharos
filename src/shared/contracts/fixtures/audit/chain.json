@@ -1,0 +1,235 @@
+{
+  "$comment": "Shared audit vectors (AUD-01b, ADR-0015). The desktop (src-tauri/src/audit.rs, audit_tests.rs) and the server (server/src/modules/audit/audit.chain.ts, tests/audit.chain.test.ts) must give exactly these answers: `jcs` canonical forms, `refused` values outside the JCS subset, and `docs`, a web audit chain exactly as /sync/pull returns it, which the desktop stores and verifies with audit::verify_chain(conn, \"web\", \"web\", userId). Regenerate `docs` with UPDATE_AUDIT_FIXTURE=1 in the server tests, and change this file only together with both sides.",
+  "jcs": [
+    {
+      "value": null,
+      "canonical": "null"
+    },
+    {
+      "value": true,
+      "canonical": "true"
+    },
+    {
+      "value": false,
+      "canonical": "false"
+    },
+    {
+      "value": 0,
+      "canonical": "0"
+    },
+    {
+      "value": -7,
+      "canonical": "-7"
+    },
+    {
+      "value": 9007199254740991,
+      "canonical": "9007199254740991"
+    },
+    {
+      "value": "",
+      "canonical": "\"\""
+    },
+    {
+      "value": "quote\" back slash/ nl\n tab\t cr\r bs\b ff\f ctrl\u0001\u001f del",
+      "canonical": "\"quote\\\" back slash/ nl\\n tab\\t cr\\r bs\\b ff\\f ctrl\\u0001\\u001f del\""
+    },
+    {
+      "value": "é ñ 中文 😀    ",
+      "canonical": "\"é ñ 中文 😀    \""
+    },
+    {
+      "value": [],
+      "canonical": "[]"
+    },
+    {
+      "value": {},
+      "canonical": "{}"
+    },
+    {
+      "value": [
+        1,
+        [
+          2,
+          [
+            3
+          ]
+        ],
+        {
+          "b": 1,
+          "a": 2
+        }
+      ],
+      "canonical": "[1,[2,[3]],{\"a\":2,\"b\":1}]"
+    },
+    {
+      "value": {
+        "b": 1,
+        "a": 2,
+        "B": 3,
+        "_": 4,
+        "aa": 5,
+        "": 6,
+        "a b": 7,
+        "~": 8
+      },
+      "canonical": "{\"\":6,\"B\":3,\"_\":4,\"a\":2,\"a b\":7,\"aa\":5,\"b\":1,\"~\":8}"
+    },
+    {
+      "value": {
+        "id": "e1",
+        "at": "2026-10-31T12:00:00.000Z",
+        "onBehalfOf": null,
+        "chainSeq": 12,
+        "summary": "{\"cascade\":{\"test_cases\":1}}",
+        "entityKey": "ATS_001"
+      },
+      "canonical": "{\"at\":\"2026-10-31T12:00:00.000Z\",\"chainSeq\":12,\"entityKey\":\"ATS_001\",\"id\":\"e1\",\"onBehalfOf\":null,\"summary\":\"{\\\"cascade\\\":{\\\"test_cases\\\":1}}\"}"
+    }
+  ],
+  "refused": [
+    {
+      "x": 1.5
+    },
+    [
+      0.25
+    ],
+    {
+      "clé": 1
+    }
+  ],
+  "userId": "6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+  "docs": [
+    {
+      "entity": "audit_event",
+      "entityId": "e0000000-0000-4000-8000-000000000000",
+      "payload": {
+        "id": "e0000000-0000-4000-8000-000000000000",
+        "workspaceId": "",
+        "projectId": "a0000000-0000-4000-8000-000000000001",
+        "at": "2026-10-31T12:00:00.000Z",
+        "hlc": "001730000000000-00000-server",
+        "deviceId": "web",
+        "actor": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "onBehalfOf": null,
+        "action": "create",
+        "entity": "test_case",
+        "entityId": "c0000000-0000-4000-8000-000000000002",
+        "entityKey": "ATS_001",
+        "changes": "{\"data.gherkinLevel\":[null,\"basic\"],\"data.steps\":[null,[\"a\"]],\"deleted\":[null,false],\"id\":[null,\"c0000000-0000-4000-8000-000000000002\"],\"projectId\":[null,\"a0000000-0000-4000-8000-000000000001\"],\"scenarioId\":[null,\"ATS_001\"],\"title\":[null,\"Iniciar sesión «café» 中文 😀\\n\\t\\\"q\\\"\"]}",
+        "changesSha256": "19ac71690ece00ab193d25bc749a868eb1c76b94ae9d553e5a163ad9ce3fdc96",
+        "summary": null,
+        "origin": "local",
+        "chainWorkspaceId": "web",
+        "chainOwner": "6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "chainSeq": 1,
+        "prevHash": null,
+        "hash": "fc22819638bd28894904c27714d2270efd687ec08184f3d47b72f15fafac49d7",
+        "redactedAt": null
+      },
+      "revision": 1,
+      "author": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+      "deleted": false,
+      "hlc": "001730000000000-00000-server",
+      "seq": 1
+    },
+    {
+      "entity": "audit_event",
+      "entityId": "e0000001-0000-4000-8000-000000000001",
+      "payload": {
+        "id": "e0000001-0000-4000-8000-000000000001",
+        "workspaceId": "",
+        "projectId": "a0000000-0000-4000-8000-000000000001",
+        "at": "2026-10-31T12:00:01.100Z",
+        "hlc": "001730000000001-00000-server",
+        "deviceId": "web",
+        "actor": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "onBehalfOf": null,
+        "action": "update",
+        "entity": "test_case",
+        "entityId": "c0000000-0000-4000-8000-000000000002",
+        "entityKey": "ATS_001",
+        "changes": "{\"data.steps\":[[\"a\"],[\"a\",\"b\"]],\"title\":[\"Iniciar sesión «café» 中文 😀\\n\\t\\\"q\\\"\",\"Cerrar sesión\"]}",
+        "changesSha256": "040acbcbfd0e71c1eb4ef8dadebebbf2bec35cffd6d60ff5d59dc9df7aba1e47",
+        "summary": null,
+        "origin": "local",
+        "chainWorkspaceId": "web",
+        "chainOwner": "6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "chainSeq": 2,
+        "prevHash": "fc22819638bd28894904c27714d2270efd687ec08184f3d47b72f15fafac49d7",
+        "hash": "4cd78b16994ef9ee4d7196026fa7a66bb0fb33f31f9abc8470d830b53919bd75",
+        "redactedAt": null
+      },
+      "revision": 1,
+      "author": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+      "deleted": false,
+      "hlc": "001730000000001-00000-server",
+      "seq": 2
+    },
+    {
+      "entity": "audit_event",
+      "entityId": "e0000002-0000-4000-8000-000000000002",
+      "payload": {
+        "id": "e0000002-0000-4000-8000-000000000002",
+        "workspaceId": "",
+        "projectId": "a0000000-0000-4000-8000-000000000001",
+        "at": "2026-10-31T12:00:02.200Z",
+        "hlc": "001730000000002-00000-server",
+        "deviceId": "web",
+        "actor": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "onBehalfOf": null,
+        "action": "import",
+        "entity": "project",
+        "entityId": "a0000000-0000-4000-8000-000000000001",
+        "entityKey": null,
+        "changes": "{}",
+        "changesSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "summary": "{\"created\":2,\"entity\":\"requirement\",\"format\":\"csv\",\"rows\":3,\"skipped\":0,\"updated\":1}",
+        "origin": "local",
+        "chainWorkspaceId": "web",
+        "chainOwner": "6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "chainSeq": 3,
+        "prevHash": "4cd78b16994ef9ee4d7196026fa7a66bb0fb33f31f9abc8470d830b53919bd75",
+        "hash": "e7b191c665a813303956c554b32c6c92a5075bb4eea710b5052068cbd8d13584",
+        "redactedAt": null
+      },
+      "revision": 1,
+      "author": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+      "deleted": false,
+      "hlc": "001730000000002-00000-server",
+      "seq": 3
+    },
+    {
+      "entity": "audit_event",
+      "entityId": "e0000003-0000-4000-8000-000000000003",
+      "payload": {
+        "id": "e0000003-0000-4000-8000-000000000003",
+        "workspaceId": "",
+        "projectId": "a0000000-0000-4000-8000-000000000001",
+        "at": "2026-10-31T12:00:03.300Z",
+        "hlc": "001730000000003-00000-server",
+        "deviceId": "web",
+        "actor": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "onBehalfOf": null,
+        "action": "delete",
+        "entity": "project",
+        "entityId": "a0000000-0000-4000-8000-000000000001",
+        "entityKey": null,
+        "changes": "{\"caseIdDigits\":[3,null],\"caseIdPrefix\":[\"ATS_\",null],\"deleted\":[false,null],\"id\":[\"a0000000-0000-4000-8000-000000000001\",null],\"name\":[\"Pagos\",null]}",
+        "changesSha256": "391f2ae4af646447a1222cd1275d80f06c90642c2f1da50ddb254571c43fa5fd",
+        "summary": "{\"cascade\":{\"planner_cards\":0,\"requirements\":2,\"test_cases\":1,\"test_plans\":0}}",
+        "origin": "local",
+        "chainWorkspaceId": "web",
+        "chainOwner": "6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+        "chainSeq": 4,
+        "prevHash": "e7b191c665a813303956c554b32c6c92a5075bb4eea710b5052068cbd8d13584",
+        "hash": "4384f7e94c64831bb2055b7e9fc3adaad6cd21b4377cefb8c2a9dcd655fe67c8",
+        "redactedAt": null
+      },
+      "revision": 1,
+      "author": "user:6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
+      "deleted": false,
+      "hlc": "001730000000003-00000-server",
+      "seq": 4
+    }
+  ]
+}

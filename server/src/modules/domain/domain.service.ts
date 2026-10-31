@@ -290,7 +290,15 @@ export function createDomainService(store: DomainStore) {
 
   const priorityOf = (p?: string) => (p && PRIORITIES.includes(p) ? p : "medium");
 
-  async function insertRequirement(tx: DomainTx, projectId: string, input: Omit<RequirementInput, "projectId">): Promise<RemoteDoc> {
+  /** `audit`: "folded" inside an import, which writes one event. */
+  type Audit = { audit?: "event" | "folded" };
+
+  async function insertRequirement(
+    tx: DomainTx,
+    projectId: string,
+    input: Omit<RequirementInput, "projectId">,
+    opts: Audit = {},
+  ): Promise<RemoteDoc> {
     const typed = input.requirementKey?.trim();
     if (typed) await checkManualKey(tx, "requirement", projectId, typed, isValidKey(typed));
     const requirementKey = typed || (await nextKey(tx, projectId, "requirement", REQUIREMENT_PREFIX, REQUIREMENT_DIGITS));
@@ -307,11 +315,16 @@ export function createDomainService(store: DomainStore) {
       createdAt: at,
       updatedAt: at,
     };
-    return tx.put("requirement", id, payload, null);
+    return tx.put("requirement", id, payload, null, false, opts);
   }
 
   /** The key is immutable: an update never changes it. */
-  async function patchRequirement(tx: DomainTx, doc: RemoteDoc, input: Omit<RequirementInput, "projectId">): Promise<RemoteDoc> {
+  async function patchRequirement(
+    tx: DomainTx,
+    doc: RemoteDoc,
+    input: Omit<RequirementInput, "projectId">,
+    opts: Audit = {},
+  ): Promise<RemoteDoc> {
     const payload = {
       ...doc.payload,
       title: input.title.trim(),
@@ -319,8 +332,10 @@ export function createDomainService(store: DomainStore) {
       priority: priorityOf(input.priority),
       updatedAt: now(),
     };
-    return tx.put("requirement", doc.entityId, payload, doc);
+    return tx.put("requirement", doc.entityId, payload, doc, false, opts);
   }
+
+  const FOLDED: Audit = { audit: "folded" };
 
   const requirements = {
     list: (userId: string, projectId: string) =>
@@ -359,16 +374,26 @@ export function createDomainService(store: DomainStore) {
           const key = row.requirementKey?.trim();
           const live = key ? byKey.get(key) : undefined;
           if (live) {
-            byKey.set(key!, await patchRequirement(tx, live, row));
+            byKey.set(key!, await patchRequirement(tx, live, row, FOLDED));
             summary.updated++;
           } else if (key && (await tx.keyUse("requirement", projectId, key)) === "deleted") {
             summary.skipped.push(key);
           } else {
-            const created = await insertRequirement(tx, projectId, row);
+            const created = await insertRequirement(tx, projectId, row, FOLDED);
             byKey.set(str(created.payload, "requirementKey"), created);
             summary.created++;
           }
         }
+        // One event for the whole import (ADR-0015), with the desktop's counts
+        // (`requirement.rs`).
+        await tx.audit("import", "project", projectId, {
+          entity: "requirement",
+          format: "csv",
+          rows: rows.length,
+          created: summary.created,
+          updated: summary.updated,
+          skipped: summary.skipped.length,
+        });
         return summary;
       }),
   };
