@@ -274,14 +274,7 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
     // defaults).
     let case_type = input.case_type.as_deref().unwrap_or("standard");
     let automation = input.automation_status.as_deref().unwrap_or("manual");
-    let data = prepare_data(
-        conn,
-        &input.project_id,
-        case_type,
-        automation,
-        &input.data,
-        None,
-    )?;
+    let data = prepare_data(conn, &input.project_id, case_type, &input.data, None)?;
     let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, \
@@ -356,7 +349,6 @@ pub(crate) fn update_case(
         conn,
         &project_id,
         case_type.as_deref().unwrap_or("standard"),
-        automation.as_deref().unwrap_or("manual"),
         &input.data,
         previous.as_ref(),
     )?;
@@ -412,7 +404,6 @@ fn prepare_data(
     conn: &Connection,
     project_id: &str,
     case_type: &str,
-    automation: &str,
     input: &Value,
     previous: Option<&Value>,
 ) -> Result<Value, String> {
