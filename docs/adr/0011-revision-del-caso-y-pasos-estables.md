@@ -247,8 +247,11 @@ entidad es `audit_event` (ADR-0015). Lo que conviene saber para registrar
 - **La puerta de solo lectura para 0.1** (`426 read_only_client_version`) se
   hace en el paso 2, con el cambio de forma de los casos. E1 no cambia la forma
   de ninguna entidad existente.
-- **El campo que falta conserva el valor local**, en los dos lados: al aplicar
-  un pull o la versión del servidor en el panel de conflictos
-  (`sync.rs::fill_missing`), y en cada upsert sobre un documento vivo del
-  servidor (`storeDoc`). `data` se fusiona a un nivel y `null` borra. Por eso un
-  emisor que quiere vaciar un campo envía `null`, nunca lo omite.
+- **El campo que falta conserva el valor guardado, solo para clientes
+  antiguos.** El servidor lo aplica (`storeDoc`, con `data` a un nivel) a los
+  push de clientes que no envían la funcionalidad `complete-payload` (0.1.x,
+  0.2.0-alpha.1). Los clientes actuales y las escrituras de la web envían el
+  estado completo y pueden vaciar un campo omitiéndolo; el escritorio aplica el
+  pull tal cual llega. Enviar `null` para vaciar sigue siendo la práctica
+  recomendada, no un requisito. (Revisión de E1: la fusión para todos devolvía
+  campos que el usuario había vaciado.)

@@ -199,3 +199,36 @@ decisión sin cambiarla:
   cambios pendientes. El diagnóstico exportado lleva su número
   (`pendingAuditEvents`), para ver si se acumulan contra un servidor sin
   `append-only`.
+
+### Tras la revisión de E1 (2026-10-31)
+
+- **Bifurcación al copiar la base.**
+  - Una base recuperada con la clave de recuperación recibe un `device_id`
+    nuevo (`oplog::rotate_device_id`), así que sus eventos empiezan una cadena
+    nueva en lugar de bifurcar la del equipo original.
+  - Una copia `.bak` restaurada a mano conserva el `device_id`, y la cabeza de
+    su cadena retrocede: la cadena se bifurca y `verify_chain` lo verá como un
+    eslabón roto. Lo cubre AUD-01c (ROADMAP).
+- **Eventos rechazados.**
+  - Un evento que el servidor rechaza (`appendRejected`) se marca y no se
+    vuelve a enviar. Se conserva en local y el diagnóstico lo cuenta
+    (`rejectedAuditEvents`).
+  - **Para SYNC-06:** la redacción cambia el contenido del documento en el
+    servidor. Una copia sin redactar que se reenvíe después chocará y se
+    rechazará, y así debe ser: la redacción de servidor tendrá que propagarse a
+    los equipos (el pull no aplica cambios a eventos que ya tiene) antes de que
+    estos reenvíen nada.
+- **Actor `user:` sin id** (un cambio hecho sin sesión, por ejemplo un
+  proyecto sin `ownerId`): el evento no tiene dueño y se queda en el equipo,
+  igual que el cambio, que no tiene a quién sincronizarse.
+- **El pull no verifica el hash.** Guarda lo que tiene el servidor; quien
+  comprueba una cadena es `verify_chain` (Admin > Auditoría).
+- **Solo añadir, también frente a `INSERT OR REPLACE`.** SQLite no dispara los
+  triggers de borrado en un REPLACE salvo con `recursive_triggers`, así que un
+  trigger rechaza insertar un id que ya existe.
+- **Crecimiento.**
+  - Cada cambio auditado escribe dos filas de oplog, y un evento con los
+    valores cambiados; reordenar 200 tarjetas son 200 eventos (112 ms en un
+    build de depuración).
+  - Nada se compacta todavía: las filas de oplog sincronizadas esperan a
+    SYNC-10, y la auditoría no se purga en `0.x`.

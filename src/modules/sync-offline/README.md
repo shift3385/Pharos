@@ -105,16 +105,20 @@ resolution can be added without a schema change.
   server that listed `append-only`; against an older server they stay pending
   (the exported diagnostics count them, `pendingAuditEvents`). They are not in
   the "pending changes" badge. A refused one stays pending and is logged, not
-  shown.
+  shown. A failed push of them is logged and never fails the sync; a refused
+  one is marked (`oplog_mark_rejected`), never resent, and counted in the
+  diagnostics (`rejectedAuditEvents`).
 - **Older clients.** A client without `append-only` (0.1.x, 0.2.0-alpha.1) gets
   exactly the previous answers and no append-only document in its pulls; its
   pushes of the lww entities are unchanged.
-- **A missing field keeps the local value.** A pulled document, or a server
-  version taken in the conflict panel, that lacks a payload key keeps the local
-  value; `data` is merged one level deep the same way (`sync.rs::fill_missing`).
-  The server does the same on every upsert over a live document. An explicit
-  `null` clears. So an older sender never resets a field it does not know.
-  Senders must send `null` to clear a key, never omit it.
+- **A missing field keeps the stored value, for old clients only.** The
+  client sends `x-pharos-sync-features: complete-payload`: it pushes each
+  entity's whole state, so a key it leaves out is a clear. An upsert from a
+  client without it (0.1.x, 0.2.0-alpha.1) keeps on the server every key it
+  left out, and `data` keys one level deep (`storeDoc`), so it never resets a
+  field it does not know. Web domain writes are never merged. On pull the
+  desktop takes the document as it is: the server already protected it.
+  Sending `null` to clear is the recommended practice, not a requirement.
 - **Cursor reset.** `sync_cursor_get` returns `0` when the cursor was stored
   under an older set of applied entities (`cursor_set:<user_id>` ≠
   `APPLIED_SET_VERSION`): an older build moved its cursor past documents it

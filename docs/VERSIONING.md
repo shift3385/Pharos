@@ -164,10 +164,14 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
 
    - **Un campo que falta en un documento recibido conserva el valor local**, y
      el cursor de pull vuelve a 0 en el primer sync de una MENOR que añade
-     entidades al conjunto que se aplica. Lo aplican el pull del escritorio y cada
-     upsert del servidor; para vaciar un campo se envía `null`, nunca se omite.
+     entidades al conjunto que se aplica. Lo aplica el servidor a los push de
+     los clientes que no envían la funcionalidad `complete-payload` (los
+     anteriores a ella); los clientes actuales envían el estado completo y
+     pueden vaciar un campo omitiéndolo. Enviar `null` para vaciarlo es la
+     práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
-     hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`).
+     hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
+     `complete-payload`).
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian

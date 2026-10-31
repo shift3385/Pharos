@@ -207,14 +207,25 @@ through `src-tauri/src/journal.rs`:
   local workspace but only syncs its own events.
 - **Owner** fixed when the event is written: the person's account; for a
   `system:` actor, the project's owner, or '' — the event then stays on the
-  device and is never pushed.
+  device and is never pushed. So does the event of a `user:` actor without an id (a change
+  made signed out).
 - Pulls create no event (they arrive as the other device's events); resolving a
   conflict does (`resolve_conflict`). Web edits leave no audit trail yet
   (AUD-01b, 0.2.0, wave E2). There is no audit UI yet (Admin > Auditoría comes later).
 - Each event with an owner rides an oplog row `entity = 'audit_event'`,
   outside `oplog::SYNCED`, so it is not in the "pending changes" badge; the
   exported diagnostics carry `pendingAuditEvents` (all accounts) so a server
-  that does not take them can be spotted.
+  that does not take them can be spotted. An event the server refuses (`appendRejected`)
+  is marked and never resent; the diagnostics count it as
+  `rejectedAuditEvents`. A failed push of events is logged and never fails the
+  sync. A pull stores events without checking their hash: `verify_chain` does.
+- **A copy of the database forks nothing:** a database recovered with the
+  recovery key gets a new `device_id`, so its events start a new chain. A
+  `.bak` copied back by hand keeps the old one (AUD-01c).
+- **Growth.** Every audited change writes two oplog rows (the entity's and its
+  event's) and an event with the changed values; a planner reorder writes one
+  event per moved card. Nothing is compacted yet: synced oplog rows are kept
+  until SYNC-10, and the audit log is never purged in 0.x (ADR-0015).
 
 ## Design system — "Faro Nocturno" (spec §12.1)
 
@@ -738,10 +749,12 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   stored one stays; only the location keys (`workspaceId`, `projectId`) may
   change; never a conflict, never tombstoned by a project delete. Only a client
   that sends `append-only` may push them, pulls them and gets `features` in the
-  answers; older clients get exactly the previous answers. An upsert over a
-  live document keeps every payload key the client left out, and `data` keys
-  one level deep (`storeDoc`, VERSIONING §6.5); to clear a key a client sends
-  `null`, never omits it. Tombstones are never removed; at start
+  answers; older clients get exactly the previous answers. An upsert from a
+  client that does not send `complete-payload` (0.1.x, 0.2.0-alpha.1) keeps
+  every payload key it left out, and `data` keys one level deep (`storeDoc`,
+  VERSIONING §6.5), so it never resets a field it does not know. Current
+  clients and the web's domain writes are stored as sent: they may clear a key
+  by leaving it out (sending `null` stays the recommended practice). Tombstones are never removed; at start
   and then daily (`server.ts`) the payload of those older than
   `SYNC_TOMBSTONE_DAYS` is cleared (SYNC-06). See `src/modules/sync-offline/README.md`.
 - `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`,
