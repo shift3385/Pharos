@@ -34,10 +34,12 @@ export const MAX_PULL_LIMIT = 500;
 
 /** A change pushed by a client: the full latest state of one entity, or a
  *  tombstone (op: "delete"). Since 8C a delta carries its HLC and, from the
- *  desktop, the base version it was built on (for conflict detection). An
- *  append-only document travels as op "append", and only it does. A key the
- *  client wants cleared is sent as `null`, never omitted: an omitted key keeps
- *  the stored value (VERSIONING §6.5, `mergeMissing`). */
+ *  desktop, the base version it was built on (for conflict detection).  An
+ *  append-only document travels as op "append", and only it does. A client
+ *  that sends `complete-payload` pushes its whole state: a key it omits is
+ *  cleared. For an older client an omitted key keeps the stored value
+ *  (`storeDoc`, VERSIONING §6.5). Sending `null` to clear is still the
+ *  recommended practice. */
 export const deltaSchema = z
   .object({
     entity: z.enum(SYNCED_ENTITIES),

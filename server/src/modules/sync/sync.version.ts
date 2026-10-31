@@ -84,3 +84,11 @@ export function understandsKeyConflicts(req: FastifyRequest): boolean {
 export function understandsAppendOnly(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("append-only");
 }
+
+/** True if the client pushes each entity's whole state, so an omitted key is
+ *  a deliberate clear (AUD-01 review). Clients without it (0.1.x,
+ *  0.2.0-alpha.1) do not know the fields added since; their upserts keep the
+ *  keys they leave out (`storeDoc`, VERSIONING §6.5). */
+export function sendsCompletePayload(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("complete-payload");
+}

@@ -34,7 +34,7 @@ async function tokenFor(email = "append@pharos.dev"): Promise<string> {
 const current = (token: string) => ({
   authorization: `Bearer ${token}`,
   [VERSION_HEADER]: SERVER_VERSION,
-  [FEATURES_HEADER]: "key-conflicts,append-only",
+  [FEATURES_HEADER]: "key-conflicts,append-only,complete-payload",
 });
 const alpha1 = (token: string) => ({
   authorization: `Bearer ${token}`,
@@ -194,7 +194,7 @@ describe("older clients (0.1.x, 0.2.0-alpha.1)", () => {
   });
 });
 
-describe("a key missing from an upsert keeps the stored value", () => {
+describe("an old client's upsert keeps the keys it leaves out", () => {
   const caseDelta = (payload: Record<string, unknown>, wall: number) => ({
     entity: "test_case",
     entityId: "c1",
@@ -255,5 +255,63 @@ describe("a key missing from an upsert keeps the stored value", () => {
     const seq = await seqOf("test_case", "c1");
     expect((await push(h, [d])).json()).toEqual({ accepted: 1, conflicts: [], keyConflicts: [] });
     expect(await seqOf("test_case", "c1")).toBe(seq);
+  });
+});
+
+describe("a current client clears a key by leaving it out (review B1)", () => {
+  const stored = async (id: string) =>
+    (await pool.query("SELECT payload FROM documents WHERE entity_id = $1", [id])).rows[0].payload as Record<
+      string,
+      unknown
+    >;
+
+  it("a desktop push with complete-payload stores its payload as sent", async () => {
+    const token = await tokenFor();
+    const h = current(token);
+    const caseDelta = (payload: Record<string, unknown>, wall: number) => ({
+      entity: "test_case",
+      entityId: "c1",
+      op: "upsert",
+      payload,
+      revision: wall,
+      hlc: H(wall),
+    });
+    await push(h, [caseDelta({ title: "Login", caseDate: "2026-10-01", data: { steps: ["a"], flows: [1] } }, 1)]);
+    // Device A cleared the date and went back to basic: both keys are gone.
+    await push(h, [caseDelta({ title: "Login", data: { steps: ["a"] } }, 2)]);
+    expect(await stored("c1")).toEqual({ title: "Login", data: { steps: ["a"] } });
+    // Device B pulls exactly that.
+    const doc = (await pull(h)).docs.find((d: { entityId: string }) => d.entityId === "c1");
+    expect(doc.payload).toEqual({ title: "Login", data: { steps: ["a"] } });
+    // An old client that does not know `caseType` cannot reset it.
+    await push(h, [caseDelta({ title: "Login", caseType: "functional", data: { steps: ["a"] } }, 3)]);
+    await push(alpha1(token), [caseDelta({ title: "Login v2", data: { steps: ["a", "b"] } }, 4)]);
+    expect(await stored("c1")).toEqual({ title: "Login v2", caseType: "functional", data: { steps: ["a", "b"] } });
+  });
+
+  it("a web edit that clears the date and goes back to basic keeps them cleared after a reload", async () => {
+    const token = await tokenFor("web-clear@pharos.dev");
+    const headers = { ...alpha1(token) };
+    const call = async (method: "GET" | "POST" | "PUT", url: string, payload?: object) => {
+      const res = await app.inject({ method, url, headers, payload });
+      return res.json();
+    };
+    const project = await call("POST", "/api/projects", { name: "P" });
+    const data = {
+      gherkinLevel: "advanced",
+      caseDate: "2026-10-01",
+      steps: ["a"],
+      background: ["b"],
+      examples: [{ x: 1 }],
+      flows: [{ id: "f1" }],
+      featureSource: "Feature: x",
+    };
+    const created = await call("POST", "/api/test-cases", { projectId: project.id, title: "T", author: "QA", data });
+    await call("PUT", `/api/test-cases/${created.id}`, {
+      input: { projectId: project.id, title: "T", author: "QA", data: { gherkinLevel: "basic", steps: ["a"] } },
+      revision: created.revision,
+    });
+    const reloaded = await call("GET", `/api/test-cases/${created.id}`);
+    expect(reloaded.data).toEqual({ gherkinLevel: "basic", steps: ["a"] });
   });
 });

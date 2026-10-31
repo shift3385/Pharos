@@ -7,6 +7,7 @@ import {
   requireSupportedVersion,
   SERVER_FEATURES,
   SERVER_VERSION,
+  sendsCompletePayload,
   understandsAppendOnly,
   understandsKeyConflicts,
 } from "./sync.version";
@@ -43,8 +44,11 @@ export function syncRoutes(
         message: "This client did not announce the append-only sync feature.",
       });
     }
+    // An old client (no `complete-payload`) never resets a field it does not
+    // know: its upserts keep the keys it leaves out.
+    const merge = !sendsCompletePayload(req);
     for (const d of deltas) {
-      const res = await repo.apply(userId, d);
+      const res = await repo.apply(userId, d, { merge });
       if ("current" in res) conflicts.push(res.current);
       else if ("appendRejected" in res) appendRejected.push(res.appendRejected);
       else if ("keyConflict" in res) {

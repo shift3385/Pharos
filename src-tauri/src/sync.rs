@@ -425,6 +425,7 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
             .prepare(&format!(
                 "SELECT entity, entity_id, id, hlc, author FROM oplog
                   WHERE synced_at IS NULL AND user_id = ?1 AND entity IN ({})
+                    AND payload NOT LIKE '%\"appendRejected\"%'
                   ORDER BY rowid",
                 sync_class::append_only_sql_list()
             ))
@@ -500,6 +501,43 @@ pub(crate) fn mark_pushed(
         }
     }
     Ok(())
+}
+
+/// Marks the oplog rows of append-only documents the server refused
+/// (`appendRejected`, AUD-01): they stay unsynced, are no longer sent and are
+/// counted apart in the diagnostics. The server keeps its own version for good,
+/// so resending would only fail again.
+pub(crate) fn mark_rejected(
+    conn: &Connection,
+    user: &str,
+    op_ids: &[String],
+) -> Result<(), String> {
+    for id in op_ids {
+        conn.execute(
+            &format!(
+                "UPDATE oplog SET payload = '{{\"appendRejected\":\"content_changed\"}}'
+                  WHERE id = ?1 AND user_id = ?2 AND synced_at IS NULL AND entity IN ({})",
+                sync_class::append_only_sql_list()
+            ),
+            params![id, user],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn oplog_mark_rejected(
+    db: State<Db>,
+    user_id: String,
+    op_ids: Vec<String>,
+) -> Result<(), String> {
+    require_user(&user_id)?;
+    if op_ids.is_empty() {
+        return Ok(());
+    }
+    db.with_tx(|conn| mark_rejected(conn, &user_id, &op_ids))?;
+    db.persist()
 }
 
 #[tauri::command]
@@ -620,35 +658,12 @@ pub(crate) fn apply_doc(
     )
 }
 
-/// A remote payload completed with the local one (VERSIONING §6.5, design
-/// 0.2.0 §3.7): a key the sender left out keeps the local value, and `data` is
-/// merged one level deep the same way. An older client that does not know a
-/// field never resets it here. A key sent as `null` is taken as sent (cleared).
-/// The server applies the same rule on push (`storeDoc`).
-pub(crate) fn fill_missing(local: &Value, remote: &Value) -> Value {
-    let (Some(l), Some(r)) = (local.as_object(), remote.as_object()) else {
-        return remote.clone();
-    };
-    let mut out = l.clone();
-    for (key, value) in r {
-        let merged = match (key.as_str(), l.get(key), value) {
-            ("data", Some(Value::Object(ld)), Value::Object(rd)) => {
-                let mut d = ld.clone();
-                d.extend(rd.iter().map(|(k, v)| (k.clone(), v.clone())));
-                Value::Object(d)
-            }
-            _ => value.clone(),
-        };
-        out.insert(key.clone(), merged);
-    }
-    Value::Object(out)
-}
-
 /// Overwrites the local row with a remote document's state. `created_by` and
 /// `updated_by` always get `user`, the account the document belongs to (its
-/// owner, ADR-0020), never the free-text `author` of the payload (FIX-06). A
-/// key missing from the document keeps the live local value (`fill_missing`);
-/// a tombstone, or a new row, takes the document as it is.
+/// owner, ADR-0020), never the free-text `author` of the payload (FIX-06). The
+/// document is the sender's whole state: a key it lacks is cleared here. The
+/// server already kept the keys an old client (no `complete-payload`) left
+/// out, so nothing is merged on pull (AUD-01 review).
 fn write_doc(
     conn: &Connection,
     workspace_id: &str,
@@ -671,11 +686,7 @@ fn write_doc(
         return Ok(());
     }
 
-    let filled = match read_payload(conn, &doc.entity, &doc.entity_id)? {
-        Some((local, _, false)) => fill_missing(&local, &doc.payload),
-        _ => doc.payload.clone(),
-    };
-    let p = &filled;
+    let p = &doc.payload;
     let data_str = |key: &str| {
         p.get(key)
             .map(|v| v.to_string())

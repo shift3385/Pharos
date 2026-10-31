@@ -129,13 +129,14 @@ export async function takenKey(client: PoolClient, userId: string, d: Delta): Pr
   return rows[0] ? { entity: d.entity, entityId: d.entityId, key, takenBy: rows[0].entity_id } : null;
 }
 
-/** The payload stored when an upsert lands on a live document: a key the
- *  emitter left out keeps the stored value, and `data` is merged one level deep
- *  the same way (VERSIONING §6.5, design 0.2.0 §3.7). An older client that does
- *  not know a field can never reset it. A key sent as `null` is cleared. A
- *  tombstone, or a delete, stores the delta's payload as is: merging never
- *  brings back what was deleted. The desktop applies the same rule on pull
- *  (`sync.rs`, `fill_missing`). */
+/** The payload stored when an upsert from an OLD client (one that does not
+ *  send the `complete-payload` feature: 0.1.x, 0.2.0-alpha.1) lands on a live
+ *  document: a key it left out keeps the stored value, and `data` is merged one
+ *  level deep the same way (VERSIONING §6.5, design 0.2.0 §3.7), so it can
+ *  never reset a field it does not know. Current clients send their whole
+ *  state and may clear a key by omitting it, so their payload is stored as is
+ *  (and so are the web's domain writes). A tombstone, or a delete, is never
+ *  merged: merging never brings back what was deleted. */
 const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN EXCLUDED.payload
        ELSE (documents.payload || EXCLUDED.payload)
          || CASE WHEN jsonb_typeof(documents.payload->'data') = 'object'
@@ -146,14 +147,21 @@ const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN
 
 /** Stores a delta as the user's latest version of the entity (with a new
  *  `seq`) and cascades a project delete to its children. The caller holds the
- *  user's write lock and has already decided that the delta wins. */
-export async function storeDoc(client: PoolClient, userId: string, d: Delta): Promise<void> {
+ *  user's write lock and has already decided that the delta wins. `merge`:
+ *  keep the keys the delta left out (only for old clients, above). */
+export async function storeDoc(
+  client: PoolClient,
+  userId: string,
+  d: Delta,
+  opts: { merge: boolean } = { merge: false },
+): Promise<void> {
   await client.query(
     `INSERT INTO documents
        (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
      ON CONFLICT (user_id, entity, entity_id) DO UPDATE
-       SET payload = ${MERGED_PAYLOAD_SQL},
+       SET payload = ${opts.merge ? MERGED_PAYLOAD_SQL : "EXCLUDED.payload"},
+
            revision = EXCLUDED.revision,
            author = EXCLUDED.author,
            deleted = EXCLUDED.deleted,
@@ -249,8 +257,9 @@ export async function leaseRange(
 export function createSyncRepository(pool: Pool) {
   return {
     /** Applies one delta under a row lock, following the merge rule in
-     *  `sync.merge.ts` (base check, then last-write-wins by HLC). */
-    async apply(userId: string, d: Delta): Promise<ApplyResult> {
+     *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
+     *  client is old and its upserts keep the keys it left out (`storeDoc`). */
+    async apply(userId: string, d: Delta, opts: { merge: boolean } = { merge: false }): Promise<ApplyResult> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -274,7 +283,7 @@ export function createSyncRepository(pool: Pool) {
             await client.query("COMMIT");
             return { accepted: false, keyConflict };
           }
-          await storeDoc(client, userId, d);
+          await storeDoc(client, userId, d, opts);
         }
         await client.query("COMMIT");
         return decision === "conflict" && current ? { accepted: false, current } : { accepted: true };
