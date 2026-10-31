@@ -38,7 +38,7 @@
 | Trazabilidad: requisitos, matriz, tags                                          | Implementado                                                                     | `484e941`                       |
 | BD sin texto plano y guardado atómico (SEC-01/02)                               | Hecho                                                                            | `54f1dde`                       |
 | Varios proveedores de IA (IA-08) y cuenta de test (BASE-17)                     | Hecho                                                                            | `91f0b9a`                       |
-| Tests                                                                           | Cliente 473 · Rust 244 · servidor 90 · scripts 40. CI con 8 checks obligatorios, E2E incluido | —                   |
+| Tests                                                                           | Cliente 710 · Rust 245 · servidor 92 · scripts 47 · E2E 13 (2026-10-30, `f7dcd62`). CI con 8 checks obligatorios, E2E incluido | —                   |
 | Segunda ola: compuerta A cerrada, SEC-03, IA-05/IA-10, Inicio real, carpeta de descarga, PDFs en ZIPs, logs de sync, zod 4 | Hecho (A3, S1, Q1, I1, U1) | `b969824`, `b75e757`, `c000a53`, `24535c4`, `0eab0a1` |
 | Tercera ola: compuerta B cerrada, WCAG 2.1 AA y validación común de formularios (UX-05/UX-01), web como cliente puro del servidor y contratos generados (BASE-10/BASE-05), react-router 7 y cobertura en cada PR (BASE-20/BASE-13), E2E obligatorio | Hecho (X1, W1, D1, Q1) | `f1cac23`, `1f93e15`, `446dd7e`, `95958e6` |
 | Fase 9: documentación final, guía de la beta y release `0.1.0-beta.1` (UX-06) | Hecho (R1); falta la validación nativa (§6) | — |
@@ -50,7 +50,7 @@ Las validaciones nativas pendientes están en §6.
 
 | Versión                         | Tema                     | Contenido                                                                                                                    | Criterio de salida                                                                                                                                                                                                                                    |
 | ------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0.1.0** (hoy `0.1.0-beta.1`: beta.1 en `main`; se publica al etiquetar; pendiente validación nativa) | MVP consolidado          | Compuertas A y B; SEC-03, SEC-06, SYNC-08, IA-05; Fase 9 (UX-05/06); huecos de la spec (§5)                                  | Compuertas A y B cerradas con evidencia; `cargo test`, `verify` y tests del servidor en CI; conflicto simulado visible; matriz exportable; `.feature` filtrable por `@TC-xxx`; instalador NSIS limpio en Windows 11; validaciones nativas (§6) hechas |
+| **0.1.0** (`v0.1.0-beta.1`; pendiente validación nativa; `main` ya está en 0.2.0) | MVP consolidado          | Compuertas A y B; SEC-03, SEC-06, SYNC-08, IA-05; Fase 9 (UX-05/06); huecos de la spec (§5)                                  | Compuertas A y B cerradas con evidencia; `cargo test`, `verify` y tests del servidor en CI; conflicto simulado visible; matriz exportable; `.feature` filtrable por `@TC-xxx`; instalador NSIS limpio en Windows 11; validaciones nativas (§6) hechas |
 | **0.2.0** (hoy `0.2.0-alpha.1`: incluye el rediseño de la interfaz, RED-*) | Ejecución                | Compuerta C cerrada (ADRs); EJE-01..04, RUN-00, AUD-01, DAT-02/03, CYC-01 y FLD-01 (recortables a 0.3.0), DEF-01; ING-02..05 | Un run manual y uno de Playwright aparecen en la misma matriz; editar un caso ejecutado no altera sus resultados                                                                                                                                      |
 | **0.3.0**                       | Núcleo y equipo          | CORE-01, SEC-04/05, SYNC-05, SYNC-07, TEN-01, CAS-01/02                                                                      | Dos usuarios trabajan en el mismo workspace con roles; el CLI escribe con la app abierta                                                                                                                                                              |
 | **0.4.0**                       | Campo                    | MOB-01, EXP-01, SYNC-04b, SYNC-09                                                                                            | Un caso ejecutado en el móvil aparece en el escritorio; una sesión exploratoria genera un Run                                                                                                                                                         |
@@ -307,7 +307,8 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
 - **Fase 9A:** panel de administración.
 - **Trazabilidad:** requisitos, matriz y tags en la app nativa; filtrado con playwright-bdd.
 - **SEC-01/02:** guardar desde la app y comprobar que no quedan `.tmp` ni `.new`.
-- **SEC-03:** en la app nativa, exportar la clave de recuperación desde Perfil; después
+- **SEC-03:** en la app nativa, exportar la clave de recuperación desde Administración →
+  Seguridad (estaba en Perfil hasta RED-V4); después
   copiar `pharos.db.enc` a otro equipo (o borrar la entrada `db-key` del Administrador de
   credenciales tras guardar una copia del `.enc`), abrir Pharos y recuperar los datos con
   la clave. Probar también una errata y una clave de otro equipo.
@@ -347,6 +348,12 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   (aviso de SmartScreen: el instalador no está firmado), primer arranque y WebView2, versión
   visible, carpeta de datos, desinstalar y reinstalar, y actualizar encima de `0.1.0-alpha.1`.
   La firma de código queda fuera de 0.1.0 (limitación conocida).
+- **Alfa 0.2.0-alpha.1 (rediseño completo):** recorrer el apartado 4.10 de
+  [`guia-beta.md`](guia-beta.md) con el instalador de la etiqueta `v0.2.0-alpha.1`:
+  instalar encima de `0.1.0-beta.1` (los datos siguen y se ven con la interfaz nueva),
+  Proyectos, Ajustes (borrar escribiendo el prefijo), los 19 pasos del Plan, Administración
+  por pestañas (tema «Según el sistema», capacidades de IA con candado) y el aviso de cambios
+  sin guardar en el Plan, el editor de casos y Administración.
 - **E2E (BASE-14):** `npm run e2e` en verde con la API de `main` en el puerto 3000 (la CSP
   del escritorio solo admite ese puerto).
 
