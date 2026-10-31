@@ -131,8 +131,8 @@ struct Child {
     table: &'static str,
     /// Key column and kind, when the row carries a human-readable key.
     key: Option<(&'static str, KeyKind)>,
-    /// History or attachment table to clear first: (table, column).
-    dependents: Option<(&'static str, &'static str)>,
+    /// History or attachment rows to clear first: a DELETE taking the row id.
+    dependents: Option<&'static str>,
 }
 
 const CHILDREN: [Child; 4] = [
@@ -140,13 +140,13 @@ const CHILDREN: [Child; 4] = [
         entity: "test_plan",
         table: "test_plans",
         key: None,
-        dependents: Some(("test_plan_revisions", "test_plan_id")),
+        dependents: Some("DELETE FROM test_plan_revisions WHERE test_plan_id = ?1"),
     },
     Child {
         entity: "test_case",
         table: "test_cases",
         key: Some(("scenario_id", KeyKind::Case)),
-        dependents: Some(("test_case_revisions", "test_case_id")),
+        dependents: Some("DELETE FROM test_case_revisions WHERE test_case_id = ?1"),
     },
     Child {
         entity: "requirement",
@@ -158,7 +158,10 @@ const CHILDREN: [Child; 4] = [
         entity: "planner_card",
         table: "planner_cards",
         key: Some(("card_key", KeyKind::Defect)),
-        dependents: Some(("planner_attachments", "card_id")),
+        // Its files go with the next evidence collection (ADR-0014).
+        dependents: Some(
+            "DELETE FROM attachments WHERE owner_entity = 'planner_card' AND owner_id = ?1",
+        ),
     },
 ];
 
@@ -191,12 +194,8 @@ fn purge_children(
             let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
             keys::retire(conn, kind, &project_id, &prefix, &key)?;
         }
-        if let Some((table, column)) = child.dependents {
-            conn.execute(
-                &format!("DELETE FROM {table} WHERE {column} = ?1"),
-                params![id],
-            )
-            .map_err(|e| e.to_string())?;
+        if let Some(sql) = child.dependents {
+            conn.execute(sql, params![id]).map_err(|e| e.to_string())?;
         }
         conn.execute(
             &format!("DELETE FROM {} WHERE id = ?1", child.table),
@@ -281,8 +280,29 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
     })
 }
 
+/// Evidence side of the purge (ADR-0014): the account's attachments deleted
+/// more than `days` days ago go for good, contents whose retention passed
+/// expire (`evidence::expire`), and every content no live attachment needs is
+/// released for `collect`. Returns how many attachment rows changed.
+pub(crate) fn purge_evidence(conn: &Connection, user: &str, days: i64) -> Result<usize, String> {
+    let days = days.clamp(MIN_DAYS, MAX_DAYS);
+    let removed = conn
+        .execute(
+            &format!(
+                "DELETE FROM attachments AS x WHERE x.owner_entity = 'planner_card' \
+                 AND x.owner_id IN (SELECT id FROM planner_cards WHERE owner_id = ?1) AND {EXPIRED}"
+            ),
+            params![user, days],
+        )
+        .map_err(|e| e.to_string())?;
+    let expired = crate::evidence::expire(conn)?;
+    crate::evidence::release_unreferenced(conn)?;
+    Ok(removed + expired)
+}
+
 /// Runs the purge for the signed-in account in one transaction; saves the
-/// database only when something was removed.
+/// database only when something was removed, then removes the evidence files
+/// nothing needs any more.
 #[tauri::command]
 pub fn purge_deleted(
     db: State<Db>,
@@ -292,12 +312,15 @@ pub fn purge_deleted(
     let summary = db.with_conn(|conn| {
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         let summary = purge(&tx, &user_id, retention_days)?;
+        let evidence = purge_evidence(&tx, &user_id, retention_days)?;
         tx.commit().map_err(|e| e.to_string())?;
-        Ok(summary)
+        Ok((summary, evidence))
     })?;
-    if summary.total() > 0 {
+    let (summary, evidence) = summary;
+    if summary.total() > 0 || evidence > 0 {
         db.persist()?;
     }
+    db.collect_evidence()?;
     Ok(summary)
 }
 
@@ -532,8 +555,10 @@ mod tests {
         )
         .unwrap();
         c.execute(
-            "INSERT INTO planner_attachments (id, card_id, name, bytes) VALUES ('at', 'd1', 'x', x'00')",
-            [],
+            "INSERT INTO attachments (id, workspace_id, project_id, sha256, size, name, owner_entity, \
+             owner_id, created_by, updated_by, created_at, updated_at) \
+             VALUES ('at', ?1, 'p1', 'aa', 1, 'x', 'planner_card', 'd1', 'a', 'a', 'now', 'now')",
+            params![ws],
         )
         .unwrap();
         let s = purge(&c, A, 30).unwrap();
@@ -543,7 +568,7 @@ mod tests {
             1,
             "the built-in one stays"
         );
-        assert_eq!(count(&c, "SELECT count(*) FROM planner_attachments"), 0);
+        assert_eq!(count(&c, "SELECT count(*) FROM attachments"), 0);
         assert!(keys::taken(&c, KeyKind::Defect, "p1", "DEF-004").unwrap());
     }
 

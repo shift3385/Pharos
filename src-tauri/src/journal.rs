@@ -58,6 +58,8 @@ pub enum Action {
     Link,
     Unlink,
     ResolveConflict,
+    /// Content removed by retention while the record of it stays (ADR-0014).
+    Redact,
 }
 
 impl Action {
@@ -70,6 +72,7 @@ impl Action {
             Action::Link => "link",
             Action::Unlink => "unlink",
             Action::ResolveConflict => "resolve_conflict",
+            Action::Redact => "redact",
         }
     }
 }
@@ -380,6 +383,32 @@ pub fn record_event(
     let (project, key) = location(entity, id, snap.as_ref(), None);
     write_event(
         conn, &actor, action, entity, id, project, key, changes, summary,
+    )
+}
+
+/// `record_event` for an entity `snapshot` does not read (evidence
+/// `attachment`s), with its project given by the caller.
+#[allow(clippy::too_many_arguments)]
+pub fn record_event_in(
+    conn: &Connection,
+    actor: Actor,
+    action: Action,
+    entity: &str,
+    id: &str,
+    project: Option<&str>,
+    changes: Map<String, Value>,
+    summary: Option<Value>,
+) -> Result<(), String> {
+    write_event(
+        conn,
+        &actor,
+        action,
+        entity,
+        id,
+        project.map(String::from),
+        None,
+        changes,
+        summary,
     )
 }
 

@@ -402,7 +402,10 @@ fn attachments_are_audited_without_bytes_or_an_entity_oplog_row() {
         U,
         "log.txt",
         Some("text/plain"),
-        b"secret log",
+        &crate::evidence::Stored {
+            sha256: crate::audit::sha256_hex(b"secret log"),
+            size: 10,
+        },
     )
     .unwrap();
     assert_eq!(last_changes(&c)["attachment"][1]["size"], 10);
@@ -1095,7 +1098,7 @@ const EXEMPT: &[(&str, &str)] = &[
     ("sync::sync_conflicts_list", "read"),
     (
         "purge::purge_deleted",
-        "removes rows already deleted and audited; SYNC-06 adds `redact`",
+        "removes rows already deleted and audited; expired evidence writes its own `redact`",
     ),
     ("key_sync::key_lease_requests", "read"),
     (
@@ -1109,6 +1112,22 @@ const EXEMPT: &[(&str, &str)] = &[
     ("downloads::download_dir_pick", "a setting"),
     ("downloads::download_dir_reset", "a setting"),
     ("downloads::download_save", "writes a file the user exports"),
+    (
+        "evidence::evidence_upload_begin",
+        "an upload; attaching it is audited (planner_attachment_add)",
+    ),
+    (
+        "evidence::evidence_upload_chunk",
+        "an upload; attaching it is audited (planner_attachment_add)",
+    ),
+    (
+        "evidence::evidence_upload_cancel",
+        "drops an unfinished upload",
+    ),
+    (
+        "planner::planner_attachment_save",
+        "read (writes a file the user exports)",
+    ),
 ];
 
 fn registered_commands() -> Vec<String> {
@@ -1265,7 +1284,11 @@ fn every_audited_command_leaves_an_event() {
         planner::reorder(tx, U, "done", std::slice::from_ref(&card))
     });
     step("planner::planner_attachment_add", &mut |tx| {
-        planner::add_attachment(tx, "att", &card, U, "a", None, b"x")
+        let x = crate::evidence::Stored {
+            sha256: crate::audit::sha256_hex(b"x"),
+            size: 1,
+        };
+        planner::add_attachment(tx, "att", &card, U, "a", None, &x)
     });
     step("planner::planner_attachment_delete", &mut |tx| {
         planner::delete_attachment(tx, "att", U)

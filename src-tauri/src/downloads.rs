@@ -122,10 +122,24 @@ impl Downloads {
     /// cannot be written (access denied, disk full, Controlled Folder Access),
     /// the file goes to Downloads and `fallback` says so: never silently.
     fn save(&self, name: &str, bytes: &[u8], untrusted: bool) -> Result<SaveResult, String> {
+        self.save_with(name, untrusted, &|out| out.write_all(bytes))
+    }
+
+    /// `save` with the content written by `write`, which may run twice (once
+    /// more for the fallback folder): planner attachments stream from the
+    /// evidence store without passing through memory or the webview. A failure
+    /// of the content itself (`source_error`) never falls back.
+    pub(crate) fn save_with(
+        &self,
+        name: &str,
+        untrusted: bool,
+        write: &dyn Fn(&mut dyn Write) -> io::Result<()>,
+    ) -> Result<SaveResult, String> {
         if let Some(dir) = self.chosen() {
             if dir.is_dir() {
-                match save_in(&dir, name, bytes, untrusted) {
+                match save_in(&dir, name, write, untrusted) {
                     Ok(path) => return Ok(SaveResult::new(path, false)),
+                    Err(e) if is_source_error(&e) => return Err(e.to_string()),
                     Err(e) => tracing::warn!(
                         kind = ?e.kind(),
                         "could not write to the chosen download folder; using Downloads"
@@ -134,14 +148,35 @@ impl Downloads {
             } else {
                 tracing::warn!("chosen download folder is missing; using Downloads");
             }
-            let path = save_in(&self.default_target()?, name, bytes, untrusted)
+            let path = save_in(&self.default_target()?, name, write, untrusted)
                 .map_err(|e| e.to_string())?;
             return Ok(SaveResult::new(path, true));
         }
         let path =
-            save_in(&self.default_target()?, name, bytes, untrusted).map_err(|e| e.to_string())?;
+            save_in(&self.default_target()?, name, write, untrusted).map_err(|e| e.to_string())?;
         Ok(SaveResult::new(path, false))
     }
+}
+
+/// A failure reading the content being saved (not writing it): `save_with`
+/// reports it as is instead of retrying in Downloads.
+#[derive(Debug)]
+struct SourceError(String);
+
+impl std::fmt::Display for SourceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for SourceError {}
+
+pub(crate) fn source_error(message: impl std::fmt::Display) -> io::Error {
+    io::Error::other(SourceError(message.to_string()))
+}
+
+fn is_source_error(e: &io::Error) -> bool {
+    e.get_ref().is_some_and(|inner| inner.is::<SourceError>())
 }
 
 /// Where a file was saved, and whether it had to go to Downloads instead of
@@ -237,12 +272,18 @@ fn reserve_path(dir: &Path, name: &str) -> io::Result<PathBuf> {
 /// temp file, fsynced and renamed over the reservation, so a crash never
 /// leaves a truncated file under the final name. `untrusted` files (planner
 /// attachments: content that came from someone else) get Mark-of-the-Web.
-fn save_in(dir: &Path, name: &str, bytes: &[u8], untrusted: bool) -> io::Result<PathBuf> {
+fn save_in(
+    dir: &Path,
+    name: &str,
+    write: &dyn Fn(&mut dyn Write) -> io::Result<()>,
+    untrusted: bool,
+) -> io::Result<PathBuf> {
     let path = reserve_path(dir, &sanitize_name(name))?;
     let pending = dir.join(format!(".pharos-{}.part", uuid::Uuid::new_v4()));
     let result = (|| {
-        let mut file = fs::File::create(&pending)?;
-        file.write_all(bytes)?;
+        let mut file = io::BufWriter::new(fs::File::create(&pending)?);
+        write(&mut file)?;
+        let file = file.into_inner().map_err(|e| e.into_error())?;
         file.sync_all()?;
         drop(file);
         // Replaces our own empty reservation, never someone else's file.
@@ -381,6 +422,10 @@ pub fn download_save(
 mod tests {
     use super::*;
 
+    fn save_bytes(dir: &Path, name: &str, bytes: &[u8], untrusted: bool) -> io::Result<PathBuf> {
+        save_in(dir, name, &|out| out.write_all(bytes), untrusted)
+    }
+
     fn temp_dir(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("pharos-dl-{tag}-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(&dir).unwrap();
@@ -444,9 +489,9 @@ mod tests {
     #[test]
     fn never_overwrites_an_existing_file() {
         let dir = temp_dir("unique");
-        let first = save_in(&dir, "report.pdf", b"one", false).unwrap();
-        let second = save_in(&dir, "report.pdf", b"two", false).unwrap();
-        let third = save_in(&dir, "report.pdf", b"three", false).unwrap();
+        let first = save_bytes(&dir, "report.pdf", b"one", false).unwrap();
+        let second = save_bytes(&dir, "report.pdf", b"two", false).unwrap();
+        let third = save_bytes(&dir, "report.pdf", b"three", false).unwrap();
         assert_eq!(first.file_name().unwrap(), "report.pdf");
         assert_eq!(second.file_name().unwrap(), "report (2).pdf");
         assert_eq!(third.file_name().unwrap(), "report (3).pdf");
@@ -464,7 +509,7 @@ mod tests {
         let handles: Vec<_> = (0..threads)
             .map(|i| {
                 let dir = dir.clone();
-                std::thread::spawn(move || save_in(&dir, "export.zip", &[i; 64], false).unwrap())
+                std::thread::spawn(move || save_bytes(&dir, "export.zip", &[i; 64], false).unwrap())
             })
             .collect();
         let mut paths: Vec<PathBuf> = handles.into_iter().map(|h| h.join().unwrap()).collect();
@@ -487,7 +532,7 @@ mod tests {
     #[test]
     fn writes_only_inside_the_folder() {
         let dir = temp_dir("inside");
-        let path = save_in(&dir, "..\\..\\escape.txt", b"x", false).unwrap();
+        let path = save_bytes(&dir, "..\\..\\escape.txt", b"x", false).unwrap();
         assert_eq!(path.parent().unwrap(), dir);
         fs::remove_dir_all(dir).unwrap();
     }
@@ -496,13 +541,13 @@ mod tests {
     #[test]
     fn untrusted_files_get_mark_of_the_web() {
         let dir = temp_dir("motw");
-        let path = save_in(&dir, "attachment.exe", b"MZ", true).unwrap();
+        let path = save_bytes(&dir, "attachment.exe", b"MZ", true).unwrap();
         let mut stream = path.as_os_str().to_owned();
         stream.push(":Zone.Identifier");
         let zone = fs::read_to_string(PathBuf::from(stream)).unwrap();
         assert!(zone.contains("ZoneId=3"), "{zone}");
 
-        let own = save_in(&dir, "plan.xlsx", b"PK", false).unwrap();
+        let own = save_bytes(&dir, "plan.xlsx", b"PK", false).unwrap();
         let mut stream = own.as_os_str().to_owned();
         stream.push(":Zone.Identifier");
         assert!(

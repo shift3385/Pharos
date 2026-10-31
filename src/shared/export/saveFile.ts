@@ -21,7 +21,7 @@ export interface DownloadDirInfo {
   missing: boolean;
 }
 
-interface SaveResult {
+export interface SaveResult {
   path: string;
   /** The chosen folder was missing or not writable: saved in Downloads. */
   fallback: boolean;
@@ -78,17 +78,30 @@ export async function saveFile(
     browserDownload(name, data, mime);
     return name;
   }
+  const headers: Record<string, string> = {
+    "x-pharos-filename": encodeURIComponent(name),
+  };
+  if (untrusted) headers["x-pharos-untrusted"] = "1";
+  return saveVia(name, async () =>
+    invoke<SaveResult>("download_save", await toBytes(data), { headers }),
+  );
+}
+
+/**
+ * A desktop save done by a Rust command that writes the file itself (planner
+ * attachments, streamed from the evidence store), with the same toasts as
+ * `saveFile`. `explain` turns a raw error into the text shown.
+ */
+export async function saveVia(
+  name: string,
+  run: () => Promise<SaveResult>,
+  explain: (reason: string) => string = (reason) => reason,
+): Promise<string> {
   let saved: SaveResult;
   try {
-    const headers: Record<string, string> = {
-      "x-pharos-filename": encodeURIComponent(name),
-    };
-    if (untrusted) headers["x-pharos-untrusted"] = "1";
-    saved = await invoke<SaveResult>("download_save", await toBytes(data), {
-      headers,
-    });
+    saved = await run();
   } catch (e) {
-    const reason = e instanceof Error ? e.message : String(e);
+    const reason = explain(e instanceof Error ? e.message : String(e));
     notify(i18n.t("downloads.failed", { name, reason }), "error");
     throw new ReportedError(reason);
   }

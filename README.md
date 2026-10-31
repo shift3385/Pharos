@@ -308,7 +308,31 @@ Both themes meet AA contrast. The audit and its open points are in
 
 ### Local data backups
 
-The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\pharos.db.enc`.
+The desktop app keeps its data in `%APPDATA%\com.pharos.desktop\`:
+
+- `pharos.db.enc`: the encrypted database;
+- `evidence\`: the attachment files, encrypted, one `.pev` file per distinct
+  content ([ADR-0014](docs/adr/0014-evidencias-cifradas-por-hash.md)). The
+  names say nothing about the content, and the database key (so also the
+  recovery key) opens them. Never edit or delete files in it by hand;
+  `evidence\tmp\` only holds unfinished uploads and is emptied at start.
+
+The two belong together: back up, copy and restore **both**.
+
+Evidence store defaults (DAT-03). Their Administration settings arrive with
+manual execution (step 7 of the 0.2.0 design):
+
+| Setting                  | Default                                          |
+| ------------------------ | ------------------------------------------------ |
+| Largest file             | 200 MB                                           |
+| `trace`, `video`         | kept 30 days                                     |
+| `raw_report`, `log`      | kept 90 days                                     |
+| `screenshot`, `evidence` | kept always                                      |
+| Planner card attachments | kept until you delete them (or the card is purged) |
+
+Retention by kind only applies to the evidence of imported runs. When it
+expires, the file goes and the record of it stays. A deleted attachment's file
+is removed at once if nothing else uses the same content.
 
 Before a new version upgrades that database, the app saves an untouched,
 encrypted copy next to it: `pharos.db.enc.bak-<version>-<last migration>`. For
@@ -317,12 +341,18 @@ example, `0.1.0-beta.1` opening data saved by `0.1.0-alpha.1` keeps
 
 - Only the 3 newest copies are kept; older ones are deleted.
 - If the copy cannot be saved, the app upgrades nothing and says so.
+- The upgrade to `0.2.0` moves the planner attachments out of the database
+  into `evidence\`, so `pharos.db.enc` shrinks. The copies saved before it
+  still hold those attachments until they are pruned. Attachments whose card no
+  longer existed (never visible in the app) are not moved; they stay only in
+  that copy.
 
 To go back to the data from before an upgrade:
 
 1. Close Pharos.
 2. Rename `pharos.db.enc` (keep it until you are sure you want to discard it).
-3. Copy the `.bak-…` file you want to `pharos.db.enc`.
+3. Copy the `.bak-…` file you want to `pharos.db.enc`. Leave `evidence\` as it
+   is: an older copy simply does not use the newer files.
 4. Open the Pharos version that wrote that copy.
 
 The copy is encrypted with the same key, kept in the Windows Credential
@@ -339,13 +369,15 @@ decrypted without the **recovery key** ([ADR-0024](docs/adr/0024-clave-de-recupe
   characters in 14 groups of 4 (`XXXX-XXXX-…`). Write it on paper or store it
   in a password manager, never next to the copy of your data: anyone with both
   can read it. Pharos keeps no copy of it.
-- **A full backup** is `pharos.db.enc` (plus `evidence/` once evidence files
-  exist) and the recovery key. The `.bak-…` copies use the same key.
+- **A full backup** is `pharos.db.enc` plus the `evidence\` folder, and the
+  recovery key. The `.bak-…` copies and the evidence files use the same key.
 
 To recover on another PC:
 
 1. Install Pharos and close it if it is open.
-2. Copy `pharos.db.enc` to `%APPDATA%\com.pharos.desktop\`.
+2. Copy `pharos.db.enc` and the `evidence\` folder to
+   `%APPDATA%\com.pharos.desktop\`. Without `evidence\` the data still opens,
+   but its attachments say they are not on this device.
 3. Open Pharos. It says the database key is missing (or that the stored key
    does not open the database) and asks for the recovery key.
 4. Type it: case, spaces and hyphens do not matter. A typo is reported before

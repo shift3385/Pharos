@@ -25,8 +25,10 @@ resolution can be added without a schema change.
 
 - **What syncs (SYNC-04a).** `project`, `test_plan`, `test_case`,
   `requirement`, `planner_card` — one list, `SYNCED` in `oplog.rs` and
-  `SYNCED_ENTITIES` on the server. Templates and attachments still journal to
-  the oplog and wait for SYNC-04b.
+  `SYNCED_ENTITIES` on the server. Templates still journal to the oplog and
+  wait for SYNC-04b. Attachments leave only an audit event: their rows
+  (`attachments`) and contents (`evidence/`, ADR-0014) never reach the oplog
+  until step 7 / SYNC-04b registers them.
 - **Per account (FIX-07).** `oplog`, `sync_base` and `sync_conflicts` carry
   `user_id` (the entity's owner, derived by `oplog::record`); the cursor is
   `cursor:<user_id>`. Every sync command takes `userId`, read together with the
@@ -54,8 +56,9 @@ resolution can be added without a schema change.
   the owner can be derived, and meanwhile the indicator tooltip counts it.
 - **Purge (SYNC-06).** `api/purgeApi.ts` → `purge_deleted` (`src-tauri/src/purge.rs`)
   removes for good, on this device, the signed-in account's rows deleted more
-  than `retentionDays` ago (Administration), with their history, attachments,
-  oplog rows, sync bases and resolved conflicts. `SyncIndicator` runs it after
+  than `retentionDays` ago (Administration), with their history, attachments
+  (and then, through `evidence::collect`, the evidence files nothing needs any
+  more), oplog rows, sync bases and resolved conflicts. `SyncIndicator` runs it after
   sign-in (also offline) and after every sync. A row waits while it has an open
   conflict, or a pending change the server must receive first (unless the
   server never knew it); a child waits while its project's delete is pending or

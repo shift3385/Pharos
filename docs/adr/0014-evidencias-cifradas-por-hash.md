@@ -186,3 +186,46 @@ Endpoints:
   - el dueño se toma de `project_id`.
 - **Cambio sobre lo aceptado, confirmado por el usuario el 2026-10-28:** se añade la retención por tipo, con
   sus excepciones.
+
+## Implementación (E2, paso 3, 2026-10-31)
+
+Hecho en `src-tauri/src/evidence.rs` y las migraciones 0022–0023 (plan:
+[`docs/design/e2-evidence-plan.md`](../design/e2-evidence-plan.md)). Precisiones
+sobre lo decidido, sin cambiar la decisión:
+
+- **Subclaves.** De `evidence_key` salen dos subclaves con HKDF-Expand
+  (`"name"` para el HMAC de los nombres, `"file"` para AES-GCM), para no usar
+  una misma clave en dos primitivas. La rotación descrita arriba no cambia.
+- **Formato `.pev` v1.** Cabecera de 16 bytes: `"PEV1"`, versión (1), tamaño
+  de bloque (u32, 65 536) y el prefijo de nonce de 7 bytes, aleatorio por
+  archivo. La cabecera es el dato asociado de cada bloque (`StreamBE32`). Al
+  leer se recalcula el sha256 y se rechaza el archivo si no coincide. Una
+  versión mayor que 1 da `evidence-newer-than-app`.
+- **Temporales** en `evidence/tmp/` (`<uuid>.pev.new`); se vacía al abrir.
+- **`local_state = 'deleting'`** se añade a `present | remote_only | missing`.
+  Un contenido sin referencias vivas pasa a `deleting` en la misma transacción,
+  y su archivo se borra después de guardar la BD (`Db::collect_evidence`). Así
+  ningún corte deja una BD que apunte a un archivo borrado.
+- **Huérfanos.** Si la migración se corta, al repetirla se reutilizan los
+  archivos ya escritos (la recolección no hace falta). Los `.pev` que ninguna
+  fila conoce **no se barren solos**: pueden ser de una BD que el usuario
+  apartó al restaurar un `.bak`. El diagnóstico los cuenta y DAT-03b (ROADMAP)
+  los repara a mano. Las filas de `planner_attachments` sin tarjeta se
+  descartan (quedan en la copia SEC-06).
+- **Borrado de un adjunto:** borrado lógico (la fila podrá sincronizar) y el
+  contenido se libera en el acto si nadie más lo usa. Borrar la tarjeta no
+  libera nada; purgarla, sí.
+- **Retención:** motor y valores por defecto (`DEFAULT_RETENTION`) con
+  `evidence_retention` por proyecto; los ajustes de Admin llegan con el paso 7.
+  Hasta entonces solo caduca la evidencia de un `run_shard`: las excepciones de
+  los resultados (final fallido o bloqueado, defecto abierto, ejecución manual)
+  necesitan sus tablas. Caducar escribe un evento `redact` con actor
+  `system:evidence`.
+- **`attachment` aún no se sincroniza** (decisión del coordinador,
+  2026-10-31): la tabla tiene ya la forma LWW, y registrarla es una línea en
+  `oplog::SYNCED`, otra en `sync.schemas.ts` y subir `APPLIED_SET_VERSION`
+  (paso 7 o SYNC-04b). SYNC-04b no necesita cambiar el formato local: el
+  servidor recibe el texto en claro por TLS y verifica el sha256.
+- **Límite** de 200 MB (`MAX_FILE_BYTES`), comprobado al empezar la subida y en
+  cada trozo; la UI envía el archivo en trozos crudos de 4 MiB y lo descarga
+  directamente desde Rust, sin base64.
