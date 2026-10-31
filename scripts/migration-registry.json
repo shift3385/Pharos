@@ -3,7 +3,10 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0029": "E4 step 8 (DEF-01): defects + defect_links and the planner defect conversion",
+      "0030": "E4 step 8 (DEF-01): spare"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024"
@@ -11,7 +14,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0010": "E4 step 8 (DEF-01): defectKey in documents_key_idx + planner defect conversion"
+    },
     "retired": {}
   }
 }
