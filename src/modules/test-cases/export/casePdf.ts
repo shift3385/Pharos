@@ -154,6 +154,18 @@ export function caseDocDefinition(c: ExportableCase, t: Translate): TDocumentDef
     content.push(...standardBody(c, t, none));
   }
 
+  // Case type, automation and custom fields (FLD-01), when the case has any.
+  if (c.customRows?.length) {
+    content.push(
+      sectionHeader(c.customSheet?.name ?? t("testCase.exportSheet")),
+      dataTable(
+        [c.customSheet?.headers[0] ?? "", c.customSheet?.headers[2] ?? ""],
+        c.customRows.map((r) => [r.label, r.value]),
+        none,
+      ),
+    );
+  }
+
   if (c.gherkin?.trim()) {
     content.push(sectionHeader(t("testCase.tab.gherkin")), {
       text: c.gherkin,

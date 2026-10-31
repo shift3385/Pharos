@@ -6,11 +6,24 @@ import {
   contentSha256,
   normalizeCaseData,
   normalizeNewCaseData,
+  randomId,
   revisionContent,
   revisionId,
 } from "../sync/stable-steps";
 import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
+import {
+  CASE_FIELDS_STASH_KEY,
+  CASE_TYPES,
+  FIELD_TYPES,
+  fieldId,
+  validateValue,
+  validateValues,
+  validKey,
+  type FieldOption,
+  type FieldRule,
+} from "./custom-fields";
 import type {
+  CustomFieldInput,
   PlannerCardInput,
   ProjectInput,
   RequirementImportRow,
@@ -68,6 +81,8 @@ function aiPending(data: unknown): boolean {
   const prov = (data as { aiProvenance?: Record<string, { reviewedAt?: unknown }> } | null)?.aiProvenance;
   return !!prov && typeof prov === "object" && Object.values(prov).some((p) => p?.reviewedAt == null);
 }
+
+const isObject = (v: unknown): v is Payload => typeof v === "object" && v !== null && !Array.isArray(v);
 
 const pad = (n: number, digits: number) => String(n).padStart(digits, "0");
 
@@ -233,15 +248,45 @@ export function createDomainService(store: DomainStore) {
     remove: remove("test_plan", "Test plan"),
   };
 
-  function casePayload(prev: Payload, input: TestCaseInput): Payload {
+  /** The rules of a project's test case fields, for a case save. */
+  async function caseRules(tx: DomainTx, projectId: string): Promise<FieldRule[]> {
+    return (await tx.list("custom_field", projectId))
+      .map((d) => d.payload)
+      .filter((p) => p.entity === "test_case")
+      .map((p) => ({
+        fieldKey: str(p, "fieldKey"),
+        fieldType: str(p, "fieldType"),
+        options: (Array.isArray(p.options) ? p.options : []) as FieldOption[],
+        appliesToCaseTypes: Array.isArray(p.appliesToCaseTypes) ? (p.appliesToCaseTypes as string[]) : null,
+        archived: typeof p.archivedAt === "string",
+      }));
+  }
+
+  /** A case as the desktop's `update_case` stores it (FLD-01): the case fields
+   *  the input leaves out keep the stored values (a new case gets the
+   *  defaults), an input `data` without `custom` keeps the stored one, the
+   *  stash for read-only clients goes, and the values must fit their fields. */
+  async function casePayload(tx: DomainTx, prev: Payload, input: TestCaseInput): Promise<Payload> {
+    const isNew = !("revision" in prev);
+    const caseType = input.caseType ?? (prev.caseType as string | undefined) ?? (isNew ? "standard" : null);
+    const automationStatus =
+      input.automationStatus ?? (prev.automationStatus as string | undefined) ?? (isNew ? "manual" : null);
+    const data = normalizeNewCaseData(input.data) as Payload;
+    delete data[CASE_FIELDS_STASH_KEY];
+    const prevData = (prev.data ?? {}) as Payload;
+    if (!("custom" in data) && prevData.custom !== undefined) data.custom = prevData.custom;
+    const checked = validateValues(await caseRules(tx, str(prev, "projectId")), caseType ?? "standard", data, prevData);
+    if ("error" in checked) throw new AppError(400, "invalid_custom_value", checked.error);
     return {
       ...prev,
       title: input.title,
       version: input.version ?? "1.0",
       status: input.status ?? "draft",
       priority: input.priority ?? "medium",
+      caseType,
+      automationStatus,
       author: input.author,
-      data: normalizeNewCaseData(input.data),
+      data: checked.data,
       updatedAt: now(),
     };
   }
@@ -263,8 +308,8 @@ export function createDomainService(store: DomainStore) {
       version: str(p, "version"),
       status: str(p, "status"),
       priority: str(p, "priority"),
-      caseType: null,
-      automationStatus: null,
+      caseType: typeof p.caseType === "string" ? p.caseType : null,
+      automationStatus: typeof p.automationStatus === "string" ? p.automationStatus : null,
       data: p.data ?? {},
     };
     const sha = contentSha256(revisionContent(fields));
@@ -298,6 +343,9 @@ export function createDomainService(store: DomainStore) {
             status: c.status,
             priority: c.priority,
             gherkinLevel: str((c.data ?? {}) as Payload, "gherkinLevel") || "basic",
+            caseType: typeof c.caseType === "string" ? c.caseType : null,
+            automationStatus: typeof c.automationStatus === "string" ? c.automationStatus : null,
+            custom: isObject((c.data as Payload | undefined)?.custom) ? (c.data as Payload).custom : {},
             aiPending: aiPending(c.data),
             updatedAt: c.updatedAt,
             revision: c.revision,
@@ -332,12 +380,7 @@ export function createDomainService(store: DomainStore) {
           scenarioId,
           createdAt: now(),
         };
-        const doc = await tx.put(
-          "test_case",
-          id,
-          casePayload(base, input),
-          null,
-        );
+        const doc = await tx.put("test_case", id, await casePayload(tx, base, input), null);
         await storeRevision(tx, userId, doc);
         return doc.payload;
       }),
@@ -349,12 +392,7 @@ export function createDomainService(store: DomainStore) {
           "Test case",
           revision,
         );
-        const next = await tx.put(
-          "test_case",
-          id,
-          casePayload(doc.payload, input),
-          doc,
-        );
+        const next = await tx.put("test_case", id, await casePayload(tx, doc.payload, input), doc);
         await storeRevision(tx, userId, next);
         return next.payload;
       }),
@@ -539,7 +577,170 @@ export function createDomainService(store: DomainStore) {
       }),
   };
 
-  return { projects, testPlans, testCases, requirements, plannerCards };
+  /** A definition's editable part checked and completed, as
+   *  `custom_fields.rs::check_definition`: options get missing ids. */
+  function checkDefinition(fieldType: string, input: CustomFieldInput): CustomFieldInput {
+    const bad = (code: string) => new AppError(400, "invalid_custom_field", `custom_field.${code}`);
+    const label = input.label.trim();
+    if (!label || label.length > 100) throw bad("label");
+    if ((input.description ?? "").length > 500) throw bad("description");
+    let options: CustomFieldInput["options"] = [];
+    if (fieldType === "select" || fieldType === "multi_select") {
+      if (input.options.length === 0 || input.options.length > 100) throw bad("options");
+      const used = new Set<string>();
+      const labels = new Set<string>();
+      options = input.options.map((o) => {
+        const optionLabel = o.label.trim();
+        if (!optionLabel || optionLabel.length > 100) throw bad("option_label");
+        if (labels.has(optionLabel.toLowerCase())) throw bad("option_duplicate");
+        labels.add(optionLabel.toLowerCase());
+        let id = o.id;
+        if (!id || used.has(id)) id = randomId(used);
+        else used.add(id);
+        return { id, label: optionLabel, archived: o.archived ?? false };
+      });
+    }
+    const applies = input.appliesToCaseTypes ?? null;
+    if (applies && (applies.length === 0 || applies.some((t) => !(CASE_TYPES as readonly string[]).includes(t))))
+      throw bad("applies_to");
+    const defaultValue = input.defaultValue ?? null;
+    if (defaultValue !== null) {
+      const code = validateValue(
+        { fieldKey: input.fieldKey, fieldType, options, appliesToCaseTypes: null, archived: false },
+        defaultValue,
+      );
+      if (code) throw bad(`default.${code}`);
+    }
+    return { ...input, label, options, appliesToCaseTypes: applies, defaultValue };
+  }
+
+  const fieldPayload = (prev: Payload, input: CustomFieldInput): Payload => ({
+    ...prev,
+    label: input.label,
+    description: input.description ?? "",
+    options: input.options,
+    required: input.required,
+    defaultValue: input.defaultValue ?? null,
+    appliesToCaseTypes: input.appliesToCaseTypes ?? null,
+    updatedAt: now(),
+  });
+
+  const liveField = async (tx: DomainTx, id: string, revision?: number) =>
+    current(await tx.get("custom_field", id), "Custom field", revision);
+
+  async function createField(tx: DomainTx, input: CustomFieldInput): Promise<RemoteDoc> {
+    await liveProject(tx, input.projectId);
+    const fieldKey = input.fieldKey.trim();
+    if (!validKey(fieldKey)) throw new AppError(400, "invalid_custom_field", "custom_field.key");
+    if (!(FIELD_TYPES as readonly string[]).includes(input.fieldType))
+      throw new AppError(400, "invalid_custom_field", "custom_field.field_type");
+    const checked = checkDefinition(input.fieldType, { ...input, fieldKey });
+    const id = fieldId(input.projectId, input.entity, fieldKey);
+    // The deterministic id is the uniqueness: any document with it means the
+    // key is taken (`custom_fields.rs`).
+    if (await tx.get("custom_field", id)) throw new AppError(409, "key_taken", "custom_field.duplicate_key");
+    const siblings = (await tx.list("custom_field", input.projectId)).filter((d) => d.payload.entity === input.entity);
+    const position = Math.max(-1, ...siblings.map((d) => num(d.payload, "position"))) + 1;
+    const at = now();
+    const base = {
+      id,
+      workspaceId: WORKSPACE,
+      projectId: input.projectId,
+      entity: input.entity,
+      fieldKey,
+      fieldType: input.fieldType,
+      position,
+      archivedAt: null,
+      createdAt: at,
+    };
+    return tx.put("custom_field", id, fieldPayload(base, checked), null);
+  }
+
+  const customFields = {
+    list: (userId: string, projectId: string, entity: string) =>
+      run(userId, async (tx) => {
+        const project = await tx.get("project", projectId);
+        if (!project || project.deleted) return [];
+        return (await tx.list("custom_field", projectId))
+          .filter((d) => d.payload.entity === entity)
+          .sort((a, b) => num(a.payload, "position") - num(b.payload, "position") || byText("fieldKey")(a.payload, b.payload))
+          .map((d) => d.payload);
+      }),
+    create: (userId: string, input: CustomFieldInput) =>
+      run(userId, async (tx) => (await createField(tx, input)).payload),
+    /** The key and the type never change; options left out stay, archived. */
+    update: (userId: string, id: string, input: CustomFieldInput, revision?: number) =>
+      run(userId, async (tx) => {
+        const doc = await liveField(tx, id, revision);
+        const p = doc.payload;
+        if (input.fieldType !== p.fieldType) throw new AppError(400, "invalid_custom_field", "custom_field.type_immutable");
+        if (input.fieldKey !== p.fieldKey) throw new AppError(400, "invalid_custom_field", "custom_field.key_immutable");
+        const old = (Array.isArray(p.options) ? p.options : []) as FieldOption[];
+        const options = [
+          ...input.options,
+          ...old.filter((o) => !input.options.some((n) => n.id === o.id)).map((o) => ({ ...o, archived: true })),
+        ];
+        const checked = checkDefinition(str(p, "fieldType"), { ...input, options });
+        return (await tx.put("custom_field", id, fieldPayload(p, checked), doc)).payload;
+      }),
+    archive: (userId: string, id: string, archived: boolean) =>
+      run(userId, async (tx) => {
+        const doc = await liveField(tx, id);
+        if ((typeof doc.payload.archivedAt === "string") === archived) return doc.payload;
+        const payload = { ...doc.payload, archivedAt: archived ? now() : null, updatedAt: now() };
+        return (await tx.put("custom_field", id, payload, doc)).payload;
+      }),
+    /** The order of `ids`; fields left out keep their relative order after. */
+    reorder: (userId: string, projectId: string, entity: string, ids: string[]) =>
+      run(userId, async (tx) => {
+        await liveProject(tx, projectId);
+        const fields = (await tx.list("custom_field", projectId))
+          .filter((d) => d.payload.entity === entity)
+          .sort((a, b) => num(a.payload, "position") - num(b.payload, "position"));
+        const ordered = [
+          ...ids.map((id) => fields.find((f) => f.entityId === id)).filter((f): f is RemoteDoc => !!f),
+          ...fields.filter((f) => !ids.includes(f.entityId)),
+        ];
+        for (const [position, f] of ordered.entries()) {
+          if (num(f.payload, "position") === position) continue;
+          await tx.put("custom_field", f.entityId, { ...f.payload, position, updatedAt: now() }, f);
+        }
+      }),
+    /** «Copiar de otro proyecto» (ADR-0018): live, not archived fields the
+     *  target does not have yet. */
+    copy: (userId: string, fromProjectId: string, toProjectId: string, entity: string) =>
+      run(userId, async (tx) => {
+        await liveProject(tx, fromProjectId);
+        await liveProject(tx, toProjectId);
+        const summary = { copied: 0, skipped: [] as string[] };
+        const source = (await tx.list("custom_field", fromProjectId))
+          .filter((d) => d.payload.entity === entity && typeof d.payload.archivedAt !== "string")
+          .sort((a, b) => num(a.payload, "position") - num(b.payload, "position"));
+        for (const { payload: p } of source) {
+          const key = str(p, "fieldKey");
+          if (await tx.get("custom_field", fieldId(toProjectId, entity, key))) {
+            summary.skipped.push(key);
+            continue;
+          }
+          await createField(tx, {
+            projectId: toProjectId,
+            entity: entity as CustomFieldInput["entity"],
+            fieldKey: key,
+            label: str(p, "label"),
+            description: str(p, "description"),
+            fieldType: str(p, "fieldType"),
+            options: (Array.isArray(p.options) ? p.options : []) as CustomFieldInput["options"],
+            required: p.required === true,
+            defaultValue: p.defaultValue ?? null,
+            appliesToCaseTypes: Array.isArray(p.appliesToCaseTypes) ? (p.appliesToCaseTypes as string[]) : null,
+          });
+          summary.copied++;
+        }
+        return summary;
+      }),
+  };
+
+  return { projects, testPlans, testCases, requirements, plannerCards, customFields };
 }
 
 export type DomainService = ReturnType<typeof createDomainService>;

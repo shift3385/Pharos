@@ -6,6 +6,14 @@ export type TestCaseInput = { projectId: string,
  */
 scenarioId?: string, title: string, version?: string, status?: string, priority?: string, 
 /**
+ * None on create → `standard`; None on update keeps the stored value.
+ */
+caseType?: string, 
+/**
+ * None on create → `manual`; None on update keeps the stored value.
+ */
+automationStatus?: string, 
+/**
  * Name printed on the document; not an id.
  */
 author: string, data: unknown, 

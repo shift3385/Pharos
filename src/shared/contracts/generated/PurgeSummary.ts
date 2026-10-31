@@ -3,7 +3,7 @@
 /**
  * Rows removed by one purge, per kind.
  */
-export type PurgeSummary = { projects: number, testPlans: number, testCases: number, requirements: number, plannerCards: number, 
+export type PurgeSummary = { projects: number, testPlans: number, testCases: number, requirements: number, plannerCards: number, customFields: number, 
 /**
  * Runs, run items and unlinked mappings (EJE-01); a run takes its shards,
  * results and step results with it.

@@ -5,6 +5,9 @@ mod ai;
 mod audit;
 #[cfg(test)]
 mod audit_tests;
+mod custom_fields;
+#[cfg(test)]
+mod custom_fields_tests;
 mod db;
 mod diag;
 mod downloads;
@@ -148,6 +151,12 @@ pub fn run() {
             test_case::test_case_update,
             test_case::test_case_delete,
             test_case::test_case_revisions,
+            custom_fields::custom_field_list,
+            custom_fields::custom_field_create,
+            custom_fields::custom_field_update,
+            custom_fields::custom_field_archive,
+            custom_fields::custom_field_reorder,
+            custom_fields::custom_field_copy,
             requirement::requirement_list,
             requirement::requirement_get,
             requirement::requirement_create,

@@ -175,7 +175,9 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
        conocen); nunca ven un objeto donde esperaban un texto. Las listas
        estables viajan en `data.__stableSteps`, que guardan sin tocar: al
        actualizar recuperan los mismos ids, el resultado esperado y el mismo
-       hash de revisión que el servidor (DAT-02, revisión B1).
+       hash de revisión que el servidor (DAT-02, revisión B1). Del mismo modo,
+       el tipo de caso y el estado de automatización, para los que no tienen
+       columna, viajan en `data.__caseFields` (FLD-01, migración 0027).
      - **Límite conocido:** las apps publicadas tratan cualquier 426 como
        fatal y hacen el push antes del pull. Mientras no tengan cambios
        pendientes leen con normalidad; en cuanto tienen uno, cada sync se
@@ -191,16 +193,22 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
-     `complete-payload`, `stable-steps`, `runs`). Un cliente que aún no ha visto
-     `stable-steps` en las respuestas del servidor no le envía casos ni
-     revisiones (los retiene y el diagnóstico los cuenta). Del mismo modo, sin
-     `runs` no le envía runs, elementos, reglas de enlace, shards ni
-     resultados, ni le pide bloques de claves `run` (EJE-01).
+     `complete-payload`, `stable-steps`, `runs`, `custom-fields`). Un cliente que
+     aún no ha visto `stable-steps` en las respuestas del servidor no le envía
+     casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
+     modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
+     resultados, ni le pide bloques de claves `run` (EJE-01), y sin
+     `custom-fields` no le envía definiciones de campos (FLD-01).
    - **Una funcionalidad que añade campos a una entidad existente** los
      protege de quien no la conoce: el push de un cliente sin ella conserva
-     esos campos aunque envíe su estado completo (`FEATURE_KEYS` del servidor;
-     hoy, `riskLikelihood`/`riskImpact` del requisito con `runs`). Las
-     entidades nuevas solo llegan en el pull a quien la envía.
+     esos campos aunque envíe su estado completo (`FEATURE_KEYS` del servidor,
+     y `FEATURE_DATA_KEYS` para claves dentro de `data`; hoy,
+     `riskLikelihood`/`riskImpact` del requisito con `runs`, y `caseType`,
+     `automationStatus` y `data.custom` del caso con `custom-fields`). Las
+     entidades nuevas solo llegan en el pull a quien la envía. Como el push del
+     cliente antiguo no lleva esos campos, la revisión que calcula puede no
+     coincidir con el estado que guarda el servidor: dos revisiones con el
+     mismo número y distinto contenido, sin pérdida de datos (ADR-0018).
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
    - **Una clave nueva dentro de un blob opaco no necesita puerta** si se

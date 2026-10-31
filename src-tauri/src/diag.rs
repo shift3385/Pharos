@@ -395,6 +395,12 @@ struct DatabaseInfo {
     /// Why they are held back; absent when nothing is.
     #[serde(skip_serializing_if = "Option::is_none")]
     held_back_reason: Option<&'static str>,
+    /// Custom field definitions with pending changes held back because the
+    /// server has not listed `custom-fields` (FLD-01): an older server refuses
+    /// a push with an entity it does not know. Absent when the database is not
+    /// open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    held_back_fields: Option<i64>,
     /// Runs, run items, mappings, shards and results with pending changes held
     /// back because the server has not listed `runs` (EJE-01): an older server
     /// would refuse the whole push. Absent when the database is not open.
@@ -542,6 +548,7 @@ fn build_bundle(
             held_back_cases: Some(crate::sync::held_back_cases(conn)?),
             held_back_reason: (crate::sync::held_back_cases(conn)? > 0)
                 .then_some("server-without-stable-steps"),
+            held_back_fields: Some(crate::sync::held_back_fields(conn)?),
             held_back_runs: Some(crate::runs::held_back(conn)?),
             open_error: None,
             evidence,
@@ -552,6 +559,7 @@ fn build_bundle(
             rejected_audit_events: None,
             held_back_cases: None,
             held_back_reason: None,
+            held_back_fields: None,
             held_back_runs: None,
             open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
             evidence: None,

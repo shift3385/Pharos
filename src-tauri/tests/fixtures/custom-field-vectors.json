@@ -1,0 +1,920 @@
+{
+  "ids": [
+    {
+      "projectId": "00000000-0000-4000-8000-000000000001",
+      "entity": "test_case",
+      "fieldKey": "browser",
+      "id": "49d39e0c-c1b9-53ab-936f-c996e60b80a6"
+    },
+    {
+      "projectId": "00000000-0000-4000-8000-000000000001",
+      "entity": "test_case",
+      "fieldKey": "points",
+      "id": "935a14f8-0208-5757-afa4-47d8d858357a"
+    },
+    {
+      "projectId": "00000000-0000-4000-8000-000000000002",
+      "entity": "test_case",
+      "fieldKey": "browser",
+      "id": "d7f39a93-7cc8-57f5-8d5d-86d21945ad91"
+    },
+    {
+      "projectId": "00000000-0000-4000-8000-000000000001",
+      "entity": "defect",
+      "fieldKey": "browser",
+      "id": "b7c68e0e-613a-5ed0-b897-52f43c83facf"
+    }
+  ],
+  "keys": [
+    {
+      "key": "browser",
+      "valid": true
+    },
+    {
+      "key": "a",
+      "valid": true
+    },
+    {
+      "key": "build_2",
+      "valid": true
+    },
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "valid": true
+    },
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "valid": false
+    },
+    {
+      "key": "Browser",
+      "valid": false
+    },
+    {
+      "key": "2fa",
+      "valid": false
+    },
+    {
+      "key": "_x",
+      "valid": false
+    },
+    {
+      "key": "has-dash",
+      "valid": false
+    },
+    {
+      "key": "ñandu",
+      "valid": false
+    },
+    {
+      "key": "",
+      "valid": false
+    }
+  ],
+  "values": [
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "Chrome 120",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "error": "too_long"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "error": "too_long"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": 5,
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "long_text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "line 1\nline 2",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "long_text",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "error": "too_long"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "number",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": 1.5,
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "number",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": -3,
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "number",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "1",
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "number",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": true,
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "integer",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": 3,
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "integer",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": -9007199254740991,
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "integer",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": 3.5,
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "integer",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": 9007199254740992,
+      "error": "range"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "integer",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "3",
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "date",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "2024-02-29",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "date",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "2026-02-29",
+      "error": "date"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "date",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "2026-13-01",
+      "error": "date"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "date",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "2026-1-01",
+      "error": "date"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "date",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "2026-04-31",
+      "error": "date"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "date",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": 20260101,
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "boolean",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": true,
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "boolean",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": false,
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "boolean",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "true",
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "OPT00001",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "OPT00002",
+      "error": "option"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "OPT00002",
+      "previous": "OPT00002",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "NOPE0000",
+      "error": "option"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [
+        "OPT00001"
+      ],
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [
+        "OPT00001"
+      ],
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [],
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [
+        "OPT00001",
+        "OPT00001"
+      ],
+      "error": "duplicate"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [
+        "OPT00002"
+      ],
+      "error": "option"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [
+        "OPT00002",
+        "OPT00001"
+      ],
+      "previous": [
+        "OPT00002"
+      ],
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "OPT00001",
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "multi_select",
+        "options": [
+          {
+            "id": "OPT00001",
+            "label": "Chrome",
+            "archived": false
+          },
+          {
+            "id": "OPT00002",
+            "label": "IE 11",
+            "archived": true
+          }
+        ],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": [
+        1
+      ],
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "user",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "ana.garcia",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "user",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "   ",
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "user",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "",
+      "error": "type"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "url",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "https://example.com/x?y=1",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "url",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "http://localhost:8080",
+      "error": null
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "url",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "ftp://example.com",
+      "error": "url"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "url",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "https://",
+      "error": "url"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "url",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "https://a b.com",
+      "error": "url"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "url",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": "example.com",
+      "error": "url"
+    },
+    {
+      "field": {
+        "fieldKey": "f",
+        "fieldType": "future_type",
+        "options": [],
+        "appliesToCaseTypes": null,
+        "archived": false
+      },
+      "value": {
+        "anything": 1
+      },
+      "error": null
+    }
+  ],
+  "caseFields": [
+    {
+      "fieldKey": "points",
+      "fieldType": "integer",
+      "options": [],
+      "appliesToCaseTypes": null,
+      "archived": false
+    },
+    {
+      "fieldKey": "browser",
+      "fieldType": "select",
+      "options": [
+        {
+          "id": "OPT00001",
+          "label": "Chrome",
+          "archived": false
+        },
+        {
+          "id": "OPT00002",
+          "label": "IE 11",
+          "archived": true
+        }
+      ],
+      "appliesToCaseTypes": null,
+      "archived": false
+    },
+    {
+      "fieldKey": "old_field",
+      "fieldType": "text",
+      "options": [],
+      "appliesToCaseTypes": null,
+      "archived": true
+    },
+    {
+      "fieldKey": "signed_off",
+      "fieldType": "boolean",
+      "options": [],
+      "appliesToCaseTypes": [
+        "checklist"
+      ],
+      "archived": false
+    }
+  ],
+  "cases": [
+    {
+      "name": "valid values, unknown key kept",
+      "caseType": "standard",
+      "data": {
+        "custom": {
+          "points": 3,
+          "browser": "OPT00001",
+          "from_elsewhere": "x"
+        }
+      },
+      "expected": {
+        "custom": {
+          "points": 3,
+          "browser": "OPT00001",
+          "from_elsewhere": "x"
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "null values dropped",
+      "caseType": "standard",
+      "data": {
+        "custom": {
+          "points": null,
+          "browser": "OPT00001"
+        }
+      },
+      "expected": {
+        "custom": {
+          "browser": "OPT00001"
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "an empty map is removed",
+      "caseType": "standard",
+      "data": {
+        "steps": [],
+        "custom": {
+          "points": null
+        }
+      },
+      "expected": {
+        "steps": []
+      },
+      "error": null
+    },
+    {
+      "name": "archived field and field of another case type keep any value",
+      "caseType": "standard",
+      "data": {
+        "custom": {
+          "old_field": 42,
+          "signed_off": "yes"
+        }
+      },
+      "expected": {
+        "custom": {
+          "old_field": 42,
+          "signed_off": "yes"
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "a field that applies is checked",
+      "caseType": "checklist",
+      "data": {
+        "custom": {
+          "signed_off": "yes"
+        }
+      },
+      "expected": null,
+      "error": "custom_field.type:signed_off"
+    },
+    {
+      "name": "wrong type",
+      "caseType": "standard",
+      "data": {
+        "custom": {
+          "points": 2.5
+        }
+      },
+      "expected": null,
+      "error": "custom_field.type:points"
+    },
+    {
+      "name": "an archived option only where it already was",
+      "caseType": "standard",
+      "data": {
+        "custom": {
+          "browser": "OPT00002"
+        }
+      },
+      "previous": {
+        "custom": {
+          "browser": "OPT00002"
+        }
+      },
+      "expected": {
+        "custom": {
+          "browser": "OPT00002"
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "custom that is not an object",
+      "caseType": "standard",
+      "data": {
+        "custom": [
+          1
+        ]
+      },
+      "expected": null,
+      "error": "custom_field.type:custom"
+    }
+  ]
+}

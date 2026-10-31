@@ -2,6 +2,13 @@
 // pure functions, so the list and the editor's «‹ anterior | N de M |
 // siguiente ›» walk the same order.
 
+import {
+  effectiveAutomation,
+  effectiveCaseType,
+  type AutomationStatus,
+  type CaseType,
+  type CustomField,
+} from "@modules/custom-fields";
 import type { GherkinLevel, TestCaseStatus, TestCaseSummary } from "./types";
 
 /** A case row: its summary plus the requirements it links (from the trace). */
@@ -18,6 +25,13 @@ export interface CaseFilters {
   /** Empty = any. */
   priorities: ReadonlySet<string>;
   levels: ReadonlySet<GherkinLevel>;
+  /** FLD-01. A case that never set them counts as standard / manual. */
+  caseTypes: ReadonlySet<CaseType>;
+  automation: ReadonlySet<AutomationStatus>;
+  /** Custom field values, as `customFilterValue` (select, multi-select and
+   *  yes/no fields). Within a field any value matches; across fields all
+   *  must. */
+  custom: ReadonlySet<string>;
 }
 
 export const EMPTY_FILTERS: CaseFilters = {
@@ -25,7 +39,47 @@ export const EMPTY_FILTERS: CaseFilters = {
   status: "all",
   priorities: new Set(),
   levels: new Set(),
+  caseTypes: new Set(),
+  automation: new Set(),
+  custom: new Set(),
 };
+
+/** True when any filter besides the search and the state is on. */
+export const hasMenuFilters = (f: CaseFilters) =>
+  f.priorities.size +
+    f.levels.size +
+    f.caseTypes.size +
+    f.automation.size +
+    f.custom.size >
+  0;
+
+/** The fields the list can filter by (ADR-0018 amendment: choices and yes/no
+ *  only; free text goes through the search box). */
+export const filterableFields = (fields: CustomField[]) =>
+  fields.filter(
+    (f) =>
+      f.archivedAt === null &&
+      ["select", "multi_select", "boolean"].includes(f.fieldType),
+  );
+
+const SEP = "\u0000";
+/** One filter value: field key and option id (or `true`/`false`). */
+export const customFilterValue = (key: string, value: string) =>
+  `${key}${SEP}${value}`;
+
+function matchesCustom(c: ListedCase, chosen: ReadonlySet<string>): boolean {
+  if (chosen.size === 0) return true;
+  const byField = new Map<string, Set<string>>();
+  for (const v of chosen) {
+    const [key, value] = v.split(SEP);
+    byField.set(key, (byField.get(key) ?? new Set()).add(value));
+  }
+  return [...byField].every(([key, values]) => {
+    const v = c.custom?.[key];
+    if (Array.isArray(v)) return v.some((x) => values.has(String(x)));
+    return v !== undefined && v !== null && values.has(String(v));
+  });
+}
 
 export type CaseSortId = "id" | "title" | "priority" | "status" | "updated";
 export interface CaseSort {
@@ -60,7 +114,12 @@ function matchesOthers(c: ListedCase, f: CaseFilters): boolean {
   return (
     matchesQuery(c, f.query) &&
     (f.priorities.size === 0 || f.priorities.has(c.priority)) &&
-    (f.levels.size === 0 || f.levels.has(c.gherkinLevel))
+    (f.levels.size === 0 || f.levels.has(c.gherkinLevel)) &&
+    (f.caseTypes.size === 0 ||
+      f.caseTypes.has(effectiveCaseType(c.caseType))) &&
+    (f.automation.size === 0 ||
+      f.automation.has(effectiveAutomation(c.automationStatus))) &&
+    matchesCustom(c, f.custom)
   );
 }
 

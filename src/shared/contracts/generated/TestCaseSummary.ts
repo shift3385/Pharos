@@ -2,6 +2,18 @@
 
 export type TestCaseSummary = { id: string, scenarioId: string, title: string, status: string, priority: string, gherkinLevel: string, 
 /**
+ * `standard | checklist`; None = never set (reads as standard, FLD-01).
+ */
+caseType: string | null, 
+/**
+ * `manual | to_automate | automated`; None = never set (reads as manual).
+ */
+automationStatus: string | null, 
+/**
+ * `data.custom` (ADR-0018), for the list's custom field filters.
+ */
+custom: Record<string, unknown>, 
+/**
  * Some AI-generated content is still pending human review (IA-01).
  */
 aiPending: boolean, updatedAt: string, revision: number, };

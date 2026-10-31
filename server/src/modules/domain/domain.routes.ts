@@ -14,6 +14,11 @@ import {
   testCaseInputSchema,
   testPlanInputSchema,
   updateOf,
+  customFieldArchiveSchema,
+  customFieldCopySchema,
+  customFieldInputSchema,
+  customFieldQuerySchema,
+  customFieldReorderSchema,
 } from "./domain.schemas";
 
 /** The web's domain API (BASE-10, ADR-0004): the browser reads and writes
@@ -71,6 +76,30 @@ export function domainRoutes(app: FastifyInstance, deps: { domain: DomainService
     await domain.testCases.remove(user(req), id(req), revisionOf(req));
     return reply.code(204).send();
   });
+
+  // Custom field definitions (FLD-01). Fields are archived, never deleted.
+  app.get("/api/custom-fields", { preHandler }, (req) => {
+    const { projectId, entity } = customFieldQuerySchema.parse(req.query);
+    return domain.customFields.list(user(req), projectId, entity);
+  });
+  app.post("/api/custom-fields", { preHandler }, (req) =>
+    domain.customFields.create(user(req), customFieldInputSchema.parse(req.body)),
+  );
+  app.post("/api/custom-fields/reorder", { preHandler }, (req) => {
+    const { projectId, entity, ids } = customFieldReorderSchema.parse(req.body);
+    return domain.customFields.reorder(user(req), projectId, entity, ids);
+  });
+  app.post("/api/custom-fields/copy", { preHandler }, (req) => {
+    const { fromProjectId, toProjectId, entity } = customFieldCopySchema.parse(req.body);
+    return domain.customFields.copy(user(req), fromProjectId, toProjectId, entity);
+  });
+  app.put("/api/custom-fields/:id", { preHandler }, (req) => {
+    const { input, revision } = updateOf(customFieldInputSchema).parse(req.body);
+    return domain.customFields.update(user(req), id(req), input, revision);
+  });
+  app.post("/api/custom-fields/:id/archive", { preHandler }, (req) =>
+    domain.customFields.archive(user(req), id(req), customFieldArchiveSchema.parse(req.body).archived),
+  );
 
   app.get("/api/requirements", { preHandler }, (req) =>
     domain.requirements.list(user(req), projectQuerySchema.parse(req.query).projectId),

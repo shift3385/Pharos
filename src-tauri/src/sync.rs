@@ -20,6 +20,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
+use crate::custom_fields;
 use crate::db::{ensure_workspace, Db};
 use crate::hlc;
 use crate::journal::{self, Action, Actor, Change};
@@ -36,6 +37,7 @@ fn table_for(entity: &str) -> Option<&'static str> {
         "test_case" => Some("test_cases"),
         "requirement" => Some("requirements"),
         "planner_card" => Some("planner_cards"),
+        "custom_field" => Some("custom_fields"),
         other => crate::runs::table_for(other),
     }
 }
@@ -124,6 +126,9 @@ pub(crate) fn read_payload(
     entity: &str,
     id: &str,
 ) -> Result<Option<PayloadRow>, String> {
+    if entity == custom_fields::ENTITY {
+        return custom_fields::payload(conn, id);
+    }
     if crate::runs::table_for(entity).is_some() {
         return crate::runs::read_payload(conn, entity, id);
     }
@@ -175,7 +180,8 @@ pub(crate) fn read_payload(
         ),
         "test_case" => (
             "SELECT id, workspace_id, project_id, scenario_id, title, version, status, priority,
-                    author, data, created_at, updated_at, revision, deleted_at FROM test_cases WHERE id = ?1",
+                    case_type, automation_status, author, data, created_at, updated_at, revision,
+                    deleted_at FROM test_cases WHERE id = ?1",
             |r| {
                 Ok((
                     json!({
@@ -187,6 +193,8 @@ pub(crate) fn read_payload(
                         "version": r.get::<_, String>("version")?,
                         "status": r.get::<_, String>("status")?,
                         "priority": r.get::<_, String>("priority")?,
+                        "caseType": s(r, "case_type")?,
+                        "automationStatus": s(r, "automation_status")?,
                         "author": r.get::<_, String>("author")?,
                         "data": data_json(r)?,
                         "createdAt": r.get::<_, String>("created_at")?,
@@ -351,6 +359,12 @@ const ANY_ACCOUNT_FEATURES_KEY: &str = "server_features:*";
 /// revisions (DAT-02). Without it, a test_case push is held back.
 pub(crate) const STABLE_STEPS: &str = "stable-steps";
 
+/// The server feature that takes custom field definitions and keeps the case
+/// fields of clients that do not know them (FLD-01). Without it, a
+/// custom_field push is held back: an older server refuses the whole batch on
+/// an entity it does not know.
+pub(crate) const CUSTOM_FIELDS: &str = "custom-fields";
+
 /// True once the account's server has listed `stable-steps` (VERSIONING §6.5,
 /// ADR-0011). Until then this build's test cases and case revisions stay
 /// pending: a server without it would hand their new shape to clients that
@@ -380,6 +394,40 @@ fn server_lists(conn: &Connection, user: &str, feature: &str) -> Result<bool, St
         None => state_value(conn, ANY_ACCOUNT_FEATURES_KEY)?,
     };
     Ok(features.is_some_and(|f| f.split(',').any(|x| x == feature)))
+}
+
+/// Custom field definitions with pending changes held back, over every
+/// account of this device, because its server has not listed
+/// `custom-fields` yet, for the diagnostics.
+pub(crate) fn held_back_fields(conn: &Connection) -> Result<i64, String> {
+    let users: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT user_id FROM oplog
+                  WHERE entity = 'custom_field' AND synced_at IS NULL AND user_id <> ''",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map([], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?
+    };
+    let mut held = 0;
+    for user in users {
+        if server_lists(conn, &user, CUSTOM_FIELDS)? {
+            continue;
+        }
+        held += conn
+            .query_row(
+                "SELECT count(DISTINCT entity_id) FROM oplog
+                  WHERE entity = 'custom_field' AND synced_at IS NULL AND user_id = ?1",
+                params![user],
+                |r| r.get::<_, i64>(0),
+            )
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(held)
 }
 
 /// Test cases with pending changes held back, over every account of this
@@ -420,7 +468,10 @@ pub(crate) fn held_back_cases(conn: &Connection) -> Result<i64, String> {
 /// for every account.
 #[cfg(test)]
 pub(crate) fn assume_stable_steps_server(conn: &Connection) {
-    assume_server_features(conn, "key-conflicts,append-only,stable-steps,runs");
+    assume_server_features(
+        conn,
+        "key-conflicts,append-only,stable-steps,runs,custom-fields",
+    );
 }
 
 /// Tests: the features every account's server listed last.
@@ -453,6 +504,7 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     let cases_too = server_takes_stable_steps(conn, user)?;
     // Runs and their children wait for a server with `runs` (EJE-01).
     let runs_too = server_takes_runs(conn, user)?;
+    let fields_too = server_lists(conn, user, CUSTOM_FIELDS)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -469,13 +521,14 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                                    AND k.entity_id = o.entity_id AND k.resolved_at IS NULL)
                    AND (o.entity <> 'test_case' OR ?2)
                    AND (o.entity NOT IN ({}) OR ?3)
+                   AND (o.entity <> 'custom_field' OR ?4)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list(),
                 crate::runs::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user, cases_too, runs_too], |r| {
+            .query_map(params![user, cases_too, runs_too, fields_too], |r| {
                 Ok((
                     r.get::<_, String>(0)?,
                     r.get::<_, String>(1)?,
@@ -911,13 +964,16 @@ fn write_doc(
         "test_case" => {
             conn.execute(
                 "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, version, status,
-                        priority, author, data, created_by, updated_by, created_at, updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?12, ?12, datetime('now'), datetime('now'), ?11, NULL)
+                        priority, author, data, created_by, updated_by, created_at, updated_at, revision, deleted_at,
+                        case_type, automation_status)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?12, ?12, datetime('now'), datetime('now'), ?11, NULL,
+                        ?13, ?14)
                  ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id, scenario_id=excluded.scenario_id,
                         title=excluded.title, version=excluded.version, status=excluded.status,
                         priority=excluded.priority, author=excluded.author, data=excluded.data,
                         updated_by=excluded.updated_by, updated_at=datetime('now'),
-                        revision=excluded.revision, deleted_at=NULL",
+                        revision=excluded.revision, deleted_at=NULL,
+                        case_type=excluded.case_type, automation_status=excluded.automation_status",
                 params![
                     doc.entity_id,
                     workspace_id,
@@ -931,9 +987,14 @@ fn write_doc(
                     data_str("data"),
                     doc.revision,
                     user,
+                    p.get("caseType").and_then(Value::as_str),
+                    p.get("automationStatus").and_then(Value::as_str),
                 ],
             )
             .map_err(|e| e.to_string())?;
+        }
+        "custom_field" => {
+            custom_fields::write_doc(conn, workspace_id, user, &doc.entity_id, doc.revision, p)?;
         }
         "requirement" => {
             // A definitive key never changes, but the server's version wins:
@@ -1331,6 +1392,7 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
         ("test_case", "test_cases"),
         ("requirement", "requirements"),
         ("planner_card", "planner_cards"),
+        ("custom_field", "custom_fields"),
         ("run", "runs"),
         ("run_item", "run_items"),
         ("unlinked_mapping", "unlinked_mappings"),

@@ -16,6 +16,10 @@ vi.mock("@modules/planner", () => ({ projectCardCount: async () => 12 }));
 vi.mock("@modules/traceability", () => ({
   requirementApi: { list: async () => Array.from({ length: 48 }, (_, i) => ({ id: String(i) })) },
 }));
+// The «Campos personalizados» card (FLD-01) has its own tests; here it lists none.
+vi.mock("@modules/custom-fields/api/customFieldApi", () => ({
+  customFieldApi: { list: async () => [] },
+}));
 vi.mock("../api/projectApi", () => ({
   projectApi: { update: vi.fn(async () => null), remove: vi.fn(async () => undefined), get: vi.fn() },
 }));

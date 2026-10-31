@@ -22,12 +22,14 @@ export const VERSION_HEADER = "x-pharos-version";
  *  stable ids and pushes case revisions; a client without it may only read
  *  (426 `read_only_client_version` on push, VERSIONING §6.5). `runs`
  *  (EJE-01): it pushes and pulls runs, run items, unlinked mappings, shards and
- *  results, and the risk of requirements. Inside one
- *  minor the version string does not change between builds, so this header is
- *  what tells them apart. */
+ *  results, and the risk of requirements. `custom-fields` (FLD-01): it sends
+ *  the case type, automation status and `data.custom` with every case and
+ *  syncs custom field definitions; the server keeps those case fields for a
+ *  client without it. Inside one minor the version string does not change
+ *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 export const SYNC_FEATURES =
-  "key-conflicts,append-only,complete-payload,stable-steps,runs";
+  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };

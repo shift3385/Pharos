@@ -1163,6 +1163,11 @@ const AUDITED: &[&str] = &[
     "test_case::test_case_delete",
     "requirement::requirement_create",
     "requirement::requirement_update",
+    "custom_fields::custom_field_create",
+    "custom_fields::custom_field_update",
+    "custom_fields::custom_field_archive",
+    "custom_fields::custom_field_reorder",
+    "custom_fields::custom_field_copy",
     "requirement::requirement_delete",
     "requirement::requirement_import",
     "requirement::requirement_risk_set",
@@ -1439,6 +1444,37 @@ fn every_audited_command_leaves_an_event() {
     });
     step("requirement::requirement_delete", &mut |tx| {
         requirement::delete_requirement(tx, &req, U)
+    });
+    let field_input = |key: &str| -> crate::custom_fields::CustomFieldInput {
+        serde_json::from_value(
+            json!({"projectId": p, "fieldKey": key, "label": key, "fieldType": "text", "userId": U}),
+        )
+        .unwrap()
+    };
+    let field = in_tx(&c, |tx| {
+        crate::custom_fields::create_field(tx, field_input("env"))
+    })
+    .unwrap();
+    step("custom_fields::custom_field_create", &mut |tx| {
+        crate::custom_fields::create_field(tx, field_input("build")).map(drop)
+    });
+    step("custom_fields::custom_field_update", &mut |tx| {
+        let input: crate::custom_fields::CustomFieldInput = serde_json::from_value(json!({
+            "projectId": p, "fieldKey": "env", "label": "Entorno", "fieldType": "text", "userId": U
+        }))
+        .unwrap();
+        crate::custom_fields::update_field(tx, &field.id, input).map(drop)
+    });
+    step("custom_fields::custom_field_archive", &mut |tx| {
+        crate::custom_fields::set_archived(tx, &field.id, true, U).map(drop)
+    });
+    step("custom_fields::custom_field_reorder", &mut |tx| {
+        let build = crate::custom_fields::field_id(&p, "test_case", "build");
+        crate::custom_fields::reorder(tx, &p, "test_case", &[build], U).map(drop)
+    });
+    let other = new_project(&c, U);
+    step("custom_fields::custom_field_copy", &mut |tx| {
+        crate::custom_fields::copy_fields(tx, &p, &other, "test_case", U).map(drop)
     });
     let card = in_tx(&c, |tx| planner::insert_card(tx, &card_input("C"))).unwrap();
     step("planner::planner_create", &mut |tx| {

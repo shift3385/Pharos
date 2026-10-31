@@ -153,6 +153,14 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0024_execution.sql",
         include_str!("../migrations/0024_execution.sql"),
     ),
+    (
+        "0026_case_fields.sql",
+        include_str!("../migrations/0026_case_fields.sql"),
+    ),
+    (
+        "0027_case_fields_restore.sql",
+        include_str!("../migrations/0027_case_fields_restore.sql"),
+    ),
 ];
 
 /// Migration whose SQL runs only after Rust moved the planner attachment BLOBs
@@ -163,10 +171,16 @@ const PLANNER_ATTACHMENTS_OUT: &str = "0023_planner_attachments_out.sql";
 /// of the migration they are named after, in the same savepoint. Each one is
 /// deterministic and idempotent.
 type RustStep = fn(&Connection) -> Result<(), String>;
-const RUST_STEPS: &[(&str, RustStep)] = &[(
-    "0021_stable_steps.sql",
-    crate::revisions::migrate_stable_steps,
-)];
+const RUST_STEPS: &[(&str, RustStep)] = &[
+    (
+        "0021_stable_steps.sql",
+        crate::revisions::migrate_stable_steps,
+    ),
+    (
+        "0027_case_fields_restore.sql",
+        crate::custom_fields::migrate_restore,
+    ),
+];
 
 pub struct Db {
     conn: Mutex<Connection>,

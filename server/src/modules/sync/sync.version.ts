@@ -65,6 +65,7 @@ export const SERVER_FEATURES = [
   "append-only",
   "stable-steps",
   "runs",
+  "custom-fields",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not

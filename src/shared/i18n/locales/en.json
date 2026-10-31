@@ -286,7 +286,8 @@
         "test_plan": "Test plan",
         "test_case": "Test case",
         "requirement": "Requirement",
-        "planner_card": "Planner card"
+        "planner_card": "Planner card",
+        "custom_field": "Custom field"
       },
       "fields": {
         "title": "Title",
@@ -305,7 +306,17 @@
         "cardKey": "Defect key",
         "description": "Description",
         "kind": "Kind",
-        "position": "Position"
+        "position": "Position",
+        "caseType": "Case type",
+        "automationStatus": "Automation",
+        "fieldKey": "Key",
+        "fieldType": "Type",
+        "label": "Name",
+        "options": "Options",
+        "required": "Required",
+        "defaultValue": "Default value",
+        "appliesToCaseTypes": "Applies to",
+        "archivedAt": "Archived"
       },
       "key": {
         "title": "Repeated keys",
@@ -1127,7 +1138,9 @@
         "level": "Level",
         "status": "Status",
         "execution": "Execution",
-        "edited": "Edited"
+        "edited": "Edited",
+        "type": "Type",
+        "automation": "Automation"
       },
       "noRequirement": "No requirement",
       "more": "+{{count}}",
@@ -1162,7 +1175,11 @@
       "offPage_other": "{{count}} on other pages",
       "andMore": "and {{count}} more",
       "deleteFailed_one": "{{count}} case could not be deleted; it stays in the list.",
-      "deleteFailed_other": "{{count}} cases could not be deleted; they stay in the list."
+      "deleteFailed_other": "{{count}} cases could not be deleted; they stay in the list.",
+      "checklistMark": "Checklist",
+      "featuresSkipped_one": "{{count}} checklist is not exported to .feature.",
+      "featuresSkipped_other": "{{count}} checklists are not exported to .feature.",
+      "automationMark": "Automation: {{status}}"
     },
     "nav": {
       "allCases": "All cases",
@@ -1198,7 +1215,32 @@
       "editing": "editing",
       "swipe": "Swipe the code sideways to see long lines.",
       "indent": "Indent"
-    }
+    },
+    "caseType": "Case type",
+    "caseTypeLabel": {
+      "standard": "Standard",
+      "checklist": "Checklist"
+    },
+    "automation": "Automation",
+    "automationSheet": "Automation status",
+    "automationLabel": {
+      "manual": "Manual",
+      "to_automate": "To automate",
+      "automated": "Automated"
+    },
+    "automationHelp": {
+      "manual": "Run by hand.",
+      "to_automate": "A candidate for automation; run by hand meanwhile.",
+      "automated": "Run by a tool (for example, playwright-bdd)."
+    },
+    "checklist": {
+      "items": "Checks",
+      "hint": "A checklist is run by ticking each item; it has no Gherkin steps.",
+      "kept": "This case's steps and Gherkin are kept, hidden while it is a checklist.",
+      "noGherkin": "A checklist has no Gherkin view."
+    },
+    "exportSheet": "Custom fields",
+    "importSkippedFields": "These values were not imported because they do not fit their field: {{keys}}"
   },
   "dashboard": {
     "title": "Home",
@@ -1663,7 +1705,8 @@
     "duplicateRow": "Duplicate row: there is already one like it.",
     "duplicateKey": "That ID already exists.",
     "summary": "Cannot save: check {{count}} field(s).",
-    "savedWithWarnings": "Saved with {{count}} warning(s) to review."
+    "savedWithWarnings": "Saved with {{count}} warning(s) to review.",
+    "customRequired": "This field is required."
   },
   "dialog": {
     "typeToConfirm": "Type «{{text}}» to confirm",
@@ -1726,12 +1769,112 @@
     },
     "selectAllShort": "Select all"
   },
-  "sortMenu": {
-    "title": "Sort by",
-    "label": "Sort",
-    "trigger": "{{label}}: {{option}}",
-    "direction": "Direction",
-    "desc": "Descending",
-    "asc": "Ascending"
+  "customFields": {
+    "title": "Custom fields",
+    "desc": "The project's own fields for its test cases. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
+    "empty": "No custom fields yet. Create one to record, for example, the browser or the sprint of each case.",
+    "new": "New field",
+    "copy": "Copy from another project",
+    "showArchived": "Show archived",
+    "listLabel": "The project's custom fields",
+    "required": "Required",
+    "archived": "Archived",
+    "appliesTo": "Applies to",
+    "appliesAll": "Every case",
+    "appliesStandard": "Standard only",
+    "appliesChecklist": "Checklist only",
+    "actions": "Actions for “{{label}}”",
+    "edit": "Edit",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "drag": "Drag to reorder “{{label}}”",
+    "moved": "“{{label}}” moved to position {{n}}",
+    "type": {
+      "text": "Text",
+      "long_text": "Long text",
+      "number": "Number",
+      "integer": "Whole number",
+      "date": "Date",
+      "boolean": "Yes / No",
+      "select": "Single choice",
+      "multi_select": "Multiple choice",
+      "user": "User",
+      "url": "URL"
+    },
+    "dialog": {
+      "newTitle": "New custom field",
+      "editTitle": "Edit field",
+      "label": "Name",
+      "key": "Key",
+      "keyHint": "Lowercase letters, digits and underscores. It cannot change later.",
+      "keyLocked": "The key cannot change: the cases' values use it.",
+      "type": "Type",
+      "typeLocked": "The type cannot change once created.",
+      "description": "Description",
+      "required": "Required when editing a case",
+      "requiredHint": "The editor does not save a case without this field. Import and AI do not require it.",
+      "default": "Default value",
+      "defaultHint": "New cases get it.",
+      "options": "Options",
+      "addOption": "Add option",
+      "optionN": "Option {{n}}",
+      "removeOption": "Remove option {{n}}",
+      "archiveOption": "Archive option {{n}}",
+      "restoreOption": "Restore option {{n}}",
+      "optionArchived": "Archived: not offered for new values, but cases that have it keep it.",
+      "create": "Create field",
+      "save": "Save changes",
+      "saving": "Saving…"
+    },
+    "copyDialog": {
+      "title": "Copy fields from another project",
+      "source": "Source project",
+      "hint": "Copies the fields that are not archived and that this project does not have yet, with their options.",
+      "none": "You have no other projects.",
+      "confirm": "Copy fields",
+      "copying": "Copying…",
+      "copiedToast_one": "{{count}} field copied",
+      "copiedToast_other": "{{count}} fields copied",
+      "skipped": "Already there and left as they were: {{keys}}"
+    },
+    "savedToast": "Field “{{label}}” saved",
+    "archivedToast": "“{{label}}” archived: its values are kept",
+    "restoredToast": "“{{label}}” restored",
+    "saveFailed": "The field could not be saved. Try again.",
+    "loadFailed": "The custom fields could not be loaded.",
+    "error": {
+      "key": "Invalid key: start with a lowercase letter; only lowercase letters, digits and _ (max. 40).",
+      "duplicate_key": "The project already has a field with this key (it may be archived).",
+      "label": "The name is required (max. 100 characters).",
+      "options": "Add at least one option.",
+      "option_label": "Every option needs a name.",
+      "option_duplicate": "Two options have the same name.",
+      "type": "The value is not of the field's type.",
+      "too_long": "The text is too long.",
+      "option": "Choose one of the available options.",
+      "duplicate": "An option is repeated.",
+      "date": "Invalid date (YYYY-MM-DD).",
+      "url": "Enter a URL starting with http:// or https://.",
+      "range": "The number is too large."
+    },
+    "section": {
+      "title": "Custom fields",
+      "other": "Other values",
+      "otherHint": "Values of archived fields, or of fields that have not reached this device yet. They are kept as they are.",
+      "unknown": "unknown field",
+      "choose": "No value",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "filter": "Fields",
+    "filterYes": "{{label}}: Yes",
+    "filterNo": "{{label}}: No",
+    "sheet": {
+      "field": "Field",
+      "key": "Key",
+      "value": "Value"
+    }
   }
 }

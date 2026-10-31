@@ -104,8 +104,8 @@ export function toDoc(r: Record<string, unknown>): RemoteDoc {
  *  time, a user's seqs become visible in order. */
 export const LOCK_USER_SQL = "SELECT pg_advisory_xact_lock(hashtext($1))";
 
-/** Deleting a project deletes its plans, cases, requirements and planner
- *  cards in the same transaction (FIX-05, ADR-0020), whichever client sent
+/** Deleting a project deletes its plans, cases, requirements, planner
+ *  cards and custom fields in the same transaction (FIX-05, ADR-0020), whichever client sent
  *  it. Each child gets a tombstone with a new `seq`, so every device pulls it;
  *  a device with a pending edit of that child sees a conflict, not a loss.
  *  A child's HLC never goes backwards (a newer child edit keeps its HLC), so
@@ -138,6 +138,7 @@ const CASCADE_KEY: Partial<Record<(typeof PROJECT_CHILDREN)[number], string>> = 
   test_case: "test_cases",
   requirement: "requirements",
   planner_card: "planner_cards",
+  custom_field: "custom_fields",
   run: "runs",
   run_item: "run_items",
   unlinked_mapping: "unlinked_mappings",
@@ -179,14 +180,31 @@ const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN
 
 /** The payload stored when an upsert from a client that sends its whole
  *  state lands on a live document, but the client lacks a feature that added
- *  keys to the entity (`FEATURE_KEYS`): those keys ($9), when it left them
- *  out, keep the stored value. Everything else is its payload as is. */
+ *  keys to the entity (`FEATURE_KEYS`, `FEATURE_DATA_KEYS`): those keys
+ *  ($9 at the top level, $10 inside `data`), when it left them out, keep the
+ *  stored value. Everything else is its payload as is. */
 const KEPT_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN EXCLUDED.payload
-       ELSE EXCLUDED.payload || coalesce(
+       ELSE (EXCLUDED.payload || coalesce(
          (SELECT jsonb_object_agg(k.key, k.value) FROM jsonb_each(documents.payload) AS k
            WHERE k.key = ANY($9::text[]) AND NOT (EXCLUDED.payload ? k.key)),
-         '{}'::jsonb)
+         '{}'::jsonb))
+         || CASE WHEN jsonb_typeof(EXCLUDED.payload->'data') = 'object'
+                  AND jsonb_typeof(documents.payload->'data') = 'object'
+                 THEN jsonb_build_object('data', (EXCLUDED.payload->'data') || coalesce(
+                   (SELECT jsonb_object_agg(k.key, k.value) FROM jsonb_each(documents.payload->'data') AS k
+                     WHERE k.key = ANY($10::text[]) AND NOT ((EXCLUDED.payload->'data') ? k.key)),
+                   '{}'::jsonb))
+                 ELSE '{}'::jsonb END
      END`;
+
+export interface StoreOpts {
+  /** The client is old (no `complete-payload`): keep every key it left out. */
+  merge: boolean;
+  /** Top-level keys of features the client lacks (`FEATURE_KEYS`). */
+  keep?: readonly string[];
+  /** Keys inside `data` of features the client lacks (`FEATURE_DATA_KEYS`). */
+  keepData?: readonly string[];
+}
 
 /** Stores a delta as the user's latest version of the entity (with a new
  *  `seq`) and cascades a project delete to its children. The caller holds the
@@ -199,12 +217,14 @@ export async function storeDoc(
   client: PoolClient,
   userId: string,
   d: Delta,
-  opts: { merge: boolean; keep?: readonly string[] } = { merge: false },
+  opts: StoreOpts = { merge: false },
 ): Promise<{ payload: Record<string, unknown>; cascade: Record<string, number> | null }> {
   const keep = opts.keep ?? [];
-  const payloadSql = opts.merge ? MERGED_PAYLOAD_SQL : keep.length ? KEPT_PAYLOAD_SQL : "EXCLUDED.payload";
+  const keepData = opts.keepData ?? [];
+  const kept = !opts.merge && (keep.length > 0 || keepData.length > 0);
+  const payloadSql = opts.merge ? MERGED_PAYLOAD_SQL : kept ? KEPT_PAYLOAD_SQL : "EXCLUDED.payload";
   const params: unknown[] = [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc];
-  if (!opts.merge && keep.length) params.push([...keep]);
+  if (kept) params.push([...keep], [...keepData]);
   const { rows } = await client.query<{ payload: Record<string, unknown> }>(
     `INSERT INTO documents
        (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
@@ -335,12 +355,25 @@ export function createSyncRepository(pool: Pool) {
   return {
     /** Applies one delta under a row lock, following the merge rule in
      *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
-     *  client is old and its upserts keep the keys it left out (`storeDoc`). */
-    async apply(
-      userId: string,
-      d: Delta,
-      opts: { merge: boolean; keep?: readonly string[] } = { merge: false },
-    ): Promise<ApplyResult> {
+     *  client is old and its upserts keep the keys it left out (`storeDoc`);
+     *  `keep` / `keepData`: keys of features it lacks (FLD-01, EJE-01). */
+    /** Ids of `custom_field` deltas whose stored live field has another
+     *  `fieldType`: the type never changes (FLD-01, ADR-0018). */
+    async changedFieldTypes(userId: string, deltas: Delta[]): Promise<string[]> {
+      const pushed = deltas.filter((d) => d.entity === "custom_field" && d.op === "upsert");
+      if (pushed.length === 0) return [];
+      const { rows } = await pool.query<{ entity_id: string; field_type: string | null }>(
+        `SELECT entity_id, payload->>'fieldType' AS field_type FROM documents
+          WHERE user_id = $1 AND entity = 'custom_field' AND NOT deleted AND entity_id = ANY($2::text[])`,
+        [userId, pushed.map((d) => d.entityId)],
+      );
+      const stored = new Map(rows.map((r) => [r.entity_id, r.field_type]));
+      return pushed
+        .filter((d) => stored.has(d.entityId) && stored.get(d.entityId) !== d.payload.fieldType)
+        .map((d) => d.entityId);
+    },
+
+    async apply(userId: string, d: Delta, opts: StoreOpts = { merge: false }): Promise<ApplyResult> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");

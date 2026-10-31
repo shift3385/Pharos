@@ -3,6 +3,11 @@
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 import type { ProvenanceMap } from "@modules/ai";
+import type {
+  AutomationStatus,
+  CaseType,
+  CustomValues,
+} from "@modules/custom-fields";
 
 // Gherkin authoring level chosen when creating a case (spec §5.3 amendment):
 //  - basic:    Feature/Scenario + Given/When/Then/And (one simple scenario)
@@ -82,6 +87,10 @@ export interface TestCaseData {
   // AI provenance (IA-01): `description` when drafted with AI, `case` when the
   // whole case came from "Suggest tests". Shown until a person reviews it.
   aiProvenance?: ProvenanceMap;
+  // Values of the project's custom fields, by field key (FLD-01, ADR-0018).
+  // Keys without a definition here (another device's, an archived field's)
+  // are kept as they are.
+  custom?: CustomValues;
 }
 
 /** A requirement a case can link to (supplied by the projects module, so
@@ -113,6 +122,10 @@ export interface TestCase {
   version: string;
   status: string;
   priority: string;
+  /** null = never set: reads as `standard` (FLD-01). */
+  caseType: CaseType | null;
+  /** null = never set: reads as `manual`. */
+  automationStatus: AutomationStatus | null;
   author: string;
   data: TestCaseData;
   createdAt: string;
@@ -127,6 +140,10 @@ export interface TestCaseSummary {
   status: string;
   priority: string;
   gherkinLevel: GherkinLevel;
+  caseType: CaseType | null;
+  automationStatus: AutomationStatus | null;
+  /** `data.custom`, for the custom field filters. */
+  custom: CustomValues;
   /** Some AI-generated content of the case is still pending review (IA-01). */
   aiPending?: boolean;
   updatedAt: string;
@@ -140,6 +157,10 @@ export interface TestCaseInput {
   version?: string;
   status?: string;
   priority?: string;
+  /** Omitted: `standard` on create, the stored value on update. */
+  caseType?: CaseType | null;
+  /** Omitted: `manual` on create, the stored value on update. */
+  automationStatus?: AutomationStatus | null;
   author: string;
   data: TestCaseData;
   /** Signed-in user making the change (owner check and audit fields). */

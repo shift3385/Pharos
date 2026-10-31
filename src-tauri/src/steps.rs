@@ -577,7 +577,9 @@ fn normalize_with(data: &mut Value, gen: IdGen) -> bool {
 }
 
 /// The content of a case revision that its hash covers (ADR-0011 rule 2).
-/// `caseType` and `automationStatus` are null until FLD-01 adds them.
+/// `caseType` and `automationStatus` are the stored values: null for a case
+/// that never set them (FLD-01), so revisions written before 0026 keep their
+/// hash.
 #[allow(clippy::too_many_arguments)]
 pub fn revision_content(
     scenario_id: &str,

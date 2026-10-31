@@ -8,6 +8,7 @@ import type {
   SyncRepository,
 } from "./sync.repository";
 import {
+  FEATURE_DATA_KEYS,
   FEATURE_KEYS,
   isAppendOnly,
   isExecution,
@@ -16,6 +17,7 @@ import {
   pushSchema,
 } from "./sync.schemas";
 import { flattenCaseData } from "./stable-steps";
+import { CASE_FIELDS_STASH_KEY } from "../domain/custom-fields";
 import {
   readOnlyClient,
   requireSupportedVersion,
@@ -28,6 +30,9 @@ import {
   understandsKeyConflicts,
   understandsRuns,
 } from "./sync.version";
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
  *  user, and only clients of a supported version are served (SYNC-08). A delta
@@ -51,6 +56,15 @@ export function syncRoutes(
     // VERSIONING §6.5): nothing it sends is parsed or stored.
     if (!sendsStableSteps(req)) return readOnlyClient(reply);
     const { deltas } = pushSchema.parse(req.body);
+    // A custom field's type never changes (FLD-01): nothing of the batch is
+    // stored if one tries.
+    const retyped = await repo.changedFieldTypes(req.userId as string, deltas);
+    if (retyped.length > 0) {
+      return reply.code(400).send({
+        code: "custom_field_immutable",
+        message: `The type of custom field ${retyped[0]} cannot change.`,
+      });
+    }
     const userId = req.userId as string;
     const conflicts: RemoteDoc[] = [];
     const keyConflicts: KeyConflict[] = [];
@@ -77,8 +91,9 @@ export function syncRoutes(
     const merge = !sendsCompletePayload(req);
     const missing = missingFeatures(req);
     const keepFor = (entity: string) => missing.flatMap((f) => FEATURE_KEYS[f]?.[entity] ?? []);
+    const keepDataFor = (entity: string) => missing.flatMap((f) => FEATURE_DATA_KEYS[f]?.[entity] ?? []);
     for (const d of deltas) {
-      const res = await repo.apply(userId, d, { merge, keep: keepFor(d.entity) });
+      const res = await repo.apply(userId, d, { merge, keep: keepFor(d.entity), keepData: keepDataFor(d.entity) });
       if ("current" in res) conflicts.push(res.current);
       else if ("appendRejected" in res) appendRejected.push(res.appendRejected);
       else if ("keyConflict" in res) {
@@ -149,8 +164,22 @@ function asLegacyCase(doc: RemoteDoc): RemoteDoc {
     return doc;
   const payload = doc.payload as Record<string, unknown>;
   if (!("data" in payload)) return doc;
+  // It has no column for the case fields: they travel in `data`, where it
+  // keeps them until it upgrades (migration 0027, FLD-01).
+  const caseFields = Object.fromEntries(
+    (["caseType", "automationStatus"] as const)
+      .filter((k) => typeof payload[k] === "string")
+      .map((k) => [k, payload[k]]),
+  );
+  const data = flattenCaseData(payload.data);
   return {
     ...doc,
-    payload: { ...payload, data: flattenCaseData(payload.data) },
+    payload: {
+      ...payload,
+      data:
+        Object.keys(caseFields).length && isRecord(data)
+          ? { ...data, [CASE_FIELDS_STASH_KEY]: caseFields }
+          : data,
+    },
   };
 }

@@ -43,6 +43,7 @@ pub struct PurgeSummary {
     pub(crate) test_cases: usize,
     pub(crate) requirements: usize,
     pub(crate) planner_cards: usize,
+    pub(crate) custom_fields: usize,
     /// Runs, run items and unlinked mappings (EJE-01); a run takes its shards,
     /// results and step results with it.
     pub(crate) runs: usize,
@@ -56,6 +57,7 @@ impl PurgeSummary {
             + self.test_cases
             + self.requirements
             + self.planner_cards
+            + self.custom_fields
             + self.runs
             + self.templates
     }
@@ -140,7 +142,7 @@ struct Child {
     dependents: &'static [&'static str],
 }
 
-const CHILDREN: [Child; 7] = [
+const CHILDREN: [Child; 8] = [
     Child {
         entity: "test_plan",
         table: "test_plans",
@@ -187,6 +189,13 @@ const CHILDREN: [Child; 7] = [
     Child {
         entity: "unlinked_mapping",
         table: "unlinked_mappings",
+        key: None,
+        dependents: &[],
+    },
+    // Only a project's cascade deletes a field (FLD-01): it goes with it.
+    Child {
+        entity: "custom_field",
+        table: "custom_fields",
         key: None,
         dependents: &[],
     },
@@ -353,12 +362,14 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
         *n = purge_children(conn, user, days, child)?;
     }
-    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings] = counts;
+    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields] =
+        counts;
     Ok(PurgeSummary {
         test_plans,
         test_cases,
         requirements,
         planner_cards,
+        custom_fields,
         runs: runs + run_items + mappings + purge_orphan_results(conn, user, days)?,
         projects: purge_projects(conn, user, days)?,
         templates: purge_templates(conn, user, days)?,

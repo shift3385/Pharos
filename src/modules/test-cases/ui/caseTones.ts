@@ -17,7 +17,16 @@ const PRIORITY_TONE: Record<string, FlagTone> = {
   low: "muted",
 };
 
+/** Automation status (FLD-01): automated reads as done, «por automatizar» as
+ *  pending work, manual as the neutral default. */
+const AUTOMATION_TONE: Record<string, PillTone> = {
+  manual: "neutral",
+  to_automate: "warning",
+  automated: "success",
+};
+
 export const statusTone = (status: string): PillTone => STATUS_TONE[status] ?? "neutral";
+export const automationTone = (status: string): PillTone => AUTOMATION_TONE[status] ?? "neutral";
 export const priorityTone = (priority: string): FlagTone => PRIORITY_TONE[priority] ?? "muted";
 
 /** A stored stamp as local date and time («30 oct 2026, 14:05»); the raw value

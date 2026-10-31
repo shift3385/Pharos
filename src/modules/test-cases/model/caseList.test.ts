@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_FILTERS, filterCases, sortCases, statusCounts, type ListedCase } from "./caseList";
+import {
+  EMPTY_FILTERS,
+  customFilterValue,
+  hasMenuFilters,
+  filterCases,
+  sortCases,
+  statusCounts,
+  type ListedCase,
+} from "./caseList";
 
 const c = (scenarioId: string, over: Partial<ListedCase> = {}): ListedCase => ({
   id: scenarioId.toLowerCase(),
@@ -8,6 +16,9 @@ const c = (scenarioId: string, over: Partial<ListedCase> = {}): ListedCase => ({
   status: "draft",
   priority: "medium",
   gherkinLevel: "basic",
+  caseType: null,
+  automationStatus: null,
+  custom: {},
   updatedAt: "2026-10-01T10:00:00Z",
   revision: 1,
   requirementKeys: [],
@@ -54,5 +65,47 @@ describe("case list model", () => {
       "PCL-1",
     ]);
     expect(sortCases(CASES, { id: "id", dir: "desc" })[0].scenarioId).toBe("PCL-10");
+  });
+});
+
+describe("type, automation and custom field filters (FLD-01)", () => {
+  const list = [
+    c("A-1", { caseType: null, automationStatus: null }),
+    c("A-2", { caseType: "checklist", automationStatus: "automated" }),
+    c("A-3", { custom: { browser: ["OPT1", "OPT2"], signed: true } }),
+    c("A-4", { custom: { browser: ["OPT2"], signed: false } }),
+  ];
+  const ids = (f: Partial<typeof EMPTY_FILTERS>) =>
+    filterCases(list, { ...EMPTY_FILTERS, ...f }).map((x) => x.scenarioId);
+
+  it("a case that never set them counts as standard and manual", () => {
+    expect(ids({ caseTypes: new Set(["standard"]) })).toEqual([
+      "A-1",
+      "A-3",
+      "A-4",
+    ]);
+    expect(ids({ automation: new Set(["manual"]) })).toEqual([
+      "A-1",
+      "A-3",
+      "A-4",
+    ]);
+    expect(ids({ automation: new Set(["automated"]) })).toEqual(["A-2"]);
+  });
+
+  it("any value within a field, every field across them", () => {
+    const v = customFilterValue;
+    expect(ids({ custom: new Set([v("browser", "OPT1")]) })).toEqual(["A-3"]);
+    expect(
+      ids({ custom: new Set([v("browser", "OPT1"), v("browser", "OPT2")]) }),
+    ).toEqual(["A-3", "A-4"]);
+    expect(
+      ids({ custom: new Set([v("browser", "OPT2"), v("signed", "false")]) }),
+    ).toEqual(["A-4"]);
+    expect(
+      hasMenuFilters({
+        ...EMPTY_FILTERS,
+        custom: new Set([v("signed", "true")]),
+      }),
+    ).toBe(true);
   });
 });

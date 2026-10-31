@@ -1,12 +1,18 @@
-import { useContext, useEffect, useState } from "react";
+import { Fragment, useContext, useEffect, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Link } from "react-router";
 import {
   ArrowLeftRight,
+  Bot,
+  Hand,
+  Hourglass,
+  type LucideIcon,
   Download,
   Flag,
   Layers,
+  ListChecks,
   ListFilter,
+  SlidersHorizontal,
   Play,
   Plus,
   Search,
@@ -32,6 +38,10 @@ import {
   CASE_PAGE_SIZES,
   CASE_PRIORITIES,
   CASE_STATUSES,
+  EMPTY_FILTERS,
+  customFilterValue,
+  filterableFields,
+  hasMenuFilters,
   statusCounts,
   type CaseFilters,
   type CaseSort,
@@ -39,20 +49,56 @@ import {
   type StatusFilter,
 } from "../model/caseList";
 import type { GherkinLevel } from "../model/types";
-import { editedLabel, priorityTone, stampLabel, statusTone } from "./caseTones";
+import {
+  AUTOMATION_STATUSES,
+  CASE_TYPES,
+  effectiveAutomation,
+  effectiveCaseType,
+  type AutomationStatus,
+  type CaseType,
+  type CustomField,
+} from "@modules/custom-fields";
+import {
+  automationTone,
+  editedLabel,
+  priorityTone,
+  stampLabel,
+  statusTone,
+} from "./caseTones";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
 
+const AUTOMATION_ICON: Record<AutomationStatus, LucideIcon> = {
+  manual: Hand,
+  to_automate: Hourglass,
+  automated: Bot,
+};
+
+/** Windows at least this wide show every column of the case table. */
+const WIDE_MIN = 1400;
+function useWideWindow(): boolean {
+  const [wide, setWide] = useState(() => window.innerWidth >= WIDE_MIN);
+  useEffect(() => {
+    const onResize = () => setWide(window.innerWidth >= WIDE_MIN);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return wide;
+}
+
 /**
  * Casos · lista (SPEC §8, RED-V3): the full table with search, state chips,
- * Prioridad / Ejecución / Nivel filters, multi-selection with bulk actions and
+ * Prioridad / Ejecución / Nivel / Tipo / Automatización filters and, for
+ * choice and yes/no custom fields, «Campos» (FLD-01), multi-selection with
+ * bulk actions and
  * pagination; cards on mobile. The page owns the filters, the order and the
  * page, so the editor walks the same list.
  */
 export function TestCaseList({
   projectId,
   cases,
+  fields = [],
   loading,
   visible,
   total,
@@ -75,6 +121,8 @@ export function TestCaseList({
   projectId: string;
   /** Every case of the project (for the chip counts). */
   cases: ListedCase[];
+  /** The project's custom fields, for the «Campos» filter. */
+  fields?: CustomField[];
   loading: boolean;
   /** The rows of the current page. */
   visible: ListedCase[];
@@ -101,6 +149,7 @@ export function TestCaseList({
   const { t, i18n } = useTranslation();
   const view = useBreakpoint();
   const mobile = view === "mobile";
+  const wide = useWideWindow();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   // A filter never leaves cases selected that it hides: the selection keeps
@@ -117,7 +166,8 @@ export function TestCaseList({
   const selectedKeys = matching.filter((c) => selected.has(c.id)).map((c) => c.scenarioId);
   const counts = statusCounts(cases, filters);
   const lang = i18n.resolvedLanguage ?? "es";
-  const filtered = filters.query !== "" || filters.status !== "all" || filters.priorities.size > 0 || filters.levels.size > 0;
+  const filtered =
+    filters.query !== "" || filters.status !== "all" || hasMenuFilters(filters);
 
   const set = (patch: Partial<CaseFilters>) => onFiltersChange({ ...filters, ...patch });
   const statusOptions = [
@@ -134,6 +184,57 @@ export function TestCaseList({
     description: t(`testCase.priorityHelp.${p}`),
   }));
   const levelOptions = CASE_LEVELS.map((l) => ({ value: l, label: t(`testCase.level.${l}.name`) }));
+  const typeOptions = CASE_TYPES.map((c) => ({
+    value: c,
+    label: t(`testCase.caseTypeLabel.${c}`),
+  }));
+  const automationOptions = AUTOMATION_STATUSES.map((s) => ({
+    value: s,
+    label: t(`testCase.automationLabel.${s}`),
+    description: t(`testCase.automationHelp.${s}`),
+  }));
+  // «Campos» (FLD-01): one entry per option of the choice and yes/no fields.
+  const customOptions = filterableFields(fields).flatMap((f) =>
+    f.fieldType === "boolean"
+      ? [
+          {
+            value: customFilterValue(f.fieldKey, "true"),
+            label: t("customFields.filterYes", { label: f.label }),
+          },
+          {
+            value: customFilterValue(f.fieldKey, "false"),
+            label: t("customFields.filterNo", { label: f.label }),
+          },
+        ]
+      : f.options
+          .filter((o) => !o.archived)
+          .map((o) => ({
+            value: customFilterValue(f.fieldKey, o.id),
+            label: `${f.label}: ${o.label}`,
+          })),
+  );
+  // The automation status as an icon next to the ID (the user's decision,
+  // FLD-01): named for screen readers, its status in the tooltip.
+  const automationMark = (c: ListedCase) => {
+    const a = effectiveAutomation(c.automationStatus);
+    const Icon = AUTOMATION_ICON[a];
+    const label = t("testCase.list.automationMark", {
+      status: t(`testCase.automationLabel.${a}`),
+    });
+    return (
+      <span className="cl-automation" data-tone={automationTone(a)} title={label}>
+        <Icon size={14} aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </span>
+    );
+  };
+  const checklistMark = (c: ListedCase) =>
+    effectiveCaseType(c.caseType) === "checklist" && (
+      <span className="cl-checklist" title={t("testCase.list.checklistMark")}>
+        <ListChecks size={14} aria-hidden="true" />
+        <span className="sr-only">{t("testCase.list.checklistMark")}</span>
+      </span>
+    );
 
   const reqCell = (c: ListedCase) =>
     c.requirementKeys.length === 0 ? (
@@ -169,8 +270,12 @@ export function TestCaseList({
       width: "96px",
       sortable: true,
       cell: (c) => (
-        <span className="cl-id" title={c.scenarioId}>
-          {c.scenarioId}
+        <span className="cl-id-cell">
+          <span className="cl-id" title={c.scenarioId}>
+            {c.scenarioId}
+          </span>
+          {automationMark(c)}
+          {checklistMark(c)}
         </span>
       ),
     },
@@ -199,18 +304,24 @@ export function TestCaseList({
     {
       id: "level",
       header: t("testCase.list.col.level"),
-      width: "minmax(124px,1fr)",
+      width: "minmax(112px,1fr)",
       minView: "desktop",
       cell: (c) => <span className="cl-ellipsis">{t(`testCase.level.${c.gherkinLevel}.name`)}</span>,
     },
     { id: "status", header: t("testCase.list.col.status"), width: "104px", sortable: true, cell: statusPill },
-    {
-      id: "execution",
-      header: t("testCase.list.col.execution"),
-      width: "128px",
-      minView: "desktop",
-      cell: () => execution,
-    },
+    // A placeholder until manual execution (step 7): on a narrower desktop
+    // its width goes to the titles (FLD-01 review 7).
+    ...(wide
+      ? [
+          {
+            id: "execution",
+            header: t("testCase.list.col.execution"),
+            width: "128px",
+            minView: "desktop" as const,
+            cell: () => execution,
+          },
+        ]
+      : []),
     {
       id: "updated",
       header: t("testCase.list.col.edited"),
@@ -232,8 +343,17 @@ export function TestCaseList({
       </div>
       {titleLink(c)}
       <span className="cl-card__meta">
-        <PriorityFlag tone={priorityTone(c.priority)} label={t(`testCase.priorityLabel.${c.priority}`)} />
-        {t(`testCase.level.${c.gherkinLevel}.name`)} · {t(`testCase.statusLabel.${c.status}`)}
+        <PriorityFlag
+          tone={priorityTone(c.priority)}
+          label={t(`testCase.priorityLabel.${c.priority}`)}
+        />
+        {effectiveCaseType(c.caseType) === "checklist"
+          ? t("testCase.caseTypeLabel.checklist")
+          : t(`testCase.level.${c.gherkinLevel}.name`)}{" "}
+        · {t(`testCase.statusLabel.${c.status}`)} ·{" "}
+        {t(
+          `testCase.automationLabel.${effectiveAutomation(c.automationStatus)}`,
+        )}
       </span>
       {c.requirementKeys.length > 0 && reqCell(c)}
     </div>
@@ -288,6 +408,27 @@ export function TestCaseList({
             <MobileFilters
               filters={filters}
               onChange={onFiltersChange}
+              groups={[
+                {
+                  label: t("testCase.list.col.type"),
+                  key: "caseTypes",
+                  options: typeOptions,
+                },
+                {
+                  label: t("testCase.list.col.automation"),
+                  key: "automation",
+                  options: automationOptions,
+                },
+                ...(customOptions.length
+                  ? [
+                      {
+                        label: t("customFields.filter"),
+                        key: "custom" as const,
+                        options: customOptions,
+                      },
+                    ]
+                  : []),
+              ]}
               priorityOptions={priorityOptions}
               levelOptions={levelOptions}
             />
@@ -323,6 +464,31 @@ export function TestCaseList({
                 selected={filters.levels}
                 onChange={(v) => set({ levels: v as Set<GherkinLevel> })}
               />
+              <FilterMenuButton
+                label={t("testCase.list.col.type")}
+                icon={ListChecks}
+                options={typeOptions}
+                selected={filters.caseTypes}
+                onChange={(v) => set({ caseTypes: v as Set<CaseType> })}
+              />
+              <FilterMenuButton
+                label={t("testCase.list.col.automation")}
+                icon={Bot}
+                options={automationOptions}
+                selected={filters.automation}
+                onChange={(v) =>
+                  set({ automation: v as Set<AutomationStatus> })
+                }
+              />
+              {customOptions.length > 0 && (
+                <FilterMenuButton
+                  label={t("customFields.filter")}
+                  icon={SlidersHorizontal}
+                  options={customOptions}
+                  selected={filters.custom}
+                  onChange={(v) => set({ custom: v })}
+                />
+              )}
             </div>
           )}
         </div>
@@ -375,7 +541,7 @@ export function TestCaseList({
                     <button
                       type="button"
                       className="ui-btn ui-btn--small"
-                      onClick={() => onFiltersChange({ ...filters, query: "", status: "all", priorities: new Set(), levels: new Set() })}
+                      onClick={() => onFiltersChange(EMPTY_FILTERS)}
                     >
                       {t("testCase.list.clearFilters")}
                     </button>
@@ -483,15 +649,27 @@ function MobileFilters({
   onChange,
   priorityOptions,
   levelOptions,
+  groups,
 }: {
   filters: CaseFilters;
   onChange: (f: CaseFilters) => void;
   priorityOptions: { value: string; label: string; description: string }[];
   levelOptions: { value: GherkinLevel; label: string }[];
+  /** Type, automation and custom field filters (FLD-01). */
+  groups: {
+    label: string;
+    key: "caseTypes" | "automation" | "custom";
+    options: { value: string; label: string; description?: string }[];
+  }[];
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const active = filters.priorities.size + filters.levels.size;
+  const active =
+    filters.priorities.size +
+    filters.levels.size +
+    filters.caseTypes.size +
+    filters.automation.size +
+    filters.custom.size;
   const toggle = <T,>(set: ReadonlySet<T>, v: T) => {
     const next = new Set(set);
     if (next.has(v)) next.delete(v);
@@ -535,6 +713,29 @@ function MobileFilters({
             >
               {o.label}
             </MenuCheckItem>
+          ))}
+          {groups.map((g) => (
+            <Fragment key={g.key}>
+              <MenuLabel>{g.label}</MenuLabel>
+              {g.options.map((o) => (
+                <MenuCheckItem
+                  key={o.value}
+                  checked={(filters[g.key] as ReadonlySet<string>).has(o.value)}
+                  onToggle={() =>
+                    onChange({
+                      ...filters,
+                      [g.key]: toggle(
+                        filters[g.key] as ReadonlySet<string>,
+                        o.value,
+                      ),
+                    })
+                  }
+                  description={o.description}
+                >
+                  {o.label}
+                </MenuCheckItem>
+              ))}
+            </Fragment>
           ))}
           <MenuLabel>{t("testCase.list.col.execution")}</MenuLabel>
           <MenuCheckItem checked={false} onToggle={() => {}} disabled title={t("testCase.list.executionSoon")}>

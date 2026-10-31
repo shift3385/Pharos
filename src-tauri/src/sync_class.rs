@@ -52,8 +52,9 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// added to `oplog::SYNCED` or `APPEND_ONLY`.
 /// 1: audit_event (AUD-01). 2: test_case_revision and the stable-steps shape
 /// of test cases (DAT-02). 3: run, run_item, unlinked_mapping, run_shard and
-/// result (EJE-01).
-pub const APPLIED_SET_VERSION: i64 = 3;
+/// result (EJE-01). 4: custom_field and the case type / automation status of
+/// test cases (FLD-01).
+pub const APPLIED_SET_VERSION: i64 = 4;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

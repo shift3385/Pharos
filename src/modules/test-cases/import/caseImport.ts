@@ -14,6 +14,12 @@ import {
 } from "@shared/import/xlsx";
 import { detectLevel, fromGherkin, parseFeatureFlows } from "../ui/gherkin";
 import type { TestCaseData } from "../model/types";
+import { CUSTOM_SHEET_NAMES, readCustomSheet } from "../export/customSheet";
+import type {
+  AutomationStatus,
+  CaseType,
+  CustomField,
+} from "@modules/custom-fields";
 import { reconcileFlows, reconcileTable, stepsOf } from "../model/steps";
 
 // --- Header-driven .xlsx case importer ---------------------------------------
@@ -32,6 +38,12 @@ export interface ImportedCase {
   priority: string;
   author: string;
   data: TestCaseData;
+  /** Rows of the «Campos personalizados» sheet, if the file has one
+   *  (FLD-01): the page resolves them against the project's fields
+   *  (`readCustomSheet`). */
+  customSheet?: { key: string; text: string }[];
+  caseType?: CaseType;
+  automationStatus?: AutomationStatus;
 }
 
 export interface CaseImportResult {
@@ -42,6 +54,43 @@ export interface CaseImportResult {
 const tc = (loc: typeof esLocale) => loc.testCase as unknown as Record<string, Record<string, string>>;
 const PRIORITY_REV = reverse(tc(esLocale).priorityLabel, tc(enLocale).priorityLabel);
 const STATUS_REV = reverse(tc(esLocale).statusLabel, tc(enLocale).statusLabel);
+const CASE_TYPE_REV = reverse(
+  tc(esLocale).caseTypeLabel,
+  tc(enLocale).caseTypeLabel,
+);
+const AUTOMATION_REV = reverse(
+  tc(esLocale).automationLabel,
+  tc(enLocale).automationLabel,
+);
+
+/** The imported case with its «Campos personalizados» sheet applied against
+ *  the project's fields (FLD-01). Values that do not fit their field are
+ *  left out and named in `skipped`. */
+export function withCustomSheet(
+  input: ImportedCase,
+  fields: CustomField[],
+  words: { yes: string; no: string },
+): { input: ImportedCase; skipped: string[] } {
+  if (!input.customSheet?.length) return { input, skipped: [] };
+  const read = readCustomSheet(
+    input.customSheet,
+    fields,
+    { caseType: CASE_TYPE_REV, automation: AUTOMATION_REV },
+    words,
+  );
+  const { customSheet: _sheet, ...rest } = input;
+  return {
+    input: {
+      ...rest,
+      ...(read.caseType ? { caseType: read.caseType } : {}),
+      ...(read.automationStatus
+        ? { automationStatus: read.automationStatus }
+        : {}),
+      data: { ...rest.data, custom: read.custom },
+    },
+    skipped: read.skipped,
+  };
+}
 
 type Kind = "text" | "list" | "steps" | "priority" | "status";
 
@@ -169,7 +218,25 @@ export async function parseCaseXlsx(
   }
   push({ labelKey: "testCase.level.label", status: gherkin ? "filled" : "empty", preview: level });
 
+  // The «Campos personalizados» sheet (FLD-01): Campo | Clave | Valor.
+  const sheet = wb.worksheets.find((w) => CUSTOM_SHEET_NAMES.includes(w.name));
+  const customSheet: { key: string; text: string }[] = [];
+  sheet?.eachRow((row, n) => {
+    if (n === 1) return;
+    const key = cellText(row.getCell(2)).trim();
+    if (key) customSheet.push({ key, text: cellText(row.getCell(3)) });
+  });
+  if (sheet)
+    push({
+      labelKey: "testCase.exportSheet",
+      status: customSheet.length ? "filled" : "empty",
+      preview: customSheet.length
+        ? preview(customSheet.map((r) => r.key).join(", "))
+        : undefined,
+    });
+
   const input: ImportedCase = {
+    ...(sheet ? { customSheet } : {}),
     scenarioId: scalar.scenarioId ?? "",
     title: scalar.title?.trim() || fileName.replace(/\.xlsx$/i, "").trim(),
     version: scalar.version || "1.0",

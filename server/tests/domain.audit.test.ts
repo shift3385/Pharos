@@ -234,6 +234,7 @@ describe("web audit (AUD-01b)", () => {
     expect(events[0]).toMatchObject({ action: "delete", entity: "project", entityId: p.id });
     expect(JSON.parse(events[0].summary!)).toEqual({
       cascade: {
+        custom_fields: 0,
         planner_cards: 0,
         requirements: 1,
         test_cases: 2,

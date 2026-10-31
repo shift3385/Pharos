@@ -39,6 +39,7 @@ src/
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
+    custom-fields/
   shared/      # design system (theme tokens), i18n, ui kit, form validation, fonts, diagnostics, version, platform, contracts
   test/        # test utilities (renderWithProviders, axe helper, fake server)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync, logs
@@ -870,7 +871,11 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `x-pharos-version`; the server serves its own MINOR and the previous one and
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
-  `append-only`, `complete-payload`, `stable-steps`, `runs`). A push from a client
+  `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`). A
+  test_case upsert from a client without `custom-fields` keeps the stored
+  `caseType`, `automationStatus` (`FEATURE_KEYS`) and `data.custom`
+  (`FEATURE_DATA_KEYS`); read-only clients pull the first two in
+  `data.__caseFields` (FLD-01). A push from a client
   without `stable-steps` (0.1.x, 0.2.0-alpha.1) is refused with 426
   `read_only_client_version` before anything is stored, and its pulls carry
   test cases with text steps (`flattenCaseData`), the stable lists kept in
@@ -902,8 +907,9 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   and then daily (`server.ts`) the payload of those older than
   `SYNC_TOMBSTONE_DAYS` is cleared (SYNC-06). See `src/modules/sync-offline/README.md`.
 - `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`,
-  `/api/test-plans`, `/api/test-cases`, `/api/requirements` (+ `/import`) and
-  `/api/planner-cards` (+ `/reorder`). `domain.service.ts` applies the
+  `/api/test-plans`, `/api/test-cases`, `/api/requirements` (+ `/import`),
+  `/api/planner-cards` (+ `/reorder`) and `/api/custom-fields` (+ `/reorder`,
+  `/copy`, `/:id/archive`; FLD-01). `domain.service.ts` applies the
   desktop core's rules (defaults, immutable keys, keys never reused,
   positions per column, upsert-by-key import) to the same document store, in
   one transaction under the user's sync write lock (`domain.store.ts`). Every
@@ -1033,6 +1039,25 @@ until the account's server lists `stable-steps` (diagnostics:
 back from the stash on upgrade (`restore_from_stash`, or the stash of its
 newest pre-0.2 history row if the old editor saved over it).
 `.feature` and `.xlsx` exports are unchanged (`exportGolden.test.ts`).
+
+**Case type, automation status and custom fields (FLD-01, [ADR-0018](adr/0018-campos-personalizados.md)).**
+`test_cases.case_type` (`standard | checklist`) and `automation_status`
+(`manual | to_automate | automated`) are nullable (0026): NULL = never set,
+read as standard / manual, and hashed as stored, so no revision written
+before them changes. Definitions live in `custom_fields` (lww entity
+`custom_field`, id `UUIDv5(NS_CUSTOM_FIELD, "<project>:<entity>:<key>")`,
+no UNIQUE index; key and type immutable; archived, never deleted;
+`src-tauri/src/custom_fields.rs`). Values are `data.custom` of each case,
+checked on a local save against the project's definitions (unknown keys,
+archived fields and fields of another case type are kept as they are;
+`required` is enforced by the editor only); the same validator runs on the
+server and the client, checked against
+`tests/fixtures/custom-field-vectors.json`. Definitions wait until the
+account's server lists `custom-fields` (diagnostics: `heldBackFields`). 0027
+(Rust step) restores what read-only builds kept in `data.__caseFields` and a
+`custom` their old editor dropped. The client module is
+`src/modules/custom-fields` (API, validator, settings card, editor section);
+`test-cases` and `projects` use it, it uses neither.
 
 **Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**
 Attachment contents live outside the database, in `<data dir>/evidence/`

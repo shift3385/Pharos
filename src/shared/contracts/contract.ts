@@ -4,7 +4,11 @@
 export type * from "./generated/AttachmentSummary";
 export type * from "./generated/Conflict";
 export type * from "./generated/ConflictSide";
+export type * from "./generated/CopySummary";
+export type * from "./generated/CustomField";
+export type * from "./generated/CustomFieldInput";
 export type * from "./generated/Delta";
+export type * from "./generated/FieldOption";
 export type * from "./generated/ImportSummary";
 export type * from "./generated/KeyBlock";
 export type * from "./generated/KeyConflict";

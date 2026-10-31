@@ -1,0 +1,329 @@
+/* Custom fields (FLD-01): the settings card, its dialogs and the case
+   editor's section. Tokens only (RED-*). The card sits in the project
+   settings and uses their card box (pj-card-box). */
+
+.cf-mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+/* ---- Settings card ---- */
+.cf-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.cf-card__head > .pj-card-box__head {
+  flex: 1 1 320px;
+}
+
+.cf-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+[data-viewport="mobile"] .cf-card__actions,
+[data-viewport="mobile"] .cf-card__actions > * {
+  flex: 1 1 100%;
+}
+
+.cf-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 16px;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-radius: 10px;
+}
+
+.cf-empty > svg {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.cf-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.cf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 10px 8px 6px;
+  background: var(--color-surface-1);
+}
+
+.cf-row + .cf-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.cf-row:first-child {
+  border-radius: 10px 10px 0 0;
+}
+
+.cf-row:last-child {
+  border-radius: 0 0 10px 10px;
+}
+
+.cf-row[data-archived] .cf-row__label {
+  color: var(--color-text-muted);
+}
+
+.cf-row__handle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: grab;
+}
+
+.cf-row__handle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.cf-row__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cf-row__label {
+  overflow: hidden;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cf-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+
+.cf-row__pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.cf-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cf-icon-btn:hover {
+  background: var(--color-surface-2);
+}
+
+.cf-icon-btn[aria-pressed="true"] {
+  color: var(--color-navy-500);
+}
+
+[data-viewport="mobile"] .cf-icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+[data-viewport="mobile"] .cf-row {
+  flex-wrap: wrap;
+}
+
+[data-viewport="mobile"] .cf-row__main {
+  flex-basis: calc(100% - 96px);
+}
+
+[data-viewport="mobile"] .cf-row__pills {
+  order: 3;
+  flex-basis: 100%;
+  justify-content: flex-start;
+  padding-left: 38px;
+}
+
+/* ---- Dialogs ---- */
+.cd.cf-dialog {
+  max-width: 560px;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  overflow-y: auto;
+}
+
+.cf-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cf-dialog__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.cf-dialog__row > * {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.cf-dialog__switch {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cf-options__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cf-options__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cf-options__row > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cf-options__row[data-archived] > input {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+/* ---- Case editor section ---- */
+.cf-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cf-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-3);
+}
+
+.cf-section__wide {
+  grid-column: 1 / -1;
+}
+
+.cf-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cf-group > legend,
+.cf-options > legend {
+  padding: 0;
+}
+
+.cf-group__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.cf-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: var(--fs-body);
+  color: var(--color-text-primary);
+}
+
+[data-viewport="mobile"] .cf-check {
+  min-height: 44px;
+}
+
+.cf-others {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+.cf-others > summary {
+  cursor: pointer;
+}
+
+/* One label column for every row, so the values line up. */
+.cf-others__list {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 8px 0 0;
+}
+
+.cf-others__row {
+  display: contents;
+}
+
+.cf-others__row > dt {
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text-primary);
+}
+
+.cf-others__row > dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.cf-others__key {
+  font-family: var(--font-mono);
+  font-size: var(--fs-metadata);
+  color: var(--color-text-muted);
+}

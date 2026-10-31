@@ -36,6 +36,8 @@ function legacyCase(
     version: "1.2",
     status: "approved",
     priority: "high",
+    caseType: null,
+    automationStatus: null,
     author: "QA Ñandú",
     data: data as TestCase["data"],
     createdAt: "2026-10-01 10:00:00",

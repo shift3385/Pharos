@@ -67,6 +67,13 @@ describe("documents written by the web (shared fixture)", () => {
     await post("/api/test-cases", { projectId, title: "Pay", author: "QA", data: {} });
     await post("/api/requirements", { projectId, title: "Cards" });
     await post("/api/planner-cards", { projectId, kind: "defect", title: "Bug", data: {} });
+    await post("/api/custom-fields", {
+      projectId,
+      fieldKey: "browser",
+      label: "Browser",
+      fieldType: "select",
+      options: [{ label: "Chrome" }],
+    });
 
     const pulled = (await app.inject({ method: "GET", url: "/sync/pull?since=0", headers })).json().docs as {
       entity: string;

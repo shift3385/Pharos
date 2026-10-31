@@ -10,6 +10,7 @@ import {
   type TextTable,
 } from "../model/steps";
 import { traceabilityText } from "../model/trace";
+import type { CustomSheetRow } from "./customSheet";
 
 export interface ExportableCase {
   scenarioId: string;
@@ -28,6 +29,10 @@ export interface ExportableCase {
   // Labels the template does not carry (localized by the caller).
   altFlowLabel?: string;
   examplesLabel?: string;
+  /** The «Campos personalizados» sheet (FLD-01): empty or absent = no sheet. */
+  customRows?: CustomSheetRow[];
+  /** Its name and column headers (Campo, Clave, Valor), localized. */
+  customSheet?: { name: string; headers: [string, string, string] };
 }
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -132,6 +137,20 @@ export async function buildCaseXlsx(
   if (gherkinSheet && c.gherkin) {
     gherkinSheet.getCell("B4").value = c.gherkin;
     growRow(gherkinSheet, 4, c.gherkin, 95, 150);
+  }
+
+  // A sheet of its own, after the template's: those stay as they are.
+  if (c.customRows?.length) {
+    const sheet = wb.addWorksheet(c.customSheet?.name ?? "Custom fields");
+    sheet.columns = [{ width: 32 }, { width: 28 }, { width: 60 }];
+    const head = sheet.addRow(
+      c.customSheet?.headers ?? ["Field", "Key", "Value"],
+    );
+    head.font = { bold: true };
+    for (const r of c.customRows) {
+      const row = sheet.addRow([r.label, r.key, r.value]);
+      row.getCell(3).alignment = { wrapText: true, vertical: "top" };
+    }
   }
 
   const filename = `${c.scenarioId || "case"}.xlsx`;
