@@ -30,13 +30,13 @@ sign-in on a machine always needs it:
 If the database or the API is down, sign-in shows "Could not reach the server"
 ("No se pudo conectar con el servidor" in Spanish, the default UI language).
 
-## Installing the beta (Windows 11)
+## Installing a test version (Windows 11)
 
 The **Installer** workflow builds the NSIS installer on every push to `main`
 (see "Continuous integration"). To install it:
 
-1. On GitHub: **Actions → Installer**, filter by the release tag (for this
-   beta, `v0.1.0-beta.1`), open that green run and download the artifact
+1. On GitHub: **Actions → Installer**, filter by the release tag (for the current
+   version, `v0.2.0-alpha.1`), open that green run and download the artifact
    `pharos-<version>-<commit>-windows` under **Artifacts** (you must be signed
    in to GitHub; artifacts expire after 30 days). Use the tag's run only:
    later pushes to `main` build artifacts with the same version number but
@@ -117,6 +117,12 @@ two windows:
 
 Close a window (or `Ctrl+C` inside it) to stop that part. [`stop.bat`](stop.bat)
 stops the Docker database; a native PostgreSQL service is left running.
+
+**After pulling new code, run `npm install` in the root and in `server/`
+first.** A new version may add dependencies (0.2.0-alpha.1 added `lucide-react`
+and moved to react-router 7); without it Vite fails with `Failed to resolve
+import "lucide-react"`. In a PowerShell where scripts are disabled, `npm` fails
+with "la ejecución de scripts está deshabilitada": use `npm.cmd` instead.
 
 **Manual**, in separate terminals from the repository root:
 
@@ -672,8 +678,10 @@ on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
 (planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the
 baseline are closed and every item of that milestone is merged. Before `0.1.0` the user still has to
 run the native validations of [`docs/ROADMAP.md` §6](docs/ROADMAP.md) (the
-[beta guide](docs/guia-beta.md) turns them into a checklist); each fix ships as
-a new `beta.N`. Known limitations of the beta:
+[test guide](docs/guia-beta.md) turns them into a checklist); since `main` is
+now on 0.2.0, a final `0.1.0` would be cut from the `v0.1.0-beta.1` tag
+([`docs/VERSIONING.md`](docs/VERSIONING.md) §5), and fixes on `main` ship as
+`0.2.0-alpha.N`. Known limitations:
 
 - the installer is not code-signed (SmartScreen warning);
 - the installed app needs the API on `localhost:3000` of the same PC;

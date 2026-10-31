@@ -1,6 +1,7 @@
-# Guía de la beta 0.1.0
+# Guía de pruebas de Pharos
 
-Esta guía es para quien prueba **Pharos 0.1.0-beta.1** en Windows 11. Explica
+Esta guía es para quien prueba **Pharos 0.2.0-alpha.1** en Windows 11: todo lo
+de la beta `0.1.0-beta.1` con la interfaz rediseñada (apartado 1.1). Explica
 qué trae la versión, cómo instalarla, qué comprobar (con casillas para ir
 marcando) y cómo informar de un problema. Los detalles técnicos están en el
 [README](../README.md) (en inglés); el plan de versiones, en
@@ -32,7 +33,28 @@ marcando) y cómo informar de un problema. Los detalles técnicos están en el
   pantalla.
 - **Exportar diagnóstico** para informar de fallos sin enviar tus datos.
 
-**Todavía no incluye:** ejecución de pruebas (llega en 0.2.0), sincronizar
+### 1.1 Qué cambia en 0.2.0-alpha.1: la interfaz rediseñada
+
+- **Navegación nueva:** menú lateral que se contrae a una franja de iconos;
+  en tablet, franja de iconos; en el móvil (web), barra superior y barra
+  inferior. Dentro de un proyecto, el grupo «Proyecto activo» cambia de
+  proyecto y de sección. El idioma y «Cerrar sesión» están en el menú del
+  usuario.
+- **Inicio** con indicadores, criterios de salida del plan, próximas pruebas
+  y gráficos de ejecución (vacíos hasta que llegue la ejecución).
+- **Proyectos** con recientes, tabla con búsqueda, orden y paginación;
+  **Ajustes del proyecto** con borrado que pide escribir el prefijo.
+- **Plan** de 19 pasos con lista de pasos, barra de progreso y panel de
+  estado; entregables ISO 29119-3 y 75 herramientas en catálogo.
+- **Casos** con tabla, filtros y selección múltiple; editor con vistas
+  Editor / Gherkin / Dividida y «Ir a un caso…» (Ctrl P).
+- **Administración** en una sola pantalla con pestañas: Motor de IA,
+  Plantillas, General (tema «Según el sistema»), Sincronización, Seguridad
+  (aquí está ahora la clave de recuperación) y Diagnóstico.
+- Al salir de una pantalla con cambios sin guardar, Pharos pregunta antes.
+
+**Todavía no incluye:** ejecución de pruebas (llega más adelante en 0.2.0;
+los controles de ejecución salen deshabilitados con «Próximamente»), sincronizar
 adjuntos y plantillas propias, ni instalador firmado. Si la base local no
 abre, la pantalla que lo explica no ofrece "Exportar diagnóstico" (apartado 5).
 
@@ -46,10 +68,13 @@ La app instalada inicia sesión y sincroniza contra la API de Pharos en
 - [ ] Git y Node.js ≥ 22.12 con npm, para ejecutar la API.
 - [ ] La API de Pharos en la misma versión que la app: clona el repositorio
       (`git clone https://github.com/shift3385/Pharos.git`) y, dentro,
-      `git checkout v0.1.0-beta.1`. Después, `npm install` en la raíz y en
+      `git checkout v0.2.0-alpha.1`. Después, `npm install` en la raíz y en
       `server/`, un `.env` y las bases `pharos_db` / `pharos_test_db`
       (README → "First-time setup"). Cada vez que pruebes:
-      `cd server && npm start`.
+      `cd server && npm start`. **Al cambiar de versión, vuelve a ejecutar
+      `npm install`** en la raíz y en `server/`: las versiones nuevas pueden
+      traer dependencias nuevas. En PowerShell con los scripts deshabilitados,
+      usa `npm.cmd` en lugar de `npm`.
 - [ ] Una cuenta: "Regístrate" en la pantalla de inicio de sesión, o la cuenta
       de pruebas local con `cd server && npm run seed:test-user` (sus datos
       están en el README).
@@ -60,12 +85,12 @@ compilarla.
 ## 3. Instalar
 
 1. En GitHub, **Actions → Installer**, filtra por la rama o etiqueta
-   **`v0.1.0-beta.1`** y abre esa ejecución (en verde). En **Artifacts**,
-   descarga `pharos-0.1.0-beta.1-<commit>-windows`. Usa solo la ejecución de
+   **`v0.2.0-alpha.1`** y abre esa ejecución (en verde). En **Artifacts**,
+   descarga `pharos-0.2.0-alpha.1-<commit>-windows`. Usa solo la ejecución de
    la etiqueta: los cambios posteriores en `main` generan artefactos con el
    mismo nombre de versión, pero con código aún no publicado. Hace falta haber
    iniciado sesión en GitHub y el artefacto caduca a los 30 días.
-2. Descomprime el `.zip`: contiene `Pharos_0.1.0-beta.1_x64-setup.exe`.
+2. Descomprime el `.zip`: contiene `Pharos_0.2.0-alpha.1_x64-setup.exe`.
 3. Ejecútalo. **El instalador no está firmado**, así que Windows SmartScreen
    muestra "Windows protegió tu PC": pulsa **Más información → Ejecutar de
    todas formas**.
@@ -85,8 +110,8 @@ seguir.
 - [ ] La instalación termina sin errores y Pharos aparece en el menú Inicio.
 - [ ] El primer arranque abre la pantalla de inicio de sesión (WebView2
       funciona: no hay ventana en blanco).
-- [ ] Al pie de la barra lateral y en Administración → Diagnóstico la versión
-      es `0.1.0-beta.1`.
+- [ ] Al pie del menú lateral y en Administración → Diagnóstico la versión
+      es `0.2.0-alpha.1`.
 - [ ] Tras iniciar sesión existe `%APPDATA%\com.pharos.desktop\pharos.db.enc`
       y no quedan archivos `.tmp` ni `.new` al guardar (SEC-01/02).
 - [ ] Hay un log del día en `%LOCALAPPDATA%\com.pharos.desktop\logs`.
@@ -96,12 +121,14 @@ seguir.
       `%APPDATA%\com.pharos.desktop` se conserva.
 - [ ] Volver a instalar: los proyectos siguen ahí.
 
-### 4.2 Actualizar desde 0.1.0-alpha.1 (si la tenías)
+### 4.2 Actualizar desde una versión anterior (si la tenías)
 
-- [ ] Instalar la beta encima de la alfa y abrirla: los proyectos, planes,
-      casos y requisitos siguen intactos.
-- [ ] En la carpeta de datos aparece
-      `pharos.db.enc.bak-0.1.0-beta.1-0011_sync_conflicts`, la copia previa a
+- [ ] Desde `0.1.0-beta.1`: instalar `0.2.0-alpha.1` encima y abrirla. Los
+      proyectos, planes, casos, requisitos y tarjetas siguen intactos y se ven
+      con la interfaz nueva. Esta versión no cambia la base de datos, así que
+      no se crea copia `.bak-…`.
+- [ ] Desde `0.1.0-alpha.1`: además aparece
+      `pharos.db.enc.bak-<versión>-0011_sync_conflicts`, la copia previa a
       la actualización (SEC-06).
 
 ### 4.3 Plan, casos y exportaciones
@@ -176,9 +203,26 @@ Los puntos abiertos de la auditoría están en
 ### 4.9 Diagnóstico
 
 - [ ] Administración → Diagnóstico → **Exportar diagnóstico** guarda
-      `pharos-diagnostic-0.1.0-beta.1-<fecha>.zip` en la carpeta de descarga.
+      `pharos-diagnostic-0.2.0-alpha.1-<fecha>.zip` en la carpeta de descarga.
 - [ ] Abrir el ZIP: no contiene proyectos, casos, tu perfil, la base de datos,
       claves ni tokens (BASE-08).
+
+### 4.10 Interfaz rediseñada (0.2.0-alpha.1)
+
+- [ ] Estrechar la ventana: por debajo de 1280 px el menú lateral pasa a
+      franja de iconos; contraer y expandir el menú se recuerda al reabrir.
+- [ ] Inicio: los indicadores llevan a su sitio; «Criterios de salida» y
+      «Próximas pruebas» muestran datos del plan y de los casos.
+- [ ] Proyectos: buscar, ordenar y paginar; borrar un proyecto desde sus
+      Ajustes pide escribir el prefijo y solo se cierra con «Cancelar».
+- [ ] Plan: recorrer los 19 pasos con la lista de pasos; cambiar un campo e
+      intentar salir: Pharos pregunta antes de descartar.
+- [ ] Casos: filtrar, seleccionar y exportar `.feature`; abrir un caso y
+      pasar al siguiente con «›»; «Ir a un caso…» con Ctrl P.
+- [ ] Administración: cada pestaña abre; el tema «Según el sistema» sigue al
+      de Windows; los parámetros de IA que un modelo no admite salen con
+      candado.
+- [ ] Tema claro y oscuro en todas las pantallas: nada ilegible ni cortado.
 
 ## 5. Cómo informar de un problema
 
@@ -195,15 +239,17 @@ Los puntos abiertos de la auditoría están en
      existe). Los logs no llevan tus datos: correos, tokens y claves van
      enmascarados.
 3. Abre un issue en el repositorio de GitHub (`shift3385/Pharos`) con:
-   - la versión (`0.1.0-beta.1`) y el apartado de esta guía;
+   - la versión (`0.2.0-alpha.1`) y el apartado de esta guía;
    - los pasos para reproducirlo, lo que esperabas y lo que pasó;
    - una captura, si ayuda;
    - el ZIP de diagnóstico (o, si la base no abrió, el log del paso 2).
 4. **Nunca adjuntes** `pharos.db.enc`, las copias `.bak-…`, tu clave de
    recuperación, claves de IA ni contraseñas.
 
-Cada corrección se publica como una nueva beta (`0.1.0-beta.2`…). Cuando todas
-las casillas estén en verde, se publica `0.1.0`.
+Cada corrección se publica como una nueva versión de prueba
+(`0.2.0-alpha.2`…). Las validaciones de los apartados 4.1 a 4.9 son las que
+faltan para cerrar la `0.1.0`, que se publicaría desde la etiqueta
+`v0.1.0-beta.1` ([`VERSIONING.md`](VERSIONING.md) §5).
 
 ## 6. Si algo sale mal con los datos
 

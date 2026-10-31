@@ -884,6 +884,12 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   the CI installer (BASE-09) and the final docs (UX-06, with the beta guide
   `docs/guia-beta.md`) are done. `0.1.0-beta.1` is the first beta; the native
   checks of `docs/ROADMAP.md` §6 remain before `0.1.0`.
+- **Wave 4 — interface redesign (`0.2.0-alpha.1`, 2026-10-30):** the redesign
+  package in `docs/rediseno/` applied in full (ADR-0028…0031): new shell and
+  shared UI primitives (F1), Login/Inicio/Perfil (V1), Proyectos/Ajustes/Plan
+  (V2), Casos/Planificador/Trazabilidad (V3), Administración by tabs (V4), and
+  the data router with the shared unsaved-changes guard (RED-V3k). Released as
+  `0.2.0-alpha.1`; test execution (the rest of 0.2.0) is next.
 - **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
   visible AI provenance. Requirements and planner cards sync since SYNC-04a;
