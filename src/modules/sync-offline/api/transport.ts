@@ -14,9 +14,12 @@ export const VERSION_HEADER = "x-pharos-version";
 
 /** Sync features this client understands. `key-conflicts` (DAT-01): it reads
  *  `keyConflicts` in the push answer. A client without it gets 426 instead
- *  of a refusal it would mistake for an accepted delta. */
+ *  of a refusal it would mistake for an accepted delta. `append-only`
+ *  (AUD-01): it pushes and pulls append-only documents (audit events) and
+ *  reads `appendRejected`. Inside one minor the version string does not change
+ *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
-export const SYNC_FEATURES = "key-conflicts";
+export const SYNC_FEATURES = "key-conflicts,append-only";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };
@@ -135,6 +138,8 @@ export interface PullPage {
   docs: RemoteDoc[];
   cursor: number;
   hasMore: boolean;
+  /** Sync features of the server (AUD-01); absent on an older server. */
+  features?: string[];
 }
 
 /** Safety stop for a pull loop (500 docs per page → 500k documents). */

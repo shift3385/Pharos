@@ -65,8 +65,9 @@ describe("syncRequest (SYNC-08)", () => {
     const headers = fetch.mock.calls[0][1].headers as Record<string, string>;
     expect(headers[VERSION_HEADER]).toBe(rootPackage.version);
     expect(headers.authorization).toBe("Bearer tok");
-    // DAT-01: tells the server it reads `keyConflicts` (else a taken key is a 426).
-    expect(headers[FEATURES_HEADER]).toBe("key-conflicts");
+    // DAT-01: tells the server it reads `keyConflicts` (else a taken key is a 426);
+    // AUD-01: and that it knows the append-only class.
+    expect(headers[FEATURES_HEADER]).toBe("key-conflicts,append-only");
   });
 
   it("turns the server's refusal into an error with its code", async () => {
