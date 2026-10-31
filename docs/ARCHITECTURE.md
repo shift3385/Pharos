@@ -127,9 +127,12 @@ months from 640 px of step width) and the rows below
 `form.milestones`. The calendar is a WAI-ARIA grid with one tab stop
 (arrows, Home/End, PageUp/PageDown, Enter/Space, Esc); bands and diamonds are
 drawn `aria-hidden` and every day's label says the same in words. Band ends
-drag with pointer events on desktop only (from 560 px, not on phones); the
-row dates (dd/mm/aaaa, committed on blur or Enter) are the keyboard way to do
-it. Rules live in `model/schedule.ts` and `formState.sprintIssues`: missing
+drag with pointer events only with a fine pointer (`(pointer: fine)`, from
+560 px; never a finger, which scrolls); the row dates are the keyboard and
+touch way to do it. A row date (dd/mm/aaaa or ISO) is applied on blur or
+Enter whatever it says: a real day as ISO, empty clears it, anything else is
+kept as typed with its warning, so nothing typed stays unsaved; the focus
+stays put when the row re-sorts. Rules live in `model/schedule.ts` and `formState.sprintIssues`: missing
 or invalid date, end before start, overlap, and a length other than the step 6
 sprint weeks × 7 (agile plans only). All are warnings (ADR-0027): the plan
 still saves; an overlap is drawn in error colors but says «es un aviso» with
@@ -146,8 +149,10 @@ id gets `crockford32(fmix64(fnv1a64("<planId>:sprints|milestones:<index>")))`
 unsaved legacy plan, or restores a legacy revision, with the same ids; the
 first save persists them. New rows (calendar, «Siguiente sprint», an .xlsx
 import) get random ids, so a deleted row's id is never reused. Nothing is
-dropped: unknown fields stay and a legacy date that is not ISO stays as
-written (shown as invalid, not drawn). Exports map sprints to
+dropped: unknown fields stay, a legacy dd/mm/aaaa day (old imports) reads as
+ISO, and any other date that is not ISO stays as written (shown as invalid,
+not drawn). The wizard's unsaved-changes check compares against this same
+normalized form, so reading never marks a plan changed. Exports map sprints to
 `{ name, range }`, so ids never reach .xlsx or .pdf. **Old clients:** every
 released build gets 426 on push since `stable-steps` (DAT-02), so none can
 write a plan back without its ids; on pull they store `data` as received
