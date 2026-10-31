@@ -1,162 +1,531 @@
-import { useId } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarRange, Plus, X } from "lucide-react";
-import { FieldMessage } from "@shared/ui/FormField";
-import { controlProps } from "@shared/ui/fieldProps";
-import { duplicateRow, duplicateRows } from "@shared/validation";
-import { ScheduleCalendar } from "../ScheduleCalendar";
-import { sprintIssues } from "./formState";
-import { FieldLabel, type StepProps } from "./stepProps";
+import { CalendarRange, ChevronLeft, ChevronRight, Diamond, Plus } from "lucide-react";
+import { duplicateRow, duplicateRows, type Issue } from "@shared/validation";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import type { ScheduleMilestone, ScheduleSprint } from "../../model/types";
+import {
+  fromDisplay,
+  isDrawable,
+  isIsoDay,
+  isoOf,
+  newScheduleId,
+  nextSprintName,
+  nextSprintRange,
+  overlaps,
+  parseIso,
+  toDisplay,
+} from "../../model/schedule";
+import { expectedSprintDays, milestoneIssues, sprintIssues } from "./formState";
+import { ScheduleCalendar, type CalendarView } from "./schedule/ScheduleCalendar";
+import { DateField, DeleteButton, RowMessage } from "./schedule/ScheduleRows";
+import type { StepProps } from "./stepProps";
 
-/** Step 14, Cronograma: sprints (with the calendar) and milestones. «Generar
- *  sprints a partir de un rango» is shown but not usable yet (RED-W5). */
-export function ScheduleStep({ form, set }: StepProps) {
+type Mode = "sprint" | "milestone";
+type Drag = { id: string; edge: "start" | "end" };
+
+/** Container widths of the prototype: two months from 640 px, and the band
+ *  ends drag only on desktop pointers (not on phones). */
+const TWO_MONTHS_MIN = 640;
+const DRAG_MIN = 560;
+/** Sprint length when step 6 gives none (traditional plan): two weeks. */
+const DEFAULT_DAYS = 14;
+
+const viewOf = (iso: string): CalendarView => {
+  const d = parseIso(iso) ?? new Date();
+  return { year: d.getFullYear(), month: d.getMonth() };
+};
+const monthIndex = (v: CalendarView) => v.year * 12 + v.month;
+/** Drawable rows first, by date; rows with a missing or invalid date after,
+ *  in their order. */
+const byDate = <T,>(rows: T[], key: (r: T) => string) =>
+  rows
+    .map((r, i) => ({ r, i, k: isIsoDay(key(r)) ? key(r) : "￿" }))
+    .sort((a, b) => (a.k < b.k ? -1 : a.k > b.k ? 1 : a.i - b.i))
+    .map((x) => x.r);
+
+/** Step 14, Cronograma (RED-W5): one calendar where sprints are marked as
+ *  ranges and milestones as days, and the rows below with the same data in
+ *  dd/mm/aaaa. Calendar and rows edit the same list both ways. */
+export function ScheduleStep({ form, setForm }: StepProps) {
   const { t } = useTranslation();
-  const genId = useId();
-  const issues = sprintIssues(form.sprints);
-  const sprintNames = duplicateRows(form.sprints, (x) => x.name);
-  const milestoneNames = duplicateRows(form.milestones, (x) => x.name);
+  const uid = useId();
+  const mobile = useBreakpoint() === "mobile";
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(() => window.innerWidth);
+  const today = isoOf(new Date());
 
-  const updateSprint = (i: number, patch: Partial<(typeof form.sprints)[number]>) => {
-    const next = [...form.sprints];
-    next[i] = { ...next[i], ...patch };
-    set("sprints", next);
+  const [mode, setMode] = useState<Mode>("sprint");
+  const [anchor, setAnchor] = useState<string | null>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(null);
+  const [hl, setHl] = useState<string | null>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const dragged = useRef(false);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [bad, setBad] = useState<Record<string, Issue>>({});
+  const [view, setView] = useState<CalendarView>(() => {
+    const first = [
+      ...form.sprints.filter(isDrawable).map((s) => s.start),
+      ...form.milestones.filter((m) => isIsoDay(m.date)).map((m) => m.date),
+    ].sort()[0];
+    return viewOf(first ?? today);
+  });
+  const [focusDay, setFocusDay] = useState(() => isoOf(new Date(view.year, view.month, 1)));
+
+  // The container, not the window, decides one or two months (as the
+  // prototype); jsdom has no layout, so the window width is the fallback.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (el.clientWidth) setWidth(el.clientWidth);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => {
+      const w = Math.round(e?.contentRect.width ?? 0);
+      if (w) setWidth((p) => (Math.abs(p - w) > 4 ? w : p));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const months: 1 | 2 = !mobile && width >= TWO_MONTHS_MIN ? 2 : 1;
+  const canDrag = !mobile && width >= DRAG_MIN;
+
+  // A drag ends wherever the pointer is released; Esc cancels a range.
+  useEffect(() => {
+    if (!drag) return;
+    const up = () => {
+      dragged.current = true;
+      setDrag(null);
+    };
+    document.addEventListener("pointerup", up);
+    return () => document.removeEventListener("pointerup", up);
+  }, [drag]);
+  useEffect(() => {
+    if (!anchor) return;
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setAnchor(null);
+        setHover(null);
+      }
+    };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [anchor]);
+
+  const updSprints = (fn: (s: ScheduleSprint[]) => ScheduleSprint[]) =>
+    setForm((f) => (f ? { ...f, sprints: fn(f.sprints) } : f));
+  const updMilestones = (fn: (m: ScheduleMilestone[]) => ScheduleMilestone[]) =>
+    setForm((f) => (f ? { ...f, milestones: fn(f.milestones) } : f));
+  const patchSprint = (id: string, patch: Partial<ScheduleSprint>) =>
+    updSprints((all) => all.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const patchMilestone = (id: string, patch: Partial<ScheduleMilestone>) =>
+    updMilestones((all) => all.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const usedIds = () => new Set([...form.sprints, ...form.milestones].map((x) => x.id));
+
+  /** Shows the month(s) holding `day` if they are not on screen. */
+  const reveal = (day: string) => {
+    const target = viewOf(day);
+    const first = monthIndex(view);
+    const idx = monthIndex(target);
+    if (idx < first) setView(target);
+    else if (idx > first + months - 1) setView(viewOf(isoOf(new Date(target.year, target.month - months + 1, 1))));
   };
-  const updateMilestone = (i: number, patch: Partial<(typeof form.milestones)[number]>) => {
-    const next = [...form.milestones];
-    next[i] = { ...next[i], ...patch };
-    set("milestones", next);
+
+  const word = t("testPlan.schedule.sprintWord");
+  const expected = expectedSprintDays(form);
+  const nextDays = expected ?? DEFAULT_DAYS;
+  const next = nextSprintRange(form.sprints, nextDays, today);
+  const nextName = nextSprintName(form.sprints, word);
+
+  function addSprint(start: string, end: string) {
+    const id = newScheduleId(usedIds());
+    updSprints((all) => [...all, { id, name: nextSprintName(all, word), start, end }]);
+    setSel(id);
+    setAnchor(null);
+    setHover(null);
+  }
+
+  const sorted = byDate(form.sprints, (s) => s.start);
+  const drawnSorted = sorted.filter(isDrawable);
+  const over = overlaps(form.sprints);
+
+  function onDay(day: string) {
+    if (dragged.current) {
+      dragged.current = false;
+      return;
+    }
+    if (mode === "milestone") {
+      const here = form.milestones.find((m) => m.date === day);
+      if (here) setSel(sel === here.id ? null : here.id);
+      else {
+        const id = newScheduleId(usedIds());
+        updMilestones((all) => [
+          ...all,
+          { id, name: t("testPlan.schedule.milestoneN", { n: all.length + 1 }), date: day },
+        ]);
+        setSel(id);
+      }
+      return;
+    }
+    if (!anchor) {
+      const s = drawnSorted.find((q) => q.start <= day && day <= q.end);
+      if (s) setSel(sel === s.id ? null : s.id);
+      else {
+        setAnchor(day);
+        setHover(day);
+        setSel(null);
+      }
+      return;
+    }
+    addSprint(anchor < day ? anchor : day, anchor < day ? day : anchor);
+  }
+
+  function onHoverDay(day: string) {
+    if (anchor) setHover(day);
+    if (drag)
+      updSprints((all) =>
+        all.map((q) =>
+          q.id !== drag.id
+            ? q
+            : drag.edge === "start"
+              ? { ...q, start: day <= q.end ? day : q.end }
+              : { ...q, end: day >= q.start ? day : q.start },
+        ),
+      );
+  }
+
+  const draft = (key: string, v: string) => setDrafts((d) => ({ ...d, [key]: v }));
+  /** Applies a typed date if it is valid; else keeps the text and says why. */
+  function commit(key: string, text: string, apply: (iso: string) => Issue | null) {
+    const iso = fromDisplay(text);
+    const problem: Issue | null = iso
+      ? apply(iso)
+      : { code: "testPlan.schedule.invalidDate", severity: "warning" };
+    setDrafts((d) => {
+      if (problem) return d;
+      const { [key]: _, ...rest } = d;
+      return rest;
+    });
+    setBad((b) => {
+      const { [key]: _, ...rest } = b;
+      return problem ? { ...rest, [key]: problem } : rest;
+    });
+    if (iso && !problem) reveal(iso);
+  }
+  const removeKeys = (id: string) => {
+    const drop = <V,>(o: Record<string, V>) =>
+      Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith(`${id}:`)));
+    setDrafts(drop);
+    setBad(drop);
   };
+
+  const issues = sprintIssues(sorted, expected);
+  const names = duplicateRows(sorted, (x) => x.name);
+  const mSorted = byDate(form.milestones, (m) => m.date);
+  const mIssues = milestoneIssues(mSorted);
+  const mNames = duplicateRows(mSorted, (x) => x.name);
+  const active = hl ?? sel;
+
+  const hint = anchor
+    ? t("testPlan.schedule.hintEnd", { date: toDisplay(anchor) })
+    : mode === "milestone"
+      ? t("testPlan.schedule.hintMilestone")
+      : t(canDrag ? "testPlan.schedule.hintSprintDrag" : "testPlan.schedule.hintSprint");
+  const nextDesc = t("testPlan.schedule.nextTitle", {
+    name: nextName,
+    from: toDisplay(next.start),
+    to: toDisplay(next.end),
+    count: nextDays,
+  });
+  const fill = (i: number) => (i % 2 ? "alt" : "base");
 
   return (
-    <>
-      <section
-        className="tpw-soon"
-        aria-labelledby={`${genId}-title`}
-        aria-describedby={`${genId}-desc`}
-        title={t("testPlan.sprintGen.soonTitle")}
-      >
-        <div className="tpw-soon__head">
-          <CalendarRange size={18} aria-hidden="true" />
-          <h3 id={`${genId}-title`} className="tpw-soon__title">
-            {t("testPlan.sprintGen.title")}
-          </h3>
-          <span className="tpw-badge">{t("testPlan.sprintGen.soon")}</span>
-        </div>
-        <p id={`${genId}-desc`} className="tpw-hint">
-          {t("testPlan.sprintGen.desc", { count: form.sprintWeeks })}
-        </p>
-        <div className="tpw-soon__row">
-          <label className="tp-field">
-            <span>{t("testPlan.sprintGen.from")}</span>
-            <input type="date" disabled />
-          </label>
-          <label className="tp-field">
-            <span>{t("testPlan.sprintGen.to")}</span>
-            <input type="date" disabled />
-          </label>
-          <button type="button" className="header-action" disabled title={t("testPlan.sprintGen.soonTitle")}>
-            {t("testPlan.sprintGen.button")}
+    <div className="tps" ref={rootRef}>
+      <div className="tps-card">
+        <div className="tps-bar">
+          <div role="radiogroup" aria-label={t("testPlan.schedule.addWhat")} className="tps-seg">
+            {(["sprint", "milestone"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={mode === m}
+                className="tps-seg__btn"
+                onClick={() => {
+                  setMode(m);
+                  setAnchor(null);
+                  setHover(null);
+                }}
+              >
+                {m === "sprint" ? <CalendarRange size={15} aria-hidden="true" /> : <Diamond size={15} aria-hidden="true" />}
+                {t(m === "sprint" ? "testPlan.schedule.modeSprint" : "testPlan.schedule.modeMilestone")}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="tps-next"
+            title={nextDesc}
+            aria-describedby={`${uid}-next`}
+            onClick={() => {
+              addSprint(next.start, next.end);
+              reveal(next.start);
+            }}
+          >
+            <Plus size={15} aria-hidden="true" />
+            {t("testPlan.schedule.nextSprint")}
           </button>
+          <span id={`${uid}-next`} className="sr-only">
+            {nextDesc}
+          </span>
+          <span className="tps-bar__fill" />
+          <div className="tps-nav">
+            <button
+              type="button"
+              className="tps-nav__btn"
+              aria-label={t("testPlan.schedule.prevMonth")}
+              onClick={() => setView((v) => viewOf(isoOf(new Date(v.year, v.month - 1, 1))))}
+            >
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="tps-nav__btn"
+              aria-label={t("testPlan.schedule.nextMonth")}
+              onClick={() => setView((v) => viewOf(isoOf(new Date(v.year, v.month + 1, 1))))}
+            >
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+          </div>
         </div>
+        <p className="tps-hint" aria-live="polite">
+          {hint}
+        </p>
+        <ScheduleCalendar
+          view={view}
+          months={months}
+          sprints={drawnSorted}
+          milestones={form.milestones}
+          overlap={over}
+          today={today}
+          focusDay={focusDay}
+          anchor={anchor}
+          hover={hover}
+          active={active}
+          canDrag={canDrag}
+          onDay={onDay}
+          onHoverDay={onHoverDay}
+          onFocusDay={setFocusDay}
+          onDragStart={(id, edge) => {
+            dragged.current = false;
+            setDrag({ id, edge });
+          }}
+          onEscape={() => {
+            setAnchor(null);
+            setHover(null);
+          }}
+          onReveal={reveal}
+        />
+        <ul className="tps-legend" aria-label={t("testPlan.schedule.legend")}>
+          <li>
+            <span className="tps-legend__band" data-band="base" aria-hidden="true" />
+            {t("testPlan.schedule.modeSprint")}
+          </li>
+          <li>
+            <span className="tps-legend__diamond" aria-hidden="true" />
+            {t("testPlan.schedule.modeMilestone")}
+          </li>
+          <li>
+            <span className="tps-legend__today" aria-hidden="true" />
+            {t("testPlan.schedule.todayLegend")}
+          </li>
+          <li>
+            <span className="tps-legend__band" data-band="overlap" aria-hidden="true" />
+            {t("testPlan.schedule.overlapLegend")}
+          </li>
+        </ul>
+      </div>
+
+      <section className="tps-list" aria-labelledby={`${uid}-sprints`}>
+        <div className="tps-list__head">
+          <h3 id={`${uid}-sprints`} className="tps-list__title">
+            {t("testPlan.sprints")}
+          </h3>
+          <span className="tps-list__count">{t("testPlan.schedule.sprintCount", { count: sorted.length })}</span>
+        </div>
+        {sorted.length === 0 && <p className="tps-empty">{t("testPlan.schedule.noSprints")}</p>}
+        {sorted.map((s, i) => {
+          const id = `tps-${s.id}`;
+          const issue = bad[`${s.id}:start`] ?? bad[`${s.id}:end`] ?? issues[i];
+          const nameIssue = duplicateRow(names, i);
+          const row = s.name || `${t("testPlan.sprints")} · ${t("a11y.row", { n: i + 1 })}`;
+          const msgIds = [issue && `${id}-msg`, nameIssue && `${id}-name-msg`].filter(Boolean).join(" ") || undefined;
+          return (
+            <div
+              key={s.id}
+              role="group"
+              aria-label={row}
+              className="tps-row"
+              data-active={active === s.id || undefined}
+              onPointerEnter={() => {
+                setHl(s.id);
+                if (isDrawable(s)) reveal(s.start);
+              }}
+              onPointerLeave={() => setHl(null)}
+              onFocus={() => {
+                if (hl !== s.id) {
+                  setHl(s.id);
+                  if (isDrawable(s)) reveal(s.start);
+                }
+              }}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHl(null);
+              }}
+            >
+              <div className="tps-row__line">
+                <span
+                  className="tps-swatch"
+                  data-band={over.has(s.id) ? "overlap" : fill(drawnSorted.indexOf(s))}
+                  aria-hidden="true"
+                />
+                <input
+                  {...(nameIssue ? { "aria-describedby": `${id}-name-msg` } : {})}
+                  className="tps-name"
+                  aria-label={t("testPlan.sprintName")}
+                  placeholder={t("testPlan.sprintName")}
+                  value={s.name}
+                  onChange={(e) => patchSprint(s.id, { name: e.target.value })}
+                />
+                <div className="tps-range">
+                  <DateField
+                    id={`${id}-start`}
+                    label={`${t("testPlan.schedule.startLabel")} · ${row}`}
+                    value={drafts[`${s.id}:start`] ?? toDisplay(s.start)}
+                    issue={issue && issue.code !== "testPlan.schedule.duration" ? issue : null}
+                    describedBy={msgIds}
+                    onDraft={(v) => draft(`${s.id}:start`, v)}
+                    onCommit={(v) =>
+                      commit(`${s.id}:start`, v, (iso) => {
+                        if (isIsoDay(s.end) && iso > s.end)
+                          return { code: "testPlan.schedule.startAfterEnd", severity: "warning" };
+                        patchSprint(s.id, { start: iso });
+                        return null;
+                      })
+                    }
+                  />
+                  <span className="tps-range__arrow" aria-hidden="true">
+                    →
+                  </span>
+                  <DateField
+                    id={`${id}-end`}
+                    label={`${t("testPlan.schedule.endLabel")} · ${row}`}
+                    value={drafts[`${s.id}:end`] ?? toDisplay(s.end)}
+                    issue={issue && issue.code !== "testPlan.schedule.duration" ? issue : null}
+                    describedBy={msgIds}
+                    onDraft={(v) => draft(`${s.id}:end`, v)}
+                    onCommit={(v) =>
+                      commit(`${s.id}:end`, v, (iso) => {
+                        if (isIsoDay(s.start) && iso < s.start)
+                          return { code: "testPlan.schedule.endBeforeStart", severity: "warning" };
+                        patchSprint(s.id, { end: iso });
+                        return null;
+                      })
+                    }
+                  />
+                </div>
+                <DeleteButton
+                  label={`${t("testPlan.schedule.removeSprint")}: ${row}`}
+                  onClick={() => {
+                    updSprints((all) => all.filter((z) => z.id !== s.id));
+                    removeKeys(s.id);
+                    if (sel === s.id) setSel(null);
+                    setHl(null);
+                  }}
+                />
+              </div>
+              {issue && <RowMessage id={`${id}-msg`} issue={issue} />}
+              {nameIssue && <RowMessage id={`${id}-name-msg`} issue={nameIssue} />}
+            </div>
+          );
+        })}
       </section>
 
-      <ScheduleCalendar sprints={form.sprints} onAdd={(s) => set("sprints", [...form.sprints, s])} />
-
-      <FieldLabel text={t("testPlan.sprints")} />
-      {form.sprints.map((s, i) => {
-        const issue = issues[i];
-        const nameIssue = duplicateRow(sprintNames, i);
-        const row = `${t("testPlan.sprints")} · ${t("a11y.row", { n: i + 1 })}`;
-        const id = `tp-sprint-${i}`;
-        return (
-          <div key={i} role="group" aria-label={row}>
-            <div className="tp-sched-row">
-              <input
-                {...controlProps(`${id}-name`, nameIssue)}
-                aria-label={`${t("testPlan.sprintName")} · ${t("a11y.row", { n: i + 1 })}`}
-                placeholder={t("testPlan.sprintName")}
-                value={s.name}
-                onChange={(e) => updateSprint(i, { name: e.target.value })}
-              />
-              <input
-                type="date"
-                {...controlProps(`${id}-start`, issue)}
-                aria-label={`${t("a11y.start")} · ${t("a11y.row", { n: i + 1 })}`}
-                data-invalid={issue?.code === "testPlan.sprintDateError"}
-                value={s.start}
-                onChange={(e) => updateSprint(i, { start: e.target.value })}
-              />
-              <input
-                type="date"
-                {...controlProps(`${id}-end`, issue, issue ? `${id}-start-msg` : undefined)}
-                aria-label={`${t("a11y.end")} · ${t("a11y.row", { n: i + 1 })}`}
-                data-invalid={issue?.code === "testPlan.sprintDateError"}
-                value={s.end}
-                onChange={(e) => updateSprint(i, { end: e.target.value })}
-              />
-              <button
-                type="button"
-                className="tp-list-field__del"
-                aria-label={`${t("common.delete")}: ${row}`}
-                onClick={() => set("sprints", form.sprints.filter((_, j) => j !== i))}
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
+      <section className="tps-list" aria-labelledby={`${uid}-milestones`}>
+        <div className="tps-list__head">
+          <h3 id={`${uid}-milestones`} className="tps-list__title">
+            {t("testPlan.milestones")}
+          </h3>
+          <span className="tps-list__count">{t("testPlan.schedule.milestoneCount", { count: mSorted.length })}</span>
+        </div>
+        {mSorted.length === 0 && <p className="tps-empty">{t("testPlan.schedule.noMilestones")}</p>}
+        {mSorted.map((m, i) => {
+          const id = `tps-${m.id}`;
+          const issue = bad[`${m.id}:date`] ?? mIssues[i];
+          const nameIssue = duplicateRow(mNames, i);
+          const row = m.name || `${t("testPlan.milestones")} · ${t("a11y.row", { n: i + 1 })}`;
+          return (
+            <div
+              key={m.id}
+              role="group"
+              aria-label={row}
+              className="tps-row"
+              data-active={active === m.id || undefined}
+              onPointerEnter={() => {
+                setHl(m.id);
+                if (isIsoDay(m.date)) reveal(m.date);
+              }}
+              onPointerLeave={() => setHl(null)}
+              onFocus={() => {
+                if (hl !== m.id) {
+                  setHl(m.id);
+                  if (isIsoDay(m.date)) reveal(m.date);
+                }
+              }}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHl(null);
+              }}
+            >
+              <div className="tps-row__line">
+                <span className="tps-swatch tps-swatch--diamond" aria-hidden="true" />
+                <input
+                  {...(nameIssue ? { "aria-describedby": `${id}-name-msg` } : {})}
+                  className="tps-name"
+                  aria-label={t("testPlan.milestoneName")}
+                  placeholder={t("testPlan.milestoneName")}
+                  value={m.name}
+                  onChange={(e) => patchMilestone(m.id, { name: e.target.value })}
+                />
+                <DateField
+                  id={`${id}-date`}
+                  label={`${t("testPlan.schedule.dateLabel")} · ${row}`}
+                  value={drafts[`${m.id}:date`] ?? toDisplay(m.date)}
+                  issue={issue}
+                  describedBy={issue ? `${id}-msg` : undefined}
+                  onDraft={(v) => draft(`${m.id}:date`, v)}
+                  onCommit={(v) =>
+                    commit(`${m.id}:date`, v, (iso) => {
+                      patchMilestone(m.id, { date: iso });
+                      return null;
+                    })
+                  }
+                />
+                <DeleteButton
+                  label={`${t("testPlan.schedule.removeMilestone")}: ${row}`}
+                  onClick={() => {
+                    updMilestones((all) => all.filter((z) => z.id !== m.id));
+                    removeKeys(m.id);
+                    if (sel === m.id) setSel(null);
+                    setHl(null);
+                  }}
+                />
+              </div>
+              {issue && <RowMessage id={`${id}-msg`} issue={issue} />}
+              {nameIssue && <RowMessage id={`${id}-name-msg`} issue={nameIssue} />}
             </div>
-            {issue && <FieldMessage id={`${id}-start-msg`} issue={issue} />}
-            {nameIssue && <FieldMessage id={`${id}-name-msg`} issue={nameIssue} />}
-          </div>
-        );
-      })}
-      <button
-        type="button"
-        className="tp-list-field__add"
-        onClick={() => set("sprints", [...form.sprints, { name: "", start: "", end: "" }])}
-      >
-        <Plus size={16} aria-hidden="true" /> {t("testPlan.addRow")}
-      </button>
-
-      <FieldLabel text={t("testPlan.milestones")} />
-      {form.milestones.map((m, i) => {
-        const nameIssue = duplicateRow(milestoneNames, i);
-        const row = `${t("testPlan.milestones")} · ${t("a11y.row", { n: i + 1 })}`;
-        return (
-          <div key={i} role="group" aria-label={row}>
-            <div className="tp-sched-row">
-              <input
-                {...controlProps(`tp-milestone-${i}`, nameIssue)}
-                aria-label={`${t("testPlan.milestoneName")} · ${t("a11y.row", { n: i + 1 })}`}
-                placeholder={t("testPlan.milestoneName")}
-                value={m.name}
-                onChange={(e) => updateMilestone(i, { name: e.target.value })}
-              />
-              <input
-                type="date"
-                aria-label={`${t("a11y.date")} · ${t("a11y.row", { n: i + 1 })}`}
-                value={m.date}
-                onChange={(e) => updateMilestone(i, { date: e.target.value })}
-              />
-              <button
-                type="button"
-                className="tp-list-field__del"
-                aria-label={`${t("common.delete")}: ${row}`}
-                onClick={() => set("milestones", form.milestones.filter((_, j) => j !== i))}
-              >
-                <X size={16} aria-hidden="true" />
-              </button>
-            </div>
-            {nameIssue && <FieldMessage id={`tp-milestone-${i}-msg`} issue={nameIssue} />}
-          </div>
-        );
-      })}
-      <button
-        type="button"
-        className="tp-list-field__add"
-        onClick={() => set("milestones", [...form.milestones, { name: "", date: "" }])}
-      >
-        <Plus size={16} aria-hidden="true" /> {t("testPlan.addRow")}
-      </button>
-    </>
+          );
+        })}
+      </section>
+    </div>
   );
 }

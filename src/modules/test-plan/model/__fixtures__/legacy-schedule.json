@@ -1,0 +1,27 @@
+{
+  "$comment": "Schedules as 0.1.0 and 0.2.0-alpha.1 saved them (no ids). wizard020: the wizard's toInput (blank rows dropped, ISO dates from <input type=date>, a row with only a name). odd: what an old .xlsx import or a hand-edited blob can hold. wizard020Ids: the ids normalizeSchedule derives for plan 'plan1'; they must never change (RED-W5).",
+  "wizard020": {
+    "sprints": [
+      { "name": "Sprint 1 · Login", "start": "2026-11-02", "end": "2026-11-15" },
+      { "name": "Sprint 2 · Pagos", "start": "2026-11-16", "end": "2026-11-29" },
+      { "name": "Estabilización", "start": "", "end": "" }
+    ],
+    "milestones": [
+      { "name": "Congelación de código", "date": "2026-11-12" },
+      { "name": "Salida a producción", "date": "2026-12-01" }
+    ]
+  },
+  "wizard020Ids": {
+    "sprints": ["46M66PSM", "5ABPP7A4", "E69E0QTD"],
+    "milestones": ["E0GRRHE2", "ADPE4BDP"]
+  },
+  "odd": {
+    "sprints": [
+      { "name": "Sprint 1", "start": "Nov 2", "end": "Nov 15", "note": "kept" },
+      "Sprint suelto",
+      { "name": 42 },
+      { "start": "2026-11-02" }
+    ],
+    "milestones": [{ "name": "Go-live", "date": "Nov 28" }]
+  }
+}

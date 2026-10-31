@@ -4,15 +4,24 @@
 import type { Assert, Contract, Covers } from "@shared/contracts";
 import type { ProvenanceMap } from "@modules/ai";
 
+/** A sprint of step 14. `id` is stable within the plan; dates are ISO
+ *  `YYYY-MM-DD` (a legacy value that is not stays as written). */
 export interface ScheduleSprint {
+  id: string;
   name: string;
   start: string;
   end: string;
 }
+/** A milestone of step 14 (same id and date rules as a sprint). */
 export interface ScheduleMilestone {
+  id: string;
   name: string;
   date: string;
 }
+/** As stored: plans saved before 0.2.0 have no ids, `normalizeSchedule` gives
+ *  them on read (RED-W5). */
+export type StoredSprint = Omit<ScheduleSprint, "id"> & { id?: string };
+export type StoredMilestone = Omit<ScheduleMilestone, "id"> & { id?: string };
 export interface RiskItem {
   risk: string;
   mitigation: string;
@@ -48,8 +57,8 @@ export interface TestPlanData {
   testDataManagement?: string;
   defectManagement?: string;
   roles?: RoleItem[];
-  sprints?: ScheduleSprint[];
-  milestones?: ScheduleMilestone[];
+  sprints?: StoredSprint[];
+  milestones?: StoredMilestone[];
   risks?: RiskItem[];
   communicationPlan?: string;
   closureCriteria?: ClosureCriterion[];

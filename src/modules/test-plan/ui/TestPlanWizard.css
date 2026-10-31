@@ -662,54 +662,500 @@
   height: 44px;
 }
 
-/* Step 14: sprints from a range, not available yet (SPEC §4 disabled). */
-.tpw-soon {
+/* Step 14, Cronograma (RED-W5, prototype Cronograma.dc.html): one calendar
+   with sprints as bands and milestones as diamonds, and the rows below. */
+.tps {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.tps-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: clamp(12px, 2cqi, 18px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.tps-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  padding: 14px 16px;
+  min-width: 0;
+}
+
+.tps-bar__fill {
+  flex: 1;
+}
+
+.tps-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
   background: var(--color-surface-2);
-  border: 1px dashed var(--color-border-input);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
-.tpw-soon__head {
+.tps-seg__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tps-seg__btn[aria-checked="true"] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-surface-1);
+  box-shadow: var(--shadow-1);
+}
+
+.tps-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.tps-next svg {
+  color: var(--color-navy-500);
+}
+
+.tps-next:hover,
+.tps-nav__btn:hover,
+.tps-del:hover {
+  background: var(--color-surface-2);
+}
+
+.tps-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tps-nav__btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--color-navy-500);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tps-hint {
+  min-height: 18px;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+.tps-cal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(16px, 3cqi, 32px);
+  min-width: 0;
+}
+
+.tps-month {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tps-month__label {
+  padding: 0 4px 4px;
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+}
+
+.tps-month__label::first-letter {
+  text-transform: uppercase;
+}
+
+.tps-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tps-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.tps-wd {
+  font-size: 11.5px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.tps-wd abbr {
+  text-decoration: none;
+}
+
+.tps-day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tps-day--empty {
+  cursor: default;
+}
+
+.tps-day[data-drag] {
+  cursor: ew-resize;
+}
+
+.tps-day:focus-visible {
+  outline: none;
+}
+
+.tps-day:focus-visible .tps-num {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.tps-band {
+  position: absolute;
+  inset: 3px 0;
+  background: var(--color-navy-100);
+}
+
+.tps-band[data-cap-start] {
+  border-top-left-radius: 17px;
+  border-bottom-left-radius: 17px;
+}
+
+.tps-band[data-cap-end] {
+  border-top-right-radius: 17px;
+  border-bottom-right-radius: 17px;
+}
+
+.tps-band[data-band="alt"],
+.tps-swatch[data-band="alt"] {
+  background: color-mix(in oklch, var(--color-accent) 26%, var(--color-surface-1));
+}
+
+.tps-band[data-band="active"] {
+  background: color-mix(in oklch, var(--color-navy-500) 28%, var(--color-surface-1));
+}
+
+.tps-band[data-band="preview"] {
+  background: color-mix(in oklch, var(--color-navy-500) 16%, var(--color-surface-1));
+}
+
+.tps-band[data-band="overlap"],
+.tps-swatch[data-band="overlap"],
+.tps-legend__band[data-band="overlap"] {
+  background: color-mix(in oklch, var(--color-error) 18%, var(--color-surface-1));
+}
+
+.tps-band[data-edge] {
+  outline: 1.5px solid var(--color-error);
+  outline-offset: -1.5px;
+}
+
+.tps-num {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  border-radius: 50%;
+}
+
+.tps-num[data-strong] {
+  font-weight: 700;
+}
+
+.tps-num[data-today] {
+  box-shadow: inset 0 0 0 1.5px var(--color-accent);
+}
+
+/* Text on the filled circle: white on navy in light, the dark surface on the
+   light navy of the dark theme (both above 4.5:1). */
+.tps-num[data-filled] {
+  color: var(--color-surface-1);
+  background: var(--color-navy-500);
+}
+
+.tps-diamond {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  background: var(--color-accent);
+  transform: rotate(45deg);
+}
+
+.tps-diamond[data-active] {
+  bottom: 1px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  box-shadow: 0 0 0 2px var(--color-navy-500);
+}
+
+.tps-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 10px 0 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.tps-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.tps-legend__band {
+  flex: none;
+  width: 18px;
+  height: 10px;
+  background: var(--color-navy-100);
+  border-radius: 5px;
+}
+
+.tps-legend__diamond {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--color-accent);
+  transform: rotate(45deg);
+}
+
+.tps-legend__today {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--color-accent);
+}
+
+.tps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tps-list__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tps-list__title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: var(--fw-semibold);
+}
+
+.tps-list__count {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.tps-empty {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+}
+
+.tps-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.tps-row[data-active] {
+  background: color-mix(in oklch, var(--color-navy-500) 6%, var(--color-surface-1));
+  border-color: var(--color-navy-300);
+}
+
+.tps-row__line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  color: var(--color-text-secondary);
+  min-width: 0;
 }
 
-.tpw-soon__title {
-  margin: 0;
-  font-size: var(--fs-ui);
-  font-weight: var(--fw-semibold);
+.tps-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin: 0 2px;
+  background: var(--color-navy-100);
+  border-radius: 4px;
+}
+
+.tps-swatch--diamond {
+  width: 9px;
+  height: 9px;
+  background: var(--color-accent);
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+.tps-name,
+.tps-date {
+  box-sizing: border-box;
+  height: 38px;
+  font: inherit;
+  font-size: 13.5px;
   color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
 }
 
-.tpw-soon__row {
+.tps-name {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.tps-date {
+  flex: 0 1 140px;
+  min-width: 0;
+  padding: 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tps-date[data-invalid] {
+  border-color: var(--color-error);
+}
+
+.tps-range {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 10px;
-  opacity: 0.55;
+  flex: 1 1 230px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
-.tpw-soon__row > .tp-field {
-  flex: 1 1 160px;
+.tps-range .tps-date {
+  flex: 1 1 0;
 }
 
-.tpw-soon__row :disabled {
-  cursor: not-allowed;
+.tps-range__arrow {
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
-[data-viewport="mobile"] .tp-sched-row {
-  flex-wrap: wrap;
+.tps-del {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-[data-viewport="mobile"] .tp-sched-row input {
-  flex: 1 1 140px;
+.tps-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding-left: 20px;
+  font-size: 12px;
+  color: var(--color-warning-text);
+  text-wrap: pretty;
+}
+
+.tps-msg[data-tone="overlap"],
+.tps-msg[data-tone="error"] {
+  color: var(--color-error-text);
+}
+
+.tps-msg__icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tps-row {
+    transition: none;
+  }
+}
+
+/* Phones: 44 px touch targets for the toolbar and the row controls. */
+[data-viewport="mobile"] .tps-seg__btn,
+[data-viewport="mobile"] .tps-nav__btn,
+[data-viewport="mobile"] .tps-next,
+[data-viewport="mobile"] .tps-del {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+[data-viewport="mobile"] .tps-name,
+[data-viewport="mobile"] .tps-date {
+  height: 44px;
 }
 
 /* Step 19: before finishing. */
@@ -769,20 +1215,6 @@
 /* Inside the scrolling panel the rows keep their height. */
 .tpw-tools__more > * {
   flex: none;
-}
-
-/* Phones: seven 44 px day cells do not fit in 320 px. Smaller cells, and
-   the calendar may scroll sideways rather than push the page wider. */
-.tp-cal {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-[data-viewport="mobile"] .tp-cal .rdp-root {
-  --rdp-day-width: 36px;
-  --rdp-day-height: 36px;
-  --rdp-day_button-width: 34px;
-  --rdp-day_button-height: 34px;
 }
 
 /* Phones: «Anterior» keeps its word; «Siguiente: …» takes the rest and
