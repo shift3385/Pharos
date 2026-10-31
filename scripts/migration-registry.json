@@ -3,7 +3,9 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0031": "E4 step 9 (ING-02..05): importers and unlinked tray"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024"
@@ -11,7 +13,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0011": "E4 step 9 (ING-02..05): importers and unlinked tray"
+    },
     "retired": {}
   }
 }
