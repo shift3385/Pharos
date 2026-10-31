@@ -13,9 +13,10 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
+use crate::audit::sha256_hex;
 use crate::db::{ensure_workspace, Db};
+use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
-use crate::oplog;
 use crate::project;
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
@@ -142,7 +143,7 @@ fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, String> {
     .map(|r| r.is_some())
 }
 
-fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, String> {
+pub(crate) fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, String> {
     if !project::owns(conn, &input.project_id, &input.owner_id)? {
         return Err("project not found".to_string());
     }
@@ -185,14 +186,18 @@ fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, St
     )
     .map_err(|e| e.to_string())?;
     ensure_defect_key(conn, &id)?;
-    oplog::record(
+    let owner = &input.owner_id;
+    journal::record(
         conn,
-        "planner_card",
-        &id,
-        "upsert",
-        "{}",
-        1,
-        &input.owner_id,
+        Change::new(
+            "planner_card",
+            &id,
+            Action::Create,
+            Actor::user(owner),
+            "upsert",
+            1,
+            owner,
+        ),
     )?;
     Ok(id)
 }
@@ -227,7 +232,12 @@ fn ensure_defect_key(conn: &Connection, id: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<(), String> {
+pub(crate) fn update_card(
+    conn: &Connection,
+    id: &str,
+    input: &PlannerCardInput,
+) -> Result<(), String> {
+    let before = journal::snapshot(conn, "planner_card", id)?;
     let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
     let changed = conn
         .execute(
@@ -252,14 +262,33 @@ fn update_card(conn: &Connection, id: &str, input: &PlannerCardInput) -> Result<
         return Err("card not found".to_string());
     }
     ensure_defect_key(conn, id)?;
-    oplog::record(conn, "planner_card", id, "upsert", "{}", 0, &input.owner_id)?;
+    let owner = &input.owner_id;
+    journal::record(
+        conn,
+        Change::new(
+            "planner_card",
+            id,
+            Action::Update,
+            Actor::user(owner),
+            "upsert",
+            0,
+            owner,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
 /// Persists the order of a column after a drag: every id gets its index as
 /// position and the target status (handles both moves and reorders).
-fn reorder(conn: &Connection, owner_id: &str, status: &str, ids: &[String]) -> Result<(), String> {
+pub(crate) fn reorder(
+    conn: &Connection,
+    owner_id: &str,
+    status: &str,
+    ids: &[String],
+) -> Result<(), String> {
     for (i, id) in ids.iter().enumerate() {
+        let before = journal::snapshot(conn, "planner_card", id)?;
         let moved = conn
             .execute(
                 "UPDATE planner_cards SET status = ?2, position = ?3, \
@@ -270,7 +299,19 @@ fn reorder(conn: &Connection, owner_id: &str, status: &str, ids: &[String]) -> R
             .map_err(|e| e.to_string())?;
         // A move changes status/position, which sync carries (SYNC-04a).
         if moved > 0 {
-            oplog::record(conn, "planner_card", id, "upsert", "{}", 0, owner_id)?;
+            journal::record(
+                conn,
+                Change::new(
+                    "planner_card",
+                    id,
+                    Action::Update,
+                    Actor::user(owner_id),
+                    "upsert",
+                    0,
+                    owner_id,
+                )
+                .before(before),
+            )?;
         }
     }
     Ok(())
@@ -293,7 +334,7 @@ pub fn planner_create(
     input: PlannerCardInput,
 ) -> Result<Option<PlannerCard>, String> {
     let owner = input.owner_id.clone();
-    let id = db.with_conn(|conn| insert_card(conn, &input))?;
+    let id = db.with_tx(|conn| insert_card(conn, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_card(conn, &id, &owner))
 }
@@ -305,29 +346,42 @@ pub fn planner_update(
     input: PlannerCardInput,
 ) -> Result<Option<PlannerCard>, String> {
     let owner = input.owner_id.clone();
-    db.with_conn(|conn| update_card(conn, &id, &input))?;
+    db.with_tx(|conn| update_card(conn, &id, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_card(conn, &id, &owner))
 }
 
 /// Soft-deletes a card the user owns. An unknown or foreign id is an error and
 /// leaves no oplog row behind.
-fn delete_card(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
+pub(crate) fn delete_card(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
     if !owns(conn, id, owner_id)? {
         return Err("card not found".to_string());
     }
+    let before = journal::snapshot(conn, "planner_card", id)?;
     conn.execute(
         "UPDATE planner_cards SET deleted_at = datetime('now'), updated_by = ?2 WHERE id = ?1",
         params![id, owner_id],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "planner_card", id, "delete", "{}", 0, owner_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "planner_card",
+            id,
+            Action::Delete,
+            Actor::user(owner_id),
+            "delete",
+            0,
+            owner_id,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
 #[tauri::command]
 pub fn planner_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_card(conn, &id, &owner_id))?;
+    db.with_tx(|conn| delete_card(conn, &id, &owner_id))?;
     db.persist()
 }
 
@@ -338,7 +392,7 @@ pub fn planner_reorder(
     status: String,
     ids: Vec<String>,
 ) -> Result<(), String> {
-    db.with_conn(|conn| reorder(conn, &owner_id, &status, &ids))?;
+    db.with_tx(|conn| reorder(conn, &owner_id, &status, &ids))?;
     db.persist()
 }
 
@@ -353,17 +407,16 @@ pub fn planner_attachment_add(
 ) -> Result<Option<AttachmentSummary>, String> {
     let bytes = B64.decode(data_base64).map_err(|e| e.to_string())?;
     let id = Uuid::new_v4().to_string();
-    db.with_conn(|conn| {
-        if !owns(conn, &card_id, &owner_id)? {
-            return Err("card not found".to_string());
-        }
-        conn.execute(
-            "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) \
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id, card_id, name, mime, bytes],
+    db.with_tx(|conn| {
+        add_attachment(
+            conn,
+            &id,
+            &card_id,
+            &owner_id,
+            &name,
+            mime.as_deref(),
+            &bytes,
         )
-        .map_err(|e| e.to_string())?;
-        Ok(())
     })?;
     db.persist()?;
     Ok(Some(AttachmentSummary {
@@ -426,19 +479,79 @@ fn get_attachment(
     .map_err(|e| e.to_string())
 }
 
+/// What the audit keeps of an attachment: never its bytes.
+fn attachment_fact(id: &str, name: &str, mime: Option<&str>, bytes: &[u8]) -> Value {
+    serde_json::json!({
+        "id": id, "name": name, "mime": mime, "size": bytes.len(), "sha256": sha256_hex(bytes),
+    })
+}
+
+/// Attaches a file to a card the user owns. Attachments do not sync yet
+/// (SYNC-04b, ADR-0014), so this is an audit event without an oplog row.
+pub(crate) fn add_attachment(
+    conn: &Connection,
+    id: &str,
+    card_id: &str,
+    owner_id: &str,
+    name: &str,
+    mime: Option<&str>,
+    bytes: &[u8],
+) -> Result<(), String> {
+    if !owns(conn, card_id, owner_id)? {
+        return Err("card not found".to_string());
+    }
+    conn.execute(
+        "INSERT INTO planner_attachments (id, card_id, name, mime, bytes) \
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![id, card_id, name, mime, bytes],
+    )
+    .map_err(|e| e.to_string())?;
+    let mut changes = serde_json::Map::new();
+    changes.insert(
+        "attachment".into(),
+        serde_json::json!([null, attachment_fact(id, name, mime, bytes)]),
+    );
+    journal::record_event(
+        conn,
+        Actor::user(owner_id),
+        Action::Link,
+        "planner_card",
+        card_id,
+        changes,
+        None,
+    )
+}
+
 /// Removes an attachment whose card the user owns.
-fn delete_attachment(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
-    let removed = conn
-        .execute(
-            "DELETE FROM planner_attachments WHERE id = ?1 AND card_id IN \
+pub(crate) fn delete_attachment(conn: &Connection, id: &str, owner_id: &str) -> Result<(), String> {
+    let found: Option<(String, String, Option<String>, Vec<u8>)> = conn
+        .query_row(
+            "SELECT card_id, name, mime, bytes FROM planner_attachments WHERE id = ?1 AND card_id IN \
              (SELECT id FROM planner_cards WHERE owner_id = ?2 AND deleted_at IS NULL)",
             params![id, owner_id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
         )
+        .optional()
         .map_err(|e| e.to_string())?;
-    if removed == 0 {
+    let Some((card_id, name, mime, bytes)) = found else {
         return Err("attachment not found".to_string());
-    }
-    Ok(())
+    };
+    conn.execute("DELETE FROM planner_attachments WHERE id = ?1", params![id])
+        .map_err(|e| e.to_string())?;
+    let mut changes = serde_json::Map::new();
+    changes.insert(
+        "attachment".into(),
+        serde_json::json!([attachment_fact(id, &name, mime.as_deref(), &bytes), null]),
+    );
+    journal::record_event(
+        conn,
+        Actor::user(owner_id),
+        Action::Unlink,
+        "planner_card",
+        &card_id,
+        changes,
+        None,
+    )
 }
 
 #[tauri::command]
@@ -465,7 +578,7 @@ pub fn planner_attachment_delete(
     id: String,
     owner_id: String,
 ) -> Result<(), String> {
-    db.with_conn(|conn| delete_attachment(conn, &id, &owner_id))?;
+    db.with_tx(|conn| delete_attachment(conn, &id, &owner_id))?;
     db.persist()
 }
 

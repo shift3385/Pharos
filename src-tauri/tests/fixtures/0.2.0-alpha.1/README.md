@@ -16,8 +16,9 @@ HEAD la abre sin perder nada (la MENOR anterior publicada, `docs/VERSIONING.md`
   - oplog del usuario 1 sincronizado, su cursor de pull (`cursor:<usuario>`) y
     `sync_base`;
   - un caso recibido de otro equipo y un conflicto de versión abierto;
-  - un caso con clave provisional (creado tras el push, sin bloque) y un
-    conflicto de clave de un requisito;
+  - un caso y un requisito con clave provisional (creados tras el push, sin
+    bloque); el rechazo de clave del requisito no abre conflicto porque su
+    clave ya era provisional;
   - cambios pendientes de los dos usuarios.
 - **No se edita nunca.** Una base de otra versión publicada va en su propia
   carpeta.

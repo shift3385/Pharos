@@ -15,8 +15,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::journal::{self, Action, Actor, Audit, Change};
 use crate::keys::{self, KeyKind};
-use crate::oplog;
 use crate::project;
 
 pub(crate) const KEY_PREFIX: &str = "REQ-";
@@ -183,7 +183,19 @@ fn find_by_key(
     .map_err(|e| e.to_string())
 }
 
-fn insert_requirement(conn: &Connection, input: &RequirementInput) -> Result<String, String> {
+pub(crate) fn insert_requirement(
+    conn: &Connection,
+    input: &RequirementInput,
+) -> Result<String, String> {
+    insert_requirement_as(conn, input, Audit::Event)
+}
+
+/// `insert_requirement`; `Audit::Folded` inside an import, which writes one event.
+fn insert_requirement_as(
+    conn: &Connection,
+    input: &RequirementInput,
+    audit: Audit,
+) -> Result<String, String> {
     if !project::owns(conn, &input.project_id, &input.user_id)? {
         return Err("project not found".to_string());
     }
@@ -224,12 +236,36 @@ fn insert_requirement(conn: &Connection, input: &RequirementInput) -> Result<Str
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "requirement", &id, "upsert", "{}", 1, &input.user_id)?;
+    let user = &input.user_id;
+    let mut change = Change::new(
+        "requirement",
+        &id,
+        Action::Create,
+        Actor::user(user),
+        "upsert",
+        1,
+        user,
+    );
+    change.audit = audit;
+    journal::record(conn, change)?;
     Ok(id)
 }
 
 /// Updates the editable fields. The key is immutable and ignored here.
-fn update_requirement(conn: &Connection, id: &str, input: &RequirementInput) -> Result<(), String> {
+pub(crate) fn update_requirement(
+    conn: &Connection,
+    id: &str,
+    input: &RequirementInput,
+) -> Result<(), String> {
+    update_requirement_as(conn, id, input, Audit::Event)
+}
+
+fn update_requirement_as(
+    conn: &Connection,
+    id: &str,
+    input: &RequirementInput,
+    audit: Audit,
+) -> Result<(), String> {
     if !owns(conn, id, &input.user_id)? {
         return Err("requirement not found".to_string());
     }
@@ -240,6 +276,7 @@ fn update_requirement(conn: &Connection, id: &str, input: &RequirementInput) -> 
             |r| r.get(0),
         )
         .map_err(|e| e.to_string())?;
+    let before = journal::snapshot(conn, "requirement", id)?;
     conn.execute(
         "UPDATE requirements SET title = ?2, description = ?3, priority = ?4, \
          updated_by = ?5, updated_at = datetime('now'), revision = ?6 WHERE id = ?1",
@@ -253,38 +290,55 @@ fn update_requirement(conn: &Connection, id: &str, input: &RequirementInput) -> 
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(
-        conn,
+    let user = &input.user_id;
+    let mut change = Change::new(
         "requirement",
         id,
+        Action::Update,
+        Actor::user(user),
         "upsert",
-        "{}",
         revision + 1,
-        &input.user_id,
-    )?;
+        user,
+    )
+    .before(before);
+    change.audit = audit;
+    journal::record(conn, change)?;
     Ok(())
 }
 
 /// Soft-deletes a requirement the user owns. An unknown or foreign id is an
 /// error and leaves no oplog row behind.
-fn delete_requirement(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
+pub(crate) fn delete_requirement(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
     if !owns(conn, id, user_id)? {
         return Err("requirement not found".to_string());
     }
+    let before = journal::snapshot(conn, "requirement", id)?;
     conn.execute(
         "UPDATE requirements SET deleted_at = datetime('now'), updated_by = ?2 \
          WHERE id = ?1 AND deleted_at IS NULL",
         params![id, user_id],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "requirement", id, "delete", "{}", 0, user_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "requirement",
+            id,
+            Action::Delete,
+            Actor::user(user_id),
+            "delete",
+            0,
+            user_id,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
 /// Bulk CSV import in one transaction: rows whose key already exists update that
 /// requirement; rows with the key of a deleted requirement are skipped and
 /// reported; the rest are created (keyed as given, or auto-numbered).
-fn import_requirements(
+pub(crate) fn import_requirements(
     conn: &Connection,
     project_id: &str,
     user_id: &str,
@@ -328,15 +382,32 @@ fn import_requirements(
         }
         match existing {
             Some((id, _)) => {
-                update_requirement(&tx, &id, &input)?;
+                update_requirement_as(&tx, &id, &input, Audit::Folded)?;
                 summary.updated += 1;
             }
             None => {
-                insert_requirement(&tx, &input)?;
+                insert_requirement_as(&tx, &input, Audit::Folded)?;
                 summary.created += 1;
             }
         }
     }
+    // One event for the whole import (ADR-0015), with its counts.
+    journal::record_event(
+        &tx,
+        Actor::user(user_id),
+        Action::Import,
+        "project",
+        project_id,
+        serde_json::Map::new(),
+        Some(serde_json::json!({
+            "entity": "requirement",
+            "format": "csv",
+            "rows": rows.len(),
+            "created": summary.created,
+            "updated": summary.updated,
+            "skipped": summary.skipped.len(),
+        })),
+    )?;
     tx.commit().map_err(|e| e.to_string())?;
     Ok(summary)
 }
@@ -364,7 +435,7 @@ pub fn requirement_create(
     db: State<Db>,
     input: RequirementInput,
 ) -> Result<Option<Requirement>, String> {
-    let id = db.with_conn(|conn| insert_requirement(conn, &input))?;
+    let id = db.with_tx(|conn| insert_requirement(conn, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
@@ -375,14 +446,14 @@ pub fn requirement_update(
     id: String,
     input: RequirementInput,
 ) -> Result<Option<Requirement>, String> {
-    db.with_conn(|conn| update_requirement(conn, &id, &input))?;
+    db.with_tx(|conn| update_requirement(conn, &id, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_requirement(conn, &id, &input.user_id))
 }
 
 #[tauri::command]
 pub fn requirement_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_requirement(conn, &id, &user_id))?;
+    db.with_tx(|conn| delete_requirement(conn, &id, &user_id))?;
     db.persist()
 }
 

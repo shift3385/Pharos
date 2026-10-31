@@ -1,0 +1,46 @@
+//! Sync classes (design 0.2.0 §3.2). `lww` entities (`oplog::SYNCED`) merge by
+//! base and HLC with the conflict panel; `append_only` entities, registered
+//! here, are inserted if absent, never conflict and never change content; the
+//! server refuses other content under an existing id. Registering one is one
+//! entry in `APPEND_ONLY` (and one line in the server's `sync.schemas.ts`); a
+//! new entity in either class also bumps `APPLIED_SET_VERSION`.
+
+use rusqlite::Connection;
+use serde_json::Value;
+
+/// How the desktop pushes and pulls one append-only entity.
+pub struct AppendOnly {
+    pub entity: &'static str,
+    /// The document pushed for a local row; None if it is gone.
+    pub read: fn(&Connection, &str) -> Result<Option<Value>, String>,
+    /// Stores a pulled document for an account unless its id is already here.
+    pub insert_if_absent: fn(&Connection, &str, &Value) -> Result<(), String>,
+    /// The account the local row syncs with; None = stays on this device.
+    pub owner: fn(&Connection, &str) -> Result<Option<String>, String>,
+}
+
+pub const APPEND_ONLY: &[AppendOnly] = &[AppendOnly {
+    entity: "audit_event",
+    read: crate::audit::payload,
+    insert_if_absent: crate::audit::insert_if_absent,
+    owner: crate::audit::owner,
+}];
+
+/// Version of the set of entities this build applies on pull. A pull cursor
+/// stored under an older set restarts at 0 (VERSIONING §6.5): an older build
+/// moved the cursor past documents it did not apply. Bump it with every entity
+/// added to `oplog::SYNCED` or `APPEND_ONLY`.
+pub const APPLIED_SET_VERSION: i64 = 1;
+
+pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
+    APPEND_ONLY.iter().find(|a| a.entity == entity)
+}
+
+/// `APPEND_ONLY` as an SQL list literal, for `entity IN (...)`.
+pub fn append_only_sql_list() -> String {
+    APPEND_ONLY
+        .iter()
+        .map(|a| format!("'{}'", a.entity))
+        .collect::<Vec<_>>()
+        .join(",")
+}

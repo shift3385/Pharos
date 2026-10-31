@@ -392,3 +392,147 @@ fn an_alpha_1_database_with_duplicate_and_empty_keys_still_opens() {
         2
     );
 }
+
+// ---- 0.2.0-alpha.1 (the previous published minor, VERSIONING §6.2) ----------
+
+const FIXTURE_020A1: &[u8] = include_bytes!("../tests/fixtures/0.2.0-alpha.1/pharos.db.enc");
+
+fn fixture_020a1_image() -> Connection {
+    let mut conn = Connection::open_in_memory().unwrap();
+    load_image(&mut conn, &decrypt(&FIXTURE_KEY, FIXTURE_020A1).unwrap()).unwrap();
+    conn
+}
+
+/// (entity, entity_id) of every delta an account's next lww push would send.
+fn pending_entities(conn: &Connection, user: &str) -> Vec<(String, String)> {
+    let pending = serde_json::to_value(crate::sync::build_pending(conn, user).unwrap()).unwrap();
+    let mut out: Vec<(String, String)> = pending["deltas"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| {
+            (
+                d["entity"].as_str().unwrap().into(),
+                d["entityId"].as_str().unwrap().into(),
+            )
+        })
+        .collect();
+    out.sort();
+    out
+}
+
+#[test]
+fn the_fixture_really_is_a_0_2_0_alpha_1_database() {
+    let old = fixture_020a1_image();
+    let applied = applied_migrations(&old).unwrap();
+    assert_eq!(applied.len(), 17);
+    assert_eq!(
+        applied.last().map(String::as_str),
+        Some("0018_template_owner.sql")
+    );
+    assert!(!tables(&old).contains(&"audit_log".to_string()));
+    for table in [
+        "profiles",
+        "projects",
+        "test_plans",
+        "test_plan_revisions",
+        "test_cases",
+        "test_case_revisions",
+        "requirements",
+        "planner_cards",
+        "planner_attachments",
+        "templates",
+        "oplog",
+        "sync_state",
+        "sync_base",
+        "sync_conflicts",
+        "key_counters",
+    ] {
+        assert!(
+            count(&old, &format!("SELECT count(*) FROM {table}")) > 0,
+            "{table} is empty"
+        );
+    }
+    assert!(
+        count(
+            &old,
+            "SELECT count(*) FROM test_cases WHERE scenario_id LIKE '%?%'"
+        ) > 0
+    );
+    assert!(count(&old, "SELECT count(*) FROM oplog WHERE synced_at IS NULL") > 0);
+}
+
+#[test]
+fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_audit_log() {
+    let dir = temp_dir();
+    fs::write(dir.join("pharos.db.enc"), FIXTURE_020A1).unwrap();
+    let old = fixture_020a1_image();
+    let pending_before = (
+        pending_entities(&old, USER_1),
+        pending_entities(&old, USER_2),
+    );
+
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+
+    // SEC-06: the untouched 0.2.0-alpha.1 file was kept before migrating.
+    let backup = dir.join(format!(
+        "pharos.db.enc.bak-{APP_VERSION}-0018_template_owner"
+    ));
+    assert_eq!(fs::read(&backup).unwrap(), FIXTURE_020A1);
+
+    db.with_conn(|new| {
+        assert_eq!(pending_migrations(new)?.len(), 0);
+        // Nothing changes: no migration since 0018 rewrites a row.
+        for table in tables(&old) {
+            let cols = columns(&old, &table);
+            let before = rows(&old, &table, &cols);
+            let after = rows(new, &table, &cols);
+            if table == "schema_migrations" {
+                assert_eq!(&after[..before.len()], &before[..]);
+                continue;
+            }
+            assert_eq!(after, before, "{table}");
+        }
+        // The audit log starts empty: nothing is backfilled (ADR-0015).
+        assert_eq!(count(new, "SELECT count(*) FROM audit_log"), 0);
+        // Both accounts' pending changes still push as before, open conflicts stay.
+        assert_eq!(
+            (pending_entities(new, USER_1), pending_entities(new, USER_2)),
+            pending_before
+        );
+        assert!(
+            count(
+                new,
+                "SELECT count(*) FROM sync_conflicts WHERE resolved_at IS NULL"
+            ) > 0
+        );
+        // The cursor advanced by 0.2.0-alpha.1 restarts once (VERSIONING §6.5).
+        assert_eq!(crate::sync::cursor_get(new, USER_1)?, "0");
+
+        // The first audited change starts the account's chain at 1.
+        let case: String = new
+            .query_row(
+                "SELECT c.id FROM test_cases c JOIN projects p ON p.id = c.project_id \
+             WHERE p.owner_id = ?1 AND c.deleted_at IS NULL AND c.scenario_id = 'ATS_002'",
+                params![USER_1],
+                |r| r.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+        crate::test_case::delete_case(new, &case, USER_1)?;
+        let (seq, prev, owner): (i64, Option<String>, String) = new
+            .query_row(
+                "SELECT chain_seq, prev_hash, user_id FROM audit_log",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .map_err(|e| e.to_string())?;
+        assert_eq!((seq, prev, owner.as_str()), (1, None, USER_1));
+        Ok(())
+    })
+    .unwrap();
+    drop(db);
+
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    assert_eq!(db.with_conn(pending_migrations).unwrap().len(), 0);
+    fs::remove_dir_all(&dir).unwrap();
+}

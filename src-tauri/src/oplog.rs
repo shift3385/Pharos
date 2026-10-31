@@ -114,7 +114,13 @@ pub fn owner_of(
         }
         "planner_card" => "SELECT owner_id FROM planner_cards WHERE id = ?1",
         "template" => "SELECT owner_id FROM templates WHERE id = ?1",
-        _ => return Ok(None),
+        // Append-only entities say it themselves (sync_class registry).
+        _ => {
+            return match crate::sync_class::append_only(entity) {
+                Some(class) => (class.owner)(conn, entity_id),
+                None => Ok(None),
+            }
+        }
     };
     let owner: Option<Option<String>> = conn
         .query_row(sql, params![entity_id], |r| r.get(0))
@@ -138,11 +144,12 @@ pub(crate) fn known_to_server(conn: &Connection, entity: &str, id: &str) -> Resu
     .map(|r| r.is_some())
 }
 
-/// Appends a delta for an entity mutation. Called inside each repo's write, in
-/// the same connection/transaction, so the journal never diverges from the data.
-/// The row belongs to the entity's owner (FIX-07), so another account signed in
-/// on this device never pushes it.
-pub fn record(
+/// Appends a delta for an entity mutation, in the same connection/transaction
+/// as the write, so the journal never diverges from the data. Only
+/// `journal::record` calls it (AUD-01): the oplog row and the audit event of a
+/// change are written together. The row belongs to the entity's owner (FIX-07),
+/// so another account signed in on this device never pushes it.
+pub(crate) fn record(
     conn: &Connection,
     entity: &str,
     entity_id: &str,

@@ -2,11 +2,15 @@
 //! target (v0.0.4) can reuse the same entrypoint.
 
 mod ai;
+mod audit;
+#[cfg(test)]
+mod audit_tests;
 mod db;
 mod diag;
 mod downloads;
 mod hlc;
 mod instance;
+mod journal;
 mod key_sync;
 mod keychain;
 mod keys;
@@ -18,6 +22,7 @@ mod purge;
 mod recovery;
 mod requirement;
 mod sync;
+mod sync_class;
 mod template;
 mod test_case;
 mod test_plan;

@@ -155,7 +155,8 @@ fn generate_fixture() {
         // provisional key until a block is leased (DAT-01).
         crate::test_case::insert_case(c, &case_in(&project_1, USER_1, None, "Created offline"))?;
 
-        // A requirement whose key the server refused → key conflict.
+        // A requirement whose key the server refused. Its key is already
+        // provisional (numbered after the push), so no key conflict opens.
         let req_4 = crate::requirement::insert_requirement(c, &req_in("Split payment"))?;
         let refused: Vec<crate::key_sync::RejectedKey> = serde_json::from_value(json!([
             {"entity": "requirement", "entityId": req_4, "takenBy": "someone-else"}

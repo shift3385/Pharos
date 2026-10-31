@@ -374,6 +374,12 @@ struct OsInfo {
 #[serde(rename_all = "camelCase")]
 struct DatabaseInfo {
     migrations: Vec<AppliedMigration>,
+    /// Audit events of any account on this device not yet on the server
+    /// (AUD-01). They are not in the pending badge; a number that keeps growing
+    /// points at a server without the `append-only` feature. Absent when the
+    /// database is not open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pending_audit_events: Option<i64>,
     /// Why the local database is not open; absent when it is.
     #[serde(skip_serializing_if = "Option::is_none")]
     open_error: Option<String>,
@@ -478,10 +484,12 @@ fn build_bundle(
     let database = match conn {
         Some(conn) => DatabaseInfo {
             migrations: applied_migrations(conn)?,
+            pending_audit_events: Some(crate::audit::pending_count(conn)?),
             open_error: None,
         },
         None => DatabaseInfo {
             migrations: Vec::new(),
+            pending_audit_events: None,
             open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
         },
     };

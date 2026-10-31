@@ -22,9 +22,11 @@ use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
 use crate::hlc;
+use crate::journal::{self, Action, Actor, Change};
 use crate::key_sync;
 use crate::keys;
 use crate::oplog::{self, SYNCED};
+use crate::sync_class;
 
 fn table_for(entity: &str) -> Option<&'static str> {
     match entity {
@@ -116,7 +118,11 @@ type PayloadRow = (Value, i64, bool);
 
 /// Reads one entity's live state as the camelCase payload the TS API returns
 /// (so the web client can consume it directly). None if the row is gone.
-fn read_payload(conn: &Connection, entity: &str, id: &str) -> Result<Option<PayloadRow>, String> {
+pub(crate) fn read_payload(
+    conn: &Connection,
+    entity: &str,
+    id: &str,
+) -> Result<Option<PayloadRow>, String> {
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
             "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
@@ -324,7 +330,7 @@ fn open_conflict_id(
 /// changed since the last sync, carrying its live state (or a tombstone), its
 /// base and the oplog ids covered. Entities with an open conflict (of version
 /// or of key, DAT-01) are held back until it is resolved.
-fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
+pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
     oplog::claim_unowned(conn)?;
     key_sync::close_stale(conn)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
@@ -410,17 +416,76 @@ fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
     Ok(Pending { deltas })
 }
 
+/// Pending documents of the `append_only` class (AUD-01): one per row, read
+/// from its registry entry, op "append", no base. Never held back by a
+/// conflict (they have none). Sent only to servers with `append-only`.
+pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pending, String> {
+    let rows: Vec<(String, String, String, String, String)> = {
+        let mut stmt = conn
+            .prepare(&format!(
+                "SELECT entity, entity_id, id, hlc, author FROM oplog
+                  WHERE synced_at IS NULL AND user_id = ?1 AND entity IN ({})
+                  ORDER BY rowid",
+                sync_class::append_only_sql_list()
+            ))
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params![user], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+            })
+            .map_err(|e| e.to_string())?;
+        rows.collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?
+    };
+    let mut deltas = Vec::new();
+    for (entity, entity_id, op_id, row_hlc, author) in rows {
+        let Some(class) = sync_class::append_only(&entity) else {
+            continue;
+        };
+        let Some(payload) = (class.read)(conn, &entity_id)? else {
+            continue;
+        };
+        deltas.push(Delta {
+            entity,
+            entity_id,
+            op: "append".into(),
+            payload,
+            revision: 1,
+            author,
+            hlc: row_hlc,
+            base_revision: None,
+            base_hlc: None,
+            op_ids: vec![op_id],
+        });
+    }
+    Ok(Pending { deltas })
+}
+
+/// Pending deltas of one account. `class`: "lww" (default: what every client
+/// before AUD-01 asked for) or "append_only".
 #[tauri::command]
-pub fn oplog_pending(db: State<Db>, user_id: String) -> Result<Pending, String> {
+pub fn oplog_pending(
+    db: State<Db>,
+    user_id: String,
+    class: Option<String>,
+) -> Result<Pending, String> {
     require_user(&user_id)?;
-    let pending = db.with_conn(|conn| build_pending(conn, &user_id))?;
+    let pending = match class.as_deref().unwrap_or("lww") {
+        "lww" => db.with_conn(|conn| build_pending(conn, &user_id))?,
+        "append_only" => db.with_conn(|conn| build_pending_append(conn, &user_id))?,
+        other => return Err(format!("unknown sync class: {other}")),
+    };
     db.persist()?;
     Ok(pending)
 }
 
 /// Marks the oplog rows of the deltas the server accepted as synced and moves
 /// each entity's base to the version just pushed.
-fn mark_pushed(conn: &Connection, user: &str, deltas: &[PushedDelta]) -> Result<(), String> {
+pub(crate) fn mark_pushed(
+    conn: &Connection,
+    user: &str,
+    deltas: &[PushedDelta],
+) -> Result<(), String> {
     for d in deltas {
         for id in &d.op_ids {
             conn.execute(
@@ -429,7 +494,10 @@ fn mark_pushed(conn: &Connection, user: &str, deltas: &[PushedDelta]) -> Result<
             )
             .map_err(|e| e.to_string())?;
         }
-        set_base(conn, user, &d.entity, &d.entity_id, d.revision, &d.hlc)?;
+        // An append-only document has no base: it never changes.
+        if sync_class::append_only(&d.entity).is_none() {
+            set_base(conn, user, &d.entity, &d.entity_id, d.revision, &d.hlc)?;
+        }
     }
     Ok(())
 }
@@ -509,12 +577,21 @@ fn upsert_conflict(
 /// pending changes or an open conflict, the remote version is kept in
 /// `sync_conflicts` instead. An entity that belongs to another account on this
 /// device is never overwritten (FIX-07).
-fn apply_doc(
+pub(crate) fn apply_doc(
     conn: &Connection,
     workspace_id: &str,
     user: &str,
     doc: &RemoteDoc,
 ) -> Result<(), String> {
+    // Append-only (AUD-01): inserted if absent, no base, never a conflict,
+    // nothing echoed to the oplog. A tombstone of one changes nothing here.
+    if let Some(class) = sync_class::append_only(&doc.entity) {
+        oplog::observe_hlc(conn, &doc.hlc)?;
+        if !doc.deleted {
+            (class.insert_if_absent)(conn, user, &doc.payload)?;
+        }
+        return Ok(());
+    }
     if !SYNCED.contains(&doc.entity.as_str()) {
         return Ok(());
     }
@@ -543,9 +620,35 @@ fn apply_doc(
     )
 }
 
+/// A remote payload completed with the local one (VERSIONING §6.5, design
+/// 0.2.0 §3.7): a key the sender left out keeps the local value, and `data` is
+/// merged one level deep the same way. An older client that does not know a
+/// field never resets it here. A key sent as `null` is taken as sent (cleared).
+/// The server applies the same rule on push (`storeDoc`).
+pub(crate) fn fill_missing(local: &Value, remote: &Value) -> Value {
+    let (Some(l), Some(r)) = (local.as_object(), remote.as_object()) else {
+        return remote.clone();
+    };
+    let mut out = l.clone();
+    for (key, value) in r {
+        let merged = match (key.as_str(), l.get(key), value) {
+            ("data", Some(Value::Object(ld)), Value::Object(rd)) => {
+                let mut d = ld.clone();
+                d.extend(rd.iter().map(|(k, v)| (k.clone(), v.clone())));
+                Value::Object(d)
+            }
+            _ => value.clone(),
+        };
+        out.insert(key.clone(), merged);
+    }
+    Value::Object(out)
+}
+
 /// Overwrites the local row with a remote document's state. `created_by` and
 /// `updated_by` always get `user`, the account the document belongs to (its
-/// owner, ADR-0020), never the free-text `author` of the payload (FIX-06).
+/// owner, ADR-0020), never the free-text `author` of the payload (FIX-06). A
+/// key missing from the document keeps the live local value (`fill_missing`);
+/// a tombstone, or a new row, takes the document as it is.
 fn write_doc(
     conn: &Connection,
     workspace_id: &str,
@@ -568,7 +671,11 @@ fn write_doc(
         return Ok(());
     }
 
-    let p = &doc.payload;
+    let filled = match read_payload(conn, &doc.entity, &doc.entity_id)? {
+        Some((local, _, false)) => fill_missing(&local, &doc.payload),
+        _ => doc.payload.clone(),
+    };
+    let p = &filled;
     let data_str = |key: &str| {
         p.get(key)
             .map(|v| v.to_string())
@@ -747,34 +854,65 @@ fn cursor_key(user: &str) -> String {
     format!("cursor:{user}")
 }
 
+/// Key of the applied-set version the cursor was advanced under
+/// (`sync_class::APPLIED_SET_VERSION`). Missing: a build before AUD-01.
+fn cursor_set_key(user: &str) -> String {
+    format!("cursor_set:{user}")
+}
+
+fn state_value(conn: &Connection, key: &str) -> Result<Option<String>, String> {
+    conn.query_row(
+        "SELECT value FROM sync_state WHERE key = ?1",
+        params![key],
+        |r| r.get(0),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
+fn put_state(conn: &Connection, key: &str, value: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO sync_state (key, value) VALUES (?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        params![key, value],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// The account's pull cursor. It restarts at 0 when it was advanced under an
+/// older set of applied entities (VERSIONING §6.5, design 0.2.0 §3.7): that
+/// build skipped documents of entities it did not know but moved past them.
+/// Re-pulling is safe: what matches `sync_base` is a no-op.
+pub(crate) fn cursor_get(conn: &Connection, user: &str) -> Result<String, String> {
+    let set = state_value(conn, &cursor_set_key(user))?.and_then(|v| v.parse::<i64>().ok());
+    if set != Some(sync_class::APPLIED_SET_VERSION) {
+        return Ok("0".to_string());
+    }
+    Ok(state_value(conn, &cursor_key(user))?.unwrap_or_else(|| "0".to_string()))
+}
+
+/// Stores the cursor together with the applied-set version it was reached
+/// under, so an interrupted re-pull resumes instead of restarting.
+pub(crate) fn cursor_set(conn: &Connection, user: &str, value: &str) -> Result<(), String> {
+    put_state(conn, &cursor_key(user), value)?;
+    put_state(
+        conn,
+        &cursor_set_key(user),
+        &sync_class::APPLIED_SET_VERSION.to_string(),
+    )
+}
+
 #[tauri::command]
 pub fn sync_cursor_get(db: State<Db>, user_id: String) -> Result<String, String> {
     require_user(&user_id)?;
-    db.with_conn(|conn| {
-        let v: Option<String> = conn
-            .query_row(
-                "SELECT value FROM sync_state WHERE key = ?1",
-                params![cursor_key(&user_id)],
-                |r| r.get(0),
-            )
-            .optional()
-            .map_err(|e| e.to_string())?;
-        Ok(v.unwrap_or_else(|| "0".to_string()))
-    })
+    db.with_conn(|conn| cursor_get(conn, &user_id))
 }
 
 #[tauri::command]
 pub fn sync_cursor_set(db: State<Db>, user_id: String, value: String) -> Result<(), String> {
     require_user(&user_id)?;
-    db.with_conn(|conn| {
-        conn.execute(
-            "INSERT INTO sync_state (key, value) VALUES (?1, ?2)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            params![cursor_key(&user_id), value],
-        )
-        .map_err(|e| e.to_string())?;
-        Ok(())
-    })?;
+    db.with_tx(|conn| cursor_set(conn, &user_id, &value))?;
     db.persist()
 }
 
@@ -876,7 +1014,7 @@ pub fn sync_conflicts_list(db: State<Db>, user_id: String) -> Result<Vec<Conflic
 /// granularity). `local` keeps this device's version and re-bases it on the
 /// remote one so the next push is accepted; `remote` takes the server version
 /// and discards the local pending changes.
-fn resolve_conflict(
+pub(crate) fn resolve_conflict(
     conn: &Connection,
     workspace_id: &str,
     user: &str,
@@ -919,14 +1057,19 @@ fn resolve_conflict(
             let deleted = read_payload(conn, &c.entity, &c.entity_id)?.map_or(true, |p| p.2);
             // A fresh delta (new HLC, after the remote one already observed) on
             // top of the remote base: the next push fast-forwards the server.
-            oplog::record(
+            journal::record(
                 conn,
-                &c.entity,
-                &c.entity_id,
-                if deleted { "delete" } else { "upsert" },
-                "{}",
-                revision,
-                &author,
+                Change::new(
+                    &c.entity,
+                    &c.entity_id,
+                    Action::ResolveConflict,
+                    Actor::user(user),
+                    if deleted { "delete" } else { "upsert" },
+                    revision,
+                    &author,
+                )
+                .before(journal::snapshot(conn, &c.entity, &c.entity_id)?)
+                .summary(json!({ "resolution": "local", "remoteRevision": c.remote.revision })),
             )?;
         }
         "remote" => {
@@ -935,6 +1078,7 @@ fn resolve_conflict(
             if c.entity == "project" && c.local.deleted && !c.remote.deleted {
                 restore_project_children(conn, &c.entity_id)?;
             }
+            let before = journal::snapshot(conn, &c.entity, &c.entity_id)?;
             let doc = RemoteDoc {
                 entity: c.entity.clone(),
                 entity_id: c.entity_id.clone(),
@@ -945,6 +1089,18 @@ fn resolve_conflict(
             };
             write_doc(conn, workspace_id, user, &doc)?;
             mark_entity_synced(conn, user, &c.entity, &c.entity_id)?;
+            // The local change is dropped for the server version: no oplog row
+            // (nothing to push), but the decision is audited (ADR-0015).
+            let after = journal::snapshot(conn, &c.entity, &c.entity_id)?;
+            journal::record_event(
+                conn,
+                Actor::user(user),
+                Action::ResolveConflict,
+                &c.entity,
+                &c.entity_id,
+                journal::diff(before.as_ref(), after.as_ref()),
+                Some(json!({ "resolution": "remote", "remoteRevision": c.remote.revision })),
+            )?;
             set_base(
                 conn,
                 user,

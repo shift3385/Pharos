@@ -123,6 +123,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0018_template_owner.sql",
         include_str!("../migrations/0018_template_owner.sql"),
     ),
+    (
+        "0019_audit_log.sql",
+        include_str!("../migrations/0019_audit_log.sql"),
+    ),
 ];
 
 pub struct Db {
@@ -317,6 +321,19 @@ impl Db {
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
         f(&conn)
+    }
+
+    /// Runs a write in one transaction: committed if the closure succeeds,
+    /// rolled back otherwise, so an entity change, its oplog row and its audit
+    /// event (journal) are all kept or all dropped. The closure must not open a
+    /// transaction of its own (repositories that need one, like the CSV import,
+    /// are called through `with_conn`). The lock is held only for the closure,
+    /// which is synchronous.
+    pub fn with_tx<T>(
+        &self,
+        f: impl FnOnce(&Connection) -> Result<T, String>,
+    ) -> Result<T, String> {
+        self.with_conn(|conn| in_tx(conn, f))
     }
 
     /// Serializes the in-memory database and writes it encrypted to disk.
@@ -546,6 +563,17 @@ fn load_image(conn: &mut Connection, image: &[u8]) -> Result<(), String> {
     };
     conn.deserialize(DatabaseName::Main, data, false)
         .map_err(|e| format!("failed to load local database: {e}"))
+}
+
+/// `Db::with_tx` on a bare connection (also what tests use).
+pub(crate) fn in_tx<T>(
+    conn: &Connection,
+    f: impl FnOnce(&Connection) -> Result<T, String>,
+) -> Result<T, String> {
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let out = f(&tx)?;
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(out)
 }
 
 /// Returns the single workspace id, creating a default workspace on first use.
