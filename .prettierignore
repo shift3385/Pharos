@@ -4,3 +4,5 @@ coverage
 src-tauri/target
 docs/referencias
 docs/rediseno
+# Golden export files are compared byte for byte (DAT-02): never reformat them.
+src/modules/test-cases/export/__golden__
