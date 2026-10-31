@@ -21,6 +21,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::Db;
+use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
 use crate::oplog;
 
@@ -142,8 +143,10 @@ pub(crate) fn apply_blocks(
 
 /// Gives a row a new key: bumps its revision and journals it, so the next push
 /// carries it. A renamed requirement takes its links along.
+#[allow(clippy::too_many_arguments)]
 fn set_key(
     conn: &Connection,
+    actor: &Actor,
     user: &str,
     kind: KeyKind,
     id: &str,
@@ -159,6 +162,7 @@ fn set_key(
             |r| r.get(0),
         )
         .map_err(|e| e.to_string())?;
+    let before = journal::snapshot(conn, entity, id)?;
     conn.execute(
         &format!(
             "UPDATE {table} SET {column} = ?2, revision = ?3, updated_by = ?4, \
@@ -167,9 +171,21 @@ fn set_key(
         params![id, new, revision + 1, user],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, entity, id, "upsert", "{}", revision + 1, user)?;
+    journal::record(
+        conn,
+        Change::new(
+            entity,
+            id,
+            Action::Update,
+            actor.clone(),
+            "upsert",
+            revision + 1,
+            user,
+        )
+        .before(before),
+    )?;
     if let KeyKind::Requirement = kind {
-        relink_requirement(conn, user, project_id, old, new)?;
+        relink_requirement(conn, actor, user, project_id, old, new)?;
     }
     Ok(())
 }
@@ -178,6 +194,7 @@ fn set_key(
 /// (ADR-0010 precisions: a provisional key is replaced in the same transaction).
 fn relink_requirement(
     conn: &Connection,
+    actor: &Actor,
     user: &str,
     project_id: &str,
     old: &str,
@@ -200,6 +217,7 @@ fn relink_requirement(
             .map_err(|e| e.to_string())?
     };
     for (id, data, revision) in cases {
+        let before = journal::snapshot(conn, "test_case", &id)?;
         let mut data: Value = serde_json::from_str(&data).unwrap_or(Value::Null);
         if let Some(keys) = data
             .get_mut("requirementKeys")
@@ -217,7 +235,19 @@ fn relink_requirement(
             params![id, data.to_string(), revision + 1, user],
         )
         .map_err(|e| e.to_string())?;
-        oplog::record(conn, "test_case", &id, "upsert", "{}", revision + 1, user)?;
+        journal::record(
+            conn,
+            Change::new(
+                "test_case",
+                &id,
+                Action::Update,
+                actor.clone(),
+                "upsert",
+                revision + 1,
+                user,
+            )
+            .before(before),
+        )?;
     }
     Ok(())
 }
@@ -253,7 +283,11 @@ pub(crate) fn finalize(conn: &Connection, user: &str) -> Result<usize, String> {
             let Some(new) = keys::allocate_definitive(conn, kind, &project_id)? else {
                 continue;
             };
-            set_key(conn, user, kind, &id, &project_id, &old, &new)?;
+            let actor = Actor::System {
+                component: "keys",
+                on_behalf_of: Some(user.to_string()),
+            };
+            set_key(conn, &actor, user, kind, &id, &project_id, &old, &new)?;
             assigned += 1;
         }
     }
@@ -514,7 +548,16 @@ pub(crate) fn resolve(
         }
         None => keys::allocate_definitive(conn, kind, &project_id)?.ok_or("no-key-block")?,
     };
-    set_key(conn, user, kind, &entity_id, &project_id, &current, &new)?;
+    set_key(
+        conn,
+        &Actor::user(user),
+        user,
+        kind,
+        &entity_id,
+        &project_id,
+        &current,
+        &new,
+    )?;
     conn.execute(
         "UPDATE key_conflicts SET resolved_at = datetime('now'), resolution = 'renamed' WHERE id = ?1",
         params![id],
@@ -766,10 +809,11 @@ mod tests {
             get("SELECT scenario_id FROM test_cases WHERE id = 'c2'"),
             "ATS_?QQQQ"
         );
-        // Every change is journaled for the next push.
+        // Every change is journaled for the next push (and audited, AUD-01).
         let journaled: i64 = c
             .query_row(
-                "SELECT count(DISTINCT entity_id) FROM oplog WHERE synced_at IS NULL",
+                "SELECT count(DISTINCT entity_id) FROM oplog WHERE synced_at IS NULL \
+                 AND entity <> 'audit_event'",
                 [],
                 |r| r.get(0),
             )

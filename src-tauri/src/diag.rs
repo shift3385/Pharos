@@ -374,6 +374,16 @@ struct OsInfo {
 #[serde(rename_all = "camelCase")]
 struct DatabaseInfo {
     migrations: Vec<AppliedMigration>,
+    /// Audit events of any account on this device not yet on the server
+    /// (AUD-01). They are not in the pending badge; a number that keeps growing
+    /// points at a server without the `append-only` feature. Absent when the
+    /// database is not open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pending_audit_events: Option<i64>,
+    /// Audit events the server refused for other content under their id: never
+    /// resent; a number above 0 points at a bug or a tampered copy.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rejected_audit_events: Option<i64>,
     /// Why the local database is not open; absent when it is.
     #[serde(skip_serializing_if = "Option::is_none")]
     open_error: Option<String>,
@@ -478,10 +488,14 @@ fn build_bundle(
     let database = match conn {
         Some(conn) => DatabaseInfo {
             migrations: applied_migrations(conn)?,
+            pending_audit_events: Some(crate::audit::pending_count(conn)?),
+            rejected_audit_events: Some(crate::audit::rejected_count(conn)?),
             open_error: None,
         },
         None => DatabaseInfo {
             migrations: Vec::new(),
+            pending_audit_events: None,
+            rejected_audit_events: None,
             open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
         },
     };
@@ -824,6 +838,9 @@ mod tests {
         assert!(bundle.logs.is_empty());
         assert_eq!(bundle.manifest.app.version, env!("CARGO_PKG_VERSION"));
         assert!(!bundle.manifest.database.migrations.is_empty());
+        // AUD-01: pending audit events are counted (no ids, no content).
+        assert_eq!(bundle.manifest.database.pending_audit_events, Some(0));
+        assert_eq!(bundle.manifest.database.rejected_audit_events, Some(0));
         let no_log_dir =
             build_bundle(Some(&conn), None, None, ClientInfo::default(), "x".into()).unwrap();
         assert!(no_log_dir.logs.is_empty());

@@ -148,3 +148,87 @@ auditan en el servidor.
   revisiones de antes y después en lugar de copiar las diferencias. Se mantiene
   `changes`: el evento se entiende sin consultar las revisiones, el volumen es
   pequeño y la redacción es más sencilla.
+
+## Enmienda de implementación (E1, 2026-10-31)
+
+Aprobada por el coordinador el 2026-10-31 junto con el plan de E1. Precisa la
+decisión sin cambiarla:
+
+- **Clave de la cadena hasta 0.3.0:** `(device_id, chain_workspace_id,
+  chain_owner)` en lugar de `(device_id, workspace_id)`.
+  - En 0.2 todas las cuentas de un equipo comparten el único workspace local,
+    pero cada cuenta solo sincroniza sus eventos (regla 1 de ADR-0020). Con la
+    clave original, la copia de cada cuenta en el servidor tendría huecos y no
+    se podría verificar.
+  - `chain_owner` es el dueño del evento (`user_id`), fijado al escribirlo.
+  - **Paso a 0.3.0:** cuando ADR-0019 haga del workspace la frontera de datos,
+    los eventos nuevos llevan `chain_owner = ''` y empiezan una cadena por
+    `(device_id, workspace)`. Las cadenas anteriores no cambian y se siguen
+    verificando con su `chain_owner`; la columna se queda.
+- **Columnas añadidas al boceto** (migración `0019_audit_log.sql`):
+  - `chain_seq` (1, 2, 3… por cadena), para detectar huecos y ordenar la
+    verificación;
+  - `chain_owner`;
+  - `user_id`, la cuenta con la que se sincroniza (`''` = solo local);
+  - `redacted_at`.
+- **El dueño se fija al escribir** y no se vuelve a derivar: el de un actor
+  `user:` es esa cuenta (en 0.2 solo el dueño de un proyecto lo edita); el de
+  un actor `system:` es el dueño del proyecto, o `''`. Así un evento no cambia
+  de cadena después.
+- **Cabecera hasheada:** el evento sin `changes`, `workspace_id`, `project_id`,
+  `user_id`, `prev_hash`, `hash` ni `redacted_at`. JCS (RFC 8785) solo para el
+  subconjunto que usa la cabecera (claves ASCII, cadenas, enteros, booleanos,
+  null); otra cosa es un error. `changes` y `summary` viajan como el texto JSON
+  guardado, y `changes_sha256` es el sha256 de ese texto.
+- **Solo añadir, también en la BD local:** triggers que rechazan `DELETE` y
+  todo `UPDATE` salvo la redacción (`changes` → NULL y `redacted_at` puesto,
+  una sola vez). La purga nunca toca `audit_log`.
+- **Un evento por intención:** borrar un proyecto es un evento `delete` con los
+  recuentos de la cascada en `summary`; importar requisitos por CSV, un evento
+  `import` con sus recuentos (sus filas siguen teniendo cada una su fila de
+  oplog). Una actualización que no cambia ningún campo no deja evento.
+- **Adjuntos del planificador:** eventos `link` / `unlink` sobre la tarjeta,
+  con nombre, tipo, tamaño y sha256, sin fila de oplog propia hasta SYNC-04b.
+- **Resolver un conflicto** deja un evento `resolve_conflict` en los dos
+  sentidos (con `"resolution": "local"` o `"remote"` en `summary`).
+- **Hasta AUD-01b (0.2.0), lo que se edita en la web no deja rastro.** La web
+  escribe en el servidor sin pasar por `journal::record`. AUD-01b (ROADMAP,
+  ola E2) hace que el servidor escriba un `audit_event` por cada escritura del
+  dominio, con su propia cadena.
+- **Sincronización:** los eventos pendientes no cuentan en el indicador de
+  cambios pendientes. El diagnóstico exportado lleva su número
+  (`pendingAuditEvents`), para ver si se acumulan contra un servidor sin
+  `append-only`.
+
+### Tras la revisión de E1 (2026-10-31)
+
+- **Bifurcación al copiar la base.**
+  - Una base recuperada con la clave de recuperación recibe un `device_id`
+    nuevo (`oplog::rotate_device_id`), así que sus eventos empiezan una cadena
+    nueva en lugar de bifurcar la del equipo original.
+  - Una copia `.bak` restaurada a mano conserva el `device_id`, y la cabeza de
+    su cadena retrocede: la cadena se bifurca y `verify_chain` lo verá como un
+    eslabón roto. Lo cubre AUD-01c (ROADMAP).
+- **Eventos rechazados.**
+  - Un evento que el servidor rechaza (`appendRejected`) se marca y no se
+    vuelve a enviar. Se conserva en local y el diagnóstico lo cuenta
+    (`rejectedAuditEvents`).
+  - **Para SYNC-06:** la redacción cambia el contenido del documento en el
+    servidor. Una copia sin redactar que se reenvíe después chocará y se
+    rechazará, y así debe ser: la redacción de servidor tendrá que propagarse a
+    los equipos (el pull no aplica cambios a eventos que ya tiene) antes de que
+    estos reenvíen nada.
+- **Actor `user:` sin id** (un cambio hecho sin sesión, por ejemplo un
+  proyecto sin `ownerId`): el evento no tiene dueño y se queda en el equipo,
+  igual que el cambio, que no tiene a quién sincronizarse.
+- **El pull no verifica el hash.** Guarda lo que tiene el servidor; quien
+  comprueba una cadena es `verify_chain` (Admin > Auditoría).
+- **Solo añadir, también frente a `INSERT OR REPLACE`.** SQLite no dispara los
+  triggers de borrado en un REPLACE salvo con `recursive_triggers`, así que un
+  trigger rechaza insertar un id que ya existe.
+- **Crecimiento.**
+  - Cada cambio auditado escribe dos filas de oplog, y un evento con los
+    valores cambiados; reordenar 200 tarjetas son 200 eventos (112 ms en un
+    build de depuración).
+  - Nada se compacta todavía: las filas de oplog sincronizadas esperan a
+    SYNC-10, y la auditoría no se purga en `0.x`.

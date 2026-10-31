@@ -53,6 +53,14 @@ pub fn device_id(conn: &Connection) -> Result<String, String> {
     Ok(id)
 }
 
+/// Gives this database a new device id (AUD-01 review): for a file that may be
+/// a copy of another device's (recovered with the recovery key). Its audit
+/// events then start a new chain instead of forking the original's; the HLC
+/// stays monotonic (`hlc_last` is kept).
+pub(crate) fn rotate_device_id(conn: &Connection) -> Result<(), String> {
+    state_set(conn, "device_id", &Uuid::new_v4().to_string())
+}
+
 fn last_hlc(conn: &Connection) -> Result<Option<Hlc>, String> {
     Ok(state_get(conn, "hlc_last")?.and_then(|s| Hlc::parse(&s)))
 }
@@ -114,7 +122,13 @@ pub fn owner_of(
         }
         "planner_card" => "SELECT owner_id FROM planner_cards WHERE id = ?1",
         "template" => "SELECT owner_id FROM templates WHERE id = ?1",
-        _ => return Ok(None),
+        // Append-only entities say it themselves (sync_class registry).
+        _ => {
+            return match crate::sync_class::append_only(entity) {
+                Some(class) => (class.owner)(conn, entity_id),
+                None => Ok(None),
+            }
+        }
     };
     let owner: Option<Option<String>> = conn
         .query_row(sql, params![entity_id], |r| r.get(0))
@@ -138,11 +152,12 @@ pub(crate) fn known_to_server(conn: &Connection, entity: &str, id: &str) -> Resu
     .map(|r| r.is_some())
 }
 
-/// Appends a delta for an entity mutation. Called inside each repo's write, in
-/// the same connection/transaction, so the journal never diverges from the data.
-/// The row belongs to the entity's owner (FIX-07), so another account signed in
-/// on this device never pushes it.
-pub fn record(
+/// Appends a delta for an entity mutation, in the same connection/transaction
+/// as the write, so the journal never diverges from the data. Only
+/// `journal::record` calls it (AUD-01): the oplog row and the audit event of a
+/// change are written together. The row belongs to the entity's owner (FIX-07),
+/// so another account signed in on this device never pushes it.
+pub(crate) fn record(
     conn: &Connection,
     entity: &str,
     entity_id: &str,

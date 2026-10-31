@@ -13,7 +13,7 @@ import type { Assert, Contract, Covers } from "@shared/contracts";
 import { getSession } from "@modules/auth";
 import { invoke as platformInvoke, isTauri } from "@shared/platform";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
-import { logRefusedChanges } from "./syncFailure";
+import { logRefusedChanges, logSyncFailure } from "./syncFailure";
 import {
   batchDeltas,
   pullPages,
@@ -41,7 +41,7 @@ export type SyncStatus = "offline" | "conflicts" | "pending" | "synced";
 export interface PendingDelta {
   entity: string;
   entityId: string;
-  op: "upsert" | "delete";
+  op: "upsert" | "delete" | "append";
   payload: unknown;
   revision: number;
   author: string;
@@ -141,11 +141,58 @@ export async function leaseKeyBlocks(
   await invoke("key_blocks_apply", { userId, blocks });
 }
 
+/** A pushed append-only document the server already holds with other content
+ *  (AUD-01). It stays pending and is logged; only a bug or tampering makes one. */
+interface AppendRejectedDoc {
+  entity: string;
+  entityId: string;
+  reason: string;
+}
+
+/** Pushes the account's pending append-only documents (audit events) in
+ *  batches and marks the accepted ones synced. Returns how many were refused
+ *  (by content, or `appendRejected`); they stay pending and are logged. */
+export async function pushAppendOnly(
+  token: string,
+  userId: string,
+  invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>,
+): Promise<number> {
+  const { deltas } = await invoke<{ deltas: PendingDelta[] }>("oplog_pending", {
+    userId,
+    class: "append_only",
+  });
+  let refusedCount = 0;
+  const send = (part: PendingDelta[]) =>
+    withRetry(() =>
+      syncRequest<{ appendRejected?: AppendRejectedDoc[] }>("/sync/push", token, {
+        method: "POST",
+        body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
+      }),
+    );
+  for (const batch of batchDeltas(deltas)) {
+    const refused = await sendIsolating(batch, send, async (part, body) => {
+      const rejected = body.appendRejected ?? [];
+      const { accepted, rejected: refusedHere } = splitPushed(part, rejected);
+      await invoke("oplog_mark_synced", { userId, deltas: accepted });
+      // The server keeps its own version for good: never resend these.
+      if (refusedHere.length > 0) {
+        await invoke("oplog_mark_rejected", { userId, opIds: refusedHere.flatMap((d) => d.opIds) });
+      }
+      logRefusedChanges(rejected);
+      refusedCount += rejected.length;
+    });
+    logRefusedChanges(refused);
+    refusedCount += refused.length;
+  }
+  return refusedCount;
+}
+
 /** Runs one desktop sync cycle for the signed-in account: lease key blocks
  *  and finalize provisional keys (DAT-01), push its pending deltas in batches (each accepted batch is marked synced at once, rejected
  *  deltas become conflicts, as do keys another document already has; deltas
  *  the server refuses for their content are
- *  skipped and stay pending), then pull every page after its cursor. Throws
+ *  skipped and stay pending), then pull every page after its cursor, then
+ *  push the audit events if the server has `append-only` (AUD-01). Throws
  *  on network/auth/version errors (after retries); callers toast. */
 export async function syncNow(): Promise<SyncResult> {
   if (!isTauri()) throw new Error("sync-desktop-only");
@@ -207,12 +254,27 @@ export async function syncNow(): Promise<SyncResult> {
   // Pull. The cursor lives in the local DB (wiped with the data), one per
   // account, so an empty DB re-pulls everything.
   const cursor = await invoke<string>("sync_cursor_get", { userId });
+  let serverFeatures: string[] = [];
   const pulled = await pullPages(token, cursor, async (page) => {
+    serverFeatures = page.features ?? serverFeatures;
     if (page.docs.length > 0) {
       await invoke("apply_remote", { userId, docs: page.docs });
     }
     await invoke("sync_cursor_set", { userId, value: String(page.cursor) });
   });
+
+  // Append-only documents (AUD-01: audit events) go last, and only to a
+  // server that knows the class; an older one never sees them and they stay
+  // pending. They never conflict, so after the pull is as good as before. A
+  // refused one, or a failed push of them, is logged, not shown: they are not
+  // changes people make, and the sync of their data already succeeded.
+  if (serverFeatures.includes("append-only")) {
+    try {
+      await pushAppendOnly(token, userId, invoke);
+    } catch (e) {
+      logSyncFailure(e, "audit-push");
+    }
+  }
   // Tell open pages to reload from the (now updated) local DB.
   if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));
   if (skipped > 0) {

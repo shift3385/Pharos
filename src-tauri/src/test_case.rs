@@ -16,8 +16,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
+use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
-use crate::oplog;
 use crate::project;
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -208,7 +208,7 @@ fn get_case(conn: &Connection, id: &str, user_id: &str) -> Result<Option<TestCas
         .map_err(|e| e.to_string())
 }
 
-fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<String, String> {
+pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<String, String> {
     if !project::owns(conn, &input.project_id, &input.user_id)? {
         return Err("project not found".to_string());
     }
@@ -259,12 +259,28 @@ fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<String, Strin
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "test_case", &id, "upsert", "{}", 1, &input.user_id)?;
+    let user = &input.user_id;
+    journal::record(
+        conn,
+        Change::new(
+            "test_case",
+            &id,
+            Action::Create,
+            Actor::user(user),
+            "upsert",
+            1,
+            user,
+        ),
+    )?;
     Ok(id)
 }
 
 /// Updates the editable fields. The scenario id is immutable and ignored here.
-fn update_case(conn: &Connection, id: &str, input: &TestCaseInput) -> Result<(), String> {
+pub(crate) fn update_case(
+    conn: &Connection,
+    id: &str,
+    input: &TestCaseInput,
+) -> Result<(), String> {
     if !owns(conn, id, &input.user_id)? {
         return Err("test case not found".to_string());
     }
@@ -282,6 +298,7 @@ fn update_case(conn: &Connection, id: &str, input: &TestCaseInput) -> Result<(),
         )
         .map_err(|e| e.to_string())?;
 
+    let before = journal::snapshot(conn, "test_case", id)?;
     conn.execute(
         "INSERT INTO test_case_revisions (id, test_case_id, revision, title, data, \
          created_at, created_by) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), ?6)",
@@ -317,30 +334,48 @@ fn update_case(conn: &Connection, id: &str, input: &TestCaseInput) -> Result<(),
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(
+    let user = &input.user_id;
+    journal::record(
         conn,
-        "test_case",
-        id,
-        "upsert",
-        "{}",
-        revision + 1,
-        &input.user_id,
+        Change::new(
+            "test_case",
+            id,
+            Action::Update,
+            Actor::user(user),
+            "upsert",
+            revision + 1,
+            user,
+        )
+        .before(before),
     )?;
     Ok(())
 }
 
 /// Soft-deletes a case the user owns. An unknown or foreign id is an error and
 /// leaves no oplog row behind.
-fn delete_case(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
+pub(crate) fn delete_case(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
     if !owns(conn, id, user_id)? {
         return Err("test case not found".to_string());
     }
+    let before = journal::snapshot(conn, "test_case", id)?;
     conn.execute(
         "UPDATE test_cases SET deleted_at = datetime('now'), updated_by = ?2 WHERE id = ?1",
         params![id, user_id],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "test_case", id, "delete", "{}", 0, user_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "test_case",
+            id,
+            Action::Delete,
+            Actor::user(user_id),
+            "delete",
+            0,
+            user_id,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
@@ -392,7 +427,7 @@ pub fn test_case_get(
 
 #[tauri::command]
 pub fn test_case_create(db: State<Db>, input: TestCaseInput) -> Result<Option<TestCase>, String> {
-    let id = db.with_conn(|conn| insert_case(conn, &input))?;
+    let id = db.with_tx(|conn| insert_case(conn, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
@@ -403,14 +438,14 @@ pub fn test_case_update(
     id: String,
     input: TestCaseInput,
 ) -> Result<Option<TestCase>, String> {
-    db.with_conn(|conn| update_case(conn, &id, &input))?;
+    db.with_tx(|conn| update_case(conn, &id, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_case(conn, &id, &input.user_id))
 }
 
 #[tauri::command]
 pub fn test_case_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_case(conn, &id, &user_id))?;
+    db.with_tx(|conn| delete_case(conn, &id, &user_id))?;
     db.persist()
 }
 

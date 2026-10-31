@@ -20,7 +20,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
-use crate::oplog;
+use crate::journal::{self, Action, Actor, Change};
 
 const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::STANDARD;
@@ -209,7 +209,7 @@ fn owned_revision(conn: &Connection, id: &str, user_id: &str) -> Result<i64, Str
 
 /// Inserts a user template owned by the account and records it in the oplog;
 /// returns its new id.
-fn insert_template(
+pub(crate) fn insert_template(
     conn: &Connection,
     input: &TemplateInput,
     user_id: &str,
@@ -239,13 +239,24 @@ fn insert_template(
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "template", &id, "upsert", "{}", 1, user_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "template",
+            &id,
+            Action::Create,
+            Actor::user(user_id),
+            "upsert",
+            1,
+            user_id,
+        ),
+    )?;
     Ok(id)
 }
 
 /// Updates the metadata of a template the account owns (the file itself is
 /// immutable). Anything else is an error and leaves no oplog row.
-fn update_template(
+pub(crate) fn update_template(
     conn: &Connection,
     id: &str,
     meta: &TemplateMeta,
@@ -253,6 +264,7 @@ fn update_template(
 ) -> Result<(), String> {
     require_user(user_id)?;
     let revision = owned_revision(conn, id, user_id)?;
+    let before = journal::snapshot(conn, "template", id)?;
     conn.execute(
         "UPDATE templates
             SET name = ?2, description = ?3, usage_prompt = ?4, version = ?5,
@@ -268,21 +280,46 @@ fn update_template(
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "template", id, "upsert", "{}", revision + 1, user_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "template",
+            id,
+            Action::Update,
+            Actor::user(user_id),
+            "upsert",
+            revision + 1,
+            user_id,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
 /// Soft-deletes a template the account owns. Anything else is an error and
 /// leaves no oplog row.
-fn delete_template(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
+pub(crate) fn delete_template(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
     require_user(user_id)?;
     let revision = owned_revision(conn, id, user_id)?;
+    let before = journal::snapshot(conn, "template", id)?;
     conn.execute(
         "UPDATE templates SET deleted_at = datetime('now'), revision = ?2 WHERE id = ?1",
         params![id, revision + 1],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "template", id, "delete", "{}", revision + 1, user_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "template",
+            id,
+            Action::Delete,
+            Actor::user(user_id),
+            "delete",
+            revision + 1,
+            user_id,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
@@ -351,7 +388,7 @@ pub fn template_create(
     input: TemplateInput,
     user_id: String,
 ) -> Result<Option<TemplateData>, String> {
-    let id = db.with_conn(|conn| insert_template(conn, &input, &user_id))?;
+    let id = db.with_tx(|conn| insert_template(conn, &input, &user_id))?;
     db.persist()?;
     db.with_conn(|conn| get_template(conn, &id, &user_id))
 }
@@ -363,14 +400,14 @@ pub fn template_update(
     meta: TemplateMeta,
     user_id: String,
 ) -> Result<Option<TemplateData>, String> {
-    db.with_conn(|conn| update_template(conn, &id, &meta, &user_id))?;
+    db.with_tx(|conn| update_template(conn, &id, &meta, &user_id))?;
     db.persist()?;
     db.with_conn(|conn| get_template(conn, &id, &user_id))
 }
 
 #[tauri::command]
 pub fn template_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_template(conn, &id, &user_id))?;
+    db.with_tx(|conn| delete_template(conn, &id, &user_id))?;
     db.persist()
 }
 

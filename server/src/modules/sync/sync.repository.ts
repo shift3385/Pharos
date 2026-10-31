@@ -5,6 +5,9 @@ import {
   KEY_BLOCK_SIZE,
   KEY_ENTITY,
   KEY_FIELD,
+  APPEND_ONLY_ENTITIES,
+  isAppendOnly,
+  LOCATION_KEYS,
   MAX_PULL_LIMIT,
   PROJECT_CHILDREN,
   type Delta,
@@ -40,7 +43,17 @@ export interface KeyConflict {
 export type ApplyResult =
   | { accepted: true }
   | { accepted: false; current: RemoteDoc }
-  | { accepted: false; keyConflict: KeyConflict };
+  | { accepted: false; keyConflict: KeyConflict }
+  | { accepted: false; appendRejected: AppendRejected };
+
+/** A pushed append-only document whose id the server already holds with other
+ *  content (AUD-01): it is never overwritten. Only a bug or tampering on the
+ *  device produces one. */
+export interface AppendRejected {
+  entity: string;
+  entityId: string;
+  reason: "content_changed";
+}
 
 /** A block of key numbers leased to a device, both ends included. */
 export interface KeyBlock {
@@ -116,16 +129,39 @@ export async function takenKey(client: PoolClient, userId: string, d: Delta): Pr
   return rows[0] ? { entity: d.entity, entityId: d.entityId, key, takenBy: rows[0].entity_id } : null;
 }
 
+/** The payload stored when an upsert from an OLD client (one that does not
+ *  send the `complete-payload` feature: 0.1.x, 0.2.0-alpha.1) lands on a live
+ *  document: a key it left out keeps the stored value, and `data` is merged one
+ *  level deep the same way (VERSIONING §6.5, design 0.2.0 §3.7), so it can
+ *  never reset a field it does not know. Current clients send their whole
+ *  state and may clear a key by omitting it, so their payload is stored as is
+ *  (and so are the web's domain writes). A tombstone, or a delete, is never
+ *  merged: merging never brings back what was deleted. */
+const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN EXCLUDED.payload
+       ELSE (documents.payload || EXCLUDED.payload)
+         || CASE WHEN jsonb_typeof(documents.payload->'data') = 'object'
+                  AND jsonb_typeof(EXCLUDED.payload->'data') = 'object'
+                 THEN jsonb_build_object('data', (documents.payload->'data') || (EXCLUDED.payload->'data'))
+                 ELSE '{}'::jsonb END
+     END`;
+
 /** Stores a delta as the user's latest version of the entity (with a new
  *  `seq`) and cascades a project delete to its children. The caller holds the
- *  user's write lock and has already decided that the delta wins. */
-export async function storeDoc(client: PoolClient, userId: string, d: Delta): Promise<void> {
+ *  user's write lock and has already decided that the delta wins. `merge`:
+ *  keep the keys the delta left out (only for old clients, above). */
+export async function storeDoc(
+  client: PoolClient,
+  userId: string,
+  d: Delta,
+  opts: { merge: boolean } = { merge: false },
+): Promise<void> {
   await client.query(
     `INSERT INTO documents
        (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
      ON CONFLICT (user_id, entity, entity_id) DO UPDATE
-       SET payload = EXCLUDED.payload,
+       SET payload = ${opts.merge ? MERGED_PAYLOAD_SQL : "EXCLUDED.payload"},
+
            revision = EXCLUDED.revision,
            author = EXCLUDED.author,
            deleted = EXCLUDED.deleted,
@@ -135,6 +171,50 @@ export async function storeDoc(client: PoolClient, userId: string, d: Delta): Pr
     [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc],
   );
   if (d.entity === "project" && d.op === "delete") await cascadeProjectDelete(client, userId, d);
+}
+
+/** `payload` without its location keys: the immutable content of an
+ *  append-only document. */
+const CONTENT_SQL = (payload: string) => `(${payload} - ${LOCATION_KEYS.map((k) => `'${k}'`).join(" - ")})`;
+
+/** Stores one append-only document (design 0.2.0 §3.2, ADR-0011): inserted if
+ *  absent; the same content again is a no-op (a retried push); other content
+ *  under the same id is refused and the stored one stays. The location
+ *  (`workspaceId`, `projectId`) is outside the content and may change. Never a
+ *  conflict, no base, no last-write-wins. A tombstone stays a tombstone. The
+ *  caller holds the user's write lock. */
+export async function storeAppend(client: PoolClient, userId: string, d: Delta): Promise<ApplyResult> {
+  const { rows } = await client.query<{ deleted: boolean; same: boolean; moved: boolean }>(
+    `SELECT deleted,
+            ${CONTENT_SQL("payload")} = ${CONTENT_SQL("$4::jsonb")} AS same,
+            payload <> $4::jsonb AS moved
+       FROM documents
+      WHERE user_id = $1 AND entity = $2 AND entity_id = $3
+      FOR UPDATE`,
+    [userId, d.entity, d.entityId, d.payload],
+  );
+  const current = rows[0];
+  if (!current) {
+    await client.query(
+      `INSERT INTO documents
+         (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
+       VALUES ($1, $2, $3, $4, 1, $5, false, $6, now(), nextval('documents_seq'))`,
+      [userId, d.entity, d.entityId, d.payload, d.author, d.hlc],
+    );
+    return { accepted: true };
+  }
+  if (current.deleted) return { accepted: true };
+  if (!current.same) {
+    return { accepted: false, appendRejected: { entity: d.entity, entityId: d.entityId, reason: "content_changed" } };
+  }
+  if (current.moved) {
+    await client.query(
+      `UPDATE documents SET payload = $4, updated_at = now(), seq = nextval('documents_seq')
+        WHERE user_id = $1 AND entity = $2 AND entity_id = $3`,
+      [userId, d.entity, d.entityId, d.payload],
+    );
+  }
+  return { accepted: true };
 }
 
 /** Takes `size` key numbers of a project's series (DAT-01, ADR-0010 rule 4),
@@ -177,12 +257,18 @@ export async function leaseRange(
 export function createSyncRepository(pool: Pool) {
   return {
     /** Applies one delta under a row lock, following the merge rule in
-     *  `sync.merge.ts` (base check, then last-write-wins by HLC). */
-    async apply(userId: string, d: Delta): Promise<ApplyResult> {
+     *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
+     *  client is old and its upserts keep the keys it left out (`storeDoc`). */
+    async apply(userId: string, d: Delta, opts: { merge: boolean } = { merge: false }): Promise<ApplyResult> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
         await client.query(LOCK_USER_SQL, [userId]);
+        if (isAppendOnly(d.entity)) {
+          const result = await storeAppend(client, userId, d);
+          await client.query("COMMIT");
+          return result;
+        }
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents
             WHERE user_id = $1 AND entity = $2 AND entity_id = $3
@@ -197,7 +283,7 @@ export function createSyncRepository(pool: Pool) {
             await client.query("COMMIT");
             return { accepted: false, keyConflict };
           }
-          await storeDoc(client, userId, d);
+          await storeDoc(client, userId, d, opts);
         }
         await client.query("COMMIT");
         return decision === "conflict" && current ? { accepted: false, current } : { accepted: true };
@@ -210,15 +296,22 @@ export function createSyncRepository(pool: Pool) {
     },
 
     /** One page of documents changed after `since` (exclusive), oldest first.
-     *  Reads one extra row to tell the client whether to ask again (FIX-02). */
-    async since(userId: string, since: number, limit = MAX_PULL_LIMIT): Promise<PullPage> {
+     *  Reads one extra row to tell the client whether to ask again (FIX-02).
+     *  Append-only documents only go to clients that know the class. */
+    async since(
+      userId: string,
+      since: number,
+      limit = MAX_PULL_LIMIT,
+      opts: { appendOnly: boolean } = { appendOnly: false },
+    ): Promise<PullPage> {
+      const skipped: string[] = opts.appendOnly ? [] : [...APPEND_ONLY_ENTITIES];
       const { rows } = await pool.query(
         `SELECT ${COLS}
            FROM documents
-          WHERE user_id = $1 AND seq > $2
+          WHERE user_id = $1 AND seq > $2 AND entity <> ALL($4::text[])
           ORDER BY seq ASC
           LIMIT $3`,
-        [userId, since, limit + 1],
+        [userId, since, limit + 1, skipped],
       );
       return { docs: rows.slice(0, limit).map(toDoc), hasMore: rows.length > limit };
     },

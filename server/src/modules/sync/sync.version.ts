@@ -57,11 +57,38 @@ export async function requireSupportedVersion(req: FastifyRequest, reply: Fastif
 /** Header with the sync features the client understands (DAT-01). */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 
+/** Sync features this server has, sent back in the push and pull answers
+ *  (`features`). A client only pushes append-only documents to a server that
+ *  lists `append-only`; an older server lists nothing. */
+export const SERVER_FEATURES = ["key-conflicts", "append-only"] as const;
+
+/** Features the client sent. Inside one minor the version string does not
+ *  change between builds, so this header, not the version, is what tells an
+ *  older build of the same minor apart (DAT-01, AUD-01). */
+function clientFeatures(req: FastifyRequest): string[] {
+  const raw = req.headers[FEATURES_HEADER];
+  const value = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
+  return value.split(",").map((f) => f.trim());
+}
+
 /** True if the client reads `keyConflicts` in the push answer. Clients built
  *  before DAT-01 send the same version string but not this header; they only
  *  read `conflicts`, so a refused key would look accepted to them. */
 export function understandsKeyConflicts(req: FastifyRequest): boolean {
-  const raw = req.headers[FEATURES_HEADER];
-  const value = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
-  return value.split(",").map((f) => f.trim()).includes("key-conflicts");
+  return clientFeatures(req).includes("key-conflicts");
+}
+
+/** True if the client knows the `append_only` sync class (AUD-01): it may push
+ *  append-only documents, reads `appendRejected`, and pulls them. Older clients
+ *  never see them (they would skip them anyway). */
+export function understandsAppendOnly(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("append-only");
+}
+
+/** True if the client pushes each entity's whole state, so an omitted key is
+ *  a deliberate clear (AUD-01 review). Clients without it (0.1.x,
+ *  0.2.0-alpha.1) do not know the fields added since; their upserts keep the
+ *  keys they leave out (`storeDoc`, VERSIONING §6.5). */
+export function sendsCompletePayload(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("complete-payload");
 }

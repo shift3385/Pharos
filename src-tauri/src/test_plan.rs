@@ -15,7 +15,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
-use crate::oplog;
+use crate::journal::{self, Action, Actor, Change};
 use crate::project;
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -184,7 +184,7 @@ pub(crate) fn get_plan_by_project(
 
 /// Creates a plan inside a project the user owns. A plan without a project
 /// would be visible to nobody, so it is refused.
-fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<String, String> {
+pub(crate) fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<String, String> {
     let project_id = input.project_id.as_deref().unwrap_or_default();
     if !project::owns(conn, project_id, &input.user_id)? {
         return Err("project not found".to_string());
@@ -211,11 +211,27 @@ fn insert_plan(conn: &Connection, input: &TestPlanInput) -> Result<String, Strin
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "test_plan", &id, "upsert", "{}", 1, &input.user_id)?;
+    let user = &input.user_id;
+    journal::record(
+        conn,
+        Change::new(
+            "test_plan",
+            &id,
+            Action::Create,
+            Actor::user(user),
+            "upsert",
+            1,
+            user,
+        ),
+    )?;
     Ok(id)
 }
 
-fn update_plan(conn: &Connection, id: &str, input: &TestPlanInput) -> Result<(), String> {
+pub(crate) fn update_plan(
+    conn: &Connection,
+    id: &str,
+    input: &TestPlanInput,
+) -> Result<(), String> {
     if !owns(conn, id, &input.user_id)? {
         return Err("test plan not found".to_string());
     }
@@ -233,6 +249,7 @@ fn update_plan(conn: &Connection, id: &str, input: &TestPlanInput) -> Result<(),
         )
         .map_err(|e| e.to_string())?;
 
+    let before = journal::snapshot(conn, "test_plan", id)?;
     // Snapshot the current state before overwriting it.
     conn.execute(
         "INSERT INTO test_plan_revisions (id, test_plan_id, revision, title, data, \
@@ -266,30 +283,48 @@ fn update_plan(conn: &Connection, id: &str, input: &TestPlanInput) -> Result<(),
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(
+    let user = &input.user_id;
+    journal::record(
         conn,
-        "test_plan",
-        id,
-        "upsert",
-        "{}",
-        revision + 1,
-        &input.user_id,
+        Change::new(
+            "test_plan",
+            id,
+            Action::Update,
+            Actor::user(user),
+            "upsert",
+            revision + 1,
+            user,
+        )
+        .before(before),
     )?;
     Ok(())
 }
 
 /// Soft-deletes a plan the user owns. An unknown or foreign id is an error and
 /// leaves no oplog row behind.
-fn delete_plan(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
+pub(crate) fn delete_plan(conn: &Connection, id: &str, user_id: &str) -> Result<(), String> {
     if !owns(conn, id, user_id)? {
         return Err("test plan not found".to_string());
     }
+    let before = journal::snapshot(conn, "test_plan", id)?;
     conn.execute(
         "UPDATE test_plans SET deleted_at = datetime('now'), updated_by = ?2 WHERE id = ?1",
         params![id, user_id],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(conn, "test_plan", id, "delete", "{}", 0, user_id)?;
+    journal::record(
+        conn,
+        Change::new(
+            "test_plan",
+            id,
+            Action::Delete,
+            Actor::user(user_id),
+            "delete",
+            0,
+            user_id,
+        )
+        .before(before),
+    )?;
     Ok(())
 }
 
@@ -373,7 +408,7 @@ pub fn test_plan_by_project(
 
 #[tauri::command]
 pub fn test_plan_create(db: State<Db>, input: TestPlanInput) -> Result<Option<TestPlan>, String> {
-    let id = db.with_conn(|conn| insert_plan(conn, &input))?;
+    let id = db.with_tx(|conn| insert_plan(conn, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
@@ -384,14 +419,14 @@ pub fn test_plan_update(
     id: String,
     input: TestPlanInput,
 ) -> Result<Option<TestPlan>, String> {
-    db.with_conn(|conn| update_plan(conn, &id, &input))?;
+    db.with_tx(|conn| update_plan(conn, &id, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_plan(conn, &id, &input.user_id))
 }
 
 #[tauri::command]
 pub fn test_plan_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
-    db.with_conn(|conn| delete_plan(conn, &id, &user_id))?;
+    db.with_tx(|conn| delete_plan(conn, &id, &user_id))?;
     db.persist()
 }
 

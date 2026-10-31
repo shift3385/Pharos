@@ -261,4 +261,125 @@ describe("syncNow key blocks (DAT-01)", () => {
     expect(await syncNow()).toMatchObject({ pushed: 1 });
     expect(calls.find((c) => c.cmd === "key_blocks_apply")?.args).toEqual({ userId: "user-A", blocks: [] });
   });
+
+  describe("append-only documents (AUD-01)", () => {
+    const event = (i: number): PendingDelta => ({
+      entity: "audit_event",
+      entityId: `e${i}`,
+      op: "append",
+      payload: { hash: `h${i}` },
+      revision: 1,
+      author: "user:user-A",
+      hlc: `h${i}`,
+      baseRevision: null,
+      baseHlc: null,
+      opIds: [`ev${i}`],
+    });
+
+    function core(lww: PendingDelta[], appendOnly: PendingDelta[]) {
+      const calls: { cmd: string; args: Record<string, unknown> }[] = [];
+      invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+        calls.push({ cmd, args });
+        if (cmd === "oplog_pending") return { deltas: args.class === "append_only" ? appendOnly : lww };
+        if (cmd === "sync_cursor_get") return "0";
+        return undefined;
+      });
+      return calls;
+    }
+
+    function server(features: string[] | undefined, rejected: string[] = []) {
+      const pushes: { entity: string; entityId: string }[][] = [];
+      const urls: string[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn((url: string, init: RequestInit) => {
+          urls.push(url.replace(/^.*\/sync/, "/sync").replace(/\?.*$/, ""));
+          if (url.includes("/sync/push")) {
+            const body = JSON.parse(init.body as string) as { deltas: { entity: string; entityId: string }[] };
+            pushes.push(body.deltas);
+            const appendRejected = body.deltas
+              .filter((d) => rejected.includes(d.entityId))
+              .map((d) => ({ entity: d.entity, entityId: d.entityId, reason: "content_changed" }));
+            return json({
+              accepted: body.deltas.length - appendRejected.length,
+              conflicts: [],
+              keyConflicts: [],
+              appendRejected,
+            });
+          }
+          return json({ docs: [], cursor: 0, hasMore: false, ...(features ? { features } : {}) });
+        }),
+      );
+      return { pushes, urls };
+    }
+
+    it("pushes them after the pull to a server with the feature, apart from the lww deltas", async () => {
+      const calls = core([delta(1)], [event(1), event(2)]);
+      const { pushes, urls } = server(["key-conflicts", "append-only"]);
+      const res = await syncNow();
+      expect(urls).toEqual(["/sync/push", "/sync/pull", "/sync/push"]);
+      expect(pushes[0].map((d) => d.entity)).toEqual(["test_case"]);
+      expect(pushes[1].map((d) => d.entity)).toEqual(["audit_event", "audit_event"]);
+      expect(res.pushed).toBe(1);
+      const marked = calls
+        .filter((c) => c.cmd === "oplog_mark_synced")
+        .map((c) => c.args.deltas as PendingDelta[]);
+      expect(marked[1].map((d) => d.entityId)).toEqual(["e1", "e2"]);
+    });
+
+    it("keeps them pending against a server without the feature", async () => {
+      const calls = core([delta(1)], [event(1)]);
+      const { urls } = server(undefined);
+      await syncNow();
+      expect(urls).toEqual(["/sync/push", "/sync/pull"]);
+      expect(calls.some((c) => c.cmd === "oplog_pending" && c.args.class === "append_only")).toBe(false);
+    });
+
+    it("does not mark a refused one synced, nor report it as a skipped change", async () => {
+      const calls = core([], [event(1), event(2)]);
+      server(["append-only"], ["e2"]);
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const res = await syncNow();
+      expect(res.skipped).toBe(0);
+      const marked = calls
+        .filter((c) => c.cmd === "oplog_mark_synced")
+        .flatMap((c) => c.args.deltas as PendingDelta[]);
+      expect(marked.map((d) => d.entityId)).toEqual(["e1"]);
+      // Marked as refused, so the next sync does not send it again.
+      expect(calls.find((c) => c.cmd === "oplog_mark_rejected")?.args).toEqual({
+        userId: "user-A",
+        opIds: ["ev2"],
+      });
+    });
+
+    it("a failing audit push leaves a good sync good", async () => {
+      vi.useFakeTimers();
+      try {
+        const calls = core([delta(1)], [event(1)]);
+        let pushes = 0;
+        vi.stubGlobal(
+          "fetch",
+          vi.fn((url: string) => {
+            if (url.includes("/sync/push")) {
+              pushes++;
+              // The lww push works; every try of the audit push gets a 503.
+              if (pushes === 1) return json({ accepted: 1, conflicts: [], keyConflicts: [] });
+              return json({ code: "unavailable", message: "down" }, 503);
+            }
+            return json({ docs: [], cursor: 0, hasMore: false, features: ["append-only"] });
+          }),
+        );
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        const run = syncNow();
+        await vi.runAllTimersAsync();
+        const res = await run;
+        expect(res).toMatchObject({ pushed: 1, skipped: 0 });
+        expect(pushes).toBe(5); // the lww push + the audit push and its 3 retries
+        const marked = calls.filter((c) => c.cmd === "oplog_mark_synced");
+        expect(marked).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });

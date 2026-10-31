@@ -10,7 +10,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::db::{ensure_workspace, Db};
-use crate::oplog;
+use crate::journal::{self, Action, Actor, Change};
 
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
@@ -105,7 +105,7 @@ fn get_project(conn: &Connection, id: &str, owner_id: &str) -> Result<Option<Pro
     .map_err(|e| e.to_string())
 }
 
-fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, String> {
+pub(crate) fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, String> {
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
     let prefix = input
@@ -131,14 +131,18 @@ fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<String, Str
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(
+    let owner = input.owner_id.clone().unwrap_or_default();
+    journal::record(
         conn,
-        "project",
-        &id,
-        "upsert",
-        "{}",
-        1,
-        &input.owner_id.clone().unwrap_or_default(),
+        Change::new(
+            "project",
+            &id,
+            Action::Create,
+            Actor::user(&owner),
+            "upsert",
+            1,
+            &owner,
+        ),
     )?;
     Ok(id)
 }
@@ -156,7 +160,11 @@ pub(crate) fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, 
     .map(|r| r.is_some())
 }
 
-fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(), String> {
+pub(crate) fn update_project(
+    conn: &Connection,
+    id: &str,
+    input: &ProjectInput,
+) -> Result<(), String> {
     let revision: i64 = conn
         .query_row(
             "SELECT revision FROM projects WHERE id = ?1 AND deleted_at IS NULL",
@@ -166,6 +174,7 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
         .optional()
         .map_err(|e| e.to_string())?
         .ok_or("project not found")?;
+    let before = journal::snapshot(conn, "project", id)?;
     let prefix = input
         .case_id_prefix
         .clone()
@@ -188,22 +197,30 @@ fn update_project(conn: &Connection, id: &str, input: &ProjectInput) -> Result<(
         ],
     )
     .map_err(|e| e.to_string())?;
-    oplog::record(
+    let owner = input.owner_id.clone().unwrap_or_default();
+    journal::record(
         conn,
-        "project",
-        id,
-        "upsert",
-        "{}",
-        revision + 1,
-        &input.owner_id.clone().unwrap_or_default(),
+        Change::new(
+            "project",
+            id,
+            Action::Update,
+            Actor::user(&owner),
+            "upsert",
+            revision + 1,
+            &owner,
+        )
+        .before(before),
     )?;
     Ok(())
 }
 
 /// Soft-deletes a project and cascades the soft-delete to its plan, cases,
 /// planner cards and requirements so nothing is left orphaned (the hard-delete
-/// purge runs later).
+/// purge runs later). One audit event for the project, with how many children
+/// went with it (ADR-0015: the event reflects the intent, not each row).
 pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Result<(), String> {
+    let before = journal::snapshot(conn, "project", id)?;
+    let mut children = serde_json::Map::new();
     for table in [
         "projects",
         "test_plans",
@@ -220,9 +237,25 @@ pub(crate) fn delete_project(conn: &Connection, id: &str, author: &str) -> Resul
                 "project_id"
             }
         );
-        conn.execute(&sql, params![id]).map_err(|e| e.to_string())?;
+        let n = conn.execute(&sql, params![id]).map_err(|e| e.to_string())?;
+        if table != "projects" {
+            children.insert(table.to_string(), n.into());
+        }
     }
-    oplog::record(conn, "project", id, "delete", "{}", 0, author)?;
+    journal::record(
+        conn,
+        Change::new(
+            "project",
+            id,
+            Action::Delete,
+            Actor::user(author),
+            "delete",
+            0,
+            author,
+        )
+        .before(before)
+        .summary(serde_json::json!({ "cascade": children })),
+    )?;
     Ok(())
 }
 
@@ -239,7 +272,7 @@ pub fn project_get(db: State<Db>, id: String, owner_id: String) -> Result<Option
 #[tauri::command]
 pub fn project_create(db: State<Db>, input: ProjectInput) -> Result<Option<Project>, String> {
     let owner = input.owner_id.clone().unwrap_or_default();
-    let id = db.with_conn(|conn| insert_project(conn, &input))?;
+    let id = db.with_tx(|conn| insert_project(conn, &input))?;
     db.persist()?;
     db.with_conn(|conn| get_project(conn, &id, &owner))
 }
@@ -251,7 +284,7 @@ pub fn project_update(
     input: ProjectInput,
 ) -> Result<Option<Project>, String> {
     let owner = input.owner_id.clone().unwrap_or_default();
-    db.with_conn(|conn| {
+    db.with_tx(|conn| {
         if !owns(conn, &id, &owner)? {
             return Err("project not found".to_string());
         }
@@ -263,7 +296,7 @@ pub fn project_update(
 
 #[tauri::command]
 pub fn project_delete(db: State<Db>, id: String, owner_id: String) -> Result<(), String> {
-    db.with_conn(|conn| {
+    db.with_tx(|conn| {
         if !owns(conn, &id, &owner_id)? {
             return Err("project not found".to_string());
         }

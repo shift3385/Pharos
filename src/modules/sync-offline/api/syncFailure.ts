@@ -13,7 +13,8 @@ export type SyncAction =
   | "key-conflicts-list"
   | "conflict-resolve"
   | "purge"
-  | "push-refused";
+  | "push-refused"
+  | "audit-push";
 
 /**
  * The value to log for a sync failure. A `SyncHttpError` becomes a new error
