@@ -252,9 +252,7 @@ export function TestCaseList({
     {
       id: "title",
       header: t("testCase.list.col.title"),
-      // A title never gets narrower than this: the table scrolls sideways
-      // instead (FLD-01 added the Automatización column).
-      width: "minmax(160px,2.6fr)",
+      width: "minmax(0,2.6fr)",
       sortable: true,
       cell: (c) => (
         <>
@@ -284,7 +282,7 @@ export function TestCaseList({
     {
       id: "automation",
       header: t("testCase.list.col.automation"),
-      width: "124px",
+      width: "120px",
       minView: "tablet",
       cell: automationPill,
     },
@@ -506,7 +504,7 @@ export function TestCaseList({
               sort={sort}
               onSortChange={(s) => onSortChange(s as CaseSort)}
               mobileCard={card}
-              minWidth={view === "desktop" ? 1020 : 720}
+              minWidth={view === "desktop" ? 900 : 640}
               empty={
                 <div className="cl-nomatch">
                   <p>{t("testCase.list.noMatch")}</p>
