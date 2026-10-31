@@ -3,7 +3,10 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0026": "E3 step 5 (custom fields, ADR-0018): case_type, automation_status and custom_fields",
+      "0027": "E3 step 5 (custom fields, ADR-0018): restore case fields kept for read-only clients (data migration in Rust)"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013"
     }
