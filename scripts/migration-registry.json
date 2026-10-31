@@ -3,7 +3,12 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0020": "E2 step 2 (revisions and stable steps, ADR-0011)",
+      "0021": "E2 step 2 (revisions and stable steps, ADR-0011)",
+      "0022": "E2 step 3 (evidence store, ADR-0014): blobs and attachments",
+      "0023": "E2 step 3 (evidence store, ADR-0014): planner_attachments moved out of the database"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013"
     }
