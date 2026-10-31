@@ -8,6 +8,7 @@ import { useSaveGuard } from "@shared/ui/fieldProps";
 import { duplicateRows, required } from "@shared/validation";
 import { testCaseApi } from "../api/testCaseApi";
 import type { ExportableCase } from "../export/caseXlsx";
+import { customSheetLabels, customSheetRows } from "../export/customSheet";
 import type { ImportedCase } from "../import/caseImport";
 import type {
   ExampleTable,
@@ -71,7 +72,20 @@ import { useHideMobileChrome } from "@shared/ui/useShellChrome";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { CaseNavBar, CaseNavFooter, type CaseNav, type SaveState } from "./CaseNavBar";
 import { GoToCaseDialog } from "./GoToCaseDialog";
-import { PriorityField, StatusField } from "./CaseMetaMenus";
+import { AutomationField, PriorityField, StatusField } from "./CaseMetaMenus";
+import {
+  CASE_TYPES,
+  CustomFieldsSection,
+  customFieldApi,
+  customFieldIssues,
+  defaultValues,
+  effectiveCaseType,
+  fieldControlId,
+  type AutomationStatus,
+  type CaseType,
+  type CustomField,
+  type CustomValues,
+} from "@modules/custom-fields";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
 import { stampLabel, statusTone } from "./caseTones";
@@ -84,6 +98,12 @@ export type { CaseNav } from "./CaseNavBar";
 type Tab = "split" | "editor" | "gherkin";
 
 interface FormState {
+  /** As stored: null = never set, reads as standard (FLD-01). Sent back
+   *  unchanged unless the user picks one. */
+  caseType: CaseType | null;
+  automationStatus: AutomationStatus | null;
+  /** `data.custom`, every key kept (unknown and archived ones too). */
+  custom: CustomValues;
   gherkinLevel: GherkinLevel;
   scenarioId: string;
   title: string;
@@ -116,6 +136,9 @@ interface FormState {
 
 function emptyForm(): FormState {
   return {
+    caseType: "standard",
+    automationStatus: "manual",
+    custom: {},
     gherkinLevel: "basic",
     scenarioId: "",
     title: "",
@@ -149,6 +172,9 @@ function emptyForm(): FormState {
 function fromCase(c: TestCase): FormState {
   const d = withStableSteps(c.data ?? {});
   return {
+    caseType: c.caseType ?? null,
+    automationStatus: c.automationStatus ?? null,
+    custom: d.custom ?? {},
     gherkinLevel: d.gherkinLevel ?? "basic",
     scenarioId: c.scenarioId,
     title: c.title,
@@ -304,14 +330,45 @@ export function TestCaseEditor({
   const [snapshot, setSnapshot] = useState<string | null>(null);
   const [goingTo, setGoingTo] = useState(false);
   const [gherkinEditing, setGherkinEditing] = useState(false);
+  const [fields, setFields] = useState<CustomField[]>([]);
   const mobile = useBreakpoint() === "mobile";
-  const view: Tab = mobile && tab === "split" ? "editor" : tab;
+  // A checklist has no Gherkin: only the editor view (FLD-01).
+  const caseType = effectiveCaseType(form.caseType);
+  const checklist = caseType === "checklist";
+  const view: Tab = checklist
+    ? "editor"
+    : mobile && tab === "split"
+      ? "editor"
+      : tab;
   useHideMobileChrome(mobile && gherkinEditing && view === "gherkin");
   // undefined while an existing case loads; null when it does not exist.
   const [found, setFound] = useState<boolean | undefined>(caseId ? undefined : true);
-  // The title is the only rule that blocks saving a case (draft rule, ADR-0027).
+  // The title, and the project's custom fields (a value of the wrong type,
+  // a required one without a value; ADR-0018 amendment), block saving a case
+  // (draft rule, ADR-0027).
   const titleIssue = required(form.title);
-  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(titleIssue !== null);
+  const customIssues = customFieldIssues(
+    fields,
+    caseType,
+    form.custom,
+    testCase?.data.custom ?? {},
+  );
+  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(
+    titleIssue !== null || customIssues.length > 0,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void customFieldApi
+      .list(projectId, userId)
+      .catch(() => [])
+      .then((list) => {
+        if (!cancelled) setFields(list);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, userId]);
 
   useEffect(() => {
     void aiAvailable().then(setAiReady);
@@ -430,7 +487,12 @@ export function TestCaseEditor({
     setForm((f) => ({ ...f, aiProvenance: markReviewed(f.aiProvenance, field, user?.id ?? "") }));
 
   const pickLevel = (chosen: GherkinLevel) => {
-    const f = { ...emptyForm(), gherkinLevel: chosen, title: t("testCase.defaultTitle") };
+    const f = {
+      ...emptyForm(),
+      gherkinLevel: chosen,
+      title: t("testCase.defaultTitle"),
+      custom: defaultValues(fields, "standard"),
+    };
     if (chosen === "advanced") f.flows = [newFlow(t("testCase.flow.mainName"))];
     setForm(f);
     setSnapshot(JSON.stringify(f));
@@ -504,6 +566,8 @@ export function TestCaseEditor({
       data.flows = form.flows;
       data.featureSource = buildGherkin(form);
     }
+    // Always sent, so `{}` clears them; unknown keys travel back untouched.
+    data.custom = form.custom;
     const input: TestCaseInput = {
       projectId,
       caseIdPrefix,
@@ -513,6 +577,9 @@ export function TestCaseEditor({
       version: form.version,
       status: form.status,
       priority: form.priority,
+      // Never set and not touched: omitted, so the stored null stays.
+      caseType: form.caseType ?? undefined,
+      automationStatus: form.automationStatus ?? undefined,
       author,
       data,
       userId,
@@ -575,6 +642,8 @@ export function TestCaseEditor({
         requirementKeys: form.requirementKeys,
         traceability: form.traceability,
       },
+      customRows: customSheetRows(form, fields, t),
+      customSheet: customSheetLabels(t),
     };
   }
 
@@ -680,11 +749,35 @@ export function TestCaseEditor({
     </label>
   );
 
+  const caseTypeControl = (
+    <div className="tc-meta">
+      <span className="tc-meta__label" aria-hidden="true">
+        {t("testCase.caseType")}
+      </span>
+      <SegmentedControl<CaseType>
+        label={t("testCase.caseType")}
+        size="sm"
+        value={caseType}
+        onChange={(v) => update({ caseType: v })}
+        options={CASE_TYPES.map((c) => ({
+          value: c,
+          label: t(`testCase.caseTypeLabel.${c}`),
+        }))}
+        testId="tc-case-type"
+      />
+    </div>
+  );
+
   const metaGrid = (
     <div className="tc-meta-row">
       <PriorityField value={form.priority} onChange={(v) => update({ priority: v })} />
       <StatusField value={form.status} onChange={(v) => update({ status: v })} />
-      {levelSelect}
+      {caseTypeControl}
+      <AutomationField
+        value={form.automationStatus}
+        onChange={(v) => update({ automationStatus: v as AutomationStatus })}
+      />
+      {!checklist && levelSelect}
       <label className="tc-meta tc-meta--narrow">
         <span className="tc-meta__label">{t("testCase.version")}</span>
         <input
@@ -790,12 +883,57 @@ export function TestCaseEditor({
         )
       : [];
 
+  const customSection = (
+    <CustomFieldsSection
+      fields={fields}
+      caseType={caseType}
+      values={form.custom}
+      previous={testCase?.data.custom}
+      attempted={attempted}
+      onChange={(custom) => update({ custom })}
+    />
+  );
+
+  // What a checklist hides is still stored (switching back shows it).
+  const hiddenByChecklist =
+    level !== "basic" ||
+    form.preconditions.length > 0 ||
+    form.expectedResult.trim() !== "" ||
+    form.postconditions.length > 0 ||
+    form.acceptanceCriteria.length > 0;
+
   const editor = (
     <div className="tc-form">
       {metaGrid}
       {identityFields}
+      {customSection}
 
-      {level === "advanced" ? (
+      {checklist ? (
+        <>
+          <p className="tp-field__grouplabel">
+            {t("testCase.checklist.items")}
+          </p>
+          <p className="tp-field__hint">{t("testCase.checklist.hint")}</p>
+          <SortableSteps
+            label={t("testCase.checklist.items")}
+            steps={form.steps}
+            onChange={(v) => update({ steps: v })}
+          />
+          {hiddenByChecklist && (
+            <p className="tp-field__hint" role="note">
+              {t("testCase.checklist.kept")}
+            </p>
+          )}
+          <label className="tp-field">
+            <span>{t("testCase.notes")}</span>
+            <textarea
+              rows={2}
+              value={form.notes}
+              onChange={(e) => update({ notes: e.target.value })}
+            />
+          </label>
+        </>
+      ) : level === "advanced" ? (
         <>
           <FlowsEditor
             background={form.background}
@@ -1012,7 +1150,7 @@ export function TestCaseEditor({
             onRevisions={() => void toggleRevisions()}
             onXlsx={() => void exportXlsx()}
             onPdf={() => void exportPdf()}
-            onFeature={() => void exportFeature()}
+            onFeature={checklist ? undefined : () => void exportFeature()}
           />
         }
         save={saveButton}
@@ -1024,18 +1162,37 @@ export function TestCaseEditor({
           <StatusPill tone={statusTone(form.status)} strike={form.status === "obsolete"}>
             {t(`testCase.statusLabel.${form.status}`)}
           </StatusPill>
-          <span className="tc-head__level">{t(`testCase.level.${level}.name`)}</span>
+          <span className="tc-head__level">
+            {checklist
+              ? t("testCase.caseTypeLabel.checklist")
+              : t(`testCase.level.${level}.name`)}
+          </span>
         </div>
         <h2 id="tc-head-title" className="tc-head__title">
           {form.title.trim() || (testCase ? t("testCase.editTitle") : t("testCase.newTitle"))}
         </h2>
-        {viewSwitch}
+        {!checklist && viewSwitch}
       </header>
 
       {showSummary && (
         <ErrorSummary
           ref={summaryRef}
-          items={[{ label: t("testCase.fieldTitle"), issue: titleIssue!, fieldId: "tc-title" }]}
+          items={[
+            ...(titleIssue
+              ? [
+                  {
+                    label: t("testCase.fieldTitle"),
+                    issue: titleIssue,
+                    fieldId: "tc-title",
+                  },
+                ]
+              : []),
+            ...customIssues.map(({ field, issue }) => ({
+              label: field.label,
+              issue,
+              fieldId: fieldControlId(field.fieldKey),
+            })),
+          ]}
         />
       )}
 
@@ -1101,7 +1258,8 @@ function MoreActions({
   onRevisions: () => void;
   onXlsx: () => void;
   onPdf: () => void;
-  onFeature: () => void;
+  /** None for a checklist: it has no Gherkin (FLD-01). */
+  onFeature?: () => void;
 }) {
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
@@ -1124,7 +1282,11 @@ function MoreActions({
         {hasCase && <MenuItem onSelect={onRevisions}>{t("testCase.revisions")}</MenuItem>}
         <MenuItem onSelect={onXlsx}>{t("testCase.exportXlsx")}</MenuItem>
         <MenuItem onSelect={onPdf}>{t("testCase.exportPdf")}</MenuItem>
-        <MenuItem onSelect={onFeature}>{t("testCase.exportFeature")}</MenuItem>
+        {onFeature && (
+          <MenuItem onSelect={onFeature}>
+            {t("testCase.exportFeature")}
+          </MenuItem>
+        )}
       </ResponsiveMenu>
     </>
   );

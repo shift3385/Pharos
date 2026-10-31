@@ -18,6 +18,8 @@ const stored = (input: TestCaseInput): TestCase => ({
   version: "1.0",
   status: input.status ?? "draft",
   priority: input.priority ?? "medium",
+  caseType: null,
+  automationStatus: null,
   author: input.author,
   data: input.data,
   createdAt: "2026-10-29T10:00:00.000Z",

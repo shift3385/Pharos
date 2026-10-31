@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Archive, Check, Download, Hash, Trash2 } from "lucide-react";
@@ -12,6 +12,7 @@ import { useSaveGuard } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
 import { useToast } from "@shared/ui/Toast";
 import { useAuth } from "@modules/auth";
+import { CustomFieldsCard } from "@modules/custom-fields";
 import { projectApi } from "../api/projectApi";
 import { deleteConfirmWord } from "../model/projectTable";
 import type { Project } from "../model/types";
@@ -29,7 +30,8 @@ interface LossSummary {
 }
 
 /** Ajustes del proyecto (ScrAjustesProyecto): General (name and case
- *  numbering), «Exportar proyecto (ZIP)» and «Eliminar proyecto». */
+ *  numbering), «Campos personalizados» (FLD-01), «Exportar proyecto (ZIP)»
+ *  and «Eliminar proyecto». */
 export function ProjectSettings({ project, onSaved }: { project: Project; onSaved: () => void }) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -89,6 +91,12 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
     toast(t("projects.settings.deletedToast", { name: project.name }));
     navigate("/projects", { replace: true });
   }
+
+  const loadProjects = useCallback(
+    async () =>
+      (await projectApi.list(owner)).map((p) => ({ id: p.id, name: p.name })),
+    [owner],
+  );
 
   const sample = (n: number) => `${prefix}${String(n).padStart(digits, "0")}`;
   const word = deleteConfirmWord(project);
@@ -177,6 +185,12 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
           </button>
         </div>
       </section>
+
+      <CustomFieldsCard
+        projectId={project.id}
+        userId={owner}
+        loadProjects={loadProjects}
+      />
 
       <section className="pj-card-box pj-card-box--row" aria-labelledby="pj-export-title">
         <span className="pj-card-box__icon" aria-hidden="true">

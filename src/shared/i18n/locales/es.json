@@ -1094,7 +1094,9 @@
         "level": "Nivel",
         "status": "Estado",
         "execution": "Ejecución",
-        "edited": "Editado"
+        "edited": "Editado",
+        "type": "Tipo",
+        "automation": "Automatización"
       },
       "noRequirement": "Sin requisito",
       "more": "+{{count}}",
@@ -1129,7 +1131,10 @@
       "offPage_other": "{{count}} en otras páginas",
       "andMore": "y {{count}} más",
       "deleteFailed_one": "No se pudo eliminar {{count}} caso; sigue en la lista.",
-      "deleteFailed_other": "No se pudieron eliminar {{count}} casos; siguen en la lista."
+      "deleteFailed_other": "No se pudieron eliminar {{count}} casos; siguen en la lista.",
+      "checklistMark": "Checklist",
+      "featuresSkipped_one": "{{count}} checklist no se exporta a .feature.",
+      "featuresSkipped_other": "{{count}} checklists no se exportan a .feature."
     },
     "nav": {
       "allCases": "Todos los casos",
@@ -1165,7 +1170,32 @@
       "editing": "editando",
       "swipe": "Desliza el código hacia los lados para ver las líneas largas.",
       "indent": "Sangrar"
-    }
+    },
+    "caseType": "Tipo de caso",
+    "caseTypeLabel": {
+      "standard": "Estándar",
+      "checklist": "Checklist"
+    },
+    "automation": "Automatización",
+    "automationSheet": "Estado de automatización",
+    "automationLabel": {
+      "manual": "Manual",
+      "to_automate": "Por automatizar",
+      "automated": "Automatizado"
+    },
+    "automationHelp": {
+      "manual": "Se ejecuta a mano.",
+      "to_automate": "Candidato a automatizar; mientras tanto se ejecuta a mano.",
+      "automated": "Lo ejecuta una herramienta (por ejemplo, playwright-bdd)."
+    },
+    "checklist": {
+      "items": "Comprobaciones",
+      "hint": "Una checklist se ejecuta marcando cada punto; no tiene pasos Gherkin.",
+      "kept": "Los pasos y el Gherkin de este caso se conservan, ocultos mientras sea una checklist.",
+      "noGherkin": "Una checklist no tiene vista Gherkin."
+    },
+    "exportSheet": "Campos personalizados",
+    "importSkippedFields": "No se importaron estos valores porque no encajan con su campo: {{keys}}"
   },
   "dashboard": {
     "title": "Inicio",
@@ -1630,7 +1660,8 @@
     "duplicateRow": "Fila repetida: ya hay otra igual.",
     "duplicateKey": "Ese ID ya existe.",
     "summary": "No se puede guardar: revisa {{count}} campo(s).",
-    "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar."
+    "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar.",
+    "customRequired": "Este campo es obligatorio."
   },
   "dialog": {
     "typeToConfirm": "Escribe «{{text}}» para confirmar",
@@ -1693,12 +1724,112 @@
     },
     "selectAllShort": "Seleccionar todo"
   },
-  "sortMenu": {
-    "title": "Ordenar por",
-    "label": "Orden",
-    "trigger": "{{label}}: {{option}}",
-    "direction": "Dirección",
-    "desc": "Descendente",
-    "asc": "Ascendente"
+  "customFields": {
+    "title": "Campos personalizados",
+    "desc": "Campos propios del proyecto para sus casos de prueba. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "empty": "Aún no hay campos personalizados. Crea uno para registrar, por ejemplo, el navegador o el sprint de cada caso.",
+    "new": "Nuevo campo",
+    "copy": "Copiar de otro proyecto",
+    "showArchived": "Mostrar archivados",
+    "listLabel": "Campos personalizados del proyecto",
+    "required": "Obligatorio",
+    "archived": "Archivado",
+    "appliesTo": "Aplica a",
+    "appliesAll": "Todos los casos",
+    "appliesStandard": "Solo estándar",
+    "appliesChecklist": "Solo checklist",
+    "actions": "Acciones de «{{label}}»",
+    "edit": "Editar",
+    "archive": "Archivar",
+    "unarchive": "Desarchivar",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "drag": "Arrastrar para reordenar «{{label}}»",
+    "moved": "«{{label}}» movido a la posición {{n}}",
+    "type": {
+      "text": "Texto",
+      "long_text": "Texto largo",
+      "number": "Número",
+      "integer": "Número entero",
+      "date": "Fecha",
+      "boolean": "Sí / No",
+      "select": "Selección",
+      "multi_select": "Selección múltiple",
+      "user": "Usuario",
+      "url": "URL"
+    },
+    "dialog": {
+      "newTitle": "Nuevo campo personalizado",
+      "editTitle": "Editar campo",
+      "label": "Nombre",
+      "key": "Clave",
+      "keyHint": "Minúsculas, números y guion bajo. No se puede cambiar después.",
+      "keyLocked": "La clave no se puede cambiar: los valores de los casos la usan.",
+      "type": "Tipo",
+      "typeLocked": "El tipo no se puede cambiar una vez creado.",
+      "description": "Descripción",
+      "required": "Obligatorio al editar un caso",
+      "requiredHint": "El editor no guarda un caso sin este campo. La importación y la IA no lo exigen.",
+      "default": "Valor por defecto",
+      "defaultHint": "Lo reciben los casos nuevos.",
+      "options": "Opciones",
+      "addOption": "Añadir opción",
+      "optionN": "Opción {{n}}",
+      "removeOption": "Quitar la opción {{n}}",
+      "archiveOption": "Archivar la opción {{n}}",
+      "restoreOption": "Recuperar la opción {{n}}",
+      "optionArchived": "Archivada: no se ofrece en casos nuevos, pero los que la tienen la conservan.",
+      "create": "Crear campo",
+      "save": "Guardar cambios",
+      "saving": "Guardando…"
+    },
+    "copyDialog": {
+      "title": "Copiar campos de otro proyecto",
+      "source": "Proyecto de origen",
+      "hint": "Se copian los campos no archivados que este proyecto aún no tiene, con sus opciones.",
+      "none": "No tienes otros proyectos.",
+      "confirm": "Copiar campos",
+      "copying": "Copiando…",
+      "copiedToast_one": "{{count}} campo copiado",
+      "copiedToast_other": "{{count}} campos copiados",
+      "skipped": "Ya existían y no se tocaron: {{keys}}"
+    },
+    "savedToast": "Campo «{{label}}» guardado",
+    "archivedToast": "«{{label}}» archivado: sus valores se conservan",
+    "restoredToast": "«{{label}}» recuperado",
+    "saveFailed": "No se pudo guardar el campo. Inténtalo de nuevo.",
+    "loadFailed": "No se pudieron cargar los campos personalizados.",
+    "error": {
+      "key": "Clave no válida: empieza por una letra minúscula; solo minúsculas, números y _ (máx. 40).",
+      "duplicate_key": "Ya hay un campo con esta clave en el proyecto (puede estar archivado).",
+      "label": "El nombre es obligatorio (máx. 100 caracteres).",
+      "options": "Añade al menos una opción.",
+      "option_label": "Cada opción necesita un nombre.",
+      "option_duplicate": "Hay dos opciones con el mismo nombre.",
+      "type": "El valor no es del tipo del campo.",
+      "too_long": "El texto es demasiado largo.",
+      "option": "Elige una de las opciones disponibles.",
+      "duplicate": "Hay una opción repetida.",
+      "date": "Fecha no válida (AAAA-MM-DD).",
+      "url": "Escribe una URL que empiece por http:// o https://.",
+      "range": "El número es demasiado grande."
+    },
+    "section": {
+      "title": "Campos personalizados",
+      "other": "Otros valores",
+      "otherHint": "Valores de campos archivados o que aún no han llegado a este equipo. Se conservan tal cual.",
+      "unknown": "campo desconocido",
+      "choose": "Sin valor",
+      "yes": "Sí",
+      "no": "No"
+    },
+    "filter": "Campos",
+    "filterYes": "{{label}}: Sí",
+    "filterNo": "{{label}}: No",
+    "sheet": {
+      "field": "Campo",
+      "key": "Clave",
+      "value": "Valor"
+    }
   }
 }

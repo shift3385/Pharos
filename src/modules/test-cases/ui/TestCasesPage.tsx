@@ -22,6 +22,7 @@ import {
   type ListedCase,
 } from "../model/caseList";
 import { TestCaseList } from "./TestCaseList";
+import { customFieldApi, type CustomField } from "@modules/custom-fields";
 import { TestCaseEditor, type CaseNav } from "./TestCaseEditor";
 import { SuggestTestsModal } from "./SuggestTestsModal";
 import type { CaseImportResult, DetectionRow } from "../import/caseImport";
@@ -58,6 +59,7 @@ export function TestCasesPage({
   const [cases, setCases] = useState<ListedCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<CaseFilters>(EMPTY_FILTERS);
+  const [fields, setFields] = useState<CustomField[]>([]);
   const [sort, setSort] = useState<CaseSort>(DEFAULT_SORT);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(CASE_PAGE_SIZES[0]);
@@ -84,6 +86,12 @@ export function TestCasesPage({
   useEffect(() => {
     void refresh();
     let cancelled = false;
+    void customFieldApi
+      .list(projectId, userId)
+      .catch(() => [])
+      .then((list) => {
+        if (!cancelled) setFields(list);
+      });
     void Promise.all([aiAvailable(), projectHasPlan(projectId, userId)]).then(([ai, plan]) => {
       if (!cancelled) setCanSuggest(ai && plan);
     });
@@ -170,7 +178,10 @@ export function TestCasesPage({
       import("../export/batch"),
       import("jszip"),
     ]);
-    const files = await projectFeatureFiles(projectId, userId, t, ids);
+    let checklists = 0;
+    const files = await projectFeatureFiles(projectId, userId, t, ids, () => {
+      checklists++;
+    });
     const zip = new JSZip();
     for (const f of files) zip.file(`features/${f.name}`, f.content);
     const blob = await zip.generateAsync({ type: "blob" });
@@ -180,9 +191,18 @@ export function TestCasesPage({
     const provisional = files.filter((f) => f.provisional).length;
     const done = t("testCase.exportFeaturesToast", { count: files.length, path });
     toast(
-      provisional > 0
-        ? `${done}. ${t("testCase.exportProvisionalToast", { count: provisional })}`
-        : done,
+      [
+        done,
+        provisional > 0
+          ? t("testCase.exportProvisionalToast", { count: provisional })
+          : "",
+        // A checklist has no Gherkin (FLD-01): say it was left out.
+        checklists > 0
+          ? t("testCase.list.featuresSkipped", { count: checklists })
+          : "",
+      ]
+        .filter(Boolean)
+        .join(". "),
     );
   }
 
@@ -207,9 +227,23 @@ export function TestCasesPage({
     await refresh();
   }
 
-  function applyImport() {
+  async function applyImport() {
     if (!importState?.result) return;
-    setSeed(importState.result.input);
+    const { withCustomSheet } = await import("../import/caseImport");
+    const { input, skipped } = withCustomSheet(
+      importState.result.input,
+      fields,
+      {
+        yes: t("customFields.section.yes"),
+        no: t("customFields.section.no"),
+      },
+    );
+    if (skipped.length)
+      toast(
+        t("testCase.importSkippedFields", { keys: skipped.join(", ") }),
+        "warning",
+      );
+    setSeed(input);
     setImportState(null);
     openCase(NEW_CASE);
   }
@@ -259,6 +293,7 @@ export function TestCasesPage({
       <TestCaseList
         projectId={projectId}
         cases={cases}
+        fields={fields}
         loading={loading}
         visible={visible}
         total={ordered.length}

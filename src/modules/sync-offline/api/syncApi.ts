@@ -282,7 +282,9 @@ export async function syncNow(): Promise<SyncResult> {
     features: serverFeatures,
   });
   // Test cases held back until the server listed `stable-steps` (DAT-02, the
-  // first sync after an upgrade) go now; usually nothing is left to send.
+  // first sync after an upgrade) go now, and custom field definitions held
+  // back until it listed `custom-fields` (FLD-01; such a server also lists
+  // `stable-steps`); usually nothing is left to send.
   if (serverFeatures.includes("stable-steps")) {
     const late = await pushLww(token, userId, invoke);
     pushed += late.pushed;

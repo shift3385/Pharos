@@ -27,6 +27,12 @@ function FakeHeader({ children }: { children: ReactNode }) {
 const list = vi.fn();
 const get = vi.fn();
 const remove = vi.fn();
+const update = vi.fn();
+const fieldList = vi.fn();
+vi.mock("@modules/custom-fields", async (orig) => ({
+  ...(await orig<typeof import("@modules/custom-fields")>()),
+  customFieldApi: { list: (...a: unknown[]) => fieldList(...a) },
+}));
 vi.mock("../api/testCaseApi", () => ({
   testCaseApi: {
     list: (...a: unknown[]) => list(...a),
@@ -34,7 +40,7 @@ vi.mock("../api/testCaseApi", () => ({
     remove: (...a: unknown[]) => remove(...a),
     revisions: () => Promise.resolve([]),
     create: vi.fn(),
-    update: vi.fn(),
+    update: (...a: unknown[]) => update(...a),
   },
 }));
 vi.mock("../api/traceLinks", () => ({
@@ -59,6 +65,9 @@ const summary = (n: number, over: Partial<TestCaseSummary> = {}): TestCaseSummar
   status: "approved",
   priority: "medium",
   gherkinLevel: "basic",
+  caseType: null,
+  automationStatus: null,
+  custom: {},
   updatedAt: new Date().toISOString(),
   revision: 1,
   ...over,
@@ -77,6 +86,8 @@ const full = (s: TestCaseSummary): TestCase => ({
   version: "1.0",
   status: s.status,
   priority: s.priority,
+  caseType: s.caseType,
+  automationStatus: s.automationStatus,
   author: "QA",
   data: { gherkinLevel: "basic", steps: st("Abrir"), expectedResult: "Ok" },
   createdAt: s.updatedAt,
@@ -117,6 +128,8 @@ beforeEach(async () => {
   list.mockResolvedValue(SUMMARIES);
   get.mockImplementation((id: string) => Promise.resolve(full(SUMMARIES.find((s) => s.id === id)!)));
   remove.mockResolvedValue(undefined);
+  update.mockReset().mockResolvedValue(null);
+  fieldList.mockResolvedValue([]);
 });
 
 describe("Casos · lista (RED-V3)", () => {
@@ -326,4 +339,121 @@ describe("Casos · review fixes (RED-V3)", () => {
     );
     await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(calls));
   });
+});
+
+// FLD-01: case type, automation status and custom fields.
+const SPRINT = {
+  id: "f-sprint",
+  projectId: "p1",
+  entity: "test_case" as const,
+  fieldKey: "sprint",
+  label: "Sprint",
+  description: "",
+  fieldType: "select" as const,
+  options: [
+    { id: "OPT00001", label: "S1", archived: false },
+    { id: "OPT00002", label: "S2", archived: false },
+  ],
+  required: true,
+  defaultValue: null,
+  appliesToCaseTypes: null,
+  position: 0,
+  archivedAt: null,
+  createdAt: "",
+  updatedAt: "",
+  revision: 1,
+};
+
+describe("Casos · tipo, automatización y campos (FLD-01)", () => {
+  it("shows the automation column and the checklist mark, and filters by both", async () => {
+    setViewportWidth(1440);
+    list.mockResolvedValue([
+      summary(1, { title: "Manual", automationStatus: null }),
+      summary(2, {
+        title: "Auto",
+        automationStatus: "automated",
+        caseType: "checklist",
+      }),
+      summary(3, { title: "Sprint 2", custom: { sprint: "OPT00002" } }),
+    ]);
+    fieldList.mockResolvedValue([SPRINT]);
+    renderPage();
+    const table = await screen.findByRole("table", { name: "Casos de prueba" });
+    expect(within(table).getAllByText("Manual").length).toBeGreaterThan(0);
+    expect(within(table).getByText("Automatizado")).toBeInTheDocument();
+    expect(within(table).getAllByTitle("Checklist")).toHaveLength(1);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Automatización" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: /Automatizado/ }),
+    );
+    await userEvent.keyboard("{Escape}");
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+  }, 15_000);
+
+  it("filters by a choice custom field", async () => {
+    setViewportWidth(1440);
+    list.mockResolvedValue([
+      summary(1, { title: "Sprint 1", custom: { sprint: "OPT00001" } }),
+      summary(2, { title: "Sprint 2", custom: { sprint: "OPT00002" } }),
+    ]);
+    fieldList.mockResolvedValue([SPRINT]);
+    renderPage();
+    const table = await screen.findByRole("table", { name: "Casos de prueba" });
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Campos" }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitemcheckbox", { name: "Sprint: S2" }),
+    );
+    await userEvent.keyboard("{Escape}");
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toHaveTextContent("Sprint 2");
+  }, 15_000);
+
+  it("a required field blocks the save and is named; a checklist hides the Gherkin", async () => {
+    setViewportWidth(1440);
+    fieldList.mockResolvedValue([SPRINT]);
+    renderPage("/projects/p1/cases?case=c1");
+    await screen.findByRole("textbox", { name: /Título/ });
+    expect(
+      screen.getByRole("radiogroup", { name: "Vista del caso" }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /Guardar/ })[0],
+    );
+    const alert = await screen.findByRole("alert");
+    expect(
+      within(alert).getByRole("button", { name: "Sprint" }),
+    ).toBeInTheDocument();
+    expect(update).not.toHaveBeenCalled();
+
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /Sprint/ }),
+      "OPT00001",
+    );
+    await userEvent.click(screen.getByRole("radio", { name: "Checklist" }));
+    expect(
+      screen.getByText("Comprobaciones", { selector: "p" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("radiogroup", { name: "Vista del caso" }),
+    ).toBeNull();
+    await expectNoAxeViolations();
+
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /Guardar/ })[0],
+    );
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    const [, input] = update.mock.calls[0];
+    expect(input).toMatchObject({
+      caseType: "checklist",
+      data: expect.objectContaining({ custom: { sprint: "OPT00001" } }),
+    });
+    // Never set and not touched: not sent, so the stored null stays.
+    expect(input.automationStatus).toBeUndefined();
+  }, 20_000);
 });

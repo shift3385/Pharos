@@ -6,8 +6,12 @@ import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { PriorityFlag } from "@shared/ui/PriorityFlag";
 import { StatusPill } from "@shared/ui/StatusPill";
+import {
+  AUTOMATION_STATUSES,
+  effectiveAutomation,
+} from "@modules/custom-fields";
 import { CASE_PRIORITIES, CASE_STATUSES } from "../model/caseList";
-import { priorityTone, statusTone } from "./caseTones";
+import { automationTone, priorityTone, statusTone } from "./caseTones";
 
 /** A labelled field whose value is chosen from a menu (a sheet on mobile),
  *  each option with its explanation (SPEC §8 «Prioridad y Estado con
@@ -106,6 +110,36 @@ export function StatusField({ value, onChange }: { value: string; onChange: (v: 
         value: s,
         label: label(s),
         description: t(`testCase.statusHelp.${s}`),
+      }))}
+      onChange={onChange}
+    />
+  );
+}
+
+/** «Automatización» (FLD-01): manual / por automatizar / automatizado, each
+ *  with its explanation. A case that never set it reads as manual. */
+export function AutomationField({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const current = effectiveAutomation(value);
+  const label = (s: string) => t(`testCase.automationLabel.${s}`);
+  return (
+    <MenuField
+      label={t("testCase.automation")}
+      sheetTitle={t("testCase.automationSheet")}
+      value={current}
+      current={
+        <StatusPill tone={automationTone(current)}>{label(current)}</StatusPill>
+      }
+      options={AUTOMATION_STATUSES.map((s) => ({
+        value: s,
+        label: label(s),
+        description: t(`testCase.automationHelp.${s}`),
       }))}
       onChange={onChange}
     />

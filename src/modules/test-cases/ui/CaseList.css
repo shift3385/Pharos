@@ -100,6 +100,21 @@
   color: var(--color-navy-500);
 }
 
+/* The ID and, for a checklist (FLD-01), its mark. */
+.cl-id-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cl-checklist {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  color: var(--color-text-muted);
+}
+
 .cl-title {
   min-width: 0;
   overflow: hidden;
