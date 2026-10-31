@@ -200,9 +200,16 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   enforces foreign keys. The repository checks the links. No UNIQUE index but
   the live run key.
 - **Immutable.** Triggers refuse any change to the content of a shard, a result
-  or a step result (only `workspace_id`/`project_id` may move, ADR-0019); the
-  purge is the only code that deletes them, with their run. A correction is a
-  new attempt.
+  or a step result (only `workspace_id`/`project_id` may move, ADR-0019). The
+  purge is the only code that deletes them (a test greps for it): with their
+  run, once none of them is still pending for the server, together with their
+  journal rows; and stale ones whose run never came and whose project is gone.
+  A correction is a new attempt.
+- **Ids by kind.** A run item's flow must be a flow of the frozen revision, its
+  row a row of that flow (or of the case), and a step result's `step_id` a step
+  of that flow (the main flow: preconditions, Background and steps; a flow:
+  Background and its own lists). A case with an open key conflict cannot be
+  frozen. The server's size limits are checked before writing.
 - **Commands.** `run_create`, `run_update` (only while `in_progress`, else
   `run-closed`), `run_get`, `run_list`, `run_items_add` (one oplog row per item
   and one audit event), `run_items_list`, `result_record` (a manual attempt of
@@ -835,7 +842,8 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   web chain, AUD-01b); only the location keys (`workspaceId`, `projectId`) may
   change; never a conflict. A project delete tombstones shards and results
   (with runs, run items and mappings), not revisions or audit events
-  (SYNC-11). The execution entities only reach clients that send `runs`, and
+  (SYNC-11); a shard or result first pushed after its project was deleted is
+  stored as a tombstone. The execution entities only reach clients that send `runs`, and
   only those may push them (else 400 `runs_unsupported`); a requirement upsert
   from a client without `runs` keeps `riskLikelihood`/`riskImpact`
   (`FEATURE_KEYS`) even with `complete-payload`. The server validates their

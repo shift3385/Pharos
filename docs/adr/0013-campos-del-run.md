@@ -324,4 +324,39 @@ el boceto:
   resultados (a diferencia de las revisiones, SYNC-11). Los recuentos del
   evento de auditoría son los de las tablas del escritorio.
 - **El servidor valida, no interpreta:** comprueba los campos obligatorios y
-  los estados de los documentos de ejecución (`EXECUTION_PAYLOADS`).
+  los estados de los documentos de ejecución (`EXECUTION_PAYLOADS`). El
+  escritorio comprueba los mismos límites antes de escribir (título 500,
+  `test_key` 2000, 5000 pasos, en unidades UTF-16 como zod): un documento que
+  el servidor rechazara quedaría pendiente para siempre.
+
+Tras la revisión independiente (2026-10-31):
+
+- **Ids comprobados por tipo.** Un `flow_id` tiene que ser un flujo de la
+  revisión; un `example_row_id`, una fila de ese flujo (o del caso, sin
+  flujo); y un `step_id`, un paso de ese flujo. El flujo principal son las
+  precondiciones, el Background y los pasos del caso; cada flujo de un caso
+  avanzado, el Background y sus propias precondiciones y pasos. Un resultado
+  atribuido al paso equivocado no se podría corregir después.
+- **Un caso con un conflicto de clave abierto no se congela**
+  (`case-key-conflict`): su revisión con clave provisional solo existe en este
+  equipo.
+- **El peor estado** (`worst_status`) ordena `failed` > `blocked` > `other`
+  (y cualquier valor desconocido) > `skipped` > `passed`.
+- **Tiempos.** Se comparan como instantes: RFC 3339 (también `+0530` y más de
+  tres decimales, que se truncan a milisegundos) o la forma de SQLite. Un valor
+  que no se puede leer cuenta como ausente y se usa el siguiente de
+  `coalesce`; nunca se compara como texto junto a valores leídos.
+- **Borrado.** No hay trigger de `DELETE`: la purga es el único código que
+  borra shards, resultados y pasos (lo comprueba un test que busca esas
+  sentencias en el código). Un run espera en la purga mientras alguno de sus
+  shards o resultados no haya llegado al servidor, y al purgarse se lleva
+  también sus filas del oplog. La purga barre además los shards y resultados
+  sin run cuyo proyecto ya no existe (o está borrado y caducado) y que son más
+  antiguos que la retención; los recientes esperan a su run.
+- **Servidor.** Un shard o resultado que llega después de borrar su proyecto se
+  guarda como lápida, como lo habría dejado la cascada.
+- **Para el paso 9:** los importadores tienen que dar ids **deterministas** a
+  los resultados de paso (p. ej. UUIDv5 del resultado y la posición), igual que
+  a los resultados: si no, dos equipos que importan el mismo archivo
+  producirían el mismo resultado con pasos distintos y el servidor lo
+  rechazaría (`content_changed`).
