@@ -29,8 +29,12 @@ html.auth-route body {
 }
 
 /* ---- Form column (≥ 600 px): the only scroll. Centered when the form
-   fits; scrolls from the top, uncut, when it does not. ---- */
+   fits; scrolls from the top, uncut, when it does not. `position: relative`
+   makes it the containing block of absolutely positioned descendants (the
+   `sr-only` texts): without it they escaped its overflow and stretched the
+   page, which was the second scrollbar. ---- */
 .auth-col {
+  position: relative;
   flex: 0 0 clamp(340px, 48%, 620px);
   height: 100%;
   overflow-y: auto;
@@ -246,6 +250,10 @@ html.auth-route body {
    50 px buttons and no note (Login.dc.html, update 2026-10-31). */
 .auth[data-mode="register"] .auth-form {
   gap: 20px;
+}
+
+.auth[data-mode="register"] .auth-col__center {
+  padding: 16px 0;
 }
 
 .auth[data-mode="register"] .auth-form__title {
