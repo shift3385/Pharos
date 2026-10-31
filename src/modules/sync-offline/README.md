@@ -88,6 +88,39 @@ resolution can be added without a schema change.
     the row is deleted (its delete must still sync);
   - on the web a taken key is refused when saving (409 `key_taken`), with a toast.
 
+## Sync classes and compatibility (AUD-01, design 0.2.0 §3)
+
+- **Two classes.** `lww` is everything above (`oplog::SYNCED`,
+  `LWW_ENTITIES`). `append_only` documents are inserted if absent, carry no
+  base and never conflict; the server refuses other content under an existing
+  id (`appendRejected`) and keeps its own. The first one is `audit_event` (the
+  audit log, `src-tauri/src/audit.rs`). Adding one is one entry in
+  `src-tauri/src/sync_class.rs` (`APPEND_ONLY`, with its read, insert and owner
+  functions) and one in `server/src/modules/sync/sync.schemas.ts`
+  (`APPEND_ONLY_ENTITIES`), plus a bump of `APPLIED_SET_VERSION`.
+- **The cycle.** Key blocks → lww push → pull → append-only push
+  (`pushAppendOnly`, `oplog_pending` with `class: "append_only"`). The client
+  sends `x-pharos-sync-features: key-conflicts,append-only`; a server that knows
+  the class answers with `features`. Append-only documents are only pushed to a
+  server that listed `append-only`; against an older server they stay pending
+  (the exported diagnostics count them, `pendingAuditEvents`). They are not in
+  the "pending changes" badge. A refused one stays pending and is logged, not
+  shown.
+- **Older clients.** A client without `append-only` (0.1.x, 0.2.0-alpha.1) gets
+  exactly the previous answers and no append-only document in its pulls; its
+  pushes of the lww entities are unchanged.
+- **A missing field keeps the local value.** A pulled document, or a server
+  version taken in the conflict panel, that lacks a payload key keeps the local
+  value; `data` is merged one level deep the same way (`sync.rs::fill_missing`).
+  The server does the same on every upsert over a live document. An explicit
+  `null` clears. So an older sender never resets a field it does not know.
+  Senders must send `null` to clear a key, never omit it.
+- **Cursor reset.** `sync_cursor_get` returns `0` when the cursor was stored
+  under an older set of applied entities (`cursor_set:<user_id>` ≠
+  `APPLIED_SET_VERSION`): an older build moved its cursor past documents it
+  skipped. Re-pulling is safe (what matches `sync_base` is a no-op), and
+  `sync_cursor_set` stores the set with every page, so it restarts once.
+
 ## Web client (`web/serverApi.ts`, ADR-0004, BASE-10)
 
 The web build has no local store, oplog or outbox. Every module API calls the

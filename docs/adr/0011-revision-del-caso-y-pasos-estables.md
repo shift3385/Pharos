@@ -216,3 +216,39 @@ posición y los resultados antiguos apuntarían a pasos equivocados. Por eso:
   - nomenclatura `<scenario_id>` en lugar de `TC-xxx`.
 - **Cambio sobre lo aceptado, confirmado por el usuario el 2026-10-28:** el servidor 0.2 acepta clientes 0.1
   solo en lectura (excepción en VERSIONING §6.5).
+
+## Nota de implementación: clase `append_only` (E1, 2026-10-31)
+
+La clase `append_only` está hecha (paso 1 del diseño 0.2.0) y su primera
+entidad es `audit_event` (ADR-0015). Lo que conviene saber para registrar
+`test_case_revision` y las demás:
+
+- **Registro de una línea por lado:** `APPEND_ONLY` en
+  `src-tauri/src/sync_class.rs` (con sus funciones de lectura, inserción y
+  dueño) y `APPEND_ONLY_ENTITIES` en `server/src/modules/sync/sync.schemas.ts`.
+  Si borrar el proyecto debe dejar lápida, se añade también a
+  `PROJECT_CHILDREN`; `audit_event` no está ahí, porque la auditoría sobrevive
+  a lo que audita. Cada entidad nueva sube `APPLIED_SET_VERSION`, y con eso el
+  cursor vuelve a 0 una vez.
+- **En el protocolo** el documento viaja con `op: "append"` (solo las entidades
+  append-only lo usan, y solo con ese op), `revision: 1` y sin base. El
+  servidor responde `appendRejected` cuando ya tiene el id con otro contenido.
+- **Interruptor:** además de la versión de SYNC-08, la cabecera
+  `x-pharos-sync-features` con `append-only`. Dentro de una MENOR la cadena de
+  versión no cambia entre builds, así que la cabecera es lo que distingue un
+  0.2.0-alpha.1 de un build con la clase. El servidor responde `features`, y un
+  cliente solo envía documentos append-only a un servidor que los lista.
+- **De las tres operaciones de servidor, hoy solo existe el cambio de
+  ubicación:** un push con el mismo contenido y otra ubicación se acepta con
+  `seq` nuevo. Todavía no deja evento de auditoría en el servidor (AUD-01b), y
+  el escritorio no aplica cambios de ubicación de documentos que ya tiene (solo
+  inserta si no existen): llega con ADR-0019. La lápida y la redacción de
+  servidor llegan con SYNC-06 y Admin > Auditoría.
+- **La puerta de solo lectura para 0.1** (`426 read_only_client_version`) se
+  hace en el paso 2, con el cambio de forma de los casos. E1 no cambia la forma
+  de ninguna entidad existente.
+- **El campo que falta conserva el valor local**, en los dos lados: al aplicar
+  un pull o la versión del servidor en el panel de conflictos
+  (`sync.rs::fill_missing`), y en cada upsert sobre un documento vivo del
+  servidor (`storeDoc`). `data` se fusiona a un nivel y `null` borra. Por eso un
+  emisor que quiere vaciar un campo envía `null`, nunca lo omite.
