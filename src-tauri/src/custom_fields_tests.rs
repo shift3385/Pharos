@@ -347,6 +347,29 @@ fn a_case_save_checks_its_values_and_keeps_what_it_does_not_know() {
     assert!(data_of(&c, &id).get(custom_fields::STASH_KEY).is_none());
 }
 
+#[test]
+fn a_stored_case_type_this_build_does_not_know_never_blocks_a_save() {
+    let c = device();
+    let p = new_project(&c, "Checkout");
+    let id = test_case::insert_case(&c, &case_input(&p, json!({}))).unwrap();
+    // Pulled from a newer device.
+    c.execute(
+        "UPDATE test_cases SET case_type = 'exploratory', automation_status = 'flaky' WHERE id = ?1",
+        [&id],
+    )
+    .unwrap();
+    test_case::update_case(&c, &id, &case_input(&p, json!({"title": "Pay v2"}))).unwrap();
+    assert_eq!(
+        columns_of(&c, &id),
+        (Some("exploratory".into()), Some("flaky".into())),
+        "kept as it came"
+    );
+    // What the caller sends is still checked.
+    assert!(
+        test_case::update_case(&c, &id, &case_input(&p, json!({"caseType": "other"}))).is_err()
+    );
+}
+
 // ---------------------------------------------------------------- revisions
 
 fn revision_rows(c: &Connection, case_id: &str) -> Vec<(i64, String, String)> {

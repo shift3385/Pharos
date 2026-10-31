@@ -891,23 +891,24 @@ pub(crate) fn write_doc(
 
 // ----------------------------------------------------------- migration 0027
 
-/// The `custom` map of the case's state at its sync base, from the history
-/// rows the old `update_case` wrote (no hash) or the revision rows.
-fn custom_at_base(conn: &Connection, case_id: &str) -> Result<Option<Value>, String> {
-    let custom: Option<String> = conn
+/// The object at `data.<key>` of the case's state at its sync base, from the
+/// history rows the old `update_case` wrote (no hash) or the revision rows.
+fn at_base(conn: &Connection, case_id: &str, key: &str) -> Result<Option<Value>, String> {
+    let path = format!("$.{key}");
+    let value: Option<String> = conn
         .query_row(
-            "SELECT json_extract(r.data, '$.custom') FROM test_case_revisions r
+            "SELECT json_extract(r.data, ?2) FROM test_case_revisions r
                JOIN sync_base b ON b.entity = 'test_case' AND b.entity_id = r.test_case_id
                                AND b.revision = r.revision
               WHERE r.test_case_id = ?1 AND json_valid(r.data)
-                AND json_type(r.data, '$.custom') = 'object'
+                AND json_type(r.data, ?2) = 'object'
               ORDER BY r.rowid DESC LIMIT 1",
-            params![case_id],
+            params![case_id, path],
             |r| r.get(0),
         )
         .optional()
         .map_err(|e| e.to_string())?;
-    Ok(custom.and_then(|s| serde_json::from_str(&s).ok()))
+    Ok(value.and_then(|s| serde_json::from_str(&s).ok()))
 }
 
 /// True when the case has local changes not pushed yet.
@@ -927,30 +928,49 @@ fn has_pending(conn: &Connection, case_id: &str) -> Result<bool, String> {
 /// Data step of migration 0027 (module doc of `0027_case_fields_restore.sql`).
 /// Idempotent: after one run there is no stash left and `custom` is present.
 pub fn migrate_restore(conn: &Connection) -> Result<(), String> {
-    let cases: Vec<(String, String, String, bool)> = {
+    let cases: Vec<(String, String, String, bool, bool)> = {
         let mut stmt = conn
             .prepare(
-                "SELECT id, data, updated_by, deleted_at IS NOT NULL FROM test_cases
-                  WHERE json_valid(data) ORDER BY id",
+                "SELECT id, data, updated_by, deleted_at IS NOT NULL,
+                        case_type IS NULL AND automation_status IS NULL
+                   FROM test_cases WHERE json_valid(data) ORDER BY id",
             )
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+            .query_map([], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+            })
             .map_err(|e| e.to_string())?;
         rows.collect::<rusqlite::Result<_>>()
             .map_err(|e| e.to_string())?
     };
-    for (id, data, updated_by, deleted) in cases {
+    for (id, data, updated_by, deleted, unset) in cases {
         let Ok(mut value) = serde_json::from_str::<Value>(&data) else {
             continue;
         };
-        let stash = take_stash(&mut value);
+        let mut stash = take_stash(&mut value);
         let mut changed = stash.is_some();
-        let lacks_custom = value.get("custom").is_none();
-        if lacks_custom && has_pending(conn, &id)? {
-            if let (Some(custom), Some(obj)) = (custom_at_base(conn, &id)?, value.as_object_mut()) {
-                obj.insert("custom".into(), custom);
-                changed = true;
+        // Edited while read-only: the old editor rebuilt `data` without the
+        // stash and without `custom`; the state it started from (its sync
+        // base, copied to the history by the old `update_case`) has both.
+        if has_pending(conn, &id)? {
+            if stash.is_none() && unset {
+                if let Some(mut base) = at_base(conn, &id, STASH_KEY)? {
+                    let mut holder = Value::Object(serde_json::Map::from_iter([(
+                        STASH_KEY.to_string(),
+                        base.take(),
+                    )]));
+                    stash = take_stash(&mut holder);
+                    changed |= stash.is_some();
+                }
+            }
+            if value.get("custom").is_none() {
+                if let (Some(custom), Some(obj)) =
+                    (at_base(conn, &id, "custom")?, value.as_object_mut())
+                {
+                    obj.insert("custom".into(), custom);
+                    changed = true;
+                }
             }
         }
         if !changed {

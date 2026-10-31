@@ -241,6 +241,12 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
     if !project::owns(conn, &input.project_id, &input.user_id)? {
         return Err("project not found".to_string());
     }
+    // Only what the caller sends is checked: a stored value this build does
+    // not know (from a newer device) never blocks a save (review 5).
+    custom_fields::check_case_fields(
+        input.case_type.as_deref(),
+        input.automation_status.as_deref(),
+    )?;
     let scenario_id = match input.scenario_id.as_deref().map(str::trim) {
         Some(s) if !s.is_empty() => {
             // `?` marks a provisional key (DAT-01); nobody types one.
@@ -328,6 +334,10 @@ pub(crate) fn update_case(
     if !owns(conn, id, &input.user_id)? {
         return Err("test case not found".to_string());
     }
+    custom_fields::check_case_fields(
+        input.case_type.as_deref(),
+        input.automation_status.as_deref(),
+    )?;
     type Stored = (i64, String, Option<String>, Option<String>, String);
     let (revision, project_id, stored_type, stored_automation, stored_data): Stored = conn
         .query_row(
@@ -406,7 +416,6 @@ fn prepare_data(
     input: &Value,
     previous: Option<&Value>,
 ) -> Result<Value, String> {
-    custom_fields::check_case_fields(Some(case_type), Some(automation))?;
     let mut data = input.clone();
     steps::normalize_new_case_data(&mut data);
     custom_fields::take_stash(&mut data);

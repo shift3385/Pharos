@@ -1813,13 +1813,16 @@ fn a_case_edited_while_read_only_gets_its_custom_values_back() {
     let image = fixture_020a1_image();
     let mut server = server_case_data();
     server["custom"] = serde_json::json!({"points": 3});
-    let pulled = flattened(&server);
+    let mut pulled = flattened(&server);
+    pulled[crate::custom_fields::STASH_KEY] =
+        serde_json::json!({"caseType": "checklist", "automationStatus": "to_automate"});
     add_pulled_case(&image, "fld-edit", 5, &pulled);
     // The old editor rebuilt `data` without `custom`; its `update_case`
     // copied the pulled state to the history.
     let mut edited = pulled.clone();
     let obj = edited.as_object_mut().unwrap();
     obj.remove(crate::steps::STASH_KEY);
+    obj.remove(crate::custom_fields::STASH_KEY);
     obj.remove("custom");
     edited["notes"] = serde_json::json!("edited offline");
     image
@@ -1850,6 +1853,17 @@ fn a_case_edited_while_read_only_gets_its_custom_values_back() {
         let data = data_of(c, "fld-edit");
         assert_eq!(data["custom"], serde_json::json!({"points": 3}));
         assert_eq!(data["notes"], "edited offline", "the offline edit stays");
+        assert!(data.get(crate::custom_fields::STASH_KEY).is_none());
+        // The case type the old editor dropped comes back from the base row
+        // (review blocker 1): its push must not clear it everywhere.
+        let cols: (Option<String>, Option<String>) = c
+            .query_row(
+                "SELECT case_type, automation_status FROM test_cases WHERE id = 'fld-edit'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(cols, (Some("checklist".into()), Some("to_automate".into())));
         assert_eq!(
             count(
                 c,
