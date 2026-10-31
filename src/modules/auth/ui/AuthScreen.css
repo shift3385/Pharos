@@ -1,9 +1,19 @@
 /* Login (SPEC §5/§8, Login.dc.html). Layout keys on the app container's
    `data-viewport` and on `cqi`/`cqh`, never on window media queries. */
 
+/* One scroll at most (update 2026-10-31, double scroll in «Crear cuenta»):
+   the screen is exactly the dynamic viewport and never scrolls; html and body
+   are locked while it is shown (`auth-route`, set by AuthScreen). Only the
+   form column scrolls (the sheet on mobile); the photo never does. */
+html.auth-route,
+html.auth-route body {
+  height: 100%;
+  overflow: hidden;
+}
+
 .auth {
   display: flex;
-  height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background: var(--color-surface-1);
   color: var(--color-text-primary);
@@ -18,7 +28,8 @@
   letter-spacing: -0.01em;
 }
 
-/* ---- Form column (≥ 600 px) ---- */
+/* ---- Form column (≥ 600 px): the only scroll. Centered when the form
+   fits; scrolls from the top, uncut, when it does not. ---- */
 .auth-col {
   flex: 0 0 clamp(340px, 48%, 620px);
   height: 100%;
@@ -217,6 +228,45 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Nombre and Apellidos share a row; each wraps below 180 px. */
+.auth-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.auth-form__row > .auth-field {
+  flex: 1 1 180px;
+}
+
+/* «Crear cuenta» is more compact so it fits without scrolling at ~800 px:
+   32 px title, 46 px inputs, 14 px between fields, 20 px between blocks,
+   50 px buttons and no note (Login.dc.html, update 2026-10-31). */
+.auth[data-mode="register"] .auth-form {
+  gap: 20px;
+}
+
+.auth[data-mode="register"] .auth-form__title {
+  font-size: 32px;
+}
+
+.auth[data-mode="register"] .auth-form__fields {
+  gap: 14px;
+}
+
+.auth[data-mode="register"] .auth-field__input {
+  height: 46px;
+}
+
+.auth[data-mode="register"] .auth-form__submit,
+.auth[data-mode="register"] .auth-form__google {
+  height: 50px;
+}
+
+.auth[data-mode="register"] .auth-form__note {
+  display: none;
 }
 
 .auth-field {
@@ -573,6 +623,35 @@
 
 .auth--mobile .auth-form__google {
   font-size: 14.5px;
+}
+
+/* «Crear cuenta» on a phone: Nombre and Apellidos side by side, 44 px
+   inputs, 48 px buttons, 12 px gaps; only the sheet scrolls if needed. */
+.auth--mobile[data-mode="register"] .auth-form,
+.auth--mobile[data-mode="register"] .auth-form__fields {
+  gap: 12px;
+}
+
+.auth--mobile[data-mode="register"] .auth-form__row {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.auth--mobile[data-mode="register"] .auth-form__row > .auth-field {
+  flex: 1 1 0;
+}
+
+.auth--mobile[data-mode="register"] .auth-form__title {
+  font-size: 24px;
+}
+
+.auth--mobile[data-mode="register"] .auth-field__input {
+  height: 44px;
+}
+
+.auth--mobile[data-mode="register"] .auth-form__submit,
+.auth--mobile[data-mode="register"] .auth-form__google {
+  height: 48px;
 }
 
 /* The prototype drops the «o» divider on mobile to save height. */
