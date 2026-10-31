@@ -3,7 +3,9 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0028": "E4 step 6 (CYC-01, ADR-0017): configurations, test cycles and cycle items"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024"
@@ -11,7 +13,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0009": "E4 step 6 (CYC-01, ADR-0017): documents key index with cycleKey"
+    },
     "retired": {}
   }
 }
