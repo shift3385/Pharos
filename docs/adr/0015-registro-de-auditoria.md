@@ -191,10 +191,10 @@ decisión sin cambiarla:
   con nombre, tipo, tamaño y sha256, sin fila de oplog propia hasta SYNC-04b.
 - **Resolver un conflicto** deja un evento `resolve_conflict` en los dos
   sentidos (con `"resolution": "local"` o `"remote"` en `summary`).
-- **Lo que se edita en la web no deja rastro todavía.** La web escribe en el
-  servidor sin pasar por `journal::record`. Lo cubre AUD-01b (ROADMAP): el
-  servidor escribirá un `audit_event` por cada escritura del dominio, con su
-  propia cadena.
+- **Hasta AUD-01b (0.2.0), lo que se edita en la web no deja rastro.** La web
+  escribe en el servidor sin pasar por `journal::record`. AUD-01b (ROADMAP,
+  ola E2) hace que el servidor escriba un `audit_event` por cada escritura del
+  dominio, con su propia cadena.
 - **Sincronización:** los eventos pendientes no cuentan en el indicador de
   cambios pendientes. El diagnóstico exportado lleva su número
   (`pendingAuditEvents`), para ver si se acumulan contra un servidor sin

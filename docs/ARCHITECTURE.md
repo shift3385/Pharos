@@ -210,7 +210,7 @@ through `src-tauri/src/journal.rs`:
   device and is never pushed.
 - Pulls create no event (they arrive as the other device's events); resolving a
   conflict does (`resolve_conflict`). Web edits leave no audit trail yet
-  (AUD-01b). There is no audit UI yet (Admin > Auditoría comes later).
+  (AUD-01b, 0.2.0, wave E2). There is no audit UI yet (Admin > Auditoría comes later).
 - Each event with an owner rides an oplog row `entity = 'audit_event'`,
   outside `oplog::SYNCED`, so it is not in the "pending changes" badge; the
   exported diagnostics carry `pendingAuditEvents` (all accounts) so a server
