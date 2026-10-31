@@ -191,10 +191,8 @@ decisión sin cambiarla:
   con nombre, tipo, tamaño y sha256, sin fila de oplog propia hasta SYNC-04b.
 - **Resolver un conflicto** deja un evento `resolve_conflict` en los dos
   sentidos (con `"resolution": "local"` o `"remote"` en `summary`).
-- **Hasta AUD-01b (0.2.0), lo que se edita en la web no deja rastro.** La web
-  escribe en el servidor sin pasar por `journal::record`. AUD-01b (ROADMAP,
-  ola E2) hace que el servidor escriba un `audit_event` por cada escritura del
-  dominio, con su propia cadena.
+- **Lo que se edita en la web** lo audita el servidor desde AUD-01b (ver
+  «Enmienda de AUD-01b» más abajo).
 - **Sincronización:** los eventos pendientes no cuentan en el indicador de
   cambios pendientes. El diagnóstico exportado lleva su número
   (`pendingAuditEvents`), para ver si se acumulan contra un servidor sin
@@ -232,3 +230,49 @@ decisión sin cambiarla:
     build de depuración).
   - Nada se compacta todavía: las filas de oplog sincronizadas esperan a
     SYNC-10, y la auditoría no se purga en `0.x`.
+
+## Enmienda de AUD-01b: auditoría de la web (E2, 2026-10-31)
+
+Aprobada por el coordinador el 2026-10-31 junto con el plan de E2 · AUD-01b.
+Extiende la decisión a lo que se edita en la web, sin cambiarla:
+
+- **El servidor escribe su propia cadena por cuenta:** `(device_id "web",
+  chain_workspace_id "web", chain_owner = la cuenta)`.
+  - En 0.2 el servidor no tiene workspace, y el `workspaceId` de los
+    documentos lo pone cada escritorio; un valor fijo deja la clave estable.
+  - Cuando llegue ADR-0019, los eventos nuevos de la web pasan al workspace real
+    con `chain_owner = ''`, la misma transición que en el escritorio.
+- **Mismo evento y mismo hash que el escritorio.** Cada escritura del dominio
+  (`DomainTx.put`, `server/src/modules/audit/`) guarda, en la misma
+  transacción y bajo el candado de escritura de la cuenta, un documento
+  `audit_event` con la forma de `audit.rs::payload`:
+  - `actor = "user:<id>"`, `origin = "local"`, `hlc` del reloj del servidor
+    (posterior al del cambio) y `at` en ISO-8601 UTC con milisegundos;
+  - `workspaceId` vacío: cada escritorio lo archiva en su propio workspace (la
+    ubicación queda fuera del hash y del contenido);
+  - el diff con las reglas de `journal::diff`; sin evento para una
+    actualización que no cambia nada ni para una escritura rechazada (409/404);
+    una importación de requisitos es un evento `import` con sus recuentos, y
+    borrar un proyecto, un `delete` con los recuentos de la cascada.
+- **Sin `origin = 'web'`:** el CHECK de la migración local 0019 haría que un
+  escritorio lo descartara. `deviceId "web"` ya distingue los eventos de la
+  web.
+- **Cabeza de la cadena** en `audit_chain_heads` (migración de servidor 0007),
+  leída y movida bajo el candado de la cuenta: dos escrituras concurrentes de
+  la misma cuenta nunca toman el mismo `chain_seq`.
+- **`device_id "web"` está reservado.** `/sync/push` rechaza un
+  `audit_event` que lo declare (`appendRejected`, motivo `reserved_chain`),
+  así que solo el servidor alarga esa cadena y ningún cliente puede bifurcarla.
+  Los escritorios tienen UUID como `device_id`; ninguno real se ve afectado.
+- **`/sync/push` no se audita:** cada equipo envía sus propios eventos.
+- **Una forma canónica, dos implementaciones.** `audit.chain.ts` porta JCS
+  (con el mismo rechazo de lo que queda fuera del subconjunto), `hash_of` y
+  `verify_chain`. El fichero compartido
+  `src/shared/contracts/fixtures/audit/chain.json` (formas canónicas, valores
+  rechazados y una cadena web tal como la devuelve `/sync/pull`) lo comprueban
+  `cargo test` y los tests del servidor: si las dos implementaciones se
+  separan, falla uno de los dos.
+- **En el escritorio no cambia nada:** con `append-only`, el pull guarda los
+  eventos de la web como los de cualquier equipo, y
+  `audit::verify_chain(conn, "web", "web", cuenta)` los verifica. Los
+  clientes sin `append-only` no los reciben.
