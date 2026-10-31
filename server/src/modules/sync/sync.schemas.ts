@@ -1,9 +1,19 @@
 import { z } from "zod";
 
 /** Entities of the `lww` sync class (Phase 8B core + SYNC-04a requirements
- *  and planner cards): base check, then last-write-wins by HLC (ADR-0002).
- *  Templates and attachments follow in SYNC-04b. */
-export const LWW_ENTITIES = ["project", "test_plan", "test_case", "requirement", "planner_card"] as const;
+ *  and planner cards, EJE-01 runs, run items and unlinked mappings): base
+ *  check, then last-write-wins by HLC (ADR-0002). Templates and attachments
+ *  follow in SYNC-04b. */
+export const LWW_ENTITIES = [
+  "project",
+  "test_plan",
+  "test_case",
+  "requirement",
+  "planner_card",
+  "run",
+  "run_item",
+  "unlinked_mapping",
+] as const;
 
 /** Entities of the `append_only` sync class (design 0.2.0 §3.2, ADR-0011):
  *  inserted if absent, never a conflict, content never changes. Registering
@@ -13,7 +23,24 @@ export const LWW_ENTITIES = ["project", "test_plan", "test_case", "requirement",
 export const APPEND_ONLY_ENTITIES = [
   "audit_event",
   "test_case_revision",
+  "run_shard",
+  "result",
 ] as const;
+
+/** The execution entities (EJE-01, ADR-0013), of both classes. Only clients
+ *  that send the `runs` feature pull them; the others never knew them and
+ *  get the answers they got before (VERSIONING §6.5). */
+export const EXECUTION_ENTITIES = ["run", "run_item", "unlinked_mapping", "run_shard", "result"] as const;
+
+export const isExecution = (entity: string): boolean =>
+  (EXECUTION_ENTITIES as readonly string[]).includes(entity);
+
+/** Payload keys a feature introduced on existing entities. A client without
+ *  the feature does not know them, so its upsert keeps the stored values even
+ *  when it sends its whole state (`complete-payload`): `storeDoc`. */
+export const FEATURE_KEYS: Record<string, Partial<Record<string, readonly string[]>>> = {
+  runs: { requirement: ["riskLikelihood", "riskImpact"] },
+};
 
 /** Every entity that syncs, of either class. */
 export const SYNCED_ENTITIES = [...LWW_ENTITIES, ...APPEND_ONLY_ENTITIES] as const;
@@ -35,6 +62,10 @@ export const NON_CONTENT_KEYS: Partial<
   Record<(typeof APPEND_ONLY_ENTITIES)[number], readonly string[]>
 > = {
   test_case_revision: ["createdAt", "createdBy", "hlc"],
+  // Two devices that import the same file write the same shard and results
+  // (deterministic ids, ADR-0013) at different times and clocks.
+  run_shard: ["importedAt", "importedBy", "hlc"],
+  result: ["createdAt", "createdBy", "hlc"],
 };
 
 /** Every payload key of `entity` outside its immutable content. */
@@ -44,8 +75,53 @@ export const outsideContent = (entity: string): readonly string[] => [
 ];
 
 /** Children removed with their project (FIX-05): their payload carries
- *  `projectId`. */
-export const PROJECT_CHILDREN = ["test_plan", "test_case", "requirement", "planner_card"] as const;
+ *  `projectId`. Shards and results go too (append-only, ADR-0011: a
+ *  tombstone is one of the three changes allowed); case revisions and audit
+ *  events stay until SYNC-11. */
+export const PROJECT_CHILDREN = [
+  "test_plan",
+  "test_case",
+  "requirement",
+  "planner_card",
+  "run",
+  "run_item",
+  "unlinked_mapping",
+  "run_shard",
+  "result",
+] as const;
+
+const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"] as const;
+const id = z.string().min(1).max(200);
+
+/** What the server checks of an execution document (design §3.11: it
+ *  validates, it does not interpret). Extra keys pass. */
+const EXECUTION_PAYLOADS: Partial<Record<string, z.ZodType>> = {
+  run: z.looseObject({
+    projectId: id,
+    runKey: z.string().min(1).max(100),
+    title: z.string().max(500),
+    status: z.enum(["in_progress", "completed", "aborted"]),
+  }),
+  run_item: z.looseObject({ projectId: id, runId: id, testCaseId: id, testCaseRevisionId: id }),
+  unlinked_mapping: z.looseObject({ projectId: id, testKey: z.string().min(1).max(2000) }),
+  run_shard: z.looseObject({
+    projectId: id,
+    runId: id,
+    sourceFormat: z.string().min(1).max(100),
+    sourceFileSha256: z.string().regex(/^[0-9a-f]{64}$/i),
+  }),
+  result: z.looseObject({
+    projectId: id,
+    runId: id,
+    testKey: z.string().min(1).max(2000),
+    status: z.enum(RESULT_STATUSES),
+    attempt: z.number().int().nonnegative(),
+    steps: z
+      .array(z.looseObject({ text: z.string(), status: z.enum(RESULT_STATUSES) }))
+      .max(5000)
+      .default([]),
+  }),
+};
 
 /** Most deltas per push and documents per pull page. Clients send batches
  *  and page through pulls (FIX-02/03). */
@@ -75,6 +151,15 @@ export const deltaSchema = z
   .refine((d) => isAppendOnly(d.entity) === (d.op === "append"), {
     message: 'Append-only entities are sent with op "append", and only they are.',
     path: ["op"],
+  })
+  .superRefine((d, ctx) => {
+    const schema = d.op === "delete" ? undefined : EXECUTION_PAYLOADS[d.entity];
+    const parsed = schema?.safeParse(d.payload);
+    if (parsed && !parsed.success) {
+      for (const issue of parsed.error.issues) {
+        ctx.addIssue({ code: "custom", message: issue.message, path: ["payload", ...issue.path] });
+      }
+    }
   });
 
 export const pushSchema = z.object({
@@ -90,17 +175,22 @@ export type Delta = z.infer<typeof deltaSchema>;
 
 /** Human-readable keys (DAT-01, ADR-0010): the kind of key each keyed entity
  *  carries and the payload field that holds it. */
-export const KEY_KINDS = ["case", "requirement", "defect"] as const;
+export const KEY_KINDS = ["case", "requirement", "defect", "run", "cycle"] as const;
 export type KeyKind = (typeof KEY_KINDS)[number];
+/** `cycle` (CYC-, ADR-0017) is accepted now (migration 0008) and gets its
+ *  entity with step 6. */
 export const KEY_ENTITY: Record<KeyKind, string> = {
   case: "test_case",
   requirement: "requirement",
   defect: "planner_card",
+  run: "run",
+  cycle: "test_cycle",
 };
 export const KEY_FIELD: Record<string, string> = {
   test_case: "scenarioId",
   requirement: "requirementKey",
   planner_card: "cardKey",
+  run: "runKey",
 };
 
 /** Numbers per leased block; the desktop asks for another when fewer than 10

@@ -84,6 +84,8 @@
         "title": "Saved cards",
         "description": "A user can pay with a saved card.",
         "priority": "high",
+        "riskLikelihood": null,
+        "riskImpact": null,
         "createdAt": "2026-10-29 10:00:00",
         "updatedAt": "2026-10-29 10:00:00",
         "revision": 1

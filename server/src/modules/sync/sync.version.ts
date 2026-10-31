@@ -64,6 +64,7 @@ export const SERVER_FEATURES = [
   "key-conflicts",
   "append-only",
   "stable-steps",
+  "runs",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -105,6 +106,20 @@ export function sendsCompletePayload(req: FastifyRequest): boolean {
  *  pulls carry cases in the text-step shape it knows. */
 export function sendsStableSteps(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("stable-steps");
+}
+
+/** True if the client knows the execution entities (EJE-01, ADR-0013): runs,
+ *  run items, unlinked mappings, shards and results, the risk keys of a
+ *  requirement and `run` key blocks. Without it a client never sees them on
+ *  pull, and its requirement upserts keep the risk the server has. */
+export function understandsRuns(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("runs");
+}
+
+/** Features of `SERVER_FEATURES` the client did not send. */
+export function missingFeatures(req: FastifyRequest): string[] {
+  const sent = clientFeatures(req);
+  return SERVER_FEATURES.filter((f) => !sent.includes(f));
 }
 
 /** 426 for a push of a read-only client (VERSIONING §6.5), before anything
