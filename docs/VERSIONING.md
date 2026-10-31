@@ -175,7 +175,9 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
        conocen); nunca ven un objeto donde esperaban un texto. Las listas
        estables viajan en `data.__stableSteps`, que guardan sin tocar: al
        actualizar recuperan los mismos ids, el resultado esperado y el mismo
-       hash de revisión que el servidor (DAT-02, revisión B1).
+       hash de revisión que el servidor (DAT-02, revisión B1). Del mismo modo,
+       el tipo de caso y el estado de automatización, para los que no tienen
+       columna, viajan en `data.__caseFields` (FLD-01, migración 0027).
      - **Límite conocido:** las apps publicadas tratan cualquier 426 como
        fatal y hacen el push antes del pull. Mientras no tengan cambios
        pendientes leen con normalidad; en cuanto tienen uno, cada sync se
@@ -191,9 +193,12 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
-     `complete-payload`, `stable-steps`). Un cliente que aún no ha visto
-     `stable-steps` en las respuestas del servidor no le envía casos ni
-     revisiones (los retiene y el diagnóstico los cuenta).
+     `complete-payload`, `stable-steps`, `custom-fields`). Un cliente que aún
+     no ha visto `stable-steps` en las respuestas del servidor no le envía casos
+     ni revisiones, ni definiciones de campos sin `custom-fields` (los retiene y
+     el diagnóstico los cuenta). El servidor conserva el tipo de caso, el estado
+     de automatización y `data.custom` de un caso que envía un cliente sin
+     `custom-fields`.
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian

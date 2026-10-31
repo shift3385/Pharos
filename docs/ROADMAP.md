@@ -134,7 +134,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | RUN-00  | Entorno, build, commit, dataset y riesgo del requisito dentro del Run desde el inicio (absorbe EJE-05 y los campos de TRZ-04) | P0  | Aceptado: [ADR-0013](adr/0013-campos-del-run.md)                                                                                            |
 | DEF-01  | El defecto como entidad propia (severidad, estado, clave externa, enlace a Result)                                            | P1  | Aceptado: [ADR-0016](adr/0016-defecto-como-entidad.md)                                                                                      |
 | CYC-01  | Ciclo o conjunto de pruebas y matriz de configuración                                                                         | P1  | Aceptado: [ADR-0017](adr/0017-ciclos-y-configuraciones.md)                                                                                  |
-| FLD-01  | Campos personalizados tipados por proyecto y tipo de caso                                                                     | P1  | Aceptado: [ADR-0018](adr/0018-campos-personalizados.md)                                                                                     |
+| FLD-01  | Campos personalizados tipados por proyecto y tipo de caso                                                                     | P1  | Aceptado: [ADR-0018](adr/0018-campos-personalizados.md). Hecho (E3, paso 5): `case_type`, `automation_status`, campos por proyecto, checklist mínima, hoja «Campos personalizados» del `.xlsx`                                                                  |
 | TEN-01  | Diseño de workspaces compartidos ([ADR-0003](adr/0003-workspaces-compartidos.md))                                             | P0  | Aceptado: modelo en [ADR-0003](adr/0003-workspaces-compartidos.md), diseño técnico en [ADR-0019](adr/0019-diseno-workspaces-compartidos.md) |
 | SYNC-02 | Conflictos por entidad hasta 0.5.0 ([ADR-0002](adr/0002-conflictos-por-entidad.md))                                           | —   | Decidido                                                                                                                                    |
 
@@ -204,6 +204,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | CAS-01 | Pasos compartidos, parámetros y datasets                                    | P1  | 0.3.0   | Cambiar un paso compartido actualiza N casos; un dataset de 3 filas da 3 resultados |
 | CAS-02 | Flujo borrador → revisión → aprobado y baselines de suite                   | P1  | 0.3.0   | Editar un caso aprobado lo devuelve a borrador; una baseline queda congelada        |
 | EXP-01 | Sesiones exploratorias (charter, timebox, notas, evidencias desde el móvil) | P2  | 0.4.0   | Una sesión genera un Run con notas y un defecto vinculado                           |
+| FLD-02 | Selector de columnas en la lista de casos (campos personalizados como columnas; ADR-0018, Q4 de E3) | P2  | 0.3.0   | Mostrar u ocultar columnas, también de campos personalizados, y que se recuerde por proyecto |
 
 ### Integraciones, CLI y runners
 
