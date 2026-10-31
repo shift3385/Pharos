@@ -10,7 +10,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0007": "E2 AUD-01b: audit_chain_heads (web audit chain)"
+    },
     "retired": {}
   }
 }
