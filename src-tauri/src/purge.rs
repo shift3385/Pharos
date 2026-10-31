@@ -313,14 +313,14 @@ pub fn purge_deleted(
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
         let summary = purge(&tx, &user_id, retention_days)?;
         let evidence = purge_evidence(&tx, &user_id, retention_days)?;
+        let released = crate::evidence::has_pending_deletions(&tx)?;
         tx.commit().map_err(|e| e.to_string())?;
-        Ok((summary, evidence))
+        Ok((summary, evidence > 0 || released))
     })?;
-    let (summary, evidence) = summary;
-    if summary.total() > 0 || evidence > 0 {
-        db.persist()?;
+    let (summary, evidence_changed) = summary;
+    if summary.total() > 0 || evidence_changed {
+        db.persist_and_collect()?;
     }
-    db.collect_evidence()?;
     Ok(summary)
 }
 

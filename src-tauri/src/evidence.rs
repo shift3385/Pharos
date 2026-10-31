@@ -25,8 +25,9 @@
 //! - **Deleting** follows the database: a file is written before the database
 //!   that references it is saved, and removed only after the database that no
 //!   longer references it is saved. A content without live references becomes
-//!   `local_state = 'deleting'` in the same transaction; `collect`, run after
-//!   `Db::persist` (and at open), removes the file and then the row.
+//!   `local_state = 'deleting'` in the same transaction;
+//!   `Db::persist_and_collect` saves and then runs `collect` under the same
+//!   lock, which removes the file and then the row.
 //!
 //! Evidence never syncs yet (SYNC-04b, 0.4.0): no `attachments` row reaches the
 //! oplog and the bytes never leave this folder. Logs carry counts, sizes and
@@ -122,7 +123,7 @@ impl EvidenceStore {
     }
 
     /// `evidence/<2 hex>/<hmac>.pev` of a content hash.
-    fn path_for(&self, sha256: &str) -> Result<PathBuf, String> {
+    pub(crate) fn path_for(&self, sha256: &str) -> Result<PathBuf, String> {
         let raw = decode_hex(sha256).ok_or("not a sha256")?;
         let mut mac =
             <Hmac<Sha256> as Mac>::new_from_slice(&self.name_key).expect("any key length");
@@ -136,8 +137,16 @@ impl EvidenceStore {
     }
 
     /// True if the file of this content is on disk.
+    #[cfg(test)]
     pub(crate) fn exists(&self, sha256: &str) -> bool {
         self.path_for(sha256).map(|p| p.is_file()).unwrap_or(false)
+    }
+
+    /// True if an intact-looking file of this `size`-byte content is on disk.
+    pub(crate) fn is_stored(&self, sha256: &str, size: u64) -> bool {
+        self.path_for(sha256)
+            .map(|p| is_intact(&p, size))
+            .unwrap_or(false)
     }
 
     /// Starts writing one content, at most `limit` bytes.
@@ -184,7 +193,7 @@ impl EvidenceStore {
             writer.write(&chunk[..n])?;
         }
         writer.seal()?;
-        writer.commit(self)
+        writer.commit(self).map(|c| c.stored)
     }
 
     /// A streaming reader of a content; it fails at the end if the plaintext
@@ -319,6 +328,40 @@ impl EvidenceStore {
     }
 }
 
+/// What `commit` did: the content's identity, and whether this writer's file
+/// was moved into place (false: an intact copy was already stored).
+#[derive(Debug)]
+pub(crate) struct Committed {
+    pub(crate) stored: Stored,
+    pub(crate) wrote: bool,
+}
+
+/// Length of the `.pev` file of a `size`-byte content: header, plaintext and
+/// one tag per block (an empty content still has its last, empty block).
+fn expected_len(size: u64) -> u64 {
+    let blocks = size.div_ceil(BLOCK as u64).max(1);
+    HEADER_LEN as u64 + size + TAG as u64 * blocks
+}
+
+/// True if `path` looks like a complete `.pev` v1 of a `size`-byte content:
+/// the expected length and a known header. Cheap (no decryption): it keeps
+/// dedupe from trusting a truncated or foreign file.
+fn is_intact(path: &Path, size: u64) -> bool {
+    let Ok(meta) = fs::metadata(path) else {
+        return false;
+    };
+    if !meta.is_file() || meta.len() != expected_len(size) {
+        return false;
+    }
+    let mut header = [0u8; 9];
+    File::open(path)
+        .and_then(|mut f| f.read_exact(&mut header))
+        .is_ok()
+        && &header[..4] == MAGIC
+        && header[4] == FORMAT_VERSION
+        && u32::from_le_bytes(header[5..9].try_into().unwrap()) as usize == BLOCK
+}
+
 /// One content being written: encrypted and hashed block by block.
 pub struct BlobWriter {
     tmp: PathBuf,
@@ -404,24 +447,37 @@ impl BlobWriter {
         Ok(())
     }
 
-    /// Moves the sealed file to its name; if that content is already stored,
-    /// the copy is discarded. Call it with the database lock held, so a
+    /// Moves the sealed file to its name. If an intact copy of that content
+    /// is already stored (right length and header), the new one is discarded;
+    /// a damaged copy (truncated, overwritten) is replaced, so attaching the
+    /// same file again repairs it. Call it with the database lock held, so a
     /// concurrent `collect` cannot remove the file between this and the row
     /// that references it.
-    pub(crate) fn commit(mut self, store: &EvidenceStore) -> Result<Stored, String> {
+    pub(crate) fn commit(mut self, store: &EvidenceStore) -> Result<Committed, String> {
         self.seal()?;
         let stored = self.sealed.clone().expect("sealed above");
         let dest = store.path_for(&stored.sha256)?;
-        if dest.is_file() {
-            return Ok(stored); // Drop removes the temp copy.
+        if is_intact(&dest, stored.size) {
+            // Drop removes the temp copy.
+            return Ok(Committed {
+                stored,
+                wrote: false,
+            });
         }
         if let Some(parent) = dest.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
+        // `rename` replaces a damaged copy (MOVEFILE_REPLACE_EXISTING on Windows).
         match fs::rename(&self.tmp, &dest) {
-            Ok(()) => Ok(stored),
+            Ok(()) => Ok(Committed {
+                stored,
+                wrote: true,
+            }),
             // Another writer of the same content won the race.
-            Err(_) if dest.is_file() => Ok(stored),
+            Err(_) if is_intact(&dest, stored.size) => Ok(Committed {
+                stored,
+                wrote: false,
+            }),
             Err(e) => Err(format!("failed to store evidence: {e}")),
         }
     }
@@ -564,6 +620,16 @@ pub(crate) fn release(conn: &Connection, sha256: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// True if some content is marked `deleting` (its file still to remove).
+pub(crate) fn has_pending_deletions(conn: &Connection) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM blobs WHERE local_state = 'deleting')",
+        [],
+        |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())
+}
+
 /// Releases every content no live attachment needs (after a purge).
 pub(crate) fn release_unreferenced(conn: &Connection) -> Result<(), String> {
     conn.execute(
@@ -577,7 +643,7 @@ pub(crate) fn release_unreferenced(conn: &Connection) -> Result<(), String> {
 }
 
 /// Removes the files of contents marked `deleting`, then their rows. Call it
-/// after `Db::persist` (and at open), with the database lock held; the rows'
+/// after `Db::persist_and_collect`, with the database lock held; the rows'
 /// removal is saved by the next persist (if that never happens, the next run
 /// finds the rows again and the files already gone). A content referenced
 /// again in the meantime goes back to `present`. Returns the files removed.
@@ -881,15 +947,20 @@ pub(crate) fn migrate_planner_attachments(
             orphans += 1;
             continue;
         };
-        let done: Option<String> = conn
+        let done: Option<(String, i64)> = conn
             .query_row(
-                "SELECT sha256 FROM attachments WHERE id = ?1",
+                "SELECT sha256, size FROM attachments WHERE id = ?1",
                 params![old.id],
-                |r| r.get(0),
+                |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .optional()
             .map_err(|e| e.to_string())?;
-        if done.as_deref().is_some_and(|sha| store.exists(sha)) {
+        // A row already moved is skipped if its file is intact; a missing or
+        // damaged file is stored again (`commit` replaces it).
+        if done
+            .as_ref()
+            .is_some_and(|(sha, size)| store.is_stored(sha, *size as u64))
+        {
             continue;
         }
         // Incremental BLOB I/O: the bytes are read in blocks, not copied whole.

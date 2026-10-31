@@ -404,28 +404,14 @@ pub fn planner_attachment_add(
     upload.seal()?;
     let id = Uuid::new_v4().to_string();
     let stored = db.with_conn(|conn| {
-        if !owns(conn, &card_id, &owner_id)? {
-            return Err("card not found".to_string());
-        }
-        let stored = upload.commit(db.evidence())?;
-        let added = in_tx(conn, |tx| {
-            add_attachment(
-                tx,
-                &id,
-                &card_id,
-                &owner_id,
-                &name,
-                mime.as_deref(),
-                &stored,
-            )
-        });
-        if let Err(e) = added {
-            if !evidence::is_known(conn, &stored.sha256)? {
-                db.evidence().remove(&stored.sha256)?;
-            }
-            return Err(e);
-        }
-        Ok(stored)
+        let card = NewAttachment {
+            id: &id,
+            card_id: &card_id,
+            owner_id: &owner_id,
+            name: &name,
+            mime: mime.as_deref(),
+        };
+        attach_upload(conn, db.evidence(), upload, &card)
     })?;
     db.persist()?;
     Ok(Some(AttachmentSummary {
@@ -434,6 +420,50 @@ pub fn planner_attachment_add(
         mime,
         size: stored.size as i64,
     }))
+}
+
+/// The row `attach_upload` writes for an upload.
+struct NewAttachment<'a> {
+    id: &'a str,
+    card_id: &'a str,
+    owner_id: &'a str,
+    name: &'a str,
+    mime: Option<&'a str>,
+}
+
+/// Moves a sealed upload into the store and attaches it, under the database
+/// lock (`conn`). If attaching fails, the file is removed only when this
+/// upload wrote it and nothing knows that content: a copy that was already
+/// stored (another attachment's, or one a moved-aside database needs) stays.
+fn attach_upload(
+    conn: &Connection,
+    store: &evidence::EvidenceStore,
+    upload: evidence::BlobWriter,
+    new: &NewAttachment,
+) -> Result<evidence::Stored, String> {
+    if !owns(conn, new.card_id, new.owner_id)? {
+        return Err("card not found".to_string());
+    }
+    let committed = upload.commit(store)?;
+    let stored = committed.stored;
+    let added = in_tx(conn, |tx| {
+        add_attachment(
+            tx,
+            new.id,
+            new.card_id,
+            new.owner_id,
+            new.name,
+            new.mime,
+            &stored,
+        )
+    });
+    if let Err(e) = added {
+        if committed.wrote && !evidence::is_known(conn, &stored.sha256)? {
+            store.remove(&stored.sha256)?;
+        }
+        return Err(e);
+    }
+    Ok(stored)
 }
 
 /// Attachments of a live card the user owns (none for anyone else).
@@ -650,8 +680,7 @@ pub fn planner_attachment_delete(
     owner_id: String,
 ) -> Result<(), String> {
     db.with_tx(|conn| delete_attachment(conn, &id, &owner_id))?;
-    db.persist()?;
-    db.collect_evidence()
+    db.persist_and_collect()
 }
 
 #[cfg(test)]
@@ -817,6 +846,50 @@ mod tests {
             )
             .unwrap();
         assert_eq!(state, "deleting");
+    }
+
+    #[test]
+    fn a_failed_attach_removes_only_a_file_it_wrote() {
+        let dir = std::env::temp_dir().join(format!("pharos-attach-{}", Uuid::new_v4()));
+        let store = evidence::EvidenceStore::new(&dir, &[3u8; 32]);
+        let c = conn();
+        let card = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let existing = attach(&c, &card); // takes the id the failing attach reuses
+        let upload = |bytes: &[u8]| {
+            let mut w = store.writer(evidence::MAX_FILE_BYTES).unwrap();
+            w.write(bytes).unwrap();
+            w.seal().unwrap();
+            w
+        };
+        let new = |name: &'static str| NewAttachment {
+            id: &existing,
+            card_id: &card,
+            owner_id: OWNER,
+            name,
+            mime: None,
+        };
+        // Content already on disk (and unknown to this database): the failed
+        // attach found it there and must leave it alone.
+        let foreign = store
+            .put(&b"foreign"[..], evidence::MAX_FILE_BYTES)
+            .unwrap();
+        assert!(attach_upload(&c, &store, upload(b"foreign"), &new("a")).is_err());
+        assert!(store.exists(&foreign.sha256));
+        // A content this attach wrote and nothing knows: removed.
+        let fresh = crate::audit::sha256_hex(b"fresh");
+        assert!(attach_upload(&c, &store, upload(b"fresh"), &new("b")).is_err());
+        assert!(!store.exists(&fresh));
+        // And a working attach keeps its file.
+        let ok = NewAttachment {
+            id: "ok",
+            card_id: &card,
+            owner_id: OWNER,
+            name: "ok.txt",
+            mime: None,
+        };
+        let stored = attach_upload(&c, &store, upload(b"fresh"), &ok).unwrap();
+        assert!(store.exists(&stored.sha256));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

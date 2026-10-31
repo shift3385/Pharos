@@ -859,6 +859,24 @@ fn a_database_saved_between_the_rust_step_and_0023_finishes_cleanly() {
     crate::evidence::migrate_planner_attachments(&mid, Some(&store)).unwrap();
     let copied = count(&mid, "SELECT count(*) FROM attachments");
     write_image(&dir, &mid);
+    // One of the copied files was cut short: the rerun stores it again.
+    let (big_sha, big_size): (String, i64) = mid
+        .query_row(
+            "SELECT sha256, size FROM attachments WHERE id = 'big'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert!(store.is_stored(&big_sha, big_size as u64));
+    let big = store.path_for(&big_sha).unwrap();
+    let len = fs::metadata(&big).unwrap().len();
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&big)
+        .unwrap()
+        .set_len(len / 2)
+        .unwrap();
+    assert!(!store.is_stored(&big_sha, big_size as u64));
 
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     assert_attachments_moved(&old, &db);

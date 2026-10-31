@@ -71,6 +71,11 @@ fn contents_round_trip_at_every_block_boundary() {
             bytes,
             "len {len}"
         );
+        let on_disk = fs::metadata(store.path_for(&stored.sha256).unwrap())
+            .unwrap()
+            .len();
+        assert_eq!(on_disk, expected_len(len as u64), "len {len}");
+        assert!(store.is_stored(&stored.sha256, len as u64));
         // Tiny reads work across block boundaries too.
         let mut reader = store.open(&stored.sha256).unwrap();
         let (mut out, mut buf) = (Vec::new(), [0u8; 7]);
@@ -98,7 +103,7 @@ fn a_large_file_is_streamed_block_by_block() {
         assert!(writer.buf.capacity() <= BLOCK);
     }
     writer.seal().unwrap();
-    let stored = writer.commit(&store).unwrap();
+    let stored = writer.commit(&store).unwrap().stored;
     assert_eq!(stored.size, bytes.len() as u64);
     let mut reader = store.open(&stored.sha256).unwrap();
     let mut out = Vec::new();
@@ -127,6 +132,38 @@ fn the_same_content_is_stored_once_and_nothing_is_left_behind() {
     assert!(names[0].ends_with(".pev"));
     // The name is the HMAC, never the plaintext hash.
     assert!(!names[0].contains(&a.sha256));
+    assert!(fs::read_dir(dir.join(DIR).join(TMP))
+        .unwrap()
+        .next()
+        .is_none());
+    fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn attaching_the_same_content_again_repairs_a_damaged_copy() {
+    let dir = temp_dir();
+    let store = EvidenceStore::new(&dir, &KEY);
+    let bytes = sample(BLOCK + 500);
+    let stored = store.put(&bytes[..], MAX_FILE_BYTES).unwrap();
+    let path = store.path_for(&stored.sha256).unwrap();
+    let original = fs::read(&path).unwrap();
+
+    // An intact copy is reused: the new writer's file is discarded.
+    let mut again = store.writer(MAX_FILE_BYTES).unwrap();
+    again.write(&bytes).unwrap();
+    assert!(!again.commit(&store).unwrap().wrote);
+
+    // Truncated, or the same length with a foreign header: replaced.
+    let mut foreign_header = original.clone();
+    foreign_header[..4].copy_from_slice(b"XXXX");
+    for damaged in [original[..original.len() - 10].to_vec(), foreign_header] {
+        fs::write(&path, &damaged).unwrap();
+        assert!(!store.is_stored(&stored.sha256, stored.size));
+        let mut writer = store.writer(MAX_FILE_BYTES).unwrap();
+        writer.write(&bytes).unwrap();
+        assert!(writer.commit(&store).unwrap().wrote);
+        assert_eq!(read_all(&store, &stored.sha256).unwrap(), bytes);
+    }
     assert!(fs::read_dir(dir.join(DIR).join(TMP))
         .unwrap()
         .next()

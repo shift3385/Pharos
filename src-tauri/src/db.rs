@@ -24,7 +24,7 @@
 //! Evidence (DAT-03, ADR-0014): attachment contents live next to the database
 //! in `evidence/` (evidence.rs), keyed from the same key; `Db` owns that store,
 //! migration 0023 moves the old planner attachment BLOBs into it, and
-//! `collect_evidence` removes files only after the save that released them.
+//! `persist_and_collect` removes files only after the save that released them.
 
 use std::fs;
 use std::io::Write;
@@ -332,12 +332,11 @@ impl Db {
             evidence: store,
         };
         // Save the migrated image right away, so the backup and the file on
-        // disk are always exactly one upgrade apart.
-        if migrate_existing {
-            db.persist()?;
+        // disk are always exactly one upgrade apart; then finish the evidence
+        // deletions an earlier run saved but did not complete (ADR-0014).
+        if migrate_existing || db.with_conn(evidence::has_pending_deletions)? {
+            db.persist_and_collect()?;
         }
-        // Evidence whose deletion was saved but not finished (ADR-0014).
-        db.collect_evidence()?;
         Ok(db)
     }
 
@@ -371,12 +370,20 @@ impl Db {
         &self.evidence
     }
 
-    /// Removes the evidence files a saved change no longer needs, then saves
-    /// the removal of their rows. Call it after `persist`.
-    pub(crate) fn collect_evidence(&self) -> Result<(), String> {
-        let removed = self.with_conn(|conn| evidence::collect(conn, &self.evidence))?;
-        if removed > 0 {
-            self.persist()?;
+    /// Saves, then removes the evidence files that save released, then saves
+    /// the removal of their rows: all under one lock, so every `deleting` row
+    /// `collect` sees is in the image just written. No other transaction can
+    /// release a content between the save and the removal, and a failed save
+    /// removes nothing. Use it instead of `persist` after a change that may
+    /// release evidence.
+    pub(crate) fn persist_and_collect(&self) -> Result<(), String> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|_| "db lock poisoned".to_string())?;
+        self.save(&conn)?;
+        if evidence::collect(&conn, &self.evidence)? > 0 {
+            self.save(&conn)?;
         }
         Ok(())
     }
@@ -387,6 +394,10 @@ impl Db {
             .conn
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
+        self.save(&conn)
+    }
+
+    fn save(&self, conn: &Connection) -> Result<(), String> {
         let image = conn
             .serialize(DatabaseName::Main)
             .map_err(|e| e.to_string())?;
@@ -1024,6 +1035,40 @@ mod tests {
         drop(db);
         Db::open_with_key(&dir, KEY).unwrap();
         assert_eq!(file_names(&dir), vec!["pharos.db.enc"]);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn evidence_is_removed_only_after_the_save_that_released_it() {
+        let dir = temp_dir();
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let stored = db
+            .evidence()
+            .put(&b"evidence"[..], evidence::MAX_FILE_BYTES)
+            .unwrap();
+        db.with_conn(|c| {
+            evidence::record_blob(c, &stored, None)?;
+            evidence::release(c, &stored.sha256)
+        })
+        .unwrap();
+        // A save that fails (its temp path is taken by a folder) removes nothing.
+        fs::create_dir(dir.join("pharos.db.enc.new")).unwrap();
+        assert!(db.persist_and_collect().is_err());
+        assert!(db.evidence().exists(&stored.sha256));
+        fs::remove_dir(dir.join("pharos.db.enc.new")).unwrap();
+        // Once it is saved, the file goes, and so does its row (saved too).
+        db.persist_and_collect().unwrap();
+        assert!(!db.evidence().exists(&stored.sha256));
+        drop(db);
+        let db = Db::open_with_key(&dir, KEY).unwrap();
+        let rows: i64 = db
+            .with_conn(|c| {
+                c.query_row("SELECT count(*) FROM blobs", [], |r| r.get(0))
+                    .map_err(|e| e.to_string())
+            })
+            .unwrap();
+        assert_eq!(rows, 0);
+        drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
 
