@@ -993,4 +993,67 @@ mod tests {
         );
         assert!(dup.is_err());
     }
+
+    /// The current state of the case has its revision row (DAT-02, review S2).
+    fn assert_current_revision(c: &Connection, id: &str) {
+        let (rev_id, sha) = crate::revisions::current_id(c, id).unwrap().unwrap();
+        let stored: String = c
+            .query_row(
+                "SELECT content_sha256 FROM test_case_revisions WHERE id = ?1",
+                [&rev_id],
+                |r| r.get(0),
+            )
+            .unwrap_or_else(|_| panic!("no revision row for the current state of {id}"));
+        assert_eq!(stored, sha, "{id}");
+    }
+
+    #[test]
+    fn every_key_path_that_changes_a_case_leaves_its_current_revision() {
+        let c = conn();
+        project(&c, "p1", U, true);
+        requirement(&c, "r1", "REQ-?ABCD");
+        case(
+            &c,
+            "c1",
+            "ATS_?WXYZ",
+            r#"{"requirementKeys":["REQ-?ABCD"]}"#,
+        );
+        case(
+            &c,
+            "c2",
+            "ATS_?QQQQ",
+            r#"{"requirementKeys":["REQ-?ABCD"]}"#,
+        );
+        // Key finalization of a case, and of the requirement it links (relink).
+        apply_blocks(&c, U, &[block("case", 1, 50), block("requirement", 1, 50)]).unwrap();
+        assert!(finalize(&c, U).unwrap() > 0);
+        for id in ["c1", "c2"] {
+            assert_current_revision(&c, id);
+        }
+        // A pulled key takes the local one away (vacate), then comes back.
+        let key: String = c
+            .query_row(
+                "SELECT scenario_id FROM test_cases WHERE id = 'c1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        c.execute(
+            "INSERT OR IGNORE INTO sync_base (user_id, entity, entity_id, revision, hlc) VALUES (?1, 'test_case', 'c1', 1, '')",
+            [U],
+        )
+        .unwrap();
+        vacate(&c, U, "test_case", "c1", "remote-holder").unwrap();
+        assert_current_revision(&c, "c1");
+        holder_deleted(&c, "test_case", "remote-holder").unwrap();
+        let back: String = c
+            .query_row(
+                "SELECT scenario_id FROM test_cases WHERE id = 'c1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(back, key);
+        assert_current_revision(&c, "c1");
+    }
 }

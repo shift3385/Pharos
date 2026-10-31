@@ -21,6 +21,8 @@ import {
   normalizeCaseData,
   revisionContent,
   revisionId,
+  STASH_KEY,
+  align,
 } from "../src/modules/sync/stable-steps";
 
 const vectors = JSON.parse(
@@ -49,6 +51,9 @@ describe("shared vectors (the desktop checks the same file)", () => {
       expect(normalizeCaseData(v.caseId, data).changed, v.name).toBe(false);
     }
   });
+  it("align (rule 9)", () => {
+    for (const v of vectors.align) expect(align(v.prev, v.next)).toEqual(v.out);
+  });
   it("revision hashes and ids", () => {
     for (const v of vectors.revisions) {
       const sha = contentSha256(revisionContent(v.content));
@@ -76,7 +81,13 @@ describe("shared vectors (the desktop checks the same file)", () => {
       steps: Record<string, unknown>[];
     };
     stable.steps[0] = { ...stable.steps[0], expected: "only for 0.2" };
-    expect(flattenCaseData(stable)).toEqual(legacy);
+    const flat = flattenCaseData(stable) as Record<string, unknown>;
+    const { [STASH_KEY]: stash, ...visible } = flat;
+    expect(visible).toEqual(legacy);
+    // The stable lists travel in the stash, and the upgrade gives them back
+    // exactly: same ids, same expected, same hash (review B1).
+    expect(stash).toBeDefined();
+    expect(normalizeCaseData("c1", flat).data).toEqual(stable);
   });
 });
 
@@ -251,11 +262,13 @@ describe("clients without stable-steps may only read (VERSIONING §6.5)", () => 
     const token = await tokenFor();
     await push(current(token), [caseDelta()]);
     const old = (await pull(alpha1(token))).docs[0].payload.data;
-    expect(old).toEqual({
+    const { [STASH_KEY]: stash, ...visible } = old;
+    expect(visible).toEqual({
       gherkinLevel: "outline",
       steps: ["I log in as <user>"],
       examples: { headers: ["user"], rows: [["ana"]] },
     });
+    expect(stash).toEqual({ steps: stableData.steps, examples: stableData.examples });
     const now = (await pull(current(token))).docs[0].payload.data;
     expect(now).toEqual(stableData);
     // The stored document is untouched.
@@ -265,6 +278,26 @@ describe("clients without stable-steps may only read (VERSIONING §6.5)", () => 
       )
     ).rows[0].payload;
     expect(stored.data).toEqual(stableData);
+  });
+
+  it("once upgraded, the case it pulled flattened is the server's again: no new revision", async () => {
+    const token = await tokenFor();
+    await push(current(token), [caseDelta(), revisionDoc()]);
+    const revisions = async () =>
+      (await pool.query("SELECT count(*)::int AS n, max(seq) AS seq FROM documents WHERE entity = 'test_case_revision'"))
+        .rows[0];
+    const before = await revisions();
+    // What the read-only client stored, normalized by its upgrade.
+    const pulled = (await pull(alpha1(token))).docs[0].payload.data;
+    const upgraded = normalizeCaseData("c1", pulled).data;
+    expect(upgraded).toEqual(stableData);
+    // The revision its migration queues is the one the server already holds.
+    const fields = { scenarioId: "ATS_001", title: "Login", version: "1.0", status: "draft", priority: "medium", data: upgraded };
+    const sha = contentSha256(revisionContent(fields));
+    expect(revisionId("c1", 1, sha)).toBe(revisionDoc().entityId);
+    const res = (await push(current(token), [revisionDoc({ createdAt: "2026-11-05 09:00:00", createdBy: "u-b", hlc: H(77, "b") })])).json();
+    expect(res.appendRejected).toEqual([]);
+    expect(await revisions()).toEqual(before);
   });
 
   it("the server lists stable-steps to current clients", async () => {

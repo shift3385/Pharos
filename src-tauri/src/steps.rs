@@ -22,6 +22,11 @@
 //! `background`, `steps`, `examples`, `flows/<flowId>/preconditions|steps|examples`;
 //! a flow without an id gets one derived from `flows` and its index.
 //!
+//! Before that, a stash the server left for a read-only client
+//! (`STASH_KEY`) gives every step it still matches its id back
+//! (`restore_from_stash`). A replaced id that was not empty stays as
+//! `legacyId`.
+//!
 //! A save (`normalize_new_case_data`) follows the same rules but gives a
 //! missing id a random one instead: a derived id could be the one a deleted
 //! step had in that slot, and an id is never reused within a case.
@@ -229,15 +234,290 @@ fn flow_ids(data: &mut Value, gen: IdGen) {
     for i in needs {
         let id = gen("flows", i, &mut used);
         if let Some(flow) = flows[i].as_object_mut() {
-            flow.insert("id".into(), Value::String(id));
+            set_id(flow, id);
         }
     }
+}
+
+/// Key, inside `data`, where the server keeps the stable lists of a case it
+/// serves with text steps to a client without `stable-steps` (DAT-02, review
+/// B1). That client stores `data` as it comes and may not push, so on upgrade
+/// `restore_from_stash` gives every step back the id (and `expected`) the
+/// server has, and the case keeps its content hash.
+pub const STASH_KEY: &str = "__stableSteps";
+
+/// The text a step element stands for (the conversion rules of `convert`).
+pub(crate) fn step_text(el: &Value) -> String {
+    match el {
+        Value::String(s) => s.clone(),
+        other => match other.get("text") {
+            Some(Value::String(t)) if other.is_object() => t.clone(),
+            _ => jcs(other),
+        },
+    }
+}
+
+/// The values a row element stands for (the conversion rules of `convert`).
+pub(crate) fn row_values(el: &Value) -> Value {
+    match el {
+        Value::Array(_) => el.clone(),
+        Value::String(s) => json!([s]),
+        other => match other.get("values") {
+            Some(v @ Value::Array(_)) if other.is_object() => v.clone(),
+            _ => json!([jcs(other)]),
+        },
+    }
+}
+
+/// Dice similarity of two texts over UTF-16 bigrams of their lowercase form,
+/// 0..1: the client's `similarity` (model/steps.ts), operation for operation.
+fn similarity(a: &str, b: &str) -> f64 {
+    fn grams(s: &str) -> std::collections::HashMap<(u16, u16), u32> {
+        let t: Vec<u16> = s.to_lowercase().encode_utf16().collect();
+        let mut out = std::collections::HashMap::new();
+        for w in t.windows(2) {
+            *out.entry((w[0], w[1])).or_insert(0) += 1;
+        }
+        out
+    }
+    let (x, y) = (grams(a), grams(b));
+    let common: u32 = x
+        .iter()
+        .map(|(g, c)| (*c).min(*y.get(g).unwrap_or(&0)))
+        .sum();
+    let len = |s: &str| s.encode_utf16().count().saturating_sub(1);
+    let total = len(a) + len(b);
+    if total > 0 {
+        2.0 * f64::from(common) / total as f64
+    } else if a.to_lowercase() == b.to_lowercase() {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+/// Below this similarity, two items of a gap with different counts on each
+/// side are not paired: a line replaced wholesale gets a new id (rule 9).
+pub const MIN_SIMILARITY: f64 = 0.3;
+
+/// Pairs the items of one gap between two matches (`align`).
+fn pair_gap(
+    prev: &[String],
+    next: &[String],
+    (pi, ai): (usize, usize),
+    (pj, aj): (usize, usize),
+    out: &mut [Option<usize>],
+) {
+    let (p, q) = (ai - pi, aj - pj);
+    if p == 0 || q == 0 {
+        return;
+    }
+    if p == q {
+        for k in 0..p {
+            out[pj + k] = Some(pi + k);
+        }
+        return;
+    }
+    let score = |i: usize, j: usize| {
+        let s = similarity(&prev[pi + i - 1], &next[pj + j - 1]);
+        (s >= MIN_SIMILARITY).then_some(1e-6 + s)
+    };
+    let mut best = vec![vec![0.0f64; q + 1]; p + 1];
+    for i in 1..=p {
+        for j in 1..=q {
+            let mut v = best[i - 1][j].max(best[i][j - 1]);
+            if let Some(s) = score(i, j) {
+                v = v.max(best[i - 1][j - 1] + s);
+            }
+            best[i][j] = v;
+        }
+    }
+    let (mut i, mut j) = (p, q);
+    while i > 0 && j > 0 {
+        if score(i, j).is_some_and(|s| best[i][j] == best[i - 1][j - 1] + s) {
+            out[pj + j - 1] = Some(pi + i - 1);
+            i -= 1;
+            j -= 1;
+        } else if best[i][j] == best[i - 1][j] {
+            i -= 1;
+        } else {
+            j -= 1;
+        }
+    }
+}
+
+/// For each item of `next`, the item of `prev` whose id it takes: equal keys
+/// in order (longest common subsequence); between two matches, `pair_gap`.
+/// The client's `align` (model/steps.ts) and the server's, step for step.
+pub fn align(prev: &[String], next: &[String]) -> Vec<Option<usize>> {
+    let (n, m) = (prev.len(), next.len());
+    let mut lcs = vec![vec![0usize; m + 1]; n + 1];
+    for i in (0..n).rev() {
+        for j in (0..m).rev() {
+            lcs[i][j] = if prev[i] == next[j] {
+                lcs[i + 1][j + 1] + 1
+            } else {
+                lcs[i + 1][j].max(lcs[i][j + 1])
+            };
+        }
+    }
+    let mut anchors = Vec::new();
+    let (mut i, mut j) = (0, 0);
+    while i < n && j < m {
+        if prev[i] == next[j] {
+            anchors.push((i, j));
+            i += 1;
+            j += 1;
+        } else if lcs[i + 1][j] >= lcs[i][j + 1] {
+            i += 1;
+        } else {
+            j += 1;
+        }
+    }
+    anchors.push((n, m));
+    let mut out = vec![None; m];
+    let (mut pi, mut pj) = (0, 0);
+    for (ai, aj) in anchors {
+        pair_gap(prev, next, (pi, ai), (pj, aj), &mut out);
+        if ai < n {
+            out[aj] = Some(ai);
+        }
+        pi = ai + 1;
+        pj = aj + 1;
+    }
+    out
+}
+
+/// Gives the elements of `cur` the stable elements of `prev` that `align`
+/// matches them with (id, `expected` and any other field), with the current
+/// text or values. Elements already stable, or unmatched, are left alone.
+fn restore_list(kind: Kind, cur: &mut [Value], prev: &[Value]) {
+    let key = |el: &Value| match kind {
+        Kind::Step => step_text(el),
+        Kind::Row => row_values(el).to_string(),
+    };
+    let prev_keys: Vec<String> = prev.iter().map(key).collect();
+    let cur_keys: Vec<String> = cur.iter().map(key).collect();
+    for (j, from) in align(&prev_keys, &cur_keys).into_iter().enumerate() {
+        let Some(i) = from else { continue };
+        let source = &prev[i];
+        if (well_formed(kind, &cur[j]) && valid_id(&cur[j]).is_some())
+            || !well_formed(kind, source)
+            || valid_id(source).is_none()
+        {
+            continue;
+        }
+        let mut restored = source.as_object().cloned().unwrap_or_default();
+        match kind {
+            Kind::Step => restored.insert("text".into(), json!(step_text(&cur[j]))),
+            Kind::Row => restored.insert("values".into(), row_values(&cur[j])),
+        };
+        cur[j] = Value::Object(restored);
+    }
+}
+
+fn rows_mut(v: &mut Value) -> Option<&mut Vec<Value>> {
+    v.get_mut("examples")?.get_mut("rows")?.as_array_mut()
+}
+
+fn rows_of(v: &Value) -> Option<&Vec<Value>> {
+    v.get("examples")?.get("rows")?.as_array()
+}
+
+/// Takes the stash (`STASH_KEY`) out of `data` and gives its ids back to the
+/// steps, rows and flows still there (review B1). A flow is the stash's flow
+/// with its id, then its name, then in the same position. True if a stash was
+/// found.
+pub fn restore_from_stash(data: &mut Value) -> bool {
+    let Some(obj) = data.as_object_mut() else {
+        return false;
+    };
+    let Some(stash) = obj.remove(STASH_KEY) else {
+        return false;
+    };
+    for key in STEP_LISTS {
+        if let (Some(Value::Array(cur)), Some(Value::Array(prev))) =
+            (obj.get_mut(key), stash.get(key))
+        {
+            restore_list(Kind::Step, cur, prev);
+        }
+    }
+    let mut data_ref = Value::Object(std::mem::take(obj));
+    if let (Some(cur), Some(prev)) = (rows_mut(&mut data_ref), rows_of(&stash)) {
+        restore_list(Kind::Row, cur, prev);
+    }
+    if let (Some(Value::Array(flows)), Some(Value::Array(prev_flows))) =
+        (data_ref.get_mut("flows"), stash.get("flows"))
+    {
+        let mut taken = vec![false; prev_flows.len()];
+        let mut matched: Vec<Option<usize>> = vec![None; flows.len()];
+        fn pick(found: Option<usize>, taken: &mut [bool]) -> Option<usize> {
+            found.inspect(|&k| taken[k] = true)
+        }
+        for (j, f) in flows.iter().enumerate() {
+            let id = f.get("id").and_then(Value::as_str);
+            let found = prev_flows.iter().enumerate().position(|(k, p)| {
+                !taken[k] && id.is_some() && p.get("id").and_then(Value::as_str) == id
+            });
+            matched[j] = pick(found, &mut taken);
+        }
+        for (j, f) in flows.iter().enumerate() {
+            if matched[j].is_some() {
+                continue;
+            }
+            let name = f.get("name");
+            let found = prev_flows
+                .iter()
+                .enumerate()
+                .position(|(k, p)| !taken[k] && name.is_some() && p.get("name") == name);
+            matched[j] = pick(found, &mut taken);
+        }
+        for j in 0..flows.len() {
+            if matched[j].is_none() && j < prev_flows.len() && !taken[j] {
+                taken[j] = true;
+                matched[j] = Some(j);
+            }
+        }
+        for (j, flow) in flows.iter_mut().enumerate() {
+            let Some(prev) = matched[j].map(|k| &prev_flows[k]) else {
+                continue;
+            };
+            if let (Some(o), Some(pid)) = (flow.as_object_mut(), prev.get("id")) {
+                o.entry("id").or_insert(pid.clone());
+            }
+            for key in FLOW_STEP_LISTS {
+                if let (Some(Value::Array(cur)), Some(Value::Array(p))) =
+                    (flow.get_mut(key), prev.get(key))
+                {
+                    restore_list(Kind::Step, cur, p);
+                }
+            }
+            if let (Some(cur), Some(p)) = (rows_mut(flow), rows_of(prev)) {
+                restore_list(Kind::Row, cur, p);
+            }
+        }
+    }
+    *data = data_ref;
+    true
+}
+
+/// Keeps a replaced id that was not empty as `legacyId` (a number from an old
+/// import, a repeated id), so nothing of the original is lost.
+fn set_id(obj: &mut Map<String, Value>, id: String) {
+    let old = obj
+        .get("id")
+        .filter(|v| !v.is_null() && v.as_str() != Some(""))
+        .cloned();
+    if let Some(old) = old {
+        obj.entry("legacyId").or_insert(old);
+    }
+    obj.insert("id".into(), Value::String(id));
 }
 
 fn convert(kind: Kind, el: &Value, id: String) -> Value {
     if well_formed(kind, el) {
         let mut obj = el.as_object().cloned().unwrap_or_default();
-        obj.insert("id".into(), Value::String(id));
+        set_id(&mut obj, id);
         return Value::Object(obj);
     }
     match (kind, el) {
@@ -268,6 +548,8 @@ fn normalize_with(data: &mut Value, gen: IdGen) -> bool {
         return false;
     }
     let before = data.clone();
+    // A case served with text steps to a read-only client gets its ids back.
+    restore_from_stash(data);
     flow_ids(data, gen);
     // Pass 1: the first holder of each well-formed id keeps it.
     let mut used: HashSet<String> = HashSet::new();
@@ -315,7 +597,13 @@ pub fn revision_content(
     m.insert("priority".into(), json!(priority));
     m.insert("caseType".into(), json!(case_type));
     m.insert("automationStatus".into(), json!(automation_status));
-    m.insert("data".into(), data.clone());
+    // A missing `data` hashes as an empty one, on every side.
+    let data = if data.is_null() {
+        json!({})
+    } else {
+        data.clone()
+    };
+    m.insert("data".into(), data);
     Value::Object(m)
 }
 
@@ -347,6 +635,30 @@ mod tests {
     fn the_shared_jcs_vectors_hold() {
         for v in vectors()["jcs"].as_array().unwrap() {
             assert_eq!(jcs(&v["input"]), v["output"].as_str().unwrap(), "{v}");
+        }
+    }
+
+    #[test]
+    fn the_shared_align_vectors_hold() {
+        let strings = |v: &Value| -> Vec<String> {
+            v.as_array()
+                .unwrap()
+                .iter()
+                .map(|s| s.as_str().unwrap().to_string())
+                .collect()
+        };
+        for v in vectors()["align"].as_array().unwrap() {
+            let out: Vec<i64> = align(&strings(&v["prev"]), &strings(&v["next"]))
+                .into_iter()
+                .map(|o| o.map_or(-1, |i| i as i64))
+                .collect();
+            let want: Vec<i64> = v["out"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|x| x.as_i64().unwrap())
+                .collect();
+            assert_eq!(out, want, "{v}");
         }
     }
 

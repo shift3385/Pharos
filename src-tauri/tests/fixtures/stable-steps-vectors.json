@@ -358,7 +358,8 @@
                 "text": "x"
               }
             ],
-            "expectedResult": ""
+            "expectedResult": "",
+            "legacyId": "main"
           },
           "not a flow"
         ],
@@ -481,12 +482,14 @@
         "steps": [
           {
             "id": "HC8V45G1",
-            "text": "one"
+            "text": "one",
+            "legacyId": "AAAAAAAA"
           },
           {
             "id": "R2T7T9M1",
             "text": "two",
-            "expected": "kept"
+            "expected": "kept",
+            "legacyId": "AAAAAAAA"
           },
           {
             "id": "HW2ACPH1",
@@ -569,6 +572,526 @@
       "caseId": "case-odd",
       "input": "text",
       "output": "text"
+    },
+    {
+      "name": "a non-string or repeated id is kept as legacyId",
+      "caseId": "case-legacy-id",
+      "input": {
+        "steps": [
+          {
+            "id": 3,
+            "text": "three"
+          },
+          {
+            "id": "S1",
+            "text": "a"
+          },
+          {
+            "id": "S1",
+            "text": "b"
+          }
+        ]
+      },
+      "output": {
+        "steps": [
+          {
+            "id": "EEEB0PP0",
+            "text": "three",
+            "legacyId": 3
+          },
+          {
+            "id": "S1",
+            "text": "a"
+          },
+          {
+            "id": "F8Z4ER88",
+            "text": "b",
+            "legacyId": "S1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "flattened for a read-only client, upgraded",
+      "caseId": "case-stash",
+      "input": {
+        "gherkinLevel": "advanced",
+        "preconditions": [
+          "a user"
+        ],
+        "steps": [
+          "open",
+          "pay"
+        ],
+        "background": [
+          "shop open"
+        ],
+        "examples": {
+          "headers": [
+            "x"
+          ],
+          "rows": [
+            [
+              "1"
+            ],
+            [
+              "2"
+            ]
+          ]
+        },
+        "flows": [
+          {
+            "id": "F1",
+            "name": "Pay",
+            "preconditions": [
+              "a cart"
+            ],
+            "steps": [
+              "I pay"
+            ],
+            "examples": {
+              "headers": [
+                "c"
+              ],
+              "rows": [
+                [
+                  "visa"
+                ]
+              ]
+            }
+          },
+          {
+            "id": "F2",
+            "name": "Decline",
+            "steps": [
+              "I pay badly"
+            ]
+          }
+        ],
+        "notes": "kept",
+        "__stableSteps": {
+          "preconditions": [
+            {
+              "id": "P0000001",
+              "text": "a user"
+            }
+          ],
+          "background": [
+            {
+              "id": "B0000001",
+              "text": "shop open"
+            }
+          ],
+          "steps": [
+            {
+              "id": "S0000001",
+              "text": "open",
+              "expected": "the cart opens"
+            },
+            {
+              "id": "S0000002",
+              "text": "pay"
+            }
+          ],
+          "examples": {
+            "headers": [
+              "x"
+            ],
+            "rows": [
+              {
+                "id": "R0000001",
+                "values": [
+                  "1"
+                ]
+              },
+              {
+                "id": "R0000002",
+                "values": [
+                  "2"
+                ]
+              }
+            ]
+          },
+          "flows": [
+            {
+              "id": "F1",
+              "name": "Pay",
+              "preconditions": [
+                {
+                  "id": "P0000002",
+                  "text": "a cart"
+                }
+              ],
+              "steps": [
+                {
+                  "id": "S0000003",
+                  "text": "I pay",
+                  "expected": "paid"
+                }
+              ],
+              "examples": {
+                "headers": [
+                  "c"
+                ],
+                "rows": [
+                  {
+                    "id": "R0000003",
+                    "values": [
+                      "visa"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "id": "F2",
+              "name": "Decline",
+              "steps": [
+                {
+                  "id": "S0000004",
+                  "text": "I pay badly"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "output": {
+        "gherkinLevel": "advanced",
+        "preconditions": [
+          {
+            "id": "P0000001",
+            "text": "a user"
+          }
+        ],
+        "steps": [
+          {
+            "id": "S0000001",
+            "text": "open",
+            "expected": "the cart opens"
+          },
+          {
+            "id": "S0000002",
+            "text": "pay"
+          }
+        ],
+        "background": [
+          {
+            "id": "B0000001",
+            "text": "shop open"
+          }
+        ],
+        "examples": {
+          "headers": [
+            "x"
+          ],
+          "rows": [
+            {
+              "id": "R0000001",
+              "values": [
+                "1"
+              ]
+            },
+            {
+              "id": "R0000002",
+              "values": [
+                "2"
+              ]
+            }
+          ]
+        },
+        "flows": [
+          {
+            "id": "F1",
+            "name": "Pay",
+            "preconditions": [
+              {
+                "id": "P0000002",
+                "text": "a cart"
+              }
+            ],
+            "steps": [
+              {
+                "id": "S0000003",
+                "text": "I pay",
+                "expected": "paid"
+              }
+            ],
+            "examples": {
+              "headers": [
+                "c"
+              ],
+              "rows": [
+                {
+                  "id": "R0000003",
+                  "values": [
+                    "visa"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "F2",
+            "name": "Decline",
+            "steps": [
+              {
+                "id": "S0000004",
+                "text": "I pay badly"
+              }
+            ]
+          }
+        ],
+        "notes": "kept"
+      }
+    },
+    {
+      "name": "flattened, edited while read-only, upgraded",
+      "caseId": "case-stash",
+      "input": {
+        "gherkinLevel": "advanced",
+        "preconditions": [
+          "a user"
+        ],
+        "steps": [
+          "open",
+          "add a coupon",
+          "pay now"
+        ],
+        "background": [
+          "shop open"
+        ],
+        "examples": {
+          "headers": [
+            "x"
+          ],
+          "rows": [
+            [
+              "1"
+            ],
+            [
+              "2"
+            ],
+            [
+              "3"
+            ]
+          ]
+        },
+        "flows": [
+          {
+            "id": "F1",
+            "name": "Pay",
+            "preconditions": [
+              "a cart"
+            ],
+            "steps": [
+              "I pay"
+            ],
+            "examples": {
+              "headers": [
+                "c"
+              ],
+              "rows": [
+                [
+                  "visa"
+                ]
+              ]
+            }
+          },
+          {
+            "id": "F2",
+            "name": "Decline",
+            "steps": [
+              "I pay badly"
+            ]
+          }
+        ],
+        "notes": "kept",
+        "__stableSteps": {
+          "preconditions": [
+            {
+              "id": "P0000001",
+              "text": "a user"
+            }
+          ],
+          "background": [
+            {
+              "id": "B0000001",
+              "text": "shop open"
+            }
+          ],
+          "steps": [
+            {
+              "id": "S0000001",
+              "text": "open",
+              "expected": "the cart opens"
+            },
+            {
+              "id": "S0000002",
+              "text": "pay"
+            }
+          ],
+          "examples": {
+            "headers": [
+              "x"
+            ],
+            "rows": [
+              {
+                "id": "R0000001",
+                "values": [
+                  "1"
+                ]
+              },
+              {
+                "id": "R0000002",
+                "values": [
+                  "2"
+                ]
+              }
+            ]
+          },
+          "flows": [
+            {
+              "id": "F1",
+              "name": "Pay",
+              "preconditions": [
+                {
+                  "id": "P0000002",
+                  "text": "a cart"
+                }
+              ],
+              "steps": [
+                {
+                  "id": "S0000003",
+                  "text": "I pay",
+                  "expected": "paid"
+                }
+              ],
+              "examples": {
+                "headers": [
+                  "c"
+                ],
+                "rows": [
+                  {
+                    "id": "R0000003",
+                    "values": [
+                      "visa"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "id": "F2",
+              "name": "Decline",
+              "steps": [
+                {
+                  "id": "S0000004",
+                  "text": "I pay badly"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "output": {
+        "gherkinLevel": "advanced",
+        "preconditions": [
+          {
+            "id": "P0000001",
+            "text": "a user"
+          }
+        ],
+        "steps": [
+          {
+            "id": "S0000001",
+            "text": "open",
+            "expected": "the cart opens"
+          },
+          {
+            "id": "8B5CBJ77",
+            "text": "add a coupon"
+          },
+          {
+            "id": "S0000002",
+            "text": "pay now"
+          }
+        ],
+        "background": [
+          {
+            "id": "B0000001",
+            "text": "shop open"
+          }
+        ],
+        "examples": {
+          "headers": [
+            "x"
+          ],
+          "rows": [
+            {
+              "id": "R0000001",
+              "values": [
+                "1"
+              ]
+            },
+            {
+              "id": "R0000002",
+              "values": [
+                "2"
+              ]
+            },
+            {
+              "id": "FX34547G",
+              "values": [
+                "3"
+              ]
+            }
+          ]
+        },
+        "flows": [
+          {
+            "id": "F1",
+            "name": "Pay",
+            "preconditions": [
+              {
+                "id": "P0000002",
+                "text": "a cart"
+              }
+            ],
+            "steps": [
+              {
+                "id": "S0000003",
+                "text": "I pay",
+                "expected": "paid"
+              }
+            ],
+            "examples": {
+              "headers": [
+                "c"
+              ],
+              "rows": [
+                {
+                  "id": "R0000003",
+                  "values": [
+                    "visa"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "F2",
+            "name": "Decline",
+            "steps": [
+              {
+                "id": "S0000004",
+                "text": "I pay badly"
+              }
+            ]
+          }
+        ],
+        "notes": "kept"
+      }
     }
   ],
   "revisions": [
@@ -667,6 +1190,141 @@
       },
       "contentSha256": "39b9391283092b826ef17fd9fa93de40ab22c7b8afa7ffec0555479ba2eb087c",
       "id": "da26e347-8e8f-5a17-8c24-0f328123fa17"
+    },
+    {
+      "caseId": "case-null",
+      "revision": 1,
+      "content": {
+        "scenarioId": "ATS_009",
+        "title": "No data",
+        "version": "1.0",
+        "status": "draft",
+        "priority": "medium",
+        "caseType": null,
+        "automationStatus": null,
+        "data": null
+      },
+      "contentSha256": "04ad1bbff238aa03c8053df74504b658852ebf9c95ab3a467ecf6039861f5067",
+      "id": "561797db-d1a1-55ae-9476-28c1b1bc6a4a"
+    }
+  ],
+  "align": [
+    {
+      "prev": [
+        "a",
+        "b",
+        "c"
+      ],
+      "next": [
+        "a",
+        "B",
+        "c"
+      ],
+      "out": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "prev": [
+        "a",
+        "b",
+        "c"
+      ],
+      "next": [
+        "a",
+        "x",
+        "b",
+        "c"
+      ],
+      "out": [
+        0,
+        -1,
+        1,
+        2
+      ]
+    },
+    {
+      "prev": [
+        "a",
+        "b",
+        "c"
+      ],
+      "next": [
+        "c",
+        "a",
+        "b"
+      ],
+      "out": [
+        -1,
+        0,
+        1
+      ]
+    },
+    {
+      "prev": [
+        "x",
+        "x"
+      ],
+      "next": [
+        "x",
+        "x",
+        "x"
+      ],
+      "out": [
+        0,
+        1,
+        -1
+      ]
+    },
+    {
+      "prev": [
+        "I open the cart"
+      ],
+      "next": [
+        "I accept cookies",
+        "I open the basket"
+      ],
+      "out": [
+        -1,
+        0
+      ]
+    },
+    {
+      "prev": [
+        "Open the cart"
+      ],
+      "next": [
+        "Close the window",
+        "Delete everything"
+      ],
+      "out": [
+        -1,
+        -1
+      ]
+    },
+    {
+      "prev": [
+        "Ñandú corre"
+      ],
+      "next": [
+        "ñandú corre rápido",
+        "otra cosa"
+      ],
+      "out": [
+        0,
+        -1
+      ]
+    },
+    {
+      "prev": [],
+      "next": [
+        "a"
+      ],
+      "out": [
+        -1
+      ]
     }
   ]
 }

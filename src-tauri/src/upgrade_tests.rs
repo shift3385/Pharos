@@ -120,6 +120,36 @@ fn strings(v: &serde_json::Value, out: &mut Vec<String>) {
 /// exactly the deterministic normalization, and not a character lost. Every
 /// old string is still a string of the new value, or inside the canonical
 /// JSON text of an element that had no text of its own.
+/// The texts of every step and the values of every row of a case `data` (or a
+/// payload's `data`), sorted: what 0021 must keep exactly, as a multiset.
+fn list_texts(v: &serde_json::Value) -> Vec<String> {
+    let data = v.get("data").filter(|d| d.is_object()).unwrap_or(v);
+    let mut out = Vec::new();
+    let mut steps = |list: &serde_json::Value| {
+        for el in list.as_array().into_iter().flatten() {
+            out.push(crate::steps::step_text(el));
+        }
+    };
+    for key in ["preconditions", "background", "steps"] {
+        steps(&data[key]);
+    }
+    for flow in data["flows"].as_array().into_iter().flatten() {
+        steps(&flow["preconditions"]);
+        steps(&flow["steps"]);
+    }
+    let mut rows = |ex: &serde_json::Value| {
+        for el in ex["rows"].as_array().into_iter().flatten() {
+            out.push(crate::steps::row_values(el).to_string());
+        }
+    };
+    rows(&data["examples"]);
+    for flow in data["flows"].as_array().into_iter().flatten() {
+        rows(&flow["examples"]);
+    }
+    out.sort();
+    out
+}
+
 fn assert_stable_rewrite(
     table: &str,
     case_id: &str,
@@ -133,6 +163,12 @@ fn assert_stable_rewrite(
         crate::revisions::normalize_payload(case_id, &mut expected);
     }
     assert_eq!(new, &expected, "{table} of {case_id}");
+    // The same texts and rows, as many times each: none lost, none added.
+    assert_eq!(
+        list_texts(old),
+        list_texts(new),
+        "{table} of {case_id}: texts"
+    );
     let (mut before, mut after) = (Vec::new(), Vec::new());
     strings(old, &mut before);
     strings(new, &mut after);
@@ -1373,4 +1409,231 @@ fn stable_steps_migrate_after_or_before_the_evidence_store() {
         drop(db);
         fs::remove_dir_all(&dir).unwrap();
     }
+}
+
+// ---- DAT-02 review B1: cases a read-only client pulled flattened -----------
+
+/// A case as the server stores it: steps with random ids and `expected`.
+fn server_case_data() -> serde_json::Value {
+    serde_json::json!({
+        "gherkinLevel": "outline",
+        "preconditions": [{"id": "P7Q2M9X1", "text": "a user"}],
+        "steps": [
+            {"id": "K3J8W2Z5", "text": "open the cart", "expected": "the cart opens"},
+            {"id": "T6H1C4N8", "text": "pay"}
+        ],
+        "examples": {"headers": ["card"], "rows": [{"id": "R2V5B8D3", "values": ["visa"]}]},
+        "notes": "kept"
+    })
+}
+
+/// What `flattenCaseData` (server) sends a client without `stable-steps`:
+/// text steps, plain rows and the stable lists in the stash.
+fn flattened(data: &serde_json::Value) -> serde_json::Value {
+    let mut out = data.clone();
+    let mut stash = serde_json::Map::new();
+    for key in ["preconditions", "background", "steps", "examples", "flows"] {
+        if let Some(v) = data.get(key) {
+            stash.insert(key.into(), v.clone());
+        }
+    }
+    for key in ["preconditions", "background", "steps"] {
+        if let Some(list) = out.get_mut(key).and_then(|v| v.as_array_mut()) {
+            for s in list.iter_mut() {
+                *s = s["text"].clone();
+            }
+        }
+    }
+    if let Some(rows) = out["examples"]["rows"].as_array_mut() {
+        for r in rows.iter_mut() {
+            *r = r["values"].clone();
+        }
+    }
+    out[crate::steps::STASH_KEY] = serde_json::Value::Object(stash);
+    out
+}
+
+/// Adds case `id` to the 0.2.0-alpha.1 image as that client stored a pulled
+/// document (`write_doc` + `set_base`), at `revision` with `data`.
+fn add_pulled_case(image: &Connection, id: &str, revision: i64, data: &serde_json::Value) {
+    let (project, workspace): (String, String) = image
+        .query_row(
+            "SELECT id, workspace_id FROM projects WHERE owner_id = ?1",
+            params![USER_1],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    image
+        .execute(
+            "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, version, status,
+                    priority, author, data, created_by, updated_by, created_at, updated_at, revision)
+             VALUES (?1, ?2, ?3, ?7, 'Pay', '1.0', 'draft', 'medium', 'QA', ?4, ?5, ?5,
+                    '2026-10-30 10:00:00', '2026-10-30 10:00:00', ?6)",
+            params![id, workspace, project, data.to_string(), USER_1, revision, scenario_of(id)],
+        )
+        .unwrap();
+    image
+        .execute(
+            "INSERT INTO sync_base (user_id, entity, entity_id, revision, hlc)
+             VALUES (?1, 'test_case', ?2, ?3, '001793000000000-00000-web')",
+            params![USER_1, id, revision],
+        )
+        .unwrap();
+}
+
+/// The scenario id of a test case added here (unique in the fixture).
+fn scenario_of(id: &str) -> String {
+    format!("B1_{}", id.replace('-', "_").to_uppercase())
+}
+
+/// The revision id the server already holds for `data` at `revision`.
+fn server_revision_id(id: &str, revision: i64, data: &serde_json::Value) -> String {
+    let content = crate::steps::revision_content(
+        &scenario_of(id),
+        "Pay",
+        "1.0",
+        "draft",
+        "medium",
+        None,
+        None,
+        data,
+    );
+    crate::steps::revision_id(id, revision, &crate::steps::content_sha256(&content))
+}
+
+fn data_of(c: &Connection, id: &str) -> serde_json::Value {
+    let s: String = c
+        .query_row("SELECT data FROM test_cases WHERE id = ?1", [id], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    serde_json::from_str(&s).unwrap()
+}
+
+#[test]
+fn a_case_pulled_flattened_gets_the_servers_ids_back_and_no_new_revision() {
+    let image = fixture_020a1_image();
+    add_pulled_case(&image, "b1-case", 5, &flattened(&server_case_data()));
+    let dir = temp_dir();
+    write_image(&dir, &image);
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    db.with_conn(|c| {
+        // Same content as the server's, `expected` and every id included.
+        assert_eq!(data_of(c, "b1-case"), server_case_data());
+        assert_eq!(
+            count(c, "SELECT revision FROM test_cases WHERE id = 'b1-case'"),
+            5
+        );
+        // Its only revision row, and the one queued for the push, is the one
+        // the server already has: a no-op there, never a phantom revision.
+        let want = server_revision_id("b1-case", 5, &server_case_data());
+        let rows: Vec<String> = c
+            .prepare(
+                "SELECT id FROM test_case_revisions
+                  WHERE test_case_id = 'b1-case' AND content_sha256 IS NOT NULL",
+            )
+            .map_err(|e| e.to_string())?
+            .query_map([], |r| r.get(0))
+            .map_err(|e| e.to_string())?
+            .collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?;
+        assert_eq!(rows, std::slice::from_ref(&want));
+        assert_eq!(
+            count(
+                c,
+                &format!(
+                    "SELECT count(*) FROM oplog WHERE entity = 'test_case_revision' AND entity_id = '{want}'"
+                )
+            ),
+            1
+        );
+        // Nothing of the case itself is pending: the pulled base still holds.
+        assert_eq!(
+            count(
+                c,
+                "SELECT count(*) FROM oplog WHERE entity = 'test_case' AND entity_id = 'b1-case'"
+            ),
+            0
+        );
+        Ok(())
+    })
+    .unwrap();
+    drop(db);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_case_edited_while_read_only_keeps_the_ids_of_the_steps_it_did_not_touch() {
+    let image = fixture_020a1_image();
+    let server = server_case_data();
+    let pulled = flattened(&server);
+    add_pulled_case(&image, "b1-edit", 5, &pulled);
+    // The old editor saved: its `update_case` copied the pulled state (with
+    // the stash) to the history and wrote data without the stash.
+    let mut edited = pulled.clone();
+    edited
+        .as_object_mut()
+        .unwrap()
+        .remove(crate::steps::STASH_KEY);
+    edited["steps"] = serde_json::json!(["open the cart", "add a coupon", "pay now"]);
+    image
+        .execute(
+            "INSERT INTO test_case_revisions (id, test_case_id, revision, title, data, created_at, created_by)
+             VALUES ('old-5', 'b1-edit', 5, 'Pay', ?1, '2026-10-30 11:00:00', ?2)",
+            params![pulled.to_string(), USER_1],
+        )
+        .unwrap();
+    image
+        .execute(
+            "UPDATE test_cases SET data = ?1, revision = 6 WHERE id = 'b1-edit'",
+            params![edited.to_string()],
+        )
+        .unwrap();
+    image
+        .execute(
+            "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id)
+             VALUES ('op-b1', 'test_case', 'b1-edit', 'upsert', '{}', 6, ?1, '2026-10-30 11:00:00',
+                     '001793000000001-00000-dev', ?1)",
+            params![USER_1],
+        )
+        .unwrap();
+    let dir = temp_dir();
+    write_image(&dir, &image);
+    let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+    db.with_conn(|c| {
+        let data = data_of(c, "b1-edit");
+        let steps = data["steps"].as_array().unwrap();
+        assert_eq!(
+            steps[0], server["steps"][0],
+            "untouched: same id and expected"
+        );
+        assert_eq!(
+            steps[2]["id"], server["steps"][1]["id"],
+            "edited in place: same id"
+        );
+        assert_eq!(steps[2]["text"], "pay now");
+        let new_id = steps[1]["id"].as_str().unwrap();
+        assert!(
+            new_id != "K3J8W2Z5" && new_id != "T6H1C4N8",
+            "inserted: a new id"
+        );
+        assert_eq!(data["preconditions"], server["preconditions"]);
+        assert_eq!(data["examples"], server["examples"]);
+        assert!(data.get(crate::steps::STASH_KEY).is_none());
+        // The pending edit still pushes, now with the server's ids.
+        crate::sync::assume_stable_steps_server(c);
+        let pending = serde_json::to_value(crate::sync::build_pending(c, USER_1)?).unwrap();
+        let delta = pending["deltas"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|d| d["entityId"] == "b1-edit")
+            .cloned()
+            .unwrap();
+        assert_eq!(delta["payload"]["data"]["steps"][0]["id"], "K3J8W2Z5");
+        Ok(())
+    })
+    .unwrap();
+    drop(db);
+    fs::remove_dir_all(&dir).unwrap();
 }

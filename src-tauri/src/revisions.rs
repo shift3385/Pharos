@@ -41,22 +41,51 @@ fn case_state(conn: &Connection, case_id: &str) -> Result<Option<CaseState>, Str
            FROM test_cases WHERE id = ?1",
         params![case_id],
         |r| {
-            let data: String = r.get(7)?;
-            Ok(CaseState {
-                workspace_id: r.get(0)?,
-                project_id: r.get(1)?,
-                scenario_id: r.get(2)?,
-                title: r.get(3)?,
-                version: r.get(4)?,
-                status: r.get(5)?,
-                priority: r.get(6)?,
-                data: serde_json::from_str(&data).unwrap_or_else(|_| json!({})),
-                revision: r.get(8)?,
-            })
+            Ok((
+                CaseState {
+                    workspace_id: r.get(0)?,
+                    project_id: r.get(1)?,
+                    scenario_id: r.get(2)?,
+                    title: r.get(3)?,
+                    version: r.get(4)?,
+                    status: r.get(5)?,
+                    priority: r.get(6)?,
+                    data: Value::Null,
+                    revision: r.get(8)?,
+                },
+                r.get::<_, String>(7)?,
+            ))
         },
     )
     .optional()
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_string())?
+    .map_or(Ok(None), |(mut state, data)| match serde_json::from_str(&data) {
+        Ok(value) => {
+            state.data = value;
+            Ok(Some(state))
+        }
+        // Not JSON: no content to fix in an immutable row. Logged, skipped.
+        Err(_) => {
+            tracing::warn!(case_id, "case data is not JSON: no revision row written");
+            Ok(None)
+        }
+    })
+}
+
+/// `sync_state` key that marks a case purged on this device (SYNC-06).
+fn purged_key(case_id: &str) -> String {
+    format!("purged_case:{case_id}")
+}
+
+/// Records that the purge removed a case, so its revisions, which the server
+/// keeps until SYNC-11, are not inserted again by a later pull.
+pub fn remember_purged(conn: &Connection, case_id: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT OR REPLACE INTO sync_state (key, value) VALUES (?1, datetime('now'))",
+        params![purged_key(case_id)],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 /// Id and hash of the case's current state; None if the case does not exist.
@@ -207,6 +236,19 @@ pub fn insert_if_absent(conn: &Connection, user: &str, p: &Value) -> Result<(), 
         tracing::warn!("skipped a pulled test_case_revision without its required fields");
         return Ok(());
     };
+    // A case purged here (SYNC-06): its revisions stay out (SYNC-11).
+    let purged = conn
+        .query_row(
+            "SELECT 1 FROM sync_state WHERE key = ?1",
+            params![purged_key(case_id)],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?
+        .is_some();
+    if purged {
+        return Ok(());
+    }
     let data = p.get("data").cloned().unwrap_or_else(|| json!({}));
     let content = steps::revision_content(
         s("scenarioId").unwrap_or_default(),
@@ -284,6 +326,38 @@ pub fn normalize_payload(case_id: &str, payload: &mut Value) -> bool {
     }
 }
 
+/// A case edited while its app was read-only (review B1): the old editor
+/// saved `data` without the stash the server had sent, but its previous state,
+/// copied to the history by the old `update_case`, still has it. The newest
+/// such stash gives the steps the user did not touch their ids back.
+fn borrow_stash(conn: &Connection, case_id: &str, data: &mut Value) -> Result<(), String> {
+    let Some(obj) = data.as_object_mut() else {
+        return Ok(());
+    };
+    if obj.contains_key(steps::STASH_KEY) {
+        return Ok(());
+    }
+    let stash: Option<String> = conn
+        .query_row(
+            &format!(
+                "SELECT json_extract(data, '$.{}') FROM test_case_revisions
+                  WHERE test_case_id = ?1 AND content_sha256 IS NULL AND json_valid(data)
+                    AND json_extract(data, '$.{}') IS NOT NULL
+                  ORDER BY revision DESC, rowid DESC LIMIT 1",
+                steps::STASH_KEY,
+                steps::STASH_KEY
+            ),
+            params![case_id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+    if let Some(stash) = stash.and_then(|s| serde_json::from_str::<Value>(&s).ok()) {
+        obj.insert(steps::STASH_KEY.into(), stash);
+    }
+    Ok(())
+}
+
 /// Data step of migration 0021 (ADR-0011, "migración de datos determinista").
 /// Every case (deleted ones too) gets stable step and row ids, the test_case
 /// payloads of open conflicts too, and every case gets the row of its current
@@ -307,6 +381,7 @@ pub fn migrate_stable_steps(conn: &Connection) -> Result<(), String> {
     for (id, data, updated_by, deleted) in cases {
         // Data that is not JSON is left as it is: nothing to give ids to.
         if let Ok(mut value) = serde_json::from_str::<Value>(&data) {
+            borrow_stash(conn, &id, &mut value)?;
             if steps::normalize_case_data(&id, &mut value) {
                 conn.execute(
                     "UPDATE test_cases SET data = ?2 WHERE id = ?1",
@@ -438,6 +513,33 @@ mod tests {
             .query_row("SELECT count(*) FROM test_case_revisions", [], |r| r.get(0))
             .unwrap();
         assert_eq!(n, 1, "a document that does not hash to its id is skipped");
+    }
+
+    #[test]
+    fn a_purged_cases_revisions_do_not_come_back() {
+        let src = conn();
+        case(&src, "t", 1);
+        let id = ensure_current(&src, "c1", U1, true).unwrap().unwrap();
+        let doc = payload(&src, &id).unwrap().unwrap();
+        let dst = conn();
+        remember_purged(&dst, "c1").unwrap();
+        insert_if_absent(&dst, U1, &doc).unwrap();
+        let n: i64 = dst
+            .query_row("SELECT count(*) FROM test_case_revisions", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(n, 0, "purged here: stays out until SYNC-11");
+    }
+
+    #[test]
+    fn unparseable_case_data_writes_no_revision() {
+        let c = conn();
+        case(&c, "t", 1);
+        c.execute(
+            "UPDATE test_cases SET data = 'not json' WHERE id = 'c1'",
+            [],
+        )
+        .unwrap();
+        assert_eq!(ensure_current(&c, "c1", U1, true).unwrap(), None);
     }
 
     #[test]

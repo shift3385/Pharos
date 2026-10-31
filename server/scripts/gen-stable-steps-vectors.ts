@@ -10,6 +10,8 @@ import {
   normalizeCaseData,
   revisionContent,
   revisionId,
+  align,
+  flattenCaseData,
 } from "../src/modules/sync/stable-steps";
 
 const out = new URL(
@@ -167,7 +169,49 @@ const normalizeInputs: { name: string; caseId: string; input: unknown }[] = [
     input: { notes: "n", steps: "not an array" },
   },
   { name: "data is not an object", caseId: "case-odd", input: "text" },
+  {
+    name: "a non-string or repeated id is kept as legacyId",
+    caseId: "case-legacy-id",
+    input: { steps: [{ id: 3, text: "three" }, { id: "S1", text: "a" }, { id: "S1", text: "b" }] },
+  },
 ];
+
+// Review B1: a case the server served flattened to a read-only client (the
+// stable lists kept in the stash), as that client stored it; then upgraded.
+// The output must be the server's data exactly: same ids, same expected.
+const serverData = {
+  gherkinLevel: "advanced",
+  preconditions: [{ id: "P0000001", text: "a user" }],
+  steps: [
+    { id: "S0000001", text: "open", expected: "the cart opens" },
+    { id: "S0000002", text: "pay" },
+  ],
+  background: [{ id: "B0000001", text: "shop open" }],
+  examples: { headers: ["x"], rows: [{ id: "R0000001", values: ["1"] }, { id: "R0000002", values: ["2"] }] },
+  flows: [
+    {
+      id: "F1",
+      name: "Pay",
+      preconditions: [{ id: "P0000002", text: "a cart" }],
+      steps: [{ id: "S0000003", text: "I pay", expected: "paid" }],
+      examples: { headers: ["c"], rows: [{ id: "R0000003", values: ["visa"] }] },
+    },
+    { id: "F2", name: "Decline", steps: [{ id: "S0000004", text: "I pay badly" }] },
+  ],
+  notes: "kept",
+};
+const flattened = flattenCaseData(serverData) as Record<string, unknown>;
+const restored = normalizeCaseData("case-stash", flattened).data;
+if (JSON.stringify(restored) !== JSON.stringify(serverData) && jcs(restored) !== jcs(serverData))
+  throw new Error("the stash must give the server's data back exactly");
+// Edited while read-only: a step changed in place, one inserted, a row added.
+const edited = structuredClone(flattened) as Record<string, unknown> & { examples: { rows: unknown } };
+edited.steps = ["open", "add a coupon", "pay now"];
+edited.examples.rows = [["1"], ["2"], ["3"]];
+normalizeInputs.push(
+  { name: "flattened for a read-only client, upgraded", caseId: "case-stash", input: flattened },
+  { name: "flattened, edited while read-only, upgraded", caseId: "case-stash", input: edited },
+);
 const normalize = normalizeInputs.map((v) => ({
   ...v,
   output: normalizeCaseData(v.caseId, v.input).data,
@@ -206,6 +250,20 @@ const revisionInputs = [
     },
   },
 ];
+revisionInputs.push({
+  caseId: "case-null",
+  revision: 1,
+  content: {
+    scenarioId: "ATS_009",
+    title: "No data",
+    version: "1.0",
+    status: "draft",
+    priority: "medium",
+    caseType: null,
+    automationStatus: null,
+    data: null as never,
+  },
+});
 const revisions = revisionInputs.map((r) => {
   const sha = contentSha256(revisionContent(r.content));
   return {
@@ -222,6 +280,17 @@ const file = {
   derivedIds,
   normalize,
   revisions,
+  // The step alignment (rule 9) of steps.rs, the server and the client.
+  align: [
+    [["a", "b", "c"], ["a", "B", "c"]],
+    [["a", "b", "c"], ["a", "x", "b", "c"]],
+    [["a", "b", "c"], ["c", "a", "b"]],
+    [["x", "x"], ["x", "x", "x"]],
+    [["I open the cart"], ["I accept cookies", "I open the basket"]],
+    [["Open the cart"], ["Close the window", "Delete everything"]],
+    [["Ñandú corre"], ["ñandú corre rápido", "otra cosa"]],
+    [[], ["a"]],
+  ].map(([prev, next]) => ({ prev, next, out: align(prev, next) })),
 };
 writeFileSync(out, JSON.stringify(file, null, 2) + "\n");
 console.log("wrote", out.pathname);

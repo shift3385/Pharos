@@ -214,3 +214,131 @@ fn nothing_of_the_new_shape_goes_to_a_server_without_stable_steps() {
     assert!(lww.contains(&"test_case".to_string()));
     assert!(append.contains(&revisions::ENTITY.to_string()));
 }
+
+/// The current state of a case has its revision row (review S2).
+fn assert_current_revision(c: &Connection, id: &str) {
+    let (rev_id, sha) = revisions::current_id(c, id).unwrap().unwrap();
+    let stored: String = c
+        .query_row(
+            "SELECT content_sha256 FROM test_case_revisions WHERE id = ?1",
+            [&rev_id],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| panic!("no revision row for the current state of {id}"));
+    assert_eq!(stored, sha, "{id}");
+}
+
+#[test]
+fn every_sync_path_that_changes_a_case_leaves_its_current_revision() {
+    let a = device();
+    let p = new_project(&a);
+    let id = test_case::insert_case(&a, &case_input(&p, "Pay", json!({"steps": ["x"]}))).unwrap();
+    assert_current_revision(&a, &id);
+    let b = device();
+    pull(&b, &push(&a));
+    assert_current_revision(&b, &id); // the pull
+    let data = data_of(&a, &id);
+    test_case::update_case(&a, &id, &case_input(&p, "On A", data.clone())).unwrap();
+    test_case::update_case(&b, &id, &case_input(&p, "On B", data)).unwrap();
+    // B pulls A's version while its own edit is pending: a conflict.
+    let (from_a, _) = push_split(&a);
+    pull(&b, &from_a);
+    let conflict: String = b
+        .query_row(
+            "SELECT id FROM sync_conflicts WHERE entity = 'test_case' AND resolved_at IS NULL",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let ws = ensure_workspace(&b).unwrap();
+    sync::resolve_conflict(&b, &ws, U, &conflict, "local").unwrap();
+    assert_current_revision(&b, &id);
+}
+
+#[test]
+fn every_site_that_gives_a_case_a_new_revision_is_known() {
+    // Each SQL statement that writes a case's `revision` (an INSERT INTO
+    // test_cases, or an UPDATE of test_cases or of a generic `{table}` that
+    // sets `revision`) must be followed by `revisions::ensure_current`. A new
+    // one changes these counts: add the call, then the count here.
+    let known: &[(&str, usize, &str)] = &[
+        ("test_case.rs", 2, "insert_case, update_case"),
+        (
+            "key_sync.rs",
+            2,
+            "set_key (a case's key), relink_requirement",
+        ),
+        (
+            "sync.rs",
+            3,
+            "write_doc: tombstone and upsert; resolve_conflict(local)",
+        ),
+    ];
+    let files = [
+        ("test_case.rs", include_str!("test_case.rs")),
+        ("key_sync.rs", include_str!("key_sync.rs")),
+        ("sync.rs", include_str!("sync.rs")),
+        ("purge.rs", include_str!("purge.rs")),
+        ("project.rs", include_str!("project.rs")),
+        ("planner.rs", include_str!("planner.rs")),
+        ("requirement.rs", include_str!("requirement.rs")),
+        ("revisions.rs", include_str!("revisions.rs")),
+        ("journal.rs", include_str!("journal.rs")),
+        ("template.rs", include_str!("template.rs")),
+        ("test_plan.rs", include_str!("test_plan.rs")),
+        ("db.rs", include_str!("db.rs")),
+    ];
+    for (name, source) in files {
+        // Production code only: the test module comes last.
+        let code = source.split("#[cfg(test)]\nmod tests").next().unwrap();
+        let mut writes = 0;
+        for start in ["\"UPDATE ", "\"INSERT INTO "] {
+            for (at, _) in code.match_indices(start) {
+                let rest = &code[at + 1..];
+                let sql = &rest[..rest.find('"').unwrap_or(rest.len())];
+                let on_cases = sql.contains("test_cases") || sql.contains("{table}");
+                let sets_revision =
+                    sql.starts_with("INSERT INTO test_cases") || sql.contains("revision");
+                if on_cases && sets_revision {
+                    writes += 1;
+                }
+            }
+        }
+        let want = known.iter().find(|(f, _, _)| *f == name);
+        assert_eq!(
+            writes,
+            want.map_or(0, |w| w.1),
+            "{name}: {:?}",
+            want.map(|w| w.2)
+        );
+        if writes > 0 {
+            assert!(
+                code.contains("ensure_current"),
+                "{name} never calls ensure_current"
+            );
+        }
+    }
+}
+
+#[test]
+fn what_a_server_takes_is_per_account() {
+    let c = Connection::open_in_memory().unwrap();
+    run_migrations(&c).unwrap();
+    let other = "22222222-2222-4222-8222-222222222222";
+    let mine = new_project(&c);
+    test_case::insert_case(&c, &case_input(&mine, "Mine", json!({"steps": ["x"]}))).unwrap();
+    let input: project::ProjectInput =
+        serde_json::from_value(json!({"name": "Theirs", "ownerId": other})).unwrap();
+    let theirs = project::insert_project(&c, &input).unwrap();
+    let case: test_case::TestCaseInput = serde_json::from_value(json!({
+        "projectId": theirs, "title": "Theirs", "author": "Ada", "data": {"steps": ["y"]}, "userId": other
+    }))
+    .unwrap();
+    test_case::insert_case(&c, &case).unwrap();
+    assert_eq!(sync::held_back_cases(&c).unwrap(), 2);
+    // Only this account's server has listed stable-steps.
+    sync::record_server_features(&c, U, "key-conflicts,append-only,stable-steps");
+    assert_eq!(sync::held_back_cases(&c).unwrap(), 1);
+    assert!(sync::server_takes_stable_steps(&c, U).unwrap());
+    assert!(!sync::server_takes_stable_steps(&c, other).unwrap());
+}

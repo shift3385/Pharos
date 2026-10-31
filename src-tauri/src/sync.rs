@@ -331,51 +331,82 @@ fn open_conflict_id(
 /// changed since the last sync, carrying its live state (or a tombstone), its
 /// base and the oplog ids covered. Entities with an open conflict (of version
 /// or of key, DAT-01) are held back until it is resolved.
-/// `sync_state` key of the features the server listed in its last answer.
-const SERVER_FEATURES_KEY: &str = "server_features";
+/// `sync_state` key of the features the server listed in an account's last
+/// pull, one per account like its cursor (FIX-07).
+fn server_features_key(user: &str) -> String {
+    format!("server_features:{user}")
+}
+
+/// Tests only: the features every account's server listed.
+#[cfg(test)]
+const ANY_ACCOUNT_FEATURES_KEY: &str = "server_features:*";
 
 /// The server feature that stores test cases with stable steps and takes case
 /// revisions (DAT-02). Without it, a test_case push is held back.
 pub(crate) const STABLE_STEPS: &str = "stable-steps";
 
-/// True once the server has listed `stable-steps` (VERSIONING §6.5, ADR-0011).
-/// Until then this build's test cases and case revisions stay pending: a
-/// server without it would hand their new shape to clients that only know
-/// text steps, and would refuse the revisions.
-pub(crate) fn server_takes_stable_steps(conn: &Connection) -> Result<bool, String> {
-    Ok(state_value(conn, SERVER_FEATURES_KEY)?
-        .is_some_and(|f| f.split(',').any(|x| x == STABLE_STEPS)))
+/// True once the account's server has listed `stable-steps` (VERSIONING §6.5,
+/// ADR-0011). Until then this build's test cases and case revisions stay
+/// pending: a server without it would hand their new shape to clients that
+/// only know text steps, and would refuse the revisions.
+pub(crate) fn server_takes_stable_steps(conn: &Connection, user: &str) -> Result<bool, String> {
+    let features = state_value(conn, &server_features_key(user))?;
+    #[cfg(test)]
+    let features = match features {
+        Some(f) => Some(f),
+        None => state_value(conn, ANY_ACCOUNT_FEATURES_KEY)?,
+    };
+    Ok(features.is_some_and(|f| f.split(',').any(|x| x == STABLE_STEPS)))
 }
 
-/// Test cases with pending changes held back because the server has not
-/// listed `stable-steps` yet (0 once it has), for the diagnostics.
+/// Test cases with pending changes held back, over every account of this
+/// device, because its server has not listed `stable-steps` yet, for the
+/// diagnostics.
 pub(crate) fn held_back_cases(conn: &Connection) -> Result<i64, String> {
-    if server_takes_stable_steps(conn)? {
-        return Ok(0);
+    let users: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT user_id FROM oplog
+                  WHERE entity = 'test_case' AND synced_at IS NULL AND user_id <> ''",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map([], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?
+    };
+    let mut held = 0;
+    for user in users {
+        if server_takes_stable_steps(conn, &user)? {
+            continue;
+        }
+        held += conn
+            .query_row(
+                "SELECT count(DISTINCT entity_id) FROM oplog
+                  WHERE entity = 'test_case' AND synced_at IS NULL AND user_id = ?1",
+                params![user],
+                |r| r.get::<_, i64>(0),
+            )
+            .map_err(|e| e.to_string())?;
     }
-    conn.query_row(
-        "SELECT count(DISTINCT entity_id) FROM oplog WHERE entity = 'test_case' AND synced_at IS NULL",
-        [],
-        |r| r.get(0),
-    )
-    .map_err(|e| e.to_string())
+    Ok(held)
 }
 
-/// Tests: a server that lists `stable-steps` (what every current server does).
+/// Tests: a server that lists `stable-steps` (what every current server does),
+/// for every account.
 #[cfg(test)]
 pub(crate) fn assume_stable_steps_server(conn: &Connection) {
     assume_server_features(conn, "key-conflicts,append-only,stable-steps");
 }
 
-/// Tests: the features the server listed last.
+/// Tests: the features every account's server listed last.
 #[cfg(test)]
 pub(crate) fn assume_server_features(conn: &Connection, features: &str) {
-    put_state(conn, SERVER_FEATURES_KEY, features).unwrap();
+    put_state(conn, ANY_ACCOUNT_FEATURES_KEY, features).unwrap();
 }
 
-/// Records the features the server listed in a pull answer. They belong to
-/// the server, not to an account; the signed-in one is required like for
-/// every sync command (FIX-07).
+/// Records the features the account's server listed in a pull answer.
 #[tauri::command]
 pub fn sync_server_features_set(
     db: State<Db>,
@@ -383,14 +414,20 @@ pub fn sync_server_features_set(
     features: Vec<String>,
 ) -> Result<(), String> {
     require_user(&user_id)?;
-    db.with_conn(|conn| put_state(conn, SERVER_FEATURES_KEY, &features.join(",")))?;
+    db.with_conn(|conn| put_state(conn, &server_features_key(&user_id), &features.join(",")))?;
     db.persist()
+}
+
+/// Records the features for one account (the command's body, for tests).
+#[cfg(test)]
+pub(crate) fn record_server_features(conn: &Connection, user: &str, features: &str) {
+    put_state(conn, &server_features_key(user), features).unwrap();
 }
 
 pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
     oplog::claim_unowned(conn)?;
     key_sync::close_stale(conn)?;
-    let cases_too = server_takes_stable_steps(conn)?;
+    let cases_too = server_takes_stable_steps(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -480,7 +517,7 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
 /// conflict (they have none). Sent only to servers with `append-only`.
 pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pending, String> {
     // Case revisions wait for a server with `stable-steps`, like their cases.
-    let revisions_too = server_takes_stable_steps(conn)?;
+    let revisions_too = server_takes_stable_steps(conn, user)?;
     let rows: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(&format!(
