@@ -172,7 +172,10 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
        escribir nada, con el mensaje «Actualiza Pharos para enviar cambios;
        tus cambios pendientes se conservan».
      - En su pull, los casos llegan con los pasos como texto (la forma que
-       conocen); nunca ven un objeto donde esperaban un texto.
+       conocen); nunca ven un objeto donde esperaban un texto. Las listas
+       estables viajan en `data.__stableSteps`, que guardan sin tocar: al
+       actualizar recuperan los mismos ids, el resultado esperado y el mismo
+       hash de revisión que el servidor (DAT-02, revisión B1).
      - **Límite conocido:** las apps publicadas tratan cualquier 426 como
        fatal y hacen el push antes del pull. Mientras no tengan cambios
        pendientes leen con normalidad; en cuanto tienen uno, cada sync se

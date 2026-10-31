@@ -767,8 +767,9 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `append-only`, `complete-payload`, `stable-steps`). A push from a client
   without `stable-steps` (0.1.x, 0.2.0-alpha.1) is refused with 426
   `read_only_client_version` before anything is stored, and its pulls carry
-  test cases with text steps (`flattenCaseData`): older clients may only read
-  (VERSIONING §6.5, DAT-02). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
+  test cases with text steps (`flattenCaseData`), the stable lists kept in
+  `data.__stableSteps` so their upgrade restores the same ids and hash: older
+  clients may only read (VERSIONING §6.5, DAT-02). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
   `append_only` (`APPEND_ONLY_ENTITIES` in `sync.schemas.ts`, today
   `audit_event` and `test_case_revision`; for the latter `createdAt`,
   `createdBy` and `hlc` are outside the compared content): op `append`, inserted if absent, the same content again is a
@@ -913,7 +914,10 @@ key (a pull may bring revisions before their case); 0021 runs a Rust step
 ids and its current revision. A save gives a new step a random id; the
 editor keeps ids through edits, moves and Gherkin re-parses
 (`src/modules/test-cases/model/steps.ts`). Test cases and revisions wait
-until the server lists `stable-steps` (diagnostics: `heldBackCases`).
+until the account's server lists `stable-steps` (diagnostics:
+`heldBackCases`). A case pulled flattened by a read-only build gets its ids
+back from the stash on upgrade (`restore_from_stash`, or the stash of its
+newest pre-0.2 history row if the old editor saved over it).
 `.feature` and `.xlsx` exports are unchanged (`exportGolden.test.ts`).
 
 **Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**

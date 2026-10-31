@@ -299,7 +299,11 @@ preguntas del plan (Q1–Q9) y lo que conviene saber:
   camino que da un estado nuevo al caso (crear, guardar, claves, conflictos,
   pull, migración). JCS completo (RFC 8785, números con `ryu-js`, Q7); un
   entero fuera de ±(2^53 − 1) se escribe como lo lee JavaScript, y dentro del
-  subconjunto de la auditoría la salida es la misma que `audit::jcs`.
+  subconjunto de la auditoría la salida es la misma que `audit::jcs`. Un
+  `data` nulo se hashea como `{}` en los dos lados; un `data` que no es JSON
+  no deja fila (se registra en el log). Un test recorre cada camino que sube
+  `revision` y otro cuenta en el código las sentencias que la escriben, para
+  que un sitio nuevo no se olvide de `ensure_current` (revisión S2).
 - **Migración 0021 (Rust, mismo savepoint que su SQL).** Normaliza todos los
   casos (también los borrados) y los payloads de los conflictos abiertos, y
   escribe la fila de la revisión vigente de cada caso. No sube `revision` ni
@@ -309,12 +313,26 @@ preguntas del plan (Q1–Q9) y lo que conviene saber:
   editar; dos equipos producen el mismo documento, que el servidor guarda una
   vez. Idempotente; probada desde los dos fixtures, con casos de los tres
   niveles añadidos, y en los dos órdenes posibles con 0022–0023.
+- **Ids que el usuario no ve cambiar.** En un campo de lista (precondiciones,
+  Background), mientras la lista conserva su longitud cada paso conserva el id
+  de su fila, escriba lo que escriba (vaciar un paso no lo convierte en otro);
+  solo una inserción o un borrado alinean los textos (revisión S1). En la
+  alineación, dos elementos de un hueco con distinto número a cada lado solo se
+  emparejan si su parecido llega a 0,3 (`MIN_SIMILARITY`): una línea
+  reemplazada por completo recibe id nuevo. Mismo algoritmo en el escritorio,
+  el servidor y el cliente, comprobado con los vectores compartidos. Un id
+  reemplazado que no estaba vacío (un número de una importación antigua, un id
+  repetido) se guarda en `legacyId`. Un flujo conserva las claves que el
+  parser no conoce. El panel de conflictos muestra los pasos como texto
+  (y su resultado esperado) y no marca como cambio dos versiones que solo
+  difieren en ids (revisión S3).
 - **Sync.** `test_case_revision` es `append_only`;
   `APPLIED_SET_VERSION = 2`. En el servidor, `createdAt`, `createdBy` y
   `hlc` quedan fuera del contenido comparado (Q8), y un cambio de ubicación
   conserva los valores guardados; los eventos de auditoría comparan igual que
   antes. Fuera de `PROJECT_CHILDREN` hasta SYNC-06 (Q9, SYNC-11 en el
-  backlog). Un pull de un caso guarda su revisión sin enviarla: la envía el
+  backlog); mientras tanto, el escritorio no vuelve a insertar las revisiones
+  de un caso que purgó (`purged_case:<id>` en `sync_state`). Un pull de un caso guarda su revisión sin enviarla: la envía el
   equipo que la hizo.
 - **Clientes antiguos en solo lectura** (excepción de VERSIONING §6.5,
   confirmada por el usuario el 2026-10-31: «Sí, acepto»). En cuanto el
@@ -322,11 +340,23 @@ preguntas del plan (Q1–Q9) y lo que conviene saber:
   leer** hasta actualizarse. La puerta es la funcionalidad `stable-steps`:
   su push recibe `426 read_only_client_version` con el mensaje «Actualiza
   Pharos para enviar cambios; tus cambios pendientes se conservan», y su pull
-  trae los casos con pasos de texto (Q4). Límite: esas apps hacen el push
+  trae los casos con pasos de texto (Q4) **sin perder nada** (revisión B1):
+  el servidor guarda las listas estables en `data.__stableSteps`, que esas
+  apps almacenan con `data` y nunca envían. Al actualizar, 0021 (y el mismo
+  normalizador en el servidor) devuelve a cada paso, fila y flujo su id y su
+  `expected` desde ese depósito y lo quita; lo que el usuario cambió mientras
+  estaba en solo lectura se alinea con la regla 9. Si el editor antiguo guardó
+  el caso sin el depósito, se toma del estado anterior que el `update_case`
+  antiguo copió al historial. Así el caso vuelve a tener el mismo contenido y
+  el mismo hash que en el servidor, y la revisión que encola la migración es la
+  que el servidor ya tiene: nada se duplica. El reinicio del cursor **no**
+  bastaría (`apply_doc` no reescribe un documento cuya base coincide), por eso
+  hace falta el depósito. Límite: esas apps hacen el push
   antes del pull y tratan el 426 como fatal, así que con un cambio pendiente
   dejan de recibir novedades hasta actualizar (VERSIONING §6.5).
 - **Servidor antiguo.** El escritorio retiene casos y revisiones hasta ver
-  `stable-steps` en una respuesta del servidor (Q6); el diagnóstico exportado
+  `stable-steps` en una respuesta del servidor de esa cuenta (Q6; se guarda
+  por cuenta, como el cursor); el diagnóstico exportado
   dice cuántos casos retiene y por qué (`heldBackCases`,
   `heldBackReason`). El primer sync tras actualizar los envía después del
   pull.
