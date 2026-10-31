@@ -64,6 +64,7 @@ export const SERVER_FEATURES = [
   "key-conflicts",
   "append-only",
   "stable-steps",
+  "custom-fields",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -105,6 +106,15 @@ export function sendsCompletePayload(req: FastifyRequest): boolean {
  *  pulls carry cases in the text-step shape it knows. */
 export function sendsStableSteps(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("stable-steps");
+}
+
+/** True if the client knows custom fields and the case fields (FLD-01,
+ *  ADR-0018): it may push `custom_field` documents (it only does once this
+ *  server lists `custom-fields`) and sends `caseType`, `automationStatus`
+ *  and `data.custom` with every case. A client without it would drop them
+ *  from a case it saves: its test_case upserts keep the stored ones. */
+export function knowsCustomFields(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("custom-fields");
 }
 
 /** 426 for a push of a read-only client (VERSIONING §6.5), before anything

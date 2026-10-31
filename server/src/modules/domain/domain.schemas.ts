@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AUTOMATION_STATUSES, CASE_TYPES, FIELD_ENTITIES } from "./custom-fields";
 
 /** Inputs of the web's domain endpoints (BASE-10). They mirror the inputs of
  *  the desktop's Tauri commands; the owner always comes from the access token,
@@ -30,8 +31,53 @@ export const testCaseInputSchema = z.object({
   version: text(50).optional(),
   status: text(50).optional(),
   priority: text(50).optional(),
+  /** Omitted on an update: the stored value stays (FLD-01). */
+  caseType: z.enum(CASE_TYPES).optional(),
+  automationStatus: z.enum(AUTOMATION_STATUSES).optional(),
   author: text(200).default(""),
   data,
+});
+
+const fieldOption = z.object({
+  id: text(40).default(""),
+  label: text(200),
+  archived: z.boolean().default(false),
+});
+
+/** A custom field definition (FLD-01, `custom_fields.rs::CustomFieldInput`).
+ *  The key and the type are only read on create; they never change. */
+export const customFieldInputSchema = z.object({
+  projectId: text(200).min(1),
+  entity: z.enum(FIELD_ENTITIES).default("test_case"),
+  fieldKey: text(100),
+  label: text(500),
+  description: text(2_000).optional(),
+  fieldType: text(50),
+  options: z.array(fieldOption).max(500).default([]),
+  required: z.boolean().default(false),
+  defaultValue: z.unknown().optional(),
+  appliesToCaseTypes: z.array(text(50)).nullish(),
+});
+
+export const customFieldArchiveSchema = z.object({
+  archived: z.boolean(),
+});
+
+export const customFieldReorderSchema = z.object({
+  projectId: text(200).min(1),
+  entity: z.enum(FIELD_ENTITIES).default("test_case"),
+  ids: z.array(text(200)).max(2000),
+});
+
+export const customFieldCopySchema = z.object({
+  fromProjectId: text(200).min(1),
+  toProjectId: text(200).min(1),
+  entity: z.enum(FIELD_ENTITIES).default("test_case"),
+});
+
+export const customFieldQuerySchema = z.object({
+  projectId: text(200).min(1),
+  entity: z.enum(FIELD_ENTITIES).default("test_case"),
 });
 
 export const requirementInputSchema = z.object({
@@ -89,3 +135,4 @@ export type TestCaseInput = z.infer<typeof testCaseInputSchema>;
 export type RequirementInput = z.infer<typeof requirementInputSchema>;
 export type RequirementImportRow = z.infer<typeof requirementImportSchema>["rows"][number];
 export type PlannerCardInput = z.infer<typeof plannerCardInputSchema>;
+export type CustomFieldInput = z.infer<typeof customFieldInputSchema>;

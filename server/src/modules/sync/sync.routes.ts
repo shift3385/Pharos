@@ -14,16 +14,21 @@ import {
   pushSchema,
 } from "./sync.schemas";
 import { flattenCaseData } from "./stable-steps";
+import { CASE_FIELDS_STASH_KEY } from "../domain/custom-fields";
 import {
   readOnlyClient,
   requireSupportedVersion,
   SERVER_FEATURES,
+  knowsCustomFields,
   SERVER_VERSION,
   sendsCompletePayload,
   sendsStableSteps,
   understandsAppendOnly,
   understandsKeyConflicts,
 } from "./sync.version";
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
  *  user, and only clients of a supported version are served (SYNC-08). A delta
@@ -63,8 +68,10 @@ export function syncRoutes(
     // An old client (no `complete-payload`) never resets a field it does not
     // know: its upserts keep the keys it leaves out.
     const merge = !sendsCompletePayload(req);
+    // A client without `custom-fields` never clears the case fields (FLD-01).
+    const keepCaseFields = !knowsCustomFields(req);
     for (const d of deltas) {
-      const res = await repo.apply(userId, d, { merge });
+      const res = await repo.apply(userId, d, { merge, keepCaseFields });
       if ("current" in res) conflicts.push(res.current);
       else if ("appendRejected" in res) appendRejected.push(res.appendRejected);
       else if ("keyConflict" in res) {
@@ -134,8 +141,22 @@ function asLegacyCase(doc: RemoteDoc): RemoteDoc {
     return doc;
   const payload = doc.payload as Record<string, unknown>;
   if (!("data" in payload)) return doc;
+  // It has no column for the case fields: they travel in `data`, where it
+  // keeps them until it upgrades (migration 0027, FLD-01).
+  const caseFields = Object.fromEntries(
+    (["caseType", "automationStatus"] as const)
+      .filter((k) => typeof payload[k] === "string")
+      .map((k) => [k, payload[k]]),
+  );
+  const data = flattenCaseData(payload.data);
   return {
     ...doc,
-    payload: { ...payload, data: flattenCaseData(payload.data) },
+    payload: {
+      ...payload,
+      data:
+        Object.keys(caseFields).length && isRecord(data)
+          ? { ...data, [CASE_FIELDS_STASH_KEY]: caseFields }
+          : data,
+    },
   };
 }

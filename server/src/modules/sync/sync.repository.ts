@@ -101,8 +101,8 @@ export function toDoc(r: Record<string, unknown>): RemoteDoc {
  *  time, a user's seqs become visible in order. */
 export const LOCK_USER_SQL = "SELECT pg_advisory_xact_lock(hashtext($1))";
 
-/** Deleting a project deletes its plans, cases, requirements and planner
- *  cards in the same transaction (FIX-05, ADR-0020), whichever client sent
+/** Deleting a project deletes its plans, cases, requirements, planner
+ *  cards and custom fields in the same transaction (FIX-05, ADR-0020), whichever client sent
  *  it. Each child gets a tombstone with a new `seq`, so every device pulls it;
  *  a device with a pending edit of that child sees a conflict, not a loss.
  *  A child's HLC never goes backwards (a newer child edit keeps its HLC), so
@@ -130,6 +130,7 @@ const CASCADE_KEY: Record<(typeof PROJECT_CHILDREN)[number], string> = {
   test_case: "test_cases",
   requirement: "requirements",
   planner_card: "planner_cards",
+  custom_field: "custom_fields",
 };
 
 /** The live document of the same project that already uses the key of an
@@ -166,6 +167,31 @@ const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN
                  ELSE '{}'::jsonb END
      END`;
 
+/** The payload stored when a test_case upsert from a client that does not
+ *  send `custom-fields` (FLD-01: builds between DAT-02 and it, which send
+ *  their whole state but do not know the case fields) lands on a live
+ *  document: `caseType`, `automationStatus` and `data.custom` keep the
+ *  stored values when the delta has none; everything else is the delta's. */
+const KEPT_CASE_FIELDS_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN EXCLUDED.payload
+       ELSE (jsonb_strip_nulls(jsonb_build_object(
+               'caseType', documents.payload->'caseType',
+               'automationStatus', documents.payload->'automationStatus')) || EXCLUDED.payload)
+         || CASE WHEN jsonb_typeof(EXCLUDED.payload->'data') = 'object'
+                  AND NOT (EXCLUDED.payload->'data') ? 'custom'
+                  AND jsonb_typeof(documents.payload->'data'->'custom') = 'object'
+                 THEN jsonb_build_object('data', (EXCLUDED.payload->'data')
+                        || jsonb_build_object('custom', documents.payload->'data'->'custom'))
+                 ELSE '{}'::jsonb END
+     END`;
+
+export interface StoreOpts {
+  /** The client is old (no `complete-payload`): keep every key it left out. */
+  merge: boolean;
+  /** The client does not know the case fields (no `custom-fields`): keep
+   *  them on a test_case. */
+  keepCaseFields?: boolean;
+}
+
 /** Stores a delta as the user's latest version of the entity (with a new
  *  `seq`) and cascades a project delete to its children. The caller holds the
  *  user's write lock and has already decided that the delta wins. `merge`:
@@ -176,14 +202,19 @@ export async function storeDoc(
   client: PoolClient,
   userId: string,
   d: Delta,
-  opts: { merge: boolean } = { merge: false },
+  opts: StoreOpts = { merge: false },
 ): Promise<{ payload: Record<string, unknown>; cascade: Record<string, number> | null }> {
+  const payloadSql = opts.merge
+    ? MERGED_PAYLOAD_SQL
+    : opts.keepCaseFields && d.entity === "test_case"
+      ? KEPT_CASE_FIELDS_SQL
+      : "EXCLUDED.payload";
   const { rows } = await client.query<{ payload: Record<string, unknown> }>(
     `INSERT INTO documents
        (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
      ON CONFLICT (user_id, entity, entity_id) DO UPDATE
-       SET payload = ${opts.merge ? MERGED_PAYLOAD_SQL : "EXCLUDED.payload"},
+       SET payload = ${payloadSql},
 
            revision = EXCLUDED.revision,
            author = EXCLUDED.author,
@@ -296,8 +327,9 @@ export function createSyncRepository(pool: Pool) {
   return {
     /** Applies one delta under a row lock, following the merge rule in
      *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
-     *  client is old and its upserts keep the keys it left out (`storeDoc`). */
-    async apply(userId: string, d: Delta, opts: { merge: boolean } = { merge: false }): Promise<ApplyResult> {
+     *  client is old and its upserts keep the keys it left out (`storeDoc`);
+     *  `keepCaseFields`: it does not know the case fields (FLD-01). */
+    async apply(userId: string, d: Delta, opts: StoreOpts = { merge: false }): Promise<ApplyResult> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");

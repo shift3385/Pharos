@@ -3,7 +3,14 @@ import { z } from "zod";
 /** Entities of the `lww` sync class (Phase 8B core + SYNC-04a requirements
  *  and planner cards): base check, then last-write-wins by HLC (ADR-0002).
  *  Templates and attachments follow in SYNC-04b. */
-export const LWW_ENTITIES = ["project", "test_plan", "test_case", "requirement", "planner_card"] as const;
+export const LWW_ENTITIES = [
+  "project",
+  "test_plan",
+  "test_case",
+  "requirement",
+  "planner_card",
+  "custom_field",
+] as const;
 
 /** Entities of the `append_only` sync class (design 0.2.0 §3.2, ADR-0011):
  *  inserted if absent, never a conflict, content never changes. Registering
@@ -45,7 +52,13 @@ export const outsideContent = (entity: string): readonly string[] => [
 
 /** Children removed with their project (FIX-05): their payload carries
  *  `projectId`. */
-export const PROJECT_CHILDREN = ["test_plan", "test_case", "requirement", "planner_card"] as const;
+export const PROJECT_CHILDREN = [
+  "test_plan",
+  "test_case",
+  "requirement",
+  "planner_card",
+  "custom_field",
+] as const;
 
 /** Most deltas per push and documents per pull page. Clients send batches
  *  and page through pulls (FIX-02/03). */
