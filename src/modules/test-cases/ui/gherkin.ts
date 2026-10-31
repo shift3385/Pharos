@@ -2,8 +2,19 @@ import type {
   ExampleTable,
   Flow,
   GherkinLevel,
+  Step,
   TestCaseData,
 } from "../model/types";
+import {
+  tableText,
+  texts,
+  type TextFlow,
+  type TextTable,
+} from "../model/steps";
+
+// Steps carry stable ids (DAT-02): the renderers print their texts only, so
+// the Gherkin is exactly what it was with text steps; the parsers return texts
+// and the editor gives them the ids they had (`reconcile*` in model/steps).
 
 function uid(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -111,7 +122,8 @@ function renderRow(cells: string[]): string {
 }
 
 /** Renders the Examples block of a Scenario Outline. */
-function renderExamples(ex: ExampleTable): string[] {
+function renderExamples(table: ExampleTable | TextTable): string[] {
+  const ex = tableText(table);
   const headers = ex.headers.filter((h) => h.trim());
   if (!headers.length) return [];
   const lines = ["", `${INDENT_STEP}Examples:`, renderRow(headers)];
@@ -128,8 +140,12 @@ function scaffoldAdvanced(title: string, data: TestCaseData): string {
   const lines = [`Feature: ${title || "Untitled"}`, "", `  Scenario: ${title || "Scenario"}`];
   const step = (kw: string, first: boolean, text: string) =>
     lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
-  (data.preconditions ?? []).filter((s) => s.trim()).forEach((p, i) => step("Given", i === 0, p.trim()));
-  (data.steps ?? []).filter((s) => s.trim()).forEach((s, i) => step("When", i === 0, s.trim()));
+  texts(data.preconditions)
+    .filter((s) => s.trim())
+    .forEach((p, i) => step("Given", i === 0, p.trim()));
+  texts(data.steps)
+    .filter((s) => s.trim())
+    .forEach((s, i) => step("When", i === 0, s.trim()));
   (data.expectedResult ?? "")
     .split("\n")
     .map((s) => s.trim())
@@ -162,10 +178,10 @@ export function toGherkin(title: string, data: TestCaseData, scenarioId = ""): s
   const step = (kw: string, first: boolean, text: string) =>
     lines.push(`${INDENT_STEP}${first ? kw : "And"} ${text}`);
 
-  (data.preconditions ?? [])
+  texts(data.preconditions)
     .filter((s) => s.trim())
     .forEach((p, i) => step("Given", i === 0, p.trim()));
-  (data.steps ?? [])
+  texts(data.steps)
     .filter((s) => s.trim())
     .forEach((s, i) => step("When", i === 0, s.trim()));
   (data.expectedResult ?? "")
@@ -232,7 +248,7 @@ export function extractComments(text: string): string[] {
 
 export interface NamedExampleTable {
   name: string;
-  table: ExampleTable;
+  table: TextTable;
 }
 
 /** Every Examples table in a feature, tagged with its scenario name (proposal
@@ -284,13 +300,19 @@ const step = (lines: string[], kw: string, first: boolean, text: string) =>
  *  The case is the whole Feature, so every scenario carries the case ID tag. */
 export function flowsToGherkin(
   title: string,
-  background: string[],
-  flows: Flow[],
-  tags: { scenarioId?: string; requirementKeys?: string[]; featureTags?: string[] } = {},
+  background: readonly (Step | string)[],
+  flows: readonly (Flow | TextFlow)[],
+  tags: {
+    scenarioId?: string;
+    requirementKeys?: string[];
+    featureTags?: string[];
+  } = {},
 ): string {
   const lines: string[] = [...featureTagLine(tags), `Feature: ${title || "Untitled"}`];
 
-  const bg = (background ?? []).map((s) => s.trim()).filter(Boolean);
+  const bg = texts(background)
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (bg.length) {
     lines.push("", "  Background:");
     bg.forEach((p, i) => step(lines, "Given", i === 0, p));
@@ -298,13 +320,17 @@ export function flowsToGherkin(
 
   for (const flow of flows) {
     const isOutline = !!flow.examples?.headers.some((h) => h.trim());
+    const preconditions = texts(flow.preconditions);
+    const flowSteps = texts(flow.steps);
     lines.push("", ...tagLine("  ", [tags.scenarioId, ...(flow.tags ?? [])]));
-    lines.push(`  ${isOutline ? "Scenario Outline" : "Scenario"}: ${flow.name || "Escenario"}`);
-    (flow.preconditions ?? [])
+    lines.push(
+      `  ${isOutline ? "Scenario Outline" : "Scenario"}: ${flow.name || "Escenario"}`,
+    );
+    preconditions
       .map((s) => s.trim())
       .filter(Boolean)
       .forEach((p, i) => step(lines, "Given", i === 0, p));
-    (flow.steps ?? [])
+    flowSteps
       .filter((s) => s.trim())
       .forEach((s, i) => step(lines, "When", i === 0, s.trim()));
     (flow.expectedResult ?? "")
@@ -323,8 +349,9 @@ export interface ParsedFlows {
   /** Raw feature-level tags (see `splitFeatureTags`); each flow's raw scenario
    *  tags are in `flow.tags` (see `userScenarioTags`). */
   featureTags: string[];
+  /** Texts: `reconcileSteps` / `reconcileFlows` give them their ids. */
   background: string[];
-  flows: Flow[];
+  flows: TextFlow[];
 }
 
 /** Parses a whole feature into shared Background + flows, so hand-edited Gherkin
@@ -333,10 +360,9 @@ export interface ParsedFlows {
 export function parseFeatureFlows(text: string): ParsedFlows {
   let title: string | undefined;
   const background: string[] = [];
-  const flows: Flow[] = [];
-  let cur:
-    | (Omit<Flow, "expectedResult"> & { then: string[] })
-    | null = null;
+  const flows: TextFlow[] = [];
+  let cur: (Omit<TextFlow, "expectedResult"> & { then: string[] }) | null =
+    null;
   let mode: "bg" | "given" | "when" | "then" | "examples" | null = null;
   let table: string[][] = [];
   let featureTags: string[] = [];
@@ -347,7 +373,6 @@ export function parseFeatureFlows(text: string): ParsedFlows {
     if (table.length) cur.examples = { headers: table[0], rows: table.slice(1) };
     table = [];
     flows.push({
-      id: cur.id,
       name: cur.name,
       preconditions: cur.preconditions,
       steps: cur.steps,
@@ -389,7 +414,13 @@ export function parseFeatureFlows(text: string): ParsedFlows {
     const sc = line.match(/^Scenario(?:\s+Outline)?:\s*(.*)$/i);
     if (sc) {
       closeFlow();
-      cur = { id: uid(), name: sc[1].trim(), preconditions: [], steps: [], then: [], tags: pendingTags };
+      cur = {
+        name: sc[1].trim(),
+        preconditions: [],
+        steps: [],
+        then: [],
+        tags: pendingTags,
+      };
       pendingTags = [];
       mode = null;
       continue;
@@ -468,10 +499,11 @@ export interface ParsedGherkin {
   featureTags: string[];
   /** Raw scenario-level tags (see `userScenarioTags`). */
   scenarioTags: string[];
+  /** Texts: `reconcileSteps` gives them their ids. */
   preconditions: string[];
   steps: string[];
   expectedResult: string;
-  examples?: ExampleTable;
+  examples?: TextTable;
   isOutline: boolean;
 }
 
@@ -544,7 +576,7 @@ export function fromGherkin(text: string): ParsedGherkin {
     else if (section === "then") then.push(content);
   }
 
-  let examples: ExampleTable | undefined;
+  let examples: TextTable | undefined;
   if (tableRows.length) {
     examples = { headers: tableRows[0], rows: tableRows.slice(1) };
     isOutline = true;

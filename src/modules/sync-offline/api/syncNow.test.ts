@@ -383,3 +383,81 @@ describe("syncNow key blocks (DAT-01)", () => {
     });
   });
 });
+
+describe("syncNow and stable steps (DAT-02)", () => {
+  it("records the server's features and pushes the test cases held back until it lists stable-steps", async () => {
+    const order: string[] = [];
+    let pendingCalls = 0;
+    invoke.mockImplementation(
+      async (cmd: string, args?: Record<string, unknown>) => {
+        order.push(cmd);
+        if (cmd === "oplog_pending" && args?.class === "append_only")
+          return { deltas: [] };
+        // The core holds the case back until the features are recorded.
+        if (cmd === "oplog_pending")
+          return { deltas: pendingCalls++ === 0 ? [] : [delta(7)] };
+        if (cmd === "sync_cursor_get") return "0";
+        return undefined;
+      },
+    );
+    const pushed: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init: RequestInit) => {
+        if (url.includes("/sync/push")) {
+          const ids = (
+            JSON.parse(init.body as string) as {
+              deltas: { entityId: string }[];
+            }
+          ).deltas.map((d) => d.entityId);
+          pushed.push(...ids);
+          return json({
+            accepted: ids.length,
+            conflicts: [],
+            appendRejected: [],
+            features: ["stable-steps"],
+          });
+        }
+        return json({
+          docs: [],
+          cursor: 0,
+          hasMore: false,
+          features: ["key-conflicts", "append-only", "stable-steps"],
+        });
+      }),
+    );
+    const res = await syncNow();
+    expect(pushed).toEqual(["c7"]);
+    expect(res.pushed).toBe(1);
+    const recorded = invoke.mock.calls.find(
+      ([cmd]) => cmd === "sync_server_features_set",
+    );
+    expect(recorded?.[1]).toEqual({
+      userId: "user-A",
+      features: ["key-conflicts", "append-only", "stable-steps"],
+    });
+    expect(order.indexOf("sync_server_features_set")).toBeLessThan(
+      order.lastIndexOf("oplog_pending"),
+    );
+  });
+
+  it("does not push again to a server without stable-steps", async () => {
+    const calls = fakeCore([]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        json({
+          docs: [],
+          cursor: 0,
+          hasMore: false,
+          features: ["key-conflicts", "append-only"],
+        }),
+      ),
+    );
+    await syncNow();
+    const lww = calls.filter(
+      (c) => c.cmd === "oplog_pending" && c.args?.class !== "append_only",
+    );
+    expect(lww).toHaveLength(1);
+  });
+});

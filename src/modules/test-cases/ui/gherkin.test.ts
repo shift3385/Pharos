@@ -11,13 +11,19 @@ import {
   parseFeatureFlows,
 } from "./gherkin";
 import type { Flow, TestCaseData } from "../model/types";
+import { newStepId, stepsOf, texts } from "../model/steps";
+
+// Steps and Outline rows carry stable ids (DAT-02).
+const st = (...list: string[]) => stepsOf(list);
+const exRows = (...values: string[][]) =>
+  values.map((v) => ({ id: newStepId(), values: v }));
 
 const baseData: TestCaseData = {
   mappedUseCase: "",
   caseDate: "",
   description: "",
-  preconditions: ["User is logged in", "Cart has one item"],
-  steps: ["Open the cart", "Click checkout"],
+  preconditions: st("User is logged in", "Cart has one item"),
+  steps: st("Open the cart", "Click checkout"),
   expectedResult: "Order is confirmed\nEmail is sent",
   postconditions: [],
   acceptanceCriteria: [],
@@ -45,15 +51,15 @@ describe("gherkin mapper", () => {
     const text = toGherkin("Checkout flow", baseData);
     const parsed = fromGherkin(text);
     expect(parsed.title).toBe("Checkout flow");
-    expect(parsed.preconditions).toEqual(baseData.preconditions);
-    expect(parsed.steps).toEqual(baseData.steps);
+    expect(parsed.preconditions).toEqual(texts(baseData.preconditions));
+    expect(parsed.steps).toEqual(texts(baseData.steps));
     expect(parsed.expectedResult).toBe(baseData.expectedResult);
   });
 
   it("ignores blank lines and skips empty entries", () => {
     const out = toGherkin("Empty", {
       ...baseData,
-      preconditions: ["  ", "Real precondition"],
+      preconditions: st("  ", "Real precondition"),
       steps: [],
       expectedResult: "",
     });
@@ -71,15 +77,15 @@ describe("gherkin mapper — Scenario Outline", () => {
   const outlineData: TestCaseData = {
     ...baseData,
     gherkinLevel: "outline",
-    preconditions: ["el usuario tiene un producto en el carrito"],
-    steps: ['ingresa el cupón "<cupon>" y presiona "Aplicar"'],
+    preconditions: st("el usuario tiene un producto en el carrito"),
+    steps: st('ingresa el cupón "<cupon>" y presiona "Aplicar"'),
     expectedResult: 'el sistema muestra "<resultado>"',
     examples: {
       headers: ["cupon", "resultado"],
-      rows: [
+      rows: exRows(
         ["DESC10", "Descuento aplicado"],
         ["VERANO23", "Cupón ha expirado"],
-      ],
+      ),
     },
   };
 
@@ -96,7 +102,7 @@ describe("gherkin mapper — Scenario Outline", () => {
   it("round-trips the Examples table", () => {
     const parsed = fromGherkin(toGherkin("Aplicación de cupón", outlineData));
     expect(parsed.isOutline).toBe(true);
-    expect(parsed.steps).toEqual(outlineData.steps);
+    expect(parsed.steps).toEqual(texts(outlineData.steps));
     expect(parsed.examples?.headers).toEqual(["cupon", "resultado"]);
     expect(parsed.examples?.rows).toEqual([
       ["DESC10", "Descuento aplicado"],
@@ -107,7 +113,7 @@ describe("gherkin mapper — Scenario Outline", () => {
   it("skips fully empty example rows", () => {
     const out = toGherkin("X", {
       ...outlineData,
-      examples: { headers: ["a"], rows: [["1"], ["  "]] },
+      examples: { headers: ["a"], rows: exRows(["1"], ["  "]) },
     });
     const rows = out.split("\n").filter((l) => l.trim().startsWith("|"));
     expect(rows).toHaveLength(2); // header + one data row
@@ -188,18 +194,18 @@ describe("advanced flows <-> Gherkin (main + alternative flows)", () => {
       id: "1",
       name: "Flujo principal",
       preconditions: [],
-      steps: ['aplica el cupón "DESC10"'],
+      steps: st('aplica el cupón "DESC10"'),
       expectedResult: 'el total es "$90.00"',
     },
     {
       id: "2",
       name: "Alterno: cupón rechazado",
-      preconditions: ["el cupón está expirado"],
-      steps: ['aplica el cupón "<cupon>"'],
+      preconditions: st("el cupón está expirado"),
+      steps: st('aplica el cupón "<cupon>"'),
       expectedResult: 've "<mensaje>"',
       examples: {
         headers: ["cupon", "mensaje"],
-        rows: [["VERANO23", "Cupón expirado"]],
+        rows: exRows(["VERANO23", "Cupón expirado"]),
       },
     },
   ];

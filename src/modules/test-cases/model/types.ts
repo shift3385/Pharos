@@ -11,10 +11,26 @@ import type { ProvenanceMap } from "@modules/ai";
 //              authored directly in the Gherkin editor (featureSource).
 export type GherkinLevel = "basic" | "outline" | "advanced";
 
+/** A step with a stable id (DAT-02, ADR-0011): unique within the case, kept
+ *  when its text is edited or it moves, never reused. Results point at it.
+ *  `expected` is an optional expected result of the step, shown next to it
+ *  in manual execution (EJE-02); the .xlsx and .feature exports do not carry it. */
+export interface Step {
+  id: string;
+  text: string;
+  expected?: string;
+}
+
+/** A data row of an Outline's Examples, with a stable id (DAT-02). */
+export interface ExampleRow {
+  id: string;
+  values: string[];
+}
+
 // Data table backing a Scenario Outline (spec §5.3 amendment).
 export interface ExampleTable {
   headers: string[];
-  rows: string[][];
+  rows: ExampleRow[];
 }
 
 // A flow of an advanced case: the main (happy) path or an alternative flow. Each
@@ -23,8 +39,8 @@ export interface ExampleTable {
 export interface Flow {
   id: string;
   name: string;
-  preconditions?: string[];
-  steps: string[];
+  preconditions?: Step[];
+  steps: Step[];
   expectedResult: string;
   examples?: ExampleTable;
   /** The user’s own scenario tags (without "@"), e.g. smoke. */
@@ -36,8 +52,8 @@ export interface TestCaseData {
   mappedUseCase?: string;
   caseDate?: string;
   description?: string;
-  preconditions?: string[];
-  steps?: string[];
+  preconditions?: Step[];
+  steps?: Step[];
   expectedResult?: string;
   postconditions?: string[];
   acceptanceCriteria?: string[];
@@ -47,7 +63,7 @@ export interface TestCaseData {
   examples?: ExampleTable;
   // Advanced level: shared preconditions (Background) + the flows (main +
   // alternatives). Each flow becomes a scenario.
-  background?: string[];
+  background?: Step[];
   flows?: Flow[];
   // Raw Gherkin feature kept for the editable Gherkin view of advanced cases.
   featureSource?: string;

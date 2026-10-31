@@ -15,11 +15,22 @@ import type {
   GherkinLevel,
   RequirementOption,
   RevisionSummary,
+  Step,
   TestCase,
   TestCaseData,
   TestCaseInput,
 } from "../model/types";
 import { SortableSteps } from "./SortableSteps";
+import { StepListField } from "./StepListField";
+import {
+  newStepId,
+  reconcileFlows,
+  reconcileSteps,
+  reconcileTable,
+  stepsOf,
+  texts,
+  withStableSteps,
+} from "../model/steps";
 import { ExamplesTable } from "./ExamplesTable";
 import { FlowsEditor } from "./FlowsEditor";
 import { GherkinEditor } from "./GherkinEditor";
@@ -82,8 +93,9 @@ interface FormState {
   mappedUseCase: string;
   caseDate: string;
   description: string;
-  preconditions: string[];
-  steps: string[];
+  // Given/When steps and Outline rows keep stable ids (DAT-02).
+  preconditions: Step[];
+  steps: Step[];
   expectedResult: string;
   postconditions: string[];
   acceptanceCriteria: string[];
@@ -97,7 +109,7 @@ interface FormState {
   environmentRequirements: string;
   aiProvenance: ProvenanceMap;
   examples: ExampleTable;
-  background: string[];
+  background: Step[];
   flows: Flow[];
   featureSource: string;
 }
@@ -135,7 +147,7 @@ function emptyForm(): FormState {
 }
 
 function fromCase(c: TestCase): FormState {
-  const d = c.data ?? {};
+  const d = withStableSteps(c.data ?? {});
   return {
     gherkinLevel: d.gherkinLevel ?? "basic",
     scenarioId: c.scenarioId,
@@ -163,10 +175,14 @@ function fromCase(c: TestCase): FormState {
     examples: d.examples ?? { headers: [], rows: [] },
     background:
       d.background ??
-      (d.featureSource ? parseFeatureFlows(d.featureSource).background : []),
+      (d.featureSource
+        ? stepsOf(parseFeatureFlows(d.featureSource).background)
+        : []),
     flows:
       d.flows ??
-      (d.featureSource ? parseFeatureFlows(d.featureSource).flows : []),
+      (d.featureSource
+        ? reconcileFlows(undefined, parseFeatureFlows(d.featureSource).flows)
+        : []),
     featureSource: d.featureSource ?? "",
   };
 }
@@ -174,14 +190,14 @@ function fromCase(c: TestCase): FormState {
 /** Non-destructively adds an Examples column for every <placeholder> used in the
  *  steps/expected result that has no column yet (proposal 3b). */
 function withPlaceholderColumns(f: FormState): ExampleTable {
-  const names = placeholdersIn([...f.steps, f.expectedResult]);
+  const names = placeholdersIn([...texts(f.steps), f.expectedResult]);
   const headers = [...f.examples.headers];
   for (const name of names) if (!headers.includes(name)) headers.push(name);
   if (headers.length === f.examples.headers.length) return f.examples;
   const rows = f.examples.rows.map((r) => {
-    const next = [...r];
-    while (next.length < headers.length) next.push("");
-    return next;
+    const values = [...r.values];
+    while (values.length < headers.length) values.push("");
+    return { ...r, values };
   });
   return { headers, rows };
 }
@@ -223,12 +239,24 @@ function caseWarnings(f: FormState): number {
   const examples = (ex: ExampleTable | undefined) =>
     ex
       ? duplicateRows(ex.headers, text).size +
-        duplicateRows(ex.rows, (r) => (r.some((c) => c.trim()) ? r.map((c) => c.trim()).join(" | ") : "")).size
+        duplicateRows(ex.rows, (r) =>
+          r.values.some((c) => c.trim())
+            ? r.values.map((c) => c.trim()).join(" | ")
+            : "",
+        ).size
       : 0;
   return (
-    lists([f.preconditions, f.postconditions, f.acceptanceCriteria, f.background]) +
+    lists([
+      texts(f.preconditions),
+      f.postconditions,
+      f.acceptanceCriteria,
+      texts(f.background),
+    ]) +
     examples(f.examples) +
-    f.flows.reduce((n, fl) => n + lists([fl.preconditions ?? []]) + examples(fl.examples), 0)
+    f.flows.reduce(
+      (n, fl) => n + lists([texts(fl.preconditions)]) + examples(fl.examples),
+      0,
+    )
   );
 }
 
@@ -367,8 +395,12 @@ export function TestCaseEditor({
           ...splitFeatureTags(parsed.featureTags, ctx),
           gherkinLevel: "advanced",
           title: parsed.title ?? f.title,
-          background: parsed.background,
-          flows: parsed.flows.map((fl) => ({ ...fl, tags: userScenarioTags(fl.tags ?? [], ctx) })),
+          // Each step keeps its id per scenario, position and text (rule 9).
+          background: reconcileSteps(f.background, parsed.background),
+          flows: reconcileFlows(f.flows, parsed.flows).map((fl) => ({
+            ...fl,
+            tags: userScenarioTags(fl.tags ?? [], ctx),
+          })),
           featureSource: text,
         };
       });
@@ -384,10 +416,12 @@ export function TestCaseEditor({
       flows: [],
       featureSource: "",
       title: parsed.title ?? f.title,
-      preconditions: parsed.preconditions,
-      steps: parsed.steps,
+      preconditions: reconcileSteps(f.preconditions, parsed.preconditions),
+      steps: reconcileSteps(f.steps, parsed.steps),
       expectedResult: parsed.expectedResult,
-      examples: parsed.examples ?? f.examples,
+      examples: parsed.examples
+        ? reconcileTable(f.examples, parsed.examples)
+        : f.examples,
     }));
   };
 
@@ -411,13 +445,20 @@ export function TestCaseEditor({
     setForm((f) => {
       const next = { ...f, gherkinLevel: chosen };
       if (chosen === "advanced" && next.flows.length === 0) {
-        next.background = f.preconditions;
+        // Copies with ids of their own: the flat fields keep theirs, and an id
+        // is unique within the case (DAT-02).
+        const copy = (list: Step[]) =>
+          list.map((s) => ({ ...s, id: newStepId() }));
+        next.background = copy(f.preconditions);
         next.flows = [
           {
             ...newFlow(t("testCase.flow.mainName")),
-            steps: f.steps,
+            steps: copy(f.steps),
             expectedResult: f.expectedResult,
-            examples: f.examples,
+            examples: {
+              ...f.examples,
+              rows: f.examples.rows.map((r) => ({ ...r, id: newStepId() })),
+            },
           },
         ];
       }
@@ -430,17 +471,20 @@ export function TestCaseEditor({
     setSaving(true);
     const author = testCase?.author ?? (user ? `${user.firstName} ${user.lastName}` : "");
     const clean = (a: string[]) => a.map((s) => s.trim()).filter(Boolean);
+    // A step keeps its id when its text is trimmed; empty ones are dropped.
+    const cleanSteps = (a: Step[]) =>
+      a.map((s) => ({ ...s, text: s.text.trim() })).filter((s) => s.text);
     const cleanExamples = (ex: ExampleTable): ExampleTable => ({
       headers: ex.headers.map((h) => h.trim()),
-      rows: ex.rows.filter((r) => r.some((c) => c.trim())),
+      rows: ex.rows.filter((r) => r.values.some((c) => c.trim())),
     });
     const data: TestCaseData = {
       gherkinLevel: form.gherkinLevel,
       mappedUseCase: form.mappedUseCase,
       caseDate: form.caseDate || undefined,
       description: form.description,
-      preconditions: clean(form.preconditions),
-      steps: clean(form.steps),
+      preconditions: cleanSteps(form.preconditions),
+      steps: cleanSteps(form.steps),
       expectedResult: form.expectedResult,
       postconditions: clean(form.postconditions),
       acceptanceCriteria: clean(form.acceptanceCriteria),
@@ -456,7 +500,7 @@ export function TestCaseEditor({
     };
     if (form.gherkinLevel === "outline") data.examples = cleanExamples(form.examples);
     if (form.gherkinLevel === "advanced") {
-      data.background = clean(form.background);
+      data.background = cleanSteps(form.background);
       data.flows = form.flows;
       data.featureSource = buildGherkin(form);
     }
@@ -736,7 +780,9 @@ export function TestCaseEditor({
 
   // Outline: placeholders in steps and any columns that no longer match one.
   const placeholders =
-    level === "outline" ? placeholdersIn([...form.steps, form.expectedResult]) : [];
+    level === "outline"
+      ? placeholdersIn([...texts(form.steps), form.expectedResult])
+      : [];
   const orphanColumns =
     level === "outline"
       ? form.examples.headers.filter(
@@ -762,7 +808,7 @@ export function TestCaseEditor({
       ) : (
         <>
           <p className="tp-field__grouplabel">{t("testCase.preconditions")}</p>
-          <ListField
+          <StepListField
             label={t("testCase.preconditions")}
             items={form.preconditions}
             onChange={(v) => update({ preconditions: v })}
@@ -774,16 +820,17 @@ export function TestCaseEditor({
               suggestPreconditions(
                 [
                   `Test case title: ${form.title}`,
-                  form.description.trim() && `Description: ${form.description.trim()}`,
-                  form.steps.filter((s) => s.trim()).length &&
-                    `Steps:\n${form.steps
+                  form.description.trim() &&
+                    `Description: ${form.description.trim()}`,
+                  texts(form.steps).filter((s) => s.trim()).length &&
+                    `Steps:\n${texts(form.steps)
                       .filter((s) => s.trim())
                       .map((s, i) => `${i + 1}. ${s}`)
                       .join("\n")}`,
                 ]
                   .filter(Boolean)
                   .join("\n"),
-                form.preconditions.filter((p) => p.trim()),
+                texts(form.preconditions).filter((p) => p.trim()),
                 i18n.resolvedLanguage ?? "es",
               )
             }
@@ -792,8 +839,15 @@ export function TestCaseEditor({
             onAdd={(items, p) =>
               update({
                 // Replace the empty starter row instead of keeping it.
-                preconditions: [...form.preconditions.filter((x) => x.trim()), ...items],
-                aiProvenance: withProvenance(form.aiProvenance, "preconditions", p),
+                preconditions: [
+                  ...form.preconditions.filter((x) => x.text.trim()),
+                  ...stepsOf(items),
+                ],
+                aiProvenance: withProvenance(
+                  form.aiProvenance,
+                  "preconditions",
+                  p,
+                ),
               })
             }
             onReview={() => review("preconditions")}

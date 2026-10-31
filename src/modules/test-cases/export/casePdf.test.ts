@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { caseDocDefinition } from "./casePdf";
 import type { ExportableCase } from "./caseXlsx";
+import { stepsOf } from "../model/steps";
+
+// Steps and Outline rows carry stable ids (DAT-02).
+const st = (...list: string[]) => stepsOf(list);
 
 const t = (k: string) => k; // identity translator
 
@@ -17,8 +21,8 @@ const basic: ExportableCase = {
     mappedUseCase: "UC-1",
     caseDate: "2026-08-01",
     description: "Logs in with valid credentials.",
-    preconditions: ["User exists"],
-    steps: ["Open login", "Submit form"],
+    preconditions: st("User exists"),
+    steps: st("Open login", "Submit form"),
     expectedResult: "Dashboard shown",
     postconditions: ["Session open"],
     acceptanceCriteria: ["No errors"],
@@ -39,10 +43,22 @@ const advanced: ExportableCase = {
   gherkin: "Feature: Coupon",
   altFlowLabel: "ALTERNATIVE FLOW",
   examplesLabel: "EXAMPLES",
-  background: ["Store is open"],
+  background: st("Store is open"),
   flows: [
-    { id: "f1", name: "Main", preconditions: ["Valid coupon"], steps: ["Apply coupon"], expectedResult: "Discount applied" },
-    { id: "f2", name: "Expired coupon", preconditions: ["Coupon expired"], steps: ["Apply coupon"], expectedResult: "Rejected" },
+    {
+      id: "f1",
+      name: "Main",
+      preconditions: st("Valid coupon"),
+      steps: st("Apply coupon"),
+      expectedResult: "Discount applied",
+    },
+    {
+      id: "f2",
+      name: "Expired coupon",
+      preconditions: st("Coupon expired"),
+      steps: st("Apply coupon"),
+      expectedResult: "Rejected",
+    },
   ],
   data: {},
 };

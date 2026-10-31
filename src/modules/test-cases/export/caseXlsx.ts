@@ -2,7 +2,13 @@ import ExcelJS from "exceljs";
 import { saveFile } from "@shared/export/saveFile";
 import templateEs from "../assets/case-template-es.xlsx?url";
 import templateEn from "../assets/case-template-en.xlsx?url";
-import type { ExampleTable, Flow, TestCaseData } from "../model/types";
+import type { ExampleTable, Flow, Step, TestCaseData } from "../model/types";
+import {
+  tableText as plainTable,
+  texts,
+  type TextFlow,
+  type TextTable,
+} from "../model/steps";
 import { traceabilityText } from "../model/trace";
 
 export interface ExportableCase {
@@ -16,8 +22,9 @@ export interface ExportableCase {
   gherkin: string;
   level: "basic" | "outline" | "advanced";
   // Advanced: shared preconditions + flows (main first, then alternatives).
-  background?: string[];
-  flows?: Flow[];
+  // Steps are written as their texts only (DAT-02): the file is unchanged.
+  background?: readonly (Step | string)[];
+  flows?: readonly (Flow | TextFlow)[];
   // Labels the template does not carry (localized by the caller).
   altFlowLabel?: string;
   examplesLabel?: string;
@@ -25,14 +32,24 @@ export interface ExportableCase {
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-function tableText(ex?: ExampleTable): string {
-  if (!ex || !ex.headers.some((h) => h.trim())) return "";
-  return [ex.headers, ...ex.rows].map((r) => "| " + r.join(" | ") + " |").join("\n");
+function tableText(table?: ExampleTable | TextTable): string {
+  if (!table || !table.headers.some((h) => h.trim())) return "";
+  const ex = plainTable(table);
+  return [ex.headers, ...ex.rows]
+    .map((r) => "| " + r.join(" | ") + " |")
+    .join("\n");
 }
 
-const list = (a?: string[]) => (a ?? []).map((s) => s.trim()).filter(Boolean).join("\n");
-const numbered = (a?: string[]) =>
-  (a ?? []).filter((s) => s.trim()).map((s, i) => `${i + 1}. ${s.trim()}`).join("\n");
+const list = (a?: readonly unknown[]) =>
+  texts(a)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join("\n");
+const numbered = (a?: readonly unknown[]) =>
+  texts(a)
+    .filter((s) => s.trim())
+    .map((s, i) => `${i + 1}. ${s.trim()}`)
+    .join("\n");
 
 /** Estimated wrapped-line count for a wrap-text cell of a given character width. */
 function visualLines(text: string, charsPerLine: number): number {
@@ -140,7 +157,11 @@ interface BlockLabels {
 
 /** Appends one block per alternative flow below the case body, reusing the
  *  template's own header/label/value cell styles so it stays visually consistent. */
-function appendAltFlows(ws: ExcelJS.Worksheet, flows: Flow[], labels: BlockLabels) {
+function appendAltFlows(
+  ws: ExcelJS.Worksheet,
+  flows: readonly (Flow | TextFlow)[],
+  labels: BlockLabels,
+) {
   if (flows.length === 0) return;
   const headerStyle = ws.getCell("B14").style; // navy section bar
   const labelStyle = ws.getCell("B3").style; // field label

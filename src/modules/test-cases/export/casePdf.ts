@@ -9,16 +9,31 @@ import {
   sectionHeader,
 } from "@shared/export/pdfDoc";
 import type { ExampleTable, Flow } from "../model/types";
+import {
+  tableText,
+  texts,
+  type TextFlow,
+  type TextTable,
+} from "../model/steps";
 import type { ExportableCase } from "./caseXlsx";
 import { traceabilityText } from "../model/trace";
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
-const clean = (a?: string[]) => (a ?? []).map((s) => s.trim()).filter(Boolean);
+// Steps print as their texts (DAT-02): the document is what it was.
+const clean = (a?: readonly unknown[]) =>
+  texts(a)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 /** Renders an Examples data table as its own labelled block (empty → nothing). */
-function examplesBlock(ex: ExampleTable | undefined, label: string, none: string): Content[] {
-  if (!ex || !ex.headers.some((h) => h.trim())) return [];
+function examplesBlock(
+  table: ExampleTable | TextTable | undefined,
+  label: string,
+  none: string,
+): Content[] {
+  if (!table || !table.headers.some((h) => h.trim())) return [];
+  const ex = tableText(table);
   return [
     { text: label, style: "value", bold: true, margin: [0, 4, 0, 2] },
     dataTable(ex.headers, ex.rows, none),
@@ -30,11 +45,16 @@ function standardBody(
   c: ExportableCase,
   t: Translate,
   none: string,
-  over?: { preconditions?: string[]; steps?: string[]; expected?: string; examples?: ExampleTable },
+  over?: {
+    preconditions?: readonly unknown[];
+    steps?: readonly unknown[];
+    expected?: string;
+    examples?: ExampleTable | TextTable;
+  },
 ): Content[] {
   const d = c.data ?? {};
-  const preconditions = over?.preconditions ?? d.preconditions ?? [];
-  const steps = over?.steps ?? d.steps ?? [];
+  const preconditions = texts(over?.preconditions ?? d.preconditions);
+  const steps = texts(over?.steps ?? d.steps);
   const expected = over?.expected ?? d.expectedResult ?? "";
   const examples = over?.examples ?? d.examples;
   return [
@@ -57,17 +77,32 @@ function standardBody(
 }
 
 /** One block per alternative flow (name + its precond/steps/expected/examples). */
-function altFlowBlocks(flows: Flow[], c: ExportableCase, t: Translate, none: string): Content[] {
+function altFlowBlocks(
+  flows: readonly (Flow | TextFlow)[],
+  c: ExportableCase,
+  t: Translate,
+  none: string,
+): Content[] {
   const out: Content[] = [];
   for (const flow of flows) {
     out.push(sectionHeader(`${c.altFlowLabel ?? "ALTERNATIVE FLOW"}: ${flow.name}`));
     if (clean(flow.preconditions).length) {
-      out.push({ text: t("testCase.preconditions"), style: "value", bold: true, margin: [0, 2, 0, 2] });
-      out.push(itemList(flow.preconditions ?? []));
+      out.push({
+        text: t("testCase.preconditions"),
+        style: "value",
+        bold: true,
+        margin: [0, 2, 0, 2],
+      });
+      out.push(itemList(texts(flow.preconditions)));
     }
     if (clean(flow.steps).length) {
-      out.push({ text: t("testCase.steps"), style: "value", bold: true, margin: [0, 2, 0, 2] });
-      out.push(itemList(flow.steps ?? [], true));
+      out.push({
+        text: t("testCase.steps"),
+        style: "value",
+        bold: true,
+        margin: [0, 2, 0, 2],
+      });
+      out.push(itemList(texts(flow.steps), true));
     }
     if (flow.expectedResult?.trim()) {
       out.push({ text: t("testCase.expectedResult"), style: "value", bold: true, margin: [0, 2, 0, 2] });

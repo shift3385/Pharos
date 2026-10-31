@@ -1,8 +1,8 @@
 // Golden exports (DAT-02): stable step ids must not change what users get. The
 // files under __golden__/ were written by the export code of 0.2.0-alpha.1 + E1
-// (text steps), before steps had ids. Every case here is exported as it was
-// stored then (text steps); DAT-02 adds the stable shape. Both must give
-// exactly those files:
+// (text steps), before steps had ids. Every case here is exported twice, as it
+// was stored then (text steps) and as it is stored now ({id, text} steps, Outline
+// rows with ids), and both must give exactly those files:
 //  - the .feature text, byte for byte;
 //  - the .xlsx, part by part (every sheet, style and string), except the
 //    workbook's own creation/modification timestamps (docProps/core.xml).
@@ -114,6 +114,49 @@ const LEGACY: TestCase[] = [
   }),
 ];
 
+let n = 0;
+const id = () => `G${String(++n).padStart(7, "0")}`;
+const steps = (list: unknown) =>
+  Array.isArray(list)
+    ? list.map((text) => ({ id: id(), text, expected: "not exported" }))
+    : list;
+const table = (ex: unknown) =>
+  ex && typeof ex === "object"
+    ? {
+        ...(ex as object),
+        rows: ((ex as { rows: string[][] }).rows ?? []).map((values) => ({
+          id: id(),
+          values,
+        })),
+      }
+    : ex;
+
+/** The same cases as 0.2.0 stores them: every step and row has an id. */
+function stable(c: TestCase): TestCase {
+  const d = c.data as Record<string, unknown>;
+  const flows = d.flows as Record<string, unknown>[] | undefined;
+  return {
+    ...c,
+    data: {
+      ...d,
+      ...(d.preconditions ? { preconditions: steps(d.preconditions) } : {}),
+      ...(d.steps ? { steps: steps(d.steps) } : {}),
+      ...(d.background ? { background: steps(d.background) } : {}),
+      ...(d.examples ? { examples: table(d.examples) } : {}),
+      ...(flows
+        ? {
+            flows: flows.map((f) => ({
+              ...f,
+              preconditions: steps(f.preconditions),
+              steps: steps(f.steps),
+              ...(f.examples ? { examples: table(f.examples) } : {}),
+            })),
+          }
+        : {}),
+    } as TestCase["data"],
+  };
+}
+
 /** Every part of an .xlsx but its timestamps, as text. */
 async function xlsxParts(buffer: ArrayBuffer): Promise<Record<string, string>> {
   const zip = await JSZip.loadAsync(buffer);
@@ -144,28 +187,28 @@ function golden(name: string, actual: string) {
   expect(actual, name).toBe(readFileSync(file, "utf8"));
 }
 
-describe.each([["as 0.2.0-alpha.1 stored them", (c: TestCase) => c]])(
-  "exports are unchanged — cases %s",
-  (_label, shape) => {
-    for (const legacy of LEGACY) {
-      it(`${legacy.scenarioId}: .feature byte for byte`, () => {
-        golden(
-          `${legacy.scenarioId}.feature`,
-          caseToExportable(shape(legacy), t).gherkin,
+describe.each([
+  ["as 0.2.0-alpha.1 stored them", (c: TestCase) => c],
+  ["with stable step ids", stable],
+])("exports are unchanged — cases %s", (_label, shape) => {
+  for (const legacy of LEGACY) {
+    it(`${legacy.scenarioId}: .feature byte for byte`, () => {
+      golden(
+        `${legacy.scenarioId}.feature`,
+        caseToExportable(shape(legacy), t).gherkin,
+      );
+    });
+    it(`${legacy.scenarioId}: .xlsx part by part (es and en)`, async () => {
+      for (const lang of ["es", "en"]) {
+        const { buffer } = await buildCaseXlsx(
+          caseToExportable(shape(legacy), t),
+          lang,
         );
-      });
-      it(`${legacy.scenarioId}: .xlsx part by part (es and en)`, async () => {
-        for (const lang of ["es", "en"]) {
-          const { buffer } = await buildCaseXlsx(
-            caseToExportable(shape(legacy), t),
-            lang,
-          );
-          golden(
-            `${legacy.scenarioId}.${lang}.xlsx.json`,
-            JSON.stringify(await xlsxParts(buffer), null, 1),
-          );
-        }
-      });
-    }
-  },
-);
+        golden(
+          `${legacy.scenarioId}.${lang}.xlsx.json`,
+          JSON.stringify(await xlsxParts(buffer), null, 1),
+        );
+      }
+    });
+  }
+});

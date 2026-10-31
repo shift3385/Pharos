@@ -187,27 +187,16 @@ export async function pushAppendOnly(
   return refusedCount;
 }
 
-/** Runs one desktop sync cycle for the signed-in account: lease key blocks
- *  and finalize provisional keys (DAT-01), push its pending deltas in batches (each accepted batch is marked synced at once, rejected
- *  deltas become conflicts, as do keys another document already has; deltas
- *  the server refuses for their content are
- *  skipped and stay pending), then pull every page after its cursor, then
- *  push the audit events if the server has `append-only` (AUD-01). Throws
- *  on network/auth/version errors (after retries); callers toast. */
-export async function syncNow(): Promise<SyncResult> {
-  if (!isTauri()) throw new Error("sync-desktop-only");
-  // Token and user from one read: never push one account's changes with
-  // another account's token (FIX-07).
-  const session = await getSession();
-  if (!session) throw new Error("not-authenticated");
-  const { accessToken: token, userId } = session;
-  const invoke = platformInvoke;
-
-  // Key blocks first (DAT-01): provisional keys get their definitive one
-  // before the push, so it carries them.
-  await leaseKeyBlocks(token, userId, invoke);
-
-  // Push.
+/** Pushes the account's pending lww deltas in batches: each accepted batch is
+ *  marked synced at once, rejected deltas become conflicts, as do keys another
+ *  document already has; deltas the server refuses for their content are
+ *  skipped and stay pending. Test cases wait while the server has not listed
+ *  `stable-steps` (DAT-02): `oplog_pending` leaves them out. */
+async function pushLww(
+  token: string,
+  userId: string,
+  invoke: typeof platformInvoke,
+) {
   const { deltas } = await invoke<{ deltas: PendingDelta[] }>("oplog_pending", {
     userId,
   });
@@ -250,6 +239,31 @@ export async function syncNow(): Promise<SyncResult> {
     skipped += refused.length;
     logRefusedChanges(refused);
   }
+  return { pushed, conflicts, skipped };
+}
+
+/** Runs one desktop sync cycle for the signed-in account: lease key blocks
+ *  and finalize provisional keys (DAT-01), push its pending deltas
+ *  (`pushLww`), then pull every page after its cursor and record the
+ *  server's features. A server that lists `stable-steps` then takes the
+ *  test cases held back so far (DAT-02), and one with `append-only` the
+ *  audit events and case revisions (AUD-01). Throws on network/auth/version
+ *  errors (after retries); callers toast. */
+export async function syncNow(): Promise<SyncResult> {
+  if (!isTauri()) throw new Error("sync-desktop-only");
+  // Token and user from one read: never push one account's changes with
+  // another account's token (FIX-07).
+  const session = await getSession();
+  if (!session) throw new Error("not-authenticated");
+  const { accessToken: token, userId } = session;
+  const invoke = platformInvoke;
+
+  // Key blocks first (DAT-01): provisional keys get their definitive one
+  // before the push, so it carries them.
+  await leaseKeyBlocks(token, userId, invoke);
+
+  // Push.
+  let { pushed, conflicts, skipped } = await pushLww(token, userId, invoke);
 
   // Pull. The cursor lives in the local DB (wiped with the data), one per
   // account, so an empty DB re-pulls everything.
@@ -262,8 +276,21 @@ export async function syncNow(): Promise<SyncResult> {
     }
     await invoke("sync_cursor_set", { userId, value: String(page.cursor) });
   });
+  // What the server can take decides what goes next time, and now.
+  await invoke("sync_server_features_set", {
+    userId,
+    features: serverFeatures,
+  });
+  // Test cases held back until the server listed `stable-steps` (DAT-02, the
+  // first sync after an upgrade) go now; usually nothing is left to send.
+  if (serverFeatures.includes("stable-steps")) {
+    const late = await pushLww(token, userId, invoke);
+    pushed += late.pushed;
+    conflicts += late.conflicts;
+    skipped += late.skipped;
+  }
 
-  // Append-only documents (AUD-01: audit events) go last, and only to a
+  // Append-only documents (audit events, AUD-01; case revisions, DAT-02) go last, and only to a
   // server that knows the class; an older one never sees them and they stay
   // pending. They never conflict, so after the pull is as good as before. A
   // refused one, or a failed push of them, is logged, not shown: they are not
