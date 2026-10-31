@@ -171,7 +171,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
     const rev = await testPlanApi.revisionDetail(revisionId, userId);
     if (!rev) return;
     if (!window.confirm(t("testPlan.restoreConfirm"))) return;
-    setForm(applyRevision(form, rev.title, rev.data));
+    setForm(applyRevision(form, rev.title, rev.data, plan?.id ?? planId));
     setShowRev(false);
     setStep(0);
   }

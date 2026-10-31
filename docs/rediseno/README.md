@@ -78,3 +78,10 @@ Usar siempre `var(--…)` de `ds/tokens/tokens.css`. Valores (tema claro / oscur
 1. Sustituir `Logo.jsx` y sus ejemplos por `logo/Logo.jsx` y `logo/Logo.examples.md`; eliminar el logo anterior.
 2. Añadir `/* @kind font */` a `--fw-regular`, `--fw-medium`, `--fw-semibold`, `--lh-tight`, `--lh-normal` en `tokens/tokens.css` (ya aplicado en la copia `ds/`).
 3. Publicar la nueva versión de pharos-ds y actualizarla en la app.
+
+
+## Actualización — Cronograma y Registro
+- **prototipos/Cronograma.dc.html** (nuevo): paso 14 del plan. Calendario único con selector Sprint/Hito, «Siguiente sprint», bandas y rombos en el calendario, arrastre de extremos en escritorio, filas editables con fechas dd/mm/aaaa sincronizadas en ambos sentidos y validación de solapamiento/duración. Se monta desde **ScrPlan.dc.html** (actualizado).
+- **prototipos/Login.dc.html** (actualizado): añade la vista «Crear cuenta» (enlace «Regístrate») y corrige el doble scroll: la raíz ocupa 100dvh sin scroll y solo scrolla la columna del formulario (en móvil, solo la hoja inferior).
+- Instrucciones para Claude Code: **cambios/ACTUALIZACION-para-Claude-Code.md** (secciones «Paso 14 · Cronograma» y «Login / Registro · doble scroll»).
+- **En la app (0.2.0):** el paso 14 es el Cronograma nuevo (RED-W5) y «Crear cuenta» tiene un solo scroll (RED-V1c). Ver `docs/ROADMAP.md`.
