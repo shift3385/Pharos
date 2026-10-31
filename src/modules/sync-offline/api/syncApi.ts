@@ -13,7 +13,7 @@ import type { Assert, Contract, Covers } from "@shared/contracts";
 import { getSession } from "@modules/auth";
 import { invoke as platformInvoke, isTauri } from "@shared/platform";
 import type { ConflictResolution, SyncConflict } from "../domain/conflict";
-import { logRefusedChanges } from "./syncFailure";
+import { logRefusedChanges, logSyncFailure } from "./syncFailure";
 import {
   batchDeltas,
   pullPages,
@@ -172,8 +172,12 @@ export async function pushAppendOnly(
   for (const batch of batchDeltas(deltas)) {
     const refused = await sendIsolating(batch, send, async (part, body) => {
       const rejected = body.appendRejected ?? [];
-      const { accepted } = splitPushed(part, rejected);
+      const { accepted, rejected: refusedHere } = splitPushed(part, rejected);
       await invoke("oplog_mark_synced", { userId, deltas: accepted });
+      // The server keeps its own version for good: never resend these.
+      if (refusedHere.length > 0) {
+        await invoke("oplog_mark_rejected", { userId, opIds: refusedHere.flatMap((d) => d.opIds) });
+      }
       logRefusedChanges(rejected);
       refusedCount += rejected.length;
     });
@@ -262,9 +266,14 @@ export async function syncNow(): Promise<SyncResult> {
   // Append-only documents (AUD-01: audit events) go last, and only to a
   // server that knows the class; an older one never sees them and they stay
   // pending. They never conflict, so after the pull is as good as before. A
-  // refused one is logged, not shown: they are not changes people make.
+  // refused one, or a failed push of them, is logged, not shown: they are not
+  // changes people make, and the sync of their data already succeeded.
   if (serverFeatures.includes("append-only")) {
-    await pushAppendOnly(token, userId, invoke);
+    try {
+      await pushAppendOnly(token, userId, invoke);
+    } catch (e) {
+      logSyncFailure(e, "audit-push");
+    }
   }
   // Tell open pages to reload from the (now updated) local DB.
   if (pulled > 0) window.dispatchEvent(new CustomEvent("pharos:synced"));

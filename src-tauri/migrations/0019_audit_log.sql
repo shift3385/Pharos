@@ -47,6 +47,17 @@ CREATE INDEX IF NOT EXISTS audit_entity_idx ON audit_log (entity, entity_id);
 CREATE INDEX IF NOT EXISTS audit_at_idx ON audit_log (workspace_id, at);
 CREATE INDEX IF NOT EXISTS audit_chain_idx ON audit_log (device_id, chain_workspace_id, chain_owner, chain_seq);
 
+-- `INSERT OR REPLACE` would delete the existing row without firing
+-- `audit_log_no_delete` (SQLite only fires delete triggers on REPLACE with
+-- recursive_triggers on), so an insert under an id that is already here is
+-- refused too. Writers check first (`audit.rs::insert`).
+CREATE TRIGGER IF NOT EXISTS audit_log_no_replace
+BEFORE INSERT ON audit_log
+WHEN EXISTS (SELECT 1 FROM audit_log WHERE id = NEW.id)
+BEGIN
+    SELECT RAISE(ABORT, 'audit_log is append-only: this id is already here');
+END;
+
 CREATE TRIGGER IF NOT EXISTS audit_log_no_delete
 BEFORE DELETE ON audit_log
 BEGIN

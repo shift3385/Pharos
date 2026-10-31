@@ -170,6 +170,7 @@ pub fn run() {
             oplog::oplog_pending_count,
             sync::oplog_pending,
             sync::oplog_mark_synced,
+            sync::oplog_mark_rejected,
             sync::apply_remote,
             sync::sync_cursor_get,
             sync::sync_cursor_set,

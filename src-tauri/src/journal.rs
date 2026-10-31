@@ -258,7 +258,10 @@ fn location(
 
 /// The account an event syncs with, fixed when it is written (ADR-0015, ADR-0020
 /// rule 1): a person's own account (in 0.2 only a project's owner edits it);
-/// for a `system:` actor, the owner of the project, or '' (stays here).
+/// for a `system:` actor, the owner of the project, or '' (stays here). A
+/// `user:` actor without an id (a change made signed out, e.g. a project with
+/// no `ownerId`) also gets '': like the change itself, which has no owner to
+/// sync with, its event stays on this device.
 fn event_owner(conn: &Connection, actor: &Actor, project: Option<&str>) -> Result<String, String> {
     if let Actor::User(id) = actor {
         return Ok(id.clone());

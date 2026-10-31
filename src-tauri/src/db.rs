@@ -255,6 +255,11 @@ impl Db {
             return Err("there is no local database to recover".to_string());
         }
         let db = Self::open_with_key(app_data_dir, key).map_err(wrong)?;
+        // A recovered file is a copy (another PC, a reinstall): it gets a new
+        // device id, so its audit chain (AUD-01) and HLCs never fork the ones the
+        // original device may still extend.
+        db.with_conn(crate::oplog::rotate_device_id)?;
+        db.persist()?;
         if let Ok(Some(old)) = store.load() {
             if old != key {
                 store.keep_previous(&old)?;
@@ -1179,9 +1184,11 @@ mod tests {
     fn the_enc_file_and_the_recovery_key_recover_the_data_on_another_pc() {
         let first_pc = temp_dir();
         let id = saved_db(&first_pc);
-        let recovery_key = Db::open_with_store(&first_pc, &MemStore::with(KEY))
-            .unwrap()
-            .recovery_key();
+        let original = Db::open_with_store(&first_pc, &MemStore::with(KEY)).unwrap();
+        let recovery_key = original.recovery_key();
+        let first_device = original.with_conn(crate::oplog::device_id).unwrap();
+        original.persist().unwrap();
+        drop(original);
 
         let other_pc = temp_dir();
         fs::copy(
@@ -1204,6 +1211,9 @@ mod tests {
             .unwrap();
         assert_eq!(name, "Recovered");
         assert_eq!(keychain.key(), Some(KEY));
+        // AUD-01: the copy gets its own device id, so its audit chain never forks.
+        let device = db.with_conn(crate::oplog::device_id).unwrap();
+        assert_ne!(device, first_device);
         drop(db);
         // The next start opens normally from the keychain.
         Db::open_with_store(&other_pc, &keychain).unwrap();

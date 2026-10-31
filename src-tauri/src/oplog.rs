@@ -53,6 +53,14 @@ pub fn device_id(conn: &Connection) -> Result<String, String> {
     Ok(id)
 }
 
+/// Gives this database a new device id (AUD-01 review): for a file that may be
+/// a copy of another device's (recovered with the recovery key). Its audit
+/// events then start a new chain instead of forking the original's; the HLC
+/// stays monotonic (`hlc_last` is kept).
+pub(crate) fn rotate_device_id(conn: &Connection) -> Result<(), String> {
+    state_set(conn, "device_id", &Uuid::new_v4().to_string())
+}
+
 fn last_hlc(conn: &Connection) -> Result<Option<Hlc>, String> {
     Ok(state_get(conn, "hlc_last")?.and_then(|s| Hlc::parse(&s)))
 }

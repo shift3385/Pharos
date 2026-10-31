@@ -259,13 +259,18 @@ pub fn append(conn: &Connection, new: NewEvent) -> Result<Event, String> {
     Ok(event)
 }
 
-/// Inserts a row; an existing id is left as it is (`INSERT OR IGNORE`), which
-/// is what an append-only pull needs. Returns whether it was inserted.
+/// Inserts a row; an existing id is left as it is, which is what an
+/// append-only pull needs. The table refuses an insert under an existing id
+/// (`audit_log_no_replace`), so the check comes first. Returns whether it was
+/// inserted.
 fn insert(conn: &Connection, e: &Event) -> Result<bool, String> {
+    if get(conn, &e.id)?.is_some() {
+        return Ok(false);
+    }
     let n = conn
         .execute(
             &format!(
-                "INSERT OR IGNORE INTO audit_log ({COLS})
+                "INSERT INTO audit_log ({COLS})
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16,
                          ?17, ?18, ?19, ?20, ?21, ?22, ?23)"
             ),
@@ -349,7 +354,9 @@ pub fn payload(conn: &Connection, id: &str) -> Result<Option<Value>, String> {
 /// this device's own echo). An id already here is left untouched: append-only
 /// content never changes, and no event or oplog row is created for it
 /// (ADR-0015). A document without the required fields is skipped, not an
-/// error, so one bad document never stops a pull.
+/// error, so one bad document never stops a pull. Its hash is not checked
+/// here: a pull stores what the server has, and `verify_chain` (Admin >
+/// Auditoría) is what tells a broken chain.
 pub fn insert_if_absent(conn: &Connection, user: &str, p: &Value) -> Result<(), String> {
     let s = |k: &str| p.get(k).and_then(Value::as_str).map(str::to_string);
     let required = (|| {
@@ -404,7 +411,8 @@ pub fn insert_if_absent(conn: &Connection, user: &str, p: &Value) -> Result<(), 
 /// pile up can be spotted.
 pub fn pending_count(conn: &Connection) -> Result<i64, String> {
     conn.query_row(
-        "SELECT count(*) FROM oplog WHERE entity = 'audit_event' AND synced_at IS NULL",
+        "SELECT count(*) FROM oplog WHERE entity = 'audit_event' AND synced_at IS NULL
+            AND payload NOT LIKE '%\"appendRejected\"%'",
         [],
         |r| r.get(0),
     )
@@ -472,4 +480,16 @@ pub fn verify_chain(
         prev = Some(e.hash.clone());
     }
     Ok(Ok(events.len()))
+}
+
+/// Events the server refused (`appendRejected`): kept here, never resent, and
+/// counted in the diagnostics so a bug or a tampered copy is visible.
+pub fn rejected_count(conn: &Connection) -> Result<i64, String> {
+    conn.query_row(
+        "SELECT count(*) FROM oplog WHERE entity = 'audit_event' AND synced_at IS NULL
+            AND payload LIKE '%\"appendRejected\"%'",
+        [],
+        |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())
 }

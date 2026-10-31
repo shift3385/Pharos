@@ -755,98 +755,89 @@ fn a_pulled_event_is_inserted_once_never_changed_and_never_echoed() {
     assert_eq!(owner, U);
 }
 
-// ---- sync: a missing field keeps the local value ---------------------------
+// ---- sync: a pulled document is the sender's whole state (review B1) --------
 
-#[test]
-fn fill_missing_keeps_absent_keys_and_data_keys_one_level_deep() {
-    let local = json!({"title": "a", "priority": "high", "data": {"steps": [1], "custom": {"k": 1}, "note": "n"}});
-    let remote = json!({"title": "b", "data": {"steps": [1, 2], "note": null}});
-    assert_eq!(
-        sync::fill_missing(&local, &remote),
-        json!({"title": "b", "priority": "high", "data": {"steps": [1, 2], "custom": {"k": 1}, "note": null}})
-    );
-    // A present nested object replaces the local one whole.
-    let remote = json!({"data": {"custom": {"j": 2}}});
-    assert_eq!(
-        sync::fill_missing(&local, &remote)["data"]["custom"],
-        json!({"j": 2})
-    );
-    // Explicit null at the top level clears; a non-object data replaces.
-    assert_eq!(
-        sync::fill_missing(&local, &json!({"data": null}))["data"],
-        Value::Null
-    );
+/// Pushes everything pending of `user` on `c` (as accepted) and returns the
+/// documents a server with `complete-payload` would store for them.
+fn push_all(c: &Connection, user: &str) -> Vec<sync::RemoteDoc> {
+    let pending = serde_json::to_value(sync::build_pending(c, user).unwrap()).unwrap();
+    let pushed: Vec<sync::PushedDelta> = serde_json::from_value(pending["deltas"].clone()).unwrap();
+    sync::mark_pushed(c, user, &pushed).unwrap();
+    pending["deltas"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| {
+            serde_json::from_value(json!({
+                "entity": d["entity"], "entityId": d["entityId"], "payload": d["payload"],
+                "revision": d["revision"], "hlc": d["hlc"], "deleted": d["op"] == "delete",
+            }))
+            .unwrap()
+        })
+        .collect()
 }
 
 #[test]
-fn a_pulled_document_from_an_older_sender_never_resets_local_fields() {
-    let c = conn();
-    let p = new_project(&c, U);
+fn a_key_cleared_on_one_device_is_cleared_on_the_other() {
+    let a = conn();
+    let p = new_project(&a, U);
     let id = test_case::insert_case(
-        &c,
+        &a,
         &case_input(
             &p,
             U,
             "Pay",
-            json!({"steps": ["a"], "custom": {"env": "prod"}, "note": "n"}),
+            json!({"steps": ["a"], "caseDate": "2026-10-01", "flows": [1]}),
         ),
     )
     .unwrap();
-    let pushed: Vec<sync::PushedDelta> = serde_json::from_value(
-        serde_json::to_value(sync::build_pending(&c, U).unwrap()).unwrap()["deltas"].clone(),
-    )
-    .unwrap();
-    sync::mark_pushed(&c, U, &pushed).unwrap();
+    let first = push_all(&a, U);
 
-    // An older sender: no priority, no data.custom; it clears data.note.
-    let ws = ensure_workspace(&c).unwrap();
-    let doc: sync::RemoteDoc = serde_json::from_value(json!({
-        "entity": "test_case", "entityId": id, "revision": 5, "hlc": "000009999999999-00000-other",
-        "payload": {"projectId": p, "scenarioId": "ATS_001", "title": "Pay (remote)", "version": "1.0",
-                    "status": "ready", "author": "Grace", "data": {"steps": ["a", "b"], "note": null}}
-    }))
-    .unwrap();
-    sync::apply_doc(&c, &ws, U, &doc).unwrap();
-    let (title, priority, data): (String, String, String) = c
-        .query_row(
-            "SELECT title, priority, data FROM test_cases WHERE id = ?1",
-            [&id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )
-        .unwrap();
-    assert_eq!(
-        (title.as_str(), priority.as_str()),
-        ("Pay (remote)", "high")
-    );
-    let data: Value = serde_json::from_str(&data).unwrap();
-    assert_eq!(
-        data,
-        json!({"steps": ["a", "b"], "custom": {"env": "prod"}, "note": null})
-    );
-    assert_eq!(
-        count(
-            &c,
-            "SELECT count(*) FROM audit_log WHERE entity_id = (SELECT id FROM test_cases)"
-        ),
-        1,
-        "a pull adds no event"
-    );
+    // Device B gets the case as it was.
+    let b = conn();
+    let ws_b = ensure_workspace(&b).unwrap();
+    for d in &first {
+        sync::apply_doc(&b, &ws_b, U, d).unwrap();
+    }
+    let data_of = |c: &Connection| -> Value {
+        let s: String = c
+            .query_row("SELECT data FROM test_cases WHERE id = ?1", [&id], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        serde_json::from_str(&s).unwrap()
+    };
+    assert_eq!(data_of(&b)["caseDate"], "2026-10-01");
 
-    // A new row takes the document as it is (today's defaults).
-    let fresh: sync::RemoteDoc = serde_json::from_value(json!({
-        "entity": "test_case", "entityId": "new", "revision": 1, "hlc": "000009999999999-00001-other",
-        "payload": {"projectId": p, "scenarioId": "ATS_050", "title": "New"}
-    }))
-    .unwrap();
-    sync::apply_doc(&c, &ws, U, &fresh).unwrap();
-    let (priority, data): (String, String) = c
-        .query_row(
-            "SELECT priority, data FROM test_cases WHERE id = 'new'",
-            [],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        )
+    // A clears the date and goes back to basic: the keys are left out.
+    test_case::update_case(&a, &id, &case_input(&p, U, "Pay", json!({"steps": ["a"]}))).unwrap();
+    let second = push_all(&a, U);
+    assert_eq!(second.len(), 1);
+    for d in &second {
+        sync::apply_doc(&b, &ws_b, U, d).unwrap();
+    }
+    assert_eq!(data_of(&b), json!({"steps": ["a"]}));
+    assert_eq!(data_of(&a), json!({"steps": ["a"]}));
+    // And B's next push sends nothing back: it has no pending change.
+    assert!(
+        serde_json::to_value(sync::build_pending(&b, U).unwrap()).unwrap()["deltas"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn taking_the_server_version_in_the_conflict_panel_clears_what_it_lacks() {
+    let (c, ws, conflict) = conflicted();
+    sync::resolve_conflict(&c, &ws, U, &conflict, "remote").unwrap();
+    let (title, priority): (String, String) = c
+        .query_row("SELECT title, priority FROM test_cases", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
         .unwrap();
-    assert_eq!((priority.as_str(), data.as_str()), ("", "{}"));
+    // The remote version has no priority: it is the server's whole state.
+    assert_eq!((title.as_str(), priority.as_str()), ("Remote", ""));
 }
 
 #[test]
@@ -1092,6 +1083,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     ("sync::oplog_mark_synced", "sync bookkeeping"),
     (
+        "sync::oplog_mark_rejected",
+        "sync bookkeeping (refused audit events)",
+    ),
+    (
         "sync::apply_remote",
         "a pull: remote events arrive by sync (ADR-0015)",
     ),
@@ -1177,9 +1172,13 @@ fn only_the_journal_writes_the_oplog() {
             continue;
         }
         let text = std::fs::read_to_string(&path).unwrap();
-        let production = text.split("#[cfg(test)]\nmod tests").next().unwrap();
+        // Everything before the test module, whatever the line endings.
+        let production = text.split("mod tests {").next().unwrap();
+        let raw_insert = production
+            .to_ascii_uppercase()
+            .contains("INSERT INTO OPLOG");
         assert!(
-            !production.contains("oplog::record("),
+            !production.contains("oplog::record(") && !raw_insert,
             "{name} writes the oplog directly; go through journal::record"
         );
     }
@@ -1346,4 +1345,67 @@ fn a_key_conflict_renamed_by_the_user_is_audited_as_the_user() {
         .unwrap();
     assert_eq!(actor, format!("user:{U}"));
     assert_eq!(last_changes(&c)["requirementKey"][1], "REQ-777");
+}
+
+#[test]
+fn an_insert_or_replace_cannot_overwrite_an_event() {
+    let c = conn();
+    let p = new_project(&c, U);
+    new_case(&c, &p, U);
+    let id: String = c
+        .query_row("SELECT id FROM audit_log WHERE chain_seq = 1", [], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    let err = c
+        .execute(
+            "INSERT OR REPLACE INTO audit_log (id, workspace_id, at, hlc, device_id, actor, action, entity,
+                entity_id, changes_sha256, chain_workspace_id, chain_seq, hash)
+             VALUES (?1, 'w', 'now', 'h', 'd', 'user:x', 'update', 'test_case', 'c', 's', 'w', 1, 'x')",
+            [&id],
+        )
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("append-only"), "{err}");
+    assert_eq!(chain_ok(&c, U), 2);
+}
+
+#[test]
+fn a_rejected_event_is_not_sent_again_and_is_counted_apart() {
+    let c = conn();
+    let p = new_project(&c, U);
+    new_case(&c, &p, U);
+    let deltas = pushed_events(&c, U);
+    assert_eq!(deltas.len(), 2);
+    let op_ids: Vec<String> = deltas[1]["opIds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+    sync::mark_rejected(&c, U, &op_ids).unwrap();
+    assert_eq!(pushed_events(&c, U).len(), 1);
+    assert_eq!(
+        (
+            audit::pending_count(&c).unwrap(),
+            audit::rejected_count(&c).unwrap()
+        ),
+        (1, 1)
+    );
+    // Entity rows are never marked.
+    let case_ops: Vec<String> = {
+        let mut stmt = c
+            .prepare("SELECT id FROM oplog WHERE entity = 'test_case'")
+            .unwrap();
+        let rows = stmt.query_map([], |r| r.get(0)).unwrap();
+        rows.collect::<rusqlite::Result<_>>().unwrap()
+    };
+    sync::mark_rejected(&c, U, &case_ops).unwrap();
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM oplog WHERE entity = 'test_case' AND payload = '{}'"
+        ),
+        1
+    );
 }

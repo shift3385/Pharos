@@ -345,6 +345,41 @@ describe("syncNow key blocks (DAT-01)", () => {
         .filter((c) => c.cmd === "oplog_mark_synced")
         .flatMap((c) => c.args.deltas as PendingDelta[]);
       expect(marked.map((d) => d.entityId)).toEqual(["e1"]);
+      // Marked as refused, so the next sync does not send it again.
+      expect(calls.find((c) => c.cmd === "oplog_mark_rejected")?.args).toEqual({
+        userId: "user-A",
+        opIds: ["ev2"],
+      });
+    });
+
+    it("a failing audit push leaves a good sync good", async () => {
+      vi.useFakeTimers();
+      try {
+        const calls = core([delta(1)], [event(1)]);
+        let pushes = 0;
+        vi.stubGlobal(
+          "fetch",
+          vi.fn((url: string) => {
+            if (url.includes("/sync/push")) {
+              pushes++;
+              // The lww push works; every try of the audit push gets a 503.
+              if (pushes === 1) return json({ accepted: 1, conflicts: [], keyConflicts: [] });
+              return json({ code: "unavailable", message: "down" }, 503);
+            }
+            return json({ docs: [], cursor: 0, hasMore: false, features: ["append-only"] });
+          }),
+        );
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        const run = syncNow();
+        await vi.runAllTimersAsync();
+        const res = await run;
+        expect(res).toMatchObject({ pushed: 1, skipped: 0 });
+        expect(pushes).toBe(5); // the lww push + the audit push and its 3 retries
+        const marked = calls.filter((c) => c.cmd === "oplog_mark_synced");
+        expect(marked).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });
