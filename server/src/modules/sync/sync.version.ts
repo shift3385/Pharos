@@ -114,7 +114,7 @@ export function readOnlyClient(reply: FastifyReply) {
   return reply.code(426).send({
     code: "read_only_client_version",
     message:
-      "Esta versión de Pharos solo puede leer: actualiza Pharos para enviar cambios. / This version of Pharos can only read: update Pharos to send changes.",
+      "Actualiza Pharos para enviar cambios; tus cambios pendientes se conservan. / Update Pharos to send changes; your pending changes are kept.",
     serverVersion: SERVER_VERSION,
   });
 }

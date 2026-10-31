@@ -255,3 +255,82 @@ entidad es `audit_event` (ADR-0015). Lo que conviene saber para registrar
   pull tal cual llega. Enviar `null` para vaciar sigue siendo la práctica
   recomendada, no un requisito. (Revisión de E1: la fusión para todos devolvía
   campos que el usuario había vaciado.)
+
+## Nota de implementación: revisiones y pasos estables (E2, paso 2, 2026-10-31)
+
+Hecho en el paso 2 del diseño 0.2.0. Respuestas del coordinador a las
+preguntas del plan (Q1–Q9) y lo que conviene saber:
+
+- **Formas.** `Step = { id, text, expected? }` en `data.preconditions`,
+  `data.background`, `data.steps` y `flows[].preconditions|steps` (Q1:
+  también las precondiciones, que son pasos Given; añadirlas más tarde
+  exigiría otra migración de datos). `ExampleRow = { id, values }` en
+  `examples.rows` y `flows[].examples.rows`. Los ids son únicos dentro del
+  caso (pasos y filas comparten espacio; los flujos tienen el suyo).
+  `expected` viaja en el modelo, el hash y el normalizador; su campo en el
+  editor llega con la ejecución manual (paso 7, Q2). `.feature` y `.xlsx`
+  no cambian: un test dorado compara ambos formatos, escritos por el código
+  anterior, con los casos en las dos formas.
+- **Ids.** Tres implementaciones del mismo normalizador (`steps.rs`,
+  `server/src/modules/sync/stable-steps.ts` y el lector tolerante del cliente)
+  comprobadas contra `src-tauri/tests/fixtures/stable-steps-vectors.json`.
+  - Datos antiguos (migración, pull de un documento antiguo, lectura en la
+    API de la web): id derivado de `sha256("<caso>:<lista>:<índice>")`, 40
+    bits en base32 de Crockford; mismo caso, mismos ids en todos los equipos.
+    Nada se pierde: un elemento que no es texto ni paso pasa a ser un paso
+    cuyo texto es su JSON canónico.
+  - **Desviación:** al guardar, un paso sin id recibe uno aleatorio, no
+    derivado: un id derivado podría ser el de un paso borrado en esa
+    posición, y un id nunca se reutiliza.
+  - El editor conserva los ids al editar, insertar, borrar y reordenar, y al
+    reparsear el Gherkin crudo (regla 9): los textos iguales se emparejan por
+    subsecuencia común; entre dos coincidencias, con tantos a cada lado se
+    emparejan en orden (texto editado en su sitio) y, si no, por parecido del
+    texto, para que una línea insertada junto a una editada no se quede con
+    el id de esta. Los flujos se emparejan por nombre de escenario y, si no,
+    por posición (escenario renombrado).
+- **Revisiones.** Migración 0020: `test_case_revisions` se reconstruye con
+  las columnas del contenido, `content_sha256` y `hlc`, y un trigger que
+  impide cambiar el contenido de una fila con hash. **Sin la clave foránea a
+  `test_cases`**: un pull puede traer revisiones antiguas antes que su caso
+  (el documento del caso tiene un `seq` más nuevo), y el SQLite incluido
+  aplica las claves foráneas. La purga borra las revisiones de un caso
+  purgado. `revisions::ensure_current` es el único que escribe filas, en todo
+  camino que da un estado nuevo al caso (crear, guardar, claves, conflictos,
+  pull, migración). JCS completo (RFC 8785, números con `ryu-js`, Q7); un
+  entero fuera de ±(2^53 − 1) se escribe como lo lee JavaScript, y dentro del
+  subconjunto de la auditoría la salida es la misma que `audit::jcs`.
+- **Migración 0021 (Rust, mismo savepoint que su SQL).** Normaliza todos los
+  casos (también los borrados) y los payloads de los conflictos abiertos, y
+  escribe la fila de la revisión vigente de cada caso. No sube `revision` ni
+  registra cambios de `test_case`. **Desviación (Q5):** sí deja en el oplog
+  una fila `append` por esa revisión (casos vivos con dueño), para que el
+  servidor y la web tengan la revisión de los casos que nadie vuelve a
+  editar; dos equipos producen el mismo documento, que el servidor guarda una
+  vez. Idempotente; probada desde los dos fixtures, con casos de los tres
+  niveles añadidos, y en los dos órdenes posibles con 0022–0023.
+- **Sync.** `test_case_revision` es `append_only`;
+  `APPLIED_SET_VERSION = 2`. En el servidor, `createdAt`, `createdBy` y
+  `hlc` quedan fuera del contenido comparado (Q8), y un cambio de ubicación
+  conserva los valores guardados; los eventos de auditoría comparan igual que
+  antes. Fuera de `PROJECT_CHILDREN` hasta SYNC-06 (Q9, SYNC-11 en el
+  backlog). Un pull de un caso guarda su revisión sin enviarla: la envía el
+  equipo que la hizo.
+- **Clientes antiguos en solo lectura** (excepción de VERSIONING §6.5,
+  confirmada por el usuario el 2026-10-31: «Sí, acepto»). En cuanto el
+  servidor tiene este paso, las apps **0.1.x y 0.2.0-alpha.1 solo pueden
+  leer** hasta actualizarse. La puerta es la funcionalidad `stable-steps`:
+  su push recibe `426 read_only_client_version` con el mensaje «Actualiza
+  Pharos para enviar cambios; tus cambios pendientes se conservan», y su pull
+  trae los casos con pasos de texto (Q4). Límite: esas apps hacen el push
+  antes del pull y tratan el 426 como fatal, así que con un cambio pendiente
+  dejan de recibir novedades hasta actualizar (VERSIONING §6.5).
+- **Servidor antiguo.** El escritorio retiene casos y revisiones hasta ver
+  `stable-steps` en una respuesta del servidor (Q6); el diagnóstico exportado
+  dice cuántos casos retiene y por qué (`heldBackCases`,
+  `heldBackReason`). El primer sync tras actualizar los envía después del
+  pull.
+- **La web.** La API de dominio lee con ids derivados los casos guardados por
+  un cliente antiguo, da ids aleatorios a los pasos nuevos y guarda el
+  documento de la revisión en cada guardado, con el mismo id que el
+  escritorio.

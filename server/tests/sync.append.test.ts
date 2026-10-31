@@ -185,7 +185,7 @@ describe("older clients (0.1.x, 0.2.0-alpha.1)", () => {
       const res = await push(alpha1(token), deltas);
       expect(res.statusCode).toBe(426);
       expect(res.json().code).toBe("read_only_client_version");
-      expect(res.json().message).toMatch(/actualiza Pharos/);
+      expect(res.json().message).toContain("Actualiza Pharos para enviar cambios; tus cambios pendientes se conservan");
     }
     expect(
       (await pool.query("SELECT count(*)::int AS n FROM documents")).rows[0].n,
