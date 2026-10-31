@@ -255,11 +255,23 @@ export async function storeAppend(client: PoolClient, userId: string, d: Delta):
   );
   const current = rows[0];
   if (!current) {
+    // A shard or result of a project already deleted here arrives as a
+    // tombstone, as the cascade would have left it (a device that pushes
+    // after the delete). Revisions and audit events stay out (SYNC-11).
+    const orphan =
+      (PROJECT_CHILDREN as readonly string[]).includes(d.entity) &&
+      typeof d.payload.projectId === "string" &&
+      ((
+        await client.query(
+          `SELECT 1 FROM documents WHERE user_id = $1 AND entity = 'project' AND entity_id = $2 AND deleted`,
+          [userId, d.payload.projectId],
+        )
+      ).rowCount ?? 0) > 0;
     await client.query(
       `INSERT INTO documents
          (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
-       VALUES ($1, $2, $3, $4, 1, $5, false, $6, now(), nextval('documents_seq'))`,
-      [userId, d.entity, d.entityId, d.payload, d.author, d.hlc],
+       VALUES ($1, $2, $3, $4, 1, $5, $7, $6, now(), nextval('documents_seq'))`,
+      [userId, d.entity, d.entityId, d.payload, d.author, d.hlc, orphan],
     );
     return { accepted: true };
   }

@@ -1,5 +1,5 @@
 {
-  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Checked by src-tauri/src/runs/ids.rs and src/shared/contracts/pharos-run/ids.test.ts.",
+  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and src/shared/contracts/pharos-run/ids.test.ts.",
   "namespaces": {
     "runShard": "3b6d1f0a-8c2e-5d47-a913-6e0f2b8c4d71",
     "result": "9a4e7c21-0b5f-5e83-b6d2-1c9a3f70e845",
@@ -38,6 +38,27 @@
       "configurationLabel": null,
       "attempt": 0,
       "id": "2c788baa-27ae-52cc-9f6f-ae55b9aa4e3a"
+    },
+    {
+      "shardId": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31",
+      "testKey": "quotes \"double\" and \\backslash\\",
+      "configurationLabel": "",
+      "attempt": 3,
+      "id": "3a1cc36b-4830-572f-9ee8-6bbf18d3ec5a"
+    },
+    {
+      "shardId": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31",
+      "testKey": "control \u0000\u0001\u001f tab\t newline\n cr\r bs\b ff\f del",
+      "configurationLabel": "webkit",
+      "attempt": 0,
+      "id": "599fe979-4b11-5550-a79e-36e84185fcca"
+    },
+    {
+      "shardId": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31",
+      "testKey": "separators   and  , emoji 😀, CJK 試験",
+      "configurationLabel": "Pixel 8",
+      "attempt": 2,
+      "id": "c11897b9-222b-5d79-8218-238bb8097e2b"
     }
   ],
   "mappings": [
@@ -50,6 +71,11 @@
       "projectId": "p1",
       "testKey": "manual:c1/-/-",
       "id": "ef3b430f-9b3a-5133-b41e-d0f22df99c68"
+    },
+    {
+      "projectId": "p1",
+      "testKey": "with \"quotes\"   and \u0007",
+      "id": "932a75df-ad15-5e48-85dd-bb15995ef9ec"
     }
   ],
   "manualKeys": [

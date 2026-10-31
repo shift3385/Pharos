@@ -199,6 +199,25 @@ describe("execution entities (runs feature)", () => {
     const late = await push(h, [result()]);
     expect(late.json().appendRejected).toEqual([]);
     expect((await pool.query("SELECT deleted FROM documents WHERE entity = 'result'")).rows[0].deleted).toBe(true);
+    // A result or shard first pushed after the delete is stored as a
+    // tombstone, as the cascade would have left it; a revision is not.
+    const after = await push(h, [
+      result("res-late"),
+      shard("s-late"),
+      append("test_case_revision", "rev-late", { projectId: "p1", testCaseId: "c1", revision: 2, contentSha256: "b" }),
+    ]);
+    expect(after.json().accepted).toBe(3);
+    const lateRows = await pool.query<{ entity_id: string; deleted: boolean }>(
+      "SELECT entity_id, deleted FROM documents WHERE entity_id IN ('res-late', 's-late', 'rev-late') ORDER BY entity_id",
+    );
+    expect(lateRows.rows).toEqual([
+      { entity_id: "res-late", deleted: true },
+      { entity_id: "rev-late", deleted: false },
+      { entity_id: "s-late", deleted: true },
+    ]);
+    // Nobody pulls them as live documents.
+    const page = await pull(h);
+    expect(page.docs.filter((d: { entity: string; deleted: boolean }) => d.entity === "result" && !d.deleted)).toEqual([]);
   });
 });
 

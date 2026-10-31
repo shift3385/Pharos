@@ -1677,13 +1677,30 @@ fn key_rows(conn: &Connection, table: &str) -> Vec<Vec<String>> {
 
 #[test]
 fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
-    for (fixture, image) in [
-        (FIXTURE, fixture_image as fn() -> Connection),
-        (FIXTURE_020A1, fixture_020a1_image as fn() -> Connection),
+    // Key-table rows the rebuild must carry over: the 0.2.0-alpha.1 image has
+    // both tables (0016/0017); a counter and a retired key of each new-ish
+    // kind are added to be sure there is something to copy.
+    let mut key_rows_checked = 0;
+    for image in [
+        fixture_image as fn() -> Connection,
+        fixture_020a1_image as fn() -> Connection,
     ] {
         let dir = temp_dir();
-        fs::write(dir.join("pharos.db.enc"), fixture).unwrap();
         let old = image();
+        if tables(&old).iter().any(|t| t == "retired_keys") {
+            old.execute_batch(
+                "INSERT OR IGNORE INTO key_counters (project_id, kind, next_value, block_end)
+                     VALUES ('p-upgrade', 'defect', 8, 57);
+                 INSERT OR IGNORE INTO retired_keys (project_id, kind, key)
+                     VALUES ('p-upgrade', 'case', 'ATS_099');",
+            )
+            .unwrap();
+        }
+        assert!(
+            count(&old, "SELECT count(*) FROM requirements") > 0,
+            "the fixture has requirements to keep"
+        );
+        write_image(&dir, &old);
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         db.with_conn(|new| {
             for t in [
@@ -1719,6 +1736,21 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
                     assert_eq!(key_rows(new, t), before, "{t}");
                 }
             }
+            // The new kinds' keys are there with their values.
+            if tables(&old).iter().any(|t| t == "retired_keys") {
+                assert_eq!(
+                    count(
+                        new,
+                        "SELECT count(*) FROM key_counters WHERE project_id = 'p-upgrade'
+                            AND next_value = 8 AND block_end = 57"
+                    ),
+                    1
+                );
+                assert_eq!(
+                    count(new, "SELECT count(*) FROM retired_keys WHERE key = 'ATS_099'"),
+                    1
+                );
+            }
             // ...and accept the new kinds; risk stays in 1..5.
             new.execute(
                 "INSERT INTO key_counters (project_id, kind, next_value) VALUES ('px', 'run', 1), ('px', 'cycle', 1)",
@@ -1743,6 +1775,11 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
             Ok(())
         })
         .unwrap();
+        for t in ["key_counters", "retired_keys"] {
+            if !key_rows(&old, t).is_empty() {
+                key_rows_checked += 1;
+            }
+        }
         // Reopening changes nothing.
         drop(db);
         let again = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
@@ -1753,4 +1790,8 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
             })
             .unwrap();
     }
+    assert!(
+        key_rows_checked >= 2,
+        "both key tables were checked with rows in them"
+    );
 }

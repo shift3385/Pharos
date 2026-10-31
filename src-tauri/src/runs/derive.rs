@@ -30,10 +30,14 @@ pub struct Attempt<'a> {
 
 impl Attempt<'_> {
     /// When it happened: `coalesce(finished_at, started_at, shard.imported_at)`.
-    fn time(&self) -> Option<&str> {
-        self.finished_at
-            .or(self.started_at)
-            .or(self.shard_imported_at)
+    /// When it happened, in ms: the first of `finished_at`, `started_at` and
+    /// the shard's `imported_at` that parses (`instant_ms`). A value that does
+    /// not parse counts as missing, never as text next to parsed ones.
+    fn time(&self) -> Option<i64> {
+        [self.finished_at, self.started_at, self.shard_imported_at]
+            .into_iter()
+            .flatten()
+            .find_map(instant_ms)
     }
 
     fn test(&self) -> (&str, &str, &str) {
@@ -83,11 +87,16 @@ pub fn instant_ms(s: &str) -> Option<i64> {
     }
     let offset_min = match &s[i..] {
         "" | "Z" | "z" => 0,
-        tz if tz.len() == 6
-            && matches!(tz.as_bytes()[0], b'+' | b'-')
-            && tz.as_bytes()[3] == b':' =>
+        // `+05:30` (RFC 3339) or `+0530` (ISO 8601 basic).
+        tz if matches!(tz.as_bytes()[0], b'+' | b'-')
+            && ((tz.len() == 6 && tz.as_bytes()[3] == b':') || tz.len() == 5) =>
         {
-            let m = num(i + 1, 2)? * 60 + num(i + 4, 2)?;
+            let minutes_at = if tz.len() == 6 { i + 4 } else { i + 3 };
+            let (oh, om) = (num(i + 1, 2)?, num(minutes_at, 2)?);
+            if oh > 23 || om > 59 {
+                return None;
+            }
+            let m = oh * 60 + om;
             if tz.starts_with('-') {
                 -m
             } else {
@@ -110,19 +119,11 @@ pub fn instant_ms(s: &str) -> Option<i64> {
     Some(((days * 24 + h) * 60 + mi - offset_min) * 60_000 + sec * 1000 + ms)
 }
 
-/// Timestamps are compared as instants when they parse (`instant_ms`),
-/// otherwise as text. A missing time sorts first.
-fn cmp_time(a: Option<&str>, b: Option<&str>) -> Ordering {
-    let instant = instant_ms;
-    match (a, b) {
-        (None, None) => Ordering::Equal,
-        (None, Some(_)) => Ordering::Less,
-        (Some(_), None) => Ordering::Greater,
-        (Some(x), Some(y)) => match (instant(x), instant(y)) {
-            (Some(i), Some(j)) => i.cmp(&j),
-            _ => x.cmp(y),
-        },
-    }
+/// Times are compared as instants (`Attempt::time`); a missing or unparseable
+/// one sorts first.
+fn cmp_time(a: Option<i64>, b: Option<i64>) -> Ordering {
+    // None < Some: an attempt without a usable time sorts first.
+    a.cmp(&b)
 }
 
 /// The order of attempts of one test: time, then `attempt`, then HLC.
@@ -271,6 +272,19 @@ mod tests {
     }
 
     #[test]
+    fn an_unparseable_time_counts_as_missing_not_as_text() {
+        let mut a = at("a", "t", 0, "failed");
+        a.finished_at = Some("yesterday");
+        a.started_at = Some("2026-10-31T10:00:00Z"); // falls back to this
+        let mut b = at("b", "t", 0, "passed");
+        b.finished_at = Some("2026-10-31T09:00:00Z");
+        assert_eq!(final_attempts(&[a.clone(), b.clone()]), vec!["a"]);
+        // Nothing parses: the attempt sorts first, whatever its text says.
+        a.started_at = Some("zzz");
+        assert_eq!(final_attempts(&[a, b]), vec!["b"]);
+    }
+
+    #[test]
     fn each_test_and_configuration_has_its_own_final() {
         let mut chromium = at("c", "t", 0, "passed");
         chromium.configuration_label = Some("chromium");
@@ -313,7 +327,17 @@ mod tests {
         assert_eq!(instant_ms("2000-03-01T00:00:00Z"), Some(951_868_800_000));
         assert_eq!(instant_ms("not a date"), None);
         assert_eq!(instant_ms("2026-13-01T00:00:00Z"), None);
-        assert_eq!(instant_ms("2026-10-31T00:00:00+0100"), None);
+        // ISO 8601 basic offsets and more than 3 fractional digits.
+        assert_eq!(
+            instant_ms("2026-10-31T05:30:00+0530"),
+            instant_ms("2026-10-31T00:00:00Z")
+        );
+        assert_eq!(
+            instant_ms("2026-10-31T00:00:00.123456789Z"),
+            instant_ms("2026-10-31T00:00:00.123Z")
+        );
+        assert_eq!(instant_ms("2026-10-31T00:00:00+05:60"), None);
+        assert_eq!(instant_ms("2026-10-31T00:00:00+053"), None);
     }
 
     #[test]

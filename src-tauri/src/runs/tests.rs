@@ -721,3 +721,249 @@ fn a_cursor_stored_before_the_execution_entities_restarts_at_zero() {
     .unwrap();
     assert_eq!(sync::cursor_get(&c, U).unwrap(), "0");
 }
+
+// ---- review: ids by kind, limits, purge, orphans -------------------------------
+
+/// An advanced case: background, main steps and rows, and one flow with its
+/// own steps and rows.
+fn advanced_case(c: &Connection, p: &str) -> (String, Value) {
+    let case = new_case(
+        c,
+        p,
+        json!({
+            "background": ["logged in"],
+            "steps": ["main step"],
+            "examples": {"rows": [["a"]]},
+            "flows": [{"name": "Refund", "steps": ["flow step"], "examples": {"rows": [["x"]]}}]
+        }),
+    );
+    (case.clone(), case_data(c, &case))
+}
+
+fn id_at(v: &Value, path: &[&str]) -> String {
+    let mut cur = v;
+    for p in path {
+        cur = match p.parse::<usize>() {
+            Ok(i) => &cur[i],
+            Err(_) => &cur[*p],
+        };
+    }
+    cur["id"].as_str().unwrap().to_string()
+}
+
+#[test]
+fn flows_rows_and_steps_are_checked_by_kind() {
+    let c = device();
+    let p = new_project(&c);
+    let (case, data) = advanced_case(&c, &p);
+    let flow = data["flows"][0]["id"].as_str().unwrap().to_string();
+    let background = id_at(&data, &["background", "0"]);
+    let main_step = id_at(&data, &["steps", "0"]);
+    let main_row = id_at(&data, &["examples", "rows", "0"]);
+    let flow_step = id_at(&data, &["flows", "0", "steps", "0"]);
+    let flow_row = id_at(&data, &["flows", "0", "examples", "rows", "0"]);
+    let run = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    let item_with = |flow: Option<&str>, row: Option<&str>| -> RunItemInput {
+        serde_json::from_value(json!({"testCaseId": case, "flowId": flow, "exampleRowId": row}))
+            .unwrap()
+    };
+    // A step id is not a flow; a flow's row is not a main row, nor the reverse.
+    for (flow_id, row) in [
+        (Some(main_step.as_str()), None),
+        (None, Some(flow_row.as_str())),
+        (Some(flow.as_str()), Some(main_row.as_str())),
+        (None, Some(main_step.as_str())),
+    ] {
+        assert!(
+            add_items(&c, &run, U, &[item_with(flow_id, row)]).is_err(),
+            "{flow_id:?} {row:?}"
+        );
+    }
+    let main_item = add_items(&c, &run, U, &[item_with(None, Some(&main_row))]).unwrap();
+    let flow_item = add_items(&c, &run, U, &[item_with(Some(&flow), Some(&flow_row))]).unwrap();
+    let steps = |id: &str| json!({"steps": [{"stepId": id, "text": "x", "status": "passed"}]});
+    // The main flow takes the background and its steps, not a flow's.
+    assert!(record_result(&c, &result(&main_item[0], "passed", steps(&background))).is_ok());
+    assert!(record_result(&c, &result(&main_item[0], "passed", steps(&main_step))).is_ok());
+    assert!(record_result(&c, &result(&main_item[0], "passed", steps(&flow_step))).is_err());
+    assert!(record_result(&c, &result(&main_item[0], "passed", steps(&main_row))).is_err());
+    // A flow takes the background and its own steps, not the main ones.
+    assert!(record_result(&c, &result(&flow_item[0], "passed", steps(&background))).is_ok());
+    assert!(record_result(&c, &result(&flow_item[0], "passed", steps(&flow_step))).is_ok());
+    assert!(record_result(&c, &result(&flow_item[0], "passed", steps(&main_step))).is_err());
+    assert!(record_result(&c, &result(&flow_item[0], "passed", steps(&flow))).is_err());
+}
+
+#[test]
+fn the_server_limits_are_checked_before_writing() {
+    let c = device();
+    let p = new_project(&c);
+    let long = "x".repeat(MAX_TITLE + 1);
+    assert!(insert_run(&c, &run_input(&p, json!({ "title": long })))
+        .unwrap_err()
+        .starts_with("title-too-long"));
+    // UTF-16 units, as the server counts: 250 emoji are 500 units.
+    let emoji = "😀".repeat(MAX_TITLE / 2);
+    let run = insert_run(&c, &run_input(&p, json!({ "title": emoji }))).unwrap();
+    let longer = format!("{emoji}a");
+    assert!(update_run(&c, &run, &run_input(&p, json!({ "title": longer }))).is_err());
+    let case = new_case(&c, &p, json!({}));
+    let item_ids = add_items(&c, &run, U, &[item(&case)]).unwrap();
+    let many: Vec<Value> = (0..=MAX_STEPS)
+        .map(|_| json!({"text": "s", "status": "passed"}))
+        .collect();
+    assert!(record_result(
+        &c,
+        &result(&item_ids[0], "passed", json!({ "steps": many }))
+    )
+    .unwrap_err()
+    .starts_with("steps-too-many"));
+    let key = "k".repeat(MAX_TEST_KEY + 1);
+    assert!(set_mapping(&c, &p, &key, None, U)
+        .unwrap_err()
+        .starts_with("testKey-too-long"));
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 0);
+}
+
+#[test]
+fn a_case_with_an_open_key_conflict_cannot_be_frozen() {
+    let c = device();
+    let p = new_project(&c);
+    let case = new_case(&c, &p, json!({}));
+    let run = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    crate::key_sync::vacate(&c, U, "test_case", &case, "other").unwrap();
+    assert!(add_items(&c, &run, U, &[item(&case)])
+        .unwrap_err()
+        .starts_with("case-key-conflict"));
+}
+
+/// Marks everything synced, as if the server had it all.
+fn all_synced(c: &Connection) {
+    c.execute(
+        "UPDATE oplog SET synced_at = datetime('now') WHERE synced_at IS NULL",
+        [],
+    )
+    .unwrap();
+    c.execute(
+        "INSERT OR IGNORE INTO sync_base (user_id, entity, entity_id, revision, hlc)
+         SELECT ?1, 'run', id, revision, '' FROM runs",
+        [U],
+    )
+    .unwrap();
+}
+
+fn expire_project(c: &Connection) {
+    for t in ["runs", "run_items", "test_cases", "projects"] {
+        c.execute(
+            &format!("UPDATE {t} SET deleted_at = '2000-01-01 00:00:00'"),
+            [],
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn the_purge_waits_for_pending_results_and_forgets_their_journal() {
+    let c = device();
+    let (p, _, _, item_id) = setup(&c);
+    all_synced(&c);
+    record_result(&c, &result(&item_id, "passed", json!({}))).unwrap();
+    project::delete_project(&c, &p, U).unwrap();
+    // Everything but the result reached the server.
+    c.execute(
+        "UPDATE oplog SET synced_at = datetime('now') WHERE entity <> 'result'",
+        [],
+    )
+    .unwrap();
+    expire_project(&c);
+    purge::purge(&c, U, 30).unwrap();
+    assert_eq!(
+        count(&c, "SELECT count(*) FROM runs"),
+        1,
+        "held by its result"
+    );
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 1);
+    // Once the result is pushed, the run goes with it and leaves no journal.
+    all_synced(&c);
+    purge::purge(&c, U, 30).unwrap();
+    for t in ["runs", "results", "step_results"] {
+        assert_eq!(count(&c, &format!("SELECT count(*) FROM {t}")), 0, "{t}");
+    }
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM oplog WHERE entity IN ('result', 'run_shard', 'run', 'run_item')"
+        ),
+        0
+    );
+}
+
+#[test]
+fn stale_results_without_a_run_are_swept_fresh_ones_wait() {
+    let c = device();
+    let p = new_project(&c);
+    let doc = |id: &str, run: &str, project: &str, at: &str| {
+        json!({"id": id, "projectId": project, "runId": run, "testKey": "t", "status": "passed",
+               "createdAt": at, "steps": [{"text": "s", "status": "passed"}]})
+    };
+    // Pulled before its run: fresh, kept.
+    result_insert_if_absent(&c, U, &doc("fresh", "r-later", &p, "2999-01-01 00:00:00")).unwrap();
+    // Its project is gone and it is old: swept, with its steps and journal.
+    result_insert_if_absent(
+        &c,
+        U,
+        &doc("stale", "r-gone", "p-gone", "2000-01-01 00:00:00"),
+    )
+    .unwrap();
+    c.execute(
+        "INSERT INTO oplog (id, entity, entity_id, op, payload, revision, author, created_at, hlc, user_id)
+         VALUES ('o1', 'result', 'stale', 'append', '{}', 1, 'a', 'now', 'h', ?1)",
+        [U],
+    )
+    .unwrap();
+    // A live project whose run is missing: kept, however old.
+    result_insert_if_absent(&c, U, &doc("live", "r-x", &p, "2000-01-01 00:00:00")).unwrap();
+    purge::purge(&c, U, 30).unwrap();
+    let left: Vec<String> = c
+        .prepare("SELECT id FROM results ORDER BY id")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert_eq!(left, vec!["fresh", "live"]);
+    assert_eq!(count(&c, "SELECT count(*) FROM step_results"), 2);
+    assert_eq!(
+        count(&c, "SELECT count(*) FROM oplog WHERE entity_id = 'stale'"),
+        0
+    );
+}
+
+#[test]
+fn only_the_purge_deletes_immutable_rows() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut files = vec![];
+    for d in [dir.clone(), dir.join("runs")] {
+        for entry in std::fs::read_dir(&d).unwrap() {
+            files.push(entry.unwrap().path());
+        }
+    }
+    for path in files {
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        if !name.ends_with(".rs") || name == "purge.rs" || name.contains("tests") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap();
+        let production = text
+            .split("mod tests {")
+            .next()
+            .unwrap()
+            .to_ascii_uppercase();
+        for table in ["RESULTS", "STEP_RESULTS", "RUN_SHARDS"] {
+            assert!(
+                !production.contains(&format!("DELETE FROM {table}")),
+                "{name} deletes from {table}; only purge.rs may"
+            );
+        }
+    }
+}

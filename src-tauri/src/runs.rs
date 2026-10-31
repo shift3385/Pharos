@@ -68,6 +68,20 @@ pub(crate) fn entities_sql_list() -> String {
 }
 
 const TRIGGERS: [&str; 6] = ["manual", "local", "agent", "ci", "cloud", "import"];
+
+/// The server's limits (`EXECUTION_PAYLOADS` in `sync.schemas.ts`), checked
+/// here too: a document the server refuses would stay pending for ever.
+/// Lengths count UTF-16 units, as zod does.
+pub(crate) const MAX_TITLE: usize = 500;
+pub(crate) const MAX_TEST_KEY: usize = 2000;
+pub(crate) const MAX_STEPS: usize = 5000;
+
+fn within(field: &str, value: &str, max: usize) -> Result<(), String> {
+    if value.encode_utf16().count() > max {
+        return Err(format!("{field}-too-long: at most {max} characters"));
+    }
+    Ok(())
+}
 const RESULT_STATUSES: [&str; 5] = ["passed", "failed", "blocked", "skipped", "other"];
 
 // ---- types -------------------------------------------------------------------
@@ -306,34 +320,88 @@ fn require_open(status: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Every `id` inside a revision's `data` (steps, Outline rows, flows): what a
-/// run item's flow and row, and a step result's `step_id`, may point at.
-fn revision_ids(conn: &Connection, revision_id: &str) -> Result<HashSet<String>, String> {
-    fn collect(v: &Value, out: &mut HashSet<String>) {
-        match v {
-            Value::Object(m) => {
-                if let Some(Value::String(id)) = m.get("id") {
-                    out.insert(id.clone());
-                }
-                m.values().for_each(|x| collect(x, out));
+/// The step and Outline-row ids of one flow of a revision (ADR-0011).
+#[derive(Default)]
+struct FlowShape {
+    steps: HashSet<String>,
+    rows: HashSet<String>,
+}
+
+/// What a run item's flow and row, and a step result's `step_id`, may point
+/// at, by kind: a result attributed to the wrong step can never be corrected.
+/// The main flow is the case's preconditions, background and steps with its
+/// Outline rows; each flow of an advanced case has the background, its own
+/// preconditions and steps, and its own rows.
+struct RevisionShape {
+    main: FlowShape,
+    flows: std::collections::HashMap<String, FlowShape>,
+}
+
+impl RevisionShape {
+    fn of(data: &Value) -> Self {
+        let ids = |list: Option<&Value>| -> HashSet<String> {
+            list.and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(|el| el.get("id").and_then(Value::as_str).map(String::from))
+                .collect()
+        };
+        let rows = |v: &Value| ids(v.get("examples").and_then(|e| e.get("rows")));
+        let background = ids(data.get("background"));
+        let mut main = FlowShape {
+            steps: background.clone(),
+            rows: rows(data),
+        };
+        for key in ["preconditions", "steps"] {
+            main.steps.extend(ids(data.get(key)));
+        }
+        let mut flows = std::collections::HashMap::new();
+        for flow in data
+            .get("flows")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let Some(id) = flow.get("id").and_then(Value::as_str) else {
+                continue;
+            };
+            let mut shape = FlowShape {
+                steps: background.clone(),
+                rows: rows(flow),
+            };
+            for key in ["preconditions", "steps"] {
+                shape.steps.extend(ids(flow.get(key)));
             }
-            Value::Array(a) => a.iter().for_each(|x| collect(x, out)),
-            _ => {}
+            flows.insert(id.to_string(), shape);
+        }
+        RevisionShape { main, flows }
+    }
+
+    fn load(conn: &Connection, revision_id: &str) -> Result<Self, String> {
+        let data: Option<String> = conn
+            .query_row(
+                "SELECT data FROM test_case_revisions WHERE id = ?1",
+                params![revision_id],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(err)?;
+        let data = data
+            .and_then(|d| serde_json::from_str::<Value>(&d).ok())
+            .unwrap_or(Value::Null);
+        Ok(Self::of(&data))
+    }
+
+    /// The flow a run item points at: the main one, or a flow of the case.
+    fn flow(&self, flow_id: Option<&str>) -> Result<&FlowShape, String> {
+        match flow_id {
+            None => Ok(&self.main),
+            Some(id) => self
+                .flows
+                .get(id)
+                .ok_or_else(|| format!("flow not in the case revision: {id}")),
         }
     }
-    let data: Option<String> = conn
-        .query_row(
-            "SELECT data FROM test_case_revisions WHERE id = ?1",
-            params![revision_id],
-            |r| r.get(0),
-        )
-        .optional()
-        .map_err(err)?;
-    let mut out = HashSet::new();
-    if let Some(v) = data.and_then(|d| serde_json::from_str::<Value>(&d).ok()) {
-        collect(&v, &mut out);
-    }
-    Ok(out)
 }
 
 // ---- runs ----------------------------------------------------------------------
@@ -413,6 +481,7 @@ pub(crate) fn insert_run(conn: &Connection, input: &RunInput) -> Result<String, 
         return Err("project not found".into());
     }
     let title = text(&input.title).ok_or("title is required")?;
+    within("title", &title, MAX_TITLE)?;
     let trigger = text(&input.trigger).unwrap_or_else(|| "manual".into());
     if !TRIGGERS.contains(&trigger.as_str()) {
         return Err(format!("unknown trigger: {trigger}"));
@@ -479,6 +548,9 @@ pub(crate) fn update_run(conn: &Connection, id: &str, input: &RunInput) -> Resul
         return Err(format!("unknown run status: {new_status}"));
     }
     let closing = new_status != "in_progress";
+    if let Some(title) = text(&input.title) {
+        within("title", &title, MAX_TITLE)?;
+    }
     let revision: i64 = conn
         .query_row(
             "SELECT revision FROM runs WHERE id = ?1",
@@ -617,18 +689,32 @@ pub(crate) fn add_items(
         if case_project.as_deref() != Some(project_id.as_str()) {
             return Err(format!("test case not found: {}", item.test_case_id));
         }
+        // A case with an open key conflict holds a provisional key whose
+        // revision stays on this device (`revisions::ensure_current_local`):
+        // an item frozen on it would point at a revision no other device has.
+        let key_conflict = conn
+            .query_row(
+                "SELECT 1 FROM key_conflicts WHERE entity = 'test_case' AND entity_id = ?1
+                    AND resolved_at IS NULL",
+                params![item.test_case_id],
+                |_| Ok(()),
+            )
+            .optional()
+            .map_err(err)?
+            .is_some();
+        if key_conflict {
+            return Err(format!("case-key-conflict: {}", item.test_case_id));
+        }
         let revision_id =
             crate::revisions::ensure_current(conn, &item.test_case_id, user, true)?
                 .ok_or_else(|| format!("test case has no revision: {}", item.test_case_id))?;
-        let known = revision_ids(conn, &revision_id)?;
-        for (what, id) in [
-            ("flow", &item.flow_id),
-            ("example row", &item.example_row_id),
-        ] {
-            if let Some(id) = text(id) {
-                if !known.contains(&id) {
-                    return Err(format!("{what} not in the case revision: {id}"));
-                }
+        let shape = RevisionShape::load(conn, &revision_id)?;
+        let flow = shape.flow(text(&item.flow_id).as_deref())?;
+        if let Some(row) = text(&item.example_row_id) {
+            if !flow.rows.contains(&row) {
+                return Err(format!(
+                    "example row not in that flow of the case revision: {row}"
+                ));
             }
         }
         let id = Uuid::new_v4().to_string();
@@ -730,14 +816,20 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
         return Err(format!("unknown result status: {}", input.status));
     }
     let steps = input.steps.clone().unwrap_or_default();
-    let known = revision_ids(conn, &item.revision_id)?;
+    if steps.len() > MAX_STEPS {
+        return Err(format!("steps-too-many: at most {MAX_STEPS} steps"));
+    }
+    let shape = RevisionShape::load(conn, &item.revision_id)?;
+    let flow = shape.flow(item.flow_id.as_deref())?;
     for s in &steps {
         if !RESULT_STATUSES.contains(&s.status.as_str()) {
             return Err(format!("unknown step status: {}", s.status));
         }
         if let Some(step_id) = text(&s.step_id) {
-            if !known.contains(&step_id) {
-                return Err(format!("step not in the case revision: {step_id}"));
+            if !flow.steps.contains(&step_id) {
+                return Err(format!(
+                    "step not in that flow of the case revision: {step_id}"
+                ));
             }
         }
     }
@@ -755,6 +847,7 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
         item.flow_id.as_deref(),
         item.example_row_id.as_deref(),
     );
+    within("testKey", &test_key, MAX_TEST_KEY)?;
     let label = text(&input.configuration_label);
     // attempt n: the next number of this test in this run (shown only; the
     // final attempt is ordered by time, ADR-0013).
@@ -911,12 +1004,17 @@ pub(crate) fn list_results(
     let mut out: Vec<ResultView> = {
         let mut stmt = conn
             .prepare(
+                // One mapping per (project, test_key) by its deterministic id;
+                // a subquery, not a join, so stray rows can never duplicate
+                // a result.
                 "SELECT x.*, s.imported_at AS shard_imported_at,
-                        coalesce(x.test_case_id, m.test_case_id) AS effective_case
+                        coalesce(x.test_case_id,
+                                 (SELECT m.test_case_id FROM unlinked_mappings m
+                                   WHERE m.project_id = x.project_id AND m.test_key = x.test_key
+                                     AND m.deleted_at IS NULL
+                                   ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)) AS effective_case
                    FROM results x
                    LEFT JOIN run_shards s ON s.id = x.shard_id
-                   LEFT JOIN unlinked_mappings m ON m.project_id = x.project_id
-                        AND m.test_key = x.test_key AND m.deleted_at IS NULL
                   WHERE x.run_id = ?1
                   ORDER BY x.created_at, x.rowid",
             )
@@ -1017,6 +1115,7 @@ pub(crate) fn set_mapping(
     if test_key.is_empty() {
         return Err("testKey is required".into());
     }
+    within("testKey", test_key, MAX_TEST_KEY)?;
     if let Some(case) = test_case_id {
         let ok = conn
             .query_row(
@@ -1330,6 +1429,42 @@ fn is_purged(conn: &Connection, run_id: &str) -> Result<bool, String> {
         .optional()
         .map_err(err)?
         .is_some())
+}
+
+/// `(entity, id)` of the shards and results of a run, for the purge.
+pub(crate) fn appended_rows(
+    conn: &Connection,
+    run_id: &str,
+) -> Result<Vec<(&'static str, String)>, String> {
+    let mut out = Vec::new();
+    for (entity, table) in [(RESULT, "results"), (RUN_SHARD, "run_shards")] {
+        let mut stmt = conn
+            .prepare(&format!("SELECT id FROM {table} WHERE run_id = ?1"))
+            .map_err(err)?;
+        let ids = stmt
+            .query_map(params![run_id], |r| r.get::<_, String>(0))
+            .map_err(err)?
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(err)?;
+        out.extend(ids.into_iter().map(|id| (entity, id)));
+    }
+    Ok(out)
+}
+
+/// True while a shard or result of the run still has to reach the server.
+pub(crate) fn has_pending_appends(conn: &Connection, run_id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM oplog o
+          WHERE o.synced_at IS NULL AND o.payload NOT LIKE '%\"appendRejected\"%'
+            AND ((o.entity = 'result' AND o.entity_id IN (SELECT id FROM results WHERE run_id = ?1))
+              OR (o.entity = 'run_shard' AND o.entity_id IN (SELECT id FROM run_shards WHERE run_id = ?1)))
+          LIMIT 1",
+        params![run_id],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(err)
+    .map(|r| r.is_some())
 }
 
 /// The `run_shard` document pushed for a row.

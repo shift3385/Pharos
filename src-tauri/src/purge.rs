@@ -217,6 +217,20 @@ fn purge_children(
         if held(conn, child.entity, &id)? || held(conn, "project", &project_id)? {
             continue;
         }
+        // A run whose shards or results have not reached the server yet
+        // waits for them, like a pending change of its own.
+        if child.entity == "run"
+            && crate::runs::has_pending_appends(conn, &id)?
+            && oplog::known_to_server(conn, "run", &id)?
+        {
+            continue;
+        }
+        if child.entity == "run" {
+            // Its shards and results leave their journal rows too.
+            for (entity, child_id) in crate::runs::appended_rows(conn, &id)? {
+                forget(conn, entity, &child_id)?;
+            }
+        }
         if let Some((_, kind)) = child.key {
             let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
             keys::retire(conn, kind, &project_id, &prefix, &key)?;
@@ -241,6 +255,39 @@ fn purge_children(
             crate::runs::remember_purged(conn, &id)?;
         }
         purged += 1;
+    }
+    Ok(purged)
+}
+
+/// Shards and results (and their step results) without a run whose project is
+/// gone, or deleted and past the retention, and older than it themselves: a
+/// pull can bring a result before its run, so only stale ones go. Journal
+/// rows go with them. Returns how many results and shards were removed.
+fn purge_orphan_results(conn: &Connection, user: &str, days: i64) -> Result<usize, String> {
+    let lost = "x.run_id NOT IN (SELECT id FROM runs)
+         AND (x.project_id NOT IN (SELECT id FROM projects)
+              OR x.project_id IN (SELECT id FROM projects p WHERE p.owner_id = ?1
+                                  AND p.deleted_at IS NOT NULL
+                                  AND julianday(p.deleted_at) <= julianday('now') - ?2))";
+    let mut purged = 0;
+    for (entity, table, at) in [
+        ("result", "results", "created_at"),
+        ("run_shard", "run_shards", "imported_at"),
+    ] {
+        let sql = format!(
+            "SELECT x.id, x.project_id, NULL FROM {table} x
+              WHERE {lost} AND julianday(x.{at}) <= julianday('now') - ?2"
+        );
+        for (id, _, _) in candidates(conn, &sql, user, days)? {
+            if entity == "result" {
+                conn.execute("DELETE FROM step_results WHERE result_id = ?1", params![id])
+                    .map_err(|e| e.to_string())?;
+            }
+            conn.execute(&format!("DELETE FROM {table} WHERE id = ?1"), params![id])
+                .map_err(|e| e.to_string())?;
+            forget(conn, entity, &id)?;
+            purged += 1;
+        }
     }
     Ok(purged)
 }
@@ -312,7 +359,7 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
         test_cases,
         requirements,
         planner_cards,
-        runs: runs + run_items + mappings,
+        runs: runs + run_items + mappings + purge_orphan_results(conn, user, days)?,
         projects: purge_projects(conn, user, days)?,
         templates: purge_templates(conn, user, days)?,
     })
