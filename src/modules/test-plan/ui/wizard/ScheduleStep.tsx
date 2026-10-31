@@ -279,7 +279,6 @@ export function ScheduleStep({ form, setForm }: StepProps) {
           <span id={`${uid}-next`} className="sr-only">
             {nextDesc}
           </span>
-          <span className="tps-bar__fill" />
           <div className="tps-nav">
             <button
               type="button"

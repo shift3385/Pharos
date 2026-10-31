@@ -690,10 +690,6 @@
   min-width: 0;
 }
 
-.tps-bar__fill {
-  flex: 1;
-}
-
 .tps-seg {
   display: inline-flex;
   gap: 2px;
@@ -753,10 +749,12 @@
   background: var(--color-surface-2);
 }
 
+/* Right-aligned, also when the bar wraps on a narrow step. */
 .tps-nav {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-left: auto;
 }
 
 .tps-nav__btn {
@@ -869,9 +867,11 @@
   border-bottom-right-radius: 17px;
 }
 
+/* Amber and red tints mix in sRGB: in oklch they turn purple on the dark
+   surface. */
 .tps-band[data-band="alt"],
 .tps-swatch[data-band="alt"] {
-  background: color-mix(in oklch, var(--color-accent) 26%, var(--color-surface-1));
+  background: color-mix(in srgb, var(--color-accent) 26%, var(--color-surface-1));
 }
 
 .tps-band[data-band="active"] {
@@ -885,7 +885,7 @@
 .tps-band[data-band="overlap"],
 .tps-swatch[data-band="overlap"],
 .tps-legend__band[data-band="overlap"] {
-  background: color-mix(in oklch, var(--color-error) 18%, var(--color-surface-1));
+  background: color-mix(in srgb, var(--color-error) 18%, var(--color-surface-1));
 }
 
 .tps-band[data-edge] {
@@ -1072,7 +1072,7 @@
 }
 
 .tps-name {
-  flex: 1 1 200px;
+  flex: 1 1 140px;
   min-width: 0;
   padding: 0 12px;
 }
