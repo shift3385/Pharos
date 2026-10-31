@@ -53,17 +53,23 @@ export function texts(steps: readonly unknown[] | undefined): string[] {
   return (steps ?? []).map(stepText);
 }
 
+/** An object of a list with a fresh id; an id it had that was not empty
+ *  stays as `legacyId` (`steps.rs::set_id`). */
+function withFreshId<T>(el: Record<string, unknown>, extra: T): T & { id: string } {
+  const legacy = el.id !== undefined && el.id !== null && el.id !== "" && !("legacyId" in el) ? { legacyId: el.id } : {};
+  return { ...el, ...legacy, ...extra, id: newStepId() };
+}
+
 /** A list of steps in the stable shape: steps keep their ids; anything else
  *  becomes a step with a fresh id. */
 export function toSteps(list: unknown): Step[] {
   if (!Array.isArray(list)) return [];
   return list.map((el) =>
-    isObject(el) &&
-    typeof el.text === "string" &&
-    typeof el.id === "string" &&
-    el.id
+    isObject(el) && typeof el.text === "string" && typeof el.id === "string" && el.id
       ? (el as unknown as Step)
-      : { id: newStepId(), text: stepText(el) },
+      : isObject(el) && typeof el.text === "string"
+        ? withFreshId(el, { text: el.text })
+        : { id: newStepId(), text: stepText(el) },
   );
 }
 
@@ -83,12 +89,11 @@ export function rowValues(row: unknown): string[] {
 export function toRows(list: unknown): ExampleRow[] {
   if (!Array.isArray(list)) return [];
   return list.map((row) =>
-    isObject(row) &&
-    Array.isArray(row.values) &&
-    typeof row.id === "string" &&
-    row.id
+    isObject(row) && Array.isArray(row.values) && typeof row.id === "string" && row.id
       ? (row as unknown as ExampleRow)
-      : { id: newStepId(), values: rowValues(row) },
+      : isObject(row) && Array.isArray(row.values)
+        ? withFreshId(row, { values: rowValues(row) })
+        : { id: newStepId(), values: rowValues(row) },
   );
 }
 
@@ -125,10 +130,15 @@ function similarity(a: string, b: string): number {
       : 0;
 }
 
+/** Below it, two items of an uneven gap are not paired: a line replaced
+ *  wholesale gets a new id (rule 9). The same in `steps.rs` and the server. */
+export const MIN_SIMILARITY = 0.3;
+
 /** Pairs the items of one gap between two matches: in order when both sides
  *  have as many (edited in place); otherwise the order-preserving pairing with
- *  the most similar texts, so an inserted line next to an edited one does not
- *  take the edited one's id. Writes into `out`. */
+ *  the most similar texts (at least `MIN_SIMILARITY`), so an inserted line
+ *  next to an edited one does not take the edited one's id. Writes into
+ *  `out`. The same algorithm as `steps.rs::align` (shared vectors). */
 function pairGap(
   prev: readonly string[],
   next: readonly string[],
@@ -144,25 +154,24 @@ function pairGap(
     return;
   }
   // best[i][j]: best score pairing the first i old with the first j new.
-  // Every pair scores a little above 0, so as many pairs as possible are made.
+  // Every allowed pair scores a little above 0, so as many as possible are made.
+  const score = (i: number, j: number) => {
+    const s = similarity(prev[pi + i - 1], next[pj + j - 1]);
+    return s >= MIN_SIMILARITY ? 1e-6 + s : null;
+  };
   const best: number[][] = Array.from({ length: p + 1 }, () =>
     new Array<number>(q + 1).fill(0),
   );
   for (let i = 1; i <= p; i++)
-    for (let j = 1; j <= q; j++)
-      best[i][j] = Math.max(
-        best[i - 1][j],
-        best[i][j - 1],
-        best[i - 1][j - 1] +
-          1e-6 +
-          similarity(prev[pi + i - 1], next[pj + j - 1]),
-      );
+    for (let j = 1; j <= q; j++) {
+      let v = Math.max(best[i - 1][j], best[i][j - 1]);
+      const sc = score(i, j);
+      if (sc !== null) v = Math.max(v, best[i - 1][j - 1] + sc);
+      best[i][j] = v;
+    }
   for (let i = p, j = q; i > 0 && j > 0;) {
-    const paired =
-      best[i - 1][j - 1] +
-      1e-6 +
-      similarity(prev[pi + i - 1], next[pj + j - 1]);
-    if (best[i][j] === paired) {
+    const sc = score(i, j);
+    if (sc !== null && best[i][j] === best[i - 1][j - 1] + sc) {
       out[pj + j - 1] = pi + i - 1;
       i--;
       j--;
@@ -224,6 +233,15 @@ export function reconcileSteps(
   );
 }
 
+/** Texts typed into a list field (`StepListField`): while the list keeps
+ *  its length, every step keeps the id of its row, whatever the user typed
+ *  (an emptied step is still that step); an insert or a delete aligns the
+ *  texts (`reconcileSteps`). */
+export function editStepTexts(prev: readonly Step[], nextTexts: readonly string[]): Step[] {
+  if (nextTexts.length !== prev.length) return reconcileSteps(prev, nextTexts);
+  return prev.map((s, i) => ({ ...s, text: nextTexts[i] }));
+}
+
 const rowKey = (values: readonly string[]) => JSON.stringify(values);
 
 /** Rows for `nextValues` that keep the ids of `prev` (like `reconcileSteps`). */
@@ -265,7 +283,8 @@ export interface TextFlow {
 /** Parsed flows with the ids of `prev`: a flow is the one with the same
  *  scenario name (the first not yet taken); an unmatched flow takes the
  *  unmatched one in the same position (a renamed scenario). Inside, steps and
- *  rows keep their ids as in `reconcileSteps`. */
+ *  rows keep their ids as in `reconcileSteps`; keys the parser does not know
+ *  stay as they were. */
 export function reconcileFlows(
   prev: readonly Flow[] | undefined,
   next: readonly TextFlow[],
@@ -287,6 +306,7 @@ export function reconcileFlows(
   return next.map((f, j) => {
     const old = match[j] >= 0 ? before[match[j]] : undefined;
     return {
+      ...old,
       id: old?.id ?? newStepId(usedFlowIds),
       name: f.name,
       preconditions: reconcileSteps(old?.preconditions, f.preconditions ?? []),

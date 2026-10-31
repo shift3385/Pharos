@@ -57,18 +57,63 @@ function flatten(
   return out;
 }
 
+const STEP_KEYS = new Set(["data.preconditions", "data.background", "data.steps"]);
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  v !== null && typeof v === "object" && !Array.isArray(v);
+
+/** A step as people read it: its text, and its expected result when it has
+ *  one. The id (DAT-02) says nothing to the user. */
+function stepLabel(step: unknown): unknown {
+  if (!isObject(step) || typeof step.text !== "string") return step;
+  return typeof step.expected === "string" && step.expected
+    ? `${step.text} → ${step.expected}`
+    : step.text;
+}
+
+const steps = (v: unknown) => (Array.isArray(v) ? v.map(stepLabel) : v);
+
+/** Outline rows as their values (DAT-02 rows carry an id). */
+function table(v: unknown): unknown {
+  if (!isObject(v) || !Array.isArray(v.rows)) return v;
+  return {
+    ...v,
+    rows: v.rows.map((r) => (isObject(r) && Array.isArray(r.values) ? r.values : r)),
+  };
+}
+
+/** The value of a field as the panel shows and compares it: steps and rows
+ *  without their ids, so two versions that differ only in ids are the same. */
+function forDisplay(key: string, v: unknown): unknown {
+  if (STEP_KEYS.has(key)) return steps(v);
+  if (key === "data.examples") return table(v);
+  if (key === "data.flows" && Array.isArray(v))
+    return v.map((f) =>
+      isObject(f)
+        ? {
+            ...f,
+            ...(f.preconditions ? { preconditions: steps(f.preconditions) } : {}),
+            ...(f.steps ? { steps: steps(f.steps) } : {}),
+            ...(f.examples ? { examples: table(f.examples) } : {}),
+          }
+        : f,
+    );
+  return v;
+}
+
 function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }
 
-/** Side-by-side field list of both versions, local field order first. */
+/** Side-by-side field list of both versions, local field order first. Steps
+ *  and Outline rows are shown and compared without their ids (DAT-02). */
 export function diffConflict(c: SyncConflict): FieldDiff[] {
   const local = flatten(c.local.deleted ? null : c.local.payload);
   const remote = flatten(c.remote.deleted ? null : c.remote.payload);
   const keys = [...new Set([...local.keys(), ...remote.keys()])];
   return keys.map((key) => {
-    const l = local.get(key);
-    const r = remote.get(key);
+    const l = forDisplay(key, local.get(key));
+    const r = forDisplay(key, remote.get(key));
     return { key, local: l, remote: r, changed: !same(l, r) };
   });
 }

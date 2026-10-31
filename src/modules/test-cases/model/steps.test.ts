@@ -13,6 +13,7 @@ import {
 import type { Flow, Step, TestCaseData } from "./types";
 import {
   align,
+  editStepTexts,
   newStepId,
   reconcileFlows,
   reconcileRows,
@@ -198,6 +199,12 @@ describe("Gherkin round-trip keeps every id (ADR-0011 rule 9)", () => {
 });
 
 describe("tolerant readers", () => {
+  it("keep an id that is not a string as legacyId", () => {
+    const [s] = toSteps([{ id: 3, text: "three" }]);
+    expect(s).toMatchObject({ text: "three", legacyId: 3 });
+    expect(s.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{8}$/);
+  });
+
   it("never print an object as a step", () => {
     expect(texts(["a", { id: "X", text: "b" }, { given: "g" }, null])).toEqual([
       "a",
@@ -231,5 +238,65 @@ describe("tolerant readers", () => {
       if (data.examples?.rows)
         expect(read.examples?.rows, v.name).toEqual(data.examples.rows);
     }
+  });
+});
+
+describe("typing in a list field keeps each step's id (review S1)", () => {
+  const A: Step = { id: "AAAAAAAA", text: "Open cart", expected: "e" };
+  const B: Step = { id: "BBBBBBBB", text: "" };
+
+  it("clearing a step, or making two equal, never moves an id", () => {
+    expect(editStepTexts([A, B], ["", ""])).toEqual([
+      { ...A, text: "" },
+      { ...B, text: "" },
+    ]);
+    expect(ids(editStepTexts([A, B], ["Open cart", "Open cart"]))).toEqual([A.id, B.id]);
+    // Typing a character at a time.
+    let steps: Step[] = [A, B];
+    for (const t of ["O", "Op", "Ope"]) steps = editStepTexts(steps, ["Open cart", t]);
+    expect(ids(steps)).toEqual([A.id, B.id]);
+  });
+
+  it("an insert or a delete aligns the texts", () => {
+    expect(ids(editStepTexts([A, B], ["Open cart"]))).toEqual([A.id]);
+    expect(ids(editStepTexts([A, B], [""]))).toEqual([B.id]);
+    const added = editStepTexts([A, B], ["Open cart", "", "new"]);
+    expect(ids(added).slice(0, 2)).toEqual([A.id, B.id]);
+  });
+
+  it("two flows renamed to the same name keep their own ids", () => {
+    const prev = reconcileFlows(undefined, [
+      { name: "One", steps: ["a"], expectedResult: "" },
+      { name: "Two", steps: ["b"], expectedResult: "" },
+    ]);
+    const same = reconcileFlows(prev, [
+      { name: "Same", steps: ["a"], expectedResult: "" },
+      { name: "Same", steps: ["b"], expectedResult: "" },
+    ]);
+    expect(same.map((f) => f.id)).toEqual(prev.map((f) => f.id));
+    const again = reconcileFlows(same, [
+      { name: "Same", steps: ["a"], expectedResult: "" },
+      { name: "Same", steps: ["b"], expectedResult: "" },
+    ]);
+    expect(again.map((f) => f.id)).toEqual(prev.map((f) => f.id));
+    expect(again[1].steps[0].id).toBe(prev[1].steps[0].id);
+  });
+
+  it("a flow keeps the keys the parser does not know", () => {
+    const prev = [{ ...reconcileFlows(undefined, [{ name: "F", steps: ["a"], expectedResult: "" }])[0], custom: { k: 1 } }];
+    expect(reconcileFlows(prev as Flow[], [{ name: "F", steps: ["a"], expectedResult: "" }])[0]).toMatchObject({ custom: { k: 1 } });
+  });
+
+  it("a line replaced wholesale next to an insert gets a new id", () => {
+    expect(align(["Open the cart"], ["Close the window", "Delete everything"])).toEqual([-1, -1]);
+  });
+});
+
+describe("align is the same on the desktop and the server (shared vectors)", () => {
+  it("holds every vector", () => {
+    const vectors = JSON.parse(
+      readFileSync(resolve(__dirname, "../../../../src-tauri/tests/fixtures/stable-steps-vectors.json"), "utf8"),
+    ) as { align: { prev: string[]; next: string[]; out: number[] }[] };
+    for (const v of vectors.align) expect(align(v.prev, v.next)).toEqual(v.out);
   });
 });
