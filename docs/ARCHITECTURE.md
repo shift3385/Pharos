@@ -891,7 +891,9 @@ Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
 **Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**
 Attachment contents live outside the database, in `<data dir>/evidence/`
 (`src-tauri/src/evidence.rs`), so saving the database never depends on their
-size and they are never whole in memory.
+size, and a file is never held whole in memory while it is written or read.
+(The migration below reads BLOBs that are already part of the in-memory image,
+and its `VACUUM` can briefly double that image.)
 
 - **Data folder = `pharos.db.enc` + `evidence/`.** Backups, recovery and the
   "newer version" check cover both. The store is created only after the
@@ -915,19 +917,28 @@ size and they are never whole in memory.
     above 1 is `evidence-newer-than-app`.
 - **Writes.** `BlobWriter` encrypts and hashes block by block into
   `evidence/tmp/<uuid>.pev.new`. `seal` writes the last block and fsyncs, off
-  the database lock; `commit` renames it under the lock, or drops it when the
-  content is already stored. `tmp/` is emptied at open.
+  the database lock; `commit` renames it under the lock. It drops the new copy
+  only when an intact one is already stored (expected length
+  `16 + size + 16 × max(1, ⌈size / 64 KiB⌉)` and a valid header); a truncated or
+  foreign copy is replaced, also when a migration resumes. `commit` reports
+  whether it wrote, so a failed attach removes only a file it wrote. `tmp/` is
+  emptied at open.
 - **Ordering with `Db::persist`.** A file is written before the database that
   references it is saved, and removed only after the database that no longer
   references it is saved.
-  - Releasing a content marks it `deleting` in the same transaction;
-    `Db::collect_evidence` (after `persist`, and at open) removes the file,
-    then the row. A content referenced again meanwhile goes back to `present`.
+  - Releasing a content marks it `deleting` in the same transaction.
+    `Db::persist_and_collect` saves and then, under the same lock, removes the
+    files and rows of those contents and saves again: every `deleting` row it
+    sees is in the image just written, and a failed save removes nothing. At
+    open it finishes deletions an earlier run saved. A content referenced again
+    meanwhile goes back to `present`.
   - `.pev` files no row knows are only **counted** (diagnostic bundle), never
     swept: they may belong to a database the user moved aside.
 - **UI path.** Uploads go in raw 4 MiB chunks (`evidence_upload_begin`,
   `_chunk`, `_cancel`, held in the managed `Uploads`); `planner_attachment_add`
-  then attaches the upload. `planner_attachment_save` decrypts straight into
+  then attaches the upload. At most 8 are open; one idle for 10 minutes (a
+  webview reload mid-upload) is dropped to make room, a chunk always gets its
+  slot back, and a second chunk of an upload that is being written is refused. `planner_attachment_save` decrypts straight into
   the download folder (`Downloads::save_with`, Mark-of-the-Web). The bytes
   never cross the webview as base64. Limit: 200 MB per file (`MAX_FILE_BYTES`).
 - **Retention and purge.** `purge_deleted` also:

@@ -38,6 +38,7 @@ use std::fs::{self, File};
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::stream::{DecryptorBE32, EncryptorBE32};
@@ -704,36 +705,111 @@ pub(crate) fn is_known(conn: &Connection, sha256: &str) -> Result<bool, String> 
 
 /// Header naming the upload of an `evidence_upload_chunk` call.
 const UPLOAD_HEADER: &str = "x-pharos-upload";
-/// Uploads open at once; an abandoned one only costs its temp file until the
-/// next start.
+/// Uploads open at once.
 const MAX_OPEN_UPLOADS: usize = 8;
+/// An upload untouched this long is dropped (the webview reloaded mid-upload,
+/// or the chunk that held it never came back), so it never blocks new ones.
+const UPLOAD_IDLE: Duration = Duration::from_secs(10 * 60);
+
+/// One upload: waiting for its next chunk, or being written by one.
+enum Slot {
+    Idle(Box<BlobWriter>, Instant),
+    /// A chunk holds the writer; a second chunk of the same upload is refused
+    /// (chunks are ordered: the UI sends them one at a time).
+    Busy(Instant),
+}
+
+impl Slot {
+    fn since(&self) -> Instant {
+        match self {
+            Slot::Idle(_, at) | Slot::Busy(at) => *at,
+        }
+    }
+}
 
 /// Uploads in progress: the UI sends a file in raw chunks
 /// (`evidence_upload_chunk`), each encrypted and hashed as it arrives, so the
 /// file is never whole in memory nor sent as base64. A finished upload is
 /// handed to the command that attaches it (`planner_attachment_add`).
+/// Dropping a writer discards its temp file.
 #[derive(Default)]
 pub struct Uploads {
-    open: Mutex<HashMap<String, BlobWriter>>,
+    open: Mutex<HashMap<String, Slot>>,
 }
 
+const BUSY: &str = "upload busy: its chunks must be sent one at a time";
+
 impl Uploads {
-    fn put(&self, id: String, writer: BlobWriter) -> Result<(), String> {
-        let mut open = self.open.lock().map_err(|_| "uploads lock poisoned")?;
-        if open.len() >= MAX_OPEN_UPLOADS && !open.contains_key(&id) {
+    fn lock(&self) -> Result<std::sync::MutexGuard<'_, HashMap<String, Slot>>, String> {
+        self.open
+            .lock()
+            .map_err(|_| "uploads lock poisoned".to_string())
+    }
+
+    /// Registers a new upload, after dropping the idle ones.
+    fn begin(&self, writer: BlobWriter, now: Instant) -> Result<String, String> {
+        let mut open = self.lock()?;
+        open.retain(|_, slot| now.saturating_duration_since(slot.since()) < UPLOAD_IDLE);
+        if open.len() >= MAX_OPEN_UPLOADS {
             return Err("too many uploads in progress".into());
         }
-        open.insert(id, writer);
+        let id = uuid::Uuid::new_v4().to_string();
+        open.insert(id.clone(), Slot::Idle(Box::new(writer), now));
+        Ok(id)
+    }
+
+    /// Takes the writer of an upload for one chunk; its slot stays (busy), so
+    /// the upload still counts and a parallel chunk is refused, not lost.
+    fn check_out(&self, id: &str, now: Instant) -> Result<BlobWriter, String> {
+        let mut open = self.lock()?;
+        let slot = open.get_mut(id).ok_or("upload not found")?;
+        match std::mem::replace(slot, Slot::Busy(now)) {
+            Slot::Idle(writer, _) => Ok(*writer),
+            busy @ Slot::Busy(_) => {
+                *slot = busy;
+                Err(BUSY.into())
+            }
+        }
+    }
+
+    /// Gives the writer back after a chunk. Never refused: its slot was kept.
+    /// If the upload was cancelled meanwhile, the writer is dropped.
+    fn check_in(&self, id: &str, writer: BlobWriter, now: Instant) -> Result<(), String> {
+        let mut open = self.lock()?;
+        if let Some(slot) = open.get_mut(id) {
+            *slot = Slot::Idle(Box::new(writer), now);
+        }
         Ok(())
     }
 
-    /// Takes an upload out (dropping it discards its temp file).
+    fn remove(&self, id: &str) -> Result<(), String> {
+        self.lock()?.remove(id);
+        Ok(())
+    }
+
+    /// Takes a finished upload out to attach it.
     pub(crate) fn take(&self, id: &str) -> Result<BlobWriter, String> {
-        self.open
-            .lock()
-            .map_err(|_| "uploads lock poisoned")?
-            .remove(id)
-            .ok_or_else(|| "upload not found".to_string())
+        let mut open = self.lock()?;
+        match open.remove(id) {
+            Some(Slot::Idle(writer, _)) => Ok(*writer),
+            Some(busy @ Slot::Busy(_)) => {
+                open.insert(id.to_string(), busy);
+                Err(BUSY.into())
+            }
+            None => Err("upload not found".into()),
+        }
+    }
+
+    /// Appends a chunk; a failing chunk discards the upload.
+    fn append(&self, id: &str, bytes: &[u8], now: Instant) -> Result<u64, String> {
+        let mut writer = self.check_out(id, now)?;
+        if let Err(e) = writer.write(bytes) {
+            self.remove(id)?;
+            return Err(e);
+        }
+        let size = writer.size();
+        self.check_in(id, writer, Instant::now())?;
+        Ok(size)
     }
 }
 
@@ -750,9 +826,7 @@ pub fn evidence_upload_begin(
             MAX_FILE_BYTES / (1024 * 1024)
         ));
     }
-    let id = uuid::Uuid::new_v4().to_string();
-    uploads.put(id.clone(), db.evidence().writer(MAX_FILE_BYTES)?)?;
-    Ok(id)
+    uploads.begin(db.evidence().writer(MAX_FILE_BYTES)?, Instant::now())
 }
 
 /// Appends a raw chunk to an upload (`x-pharos-upload` names it); returns the
@@ -771,17 +845,13 @@ pub fn evidence_upload_chunk(
         .and_then(|v| v.to_str().ok())
         .ok_or("missing upload id")?
         .to_string();
-    let mut writer = uploads.take(&id)?;
-    writer.write(bytes)?;
-    let size = writer.size();
-    uploads.put(id, writer)?;
-    Ok(size)
+    uploads.append(&id, bytes, Instant::now())
 }
 
 /// Drops an upload the user abandoned (its temp file goes with it).
 #[tauri::command]
-pub fn evidence_upload_cancel(uploads: State<Uploads>, upload_id: String) {
-    let _ = uploads.take(&upload_id);
+pub fn evidence_upload_cancel(uploads: State<Uploads>, upload_id: String) -> Result<(), String> {
+    uploads.remove(&upload_id)
 }
 
 // ---- retention (ADR-0014) -------------------------------------------------

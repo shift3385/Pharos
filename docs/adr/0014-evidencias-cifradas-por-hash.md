@@ -204,13 +204,20 @@ sobre lo decidido, sin cambiar la decisión:
 - **Temporales** en `evidence/tmp/` (`<uuid>.pev.new`); se vacía al abrir.
 - **`local_state = 'deleting'`** se añade a `present | remote_only | missing`.
   Un contenido sin referencias vivas pasa a `deleting` en la misma transacción,
-  y su archivo se borra después de guardar la BD (`Db::collect_evidence`). Así
-  ningún corte deja una BD que apunte a un archivo borrado.
+  y su archivo se borra después de guardar la BD: `Db::persist_and_collect`
+  guarda y borra con el mismo bloqueo, así que solo borra lo que ya está en la
+  imagen guardada, y si el guardado falla no borra nada. Ningún corte deja una
+  BD que apunte a un archivo borrado.
+- **Deduplicación con comprobación.** Antes de reutilizar un `.pev` que ya
+  existe se comprueba su longitud
+  (`16 + tamaño + 16 × max(1, ⌈tamaño / 64 KiB⌉)`) y su cabecera; uno
+  truncado o ajeno se sustituye por la copia nueva, también al reanudar la
+  migración. Un adjunto que falla solo borra el archivo si lo escribió él.
 - **Huérfanos.** Si la migración se corta, al repetirla se reutilizan los
   archivos ya escritos (la recolección no hace falta). Los `.pev` que ninguna
   fila conoce **no se barren solos**: pueden ser de una BD que el usuario
-  apartó al restaurar un `.bak`. El diagnóstico los cuenta y DAT-03b (ROADMAP)
-  los repara a mano. Las filas de `planner_attachments` sin tarjeta se
+  apartó al restaurar un `.bak`. El diagnóstico los cuenta y DAT-03b (ROADMAP,
+  0.2.0, ola E5) los repara a mano. Las filas de `planner_attachments` sin tarjeta se
   descartan (quedan en la copia SEC-06).
 - **Borrado de un adjunto:** borrado lógico (la fila podrá sincronizar) y el
   contenido se libera en el acto si nadie más lo usa. Borrar la tarjeta no
@@ -228,4 +235,26 @@ sobre lo decidido, sin cambiar la decisión:
   servidor recibe el texto en claro por TLS y verifica el sha256.
 - **Límite** de 200 MB (`MAX_FILE_BYTES`), comprobado al empezar la subida y en
   cada trozo; la UI envía el archivo en trozos crudos de 4 MiB y lo descarga
-  directamente desde Rust, sin base64.
+  directamente desde Rust, sin base64. Como mucho hay 8 subidas abiertas; una
+  inactiva 10 minutos (p. ej., la webview se recargó a mitad) se descarta.
+- **Memoria.** Un archivo nunca está entero en memoria mientras se escribe o se
+  lee: se cifra y descifra por bloques. Eso vale por archivo. La BD sí vive
+  entera en memoria (hasta SEC-05), la migración lee los BLOBs que ya estaban
+  en esa imagen, y su `VACUUM` puede duplicarla durante un momento.
+- **Límites conocidos del cifrado:**
+  - **Nonces.** Cada archivo elige al azar un prefijo de 7 bytes bajo la misma
+    clave de archivo. Dos archivos con el mismo prefijo reutilizarían nonces.
+    La probabilidad es de unos `n² / 2⁵⁷` con `n` archivos: menos de 1 entre
+    100 000 con un millón de archivos. Rotar la clave (SEC-04/05) la pone a
+    cero.
+  - **Tamaño.** El tamaño cifrado revela el tamaño exacto del contenido
+    (cabecera + contenido + 16 bytes por bloque).
+  - **Auditoría.** Los eventos `link`, `unlink` y `redact` llevan el nombre y
+    el sha256 del adjunto y se sincronizan con el servidor (clase
+    `append_only`). El servidor puede, por tanto, confirmar si un archivo
+    concreto se adjuntó. Es coherente con SYNC-04b, donde el servidor guarda
+    el sha256 en claro y el contenido cifrado solo en reposo.
+- **Orden con el paso 2.** Las migraciones 0020–0021 (paso 2) llegarán
+  después que estas. Una BD que ya tenga 0022–0023 las aplicará después de
+  0023, así que no deben tocar `planner_attachments`. Sus borradores no lo
+  hacen (comprobado el 2026-10-31).

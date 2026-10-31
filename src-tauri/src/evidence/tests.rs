@@ -544,3 +544,84 @@ fn nothing_about_attachments_reaches_the_sync_outbox() {
         0
     );
 }
+
+// ---- uploads ------------------------------------------------------------
+
+#[test]
+fn uploads_are_bounded_but_idle_ones_make_room() {
+    let dir = temp_dir();
+    let store = EvidenceStore::new(&dir, &KEY);
+    let uploads = Uploads::default();
+    let start = Instant::now();
+    let ids: Vec<String> = (0..MAX_OPEN_UPLOADS)
+        .map(|_| {
+            uploads
+                .begin(store.writer(MAX_FILE_BYTES).unwrap(), start)
+                .unwrap()
+        })
+        .collect();
+    let full = uploads.begin(store.writer(MAX_FILE_BYTES).unwrap(), start);
+    assert_eq!(full.unwrap_err(), "too many uploads in progress");
+    // A chunk of an open upload goes back in even while the map is full.
+    assert_eq!(uploads.append(&ids[0], b"abc", start).unwrap(), 3);
+    assert_eq!(uploads.append(&ids[0], b"de", start).unwrap(), 5);
+    // After a webview reload nobody finishes them: once idle, they make room.
+    let later = start + UPLOAD_IDLE + Duration::from_secs(1);
+    let fresh = uploads.begin(store.writer(MAX_FILE_BYTES).unwrap(), later);
+    assert!(fresh.is_ok());
+    assert_eq!(uploads.take(&ids[1]).err().unwrap(), "upload not found");
+    drop(uploads);
+    // Every abandoned temp file went with its writer.
+    assert!(fs::read_dir(dir.join(DIR).join(TMP))
+        .unwrap()
+        .next()
+        .is_none());
+    fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn a_parallel_chunk_is_refused_and_the_upload_survives() {
+    let dir = temp_dir();
+    let store = EvidenceStore::new(&dir, &KEY);
+    let uploads = Uploads::default();
+    let now = Instant::now();
+    let id = uploads
+        .begin(store.writer(MAX_FILE_BYTES).unwrap(), now)
+        .unwrap();
+    let writer = uploads.check_out(&id, now).unwrap();
+    // While a chunk holds the writer, another chunk or the attach is refused.
+    assert_eq!(uploads.append(&id, b"x", now).unwrap_err(), BUSY);
+    assert_eq!(uploads.take(&id).err().unwrap(), BUSY);
+    uploads.check_in(&id, writer, now).unwrap();
+    assert_eq!(uploads.append(&id, b"hello", now).unwrap(), 5);
+    let mut writer = uploads.take(&id).unwrap();
+    writer.seal().unwrap();
+    let stored = writer.commit(&store).unwrap().stored;
+    assert_eq!(read_all(&store, &stored.sha256).unwrap(), b"hello");
+    fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn a_chunk_over_the_limit_or_a_cancel_drops_the_upload() {
+    let dir = temp_dir();
+    let store = EvidenceStore::new(&dir, &KEY);
+    let uploads = Uploads::default();
+    let now = Instant::now();
+    let id = uploads.begin(store.writer(4).unwrap(), now).unwrap();
+    assert!(uploads
+        .append(&id, b"12345", now)
+        .unwrap_err()
+        .starts_with(EVIDENCE_TOO_LARGE));
+    assert_eq!(uploads.take(&id).err().unwrap(), "upload not found");
+    let id = uploads
+        .begin(store.writer(MAX_FILE_BYTES).unwrap(), now)
+        .unwrap();
+    uploads.append(&id, b"abc", now).unwrap();
+    uploads.remove(&id).unwrap();
+    assert_eq!(uploads.take(&id).err().unwrap(), "upload not found");
+    assert!(fs::read_dir(dir.join(DIR).join(TMP))
+        .unwrap()
+        .next()
+        .is_none());
+    fs::remove_dir_all(dir).unwrap();
+}
