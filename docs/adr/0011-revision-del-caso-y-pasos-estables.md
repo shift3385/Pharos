@@ -240,8 +240,8 @@ entidad es `audit_event` (ADR-0015). Lo que conviene saber para registrar
   cliente solo envía documentos append-only a un servidor que los lista.
 - **De las tres operaciones de servidor, hoy solo existe el cambio de
   ubicación:** un push con el mismo contenido y otra ubicación se acepta con
-  `seq` nuevo. Todavía no deja evento de auditoría en el servidor (AUD-01b), y
-  el escritorio no aplica cambios de ubicación de documentos que ya tiene (solo
+  `seq` nuevo. No deja evento de auditoría en el servidor (AUD-01b solo audita
+  las escrituras del dominio de la web), y el escritorio no aplica cambios de ubicación de documentos que ya tiene (solo
   inserta si no existen): llega con ADR-0019. La lápida y la redacción de
   servidor llegan con SYNC-06 y Admin > Auditoría.
 - **La puerta de solo lectura para 0.1** (`426 read_only_client_version`) se

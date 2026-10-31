@@ -105,20 +105,24 @@ fn jcs_sorts_keys_and_escapes_like_rfc_8785() {
         audit::jcs(&v).unwrap(),
         r#"{"A":0,"a":[true,null,"x\u0001\n\"é/"],"b":1,"c":{"y":"Ñandú","z":-5}}"#
     );
+    // Integers within ±(2^53 - 1), also when written as `1.0` (RFC 8785).
     assert_eq!(
-        audit::jcs(&json!(u64::MAX)).unwrap(),
-        "18446744073709551615"
+        audit::jcs(&json!(9_007_199_254_740_991_i64)).unwrap(),
+        "9007199254740991"
     );
+    assert_eq!(audit::jcs(&json!([1.0, -0.0])).unwrap(), "[1,0]");
 }
 
 #[test]
 fn jcs_refuses_what_is_outside_the_audit_subset() {
-    // A float or a non-ASCII key would need the full RFC 8785 rules; refusing
-    // them keeps every implementation of the header hash identical.
+    // A fraction, an integer past 2^53 - 1 or a non-ASCII key would need the
+    // full RFC 8785 rules (or lose precision on the server); refusing them
+    // keeps every implementation of the header hash identical.
     assert!(audit::jcs(&json!({"x": 1.5}))
         .unwrap_err()
-        .contains("non-integer"));
-    assert!(audit::jcs(&json!([0.0])).is_err());
+        .contains("outside the audit subset"));
+    assert!(audit::jcs(&json!(9_007_199_254_740_992_i64)).is_err());
+    assert!(audit::jcs(&json!(u64::MAX)).is_err());
     assert!(audit::jcs(&json!({"ñ": 1}))
         .unwrap_err()
         .contains("non-ASCII key"));
@@ -753,6 +757,105 @@ fn a_pulled_event_is_inserted_once_never_changed_and_never_echoed() {
         .query_row("SELECT DISTINCT user_id FROM audit_log", [], |r| r.get(0))
         .unwrap();
     assert_eq!(owner, U);
+}
+
+// ---- the web's chain (AUD-01b): vectors shared with the server --------------
+
+fn shared_vectors() -> Value {
+    serde_json::from_str(include_str!(
+        "../../src/shared/contracts/fixtures/audit/chain.json"
+    ))
+    .unwrap()
+}
+
+#[test]
+fn jcs_gives_the_canonical_forms_the_server_gives() {
+    let fixture = shared_vectors();
+    for case in fixture["jcs"].as_array().unwrap() {
+        assert_eq!(
+            audit::jcs(&case["value"]).unwrap(),
+            case["canonical"].as_str().unwrap(),
+            "{}",
+            case["value"]
+        );
+    }
+    for value in fixture["refused"].as_array().unwrap() {
+        let err = audit::jcs(value).unwrap_err();
+        assert!(err.contains("outside the audit subset"), "{value}: {err}");
+    }
+    // The same as JSON text, parsed here as the server parses it there: the
+    // integer boundary and integral numbers (`1.0`).
+    for case in fixture["jcsText"].as_array().unwrap() {
+        let json = case["json"].as_str().unwrap();
+        let value: Value = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            audit::jcs(&value).unwrap(),
+            case["canonical"].as_str().unwrap(),
+            "{json}"
+        );
+    }
+    for text in fixture["refusedText"].as_array().unwrap() {
+        let json = text.as_str().unwrap();
+        let value: Value = serde_json::from_str(json).unwrap();
+        assert!(audit::jcs(&value).is_err(), "{json}");
+    }
+}
+
+/// A web chain exactly as `/sync/pull` returns it (built by the server's
+/// `audit.store.ts`): the desktop stores it through the real pull path and
+/// `verify_chain` accepts it under ("web", "web", user).
+#[test]
+fn a_pulled_web_chain_is_stored_and_verifies() {
+    let fixture = shared_vectors();
+    let user = fixture["userId"].as_str().unwrap();
+    let docs = fixture["docs"].as_array().unwrap();
+    assert_eq!(docs.len(), 4);
+    let c = conn();
+    let ws = ensure_workspace(&c).unwrap();
+    for raw in docs {
+        let doc: sync::RemoteDoc = serde_json::from_value(raw.clone()).unwrap();
+        sync::apply_doc(&c, &ws, user, &doc).unwrap();
+    }
+    assert_eq!(audit::verify_chain(&c, "web", "web", user).unwrap(), Ok(4));
+    // Filed under this device's workspace (the server sends none), owned by
+    // the account, and nothing echoed to the oplog.
+    assert_eq!(
+        count(
+            &c,
+            &format!(
+                "SELECT count(*) FROM audit_log WHERE workspace_id = '{ws}' AND user_id = '{user}'"
+            )
+        ),
+        4
+    );
+    assert_eq!(count(&c, "SELECT count(*) FROM oplog"), 0);
+    assert_eq!(
+        actions(&c)
+            .into_iter()
+            .map(|(a, e, _)| format!("{a} {e}"))
+            .collect::<Vec<_>>(),
+        [
+            "create test_case",
+            "update test_case",
+            "import project",
+            "delete project"
+        ]
+    );
+    // An edited copy is told apart.
+    let d = conn();
+    let ws_d = ensure_workspace(&d).unwrap();
+    for (i, raw) in docs.iter().enumerate() {
+        let mut raw = raw.clone();
+        if i == 2 {
+            raw["payload"]["summary"] = json!("{\"rows\":99}");
+        }
+        let doc: sync::RemoteDoc = serde_json::from_value(raw).unwrap();
+        sync::apply_doc(&d, &ws_d, user, &doc).unwrap();
+    }
+    assert_eq!(
+        audit::verify_chain(&d, "web", "web", user).unwrap(),
+        Err(ChainBreak::Hash { seq: 3 })
+    );
 }
 
 // ---- sync: a pulled document is the sender's whole state (review B1) --------
