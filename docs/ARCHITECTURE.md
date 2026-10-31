@@ -764,8 +764,10 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `append-only`). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
   `append_only` (`APPEND_ONLY_ENTITIES` in `sync.schemas.ts`, today
   `audit_event`): op `append`, inserted if absent, the same content again is a
-  no-op, other content under the same id is refused in `appendRejected` and the
-  stored one stays; only the location keys (`workspaceId`, `projectId`) may
+  no-op, other content under the same id is refused in `appendRejected`
+  (`content_changed`) and the stored one stays, and an `audit_event` that claims
+  `deviceId "web"` is refused too (`reserved_chain`: only the server writes the
+  web chain, AUD-01b); only the location keys (`workspaceId`, `projectId`) may
   change; never a conflict, never tombstoned by a project delete. Only a client
   that sends `append-only` may push them, pulls them and gets `features` in the
   answers; older clients get exactly the previous answers. An upsert from a

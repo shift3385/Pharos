@@ -265,6 +265,10 @@ Extiende la decisión a lo que se edita en la web, sin cambiarla:
   así que solo el servidor alarga esa cadena y ningún cliente puede bifurcarla.
   Los escritorios tienen UUID como `device_id`; ninguno real se ve afectado.
 - **`/sync/push` no se audita:** cada equipo envía sus propios eventos.
+- **Retención:** un evento `delete` guarda en `changes` el contenido anterior
+  completo, también en el servidor. Hasta que exista la redacción (SYNC-06 y
+  Admin > Auditoría), borrar un elemento no borra lo que tenía: sigue en su
+  evento, en el servidor y en cada escritorio que lo haya recibido.
 - **Una forma canónica, dos implementaciones.** `audit.chain.ts` porta JCS
   (con el mismo rechazo de lo que queda fuera del subconjunto), `hash_of` y
   `verify_chain`. El fichero compartido
