@@ -1,9 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import type { TokenService } from "../auth/tokens";
 import { makeRequireAuth } from "../auth/middleware";
-import type { KeyConflict, RemoteDoc, SyncRepository } from "./sync.repository";
-import { keyBlocksSchema, pullSchema, pushSchema } from "./sync.schemas";
-import { requireSupportedVersion, SERVER_VERSION, understandsKeyConflicts } from "./sync.version";
+import type { AppendRejected, KeyConflict, RemoteDoc, SyncRepository } from "./sync.repository";
+import { isAppendOnly, keyBlocksSchema, pullSchema, pushSchema } from "./sync.schemas";
+import {
+  requireSupportedVersion,
+  SERVER_FEATURES,
+  SERVER_VERSION,
+  understandsAppendOnly,
+  understandsKeyConflicts,
+} from "./sync.version";
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
  *  user, and only clients of a supported version are served (SYNC-08). A delta
@@ -27,10 +33,20 @@ export function syncRoutes(
     const userId = req.userId as string;
     const conflicts: RemoteDoc[] = [];
     const keyConflicts: KeyConflict[] = [];
+    const appendRejected: AppendRejected[] = [];
     const readsKeyConflicts = understandsKeyConflicts(req);
+    // Only a client that reads `appendRejected` may push append-only documents
+    // (AUD-01); it only sends them after seeing `append-only` in `features`.
+    if (!understandsAppendOnly(req) && deltas.some((d) => isAppendOnly(d.entity))) {
+      return reply.code(400).send({
+        code: "append_only_unsupported",
+        message: "This client did not announce the append-only sync feature.",
+      });
+    }
     for (const d of deltas) {
       const res = await repo.apply(userId, d);
       if ("current" in res) conflicts.push(res.current);
+      else if ("appendRejected" in res) appendRejected.push(res.appendRejected);
       else if ("keyConflict" in res) {
         // A client built before DAT-01 would take the refused delta for an
         // accepted one and drop it. Stop it instead: nothing is marked synced
@@ -46,19 +62,23 @@ export function syncRoutes(
       }
     }
     return reply.send({
-      accepted: deltas.length - conflicts.length - keyConflicts.length,
+      accepted: deltas.length - conflicts.length - keyConflicts.length - appendRejected.length,
       conflicts,
       keyConflicts,
+      // Only for clients that know the class; older ones get today's answer.
+      ...(understandsAppendOnly(req) ? { appendRejected, features: SERVER_FEATURES } : {}),
     });
   });
 
   // Pull one page of changes after the client's cursor; `hasMore` tells the
-  // client to ask again from the returned cursor (FIX-02).
+  // client to ask again from the returned cursor (FIX-02). `features` tells the
+  // client what this server understands (AUD-01).
   app.get("/sync/pull", { preHandler }, async (req, reply) => {
     const { since, limit } = pullSchema.parse(req.query);
-    const { docs, hasMore } = await repo.since(req.userId as string, since, limit);
+    const appendOnly = understandsAppendOnly(req);
+    const { docs, hasMore } = await repo.since(req.userId as string, since, limit, { appendOnly });
     const cursor = docs.length ? docs[docs.length - 1].seq : since;
-    return reply.send({ docs, cursor, hasMore });
+    return reply.send({ docs, cursor, hasMore, ...(appendOnly ? { features: SERVER_FEATURES } : {}) });
   });
 
   // Lease blocks of key numbers so the device can number cases, requirements
