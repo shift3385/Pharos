@@ -1,13 +1,26 @@
 import type { FastifyInstance } from "fastify";
 import type { TokenService } from "../auth/tokens";
 import { makeRequireAuth } from "../auth/middleware";
-import type { AppendRejected, KeyConflict, RemoteDoc, SyncRepository } from "./sync.repository";
-import { isAppendOnly, keyBlocksSchema, pullSchema, pushSchema } from "./sync.schemas";
+import type {
+  AppendRejected,
+  KeyConflict,
+  RemoteDoc,
+  SyncRepository,
+} from "./sync.repository";
 import {
+  isAppendOnly,
+  keyBlocksSchema,
+  pullSchema,
+  pushSchema,
+} from "./sync.schemas";
+import { flattenCaseData } from "./stable-steps";
+import {
+  readOnlyClient,
   requireSupportedVersion,
   SERVER_FEATURES,
   SERVER_VERSION,
   sendsCompletePayload,
+  sendsStableSteps,
   understandsAppendOnly,
   understandsKeyConflicts,
 } from "./sync.version";
@@ -30,6 +43,9 @@ export function syncRoutes(
   // Push one batch of local pending deltas; rejected ones come back as
   // conflicts. Clients split large pushes into batches (FIX-03).
   app.post("/sync/push", { preHandler }, async (req, reply) => {
+    // A client that does not know stable steps may only read (DAT-02,
+    // VERSIONING §6.5): nothing it sends is parsed or stored.
+    if (!sendsStableSteps(req)) return readOnlyClient(reply);
     const { deltas } = pushSchema.parse(req.body);
     const userId = req.userId as string;
     const conflicts: RemoteDoc[] = [];
@@ -80,9 +96,23 @@ export function syncRoutes(
   app.get("/sync/pull", { preHandler }, async (req, reply) => {
     const { since, limit } = pullSchema.parse(req.query);
     const appendOnly = understandsAppendOnly(req);
-    const { docs, hasMore } = await repo.since(req.userId as string, since, limit, { appendOnly });
-    const cursor = docs.length ? docs[docs.length - 1].seq : since;
-    return reply.send({ docs, cursor, hasMore, ...(appendOnly ? { features: SERVER_FEATURES } : {}) });
+    const page = await repo.since(req.userId as string, since, limit, {
+      appendOnly,
+    });
+    const { hasMore } = page;
+    const cursor = page.docs.length
+      ? page.docs[page.docs.length - 1].seq
+      : since;
+    // A read-only client gets cases in the text-step shape it knows (DAT-02).
+    const docs = sendsStableSteps(req)
+      ? page.docs
+      : page.docs.map(asLegacyCase);
+    return reply.send({
+      docs,
+      cursor,
+      hasMore,
+      ...(appendOnly ? { features: SERVER_FEATURES } : {}),
+    });
   });
 
   // Lease blocks of key numbers so the device can number cases, requirements
@@ -91,4 +121,21 @@ export function syncRoutes(
     const { requests } = keyBlocksSchema.parse(req.body);
     return reply.send(await repo.leaseBlocks(req.userId as string, requests));
   });
+}
+
+/** A test_case document as clients without `stable-steps` know it. */
+function asLegacyCase(doc: RemoteDoc): RemoteDoc {
+  if (
+    doc.entity !== "test_case" ||
+    doc.deleted ||
+    !doc.payload ||
+    typeof doc.payload !== "object"
+  )
+    return doc;
+  const payload = doc.payload as Record<string, unknown>;
+  if (!("data" in payload)) return doc;
+  return {
+    ...doc,
+    payload: { ...payload, data: flattenCaseData(payload.data) },
+  };
 }

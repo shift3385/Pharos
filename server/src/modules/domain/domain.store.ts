@@ -6,6 +6,7 @@ import {
   KEY_SQL,
   leaseRange,
   LOCK_USER_SQL,
+  storeAppend,
   storeDoc,
   takenKey,
   toDoc,
@@ -30,7 +31,19 @@ export interface DomainTx {
   /** The next number of a project's key series, never handed out before. */
   nextNumber(projectId: string, kind: KeyKind, prefix: string): Promise<number>;
   /** Stores the next version of an entity (or its tombstone) and returns it. */
-  put(entity: string, id: string, payload: Record<string, unknown>, current: RemoteDoc | null, deleted?: boolean): Promise<RemoteDoc>;
+  put(
+    entity: string,
+    id: string,
+    payload: Record<string, unknown>,
+    current: RemoteDoc | null,
+    deleted?: boolean,
+  ): Promise<RemoteDoc>;
+  /** Stores an append-only document (a case revision, DAT-02) if absent. */
+  append(
+    entity: string,
+    id: string,
+    payload: Record<string, unknown>,
+  ): Promise<void>;
 }
 
 /** 409 with the version the server keeps: the item changed since the client
@@ -93,6 +106,23 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
         }
         await storeDoc(client, userId, delta);
         return { ...delta, deleted, seq: 0 };
+      },
+      async append(entity, id, payload) {
+        const res = await storeAppend(client, userId, {
+          entity: entity as never,
+          entityId: id,
+          op: "append",
+          payload,
+          revision: 1,
+          author: userId,
+          hlc: String(payload.hlc ?? ""),
+        });
+        if (!res.accepted)
+          throw new AppError(
+            409,
+            "append_rejected",
+            "This revision already exists with other content.",
+          );
       },
     };
   }

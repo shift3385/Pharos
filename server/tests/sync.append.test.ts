@@ -30,16 +30,23 @@ async function tokenFor(email = "append@pharos.dev"): Promise<string> {
   return res.json().accessToken as string;
 }
 
-/** Headers of an E1 desktop, and of a 0.2.0-alpha.1 one (same version string). */
+/** Headers of a current desktop, and of a 0.2.0-alpha.1 one (same version string). */
 const current = (token: string) => ({
   authorization: `Bearer ${token}`,
   [VERSION_HEADER]: SERVER_VERSION,
-  [FEATURES_HEADER]: "key-conflicts,append-only,complete-payload",
+  [FEATURES_HEADER]: "key-conflicts,append-only,complete-payload,stable-steps",
 });
 const alpha1 = (token: string) => ({
   authorization: `Bearer ${token}`,
   [VERSION_HEADER]: SERVER_VERSION,
   [FEATURES_HEADER]: "key-conflicts",
+});
+/** A client that may push (stable-steps) but sends neither `append-only` nor
+ *  `complete-payload`: it reaches the paths kept for older builds. */
+const merging = (token: string) => ({
+  authorization: `Bearer ${token}`,
+  [VERSION_HEADER]: SERVER_VERSION,
+  [FEATURES_HEADER]: "key-conflicts,stable-steps",
 });
 
 const H = (wall: number, device = "desk") => `${String(wall).padStart(15, "0")}-00000-${device}`;
@@ -165,9 +172,29 @@ describe("append_only sync class", () => {
 });
 
 describe("older clients (0.1.x, 0.2.0-alpha.1)", () => {
-  it("cannot push append-only documents and nothing is written", async () => {
+  it("may only read (DAT-02): every push is refused with 426 and nothing is written", async () => {
     const token = await tokenFor();
-    const res = await push(alpha1(token), [event("e1")]);
+    const lww = {
+      entity: "project",
+      entityId: "p1",
+      op: "upsert",
+      payload: { name: "P" },
+      hlc: H(10),
+    };
+    for (const deltas of [[event("e1")], [lww], []]) {
+      const res = await push(alpha1(token), deltas);
+      expect(res.statusCode).toBe(426);
+      expect(res.json().code).toBe("read_only_client_version");
+      expect(res.json().message).toMatch(/actualiza Pharos/);
+    }
+    expect(
+      (await pool.query("SELECT count(*)::int AS n FROM documents")).rows[0].n,
+    ).toBe(0);
+  });
+
+  it("a client that may push but not append-only cannot push append-only documents", async () => {
+    const token = await tokenFor();
+    const res = await push(merging(token), [event("e1")]);
     expect(res.statusCode).toBe(400);
     expect(res.json().code).toBe("append_only_unsupported");
     expect((await pool.query("SELECT count(*)::int AS n FROM documents")).rows[0].n).toBe(0);
@@ -176,8 +203,14 @@ describe("older clients (0.1.x, 0.2.0-alpha.1)", () => {
   it("get today's answers: no append-only documents in the pull, no new fields", async () => {
     const token = await tokenFor();
     await push(current(token), [event("e1")]);
-    const lww = { entity: "project", entityId: "p1", op: "upsert", payload: { name: "P" }, hlc: H(10) };
-    expect((await push(alpha1(token), [lww])).json()).toEqual({ accepted: 1, conflicts: [], keyConflicts: [] });
+    const lww = {
+      entity: "project",
+      entityId: "p1",
+      op: "upsert",
+      payload: { name: "P" },
+      hlc: H(10),
+    };
+    expect((await push(current(token), [lww])).statusCode).toBe(200);
     const body = await pull(alpha1(token));
     expect(Object.keys(body).sort()).toEqual(["cursor", "docs", "hasMore"]);
     expect(body.docs.map((d: { entity: string }) => d.entity)).toEqual(["project"]);
@@ -194,7 +227,7 @@ describe("older clients (0.1.x, 0.2.0-alpha.1)", () => {
   });
 });
 
-describe("an old client's upsert keeps the keys it leaves out", () => {
+describe("an upsert without complete-payload keeps the keys it leaves out", () => {
   const caseDelta = (payload: Record<string, unknown>, wall: number) => ({
     entity: "test_case",
     entityId: "c1",
@@ -210,7 +243,7 @@ describe("an old client's upsert keeps the keys it leaves out", () => {
     };
 
   it("keeps top-level keys and data keys one level deep; null clears", async () => {
-    const h = alpha1(await tokenFor());
+    const h = merging(await tokenFor());
     await push(h, [
       caseDelta(
         {
@@ -239,8 +272,13 @@ describe("an old client's upsert keeps the keys it leaves out", () => {
   });
 
   it("never brings back a tombstone's content, nor merges into a delete", async () => {
-    const h = alpha1(await tokenFor());
-    await push(h, [caseDelta({ title: "Login", caseType: "functional", data: { custom: { a: 1 } } }, 1)]);
+    const h = merging(await tokenFor());
+    await push(h, [
+      caseDelta(
+        { title: "Login", caseType: "functional", data: { custom: { a: 1 } } },
+        1,
+      ),
+    ]);
     await push(h, [{ ...caseDelta({ title: "Login" }, 2), op: "delete" }]);
     expect(await stored()).toEqual({ payload: { title: "Login" }, deleted: true });
     // A later upsert recreates it from its own payload only.
@@ -249,7 +287,7 @@ describe("an old client's upsert keeps the keys it leaves out", () => {
   });
 
   it("a push with the stored HLC stays a no-op and does not advance seq (unchanged)", async () => {
-    const h = alpha1(await tokenFor());
+    const h = merging(await tokenFor());
     const d = caseDelta({ title: "Login", data: { steps: [] } }, 1);
     await push(h, [d]);
     const seq = await seqOf("test_case", "c1");
@@ -284,15 +322,30 @@ describe("a current client clears a key by leaving it out (review B1)", () => {
     const doc = (await pull(h)).docs.find((d: { entityId: string }) => d.entityId === "c1");
     expect(doc.payload).toEqual({ title: "Login", data: { steps: ["a"] } });
     // An old client that does not know `caseType` cannot reset it.
-    await push(h, [caseDelta({ title: "Login", caseType: "functional", data: { steps: ["a"] } }, 3)]);
-    await push(alpha1(token), [caseDelta({ title: "Login v2", data: { steps: ["a", "b"] } }, 4)]);
-    expect(await stored("c1")).toEqual({ title: "Login v2", caseType: "functional", data: { steps: ["a", "b"] } });
+    await push(h, [
+      caseDelta(
+        { title: "Login", caseType: "functional", data: { steps: ["a"] } },
+        3,
+      ),
+    ]);
+    await push(merging(token), [
+      caseDelta({ title: "Login v2", data: { steps: ["a", "b"] } }, 4),
+    ]);
+    expect(await stored("c1")).toEqual({
+      title: "Login v2",
+      caseType: "functional",
+      data: { steps: ["a", "b"] },
+    });
   });
 
   it("a web edit that clears the date and goes back to basic keeps them cleared after a reload", async () => {
     const token = await tokenFor("web-clear@pharos.dev");
-    const headers = { ...alpha1(token) };
-    const call = async (method: "GET" | "POST" | "PUT", url: string, payload?: object) => {
+    const headers = { ...merging(token) };
+    const call = async (
+      method: "GET" | "POST" | "PUT",
+      url: string,
+      payload?: object,
+    ) => {
       const res = await app.inject({ method, url, headers, payload });
       return res.json();
     };
@@ -312,6 +365,14 @@ describe("a current client clears a key by leaving it out (review B1)", () => {
       revision: created.revision,
     });
     const reloaded = await call("GET", `/api/test-cases/${created.id}`);
-    expect(reloaded.data).toEqual({ gherkinLevel: "basic", steps: ["a"] });
+    // Only what the edit sent is left; its steps carry stable ids (DAT-02).
+    expect(Object.keys(reloaded.data).sort()).toEqual([
+      "gherkinLevel",
+      "steps",
+    ]);
+    expect(reloaded.data.gherkinLevel).toBe("basic");
+    expect(reloaded.data.steps.map((s: { text: string }) => s.text)).toEqual([
+      "a",
+    ]);
   });
 });

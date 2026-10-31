@@ -10,7 +10,10 @@ export const LWW_ENTITIES = ["project", "test_plan", "test_case", "requirement",
  *  one is one line here and one in the desktop's `sync_class.rs`; add it to
  *  `PROJECT_CHILDREN` too if deleting its project must tombstone it. Only
  *  clients that send the `append-only` feature push or pull them. */
-export const APPEND_ONLY_ENTITIES = ["audit_event"] as const;
+export const APPEND_ONLY_ENTITIES = [
+  "audit_event",
+  "test_case_revision",
+] as const;
 
 /** Every entity that syncs, of either class. */
 export const SYNCED_ENTITIES = [...LWW_ENTITIES, ...APPEND_ONLY_ENTITIES] as const;
@@ -22,6 +25,23 @@ export const isAppendOnly = (entity: string): boolean =>
  *  it is: they stay outside its immutable content (design §3.5), so moving a
  *  project between workspaces (ADR-0019) is not a content change. */
 export const LOCATION_KEYS = ["workspaceId", "projectId"] as const;
+
+/** Further payload keys of an append-only entity that are bookkeeping, not
+ *  content: two devices may write the same document with different values
+ *  here, and it is still the same document (a no-op, not `appendRejected`),
+ *  and they never change once stored. A case revision's content is what its
+ *  hash covers (ADR-0011 rule 2): timestamps, authors and the clock stay out. */
+export const NON_CONTENT_KEYS: Partial<
+  Record<(typeof APPEND_ONLY_ENTITIES)[number], readonly string[]>
+> = {
+  test_case_revision: ["createdAt", "createdBy", "hlc"],
+};
+
+/** Every payload key of `entity` outside its immutable content. */
+export const outsideContent = (entity: string): readonly string[] => [
+  ...LOCATION_KEYS,
+  ...(NON_CONTENT_KEYS[entity as (typeof APPEND_ONLY_ENTITIES)[number]] ?? []),
+];
 
 /** Children removed with their project (FIX-05): their payload carries
  *  `projectId`. */
