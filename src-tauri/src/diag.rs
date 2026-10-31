@@ -832,6 +832,8 @@ mod tests {
         assert!(bundle.logs.is_empty());
         assert_eq!(bundle.manifest.app.version, env!("CARGO_PKG_VERSION"));
         assert!(!bundle.manifest.database.migrations.is_empty());
+        // AUD-01: pending audit events are counted (no ids, no content).
+        assert_eq!(bundle.manifest.database.pending_audit_events, Some(0));
         let no_log_dir =
             build_bundle(Some(&conn), None, None, ClientInfo::default(), "x".into()).unwrap();
         assert!(no_log_dir.logs.is_empty());
