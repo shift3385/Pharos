@@ -4,6 +4,9 @@ import { Link } from "react-router";
 import {
   ArrowLeftRight,
   Bot,
+  Hand,
+  Hourglass,
+  type LucideIcon,
   Download,
   Flag,
   Layers,
@@ -65,6 +68,24 @@ import {
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
+
+const AUTOMATION_ICON: Record<AutomationStatus, LucideIcon> = {
+  manual: Hand,
+  to_automate: Hourglass,
+  automated: Bot,
+};
+
+/** Windows at least this wide show every column of the case table. */
+const WIDE_MIN = 1400;
+function useWideWindow(): boolean {
+  const [wide, setWide] = useState(() => window.innerWidth >= WIDE_MIN);
+  useEffect(() => {
+    const onResize = () => setWide(window.innerWidth >= WIDE_MIN);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return wide;
+}
 
 /**
  * Casos · lista (SPEC §8, RED-V3): the full table with search, state chips,
@@ -128,6 +149,7 @@ export function TestCaseList({
   const { t, i18n } = useTranslation();
   const view = useBreakpoint();
   const mobile = view === "mobile";
+  const wide = useWideWindow();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   // A filter never leaves cases selected that it hides: the selection keeps
@@ -191,12 +213,19 @@ export function TestCaseList({
             label: `${f.label}: ${o.label}`,
           })),
   );
-  const automationPill = (c: ListedCase) => {
+  // The automation status as an icon next to the ID (the user's decision,
+  // FLD-01): named for screen readers, its status in the tooltip.
+  const automationMark = (c: ListedCase) => {
     const a = effectiveAutomation(c.automationStatus);
+    const Icon = AUTOMATION_ICON[a];
+    const label = t("testCase.list.automationMark", {
+      status: t(`testCase.automationLabel.${a}`),
+    });
     return (
-      <StatusPill tone={automationTone(a)}>
-        {t(`testCase.automationLabel.${a}`)}
-      </StatusPill>
+      <span className="cl-automation" data-tone={automationTone(a)} title={label}>
+        <Icon size={14} aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </span>
     );
   };
   const checklistMark = (c: ListedCase) =>
@@ -245,6 +274,7 @@ export function TestCaseList({
           <span className="cl-id" title={c.scenarioId}>
             {c.scenarioId}
           </span>
+          {automationMark(c)}
           {checklistMark(c)}
         </span>
       ),
@@ -279,20 +309,19 @@ export function TestCaseList({
       cell: (c) => <span className="cl-ellipsis">{t(`testCase.level.${c.gherkinLevel}.name`)}</span>,
     },
     { id: "status", header: t("testCase.list.col.status"), width: "104px", sortable: true, cell: statusPill },
-    {
-      id: "automation",
-      header: t("testCase.list.col.automation"),
-      width: "120px",
-      minView: "tablet",
-      cell: automationPill,
-    },
-    {
-      id: "execution",
-      header: t("testCase.list.col.execution"),
-      width: "128px",
-      minView: "desktop",
-      cell: () => execution,
-    },
+    // A placeholder until manual execution (step 7): on a narrower desktop
+    // its width goes to the titles (FLD-01 review 7).
+    ...(wide
+      ? [
+          {
+            id: "execution",
+            header: t("testCase.list.col.execution"),
+            width: "128px",
+            minView: "desktop" as const,
+            cell: () => execution,
+          },
+        ]
+      : []),
     {
       id: "updated",
       header: t("testCase.list.col.edited"),

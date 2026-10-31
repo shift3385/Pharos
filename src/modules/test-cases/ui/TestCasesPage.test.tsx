@@ -365,7 +365,7 @@ const SPRINT = {
 };
 
 describe("Casos · tipo, automatización y campos (FLD-01)", () => {
-  it("shows the automation column and the checklist mark, and filters by both", async () => {
+  it("shows the automation status and the checklist mark next to the ID, and filters by both", async () => {
     setViewportWidth(1440);
     list.mockResolvedValue([
       summary(1, { title: "Manual", automationStatus: null }),
@@ -379,8 +379,10 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     fieldList.mockResolvedValue([SPRINT]);
     renderPage();
     const table = await screen.findByRole("table", { name: "Casos de prueba" });
-    expect(within(table).getAllByText("Manual").length).toBeGreaterThan(0);
-    expect(within(table).getByText("Automatizado")).toBeInTheDocument();
+    // No column of its own: an icon next to the ID, named and with a tooltip.
+    expect(within(table).queryByRole("columnheader", { name: "Automatización" })).toBeNull();
+    expect(within(table).getAllByTitle("Automatización: Manual")).toHaveLength(2);
+    expect(within(table).getByTitle("Automatización: Automatizado")).toHaveTextContent("Automatización: Automatizado");
     expect(within(table).getAllByTitle("Checklist")).toHaveLength(1);
 
     await userEvent.click(

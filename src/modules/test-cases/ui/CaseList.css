@@ -108,6 +108,23 @@
   min-width: 0;
 }
 
+/* Automation status next to the ID: the tone only adds to the tooltip and
+   the accessible name, never replaces them. */
+.cl-automation {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  color: var(--color-text-muted);
+}
+
+.cl-automation[data-tone="success"] {
+  color: var(--color-success-text);
+}
+
+.cl-automation[data-tone="warning"] {
+  color: var(--color-warning-text);
+}
+
 .cl-checklist {
   display: inline-grid;
   flex: none;

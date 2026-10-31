@@ -1167,7 +1167,8 @@
       "deleteFailed_other": "No se pudieron eliminar {{count}} casos; siguen en la lista.",
       "checklistMark": "Checklist",
       "featuresSkipped_one": "{{count}} checklist no se exporta a .feature.",
-      "featuresSkipped_other": "{{count}} checklists no se exportan a .feature."
+      "featuresSkipped_other": "{{count}} checklists no se exportan a .feature.",
+      "automationMark": "Automatización: {{status}}"
     },
     "nav": {
       "allCases": "Todos los casos",
