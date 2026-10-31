@@ -755,6 +755,89 @@ fn a_pulled_event_is_inserted_once_never_changed_and_never_echoed() {
     assert_eq!(owner, U);
 }
 
+// ---- the web's chain (AUD-01b): vectors shared with the server --------------
+
+fn shared_vectors() -> Value {
+    serde_json::from_str(include_str!(
+        "../../src/shared/contracts/fixtures/audit/chain.json"
+    ))
+    .unwrap()
+}
+
+#[test]
+fn jcs_gives_the_canonical_forms_the_server_gives() {
+    let fixture = shared_vectors();
+    for case in fixture["jcs"].as_array().unwrap() {
+        assert_eq!(
+            audit::jcs(&case["value"]).unwrap(),
+            case["canonical"].as_str().unwrap(),
+            "{}",
+            case["value"]
+        );
+    }
+    for value in fixture["refused"].as_array().unwrap() {
+        let err = audit::jcs(value).unwrap_err();
+        assert!(err.contains("outside the audit subset"), "{value}: {err}");
+    }
+}
+
+/// A web chain exactly as `/sync/pull` returns it (built by the server's
+/// `audit.store.ts`): the desktop stores it through the real pull path and
+/// `verify_chain` accepts it under ("web", "web", user).
+#[test]
+fn a_pulled_web_chain_is_stored_and_verifies() {
+    let fixture = shared_vectors();
+    let user = fixture["userId"].as_str().unwrap();
+    let docs = fixture["docs"].as_array().unwrap();
+    assert_eq!(docs.len(), 4);
+    let c = conn();
+    let ws = ensure_workspace(&c).unwrap();
+    for raw in docs {
+        let doc: sync::RemoteDoc = serde_json::from_value(raw.clone()).unwrap();
+        sync::apply_doc(&c, &ws, user, &doc).unwrap();
+    }
+    assert_eq!(audit::verify_chain(&c, "web", "web", user).unwrap(), Ok(4));
+    // Filed under this device's workspace (the server sends none), owned by
+    // the account, and nothing echoed to the oplog.
+    assert_eq!(
+        count(
+            &c,
+            &format!(
+                "SELECT count(*) FROM audit_log WHERE workspace_id = '{ws}' AND user_id = '{user}'"
+            )
+        ),
+        4
+    );
+    assert_eq!(count(&c, "SELECT count(*) FROM oplog"), 0);
+    assert_eq!(
+        actions(&c)
+            .into_iter()
+            .map(|(a, e, _)| format!("{a} {e}"))
+            .collect::<Vec<_>>(),
+        [
+            "create test_case",
+            "update test_case",
+            "import project",
+            "delete project"
+        ]
+    );
+    // An edited copy is told apart.
+    let d = conn();
+    let ws_d = ensure_workspace(&d).unwrap();
+    for (i, raw) in docs.iter().enumerate() {
+        let mut raw = raw.clone();
+        if i == 2 {
+            raw["payload"]["summary"] = json!("{\"rows\":99}");
+        }
+        let doc: sync::RemoteDoc = serde_json::from_value(raw).unwrap();
+        sync::apply_doc(&d, &ws_d, user, &doc).unwrap();
+    }
+    assert_eq!(
+        audit::verify_chain(&d, "web", "web", user).unwrap(),
+        Err(ChainBreak::Hash { seq: 3 })
+    );
+}
+
 // ---- sync: a pulled document is the sender's whole state (review B1) --------
 
 /// Pushes everything pending of `user` on `c` (as accepted) and returns the
