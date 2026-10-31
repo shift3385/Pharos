@@ -119,12 +119,12 @@
     },
     {
       "entity": "custom_field",
-      "entityId": "49d39e0c-c1b9-53ab-936f-c996e60b80a6",
+      "entityId": "5caacf7d-9b64-5c96-9eb1-1c44d45c6507",
       "revision": 1,
       "deleted": false,
       "hlc": "001730000000005-00000-dev-a",
       "payload": {
-        "id": "49d39e0c-c1b9-53ab-936f-c996e60b80a6",
+        "id": "5caacf7d-9b64-5c96-9eb1-1c44d45c6507",
         "workspaceId": "local",
         "projectId": "p-fixture",
         "entity": "test_case",

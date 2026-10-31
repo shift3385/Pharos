@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FIELD_ENTITIES, fieldId, validKey } from "../domain/custom-fields";
 
 /** Entities of the `lww` sync class (Phase 8B core + SYNC-04a requirements
  *  and planner cards, EJE-01 runs, run items and unlinked mappings, FLD-01
@@ -163,6 +164,24 @@ export const deltaSchema = z
     path: ["op"],
   })
   .superRefine((d, ctx) => {
+    // A custom field is its id: project, entity and key derive it (FLD-01),
+    // so none of them can change under an existing id.
+    if (d.entity === "custom_field" && d.op === "upsert") {
+      const p = d.payload;
+      const ok =
+        typeof p.projectId === "string" &&
+        (FIELD_ENTITIES as readonly unknown[]).includes(p.entity) &&
+        typeof p.fieldKey === "string" &&
+        validKey(p.fieldKey) &&
+        typeof p.fieldType === "string" &&
+        d.entityId === fieldId(p.projectId, p.entity as string, p.fieldKey);
+      if (!ok)
+        ctx.addIssue({
+          code: "custom",
+          message: "A custom field's id must be fieldId(projectId, entity, fieldKey).",
+          path: ["entityId"],
+        });
+    }
     const schema = d.op === "delete" ? undefined : EXECUTION_PAYLOADS[d.entity];
     const parsed = schema?.safeParse(d.payload);
     if (parsed && !parsed.success) {

@@ -357,6 +357,22 @@ export function createSyncRepository(pool: Pool) {
      *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
      *  client is old and its upserts keep the keys it left out (`storeDoc`);
      *  `keep` / `keepData`: keys of features it lacks (FLD-01, EJE-01). */
+    /** Ids of `custom_field` deltas whose stored live field has another
+     *  `fieldType`: the type never changes (FLD-01, ADR-0018). */
+    async changedFieldTypes(userId: string, deltas: Delta[]): Promise<string[]> {
+      const pushed = deltas.filter((d) => d.entity === "custom_field" && d.op === "upsert");
+      if (pushed.length === 0) return [];
+      const { rows } = await pool.query<{ entity_id: string; field_type: string | null }>(
+        `SELECT entity_id, payload->>'fieldType' AS field_type FROM documents
+          WHERE user_id = $1 AND entity = 'custom_field' AND NOT deleted AND entity_id = ANY($2::text[])`,
+        [userId, pushed.map((d) => d.entityId)],
+      );
+      const stored = new Map(rows.map((r) => [r.entity_id, r.field_type]));
+      return pushed
+        .filter((d) => stored.has(d.entityId) && stored.get(d.entityId) !== d.payload.fieldType)
+        .map((d) => d.entityId);
+    },
+
     async apply(userId: string, d: Delta, opts: StoreOpts = { merge: false }): Promise<ApplyResult> {
       const client = await pool.connect();
       try {

@@ -56,6 +56,15 @@ export function syncRoutes(
     // VERSIONING §6.5): nothing it sends is parsed or stored.
     if (!sendsStableSteps(req)) return readOnlyClient(reply);
     const { deltas } = pushSchema.parse(req.body);
+    // A custom field's type never changes (FLD-01): nothing of the batch is
+    // stored if one tries.
+    const retyped = await repo.changedFieldTypes(req.userId as string, deltas);
+    if (retyped.length > 0) {
+      return reply.code(400).send({
+        code: "custom_field_immutable",
+        message: `The type of custom field ${retyped[0]} cannot change.`,
+      });
+    }
     const userId = req.userId as string;
     const conflicts: RemoteDoc[] = [];
     const keyConflicts: KeyConflict[] = [];

@@ -146,6 +146,19 @@ describe("custom fields sync", () => {
     expect((await stored("custom_field", fieldDoc().entityId))?.deleted).toBe(true);
   });
 
+  it("refuses a field whose id does not derive from it, or whose type changes", async () => {
+    const h = current(await tokenFor());
+    const bad = await push(h, [{ ...fieldDoc(), entityId: "made-up" }]);
+    expect(bad.statusCode).toBe(400);
+    const moved = await push(h, [fieldDoc({ projectId: "p2" })]);
+    expect(moved.statusCode).toBe(400);
+    expect((await push(h, [fieldDoc()])).json().accepted).toBe(1);
+    const retyped = await push(h, [{ ...fieldDoc({ fieldType: "text" }), revision: 2, hlc: H(9), baseRevision: 1, baseHlc: H(5) }]);
+    expect(retyped.statusCode).toBe(400);
+    expect(retyped.json().code).toBe("custom_field_immutable");
+    expect((await stored("custom_field", fieldDoc().entityId))?.payload.fieldType).toBe("select");
+  });
+
   it("a test_case push from a client without custom-fields keeps the case fields", async () => {
     const token = await tokenFor();
     await push(current(token), [
