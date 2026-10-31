@@ -1,0 +1,153 @@
+{
+  "reportFormat": "CTRF",
+  "specVersion": "0.2.0",
+  "reportId": "f7327460-2745-48d6-949e-baf591c33687",
+  "timestamp": "2026-10-27T03:53:30.050Z",
+  "generatedBy": "playwright-ctrf-json-reporter",
+  "results": {
+    "tool": {
+      "name": "playwright",
+      "version": "1.64.1"
+    },
+    "summary": {
+      "tests": 2,
+      "passed": 1,
+      "failed": 1,
+      "pending": 0,
+      "skipped": 0,
+      "other": 0,
+      "start": 1793073210206,
+      "stop": 1793073211740,
+      "duration": 1534,
+      "suites": 5
+    },
+    "tests": [
+      {
+        "testId": "87eeb78f3f16ad2ab0ca-ee329bd62e1687978534",
+        "executionId": "d97ec504-8f6f-4f35-a527-37f7d981f56d",
+        "attemptId": "419963b3-9937-4352-9e8d-6a68e7187dfe",
+        "name": "Example #2",
+        "status": "failed",
+        "duration": 27,
+        "start": 1793073211597,
+        "stop": 1793073211624,
+        "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (steps/steps.js:8:60)\n    at .features-gen/features/auth.feature.spec.js:21:7",
+        "snippet": "   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');",
+        "rawStatus": "failed",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "type": "e2e",
+        "filePath": ".features-gen/features/auth.feature.spec.js",
+        "retries": 1,
+        "flaky": false,
+        "steps": [
+          {
+            "name": "When inicia sesion con \"z@y\" y \"peor\"",
+            "status": "passed"
+          },
+          {
+            "name": "Then el resultado es \"fallo\"",
+            "status": "failed"
+          }
+        ],
+        "suite": [
+          "features\\auth.feature.spec.js",
+          "Autenticacion",
+          "Login rechazado"
+        ],
+        "attachments": [
+          {
+            "attachmentId": "6b2dba2e-5d8f-4c74-bc36-c446270d4f36",
+            "name": "error-context",
+            "contentType": "text/markdown",
+            "path": "test-results/features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2-retry1/error-context.md"
+          }
+        ],
+        "stdout": [],
+        "stderr": [],
+        "retryAttempts": [
+          {
+            "attempt": 1,
+            "attemptId": "df24a399-f6e7-4dce-aa7b-d5b7d03a3d55",
+            "status": "failed",
+            "duration": 23,
+            "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+            "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (steps/steps.js:8:60)\n    at .features-gen/features/auth.feature.spec.js:21:7",
+            "snippet": "   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');",
+            "attachments": [
+              {
+                "attachmentId": "78da3e71-95a6-455f-83b1-cdd9c3cfaeda",
+                "name": "error-context",
+                "contentType": "text/markdown",
+                "path": "test-results/features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2/error-context.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "testId": "8730573857dc6259c5ba-aaef8b1bf326aff6ec89",
+        "executionId": "3af88558-81e0-4382-8694-0e792edc9343",
+        "attemptId": "2ed441c4-6a33-4de5-be17-485326ec25c7",
+        "name": "Reintento de sesion expirada",
+        "status": "passed",
+        "duration": 16,
+        "start": 1793073211587,
+        "stop": 1793073211603,
+        "rawStatus": "passed",
+        "tags": [
+          "@REQ-015",
+          "@TC-003",
+          "@flaky-demo"
+        ],
+        "type": "e2e",
+        "filePath": ".features-gen/features/flaky.feature.spec.js",
+        "retries": 1,
+        "flaky": true,
+        "steps": [
+          {
+            "name": "Given la sesion esta expirada",
+            "status": "passed"
+          },
+          {
+            "name": "Then la sesion se renueva al segundo intento",
+            "status": "passed"
+          }
+        ],
+        "suite": [
+          "features\\flaky.feature.spec.js",
+          "Sesion"
+        ],
+        "attachments": [],
+        "stdout": [],
+        "stderr": [],
+        "retryAttempts": [
+          {
+            "attempt": 1,
+            "attemptId": "f6030447-dddb-4983-8822-c5bfbb346a9c",
+            "status": "failed",
+            "duration": 20,
+            "message": "Error: first attempt fails (flaky demo)",
+            "trace": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (steps/steps.js:11:36)\n    at .features-gen/features/flaky.feature.spec.js:8:5",
+            "snippet": "   at ..\\steps\\steps.js:11\n\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n> 11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n     |                                    ^\n  12 | });\n  13 |",
+            "attachments": [
+              {
+                "attachmentId": "cb9e3f1c-671a-429f-b665-c763f699c4dd",
+                "name": "error-context",
+                "contentType": "text/markdown",
+                "path": "test-results/features-flaky.feature-Sesion-Reintento-de-sesion-expirada/error-context.md"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "environment": {
+      "shardId": "2-of-2"
+    }
+  }
+}

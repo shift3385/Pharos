@@ -135,6 +135,18 @@ resolution can be added without a schema change.
   for the account (`sync_server_features_set`); until a server lists `stable-steps`,
   `oplog_pending` leaves test cases and revisions out, and the first sync
   that sees it pushes them right after the pull.
+- **Runs (EJE-01).** The client sends `runs` too: it pushes and pulls `run`,
+  `run_item` and `unlinked_mapping` (lww) and `run_shard` and `result`
+  (append-only, a result with its step results inside), and asks for `run`
+  key blocks. Until the account's server lists `runs`, `oplog_pending` leaves
+  them out and no `run` block is requested (an older server would refuse the
+  whole request); the diagnostics count them (`heldBackRuns`). The server only
+  sends them to clients with `runs`, refuses their push without it (400
+  `runs_unsupported`) and, for a client without it, keeps the risk of a
+  requirement it pushes. A project delete tombstones all five on the server;
+  the desktop ignores an append-only tombstone and drops the rows with the
+  purge of their run (`purged_run:<id>` keeps a re-pull from bringing them
+  back).
 - **Cursor reset.** `sync_cursor_get` returns `0` when the cursor was stored
   under an older set of applied entities (`cursor_set:<user_id>` ≠
   `APPLIED_SET_VERSION`): an older build moved its cursor past documents it

@@ -5,7 +5,8 @@
     "registeredIn": "src-tauri/src/db.rs",
     "reserved": {},
     "retired": {
-      "0014": "A1 spare, never used; A1 merged with 0012-0013"
+      "0014": "A1 spare, never used; A1 merged with 0012-0013",
+      "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024"
     }
   },
   "server": {

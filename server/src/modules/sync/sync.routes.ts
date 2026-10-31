@@ -8,7 +8,9 @@ import type {
   SyncRepository,
 } from "./sync.repository";
 import {
+  FEATURE_KEYS,
   isAppendOnly,
+  isExecution,
   keyBlocksSchema,
   pullSchema,
   pushSchema,
@@ -20,9 +22,11 @@ import {
   SERVER_FEATURES,
   SERVER_VERSION,
   sendsCompletePayload,
+  missingFeatures,
   sendsStableSteps,
   understandsAppendOnly,
   understandsKeyConflicts,
+  understandsRuns,
 } from "./sync.version";
 
 /** Delta sync endpoints (spec §9). Everything is scoped to the authenticated
@@ -60,11 +64,21 @@ export function syncRoutes(
         message: "This client did not announce the append-only sync feature.",
       });
     }
+    // Nor can an execution entity come from a client that never pulls them.
+    if (!understandsRuns(req) && deltas.some((d) => isExecution(d.entity))) {
+      return reply.code(400).send({
+        code: "runs_unsupported",
+        message: "This client did not announce the runs sync feature.",
+      });
+    }
     // An old client (no `complete-payload`) never resets a field it does not
-    // know: its upserts keep the keys it leaves out.
+    // know: its upserts keep the keys it leaves out. A newer one that lacks a
+    // feature keeps the keys that feature added (`FEATURE_KEYS`).
     const merge = !sendsCompletePayload(req);
+    const missing = missingFeatures(req);
+    const keepFor = (entity: string) => missing.flatMap((f) => FEATURE_KEYS[f]?.[entity] ?? []);
     for (const d of deltas) {
-      const res = await repo.apply(userId, d, { merge });
+      const res = await repo.apply(userId, d, { merge, keep: keepFor(d.entity) });
       if ("current" in res) conflicts.push(res.current);
       else if ("appendRejected" in res) appendRejected.push(res.appendRejected);
       else if ("keyConflict" in res) {
@@ -98,6 +112,7 @@ export function syncRoutes(
     const appendOnly = understandsAppendOnly(req);
     const page = await repo.since(req.userId as string, since, limit, {
       appendOnly,
+      runs: understandsRuns(req),
     });
     const { hasMore } = page;
     const cursor = page.docs.length

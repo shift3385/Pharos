@@ -36,7 +36,7 @@ fn table_for(entity: &str) -> Option<&'static str> {
         "test_case" => Some("test_cases"),
         "requirement" => Some("requirements"),
         "planner_card" => Some("planner_cards"),
-        _ => None,
+        other => crate::runs::table_for(other),
     }
 }
 
@@ -124,6 +124,9 @@ pub(crate) fn read_payload(
     entity: &str,
     id: &str,
 ) -> Result<Option<PayloadRow>, String> {
+    if crate::runs::table_for(entity).is_some() {
+        return crate::runs::read_payload(conn, entity, id);
+    }
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
             "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
@@ -197,7 +200,8 @@ pub(crate) fn read_payload(
         ),
         "requirement" => (
             "SELECT id, workspace_id, project_id, requirement_key, title, description, priority,
-                    created_at, updated_at, revision, deleted_at FROM requirements WHERE id = ?1",
+                    risk_likelihood, risk_impact, created_at, updated_at, revision, deleted_at
+               FROM requirements WHERE id = ?1",
             |r| {
                 Ok((
                     json!({
@@ -208,6 +212,8 @@ pub(crate) fn read_payload(
                         "title": r.get::<_, String>("title")?,
                         "description": r.get::<_, String>("description")?,
                         "priority": r.get::<_, String>("priority")?,
+                        "riskLikelihood": r.get::<_, Option<i64>>("risk_likelihood")?,
+                        "riskImpact": r.get::<_, Option<i64>>("risk_impact")?,
                         "createdAt": r.get::<_, String>("created_at")?,
                         "updatedAt": r.get::<_, String>("updated_at")?,
                         "revision": r.get::<_, i64>("revision")?,
@@ -350,13 +356,30 @@ pub(crate) const STABLE_STEPS: &str = "stable-steps";
 /// pending: a server without it would hand their new shape to clients that
 /// only know text steps, and would refuse the revisions.
 pub(crate) fn server_takes_stable_steps(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, STABLE_STEPS)
+}
+
+/// The server feature that stores the execution entities (EJE-01, ADR-0013):
+/// runs, run items, unlinked mappings, shards and results, and `run` key
+/// blocks. A server without it would refuse the whole push (or lease request)
+/// for an entity or key kind it does not know.
+pub(crate) const RUNS: &str = "runs";
+
+/// True once the account's server has listed `runs`. Until then this build
+/// keeps its execution entities pending and asks for no `run` key blocks.
+pub(crate) fn server_takes_runs(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, RUNS)
+}
+
+/// True if the account's server listed `feature` in its last answer.
+fn server_lists(conn: &Connection, user: &str, feature: &str) -> Result<bool, String> {
     let features = state_value(conn, &server_features_key(user))?;
     #[cfg(test)]
     let features = match features {
         Some(f) => Some(f),
         None => state_value(conn, ANY_ACCOUNT_FEATURES_KEY)?,
     };
-    Ok(features.is_some_and(|f| f.split(',').any(|x| x == STABLE_STEPS)))
+    Ok(features.is_some_and(|f| f.split(',').any(|x| x == feature)))
 }
 
 /// Test cases with pending changes held back, over every account of this
@@ -393,11 +416,11 @@ pub(crate) fn held_back_cases(conn: &Connection) -> Result<i64, String> {
     Ok(held)
 }
 
-/// Tests: a server that lists `stable-steps` (what every current server does),
+/// Tests: a server that lists `stable-steps` and `runs` (what every current server does),
 /// for every account.
 #[cfg(test)]
 pub(crate) fn assume_stable_steps_server(conn: &Connection) {
-    assume_server_features(conn, "key-conflicts,append-only,stable-steps");
+    assume_server_features(conn, "key-conflicts,append-only,stable-steps,runs");
 }
 
 /// Tests: the features every account's server listed last.
@@ -428,6 +451,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     oplog::claim_unowned(conn)?;
     key_sync::close_stale(conn)?;
     let cases_too = server_takes_stable_steps(conn, user)?;
+    // Runs and their children wait for a server with `runs` (EJE-01).
+    let runs_too = server_takes_runs(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -443,12 +468,14 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                    AND NOT EXISTS (SELECT 1 FROM key_conflicts k WHERE k.entity = o.entity
                                    AND k.entity_id = o.entity_id AND k.resolved_at IS NULL)
                    AND (o.entity <> 'test_case' OR ?2)
+                   AND (o.entity NOT IN ({}) OR ?3)
                  ORDER BY o.rowid",
-                oplog::synced_sql_list()
+                oplog::synced_sql_list(),
+                crate::runs::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user, cases_too], |r| {
+            .query_map(params![user, cases_too, runs_too], |r| {
                 Ok((
                     r.get::<_, String>(0)?,
                     r.get::<_, String>(1)?,
@@ -518,6 +545,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
 pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pending, String> {
     // Case revisions wait for a server with `stable-steps`, like their cases.
     let revisions_too = server_takes_stable_steps(conn, user)?;
+    // Shards and results wait for a server with `runs`, like their runs.
+    let runs_too = server_takes_runs(conn, user)?;
     let rows: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(&format!(
@@ -525,13 +554,15 @@ pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pend
                   WHERE synced_at IS NULL AND user_id = ?1 AND entity IN ({})
                     AND payload NOT LIKE '%\"appendRejected\"%'
                     AND (entity <> '{}' OR ?2)
+                    AND (entity NOT IN ({}) OR ?3)
                   ORDER BY rowid",
                 sync_class::append_only_sql_list(),
-                revisions::ENTITY
+                revisions::ENTITY,
+                crate::runs::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user, revisions_too], |r| {
+            .query_map(params![user, revisions_too, runs_too], |r| {
                 Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
             })
             .map_err(|e| e.to_string())?;
@@ -814,6 +845,7 @@ fn write_doc(
         "test_case" => Some("scenarioId"),
         "requirement" => Some("requirementKey"),
         "planner_card" => Some("cardKey"),
+        "run" => Some("runKey"),
         _ => None,
     };
     let pulled_key = key_field.map_or("", |f| field(p, f));
@@ -907,13 +939,25 @@ fn write_doc(
             // A definitive key never changes, but the server's version wins:
             // a provisional key replaced on another device, or a key renamed in
             // the conflict panel there, arrives here (DAT-01).
+            // Risk (RUN-00): a document without the keys (written before
+            // them) keeps the local values (design §3.7); a value outside 1..5
+            // is stored as not assessed, never failing the pull on the CHECK.
+            let risk = |key: &str| {
+                p.get(key)
+                    .and_then(Value::as_i64)
+                    .filter(|v| (1..=5).contains(v))
+            };
+            let has_risk = p.get("riskLikelihood").is_some() || p.get("riskImpact").is_some();
             conn.execute(
                 "INSERT INTO requirements (id, workspace_id, project_id, requirement_key, title, description,
-                        priority, created_by, updated_by, created_at, updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, datetime('now'), datetime('now'), ?9, NULL)
+                        priority, risk_likelihood, risk_impact, created_by, updated_by, created_at,
+                        updated_at, revision, deleted_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?10, ?11, ?8, ?8, datetime('now'), datetime('now'), ?9, NULL)
                  ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id,
                         requirement_key=excluded.requirement_key, title=excluded.title,
                         description=excluded.description, priority=excluded.priority,
+                        risk_likelihood=CASE WHEN ?12 THEN excluded.risk_likelihood ELSE risk_likelihood END,
+                        risk_impact=CASE WHEN ?12 THEN excluded.risk_impact ELSE risk_impact END,
                         updated_by=excluded.updated_by, updated_at=datetime('now'),
                         revision=excluded.revision, deleted_at=NULL",
                 params![
@@ -926,6 +970,9 @@ fn write_doc(
                     p.get("priority").and_then(Value::as_str).unwrap_or("medium"),
                     user,
                     doc.revision,
+                    risk("riskLikelihood"),
+                    risk("riskImpact"),
+                    has_risk,
                 ],
             )
             .map_err(|e| e.to_string())?;
@@ -965,7 +1012,15 @@ fn write_doc(
             )
             .map_err(|e| e.to_string())?;
         }
-        _ => {}
+        entity => crate::runs::write_doc(
+            conn,
+            workspace_id,
+            user,
+            entity,
+            &doc.entity_id,
+            p,
+            doc.revision,
+        )?,
     }
     // The server gave this entity a definitive key: nothing left to resolve.
     if key_field.is_some() && !pulled_key.is_empty() && !keys::is_provisional(pulled_key) {
@@ -1276,6 +1331,9 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
         ("test_case", "test_cases"),
         ("requirement", "requirements"),
         ("planner_card", "planner_cards"),
+        ("run", "runs"),
+        ("run_item", "run_items"),
+        ("unlinked_mapping", "unlinked_mappings"),
     ] {
         conn.execute(
             &format!(

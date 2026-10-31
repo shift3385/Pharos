@@ -182,3 +182,21 @@ reales a la API.
   se crean en 0.2.0. Su forma queda fijada en Pharos Run JSON, y las tablas
   llegan con una migración aditiva en 0.4.0 (sesiones) y 0.5.0 (SARIF, k6,
   axe). Cambia el criterio de ING-06 en el ROADMAP.
+
+## Implementación (E3, paso 4, 2026-10-31)
+
+- **Pharos Run JSON 1.0.0** vive en `src/shared/contracts/pharos-run/`
+  (esquema zod y `parsePharosRun`). El JSON Schema
+  `docs/formats/pharos-run-1.schema.json` se genera desde él, y un test falla
+  si no coinciden. Un lector acepta toda `1.x.y` y rechaza otra MAYOR
+  (VERSIONING §6.6).
+- `results[]` acepta los tests de CTRF tal cual (se comprueba con una muestra
+  real de ING-01): sus estados (incluido `pending`, que se guarda como
+  `skipped` con `rawStatus`), `retries`, `flaky`, `steps` `{name, status}` y
+  sus adjuntos. Las claves desconocidas pasan, y el persistente las guarda en
+  `attributes`.
+- `findings[]`, `metrics[]` y `exploratorySession` tienen la forma del boceto
+  en camelCase y solo se validan; un documento que las trae es válido y se
+  conserva entero como informe en bruto del shard.
+- Los adjuntos del documento se nombran por `ref`; una referencia a un adjunto
+  o shard que no existe es un error de validación.

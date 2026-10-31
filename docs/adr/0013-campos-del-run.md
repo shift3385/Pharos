@@ -261,3 +261,102 @@ Son precisiones; la decisión no cambia.
   con marca de desactualizado.
 - `project_id` en todas las tablas por la regla del dueño de ADR-0020.
 - Reconstrucción de `key_counters` para `run` y `cycle`.
+
+## Implementación (E3, paso 4, 2026-10-31)
+
+El esquema, los repositorios, el sync y las derivaciones están en el código
+(migración local `0024_execution.sql`, `src-tauri/src/runs.rs`, servidor
+`0008_key_blocks_runs.sql`). La UI llega con EJE-02 (paso 7). Precisiones sobre
+el boceto:
+
+- **Una sola migración** (0024): las seis tablas, `execution_drafts`, los
+  `risk_*` y la reconstrucción de las claves. 0025 se retiró sin usar.
+- **Sin claves foráneas hacia `runs`** en las tablas sincronizadas (solo
+  `step_results → results`): un pull puede traer un resultado antes que su run,
+  cuyo encabezado editado tiene un `seq` más nuevo, y el SQLite incluido aplica
+  las claves foráneas (la misma lección que 0020). El repositorio comprueba los
+  vínculos.
+- **Inmutabilidad en la base:** triggers impiden cambiar el contenido de
+  `run_shards`, `results` y `step_results`; solo pueden cambiar
+  `workspace_id`/`project_id` (ADR-0019). La purga es el único código que los
+  borra, junto con su run.
+- **También se reconstruye `retired_keys`**, que tiene el mismo `CHECK` que
+  `key_counters` (0017) y hace falta para purgar runs. Ambas admiten `run` y
+  `cycle`; en el servidor, `key_blocks` también (0008), y el índice de claves
+  de `documents` cubre `runKey`.
+- **Ids deterministas:** UUIDv5 sobre el JCS de las partes como arreglo JSON
+  (`[run, sha256]`, `[shard, test_key, configuration_label, attempt]`,
+  `[proyecto, test_key]`), para que ningún separador dentro de un `test_key`
+  produzca choques. Gemelos en Rust (`runs/ids.rs`) y TS
+  (`src/shared/contracts/pharos-run/ids.ts`) con vectores compartidos.
+- **El intento manual** lo registra `result_record` sobre un elemento del run:
+  el `test_key` es `manual:<caso>/<flujo|->/<fila|->`, `attempt` es el siguiente
+  número de ese test en el run, y un `step_id`, flujo o fila que no esté en la
+  revisión congelada se rechaza. Solo con el run `in_progress`.
+- **El riesgo** tiene su propio comando (`requirement_risk_set`, 1..5 o nulo),
+  para no cambiar el `RequirementInput` que envía el editor.
+- **Bandas por proyecto aplazadas a TRZ-04** (decisión del usuario,
+  2026-10-31). Por ahora solo existe la función pura con las bandas por defecto
+  (≤ 4 bajo, ≤ 12 medio, > 12 alto). Guardarlas ya cambiaría la forma del
+  proyecto que se sincroniza sin una UI para editarlas. Como `risk_level` se
+  deriva, añadir el almacenamiento después no exige migrar datos.
+- **Sin `run_delete` en 0.2:** un run se borra con la cascada de su proyecto.
+  El paso 7 decide el borrado con su UI (borrado lógico con evento); los
+  resultados nunca se borran.
+- **Sync:** `run`, `run_item` y `unlinked_mapping` son LWW; `run_shard` y
+  `result` (con sus pasos dentro) son `append_only`, y para ellos `createdAt`/
+  `importedAt`, `createdBy`/`importedBy` y `hlc` quedan fuera del contenido
+  comparado, así que dos equipos que importan el mismo archivo convergen.
+  `APPLIED_SET_VERSION = 3`.
+- **Funcionalidad de sync `runs`** (decisión del usuario, 2026-10-31):
+  - un escritorio retiene sus entidades de ejecución y no pide bloques `run`
+    hasta que el servidor de esa cuenta lista `runs` (un servidor anterior
+    rechazaría todo el push o toda la petición de bloques);
+  - el servidor solo envía esas entidades a quien manda `runs` (los demás
+    reciben exactamente la respuesta de antes) y rechaza su push sin ella
+    (400 `runs_unsupported`);
+  - el push de un requisito desde un cliente sin `runs` conserva
+    `riskLikelihood`/`riskImpact` aunque envíe su estado completo;
+  - al actualizar, el reinicio del cursor trae lo que el cliente antiguo se
+    saltó.
+- **Cascada:** borrar un proyecto borra (lógicamente) sus runs, elementos y
+  reglas en el escritorio, y en el servidor pone lápida también a shards y
+  resultados (a diferencia de las revisiones, SYNC-11). Los recuentos del
+  evento de auditoría son los de las tablas del escritorio.
+- **El servidor valida, no interpreta:** comprueba los campos obligatorios y
+  los estados de los documentos de ejecución (`EXECUTION_PAYLOADS`). El
+  escritorio comprueba los mismos límites antes de escribir (título 500,
+  `test_key` 2000, 5000 pasos, en unidades UTF-16 como zod): un documento que
+  el servidor rechazara quedaría pendiente para siempre.
+
+Tras la revisión independiente (2026-10-31):
+
+- **Ids comprobados por tipo.** Un `flow_id` tiene que ser un flujo de la
+  revisión; un `example_row_id`, una fila de ese flujo (o del caso, sin
+  flujo); y un `step_id`, un paso de ese flujo. El flujo principal son las
+  precondiciones, el Background y los pasos del caso; cada flujo de un caso
+  avanzado, el Background y sus propias precondiciones y pasos. Un resultado
+  atribuido al paso equivocado no se podría corregir después.
+- **Un caso con un conflicto de clave abierto no se congela**
+  (`case-key-conflict`): su revisión con clave provisional solo existe en este
+  equipo.
+- **El peor estado** (`worst_status`) ordena `failed` > `blocked` > `other`
+  (y cualquier valor desconocido) > `skipped` > `passed`.
+- **Tiempos.** Se comparan como instantes: RFC 3339 (también `+0530` y más de
+  tres decimales, que se truncan a milisegundos) o la forma de SQLite. Un valor
+  que no se puede leer cuenta como ausente y se usa el siguiente de
+  `coalesce`; nunca se compara como texto junto a valores leídos.
+- **Borrado.** No hay trigger de `DELETE`: la purga es el único código que
+  borra shards, resultados y pasos (lo comprueba un test que busca esas
+  sentencias en el código). Un run espera en la purga mientras alguno de sus
+  shards o resultados no haya llegado al servidor, y al purgarse se lleva
+  también sus filas del oplog. La purga barre además los shards y resultados
+  sin run cuyo proyecto ya no existe (o está borrado y caducado) y que son más
+  antiguos que la retención; los recientes esperan a su run.
+- **Servidor.** Un shard o resultado que llega después de borrar su proyecto se
+  guarda como lápida, como lo habría dejado la cascada.
+- **Para el paso 9:** los importadores tienen que dar ids **deterministas** a
+  los resultados de paso (p. ej. UUIDv5 del resultado y la posición), igual que
+  a los resultados: si no, dos equipos que importan el mismo archivo
+  producirían el mismo resultado con pasos distintos y el servidor lo
+  rechazaría (`content_changed`).

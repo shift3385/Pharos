@@ -88,13 +88,17 @@ pub fn observe_hlc(conn: &Connection, remote: &str) -> Result<(), String> {
 /// Entities the sync pushes and pulls (Phase 8B + SYNC-04a). The pending count
 /// and the push are both built from this list, so the indicator only counts
 /// what a sync actually sends (FIX-01). Templates and attachments still write
-/// to the oplog and wait for SYNC-04b.
-pub const SYNCED: [&str; 5] = [
+/// to the oplog and wait for SYNC-04b. The execution entities (EJE-01) join
+/// with `runs.rs`.
+pub const SYNCED: [&str; 8] = [
     "project",
     "test_plan",
     "test_case",
     "requirement",
     "planner_card",
+    "run",
+    "run_item",
+    "unlinked_mapping",
 ];
 
 /// `SYNCED` as an SQL list literal, for `entity IN (...)`.
@@ -122,6 +126,7 @@ pub fn owner_of(
         }
         "planner_card" => "SELECT owner_id FROM planner_cards WHERE id = ?1",
         "template" => "SELECT owner_id FROM templates WHERE id = ?1",
+        "run" | "run_item" | "unlinked_mapping" => crate::runs::owner_sql(entity).unwrap_or_default(),
         // Append-only entities say it themselves (sync_class registry).
         _ => {
             return match crate::sync_class::append_only(entity) {

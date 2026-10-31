@@ -366,3 +366,8 @@ preguntas del plan (Q1–Q9) y lo que conviene saber:
   un cliente antiguo, da ids aleatorios a los pasos nuevos y guarda el
   documento de la revisión en cada guardado, con el mismo id que el
   escritorio.
+- **Resultados (E3, paso 4).** `run_item.test_case_revision_id` congela la
+  revisión vigente al añadir el elemento (`revisions::ensure_current`), y cada
+  `step_result` apunta al `step_id` de esa revisión. A diferencia de las
+  revisiones (SYNC-11), los shards y resultados `append_only` **sí** reciben
+  lápida con la cascada del borrado de su proyecto en el servidor.

@@ -6,6 +6,7 @@ import {
   KEY_ENTITY,
   KEY_FIELD,
   APPEND_ONLY_ENTITIES,
+  EXECUTION_ENTITIES,
   isAppendOnly,
   LOCATION_KEYS,
   outsideContent,
@@ -70,8 +71,10 @@ export interface KeyBlock {
   end: number;
 }
 
-/** The key expression of `documents_key_idx` (migration 0006). */
-export const KEY_SQL = "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey')";
+/** The key expression of `documents_key_idx` (migration 0006; `runKey`
+ *  since 0008). */
+export const KEY_SQL =
+  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey')";
 
 /** One pull page: documents after the cursor and whether more remain. */
 export interface PullPage {
@@ -117,19 +120,27 @@ async function cascadeProjectDelete(client: PoolClient, userId: string, d: Delta
       RETURNING entity`,
     [userId, d.entityId, d.hlc, d.author, [...PROJECT_CHILDREN]],
   );
-  const counts: Record<string, number> = Object.fromEntries(PROJECT_CHILDREN.map((e) => [CASCADE_KEY[e], 0]));
-  for (const r of rows) counts[CASCADE_KEY[r.entity as (typeof PROJECT_CHILDREN)[number]]]++;
+  const counted = PROJECT_CHILDREN.filter((e) => CASCADE_KEY[e]);
+  const counts: Record<string, number> = Object.fromEntries(counted.map((e) => [CASCADE_KEY[e], 0]));
+  for (const r of rows) {
+    const key = CASCADE_KEY[r.entity as (typeof PROJECT_CHILDREN)[number]];
+    if (key) counts[key]++;
+  }
   return counts;
 }
 
 /** How a cascade counts each child: the desktop's table names
  *  (`project.rs`), so a web project delete reads like a desktop one in the
- *  audit log. */
-const CASCADE_KEY: Record<(typeof PROJECT_CHILDREN)[number], string> = {
+ *  audit log. Shards and results are tombstoned but not counted: on the
+ *  desktop they go with their runs. */
+const CASCADE_KEY: Partial<Record<(typeof PROJECT_CHILDREN)[number], string>> = {
   test_plan: "test_plans",
   test_case: "test_cases",
   requirement: "requirements",
   planner_card: "planner_cards",
+  run: "runs",
+  run_item: "run_items",
+  unlinked_mapping: "unlinked_mappings",
 };
 
 /** The live document of the same project that already uses the key of an
@@ -166,24 +177,40 @@ const MERGED_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN
                  ELSE '{}'::jsonb END
      END`;
 
+/** The payload stored when an upsert from a client that sends its whole
+ *  state lands on a live document, but the client lacks a feature that added
+ *  keys to the entity (`FEATURE_KEYS`): those keys ($9), when it left them
+ *  out, keep the stored value. Everything else is its payload as is. */
+const KEPT_PAYLOAD_SQL = `CASE WHEN documents.deleted OR EXCLUDED.deleted THEN EXCLUDED.payload
+       ELSE EXCLUDED.payload || coalesce(
+         (SELECT jsonb_object_agg(k.key, k.value) FROM jsonb_each(documents.payload) AS k
+           WHERE k.key = ANY($9::text[]) AND NOT (EXCLUDED.payload ? k.key)),
+         '{}'::jsonb)
+     END`;
+
 /** Stores a delta as the user's latest version of the entity (with a new
  *  `seq`) and cascades a project delete to its children. The caller holds the
  *  user's write lock and has already decided that the delta wins. `merge`:
- *  keep the keys the delta left out (only for old clients, above). Returns the
+ *  keep the keys the delta left out (only for old clients, above); `keep`:
+ *  keep just these keys when left out (`KEPT_PAYLOAD_SQL`). Returns the
  *  payload stored and, for a project delete, how many children it removed
  *  (the web's audit event reads both, AUD-01b). */
 export async function storeDoc(
   client: PoolClient,
   userId: string,
   d: Delta,
-  opts: { merge: boolean } = { merge: false },
+  opts: { merge: boolean; keep?: readonly string[] } = { merge: false },
 ): Promise<{ payload: Record<string, unknown>; cascade: Record<string, number> | null }> {
+  const keep = opts.keep ?? [];
+  const payloadSql = opts.merge ? MERGED_PAYLOAD_SQL : keep.length ? KEPT_PAYLOAD_SQL : "EXCLUDED.payload";
+  const params: unknown[] = [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc];
+  if (!opts.merge && keep.length) params.push([...keep]);
   const { rows } = await client.query<{ payload: Record<string, unknown> }>(
     `INSERT INTO documents
        (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), nextval('documents_seq'))
      ON CONFLICT (user_id, entity, entity_id) DO UPDATE
-       SET payload = ${opts.merge ? MERGED_PAYLOAD_SQL : "EXCLUDED.payload"},
+       SET payload = ${payloadSql},
 
            revision = EXCLUDED.revision,
            author = EXCLUDED.author,
@@ -192,7 +219,7 @@ export async function storeDoc(
            updated_at = now(),
            seq = nextval('documents_seq')
      RETURNING payload`,
-    [userId, d.entity, d.entityId, d.payload, d.revision, d.author, d.op === "delete", d.hlc],
+    params,
   );
   const cascade = d.entity === "project" && d.op === "delete" ? await cascadeProjectDelete(client, userId, d) : null;
   return { payload: rows[0].payload, cascade };
@@ -228,11 +255,23 @@ export async function storeAppend(client: PoolClient, userId: string, d: Delta):
   );
   const current = rows[0];
   if (!current) {
+    // A shard or result of a project already deleted here arrives as a
+    // tombstone, as the cascade would have left it (a device that pushes
+    // after the delete). Revisions and audit events stay out (SYNC-11).
+    const orphan =
+      (PROJECT_CHILDREN as readonly string[]).includes(d.entity) &&
+      typeof d.payload.projectId === "string" &&
+      ((
+        await client.query(
+          `SELECT 1 FROM documents WHERE user_id = $1 AND entity = 'project' AND entity_id = $2 AND deleted`,
+          [userId, d.payload.projectId],
+        )
+      ).rowCount ?? 0) > 0;
     await client.query(
       `INSERT INTO documents
          (user_id, entity, entity_id, payload, revision, author, deleted, hlc, updated_at, seq)
-       VALUES ($1, $2, $3, $4, 1, $5, false, $6, now(), nextval('documents_seq'))`,
-      [userId, d.entity, d.entityId, d.payload, d.author, d.hlc],
+       VALUES ($1, $2, $3, $4, 1, $5, $7, $6, now(), nextval('documents_seq'))`,
+      [userId, d.entity, d.entityId, d.payload, d.author, d.hlc, orphan],
     );
     return { accepted: true };
   }
@@ -297,7 +336,11 @@ export function createSyncRepository(pool: Pool) {
     /** Applies one delta under a row lock, following the merge rule in
      *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
      *  client is old and its upserts keep the keys it left out (`storeDoc`). */
-    async apply(userId: string, d: Delta, opts: { merge: boolean } = { merge: false }): Promise<ApplyResult> {
+    async apply(
+      userId: string,
+      d: Delta,
+      opts: { merge: boolean; keep?: readonly string[] } = { merge: false },
+    ): Promise<ApplyResult> {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -339,14 +382,18 @@ export function createSyncRepository(pool: Pool) {
 
     /** One page of documents changed after `since` (exclusive), oldest first.
      *  Reads one extra row to tell the client whether to ask again (FIX-02).
-     *  Append-only documents only go to clients that know the class. */
+     *  Append-only documents only go to clients that know the class, and the
+     *  execution entities to clients that know them (`runs`). */
     async since(
       userId: string,
       since: number,
       limit = MAX_PULL_LIMIT,
-      opts: { appendOnly: boolean } = { appendOnly: false },
+      opts: { appendOnly: boolean; runs?: boolean } = { appendOnly: false },
     ): Promise<PullPage> {
-      const skipped: string[] = opts.appendOnly ? [] : [...APPEND_ONLY_ENTITIES];
+      const skipped: string[] = [
+        ...(opts.appendOnly ? [] : APPEND_ONLY_ENTITIES),
+        ...(opts.runs ? [] : EXECUTION_ENTITIES),
+      ];
       const { rows } = await pool.query(
         `SELECT ${COLS}
            FROM documents

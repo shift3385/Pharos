@@ -1,5 +1,5 @@
-//! Human-readable keys of cases (`ATS_001`), requirements (`REQ-001`) and
-//! defects (`DEF-001`) — DAT-01, ADR-0010.
+//! Human-readable keys of cases (`ATS_001`), requirements (`REQ-001`),
+//! defects (`DEF-001`) and runs (`RUN-001`, ADR-0013) — DAT-01, ADR-0010.
 //!
 //! A key travels as a Gherkin tag, so once assigned it never changes and is
 //! never handed out again. The next number of each project and kind lives in
@@ -11,12 +11,14 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 
-/// The three kinds of key; the value is stored in `key_counters.kind`.
+/// The kinds of key; the value is stored in `key_counters.kind`. `cycle` is
+/// allowed there too (0024) and joins with its table (ADR-0017).
 #[derive(Clone, Copy)]
 pub(crate) enum KeyKind {
     Case,
     Requirement,
     Defect,
+    Run,
 }
 
 impl KeyKind {
@@ -25,6 +27,7 @@ impl KeyKind {
             KeyKind::Case => "case",
             KeyKind::Requirement => "requirement",
             KeyKind::Defect => "defect",
+            KeyKind::Run => "run",
         }
     }
 
@@ -34,6 +37,7 @@ impl KeyKind {
             KeyKind::Case => ("test_cases", "scenario_id"),
             KeyKind::Requirement => ("requirements", "requirement_key"),
             KeyKind::Defect => ("planner_cards", "card_key"),
+            KeyKind::Run => ("runs", "run_key"),
         }
     }
 }
@@ -210,6 +214,7 @@ pub(crate) fn numbering(
             crate::requirement::KEY_DIGITS,
         ),
         KeyKind::Defect => (crate::planner::DEFECT_KEY_PREFIX.to_string(), 3),
+        KeyKind::Run => (crate::runs::KEY_PREFIX.to_string(), crate::runs::KEY_DIGITS),
     })
 }
 
@@ -291,7 +296,12 @@ pub(crate) fn store_block(
 }
 
 impl KeyKind {
-    pub(crate) const ALL: [KeyKind; 3] = [KeyKind::Case, KeyKind::Requirement, KeyKind::Defect];
+    pub(crate) const ALL: [KeyKind; 4] = [
+        KeyKind::Case,
+        KeyKind::Requirement,
+        KeyKind::Defect,
+        KeyKind::Run,
+    ];
 
     /// The value of `key_counters.kind` and of the server's `kind`.
     pub(crate) fn as_str(self) -> &'static str {
@@ -309,6 +319,7 @@ impl KeyKind {
             KeyKind::Case => "test_case",
             KeyKind::Requirement => "requirement",
             KeyKind::Defect => "planner_card",
+            KeyKind::Run => "run",
         };
         (entity, table, column)
     }
