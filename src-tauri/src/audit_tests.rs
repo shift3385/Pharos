@@ -105,20 +105,24 @@ fn jcs_sorts_keys_and_escapes_like_rfc_8785() {
         audit::jcs(&v).unwrap(),
         r#"{"A":0,"a":[true,null,"x\u0001\n\"é/"],"b":1,"c":{"y":"Ñandú","z":-5}}"#
     );
+    // Integers within ±(2^53 - 1), also when written as `1.0` (RFC 8785).
     assert_eq!(
-        audit::jcs(&json!(u64::MAX)).unwrap(),
-        "18446744073709551615"
+        audit::jcs(&json!(9_007_199_254_740_991_i64)).unwrap(),
+        "9007199254740991"
     );
+    assert_eq!(audit::jcs(&json!([1.0, -0.0])).unwrap(), "[1,0]");
 }
 
 #[test]
 fn jcs_refuses_what_is_outside_the_audit_subset() {
-    // A float or a non-ASCII key would need the full RFC 8785 rules; refusing
-    // them keeps every implementation of the header hash identical.
+    // A fraction, an integer past 2^53 - 1 or a non-ASCII key would need the
+    // full RFC 8785 rules (or lose precision on the server); refusing them
+    // keeps every implementation of the header hash identical.
     assert!(audit::jcs(&json!({"x": 1.5}))
         .unwrap_err()
-        .contains("non-integer"));
-    assert!(audit::jcs(&json!([0.0])).is_err());
+        .contains("outside the audit subset"));
+    assert!(audit::jcs(&json!(9_007_199_254_740_992_i64)).is_err());
+    assert!(audit::jcs(&json!(u64::MAX)).is_err());
     assert!(audit::jcs(&json!({"ñ": 1}))
         .unwrap_err()
         .contains("non-ASCII key"));
@@ -778,6 +782,22 @@ fn jcs_gives_the_canonical_forms_the_server_gives() {
     for value in fixture["refused"].as_array().unwrap() {
         let err = audit::jcs(value).unwrap_err();
         assert!(err.contains("outside the audit subset"), "{value}: {err}");
+    }
+    // The same as JSON text, parsed here as the server parses it there: the
+    // integer boundary and integral numbers (`1.0`).
+    for case in fixture["jcsText"].as_array().unwrap() {
+        let json = case["json"].as_str().unwrap();
+        let value: Value = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            audit::jcs(&value).unwrap(),
+            case["canonical"].as_str().unwrap(),
+            "{json}"
+        );
+    }
+    for text in fixture["refusedText"].as_array().unwrap() {
+        let json = text.as_str().unwrap();
+        let value: Value = serde_json::from_str(json).unwrap();
+        assert!(audit::jcs(&value).is_err(), "{json}");
     }
 }
 

@@ -245,6 +245,38 @@ describe("web audit (AUD-01b)", () => {
     expect(head.rows).toEqual([{ seq: "21", hash: events[20].hash }]);
   });
 
+  it("a missing head row continues the chain from the last stored event", async () => {
+    const { token, userId } = await register();
+    const p = await newProject(token);
+    await call(token, "PUT", `/api/projects/${p.id}`, { input: { name: "Renamed" } });
+    await pool.query("DELETE FROM audit_chain_heads WHERE user_id = $1", [userId]);
+    await call(token, "PUT", `/api/projects/${p.id}`, { input: { name: "Again" } });
+    const events = await chain(userId);
+    expect(events.map((e) => e.chainSeq)).toEqual([1, 2, 3]);
+    expect(verifyChain(events)).toEqual({ ok: true, count: 3 });
+    const head = await pool.query("SELECT seq FROM audit_chain_heads WHERE user_id = $1", [userId]);
+    expect(head.rows).toEqual([{ seq: "3" }]);
+  });
+
+  it("a failure writing the event rolls back the change and the event", async () => {
+    const { token, userId } = await register();
+    const p = await newProject(token);
+    await pool.query(`CREATE FUNCTION audit_test_fail() RETURNS trigger LANGUAGE plpgsql AS
+      $fail$ BEGIN RAISE EXCEPTION 'audit head refused (test)'; END $fail$`);
+    await pool.query(`CREATE TRIGGER audit_test_fail BEFORE INSERT OR UPDATE ON audit_chain_heads
+      FOR EACH ROW EXECUTE FUNCTION audit_test_fail()`);
+    try {
+      const res = await call(token, "PUT", `/api/projects/${p.id}`, { input: { name: "Lost" } });
+      expect(res.status).toBe(500);
+    } finally {
+      await pool.query("DROP TRIGGER audit_test_fail ON audit_chain_heads");
+      await pool.query("DROP FUNCTION audit_test_fail()");
+    }
+    const stored = (await call(token, "GET", `/api/projects/${p.id}`)).body;
+    expect(stored).toMatchObject({ name: "Checkout", revision: 1 });
+    expect((await chain(userId)).map((e) => e.action)).toEqual(["create"]);
+  });
+
   it("two users have separate chains", async () => {
     const a = await register("a@pharos.dev");
     const b = await register("b@pharos.dev");

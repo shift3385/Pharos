@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared audit vectors (AUD-01b, ADR-0015). The desktop (src-tauri/src/audit.rs, audit_tests.rs) and the server (server/src/modules/audit/audit.chain.ts, tests/audit.chain.test.ts) must give exactly these answers: `jcs` canonical forms, `refused` values outside the JCS subset, and `docs`, a web audit chain exactly as /sync/pull returns it, which the desktop stores and verifies with audit::verify_chain(conn, \"web\", \"web\", userId). Regenerate `docs` with UPDATE_AUDIT_FIXTURE=1 in the server tests, and change this file only together with both sides.",
+  "$comment": "Shared audit vectors (AUD-01b, ADR-0015). The desktop (src-tauri/src/audit.rs, audit_tests.rs) and the server (server/src/modules/audit/audit.chain.ts, tests/audit.chain.test.ts) must give exactly these answers: `jcs` canonical forms, `refused` values outside the JCS subset, `jcsText`/`refusedText` the same as JSON text each side parses with its own parser (the integer boundary ±(2^53 - 1) and integral numbers such as `1.0`), and `docs`, a web audit chain exactly as /sync/pull returns it, which the desktop stores and verifies with audit::verify_chain(conn, \"web\", \"web\", userId). Regenerate `docs` with UPDATE_AUDIT_FIXTURE=1 in the server tests, and change this file only together with both sides.",
   "jcs": [
     {
       "value": null,
@@ -96,6 +96,44 @@
     {
       "clé": 1
     }
+  ],
+  "jcsText": [
+    {
+      "json": "9007199254740991",
+      "canonical": "9007199254740991"
+    },
+    {
+      "json": "-9007199254740991",
+      "canonical": "-9007199254740991"
+    },
+    {
+      "json": "1.0",
+      "canonical": "1"
+    },
+    {
+      "json": "-0",
+      "canonical": "0"
+    },
+    {
+      "json": "-0.0",
+      "canonical": "0"
+    },
+    {
+      "json": "1e2",
+      "canonical": "100"
+    },
+    {
+      "json": "{\"n\":[2.0,-3.0E0]}",
+      "canonical": "{\"n\":[2,-3]}"
+    }
+  ],
+  "refusedText": [
+    "9007199254740992",
+    "-9007199254740992",
+    "12345678901234567890",
+    "1.5",
+    "9007199254740993.0",
+    "{\"x\":0.1}"
   ],
   "userId": "6f1c2a9e-0d3b-4c5e-9a7f-1b2c3d4e5f60",
   "docs": [

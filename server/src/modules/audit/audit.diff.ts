@@ -9,6 +9,10 @@ const BOOKKEEPING = new Set(["revision", "updatedAt", "createdAt"]);
 
 const isObj = (v: Json): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 
+/** An own key only: a payload key such as `__proto__` or `constructor` is
+ *  data, never something inherited. */
+const own = (o: Obj, key: string): Json => (Object.hasOwn(o, key) ? o[key] : undefined);
+
 /** Structural JSON equality: key order does not matter (serde_json `Value`
  *  equality). */
 export function jsonEqual(a: Json, b: Json): boolean {
@@ -18,7 +22,7 @@ export function jsonEqual(a: Json, b: Json): boolean {
   }
   if (!isObj(a) || !isObj(b)) return false;
   const ka = Object.keys(a);
-  return ka.length === Object.keys(b).length && ka.every((k) => k in b && jsonEqual(a[k], b[k]));
+  return ka.length === Object.keys(b).length && ka.every((k) => Object.hasOwn(b, k) && jsonEqual(a[k], b[k]));
 }
 
 const sortedKeys = (...objs: Obj[]) => [...new Set(objs.flatMap((o) => Object.keys(o)))].sort();
@@ -30,25 +34,29 @@ const sortedKeys = (...objs: Obj[]) => [...new Set(objs.flatMap((o) => Object.ke
 export function diff(before: Obj | null, after: Obj | null): Obj {
   const b = before ?? {};
   const a = after ?? {};
+  // Written with defineProperty: a `__proto__` field stays a field.
   const out: Obj = {};
+  const put = (key: string, value: [Json, Json]) =>
+    Object.defineProperty(out, key, { value, enumerable: true, writable: true, configurable: true });
   for (const key of sortedKeys(b, a)) {
     if (BOOKKEEPING.has(key)) continue;
-    const [bv, av] = [b[key], a[key]];
+    const [bv, av] = [own(b, key), own(a, key)];
     if (key === "data" && (bv === undefined || isObj(bv)) && (av === undefined || isObj(av))) {
       const bd = (bv ?? {}) as Obj;
       const ad = (av ?? {}) as Obj;
       for (const dk of sortedKeys(bd, ad)) {
-        if (!jsonEqual(bd[dk], ad[dk])) out[`data.${dk}`] = [bd[dk] ?? null, ad[dk] ?? null];
+        const [x, y] = [own(bd, dk), own(ad, dk)];
+        if (!jsonEqual(x, y)) put(`data.${dk}`, [x ?? null, y ?? null]);
       }
       continue;
     }
-    if (!(bv === undefined && av === undefined) && !jsonEqual(bv, av)) out[key] = [bv ?? null, av ?? null];
+    if (!(bv === undefined && av === undefined) && !jsonEqual(bv, av)) put(key, [bv ?? null, av ?? null]);
   }
   return out;
 }
 
 const strField = (v: Obj | null, key: string): string | null =>
-  v && typeof v[key] === "string" && v[key] !== "" ? (v[key] as string) : null;
+  v && typeof own(v, key) === "string" && v[key] !== "" ? (v[key] as string) : null;
 
 /** Project and human key of an entity, from either snapshot. */
 export function location(entity: string, id: string, before: Obj | null, after: Obj | null) {

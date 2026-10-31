@@ -14,6 +14,8 @@ const FIXTURE = new URL("../../src/shared/contracts/fixtures/audit/chain.json", 
 interface Fixture {
   jcs: { value: unknown; canonical: string }[];
   refused: unknown[];
+  jcsText: { json: string; canonical: string }[];
+  refusedText: string[];
   userId: string;
   docs: { entity: string; entityId: string; payload: AuditEvent; revision: number; author: string; deleted: boolean; hlc: string; seq: number }[];
 }
@@ -97,6 +99,11 @@ describe("audit chain (shared vectors)", () => {
     for (const value of fixture.refused) expect(() => jcs(value)).toThrow(/outside the audit subset/);
   });
 
+  it("reads the integer boundary and integral numbers like the desktop", () => {
+    for (const { json, canonical } of fixture.jcsText) expect(jcs(JSON.parse(json))).toBe(canonical);
+    for (const json of fixture.refusedText) expect(() => jcs(JSON.parse(json)), json).toThrow(/outside the audit subset/);
+  });
+
   it("the web chain of the fixture is what the server builds, and it verifies", () => {
     expect(chain()).toEqual(webChain());
     for (const e of chain()) {
@@ -141,5 +148,17 @@ describe("audit chain (shared vectors)", () => {
     });
     expect(diff(before, { ...before, data: { custom: { k: 1 }, gone: true, steps: [1] } })).toEqual({});
     expect(diff({ data: "x" }, { data: { a: 1 } })).toEqual({ data: ["x", { a: 1 }] });
+  });
+
+  it("a __proto__ or constructor field is data, never inherited", () => {
+    const before = JSON.parse('{"title":"a","data":{"__proto__":{"x":1}}}') as Record<string, unknown>;
+    const after = JSON.parse('{"title":"a","__proto__":"p","data":{"constructor":2}}') as Record<string, unknown>;
+    const d = diff(before, after);
+    expect(Object.getPrototypeOf(d)).toBe(Object.prototype);
+    expect(Object.keys(d).sort()).toEqual(["__proto__", "data.__proto__", "data.constructor"]);
+    expect(JSON.parse(JSON.stringify(d))).toEqual(
+      JSON.parse('{"__proto__":[null,"p"],"data.__proto__":[{"x":1},null],"data.constructor":[null,2]}'),
+    );
+    expect(diff(before, before)).toEqual({});
   });
 });

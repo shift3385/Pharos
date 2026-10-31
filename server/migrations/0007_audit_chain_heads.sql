@@ -4,7 +4,8 @@
 -- `audit.store.ts` reads its last link here and moves it in the same
 -- transaction, under the user's write lock, so two web writes of the same user
 -- never take the same `chain_seq`. The events themselves are ordinary
--- `documents` rows; this table only saves a scan per write. Additive and
+-- `documents` rows; this table only saves a scan per write (with no row, the
+-- store reads the last stored link instead of starting again at 1). Additive and
 -- forward-only: nothing to backfill, the web had no events before.
 
 CREATE TABLE IF NOT EXISTS audit_chain_heads (

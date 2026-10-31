@@ -82,6 +82,20 @@ export function buildEvent(
   return event;
 }
 
+/** The last link of the user's web chain among the stored events: what the
+ *  head says when its row is missing (lost or removed by hand), so the chain
+ *  continues instead of starting again at 1. One scan, only then. */
+async function lastStored(client: PoolClient, userId: string): Promise<{ seq: number; hash: string } | null> {
+  const { rows } = await client.query<{ seq: string; hash: string }>(
+    `SELECT payload->>'chainSeq' AS seq, payload->>'hash' AS hash FROM documents
+      WHERE user_id = $1 AND entity = 'audit_event' AND payload->>'deviceId' = $2
+        AND payload->>'chainWorkspaceId' = $3 AND payload->>'chainOwner' = $4
+      ORDER BY (payload->>'chainSeq')::bigint DESC LIMIT 1`,
+    [userId, WEB_DEVICE, WEB_CHAIN_WORKSPACE, userId],
+  );
+  return rows[0] ? { seq: Number(rows[0].seq), hash: rows[0].hash } : null;
+}
+
 /** Appends one web event to the user's chain and stores it as an
  *  `audit_event` document. The caller holds the user's write lock and runs
  *  the change in the same transaction. `after`: the HLC of the change, so the
@@ -98,7 +112,7 @@ export async function appendWebEvent(
       FOR UPDATE`,
     [ev.userId, WEB_DEVICE, WEB_CHAIN_WORKSPACE, ev.userId],
   );
-  const prev = rows[0] ? { seq: Number(rows[0].seq), hash: rows[0].hash } : null;
+  const prev = rows[0] ? { seq: Number(rows[0].seq), hash: rows[0].hash } : await lastStored(client, ev.userId);
   const event = buildEvent(ev, prev, { id: randomUUID(), at: new Date().toISOString(), hlc: clock.stamp(after) });
   const stored = await storeAppend(client, ev.userId, {
     entity: "audit_event",

@@ -40,7 +40,8 @@ export interface AuditEvent {
 export const sha256Hex = (text: string): string => createHash("sha256").update(text, "utf8").digest("hex");
 
 /** RFC 8785 (JCS) for the subset audit headers use: objects with ASCII keys,
- *  strings, safe integers, booleans and null (`audit.rs::jcs`). Anything else
+ *  strings, integers within ±(2^53 - 1), booleans and null (`audit.rs::jcs`).
+ *  A number parsed from `1.0` is the integer 1 on both sides. Anything else
  *  throws instead of producing a canonical form the desktop would not. */
 export function jcs(value: unknown): string {
   if (value === null || typeof value === "boolean" || typeof value === "string") {
@@ -49,7 +50,7 @@ export function jcs(value: unknown): string {
     return JSON.stringify(value);
   }
   if (typeof value === "number") {
-    if (!Number.isSafeInteger(value)) throw new Error(`jcs: non-integer number ${value} is outside the audit subset`);
+    if (!Number.isSafeInteger(value)) throw new Error(`jcs: number ${value} is outside the audit subset`);
     return String(value);
   }
   if (Array.isArray(value)) return `[${value.map(jcs).join(",")}]`;
