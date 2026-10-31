@@ -286,7 +286,8 @@
         "test_plan": "Plan de pruebas",
         "test_case": "Caso de prueba",
         "requirement": "Requisito",
-        "planner_card": "Tarjeta del planificador"
+        "planner_card": "Tarjeta del planificador",
+        "custom_field": "Campo personalizado"
       },
       "fields": {
         "title": "Título",
@@ -305,7 +306,17 @@
         "cardKey": "Clave del defecto",
         "description": "Descripción",
         "kind": "Tipo",
-        "position": "Posición"
+        "position": "Posición",
+        "caseType": "Tipo de caso",
+        "automationStatus": "Automatización",
+        "fieldKey": "Clave",
+        "fieldType": "Tipo",
+        "label": "Nombre",
+        "options": "Opciones",
+        "required": "Obligatorio",
+        "defaultValue": "Valor por defecto",
+        "appliesToCaseTypes": "Aplica a",
+        "archivedAt": "Archivado"
       },
       "key": {
         "title": "Claves repetidas",

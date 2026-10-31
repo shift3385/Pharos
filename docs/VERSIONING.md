@@ -205,7 +205,10 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      y `FEATURE_DATA_KEYS` para claves dentro de `data`; hoy,
      `riskLikelihood`/`riskImpact` del requisito con `runs`, y `caseType`,
      `automationStatus` y `data.custom` del caso con `custom-fields`). Las
-     entidades nuevas solo llegan en el pull a quien la envía.
+     entidades nuevas solo llegan en el pull a quien la envía. Como el push del
+     cliente antiguo no lleva esos campos, la revisión que calcula puede no
+     coincidir con el estado que guarda el servidor: dos revisiones con el
+     mismo número y distinto contenido, sin pérdida de datos (ADR-0018).
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
    - **Una clave nueva dentro de un blob opaco no necesita puerta** si se

@@ -133,7 +133,7 @@ describe("export", () => {
       ["Campo", "Clave", "Valor"],
       ["Tipo de caso", CASE_TYPE_KEY, "Checklist"],
       ["Automatización", AUTOMATION_KEY, "Por automatizar"],
-      ["Navegador", "browser", "Firefox, Chrome"],
+      ["Navegador", "browser", "Firefox; Chrome"],
       ["Firmado", "signed", "Sí"],
       ["unknown_key", "unknown_key", "x"],
     ]);

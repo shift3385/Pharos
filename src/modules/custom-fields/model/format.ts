@@ -19,6 +19,10 @@ export const effectiveAutomation = (v: unknown): AutomationStatus =>
     ? (v as AutomationStatus)
     : "manual";
 
+/** Between the options of a multi-select in a cell: option labels may hold
+ *  commas («Chrome, Edge»), not a semicolon followed by a space. */
+export const MULTI_SEPARATOR = "; ";
+
 export interface BooleanWords {
   yes: string;
   no: string;
@@ -44,7 +48,7 @@ export function formatValue(
       return option(value);
     case "multi_select":
       return Array.isArray(value)
-        ? value.map(option).join(", ")
+        ? value.map(option).join(MULTI_SEPARATOR)
         : String(value);
     default:
       return typeof value === "string" || typeof value === "number"
@@ -62,14 +66,23 @@ export function parseValue(
 ): unknown {
   const s = text.trim();
   if (s === "") return null;
+  // Only live options: an archived one is never given to a new value.
   const byLabel = (label: string) =>
     field.options.find(
-      (o) => o.label.toLowerCase() === label.trim().toLowerCase(),
+      (o) =>
+        !o.archived && o.label.toLowerCase() === label.trim().toLowerCase(),
     )?.id ?? null;
   switch (field.fieldType) {
     case "number": {
-      const n = Number(s.replace(",", "."));
-      return Number.isFinite(n) ? n : null;
+      // «1,234» and «1,234.5» group thousands; a lone comma is a decimal
+      // comma («4,5»).
+      const plain = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)
+        ? s.replace(/,/g, "")
+        : /^-?\d*,\d+$/.test(s)
+          ? s.replace(",", ".")
+          : s;
+      const n = Number(plain);
+      return plain !== "" && Number.isFinite(n) ? n : null;
     }
     case "integer": {
       const n = Number(s);
@@ -88,7 +101,10 @@ export function parseValue(
     case "select":
       return byLabel(s);
     case "multi_select": {
-      const ids = s.split(",").map(byLabel);
+      const ids = s
+        .split(MULTI_SEPARATOR.trim())
+        .filter((x) => x.trim())
+        .map(byLabel);
       return ids.every((id) => id !== null) ? [...new Set(ids)] : null;
     }
     default:

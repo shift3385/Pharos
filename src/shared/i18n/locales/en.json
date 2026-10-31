@@ -286,7 +286,8 @@
         "test_plan": "Test plan",
         "test_case": "Test case",
         "requirement": "Requirement",
-        "planner_card": "Planner card"
+        "planner_card": "Planner card",
+        "custom_field": "Custom field"
       },
       "fields": {
         "title": "Title",
@@ -305,7 +306,17 @@
         "cardKey": "Defect key",
         "description": "Description",
         "kind": "Kind",
-        "position": "Position"
+        "position": "Position",
+        "caseType": "Case type",
+        "automationStatus": "Automation",
+        "fieldKey": "Key",
+        "fieldType": "Type",
+        "label": "Name",
+        "options": "Options",
+        "required": "Required",
+        "defaultValue": "Default value",
+        "appliesToCaseTypes": "Applies to",
+        "archivedAt": "Archived"
       },
       "key": {
         "title": "Repeated keys",

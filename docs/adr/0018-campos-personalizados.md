@@ -188,6 +188,15 @@ plan (contrastadas con Jira, Xray, Zephyr, TestRail y Azure Test Plans):
   - el servidor **conserva `caseType`, `automationStatus` y `data.custom`**
     de un `test_case` que envía un cliente sin ella (los builds entre DAT-02
     y este paso mandan su estado completo, pero no conocen estos tres);
+  - **límite conocido (revisión 8):** cuando un build sin `custom-fields`
+    guarda un caso, la revisión N que envía no lleva el tipo, la
+    automatización ni `data.custom` (no los conoce), mientras que el servidor
+    los conserva en el caso. Los equipos con FLD-01 calculan entonces su propia
+    revisión N con esos campos: dos filas «revisión N» con distinto contenido,
+    como dos ediciones sin conexión (ADR-0011). No se pierde nada y cada
+    resultado apunta a la que se ejecutó. Solo afecta a builds de desarrollo
+    entre DAT-02 y este paso: las versiones publicadas anteriores son de solo
+    lectura;
   - a un cliente en solo lectura (0.1.x, 0.2.0-alpha.1), que no tiene columnas
     para ellos, el pull le manda el tipo y el estado de automatización en
     `data.__caseFields`. Clave reservada, como `__stableSteps`: todo guardado

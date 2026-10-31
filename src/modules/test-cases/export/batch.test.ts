@@ -7,6 +7,10 @@ import { projectCaseFiles, projectCaseProgress } from "./batch";
 // fails for the case titled `failTitle`.
 const pdfDocs: string[] = [];
 let failTitle: string | null = null;
+// The project has no custom fields (FLD-01).
+vi.mock("@modules/custom-fields/api/customFieldApi", () => ({
+  customFieldApi: { list: async () => [] },
+}));
 vi.mock("@shared/export/pdfDoc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@shared/export/pdfDoc")>()),
   pdfBytes: async (dd: unknown) => {

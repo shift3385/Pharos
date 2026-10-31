@@ -129,16 +129,30 @@ describe("editor helpers", () => {
     const multi = { ...browser, fieldType: "multi_select" as const };
     expect(formatValue(browser, "OPT00002", words)).toBe("Firefox");
     expect(formatValue(multi, ["OPT00001", "OPT00002"], words)).toBe(
-      "Chrome, Firefox",
+      "Chrome; Firefox",
     );
     expect(formatValue(signed, true, words)).toBe("Sí");
     expect(formatValue(undefined, { a: 1 }, words)).toBe('{"a":1}');
     expect(parseValue(browser, "firefox", words)).toBe("OPT00002");
-    expect(parseValue(multi, "Chrome, Firefox", words)).toEqual([
+    expect(parseValue(multi, "Chrome; Firefox", words)).toEqual([
       "OPT00001",
       "OPT00002",
     ]);
-    expect(parseValue(multi, "Chrome, Safari", words)).toBeNull();
+    expect(parseValue(multi, "Chrome; Safari", words)).toBeNull();
+    // A label may hold a comma; an archived option is never imported.
+    const commas = {
+      ...multi,
+      options: [
+        { id: "OPT00009", label: "Chrome, Edge", archived: false },
+        { id: "OPT00008", label: "IE 11", archived: true },
+      ],
+    };
+    expect(parseValue(commas, "Chrome, Edge", words)).toEqual(["OPT00009"]);
+    expect(parseValue(commas, "IE 11", words)).toBeNull();
+    const num = field({ fieldType: "number" });
+    expect(parseValue(num, "1,234", words)).toBe(1234);
+    expect(parseValue(num, "1,234.5", words)).toBe(1234.5);
+    expect(parseValue(num, "abc", words)).toBeNull();
     expect(parseValue(signed, "sí", words)).toBe(true);
     expect(
       parseValue(field({ fieldType: "integer" }), "4.5", words),

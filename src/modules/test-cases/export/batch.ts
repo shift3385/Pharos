@@ -135,7 +135,9 @@ export async function projectCaseFiles(
   onSkip?: (name: string) => void,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const summaries = await testCaseApi.list(projectId, userId);
-  const fields = await customFieldApi.list(projectId, userId).catch(() => []);
+  // A failure fails the export: without the definitions the sheet would
+  // show option ids instead of their labels.
+  const fields = await customFieldApi.list(projectId, userId);
   const out: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [];
   for (const s of summaries) {
     const full = await testCaseApi.get(s.id, userId);
