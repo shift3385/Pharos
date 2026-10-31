@@ -179,6 +179,9 @@ describe("login layout (RED-V1, SPEC §8)", () => {
     expect(rule("html.auth-route,\nhtml.auth-route body")).toMatch(/overflow: hidden/);
     expect(rule(".auth")).toMatch(/height: 100dvh;[\s\S]*overflow: hidden/);
     expect(rule(".auth-col")).toMatch(/height: 100%;[\s\S]*overflow-y: auto/);
+    // Regression (RED-V1c): without it the column's sr-only (absolute) texts
+    // had the viewport as containing block and stretched the page.
+    expect(rule(".auth-col")).toMatch(/position: relative/);
     expect(rule(".auth-panel")).toMatch(/height: 100%;[\s\S]*overflow: hidden/);
     expect(rule(".auth-hero")).toMatch(/overflow: hidden/);
     expect(rule(".auth-sheet")).toMatch(/flex: 0 1 auto;[\s\S]*min-height: 0;[\s\S]*overflow-y: auto/);
