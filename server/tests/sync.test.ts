@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { readFileSync } from "node:fs";
 import { setupTestApp, truncateAll } from "./helpers";
-import { SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
+import { FEATURES_HEADER, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 import { createSyncRepository, LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
 
 let app: FastifyInstance;
@@ -29,7 +29,8 @@ async function tokenFor(email = "sync@pharos.dev"): Promise<string> {
   return res.json().accessToken as string;
 }
 
-const version = { [VERSION_HEADER]: SERVER_VERSION };
+// A client that may push (DAT-02) but predates the other features.
+const version = { [VERSION_HEADER]: SERVER_VERSION, [FEATURES_HEADER]: "stable-steps" };
 const auth = (token: string) => ({ authorization: `Bearer ${token}`, ...version });
 
 describe("sync", () => {

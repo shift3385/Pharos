@@ -8,6 +8,7 @@ import {
   KEY_SQL,
   leaseRange,
   LOCK_USER_SQL,
+  storeAppend,
   storeDoc,
   takenKey,
   toDoc,
@@ -49,6 +50,8 @@ export interface DomainTx {
    *  operation (an import, with its counts), as on the desktop
    *  (`journal::record_event`). */
   audit(action: AuditAction, entity: string, id: string, summary: Record<string, unknown>): Promise<void>;
+  /** Stores an append-only document (a case revision, DAT-02) if absent. */
+  append(entity: string, id: string, payload: Record<string, unknown>): Promise<void>;
 }
 
 /** The state an event diffs: the payload plus whether it is deleted, as the
@@ -130,6 +133,23 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
           }
         }
         return { ...delta, deleted, seq: 0 };
+      },
+      async append(entity, id, payload) {
+        const res = await storeAppend(client, userId, {
+          entity: entity as never,
+          entityId: id,
+          op: "append",
+          payload,
+          revision: 1,
+          author: userId,
+          hlc: String(payload.hlc ?? ""),
+        });
+        if (!res.accepted)
+          throw new AppError(
+            409,
+            "append_rejected",
+            "This revision already exists with other content.",
+          );
       },
       async audit(action, entity, id, summary) {
         const { rows } = await client.query(

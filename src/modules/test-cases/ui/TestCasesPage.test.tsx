@@ -9,6 +9,10 @@ import type { TestCase, TestCaseSummary } from "../model/types";
 import type { ReactNode } from "react";
 import { HeaderActionsContext, useHeaderActionsSlot } from "@shared/ui/headerActions";
 import { TestCasesPage } from "./TestCasesPage";
+import { stepsOf } from "../model/steps";
+
+// Steps and Outline rows carry stable ids (DAT-02).
+const st = (...list: string[]) => stepsOf(list);
 
 function FakeHeader({ children }: { children: ReactNode }) {
   const { actions, slot } = useHeaderActionsSlot();
@@ -74,7 +78,7 @@ const full = (s: TestCaseSummary): TestCase => ({
   status: s.status,
   priority: s.priority,
   author: "QA",
-  data: { gherkinLevel: "basic", steps: ["Abrir"], expectedResult: "Ok" },
+  data: { gherkinLevel: "basic", steps: st("Abrir"), expectedResult: "Ok" },
   createdAt: s.updatedAt,
   updatedAt: s.updatedAt,
   revision: 1,

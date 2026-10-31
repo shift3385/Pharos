@@ -36,13 +36,23 @@ const proposal: ScenarioProposal = {
   then: ["the account is locked", "a lock message is shown"],
 };
 
+const ID = /^[0-9A-HJKMNP-TV-Z]{8}$/;
+
 describe("proposed cases (IA-05)", () => {
   it("maps Given / When / Then to preconditions, steps and expected result, linked to the requirement", () => {
     expect(proposalCaseData(proposal, "REQ-007", provenance)).toEqual({
       gherkinLevel: "basic",
       description: "Five failed sign-ins lock the account.",
-      preconditions: ["a registered user"],
-      steps: ["the user fails to sign in five times"],
+      // New steps, each with a fresh stable id (DAT-02).
+      preconditions: [
+        { id: expect.stringMatching(ID), text: "a registered user" },
+      ],
+      steps: [
+        {
+          id: expect.stringMatching(ID),
+          text: "the user fails to sign in five times",
+        },
+      ],
       expectedResult: "the account is locked\na lock message is shown",
       requirementKeys: ["REQ-007"],
       aiProvenance: { case: provenance },

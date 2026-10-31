@@ -9,6 +9,11 @@ import { expectNoAxeViolations } from "@test/axe";
 import { TestCaseEditor } from "./ui/TestCaseEditor";
 import { SortableSteps } from "./ui/SortableSteps";
 import { ExamplesTable } from "./ui/ExamplesTable";
+import { newStepId, stepsOf } from "./model/steps";
+
+// Steps and Outline rows carry stable ids (DAT-02).
+const exRows = (...values: string[][]) =>
+  values.map((v) => ({ id: newStepId(), values: v }));
 
 beforeEach(async () => {
   await i18n.changeLanguage("en");
@@ -31,43 +36,50 @@ describe("case editor", () => {
     await expectNoAxeViolations();
   }, AXE_TIMEOUT);
 
-  it("steps have names and keyboard-reorder instructions", async () => {
-    renderWithProviders(
-      <SortableSteps
-        label="Steps"
-        steps={["Open", "Open"]}
-        onChange={() => {}}
-      />,
-    );
-    const handle = screen.getByRole("button", {
-      name: "Drag to reorder: Step 1",
-    });
-    expect(handle).toHaveAccessibleDescription(/arrows/);
-    // A repeated step is normal ("Click Next" twice): no warning.
-    expect(screen.getByRole("textbox", { name: "Step 2" })).not.toHaveAccessibleDescription(
-      /Duplicate row/,
-    );
-    await expectNoAxeViolations();
-  }, AXE_TIMEOUT);
+  it(
+    "steps have names and keyboard-reorder instructions",
+    async () => {
+      renderWithProviders(
+        <SortableSteps
+          label="Steps"
+          steps={stepsOf(["Open", "Open"])}
+          onChange={() => {}}
+        />,
+      );
+      const handle = screen.getByRole("button", {
+        name: "Drag to reorder: Step 1",
+      });
+      expect(handle).toHaveAccessibleDescription(/arrows/);
+      // A repeated step is normal ("Click Next" twice): no warning.
+      expect(
+        screen.getByRole("textbox", { name: "Step 2" }),
+      ).not.toHaveAccessibleDescription(/Duplicate row/);
+      await expectNoAxeViolations();
+    },
+    AXE_TIMEOUT,
+  );
 
-  it("Examples cells are named by column and row; repeats are listed", async () => {
-    renderWithProviders(
-      <ExamplesTable
-        value={{
-          headers: ["user", "user"],
-          rows: [
-            ["a", "b"],
-            ["a", "b"],
-          ],
-        }}
-        onChange={() => {}}
-      />,
-    );
-    for (const cell of screen.getAllByRole("textbox", { name: "user · Row 2" }))
-      expect(cell).toHaveAccessibleDescription(/Duplicate row/);
-    expect(
-      screen.getByRole("textbox", { name: "Column 2" }),
-    ).toHaveAccessibleDescription(/Duplicate row/);
-    await expectNoAxeViolations();
-  }, AXE_TIMEOUT);
+  it(
+    "Examples cells are named by column and row; repeats are listed",
+    async () => {
+      renderWithProviders(
+        <ExamplesTable
+          value={{
+            headers: ["user", "user"],
+            rows: exRows(["a", "b"], ["a", "b"]),
+          }}
+          onChange={() => {}}
+        />,
+      );
+      for (const cell of screen.getAllByRole("textbox", {
+        name: "user · Row 2",
+      }))
+        expect(cell).toHaveAccessibleDescription(/Duplicate row/);
+      expect(
+        screen.getByRole("textbox", { name: "Column 2" }),
+      ).toHaveAccessibleDescription(/Duplicate row/);
+      await expectNoAxeViolations();
+    },
+    AXE_TIMEOUT,
+  );
 });

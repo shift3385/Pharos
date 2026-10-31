@@ -203,6 +203,11 @@ fn purge_children(
         )
         .map_err(|e| e.to_string())?;
         forget(conn, child.entity, &id)?;
+        if child.entity == "test_case" {
+            // Its revisions stay on the server until SYNC-11: a re-pull must
+            // not bring them back here (DAT-02).
+            crate::revisions::remember_purged(conn, &id)?;
+        }
         purged += 1;
     }
     Ok(purged)

@@ -1,6 +1,8 @@
 //! Test case repository + Tauri commands (spec §5.3). Scenario ids are
 //! auto-generated (ATS_001, ...). The 21-attribute content lives in `data`
-//! (JSON); every update snapshots the prior state and bumps `revision`.
+//! (JSON); every save bumps `revision` and writes the immutable row of the new
+//! state (`revisions.rs`, DAT-02). Steps and Outline rows carry stable ids
+//! (`steps.rs`): what the UI sends is normalized, never trusted blindly.
 //!
 //! A case belongs to its project's owner: every function takes the signed-in
 //! `user_id` and only touches cases of projects that user owns (FIX-08). Audit
@@ -19,6 +21,8 @@ use crate::db::{ensure_workspace, Db};
 use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
 use crate::project;
+use crate::revisions;
+use crate::steps;
 
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
@@ -235,7 +239,9 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
     };
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
-    let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
+    let mut data = input.data.clone();
+    steps::normalize_new_case_data(&mut data);
+    let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, \
          version, status, priority, author, data, created_by, updated_by, created_at, \
@@ -272,6 +278,7 @@ pub(crate) fn insert_case(conn: &Connection, input: &TestCaseInput) -> Result<St
             user,
         ),
     )?;
+    revisions::ensure_current(conn, &id, user, true)?;
     Ok(id)
 }
 
@@ -284,36 +291,18 @@ pub(crate) fn update_case(
     if !owns(conn, id, &input.user_id)? {
         return Err("test case not found".to_string());
     }
-    let (revision, prev_title, prev_data) = conn
+    let revision: i64 = conn
         .query_row(
-            "SELECT revision, title, data FROM test_cases WHERE id = ?1",
+            "SELECT revision FROM test_cases WHERE id = ?1",
             params![id],
-            |r| {
-                Ok((
-                    r.get::<_, i64>(0)?,
-                    r.get::<_, String>(1)?,
-                    r.get::<_, String>(2)?,
-                ))
-            },
+            |r| r.get(0),
         )
         .map_err(|e| e.to_string())?;
 
     let before = journal::snapshot(conn, "test_case", id)?;
-    conn.execute(
-        "INSERT INTO test_case_revisions (id, test_case_id, revision, title, data, \
-         created_at, created_by) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), ?6)",
-        params![
-            Uuid::new_v4().to_string(),
-            id,
-            revision,
-            prev_title,
-            prev_data,
-            input.user_id
-        ],
-    )
-    .map_err(|e| e.to_string())?;
-
-    let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
+    let mut data = input.data.clone();
+    steps::normalize_new_case_data(&mut data);
+    let data_str = serde_json::to_string(&data).map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE test_cases SET title = ?2, version = ?3, status = ?4, priority = ?5, \
          author = ?6, data = ?7, updated_at = datetime('now'), updated_by = ?9, \
@@ -348,6 +337,7 @@ pub(crate) fn update_case(
         )
         .before(before),
     )?;
+    revisions::ensure_current(conn, id, user, true)?;
     Ok(())
 }
 
@@ -596,15 +586,62 @@ mod tests {
     }
 
     #[test]
-    fn update_bumps_revision_and_snapshots() {
+    fn every_save_writes_the_row_of_the_new_state() {
         let c = conn();
         let p = project(&c, "ATS_");
         let id = insert_case(&c, &input(&p, None, "Case")).unwrap();
+        let first = revisions::current_id(&c, &id).unwrap().unwrap().0;
         update_case(&c, &id, &input(&p, Some("ATS_001"), "Case v2")).unwrap();
         let case = get_case(&c, &id, USER).unwrap().unwrap();
         assert_eq!(case.revision, 2);
         assert_eq!(case.title, "Case v2");
-        assert_eq!(list_revisions(&c, &id, USER).unwrap().len(), 1);
+        let revs = list_revisions(&c, &id, USER).unwrap();
+        assert_eq!(
+            revs.iter()
+                .map(|r| (r.revision, r.title.as_str()))
+                .collect::<Vec<_>>(),
+            [(2, "Case v2"), (1, "Case")]
+        );
+        assert_eq!(revs[1].id, first);
+        assert_eq!(
+            revs[0].id,
+            revisions::current_id(&c, &id).unwrap().unwrap().0
+        );
+        // Both rows wait for the push as test_case_revision documents.
+        let queued: i64 = c
+            .query_row(
+                "SELECT count(*) FROM oplog WHERE entity = 'test_case_revision' AND op = 'append'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(queued, 2);
+    }
+
+    #[test]
+    fn saved_steps_get_stable_ids_that_survive_reorder_and_edit() {
+        let c = conn();
+        let p = project(&c, "ATS_");
+        let mut create = input(&p, None, "Case");
+        create.data = serde_json::json!({"steps": ["a", "b"], "examples": {"headers": ["x"], "rows": [["1"]]}});
+        let id = insert_case(&c, &create).unwrap();
+        let data = get_case(&c, &id, USER).unwrap().unwrap().data;
+        let (a, b) = (data["steps"][0].clone(), data["steps"][1].clone());
+        assert_eq!(a["text"], "a");
+        assert!(data["examples"]["rows"][0]["id"].is_string());
+        // Reorder, edit a text and insert a new step: ids stay with their steps.
+        let mut edit = input(&p, None, "Case");
+        let mut b2 = b.clone();
+        b2["text"] = "b edited".into();
+        edit.data = serde_json::json!({"steps": [b2, "new", a], "examples": data["examples"]});
+        update_case(&c, &id, &edit).unwrap();
+        let after = get_case(&c, &id, USER).unwrap().unwrap().data;
+        assert_eq!(after["steps"][0]["id"], b["id"]);
+        assert_eq!(after["steps"][0]["text"], "b edited");
+        assert_eq!(after["steps"][2]["id"], a["id"]);
+        assert_ne!(after["steps"][1]["id"], a["id"]);
+        assert_ne!(after["steps"][1]["id"], b["id"]);
+        assert_eq!(after["examples"], data["examples"]);
     }
 
     #[test]

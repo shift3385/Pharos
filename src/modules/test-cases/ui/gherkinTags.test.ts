@@ -17,28 +17,34 @@ import {
   userScenarioTags,
   type TagContext,
 } from "./gherkin";
+import { newStepId, stepsOf } from "../model/steps";
+
+// Steps and Outline rows carry stable ids (DAT-02).
+const st = (...list: string[]) => stepsOf(list);
+const exRows = (...values: string[][]) =>
+  values.map((v) => ({ id: newStepId(), values: v }));
 
 const basic: TestCaseData = {
   gherkinLevel: "basic",
   requirementKeys: ["REQ-014"],
   featureTags: ["priority:high"],
   scenarioTags: ["smoke"],
-  preconditions: ['el usuario "qa@pharos.dev" está registrado'],
-  steps: ["inicia sesión con contraseña válida"],
+  preconditions: st('el usuario "qa@pharos.dev" está registrado'),
+  steps: st("inicia sesión con contraseña válida"),
   expectedResult: "ve el panel principal",
 };
 
 const outline: TestCaseData = {
   gherkinLevel: "outline",
   requirementKeys: ["REQ-014"],
-  steps: ['inicia sesión con "<email>" y "<clave>"'],
+  steps: st('inicia sesión con "<email>" y "<clave>"'),
   expectedResult: 've el error "<mensaje>"',
   examples: {
     headers: ["email", "clave", "mensaje"],
-    rows: [
+    rows: exRows(
       ["x@y", "mala", "Credenciales inválidas"],
       ["", "vacía", "Email obligatorio"],
-    ],
+    ),
   },
 };
 
@@ -102,8 +108,19 @@ describe("Gherkin tags — rendering", () => {
       "Checkout",
       ["hay un carrito"],
       [
-        { id: "1", name: "Pago con tarjeta", steps: ["paga"], expectedResult: "ok", tags: ["happy"] },
-        { id: "2", name: "Pago rechazado", steps: ["paga mal"], expectedResult: "error" },
+        {
+          id: "1",
+          name: "Pago con tarjeta",
+          steps: st("paga"),
+          expectedResult: "ok",
+          tags: ["happy"],
+        },
+        {
+          id: "2",
+          name: "Pago rechazado",
+          steps: st("paga mal"),
+          expectedResult: "error",
+        },
       ],
       { scenarioId: "TC-003", requirementKeys: ["REQ-002"] },
     );
@@ -113,7 +130,9 @@ describe("Gherkin tags — rendering", () => {
   });
 
   it("emits no tag lines when there is nothing to tag (unsaved case)", () => {
-    expect(toGherkin("X", { steps: ["a"] })).toBe("Feature: X\n  Scenario: X\n    When a\n");
+    expect(toGherkin("X", { steps: st("a") })).toBe(
+      "Feature: X\n  Scenario: X\n    When a\n",
+    );
   });
 
   it("makes IDs with spaces valid tags", () => {
@@ -135,8 +154,8 @@ describe("Gherkin tags — parsing back (round-trip)", () => {
       ...basic,
       ...splitFeatureTags(parsed.featureTags, ctx()),
       scenarioTags: userScenarioTags(parsed.scenarioTags, ctx()),
-      preconditions: parsed.preconditions,
-      steps: parsed.steps,
+      preconditions: stepsOf(parsed.preconditions),
+      steps: stepsOf(parsed.steps),
       expectedResult: parsed.expectedResult,
     };
     expect(data.requirementKeys).toEqual(["REQ-014"]);
@@ -149,8 +168,20 @@ describe("Gherkin tags — parsing back (round-trip)", () => {
     const text = flowsToGherkin(
       "Checkout",
       [],
-      [{ id: "1", name: "Pago", steps: ["paga"], expectedResult: "ok", tags: ["happy"] }],
-      { scenarioId: "TC-003", requirementKeys: ["REQ-002"], featureTags: ["wip"] },
+      [
+        {
+          id: "1",
+          name: "Pago",
+          steps: st("paga"),
+          expectedResult: "ok",
+          tags: ["happy"],
+        },
+      ],
+      {
+        scenarioId: "TC-003",
+        requirementKeys: ["REQ-002"],
+        featureTags: ["wip"],
+      },
     );
     const parsed = parseFeatureFlows(text);
     const c = ctx({ scenarioId: "TC-003", linkedRequirementKeys: ["REQ-002"] });
@@ -186,8 +217,18 @@ describe("official Cucumber parser + tag expressions (cucumber-js --tags)", () =
       "Checkout",
       [],
       [
-        { id: "1", name: "Pago con tarjeta", steps: ["paga"], expectedResult: "ok" },
-        { id: "2", name: "Pago rechazado", steps: ["paga mal"], expectedResult: "error" },
+        {
+          id: "1",
+          name: "Pago con tarjeta",
+          steps: st("paga"),
+          expectedResult: "ok",
+        },
+        {
+          id: "2",
+          name: "Pago rechazado",
+          steps: st("paga mal"),
+          expectedResult: "error",
+        },
       ],
       { scenarioId: "TC-003", requirementKeys: ["REQ-002"] },
     ),

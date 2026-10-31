@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { FieldMessage } from "@shared/ui/FormField";
 import { duplicateRow, duplicateRows } from "@shared/validation";
 import type { ExampleTable } from "../model/types";
+import { newStepId } from "../model/steps";
 
 /** Editable data table for a Scenario Outline's Examples block (spec §5.3
  *  amendment). Column headers become the <placeholder> names used in steps.
  *  A repeated column name or data row gets a warning listed under the table
- *  and linked to its cells (UX-01). */
+ *  and linked to its cells (UX-01). Every row keeps its stable id (DAT-02);
+ *  a new row gets a fresh one. */
 export function ExamplesTable({
   value,
   onChange,
@@ -19,8 +21,13 @@ export function ExamplesTable({
   const baseId = useId();
   const { headers, rows } = value;
   const dupHeaders = duplicateRows(headers, (h) => h);
-  const dupRows = duplicateRows(rows, (r) => (r.some((c) => c.trim()) ? r.map((c) => c.trim()).join(" | ") : ""));
-  const columnName = (i: number) => headers[i]?.trim() || t("testCase.examples.columnN", { n: i + 1 });
+  const dupRows = duplicateRows(rows, (r) =>
+    r.values.some((c) => c.trim())
+      ? r.values.map((c) => c.trim()).join(" | ")
+      : "",
+  );
+  const columnName = (i: number) =>
+    headers[i]?.trim() || t("testCase.examples.columnN", { n: i + 1 });
   const rowName = (i: number) => t("a11y.row", { n: i + 1 });
   const headerMsg = (i: number) => `${baseId}-h${i}-msg`;
   const rowMsg = (i: number) => `${baseId}-r${i}-msg`;
@@ -32,20 +39,41 @@ export function ExamplesTable({
     onChange({
       headers,
       rows: rows.map((row, ri) =>
-        ri === r ? row.map((cell, ci) => (ci === c ? v : cell)) : row,
+        ri === r
+          ? {
+              ...row,
+              values: row.values.map((cell, ci) => (ci === c ? v : cell)),
+            }
+          : row,
       ),
     });
 
   const addColumn = () =>
-    onChange({ headers: [...headers, ""], rows: rows.map((r) => [...r, ""]) });
+    onChange({
+      headers: [...headers, ""],
+      rows: rows.map((r) => ({ ...r, values: [...r.values, ""] })),
+    });
 
   const removeColumn = (i: number) =>
     onChange({
       headers: headers.filter((_, idx) => idx !== i),
-      rows: rows.map((r) => r.filter((_, ci) => ci !== i)),
+      rows: rows.map((r) => ({
+        ...r,
+        values: r.values.filter((_, ci) => ci !== i),
+      })),
     });
 
-  const addRow = () => onChange({ headers, rows: [...rows, headers.map(() => "")] });
+  const addRow = () =>
+    onChange({
+      headers,
+      rows: [
+        ...rows,
+        {
+          id: newStepId(new Set(rows.map((r) => r.id))),
+          values: headers.map(() => ""),
+        },
+      ],
+    });
 
   const removeRow = (i: number) =>
     onChange({ headers, rows: rows.filter((_, ri) => ri !== i) });
@@ -95,13 +123,13 @@ export function ExamplesTable({
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri}>
+            <tr key={row.id}>
               {headers.map((_, ci) => (
                 <td key={ci}>
                   <input
                     aria-label={`${columnName(ci)} · ${rowName(ri)}`}
                     aria-describedby={dupRows.has(ri) ? rowMsg(ri) : undefined}
-                    value={row[ci] ?? ""}
+                    value={row.values[ci] ?? ""}
                     onChange={(e) => setCell(ri, ci, e.target.value)}
                   />
                 </td>

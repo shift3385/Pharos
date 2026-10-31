@@ -67,7 +67,9 @@ describe("syncRequest (SYNC-08)", () => {
     expect(headers.authorization).toBe("Bearer tok");
     // DAT-01: tells the server it reads `keyConflicts` (else a taken key is a 426);
     // AUD-01: that it knows the append-only class and pushes whole payloads.
-    expect(headers[FEATURES_HEADER]).toBe("key-conflicts,append-only,complete-payload");
+    expect(headers[FEATURES_HEADER]).toBe(
+      "key-conflicts,append-only,complete-payload,stable-steps",
+    );
   });
 
   it("turns the server's refusal into an error with its code", async () => {

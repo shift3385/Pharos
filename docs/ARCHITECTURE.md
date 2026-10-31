@@ -170,7 +170,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   kinds are fixed in the Pharos Run JSON schema and get their tables in
   0.4.0/0.5.0. Cycles, configurations and custom fields may slip to 0.3.0.
 - Results are append-only and point to an immutable, synced
-  `test_case_revision` and to stable step ids.
+  `test_case_revision` and to stable step ids — the revisions and the ids are
+  **built in E2 (DAT-02)**, see "Case revisions and stable steps" below.
 - Evidence lives encrypted outside the database (`evidence/`, addressed by
   hash) — **built in E2 (DAT-03)**, see "Evidence store" below.
 - One write path (`journal::record`) feeds both the oplog and an append-only
@@ -763,9 +764,15 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `x-pharos-version`; the server serves its own MINOR and the previous one and
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
-  `append-only`). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
+  `append-only`, `complete-payload`, `stable-steps`). A push from a client
+  without `stable-steps` (0.1.x, 0.2.0-alpha.1) is refused with 426
+  `read_only_client_version` before anything is stored, and its pulls carry
+  test cases with text steps (`flattenCaseData`), the stable lists kept in
+  `data.__stableSteps` so their upgrade restores the same ids and hash: older
+  clients may only read (VERSIONING §6.5, DAT-02). Two sync classes (design 0.2.0 §3.2): `lww` (the above) and
   `append_only` (`APPEND_ONLY_ENTITIES` in `sync.schemas.ts`, today
-  `audit_event`): op `append`, inserted if absent, the same content again is a
+  `audit_event` and `test_case_revision`; for the latter `createdAt`,
+  `createdBy` and `hlc` are outside the compared content): op `append`, inserted if absent, the same content again is a
   no-op, other content under the same id is refused in `appendRejected`
   (`content_changed`) and the stored one stays, and an `audit_event` that claims
   `deviceId "web"` is refused too (`reserved_chain`: only the server writes the
@@ -886,7 +893,32 @@ Upgrades follow `docs/VERSIONING.md` §6 (SEC-06):
   explains how it was generated. A second fixture,
   `tests/fixtures/0.2.0-alpha.1/`, is the previous published minor: it must open
   with every row unchanged, its pending changes still push, its cursor restarts
-  once and its audit log starts empty.
+  once and its audit log starts empty. Both fixtures (plus outline, advanced
+  and odd-shaped cases added to the 0.1 image) must migrate to stable step
+  ids without losing a character, with one current revision row per case;
+  0020–0021 are also tested after 0022–0023 (a database that took the
+  evidence store first).
+
+**Case revisions and stable steps (DAT-02, [ADR-0011](adr/0011-revision-del-caso-y-pasos-estables.md)).**
+Steps are `{ id, text, expected? }` (preconditions, background, steps and
+those of every flow) and Outline rows `{ id, values }`; ids are unique within
+the case and never reused. `src-tauri/src/steps.rs` normalizes anything older
+without loss (derived ids, the same on every device), computes the full
+RFC 8785 JCS hash of a revision and its UUIDv5 id; the server has the same code
+(`stable-steps.ts`) and both check `tests/fixtures/stable-steps-vectors.json`.
+Every state a case reaches has one immutable row in `test_case_revisions`
+(`src-tauri/src/revisions.rs`, `ensure_current`), synced as the append-only
+`test_case_revision`. Migration 0020 rebuilds that table without its foreign
+key (a pull may bring revisions before their case); 0021 runs a Rust step
+(`db.rs`, `RUST_STEPS`, same savepoint as its SQL) that gives every case its
+ids and its current revision. A save gives a new step a random id; the
+editor keeps ids through edits, moves and Gherkin re-parses
+(`src/modules/test-cases/model/steps.ts`). Test cases and revisions wait
+until the account's server lists `stable-steps` (diagnostics:
+`heldBackCases`). A case pulled flattened by a read-only build gets its ids
+back from the stash on upgrade (`restore_from_stash`, or the stash of its
+newest pre-0.2 history row if the old editor saved over it).
+`.feature` and `.xlsx` exports are unchanged (`exportGolden.test.ts`).
 
 **Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**
 Attachment contents live outside the database, in `<data dir>/evidence/`

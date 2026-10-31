@@ -26,6 +26,7 @@ use crate::journal::{self, Action, Actor, Change};
 use crate::key_sync;
 use crate::keys;
 use crate::oplog::{self, SYNCED};
+use crate::revisions;
 use crate::sync_class;
 
 fn table_for(entity: &str) -> Option<&'static str> {
@@ -330,9 +331,103 @@ fn open_conflict_id(
 /// changed since the last sync, carrying its live state (or a tombstone), its
 /// base and the oplog ids covered. Entities with an open conflict (of version
 /// or of key, DAT-01) are held back until it is resolved.
+/// `sync_state` key of the features the server listed in an account's last
+/// pull, one per account like its cursor (FIX-07).
+fn server_features_key(user: &str) -> String {
+    format!("server_features:{user}")
+}
+
+/// Tests only: the features every account's server listed.
+#[cfg(test)]
+const ANY_ACCOUNT_FEATURES_KEY: &str = "server_features:*";
+
+/// The server feature that stores test cases with stable steps and takes case
+/// revisions (DAT-02). Without it, a test_case push is held back.
+pub(crate) const STABLE_STEPS: &str = "stable-steps";
+
+/// True once the account's server has listed `stable-steps` (VERSIONING §6.5,
+/// ADR-0011). Until then this build's test cases and case revisions stay
+/// pending: a server without it would hand their new shape to clients that
+/// only know text steps, and would refuse the revisions.
+pub(crate) fn server_takes_stable_steps(conn: &Connection, user: &str) -> Result<bool, String> {
+    let features = state_value(conn, &server_features_key(user))?;
+    #[cfg(test)]
+    let features = match features {
+        Some(f) => Some(f),
+        None => state_value(conn, ANY_ACCOUNT_FEATURES_KEY)?,
+    };
+    Ok(features.is_some_and(|f| f.split(',').any(|x| x == STABLE_STEPS)))
+}
+
+/// Test cases with pending changes held back, over every account of this
+/// device, because its server has not listed `stable-steps` yet, for the
+/// diagnostics.
+pub(crate) fn held_back_cases(conn: &Connection) -> Result<i64, String> {
+    let users: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT user_id FROM oplog
+                  WHERE entity = 'test_case' AND synced_at IS NULL AND user_id <> ''",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map([], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<rusqlite::Result<_>>()
+            .map_err(|e| e.to_string())?
+    };
+    let mut held = 0;
+    for user in users {
+        if server_takes_stable_steps(conn, &user)? {
+            continue;
+        }
+        held += conn
+            .query_row(
+                "SELECT count(DISTINCT entity_id) FROM oplog
+                  WHERE entity = 'test_case' AND synced_at IS NULL AND user_id = ?1",
+                params![user],
+                |r| r.get::<_, i64>(0),
+            )
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(held)
+}
+
+/// Tests: a server that lists `stable-steps` (what every current server does),
+/// for every account.
+#[cfg(test)]
+pub(crate) fn assume_stable_steps_server(conn: &Connection) {
+    assume_server_features(conn, "key-conflicts,append-only,stable-steps");
+}
+
+/// Tests: the features every account's server listed last.
+#[cfg(test)]
+pub(crate) fn assume_server_features(conn: &Connection, features: &str) {
+    put_state(conn, ANY_ACCOUNT_FEATURES_KEY, features).unwrap();
+}
+
+/// Records the features the account's server listed in a pull answer.
+#[tauri::command]
+pub fn sync_server_features_set(
+    db: State<Db>,
+    user_id: String,
+    features: Vec<String>,
+) -> Result<(), String> {
+    require_user(&user_id)?;
+    db.with_conn(|conn| put_state(conn, &server_features_key(&user_id), &features.join(",")))?;
+    db.persist()
+}
+
+/// Records the features for one account (the command's body, for tests).
+#[cfg(test)]
+pub(crate) fn record_server_features(conn: &Connection, user: &str, features: &str) {
+    put_state(conn, &server_features_key(user), features).unwrap();
+}
+
 pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, String> {
     oplog::claim_unowned(conn)?;
     key_sync::close_stale(conn)?;
+    let cases_too = server_takes_stable_steps(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -347,12 +442,13 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                                    AND c.resolved_at IS NULL)
                    AND NOT EXISTS (SELECT 1 FROM key_conflicts k WHERE k.entity = o.entity
                                    AND k.entity_id = o.entity_id AND k.resolved_at IS NULL)
+                   AND (o.entity <> 'test_case' OR ?2)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user], |r| {
+            .query_map(params![user, cases_too], |r| {
                 Ok((
                     r.get::<_, String>(0)?,
                     r.get::<_, String>(1)?,
@@ -420,18 +516,22 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
 /// from its registry entry, op "append", no base. Never held back by a
 /// conflict (they have none). Sent only to servers with `append-only`.
 pub(crate) fn build_pending_append(conn: &Connection, user: &str) -> Result<Pending, String> {
+    // Case revisions wait for a server with `stable-steps`, like their cases.
+    let revisions_too = server_takes_stable_steps(conn, user)?;
     let rows: Vec<(String, String, String, String, String)> = {
         let mut stmt = conn
             .prepare(&format!(
                 "SELECT entity, entity_id, id, hlc, author FROM oplog
                   WHERE synced_at IS NULL AND user_id = ?1 AND entity IN ({})
                     AND payload NOT LIKE '%\"appendRejected\"%'
+                    AND (entity <> '{}' OR ?2)
                   ORDER BY rowid",
-                sync_class::append_only_sql_list()
+                sync_class::append_only_sql_list(),
+                revisions::ENTITY
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user], |r| {
+            .query_map(params![user, revisions_too], |r| {
                 Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
             })
             .map_err(|e| e.to_string())?;
@@ -570,7 +670,11 @@ fn upsert_conflict(
     doc: &RemoteDoc,
     base: Option<(i64, String)>,
 ) -> Result<(), String> {
-    let remote_payload = doc.payload.to_string();
+    let mut remote = doc.payload.clone();
+    if doc.entity == "test_case" {
+        revisions::normalize_payload(&doc.entity_id, &mut remote);
+    }
+    let remote_payload = remote.to_string();
     if let Some(id) = open_conflict_id(conn, user, &doc.entity, &doc.entity_id)? {
         conn.execute(
             "UPDATE sync_conflicts SET remote_payload = ?2, remote_revision = ?3, remote_deleted = ?4,
@@ -686,7 +790,18 @@ fn write_doc(
         return Ok(());
     }
 
-    let p = &doc.payload;
+    // A case written by an older client (or before this build) arrives with
+    // plain-text steps: it gets the same derived ids as on every other device
+    // (ADR-0011, "documentos antiguos que llegan por pull").
+    let normalized;
+    let p = if doc.entity == "test_case" {
+        let mut payload = doc.payload.clone();
+        revisions::normalize_payload(&doc.entity_id, &mut payload);
+        normalized = payload;
+        &normalized
+    } else {
+        &doc.payload
+    };
     let data_str = |key: &str| {
         p.get(key)
             .map(|v| v.to_string())
@@ -855,6 +970,11 @@ fn write_doc(
     // The server gave this entity a definitive key: nothing left to resolve.
     if key_field.is_some() && !pulled_key.is_empty() && !keys::is_provisional(pulled_key) {
         key_sync::settled_by_server(conn, &doc.entity, &doc.entity_id)?;
+    }
+    // The pulled state has its revision row; the device that made it pushes
+    // the same row, so this one stays local (DAT-02).
+    if doc.entity == "test_case" {
+        revisions::ensure_current(conn, &doc.entity_id, user, false)?;
     }
     Ok(())
 }
@@ -1082,6 +1202,9 @@ pub(crate) fn resolve_conflict(
                 .before(journal::snapshot(conn, &c.entity, &c.entity_id)?)
                 .summary(json!({ "resolution": "local", "remoteRevision": c.remote.revision })),
             )?;
+            if c.entity == "test_case" && !deleted {
+                revisions::ensure_current(conn, &c.entity_id, user, true)?;
+            }
         }
         "remote" => {
             // Taking back a project this device had deleted: its children were
@@ -1194,6 +1317,7 @@ mod tests {
     fn conn() -> Connection {
         let c = Connection::open_in_memory().unwrap();
         crate::db::run_migrations(&c).unwrap();
+        assume_stable_steps_server(&c);
         c
     }
 
@@ -1709,10 +1833,24 @@ mod tests {
         assert_eq!(oplog::sync_state(&c, "A").unwrap().pending, 1);
         assert_eq!(oplog::sync_state(&c, "B").unwrap().pending, 1);
         let rows: i64 = c
-            .query_row("SELECT count(*) FROM oplog", [], |r| r.get(0))
+            .query_row(
+                "SELECT count(*) FROM oplog WHERE entity <> 'test_case_revision'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(rows, 3);
-        // Only the unattributable global cursor goes; the device id stays.
+        // Migration 0021 queued the current revision of the live case (DAT-02).
+        let revisions: i64 = c
+            .query_row(
+                "SELECT count(*) FROM oplog WHERE entity = 'test_case_revision'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(revisions, 1);
+        // Only the unattributable global cursor goes; the device id stays (and
+        // the clock 0021 stamped the revision with).
         let keys: Vec<String> = c
             .prepare("SELECT key FROM sync_state ORDER BY key")
             .unwrap()
@@ -1720,7 +1858,7 @@ mod tests {
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap();
-        assert_eq!(keys, ["device_id"]);
+        assert_eq!(keys, ["device_id", "hlc_last"]);
     }
 
     fn is_deleted(c: &Connection, table: &str, id: &str) -> bool {

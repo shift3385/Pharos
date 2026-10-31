@@ -35,7 +35,7 @@ async function tokenFor(email = "web@pharos.dev"): Promise<string> {
 const headers = (token: string) => ({
   authorization: `Bearer ${token}`,
   [VERSION_HEADER]: SERVER_VERSION,
-  [FEATURES_HEADER]: "key-conflicts",
+  [FEATURES_HEADER]: "key-conflicts,stable-steps",
 });
 
 type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";

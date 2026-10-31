@@ -32,7 +32,7 @@ async function tokenFor(email: string): Promise<string> {
 const headers = (token: string) => ({
   authorization: `Bearer ${token}`,
   [VERSION_HEADER]: SERVER_VERSION,
-  [FEATURES_HEADER]: "key-conflicts",
+  [FEATURES_HEADER]: "key-conflicts,stable-steps",
 });
 
 type Req = { projectId: string; kind: "case" | "requirement" | "defect"; prefix?: string; floor?: number };
@@ -129,8 +129,9 @@ describe("duplicate keys on push (DAT-01)", () => {
   it("answers 426 to a client that cannot read keyConflicts, instead of a silent refusal", async () => {
     const token = await tokenFor("a@pharos.dev");
     await push(token, [caseDelta("c1", "ATS_007")]);
-    // A client built before DAT-01: same version string, no features header.
-    const old = { authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION };
+    // A client that does not read keyConflicts (only the read-only gate of
+    // DAT-02 is passed, to reach the key check).
+    const old = { authorization: `Bearer ${token}`, [VERSION_HEADER]: SERVER_VERSION, [FEATURES_HEADER]: "stable-steps" };
     const res = await app.inject({
       method: "POST",
       url: "/sync/push",

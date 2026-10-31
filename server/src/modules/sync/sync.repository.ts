@@ -8,6 +8,7 @@ import {
   APPEND_ONLY_ENTITIES,
   isAppendOnly,
   LOCATION_KEYS,
+  outsideContent,
   MAX_PULL_LIMIT,
   PROJECT_CHILDREN,
   type Delta,
@@ -197,21 +198,29 @@ export async function storeDoc(
   return { payload: rows[0].payload, cascade };
 }
 
-/** `payload` without its location keys: the immutable content of an
- *  append-only document. */
-const CONTENT_SQL = (payload: string) => `(${payload} - ${LOCATION_KEYS.map((k) => `'${k}'`).join(" - ")})`;
+/** `payload` without its location and bookkeeping keys: the immutable
+ *  content of an append-only document of `entity` (`outsideContent`). */
+const CONTENT_SQL = (entity: string, payload: string) =>
+  `(${payload} - ${outsideContent(entity)
+    .map((k) => `'${k}'`)
+    .join(" - ")})`;
+
+/** True in SQL when a location key differs between two payloads. */
+const MOVED_SQL = (a: string, b: string) =>
+  `(${LOCATION_KEYS.map((k) => `${a}->'${k}' IS DISTINCT FROM ${b}->'${k}'`).join(" OR ")})`;
 
 /** Stores one append-only document (design 0.2.0 §3.2, ADR-0011): inserted if
  *  absent; the same content again is a no-op (a retried push); other content
  *  under the same id is refused and the stored one stays. The location
- *  (`workspaceId`, `projectId`) is outside the content and may change. Never a
+ *  (`workspaceId`, `projectId`) is outside the content and may change; the
+ *  bookkeeping keys (`NON_CONTENT_KEYS`) keep their first value. Never a
  *  conflict, no base, no last-write-wins. A tombstone stays a tombstone. The
  *  caller holds the user's write lock. */
 export async function storeAppend(client: PoolClient, userId: string, d: Delta): Promise<ApplyResult> {
   const { rows } = await client.query<{ deleted: boolean; same: boolean; moved: boolean }>(
     `SELECT deleted,
-            ${CONTENT_SQL("payload")} = ${CONTENT_SQL("$4::jsonb")} AS same,
-            payload <> $4::jsonb AS moved
+            ${CONTENT_SQL(d.entity, "payload")} = ${CONTENT_SQL(d.entity, "$4::jsonb")} AS same,
+            ${MOVED_SQL("payload", "$4::jsonb")} AS moved
        FROM documents
       WHERE user_id = $1 AND entity = $2 AND entity_id = $3
       FOR UPDATE`,
@@ -233,9 +242,14 @@ export async function storeAppend(client: PoolClient, userId: string, d: Delta):
   }
   if (current.moved) {
     await client.query(
-      `UPDATE documents SET payload = $4, updated_at = now(), seq = nextval('documents_seq')
+      // Only the location moves: the stored content and bookkeeping stay.
+      `UPDATE documents
+          SET payload = (payload ${LOCATION_KEYS.map((k) => `- '${k}'`).join(" ")})
+                        || (SELECT coalesce(jsonb_object_agg(key, value), '{}'::jsonb)
+                              FROM jsonb_each($4::jsonb) WHERE key = ANY($5::text[])),
+              updated_at = now(), seq = nextval('documents_seq')
         WHERE user_id = $1 AND entity = $2 AND entity_id = $3`,
-      [userId, d.entity, d.entityId, d.payload],
+      [userId, d.entity, d.entityId, d.payload, [...LOCATION_KEYS]],
     );
   }
   return { accepted: true };

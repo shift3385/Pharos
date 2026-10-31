@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { ListField } from "@shared/ui/fields";
-import type { ExampleTable, Flow } from "../model/types";
+import type { ExampleTable, Flow, Step } from "../model/types";
+import { StepListField } from "./StepListField";
 import { SortableSteps } from "./SortableSteps";
 import { ExamplesTable } from "./ExamplesTable";
 import { newFlow } from "./gherkin";
@@ -15,9 +15,9 @@ export function FlowsEditor({
   onBackgroundChange,
   onFlowsChange,
 }: {
-  background: string[];
+  background: Step[];
   flows: Flow[];
-  onBackgroundChange: (next: string[]) => void;
+  onBackgroundChange: (next: Step[]) => void;
   onFlowsChange: (next: Flow[]) => void;
 }) {
   const { t } = useTranslation();
@@ -33,7 +33,11 @@ export function FlowsEditor({
     <div className="tc-flows">
       <p className="tp-field__grouplabel">{t("testCase.flow.background")}</p>
       <p className="tp-field__hint">{t("testCase.flow.backgroundHint")}</p>
-      <ListField label={t("testCase.flow.background")} items={background} onChange={onBackgroundChange} />
+      <StepListField
+        label={t("testCase.flow.background")}
+        items={background}
+        onChange={onBackgroundChange}
+      />
 
       {flows.map((flow, i) => (
         <div className="tc-flow" key={flow.id}>
@@ -61,8 +65,10 @@ export function FlowsEditor({
             )}
           </div>
 
-          <p className="tp-field__grouplabel">{t("testCase.flow.preconditions")}</p>
-          <ListField
+          <p className="tp-field__grouplabel">
+            {t("testCase.flow.preconditions")}
+          </p>
+          <StepListField
             label={`${t("testCase.flow.preconditions")} · ${flow.name}`}
             items={flow.preconditions ?? []}
             onChange={(v) => setFlow(i, { preconditions: v })}

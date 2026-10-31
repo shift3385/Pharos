@@ -40,7 +40,7 @@ const headers = (token: string, features = "key-conflicts") => ({
   [VERSION_HEADER]: SERVER_VERSION,
   [FEATURES_HEADER]: features,
 });
-const DESKTOP = "key-conflicts,append-only,complete-payload";
+const DESKTOP = "key-conflicts,append-only,complete-payload,stable-steps";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
 async function call(token: string, method: Method, url: string, payload?: unknown) {
@@ -74,7 +74,8 @@ describe("web audit (AUD-01b)", () => {
     const p = await newProject(token);
     const c = (await call(token, "POST", "/api/test-cases", caseInput(p.id))).body;
     const updated = await call(token, "PUT", `/api/test-cases/${c.id}`, {
-      input: { ...caseInput(p.id, "Logout"), data: { steps: ["open", "close"] } },
+      // The editor sends back the step it read (with its id) and a new one.
+      input: { ...caseInput(p.id, "Logout"), data: { steps: [c.data.steps[0], "close"] } },
       revision: c.revision,
     });
     expect(updated.status).toBe(200);
@@ -103,7 +104,12 @@ describe("web audit (AUD-01b)", () => {
     }
     expect(events[1]).toMatchObject({ entityId: c.id, entityKey: "ATS_001" });
     expect(changesOf(events[1])).toMatchObject({ title: [null, "Login"], scenarioId: [null, "ATS_001"], deleted: [null, false] });
-    expect(changesOf(events[2])).toEqual({ title: ["Login", "Logout"], "data.steps": [["open"], ["open", "close"]] });
+    // Steps carry stable ids (DAT-02): the kept one keeps its id.
+    const steps = changesOf(events[2])["data.steps"] as { id: string; text: string }[][];
+    expect(Object.keys(changesOf(events[2])).sort()).toEqual(["data.steps", "title"]);
+    expect(changesOf(events[2]).title).toEqual(["Login", "Logout"]);
+    expect(steps.map((list) => list.map((s) => s.text))).toEqual([["open"], ["open", "close"]]);
+    expect(steps[1][0].id).toBe(steps[0][0].id);
     expect(changesOf(events[3])).toMatchObject({ title: ["Logout", null], deleted: [false, null] });
     expect(verifyChain(events)).toEqual({ ok: true, count: 4 });
     // Stamped after the change it records.
@@ -146,8 +152,12 @@ describe("web audit (AUD-01b)", () => {
     const c = (await call(token, "POST", "/api/test-cases", caseInput(p.id))).body;
     const before = (await chain(userId)).length;
 
-    // The same content again: a new revision for the devices, no event.
-    const same = await call(token, "PUT", `/api/test-cases/${c.id}`, { input: caseInput(p.id), revision: c.revision });
+    // The same content again (what the editor read, step ids included): a new
+    // revision for the devices, no event.
+    const same = await call(token, "PUT", `/api/test-cases/${c.id}`, {
+      input: { ...caseInput(p.id), data: c.data },
+      revision: c.revision,
+    });
     expect(same.status).toBe(200);
     expect(same.body.revision).toBe(c.revision + 1);
     // Stale revision (409), a taken key (409), not found (404).

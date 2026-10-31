@@ -122,6 +122,19 @@ resolution can be added without a schema change.
   field it does not know. Web domain writes are never merged. On pull the
   desktop takes the document as it is: the server already protected it.
   Sending `null` to clear is the recommended practice, not a requirement.
+- **Stable steps (DAT-02).** The client sends `stable-steps` too: it knows
+  `{id, text}` steps and Outline rows with ids, and pushes
+  `test_case_revision` documents (append-only). A client without it (0.1.x,
+  0.2.0-alpha.1) may only read: its push gets 426
+  `read_only_client_version` («Actualiza Pharos para enviar cambios; tus
+  cambios pendientes se conservan») and its pulls carry text steps, with the
+  stable lists in `data.__stableSteps` so its upgrade restores the server's
+  ids (review B1). Pulled
+  cases written by an older client get derived ids on apply, the same on
+  every device. After the pull the cycle records the server's features
+  for the account (`sync_server_features_set`); until a server lists `stable-steps`,
+  `oplog_pending` leaves test cases and revisions out, and the first sync
+  that sees it pushes them right after the pull.
 - **Cursor reset.** `sync_cursor_get` returns `0` when the cursor was stored
   under an older set of applied entities (`cursor_set:<user_id>` ≠
   `APPLIED_SET_VERSION`): an older build moved its cursor past documents it

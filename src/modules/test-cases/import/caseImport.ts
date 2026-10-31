@@ -14,6 +14,7 @@ import {
 } from "@shared/import/xlsx";
 import { detectLevel, fromGherkin, parseFeatureFlows } from "../ui/gherkin";
 import type { TestCaseData } from "../model/types";
+import { reconcileFlows, reconcileTable, stepsOf } from "../model/steps";
 
 // --- Header-driven .xlsx case importer ---------------------------------------
 // Reads a case spreadsheet by detecting section headers (es/en). Standard fields
@@ -124,14 +125,16 @@ export async function parseCaseXlsx(
         break;
       case "list": {
         const list = splitLines(raw);
-        (data as Record<string, unknown>)[spec.id] = list;
+        // Preconditions are Given steps: they get stable ids (DAT-02).
+        (data as Record<string, unknown>)[spec.id] =
+          spec.id === "preconditions" ? stepsOf(list) : list;
         filled = list.length > 0;
         prev = list.length ? preview(list.join(", ")) : undefined;
         break;
       }
       case "steps": {
         const list = stripNumbering(splitLines(raw));
-        data.steps = list;
+        data.steps = stepsOf(list);
         filled = list.length > 0;
         prev = list.length ? preview(list.join(", ")) : undefined;
         break;
@@ -155,11 +158,14 @@ export async function parseCaseXlsx(
   data.gherkinLevel = level;
   if (level === "advanced") {
     const parsed = parseFeatureFlows(gherkin);
-    data.background = parsed.background;
-    data.flows = parsed.flows;
+    data.background = stepsOf(parsed.background);
+    data.flows = reconcileFlows(undefined, parsed.flows);
     data.featureSource = gherkin;
   } else if (level === "outline") {
-    data.examples = fromGherkin(gherkin).examples ?? { headers: [], rows: [] };
+    data.examples = reconcileTable(
+      undefined,
+      fromGherkin(gherkin).examples ?? { headers: [], rows: [] },
+    );
   }
   push({ labelKey: "testCase.level.label", status: gherkin ? "filled" : "empty", preview: level });
 

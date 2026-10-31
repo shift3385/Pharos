@@ -1,5 +1,6 @@
 import type { AiProvenance } from "@modules/ai";
 import type { TestCaseData } from "../model/types";
+import { stepsOf } from "../model/steps";
 import { toGherkin } from "../ui/gherkin";
 import { testCaseApi } from "./testCaseApi";
 
@@ -25,8 +26,8 @@ export function proposalCaseData(
   return {
     gherkinLevel: "basic",
     description: p.description,
-    preconditions: [...p.given],
-    steps: [...p.when],
+    preconditions: stepsOf(p.given),
+    steps: stepsOf(p.when),
     expectedResult: p.then.join("\n"),
     requirementKeys: [requirementKey],
     // The whole case came from the AI and waits for a review (IA-01).

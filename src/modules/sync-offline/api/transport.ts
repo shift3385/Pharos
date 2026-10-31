@@ -18,10 +18,14 @@ export const VERSION_HEADER = "x-pharos-version";
  *  (AUD-01): it pushes and pulls append-only documents (audit events) and
  *  reads `appendRejected`. `complete-payload` (AUD-01): it pushes each entity's
  *  whole state, so a key it leaves out is a clear, not a field it does not
- *  know. Inside one minor the version string does not change between builds,
- *  so this header is what tells them apart. */
+ *  know. `stable-steps` (DAT-02): it knows steps and Outline rows with
+ *  stable ids and pushes case revisions; a client without it may only read
+ *  (426 `read_only_client_version` on push, VERSIONING §6.5). Inside one
+ *  minor the version string does not change between builds, so this header is
+ *  what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
-export const SYNC_FEATURES = "key-conflicts,append-only,complete-payload";
+export const SYNC_FEATURES =
+  "key-conflicts,append-only,complete-payload,stable-steps";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };

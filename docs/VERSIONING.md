@@ -162,6 +162,26 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      que no conoce. La primera MENOR que lo aplica es 0.2 (casos con pasos con
      id, campos personalizados, defectos como entidad).
 
+     **Cómo se aplica en 0.2 (DAT-02, aceptado por el usuario el
+     2026-10-31).** En cuanto el servidor tiene el paso 2 de 0.2.0, las apps
+     **0.1.x y 0.2.0-alpha.1 quedan en solo lectura**: pueden leer, pero no
+     enviar cambios hasta que se actualicen.
+     - La puerta es la funcionalidad `stable-steps`, no la versión: un
+       0.2.0-alpha.1 envía la misma MENOR que el servidor. Todo push de un
+       cliente sin ella recibe `426 read_only_client_version` antes de
+       escribir nada, con el mensaje «Actualiza Pharos para enviar cambios;
+       tus cambios pendientes se conservan».
+     - En su pull, los casos llegan con los pasos como texto (la forma que
+       conocen); nunca ven un objeto donde esperaban un texto. Las listas
+       estables viajan en `data.__stableSteps`, que guardan sin tocar: al
+       actualizar recuperan los mismos ids, el resultado esperado y el mismo
+       hash de revisión que el servidor (DAT-02, revisión B1).
+     - **Límite conocido:** las apps publicadas tratan cualquier 426 como
+       fatal y hacen el push antes del pull. Mientras no tengan cambios
+       pendientes leen con normalidad; en cuanto tienen uno, cada sync se
+       detiene en el push con ese mensaje y no recibe novedades hasta
+       actualizar. Nada se pierde: al actualizar, sus cambios se envían.
+
    - **Un campo que falta en un documento recibido conserva el valor local**, y
      el cursor de pull vuelve a 0 en el primer sync de una MENOR que añade
      entidades al conjunto que se aplica. Lo aplica el servidor a los push de
@@ -171,7 +191,9 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
-     `complete-payload`).
+     `complete-payload`, `stable-steps`). Un cliente que aún no ha visto
+     `stable-steps` en las respuestas del servidor no le envía casos ni
+     revisiones (los retiene y el diagnóstico los cuenta).
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian

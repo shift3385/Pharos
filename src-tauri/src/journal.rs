@@ -367,6 +367,21 @@ pub fn record(conn: &Connection, change: Change) -> Result<(), String> {
     )
 }
 
+/// Queues one `append_only` document of `entity` for the push, with no audit
+/// event of its own: a case revision (DAT-02) is part of the case change that
+/// already left its event. Only for entities registered in `sync_class`.
+pub fn record_append(
+    conn: &Connection,
+    entity: &str,
+    id: &str,
+    author: &str,
+) -> Result<(), String> {
+    if crate::sync_class::append_only(entity).is_none() {
+        return Err(format!("{entity} is not an append-only entity"));
+    }
+    oplog::record(conn, entity, id, "append", "{}", 1, author)
+}
+
 /// An audited change with no oplog row of its own: one summary event for a
 /// bulk operation (`import`), or a change of data that does not sync yet
 /// (planner attachments until SYNC-04b, ADR-0014).

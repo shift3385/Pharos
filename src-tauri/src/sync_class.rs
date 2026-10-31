@@ -19,18 +19,28 @@ pub struct AppendOnly {
     pub owner: fn(&Connection, &str) -> Result<Option<String>, String>,
 }
 
-pub const APPEND_ONLY: &[AppendOnly] = &[AppendOnly {
-    entity: "audit_event",
-    read: crate::audit::payload,
-    insert_if_absent: crate::audit::insert_if_absent,
-    owner: crate::audit::owner,
-}];
+pub const APPEND_ONLY: &[AppendOnly] = &[
+    AppendOnly {
+        entity: "audit_event",
+        read: crate::audit::payload,
+        insert_if_absent: crate::audit::insert_if_absent,
+        owner: crate::audit::owner,
+    },
+    AppendOnly {
+        entity: "test_case_revision",
+        read: crate::revisions::payload,
+        insert_if_absent: crate::revisions::insert_if_absent,
+        owner: crate::revisions::owner,
+    },
+];
 
 /// Version of the set of entities this build applies on pull. A pull cursor
 /// stored under an older set restarts at 0 (VERSIONING §6.5): an older build
 /// moved the cursor past documents it did not apply. Bump it with every entity
 /// added to `oplog::SYNCED` or `APPEND_ONLY`.
-pub const APPLIED_SET_VERSION: i64 = 1;
+/// 1: audit_event (AUD-01). 2: test_case_revision and the stable-steps shape
+/// of test cases (DAT-02).
+pub const APPLIED_SET_VERSION: i64 = 2;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)

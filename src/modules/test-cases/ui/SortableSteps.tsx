@@ -18,6 +18,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
+import type { Step } from "../model/types";
+import { newStepId } from "../model/steps";
 
 function SortableStep({
   id,
@@ -73,14 +75,16 @@ function SortableStep({
 /** Reorderable list of test steps (drag & drop, spec §5.3). The handle also
  *  works from the keyboard (Space to pick up, arrows to move, Space to drop,
  *  Escape to cancel) and each move is announced (WCAG 2.1.1, UX-05). Steps
- *  are not checked for repeats: "Click Next" twice is a normal test. */
+ *  are not checked for repeats: "Click Next" twice is a normal test. Each step
+ *  keeps its stable id (DAT-02) when it is edited or moved; a new one gets a
+ *  fresh id. */
 export function SortableSteps({
   steps,
   onChange,
   label,
 }: {
-  steps: string[];
-  onChange: (next: string[]) => void;
+  steps: Step[];
+  onChange: (next: Step[]) => void;
   label: string;
 }) {
   const { t } = useTranslation();
@@ -89,8 +93,8 @@ export function SortableSteps({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const ids = steps.map((_, i) => String(i));
-  const n = (id: UniqueIdentifier) => Number(id) + 1;
+  const ids = steps.map((s) => s.id);
+  const n = (id: UniqueIdentifier) => ids.indexOf(String(id)) + 1;
   const announcements: Announcements = {
     onDragStart: ({ active }) => t("testCase.drag.start", { n: n(active.id) }),
     onDragOver: ({ active, over }) =>
@@ -103,7 +107,13 @@ export function SortableSteps({
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      onChange(arrayMove(steps, Number(active.id), Number(over.id)));
+      onChange(
+        arrayMove(
+          steps,
+          ids.indexOf(String(active.id)),
+          ids.indexOf(String(over.id)),
+        ),
+      );
     }
   }
 
@@ -120,16 +130,16 @@ export function SortableSteps({
       >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="tc-steps">
-            {steps.map((value, i) => (
+            {steps.map((step, i) => (
               <SortableStep
-                key={i}
-                id={String(i)}
+                key={step.id}
+                id={step.id}
                 inputId={`${baseId}-${i}`}
                 index={i}
-                value={value}
+                value={step.text}
                 onChange={(v) => {
                   const next = [...steps];
-                  next[i] = v;
+                  next[i] = { ...step, text: v };
                   onChange(next);
                 }}
                 onRemove={() => onChange(steps.filter((_, j) => j !== i))}
@@ -141,7 +151,9 @@ export function SortableSteps({
       <button
         type="button"
         className="tp-list-field__add"
-        onClick={() => onChange([...steps, ""])}
+        onClick={() =>
+          onChange([...steps, { id: newStepId(new Set(ids)), text: "" }])
+        }
       >
         + {t("testCase.addStep")}
       </button>

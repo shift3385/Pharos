@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import { parseCaseXlsx } from "./caseImport";
+import { texts } from "../model/steps";
 
 /** Builds a case workbook (main sheet + Gherkin sheet) from cell maps. */
 async function book(main: Record<string, string>, gherkin?: string): Promise<ArrayBuffer> {
@@ -45,8 +46,8 @@ describe("parseCaseXlsx (basic)", () => {
     expect(input.author).toBe("Grace Hopper");
     expect(input.scenarioId).toBe("ATS_007"); // detected (report only)
     expect(input.data.description).toBe("Logs in with valid credentials.");
-    expect(input.data.preconditions).toEqual(["User exists"]);
-    expect(input.data.steps).toEqual(["Open login", "Submit form"]);
+    expect(texts(input.data.preconditions)).toEqual(["User exists"]);
+    expect(texts(input.data.steps)).toEqual(["Open login", "Submit form"]);
     expect(input.data.expectedResult).toBe("Dashboard shown");
     expect(input.data.testData).toBe("user@test.dev");
     expect(input.data.gherkinLevel).toBe("basic");
@@ -77,8 +78,20 @@ describe("parseCaseXlsx (advanced)", () => {
 
     expect(input.data.gherkinLevel).toBe("advanced");
     expect(input.data.featureSource).toContain("Background");
-    expect(input.data.background).toEqual(expect.arrayContaining(["the store is open"]));
-    expect(input.data.flows?.map((f) => f.name)).toEqual(["Valid coupon", "Expired coupon"]);
+    expect(texts(input.data.background)).toEqual(
+      expect.arrayContaining(["the store is open"]),
+    );
+    expect(input.data.flows?.map((f) => f.name)).toEqual([
+      "Valid coupon",
+      "Expired coupon",
+    ]);
+    // Imported steps and rows get stable ids (DAT-02), unique within the case.
+    const ids = (input.data.flows ?? []).flatMap((f) => [
+      ...f.steps.map((s) => s.id),
+      ...(f.examples?.rows ?? []).map((r) => r.id),
+    ]);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 
@@ -106,8 +119,8 @@ describe("parseCaseXlsx (real ES template layout)", () => {
     expect(input.version).toBe("2.0");
     expect(input.priority).toBe("high");
     expect(input.status).toBe("approved");
-    expect(input.data.preconditions).toEqual(["Cupón activo"]);
-    expect(input.data.steps).toEqual(["Ir al carrito", "Aplicar cupón"]);
+    expect(texts(input.data.preconditions)).toEqual(["Cupón activo"]);
+    expect(texts(input.data.steps)).toEqual(["Ir al carrito", "Aplicar cupón"]);
     expect(input.data.expectedResult).toBe("Descuento aplicado");
     expect(input.data.gherkinLevel).toBe("basic");
   });
@@ -124,7 +137,9 @@ describe("parseCaseXlsx (Spanish + fallbacks)", () => {
     expect(input.title).toBe("Mi Caso"); // no TITLE cell → file name
     expect(input.priority).toBe("critical");
     expect(input.status).toBe("approved");
-    expect(input.data.preconditions).toEqual(["Sesión iniciada"]);
-    expect(rows.find((r) => r.labelKey === "testCase.fieldTitle")?.status).toBe("notFound");
+    expect(texts(input.data.preconditions)).toEqual(["Sesión iniciada"]);
+    expect(rows.find((r) => r.labelKey === "testCase.fieldTitle")?.status).toBe(
+      "notFound",
+    );
   });
 });

@@ -60,7 +60,11 @@ export const FEATURES_HEADER = "x-pharos-sync-features";
 /** Sync features this server has, sent back in the push and pull answers
  *  (`features`). A client only pushes append-only documents to a server that
  *  lists `append-only`; an older server lists nothing. */
-export const SERVER_FEATURES = ["key-conflicts", "append-only"] as const;
+export const SERVER_FEATURES = [
+  "key-conflicts",
+  "append-only",
+  "stable-steps",
+] as const;
 
 /** Features the client sent. Inside one minor the version string does not
  *  change between builds, so this header, not the version, is what tells an
@@ -91,4 +95,26 @@ export function understandsAppendOnly(req: FastifyRequest): boolean {
  *  keys they leave out (`storeDoc`, VERSIONING §6.5). */
 export function sendsCompletePayload(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("complete-payload");
+}
+
+/** True if the client knows test cases with stable steps (DAT-02, ADR-0011):
+ *  `{id, text}` steps, Outline rows with ids, and `test_case_revision`.
+ *  A client without it (0.1.x, 0.2.0-alpha.1 and the builds before DAT-02)
+ *  would rewrite a case without the ids it does not know, so it may only read
+ *  (VERSIONING §6.5): its pushes get 426 `read_only_client_version`, and its
+ *  pulls carry cases in the text-step shape it knows. */
+export function sendsStableSteps(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("stable-steps");
+}
+
+/** 426 for a push of a read-only client (VERSIONING §6.5), before anything
+ *  is read or written. Released clients treat a 426 as fatal: they stop the
+ *  cycle, keep their pending changes and show this message. */
+export function readOnlyClient(reply: FastifyReply) {
+  return reply.code(426).send({
+    code: "read_only_client_version",
+    message:
+      "Actualiza Pharos para enviar cambios; tus cambios pendientes se conservan. / Update Pharos to send changes; your pending changes are kept.",
+    serverVersion: SERVER_VERSION,
+  });
 }

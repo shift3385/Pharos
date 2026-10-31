@@ -134,6 +134,14 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0019_audit_log.sql"),
     ),
     (
+        "0020_test_case_revisions.sql",
+        include_str!("../migrations/0020_test_case_revisions.sql"),
+    ),
+    (
+        "0021_stable_steps.sql",
+        include_str!("../migrations/0021_stable_steps.sql"),
+    ),
+    (
         "0022_evidence.sql",
         include_str!("../migrations/0022_evidence.sql"),
     ),
@@ -146,6 +154,15 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
 /// Migration whose SQL runs only after Rust moved the planner attachment BLOBs
 /// into the evidence store (DAT-03, ADR-0014); the image is vacuumed after it.
 const PLANNER_ATTACHMENTS_OUT: &str = "0023_planner_attachments_out.sql";
+
+/// Data migrations written in Rust (VERSIONING §6.1), run right after the SQL
+/// of the migration they are named after, in the same savepoint. Each one is
+/// deterministic and idempotent.
+type RustStep = fn(&Connection) -> Result<(), String>;
+const RUST_STEPS: &[(&str, RustStep)] = &[(
+    "0021_stable_steps.sql",
+    crate::revisions::migrate_stable_steps,
+)];
 
 pub struct Db {
     conn: Mutex<Connection>,
@@ -677,15 +694,35 @@ pub(crate) fn run_migrations_with(
     let pending = pending_migrations(conn)?;
     let mut vacuum = false;
     for (name, sql) in MIGRATIONS.iter().filter(|(n, _)| pending.contains(n)) {
+        // The planner attachment BLOBs leave for the evidence store before 0023
+        // drops them; files written outside the database cannot roll back.
         if *name == PLANNER_ATTACHMENTS_OUT {
             evidence::migrate_planner_attachments(conn, store)
                 .map_err(|e| format!("migration {name} failed: {e}"))?;
             vacuum = true;
         }
-        conn.execute_batch(sql)
-            .map_err(|e| format!("migration {name} failed: {e}"))?;
-        conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+        // One savepoint per migration: its SQL, its Rust step and its record
+        // land together or not at all.
+        conn.execute_batch("SAVEPOINT migration")
             .map_err(|e| e.to_string())?;
+        let applied = (|| {
+            conn.execute_batch(sql)
+                .map_err(|e| format!("migration {name} failed: {e}"))?;
+            if let Some((_, step)) = RUST_STEPS.iter().find(|(n, _)| n == name) {
+                step(conn).map_err(|e| format!("migration {name} failed: {e}"))?;
+            }
+            conn.execute("INSERT INTO schema_migrations (name) VALUES (?1)", [name])
+                .map_err(|e| e.to_string())?;
+            Ok::<(), String>(())
+        })();
+        match applied {
+            Ok(()) => conn.execute_batch("RELEASE migration"),
+            Err(e) => {
+                let _ = conn.execute_batch("ROLLBACK TO migration; RELEASE migration");
+                return Err(e);
+            }
+        }
+        .map_err(|e| e.to_string())?;
     }
     // The dropped BLOBs leave free pages: compact so the saved image shrinks.
     if vacuum {

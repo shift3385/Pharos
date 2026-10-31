@@ -79,3 +79,32 @@ describe("conflictTitle", () => {
     expect(conflictTitle(conflict({}, {}))).toBe("c1");
   });
 });
+
+describe("diffConflict with stable steps (DAT-02, review S3)", () => {
+  const step = (id: string, text: string, expected?: string) => ({ id, text, ...(expected ? { expected } : {}) });
+
+  it("shows step texts, not ids, and ids alone are no change", () => {
+    const c = conflict(
+      { title: "T", data: { steps: [step("A", "open"), step("B", "pay")], examples: { headers: ["x"], rows: [{ id: "R1", values: ["1"] }] } } },
+      { title: "T", data: { steps: [step("Z", "open"), step("Y", "pay")], examples: { headers: ["x"], rows: [{ id: "R9", values: ["1"] }] } } },
+    );
+    const steps = diffConflict(c).find((d) => d.key === "data.steps")!;
+    expect(steps).toEqual({ key: "data.steps", local: ["open", "pay"], remote: ["open", "pay"], changed: false });
+    const examples = diffConflict(c).find((d) => d.key === "data.examples")!;
+    expect(examples.changed).toBe(false);
+    expect(examples.local).toEqual({ headers: ["x"], rows: [["1"]] });
+  });
+
+  it("a different text, or expected result, is a change", () => {
+    const c = conflict(
+      { data: { steps: [step("A", "open")], flows: [{ id: "f", name: "F", steps: [step("S", "pay")] }] } },
+      { data: { steps: [step("A", "open", "it opens")], flows: [{ id: "f", name: "F", steps: [step("S", "pay now")] }] } },
+    );
+    const d = diffConflict(c);
+    expect(d.find((x) => x.key === "data.steps")).toMatchObject({ remote: ["open → it opens"], changed: true });
+    expect(d.find((x) => x.key === "data.flows")).toMatchObject({
+      local: [{ id: "f", name: "F", steps: ["pay"] }],
+      changed: true,
+    });
+  });
+});

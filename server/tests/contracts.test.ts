@@ -58,7 +58,7 @@ describe("documents written by the web (shared fixture)", () => {
     const headers = {
       authorization: `Bearer ${reg.json().accessToken}`,
       [VERSION_HEADER]: SERVER_VERSION,
-      [FEATURES_HEADER]: "key-conflicts",
+      [FEATURES_HEADER]: "key-conflicts,stable-steps",
     };
     const post = async (url: string, payload: object) => (await app.inject({ method: "POST", url, headers, payload })).json();
     const project = await post("/api/projects", { name: "Checkout" });

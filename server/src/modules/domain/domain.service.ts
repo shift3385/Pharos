@@ -2,6 +2,13 @@ import { randomUUID } from "node:crypto";
 import { AppError } from "../auth/errors";
 import { isProvisionalKey, type KeyKind } from "../sync/sync.schemas";
 import type { RemoteDoc } from "../sync/sync.repository";
+import {
+  contentSha256,
+  normalizeCaseData,
+  normalizeNewCaseData,
+  revisionContent,
+  revisionId,
+} from "../sync/stable-steps";
 import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
 import type {
   PlannerCardInput,
@@ -17,7 +24,10 @@ import type {
 // `requirement.rs`, `planner.rs`) applied to the server's document store; the
 // browser holds none of them. Payloads have exactly the shape the desktop
 // pushes and reads back (`sync.rs`), so either side can edit what the other
-// wrote. Revision history and attachments stay on the desktop (SYNC-04b).
+// wrote. Attachments stay on the desktop (SYNC-04b). Test cases carry stable
+// step and row ids (DAT-02): what the browser sends and what an older client
+// stored are normalized with the desktop's function, and every save also
+// stores the case revision document the desktop would (`revisions.rs`).
 
 type Payload = Record<string, unknown>;
 
@@ -231,9 +241,46 @@ export function createDomainService(store: DomainStore) {
       status: input.status ?? "draft",
       priority: input.priority ?? "medium",
       author: input.author,
-      data: input.data,
+      data: normalizeNewCaseData(input.data),
       updatedAt: now(),
     };
+  }
+
+  /** A stored case as the desktop reads it: an older client's text steps get
+   *  the ids every device derives for them (ADR-0011). */
+  const withStableSteps = (p: Payload): Payload => ({
+    ...p,
+    data: normalizeCaseData(str(p, "id"), p.data).data,
+  });
+
+  /** Stores the revision document of a case version just written (DAT-02):
+   *  the same document, under the same id, as the desktop's `revisions.rs`. */
+  async function storeRevision(tx: DomainTx, userId: string, doc: RemoteDoc) {
+    const p = doc.payload;
+    const fields = {
+      scenarioId: str(p, "scenarioId"),
+      title: str(p, "title"),
+      version: str(p, "version"),
+      status: str(p, "status"),
+      priority: str(p, "priority"),
+      caseType: null,
+      automationStatus: null,
+      data: p.data ?? {},
+    };
+    const sha = contentSha256(revisionContent(fields));
+    const id = revisionId(doc.entityId, doc.revision, sha);
+    await tx.append("test_case_revision", id, {
+      id,
+      testCaseId: doc.entityId,
+      projectId: p.projectId ?? null,
+      workspaceId: p.workspaceId ?? null,
+      revision: doc.revision,
+      ...fields,
+      contentSha256: sha,
+      createdAt: now(),
+      createdBy: userId,
+      hlc: doc.hlc,
+    });
   }
 
   const testCases = {
@@ -242,7 +289,7 @@ export function createDomainService(store: DomainStore) {
         const project = await tx.get("project", projectId);
         if (!project || project.deleted) return [];
         return (await tx.list("test_case", projectId))
-          .map((d) => d.payload)
+          .map((d) => withStableSteps(d.payload))
           .sort(byText("scenarioId"))
           .map((c) => ({
             id: c.id,
@@ -261,7 +308,9 @@ export function createDomainService(store: DomainStore) {
         const doc = await tx.get("test_case", id);
         if (!doc || doc.deleted) return null;
         const project = await tx.get("project", str(doc.payload, "projectId"));
-        return project && !project.deleted ? doc.payload : null;
+        return project && !project.deleted
+          ? withStableSteps(doc.payload)
+          : null;
       }),
     create: (userId: string, input: TestCaseInput) =>
       run(userId, async (tx) => {
@@ -276,14 +325,38 @@ export function createDomainService(store: DomainStore) {
           scenarioId = await nextKey(tx, input.projectId, "case", prefix, num(project, "caseIdDigits") || DEFAULT_DIGITS);
         }
         const id = randomUUID();
-        const base = { id, workspaceId: WORKSPACE, projectId: input.projectId, scenarioId, createdAt: now() };
-        return (await tx.put("test_case", id, casePayload(base, input), null)).payload;
+        const base = {
+          id,
+          workspaceId: WORKSPACE,
+          projectId: input.projectId,
+          scenarioId,
+          createdAt: now(),
+        };
+        const doc = await tx.put(
+          "test_case",
+          id,
+          casePayload(base, input),
+          null,
+        );
+        await storeRevision(tx, userId, doc);
+        return doc.payload;
       }),
     /** The scenario id is immutable: an update never changes it. */
     update: (userId: string, id: string, input: TestCaseInput, revision?: number) =>
       run(userId, async (tx) => {
-        const doc = current(await tx.get("test_case", id), "Test case", revision);
-        return (await tx.put("test_case", id, casePayload(doc.payload, input), doc)).payload;
+        const doc = current(
+          await tx.get("test_case", id),
+          "Test case",
+          revision,
+        );
+        const next = await tx.put(
+          "test_case",
+          id,
+          casePayload(doc.payload, input),
+          doc,
+        );
+        await storeRevision(tx, userId, next);
+        return next.payload;
       }),
     remove: remove("test_case", "Test case"),
   };
