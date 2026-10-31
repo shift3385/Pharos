@@ -96,7 +96,8 @@ describe("schedule dates", () => {
     expect(fromDisplay("2/11/2026")).toBe("2026-11-02");
     expect(fromDisplay(" 02-11-2026 ")).toBe("2026-11-02");
     expect(fromDisplay("31/02/2026")).toBeNull();
-    expect(fromDisplay("2026-11-02")).toBeNull();
+    expect(fromDisplay("2026-11-02")).toBe("2026-11-02");
+    expect(fromDisplay("2026-02-31")).toBeNull();
     expect(fromDisplay("")).toBeNull();
   });
 
@@ -129,5 +130,27 @@ describe("schedule rules", () => {
     expect(nextSprintRange([], 21, "2026-10-31")).toEqual({ start: "2026-10-31", end: "2026-11-20" });
     expect(nextSprintName(list, "Sprint")).toBe("Sprint 23");
     expect(nextSprintName([sp("x", "", "", "Kick-off")], "Sprint")).toBe("Sprint 2");
+  });
+});
+
+describe("legacy dates (review S1)", () => {
+  it("a real day written dd/mm/aaaa (old import) reads as ISO; other text stays", () => {
+    const out = normalizeSchedule("plan1", {
+      sprints: [
+        { name: "A", start: "02/11/2026", end: "15/11/2026" },
+        { name: "B", start: "31/02/2026", end: "Nov 30" },
+      ],
+      milestones: [{ name: "M", date: "1/12/2026" }],
+    });
+    expect(out.sprints[0]).toMatchObject({ start: "2026-11-02", end: "2026-11-15" });
+    expect(out.sprints[1]).toMatchObject({ start: "31/02/2026", end: "Nov 30" });
+    expect(out.milestones[0].date).toBe("2026-12-01");
+  });
+
+  it("nextSprintName matches the word literally", () => {
+    const list = [{ id: "a", name: "S.1 x", start: "", end: "" }, { id: "b", name: "S.4", start: "", end: "" }];
+    expect(nextSprintName(list, "S.")).toBe("S. 3");
+    expect(nextSprintName([{ id: "a", name: "S. 4", start: "", end: "" }], "S.")).toBe("S. 5");
+    expect(nextSprintName([{ id: "a", name: "Sx 4", start: "", end: "" }], "S.")).toBe("S. 2");
   });
 });

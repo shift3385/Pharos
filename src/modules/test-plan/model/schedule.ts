@@ -13,8 +13,10 @@
 // random id instead (`newScheduleId`): a derived one could be the id a deleted
 // row had in that slot, and an id is never reused within a plan (the DAT-02
 // rule, ADR-0011). Nothing is lost: unknown fields stay, a bare string is a
-// row with that name (anything else, its JSON), and a date that is not ISO stays as
-// written (the row shows it as invalid; the calendar does not draw it).
+// row with that name (anything else, its JSON). A real day written dd/mm/aaaa
+// (old imports) reads as ISO; any other date that is not ISO stays as written
+// (the row shows it as invalid; the calendar does not draw it). Reading never
+// marks the plan changed: the wizard compares against this same normalized form.
 
 import type { ScheduleMilestone, ScheduleSprint } from "./types";
 
@@ -114,6 +116,13 @@ function normalizeList<T extends { id: string }>(
   );
 }
 
+/** A stored date as ISO when it is a real day written ISO or dd/mm/aaaa (an
+ *  import before 0.2.0 kept «02/11/2026» as written); anything else as is. */
+const storedDay = (v: unknown): string => {
+  const s = str(v);
+  return fromDisplay(s) ?? s;
+};
+
 /** Sprints and milestones of stored plan data with an id each (see the file
  *  comment). `planId` null (an import, a new plan) gives random ids. Ids are
  *  unique across both lists. */
@@ -126,7 +135,7 @@ export function normalizeSchedule(
     planId,
     "sprints",
     data.sprints,
-    (o) => ({ name: str(o.name), start: str(o.start), end: str(o.end) }),
+    (o) => ({ name: str(o.name), start: storedDay(o.start), end: storedDay(o.end) }),
     (text) => ({ name: text, start: "", end: "" }),
     used,
   );
@@ -134,7 +143,7 @@ export function normalizeSchedule(
     planId,
     "milestones",
     data.milestones,
-    (o) => ({ name: str(o.name), date: str(o.date) }),
+    (o) => ({ name: str(o.name), date: storedDay(o.date) }),
     (text) => ({ name: text, date: "" }),
     used,
   );
@@ -166,9 +175,12 @@ export function toDisplay(iso: string): string {
   return m && isIsoDay(iso) ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
-/** The ISO day of `d/m/yyyy` or `dd/mm/aaaa` (also with `-` or `.`), or null. */
+/** The ISO day of `d/m/yyyy` or `dd/mm/aaaa` (also with `-` or `.`), or of a
+ *  typed ISO day; null when it is not a real day. */
 export function fromDisplay(s: string): string | null {
-  const m = /^\s*(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\s*$/.exec(s);
+  const t = s.trim();
+  if (isIsoDay(t)) return t;
+  const m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(t);
   if (!m) return null;
   const d = new Date(+m[3], +m[2] - 1, +m[1]);
   return d.getMonth() === +m[2] - 1 && d.getDate() === +m[1] ? isoOf(d) : null;
@@ -212,12 +224,15 @@ export function sprintDays(s: ScheduleSprint): number {
   return isDrawable(s) ? daysBetween(s.start, s.end) + 1 : 0;
 }
 
-/** «Sprint N+1», N the highest number in the names (else the count). */
+/** «Sprint N+1», N the highest number right after `word` in the names (else
+ *  the count). `word` is matched literally. */
 export function nextSprintName(sprints: readonly ScheduleSprint[], word: string): string {
+  const literal = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^\\s*${literal}\\s+(\\d+)`, "i");
   let max = 0;
   for (const s of sprints) {
-    const m = /(\d+)/.exec(s.name);
-    if (m && new RegExp(`^\\s*${word}\\s+\\d+`, "i").test(s.name)) max = Math.max(max, +m[1]);
+    const m = pattern.exec(s.name);
+    if (m) max = Math.max(max, +m[1]);
   }
   return `${word} ${max ? max + 1 : sprints.length + 1}`;
 }
