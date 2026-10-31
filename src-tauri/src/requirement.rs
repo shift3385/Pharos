@@ -33,6 +33,12 @@ pub struct Requirement {
     title: String,
     description: String,
     priority: String,
+    /// Risk (RUN-00, ADR-0013): 1..5 per factor, absent until assessed. The
+    /// level (likelihood × impact) and its band are derived (`runs::derive`).
+    #[cfg_attr(test, ts(optional = nullable))]
+    risk_likelihood: Option<i64>,
+    #[cfg_attr(test, ts(optional = nullable))]
+    risk_impact: Option<i64>,
     created_at: String,
     updated_at: String,
     revision: i64,
@@ -74,7 +80,7 @@ pub struct ImportSummary {
 
 /// Live requirements of live projects owned by the given user.
 const SELECT_REQUIREMENT: &str = "SELECT r.id, r.project_id, r.requirement_key, r.title, \
-    r.description, r.priority, r.created_at, r.updated_at, r.revision \
+    r.description, r.priority, r.risk_likelihood, r.risk_impact, r.created_at, r.updated_at, r.revision \
     FROM requirements r JOIN projects p ON p.id = r.project_id";
 
 fn map_requirement(row: &rusqlite::Row) -> rusqlite::Result<Requirement> {
@@ -85,6 +91,8 @@ fn map_requirement(row: &rusqlite::Row) -> rusqlite::Result<Requirement> {
         title: row.get("title")?,
         description: row.get("description")?,
         priority: row.get("priority")?,
+        risk_likelihood: row.get("risk_likelihood")?,
+        risk_impact: row.get("risk_impact")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         revision: row.get("revision")?,
@@ -335,6 +343,52 @@ pub(crate) fn delete_requirement(conn: &Connection, id: &str, user_id: &str) -> 
     Ok(())
 }
 
+/// Sets the risk of a requirement (RUN-00): each factor 1..5, or None for not
+/// assessed. Its own command, so `RequirementInput` (what the editor sends)
+/// does not change; the editor gets it with TRZ-04.
+pub(crate) fn set_risk(
+    conn: &Connection,
+    id: &str,
+    likelihood: Option<i64>,
+    impact: Option<i64>,
+    user_id: &str,
+) -> Result<(), String> {
+    for v in [likelihood, impact].into_iter().flatten() {
+        if !(1..=5).contains(&v) {
+            return Err("risk factors go from 1 to 5".to_string());
+        }
+    }
+    if !owns(conn, id, user_id)? {
+        return Err("requirement not found".to_string());
+    }
+    let revision: i64 = conn
+        .query_row(
+            "SELECT revision FROM requirements WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    let before = journal::snapshot(conn, "requirement", id)?;
+    conn.execute(
+        "UPDATE requirements SET risk_likelihood = ?2, risk_impact = ?3, updated_by = ?4, \n         updated_at = datetime('now'), revision = ?5 WHERE id = ?1",
+        params![id, likelihood, impact, user_id, revision + 1],
+    )
+    .map_err(|e| e.to_string())?;
+    journal::record(
+        conn,
+        Change::new(
+            "requirement",
+            id,
+            Action::Update,
+            Actor::user(user_id),
+            "upsert",
+            revision + 1,
+            user_id,
+        )
+        .before(before),
+    )
+}
+
 /// Bulk CSV import in one transaction: rows whose key already exists update that
 /// requirement; rows with the key of a deleted requirement are skipped and
 /// reported; the rest are created (keyed as given, or auto-numbered).
@@ -455,6 +509,19 @@ pub fn requirement_update(
 pub fn requirement_delete(db: State<Db>, id: String, user_id: String) -> Result<(), String> {
     db.with_tx(|conn| delete_requirement(conn, &id, &user_id))?;
     db.persist()
+}
+
+#[tauri::command]
+pub fn requirement_risk_set(
+    db: State<Db>,
+    id: String,
+    likelihood: Option<i64>,
+    impact: Option<i64>,
+    user_id: String,
+) -> Result<Option<Requirement>, String> {
+    db.with_tx(|conn| set_risk(conn, &id, likelihood, impact, &user_id))?;
+    db.persist()?;
+    db.with_conn(|conn| get_requirement(conn, &id, &user_id))
 }
 
 #[tauri::command]

@@ -43,6 +43,9 @@ pub struct PurgeSummary {
     pub(crate) test_cases: usize,
     pub(crate) requirements: usize,
     pub(crate) planner_cards: usize,
+    /// Runs, run items and unlinked mappings (EJE-01); a run takes its shards,
+    /// results and step results with it.
+    pub(crate) runs: usize,
     pub(crate) templates: usize,
 }
 
@@ -53,6 +56,7 @@ impl PurgeSummary {
             + self.test_cases
             + self.requirements
             + self.planner_cards
+            + self.runs
             + self.templates
     }
 }
@@ -131,37 +135,60 @@ struct Child {
     table: &'static str,
     /// Key column and kind, when the row carries a human-readable key.
     key: Option<(&'static str, KeyKind)>,
-    /// History or attachment rows to clear first: a DELETE taking the row id.
-    dependents: Option<&'static str>,
+    /// History, attachment or result rows to clear first: DELETEs taking the
+    /// row id.
+    dependents: &'static [&'static str],
 }
 
-const CHILDREN: [Child; 4] = [
+const CHILDREN: [Child; 7] = [
     Child {
         entity: "test_plan",
         table: "test_plans",
         key: None,
-        dependents: Some("DELETE FROM test_plan_revisions WHERE test_plan_id = ?1"),
+        dependents: &["DELETE FROM test_plan_revisions WHERE test_plan_id = ?1"],
     },
     Child {
         entity: "test_case",
         table: "test_cases",
         key: Some(("scenario_id", KeyKind::Case)),
-        dependents: Some("DELETE FROM test_case_revisions WHERE test_case_id = ?1"),
+        dependents: &["DELETE FROM test_case_revisions WHERE test_case_id = ?1"],
     },
     Child {
         entity: "requirement",
         table: "requirements",
         key: Some(("requirement_key", KeyKind::Requirement)),
-        dependents: None,
+        dependents: &[],
     },
     Child {
         entity: "planner_card",
         table: "planner_cards",
         key: Some(("card_key", KeyKind::Defect)),
         // Its files go with the next evidence collection (ADR-0014).
-        dependents: Some(
-            "DELETE FROM attachments WHERE owner_entity = 'planner_card' AND owner_id = ?1",
-        ),
+        dependents: &["DELETE FROM attachments WHERE owner_entity = 'planner_card' AND owner_id = ?1"],
+    },
+    // The immutable rows of a run (EJE-01) go only here, with their run: the
+    // purge is the one code path that deletes them.
+    Child {
+        entity: "run",
+        table: "runs",
+        key: Some(("run_key", KeyKind::Run)),
+        dependents: &[
+            "DELETE FROM step_results WHERE result_id IN (SELECT id FROM results WHERE run_id = ?1)",
+            "DELETE FROM results WHERE run_id = ?1",
+            "DELETE FROM run_shards WHERE run_id = ?1",
+        ],
+    },
+    Child {
+        entity: "run_item",
+        table: "run_items",
+        key: None,
+        dependents: &["DELETE FROM execution_drafts WHERE run_item_id = ?1"],
+    },
+    Child {
+        entity: "unlinked_mapping",
+        table: "unlinked_mappings",
+        key: None,
+        dependents: &[],
     },
 ];
 
@@ -194,7 +221,7 @@ fn purge_children(
             let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
             keys::retire(conn, kind, &project_id, &prefix, &key)?;
         }
-        if let Some(sql) = child.dependents {
+        for sql in child.dependents {
             conn.execute(sql, params![id]).map_err(|e| e.to_string())?;
         }
         conn.execute(
@@ -207,6 +234,11 @@ fn purge_children(
             // Its revisions stay on the server until SYNC-11: a re-pull must
             // not bring them back here (DAT-02).
             crate::revisions::remember_purged(conn, &id)?;
+        }
+        if child.entity == "run" {
+            // Its shards and results stay on the server (append-only): a
+            // re-pull must not bring them back here.
+            crate::runs::remember_purged(conn, &id)?;
         }
         purged += 1;
     }
@@ -270,16 +302,17 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
         return Err("not-authenticated".into());
     }
     let days = days.clamp(MIN_DAYS, MAX_DAYS);
-    let mut counts = [0usize; 4];
+    let mut counts = [0usize; CHILDREN.len()];
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
         *n = purge_children(conn, user, days, child)?;
     }
-    let [test_plans, test_cases, requirements, planner_cards] = counts;
+    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings] = counts;
     Ok(PurgeSummary {
         test_plans,
         test_cases,
         requirements,
         planner_cards,
+        runs: runs + run_items + mappings,
         projects: purge_projects(conn, user, days)?,
         templates: purge_templates(conn, user, days)?,
     })

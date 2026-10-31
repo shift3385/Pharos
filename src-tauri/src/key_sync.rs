@@ -103,11 +103,16 @@ fn projects_of(conn: &Connection, user: &str) -> Result<Vec<String>, String> {
 }
 
 /// The blocks the account's projects need: every project and kind with fewer
-/// than `LOW_WATER` numbers left.
+/// than `LOW_WATER` numbers left. `run` blocks only from a server that lists
+/// `runs`: an older one refuses the whole request for a kind it does not know.
 pub(crate) fn lease_requests(conn: &Connection, user: &str) -> Result<Vec<LeaseRequest>, String> {
+    let runs_too = crate::sync::server_takes_runs(conn, user)?;
     let mut out = Vec::new();
     for project_id in projects_of(conn, user)? {
         for kind in KeyKind::ALL {
+            if matches!(kind, KeyKind::Run) && !runs_too {
+                continue;
+            }
             let (left, next) = keys::remaining(conn, kind, &project_id)?;
             if left < LOW_WATER {
                 let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
@@ -425,6 +430,20 @@ pub(crate) fn holder_deleted(
 pub(crate) fn close_stale(conn: &Connection) -> Result<(), String> {
     for kind in KeyKind::ALL {
         let (entity, table, _) = kind.entity();
+        // A kind whose table an older image does not have yet (the upgrade
+        // tests read pending changes before migrating) has no conflicts.
+        let exists = conn
+            .query_row(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1",
+                params![table],
+                |_| Ok(()),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?
+            .is_some();
+        if !exists {
+            continue;
+        }
         conn.execute(
             &format!(
                 "UPDATE key_conflicts SET resolved_at = datetime('now'), resolution = 'deleted'
@@ -745,8 +764,8 @@ mod tests {
         let reqs = lease_requests(&c, U).unwrap();
         assert_eq!(
             reqs.len(),
-            3,
-            "one per kind, only for the account's projects"
+            4,
+            "one per kind (case, requirement, defect, run), only for the account's projects"
         );
         assert_eq!(
             reqs[0],

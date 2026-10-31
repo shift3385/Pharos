@@ -15,6 +15,8 @@ export interface PurgeSummary {
   testCases: number;
   requirements: number;
   plannerCards: number;
+  /** Runs, run items and unlinked mappings (EJE-01). */
+  runs: number;
   templates: number;
 }
 

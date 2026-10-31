@@ -58,6 +58,8 @@ pub enum Action {
     Link,
     Unlink,
     ResolveConflict,
+    /// A result recorded (EJE-01, design 0.2.0 §4).
+    Execute,
     /// Content removed by retention while the record of it stays (ADR-0014).
     Redact,
 }
@@ -72,6 +74,7 @@ impl Action {
             Action::Link => "link",
             Action::Unlink => "unlink",
             Action::ResolveConflict => "resolve_conflict",
+            Action::Execute => "execute",
             Action::Redact => "redact",
         }
     }
@@ -255,7 +258,8 @@ fn location(
     };
     let key = either("scenarioId")
         .or_else(|| either("requirementKey"))
-        .or_else(|| either("cardKey"));
+        .or_else(|| either("cardKey"))
+        .or_else(|| either("runKey"));
     (project, key)
 }
 

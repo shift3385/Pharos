@@ -1,0 +1,75 @@
+{
+  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Checked by src-tauri/src/runs/ids.rs and src/shared/contracts/pharos-run/ids.test.ts.",
+  "namespaces": {
+    "runShard": "3b6d1f0a-8c2e-5d47-a913-6e0f2b8c4d71",
+    "result": "9a4e7c21-0b5f-5e83-b6d2-1c9a3f70e845",
+    "unlinkedMapping": "5c8f2d93-e1a4-5b06-8f37-d4b26a10c9e2"
+  },
+  "shards": [
+    {
+      "runId": "7d3f2a9e-1b4c-4e8a-9f0d-2c6b8a1e5f30",
+      "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "id": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31"
+    },
+    {
+      "runId": "run-2",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "id": "de607cb2-0b72-561d-8eb6-049dc5be2cb7"
+    }
+  ],
+  "results": [
+    {
+      "shardId": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31",
+      "testKey": "features/login.feature::Login ok",
+      "configurationLabel": "chromium",
+      "attempt": 0,
+      "id": "fb9481a0-7c0b-5497-9e08-ac0cae7cc073"
+    },
+    {
+      "shardId": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31",
+      "testKey": "features/login.feature::Login ok",
+      "configurationLabel": "chromium",
+      "attempt": 1,
+      "id": "c5c69948-b813-5143-a901-a17a4c59a766"
+    },
+    {
+      "shardId": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31",
+      "testKey": "tests/a.spec.ts::suite > ñandú [row 2]",
+      "configurationLabel": null,
+      "attempt": 0,
+      "id": "2c788baa-27ae-52cc-9f6f-ae55b9aa4e3a"
+    }
+  ],
+  "mappings": [
+    {
+      "projectId": "p1",
+      "testKey": "tests/a.spec.ts::untagged",
+      "id": "addb4e71-8844-5d24-8efd-2491e4b8f6ef"
+    },
+    {
+      "projectId": "p1",
+      "testKey": "manual:c1/-/-",
+      "id": "ef3b430f-9b3a-5133-b41e-d0f22df99c68"
+    }
+  ],
+  "manualKeys": [
+    {
+      "caseId": "c1",
+      "flowId": null,
+      "rowId": null,
+      "testKey": "manual:c1/-/-"
+    },
+    {
+      "caseId": "c1",
+      "flowId": "f9",
+      "rowId": "r3",
+      "testKey": "manual:c1/f9/r3"
+    },
+    {
+      "caseId": "c1",
+      "flowId": "",
+      "rowId": "r3",
+      "testKey": "manual:c1/-/r3"
+    }
+  ]
+}

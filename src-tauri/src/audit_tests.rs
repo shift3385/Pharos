@@ -1165,6 +1165,12 @@ const AUDITED: &[&str] = &[
     "requirement::requirement_update",
     "requirement::requirement_delete",
     "requirement::requirement_import",
+    "requirement::requirement_risk_set",
+    "runs::run_create",
+    "runs::run_update",
+    "runs::run_items_add",
+    "runs::result_record",
+    "runs::unlinked_mapping_set",
     "planner::planner_create",
     "planner::planner_update",
     "planner::planner_delete",
@@ -1401,6 +1407,35 @@ fn every_audited_command_leaves_an_event() {
     });
     step("requirement::requirement_update", &mut |tx| {
         requirement::update_requirement(tx, &req, &req_input("R2"))
+    });
+    step("requirement::requirement_risk_set", &mut |tx| {
+        requirement::set_risk(tx, &req, Some(3), Some(4), U)
+    });
+    let run_input = |title: &str| -> crate::runs::RunInput {
+        serde_json::from_value(json!({"projectId": p, "title": title, "userId": U})).unwrap()
+    };
+    let run = in_tx(&c, |tx| crate::runs::insert_run(tx, &run_input("R"))).unwrap();
+    step("runs::run_create", &mut |tx| {
+        crate::runs::insert_run(tx, &run_input("S")).map(drop)
+    });
+    step("runs::run_update", &mut |tx| {
+        crate::runs::update_run(tx, &run, &run_input("R2"))
+    });
+    let items: Vec<crate::runs::RunItemInput> =
+        serde_json::from_value(json!([{"testCaseId": case}])).unwrap();
+    let mut item_ids = Vec::new();
+    step("runs::run_items_add", &mut |tx| {
+        item_ids = crate::runs::add_items(tx, &run, U, &items)?;
+        Ok(())
+    });
+    let result: crate::runs::ResultInput =
+        serde_json::from_value(json!({"runItemId": item_ids[0], "status": "passed", "userId": U}))
+            .unwrap();
+    step("runs::result_record", &mut |tx| {
+        crate::runs::record_result(tx, &result).map(drop)
+    });
+    step("runs::unlinked_mapping_set", &mut |tx| {
+        crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)
     });
     step("requirement::requirement_delete", &mut |tx| {
         requirement::delete_requirement(tx, &req, U)
