@@ -287,6 +287,27 @@ describe("typing in a list field keeps each step's id (review S1)", () => {
     expect(reconcileFlows(prev as Flow[], [{ name: "F", steps: ["a"], expectedResult: "" }])[0]).toMatchObject({ custom: { k: 1 } });
   });
 
+  it("removing Examples, tags or preconditions in the Gherkin removes them from the flow", () => {
+    const prev = reconcileFlows(undefined, [
+      {
+        name: "F",
+        preconditions: ["a cart"],
+        steps: ["I pay with <card>"],
+        expectedResult: "",
+        examples: { headers: ["card"], rows: [["visa"]] },
+        tags: ["smoke"],
+      },
+    ]);
+    const [flow] = reconcileFlows(prev, [{ name: "F", steps: ["I pay"], expectedResult: "" }]);
+    expect(flow.id).toBe(prev[0].id);
+    expect(flow.examples).toBeUndefined();
+    expect(flow.tags).toBeUndefined();
+    expect(flow.preconditions).toEqual([]);
+    expect("examples" in flow || "tags" in flow).toBe(false);
+    // Rendered again, it is a plain Scenario.
+    expect(flowsToGherkin("T", [], [flow])).not.toContain("Scenario Outline");
+  });
+
   it("a line replaced wholesale next to an insert gets a new id", () => {
     expect(align(["Open the cart"], ["Close the window", "Delete everything"])).toEqual([-1, -1]);
   });

@@ -261,6 +261,10 @@ fn every_site_that_gives_a_case_a_new_revision_is_known() {
     // test_cases, or an UPDATE of test_cases or of a generic `{table}` that
     // sets `revision`) must be followed by `revisions::ensure_current`. A new
     // one changes these counts: add the call, then the count here.
+    // Limit: it is a text scan of the SQL literals of the files listed. SQL
+    // built another way (a `format!` without those words, a new file not in
+    // the list) or a call in the wrong place escapes it; the test above, which
+    // runs every path, is the real check.
     let known: &[(&str, usize, &str)] = &[
         ("test_case.rs", 2, "insert_case, update_case"),
         (

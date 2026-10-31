@@ -280,6 +280,9 @@ export interface TextFlow {
   tags?: string[];
 }
 
+/** The keys of a flow the Gherkin parser gives (`TextFlow`, plus its id). */
+const FLOW_PARSED_KEYS = ["id", "name", "preconditions", "steps", "expectedResult", "examples", "tags"] as const;
+
 /** Parsed flows with the ids of `prev`: a flow is the one with the same
  *  scenario name (the first not yet taken); an unmatched flow takes the
  *  unmatched one in the same position (a renamed scenario). Inside, steps and
@@ -305,8 +308,12 @@ export function reconcileFlows(
   const usedFlowIds = new Set(before.map((f) => f.id));
   return next.map((f, j) => {
     const old = match[j] >= 0 ? before[match[j]] : undefined;
+    // Only the keys the parser does not know survive from the old flow: what
+    // it parses (a removed Examples block, removed tags) is what the Gherkin says.
+    const unknown: Record<string, unknown> = { ...old };
+    for (const key of FLOW_PARSED_KEYS) delete unknown[key];
     return {
-      ...old,
+      ...unknown,
       id: old?.id ?? newStepId(usedFlowIds),
       name: f.name,
       preconditions: reconcileSteps(old?.preconditions, f.preconditions ?? []),

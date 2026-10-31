@@ -351,7 +351,9 @@ preguntas del plan (Q1–Q9) y lo que conviene saber:
   el mismo hash que en el servidor, y la revisión que encola la migración es la
   que el servidor ya tiene: nada se duplica. El reinicio del cursor **no**
   bastaría (`apply_doc` no reescribe un documento cuya base coincide), por eso
-  hace falta el depósito. Límite: esas apps hacen el push
+  hace falta el depósito. `data.__stableSteps` es una clave reservada: cualquier
+  guardado o normalización la quita, y si es un objeto se trata como depósito.
+  Límite: esas apps hacen el push
   antes del pull y tratan el 426 como fatal, así que con un cambio pendiente
   dejan de recibir novedades hasta actualizar (VERSIONING §6.5).
 - **Servidor antiguo.** El escritorio retiene casos y revisiones hasta ver
