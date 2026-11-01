@@ -1,0 +1,158 @@
+{
+  "format": "junit",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "startedAt": "2026-10-27T03:57:57.075Z",
+      "context": {}
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "junit"
+      }
+    ],
+    "results": [
+      {
+        "name": "Autenticacion › Login con credenciales validas",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login con credenciales validas",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [
+          "@TC-001"
+        ],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 27,
+        "attributes": {
+          "requirementKeys": [
+            "REQ-014"
+          ]
+        }
+      },
+      {
+        "name": "Autenticacion › Login rechazado › Example #1",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #1",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [
+          "@TC-002"
+        ],
+        "exampleRow": 0,
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 34,
+        "attributes": {
+          "requirementKeys": [
+            "REQ-014"
+          ]
+        }
+      },
+      {
+        "name": "Autenticacion › Login rechazado › Example #2",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #2",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [
+          "@TC-002"
+        ],
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "status": "failed",
+        "rawStatus": "rerunError",
+        "attempt": 0,
+        "duration": 24,
+        "message": "Expected values to be strictly equal:",
+        "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:9:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7\n\n\n\n[[ATTACHMENT|..\\..\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2-retry1\\error-context.md]]"
+      },
+      {
+        "name": "Autenticacion › Login rechazado › Example #2",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #2",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [
+          "@TC-002"
+        ],
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "status": "failed",
+        "rawStatus": "error",
+        "attempt": 1,
+        "duration": 30,
+        "message": "Expected values to be strictly equal:",
+        "trace": "features\\auth.feature.spec.js:19:9 › Autenticacion › Login rechazado › Example #2 @REQ-014 @priority:high @TC-002 › Then el resultado es \"fallo\" \n\n    AssertionError: Expected values to be strictly equal:\n\n    'fallo' !== 'ok'\n\n\n       at ..\\steps\\steps.js:9\n\n       7 | Then('ve el panel principal', async ({}) => {});\n       8 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n    >  9 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n         |                                                            ^\n      10 | Given('la sesion esta expirada', async ({}) => {});\n      11 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n      12 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n        at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:9:60)\n        at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7\n\n    Error Context: ..\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2\\error-context.md\n\n    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────\n\n    AssertionError: Expected values to be strictly equal:\n\n    'fallo' !== 'ok'\n\n\n       at ..\\steps\\steps.js:9\n\n       7 | Then('ve el panel principal', async ({}) => {});\n       8 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n    >  9 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n         |                                                            ^\n      10 | Given('la sesion esta expirada', async ({}) => {});\n      11 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n      12 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n        at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:9:60)\n        at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7\n\n    Error Context: ..\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2-retry1\\error-context.md",
+        "attachments": [
+          "a1"
+        ],
+        "attributes": {
+          "requirementKeys": [
+            "REQ-014"
+          ]
+        }
+      },
+      {
+        "name": "Sesion › Reintento de sesion expirada",
+        "testKey": "features/flaky.feature.spec.js::Sesion › Reintento de sesion expirada",
+        "filePath": "features/flaky.feature.spec.js",
+        "suite": [
+          "features/flaky.feature.spec.js"
+        ],
+        "tags": [
+          "@TC-003"
+        ],
+        "shardRef": "s1",
+        "status": "failed",
+        "rawStatus": "flakyError",
+        "attempt": 0,
+        "duration": 23,
+        "message": "first attempt fails (flaky demo)",
+        "trace": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:12:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5\n\n\n\n[[ATTACHMENT|..\\..\\test-results\\features-flaky.feature-Sesion-Reintento-de-sesion-expirada\\error-context.md]]"
+      },
+      {
+        "name": "Sesion › Reintento de sesion expirada",
+        "testKey": "features/flaky.feature.spec.js::Sesion › Reintento de sesion expirada",
+        "filePath": "features/flaky.feature.spec.js",
+        "suite": [
+          "features/flaky.feature.spec.js"
+        ],
+        "tags": [
+          "@TC-003"
+        ],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 1,
+        "duration": 18,
+        "attributes": {
+          "flaky": true,
+          "requirementKeys": [
+            "REQ-015"
+          ]
+        }
+      }
+    ],
+    "attachments": [
+      {
+        "ref": "a1",
+        "name": "error-context.md",
+        "kind": "evidence",
+        "path": "..\\..\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2\\error-context.md"
+      }
+    ]
+  }
+}

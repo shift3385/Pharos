@@ -1,0 +1,112 @@
+{
+  "format": "junit",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "startedAt": "2026-10-27T03:55:04.402Z",
+      "context": {}
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "junit"
+      }
+    ],
+    "results": [
+      {
+        "name": "Autenticacion › Login con credenciales validas",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login con credenciales validas",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 16,
+        "attributes": {}
+      },
+      {
+        "name": "Autenticacion › Login rechazado › Example #1",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #1",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 18,
+        "attributes": {}
+      },
+      {
+        "name": "Autenticacion › Login rechazado › Example #2",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #2",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "status": "failed",
+        "rawStatus": "error",
+        "attempt": 0,
+        "duration": 50,
+        "message": "Expected values to be strictly equal:",
+        "trace": "features\\auth.feature.spec.js:19:9 › Autenticacion › Login rechazado › Example #2 @REQ-014 @priority:high @TC-002 › Then el resultado es \"fallo\" \n\n    AssertionError: Expected values to be strictly equal:\n\n    'fallo' !== 'ok'\n\n\n       at ..\\steps\\steps.js:8\n\n       6 | Then('ve el panel principal', async ({}) => {});\n       7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n    >  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n         |                                                            ^\n       9 | Given('la sesion esta expirada', async ({}) => {});\n      10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n      11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n        at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n        at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7\n\n    Error Context: ..\\blobs\\all\\resources\\eec759646848714db721e1526339377bddca68b5.md\n\n    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────\n\n    AssertionError: Expected values to be strictly equal:\n\n    'fallo' !== 'ok'\n\n\n       at ..\\steps\\steps.js:8\n\n       6 | Then('ve el panel principal', async ({}) => {});\n       7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n    >  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n         |                                                            ^\n       9 | Given('la sesion esta expirada', async ({}) => {});\n      10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n      11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n        at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n        at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7\n\n    Error Context: ..\\blobs\\all\\resources\\caed2e759497893cd1c1206783e2bd5d58b9be93.md",
+        "attachments": [
+          "a1",
+          "a2"
+        ],
+        "attributes": {}
+      },
+      {
+        "name": "Sesion › Reintento de sesion expirada",
+        "testKey": "features/flaky.feature.spec.js::Sesion › Reintento de sesion expirada",
+        "filePath": "features/flaky.feature.spec.js",
+        "suite": [
+          "features/flaky.feature.spec.js"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 36,
+        "attachments": [
+          "a3"
+        ],
+        "attributes": {}
+      }
+    ],
+    "attachments": [
+      {
+        "ref": "a1",
+        "name": "eec759646848714db721e1526339377bddca68b5.md",
+        "kind": "evidence",
+        "path": "..\\..\\blobs\\all\\resources\\eec759646848714db721e1526339377bddca68b5.md"
+      },
+      {
+        "ref": "a2",
+        "name": "caed2e759497893cd1c1206783e2bd5d58b9be93.md",
+        "kind": "evidence",
+        "path": "..\\..\\blobs\\all\\resources\\caed2e759497893cd1c1206783e2bd5d58b9be93.md"
+      },
+      {
+        "ref": "a3",
+        "name": "5e48851b0eaeec8c9819cb1e35f916eac161be2a.md",
+        "kind": "evidence",
+        "path": "..\\..\\blobs\\all\\resources\\5e48851b0eaeec8c9819cb1e35f916eac161be2a.md"
+      }
+    ]
+  }
+}

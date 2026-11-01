@@ -1,0 +1,115 @@
+{
+  "format": "cucumber_messages",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "playwright-bdd",
+      "sourceToolVersion": "9.2.1 (playwright 1.64.1)",
+      "startedAt": "2026-10-27T03:53:27.102Z",
+      "finishedAt": "2026-10-27T03:53:27.868Z",
+      "context": {
+        "protocolVersion": "32.2.0",
+        "os": "win32",
+        "runtime": "node.js 24.11.0"
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "cucumber_messages",
+        "formatVersion": "32.2.0"
+      }
+    ],
+    "results": [
+      {
+        "name": "Login con credenciales validas",
+        "status": "passed",
+        "rawStatus": "PASSED",
+        "testKey": "features/auth.feature::Login con credenciales validas",
+        "filePath": "features/auth.feature",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-001",
+          "@smoke"
+        ],
+        "attempt": 0,
+        "externalId": "87eeb78f3f16ad2ab0ca-e4375238820b29cd6b21",
+        "startedAt": "2026-10-27T03:53:27.743Z",
+        "finishedAt": "2026-10-27T03:53:27.759Z",
+        "duration": 1,
+        "steps": [
+          {
+            "text": "el usuario \"qa@pharos.dev\" esta registrado",
+            "status": "passed",
+            "keyword": "Given",
+            "gherkinLine": 6,
+            "durationMs": 0
+          },
+          {
+            "text": "inicia sesion con contrasena valida",
+            "status": "passed",
+            "keyword": "When",
+            "gherkinLine": 7,
+            "durationMs": 1
+          },
+          {
+            "text": "ve el panel principal",
+            "status": "passed",
+            "keyword": "Then",
+            "gherkinLine": 8,
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": false,
+          "gherkinLine": 5
+        }
+      },
+      {
+        "name": "Login rechazado",
+        "status": "passed",
+        "rawStatus": "PASSED",
+        "testKey": "features/auth.feature::Login rechazado[1]",
+        "filePath": "features/auth.feature",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "attempt": 0,
+        "externalId": "87eeb78f3f16ad2ab0ca-90ff2bc2345914e39b1f",
+        "exampleRow": 0,
+        "startedAt": "2026-10-27T03:53:27.776Z",
+        "finishedAt": "2026-10-27T03:53:27.794Z",
+        "duration": 0,
+        "steps": [
+          {
+            "text": "inicia sesion con \"x@y\" y \"mala\"",
+            "status": "passed",
+            "keyword": "When",
+            "gherkinLine": 12,
+            "durationMs": 0
+          },
+          {
+            "text": "el resultado es \"ok\"",
+            "status": "passed",
+            "keyword": "Then",
+            "gherkinLine": 13,
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": false,
+          "gherkinLine": 17
+        }
+      }
+    ],
+    "attachments": []
+  }
+}

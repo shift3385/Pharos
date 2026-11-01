@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<testsuite name="Cucumber" time="0.03" tests="4" skipped="0" failures="1" errors="0" timestamp="2026-10-27T03:55:37.047Z">
+  <testcase classname="Autenticacion" name="Login con credenciales validas" time="0.003">
+    <system-out><![CDATA[Given el usuario "qa@pharos.dev" esta registrado............................passed
+When inicia sesion con contrasena valida....................................passed
+Then ve el panel principal..................................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Autenticacion" name="Login rechazado - #1.1" time="0.001">
+    <system-out><![CDATA[When inicia sesion con "x@y" y "mala".......................................passed
+Then el resultado es "ok"...................................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Autenticacion" name="Login rechazado - #1.2" time="0">
+    <failure type="AssertionError" message="Expected values to be strictly equal:&#xA;&#xA;'fallo' !== 'ok'&#xA;"><![CDATA[AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'fallo' !== 'ok'
+
+    + expected - actual
+
+    -fallo
+    +ok
+
+    at World.<anonymous> (C:\work\ing01\steps\cucumber-steps.js:7:56)]]></failure>
+    <system-out><![CDATA[When inicia sesion con "z@y" y "peor".......................................passed
+Then el resultado es "fallo"................................................failed]]></system-out>
+  </testcase>
+  <testcase classname="Sesion" name="Reintento de sesion expirada" time="0">
+    <system-out><![CDATA[Given la sesion esta expirada...............................................passed
+Then la sesion se renueva al segundo intento................................passed]]></system-out>
+  </testcase>
+</testsuite>

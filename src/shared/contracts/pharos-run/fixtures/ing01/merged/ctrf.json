@@ -1,0 +1,230 @@
+{
+  "reportFormat": "CTRF",
+  "specVersion": "0.2.0",
+  "reportId": "fd488b8d-e96f-495c-bc8e-4c7ddd7f3468",
+  "timestamp": "2026-10-27T03:55:04.253Z",
+  "generatedBy": "playwright-ctrf-json-reporter",
+  "results": {
+    "tool": {
+      "name": "playwright",
+      "version": "1.64.1"
+    },
+    "summary": {
+      "tests": 4,
+      "passed": 3,
+      "failed": 1,
+      "pending": 0,
+      "skipped": 0,
+      "other": 0,
+      "start": 1793073304402,
+      "stop": 1793073304415,
+      "duration": 13,
+      "suites": 8
+    },
+    "tests": [
+      {
+        "testId": "87eeb78f3f16ad2ab0ca-e4375238820b29cd6b21",
+        "executionId": "62309505-ebf1-40e0-98e1-60e2a8c1e4a3",
+        "attemptId": "4f204487-2f3e-4fad-8995-7679db947b3f",
+        "name": "Login con credenciales validas",
+        "status": "passed",
+        "duration": 16,
+        "start": 1793073207743,
+        "stop": 1793073207759,
+        "rawStatus": "passed",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-001",
+          "@smoke"
+        ],
+        "type": "e2e",
+        "filePath": "C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js",
+        "retries": 0,
+        "flaky": false,
+        "steps": [
+          {
+            "name": "Given el usuario \"qa@pharos.dev\" esta registrado",
+            "status": "passed"
+          },
+          {
+            "name": "When inicia sesion con contrasena valida",
+            "status": "passed"
+          },
+          {
+            "name": "Then ve el panel principal",
+            "status": "passed"
+          }
+        ],
+        "suite": [
+          "features\\auth.feature.spec.js",
+          "Autenticacion"
+        ],
+        "attachments": [],
+        "stdout": [],
+        "stderr": []
+      },
+      {
+        "testId": "87eeb78f3f16ad2ab0ca-90ff2bc2345914e39b1f",
+        "executionId": "ee43cc27-8254-4a27-9859-01397a00854f",
+        "attemptId": "e62abac7-e867-40ce-82e1-a8accdc7785f",
+        "name": "Example #1",
+        "status": "passed",
+        "duration": 18,
+        "start": 1793073207776,
+        "stop": 1793073207794,
+        "rawStatus": "passed",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "type": "e2e",
+        "filePath": "C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js",
+        "retries": 0,
+        "flaky": false,
+        "steps": [
+          {
+            "name": "When inicia sesion con \"x@y\" y \"mala\"",
+            "status": "passed"
+          },
+          {
+            "name": "Then el resultado es \"ok\"",
+            "status": "passed"
+          }
+        ],
+        "suite": [
+          "features\\auth.feature.spec.js",
+          "Autenticacion",
+          "Login rechazado"
+        ],
+        "attachments": [],
+        "stdout": [],
+        "stderr": []
+      },
+      {
+        "testId": "87eeb78f3f16ad2ab0ca-ee329bd62e1687978534",
+        "executionId": "7694f959-0d07-44ae-97b4-b3cb9dbf86d7",
+        "attemptId": "eff1f9f9-ea8d-49e0-9192-971a255c7613",
+        "name": "Example #2",
+        "status": "failed",
+        "duration": 27,
+        "start": 1793073211597,
+        "stop": 1793073211624,
+        "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+        "snippet": "   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');",
+        "rawStatus": "failed",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "type": "e2e",
+        "filePath": "C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js",
+        "retries": 1,
+        "flaky": false,
+        "steps": [
+          {
+            "name": "When inicia sesion con \"z@y\" y \"peor\"",
+            "status": "passed"
+          },
+          {
+            "name": "Then el resultado es \"fallo\"",
+            "status": "failed"
+          }
+        ],
+        "suite": [
+          "features\\auth.feature.spec.js",
+          "Autenticacion",
+          "Login rechazado"
+        ],
+        "attachments": [
+          {
+            "attachmentId": "4ab6cdbd-27fd-448d-af0a-be708cba43c3",
+            "name": "error-context",
+            "contentType": "text/markdown",
+            "path": "C:\\work\\ing01\\blobs\\all\\resources\\caed2e759497893cd1c1206783e2bd5d58b9be93.md"
+          }
+        ],
+        "stdout": [],
+        "stderr": [],
+        "retryAttempts": [
+          {
+            "attempt": 1,
+            "attemptId": "a15b4420-da05-4e55-b3d7-0fa77b878de2",
+            "status": "failed",
+            "duration": 23,
+            "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+            "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+            "snippet": "   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');",
+            "attachments": [
+              {
+                "attachmentId": "cf760bed-bf5d-4d68-8ea9-4e9def30c2a3",
+                "name": "error-context",
+                "contentType": "text/markdown",
+                "path": "C:\\work\\ing01\\blobs\\all\\resources\\eec759646848714db721e1526339377bddca68b5.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "testId": "8730573857dc6259c5ba-aaef8b1bf326aff6ec89",
+        "executionId": "89f76613-dfe1-4193-af3b-0e827fb3c719",
+        "attemptId": "7c18289a-f13d-496e-83a7-05e7e07ff52f",
+        "name": "Reintento de sesion expirada",
+        "status": "passed",
+        "duration": 16,
+        "start": 1793073211587,
+        "stop": 1793073211603,
+        "rawStatus": "passed",
+        "tags": [
+          "@REQ-015",
+          "@TC-003",
+          "@flaky-demo"
+        ],
+        "type": "e2e",
+        "filePath": "C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js",
+        "retries": 1,
+        "flaky": true,
+        "steps": [
+          {
+            "name": "Given la sesion esta expirada",
+            "status": "passed"
+          },
+          {
+            "name": "Then la sesion se renueva al segundo intento",
+            "status": "passed"
+          }
+        ],
+        "suite": [
+          "features\\flaky.feature.spec.js",
+          "Sesion"
+        ],
+        "attachments": [],
+        "stdout": [],
+        "stderr": [],
+        "retryAttempts": [
+          {
+            "attempt": 1,
+            "attemptId": "c994254e-1f38-4715-81ed-bd49cf7ceb5c",
+            "status": "failed",
+            "duration": 20,
+            "message": "Error: first attempt fails (flaky demo)",
+            "trace": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:11:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5",
+            "snippet": "   at ..\\steps\\steps.js:11\n\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n> 11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n     |                                    ^\n  12 | });\n  13 |",
+            "attachments": [
+              {
+                "attachmentId": "3a723c71-62e8-44db-99c4-03e6533b8ce2",
+                "name": "error-context",
+                "contentType": "text/markdown",
+                "path": "C:\\work\\ing01\\blobs\\all\\resources\\5e48851b0eaeec8c9819cb1e35f916eac161be2a.md"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

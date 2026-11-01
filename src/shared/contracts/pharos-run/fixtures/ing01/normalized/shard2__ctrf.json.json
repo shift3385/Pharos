@@ -1,0 +1,182 @@
+{
+  "format": "ctrf",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "playwright",
+      "sourceToolVersion": "1.64.1",
+      "startedAt": "2026-10-27T03:53:30.206Z",
+      "finishedAt": "2026-10-27T03:53:31.740Z",
+      "context": {
+        "generatedBy": "playwright-ctrf-json-reporter",
+        "environment": {
+          "shardId": "2-of-2"
+        }
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "ctrf",
+        "formatVersion": "0.2.0",
+        "shardIndex": 2,
+        "shardTotal": 2
+      }
+    ],
+    "results": [
+      {
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #2",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "Autenticacion",
+          "Login rechazado"
+        ],
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "externalId": "87eeb78f3f16ad2ab0ca-ee329bd62e1687978534",
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "name": "Example #2",
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 0,
+        "duration": 23,
+        "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+        "attachments": [
+          "a1"
+        ]
+      },
+      {
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #2",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "Autenticacion",
+          "Login rechazado"
+        ],
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "externalId": "87eeb78f3f16ad2ab0ca-ee329bd62e1687978534",
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "name": "Example #2",
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 1,
+        "duration": 27,
+        "startedAt": "2026-10-27T03:53:31.597Z",
+        "finishedAt": "2026-10-27T03:53:31.624Z",
+        "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+        "steps": [
+          {
+            "text": "When inicia sesion con \"z@y\" y \"peor\"",
+            "status": "passed"
+          },
+          {
+            "text": "Then el resultado es \"fallo\"",
+            "status": "failed"
+          }
+        ],
+        "attachments": [
+          "a2"
+        ],
+        "attributes": {
+          "flaky": false,
+          "type": "e2e"
+        }
+      },
+      {
+        "testKey": "features/flaky.feature.spec.js::Sesion › Reintento de sesion expirada",
+        "filePath": "features/flaky.feature.spec.js",
+        "suite": [
+          "Sesion"
+        ],
+        "tags": [
+          "@REQ-015",
+          "@TC-003",
+          "@flaky-demo"
+        ],
+        "externalId": "8730573857dc6259c5ba-aaef8b1bf326aff6ec89",
+        "shardRef": "s1",
+        "name": "Reintento de sesion expirada",
+        "status": "failed",
+        "rawStatus": "failed",
+        "attempt": 0,
+        "duration": 20,
+        "message": "Error: first attempt fails (flaky demo)",
+        "trace": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:11:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5",
+        "attachments": [
+          "a3"
+        ]
+      },
+      {
+        "testKey": "features/flaky.feature.spec.js::Sesion › Reintento de sesion expirada",
+        "filePath": "features/flaky.feature.spec.js",
+        "suite": [
+          "Sesion"
+        ],
+        "tags": [
+          "@REQ-015",
+          "@TC-003",
+          "@flaky-demo"
+        ],
+        "externalId": "8730573857dc6259c5ba-aaef8b1bf326aff6ec89",
+        "shardRef": "s1",
+        "name": "Reintento de sesion expirada",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 1,
+        "duration": 16,
+        "startedAt": "2026-10-27T03:53:31.587Z",
+        "finishedAt": "2026-10-27T03:53:31.603Z",
+        "steps": [
+          {
+            "text": "Given la sesion esta expirada",
+            "status": "passed"
+          },
+          {
+            "text": "Then la sesion se renueva al segundo intento",
+            "status": "passed"
+          }
+        ],
+        "attributes": {
+          "flaky": true,
+          "type": "e2e"
+        }
+      }
+    ],
+    "attachments": [
+      {
+        "ref": "a1",
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "kind": "evidence",
+        "path": "C:\\work\\ing01\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2\\error-context.md"
+      },
+      {
+        "ref": "a2",
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "kind": "evidence",
+        "path": "C:\\work\\ing01\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2-retry1\\error-context.md"
+      },
+      {
+        "ref": "a3",
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "kind": "evidence",
+        "path": "C:\\work\\ing01\\test-results\\features-flaky.feature-Sesion-Reintento-de-sesion-expirada\\error-context.md"
+      }
+    ]
+  }
+}

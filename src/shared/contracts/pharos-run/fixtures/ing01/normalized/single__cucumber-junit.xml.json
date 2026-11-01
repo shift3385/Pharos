@@ -1,0 +1,83 @@
+{
+  "format": "junit",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "Cucumber",
+      "startedAt": "2026-10-27T03:52:07.031Z",
+      "context": {}
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "junit"
+      }
+    ],
+    "results": [
+      {
+        "name": "Login con credenciales validas",
+        "testKey": "Autenticacion::Login con credenciales validas",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 21,
+        "attributes": {}
+      },
+      {
+        "name": "Login rechazado - #1.1",
+        "testKey": "Autenticacion::Login rechazado - #1.1",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 25,
+        "attributes": {}
+      },
+      {
+        "name": "Login rechazado - #1.2",
+        "testKey": "Autenticacion::Login rechazado - #1.2",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "status": "failed",
+        "rawStatus": "failure",
+        "attempt": 0,
+        "duration": 13,
+        "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');",
+        "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+        "attributes": {}
+      },
+      {
+        "name": "Reintento de sesion expirada",
+        "testKey": "Sesion::Reintento de sesion expirada",
+        "suite": [
+          "Sesion"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "skipped",
+        "rawStatus": "skipped",
+        "attempt": 0,
+        "duration": 13,
+        "attributes": {}
+      }
+    ],
+    "attachments": []
+  }
+}

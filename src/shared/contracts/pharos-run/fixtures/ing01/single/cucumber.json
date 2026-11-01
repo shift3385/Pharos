@@ -1,0 +1,245 @@
+[
+  {
+    "description": "",
+    "elements": [
+      {
+        "description": "",
+        "id": "autenticacion;login-con-credenciales-validas",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "Login con credenciales validas",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "el usuario \"qa@pharos.dev\" esta registrado",
+            "result": {
+              "status": "passed",
+              "duration": 1000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 7,
+            "name": "inicia sesion con contrasena valida",
+            "result": {
+              "status": "passed",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "ve el panel principal",
+            "result": {
+              "status": "passed",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@REQ-014",
+            "line": 1
+          },
+          {
+            "name": "@priority:high",
+            "line": 1
+          },
+          {
+            "name": "@TC-001",
+            "line": 4
+          },
+          {
+            "name": "@smoke",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "autenticacion;login-rechazado",
+        "keyword": "Scenario Outline",
+        "line": 17,
+        "name": "Login rechazado",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 12,
+            "name": "inicia sesion con \"x@y\" y \"mala\"",
+            "result": {
+              "status": "passed",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 13,
+            "name": "el resultado es \"ok\"",
+            "result": {
+              "status": "passed",
+              "duration": 1000000
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@REQ-014",
+            "line": 1
+          },
+          {
+            "name": "@priority:high",
+            "line": 1
+          },
+          {
+            "name": "@TC-002",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "autenticacion;login-rechazado",
+        "keyword": "Scenario Outline",
+        "line": 18,
+        "name": "Login rechazado",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 12,
+            "name": "inicia sesion con \"z@y\" y \"peor\"",
+            "result": {
+              "status": "passed",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 13,
+            "name": "el resultado es \"fallo\"",
+            "result": {
+              "status": "failed",
+              "duration": 5000000,
+              "error_message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7"
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 12000000
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@REQ-014",
+            "line": 1
+          },
+          {
+            "name": "@priority:high",
+            "line": 1
+          },
+          {
+            "name": "@TC-002",
+            "line": 10
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "autenticacion",
+    "line": 2,
+    "keyword": "Feature",
+    "name": "Autenticacion",
+    "tags": [
+      {
+        "name": "@REQ-014",
+        "line": 1
+      },
+      {
+        "name": "@priority:high",
+        "line": 1
+      }
+    ],
+    "uri": "features\\auth.feature"
+  },
+  {
+    "description": "",
+    "elements": [
+      {
+        "description": "",
+        "id": "sesion;reintento-de-sesion-expirada",
+        "keyword": "Scenario",
+        "line": 5,
+        "name": "Reintento de sesion expirada",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 6,
+            "name": "la sesion esta expirada",
+            "result": {
+              "status": "passed",
+              "duration": 1000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 7,
+            "name": "la sesion se renueva al segundo intento",
+            "result": {
+              "status": "passed",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@REQ-015",
+            "line": 1
+          },
+          {
+            "name": "@TC-003",
+            "line": 4
+          },
+          {
+            "name": "@flaky-demo",
+            "line": 4
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "sesion",
+    "line": 2,
+    "keyword": "Feature",
+    "name": "Sesion",
+    "tags": [
+      {
+        "name": "@REQ-015",
+        "line": 1
+      }
+    ],
+    "uri": "features\\flaky.feature"
+  }
+]

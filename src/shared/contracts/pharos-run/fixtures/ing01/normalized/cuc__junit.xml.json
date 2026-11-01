@@ -1,0 +1,83 @@
+{
+  "format": "junit",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "Cucumber",
+      "startedAt": "2026-10-27T03:55:37.047Z",
+      "context": {}
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "junit"
+      }
+    ],
+    "results": [
+      {
+        "name": "Login con credenciales validas",
+        "testKey": "Autenticacion::Login con credenciales validas",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 3,
+        "attributes": {}
+      },
+      {
+        "name": "Login rechazado - #1.1",
+        "testKey": "Autenticacion::Login rechazado - #1.1",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 1,
+        "attributes": {}
+      },
+      {
+        "name": "Login rechazado - #1.2",
+        "testKey": "Autenticacion::Login rechazado - #1.2",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [],
+        "exampleRow": 1,
+        "shardRef": "s1",
+        "status": "failed",
+        "rawStatus": "failure",
+        "attempt": 0,
+        "duration": 0,
+        "message": "Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    + expected - actual\n\n    -fallo\n    +ok\n\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:7:56)",
+        "attributes": {}
+      },
+      {
+        "name": "Reintento de sesion expirada",
+        "testKey": "Sesion::Reintento de sesion expirada",
+        "suite": [
+          "Sesion"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 0,
+        "attributes": {}
+      }
+    ],
+    "attachments": []
+  }
+}

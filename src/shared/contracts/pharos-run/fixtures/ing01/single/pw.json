@@ -1,0 +1,536 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\work\\ing01\\node_modules\\@playwright\\test\\cli.js",
+      "test"
+    ],
+    "configFile": "C:\\work\\ing01\\playwright.config.js",
+    "rootDir": "C:/work/ing01/.features-gen",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/work/ing01/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/work/ing01/.features-gen",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "C:\\work\\ing01\\test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "name": "",
+        "testDir": "C:\\work\\ing01\\.features-gen",
+        "snapshotDir": "C:\\work\\ing01\\.features-gen",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 30000,
+        "use": {},
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "junit",
+        {
+          "outputFile": "out/single/pw-junit.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "out/single/pw.json"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-ctrf-json-reporter\\dist\\index.cjs",
+        {
+          "outputDir": "out/single",
+          "outputFile": "ctrf.json"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-bdd\\dist\\reporter\\cucumber\\index.js",
+        {
+          "$type": "message",
+          "outputFile": "out/single/cucumber-messages.ndjson"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-bdd\\dist\\reporter\\cucumber\\index.js",
+        {
+          "$type": "json",
+          "outputFile": "out/single/cucumber.json"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-bdd\\dist\\reporter\\cucumber\\index.js",
+        {
+          "$type": "junit",
+          "outputFile": "out/single/cucumber-junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "features\\auth.feature.spec.js",
+      "file": "features/auth.feature.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Autenticacion",
+          "file": "features/auth.feature.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Login con credenciales validas",
+              "ok": true,
+              "tags": [
+                "REQ-014",
+                "priority:high",
+                "TC-001",
+                "smoke"
+              ],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 21,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Given el usuario \"qa@pharos.dev\" esta registrado",
+                          "duration": 1
+                        },
+                        {
+                          "title": "When inicia sesion con contrasena valida",
+                          "duration": 0
+                        },
+                        {
+                          "title": "Then ve el panel principal",
+                          "duration": 0
+                        }
+                      ],
+                      "startTime": "2026-10-27T03:52:07.875Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "87eeb78f3f16ad2ab0ca-e4375238820b29cd6b21",
+              "file": "features/auth.feature.spec.js",
+              "line": 6,
+              "column": 7
+            }
+          ],
+          "suites": [
+            {
+              "title": "Login rechazado",
+              "file": "features/auth.feature.spec.js",
+              "line": 12,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "Example #1",
+                  "ok": true,
+                  "tags": [
+                    "REQ-014",
+                    "priority:high",
+                    "TC-002"
+                  ],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "",
+                      "projectName": "",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 25,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "steps": [
+                            {
+                              "title": "When inicia sesion con \"x@y\" y \"mala\"",
+                              "duration": 0
+                            },
+                            {
+                              "title": "Then el resultado es \"ok\"",
+                              "duration": 1
+                            }
+                          ],
+                          "startTime": "2026-10-27T03:52:07.903Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "87eeb78f3f16ad2ab0ca-90ff2bc2345914e39b1f",
+                  "file": "features/auth.feature.spec.js",
+                  "line": 14,
+                  "column": 9
+                },
+                {
+                  "title": "Example #2",
+                  "ok": false,
+                  "tags": [
+                    "REQ-014",
+                    "priority:high",
+                    "TC-002"
+                  ],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "",
+                      "projectName": "",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 2,
+                          "status": "failed",
+                          "duration": 28,
+                          "error": {
+                            "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+                            "stack": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+                            "location": {
+                              "file": "C:\\work\\ing01\\steps\\steps.js",
+                              "column": 60,
+                              "line": 8
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39m..\\steps\\steps.js:8\n\n\u001b[0m \u001b[90m  6 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m've el panel principal'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m  7 |\u001b[39m \u001b[33mWhen\u001b[39m(\u001b[32m'inicia sesion con {string} y {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m e\u001b[33m,\u001b[39m c) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'el resultado es {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m r) \u001b[33m=>\u001b[39m { assert\u001b[33m.\u001b[39mstrictEqual(r\u001b[33m,\u001b[39m \u001b[32m'ok'\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m \u001b[33mGiven\u001b[39m(\u001b[32m'la sesion esta expirada'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m 10 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'la sesion se renueva al segundo intento'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ $testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m 11 |\u001b[39m   \u001b[36mif\u001b[39m ($testInfo\u001b[33m.\u001b[39mretry \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'first attempt fails (flaky demo)'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "C:\\work\\ing01\\steps\\steps.js",
+                                "column": 60,
+                                "line": 8
+                              },
+                              "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n\n   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "steps": [
+                            {
+                              "title": "When inicia sesion con \"z@y\" y \"peor\"",
+                              "duration": 1
+                            },
+                            {
+                              "title": "Then el resultado es \"fallo\"",
+                              "duration": 4,
+                              "error": {
+                                "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+                                "stack": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+                                "location": {
+                                  "file": "C:\\work\\ing01\\steps\\steps.js",
+                                  "column": 60,
+                                  "line": 8
+                                },
+                                "snippet": "\u001b[90m   at \u001b[39m..\\steps\\steps.js:8\n\n\u001b[0m \u001b[90m  6 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m've el panel principal'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m  7 |\u001b[39m \u001b[33mWhen\u001b[39m(\u001b[32m'inicia sesion con {string} y {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m e\u001b[33m,\u001b[39m c) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'el resultado es {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m r) \u001b[33m=>\u001b[39m { assert\u001b[33m.\u001b[39mstrictEqual(r\u001b[33m,\u001b[39m \u001b[32m'ok'\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m \u001b[33mGiven\u001b[39m(\u001b[32m'la sesion esta expirada'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m 10 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'la sesion se renueva al segundo intento'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ $testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m 11 |\u001b[39m   \u001b[36mif\u001b[39m ($testInfo\u001b[33m.\u001b[39mretry \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'first attempt fails (flaky demo)'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                              }
+                            }
+                          ],
+                          "startTime": "2026-10-27T03:52:07.891Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "C:\\work\\ing01\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2\\error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "C:\\work\\ing01\\steps\\steps.js",
+                            "column": 60,
+                            "line": 8
+                          }
+                        },
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 13,
+                          "error": {
+                            "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+                            "stack": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+                            "location": {
+                              "file": "C:\\work\\ing01\\steps\\steps.js",
+                              "column": 60,
+                              "line": 8
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39m..\\steps\\steps.js:8\n\n\u001b[0m \u001b[90m  6 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m've el panel principal'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m  7 |\u001b[39m \u001b[33mWhen\u001b[39m(\u001b[32m'inicia sesion con {string} y {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m e\u001b[33m,\u001b[39m c) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'el resultado es {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m r) \u001b[33m=>\u001b[39m { assert\u001b[33m.\u001b[39mstrictEqual(r\u001b[33m,\u001b[39m \u001b[32m'ok'\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m \u001b[33mGiven\u001b[39m(\u001b[32m'la sesion esta expirada'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m 10 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'la sesion se renueva al segundo intento'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ $testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m 11 |\u001b[39m   \u001b[36mif\u001b[39m ($testInfo\u001b[33m.\u001b[39mretry \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'first attempt fails (flaky demo)'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "C:\\work\\ing01\\steps\\steps.js",
+                                "column": 60,
+                                "line": 8
+                              },
+                              "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n\n   at ..\\steps\\steps.js:8\n\n   6 | Then('ve el panel principal', async ({}) => {});\n   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});\n>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });\n     |                                                            ^\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 1,
+                          "steps": [
+                            {
+                              "title": "When inicia sesion con \"z@y\" y \"peor\"",
+                              "duration": 0
+                            },
+                            {
+                              "title": "Then el resultado es \"fallo\"",
+                              "duration": 5,
+                              "error": {
+                                "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+                                "stack": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
+                                "location": {
+                                  "file": "C:\\work\\ing01\\steps\\steps.js",
+                                  "column": 60,
+                                  "line": 8
+                                },
+                                "snippet": "\u001b[90m   at \u001b[39m..\\steps\\steps.js:8\n\n\u001b[0m \u001b[90m  6 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m've el panel principal'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m  7 |\u001b[39m \u001b[33mWhen\u001b[39m(\u001b[32m'inicia sesion con {string} y {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m e\u001b[33m,\u001b[39m c) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  8 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'el resultado es {string}'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}\u001b[33m,\u001b[39m r) \u001b[33m=>\u001b[39m { assert\u001b[33m.\u001b[39mstrictEqual(r\u001b[33m,\u001b[39m \u001b[32m'ok'\u001b[39m)\u001b[33m;\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                            \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  9 |\u001b[39m \u001b[33mGiven\u001b[39m(\u001b[32m'la sesion esta expirada'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m 10 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'la sesion se renueva al segundo intento'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ $testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m 11 |\u001b[39m   \u001b[36mif\u001b[39m ($testInfo\u001b[33m.\u001b[39mretry \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'first attempt fails (flaky demo)'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                              }
+                            }
+                          ],
+                          "startTime": "2026-10-27T03:52:08.007Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "C:\\work\\ing01\\test-results\\features-auth.feature-Aute-01b4c-n-Login-rechazado-Example-2-retry1\\error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "C:\\work\\ing01\\steps\\steps.js",
+                            "column": 60,
+                            "line": 8
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "87eeb78f3f16ad2ab0ca-ee329bd62e1687978534",
+                  "file": "features/auth.feature.spec.js",
+                  "line": 19,
+                  "column": 9
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "features\\flaky.feature.spec.js",
+      "file": "features/flaky.feature.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Sesion",
+          "file": "features/flaky.feature.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Reintento de sesion expirada",
+              "ok": true,
+              "tags": [
+                "REQ-015",
+                "TC-003",
+                "flaky-demo"
+              ],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 19,
+                      "error": {
+                        "message": "Error: first attempt fails (flaky demo)",
+                        "stack": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:11:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5",
+                        "location": {
+                          "file": "C:\\work\\ing01\\steps\\steps.js",
+                          "column": 36,
+                          "line": 11
+                        },
+                        "snippet": "\u001b[90m   at \u001b[39m..\\steps\\steps.js:11\n\n\u001b[0m \u001b[90m  9 |\u001b[39m \u001b[33mGiven\u001b[39m(\u001b[32m'la sesion esta expirada'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m 10 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'la sesion se renueva al segundo intento'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ $testInfo }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 11 |\u001b[39m   \u001b[36mif\u001b[39m ($testInfo\u001b[33m.\u001b[39mretry \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'first attempt fails (flaky demo)'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 12 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 13 |\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\work\\ing01\\steps\\steps.js",
+                            "column": 36,
+                            "line": 11
+                          },
+                          "message": "Error: first attempt fails (flaky demo)\n\n   at ..\\steps\\steps.js:11\n\n   9 | Given('la sesion esta expirada', async ({}) => {});\n  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {\n> 11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');\n     |                                    ^\n  12 | });\n  13 |\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:11:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Given la sesion esta expirada",
+                          "duration": 0
+                        },
+                        {
+                          "title": "Then la sesion se renueva al segundo intento",
+                          "duration": 1,
+                          "error": {
+                            "message": "Error: first attempt fails (flaky demo)",
+                            "stack": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:11:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5",
+                            "location": {
+                              "file": "C:\\work\\ing01\\steps\\steps.js",
+                              "column": 36,
+                              "line": 11
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39m..\\steps\\steps.js:11\n\n\u001b[0m \u001b[90m  9 |\u001b[39m \u001b[33mGiven\u001b[39m(\u001b[32m'la sesion esta expirada'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({}) \u001b[33m=>\u001b[39m {})\u001b[33m;\u001b[39m\n \u001b[90m 10 |\u001b[39m \u001b[33mThen\u001b[39m(\u001b[32m'la sesion se renueva al segundo intento'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ $testInfo }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 11 |\u001b[39m   \u001b[36mif\u001b[39m ($testInfo\u001b[33m.\u001b[39mretry \u001b[33m===\u001b[39m \u001b[35m0\u001b[39m) \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'first attempt fails (flaky demo)'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 12 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 13 |\u001b[39m\u001b[0m"
+                          }
+                        }
+                      ],
+                      "startTime": "2026-10-27T03:52:07.856Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\work\\ing01\\test-results\\features-flaky.feature-Sesion-Reintento-de-sesion-expirada\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\work\\ing01\\steps\\steps.js",
+                        "column": 36,
+                        "line": 11
+                      }
+                    },
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 13,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "steps": [
+                        {
+                          "title": "Given la sesion esta expirada",
+                          "duration": 1
+                        },
+                        {
+                          "title": "Then la sesion se renueva al segundo intento",
+                          "duration": 0
+                        }
+                      ],
+                      "startTime": "2026-10-27T03:52:08.858Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "8730573857dc6259c5ba-aaef8b1bf326aff6ec89",
+              "file": "features/flaky.feature.spec.js",
+              "line": 6,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-27T03:52:07.031Z",
+    "duration": 1914.4189999999999,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 1
+  }
+}
