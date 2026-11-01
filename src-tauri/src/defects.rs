@@ -287,29 +287,73 @@ fn links_of(conn: &Connection, defect_id: &str) -> Result<Vec<DefectLink>, Strin
     rows.collect::<rusqlite::Result<_>>().map_err(err)
 }
 
+/// What a result is the execution of: its effective case, the revision and
+/// the flow. **The one place this module reads it** (cases a defect reaches,
+/// the candidates, the draft and the create from a result): a manual result
+/// carries the link in its content, an imported one gets it at read time
+/// (step 9, `runs/link.rs::resolve`), so switching to that resolver is a
+/// change here only. Today: the result's own case, else the project's
+/// mapping of its `test_key` (as `runs::list_results`).
+pub(crate) struct ResultLink {
+    pub case_id: Option<String>,
+    pub revision_id: Option<String>,
+    pub flow_id: Option<String>,
+}
+
+pub(crate) fn result_link(
+    conn: &Connection,
+    result_id: &str,
+) -> Result<Option<ResultLink>, String> {
+    conn.query_row(
+        "SELECT coalesce(x.test_case_id,
+                         (SELECT m.test_case_id FROM unlinked_mappings m
+                           WHERE m.project_id = x.project_id AND m.test_key = x.test_key
+                             AND m.deleted_at IS NULL
+                           ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)),
+                x.test_case_revision_id, x.flow_id
+           FROM results x WHERE x.id = ?1",
+        params![result_id],
+        |r| {
+            Ok(ResultLink {
+                case_id: r.get(0)?,
+                revision_id: r.get(1)?,
+                flow_id: r.get(2)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(err)
+}
+
 /// Cases a defect reaches: direct links, and the case of each linked result
-/// (`coalesce(result.test_case_id, mapping)`, as `runs::list_results`).
+/// (`result_link`), in link order, once each.
 fn cases_of(conn: &Connection, defect_id: &str) -> Result<Vec<String>, String> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT DISTINCT case_id FROM (
-                 SELECT l.target_id AS case_id, l.rowid AS o FROM defect_links l
-                  WHERE l.defect_id = ?1 AND l.deleted_at IS NULL AND l.target_kind = 'test_case'
-                 UNION ALL
-                 SELECT coalesce(x.test_case_id,
-                                 (SELECT m.test_case_id FROM unlinked_mappings m
-                                   WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                                     AND m.deleted_at IS NULL
-                                   ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)), l.rowid
-                   FROM defect_links l JOIN results x ON x.id = l.target_id
-                  WHERE l.defect_id = ?1 AND l.deleted_at IS NULL AND l.target_kind = 'result')
-              WHERE case_id IS NOT NULL ORDER BY o",
-        )
-        .map_err(err)?;
-    let rows = stmt
-        .query_map(params![defect_id], |r| r.get::<_, String>(0))
-        .map_err(err)?;
-    rows.collect::<rusqlite::Result<_>>().map_err(err)
+    let links: Vec<(String, String)> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT target_kind, target_id FROM defect_links
+                  WHERE defect_id = ?1 AND deleted_at IS NULL
+                    AND target_kind IN ('test_case', 'result')
+                  ORDER BY rowid",
+            )
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![defect_id], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    let mut out: Vec<String> = Vec::new();
+    for (kind, target) in links {
+        let case = if kind == "test_case" {
+            Some(target)
+        } else {
+            result_link(conn, &target)?.and_then(|l| l.case_id)
+        };
+        if let Some(c) = case.filter(|c| !out.contains(c)) {
+            out.push(c);
+        }
+    }
+    Ok(out)
 }
 
 fn with_links(conn: &Connection, mut d: Defect) -> Result<Defect, String> {
@@ -371,12 +415,7 @@ pub(crate) fn result_candidates(
     let mut stmt = conn
         .prepare(
             "SELECT x.id, x.run_id, coalesce(r.run_key, ''), coalesce(r.title, ''),
-                    coalesce(x.test_case_id,
-                             (SELECT m.test_case_id FROM unlinked_mappings m
-                               WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                                 AND m.deleted_at IS NULL
-                               ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)),
-                    x.case_key, x.test_key, x.attempt, x.status, x.created_at
+                    NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at
                FROM results x LEFT JOIN runs r ON r.id = x.run_id
               WHERE x.project_id = ?1 AND x.status IN ('failed', 'blocked', 'other')
                 AND (r.id IS NULL OR r.deleted_at IS NULL)
@@ -399,7 +438,11 @@ pub(crate) fn result_candidates(
             })
         })
         .map_err(err)?;
-    rows.collect::<rusqlite::Result<_>>().map_err(err)
+    let mut out: Vec<ResultCandidate> = rows.collect::<rusqlite::Result<_>>().map_err(err)?;
+    for c in &mut out {
+        c.test_case_id = result_link(conn, &c.result_id)?.and_then(|l| l.case_id);
+    }
+    Ok(out)
 }
 
 // ---- writes ----------------------------------------------------------------------
@@ -621,15 +664,19 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
     let resolution = lifecycle::check(status, status, input.resolution.as_deref())?;
     let mut links: Vec<LinkTarget> = input.links.clone().unwrap_or_default();
     if let Some(from) = &input.from_result {
-        let (case_id,): (Option<String>,) = conn
+        let in_project = conn
             .query_row(
-                "SELECT test_case_id FROM results WHERE id = ?1 AND project_id = ?2",
+                "SELECT 1 FROM results WHERE id = ?1 AND project_id = ?2",
                 params![from.result_id, input.project_id],
-                |r| Ok((r.get(0)?,)),
+                |_| Ok(()),
             )
             .optional()
             .map_err(err)?
-            .ok_or("result not found")?;
+            .is_some();
+        if !in_project {
+            return Err("result not found".into());
+        }
+        let case_id = result_link(conn, &from.result_id)?.and_then(|l| l.case_id);
         links.insert(
             0,
             LinkTarget {
@@ -938,8 +985,8 @@ pub(crate) fn draft_from_result(
     );
     let row: Option<Row> = conn
         .query_row(
-            "SELECT x.project_id, x.run_id, x.test_case_id, x.test_case_revision_id, x.case_key,
-                    x.flow_id, x.error_message, x.test_key
+            "SELECT x.project_id, x.run_id, NULL, NULL, x.case_key, NULL, x.error_message,
+                    x.test_key
                FROM results x JOIN projects p ON p.id = x.project_id
               WHERE x.id = ?1 AND p.owner_id = ?2 AND p.deleted_at IS NULL",
             params![result_id, user],
@@ -958,11 +1005,12 @@ pub(crate) fn draft_from_result(
         )
         .optional()
         .map_err(err)?;
-    let Some((project_id, run_id, _case_id, revision_id, case_key, flow_id, message, test_key)) =
-        row
-    else {
+    let Some((project_id, run_id, _, _, case_key, _, message, test_key)) = row else {
         return Err("result not found".into());
     };
+    let link = result_link(conn, result_id)?;
+    let revision_id = link.as_ref().and_then(|l| l.revision_id.clone());
+    let flow_id = link.as_ref().and_then(|l| l.flow_id.clone());
     let run: Option<(Option<String>, Option<String>)> = conn
         .query_row(
             "SELECT build, environment FROM runs WHERE id = ?1",

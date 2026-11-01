@@ -233,6 +233,11 @@ recomendadas del plan) y precisiones sobre el boceto:
   `attachments` por evidencia del resultado y de sus pasos, con el mismo
   `sha256` (ADR-0014). En la web no existe hasta que la API lea resultados
   (INT-02).
+- **Caso de un resultado, en un solo sitio:** el caso, la revisión y el flujo
+  de un resultado se leen solo en `defects::result_link` (hoy: el del
+  resultado o la regla de enlace de su `test_key`). Los resultados importados
+  los resuelven al leer (paso 9, `runs/link.rs::resolve`): pasar a ese
+  resolvedor es un cambio en esa función.
 - **UI:** `docs/rediseno/` no tiene diseño de estas pantallas; se construyen
   con los componentes de la lista de casos y del tablero del planificador. El
   tablero tiene las seis columnas del flujo principal y «Otros» para Rechazado

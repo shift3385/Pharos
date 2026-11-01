@@ -812,3 +812,36 @@ fn a_local_conversion_and_the_server_conversion_converge() {
     );
     assert!(push(&c).is_empty());
 }
+
+#[test]
+fn a_result_without_a_case_reaches_the_case_its_test_key_is_mapped_to() {
+    let c = device();
+    let p = new_project(&c);
+    let case = new_case(&c, &p);
+    // An imported result with no case of its own (step 9 resolves these at
+    // read time; today the mapping does), then mapped to the case.
+    c.execute(
+        "INSERT INTO results (id, workspace_id, project_id, run_id, test_key, attempt, status,
+                executed_by, created_by, created_at, hlc)
+         VALUES ('imp1', 'w', ?1, 'run-x', 'tests/pay.spec.ts::pays', 0, 'failed', 'ci', ?2,
+                datetime('now'), 'h')",
+        rusqlite::params![p, U],
+    )
+    .unwrap();
+    let d = insert_defect(
+        &c,
+        &input(
+            &p,
+            json!({"links": [{"targetKind": "result", "targetId": "imp1"}]}),
+        ),
+    )
+    .unwrap();
+    assert!(get_defect(&c, &d, U).unwrap().unwrap().case_ids.is_empty());
+    runs::set_mapping(&c, &p, "tests/pay.spec.ts::pays", Some(&case), U).unwrap();
+    assert_eq!(
+        get_defect(&c, &d, U).unwrap().unwrap().case_ids,
+        vec![case.clone()]
+    );
+    let candidates = result_candidates(&c, &p, U).unwrap();
+    assert_eq!(candidates[0].test_case_id.as_deref(), Some(case.as_str()));
+}
