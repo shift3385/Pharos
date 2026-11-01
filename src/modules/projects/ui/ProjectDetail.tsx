@@ -11,10 +11,12 @@ import {
 import {
   TestCasesPage,
   projectCaseCount,
+  projectCaseOptions,
   projectTraceableCases,
   type RequirementOption,
 } from "@modules/test-cases";
 import { PlannerBoard } from "@modules/planner";
+import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { TraceabilityPage, requirementApi } from "@modules/traceability";
 import { projectApi } from "../api/projectApi";
@@ -118,6 +120,13 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
             caseIdPrefix={project.caseIdPrefix}
             caseIdDigits={project.caseIdDigits}
             requirements={facts?.requirements ?? []}
+          />
+        )}
+        {tab === "cycles" && (
+          <CyclesPage
+            projectId={projectId}
+            loadCases={() => projectCaseOptions(projectId, ownerId)}
+            requirementKeys={(facts?.requirements ?? []).map((r) => r.requirementKey)}
           />
         )}
         {tab === "traceability" && (

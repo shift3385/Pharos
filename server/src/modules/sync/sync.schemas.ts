@@ -11,6 +11,8 @@ import {
 
 /** Entities of the `lww` sync class (Phase 8B core + SYNC-04a requirements
  *  and planner cards, EJE-01 runs, run items and unlinked mappings, FLD-01
+ *  custom field definitions, CYC-01 configurations, test cycles and their
+ *  items): base check, then last-write-wins by HLC
  *  custom field definitions, DEF-01 defects and their links): base check, then last-write-wins by HLC
  *  (ADR-0002). Templates and attachments follow in SYNC-04b. */
 export const LWW_ENTITIES = [
@@ -23,6 +25,9 @@ export const LWW_ENTITIES = [
   "run_item",
   "unlinked_mapping",
   "custom_field",
+  "configuration",
+  "test_cycle",
+  "test_cycle_item",
   "defect",
   "defect_link",
 ] as const;
@@ -47,6 +52,13 @@ export const EXECUTION_ENTITIES = ["run", "run_item", "unlinked_mapping", "run_s
 export const isExecution = (entity: string): boolean =>
   (EXECUTION_ENTITIES as readonly string[]).includes(entity);
 
+/** Configurations, test cycles and their items (CYC-01, ADR-0017). Only
+ *  clients that send the `cycles` feature pull or push them; the others get
+ *  the answers they got before (VERSIONING §6.5). */
+export const CYCLE_ENTITIES = ["configuration", "test_cycle", "test_cycle_item"] as const;
+
+export const isCycleEntity = (entity: string): boolean =>
+  (CYCLE_ENTITIES as readonly string[]).includes(entity);
 /** The defect entities (DEF-01, ADR-0016). Only clients that send the
  *  `defects` feature pull them; the others never knew them and get the
  *  answers they got before (VERSIONING §6.5). */
@@ -116,6 +128,9 @@ export const PROJECT_CHILDREN = [
   "run_shard",
   "result",
   "custom_field",
+  "configuration",
+  "test_cycle",
+  "test_cycle_item",
   "defect",
   "defect_link",
 ] as const;
@@ -151,6 +166,24 @@ const EXECUTION_PAYLOADS: Partial<Record<string, z.ZodType>> = {
       .max(5000)
       .default([]),
   }),
+};
+
+/** What the server checks of a cycle document (CYC-01): the same limits the
+ *  desktop checks before writing (`cycles.rs`). Extra keys pass. */
+const CYCLE_PAYLOADS: Partial<Record<string, z.ZodType>> = {
+  configuration: z.looseObject({
+    projectId: id,
+    name: z.string().min(1).max(200),
+    matchLabels: z.array(z.string().max(200)).max(50).default([]),
+  }),
+  test_cycle: z.looseObject({
+    projectId: id,
+    cycleKey: z.string().min(1).max(100),
+    title: z.string().max(500),
+    status: z.enum(["planned", "active", "closed"]),
+    configurationIds: z.array(id).max(200).default([]),
+  }),
+  test_cycle_item: z.looseObject({ projectId: id, cycleId: id, testCaseId: id }),
 };
 
 const text = (max: number) => z.string().max(max).nullish();
@@ -248,7 +281,10 @@ export const deltaSchema = z
           path: ["entityId"],
         });
     }
-    const schema = d.op === "delete" ? undefined : (EXECUTION_PAYLOADS[d.entity] ?? DEFECT_PAYLOADS[d.entity]);
+    const schema =
+      d.op === "delete"
+        ? undefined
+        : (EXECUTION_PAYLOADS[d.entity] ?? CYCLE_PAYLOADS[d.entity] ?? DEFECT_PAYLOADS[d.entity]);
     const parsed = schema?.safeParse(d.payload);
     if (parsed && !parsed.success) {
       for (const issue of parsed.error.issues) {
@@ -272,8 +308,8 @@ export type Delta = z.infer<typeof deltaSchema>;
  *  carries and the payload field that holds it. */
 export const KEY_KINDS = ["case", "requirement", "defect", "run", "cycle"] as const;
 export type KeyKind = (typeof KEY_KINDS)[number];
-/** `cycle` (CYC-, ADR-0017) is accepted now (migration 0008) and gets its
- *  entity with step 6. */
+/** `run` and `cycle` since migration 0008; a cycle's key is its `cycleKey`
+ *  (CYC-01, migration 0009). */
 export const KEY_ENTITY: Record<KeyKind, string> = {
   case: "test_case",
   requirement: "requirement",
@@ -286,6 +322,7 @@ export const KEY_FIELD: Record<string, string> = {
   requirement: "requirementKey",
   planner_card: "cardKey",
   run: "runKey",
+  test_cycle: "cycleKey",
   defect: "defectKey",
 };
 

@@ -1176,6 +1176,20 @@ const AUDITED: &[&str] = &[
     "runs::run_items_add",
     "runs::result_record",
     "runs::unlinked_mapping_set",
+    "cycles::configuration_create",
+    "cycles::configuration_update",
+    "cycles::configuration_archive",
+    "cycles::configuration_reorder",
+    "cycles::cycle_create",
+    "cycles::cycle_update",
+    "cycles::cycle_clone",
+    "cycles::cycle_items_add",
+    "cycles::cycle_items_add_by_filter",
+    "cycles::cycle_item_update",
+    "cycles::cycle_items_reorder",
+    "cycles::cycle_items_remove",
+    "cycles::cycle_execute",
+    "cycles::cycle_delete",
     "defects::defect_create",
     "defects::defect_update",
     "defects::defect_transition",
@@ -1204,6 +1218,8 @@ const EXEMPT: &[(&str, &str)] = &[
         "the session token lives in the keychain, not in the data",
     ),
     ("session_load", "read"),
+    ("cycles::cycle_filter_preview", "read"),
+    ("cycles::cycle_runs", "read"),
     (
         "session_clear",
         "the session token lives in the keychain, not in the data",
@@ -1456,6 +1472,85 @@ fn every_audited_command_leaves_an_event() {
     });
     step("runs::unlinked_mapping_set", &mut |tx| {
         crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)
+    });
+    let config_input = |name: &str, label: &str| -> crate::cycles::ConfigurationInput {
+        serde_json::from_value(
+            json!({"projectId": p, "name": name, "matchLabels": [label], "userId": U}),
+        )
+        .unwrap()
+    };
+    let chrome = in_tx(&c, |tx| {
+        crate::cycles::create_configuration(tx, &config_input("Chrome", "chromium"))
+    })
+    .unwrap();
+    let mut firefox = String::new();
+    step("cycles::configuration_create", &mut |tx| {
+        firefox = crate::cycles::create_configuration(tx, &config_input("Firefox", "firefox"))?;
+        Ok(())
+    });
+    step("cycles::configuration_update", &mut |tx| {
+        crate::cycles::update_configuration(tx, &chrome, &config_input("Chrome 130", "chromium"))
+    });
+    step("cycles::configuration_reorder", &mut |tx| {
+        crate::cycles::reorder_configurations(tx, &p, std::slice::from_ref(&firefox), U)
+    });
+    let cycle_input = |title: &str| -> crate::cycles::TestCycleInput {
+        serde_json::from_value(
+            json!({"projectId": p, "title": title, "configurationIds": [chrome], "userId": U}),
+        )
+        .unwrap()
+    };
+    let mut cycle = String::new();
+    step("cycles::cycle_create", &mut |tx| {
+        cycle = crate::cycles::insert_cycle(tx, &cycle_input("Regression"))?;
+        Ok(())
+    });
+    step("cycles::cycle_update", &mut |tx| {
+        crate::cycles::update_cycle(tx, &cycle, &cycle_input("Regression 2"))
+    });
+    step("cycles::cycle_items_add", &mut |tx| {
+        let items: Vec<crate::cycles::CycleItemInput> =
+            serde_json::from_value(json!([{"testCaseId": case}])).unwrap();
+        crate::cycles::add_items(tx, &cycle, U, &items).map(drop)
+    });
+    in_tx(&c, |tx| {
+        test_case::insert_case(
+            tx,
+            &case_input(&p, U, "Filtered", json!({"tags": ["smoke"]})),
+        )
+    })
+    .unwrap();
+    step("cycles::cycle_items_add_by_filter", &mut |tx| {
+        let filter: crate::cycles::CycleFilter =
+            serde_json::from_value(json!({"tags": ["smoke"]})).unwrap();
+        crate::cycles::add_by_filter(tx, &cycle, U, &filter, None).map(drop)
+    });
+    let cycle_items = crate::cycles::list_items(&c, &cycle, U).unwrap();
+    step("cycles::cycle_item_update", &mut |tx| {
+        let input: crate::cycles::CycleItemUpdate =
+            serde_json::from_value(json!({"assignee": "Ada", "userId": U})).unwrap();
+        crate::cycles::update_item(tx, &cycle_items[0].id, &input)
+    });
+    step("cycles::cycle_items_reorder", &mut |tx| {
+        crate::cycles::reorder_items(tx, &cycle, std::slice::from_ref(&cycle_items[1].id), U)
+    });
+    step("cycles::cycle_execute", &mut |tx| {
+        let input: crate::cycles::ExecuteInput =
+            serde_json::from_value(json!({"userId": U})).unwrap();
+        crate::cycles::execute(tx, &cycle, &input).map(drop)
+    });
+    step("cycles::cycle_items_remove", &mut |tx| {
+        crate::cycles::remove_items(tx, &cycle, std::slice::from_ref(&cycle_items[1].id), U)
+            .map(drop)
+    });
+    step("cycles::configuration_archive", &mut |tx| {
+        crate::cycles::set_configuration_archived(tx, &firefox, true, U)
+    });
+    step("cycles::cycle_clone", &mut |tx| {
+        crate::cycles::clone_cycle(tx, &cycle, None, U).map(drop)
+    });
+    step("cycles::cycle_delete", &mut |tx| {
+        crate::cycles::delete_cycle(tx, &cycle, U)
     });
     step("requirement::requirement_delete", &mut |tx| {
         requirement::delete_requirement(tx, &req, U)

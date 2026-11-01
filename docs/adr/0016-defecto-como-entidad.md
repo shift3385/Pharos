@@ -263,7 +263,8 @@ recomendadas del plan) y precisiones sobre el boceto:
   - un push sin `defects` que trae un `defect`, un `defect_link` o cualquier
     cambio de una tarjeta de defecto recibe 400 `defects_unsupported` y no se
     guarda nada del lote;
-  - `APPLIED_SET_VERSION = 5`: el cursor vuelve a 0 y trae lo convertido.
+  - `APPLIED_SET_VERSION = 6` (5 es el de los ciclos): el cursor vuelve a 0
+    y trae lo convertido.
 - **El dueño es el del proyecto** (ADR-0020 regla 1), no el `owner_id` de la
   tarjeta; los comandos filtran por el dueño del proyecto.
 - **Crear desde un resultado** (`defect_draft_from_result`, solo lectura, y

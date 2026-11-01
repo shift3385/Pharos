@@ -322,23 +322,24 @@ fn require_open(status: &str) -> Result<(), String> {
 
 /// The step and Outline-row ids of one flow of a revision (ADR-0011).
 #[derive(Default)]
-struct FlowShape {
+pub(crate) struct FlowShape {
     steps: HashSet<String>,
-    rows: HashSet<String>,
+    pub(crate) rows: HashSet<String>,
 }
 
 /// What a run item's flow and row, and a step result's `step_id`, may point
 /// at, by kind: a result attributed to the wrong step can never be corrected.
 /// The main flow is the case's preconditions, background and steps with its
 /// Outline rows; each flow of an advanced case has the background, its own
-/// preconditions and steps, and its own rows.
-struct RevisionShape {
+/// preconditions and steps, and its own rows. Cycle items check their flow and
+/// row against the current case with it too (`cycles.rs`).
+pub(crate) struct RevisionShape {
     main: FlowShape,
     flows: std::collections::HashMap<String, FlowShape>,
 }
 
 impl RevisionShape {
-    fn of(data: &Value) -> Self {
+    pub(crate) fn of(data: &Value) -> Self {
         let ids = |list: Option<&Value>| -> HashSet<String> {
             list.and_then(Value::as_array)
                 .into_iter()
@@ -393,7 +394,7 @@ impl RevisionShape {
     }
 
     /// The flow a run item points at: the main one, or a flow of the case.
-    fn flow(&self, flow_id: Option<&str>) -> Result<&FlowShape, String> {
+    pub(crate) fn flow(&self, flow_id: Option<&str>) -> Result<&FlowShape, String> {
         match flow_id {
             None => Ok(&self.main),
             Some(id) => self
@@ -486,6 +487,13 @@ pub(crate) fn insert_run(conn: &Connection, input: &RunInput) -> Result<String, 
     if !TRIGGERS.contains(&trigger.as_str()) {
         return Err(format!("unknown trigger: {trigger}"));
     }
+    // A cycle and a configuration of this project (CYC-01).
+    crate::cycles::check_run_links(
+        conn,
+        &project_id,
+        text(&input.cycle_id).as_deref(),
+        text(&input.configuration_id).as_deref(),
+    )?;
     let id = Uuid::new_v4().to_string();
     let key = keys::allocate(conn, KeyKind::Run, &project_id, KEY_PREFIX, KEY_DIGITS)?;
     let context = object_or_empty(input.context.as_ref());
@@ -541,8 +549,25 @@ pub(crate) fn insert_run(conn: &Connection, input: &RunInput) -> Result<String, 
 /// key, the project and the trigger never change.
 pub(crate) fn update_run(conn: &Connection, id: &str, input: &RunInput) -> Result<(), String> {
     let user = &input.user_id;
-    let (_, status) = owned_run(conn, id, user)?;
+    let (project_id, status) = owned_run(conn, id, user)?;
     require_open(&status)?;
+    // Only a link that changes is checked: a run keeps the id of a cycle that
+    // was deleted and purged since (CYC-01).
+    let (cycle, configuration): (Option<String>, Option<String>) = conn
+        .query_row(
+            "SELECT cycle_id, configuration_id FROM runs WHERE id = ?1",
+            params![id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .map_err(err)?;
+    let changed =
+        |new: Option<String>, old: Option<String>| new.filter(|n| Some(n) != old.as_ref());
+    crate::cycles::check_run_links(
+        conn,
+        &project_id,
+        changed(text(&input.cycle_id), cycle).as_deref(),
+        changed(text(&input.configuration_id), configuration).as_deref(),
+    )?;
     let new_status = text(&input.status).unwrap_or_else(|| status.clone());
     if !["in_progress", "completed", "aborted"].contains(&new_status.as_str()) {
         return Err(format!("unknown run status: {new_status}"));

@@ -1,5 +1,6 @@
 //! Human-readable keys of cases (`ATS_001`), requirements (`REQ-001`),
-//! defects (`DEF-001`) and runs (`RUN-001`, ADR-0013) — DAT-01, ADR-0010.
+//! defects (`DEF-001`), runs (`RUN-001`, ADR-0013) and test cycles (`CYC-001`,
+//! ADR-0017) — DAT-01, ADR-0010.
 //!
 //! A key travels as a Gherkin tag, so once assigned it never changes and is
 //! never handed out again. The next number of each project and kind lives in
@@ -11,14 +12,14 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 
-/// The kinds of key; the value is stored in `key_counters.kind`. `cycle` is
-/// allowed there too (0024) and joins with its table (ADR-0017).
+/// The kinds of key; the value is stored in `key_counters.kind`.
 #[derive(Clone, Copy)]
 pub(crate) enum KeyKind {
     Case,
     Requirement,
     Defect,
     Run,
+    Cycle,
 }
 
 impl KeyKind {
@@ -28,6 +29,7 @@ impl KeyKind {
             KeyKind::Requirement => "requirement",
             KeyKind::Defect => "defect",
             KeyKind::Run => "run",
+            KeyKind::Cycle => "cycle",
         }
     }
 
@@ -38,6 +40,7 @@ impl KeyKind {
             KeyKind::Requirement => ("requirements", "requirement_key"),
             KeyKind::Defect => ("defects", "defect_key"),
             KeyKind::Run => ("runs", "run_key"),
+            KeyKind::Cycle => ("test_cycles", "cycle_key"),
         }
     }
 }
@@ -218,6 +221,10 @@ pub(crate) fn numbering(
             crate::defects::KEY_DIGITS,
         ),
         KeyKind::Run => (crate::runs::KEY_PREFIX.to_string(), crate::runs::KEY_DIGITS),
+        KeyKind::Cycle => (
+            crate::cycles::KEY_PREFIX.to_string(),
+            crate::cycles::KEY_DIGITS,
+        ),
     })
 }
 
@@ -299,11 +306,12 @@ pub(crate) fn store_block(
 }
 
 impl KeyKind {
-    pub(crate) const ALL: [KeyKind; 4] = [
+    pub(crate) const ALL: [KeyKind; 5] = [
         KeyKind::Case,
         KeyKind::Requirement,
         KeyKind::Defect,
         KeyKind::Run,
+        KeyKind::Cycle,
     ];
 
     /// The value of `key_counters.kind` and of the server's `kind`.
@@ -323,6 +331,7 @@ impl KeyKind {
             KeyKind::Requirement => "requirement",
             KeyKind::Defect => "defect",
             KeyKind::Run => "run",
+            KeyKind::Cycle => crate::cycles::CYCLE,
         };
         (entity, table, column)
     }

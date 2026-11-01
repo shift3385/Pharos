@@ -147,6 +147,13 @@ resolution can be added without a schema change.
   the desktop ignores an append-only tombstone and drops the rows with the
   purge of their run (`purged_run:<id>` keeps a re-pull from bringing them
   back).
+- **Cycles (CYC-01).** The client sends `cycles` too: it pushes and pulls
+  `configuration`, `test_cycle` and `test_cycle_item` (lww) and asks for
+  `cycle` key blocks. Until the account's server lists `cycles`,
+  `oplog_pending` leaves them out and no `cycle` block is requested; the
+  diagnostics count them (`heldBackCycles`). The server only sends them to
+  clients with `cycles` and refuses their push without it (400
+  `cycles_unsupported`); a project delete tombstones the three.
 - **Defects (DEF-01).** The client sends `defects` too: it pushes and pulls
   `defect` and `defect_link` (lww). Until the account's server lists
   `defects`, `oplog_pending` leaves them out (`heldBackDefects` in the

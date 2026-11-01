@@ -10,6 +10,10 @@ export type PurgeSummary = { projects: number, testPlans: number, testCases: num
  */
 runs: number, 
 /**
+ * Test cycles, their items and configurations (CYC-01).
+ */
+cycles: number, 
+/**
  * Defects and defect links (DEF-01); a defect takes its attachments.
  */
 defects: number, templates: number, };

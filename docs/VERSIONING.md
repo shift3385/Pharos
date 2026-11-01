@@ -193,13 +193,20 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
-     `complete-payload`, `stable-steps`, `runs`, `custom-fields`, `defects`). Un cliente que
+     `complete-payload`, `stable-steps`, `runs`, `custom-fields`, `cycles`,
+     `defects`). Un cliente que
      aún no ha visto `stable-steps` en las respuestas del servidor no le envía
      casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
      modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
-     resultados, ni le pide bloques de claves `run` (EJE-01), sin
-     `custom-fields` no le envía definiciones de campos (FLD-01), y sin
-     `defects` no le envía defectos ni vínculos de defecto (DEF-01).
+     resultados, ni le pide bloques de claves `run` (EJE-01); sin
+     `custom-fields` no le envía definiciones de campos (FLD-01); sin
+     `cycles` no le envía configuraciones, ciclos ni elementos, ni le pide
+     bloques de claves `cycle` (CYC-01), y sin `defects` no le envía
+     defectos ni vínculos de defecto (DEF-01). El servidor valida
+     `test_cycle.status` con una lista cerrada (`planned`, `active`,
+     `closed`): un estado nuevo exige desplegar **antes** el servidor que lo
+     admite, porque un servidor anterior rechazaría con 400 todo el push que
+     lo lleve (el escritorio ya lee un estado desconocido como `planned`).
    - **Una funcionalidad que añade campos a una entidad existente** los
      protege de quien no la conoce: el push de un cliente sin ella conserva
      esos campos aunque envíe su estado completo (`FEATURE_KEYS` del servidor,

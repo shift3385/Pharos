@@ -520,7 +520,7 @@ fn a_cursor_stored_before_defects_restarts_at_zero() {
     let c = device();
     sync::cursor_set(&c, U, "42").unwrap();
     c.execute(
-        "UPDATE sync_state SET value = '4' WHERE key = ?1",
+        "UPDATE sync_state SET value = '5' WHERE key = ?1",
         [format!("cursor_set:{U}")],
     )
     .unwrap();

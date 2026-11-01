@@ -1,7 +1,15 @@
 /** A project's sections. Each one is a URL, `/projects/:projectId/:section`
  *  (ADR-0029), so the sidebar, the breadcrumbs, "back" and a reload all know
  *  which project and section are open. */
-export const PROJECT_SECTIONS = ["plan", "cases", "defects", "planner", "traceability", "settings"] as const;
+export const PROJECT_SECTIONS = [
+  "plan",
+  "cases",
+  "cycles",
+  "defects",
+  "planner",
+  "traceability",
+  "settings",
+] as const;
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number];
 export const DEFAULT_PROJECT_SECTION: ProjectSection = "plan";
 

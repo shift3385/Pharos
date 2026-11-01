@@ -66,6 +66,7 @@ export const SERVER_FEATURES = [
   "stable-steps",
   "runs",
   "custom-fields",
+  "cycles",
   "defects",
 ] as const;
 
@@ -116,6 +117,13 @@ export function sendsStableSteps(req: FastifyRequest): boolean {
  *  pull, and its requirement upserts keep the risk the server has. */
 export function understandsRuns(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("runs");
+}
+
+/** True if the client knows configurations, test cycles and their items
+ *  (CYC-01, ADR-0017) and `cycle` key blocks. Without it a client never sees
+ *  them on pull, and may not push them. */
+export function understandsCycles(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("cycles");
 }
 
 /** True if the client knows defects as their own entity (DEF-01,

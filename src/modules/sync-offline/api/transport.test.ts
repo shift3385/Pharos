@@ -69,7 +69,7 @@ describe("syncRequest (SYNC-08)", () => {
     // AUD-01: that it knows the append-only class and pushes whole payloads;
     // DEF-01: that it syncs defects and has no planner defect cards.
     expect(headers[FEATURES_HEADER]).toBe(
-      "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,defects",
+      "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects",
     );
   });
 

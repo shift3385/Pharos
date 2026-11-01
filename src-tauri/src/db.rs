@@ -162,6 +162,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0027_case_fields_restore.sql"),
     ),
     (
+        "0028_cycles.sql",
+        include_str!("../migrations/0028_cycles.sql"),
+    ),
+    (
         "0029_defects.sql",
         include_str!("../migrations/0029_defects.sql"),
     ),

@@ -11,6 +11,7 @@ import {
   FEATURE_DATA_KEYS,
   FEATURE_KEYS,
   isAppendOnly,
+  isCycleEntity,
   isDefectEntity,
   isExecution,
   keyBlocksSchema,
@@ -28,6 +29,7 @@ import {
   missingFeatures,
   sendsStableSteps,
   understandsAppendOnly,
+  understandsCycles,
   understandsKeyConflicts,
   understandsDefects,
   understandsRuns,
@@ -87,6 +89,12 @@ export function syncRoutes(
         message: "This client did not announce the runs sync feature.",
       });
     }
+    if (!understandsCycles(req) && deltas.some((d) => isCycleEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "cycles_unsupported",
+        message: "This client did not announce the cycles sync feature.",
+      });
+    }
     // Defects have their own entity since DEF-01: a client that does not
     // know it can neither push one nor touch a planner defect card, which the
     // server converted (migration 0010). Nothing of the batch is stored.
@@ -142,6 +150,7 @@ export function syncRoutes(
     const page = await repo.since(req.userId as string, since, limit, {
       appendOnly,
       runs: understandsRuns(req),
+      cycles: understandsCycles(req),
       defects: understandsDefects(req),
     });
     const { hasMore } = page;

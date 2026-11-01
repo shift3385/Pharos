@@ -129,3 +129,137 @@ Servidor: documentos `configuration`, `test_cycle` y `test_cycle_item` (LWW).
   ciclo; `runs.cycle_id` y `runs.configuration_id` quedan nulos hasta que se
   implementen. Las columnas sí existen desde 0.2.0, así que recortar no cambia
   el esquema base.
+
+## Implementación (E4, paso 6, 2026-10-31)
+
+Entra en 0.2.0 sin recortes (decisión del usuario). Migración local
+`0028_cycles.sql`, `src-tauri/src/cycles.rs` (con `cycles/progress.rs`),
+servidor `0009_documents_key_cycles.sql`, módulo `src/modules/cycles`.
+Precisiones sobre el boceto y decisiones tomadas al implementarlo (aprobadas
+por el coordinador con la recomendación de cada una):
+
+- **Sin clave foránea `test_cycle_items → test_cycles`** (el boceto la tiene):
+  un pull puede traer un elemento antes que su ciclo y el SQLite incluido
+  aplica las claves foráneas (la lección de 0020 y 0024). El repositorio
+  comprueba el vínculo. **Sin `CHECK` en `status`**: un estado que este build
+  no conoce no hace fallar el pull; se lee como `planned`.
+- **`configurations.position`** ordena las configuraciones en los selectores y
+  en las columnas de progreso.
+- **Configuraciones: se archivan, nunca se borran** (solo la cascada del
+  proyecto pone `deleted_at`): runs y resultados apuntan a ellas. Una
+  archivada sigue en los ciclos y runs que la tienen, no se ofrece para ciclos
+  nuevos y «Ejecutar» la salta.
+- **Etiquetas únicas por proyecto.** Crear o editar una configuración con una
+  etiqueta (sin distinguir mayúsculas, sin espacios a los lados) que ya tiene
+  otra configuración viva y no archivada se rechaza (`match-label-taken`).
+  Como la unicidad solo se comprueba en cada equipo, **dos equipos sin
+  conexión pueden crear la misma etiqueta**. Entonces:
+  - una importación nunca casa con dos: `cycles::match_configuration` elige
+    la configuración con el **id menor** (orden de texto), en todos los
+    equipos y en el servidor por igual; si ninguna etiqueta casa, prueba con
+    el nombre, con la misma regla;
+  - las dos configuraciones lo muestran en Ajustes del proyecto (`labelClashes`:
+    cuál gana y cuál no), para que el usuario quite la etiqueta de una.
+- **Elementos estáticos.** Un elemento idéntico (caso + flujo + fila) ya
+  presente se salta. El flujo y la fila se comprueban contra el caso **en ese
+  momento**; la revisión se congela al crear el Run (decisión 3). Un caso no
+  aprobado se añade y se informa (decisión 2). «Añadir por filtro» casa por
+  etiquetas, requisitos, prioridad, estado y riesgo mínimo (el mayor
+  `risk_likelihood × risk_impact` de los requisitos del caso) y resuelve una
+  sola vez.
+- **Estado del ciclo.** Se mueve libremente entre `planned`, `active` y
+  `closed` (un ciclo cerrado se puede reabrir). Cerrado no admite elementos
+  nuevos ni «Ejecutar» (`cycle-closed`). «Ejecutar» pasa un ciclo planificado a
+  activo.
+- **Ejecutar** crea un Run por configuración viva y no archivada del ciclo (o
+  las elegidas; sin configuraciones, un solo Run sin ella), con `cycle_id`,
+  `configuration_id`, título `CYC-001 · <título> · <configuración>`, y el
+  build, el entorno y el plan del ciclo (se pueden cambiar en el diálogo). Sus
+  `run_items` se crean con `runs::add_items`, que congela la revisión vigente.
+  Todo o nada: si un caso no se puede congelar (p. ej. un conflicto de clave
+  abierto), no se crea ningún Run. En 0.2.0 solo el escritorio crea runs; la
+  web muestra el botón desactivado con una nota hasta que los runs tengan API
+  web.
+- **Progreso** (`cycles/progress.rs`; gemelo del servidor en
+  `server/src/modules/domain/cycle-progress.ts`, comprobados con
+  `src-tauri/tests/fixtures/cycle-progress-vectors.json`). Una celda es un
+  elemento × una configuración del ciclo. Sus candidatos son los intentos
+  **finales** de cada run del ciclo (`derive::final_attempts`) cuya
+  configuración es la de la celda (la del run, o la del resultado si el run no
+  tiene), cuyo caso efectivo es el del elemento (con la regla de enlace
+  posterior) y cuyo flujo y fila casan (NULL en el elemento = cualquiera). Por
+  cada test (`test_key` + `configuration_label`), el más reciente entre runs
+  (tiempo, `attempt`, HLC); la celda es el **peor** de ellos, o `not_run`. Dos
+  estados desconocidos empatados se deciden por orden de texto, igual en Rust
+  y en TS. Se calcula al leer; nada se guarda.
+- **Borrar un ciclo** borra (lógicamente) el ciclo y sus elementos; **sus runs
+  se conservan** con su `cycle_id`. Tras la purga el id queda colgando: el run
+  sigue siendo válido, se lee, se edita y se sincroniza igual (hay test), y
+  solo un `cycle_id` que **cambia** se comprueba.
+- **Vínculos de un Run.** `runs::insert_run` y `update_run` comprueban que un
+  `cycle_id` dado es un ciclo vivo y no cerrado del mismo proyecto, y un
+  `configuration_id` una configuración del proyecto. Un run pulled no se
+  comprueba.
+- **Sync.** Las tres entidades son LWW (`APPLIED_SET_VERSION = 5`) y viajan
+  con la funcionalidad **`cycles`**: el escritorio las retiene y no pide
+  bloques de claves `cycle` hasta que el servidor de la cuenta la lista
+  (diagnóstico: `heldBackCycles`); el servidor solo las envía a quien manda
+  `cycles` (los demás reciben exactamente lo de antes) y rechaza su push sin
+  ella (400 `cycles_unsupported`). `runs.cycleId` y `configurationId` ya
+  viajaban desde el paso 4, y los builds anteriores los conservan, así que el
+  run no necesita `FEATURE_KEYS`. `cycleKey` es una clave como las demás: un
+  choque en el pull es un conflicto de clave; en el servidor, `KEY_FIELD` y el
+  índice `documents_key_idx` (0009) la cubren.
+- **Cascada.** Borrar un proyecto borra sus configuraciones, ciclos y
+  elementos; la purga los quita y retira las claves `CYC-` en
+  `retired_keys`.
+- **Web.** `/api/configurations` y `/api/cycles` aplican las mismas reglas
+  sobre los documentos (crear, editar, archivar, ordenar, clonar, borrar,
+  elementos a mano y por filtro, asignados, progreso y runs del ciclo).
+- **Para el paso 9:** `cycles::match_configuration(conn, proyecto, etiqueta)`
+  da la configuración de un `configuration_label`, y
+  `cycles::item_for(conn, ciclo, caso, flujo, fila)` el elemento más
+  específico (flujo y fila, luego flujo, luego el caso entero). Quien fusione
+  segundo entre los pasos 6 y 9 los conecta al importador.
+Tras la revisión independiente (2026-10-31):
+
+- **Etiquetas repetidas entre equipos.** Editar una configuración solo
+  comprueba las etiquetas que **gana** (las nuevas menos las que ya tenía):
+  un choque creado sin conexión no bloquea cambiar el nombre ni los atributos
+  de ninguna de las dos.
+- **Desempate determinista.** Dos intentos iguales en tiempo, `attempt` y HLC
+  (p. ej. HLC vacío) se deciden por el **id del resultado**, dentro de un run y
+  entre runs, en Rust y en TS, sea cual sea el orden de lectura. Los vectores
+  cubren ese empate, dos `configurationLabel` de un mismo `test_key` (dos
+  tests) y años 0000–0099.
+- **Elementos que se solapan.** No se añade un elemento que cubre un test que
+  ya cubre otro del mismo caso (el caso entero y un flujo de él, un flujo y
+  una fila de él): contaría dos veces los mismos resultados. Se informa en
+  `overlapping` (clave del caso), como los no aprobados.
+- **Ejecutar.** Antes de crear nada comprueba cada elemento y el error nombra
+  el caso por su clave (`cycle-item-case-gone`, `cycle-item-flow-gone`,
+  `cycle-item-row-gone`, `case-key-conflict`); la UI deja «Ejecutar»
+  desactivado, con el motivo, mientras un elemento apunta a un caso eliminado.
+  Las configuraciones elegidas se deduplican, una lista vacía se rechaza
+  (`no-configuration-chosen`), y una configuración del ciclo que aún no ha
+  llegado a este equipo se salta y se avisa (`missingConfigurations`).
+- **Orden.** Configuraciones y elementos por posición y luego id; ciclos por
+  el `createdAt` del documento (el del equipo que lo creó, que el pull
+  conserva) y luego id, igual en el escritorio y en la web.
+- **Clonar** no copia las configuraciones archivadas.
+- **Web.** Clonar y borrar escriben **un** evento, con su resumen
+  (`clonedFrom`, `items`; `cascade.test_cycle_items`), como el escritorio. El
+  progreso de la lista lee una vez los runs, shards, reglas, resultados y
+  elementos del proyecto y los agrupa por ciclo.
+- **Purga.** Un elemento que sigue vivo bajo un ciclo borrado o ya purgado
+  (otro equipo lo añadió mientras este borraba el ciclo) se purga cuando es
+  más antiguo que la retención; uno que llegó antes que su ciclo espera.
+- **Lectura del progreso.** El progreso lee el caso, el flujo y la fila de
+  cada resultado en un solo sitio (`cycles::cycle_results`; servidor:
+  `attemptOf`), para que el cambio del
+  paso 9 (el vínculo caso/revisión sale del contenido inmutable del
+  resultado) solo toque ahí.
+
+- **UI.** No hay diseño en `docs/rediseno/` para estas pantallas: la sección
+  «Ciclos» del proyecto y la tarjeta «Configuraciones» de Ajustes usan las
+  primitivas existentes (tabla, píldoras, diálogos).

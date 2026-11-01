@@ -39,7 +39,7 @@ src/
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
-    custom-fields/  defects/
+    custom-fields/  cycles/  defects/
   shared/      # design system (theme tokens), i18n, ui kit, form validation, fonts, diagnostics, version, platform, contracts
   test/        # test utilities (renderWithProviders, axe helper, fake server)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync, logs
@@ -341,7 +341,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   server lacks goes locally; with one, the server's links the edited card
   dropped are deleted and pushed.
 - **Sync.** `defect` and `defect_link` are lww (`oplog::SYNCED`;
-  `APPLIED_SET_VERSION` 5) and wait for a server that lists `defects`
+  `APPLIED_SET_VERSION` 6) and wait for a server that lists `defects`
   (`heldBackDefects` in the diagnostics, with `defectsByStatus`). A project
   delete soft-deletes both here and tombstones them on the server; the purge
   takes links, defects and their attachments and retires the key.
@@ -943,9 +943,13 @@ core Postgres lacks). Modules:
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
   `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`,
-  `defects`; without `defects` a client neither pulls defects, their links nor
-  the converted defect cards, and its push that touches one is refused with
-  400 `defects_unsupported`, DEF-01). A
+  `cycles`, `defects`). Configurations, test cycles and their items (CYC-01)
+  only reach clients that send `cycles`, and only those may push them (else
+  400 `cycles_unsupported`); `cycleKey` is a key like the others (migration
+  0009 rebuilds `documents_key_idx` with it). Without `defects` (DEF-01) a
+  client neither pulls defects, their links nor the converted defect cards,
+  and its push that touches one is refused with 400 `defects_unsupported`;
+  migration 0010 rebuilds the key index with `defectKey` too. A
   test_case upsert from a client without `custom-fields` keeps the stored
   `caseType`, `automationStatus` (`FEATURE_KEYS`) and `data.custom`
   (`FEATURE_DATA_KEYS`); read-only clients pull the first two in
@@ -983,9 +987,11 @@ core Postgres lacks). Modules:
 - `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`,
   `/api/test-plans`, `/api/test-cases`, `/api/requirements` (+ `/import`),
   `/api/planner-cards` (+ `/reorder`; a `defect` card is refused with
-  `defect_moved`), `/api/defects` (+ `/:id/transition`, `/:id/links`; DEF-01,
-  `domain/defects.ts`) and `/api/custom-fields` (+ `/reorder`,
-  `/copy`, `/:id/archive`; FLD-01). `domain.service.ts` applies the
+  `defect_moved`), `/api/custom-fields` (+ `/reorder`, `/copy`,
+  `/:id/archive`; FLD-01), `/api/configurations` and `/api/cycles` (items,
+  filter, clone, progress, runs; CYC-01, `domain/cycles.ts`; runs are not
+  created on the web), and `/api/defects` (+ `/:id/transition`,
+  `/:id/links`; DEF-01, `domain/defects.ts`). `domain.service.ts` applies the
   desktop core's rules (defaults, immutable keys, keys never reused,
   positions per column, upsert-by-key import) to the same document store, in
   one transaction under the user's sync write lock (`domain.store.ts`). Every
@@ -1134,6 +1140,33 @@ account's server lists `custom-fields` (diagnostics: `heldBackFields`). 0027
 `custom` their old editor dropped. The client module is
 `src/modules/custom-fields` (API, validator, settings card, editor section);
 `test-cases` and `projects` use it, it uses neither.
+
+**Test cycles and configurations (CYC-01, [ADR-0017](adr/0017-ciclos-y-configuraciones.md)).**
+Migration 0028: `configurations` (name, `{browser, os, device, locale}`,
+`match_labels`, position; archived, never deleted), `test_cycles` (`CYC-001`
+keys, build, environment, dates, plan milestone and sprint as text,
+`configuration_ids`, status `planned | active | closed`) and
+`test_cycle_items` (case, optional flow or Outline row, assignee). No foreign
+key from items to their cycle and no CHECK on the status: a pull may bring
+them in any order or with a status this build does not know
+(`src-tauri/src/cycles.rs`). Items are static ("add by filter" resolves
+once); a case that is not approved is added and reported. A match label is
+unique among the project's live configurations; when two devices created the
+same one offline, `match_configuration` (the importers' hook, with
+`item_for`) takes the smallest id on every device and the settings card flags
+both. «Ejecutar» creates one run per live configuration through
+`runs::add_items` (revisions frozen then), all or nothing; `run_create`
+checks a given cycle and configuration. Progress is derived
+(`cycles/progress.rs`, TS twin on the server, shared vectors
+`tests/fixtures/cycle-progress-vectors.json`): per item × configuration, the
+latest final result among the cycle's runs, the worst across tests, or
+`not_run`. Deleting a cycle keeps its runs (their `cycle_id` may dangle after
+the purge). All three are lww (`APPLIED_SET_VERSION` 5) and, with `cycle` key
+blocks, wait for a server that lists `cycles` (diagnostics: `heldBackCycles`).
+The client module is `src/modules/cycles` (API, «Ciclos» section of a
+project, «Configuraciones» card of the settings); `projects` composes it and
+passes it the cases and requirement keys, so it depends on no other domain
+module. «Ejecutar» is desktop-only until runs have a web API.
 
 **Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**
 Attachment contents live outside the database, in `<data dir>/evidence/`

@@ -53,8 +53,9 @@ pub const APPEND_ONLY: &[AppendOnly] = &[
 /// 1: audit_event (AUD-01). 2: test_case_revision and the stable-steps shape
 /// of test cases (DAT-02). 3: run, run_item, unlinked_mapping, run_shard and
 /// result (EJE-01). 4: custom_field and the case type / automation status of
-/// test cases (FLD-01). 5: defect and defect_link (DEF-01).
-pub const APPLIED_SET_VERSION: i64 = 5;
+/// test cases (FLD-01). 5: configuration, test_cycle and test_cycle_item
+/// (CYC-01). 6: defect and defect_link (DEF-01).
+pub const APPLIED_SET_VERSION: i64 = 6;
 
 pub fn append_only(entity: &str) -> Option<&'static AppendOnly> {
     APPEND_ONLY.iter().find(|a| a.entity == entity)
