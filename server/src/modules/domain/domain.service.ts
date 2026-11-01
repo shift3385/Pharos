@@ -31,6 +31,7 @@ import {
   editable,
   newDefectId,
   putLink,
+  linkContext,
   withLinks,
 } from "./defects";
 import { linkId } from "../sync/defects";
@@ -758,7 +759,7 @@ export function createDomainService(store: DomainStore) {
     current(await tx.get("defect", id), "Defect", revision);
 
   const defectView = async (tx: DomainTx, doc: RemoteDoc) =>
-    withLinks(tx, doc, await tx.list("defect_link", str(doc.payload, "projectId")));
+    withLinks(await linkContext(tx, str(doc.payload, "projectId")), doc);
 
   /** Defects (DEF-01, `defects.rs`): the project's, newest first, with their
    *  links; created with the next DEF key; the fixed lifecycle on every status
@@ -767,9 +768,9 @@ export function createDomainService(store: DomainStore) {
     list: (userId: string, projectId: string) =>
       run(userId, async (tx) => {
         await liveProject(tx, projectId);
-        const links = await tx.list("defect_link", projectId);
+        const ctx = await linkContext(tx, projectId);
         const docs = (await tx.list("defect", projectId)).sort((a, b) => byTime("createdAt")(b, a));
-        return Promise.all(docs.map((d) => withLinks(tx, d, links)));
+        return docs.map((d) => withLinks(ctx, d));
       }),
     get: (userId: string, id: string) => run(userId, async (tx) => defectView(tx, await liveDefect(tx, id))),
     create: (userId: string, input: DefectInput) =>

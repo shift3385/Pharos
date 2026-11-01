@@ -342,3 +342,55 @@ describe("defects on the web", () => {
     expect((await call(token, "POST", "/api/defects", { projectId: p.id, title: "Third", data: {} })).json().defectKey).toBe("DEF-003");
   });
 });
+
+describe("review (DEF-01)", () => {
+  const call = (token: string, method: string, url: string, payload?: object) =>
+    app.inject({ method: method as "GET", url, headers: current(token), payload });
+
+  it("never hands out a DEF key a task card kept from before DEF-01", async () => {
+    const { token, userId } = await register();
+    const p = (await call(token, "POST", "/api/projects", { name: "Checkout" })).json();
+    await pool.query(
+      `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
+       VALUES ($1, 'planner_card', 'k-task', $2, 1, 'u', false, $3)`,
+      [userId, { id: "k-task", projectId: p.id, kind: "task", cardKey: "DEF-006", title: "T" }, H(1)],
+    );
+    const d = (await call(token, "POST", "/api/defects", { projectId: p.id, title: "Bug", data: {} })).json();
+    expect(d.defectKey).toBe("DEF-007");
+  });
+
+  it("keeps KEY_SQL textually equal to the expression of documents_key_idx", async () => {
+    const { KEY_SQL } = await import("../src/modules/sync/sync.repository");
+    const { rows } = await pool.query<{ def: string }>(
+      "SELECT pg_get_indexdef('documents_key_idx'::regclass) AS def",
+    );
+    const fields = (sql: string) => [...sql.matchAll(/payload ?->> ?'([A-Za-z]+)'/g)].map((m) => m[1]);
+    expect(fields(rows[0].def).slice(1)).toEqual(fields(KEY_SQL));
+    expect(fields(KEY_SQL)).toEqual(["scenarioId", "requirementKey", "cardKey", "runKey", "cycleKey", "defectKey"]);
+  });
+
+  it("reaches a result's case through its mapping on the web too", async () => {
+    const { token, userId } = await register();
+    const p = (await call(token, "POST", "/api/projects", { name: "Checkout" })).json();
+    const c = (await call(token, "POST", "/api/test-cases", { projectId: p.id, title: "Pay", author: "QA", data: {} })).json();
+    for (const [entity, id, payload] of [
+      ["result", "res1", { id: "res1", projectId: p.id, runId: "r1", testKey: "t::pays", status: "failed", attempt: 0 }],
+      ["unlinked_mapping", "m1", { id: "m1", projectId: p.id, testKey: "t::pays", testCaseId: c.id }],
+    ] as const) {
+      await pool.query(
+        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
+         VALUES ($1, $2, $3, $4, 1, 'u', false, $5)`,
+        [userId, entity, id, payload, H(2)],
+      );
+    }
+    const d = (
+      await call(token, "POST", "/api/defects", {
+        projectId: p.id,
+        title: "Bug",
+        data: {},
+        links: [{ targetKind: "result", targetId: "res1" }],
+      })
+    ).json();
+    expect(d.caseIds).toEqual([c.id]);
+  });
+});

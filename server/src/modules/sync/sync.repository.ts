@@ -72,10 +72,11 @@ export interface KeyBlock {
   end: number;
 }
 
-/** The key expression of `documents_key_idx` (migration 0006; `runKey`
- *  since 0008, `defectKey` since 0010). */
+/** The key expression of `documents_key_idx`, textually equal to it
+ *  (migration 0006; `runKey` since 0008, `cycleKey` since 0009,
+ *  `defectKey` since 0010). */
 export const KEY_SQL =
-  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey', payload->>'defectKey')";
+  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey', payload->>'cycleKey', payload->>'defectKey')";
 
 /** One pull page: documents after the cursor and whether more remain. */
 export interface PullPage {
@@ -337,8 +338,9 @@ export async function leaseRange(
         `SELECT max(CASE WHEN left(k, length($4)) = $4 AND substr(k, length($4) + 1) ~ '^[0-9]{1,15}$'
                          THEN substr(k, length($4) + 1)::bigint END) AS max
            FROM (SELECT ${KEY_SQL} AS k FROM documents
-                  WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3) AS keyed`,
-        [userId, KEY_ENTITY[r.kind], r.projectId, r.prefix],
+                  WHERE user_id = $1 AND entity = ANY($2::text[]) AND payload->>'projectId' = $3) AS keyed`,
+        // A DEF key a task card kept from before DEF-01 is still taken.
+        [userId, r.kind === "defect" ? [KEY_ENTITY.defect, "planner_card"] : [KEY_ENTITY[r.kind]], r.projectId, r.prefix],
       )
     : null;
   const floor = Math.max(r.floor, Number(stored?.rows[0]?.max ?? 0) + 1);

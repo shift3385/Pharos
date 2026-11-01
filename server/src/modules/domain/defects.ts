@@ -94,32 +94,61 @@ export async function dropLink(tx: DomainTx, id: string): Promise<boolean> {
   return true;
 }
 
+/** What the defects of a project link to, read once (no query per link). */
+export interface LinkContext {
+  links: RemoteDoc[];
+  byId: Map<string, RemoteDoc>;
+  mappings: Map<string, string>;
+}
+
+/** The documents a project's defects may point at, and its unlinked mappings,
+ *  in one read per entity. */
+export async function linkContext(tx: DomainTx, projectId: string): Promise<LinkContext> {
+  const [links, cases, requirements, results, runs, mappings] = await Promise.all(
+    ["defect_link", "test_case", "requirement", "result", "run", "unlinked_mapping"].map((e) => tx.list(e, projectId)),
+  );
+  const byId = new Map<string, RemoteDoc>();
+  for (const d of [...cases, ...requirements, ...results, ...runs]) byId.set(`${d.entity}:${d.entityId}`, d);
+  const mapped = new Map<string, string>();
+  for (const m of mappings) {
+    const caseId = str(m.payload, "testCaseId");
+    if (caseId) mapped.set(str(m.payload, "testKey"), caseId);
+  }
+  return { links, byId, mappings: mapped };
+}
+
+/** The case a result is the execution of: **the one place the web reads it**
+ *  (as `defects::result_link` on the desktop). Today the result's own case,
+ *  else its `test_key` mapping; step 9's read-time resolver replaces this
+ *  function only. */
+export function resultCase(ctx: LinkContext, result: RemoteDoc | undefined): string | null {
+  if (!result) return null;
+  return str(result.payload, "testCaseId") || ctx.mappings.get(str(result.payload, "testKey")) || null;
+}
+
 /** A defect as the module's screens read it: its payload with its live links
  *  and the cases it reaches (direct links and the case of a linked result). */
-export async function withLinks(tx: DomainTx, doc: RemoteDoc, links: RemoteDoc[]): Promise<Payload> {
-  const own = links.filter((l) => str(l.payload, "defectId") === doc.entityId);
+export function withLinks(ctx: LinkContext, doc: RemoteDoc): Payload {
+  const own = ctx.links.filter((l) => str(l.payload, "defectId") === doc.entityId);
   const caseIds: string[] = [];
   const out = [];
   for (const l of own) {
     const kind = str(l.payload, "targetKind");
     const target = str(l.payload, "targetId");
+    const found = ctx.byId.get(`${kind}:${target}`);
     let label: string | null = null;
+    let caseId: string | null = null;
     if (kind === "test_case") {
-      const c = await tx.get("test_case", target);
-      label = c ? str(c.payload, "scenarioId") || null : null;
-      if (!caseIds.includes(target)) caseIds.push(target);
+      label = found ? str(found.payload, "scenarioId") || null : null;
+      caseId = target;
     } else if (kind === "requirement") {
-      const r = await tx.get("requirement", target);
-      label = r ? str(r.payload, "requirementKey") || null : null;
-    } else if (kind === "result") {
-      const r = await tx.get("result", target);
-      const caseId = r ? str(r.payload, "testCaseId") : "";
-      if (caseId && !caseIds.includes(caseId)) caseIds.push(caseId);
-      if (r) {
-        const run = await tx.get("run", str(r.payload, "runId"));
-        label = `${run ? str(run.payload, "runKey") : ""} · ${str(r.payload, "caseKey") || str(r.payload, "testKey")} #${String(r.payload.attempt ?? 0)}`;
-      }
+      label = found ? str(found.payload, "requirementKey") || null : null;
+    } else if (kind === "result" && found) {
+      caseId = resultCase(ctx, found);
+      const run = ctx.byId.get(`run:${str(found.payload, "runId")}`);
+      label = `${run ? str(run.payload, "runKey") : ""} · ${str(found.payload, "caseKey") || str(found.payload, "testKey")} #${String(found.payload.attempt ?? 0)}`;
     }
+    if (caseId && !caseIds.includes(caseId)) caseIds.push(caseId);
     out.push({ id: l.entityId, targetKind: kind, targetId: target, label });
   }
   return { ...doc.payload, links: out, caseIds };
