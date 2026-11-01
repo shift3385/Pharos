@@ -377,16 +377,13 @@ Los importadores de ING-02..05 están en el código: los parsers en TypeScript
   pero esa comprobación es **solo local**: no ve lo que otro equipo importó y
   aún no se ha sincronizado. Para varios shards de una misma ejecución, se
   importa el primero como run nuevo («dejar abierto») y los demás en ese run.
-- **El vínculo se decide al importar con los datos locales.** Si dos equipos
-  importan el mismo archivo en el mismo run con datos distintos (uno no tiene
-  aún el caso o su revisión), el contenido difiere: el servidor guarda el
-  primero y marca el segundo como rechazado (`appendRejected`, como
-  cualquier `append_only`), que se queda con su copia local. La regla de
-  enlace posterior sigue funcionando en los dos.
-- **Revisión:** la del elemento del run de destino para ese caso, flujo y
-  fila (el resultado lo «cumple», `run_item_id`); si no, la revisión
-  sincronizada vigente en `run.started_at`; si no hay ninguna anterior, la
-  actual. El flujo se elige por el nombre del escenario; la fila del Outline,
+- **El vínculo no se guarda: se deriva al leer** (ver «Vínculo derivado»,
+  abajo). Dos equipos que importan el mismo archivo en el mismo run guardan
+  siempre el mismo contenido, tengan o no el caso.
+- **Revisión:** la del elemento del run para ese caso, flujo y fila (el
+  resultado lo «cumple»); si no, la revisión sincronizada vigente en
+  `run.started_at`; si no hay ninguna anterior, la más antigua (nunca el
+  estado actual). El flujo se elige por el nombre del escenario; la fila del Outline,
   por su índice; un `step_id`, solo si el texto coincide con el de la revisión
   (los `<parámetros>` del Outline casan con cualquier valor).
 - **`executed_by`** de un resultado importado es `tool:<herramienta>` (o el
@@ -425,6 +422,54 @@ Tras la revisión independiente del paso 9 (2026-10-31):
   resultados y pasos; la recogida de evidencias libera los archivos.
 - **Re-importar en un equipo que recibió el shard** adjunta la subida como su
   informe en bruto, así que su archivo nunca queda huérfano.
-- **Pendiente de aprobación (B1):** sacar el vínculo del contenido inmutable y
-  derivarlo al leer, para que sea el mismo en todos los equipos (en
-  revisión; se documenta aquí cuando se apruebe).
+
+#### Vínculo derivado (B1, aprobado 2026-10-31)
+
+El vínculo de un resultado **importado** dependía de los datos locales del
+equipo que importaba (un caso o una revisión aún no recibidos, un conflicto
+de clave conocido solo allí). Por eso no forma parte de su contenido:
+
+- **Lo que guarda el resultado importado** (`append_only`): solo lo que dijo el
+  informe: `testKey`, `caseKey` (si el informe lo trae), las etiquetas,
+  el nombre y la suite en `attributes`, `exampleRow`, intentos, tiempos,
+  errores y los pasos con su texto. `testCaseId`, `testCaseRevisionId`,
+  `caseRevision`, `flowId`, `exampleRowId`, `runItemId` y el `stepId` de los
+  pasos van siempre vacíos. El servidor rechaza un `result` con `shardId` que
+  los traiga (VERSIONING §6.5).
+- **Un solo resolvedor**, `runs/link.rs` (`Resolver`), lee por proyecto en
+  consultas de conjunto (casos, claves, revisiones sincronizadas, reglas de
+  enlace, runs y elementos) y deriva el vínculo de cualquier cantidad de
+  resultados: la lista de resultados, la bandeja, los recuentos, la vista
+  previa y, al fusionarse, el progreso de ciclos, los defectos y la matriz.
+  La web no lo necesita hasta que lea resultados (INT-02); entonces tendrá
+  su gemelo.
+- **Caso.** Gana una regla de enlace posterior viva (`unlinked_mapping`). Si
+  no, las etiquetas y el `caseKey` se comparan con **todas las claves que tuvo
+  cada caso**: su `scenario_id` actual y los de sus revisiones sincronizadas.
+  Un cambio de prefijo no desvincula ni revincula una importación antigua.
+  Si las etiquetas nombran **más de un caso** (hoy o por una clave antigua), o
+  un caso y una clave con forma de clave que no es de nadie, queda sin vincular
+  con aviso (`two-case-tags`): nunca se adivina. Un **caso borrado** sigue
+  vinculado y se muestra como «caso borrado» (`caseDeleted`); no va a la
+  bandeja. Un caso purgado ya no existe: su resultado queda como «clave
+  desconocida». Un conflicto de clave abierto deja el resultado sin vincular
+  mientras dure.
+- **Revisión:** la congelada del elemento del run para ese caso, flujo y fila; si
+  no, la revisión sincronizada más alta escrita en o antes de
+  `run.started_at`; si no hay ninguna, la más antigua. Empates por id. Una
+  edición posterior al inicio del run nunca mueve un resultado.
+- **`createdAt` de las revisiones converge:** la misma revisión congelada en
+  dos equipos (su id es su contenido) toma, al recibirse, el `createdAt` del
+  servidor, que guarda el primero. Solo filas de revisión con id por
+  contenido.
+- **Lectura:** `ResultView` lleva `effectiveTestCaseId`, `effectiveRevisionId`,
+  `effectiveCaseRevision`, `effectiveFlowId`, `effectiveExampleRowId`,
+  `effectiveRunItemId`, `effectiveStepIds`, `linkReason` y `caseDeleted`. El
+  vínculo puede cambiar tras un pull (converge), nunca por una edición
+  posterior.
+- **Los resultados manuales** (paso 7, sin `shardId`) no cambian: su vínculo
+  es parte de su contenido, como se escribió; sus `effective*` son los
+  guardados.
+- **Rendimiento:** 20 000 resultados se resuelven en consultas de conjunto
+  (test con un proyecto de 200 casos). De paso, `flaky_tests` pasa a ser
+  lineal y `results_list` lee los pasos de un run en una consulta.

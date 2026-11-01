@@ -4,7 +4,7 @@
 //! rows and step ids, the tray, re-import as a no-op, two devices converging,
 //! the limits, and attachments.
 
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use serde_json::{json, Value};
 
 use super::*;
@@ -157,7 +157,7 @@ fn a_ctrf_report_links_by_tag_rows_and_steps_into_a_new_closed_run() {
     // TC-003: failed then passed, declared flaky by the tool.
     let flaky: Vec<_> = results
         .iter()
-        .filter(|r| r.test_case_id.as_deref() == Some(tc3.as_str()))
+        .filter(|r| r.effective_test_case_id.as_deref() == Some(tc3.as_str()))
         .collect();
     assert_eq!(flaky.len(), 2);
     assert!(flaky
@@ -167,36 +167,40 @@ fn a_ctrf_report_links_by_tag_rows_and_steps_into_a_new_closed_run() {
     let rows = row_ids(&c, &tc2);
     let outline: Vec<_> = results
         .iter()
-        .filter(|r| r.test_case_id.as_deref() == Some(tc2.as_str()))
+        .filter(|r| r.effective_test_case_id.as_deref() == Some(tc2.as_str()))
         .collect();
     assert_eq!(outline.len(), 3);
     assert!(outline
         .iter()
-        .any(|r| r.example_row_id.as_deref() == Some(rows[0].as_str())));
+        .any(|r| r.effective_example_row_id.as_deref() == Some(rows[0].as_str())));
     assert_eq!(
         outline
             .iter()
-            .filter(|r| r.example_row_id.as_deref() == Some(rows[1].as_str()))
+            .filter(|r| r.effective_example_row_id.as_deref() == Some(rows[1].as_str()))
             .count(),
         2
     );
     // TC-001's steps match the revision's texts once the keyword is split off.
     let one = results
         .iter()
-        .find(|r| r.test_case_id.as_deref() == Some(tc1.as_str()))
+        .find(|r| r.effective_test_case_id.as_deref() == Some(tc1.as_str()))
         .unwrap();
     assert_eq!(one.steps.len(), 3);
     assert_eq!(one.steps[0].keyword.as_deref(), Some("Given"));
     assert!(
-        one.steps.iter().all(|s| s.step_id.is_some()),
+        one.effective_step_ids.iter().all(Option::is_some),
         "{:?}",
-        one.steps
+        one.effective_step_ids
     );
     // The Outline steps match their `<param>` templates.
     assert!(outline
         .iter()
-        .all(|r| r.steps.iter().all(|s| s.step_id.is_some())));
-    assert_eq!(one.case_key.as_deref(), Some("TC-001"));
+        .all(|r| r.effective_step_ids.iter().all(Option::is_some)));
+    // The link is derived (B1): nothing of it is stored in the result.
+    assert!(results.iter().all(|r| r.test_case_id.is_none()
+        && r.test_case_revision_id.is_none()
+        && r.steps.iter().all(|s| s.step_id.is_none())));
+    assert!(one.effective_revision_id.is_some());
     assert!(one.executed_by.starts_with("tool:"));
     // Ids are deterministic: shard by run and file, steps by result and position.
     assert_eq!(out.shard_id, ids::shard_id(&out.run_id, SHA));
@@ -242,7 +246,7 @@ fn messages_attempts_hooks_and_step_attachments_are_kept() {
     let results = list_results(&c, &out.run_id, U).unwrap();
     let three: Vec<_> = results
         .iter()
-        .filter(|r| r.test_case_id.as_deref() == Some(tc3.as_str()))
+        .filter(|r| r.effective_test_case_id.as_deref() == Some(tc3.as_str()))
         .collect();
     assert_eq!(
         three.iter().map(|r| r.attempt).collect::<Vec<_>>(),
@@ -373,16 +377,36 @@ fn the_revision_is_the_one_current_when_the_run_started() {
     };
     let old = import(&c, &new_run(&p, doc("2026-06-01T00:00:00Z"))).unwrap();
     let r = list_results(&c, &old.run_id, U).unwrap();
-    assert_eq!(r[0].test_case_revision_id.as_deref(), Some(first.as_str()));
-    // Before every revision: the current one.
+    assert_eq!(r[0].effective_revision_id.as_deref(), Some(first.as_str()));
+    // Before every revision: the oldest one, never the current state (S2).
     let req = request(
         &p,
         doc("2020-01-01T00:00:00Z"),
         json!({"newRun": {}, "allowDuplicate": true}),
     );
-    let now = import(&c, &req).unwrap();
-    let r = list_results(&c, &now.run_id, U).unwrap();
-    assert_ne!(r[0].test_case_revision_id.as_deref(), Some(first.as_str()));
+    let early = import(&c, &req).unwrap();
+    let r = list_results(&c, &early.run_id, U).unwrap();
+    assert_eq!(r[0].effective_revision_id.as_deref(), Some(first.as_str()));
+    // After the edit: the edited revision.
+    let req = request(
+        &p,
+        doc("2099-01-01T00:00:00Z"),
+        json!({"newRun": {}, "allowDuplicate": true, "sha256": "cc".repeat(32)}),
+    );
+    let late = in_tx(&c, |tx| {
+        commit(
+            tx,
+            &req,
+            &Stored {
+                sha256: "cc".repeat(32),
+                size: 1,
+            },
+        )
+    })
+    .unwrap();
+    let r = list_results(&c, &late.run_id, U).unwrap();
+    assert_ne!(r[0].effective_revision_id.as_deref(), Some(first.as_str()));
+    assert_eq!(r[0].effective_case_revision, Some(2));
 }
 
 #[test]
@@ -402,7 +426,10 @@ fn a_result_fulfils_the_target_runs_item_against_its_frozen_revision() {
         "results": [{"name": "t", "status": "failed", "testKey": "k", "tags": ["@TC-001"]}]});
     let out = import(&c, &request(&p, doc, json!({"runId": run}))).unwrap();
     let r = list_results(&c, &out.run_id, U).unwrap();
-    assert_eq!(r[0].run_item_id.as_deref(), Some(items[0].as_str()));
+    assert_eq!(
+        r[0].effective_run_item_id.as_deref(),
+        Some(items[0].as_str())
+    );
     // Importing into an existing run leaves it open.
     assert_eq!(get_run(&c, &run, U).unwrap().unwrap().status, "in_progress");
 }
@@ -430,9 +457,12 @@ fn advanced_cases_link_by_flow_name() {
         })
         .unwrap();
     let data: Value = serde_json::from_str(&data).unwrap();
-    assert_eq!(r.flow_id.as_deref(), data["flows"][1]["id"].as_str());
     assert_eq!(
-        r.steps[0].step_id.as_deref(),
+        r.effective_flow_id.as_deref(),
+        data["flows"][1]["id"].as_str()
+    );
+    assert_eq!(
+        r.effective_step_ids[0].as_deref(),
         data["flows"][1]["steps"][0]["id"].as_str()
     );
 }
@@ -852,7 +882,7 @@ fn tags_link_to_any_live_key_of_the_project() {
         r.iter()
             .find(|x| x.test_key == k)
             .unwrap()
-            .test_case_id
+            .effective_test_case_id
             .clone()
     };
     assert_eq!(case_of("k1"), Some(free));
@@ -924,7 +954,7 @@ fn a_test_tagged_later_leaves_the_tray() {
     let r = list_results(&c, &out.run_id, U).unwrap();
     assert!(r
         .iter()
-        .any(|x| x.test_case_id.as_deref() == Some(tc1.as_str())));
+        .any(|x| x.effective_test_case_id.as_deref() == Some(tc1.as_str())));
 }
 
 #[test]
@@ -1029,4 +1059,227 @@ fn run_counts_are_of_final_results() {
         }]
     );
     assert!(run_counts(&c, &p, "someone-else").unwrap().is_empty());
+}
+
+// ---- B1: the link is derived when read --------------------------------------------
+
+fn tagged(test_key: &str, tag: &str) -> Value {
+    pharos_doc(json!([{"name": "t", "status": "passed", "testKey": test_key, "tags": [tag]}]))
+}
+
+/// Gives a case a new key and freezes the revision that carries it, as a
+/// prefix change does.
+fn rekey(c: &Connection, case: &str, key: &str) {
+    c.execute(
+        "UPDATE test_cases SET scenario_id = ?2, revision = revision + 1 WHERE id = ?1",
+        params![case, key],
+    )
+    .unwrap();
+    crate::revisions::ensure_current(c, case, U, true).unwrap();
+}
+
+#[test]
+fn an_edit_between_two_devices_freezes_and_pulls_converges_to_one_revision() {
+    // A edits TC-001 and a run starts after the edit; B has the run but not
+    // yet the edit. Both import the same file: the same content, and after
+    // the pull the same derived revision.
+    let (a, b) = (device(), device());
+    let p = new_project(&a);
+    let (tc1, _, _) = ing01_cases(&a, &p);
+    a.execute(
+        "UPDATE test_case_revisions SET created_at = '2026-10-31 09:00:00'",
+        [],
+    )
+    .unwrap();
+    pull(&b, &push(&a));
+    let input: test_case::TestCaseInput = serde_json::from_value(json!({
+        "projectId": p, "scenarioId": "TC-001", "title": "TC-001 v2", "author": "Ada",
+        "data": {"steps": ["otra cosa"]}, "userId": U
+    }))
+    .unwrap();
+    test_case::update_case(&a, &tc1, &input).unwrap();
+    a.execute(
+        "UPDATE test_case_revisions SET created_at = '2026-10-31 10:00:00' WHERE revision = 2",
+        [],
+    )
+    .unwrap();
+    let run = crate::runs::insert_run(
+        &a,
+        &serde_json::from_value(json!({"projectId": p, "title": "CI", "userId": U,
+                                        "startedAt": "2026-10-31T10:05:00Z"}))
+        .unwrap(),
+    )
+    .unwrap();
+    let docs = push(&a);
+    let (later, now): (Vec<Value>, Vec<Value>) = docs
+        .into_iter()
+        .partition(|d| d["entity"] == "test_case_revision" || d["entity"] == "test_case");
+    pull(&b, &now);
+    let doc = tagged("k", "@TC-001");
+    import(&a, &request(&p, doc.clone(), json!({"runId": run}))).unwrap();
+    import(&b, &request(&p, doc, json!({"runId": run}))).unwrap();
+    let id = list_results(&a, &run, U).unwrap()[0].id.clone();
+    assert_eq!(
+        content(crate::runs::result_payload(&a, &id).unwrap().unwrap()),
+        content(crate::runs::result_payload(&b, &id).unwrap().unwrap()),
+        "the stored content never depends on local data"
+    );
+    let rev = |dev: &Connection| list_results(dev, &run, U).unwrap()[0].effective_case_revision;
+    assert_eq!(rev(&a), Some(2));
+    assert_eq!(rev(&b), Some(1), "B does not have the edit yet");
+    pull(&b, &later);
+    assert_eq!(rev(&b), Some(2), "after the pull B derives what A does");
+}
+
+#[test]
+fn the_same_revision_frozen_on_two_devices_converges_to_the_servers_time() {
+    let (a, b) = (device(), device());
+    let p = new_project(&a);
+    let case = new_case(&a, &p, "TC-001", json!({"steps": ["x"]}));
+    a.execute(
+        "UPDATE test_case_revisions SET created_at = '2026-01-01 00:00:00'",
+        [],
+    )
+    .unwrap();
+    let docs = push(&a);
+    let (revs, rest): (Vec<Value>, Vec<Value>) = docs
+        .into_iter()
+        .partition(|d| d["entity"] == "test_case_revision");
+    pull(&b, &rest);
+    // B freezes the same state itself: the same id, another time.
+    let id = crate::revisions::ensure_current(&b, &case, U, false)
+        .unwrap()
+        .unwrap();
+    let at = |dev: &Connection| -> String {
+        dev.query_row(
+            "SELECT created_at FROM test_case_revisions WHERE id = ?1",
+            [&id],
+            |r| r.get(0),
+        )
+        .unwrap()
+    };
+    assert_ne!(at(&a), at(&b));
+    // The server kept A's (the first stored): B takes it on the pull.
+    pull(&b, &revs);
+    assert_eq!(at(&a), at(&b));
+}
+
+#[test]
+fn a_prefix_change_keeps_an_old_import_on_its_case() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, _, _) = ing01_cases(&c, &p);
+    let out = import(&c, &new_run(&p, tagged("k", "@TC-001"))).unwrap();
+    rekey(&c, &tc1, "ATS_001");
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id.as_deref(), Some(tc1.as_str()));
+    assert!(unlinked_list(&c, &p, U).unwrap().is_empty());
+    assert_eq!(run_counts(&c, &p, U).unwrap()[0].unlinked, 0);
+    // A new report with the new key links to the same case.
+    let req = request(
+        &p,
+        tagged("k2", "@ATS_001"),
+        json!({"newRun": {}, "sha256": "dd".repeat(32)}),
+    );
+    let again = in_tx(&c, |tx| {
+        commit(
+            tx,
+            &req,
+            &Stored {
+                sha256: "dd".repeat(32),
+                size: 1,
+            },
+        )
+    })
+    .unwrap();
+    let r = &list_results(&c, &again.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id.as_deref(), Some(tc1.as_str()));
+}
+
+#[test]
+fn an_old_key_now_worn_by_another_case_is_ambiguous() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, tc2, _) = ing01_cases(&c, &p);
+    let out = import(&c, &new_run(&p, tagged("k", "@TC-001"))).unwrap();
+    rekey(&c, &tc1, "ATS_001");
+    rekey(&c, &tc2, "TC-001");
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id, None, "never a guess");
+    assert_eq!(r.link_reason.as_deref(), Some("two-case-tags"));
+}
+
+#[test]
+fn a_deleted_case_keeps_its_results_and_stays_out_of_the_tray() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, _, _) = ing01_cases(&c, &p);
+    let out = import(&c, &new_run(&p, tagged("k", "@TC-001"))).unwrap();
+    test_case::delete_case(&c, &tc1, U).unwrap();
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id.as_deref(), Some(tc1.as_str()));
+    assert!(r.case_deleted);
+    assert!(unlinked_list(&c, &p, U).unwrap().is_empty());
+}
+
+#[test]
+fn a_later_link_wins_over_the_tag() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, tc2, _) = ing01_cases(&c, &p);
+    let out = import(&c, &new_run(&p, tagged("k", "@TC-001"))).unwrap();
+    in_tx(&c, |tx| set_mapping(tx, &p, "k", Some(&tc2), U)).unwrap();
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id.as_deref(), Some(tc2.as_str()));
+    // Retired, the tag decides again.
+    in_tx(&c, |tx| set_mapping(tx, &p, "k", None, U)).unwrap();
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id.as_deref(), Some(tc1.as_str()));
+}
+
+#[test]
+fn twenty_thousand_results_resolve_in_set_queries() {
+    let c = device();
+    let p = new_project(&c);
+    for n in 0..200 {
+        new_case(
+            &c,
+            &p,
+            &format!("TC-{:03}", n + 1),
+            json!({"steps": ["a", "b"]}),
+        );
+    }
+    let results: Vec<Value> = (0..MAX_IMPORT_RESULTS)
+        .map(|i| {
+            json!({"name": format!("t{i}"), "status": if i % 7 == 0 { "failed" } else { "passed" },
+                   "testKey": format!("f.spec.ts::t{i}"),
+                   "tags": [format!("@TC-{:03}", i % 250 + 1)],
+                   "steps": [{"text": "a", "status": "passed"}, {"text": "b", "status": "passed"}]})
+        })
+        .collect();
+    let out = import(&c, &new_run(&p, pharos_doc(json!(results)))).unwrap();
+    assert_eq!(out.results, MAX_IMPORT_RESULTS);
+    let t = std::time::Instant::now();
+    let counts = run_counts(&c, &p, U).unwrap();
+    let counted = t.elapsed();
+    let t = std::time::Instant::now();
+    let views = list_results(&c, &out.run_id, U).unwrap();
+    let listed = t.elapsed();
+    let t = std::time::Instant::now();
+    let tray = unlinked_list(&c, &p, U).unwrap();
+    let trayed = t.elapsed();
+    eprintln!("20k results: counts {counted:?}, list {listed:?}, tray {trayed:?}");
+    // One tag in five names TC-201..250, which do not exist.
+    let unknown = MAX_IMPORT_RESULTS / 250 * 50;
+    assert_eq!(counts[0].unlinked, unknown as i64);
+    assert_eq!(tray.len(), unknown);
+    assert!(views
+        .iter()
+        .filter(|v| v.effective_test_case_id.is_some())
+        .all(|v| v.effective_step_ids.iter().all(Option::is_some)));
+    // Generous bounds for a debug build on CI: a query per result would take
+    // far longer.
+    for d in [counted, listed, trayed] {
+        assert!(d < std::time::Duration::from_secs(15), "{d:?}");
+    }
 }

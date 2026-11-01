@@ -219,6 +219,14 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      publicado anterior está en solo lectura, en su pull guarda `data` sin
      tocar (los ids siguen en su disco) y la app actual da ids deterministas a
      los planes que no los tienen al leerlos.
+   - **Una regla nueva de validación sin puerta**, cuando ningún cliente
+     publicado puede incumplirla. Es el caso del resultado importado (ING-02):
+     el servidor rechaza un `result` con `shardId` que lleve el vínculo
+     (`testCaseId`, `testCaseRevisionId`, `caseRevision`, `flowId`,
+     `exampleRowId`, `runItemId` o `stepId` en los pasos), porque ese vínculo se
+     deriva al leer (ADR-0013, «Implementación (paso 9)»). Las compilaciones
+     de desarrollo del paso 9 que lo escribían nunca se publicaron, y los
+     clientes 0.1.x y 0.2.0-alpha.1 no importan informes.
 6. **Formatos exportados** (`.feature`, `.xlsx`, Pharos Run JSON): solo cambian
    de forma incompatible en una MENOR, con nota en el CHANGELOG.
    - **Pharos Run JSON** lleva `schemaVersion` SemVer propio (hoy `1.0.0`,

@@ -25,7 +25,7 @@
 pub mod derive;
 pub mod ids;
 pub mod import;
-pub mod link;
+pub(crate) mod link;
 #[cfg(test)]
 mod tests;
 
@@ -267,12 +267,37 @@ pub struct ResultView {
     /// Its test is flaky (derived; only meaningful on the final attempt).
     pub(crate) flaky: bool,
     pub(crate) steps: Vec<StepResult>,
+    /// The link as read (`runs/link.rs`): an imported result's is derived,
+    /// a manual one's is the stored one.
+    pub(crate) effective_revision_id: Option<String>,
+    pub(crate) effective_case_revision: Option<i64>,
+    pub(crate) effective_flow_id: Option<String>,
+    pub(crate) effective_example_row_id: Option<String>,
+    pub(crate) effective_run_item_id: Option<String>,
+    /// The revision step id of each step, by position.
+    pub(crate) effective_step_ids: Vec<Option<String>>,
+    /// Why an imported result has no case (`no-tag`, `two-case-tags`…).
+    pub(crate) link_reason: Option<String>,
+    /// Its case is deleted (shown as «caso borrado»).
+    pub(crate) case_deleted: bool,
     #[serde(skip)]
     #[cfg_attr(test, ts(skip))]
     pub(crate) hlc: String,
     #[serde(skip)]
     #[cfg_attr(test, ts(skip))]
     pub(crate) shard_imported_at: Option<String>,
+}
+
+impl ResultView {
+    /// The link of a manual result: what it was written with.
+    pub(crate) fn copy_stored_link(&mut self) {
+        self.effective_revision_id = self.test_case_revision_id.clone();
+        self.effective_case_revision = self.case_revision;
+        self.effective_flow_id = self.flow_id.clone();
+        self.effective_example_row_id = self.example_row_id.clone();
+        self.effective_run_item_id = self.run_item_id.clone();
+        self.effective_step_ids = self.steps.iter().map(|s| s.step_id.clone()).collect();
+    }
 }
 
 // ---- helpers -----------------------------------------------------------------
@@ -1050,6 +1075,14 @@ pub(crate) fn list_results(
                     created_at: r.get("created_at")?,
                     is_final: false,
                     flaky: false,
+                    effective_revision_id: None,
+                    effective_case_revision: None,
+                    effective_flow_id: None,
+                    effective_example_row_id: None,
+                    effective_run_item_id: None,
+                    effective_step_ids: Vec::new(),
+                    link_reason: None,
+                    case_deleted: false,
                     steps: Vec::new(),
                     hlc: r.get("hlc")?,
                     shard_imported_at: r.get("shard_imported_at")?,
@@ -1086,6 +1119,36 @@ pub(crate) fn list_results(
                 .collect(),
         )
     };
+    // Every step of the run in one query (a run may hold 20 000 results).
+    let mut steps: std::collections::HashMap<String, Vec<StepResult>> =
+        std::collections::HashMap::new();
+    {
+        let mut stmt = conn
+            .prepare(
+                "SELECT s.result_id, s.id, s.position, s.step_id, s.keyword, s.text, s.status,
+                        s.actual, s.duration_ms, s.gherkin_line
+                   FROM step_results s JOIN results x ON x.id = s.result_id
+                  WHERE x.run_id = ?1 ORDER BY s.result_id, s.position, s.rowid",
+            )
+            .map_err(err)?;
+        let mut rows = stmt.query(params![run_id]).map_err(err)?;
+        while let Some(r) = rows.next().map_err(err)? {
+            steps
+                .entry(r.get(0).map_err(err)?)
+                .or_default()
+                .push(StepResult {
+                    id: r.get(1).map_err(err)?,
+                    position: r.get(2).map_err(err)?,
+                    step_id: r.get(3).map_err(err)?,
+                    keyword: r.get(4).map_err(err)?,
+                    text: r.get(5).map_err(err)?,
+                    status: r.get(6).map_err(err)?,
+                    actual: r.get(7).map_err(err)?,
+                    duration_ms: r.get(8).map_err(err)?,
+                    gherkin_line: r.get(9).map_err(err)?,
+                });
+        }
+    }
     for v in &mut out {
         v.is_final = finals.contains(&v.id);
         v.flaky = flaky.contains(&(
@@ -1093,7 +1156,17 @@ pub(crate) fn list_results(
             v.test_key.clone(),
             v.configuration_label.clone().unwrap_or_default(),
         ));
-        v.steps = steps_of(conn, &v.id)?;
+        v.steps = steps.remove(&v.id).unwrap_or_default();
+    }
+    if let Some(first) = out.first() {
+        let project: String = conn
+            .query_row(
+                "SELECT project_id FROM runs WHERE id = ?1",
+                params![first.run_id],
+                |r| r.get(0),
+            )
+            .map_err(err)?;
+        link::fill_views(conn, &project, &mut out)?;
     }
     Ok(out)
 }

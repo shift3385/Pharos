@@ -309,10 +309,16 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   `run_import_attach` (one report attachment to its result or step result,
   idempotent by owner and content), `unlinked_tests_list` (the tray: the keys
   whose latest imported result has no case) and `run_counts_list` (final
-  results per run, one read for the list). Linking (`runs/link.rs`): the
-  tags against the project's live `scenario_id`s (one case links); the revision is the
-  target run's item for that case/flow/row, else the synced revision current
-  at `run.started_at`, else the current one; flow by scenario name, Outline
+  results per run, one read for the list). **The link is never stored** for
+  an imported result (its content is the same on every device): the one
+  resolver, `runs/link.rs` (`Resolver`, set queries per project), derives it
+  for every reader (results list, tray, counts, preview; cycles, defects and
+  the matrix call it too). A later link wins; else the tags against every key
+  a case ever had (current `scenario_id` and those of its synced revisions;
+  two cases → unlinked, a deleted case → `caseDeleted`); the revision is the
+  run's item for that case/flow/row, else the synced revision current
+  at `run.started_at`, else the oldest (a pulled revision takes the
+  server's `createdAt`, so this converges); flow by scenario name, Outline
   row by index and step ids only when the texts match the revision. Ids:
   shard and result as above, step `UUIDv5(NS_STEP_RESULT, [result, position])`;
   re-importing a file into its run writes nothing. Texts are cut

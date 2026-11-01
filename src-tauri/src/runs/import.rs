@@ -40,7 +40,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::link::{Facts, Link, Linker};
+use super::link::{Facts, Link, Resolver, StoredFacts};
 use super::{
     err, ids, insert_run, insert_steps, owned_run, require_open, text, update_run, within,
     RunInput, StepResult, MAX_STEPS, MAX_TEST_KEY, MAX_TITLE, RESULT, RESULT_STATUSES, RUN_SHARD,
@@ -426,7 +426,10 @@ struct Planned {
     external_id: Option<String>,
     example_row: Option<i64>,
     example_values: Option<String>,
+    /// The `caseKey` the report itself named (Pharos Run JSON).
+    case_key: Option<String>,
     attributes: Value,
+    /// Resolved for the preview and the counts; never written.
     link: Link,
     steps: Vec<StepResult>,
     attachment_refs: Vec<String>,
@@ -503,14 +506,13 @@ fn plan(
         (Some(i), Some(t)) if i >= 1 && i <= t => {}
         _ => return Err("invalid-shard: the index must be between 1 and the total".into()),
     }
+    // The link is never written (B1): it is resolved here only for the
+    // preview's counts and warnings, as every reader will resolve it.
+    let target_run = run.map_or("preview", |(id, _)| id);
     let mut linker = if link {
-        Some(Linker::new(
-            conn,
-            &req.project_id,
-            &req.user_id,
-            run.map(|(id, _)| id),
-            started.as_deref(),
-        )?)
+        let mut r = Resolver::for_project(conn, &req.project_id)?;
+        r.assume_run_start(target_run, started.as_deref());
+        Some(r)
     } else {
         None
     };
@@ -588,14 +590,15 @@ fn plan(
         let link = match linker.as_mut() {
             Some(l) => {
                 let texts: Vec<String> = steps_in.iter().map(|(_, t)| t.clone()).collect();
-                let link = l.link(&Facts {
+                let facts = Facts {
                     tags: &r.tags,
                     case_key: r.case_key.as_deref(),
                     name: &r.name,
                     suite: &suite,
                     example_row: r.example_row,
                     steps: &texts,
-                })?;
+                };
+                let link = l.resolve(target_run, &key, &facts, true)?;
                 for (code, detail) in &link.warnings {
                     warnings.push(ReportImportWarning {
                         code: (*code).into(),
@@ -616,7 +619,8 @@ fn plan(
             steps.push(StepResult {
                 id: ids::imported_step_result_id(&id, i as i64),
                 position: i as i64,
-                step_id: link.step_ids[i].clone(),
+                // Derived when read (B1), never stored for an import.
+                step_id: None,
                 keyword: keyword.clone(),
                 text: t,
                 status: status_of(&s.status).to_string(),
@@ -652,9 +656,6 @@ fn plan(
         if let Some(f) = r.flaky {
             attrs.insert("flaky".into(), json!(f));
         }
-        if let Some(reason) = link.reason {
-            attrs.insert("link".into(), json!(reason));
-        }
         for (k, v) in &r.rest {
             if !KNOWN_KEYS.contains(&k.as_str()) && !attrs.contains_key(k) {
                 attrs.insert(k.clone(), v.clone());
@@ -662,11 +663,12 @@ fn plan(
         }
         let mut attributes = Value::Object(attrs);
         if attributes.to_string().len() > MAX_ATTRIBUTES {
-            // Keep what the model reads (flaky, the link) and say so.
+            // Keep what the model and the link read (flaky; name, suite and
+            // tags) and say so.
             let a = &attributes;
             attributes = json!({
-                "name": a.get("name"), "flaky": a.get("flaky"), "link": a.get("link"),
-                "attributesTruncated": true,
+                "name": a.get("name"), "flaky": a.get("flaky"), "tags": a.get("tags"),
+                "suite": a.get("suite"), "attributesTruncated": true,
             });
             truncated = true;
         }
@@ -693,6 +695,7 @@ fn plan(
                 .as_ref()
                 .filter(|v| !v.is_null())
                 .map(Value::to_string),
+            case_key: text(&r.case_key).map(|k| clip(&k, MAX_LABEL).0),
             attributes,
             link,
             steps,
@@ -1174,14 +1177,16 @@ fn write_result(
             project_id,
             run_id,
             shard_id,
-            r.link.run_item_id,
+            // The link is derived when read (runs/link.rs, B1): an imported
+            // result stores only what its report said.
+            None::<String>,
             r.test_key,
-            r.link.case_id,
-            r.link.revision_id,
-            r.link.case_revision,
-            r.link.case_key,
-            r.link.flow_id,
-            r.link.example_row_id,
+            None::<String>,
+            None::<String>,
+            None::<i64>,
+            r.case_key,
+            None::<String>,
+            None::<String>,
             r.example_row,
             r.example_values,
             r.label,
@@ -1352,60 +1357,93 @@ pub(crate) fn unlinked_list(
     if !project::owns(conn, project_id, user)? {
         return Ok(Vec::new());
     }
-    let mut stmt = conn
-        .prepare(
-            "WITH last AS (
-               SELECT x.*, row_number() OVER (PARTITION BY x.test_key
-                        ORDER BY x.created_at DESC, x.rowid DESC) AS n,
-                      count(*) OVER (PARTITION BY x.test_key) AS total
-                 FROM results x
-                 JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
-                WHERE x.project_id = ?1 AND x.shard_id IS NOT NULL)
-             SELECT l.test_key, l.total, l.status, l.run_id, r.run_key, l.created_at,
-                    l.attributes, l.case_key,
-                    (SELECT m.test_case_id FROM unlinked_mappings m
-                      WHERE m.project_id = l.project_id AND m.test_key = l.test_key
-                        AND m.deleted_at IS NULL
-                      ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1) AS mapped
-               FROM last l LEFT JOIN runs r ON r.id = l.run_id
-              WHERE l.n = 1 AND l.test_case_id IS NULL
-              ORDER BY l.created_at DESC, l.test_key",
-        )
-        .map_err(err)?;
-    let rows = stmt
-        .query_map(params![project_id], |r| {
-            let attributes: Value = r
-                .get::<_, Option<String>>(6)?
-                .and_then(|s| serde_json::from_str(&s).ok())
-                .unwrap_or_else(|| json!({}));
-            let test_key: String = r.get(0)?;
-            let name = attributes
-                .get("name")
-                .and_then(Value::as_str)
-                .map(String::from)
-                .unwrap_or_else(|| {
-                    test_key
-                        .rsplit_once("::")
-                        .map_or(test_key.clone(), |(_, t)| t.to_string())
-                });
-            Ok(UnlinkedTest {
-                test_key,
-                name,
-                results: r.get(1)?,
-                last_status: r.get(2)?,
-                last_run_id: r.get(3)?,
-                last_run_key: r.get(4)?,
-                last_seen: r.get(5)?,
-                reason: attributes
-                    .get("link")
-                    .and_then(Value::as_str)
-                    .map(String::from),
-                case_key: r.get(7)?,
-                mapped_case_id: r.get(8)?,
+    // The latest imported result of every test_key, then the link of its
+    // tags (runs/link.rs): a key stays in the tray while it names no case.
+    struct Last {
+        test_key: String,
+        total: i64,
+        status: String,
+        run_id: String,
+        run_key: Option<String>,
+        created_at: String,
+        attributes: Value,
+        case_key: Option<String>,
+        example_row: Option<i64>,
+    }
+    let rows: Vec<Last> = {
+        let mut stmt = conn
+            .prepare(
+                "WITH last AS (
+                   SELECT x.*, row_number() OVER (PARTITION BY x.test_key
+                            ORDER BY x.created_at DESC, x.rowid DESC) AS n,
+                          count(*) OVER (PARTITION BY x.test_key) AS total
+                     FROM results x
+                     JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+                    WHERE x.project_id = ?1 AND x.shard_id IS NOT NULL)
+                 SELECT l.test_key, l.total, l.status, l.run_id, r.run_key, l.created_at,
+                        l.attributes, l.case_key, l.example_row
+                   FROM last l LEFT JOIN runs r ON r.id = l.run_id
+                  WHERE l.n = 1
+                  ORDER BY l.created_at DESC, l.test_key",
+            )
+            .map_err(err)?;
+        let mapped = stmt
+            .query_map(params![project_id], |r| {
+                Ok(Last {
+                    test_key: r.get(0)?,
+                    total: r.get(1)?,
+                    status: r.get(2)?,
+                    run_id: r.get(3)?,
+                    run_key: r.get(4)?,
+                    created_at: r.get(5)?,
+                    attributes: r
+                        .get::<_, Option<String>>(6)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_else(|| json!({})),
+                    case_key: r.get(7)?,
+                    example_row: r.get(8)?,
+                })
             })
-        })
-        .map_err(err)?;
-    rows.collect::<rusqlite::Result<_>>().map_err(err)
+            .map_err(err)?;
+        mapped.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    let resolver = Resolver::for_project(conn, project_id)?;
+    let mut out = Vec::new();
+    for l in rows {
+        let stored = StoredFacts::of(
+            &l.attributes,
+            l.case_key.as_deref(),
+            l.example_row,
+            Vec::new(),
+        );
+        let Err((reason, detail)) = resolver.case_by_tags(&stored.facts()) else {
+            continue;
+        };
+        let name = if stored.name.is_empty() {
+            l.test_key
+                .rsplit_once("::")
+                .map_or(l.test_key.clone(), |(_, t)| t.to_string())
+        } else {
+            stored.name.clone()
+        };
+        out.push(UnlinkedTest {
+            mapped_case_id: resolver.mapping(&l.test_key).map(String::from),
+            test_key: l.test_key,
+            name,
+            results: l.total,
+            last_status: l.status,
+            last_run_id: l.run_id,
+            last_run_key: l.run_key,
+            last_seen: l.created_at,
+            reason: Some(reason.to_string()),
+            case_key: if reason == super::link::UNKNOWN_CASE {
+                Some(detail)
+            } else {
+                l.case_key
+            },
+        });
+    }
+    Ok(out)
 }
 
 // ---- counts per run --------------------------------------------------------------
@@ -1445,7 +1483,11 @@ pub(crate) fn run_counts(
         imported_at: Option<String>,
         hlc: String,
         flaky: bool,
-        linked: bool,
+        imported: bool,
+        manual_case: bool,
+        attributes: Value,
+        case_key: Option<String>,
+        example_row: Option<i64>,
     }
     let rows: Vec<Row> = {
         let mut stmt = conn
@@ -1453,10 +1495,8 @@ pub(crate) fn run_counts(
                 "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
                         x.started_at, x.finished_at, s.imported_at, x.hlc,
                         json_extract(x.attributes, '$.flaky') = 1,
-                        x.test_case_id IS NOT NULL OR EXISTS (
-                          SELECT 1 FROM unlinked_mappings m
-                           WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                             AND m.deleted_at IS NULL AND m.test_case_id IS NOT NULL)
+                        x.shard_id IS NOT NULL, x.test_case_id IS NOT NULL, x.attributes,
+                        x.case_key, x.example_row
                    FROM results x
                    JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
                    LEFT JOIN run_shards s ON s.id = x.shard_id
@@ -1477,7 +1517,14 @@ pub(crate) fn run_counts(
                     imported_at: r.get(8)?,
                     hlc: r.get(9)?,
                     flaky: r.get::<_, Option<bool>>(10)?.unwrap_or(false),
-                    linked: r.get(11)?,
+                    imported: r.get(11)?,
+                    manual_case: r.get(12)?,
+                    attributes: r
+                        .get::<_, Option<String>>(13)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_else(|| json!({})),
+                    case_key: r.get(14)?,
+                    example_row: r.get(15)?,
                 })
             })
             .map_err(err)?;
@@ -1502,6 +1549,8 @@ pub(crate) fn run_counts(
     let finals: HashSet<&str> = super::derive::final_attempts(&attempts)
         .into_iter()
         .collect();
+    // An imported result's case is derived (one resolver for the project).
+    let mut resolver = Resolver::for_project(conn, project_id)?;
     let mut by_run: HashMap<&str, RunCounts> = HashMap::new();
     for r in rows.iter().filter(|r| finals.contains(r.id.as_str())) {
         let c = by_run.entry(&r.run_id).or_insert_with(|| RunCounts {
@@ -1513,7 +1562,21 @@ pub(crate) fn run_counts(
             "failed" => c.failed += 1,
             _ => c.other += 1,
         }
-        if !r.linked {
+        let linked = if r.imported {
+            let stored = StoredFacts::of(
+                &r.attributes,
+                r.case_key.as_deref(),
+                r.example_row,
+                Vec::new(),
+            );
+            resolver
+                .resolve(&r.run_id, &r.test_key, &stored.facts(), false)?
+                .case_id
+                .is_some()
+        } else {
+            r.manual_case
+        };
+        if !linked {
             c.unlinked += 1;
         }
     }

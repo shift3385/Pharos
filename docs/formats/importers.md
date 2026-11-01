@@ -77,16 +77,22 @@ es contenido inmutable; un índice fuera de 1..total se rechaza.
 Un informe fusionado con `merge-reports` (Playwright, `argv` vacío) se importa
 con un aviso: pierde el shard y su duración no es fiable (ING-01 §4).
 
-## Vínculo (persistente)
+## Vínculo (se deriva al leer, `runs/link.rs`)
 
-- **Caso:** las etiquetas (con o sin `@`) y el `caseKey` se comparan con los
-  `scenario_id` vivos del proyecto, así que también vinculan una clave libre o
-  con un prefijo antiguo. Una etiqueta con la forma `<case_id_prefix><n>` que no
-  es un caso vivo es «clave desconocida». Un caso vincula; sin ninguno, con dos
-  (vivos o desconocidos) o con un conflicto de clave abierto, el test va a la
-  bandeja con su motivo en `attributes.link`.
-- **Revisión:** la del elemento del run de destino para ese caso, flujo y fila;
-  si no, la revisión sincronizada vigente en `run.started_at`; si no, la actual.
+El resultado importado no guarda el vínculo (ADR-0013, «Vínculo derivado»):
+se deriva igual en todos los equipos.
+
+- **Caso:** gana una regla de enlace posterior. Si no, las etiquetas (con o
+  sin `@`) y el `caseKey` se comparan con todas las claves que tuvo cada caso
+  del proyecto (la actual y las de sus revisiones), así que una clave libre,
+  un prefijo antiguo o un cambio de prefijo siguen vinculando. Una etiqueta
+  con la forma `<case_id_prefix><n>` que no es de nadie es «clave
+  desconocida». Un caso vincula; sin ninguno, con dos o con un conflicto de
+  clave abierto, el test va a la bandeja con su motivo. Un caso borrado sigue
+  vinculado («caso borrado»).
+- **Revisión:** la del elemento del run para ese caso, flujo y fila; si no, la
+  revisión sincronizada vigente en `run.started_at`; si no hay ninguna, la más
+  antigua.
 - **Flujo:** el del caso avanzado que se llama como el escenario (`Example #n`
   toma el nombre del Outline de `suite`; `- #b.f` se quita).
 - **Fila y pasos:** la fila por índice. El `step_id` solo se pone si el texto

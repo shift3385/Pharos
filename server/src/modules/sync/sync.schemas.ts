@@ -102,6 +102,15 @@ export const PROJECT_CHILDREN = [
 ] as const;
 
 const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"] as const;
+/** The link fields an imported result never carries (they are derived). */
+const IMPORTED_RESULT_DERIVED = [
+  "testCaseId",
+  "testCaseRevisionId",
+  "caseRevision",
+  "flowId",
+  "exampleRowId",
+  "runItemId",
+] as const;
 const id = z.string().min(1).max(200);
 
 /** What the server checks of an execution document (design §3.11: it
@@ -121,17 +130,32 @@ const EXECUTION_PAYLOADS: Partial<Record<string, z.ZodType>> = {
     sourceFormat: z.string().min(1).max(100),
     sourceFileSha256: z.string().regex(/^[0-9a-f]{64}$/i),
   }),
-  result: z.looseObject({
-    projectId: id,
-    runId: id,
-    testKey: z.string().min(1).max(2000),
-    status: z.enum(RESULT_STATUSES),
-    attempt: z.number().int().nonnegative(),
-    steps: z
-      .array(z.looseObject({ text: z.string(), status: z.enum(RESULT_STATUSES) }))
-      .max(5000)
-      .default([]),
-  }),
+  result: z
+    .looseObject({
+      projectId: id,
+      runId: id,
+      testKey: z.string().min(1).max(2000),
+      status: z.enum(RESULT_STATUSES),
+      attempt: z.number().int().nonnegative(),
+      steps: z
+        .array(z.looseObject({ text: z.string(), status: z.enum(RESULT_STATUSES) }))
+        .max(5000)
+        .default([]),
+    })
+    // An imported result (with a shard) stores only what its report said:
+    // its case link is derived when read (ADR-0013 «Implementación (paso 9)»,
+    // B1), so its content is the same on every device.
+    .superRefine((p, ctx) => {
+      if (p.shardId == null) return;
+      for (const k of IMPORTED_RESULT_DERIVED) {
+        if (p[k] != null) ctx.addIssue({ code: "custom", path: [k], message: "derived for an imported result" });
+      }
+      p.steps.forEach((s, i) => {
+        if (s.stepId != null) {
+          ctx.addIssue({ code: "custom", path: ["steps", i, "stepId"], message: "derived for an imported result" });
+        }
+      });
+    }),
 };
 
 /** Most deltas per push and documents per pull page. Clients send batches

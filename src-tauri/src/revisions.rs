@@ -326,6 +326,19 @@ pub fn insert_if_absent(conn: &Connection, user: &str, p: &Value) -> Result<(), 
         ],
     )
     .map_err(|e| e.to_string())?;
+    // The same revision frozen on two devices (its id is its content) has two
+    // `createdAt`s; the server keeps the first one stored. Taking the
+    // server's here makes them converge, so the revision an import resolves
+    // to (`runs/link.rs`: the one current at the run's start) is the same on
+    // every device. Bookkeeping only: the content and its hash never change.
+    if let Some(created) = s("createdAt") {
+        conn.execute(
+            "UPDATE test_case_revisions SET created_at = ?2
+              WHERE id = ?1 AND content_sha256 IS NOT NULL AND created_at <> ?2",
+            params![id, created],
+        )
+        .map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 

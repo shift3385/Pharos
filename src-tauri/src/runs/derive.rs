@@ -155,12 +155,17 @@ pub fn final_attempts<'a>(attempts: &[Attempt<'a>]) -> Vec<&'a str> {
 /// passed and an earlier one failed, or the tool declared the final attempt
 /// flaky.
 pub fn flaky_tests<'a>(attempts: &[Attempt<'a>]) -> Vec<(&'a str, &'a str, &'a str)> {
-    let finals = final_attempts(attempts);
+    // Sets, not scans: a run may hold 20 000 attempts.
+    let finals: std::collections::HashSet<&str> = final_attempts(attempts).into_iter().collect();
+    let mut failed: HashMap<(&str, &str, &str), Vec<&str>> = HashMap::new();
+    for b in attempts.iter().filter(|b| b.status == "failed") {
+        failed.entry(b.test()).or_default().push(b.id);
+    }
     let mut out = Vec::new();
-    for a in attempts.iter().filter(|a| finals.contains(&a.id)) {
-        let failed_before = attempts
-            .iter()
-            .any(|b| b.test() == a.test() && b.id != a.id && b.status == "failed");
+    for a in attempts.iter().filter(|a| finals.contains(a.id)) {
+        let failed_before = failed
+            .get(&a.test())
+            .is_some_and(|ids| ids.iter().any(|id| *id != a.id));
         if a.status == "passed" && (failed_before || a.declared_flaky) {
             out.push((a.run_id, a.test_key, a.configuration_label.unwrap_or("")));
         }
