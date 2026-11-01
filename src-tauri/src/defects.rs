@@ -28,6 +28,8 @@ pub mod lifecycle;
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashMap;
+
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
@@ -256,11 +258,17 @@ fn map_defect(r: &rusqlite::Row) -> rusqlite::Result<Defect> {
     })
 }
 
-/// Live links of a defect, labelled, in creation order.
-fn links_of(conn: &Connection, defect_id: &str) -> Result<Vec<DefectLink>, String> {
+/// Live links of the given defects (all of a project's with `?1` the project
+/// and `?2` NULL, or one defect's with `?2` its id), labelled, in creation
+/// order, grouped by defect: one query, whatever the number of defects.
+fn links_by_defect(
+    conn: &Connection,
+    project_id: &str,
+    defect_id: Option<&str>,
+) -> Result<HashMap<String, Vec<DefectLink>>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT l.id, l.target_kind, l.target_id,
+            "SELECT l.defect_id, l.id, l.target_kind, l.target_id,
                     CASE l.target_kind
                       WHEN 'test_case' THEN (SELECT c.scenario_id FROM test_cases c WHERE c.id = l.target_id)
                       WHEN 'requirement' THEN (SELECT q.requirement_key FROM requirements q WHERE q.id = l.target_id)
@@ -270,21 +278,29 @@ fn links_of(conn: &Connection, defect_id: &str) -> Result<Vec<DefectLink>, Strin
                                            WHERE x.id = l.target_id)
                     END AS label
                FROM defect_links l
-              WHERE l.defect_id = ?1 AND l.deleted_at IS NULL
+              WHERE l.project_id = ?1 AND (?2 IS NULL OR l.defect_id = ?2) AND l.deleted_at IS NULL
               ORDER BY l.created_at, l.rowid",
         )
         .map_err(err)?;
     let rows = stmt
-        .query_map(params![defect_id], |r| {
-            Ok(DefectLink {
-                id: r.get(0)?,
-                target_kind: r.get(1)?,
-                target_id: r.get(2)?,
-                label: r.get(3)?,
-            })
+        .query_map(params![project_id, defect_id], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                DefectLink {
+                    id: r.get(1)?,
+                    target_kind: r.get(2)?,
+                    target_id: r.get(3)?,
+                    label: r.get(4)?,
+                },
+            ))
         })
         .map_err(err)?;
-    rows.collect::<rusqlite::Result<_>>().map_err(err)
+    let mut out: HashMap<String, Vec<DefectLink>> = HashMap::new();
+    for row in rows {
+        let (defect, link) = row.map_err(err)?;
+        out.entry(defect).or_default().push(link);
+    }
+    Ok(out)
 }
 
 /// What a result is the execution of: its effective case, the revision and
@@ -300,66 +316,83 @@ pub(crate) struct ResultLink {
     pub flow_id: Option<String>,
 }
 
+/// `ResultLink` of many results in one query, by result id.
+pub(crate) fn result_links(
+    conn: &Connection,
+    result_ids: &[String],
+) -> Result<HashMap<String, ResultLink>, String> {
+    if result_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let mut stmt = conn
+        .prepare(
+            "SELECT x.id,
+                    coalesce(x.test_case_id,
+                             (SELECT m.test_case_id FROM unlinked_mappings m
+                               WHERE m.project_id = x.project_id AND m.test_key = x.test_key
+                                 AND m.deleted_at IS NULL
+                               ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)),
+                    x.test_case_revision_id, x.flow_id
+               FROM results x WHERE x.id IN (SELECT value FROM json_each(?1))",
+        )
+        .map_err(err)?;
+    let ids = serde_json::to_string(result_ids).map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map(params![ids], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                ResultLink {
+                    case_id: r.get(1)?,
+                    revision_id: r.get(2)?,
+                    flow_id: r.get(3)?,
+                },
+            ))
+        })
+        .map_err(err)?;
+    rows.collect::<rusqlite::Result<_>>().map_err(err)
+}
+
+/// `result_links` of one result.
 pub(crate) fn result_link(
     conn: &Connection,
     result_id: &str,
 ) -> Result<Option<ResultLink>, String> {
-    conn.query_row(
-        "SELECT coalesce(x.test_case_id,
-                         (SELECT m.test_case_id FROM unlinked_mappings m
-                           WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                             AND m.deleted_at IS NULL
-                           ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)),
-                x.test_case_revision_id, x.flow_id
-           FROM results x WHERE x.id = ?1",
-        params![result_id],
-        |r| {
-            Ok(ResultLink {
-                case_id: r.get(0)?,
-                revision_id: r.get(1)?,
-                flow_id: r.get(2)?,
-            })
-        },
-    )
-    .optional()
-    .map_err(err)
+    Ok(result_links(conn, &[result_id.to_string()])?.remove(result_id))
 }
 
-/// Cases a defect reaches: direct links, and the case of each linked result
-/// (`result_link`), in link order, once each.
-fn cases_of(conn: &Connection, defect_id: &str) -> Result<Vec<String>, String> {
-    let links: Vec<(String, String)> = {
-        let mut stmt = conn
-            .prepare(
-                "SELECT target_kind, target_id FROM defect_links
-                  WHERE defect_id = ?1 AND deleted_at IS NULL
-                    AND target_kind IN ('test_case', 'result')
-                  ORDER BY rowid",
-            )
-            .map_err(err)?;
-        let rows = stmt
-            .query_map(params![defect_id], |r| Ok((r.get(0)?, r.get(1)?)))
-            .map_err(err)?;
-        rows.collect::<rusqlite::Result<_>>().map_err(err)?
-    };
-    let mut out: Vec<String> = Vec::new();
-    for (kind, target) in links {
-        let case = if kind == "test_case" {
-            Some(target)
-        } else {
-            result_link(conn, &target)?.and_then(|l| l.case_id)
-        };
-        if let Some(c) = case.filter(|c| !out.contains(c)) {
-            out.push(c);
+/// Attaches their links to defects and derives the cases each reaches:
+/// direct case links, and the case of each linked result (`result_links`),
+/// in link order, once each. Two queries for any number of defects.
+fn attach_links(
+    conn: &Connection,
+    project_id: &str,
+    one: Option<&str>,
+    defects: &mut [Defect],
+) -> Result<(), String> {
+    let mut links = links_by_defect(conn, project_id, one)?;
+    let result_ids: Vec<String> = links
+        .values()
+        .flatten()
+        .filter(|l| l.target_kind == "result")
+        .map(|l| l.target_id.clone())
+        .collect();
+    let resolved = result_links(conn, &result_ids)?;
+    for d in defects.iter_mut() {
+        d.links = links.remove(&d.id).unwrap_or_default();
+        let mut cases: Vec<String> = Vec::new();
+        for l in &d.links {
+            let case = match l.target_kind.as_str() {
+                "test_case" => Some(l.target_id.clone()),
+                "result" => resolved.get(&l.target_id).and_then(|r| r.case_id.clone()),
+                _ => None,
+            };
+            if let Some(c) = case.filter(|c| !cases.contains(c)) {
+                cases.push(c);
+            }
         }
+        d.case_ids = cases;
     }
-    Ok(out)
-}
-
-fn with_links(conn: &Connection, mut d: Defect) -> Result<Defect, String> {
-    d.links = links_of(conn, &d.id)?;
-    d.case_ids = cases_of(conn, &d.id)?;
-    Ok(d)
+    Ok(())
 }
 
 pub(crate) fn get_defect(
@@ -378,7 +411,14 @@ pub(crate) fn get_defect(
         )
         .optional()
         .map_err(err)?;
-    found.map(|d| with_links(conn, d)).transpose()
+    let Some(d) = found else {
+        return Ok(None);
+    };
+    let project = d.project_id.clone();
+    let mut one = [d];
+    attach_links(conn, &project, Some(id), &mut one)?;
+    let [d] = one;
+    Ok(Some(d))
 }
 
 pub(crate) fn list_defects(
@@ -386,7 +426,7 @@ pub(crate) fn list_defects(
     project_id: &str,
     user: &str,
 ) -> Result<Vec<Defect>, String> {
-    let defects: Vec<Defect> = {
+    let mut defects: Vec<Defect> = {
         let mut stmt = conn
             .prepare(&format!(
                 "{SELECT_DEFECT} WHERE d.project_id = ?1 AND p.owner_id = ?2 \
@@ -399,7 +439,8 @@ pub(crate) fn list_defects(
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
-    defects.into_iter().map(|d| with_links(conn, d)).collect()
+    attach_links(conn, project_id, None, &mut defects)?;
+    Ok(defects)
 }
 
 /// The project's attempts that did not pass, newest first, for the «link a
@@ -439,8 +480,10 @@ pub(crate) fn result_candidates(
         })
         .map_err(err)?;
     let mut out: Vec<ResultCandidate> = rows.collect::<rusqlite::Result<_>>().map_err(err)?;
+    let ids: Vec<String> = out.iter().map(|c| c.result_id.clone()).collect();
+    let mut resolved = result_links(conn, &ids)?;
     for c in &mut out {
-        c.test_case_id = result_link(conn, &c.result_id)?.and_then(|l| l.case_id);
+        c.test_case_id = resolved.remove(&c.result_id).and_then(|l| l.case_id);
     }
     Ok(out)
 }
@@ -676,7 +719,9 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
         if !in_project {
             return Err("result not found".into());
         }
-        let case_id = result_link(conn, &from.result_id)?.and_then(|l| l.case_id);
+        // Only the result is linked: its case is derived through it
+        // (`result_link`), so a later relink of the result never leaves a
+        // stale copy of it here.
         links.insert(
             0,
             LinkTarget {
@@ -684,12 +729,6 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
                 target_id: from.result_id.clone(),
             },
         );
-        if let Some(case_id) = case_id {
-            links.push(LinkTarget {
-                target_kind: "test_case".into(),
-                target_id: case_id,
-            });
-        }
     }
     for t in &links {
         check_target(conn, &input.project_id, t)?;
@@ -1558,11 +1597,12 @@ pub(crate) fn write_doc(
     p: &Value,
     revision: i64,
 ) -> Result<(), String> {
+    // The document's own dates, as the other device wrote them.
     let meta = RowMeta {
         created_by: user,
         updated_by: user,
-        created_at: None,
-        updated_at: None,
+        created_at: ps(p, "createdAt"),
+        updated_at: ps(p, "updatedAt"),
         deleted_at: None,
     };
     match entity {
@@ -1674,6 +1714,39 @@ fn hand_over_sync(
             params![card_id],
         )
         .map_err(err)?;
+    // A card from before the journal (no base and nothing pending) would
+    // push its links without their defect: journal the defect too.
+    if bases.is_empty() && pending == 0 {
+        let mut change = Change::new(
+            DEFECT,
+            card_id,
+            Action::Create,
+            Actor::System {
+                component: "migration",
+                on_behalf_of: Some(owner.to_string()),
+            },
+            "upsert",
+            1,
+            owner,
+        );
+        change.audit = Audit::Folded;
+        journal::record(conn, change)?;
+    }
+    // What the server's own conversion will say about these links is only
+    // known when its defect and links arrive: remember what this one made up
+    // (`reconcile_pulled`).
+    if let Some((_, _, hlc)) = bases.first() {
+        let record = json!({
+            "hlc": hlc,
+            "pending": pending > 0,
+            "links": links.iter().filter_map(|l| ps(l, "id")).collect::<Vec<_>>(),
+        });
+        conn.execute(
+            "INSERT OR REPLACE INTO sync_state (key, value) VALUES (?1, ?2)",
+            params![converted_key(card_id), record.to_string()],
+        )
+        .map_err(err)?;
+    }
     if bases.is_empty() || pending > 0 {
         for link in links {
             let id = ps(link, "id").unwrap_or_default();
@@ -1724,6 +1797,130 @@ fn hand_over_sync(
             params![id, as_defect(&local), as_defect(&remote)],
         )
         .map_err(err)?;
+    }
+    Ok(())
+}
+
+/// `sync_state` key of what the local conversion of a card the server
+/// knew made up: `{hlc, pending, links}` (`hand_over_sync`).
+fn converted_key(defect_id: &str) -> String {
+    format!("converted_card:{defect_id}")
+}
+
+fn has_pending(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
+    Ok(conn
+        .query_row(
+            "SELECT 1 FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND synced_at IS NULL LIMIT 1",
+            params![entity, id],
+            |_| Ok(()),
+        )
+        .optional()
+        .map_err(err)?
+        .is_some())
+}
+
+/// Takes a link away on this device only (the server never had it): no
+/// oplog row, no event.
+fn forget_link(conn: &Connection, id: &str) -> Result<(), String> {
+    conn.execute(
+        "UPDATE defect_links SET deleted_at = datetime('now') WHERE id = ?1 AND deleted_at IS NULL",
+        params![id],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
+/// After a pulled defect or link was written (`sync::apply_doc`): makes the
+/// links a local conversion made up agree with the server's conversion, which
+/// may have started from a newer or an older card (ADR-0016, «Implementación»).
+/// - The server's defect says which case links its card had
+///   (`data.fromCard.testCaseIds`). If the local card had no pending edit,
+///   a made-up link it does not have, and that nothing pending touches, is
+///   taken away here (the server's card had lost it).
+/// - If the local card had a pending edit, that edit wins: a link of the
+///   server's conversion (revision 1, the card's HLC) that the edited card
+///   no longer has is deleted and journaled, so the server loses it too.
+pub(crate) fn reconcile_pulled(
+    conn: &Connection,
+    user: &str,
+    entity: &str,
+    id: &str,
+    p: &Value,
+    revision: i64,
+    hlc: &str,
+) -> Result<(), String> {
+    let defect_id = match entity {
+        DEFECT => id,
+        DEFECT_LINK => ps(p, "defectId").unwrap_or_default(),
+        _ => return Ok(()),
+    };
+    let Some(raw): Option<String> = conn
+        .query_row(
+            "SELECT value FROM sync_state WHERE key = ?1",
+            params![converted_key(defect_id)],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(err)?
+    else {
+        return Ok(());
+    };
+    let record: Value = serde_json::from_str(&raw).unwrap_or(Value::Null);
+    let made_up: Vec<&str> = record["links"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect();
+    let pending = record["pending"].as_bool().unwrap_or(false);
+    if entity == DEFECT && !pending {
+        let Some(server_cases) = p["data"]["fromCard"]["testCaseIds"].as_array() else {
+            return Ok(());
+        };
+        let server: Vec<String> = server_cases
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|c| ids::link_id(id, "test_case", c))
+            .collect();
+        for link in made_up {
+            if !server.iter().any(|s| s == link) && !has_pending(conn, DEFECT_LINK, link)? {
+                forget_link(conn, link)?;
+            }
+        }
+        conn.execute(
+            "DELETE FROM sync_state WHERE key = ?1",
+            params![converted_key(id)],
+        )
+        .map_err(err)?;
+    } else if entity == DEFECT_LINK
+        && pending
+        && revision == 1
+        && Some(hlc) == record["hlc"].as_str()
+        && !made_up.contains(&id)
+    {
+        let before = journal::snapshot(conn, DEFECT_LINK, id)?;
+        conn.execute(
+            "UPDATE defect_links SET deleted_at = datetime('now'), updated_by = ?2,
+                    updated_at = datetime('now'), revision = revision + 1
+              WHERE id = ?1 AND deleted_at IS NULL",
+            params![id, user],
+        )
+        .map_err(err)?;
+        let mut change = Change::new(
+            DEFECT_LINK,
+            id,
+            Action::Delete,
+            Actor::System {
+                component: "migration",
+                on_behalf_of: Some(user.to_string()),
+            },
+            "delete",
+            0,
+            user,
+        )
+        .before(before);
+        change.audit = Audit::Folded;
+        journal::record(conn, change)?;
     }
     Ok(())
 }
@@ -1856,6 +2053,28 @@ pub(crate) fn apply_pulled_card(
             revision,
             hlc,
         )?;
+        // The newer card's links are the truth: a case link of an older card
+        // it no longer has goes, unless something pending touches it (no
+        // link reached a server without `defects` but through a card).
+        let wanted: Vec<String> = links
+            .iter()
+            .filter_map(|l| ps(l, "id").map(String::from))
+            .collect();
+        let local_links: Vec<String> = {
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id FROM defect_links WHERE defect_id = ?1 AND target_kind = 'test_case'
+                       AND deleted_at IS NULL",
+                )
+                .map_err(err)?;
+            let rows = stmt.query_map(params![id], |r| r.get(0)).map_err(err)?;
+            rows.collect::<rusqlite::Result<_>>().map_err(err)?
+        };
+        for link in local_links {
+            if !wanted.contains(&link) && !has_pending(conn, DEFECT_LINK, &link)? {
+                forget_link(conn, &link)?;
+            }
+        }
     }
     for link in links {
         let link_id = ps(&link, "id").unwrap_or_default().to_string();

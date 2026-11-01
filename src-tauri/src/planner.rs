@@ -87,7 +87,8 @@ fn map_card(row: &rusqlite::Row) -> rusqlite::Result<PlannerCard> {
     })
 }
 
-/// Cards of a project, owner-scoped, ordered for the board.
+/// Cards of a project, owner-scoped, ordered for the board. A defect card is
+/// a defect now (DEF-01) and never shows here, even if something revived it.
 pub(crate) fn list_cards(
     conn: &Connection,
     project_id: &str,
@@ -98,7 +99,7 @@ pub(crate) fn list_cards(
             "SELECT id, project_id, kind, card_key, title, status, priority, position, data, \
              created_at, updated_at, revision FROM planner_cards \
              WHERE project_id = ?1 AND owner_id = ?2 AND deleted_at IS NULL \
-             ORDER BY position, created_at",
+             AND kind <> 'defect' ORDER BY position, created_at",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt

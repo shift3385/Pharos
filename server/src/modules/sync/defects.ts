@@ -56,16 +56,56 @@ const STATUS_OF: Record<string, [string, string | null]> = {
   done: ["closed", "fixed"],
 };
 
+/** The server's limits (`DEFECT_PAYLOADS`), in UTF-16 units. */
+export const MAX_TITLE = 500;
+export const MAX_DESCRIPTION = 20_000;
+
+/** `text` cut to at most `max` UTF-16 units by whole code points; null
+ *  when it already fits (`convert.rs::cut`). */
+export function cut(text: string, max: number): string | null {
+  if (text.length <= max) return null;
+  let out = "";
+  for (const ch of text) {
+    if (out.length + ch.length > max) break;
+    out += ch;
+  }
+  return out;
+}
+
 /** A planner defect card payload as a defect payload and its link payloads
- *  (`convert.rs::from_card`). */
+ *  (`convert.rs::from_card`): the server's limits always hold, and
+ *  `data.fromCard` keeps the card's case ids and the full text of what was
+ *  cut or replaced. */
 export function fromCard(card: Json): { defect: Json; links: Json[] } {
   const id = str(card, "id");
   const data: Json =
     card.data && typeof card.data === "object" && !Array.isArray(card.data) ? { ...(card.data as Json) } : {};
-  const description = typeof data.description === "string" ? data.description : "";
-  const caseIds = Array.isArray(data.testCaseIds) ? data.testCaseIds : [];
+  const originalDescription = typeof data.description === "string" ? data.description : "";
+  const rawIds = Array.isArray(data.testCaseIds) ? data.testCaseIds : [];
   delete data.description;
   delete data.testCaseIds;
+  const seen = new Set<string>();
+  const caseIds = rawIds.filter(
+    (c): c is string => typeof c === "string" && c !== "" && !seen.has(c) && Boolean(seen.add(c)),
+  );
+  const fromCard: Json = { testCaseIds: caseIds };
+  const key = str(card, "cardKey");
+  const originalTitle = str(card, "title");
+  let title = originalTitle;
+  if (originalTitle.trim() === "") {
+    fromCard.title = originalTitle;
+    title = key || "—";
+  } else {
+    const short = cut(originalTitle, MAX_TITLE);
+    if (short !== null) {
+      fromCard.title = originalTitle;
+      title = short;
+    }
+  }
+  const shortDescription = cut(originalDescription, MAX_DESCRIPTION);
+  if (shortDescription !== null) fromCard.description = originalDescription;
+  const description = shortDescription ?? originalDescription;
+  data.fromCard = fromCard;
   const [status, resolution] = STATUS_OF[str(card, "status")] ?? ["new", null];
   const priority = (DEFECT_PRIORITIES as readonly string[]).includes(str(card, "priority"))
     ? str(card, "priority")
@@ -75,8 +115,8 @@ export function fromCard(card: Json): { defect: Json; links: Json[] } {
     id,
     workspaceId: str(card, "workspaceId"),
     projectId: str(card, "projectId"),
-    defectKey: str(card, "cardKey"),
-    title: str(card, "title"),
+    defectKey: key,
+    title,
     description,
     stepsToReproduce: "",
     expected: null,
@@ -99,10 +139,7 @@ export function fromCard(card: Json): { defect: Json; links: Json[] } {
     createdAt: at("createdAt"),
     updatedAt: at("updatedAt"),
   };
-  const seen = new Set<string>();
-  const links = caseIds
-    .filter((c): c is string => typeof c === "string" && c !== "" && !seen.has(c) && Boolean(seen.add(c)))
-    .map((caseId) => ({
+  const links = caseIds.map((caseId) => ({
       id: linkId(id, "test_case", caseId),
       workspaceId: str(card, "workspaceId"),
       projectId: str(card, "projectId"),

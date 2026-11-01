@@ -85,14 +85,16 @@ fn count(conn: &Connection, sql: &str) -> i64 {
 
 /// Tables an upgrade may only append to: the migration record, the revision
 /// rows of 0021 (one per case), the oplog rows that push them, and the bases a
-/// converted defect card hands to its defect and links, and the DEF keys of
-/// tasks that were once defects (DEF-01).
-const GROWS: [&str; 5] = [
+/// converted defect card hands to its defect and links, the DEF keys of tasks
+/// that were once defects, and what a conversion made up (`converted_card:`,
+/// DEF-01).
+const GROWS: [&str; 6] = [
     "schema_migrations",
     "test_case_revisions",
     "oplog",
     "sync_base",
     "retired_keys",
+    "sync_state",
 ];
 
 /// JSON columns 0021 rewrites into the stable-steps shape (DAT-02).
@@ -266,11 +268,33 @@ fn assert_defects_converted(old: &Connection, new: &Connection) {
             )
             .unwrap_or_else(|e| panic!("defect card {id} not converted: {e}"));
         let (status, resolution) = crate::defects::convert::status_of(&column);
+        // The server's limits hold (500 UTF-16 units, never empty); the full
+        // text stays in `data.fromCard`.
+        let expected_title = if title.trim().is_empty() {
+            if key.is_empty() {
+                "—".to_string()
+            } else {
+                key.clone()
+            }
+        } else {
+            crate::defects::convert::cut(&title, crate::defects::convert::MAX_TITLE)
+                .unwrap_or_else(|| title.clone())
+        };
+        if expected_title != title {
+            let kept: String = new
+                .query_row(
+                    "SELECT json_extract(data, '$.fromCard.title') FROM defects WHERE id = ?1",
+                    [&id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(kept, title, "original title of {id}");
+        }
         assert_eq!(
             row,
             (
                 key,
-                title,
+                expected_title,
                 priority,
                 status.to_string(),
                 resolution.map(String::from)
@@ -2225,6 +2249,14 @@ fn image_before_defects() -> Connection {
         ),
         ("k-gone", "DEF-005", "defect", "backlog", "{}", true),
         ("k-task", "DEF-006", "task", "backlog", "{}", false),
+        (
+            "k-long",
+            "DEF-007",
+            "defect",
+            "backlog",
+            r#"{"description":"__LONG__"}"#,
+            false,
+        ),
     ] {
         c.execute(
             "INSERT INTO planner_cards (id, workspace_id, project_id, owner_id, kind, card_key, title,
@@ -2237,6 +2269,11 @@ fn image_before_defects() -> Connection {
         )
         .unwrap();
     }
+    c.execute(
+        "UPDATE planner_cards SET title = ?1, data = json_object('description', ?2) WHERE id = 'k-long'",
+        params!["ü".repeat(700), "x".repeat(25_000)],
+    )
+    .unwrap();
     for (id, card, sha) in [
         ("a1", "k-backlog", "aa"),
         ("a2", "k-done", "aa"),
@@ -2316,6 +2353,21 @@ fn upgrading_converts_every_defect_card_with_its_keys_links_files_and_pending_ch
             "SELECT count(*) FROM defects WHERE deleted_at IS NOT NULL"
         ),
         1
+    );
+    // A card without limits converts into a defect the server accepts.
+    assert_eq!(
+        count(
+            &new,
+            "SELECT length(description) FROM defects WHERE id = 'k-long'"
+        ),
+        20_000
+    );
+    assert_eq!(
+        count(
+            &new,
+            "SELECT length(json_extract(data, '$.fromCard.description')) FROM defects WHERE id = 'k-long'"
+        ),
+        25_000
     );
     // Files: the defects own theirs (the shared content twice), the task its own.
     assert_eq!(
@@ -2398,7 +2450,7 @@ fn a_migration_0029_that_fails_leaves_the_cards_as_they_were() {
             &c,
             "SELECT count(*) FROM planner_cards WHERE kind = 'defect' AND deleted_at IS NULL"
         ),
-        4
+        5
     );
     assert_eq!(
         count(

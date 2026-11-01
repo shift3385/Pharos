@@ -892,7 +892,19 @@ pub(crate) fn apply_doc(
         &doc.entity_id,
         doc.revision,
         &doc.hlc,
-    )
+    )?;
+    if !doc.deleted {
+        crate::defects::reconcile_pulled(
+            conn,
+            user,
+            &doc.entity,
+            &doc.entity_id,
+            &doc.payload,
+            doc.revision,
+            &doc.hlc,
+        )?;
+    }
+    Ok(())
 }
 
 /// Applies one document built here rather than pulled (a converted defect
@@ -1486,8 +1498,13 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
             &format!(
                 "UPDATE {table} SET deleted_at = NULL
                   WHERE project_id = ?1 AND deleted_at >= ?2
-                    AND id NOT IN (SELECT entity_id FROM oplog WHERE entity = ?3 AND op = 'delete')"
-            ),
+                    AND id NOT IN (SELECT entity_id FROM oplog WHERE entity = ?3 AND op = 'delete'){}"
+            , if table == "planner_cards" {
+                // A defect card is a defect now (DEF-01): it never comes back.
+                " AND kind <> 'defect'"
+            } else {
+                ""
+            }),
             params![project_id, deleted_at, entity],
         )
         .map_err(|e| e.to_string())?;

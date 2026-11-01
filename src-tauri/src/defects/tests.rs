@@ -270,7 +270,8 @@ fn a_defect_from_a_failed_result_is_prefilled_and_shares_its_evidence() {
     let id = insert_defect(&c, &draft).unwrap();
     let d = get_defect(&c, &id, U).unwrap().unwrap();
     let kinds: Vec<&str> = d.links.iter().map(|l| l.target_kind.as_str()).collect();
-    assert_eq!(kinds, ["result", "test_case"]);
+    // Only the result is stored; its case is derived through it.
+    assert_eq!(kinds, ["result"]);
     assert_eq!(d.case_ids, vec![case]);
     assert!(d.links[0]
         .label
@@ -701,7 +702,10 @@ fn planner_defect_cards_become_defects_without_loss() {
         (b.created_at.as_str(), b.revision),
         ("2026-10-01 10:00:00", 4)
     );
-    assert_eq!(by("k-review").data, json!({"labels": ["ui"]}));
+    assert_eq!(
+        by("k-review").data,
+        json!({"labels": ["ui"], "fromCard": {"testCaseIds": []}})
+    );
     // Attachments, cards, keys.
     assert_eq!(
         count(&c, "SELECT count(*) FROM attachments WHERE owner_entity = 'defect' AND owner_id = 'k-backlog'"),
@@ -844,4 +848,200 @@ fn a_result_without_a_case_reaches_the_case_its_test_key_is_mapped_to() {
     );
     let candidates = result_candidates(&c, &p, U).unwrap();
     assert_eq!(candidates[0].test_case_id.as_deref(), Some(case.as_str()));
+}
+
+// ---- review: limits, stale links, revived cards ----------------------------------
+
+/// A synced card (base 4 / H) with these case ids, and its server copy as the
+/// server's migration 0010 converts it: the defect and its links.
+fn server_conversion(p: &str, id: &str, revision: i64, hlc: &str, cases: &[&str]) -> Vec<Value> {
+    let card = json!({"id": id, "workspaceId": "w", "projectId": p, "ownerId": U, "kind": "defect",
+                      "cardKey": "DEF-001", "title": format!("Bug {id}"), "status": "backlog",
+                      "priority": "high", "data": {"testCaseIds": cases},
+                      "createdAt": "2026-10-01 10:00:00", "updatedAt": "2026-10-02 10:00:00"});
+    let (defect, links) = convert::from_card(&card);
+    let mut docs = vec![
+        json!({"entity": "defect", "entityId": id, "revision": revision,
+                                "hlc": hlc, "op": "upsert", "payload": defect}),
+    ];
+    for l in links {
+        docs.push(
+            json!({"entity": "defect_link", "entityId": l["id"], "revision": 1, "hlc": hlc,
+                         "op": "upsert", "payload": l}),
+        );
+    }
+    docs
+}
+
+fn live_links(c: &Connection, defect: &str) -> Vec<String> {
+    let mut stmt = c
+        .prepare(
+            "SELECT target_id FROM defect_links WHERE defect_id = ?1 AND deleted_at IS NULL ORDER BY target_id",
+        )
+        .unwrap();
+    let rows = stmt.query_map([defect], |r| r.get(0)).unwrap();
+    rows.collect::<rusqlite::Result<_>>().unwrap()
+}
+
+#[test]
+fn a_link_the_servers_newer_card_lost_goes_away_without_a_push() {
+    let c = device();
+    let p = new_project(&c);
+    push(&c);
+    old_card(
+        &c,
+        &p,
+        "k1",
+        "DEF-001",
+        "backlog",
+        json!({"testCaseIds": ["c1", "c2"]}),
+    );
+    c.execute(
+        "INSERT INTO sync_base (user_id, entity, entity_id, revision, hlc) VALUES (?1, 'planner_card', 'k1', 4, 'H4')",
+        [U],
+    )
+    .unwrap();
+    in_tx(&c, migrate_planner_defects).unwrap();
+    assert_eq!(live_links(&c, "k1"), ["c1", "c2"]);
+    // Another client edited the card on the server (revision 5, without c2)
+    // before the server converted it.
+    pull(&c, &server_conversion(&p, "k1", 5, "H5", &["c1"]));
+    assert_eq!(live_links(&c, "k1"), ["c1"]);
+    assert!(push(&c).is_empty(), "nothing to tell the server");
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM sync_state WHERE key = 'converted_card:k1'"
+        ),
+        0
+    );
+}
+
+#[test]
+fn a_link_a_pending_edit_removed_does_not_come_back_and_the_server_loses_it() {
+    let c = device();
+    let p = new_project(&c);
+    push(&c);
+    // Synced with c1 and c2; edited offline to c1 only, before upgrading.
+    old_card(
+        &c,
+        &p,
+        "k1",
+        "DEF-001",
+        "backlog",
+        json!({"testCaseIds": ["c1"]}),
+    );
+    c.execute(
+        "INSERT INTO sync_base (user_id, entity, entity_id, revision, hlc) VALUES (?1, 'planner_card', 'k1', 4, 'H4')",
+        [U],
+    )
+    .unwrap();
+    in_tx(&c, |tx| {
+        oplog::record(tx, "planner_card", "k1", "upsert", "{}", 4, U).map(drop)
+    })
+    .unwrap();
+    in_tx(&c, migrate_planner_defects).unwrap();
+    // The server converted the card it had: c1 and c2, revision 4, its HLC.
+    pull(&c, &server_conversion(&p, "k1", 4, "H4", &["c1", "c2"]));
+    assert_eq!(live_links(&c, "k1"), ["c1"]);
+    let docs = push(&c);
+    let gone = ids::link_id("k1", "test_case", "c2");
+    assert!(
+        docs.iter()
+            .any(|d| d["entityId"] == gone.as_str() && d["op"] == "delete"),
+        "{docs:?}"
+    );
+    // A link someone adds later (another HLC) is not touched.
+    let later = json!({"entity": "defect_link", "entityId": ids::link_id("k1", "test_case", "c9"),
+                       "revision": 1, "hlc": "H9", "op": "upsert",
+                       "payload": {"projectId": p, "defectId": "k1", "targetKind": "test_case", "targetId": "c9"}});
+    pull(&c, &[later]);
+    assert_eq!(live_links(&c, "k1"), ["c1", "c9"]);
+}
+
+#[test]
+fn a_newer_card_from_an_older_server_drops_the_links_it_no_longer_has() {
+    let c = device();
+    let p = new_project(&c);
+    push(&c);
+    let mut doc = card_doc(&p, "k1", 3, "H1", "Bug");
+    doc["payload"]["data"] = json!({"testCaseIds": ["c1", "c2"]});
+    pull(&c, &[doc.clone()]);
+    assert_eq!(live_links(&c, "k1"), ["c1", "c2"]);
+    doc["revision"] = json!(5);
+    doc["hlc"] = json!("H5");
+    doc["payload"]["data"] = json!({"testCaseIds": ["c1"]});
+    pull(&c, &[doc]);
+    assert_eq!(live_links(&c, "k1"), ["c1"]);
+    assert!(push(&c).is_empty());
+}
+
+#[test]
+fn converted_text_fits_the_server_and_keeps_the_original() {
+    let c = device();
+    let p = new_project(&c);
+    let long = "ñ".repeat(600);
+    old_card(
+        &c,
+        &p,
+        "k1",
+        "DEF-001",
+        "backlog",
+        json!({"description": "d".repeat(20_050)}),
+    );
+    c.execute(
+        "UPDATE planner_cards SET title = ?1 WHERE id = 'k1'",
+        [&long],
+    )
+    .unwrap();
+    old_card(&c, &p, "k2", "DEF-002", "backlog", json!({}));
+    c.execute("UPDATE planner_cards SET title = '  ' WHERE id = 'k2'", [])
+        .unwrap();
+    in_tx(&c, migrate_planner_defects).unwrap();
+    let d1 = get_defect(&c, "k1", U).unwrap().unwrap();
+    assert_eq!(d1.title.encode_utf16().count(), 500);
+    assert_eq!(d1.description.len(), 20_000);
+    assert_eq!(d1.data["fromCard"]["title"], long.as_str());
+    assert_eq!(
+        d1.data["fromCard"]["description"].as_str().unwrap().len(),
+        20_050
+    );
+    let d2 = get_defect(&c, "k2", U).unwrap().unwrap();
+    assert_eq!(d2.title, "DEF-002");
+    // Both push as the server accepts them (no input is refused for size).
+    for d in [&d1, &d2] {
+        assert!(d.title.encode_utf16().count() <= MAX_TITLE && !d.title.trim().is_empty());
+    }
+}
+
+#[test]
+fn a_revived_defect_card_never_shows_on_the_board() {
+    let c = device();
+    let p = new_project(&c);
+    old_card(&c, &p, "k1", "DEF-001", "backlog", json!({}));
+    in_tx(&c, migrate_planner_defects).unwrap();
+    c.execute(
+        "UPDATE planner_cards SET deleted_at = NULL WHERE id = 'k1'",
+        [],
+    )
+    .unwrap();
+    assert!(crate::planner::list_cards(&c, &p, U).unwrap().is_empty());
+}
+
+#[test]
+fn a_legacy_card_with_no_journal_pushes_its_defect_with_its_links() {
+    let c = device();
+    let p = new_project(&c);
+    push(&c);
+    old_card(
+        &c,
+        &p,
+        "k1",
+        "DEF-001",
+        "backlog",
+        json!({"testCaseIds": ["c1"]}),
+    );
+    in_tx(&c, migrate_planner_defects).unwrap();
+    let docs = push(&c);
+    assert_eq!(entities(&docs), ["defect", "defect_link"]);
 }
