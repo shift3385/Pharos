@@ -124,10 +124,13 @@
 }
 
 /* Board */
+/* All 7 columns fit beside the sidebar at 1440 px (user decision,
+   2026-10-31); narrower views scroll sideways, a phone shows about one column
+   at a time. Titles wrap, never cut. */
 .df-board {
   display: grid;
-  grid-template-columns: repeat(7, minmax(min(200px, 78cqi), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(7, minmax(min(140px, 78cqi), 1fr));
+  gap: 8px;
   align-items: start;
   padding-bottom: 6px;
   overflow-x: auto;
@@ -135,12 +138,18 @@
   scrollbar-width: thin;
 }
 
+/* A phone shows one column at a time, snapping (as the planner). */
+[data-viewport="mobile"] .df-board {
+  grid-template-columns: repeat(7, 82cqi);
+  gap: 10px;
+}
+
 .df-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  padding: 10px;
+  padding: 8px;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -186,8 +195,9 @@
 .df-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 10px 10px 12px;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 8px 8px 10px;
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-border);
@@ -237,7 +247,9 @@
 .df-card__title {
   padding: 0;
   font: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  hyphens: auto;
   font-weight: var(--fw-medium);
   color: var(--color-text-primary);
   text-align: start;

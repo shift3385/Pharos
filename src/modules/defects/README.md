@@ -41,4 +41,7 @@ list (`DataTable`, chips, `FilterMenuButton`, `SegmentedControl`) and the
 planner board (dnd-kit with the keyboard handle and announcements). On the
 board a drop is a status change along the lifecycle only; closing, rejecting
 or a drop on «Otros» (rejected and deferred) ask first (`TransitionDialog`).
-The chosen view (list or board) is a per-device convenience in `localStorage`.
+All seven columns fit beside the sidebar at 1440 px (titles wrap, never cut);
+narrower windows scroll the board sideways, and a phone shows one column at a
+time. The chosen view (list or board) is a per-device convenience in
+`localStorage`.
