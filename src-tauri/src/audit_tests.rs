@@ -409,7 +409,7 @@ fn attachments_are_audited_without_bytes_or_an_entity_oplog_row() {
     let c = conn();
     let p = new_project(&c, U);
     let card: planner::PlannerCardInput = serde_json::from_value(
-        json!({"projectId": p, "ownerId": U, "kind": "defect", "title": "Bug"}),
+        json!({"projectId": p, "ownerId": U, "kind": "task", "title": "Bug"}),
     )
     .unwrap();
     let card = planner::insert_card(&c, &card).unwrap();
@@ -1176,6 +1176,13 @@ const AUDITED: &[&str] = &[
     "runs::run_items_add",
     "runs::result_record",
     "runs::unlinked_mapping_set",
+    "defects::defect_create",
+    "defects::defect_update",
+    "defects::defect_transition",
+    "defects::defect_delete",
+    "defects::defect_link_set",
+    "defects::defect_attachment_add",
+    "defects::defect_attachment_delete",
     "planner::planner_create",
     "planner::planner_update",
     "planner::planner_delete",
@@ -1269,6 +1276,14 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     (
         "planner::planner_attachment_save",
+        "read (writes a file the user exports)",
+    ),
+    (
+        "defects::defect_draft_from_result",
+        "read: the editor's prefill; saving it is audited (defect_create)",
+    ),
+    (
+        "defects::defect_attachment_save",
         "read (writes a file the user exports)",
     ),
 ];
@@ -1475,6 +1490,42 @@ fn every_audited_command_leaves_an_event() {
     let other = new_project(&c, U);
     step("custom_fields::custom_field_copy", &mut |tx| {
         crate::custom_fields::copy_fields(tx, &p, &other, "test_case", U).map(drop)
+    });
+    let defect_input = |title: &str| -> crate::defects::DefectInput {
+        serde_json::from_value(json!({"projectId": p, "title": title, "userId": U})).unwrap()
+    };
+    let defect = in_tx(&c, |tx| {
+        crate::defects::insert_defect(tx, &defect_input("D"))
+    })
+    .unwrap();
+    step("defects::defect_create", &mut |tx| {
+        crate::defects::insert_defect(tx, &defect_input("E")).map(drop)
+    });
+    step("defects::defect_update", &mut |tx| {
+        crate::defects::update_defect(tx, &defect, &defect_input("D2"))
+    });
+    step("defects::defect_transition", &mut |tx| {
+        crate::defects::transition(tx, &defect, U, "open", None, None)
+    });
+    step("defects::defect_link_set", &mut |tx| {
+        let target = crate::defects::LinkTarget {
+            target_kind: "test_case".into(),
+            target_id: case.clone(),
+        };
+        crate::defects::set_link(tx, &defect, U, &target, true)
+    });
+    step("defects::defect_attachment_add", &mut |tx| {
+        let x = crate::evidence::Stored {
+            sha256: crate::audit::sha256_hex(b"y"),
+            size: 1,
+        };
+        crate::defects::add_attachment(tx, "datt", &defect, U, "a", None, &x)
+    });
+    step("defects::defect_attachment_delete", &mut |tx| {
+        crate::defects::delete_attachment(tx, "datt", U)
+    });
+    step("defects::defect_delete", &mut |tx| {
+        crate::defects::delete_defect(tx, &defect, U)
     });
     let card = in_tx(&c, |tx| planner::insert_card(tx, &card_input("C"))).unwrap();
     step("planner::planner_create", &mut |tx| {

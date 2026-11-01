@@ -2,6 +2,7 @@
 
 export type PlannerCard = { id: string, projectId: string, kind: string, 
 /**
- * Visible id of a defect (DEF-001…), numbered per project; None otherwise.
+ * The DEF key a card kept from before DEF-01 (a task that was once a
+ * defect); new cards never get one.
  */
 cardKey: string | null, title: string, status: string, priority: string, position: number, data: unknown, createdAt: string, updatedAt: string, revision: number, };

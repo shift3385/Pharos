@@ -9,6 +9,7 @@ mod custom_fields;
 #[cfg(test)]
 mod custom_fields_tests;
 mod db;
+mod defects;
 mod diag;
 mod downloads;
 mod evidence;
@@ -173,6 +174,19 @@ pub fn run() {
             runs::result_record,
             runs::results_list,
             runs::unlinked_mapping_set,
+            defects::defect_list,
+            defects::defect_get,
+            defects::defect_create,
+            defects::defect_update,
+            defects::defect_transition,
+            defects::defect_delete,
+            defects::defect_link_set,
+            defects::defect_draft_from_result,
+            defects::defect_result_list,
+            defects::defect_attachment_add,
+            defects::defect_attachment_list,
+            defects::defect_attachment_save,
+            defects::defect_attachment_delete,
             planner::planner_list,
             planner::planner_create,
             planner::planner_update,

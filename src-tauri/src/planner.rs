@@ -1,9 +1,9 @@
 //! Local planner repository + Tauri commands (spec §7). A per-project kanban of
-//! tasks, defects and test data. Cards move across columns; attachment contents
-//! live encrypted in the evidence store (`evidence/`, ADR-0014) and their rows in
+//! tasks and test data. Cards move across columns; attachment contents live
+//! encrypted in the evidence store (`evidence/`, ADR-0014) and their rows in
 //! `attachments` (`owner_entity = 'planner_card'`). Everything is owner-scoped,
-//! attachments included (FIX-08). Defect keys come from the project's key
-//! counter (DAT-01, ADR-0010).
+//! attachments included (FIX-08). Defects left the board for their own module
+//! (DEF-01, ADR-0016, `defects.rs`): a card can no longer be a defect.
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -17,10 +17,7 @@ use crate::db::{ensure_workspace, in_tx, Db};
 use crate::downloads::{Downloads, SaveResult};
 use crate::evidence;
 use crate::journal::{self, Action, Actor, Change};
-use crate::keys::{self, KeyKind};
 use crate::project;
-
-pub(crate) const DEFECT_KEY_PREFIX: &str = "DEF-";
 
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize)]
@@ -29,7 +26,8 @@ pub struct PlannerCard {
     id: String,
     project_id: String,
     kind: String,
-    /// Visible id of a defect (DEF-001…), numbered per project; None otherwise.
+    /// The DEF key a card kept from before DEF-01 (a task that was once a
+    /// defect); new cards never get one.
     card_key: Option<String>,
     title: String,
     status: String,
@@ -133,7 +131,16 @@ fn owns(conn: &Connection, id: &str, owner_id: &str) -> Result<bool, String> {
     .map(|r| r.is_some())
 }
 
+/// Defects have their own module since DEF-01 (ADR-0016).
+fn refuse_defect(kind: &str) -> Result<(), String> {
+    if kind == "defect" {
+        return Err("defect-moved: defects live in the defects module".into());
+    }
+    Ok(())
+}
+
 pub(crate) fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result<String, String> {
+    refuse_defect(&input.kind)?;
     if !project::owns(conn, &input.project_id, &input.owner_id)? {
         return Err("project not found".to_string());
     }
@@ -175,7 +182,6 @@ pub(crate) fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result
         ],
     )
     .map_err(|e| e.to_string())?;
-    ensure_defect_key(conn, &id)?;
     let owner = &input.owner_id;
     journal::record(
         conn,
@@ -192,41 +198,12 @@ pub(crate) fn insert_card(conn: &Connection, input: &PlannerCardInput) -> Result
     Ok(id)
 }
 
-/// Next defect key within a project, from its key counter, so a key is never
-/// reused (the matrix shows it).
-fn next_defect_key(conn: &Connection, project_id: &str) -> Result<String, String> {
-    keys::allocate(conn, KeyKind::Defect, project_id, DEFECT_KEY_PREFIX, 3)
-}
-
-/// Gives a defect its key the first time it is a defect (on create, or when a
-/// task is re-classified). The key is kept afterwards, even if the kind changes.
-fn ensure_defect_key(conn: &Connection, id: &str) -> Result<(), String> {
-    let row: Option<(String, String, Option<String>)> = conn
-        .query_row(
-            "SELECT project_id, kind, card_key FROM planner_cards WHERE id = ?1",
-            params![id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )
-        .optional()
-        .map_err(|e| e.to_string())?;
-    if let Some((project_id, kind, None)) = row {
-        if kind == "defect" {
-            let key = next_defect_key(conn, &project_id)?;
-            conn.execute(
-                "UPDATE planner_cards SET card_key = ?2 WHERE id = ?1",
-                params![id, key],
-            )
-            .map_err(|e| e.to_string())?;
-        }
-    }
-    Ok(())
-}
-
 pub(crate) fn update_card(
     conn: &Connection,
     id: &str,
     input: &PlannerCardInput,
 ) -> Result<(), String> {
+    refuse_defect(&input.kind)?;
     let before = journal::snapshot(conn, "planner_card", id)?;
     let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
     let changed = conn
@@ -251,7 +228,6 @@ pub(crate) fn update_card(
     if changed == 0 {
         return Err("card not found".to_string());
     }
-    ensure_defect_key(conn, id)?;
     let owner = &input.owner_id;
     journal::record(
         conn,
@@ -555,24 +531,22 @@ pub(crate) fn add_attachment(
         return Err("card not found".to_string());
     };
     evidence::record_blob(conn, stored, mime)?;
-    conn.execute(
-        "INSERT INTO attachments (id, workspace_id, project_id, sha256, size, mime, name, \
-         owner_entity, owner_id, kind, created_by, updated_by, created_at, updated_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'planner_card', ?8, 'evidence', ?9, ?9, \
-                 strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
-        params![
+    evidence::insert_attachment(
+        conn,
+        &evidence::AttachmentRow {
             id,
-            workspace_id,
-            project_id,
-            stored.sha256,
-            stored.size as i64,
-            mime,
+            workspace_id: &workspace_id,
+            project_id: &project_id,
+            owner_entity: "planner_card",
+            owner_id: card_id,
             name,
-            card_id,
-            owner_id
-        ],
-    )
-    .map_err(|e| e.to_string())?;
+            mime,
+            kind: "evidence",
+            sha256: &stored.sha256,
+            size: stored.size as i64,
+            user: owner_id,
+        },
+    )?;
     let mut changes = serde_json::Map::new();
     changes.insert(
         "attachment".into(),
@@ -732,7 +706,7 @@ mod tests {
     #[test]
     fn another_user_can_neither_read_nor_modify_cards_or_attachments() {
         let c = conn();
-        let card = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let card = insert_card(&c, &input("task", "Bug", None)).unwrap();
         let file = attach(&c, &card);
         let ops = oplog_rows(&c);
 
@@ -755,24 +729,21 @@ mod tests {
     fn deleting_an_unknown_card_fails_without_an_oplog_row() {
         let c = conn();
         assert!(delete_card(&c, "no-such-card", OWNER).is_err());
-        assert!(update_card(&c, "no-such-card", &input("defect", "X", None)).is_err());
+        assert!(update_card(&c, "no-such-card", &input("task", "X", None)).is_err());
         assert_eq!(oplog_rows(&c), 0);
     }
 
     #[test]
-    fn defect_keys_are_never_reused() {
+    fn a_card_can_no_longer_be_a_defect() {
         let c = conn();
-        let d1 = insert_card(&c, &input("defect", "D1", None)).unwrap();
-        delete_card(&c, &d1, OWNER).unwrap();
-        let d2 = insert_card(&c, &input("defect", "D2", None)).unwrap();
-        assert_eq!(
-            get_card(&c, &d2, OWNER)
-                .unwrap()
-                .unwrap()
-                .card_key
-                .as_deref(),
-            Some("DEF-002")
-        );
+        let err = insert_card(&c, &input("defect", "D1", None)).unwrap_err();
+        assert!(err.starts_with("defect-moved"), "{err}");
+        assert_eq!(oplog_rows(&c), 0);
+        let task = insert_card(&c, &input("task", "T", None)).unwrap();
+        let rows = oplog_rows(&c);
+        assert!(update_card(&c, &task, &input("defect", "T", None)).is_err());
+        assert_eq!(get_card(&c, &task, OWNER).unwrap().unwrap().card_key, None);
+        assert_eq!(oplog_rows(&c), rows);
     }
 
     fn input(kind: &str, title: &str, status: Option<&str>) -> PlannerCardInput {
@@ -791,7 +762,7 @@ mod tests {
     fn creates_and_lists_scoped_by_project_and_owner() {
         let c = conn();
         insert_card(&c, &input("task", "A", None)).unwrap();
-        insert_card(&c, &input("defect", "B", None)).unwrap();
+        insert_card(&c, &input("test_data", "B", None)).unwrap();
         let cards = list_cards(&c, "p1", OWNER).unwrap();
         assert_eq!(cards.len(), 2);
         // Appended within the same column with increasing positions.
@@ -799,21 +770,6 @@ mod tests {
         assert_eq!(cards[1].position, 1);
         // Another user sees nothing.
         assert_eq!(list_cards(&c, "p1", "user-2").unwrap().len(), 0);
-    }
-
-    #[test]
-    fn defects_get_sequential_keys_and_tasks_none() {
-        let c = conn();
-        let task = insert_card(&c, &input("task", "T", None)).unwrap();
-        let d1 = insert_card(&c, &input("defect", "D1", None)).unwrap();
-        let d2 = insert_card(&c, &input("defect", "D2", None)).unwrap();
-        let key = |id: &str| get_card(&c, id, OWNER).unwrap().unwrap().card_key;
-        assert_eq!(key(&task), None);
-        assert_eq!(key(&d1).as_deref(), Some("DEF-001"));
-        assert_eq!(key(&d2).as_deref(), Some("DEF-002"));
-        // Re-classifying a task as a defect gives it the next key.
-        update_card(&c, &task, &input("defect", "T", None)).unwrap();
-        assert_eq!(key(&task).as_deref(), Some("DEF-003"));
     }
 
     #[test]
@@ -829,7 +785,7 @@ mod tests {
     #[test]
     fn attachments_roundtrip_and_delete() {
         let c = conn();
-        let a = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let a = insert_card(&c, &input("task", "Bug", None)).unwrap();
         let id = attach(&c, &a);
         let list = list_attachments(&c, &a, OWNER).unwrap();
         assert_eq!(list.len(), 1);
@@ -853,7 +809,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("pharos-attach-{}", Uuid::new_v4()));
         let store = evidence::EvidenceStore::new(&dir, &[3u8; 32]);
         let c = conn();
-        let card = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let card = insert_card(&c, &input("task", "Bug", None)).unwrap();
         let existing = attach(&c, &card); // takes the id the failing attach reuses
         let upload = |bytes: &[u8]| {
             let mut w = store.writer(evidence::MAX_FILE_BYTES).unwrap();
@@ -895,7 +851,7 @@ mod tests {
     #[test]
     fn attachments_of_a_deleted_card_are_hidden_but_keep_their_content() {
         let c = conn();
-        let a = insert_card(&c, &input("defect", "Bug", None)).unwrap();
+        let a = insert_card(&c, &input("task", "Bug", None)).unwrap();
         let id = attach(&c, &a);
         delete_card(&c, &a, OWNER).unwrap();
         assert!(list_attachments(&c, &a, OWNER).unwrap().is_empty());

@@ -161,6 +161,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0027_case_fields_restore.sql",
         include_str!("../migrations/0027_case_fields_restore.sql"),
     ),
+    (
+        "0029_defects.sql",
+        include_str!("../migrations/0029_defects.sql"),
+    ),
 ];
 
 /// Migration whose SQL runs only after Rust moved the planner attachment BLOBs
@@ -180,6 +184,7 @@ const RUST_STEPS: &[(&str, RustStep)] = &[
         "0027_case_fields_restore.sql",
         crate::custom_fields::migrate_restore,
     ),
+    ("0029_defects.sql", crate::defects::migrate_planner_defects),
 ];
 
 pub struct Db {

@@ -8,4 +8,8 @@ export type PurgeSummary = { projects: number, testPlans: number, testCases: num
  * Runs, run items and unlinked mappings (EJE-01); a run takes its shards,
  * results and step results with it.
  */
-runs: number, templates: number, };
+runs: number, 
+/**
+ * Defects and defect links (DEF-01); a defect takes its attachments.
+ */
+defects: number, templates: number, };
