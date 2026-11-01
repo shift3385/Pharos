@@ -92,7 +92,7 @@ export function parsePharosRunFile(input: unknown): ParsedReport {
 
 /** A whole JSON or XML report, by content. */
 export function parseReportText(text: string): ParsedReport {
-  const body = text.replace(/^FEFF/, "").trimStart();
+  const body = text.replace(/^\uFEFF/, "").trimStart();
   if (body.startsWith("<")) return checked(parseJunit(body));
   const firstLine = body.split(/\r?\n/, 1)[0];
   try {
@@ -167,7 +167,7 @@ export async function parseReportFile(file: Blob): Promise<ParsedReport> {
   if (file.size > MAX_REPORT_BYTES)
     throw new ReportError("too-large", `${MAX_REPORT_BYTES} bytes`);
   const head = await file.slice(0, 64 * 1024).text();
-  const first = head.replace(/^FEFF/, "").trimStart().split(/\r?\n/, 1)[0];
+  const first = head.replace(/^\uFEFF/, "").trimStart().split(/\r?\n/, 1)[0];
   let ndjson = false;
   try {
     ndjson = isEnvelope(JSON.parse(first));
