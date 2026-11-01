@@ -6,6 +6,7 @@ import {
   KEY_ENTITY,
   KEY_FIELD,
   APPEND_ONLY_ENTITIES,
+  CYCLE_ENTITIES,
   EXECUTION_ENTITIES,
   isAppendOnly,
   LOCATION_KEYS,
@@ -72,9 +73,9 @@ export interface KeyBlock {
 }
 
 /** The key expression of `documents_key_idx` (migration 0006; `runKey`
- *  since 0008). */
+ *  since 0008, `cycleKey` since 0009). */
 export const KEY_SQL =
-  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey')";
+  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey', payload->>'cycleKey')";
 
 /** One pull page: documents after the cursor and whether more remain. */
 export interface PullPage {
@@ -142,6 +143,9 @@ const CASCADE_KEY: Partial<Record<(typeof PROJECT_CHILDREN)[number], string>> = 
   run: "runs",
   run_item: "run_items",
   unlinked_mapping: "unlinked_mappings",
+  configuration: "configurations",
+  test_cycle: "test_cycles",
+  test_cycle_item: "test_cycle_items",
 };
 
 /** The live document of the same project that already uses the key of an
@@ -416,16 +420,18 @@ export function createSyncRepository(pool: Pool) {
     /** One page of documents changed after `since` (exclusive), oldest first.
      *  Reads one extra row to tell the client whether to ask again (FIX-02).
      *  Append-only documents only go to clients that know the class, and the
-     *  execution entities to clients that know them (`runs`). */
+     *  execution entities to clients that know them (`runs`), and the cycle
+     *  entities to clients that know `cycles`. */
     async since(
       userId: string,
       since: number,
       limit = MAX_PULL_LIMIT,
-      opts: { appendOnly: boolean; runs?: boolean } = { appendOnly: false },
+      opts: { appendOnly: boolean; runs?: boolean; cycles?: boolean } = { appendOnly: false },
     ): Promise<PullPage> {
       const skipped: string[] = [
         ...(opts.appendOnly ? [] : APPEND_ONLY_ENTITIES),
         ...(opts.runs ? [] : EXECUTION_ENTITIES),
+        ...(opts.cycles ? [] : CYCLE_ENTITIES),
       ];
       const { rows } = await pool.query(
         `SELECT ${COLS}

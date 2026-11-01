@@ -11,6 +11,7 @@ import {
   FEATURE_DATA_KEYS,
   FEATURE_KEYS,
   isAppendOnly,
+  isCycleEntity,
   isExecution,
   keyBlocksSchema,
   pullSchema,
@@ -27,6 +28,7 @@ import {
   missingFeatures,
   sendsStableSteps,
   understandsAppendOnly,
+  understandsCycles,
   understandsKeyConflicts,
   understandsRuns,
 } from "./sync.version";
@@ -85,6 +87,12 @@ export function syncRoutes(
         message: "This client did not announce the runs sync feature.",
       });
     }
+    if (!understandsCycles(req) && deltas.some((d) => isCycleEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "cycles_unsupported",
+        message: "This client did not announce the cycles sync feature.",
+      });
+    }
     // An old client (no `complete-payload`) never resets a field it does not
     // know: its upserts keep the keys it leaves out. A newer one that lacks a
     // feature keeps the keys that feature added (`FEATURE_KEYS`).
@@ -128,6 +136,7 @@ export function syncRoutes(
     const page = await repo.since(req.userId as string, since, limit, {
       appendOnly,
       runs: understandsRuns(req),
+      cycles: understandsCycles(req),
     });
     const { hasMore } = page;
     const cursor = page.docs.length

@@ -25,11 +25,12 @@ export const VERSION_HEADER = "x-pharos-version";
  *  results, and the risk of requirements. `custom-fields` (FLD-01): it sends
  *  the case type, automation status and `data.custom` with every case and
  *  syncs custom field definitions; the server keeps those case fields for a
- *  client without it. Inside one minor the version string does not change
+ *  client without it. `cycles` (CYC-01): it syncs configurations, test
+ *  cycles and their items and leases `cycle` key blocks. Inside one minor the version string does not change
  *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 export const SYNC_FEATURES =
-  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields";
+  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };
