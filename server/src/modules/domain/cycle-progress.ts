@@ -59,8 +59,16 @@ export function instantMs(s: string): number | null {
     if (oh > 23 || om > 59) return null;
     offset = (oh * 60 + om) * (tz.startsWith("-") ? -1 : 1);
   }
-  // Date.UTC rolls over invalid days (Feb 30) like the civil-date algorithm.
-  return Date.UTC(y, mo - 1, d, h, mi, sec, ms) - offset * 60_000;
+  // Days from the civil date (Howard Hinnant's algorithm), as in Rust: an
+  // invalid day (Feb 30) rolls over the same way, and years 0–99 are years
+  // 0–99 (`Date.UTC` would read them as 1900–1999).
+  const [yy, mm] = mo <= 2 ? [y - 1, mo + 9] : [y, mo - 3];
+  const era = Math.floor(yy / 400);
+  const yoe = yy - era * 400;
+  const doy = Math.floor((153 * mm + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  const days = era * 146_097 + doe - 719_468;
+  return (((days * 24 + h) * 60 + mi - offset) * 60 + sec) * 1000 + ms;
 }
 
 const time = (a: ProgressAttempt): number | null => {
@@ -73,7 +81,8 @@ const time = (a: ProgressAttempt): number | null => {
   return null;
 };
 
-/** Time (missing first), then `attempt`, then HLC as bytes. */
+/** Time (missing first), then `attempt`, then HLC as bytes, then the id:
+ *  equal attempts are decided alike everywhere (`progress.rs::cmp`). */
 export function cmpAttempts(a: ProgressAttempt, b: ProgressAttempt): number {
   const [x, y] = [time(a), time(b)];
   if (x !== y) {
@@ -82,7 +91,8 @@ export function cmpAttempts(a: ProgressAttempt, b: ProgressAttempt): number {
     return x < y ? -1 : 1;
   }
   if (a.attempt !== b.attempt) return a.attempt < b.attempt ? -1 : 1;
-  return a.hlc < b.hlc ? -1 : a.hlc > b.hlc ? 1 : 0;
+  if (a.hlc !== b.hlc) return a.hlc < b.hlc ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
 /** failed > blocked > other (and anything unknown) > skipped > passed. */

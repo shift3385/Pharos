@@ -213,6 +213,9 @@ export function CycleDetail({
 
   const closed = cycle.status === "closed";
   const canExecute = cycleApi.canExecute();
+  // An item whose case was deleted cannot be frozen: «Ejecutar» waits until
+  // it is removed, and says which.
+  const gone = items.filter((i) => !i.caseTitle).map((i) => i.caseKey || i.testCaseId);
   const cycleConfigs = configurations.filter((c) => cycle.configurationIds.includes(c.id));
   const present = new Set(items.filter((i) => !i.flowId && !i.exampleRowId).map((i) => i.testCaseId));
   const cell = (itemId: string, configurationId: string | null) =>
@@ -396,8 +399,16 @@ export function CycleDetail({
           <button
             type="button"
             className="ui-btn ui-btn--primary"
-            disabled={!canExecute || closed || items.length === 0}
-            title={!canExecute ? t("cycles.execute.desktopOnly") : closed ? t("cycles.error.closed") : undefined}
+            disabled={!canExecute || closed || items.length === 0 || gone.length > 0}
+            title={
+              !canExecute
+                ? t("cycles.execute.desktopOnly")
+                : closed
+                  ? t("cycles.error.closed")
+                  : gone.length > 0
+                    ? t("cycles.execute.goneHint", { keys: gone.join(", ") })
+                    : undefined
+            }
             onClick={() => {
               setError("");
               setDialog("execute");
@@ -451,6 +462,11 @@ export function CycleDetail({
         </div>
       </div>
       {!canExecute && <p className="cy-note">{t("cycles.execute.desktopOnly")}</p>}
+      {canExecute && gone.length > 0 && (
+        <p className="cy-warn" role="status">
+          {t("cycles.execute.goneHint", { keys: gone.join(", ") })}
+        </p>
+      )}
       {progress && (
         <div className="cy-summary">
           <ProgressBar summary={progress.summary} />
@@ -588,7 +604,18 @@ export function CycleDetail({
           onExecute={(input) =>
             act(
               () => cycleApi.execute(cycle.id, { ...input, userId }),
-              (created) => t("cycles.execute.doneToast", { count: created.length, keys: created.map((r) => r.runKey).join(", ") }),
+              (done) =>
+                [
+                  t("cycles.execute.doneToast", {
+                    count: done.runs.length,
+                    keys: done.runs.map((r) => r.runKey).join(", "),
+                  }),
+                  done.missingConfigurations.length
+                    ? t("cycles.execute.missingToast", { count: done.missingConfigurations.length })
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" "),
             ).then((r) => {
               if (r.ok) setTab("runs");
             })

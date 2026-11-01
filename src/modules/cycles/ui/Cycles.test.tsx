@@ -141,7 +141,10 @@ describe("model", () => {
     const t = (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k);
     expect(configurationError(t, new Error("match-label-taken: chromium (Chrome)"))).toContain("labelTaken");
     expect(cycleError(t, "cycle-closed")).toBe("cycles.error.closed");
-    expect(cycleError(t, new Error("case-key-conflict: c1"))).toBe("cycles.error.keyConflict");
+    expect(cycleError(t, new Error("case-key-conflict: ATS_004"))).toBe('cycles.error.keyConflict {"key":"ATS_004"}');
+    expect(cycleError(t, new Error("cycle-item-case-gone: ATS_004"))).toBe('cycles.error.caseGone {"key":"ATS_004"}');
+    expect(cycleError(t, "cycle-item-row-gone: ATS_009")).toBe('cycles.error.rowGone {"key":"ATS_009"}');
+    expect(cycleError(t, "no-configuration-chosen")).toBe("cycles.error.noConfigurationChosen");
     expect(dateRange("2026-11-02", "2026-11-13", "es")).toMatch(/2 nov – 13 nov/);
   });
 });
@@ -216,7 +219,7 @@ describe("Ciclos", () => {
   }, 15_000);
 
   it("adds cases: those already in the cycle cannot be picked, a draft is warned", async () => {
-    vi.mocked(cycleApi.addItems).mockResolvedValue({ added: ["i3"], skipped: 0, notApproved: ["ATS_003"] });
+    vi.mocked(cycleApi.addItems).mockResolvedValue({ added: ["i3"], skipped: 0, overlapping: [], notApproved: ["ATS_003"] });
     page("/projects/p1/cycles?cycle=cy1");
     await userEvent.click(await screen.findByRole("button", { name: "Añadir casos" }));
     const dialog = await screen.findByRole("dialog", { name: "Añadir casos al ciclo" });
@@ -231,9 +234,12 @@ describe("Ciclos", () => {
   }, 15_000);
 
   it("executes one run per chosen configuration on the desktop", async () => {
-    vi.mocked(cycleApi.execute).mockResolvedValue([
-      { id: "r1", runKey: "RUN-001", title: "x", status: "in_progress", configurationId: "chrome", startedAt: null, finishedAt: null, build: null, environment: null },
-    ]);
+    vi.mocked(cycleApi.execute).mockResolvedValue({
+      runs: [
+        { id: "r1", runKey: "RUN-001", title: "x", status: "in_progress", configurationId: "chrome", startedAt: null, finishedAt: null, build: null, environment: null },
+      ],
+      missingConfigurations: ["gone-cfg"],
+    });
     page("/projects/p1/cycles?cycle=cy1");
     await userEvent.click(await screen.findByRole("button", { name: "Ejecutar" }));
     const dialog = screen.getByRole("dialog", { name: "Ejecutar CYC-001" });
@@ -244,8 +250,32 @@ describe("Ciclos", () => {
       "cy1",
       expect.objectContaining({ configurationIds: ["chrome"], build: "1.4.2", environment: "staging" }),
     );
-    expect((await screen.findAllByText(/Run creado: RUN-001/)).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText(/Run creado: RUN-001 1 configuración aún no ha llegado a este equipo y se saltó\./)).length,
+    ).toBeGreaterThan(0);
   }, 15_000);
+
+  it("«Ejecutar» waits, and names them, while an item's case was deleted", async () => {
+    vi.mocked(cycleApi.items).mockResolvedValue([
+      ITEMS[0],
+      { ...ITEMS[1], caseKey: "", caseTitle: "", caseStatus: "", testCaseId: "c-gone" },
+    ]);
+    page("/projects/p1/cycles?cycle=cy1");
+    const run = await screen.findByRole("button", { name: "Ejecutar" });
+    expect(run).toBeDisabled();
+    expect(screen.getAllByText(/quita del ciclo los casos eliminados \(c-gone\)/).length).toBeGreaterThan(0);
+  });
+
+  it("an «Ejecutar» refused for a case shows its key in the dialog", async () => {
+    vi.mocked(cycleApi.execute).mockRejectedValue(new Error("cycle-item-row-gone: ATS_002"));
+    page("/projects/p1/cycles?cycle=cy1");
+    await userEvent.click(await screen.findByRole("button", { name: "Ejecutar" }));
+    const dialog = screen.getByRole("dialog", { name: "Ejecutar CYC-001" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Crear 2 runs" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "La fila elegida de ATS_002 ya no existe en el caso.",
+    );
+  });
 
   it("on the web «Ejecutar» is disabled and says why", async () => {
     vi.mocked(cycleApi.canExecute).mockReturnValue(false);

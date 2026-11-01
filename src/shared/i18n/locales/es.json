@@ -2064,7 +2064,8 @@
       "addedToast_other": "{{count}} casos añadidos.",
       "skippedToast_one": "{{count}} ya estaba en el ciclo.",
       "skippedToast_other": "{{count}} ya estaban en el ciclo.",
-      "notApprovedToast": "Sin aprobar: {{keys}}."
+      "notApprovedToast": "Sin aprobar: {{keys}}.",
+      "overlappingToast": "Ya cubiertos por otro elemento del ciclo: {{keys}}."
     },
     "filter": {
       "action": "Añadir por filtro",
@@ -2097,7 +2098,10 @@
       "running": "Creando…",
       "doneToast_one": "Run creado: {{keys}}",
       "doneToast_other": "{{count}} runs creados: {{keys}}",
-      "desktopOnly": "Los runs se crean desde la app de escritorio."
+      "desktopOnly": "Los runs se crean desde la app de escritorio.",
+      "goneHint": "No se puede ejecutar: quita del ciclo los casos eliminados ({{keys}}).",
+      "missingToast_one": "{{count}} configuración aún no ha llegado a este equipo y se saltó.",
+      "missingToast_other": "{{count}} configuraciones aún no han llegado a este equipo y se saltaron."
     },
     "runs": {
       "label": "Runs del ciclo",
@@ -2115,7 +2119,12 @@
       "closed": "El ciclo está cerrado. Reábrelo para cambiarlo o ejecutarlo.",
       "empty": "El ciclo no tiene casos.",
       "noConfiguration": "Todas las configuraciones del ciclo están archivadas.",
-      "keyConflict": "Un caso del ciclo tiene un conflicto de clave abierto. Resuélvelo antes de ejecutar."
+      "keyConflict": "{{key}} tiene un conflicto de clave abierto. Resuélvelo antes de ejecutar.",
+      "caseGone": "El caso {{key}} se eliminó. Quítalo del ciclo para ejecutarlo.",
+      "flowGone": "El flujo elegido de {{key}} ya no existe en el caso. Quita ese elemento y vuelve a añadirlo.",
+      "rowGone": "La fila elegida de {{key}} ya no existe en el caso. Quita ese elemento y vuelve a añadirlo.",
+      "noConfigurationChosen": "Elige al menos una configuración.",
+      "configurationMissing": "Las configuraciones del ciclo aún no han llegado a este equipo. Sincroniza y vuelve a intentarlo."
     }
   }
 }

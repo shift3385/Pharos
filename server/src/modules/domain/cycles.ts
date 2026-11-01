@@ -8,7 +8,7 @@ import type { RemoteDoc } from "../sync/sync.repository";
 import { requireSupportedVersion } from "../sync/sync.version";
 import { cells, count, emptySummary, type ProgressAttempt, type ProgressSummary } from "./cycle-progress";
 import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
-import { timestamp } from "./domain.service";
+import { sortable, timestamp } from "./domain.service";
 
 // Test cycles and configurations on the web (CYC-01, ADR-0017): the rules of
 // the desktop's `cycles.rs` applied to the server's document store, with the
@@ -205,7 +205,9 @@ const cycleView = (d: RemoteDoc) => {
   };
 };
 
-const byPosition = (a: RemoteDoc, b: RemoteDoc) => num(a.payload, "position") - num(b.payload, "position") || a.seq - b.seq;
+/** By position, then id: the desktop's order, the same on every device. */
+const byId = (a: RemoteDoc, b: RemoteDoc) => (a.entityId < b.entityId ? -1 : a.entityId > b.entityId ? 1 : 0);
+const byPosition = (a: RemoteDoc, b: RemoteDoc) => num(a.payload, "position") - num(b.payload, "position") || byId(a, b);
 
 async function liveItems(tx: DomainTx, cycle: RemoteDoc) {
   return (await tx.list("test_cycle_item", str(cycle.payload, "projectId")))
@@ -230,44 +232,74 @@ function rowsOf(data: Payload, flowId: string | null): Set<string> | null {
   return flow ? rows(flow) : null;
 }
 
-/** Progress of one cycle (the desktop's `cycle_progress_of`). */
-async function progressOf(tx: DomainTx, cycle: RemoteDoc) {
-  const projectId = str(cycle.payload, "projectId");
-  const items = await liveItems(tx, cycle);
-  const configs = list(cycle.payload, "configurationIds");
-  const columns: (string | null)[] = configs.length ? configs : [null];
-  const runs = new Map(
-    (await tx.list("run", projectId))
-      .filter((d) => str(d.payload, "cycleId") === cycle.entityId)
-      .map((d) => [d.entityId, d.payload] as const),
-  );
+/** What progress reads of the project, loaded once for every cycle in it
+ *  (the list shows them all): live items, runs, shards, unlinked mappings and
+ *  results, grouped by cycle. */
+interface ExecutionData {
+  items: Map<string, RemoteDoc[]>;
+  runs: Map<string, number>;
+  attempts: Map<string, ProgressAttempt[]>;
+}
+
+/** The progress view of one result: what places it in a cell. The one place
+ *  that reads a result for progress (step 9 moves the case/revision link out
+ *  of the result content; only this function changes then). */
+function attemptOf(
+  d: RemoteDoc,
+  run: Payload,
+  shard: Payload | undefined,
+  mappings: Map<string, string | null>,
+): ProgressAttempt {
+  const p = d.payload;
+  return {
+    id: d.entityId,
+    runId: str(p, "runId"),
+    testKey: str(p, "testKey"),
+    configurationLabel: strOrNull(p, "configurationLabel"),
+    attempt: num(p, "attempt"),
+    status: str(p, "status"),
+    startedAt: strOrNull(p, "startedAt"),
+    finishedAt: strOrNull(p, "finishedAt"),
+    shardImportedAt: shard ? strOrNull(shard, "importedAt") : null,
+    hlc: str(p, "hlc"),
+    configurationId: strOrNull(run, "configurationId") ?? strOrNull(p, "configurationId"),
+    caseId: strOrNull(p, "testCaseId") ?? mappings.get(str(p, "testKey")) ?? null,
+    flowId: strOrNull(p, "flowId"),
+    rowId: strOrNull(p, "exampleRowId"),
+  };
+}
+
+async function loadExecution(tx: DomainTx, projectId: string): Promise<ExecutionData> {
+  const push = <T>(m: Map<string, T[]>, k: string, v: T) => m.set(k, [...(m.get(k) ?? []), v]);
+  const items = new Map<string, RemoteDoc[]>();
+  for (const d of await tx.list("test_cycle_item", projectId)) push(items, str(d.payload, "cycleId"), d);
+  for (const list of items.values()) list.sort(byPosition);
+  const runCycle = new Map<string, { cycle: string; payload: Payload }>();
+  const runs = new Map<string, number>();
+  for (const d of await tx.list("run", projectId)) {
+    const cycle = str(d.payload, "cycleId");
+    if (!cycle) continue;
+    runCycle.set(d.entityId, { cycle, payload: d.payload });
+    runs.set(cycle, (runs.get(cycle) ?? 0) + 1);
+  }
   const shards = new Map((await tx.list("run_shard", projectId)).map((d) => [d.entityId, d.payload] as const));
   const mappings = new Map<string, string | null>();
   for (const d of (await tx.list("unlinked_mapping", projectId)).sort((a, b) => a.seq - b.seq))
     mappings.set(str(d.payload, "testKey"), strOrNull(d.payload, "testCaseId"));
-  const attempts: ProgressAttempt[] = (await tx.list("result", projectId))
-    .filter((d) => runs.has(str(d.payload, "runId")))
-    .map((d) => {
-      const p = d.payload;
-      const run = runs.get(str(p, "runId")) as Payload;
-      const shard = shards.get(str(p, "shardId"));
-      return {
-        id: d.entityId,
-        runId: str(p, "runId"),
-        testKey: str(p, "testKey"),
-        configurationLabel: strOrNull(p, "configurationLabel"),
-        attempt: num(p, "attempt"),
-        status: str(p, "status"),
-        startedAt: strOrNull(p, "startedAt"),
-        finishedAt: strOrNull(p, "finishedAt"),
-        shardImportedAt: shard ? strOrNull(shard, "importedAt") : null,
-        hlc: str(p, "hlc"),
-        configurationId: strOrNull(run, "configurationId") ?? strOrNull(p, "configurationId"),
-        caseId: strOrNull(p, "testCaseId") ?? mappings.get(str(p, "testKey")) ?? null,
-        flowId: strOrNull(p, "flowId"),
-        rowId: strOrNull(p, "exampleRowId"),
-      };
-    });
+  const attempts = new Map<string, ProgressAttempt[]>();
+  for (const d of await tx.list("result", projectId)) {
+    const run = runCycle.get(str(d.payload, "runId"));
+    if (!run) continue;
+    push(attempts, run.cycle, attemptOf(d, run.payload, shards.get(str(d.payload, "shardId")), mappings));
+  }
+  return { items, runs, attempts };
+}
+
+/** Progress of one cycle (the desktop's `cycle_progress_of`). */
+function progressOf(cycle: RemoteDoc, data: ExecutionData) {
+  const items = data.items.get(cycle.entityId) ?? [];
+  const configs = list(cycle.payload, "configurationIds");
+  const columns: (string | null)[] = configs.length ? configs : [null];
   const result = cells(
     items.map((i) => ({
       id: i.entityId,
@@ -276,7 +308,7 @@ async function progressOf(tx: DomainTx, cycle: RemoteDoc) {
       rowId: strOrNull(i.payload, "exampleRowId"),
     })),
     columns,
-    attempts,
+    data.attempts.get(cycle.entityId) ?? [],
   );
   const summary = emptySummary();
   const byConfiguration = columns.map((configurationId) => ({ configurationId, summary: emptySummary() }));
@@ -285,7 +317,14 @@ async function progressOf(tx: DomainTx, cycle: RemoteDoc) {
     const col = byConfiguration.find((b) => b.configurationId === c.configurationId);
     if (col) count(col.summary, c.status);
   }
-  return { configurationIds: columns, cells: result, byConfiguration, summary, runs: runs.size, items: items.length };
+  return {
+    configurationIds: columns,
+    cells: result,
+    byConfiguration,
+    summary,
+    runs: data.runs.get(cycle.entityId) ?? 0,
+    items: items.length,
+  };
 }
 
 // ---- service ------------------------------------------------------------------------
@@ -355,13 +394,16 @@ export function createCycleService(store: DomainStore) {
     requireOpen(cycle);
     const projectId = str(cycle.payload, "projectId");
     const existing = await liveItems(tx, cycle);
-    const present = new Set(
-      existing.map((i) =>
-        JSON.stringify([str(i.payload, "testCaseId"), strOrNull(i.payload, "flowId"), strOrNull(i.payload, "exampleRowId")]),
-      ),
-    );
+    const present: [string, string | null, string | null][] = existing.map((i) => [
+      str(i.payload, "testCaseId"),
+      strOrNull(i.payload, "flowId"),
+      strOrNull(i.payload, "exampleRowId"),
+    ]);
+    // Two items of one case cover a common test when their flows and rows
+    // meet (one of each is empty, or they are equal): `cycles.rs::overlaps`.
+    const meet = (x: string | null, y: string | null) => x === null || y === null || x === y;
     let position = Math.max(-1, ...existing.map((i) => num(i.payload, "position"))) + 1;
-    const out = { added: [] as string[], skipped: 0, notApproved: [] as string[] };
+    const out = { added: [] as string[], skipped: 0, overlapping: [] as string[], notApproved: [] as string[] };
     for (const item of items) {
       const kase = await tx.get("test_case", item.testCaseId);
       if (!kase || kase.deleted || str(kase.payload, "projectId") !== projectId)
@@ -371,12 +413,16 @@ export function createCycleService(store: DomainStore) {
       const rows = rowsOf((kase.payload.data as Payload) ?? {}, flowId);
       if (!rows) throw bad("invalid_cycle_item", `flow not in the case revision: ${flowId}`);
       if (rowId && !rows.has(rowId)) throw bad("invalid_cycle_item", `example row not in that flow of the case: ${rowId}`);
-      const identity = JSON.stringify([item.testCaseId, flowId, rowId]);
-      if (present.has(identity)) {
+      const key = str(kase.payload, "scenarioId");
+      if (present.some((p) => p[0] === item.testCaseId && p[1] === flowId && p[2] === rowId)) {
         out.skipped++;
         continue;
       }
-      present.add(identity);
+      if (present.some((p) => p[0] === item.testCaseId && meet(p[1], flowId) && meet(p[2], rowId))) {
+        if (!out.overlapping.includes(key)) out.overlapping.push(key);
+        continue;
+      }
+      present.push([item.testCaseId, flowId, rowId]);
       const id = randomUUID();
       const at = now();
       await tx.put(
@@ -399,7 +445,6 @@ export function createCycleService(store: DomainStore) {
         false,
         { audit: "folded" },
       );
-      const key = str(kase.payload, "scenarioId");
       if (str(kase.payload, "status") !== "approved" && !out.notApproved.includes(key)) out.notApproved.push(key);
       out.added.push(id);
     }
@@ -503,7 +548,11 @@ export function createCycleService(store: DomainStore) {
         if (input.attributes !== undefined) next.attributes = checkAttributes(input.attributes);
         if (input.matchLabels !== undefined) {
           next.matchLabels = checkLabels(input.matchLabels);
-          if (!isArchived(p)) await checkLabelsFree(tx, projectId, next.matchLabels as string[], id);
+          // Only the labels it gains: a clash two devices made offline must
+          // not block every later edit of either configuration.
+          const had = new Set(list(p, "matchLabels").map(normalize));
+          const added = (next.matchLabels as string[]).filter((l) => !had.has(normalize(l)));
+          if (!isArchived(p)) await checkLabelsFree(tx, projectId, added, id);
         }
         await tx.put("configuration", id, next, doc);
         return (await projectConfigurations(tx, projectId)).find((c) => c.view.id === id)?.view;
@@ -533,12 +582,15 @@ export function createCycleService(store: DomainStore) {
       run(userId, async (tx) => {
         const project = await tx.get("project", projectId);
         if (!project || project.deleted) return [];
-        const docs = (await tx.list("test_cycle", projectId)).sort((a, b) =>
-          str(b.payload, "createdAt") < str(a.payload, "createdAt") ? -1 : str(b.payload, "createdAt") > str(a.payload, "createdAt") ? 1 : b.seq - a.seq,
-        );
+        // Newest first by the payload's createdAt, then id, as on the desktop.
+        const docs = (await tx.list("test_cycle", projectId)).sort((a, b) => {
+          const [x, y] = [sortable(str(a.payload, "createdAt")), sortable(str(b.payload, "createdAt"))];
+          return x < y ? 1 : x > y ? -1 : byId(b, a);
+        });
+        const data = await loadExecution(tx, projectId);
         const out = [];
         for (const d of docs) {
-          const p = await progressOf(tx, d);
+          const p = progressOf(d, data);
           out.push({ ...cycleView(d), items: p.items, runs: p.runs, progress: p.summary as ProgressSummary });
         }
         return out;
@@ -595,6 +647,11 @@ export function createCycleService(store: DomainStore) {
         const at = now();
         const n = await tx.nextNumber(projectId, "cycle", KEY_PREFIX);
         const items = await liveItems(tx, source);
+        // Archived configurations are not offered to a new cycle: the copy
+        // leaves them out.
+        const archived = new Set(
+          (await projectConfigurations(tx, projectId)).filter((c) => c.view.archived).map((c) => c.view.id),
+        );
         for (const [position, i] of items.entries()) {
           const itemId = randomUUID();
           await tx.put(
@@ -615,20 +672,23 @@ export function createCycleService(store: DomainStore) {
             cycleKey: `${KEY_PREFIX}${String(n).padStart(KEY_DIGITS, "0")}`,
             title: t,
             status: "planned",
+            configurationIds: list(source.payload, "configurationIds").filter((c) => !archived.has(c)),
             createdAt: at,
             updatedAt: at,
           },
           null,
+          false,
+          { summary: { clonedFrom: str(source.payload, "cycleKey"), items: items.length } },
         );
-        await tx.audit("create", "test_cycle", newId, { clonedFrom: str(source.payload, "cycleKey"), items: items.length });
         return cycleView(doc);
       }),
     /** Soft delete of the cycle and its items; its runs stay (ADR-0017). */
     remove: (userId: string, id: string, revision?: number) =>
       run(userId, async (tx) => {
         const doc = await liveCycle(tx, id, revision);
-        for (const i of await liveItems(tx, doc)) await tx.put("test_cycle_item", i.entityId, i.payload, i, true, { audit: "folded" });
-        await tx.put("test_cycle", id, doc.payload, doc, true);
+        const items = await liveItems(tx, doc);
+        for (const i of items) await tx.put("test_cycle_item", i.entityId, i.payload, i, true, { audit: "folded" });
+        await tx.put("test_cycle", id, doc.payload, doc, true, { summary: { cascade: { test_cycle_items: items.length } } });
       }),
     items: (userId: string, id: string) =>
       run(userId, async (tx) => {
@@ -700,14 +760,18 @@ export function createCycleService(store: DomainStore) {
         if (!doc || doc.deleted) return [];
         return (await tx.list("run", str(doc.payload, "projectId")))
           .filter((d) => str(d.payload, "cycleId") === id)
-          .sort((a, b) => b.seq - a.seq)
+          .sort((a, b) => {
+            const [x, y] = [sortable(str(a.payload, "createdAt")), sortable(str(b.payload, "createdAt"))];
+            return x < y ? 1 : x > y ? -1 : byId(b, a);
+          })
           .map((d) => ({ ...d.payload, id: d.entityId }));
       }),
     progress: (userId: string, id: string) =>
       run(userId, async (tx) => {
         const doc = await tx.get("test_cycle", id);
         if (!doc || doc.deleted) return null;
-        const { configurationIds, cells: c, byConfiguration, summary } = await progressOf(tx, doc);
+        const data = await loadExecution(tx, str(doc.payload, "projectId"));
+        const { configurationIds, cells: c, byConfiguration, summary } = progressOf(doc, data);
         return { configurationIds, cells: c, byConfiguration, summary };
       }),
   };

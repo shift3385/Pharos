@@ -15,6 +15,8 @@ export type CycleItemInput = Contract.CycleItemInput;
 export type CycleFilter = Contract.CycleFilter;
 export type AddOutcome = Contract.AddOutcome;
 export type ExecuteInput = Contract.ExecuteInput;
+/** What «Ejecutar» did: its runs and the configurations not on this device. */
+export type ExecuteResult = { runs: CycleRun[]; missingConfigurations: string[] };
 export type CycleProgress = Contract.CycleProgress;
 export type ProgressCell = Contract.ProgressCell;
 export type ProgressSummary = Contract.ProgressSummary;

@@ -209,16 +209,44 @@ pub struct CycleItemInput {
     pub(crate) assignee: Option<String>,
 }
 
-/// What an addition did: ids added, identical items skipped, and the keys of
-/// the added cases that are not approved (a warning, never a block: ADR-0017
-/// decision 2).
+/// What an addition did: ids added, identical items skipped, the keys of the
+/// cases left out because an item of the cycle already covers them or they
+/// would cover one (a whole case and a flow of it, a flow and a row of it),
+/// and the keys of the added cases that are not approved (a warning, never a
+/// block: ADR-0017 decision 2).
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize, Debug, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddOutcome {
     pub(crate) added: Vec<String>,
     pub(crate) skipped: i64,
+    pub(crate) overlapping: Vec<String>,
     pub(crate) not_approved: Vec<String>,
+}
+
+/// What «Ejecutar» did: the runs it created and the configurations of the
+/// cycle it could not use because they are not on this device yet (pulled
+/// later; the cycle has them, this database does not).
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteResult {
+    pub(crate) runs: Vec<runs::Run>,
+    pub(crate) missing_configurations: Vec<String>,
+}
+
+/// The internal answer of `execute`.
+#[derive(Debug, Default)]
+pub(crate) struct Executed {
+    pub(crate) run_ids: Vec<String>,
+    pub(crate) missing: Vec<String>,
+}
+
+/// True if two items of one case cover a common test: the same flow (or one
+/// of them has none) and the same row (or one of them has none).
+fn overlaps(a: (&Option<String>, &Option<String>), b: (&Option<String>, &Option<String>)) -> bool {
+    let meet = |x: &Option<String>, y: &Option<String>| x.is_none() || y.is_none() || x == y;
+    meet(a.0, b.0) && meet(a.1, b.1)
 }
 
 /// "Add by filter": every non-empty criterion must hold; inside one, any value.
@@ -504,7 +532,7 @@ fn project_configurations(
     let mut stmt = conn
         .prepare(
             "SELECT * FROM configurations WHERE project_id = ?1 AND deleted_at IS NULL
-              ORDER BY position, created_at, rowid",
+              ORDER BY position, id",
         )
         .map_err(err)?;
     let rows = stmt
@@ -726,8 +754,18 @@ pub(crate) fn update_configuration(
             |r| r.get(0),
         )
         .map_err(err)?;
+    // Only the labels it gains: a clash two devices made offline must not
+    // block every later edit of either configuration.
     if let (Some(l), false) = (&labels, archived) {
-        check_labels_free(conn, &project_id, l, Some(id))?;
+        let had: HashSet<String> = get_configuration(conn, id)?
+            .map(|c| c.match_labels.iter().map(|x| normalize_label(x)).collect())
+            .unwrap_or_default();
+        let added: Vec<String> = l
+            .iter()
+            .filter(|x| !had.contains(&normalize_label(x)))
+            .cloned()
+            .collect();
+        check_labels_free(conn, &project_id, &added, Some(id))?;
     }
     let before = journal::snapshot(conn, CONFIGURATION, id)?;
     conn.execute(
@@ -944,7 +982,7 @@ pub(crate) fn list_cycles(
             .prepare(&format!(
                 "{SELECT_CYCLE} WHERE x.project_id = ?1 AND p.owner_id = ?2 \
                  AND x.deleted_at IS NULL AND p.deleted_at IS NULL \
-                 ORDER BY x.created_at DESC, x.rowid DESC"
+                 ORDER BY x.created_at DESC, x.id DESC"
             ))
             .map_err(err)?;
         let rows = stmt
@@ -1244,15 +1282,27 @@ pub(crate) fn clone_cycle(
         KEY_PREFIX,
         KEY_DIGITS,
     )?;
+    // Archived configurations are not offered to a new cycle: the copy leaves
+    // them out.
+    let archived: HashSet<String> = project_configurations(conn, &source.project_id)?
+        .into_iter()
+        .filter(|c| c.archived)
+        .map(|c| c.id)
+        .collect();
+    let configurations: Vec<&String> = source
+        .configuration_ids
+        .iter()
+        .filter(|c| !archived.contains(*c))
+        .collect();
     conn.execute(
         "INSERT INTO test_cycles (id, workspace_id, project_id, cycle_key, title, description,
                 test_plan_id, milestone, sprint, build, environment, configuration_ids, starts_on,
                 ends_on, status, data, created_by, updated_by, created_at, updated_at, revision)
          SELECT ?2, workspace_id, project_id, ?3, ?4, description, test_plan_id, milestone, sprint,
-                build, environment, configuration_ids, starts_on, ends_on, 'planned', data, ?5, ?5,
+                build, environment, ?6, starts_on, ends_on, 'planned', data, ?5, ?5,
                 datetime('now'), datetime('now'), 1
            FROM test_cycles WHERE id = ?1",
-        params![id, new_id, key, title, user],
+        params![id, new_id, key, title, user, to_json(&configurations)?],
     )
     .map_err(err)?;
     let items = live_items(conn, id)?;
@@ -1384,7 +1434,7 @@ fn live_items(conn: &Connection, cycle_id: &str) -> Result<Vec<ItemRow>, String>
         .prepare(
             "SELECT id, test_case_id, flow_id, example_row_id, assignee, position
                FROM test_cycle_items WHERE cycle_id = ?1 AND deleted_at IS NULL
-              ORDER BY position, created_at, rowid",
+              ORDER BY position, id",
         )
         .map_err(err)?;
     let rows = stmt
@@ -1419,7 +1469,7 @@ pub(crate) fn list_items(
                FROM test_cycle_items i
                LEFT JOIN test_cases c ON c.id = i.test_case_id AND c.deleted_at IS NULL
               WHERE i.cycle_id = ?1 AND i.deleted_at IS NULL
-              ORDER BY i.position, i.created_at, i.rowid",
+              ORDER BY i.position, i.id",
         )
         .map_err(err)?;
     let rows = stmt
@@ -1489,11 +1539,10 @@ pub(crate) fn add_items(
 ) -> Result<AddOutcome, String> {
     let cycle = owned_cycle(conn, cycle_id, user)?;
     require_open(&cycle)?;
-    let mut present: HashSet<(String, Option<String>, Option<String>)> =
-        live_items(conn, cycle_id)?
-            .into_iter()
-            .map(|i| (i.test_case_id, i.flow_id, i.example_row_id))
-            .collect();
+    let mut present: Vec<(String, Option<String>, Option<String>)> = live_items(conn, cycle_id)?
+        .into_iter()
+        .map(|i| (i.test_case_id, i.flow_id, i.example_row_id))
+        .collect();
     let mut position: i64 = conn
         .query_row(
             "SELECT coalesce(max(position) + 1, 0) FROM test_cycle_items WHERE cycle_id = ?1",
@@ -1532,10 +1581,22 @@ pub(crate) fn add_items(
             text(&item.flow_id),
             text(&item.example_row_id),
         );
-        if !present.insert(identity) {
+        if present.contains(&identity) {
             out.skipped += 1;
             continue;
         }
+        // A whole case and a flow of it (or a flow and a row of it) would
+        // count the same results twice in the progress.
+        if present
+            .iter()
+            .any(|p| p.0 == identity.0 && overlaps((&p.1, &p.2), (&identity.1, &identity.2)))
+        {
+            if !out.overlapping.contains(&case_key) {
+                out.overlapping.push(case_key);
+            }
+            continue;
+        }
+        present.push(identity);
         let id = Uuid::new_v4().to_string();
         insert_item_row(
             conn,
@@ -1813,13 +1874,15 @@ pub fn item_for(
 /// cycle, or the subset asked for; a cycle without configurations gets one
 /// run without). Each run copies the items and freezes the revision current
 /// now (`runs::add_items`, ADR-0017 decision 3). A planned cycle becomes
-/// active. All or nothing: the caller's transaction rolls back if one case
-/// cannot be frozen. Returns the run ids.
+/// active. All or nothing: every item is checked first (its case still
+/// exists, has no open key conflict, still has its flow and row), and the
+/// caller's transaction rolls back if one cannot be frozen. Errors name the
+/// case by its key (`cycle-item-case-gone: ATS_004`…), so the user can fix it.
 pub(crate) fn execute(
     conn: &Connection,
     cycle_id: &str,
     input: &ExecuteInput,
-) -> Result<Vec<String>, String> {
+) -> Result<Executed, String> {
     let user = &input.user_id;
     let cycle = owned_cycle(conn, cycle_id, user)?;
     require_open(&cycle)?;
@@ -1827,28 +1890,45 @@ pub(crate) fn execute(
     if items.is_empty() {
         return Err("cycle-empty".into());
     }
+    check_executable(conn, &cycle.project_id, &items)?;
     let live = project_configurations(conn, &cycle.project_id)?;
     let wanted: Vec<String> = match &input.configuration_ids {
         Some(ids) => {
+            let mut out: Vec<String> = Vec::new();
             for id in ids {
                 if !cycle.configuration_ids.contains(id) {
                     return Err(format!("configuration not in the cycle: {id}"));
                 }
+                if !out.contains(id) {
+                    out.push(id.clone());
+                }
             }
-            ids.clone()
+            if out.is_empty() && !cycle.configuration_ids.is_empty() {
+                return Err("no-configuration-chosen".into());
+            }
+            out
         }
         None => cycle.configuration_ids.clone(),
     };
+    let mut executed = Executed::default();
     let targets: Vec<Option<&Configuration>> = if cycle.configuration_ids.is_empty() {
         vec![None]
     } else {
-        let t: Vec<Option<&Configuration>> = wanted
-            .iter()
-            .filter_map(|id| live.iter().find(|c| &c.id == id && !c.archived))
-            .map(Some)
-            .collect();
+        let mut t: Vec<Option<&Configuration>> = Vec::new();
+        for id in &wanted {
+            match live.iter().find(|c| &c.id == id) {
+                Some(c) if !c.archived => t.push(Some(c)),
+                Some(_) => {}
+                None => executed.missing.push(id.clone()),
+            }
+        }
         if t.is_empty() {
-            return Err("no-configuration: every configuration of the cycle is archived".into());
+            return Err(if executed.missing.is_empty() {
+                "no-configuration: every configuration of the cycle is archived".into()
+            } else {
+                "configuration-missing: the cycle's configurations are not on this device yet"
+                    .into()
+            });
         }
         t
     };
@@ -1890,6 +1970,7 @@ pub(crate) fn execute(
         run_ids.push(run_id);
     }
     let summary = json!({ "runsCreated": run_ids.len() });
+    executed.run_ids = run_ids;
     if cycle.status == "planned" {
         let before = journal::snapshot(conn, CYCLE, cycle_id)?;
         let revision: i64 = conn
@@ -1925,7 +2006,52 @@ pub(crate) fn execute(
             Some(summary),
         )?;
     }
-    Ok(run_ids)
+    Ok(executed)
+}
+
+/// Each item can be frozen: its case is live, has no open key conflict and
+/// still has the item's flow and row. The error names the case by its key.
+fn check_executable(conn: &Connection, project_id: &str, items: &[ItemRow]) -> Result<(), String> {
+    for it in items {
+        let case: Option<(String, Option<String>, String)> = conn
+            .query_row(
+                "SELECT scenario_id, deleted_at, data FROM test_cases WHERE id = ?1 AND project_id = ?2",
+                params![it.test_case_id, project_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .optional()
+            .map_err(err)?;
+        let Some((key, deleted, data)) = case else {
+            return Err(format!("cycle-item-case-gone: {}", it.test_case_id));
+        };
+        if deleted.is_some() {
+            return Err(format!("cycle-item-case-gone: {key}"));
+        }
+        let conflict = conn
+            .query_row(
+                "SELECT 1 FROM key_conflicts WHERE entity = 'test_case' AND entity_id = ?1
+                    AND resolved_at IS NULL",
+                params![it.test_case_id],
+                |_| Ok(()),
+            )
+            .optional()
+            .map_err(err)?
+            .is_some();
+        if conflict {
+            return Err(format!("case-key-conflict: {key}"));
+        }
+        let data: Value = serde_json::from_str(&data).unwrap_or(Value::Null);
+        let shape = runs::RevisionShape::of(&data);
+        let Ok(flow) = shape.flow(it.flow_id.as_deref()) else {
+            return Err(format!("cycle-item-flow-gone: {key}"));
+        };
+        if let Some(row) = &it.example_row_id {
+            if !flow.rows.contains(row) {
+                return Err(format!("cycle-item-row-gone: {key}"));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// The cycle's live runs, newest first.
@@ -1963,6 +2089,50 @@ struct ResultRow {
     row_id: Option<String>,
 }
 
+/// The results of the cycle's live runs as progress reads them. The one place
+/// that reads a result for progress: step 9 moves the case/revision link out of
+/// the result content, and only this function changes then.
+fn cycle_results(conn: &Connection, cycle_id: &str) -> Result<Vec<ResultRow>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
+                    x.started_at, x.finished_at, s.imported_at, x.hlc,
+                    coalesce(r.configuration_id, x.configuration_id) AS configuration,
+                    coalesce(x.test_case_id,
+                             (SELECT m.test_case_id FROM unlinked_mappings m
+                               WHERE m.project_id = x.project_id AND m.test_key = x.test_key
+                                 AND m.deleted_at IS NULL
+                               ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)) AS case_id,
+                    x.flow_id, x.example_row_id
+               FROM results x
+               JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+               LEFT JOIN run_shards s ON s.id = x.shard_id
+              WHERE r.cycle_id = ?1",
+        )
+        .map_err(err)?;
+    let rows = stmt
+        .query_map(params![cycle_id], |r| {
+            Ok(ResultRow {
+                id: r.get(0)?,
+                run_id: r.get(1)?,
+                test_key: r.get(2)?,
+                configuration_label: r.get(3)?,
+                attempt: r.get(4)?,
+                status: r.get(5)?,
+                started_at: r.get(6)?,
+                finished_at: r.get(7)?,
+                shard_imported_at: r.get(8)?,
+                hlc: r.get(9)?,
+                configuration_id: r.get(10)?,
+                case_id: r.get(11)?,
+                flow_id: r.get(12)?,
+                row_id: r.get(13)?,
+            })
+        })
+        .map_err(err)?;
+    rows.collect::<rusqlite::Result<_>>().map_err(err)
+}
+
 fn cycle_progress_of(conn: &Connection, cycle: &TestCycle) -> Result<CycleProgress, String> {
     let items = live_items(conn, &cycle.id)?;
     let columns: Vec<Option<String>> = if cycle.configuration_ids.is_empty() {
@@ -1970,46 +2140,7 @@ fn cycle_progress_of(conn: &Connection, cycle: &TestCycle) -> Result<CycleProgre
     } else {
         cycle.configuration_ids.iter().cloned().map(Some).collect()
     };
-    let rows: Vec<ResultRow> = {
-        let mut stmt = conn
-            .prepare(
-                "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
-                        x.started_at, x.finished_at, s.imported_at, x.hlc,
-                        coalesce(r.configuration_id, x.configuration_id) AS configuration,
-                        coalesce(x.test_case_id,
-                                 (SELECT m.test_case_id FROM unlinked_mappings m
-                                   WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                                     AND m.deleted_at IS NULL
-                                   ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)) AS case_id,
-                        x.flow_id, x.example_row_id
-                   FROM results x
-                   JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
-                   LEFT JOIN run_shards s ON s.id = x.shard_id
-                  WHERE r.cycle_id = ?1",
-            )
-            .map_err(err)?;
-        let rows = stmt
-            .query_map(params![cycle.id], |r| {
-                Ok(ResultRow {
-                    id: r.get(0)?,
-                    run_id: r.get(1)?,
-                    test_key: r.get(2)?,
-                    configuration_label: r.get(3)?,
-                    attempt: r.get(4)?,
-                    status: r.get(5)?,
-                    started_at: r.get(6)?,
-                    finished_at: r.get(7)?,
-                    shard_imported_at: r.get(8)?,
-                    hlc: r.get(9)?,
-                    configuration_id: r.get(10)?,
-                    case_id: r.get(11)?,
-                    flow_id: r.get(12)?,
-                    row_id: r.get(13)?,
-                })
-            })
-            .map_err(err)?;
-        rows.collect::<rusqlite::Result<_>>().map_err(err)?
-    };
+    let rows = cycle_results(conn, &cycle.id)?;
     let attempts: Vec<progress::CycleAttempt> = rows
         .iter()
         .map(|r| progress::CycleAttempt {
@@ -2240,7 +2371,7 @@ pub(crate) fn write_doc(
                     ends_on, status, data, created_by, updated_by, created_at, updated_at, revision,
                     deleted_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?17,
-                    datetime('now'), datetime('now'), ?18, NULL)
+                    coalesce(?19, datetime('now')), datetime('now'), ?18, NULL)
              ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id, cycle_key=excluded.cycle_key,
                     title=excluded.title, description=excluded.description,
                     test_plan_id=excluded.test_plan_id, milestone=excluded.milestone,
@@ -2270,6 +2401,9 @@ pub(crate) fn write_doc(
                 pobj(p, "data"),
                 user,
                 revision,
+                // The sender's creation time, so the list orders cycles alike
+                // on every device (and like the web).
+                ps(p, "createdAt"),
             ],
         ),
         CYCLE_ITEM => conn.execute(
@@ -2537,17 +2671,20 @@ pub fn cycle_execute(
     db: State<Db>,
     cycle_id: String,
     input: ExecuteInput,
-) -> Result<Vec<runs::Run>, String> {
-    let ids = db.with_tx(|conn| execute(conn, &cycle_id, &input))?;
+) -> Result<ExecuteResult, String> {
+    let executed = db.with_tx(|conn| execute(conn, &cycle_id, &input))?;
     db.persist()?;
     db.with_conn(|conn| {
-        let mut out = Vec::new();
-        for id in &ids {
+        let mut runs_out = Vec::new();
+        for id in &executed.run_ids {
             if let Some(r) = runs::get_run(conn, id, &input.user_id)? {
-                out.push(r);
+                runs_out.push(r);
             }
         }
-        Ok(out)
+        Ok(ExecuteResult {
+            runs: runs_out,
+            missing_configurations: executed.missing,
+        })
     })
 }
 

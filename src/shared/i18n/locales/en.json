@@ -2064,7 +2064,8 @@
       "addedToast_other": "{{count}} cases added.",
       "skippedToast_one": "{{count}} was already in the cycle.",
       "skippedToast_other": "{{count}} were already in the cycle.",
-      "notApprovedToast": "Not approved: {{keys}}."
+      "notApprovedToast": "Not approved: {{keys}}.",
+      "overlappingToast": "Already covered by another item of the cycle: {{keys}}."
     },
     "filter": {
       "action": "Add by filter",
@@ -2097,7 +2098,10 @@
       "running": "Creating…",
       "doneToast_one": "Run created: {{keys}}",
       "doneToast_other": "{{count}} runs created: {{keys}}",
-      "desktopOnly": "Runs are created from the desktop app."
+      "desktopOnly": "Runs are created from the desktop app.",
+      "goneHint": "Cannot run: remove the deleted cases from the cycle ({{keys}}).",
+      "missingToast_one": "{{count}} configuration has not reached this device yet and was skipped.",
+      "missingToast_other": "{{count}} configurations have not reached this device yet and were skipped."
     },
     "runs": {
       "label": "Runs of the cycle",
@@ -2115,7 +2119,12 @@
       "closed": "The cycle is closed. Reopen it to change or run it.",
       "empty": "The cycle has no cases.",
       "noConfiguration": "Every configuration of the cycle is archived.",
-      "keyConflict": "A case of the cycle has an open key conflict. Resolve it before running."
+      "keyConflict": "{{key}} has an open key conflict. Resolve it before running.",
+      "caseGone": "The case {{key}} was deleted. Remove it from the cycle to run it.",
+      "flowGone": "The chosen flow of {{key}} no longer exists in the case. Remove that item and add it again.",
+      "rowGone": "The chosen row of {{key}} no longer exists in the case. Remove that item and add it again.",
+      "noConfigurationChosen": "Choose at least one configuration.",
+      "configurationMissing": "The cycle's configurations have not reached this device yet. Sync and try again."
     }
   }
 }

@@ -241,8 +241,21 @@ fn purge_children(
     } else {
         "x.project_id IN (SELECT id FROM projects WHERE owner_id = ?1)"
     };
+    // A cycle item still live under a cycle that is deleted or gone (another
+    // device added it while this one deleted the cycle) goes too, once it is
+    // older than the retention: an item pulled before its cycle waits.
+    let expired = if child.table == "test_cycle_items" {
+        format!(
+            "(({EXPIRED}) OR (x.deleted_at IS NULL
+               AND x.cycle_id NOT IN (SELECT id FROM test_cycles WHERE deleted_at IS NULL
+                                       OR julianday(deleted_at) > julianday('now') - ?2)
+               AND julianday(x.updated_at) <= julianday('now') - ?2))"
+        )
+    } else {
+        EXPIRED.to_string()
+    };
     let sql = format!(
-        "SELECT x.id, x.project_id, {key_col} FROM {} x WHERE {owned} AND {EXPIRED}",
+        "SELECT x.id, x.project_id, {key_col} FROM {} x WHERE {owned} AND {expired}",
         child.table
     );
     let mut purged = 0;

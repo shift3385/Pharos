@@ -19,6 +19,7 @@ export type * from "./generated/CycleProgress";
 export type * from "./generated/CycleSummary";
 export type * from "./generated/Delta";
 export type * from "./generated/ExecuteInput";
+export type * from "./generated/ExecuteResult";
 export type * from "./generated/FieldOption";
 export type * from "./generated/ImportSummary";
 export type * from "./generated/KeyBlock";

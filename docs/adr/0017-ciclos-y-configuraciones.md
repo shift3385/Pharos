@@ -221,6 +221,45 @@ por el coordinador con la recomendación de cada una):
   `cycles::item_for(conn, ciclo, caso, flujo, fila)` el elemento más
   específico (flujo y fila, luego flujo, luego el caso entero). Quien fusione
   segundo entre los pasos 6 y 9 los conecta al importador.
+Tras la revisión independiente (2026-10-31):
+
+- **Etiquetas repetidas entre equipos.** Editar una configuración solo
+  comprueba las etiquetas que **gana** (las nuevas menos las que ya tenía):
+  un choque creado sin conexión no bloquea cambiar el nombre ni los atributos
+  de ninguna de las dos.
+- **Desempate determinista.** Dos intentos iguales en tiempo, `attempt` y HLC
+  (p. ej. HLC vacío) se deciden por el **id del resultado**, dentro de un run y
+  entre runs, en Rust y en TS, sea cual sea el orden de lectura. Los vectores
+  cubren ese empate, dos `configurationLabel` de un mismo `test_key` (dos
+  tests) y años 0000–0099.
+- **Elementos que se solapan.** No se añade un elemento que cubre un test que
+  ya cubre otro del mismo caso (el caso entero y un flujo de él, un flujo y
+  una fila de él): contaría dos veces los mismos resultados. Se informa en
+  `overlapping` (clave del caso), como los no aprobados.
+- **Ejecutar.** Antes de crear nada comprueba cada elemento y el error nombra
+  el caso por su clave (`cycle-item-case-gone`, `cycle-item-flow-gone`,
+  `cycle-item-row-gone`, `case-key-conflict`); la UI deja «Ejecutar»
+  desactivado, con el motivo, mientras un elemento apunta a un caso eliminado.
+  Las configuraciones elegidas se deduplican, una lista vacía se rechaza
+  (`no-configuration-chosen`), y una configuración del ciclo que aún no ha
+  llegado a este equipo se salta y se avisa (`missingConfigurations`).
+- **Orden.** Configuraciones y elementos por posición y luego id; ciclos por
+  el `createdAt` del documento (el del equipo que lo creó, que el pull
+  conserva) y luego id, igual en el escritorio y en la web.
+- **Clonar** no copia las configuraciones archivadas.
+- **Web.** Clonar y borrar escriben **un** evento, con su resumen
+  (`clonedFrom`, `items`; `cascade.test_cycle_items`), como el escritorio. El
+  progreso de la lista lee una vez los runs, shards, reglas, resultados y
+  elementos del proyecto y los agrupa por ciclo.
+- **Purga.** Un elemento que sigue vivo bajo un ciclo borrado o ya purgado
+  (otro equipo lo añadió mientras este borraba el ciclo) se purga cuando es
+  más antiguo que la retención; uno que llegó antes que su ciclo espera.
+- **Lectura del progreso.** El progreso lee el caso, el flujo y la fila de
+  cada resultado en un solo sitio (`cycles::cycle_results`; servidor:
+  `attemptOf`), para que el cambio del
+  paso 9 (el vínculo caso/revisión sale del contenido inmutable del
+  resultado) solo toque ahí.
+
 - **UI.** No hay diseño en `docs/rediseno/` para estas pantallas: la sección
   «Ciclos» del proyecto y la tarjeta «Configuraciones» de Ajustes usan las
   primitivas existentes (tabla, píldoras, diálogos).

@@ -11,6 +11,7 @@ import type {
   CycleRun,
   CycleSummary,
   ExecuteInput,
+  ExecuteResult,
   TestCycle,
   TestCycleInput,
 } from "../model/types";
@@ -88,7 +89,7 @@ export const cycleApi = {
     isTauri()
       ? invoke("cycle_items_reorder", { cycleId, ids, userId })
       : serverApi.post(`/api/cycles/${enc(cycleId)}/items/reorder`, { ids }),
-  execute: (cycleId: string, input: ExecuteInput): Promise<CycleRun[]> =>
+  execute: (cycleId: string, input: ExecuteInput): Promise<ExecuteResult> =>
     invoke("cycle_execute", { cycleId, input }),
   runs: (cycleId: string, userId: string): Promise<CycleRun[]> =>
     isTauri() ? invoke("cycle_runs", { cycleId, userId }) : serverApi.get(`/api/cycles/${enc(cycleId)}/runs`),

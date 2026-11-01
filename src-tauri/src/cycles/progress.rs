@@ -6,15 +6,20 @@
 //!
 //! - A **cell** is one cycle item and one configuration of the cycle (or no
 //!   configuration, for a cycle without any).
-//! - Its candidates are the **final** attempts of each run
-//!   (`derive::final_attempts`) whose configuration is the cell's (the run's
-//!   own, or the result's for a run without one), whose case is the item's
-//!   case, and whose flow and row match the item's (NULL in the item = any).
+//! - Its candidates are the **final** attempts of each run whose
+//!   configuration is the cell's (the run's own, or the result's for a run
+//!   without one), whose case is the item's case, and whose flow and row match
+//!   the item's (NULL in the item = any).
 //! - Per test (`test_key` + `configuration_label`) the latest of those across
-//!   runs, ordered like the final attempt (time, `attempt`, HLC). The cell is
-//!   the worst of them (`derive::worst_status`), or `not_run`.
+//!   runs. The cell is the worst of them (`derive::worst_status`), or
+//!   `not_run`.
+//! - **Order** of attempts, within a run and across runs: time, `attempt`,
+//!   HLC (`derive::cmp_attempts`), then the result id, so two equal attempts
+//!   are decided the same way on every device and on the server, whatever
+//!   order they were read in.
 
-use std::collections::HashMap;
+use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 
 use crate::runs::derive::{self, Attempt};
 
@@ -54,10 +59,32 @@ pub struct Cell<'a> {
 impl CycleAttempt<'_> {
     fn fits(&self, item: &Item, configuration: Option<&str>) -> bool {
         self.configuration_id == configuration
-            && self.case_id == Some(item.case_id)
             && item.flow_id.map_or(true, |f| self.flow_id == Some(f))
             && item.row_id.map_or(true, |r| self.row_id == Some(r))
     }
+}
+
+/// The total order of attempts: `derive::cmp_attempts`, then the id.
+fn cmp(a: &Attempt, b: &Attempt) -> Ordering {
+    derive::cmp_attempts(a, b).then_with(|| a.id.cmp(b.id))
+}
+
+/// The latest of `attempts` under `key`, per key.
+fn latest_by<'a, 'b, K: std::hash::Hash + Eq>(
+    attempts: impl IntoIterator<Item = &'b CycleAttempt<'a>>,
+    key: impl Fn(&CycleAttempt<'a>) -> K,
+) -> HashMap<K, &'b CycleAttempt<'a>> {
+    let mut out: HashMap<K, &'b CycleAttempt<'a>> = HashMap::new();
+    for a in attempts {
+        out.entry(key(a))
+            .and_modify(|cur| {
+                if cmp(&a.attempt, &cur.attempt).is_gt() {
+                    *cur = a;
+                }
+            })
+            .or_insert(a);
+    }
+    out
 }
 
 /// Every cell of the cycle, item by item, configuration by configuration.
@@ -66,31 +93,39 @@ pub fn cells<'a>(
     configurations: &[Option<&'a str>],
     attempts: &[CycleAttempt<'a>],
 ) -> Vec<Cell<'a>> {
-    let plain: Vec<Attempt<'a>> = attempts.iter().map(|a| a.attempt.clone()).collect();
-    let finals = derive::final_attempts(&plain);
-    let finals: Vec<&CycleAttempt<'a>> = attempts
-        .iter()
-        .filter(|a| finals.contains(&a.attempt.id))
-        .collect();
+    // The final attempt of each test of each run.
+    let finals: HashSet<&str> = latest_by(attempts, |a| {
+        (
+            a.attempt.run_id,
+            a.attempt.test_key,
+            a.attempt.configuration_label.unwrap_or(""),
+        )
+    })
+    .into_values()
+    .map(|a| a.attempt.id)
+    .collect();
+    // ...indexed by case, so each item only looks at its own.
+    let mut by_case: HashMap<&str, Vec<&CycleAttempt<'a>>> = HashMap::new();
+    for a in attempts.iter().filter(|a| finals.contains(a.attempt.id)) {
+        if let Some(case) = a.case_id {
+            by_case.entry(case).or_default().push(a);
+        }
+    }
+    let none = Vec::new();
     let mut out = Vec::new();
     for item in items {
+        let own = by_case.get(item.case_id).unwrap_or(&none);
         for &configuration in configurations {
             // The latest final of each test across the cycle's runs.
-            let mut latest: HashMap<(&str, &str), &CycleAttempt<'a>> = HashMap::new();
-            for a in finals.iter().filter(|a| a.fits(item, configuration)) {
-                let test = (
-                    a.attempt.test_key,
-                    a.attempt.configuration_label.unwrap_or(""),
-                );
-                latest
-                    .entry(test)
-                    .and_modify(|cur| {
-                        if derive::cmp_attempts(&a.attempt, &cur.attempt).is_gt() {
-                            *cur = a;
-                        }
-                    })
-                    .or_insert(a);
-            }
+            let latest = latest_by(
+                own.iter().copied().filter(|a| a.fits(item, configuration)),
+                |a| {
+                    (
+                        a.attempt.test_key,
+                        a.attempt.configuration_label.unwrap_or(""),
+                    )
+                },
+            );
             // Sorted first, so a tie between two unknown statuses (both count as
             // `other`) is decided the same way on every side.
             let mut statuses: Vec<&str> = latest.values().map(|a| a.attempt.status).collect();
@@ -100,7 +135,7 @@ pub fn cells<'a>(
                 latest
                     .values()
                     .filter(|a| a.attempt.status == s)
-                    .max_by(|x, y| derive::cmp_attempts(&x.attempt, &y.attempt))
+                    .max_by(|x, y| cmp(&x.attempt, &y.attempt))
             });
             out.push(Cell {
                 item_id: item.id,

@@ -17,15 +17,22 @@ export function configurationError(t: T, e: unknown): string {
   return t("configurations.saveFailed");
 }
 
-/** A refused cycle save in words. */
+/** A refused cycle save or «Ejecutar» in words; an item that cannot be run
+ *  is named by its case key (`cycle-item-case-gone: ATS_004`). */
 export function cycleError(t: T, e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e ?? "");
+  const item = /(cycle-item-case-gone|cycle-item-flow-gone|cycle-item-row-gone|case-key-conflict):\s*(\S+)/.exec(msg);
+  if (item) {
+    const which = { "cycle-item-case-gone": "caseGone", "cycle-item-flow-gone": "flowGone", "cycle-item-row-gone": "rowGone", "case-key-conflict": "keyConflict" }[item[1]];
+    return t(`cycles.error.${which}`, { key: item[2] });
+  }
+  if (msg.includes("no-configuration-chosen")) return t("cycles.error.noConfigurationChosen");
+  if (msg.includes("configuration-missing")) return t("cycles.error.configurationMissing");
   if (msg.includes("dates-out-of-order")) return t("cycles.error.dates");
   if (msg.includes("configuration-archived")) return t("cycles.error.archivedConfiguration");
   if (msg.includes("cycle-closed")) return t("cycles.error.closed");
   if (msg.includes("cycle-empty")) return t("cycles.error.empty");
   if (msg.includes("no-configuration")) return t("cycles.error.noConfiguration");
-  if (msg.includes("case-key-conflict")) return t("cycles.error.keyConflict");
   return t("cycles.saveFailed");
 }
 
@@ -46,6 +53,7 @@ export function addedMessage(t: T, out: AddOutcome): string {
   return [
     t("cycles.add.addedToast", { count: out.added.length }),
     out.skipped ? t("cycles.add.skippedToast", { count: out.skipped }) : "",
+    out.overlapping.length ? t("cycles.add.overlappingToast", { keys: out.overlapping.join(", ") }) : "",
     out.notApproved.length ? t("cycles.add.notApprovedToast", { keys: out.notApproved.join(", ") }) : "",
   ]
     .filter(Boolean)

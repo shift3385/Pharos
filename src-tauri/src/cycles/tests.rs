@@ -412,7 +412,7 @@ fn result(c: &Connection, run_item: &str, status: &str) -> String {
 fn executing_a_cycle_creates_one_run_per_configuration_with_frozen_revisions() {
     let c = device();
     let (p, case, chrome, firefox, cycle) = setup(&c);
-    let ids = execute(&c, &cycle, &exec(None)).unwrap();
+    let ids = execute(&c, &cycle, &exec(None)).unwrap().run_ids;
     assert_eq!(ids.len(), 2);
     let runs_now = cycle_runs_of(&c, &cycle, U).unwrap();
     assert_eq!(runs_now.len(), 2);
@@ -446,7 +446,9 @@ fn executing_a_cycle_creates_one_run_per_configuration_with_frozen_revisions() {
         runs::list_items(&c, &ids[0], U).unwrap()[0].test_case_revision_id,
         frozen[0].test_case_revision_id
     );
-    let again = execute(&c, &cycle, &exec(Some(vec![chrome.clone()]))).unwrap();
+    let again = execute(&c, &cycle, &exec(Some(vec![chrome.clone()])))
+        .unwrap()
+        .run_ids;
     assert_eq!(again.len(), 1);
     assert_ne!(
         runs::list_items(&c, &again[0], U).unwrap()[0].test_case_revision_id,
@@ -457,7 +459,7 @@ fn executing_a_cycle_creates_one_run_per_configuration_with_frozen_revisions() {
     let other = config(&c, &p, "Safari", &["webkit"]);
     assert!(execute(&c, &cycle, &exec(Some(vec![other]))).is_err());
     set_configuration_archived(&c, &firefox, true, U).unwrap();
-    assert_eq!(execute(&c, &cycle, &exec(None)).unwrap().len(), 1);
+    assert_eq!(execute(&c, &cycle, &exec(None)).unwrap().run_ids.len(), 1);
 }
 
 #[test]
@@ -482,7 +484,7 @@ fn execute_is_all_or_nothing_and_needs_items() {
     assert_eq!(count(&c, "SELECT count(*) FROM runs"), 0);
     // Without configurations: one run without one.
     c.execute("DELETE FROM key_conflicts", []).unwrap();
-    let ids = execute(&c, &cycle, &exec(None)).unwrap();
+    let ids = execute(&c, &cycle, &exec(None)).unwrap().run_ids;
     assert_eq!(ids.len(), 1);
     assert_eq!(
         runs::get_run(&c, &ids[0], U)
@@ -503,7 +505,7 @@ fn progress_is_the_latest_final_result_per_item_and_configuration() {
     assert_eq!(empty.cells.len(), 4);
     assert!(empty.cells.iter().all(|x| x.status == "not_run"));
     assert_eq!((empty.summary.total, empty.summary.executed), (4, 0));
-    let ids = execute(&c, &cycle, &exec(None)).unwrap();
+    let ids = execute(&c, &cycle, &exec(None)).unwrap().run_ids;
     for id in &ids {
         let run = runs::get_run(&c, id, U).unwrap().unwrap();
         let items = runs::list_items(&c, id, U).unwrap();
@@ -613,7 +615,7 @@ fn a_run_links_only_to_a_live_open_cycle_and_a_configuration_of_its_project() {
 fn deleting_a_cycle_keeps_its_runs_and_the_purge_retires_its_key() {
     let c = device();
     let (p, _, _, _, cycle) = setup(&c);
-    let ids = execute(&c, &cycle, &exec(None)).unwrap();
+    let ids = execute(&c, &cycle, &exec(None)).unwrap().run_ids;
     delete_cycle(&c, &cycle, U).unwrap();
     assert!(get_cycle(&c, &cycle, U).unwrap().is_none());
     assert_eq!(
@@ -900,4 +902,243 @@ fn a_cursor_stored_before_the_cycle_entities_restarts_at_zero() {
     .unwrap();
     assert_eq!(sync::cursor_get(&c, U).unwrap(), "0");
     let _ = oplog::SYNCED;
+}
+
+// ---- review: labels, execute errors, overlap, order, purge --------------------
+
+fn config_update(c: &Connection, id: &str, v: Value) -> Result<(), String> {
+    let mut v = v;
+    v["userId"] = json!(U);
+    let input: ConfigurationInput = serde_json::from_value(v).unwrap();
+    update_configuration(c, id, &input)
+}
+
+fn data_of(c: &Connection, id: &str) -> Value {
+    let s: String = c
+        .query_row("SELECT data FROM test_cases WHERE id = ?1", [id], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    serde_json::from_str(&s).unwrap()
+}
+
+fn key_of(c: &Connection, id: &str) -> String {
+    c.query_row(
+        "SELECT scenario_id FROM test_cases WHERE id = ?1",
+        [id],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_label_clash_from_two_devices_does_not_block_editing_either_configuration() {
+    let c = device();
+    let p = new_project(&c);
+    let a = config(&c, &p, "Chrome A", &["chromium"]);
+    // As a pull from another device would leave it: B has the same label.
+    let b = config(&c, &p, "Chrome B", &["other"]);
+    c.execute(
+        "UPDATE configurations SET match_labels = '[\"chromium\"]' WHERE id = ?1",
+        [&b],
+    )
+    .unwrap();
+    // Renaming either, or keeping its labels, works...
+    config_update(&c, &a, json!({"name": "Chrome A (Win)"})).unwrap();
+    config_update(
+        &c,
+        &b,
+        json!({"name": "Chrome B (Mac)", "matchLabels": ["chromium"]}),
+    )
+    .unwrap();
+    // ...gaining another taken label does not.
+    config(&c, &p, "Edge", &["msedge"]);
+    assert!(
+        config_update(&c, &a, json!({"matchLabels": ["chromium", "MSEDGE"]}))
+            .unwrap_err()
+            .starts_with("match-label-taken")
+    );
+}
+
+#[test]
+fn execute_names_the_case_that_cannot_be_frozen() {
+    let c = device();
+    let (_, case, _, _, cycle) = setup(&c);
+    let key = key_of(&c, &case);
+    c.execute(
+        "UPDATE test_cases SET deleted_at = datetime('now') WHERE id = ?1",
+        [&case],
+    )
+    .unwrap();
+    assert_eq!(
+        in_tx(&c, |tx| execute(tx, &cycle, &exec(None))).unwrap_err(),
+        format!("cycle-item-case-gone: {key}")
+    );
+    assert_eq!(count(&c, "SELECT count(*) FROM runs"), 0);
+}
+
+#[test]
+fn execute_reports_a_row_gone_by_case_key() {
+    let c = device();
+    let (p, _, _, _, cycle) = setup(&c);
+    let outline = new_case(
+        &c,
+        &p,
+        json!({"data": {"steps": ["pay <n>"], "examples": {"columns": ["n"], "rows": [["1"], ["2"]]}}}),
+    );
+    let data = data_of(&c, &outline);
+    let row = data["examples"]["rows"][1]["id"]
+        .as_str()
+        .expect("rows have ids")
+        .to_string();
+    let mut it = item(&outline);
+    it.example_row_id = Some(row);
+    add_items(&c, &cycle, U, &[it]).unwrap();
+    // The row disappears from the case afterwards.
+    let mut edited = data.clone();
+    edited["examples"]["rows"] = json!([data["examples"]["rows"][0].clone()]);
+    c.execute(
+        "UPDATE test_cases SET data = ?2 WHERE id = ?1",
+        rusqlite::params![outline, edited.to_string()],
+    )
+    .unwrap();
+    let err = in_tx(&c, |tx| execute(tx, &cycle, &exec(None))).unwrap_err();
+    assert_eq!(
+        err,
+        format!("cycle-item-row-gone: {}", key_of(&c, &outline))
+    );
+}
+
+#[test]
+fn execute_deduplicates_configurations_refuses_an_empty_choice_and_reports_missing_ones() {
+    let c = device();
+    let (_, _, chrome, firefox, cycle) = setup(&c);
+    let ran = execute(
+        &c,
+        &cycle,
+        &exec(Some(vec![chrome.clone(), chrome.clone()])),
+    )
+    .unwrap();
+    assert_eq!(ran.run_ids.len(), 1);
+    assert_eq!(
+        execute(&c, &cycle, &exec(Some(vec![]))).unwrap_err(),
+        "no-configuration-chosen"
+    );
+    // A configuration the cycle has but this device has not pulled yet.
+    c.execute("DELETE FROM configurations WHERE id = ?1", [&firefox])
+        .unwrap();
+    let ran = execute(&c, &cycle, &exec(None)).unwrap();
+    assert_eq!((ran.run_ids.len(), ran.missing), (1, vec![firefox.clone()]));
+    c.execute("DELETE FROM configurations WHERE id = ?1", [&chrome])
+        .unwrap();
+    assert!(execute(&c, &cycle, &exec(None))
+        .unwrap_err()
+        .starts_with("configuration-missing"));
+}
+
+#[test]
+fn an_item_that_overlaps_another_of_the_same_case_is_left_out() {
+    let c = device();
+    let (p, _, _, _, cycle) = setup(&c);
+    let outline = new_case(
+        &c,
+        &p,
+        json!({"data": {"steps": ["pay <n>"], "examples": {"columns": ["n"], "rows": [["1"], ["2"]]}}}),
+    );
+    let row = data_of(&c, &outline)["examples"]["rows"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    // One row first, then the whole case: the whole case would cover it.
+    let mut one_row = item(&outline);
+    one_row.example_row_id = Some(row);
+    assert_eq!(
+        add_items(&c, &cycle, U, &[one_row.clone()])
+            .unwrap()
+            .added
+            .len(),
+        1
+    );
+    let out = add_items(&c, &cycle, U, &[item(&outline)]).unwrap();
+    assert_eq!(out.added.len(), 0);
+    assert_eq!(out.overlapping, vec![key_of(&c, &outline)]);
+    // The same row again is a plain repeat.
+    assert_eq!(add_items(&c, &cycle, U, &[one_row]).unwrap().skipped, 1);
+    assert_eq!(list_items(&c, &cycle, U).unwrap().len(), 2);
+}
+
+#[test]
+fn clone_leaves_out_archived_configurations() {
+    let c = device();
+    let (_, _, chrome, firefox, cycle) = setup(&c);
+    set_configuration_archived(&c, &firefox, true, U).unwrap();
+    let copy = clone_cycle(&c, &cycle, None, U).unwrap();
+    assert_eq!(
+        get_cycle(&c, &copy, U).unwrap().unwrap().configuration_ids,
+        vec![chrome]
+    );
+}
+
+#[test]
+fn cycles_list_in_the_senders_creation_order() {
+    let a = device();
+    let p = new_project(&a);
+    let old = insert_cycle(&a, &cycle_input(&p, json!({"title": "Old"}))).unwrap();
+    a.execute(
+        "UPDATE test_cycles SET created_at = '2026-01-01 00:00:00' WHERE id = ?1",
+        [&old],
+    )
+    .unwrap();
+    insert_cycle(&a, &cycle_input(&p, json!({"title": "New"}))).unwrap();
+    let b = device();
+    pull(&b, &push(&a));
+    let titles = |d: &Connection| -> Vec<String> {
+        list_cycles(d, &p, U)
+            .unwrap()
+            .into_iter()
+            .map(|s| s.cycle.title)
+            .collect()
+    };
+    assert_eq!(titles(&a), vec!["New", "Old"]);
+    // Pulled later, B still orders by A's creation time.
+    assert_eq!(titles(&b), titles(&a));
+}
+
+#[test]
+fn the_purge_removes_items_left_live_under_a_deleted_cycle() {
+    let c = device();
+    let (p, _, _, _, cycle) = setup(&c);
+    let late = new_case(&c, &p, json!({}));
+    add_items(&c, &cycle, U, &[item(&late)]).unwrap();
+    delete_cycle(&c, &cycle, U).unwrap();
+    // As if another device added an item while this one deleted the cycle.
+    c.execute(
+        "UPDATE test_cycle_items SET deleted_at = NULL WHERE test_case_id = ?1",
+        [&late],
+    )
+    .unwrap();
+    c.execute("UPDATE oplog SET synced_at = datetime('now')", [])
+        .unwrap();
+    for t in ["test_cycles", "test_cycle_items"] {
+        c.execute(
+            &format!(
+                "UPDATE {t} SET updated_at = '2000-01-01 00:00:00',
+                    deleted_at = CASE WHEN deleted_at IS NULL THEN NULL ELSE '2000-01-01 00:00:00' END"
+            ),
+            [],
+        )
+        .unwrap();
+    }
+    purge::purge(&c, U, 30).unwrap();
+    assert_eq!(count(&c, "SELECT count(*) FROM test_cycle_items"), 0);
+    // An item pulled before its cycle (recent) waits.
+    c.execute(
+        "INSERT INTO test_cycle_items (id, workspace_id, cycle_id, project_id, test_case_id,
+                created_by, updated_by, created_at, updated_at)
+         VALUES ('fresh', 'w', 'not-here-yet', ?1, ?2, ?3, ?3, datetime('now'), datetime('now'))",
+        rusqlite::params![p, late, U],
+    )
+    .unwrap();
+    purge::purge(&c, U, 30).unwrap();
+    assert_eq!(count(&c, "SELECT count(*) FROM test_cycle_items"), 1);
 }

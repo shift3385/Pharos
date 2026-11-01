@@ -200,7 +200,11 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      resultados, ni le pide bloques de claves `run` (EJE-01); sin
      `custom-fields` no le envía definiciones de campos (FLD-01), y sin
      `cycles` no le envía configuraciones, ciclos ni elementos, ni le pide
-     bloques de claves `cycle` (CYC-01).
+     bloques de claves `cycle` (CYC-01). El servidor valida
+     `test_cycle.status` con una lista cerrada (`planned`, `active`,
+     `closed`): un estado nuevo exige desplegar **antes** el servidor que lo
+     admite, porque un servidor anterior rechazaría con 400 todo el push que
+     lo lleve (el escritorio ya lee un estado desconocido como `planned`).
    - **Una funcionalidad que añade campos a una entidad existente** los
      protege de quien no la conoce: el push de un cliente sin ella conserva
      esos campos aunque envíe su estado completo (`FEATURE_KEYS` del servidor,

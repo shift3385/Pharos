@@ -3,92 +3,545 @@
   "cases": [
     {
       "name": "no results: every cell is not_run",
-      "items": [{ "id": "i1", "caseId": "c1" }],
-      "configurations": ["chrome", "firefox"],
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
+      ],
+      "configurations": [
+        "chrome",
+        "firefox"
+      ],
       "attempts": [],
       "expected": [
-        { "itemId": "i1", "configurationId": "chrome", "status": "not_run", "resultId": null },
-        { "itemId": "i1", "configurationId": "firefox", "status": "not_run", "resultId": null }
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "not_run",
+          "resultId": null
+        },
+        {
+          "itemId": "i1",
+          "configurationId": "firefox",
+          "status": "not_run",
+          "resultId": null
+        }
       ]
     },
     {
       "name": "each configuration has its own cell; a result of another case or configuration does not count",
-      "items": [{ "id": "i1", "caseId": "c1" }],
-      "configurations": ["chrome", "firefox"],
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
+      ],
+      "configurations": [
+        "chrome",
+        "firefox"
+      ],
       "attempts": [
-        { "id": "r1", "runId": "run-a", "testKey": "manual:c1/-/-", "attempt": 0, "status": "passed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000001-00000-d", "configurationId": "chrome", "caseId": "c1" },
-        { "id": "r2", "runId": "run-b", "testKey": "manual:c1/-/-", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000002-00000-d", "configurationId": "firefox", "caseId": "c1" },
-        { "id": "r3", "runId": "run-a", "testKey": "manual:c2/-/-", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000003-00000-d", "configurationId": "chrome", "caseId": "c2" }
+        {
+          "id": "r1",
+          "runId": "run-a",
+          "testKey": "manual:c1/-/-",
+          "attempt": 0,
+          "status": "passed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000001-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        },
+        {
+          "id": "r2",
+          "runId": "run-b",
+          "testKey": "manual:c1/-/-",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000002-00000-d",
+          "configurationId": "firefox",
+          "caseId": "c1"
+        },
+        {
+          "id": "r3",
+          "runId": "run-a",
+          "testKey": "manual:c2/-/-",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000003-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c2"
+        }
       ],
       "expected": [
-        { "itemId": "i1", "configurationId": "chrome", "status": "passed", "resultId": "r1" },
-        { "itemId": "i1", "configurationId": "firefox", "status": "failed", "resultId": "r2" }
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "passed",
+          "resultId": "r1"
+        },
+        {
+          "itemId": "i1",
+          "configurationId": "firefox",
+          "status": "failed",
+          "resultId": "r2"
+        }
       ]
     },
     {
       "name": "the final attempt of a run wins over an earlier one",
-      "items": [{ "id": "i1", "caseId": "c1" }],
-      "configurations": ["chrome"],
-      "attempts": [
-        { "id": "r1", "runId": "run-a", "testKey": "manual:c1/-/-", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000001-00000-d", "configurationId": "chrome", "caseId": "c1" },
-        { "id": "r2", "runId": "run-a", "testKey": "manual:c1/-/-", "attempt": 1, "status": "passed", "finishedAt": "2026-10-01T10:05:00Z", "hlc": "000000000000002-00000-d", "configurationId": "chrome", "caseId": "c1" }
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
       ],
-      "expected": [{ "itemId": "i1", "configurationId": "chrome", "status": "passed", "resultId": "r2" }]
+      "configurations": [
+        "chrome"
+      ],
+      "attempts": [
+        {
+          "id": "r1",
+          "runId": "run-a",
+          "testKey": "manual:c1/-/-",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000001-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        },
+        {
+          "id": "r2",
+          "runId": "run-a",
+          "testKey": "manual:c1/-/-",
+          "attempt": 1,
+          "status": "passed",
+          "finishedAt": "2026-10-01T10:05:00Z",
+          "hlc": "000000000000002-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "passed",
+          "resultId": "r2"
+        }
+      ]
     },
     {
       "name": "the latest final across runs wins, by time not by run order",
-      "items": [{ "id": "i1", "caseId": "c1" }],
-      "configurations": ["chrome"],
-      "attempts": [
-        { "id": "r1", "runId": "run-new", "testKey": "manual:c1/-/-", "attempt": 0, "status": "passed", "finishedAt": "2026-10-02 09:00:00", "hlc": "000000000000001-00000-d", "configurationId": "chrome", "caseId": "c1" },
-        { "id": "r2", "runId": "run-old", "testKey": "manual:c1/-/-", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T09:00:00+02:00", "hlc": "000000000000009-00000-d", "configurationId": "chrome", "caseId": "c1" }
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
       ],
-      "expected": [{ "itemId": "i1", "configurationId": "chrome", "status": "passed", "resultId": "r1" }]
+      "configurations": [
+        "chrome"
+      ],
+      "attempts": [
+        {
+          "id": "r1",
+          "runId": "run-new",
+          "testKey": "manual:c1/-/-",
+          "attempt": 0,
+          "status": "passed",
+          "finishedAt": "2026-10-02 09:00:00",
+          "hlc": "000000000000001-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        },
+        {
+          "id": "r2",
+          "runId": "run-old",
+          "testKey": "manual:c1/-/-",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T09:00:00+02:00",
+          "hlc": "000000000000009-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "passed",
+          "resultId": "r1"
+        }
+      ]
     },
     {
       "name": "an item without flow covers every flow: the worst of their latest finals",
-      "items": [{ "id": "i1", "caseId": "c1" }, { "id": "i2", "caseId": "c1", "flowId": "f2" }],
-      "configurations": ["chrome"],
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        },
+        {
+          "id": "i2",
+          "caseId": "c1",
+          "flowId": "f2"
+        }
+      ],
+      "configurations": [
+        "chrome"
+      ],
       "attempts": [
-        { "id": "r1", "runId": "run-a", "testKey": "manual:c1/f1/-", "attempt": 0, "status": "passed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000001-00000-d", "configurationId": "chrome", "caseId": "c1", "flowId": "f1" },
-        { "id": "r2", "runId": "run-a", "testKey": "manual:c1/f2/-", "attempt": 0, "status": "blocked", "finishedAt": "2026-10-01T10:01:00Z", "hlc": "000000000000002-00000-d", "configurationId": "chrome", "caseId": "c1", "flowId": "f2" }
+        {
+          "id": "r1",
+          "runId": "run-a",
+          "testKey": "manual:c1/f1/-",
+          "attempt": 0,
+          "status": "passed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000001-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1",
+          "flowId": "f1"
+        },
+        {
+          "id": "r2",
+          "runId": "run-a",
+          "testKey": "manual:c1/f2/-",
+          "attempt": 0,
+          "status": "blocked",
+          "finishedAt": "2026-10-01T10:01:00Z",
+          "hlc": "000000000000002-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1",
+          "flowId": "f2"
+        }
       ],
       "expected": [
-        { "itemId": "i1", "configurationId": "chrome", "status": "blocked", "resultId": "r2" },
-        { "itemId": "i2", "configurationId": "chrome", "status": "blocked", "resultId": "r2" }
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "blocked",
+          "resultId": "r2"
+        },
+        {
+          "itemId": "i2",
+          "configurationId": "chrome",
+          "status": "blocked",
+          "resultId": "r2"
+        }
       ]
     },
     {
       "name": "an item limited to one Outline row only counts that row",
-      "items": [{ "id": "i1", "caseId": "c1", "rowId": "row-b" }],
-      "configurations": ["chrome"],
-      "attempts": [
-        { "id": "r1", "runId": "run-a", "testKey": "manual:c1/-/row-a", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000001-00000-d", "configurationId": "chrome", "caseId": "c1", "rowId": "row-a" },
-        { "id": "r2", "runId": "run-a", "testKey": "manual:c1/-/row-b", "attempt": 0, "status": "skipped", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000002-00000-d", "configurationId": "chrome", "caseId": "c1", "rowId": "row-b" }
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1",
+          "rowId": "row-b"
+        }
       ],
-      "expected": [{ "itemId": "i1", "configurationId": "chrome", "status": "skipped", "resultId": "r2" }]
+      "configurations": [
+        "chrome"
+      ],
+      "attempts": [
+        {
+          "id": "r1",
+          "runId": "run-a",
+          "testKey": "manual:c1/-/row-a",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000001-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1",
+          "rowId": "row-a"
+        },
+        {
+          "id": "r2",
+          "runId": "run-a",
+          "testKey": "manual:c1/-/row-b",
+          "attempt": 0,
+          "status": "skipped",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000002-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1",
+          "rowId": "row-b"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "skipped",
+          "resultId": "r2"
+        }
+      ]
     },
     {
       "name": "a cycle without configurations has one column, no configuration; an unknown status counts as other",
-      "items": [{ "id": "i1", "caseId": "c1" }],
-      "configurations": [null],
-      "attempts": [
-        { "id": "r1", "runId": "run-a", "testKey": "pw:login", "attempt": 0, "status": "passed", "startedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000001-00000-d", "caseId": "c1" },
-        { "id": "r2", "runId": "run-a", "testKey": "pw:logout", "attempt": 0, "status": "pending", "shardImportedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000002-00000-d", "caseId": "c1" },
-        { "id": "r3", "runId": "run-b", "testKey": "pw:login", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T11:00:00Z", "hlc": "000000000000003-00000-d", "configurationId": "chrome", "caseId": "c1" }
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
       ],
-      "expected": [{ "itemId": "i1", "configurationId": null, "status": "pending", "resultId": "r2" }]
+      "configurations": [
+        null
+      ],
+      "attempts": [
+        {
+          "id": "r1",
+          "runId": "run-a",
+          "testKey": "pw:login",
+          "attempt": 0,
+          "status": "passed",
+          "startedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000001-00000-d",
+          "caseId": "c1"
+        },
+        {
+          "id": "r2",
+          "runId": "run-a",
+          "testKey": "pw:logout",
+          "attempt": 0,
+          "status": "pending",
+          "shardImportedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000002-00000-d",
+          "caseId": "c1"
+        },
+        {
+          "id": "r3",
+          "runId": "run-b",
+          "testKey": "pw:login",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T11:00:00Z",
+          "hlc": "000000000000003-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": null,
+          "status": "pending",
+          "resultId": "r2"
+        }
+      ]
     },
     {
       "name": "same time: the higher attempt then the higher HLC is the latest; an unparseable time counts as missing",
-      "items": [{ "id": "i1", "caseId": "c1" }],
-      "configurations": ["chrome"],
-      "attempts": [
-        { "id": "r1", "runId": "run-a", "testKey": "k", "attempt": 0, "status": "failed", "finishedAt": "2026-10-01T10:00:00Z", "hlc": "000000000000005-00000-d", "configurationId": "chrome", "caseId": "c1" },
-        { "id": "r2", "runId": "run-b", "testKey": "k", "attempt": 0, "status": "passed", "finishedAt": "2026-10-01T10:00:00.000Z", "hlc": "000000000000006-00000-d", "configurationId": "chrome", "caseId": "c1" },
-        { "id": "r3", "runId": "run-c", "testKey": "k", "attempt": 3, "status": "blocked", "finishedAt": "yesterday", "hlc": "000000000000009-00000-d", "configurationId": "chrome", "caseId": "c1" }
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
       ],
-      "expected": [{ "itemId": "i1", "configurationId": "chrome", "status": "passed", "resultId": "r2" }]
+      "configurations": [
+        "chrome"
+      ],
+      "attempts": [
+        {
+          "id": "r1",
+          "runId": "run-a",
+          "testKey": "k",
+          "attempt": 0,
+          "status": "failed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "hlc": "000000000000005-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        },
+        {
+          "id": "r2",
+          "runId": "run-b",
+          "testKey": "k",
+          "attempt": 0,
+          "status": "passed",
+          "finishedAt": "2026-10-01T10:00:00.000Z",
+          "hlc": "000000000000006-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        },
+        {
+          "id": "r3",
+          "runId": "run-c",
+          "testKey": "k",
+          "attempt": 3,
+          "status": "blocked",
+          "finishedAt": "yesterday",
+          "hlc": "000000000000009-00000-d",
+          "configurationId": "chrome",
+          "caseId": "c1"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "passed",
+          "resultId": "r2"
+        }
+      ]
+    },
+    {
+      "name": "equal attempts (same time, attempt and empty hlc) are decided by id, whatever the order they come in",
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
+      ],
+      "configurations": [
+        "chrome"
+      ],
+      "attempts": [
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r-b",
+          "runId": "run-2",
+          "testKey": "k",
+          "status": "passed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "configurationId": "chrome"
+        },
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r-a",
+          "runId": "run-1",
+          "testKey": "k",
+          "status": "failed",
+          "finishedAt": "2026-10-01T10:00:00Z",
+          "configurationId": "chrome"
+        },
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r-d",
+          "runId": "run-3",
+          "testKey": "k2",
+          "status": "blocked",
+          "configurationId": "chrome"
+        },
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r-c",
+          "runId": "run-3",
+          "testKey": "k2",
+          "status": "passed",
+          "configurationId": "chrome"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "blocked",
+          "resultId": "r-d"
+        }
+      ]
+    },
+    {
+      "name": "two configuration labels of one test key are two tests: the worst of both",
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
+      ],
+      "configurations": [
+        null
+      ],
+      "attempts": [
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r1",
+          "runId": "run-1",
+          "testKey": "pw:pay",
+          "configurationLabel": "chromium",
+          "status": "passed",
+          "finishedAt": "2026-10-01T10:00:00Z"
+        },
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r2",
+          "runId": "run-1",
+          "testKey": "pw:pay",
+          "configurationLabel": "firefox",
+          "status": "failed",
+          "finishedAt": "2026-10-01T09:00:00Z"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": null,
+          "status": "failed",
+          "resultId": "r2"
+        }
+      ]
+    },
+    {
+      "name": "years 0000 to 0099 are those years, not 1900 to 1999",
+      "items": [
+        {
+          "id": "i1",
+          "caseId": "c1"
+        }
+      ],
+      "configurations": [
+        "chrome"
+      ],
+      "attempts": [
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r1",
+          "runId": "run-1",
+          "testKey": "k",
+          "status": "failed",
+          "finishedAt": "0050-03-01T00:00:00Z",
+          "configurationId": "chrome"
+        },
+        {
+          "attempt": 0,
+          "hlc": "",
+          "caseId": "c1",
+          "id": "r2",
+          "runId": "run-2",
+          "testKey": "k",
+          "status": "passed",
+          "finishedAt": "1949-12-31T23:59:59Z",
+          "configurationId": "chrome"
+        }
+      ],
+      "expected": [
+        {
+          "itemId": "i1",
+          "configurationId": "chrome",
+          "status": "passed",
+          "resultId": "r2"
+        }
+      ]
     }
   ]
 }

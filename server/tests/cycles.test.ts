@@ -318,3 +318,110 @@ describe("cycles through the web's domain API", () => {
     expect((await push(h, [run("run3", chrome.id)])).statusCode).toBe(200);
   });
 });
+
+describe("cycles on the web: audit events and review fixes", () => {
+  const api = (token: string) => {
+    const headers = current(token);
+    return async (method: "GET" | "POST" | "PUT" | "DELETE", url: string, payload?: object) => {
+      const res = await app.inject({ method, url, headers, payload });
+      return { status: res.statusCode, body: res.body ? res.json() : null };
+    };
+  };
+  type Event = { action: string; entity: string; entityId: string; summary?: string | null; changes?: string | null };
+  const events = async () =>
+    (
+      await pool.query<{ payload: Event }>(
+        `SELECT payload FROM documents WHERE entity = 'audit_event' ORDER BY (payload->>'chainSeq')::bigint`,
+      )
+    ).rows.map((r) => r.payload);
+  const since = async (n: number) => (await events()).slice(n);
+  const summaryOf = (e: Event) => (e.summary ? JSON.parse(e.summary) : null);
+
+  it("one event per create, update, clone, delete and reorder of cycles and configurations", async () => {
+    const call = api(await tokenFor());
+    const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id as string;
+    const kase = (await call("POST", "/api/test-cases", { projectId, title: "Pay", data: { steps: ["open"] } })).body;
+
+    let n = (await events()).length;
+    const chrome = (await call("POST", "/api/configurations", { projectId, name: "Chrome", matchLabels: ["chromium"] })).body;
+    const firefox = (await call("POST", "/api/configurations", { projectId, name: "Firefox" })).body;
+    expect((await since(n)).map((e) => [e.action, e.entity])).toEqual([
+      ["create", "configuration"],
+      ["create", "configuration"],
+    ]);
+
+    n = (await events()).length;
+    await call("PUT", `/api/configurations/${chrome.id}`, { input: { name: "Chrome 130" } });
+    await call("POST", "/api/configurations/reorder", { projectId, ids: [firefox.id] });
+    const conf = await since(n);
+    expect(conf.map((e) => [e.action, e.entity])).toEqual([
+      ["update", "configuration"],
+      ["update", "project"],
+    ]);
+    expect(summaryOf(conf[1])).toEqual({ configurationsReordered: 2 });
+
+    n = (await events()).length;
+    const c = (await call("POST", "/api/cycles", { projectId, title: "R", configurationIds: [chrome.id] })).body;
+    await call("PUT", `/api/cycles/${c.id}`, { input: { build: "1.4" } });
+    await call("POST", `/api/cycles/${c.id}/items`, { items: [{ testCaseId: kase.id }] });
+    const cyc = await since(n);
+    expect(cyc.map((e) => [e.action, e.entity])).toEqual([
+      ["create", "test_cycle"],
+      ["update", "test_cycle"],
+      ["update", "test_cycle"],
+    ]);
+    expect(summaryOf(cyc[2])).toEqual({ itemsAdded: 1 });
+
+    n = (await events()).length;
+    const copy = (await call("POST", `/api/cycles/${c.id}/clone`, {})).body;
+    const cloned = await since(n);
+    expect(cloned).toHaveLength(1);
+    expect(cloned[0]).toMatchObject({ action: "create", entity: "test_cycle", entityId: copy.id });
+    expect(summaryOf(cloned[0])).toEqual({ clonedFrom: "CYC-001", items: 1 });
+
+    n = (await events()).length;
+    expect((await call("DELETE", `/api/cycles/${c.id}`)).status).toBe(204);
+    const deleted = await since(n);
+    expect(deleted).toHaveLength(1);
+    expect(deleted[0]).toMatchObject({ action: "delete", entity: "test_cycle", entityId: c.id });
+    expect(summaryOf(deleted[0])).toEqual({ cascade: { test_cycle_items: 1 } });
+  });
+
+  it("a label clash from two devices does not block editing either configuration", async () => {
+    const t = await tokenFor();
+    const h = current(t);
+    await push(h, [project(), configuration("a-cfg", { name: "A" }), configuration("b-cfg", { name: "B" })]);
+    const call = api(t);
+    expect((await call("PUT", "/api/configurations/a-cfg", { input: { name: "A (Win)" } })).status).toBe(200);
+    expect((await call("PUT", "/api/configurations/b-cfg", { input: { name: "B (Mac)", matchLabels: ["chromium"] } })).status).toBe(200);
+    await push(h, [configuration("c-cfg", { name: "Edge", matchLabels: ["msedge"] })]);
+    expect((await call("PUT", "/api/configurations/a-cfg", { input: { matchLabels: ["chromium", "MSEDGE"] } })).status).toBe(409);
+  });
+
+  it("an item that overlaps another of the same case is left out", async () => {
+    const call = api(await tokenFor());
+    const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id as string;
+    const kase = (
+      await call("POST", "/api/test-cases", {
+        projectId,
+        title: "Pay",
+        data: { steps: ["pay <n>"], examples: { columns: ["n"], rows: [["1"], ["2"]] } },
+      })
+    ).body;
+    const row = (kase.data.examples.rows[0] as { id: string }).id;
+    const c = (await call("POST", "/api/cycles", { projectId, title: "R" })).body;
+    expect((await call("POST", `/api/cycles/${c.id}/items`, { items: [{ testCaseId: kase.id, exampleRowId: row }] })).body.added).toHaveLength(1);
+    const out = (await call("POST", `/api/cycles/${c.id}/items`, { items: [{ testCaseId: kase.id }] })).body;
+    expect(out).toMatchObject({ added: [], skipped: 0, overlapping: [kase.scenarioId] });
+  });
+
+  it("clone leaves out archived configurations", async () => {
+    const call = api(await tokenFor());
+    const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id as string;
+    const a = (await call("POST", "/api/configurations", { projectId, name: "A" })).body;
+    const b = (await call("POST", "/api/configurations", { projectId, name: "B" })).body;
+    const c = (await call("POST", "/api/cycles", { projectId, title: "R", configurationIds: [a.id, b.id] })).body;
+    await call("POST", `/api/configurations/${b.id}/archive`, { archived: true });
+    expect((await call("POST", `/api/cycles/${c.id}/clone`, {})).body.configurationIds).toEqual([a.id]);
+  });
+});
