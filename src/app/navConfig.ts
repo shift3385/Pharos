@@ -1,4 +1,5 @@
 import {
+  CirclePlay,
   CircleUser,
   FileText,
   Folder,
@@ -43,6 +44,7 @@ export const PROJECT_NAV: { section: ProjectSection; icon: LucideIcon }[] = [
   { section: "cases", icon: ListChecks },
   { section: "planner", icon: SquareKanban },
   { section: "traceability", icon: GitFork },
+  { section: "runs", icon: CirclePlay },
   { section: "settings", icon: SlidersHorizontal },
 ];
 

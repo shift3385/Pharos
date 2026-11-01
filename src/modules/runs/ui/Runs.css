@@ -1,0 +1,109 @@
+/* Runs module (EJE-01, ING-02..05). Classes are local (`rn-`), colors come
+   from tokens only. No design in docs/rediseno for these screens: they reuse
+   the shared primitives and only lay them out here. */
+.rn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.rn-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.rn-mono {
+  font-family: var(--font-mono);
+}
+.rn-key {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.rn-test {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.rn-counts,
+.rn-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rn-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.rn-tray {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.rn-modal {
+  max-width: 640px;
+  width: 100%;
+}
+.rn-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.rn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.rn-grid__wide {
+  grid-column: 1 / -1;
+}
+@media (max-width: 599px) {
+  .rn-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.rn-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-ui);
+}
+.rn-preview {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.rn-warnings {
+  margin: 0;
+  padding-left: var(--space-4);
+  max-height: 160px;
+  overflow: auto;
+}
+.rn-warn {
+  font-size: var(--fs-caption);
+  color: var(--color-warning-text);
+}
+.rn-error {
+  font-size: var(--fs-caption);
+  color: var(--color-error-text);
+}
+.rn-cases {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin: var(--space-3) 0;
+  padding: var(--space-2);
+  max-height: 260px;
+  overflow: auto;
+}
+.rn-case {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-2);
+}

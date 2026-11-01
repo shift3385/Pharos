@@ -491,7 +491,8 @@
         "cases": "Casos",
         "planner": "Tablero",
         "traceability": "Trazab.",
-        "settings": "Proyecto"
+        "settings": "Proyecto",
+        "runs": "Ejec."
       }
     }
   },
@@ -522,7 +523,8 @@
       "cases": "Casos de prueba",
       "settings": "Ajustes del proyecto",
       "planner": "Planificador",
-      "traceability": "Trazabilidad"
+      "traceability": "Trazabilidad",
+      "runs": "Ejecuciones"
     },
     "deleteTitle": "Eliminar proyecto",
     "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
@@ -1875,6 +1877,173 @@
       "field": "Campo",
       "key": "Clave",
       "value": "Valor"
+    }
+  },
+  "runs": {
+    "tabs": {
+      "runs": "Runs",
+      "unlinked": "Sin vincular",
+      "unlinkedBadge": "{{count}} tests sin vincular"
+    },
+    "list": {
+      "key": "Clave",
+      "title": "Run",
+      "status": "Estado",
+      "results": "Resultados",
+      "started": "Inicio",
+      "origin": "Origen de los runs",
+      "all": "Todos",
+      "imported": "Importados",
+      "empty": "Aún no hay runs. Importa un informe con «Importar informe».",
+      "build": "build {{build}}",
+      "unlinked_one": "{{count}} sin vincular",
+      "unlinked_other": "{{count}} sin vincular",
+      "countsSr": "{{passed}} pasan, {{failed}} fallan, {{other}} otros"
+    },
+    "trigger": {
+      "manual": "Manual",
+      "local": "Local",
+      "agent": "Agente",
+      "ci": "CI",
+      "cloud": "Nube",
+      "import": "Importado"
+    },
+    "runStatus": {
+      "in_progress": "En curso",
+      "completed": "Completado",
+      "aborted": "Cancelado"
+    },
+    "status": {
+      "passed": "Pasa",
+      "failed": "Falla",
+      "blocked": "Bloqueado",
+      "skipped": "Omitido",
+      "pending": "Pendiente",
+      "other": "Otro"
+    },
+    "format": {
+      "cucumber_messages": "Cucumber Messages",
+      "ctrf": "CTRF",
+      "junit": "JUnit XML",
+      "playwright_json": "Playwright JSON",
+      "pharos_run_json": "Pharos Run JSON"
+    },
+    "field": {
+      "title": "Título del run",
+      "environment": "Entorno",
+      "build": "Build",
+      "commit": "Commit",
+      "branch": "Rama"
+    },
+    "import": {
+      "open": "Importar informe",
+      "title": "Importar un informe de resultados",
+      "intro": "Cucumber Messages (NDJSON), CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON. Los tests con la etiqueta del caso (@TC-001) se vinculan a él; el resto queda en «Sin vincular».",
+      "file": "Informe",
+      "fileHint": "El formato se detecta por el contenido. Hasta 200 MB (50 MB si es JSON o XML).",
+      "reading": "Leyendo el informe…",
+      "parsed_one": "{{count}} resultado",
+      "parsed_other": "{{count}} resultados",
+      "folder": "Carpeta de adjuntos (opcional)",
+      "folderHint": "El informe nombra capturas, vídeos o trazas por su ruta. Elige la carpeta que los contiene (p. ej. test-results) para guardarlos como evidencias.",
+      "target": "Destino",
+      "newRun": "Run nuevo",
+      "existingRun": "Run abierto",
+      "noOpenRuns": "No hay runs en curso en este proyecto",
+      "run": "Run",
+      "keepOpen": "Dejar el run abierto para importar más shards",
+      "shardIndex": "Shard",
+      "shardTotal": "de",
+      "shardHint": "Se rellena si el informe lo trae (CTRF shardId, Playwright --shard).",
+      "preview": "Vista previa",
+      "previewSummary": "{{tests}} tests, {{results}} intentos: {{linked}} se vinculan a un caso y {{unlinked}} quedan sin vincular.",
+      "attachments_one": "{{count}} adjunto",
+      "attachments_other": "{{count}} adjuntos",
+      "warnings_one": "{{count}} aviso",
+      "warnings_other": "{{count}} avisos",
+      "moreWarnings_one": "y {{count}} aviso más",
+      "moreWarnings_other": "y {{count}} avisos más",
+      "alreadyInRun": "Este archivo ya está importado en {{run}}: no se escribirá nada. Puedes completar los adjuntos que falten.",
+      "duplicate": "Este archivo ya se importó en {{run}}. Importarlo de nuevo como un run nuevo",
+      "confirm": "Importar",
+      "completeAttachments": "Completar adjuntos",
+      "importing": "Importando…",
+      "attaching": "Guardando adjuntos: {{done}} de {{total}}…",
+      "done": {
+        "summary_one": "{{run}}: {{count}} resultado importado, {{unlinked}} sin vincular.",
+        "summary_other": "{{run}}: {{count}} resultados importados, {{unlinked}} sin vincular.",
+        "already": "El archivo ya estaba en {{run}}: no se ha duplicado nada.",
+        "attached_one": "{{count}} adjunto guardado como evidencia.",
+        "attached_other": "{{count}} adjuntos guardados como evidencia.",
+        "missing_one": "{{count}} adjunto no se encontró en la carpeta elegida.",
+        "missing_other": "{{count}} adjuntos no se encontraron en la carpeta elegida.",
+        "failed_one": "{{count}} adjunto no se pudo guardar.",
+        "failed_other": "{{count}} adjuntos no se pudieron guardar."
+      },
+      "warning": {
+        "two-case-tags": "Dos etiquetas de caso ({{detail}}): queda sin vincular.",
+        "unknown-case": "La etiqueta {{detail}} no es un caso de este proyecto: queda sin vincular.",
+        "case-key-conflict": "El caso {{detail}} tiene un conflicto de clave abierto: queda sin vincular.",
+        "row-not-found": "La fila {{detail}} del Outline no existe en la revisión del caso.",
+        "duplicate-test": "Dos tests con la misma identidad: el repetido se numera.",
+        "key-too-long": "Identidad del test demasiado larga: se acorta.",
+        "text-truncated": "Mensajes o pasos demasiado largos: se recortan.",
+        "result-too-large": "Resultado demasiado grande para sincronizarse: no se importa.",
+        "merged-without-shard": "Informe fusionado (merge-reports): ha perdido el shard y su duración es poco fiable. Mejor importa el informe de cada shard.",
+        "no-results": "El informe no tiene resultados.",
+        "attachment-url": "Un adjunto es una URL: no se descarga."
+      },
+      "error": {
+        "unknown-format": "No se reconoce el formato del archivo.",
+        "cucumber-json": "Es un Cucumber JSON: no se importa. Usa Cucumber Messages (--format message), que conserva reintentos y filas.",
+        "invalid-json": "El archivo no es un JSON válido.",
+        "invalid-xml": "El archivo no es un XML válido.",
+        "invalid-pharos-run": "El Pharos Run JSON no es válido.",
+        "too-large": "El informe es demasiado grande.",
+        "unsupported-version": "Versión de Pharos Run JSON no compatible: actualiza Pharos.",
+        "invalid-report": "El informe no tiene la forma esperada.",
+        "steps-too-many": "Un resultado tiene más de 5000 pasos.",
+        "already-imported": "Este archivo ya se importó en {{detail}}.",
+        "run-closed": "El run está cerrado: elige uno en curso o crea uno nuevo.",
+        "report-changed": "El archivo cambió mientras se importaba. Vuelve a elegirlo.",
+        "evidence-too-large": "El archivo supera los 200 MB.",
+        "generic": "No se pudo importar: {{detail}}"
+      }
+    },
+    "tray": {
+      "title": "Tests sin vincular",
+      "intro": "Tests importados sin un caso propio. Al vincular uno, todos sus resultados pasados y futuros cuentan para ese caso; los resultados no cambian.",
+      "filter": "Mostrar",
+      "filterUnlinked": "Sin vincular",
+      "filterMapped": "Vinculados a mano",
+      "filterAll": "Todos",
+      "test": "Test",
+      "why": "Motivo",
+      "lastStatus": "Último estado",
+      "results": "Resultados",
+      "lastRun": "Último run",
+      "actions": "Acciones",
+      "linkAction": "Vincular…",
+      "unlink": "Desvincular",
+      "mappedTo": "Vinculado a {{key}}",
+      "linkTitle": "Vincular a un caso",
+      "search": "Buscar caso por clave o título",
+      "cases": "Casos del proyecto",
+      "noCases": "Ningún caso coincide.",
+      "link": "Vincular",
+      "linkedToast": "Test vinculado: sus resultados cuentan para el caso.",
+      "unlinkedToast": "Vínculo retirado.",
+      "reason": {
+        "no-tag": "Sin etiqueta de caso",
+        "two-case-tags": "Dos etiquetas de caso",
+        "unknown-case": "{{key}} no es un caso del proyecto",
+        "case-key-conflict": "Caso con conflicto de clave"
+      },
+      "empty": {
+        "unlinked": "No hay tests sin vincular.",
+        "mapped": "Ningún test vinculado a mano.",
+        "all": "Ningún test importado sin caso."
+      }
     }
   }
 }
