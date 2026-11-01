@@ -6,6 +6,7 @@ import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { Menu, MenuItem, MenuSeparator } from "@shared/ui/Menu";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { usePopover } from "@shared/ui/usePopover";
 import { useToast } from "@shared/ui/Toast";
 import { cycleApi } from "../api/cycleApi";
@@ -153,6 +154,8 @@ export function CycleDetail({
   const [cases, setCases] = useState<CaseOption[] | null>(null);
   const [error, setError] = useState("");
   const more = usePopover("menu");
+  // The assignee column shows on desktop only; on a tablet it goes under the title.
+  const view = useBreakpoint();
 
   const notify = useRef({ toast, t });
   notify.current = { toast, t };
@@ -272,6 +275,7 @@ export function CycleDetail({
                 .join(" · ")}
             </span>
           )}
+          {view === "tablet" && i.assignee && <span className="cy-cell-title__meta">{i.assignee}</span>}
           {i.caseStatus && i.caseStatus !== "approved" && (
             <span className="cy-row__warn">
               <AlertTriangle size={13} aria-hidden="true" />
@@ -285,7 +289,7 @@ export function CycleDetail({
       id: "assignee",
       header: t("cycles.items.assignee"),
       width: "minmax(120px,1fr)",
-      minView: "tablet",
+      minView: "desktop",
       cell: (i) => (
         <AssigneeInput
           item={i}
@@ -488,7 +492,7 @@ export function CycleDetail({
             columns={itemColumns}
             getRowId={(i) => i.id}
             label={t("cycles.items.label")}
-            minWidth={560 + columnsOf.length * 110}
+            minWidth={400 + columnsOf.length * 110}
             empty={<p className="cy-empty">{t("cycles.items.empty")}</p>}
             mobileCard={(i) => (
               <div className="cy-mcard">
@@ -505,6 +509,12 @@ export function CycleDetail({
                 </div>
                 <span className="cy-mcard__title">{i.caseTitle}</span>
                 {i.assignee && <span className="cy-cell-title__meta">{i.assignee}</span>}
+                {i.caseStatus && i.caseStatus !== "approved" && (
+                  <span className="cy-row__warn">
+                    <AlertTriangle size={13} aria-hidden="true" />
+                    {t("cycles.notApproved")}
+                  </span>
+                )}
                 <span className="cy-mcard__cells">
                   {columnsOf.map((col) => {
                     const status = cellStatus(cell(i.id, col.id)?.status ?? "not_run");

@@ -2003,7 +2003,7 @@
     "meta": {
       "build": "Build {{build}}",
       "environment": "Environment {{environment}}",
-      "milestone": "Milestone {{milestone}}",
+      "milestone": "{{milestone}}",
       "sprint": "{{sprint}}"
     },
     "col": {

@@ -134,7 +134,7 @@ export function CyclesPage({
     {
       id: "title",
       header: t("cycles.col.title"),
-      width: "minmax(0,2fr)",
+      width: "minmax(180px,2fr)",
       cell: (c) => (
         <span className="cy-cell-title">
           <span className="cy-cell-title__main">{c.title}</span>
@@ -168,14 +168,14 @@ export function CyclesPage({
     {
       id: "progress",
       header: t("cycles.col.progress"),
-      width: "minmax(160px,1fr)",
+      width: "minmax(132px,1fr)",
       cell: (c) => <ProgressBar summary={c.progress} />,
     },
     {
       id: "runs",
       header: t("cycles.col.runs"),
-      width: "80px",
-      minView: "tablet",
+      width: "64px",
+      minView: "desktop",
       align: "end",
       cell: (c) => c.runs,
     },
@@ -220,7 +220,7 @@ export function CyclesPage({
           columns={columns}
           getRowId={(c) => c.id}
           label={t("cycles.listLabel")}
-          minWidth={720}
+          minWidth={640}
           empty={
             <p className="cy-empty">
               <CalendarRange size={18} aria-hidden="true" />
