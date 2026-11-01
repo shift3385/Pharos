@@ -75,10 +75,17 @@ export function UnlinkedTray({
     );
   const columns: DataColumn<UnlinkedTest>[] = [
     { id: "name", header: t("runs.tray.test"), cell: name },
-    { id: "why", header: t("runs.tray.why"), cell: why, minView: "tablet" },
+    {
+      id: "why",
+      header: t("runs.tray.why"),
+      cell: why,
+      minView: "tablet",
+      width: "200px",
+    },
     {
       id: "status",
       header: t("runs.tray.lastStatus"),
+      width: "128px",
       cell: (x) => (
         <StatusPill tone={statusTone(x.lastStatus)} dot>
           {t(`runs.status.${x.lastStatus}`)}
@@ -90,6 +97,7 @@ export function UnlinkedTray({
       header: t("runs.tray.results"),
       cell: (x) => x.results,
       align: "end",
+      width: "104px",
       minView: "tablet",
     },
     {
@@ -97,12 +105,14 @@ export function UnlinkedTray({
       header: t("runs.tray.lastRun"),
       cell: (x) => <span className="rn-mono">{x.lastRunKey}</span>,
       minView: "desktop",
+      width: "104px",
     },
     {
       id: "action",
       header: <span className="sr-only">{t("runs.tray.actions")}</span>,
       cell: action,
       align: "end",
+      width: "128px",
     },
   ];
 

@@ -235,8 +235,11 @@ export function RunsPage({
               empty={<p className="tp-field__hint">{t("runs.list.empty")}</p>}
               mobileCard={(r) => (
                 <div className="rn-card">
-                  <span className="rn-mono">{r.runKey}</span>{" "}
-                  <span>{r.title}</span>
+                  <div className="rn-card__row">
+                    <span className="rn-mono">{r.runKey}</span>
+                    {columns[2].cell(r)}
+                  </div>
+                  {columns[1].cell(r)}
                   <div className="rn-card__row">{columns[3].cell(r)}</div>
                 </div>
               )}

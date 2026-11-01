@@ -44,6 +44,9 @@
 .rn-modal {
   max-width: 640px;
   width: 100%;
+  /* The import form and its preview can be taller than the window. */
+  max-height: calc(100dvh - var(--space-6));
+  overflow-y: auto;
 }
 .rn-form {
   display: flex;
@@ -55,6 +58,8 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
+  /* A field with a hint stays level with its neighbour. */
+  align-items: end;
 }
 .rn-grid__wide {
   grid-column: 1 / -1;
