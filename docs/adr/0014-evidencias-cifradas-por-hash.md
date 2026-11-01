@@ -272,5 +272,6 @@ sobre lo decidido, sin cambiar la decisión:
   `body` de Playwright) o nombra por ruta (CTRF, Playwright, JUnit; se buscan
   en una carpeta que elige el usuario) se guardan después de importar, uno a
   uno (`run_import_attach`, idempotente por propietario y contenido), como
-  adjuntos de su resultado o de su paso (`result`, `step_result`). Pharos
+  adjuntos de su resultado o de su paso (`result`, `step_result`), con un
+  evento `link` de auditoría por adjunto nuevo, como en el planificador. Pharos
   nunca lee una ruta del informe por su cuenta.
