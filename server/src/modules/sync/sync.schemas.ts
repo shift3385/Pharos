@@ -110,6 +110,7 @@ const IMPORTED_RESULT_DERIVED = [
   "flowId",
   "exampleRowId",
   "runItemId",
+  "configurationId",
 ] as const;
 const id = z.string().min(1).max(200);
 
@@ -129,6 +130,8 @@ const EXECUTION_PAYLOADS: Partial<Record<string, z.ZodType>> = {
     runId: id,
     sourceFormat: z.string().min(1).max(100),
     sourceFileSha256: z.string().regex(/^[0-9a-f]{64}$/i),
+    // The parsers' version: part of the shard's content and id (ADR-0013).
+    normalizerVersion: z.number().int().nonnegative().optional(),
   }),
   result: z
     .looseObject({

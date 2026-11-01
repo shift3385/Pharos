@@ -6,18 +6,21 @@
 //! is derived here, from synced data, so every device with the same data
 //! derives the same link, and reading never writes.
 //!
-//! - **Case.** A live later link (`unlinked_mapping`) wins. Else the tags
-//!   (with or without `@`) and the `caseKey` are matched against every key a
-//!   case of the project ever had: its current `scenario_id` and those of its
-//!   synced revisions, so a prefix change never unlinks an old import. One
-//!   case links; two (now or by an older key), or a case and a key that only
-//!   looks like one, never do (`two-case-tags`); a key-shaped tag of no case is
-//!   `unknown-case`; an open key conflict on the case, `case-key-conflict`. A
-//!   deleted case still links, marked `case_deleted` (it is not in the tray).
+//! - **Case.** A live later link (`unlinked_mapping`) wins. Else each tag
+//!   (with or without `@`) and the `caseKey` name the live case wearing that
+//!   key now; only when none does, the cases that wore it before (keys of
+//!   their revisions every device has, and a deleted case's last key). One
+//!   case links; two (two former wearers and none now, or tags of different
+//!   cases), or a case and a key that only looks like one, never do
+//!   (`two-case-tags`); a key-shaped tag of no case is `unknown-case`; an
+//!   open key conflict on the case, `case-key-conflict` (local to this
+//!   device, like the conflict). A deleted case still links, marked
+//!   `case_deleted` (it is not in the tray).
 //! - **Revision.** The run item of the same run, case, flow and row (its
-//!   frozen revision); else the highest synced revision written at or before
-//!   the run's start; else the oldest one. Never the current state, so a later
-//!   edit never moves a result.
+//!   frozen revision); else, among the revisions every device has (not
+//!   `local_only`), the highest written at or before the run's `started_at`,
+//!   then the latest written, then the id; else the oldest one. Never the
+//!   current state, so a later edit never moves a result.
 //! - **Flow, row, steps.** The flow named like the scenario; the Outline row
 //!   by index; a `step_id` only when the text matches the revision's step at
 //!   that position (`<param>` matches any value); a report without the
@@ -81,6 +84,8 @@ pub(crate) struct Link {
     pub reason: Option<&'static str>,
     /// The case is deleted: shown as «caso borrado», never in the tray.
     pub case_deleted: bool,
+    /// The configuration of the result's `configurationLabel` (step 6).
+    pub configuration_id: Option<String>,
     /// What the preview warns about: `(code, detail)`.
     pub warnings: Vec<(&'static str, String)>,
 }
@@ -99,6 +104,7 @@ impl Link {
             step_ids: vec![None; steps],
             reason,
             case_deleted: false,
+            configuration_id: None,
             warnings: Vec::new(),
         }
     }
@@ -209,6 +215,15 @@ impl FlowSteps {
     }
 }
 
+/// SQL condition on a result `x`: it is not from a shard superseded by a
+/// shard of the same run and file read by a newer normalizer (ADR-0013). A
+/// manual result has no shard and always counts.
+pub(crate) const CURRENT_SHARD: &str = "(x.shard_id IS NULL OR NOT EXISTS (
+    SELECT 1 FROM run_shards o JOIN run_shards n
+        ON n.run_id = o.run_id AND n.source_file_sha256 = o.source_file_sha256
+       AND n.normalizer_version > o.normalizer_version
+     WHERE o.id = x.shard_id))";
+
 /// What the resolver knows of one case of the project.
 struct CaseInfo {
     deleted: bool,
@@ -229,9 +244,11 @@ pub(crate) struct Resolver<'c> {
     conn: &'c Connection,
     prefix: Regex,
     cases: HashMap<String, CaseInfo>,
-    /// Every key a case had: its current `scenario_id` and those of its
-    /// synced revisions (a prefix change keeps the old ones).
-    keys: HashMap<String, Vec<String>>,
+    /// The live cases wearing each key now (their current `scenario_id`).
+    current: HashMap<String, Vec<String>>,
+    /// The cases that wore each key before: the keys of their synced
+    /// revisions, and a deleted case's last key (a prefix change keeps them).
+    historical: HashMap<String, Vec<String>>,
     revisions: HashMap<String, Vec<RevisionRow>>,
     /// `test_key` → case of the live later link (ING-05).
     mappings: HashMap<String, String>,
@@ -257,13 +274,14 @@ impl<'c> Resolver<'c> {
         let prefix = Regex::new(&format!("^{}[0-9]{{1,9}}$", regex::escape(&prefix)))
             .map_err(|e| e.to_string())?;
         let mut cases = HashMap::new();
-        let mut keys: HashMap<String, Vec<String>> = HashMap::new();
-        let mut add_key = |key: String, case: &str| {
-            let list = keys.entry(key).or_default();
+        let mut current: HashMap<String, Vec<String>> = HashMap::new();
+        let mut historical: HashMap<String, Vec<String>> = HashMap::new();
+        fn add(map: &mut HashMap<String, Vec<String>>, key: String, case: &str) {
+            let list = map.entry(key).or_default();
             if !list.iter().any(|c| c == case) {
                 list.push(case.to_string());
             }
-        };
+        }
         each(
             conn,
             "SELECT c.id, c.scenario_id, c.deleted_at IS NOT NULL,
@@ -274,13 +292,22 @@ impl<'c> Resolver<'c> {
             |r| {
                 let id: String = r.get(0)?;
                 let key: Option<String> = r.get(1)?;
+                let deleted: bool = r.get(2)?;
                 if let Some(k) = key.filter(|k| !k.is_empty()) {
-                    add_key(k, &id);
+                    add(
+                        if deleted {
+                            &mut historical
+                        } else {
+                            &mut current
+                        },
+                        k,
+                        &id,
+                    );
                 }
                 cases.insert(
                     id,
                     CaseInfo {
-                        deleted: r.get(2)?,
+                        deleted,
                         key_conflict: r.get(3)?,
                     },
                 );
@@ -288,18 +315,20 @@ impl<'c> Resolver<'c> {
             },
         )?;
         let mut revisions: HashMap<String, Vec<RevisionRow>> = HashMap::new();
-        // Only synced revisions (content-addressed): every device has them.
+        // Only revisions every device has: content-addressed and not written
+        // here without a push (`local_only`: a pulled state or a provisional
+        // key, until the same row arrives by pull).
         each(
             conn,
             "SELECT r.test_case_id, r.id, r.revision, r.created_at, r.scenario_id
                FROM test_case_revisions r JOIN test_cases c ON c.id = r.test_case_id
-              WHERE c.project_id = ?1 AND r.content_sha256 IS NOT NULL",
+              WHERE c.project_id = ?1 AND r.content_sha256 IS NOT NULL AND r.local_only = 0",
             project_id,
             |r| {
                 let case: String = r.get(0)?;
                 let key: Option<String> = r.get(4)?;
                 if let Some(k) = key.filter(|k| !k.is_empty()) {
-                    add_key(k, &case);
+                    add(&mut historical, k, &case);
                 }
                 let created: Option<String> = r.get(3)?;
                 revisions.entry(case).or_default().push((
@@ -332,7 +361,8 @@ impl<'c> Resolver<'c> {
         let mut run_starts = HashMap::new();
         each(
             conn,
-            "SELECT id, coalesce(started_at, created_at) FROM runs WHERE project_id = ?1",
+            // The start only: `created_at` is when this device stored it.
+            "SELECT id, started_at FROM runs WHERE project_id = ?1",
             project_id,
             |r| {
                 let at: Option<String> = r.get(1)?;
@@ -361,7 +391,8 @@ impl<'c> Resolver<'c> {
             conn,
             prefix,
             cases,
-            keys,
+            current,
+            historical,
             revisions,
             mappings,
             run_starts,
@@ -415,24 +446,28 @@ impl<'c> Resolver<'c> {
         Ok(&self.flows[&key])
     }
 
-    /// The synced revision of a case current at `at`: the highest revision
-    /// written at or before it, else the oldest one (the case was edited only
-    /// after the run started). Ties by id, so every device picks the same.
-    /// Never the current state: an edit after the run never moves a result.
+    /// The synced revision of a case current at `at`: among those written at
+    /// or before it, the highest revision, then (two rows of one number) the
+    /// latest written, then the id; with none, the oldest one (the case was
+    /// edited only after the run started). Never the current state: an edit
+    /// after the run never moves a result. `created_at` has second precision
+    /// (SQLite `datetime('now')`): a revision written in the second the run
+    /// starts counts as before it.
     fn revision_at(&self, case_id: &str, at: Option<i64>) -> Option<(String, i64)> {
         let list = self.revisions.get(case_id)?;
         let before = at.and_then(|at| {
             list.iter()
-                .rev()
-                .find(|(_, _, created)| created.is_some_and(|c| c <= at))
+                .filter(|(_, _, created)| created.is_some_and(|c| c <= at))
+                .max_by(|a, b| (a.1, a.2, &a.0).cmp(&(b.1, b.2, &b.0)))
         });
         before
             .or_else(|| list.first())
             .map(|(id, n, _)| (id.clone(), *n))
     }
 
-    /// The cases a test's tags (with or without `@`) and `caseKey` name, by
-    /// any key a case ever had, and the tags that only look like a key.
+    /// The cases a test's tags (with or without `@`) and `caseKey` name, and
+    /// the tags that only look like a key. A tag names the live cases wearing
+    /// it now; only when none does, the cases that wore it before.
     fn cases_of(&self, f: &Facts) -> (Vec<String>, Vec<String>) {
         let mut found: Vec<String> = Vec::new();
         let mut unknown = Vec::new();
@@ -442,7 +477,7 @@ impl<'c> Resolver<'c> {
             .map(|t| t.trim().trim_start_matches('@'))
             .chain(f.case_key.map(str::trim));
         for k in named.filter(|k| !k.is_empty()) {
-            match self.keys.get(k) {
+            match self.current.get(k).or_else(|| self.historical.get(k)) {
                 Some(cases) => found.extend(cases.iter().cloned()),
                 None if self.prefix.is_match(k) => unknown.push(k.to_string()),
                 None => {}
@@ -469,8 +504,8 @@ impl<'c> Resolver<'c> {
                 }
                 Ok(case.clone())
             }
-            // Two cases (now or by an older key), or a case and an unknown
-            // key: never a guess.
+            // Two cases (two wearing the key now, or none now and two
+            // before), or a case and an unknown key: never a guess.
             _ => Err((TWO_CASE_TAGS, [found, unknown].concat().join(", "))),
         }
     }
@@ -504,7 +539,11 @@ impl<'c> Resolver<'c> {
         };
         link.case_deleted = self.cases.get(&case).is_some_and(|c| c.deleted);
         let at = self.run_starts.get(run_id).copied();
-        let Some((mut revision_id, mut case_revision)) = self.revision_at(&case, at) else {
+        // TODO(step 6, after step 8 lands): `link.configuration_id` from the
+        // result's `configurationLabel` (`cycles::match_configuration`) and the
+        // cycle item (`cycles::item_for`), here and never in the stored
+        // result (the server refuses an imported `configurationId`).
+        let Some((mut revision_id, case_revision)) = self.revision_at(&case, at) else {
             link.warnings.push(("no-revision", case.clone()));
             link.case_id = Some(case);
             return Ok(link);
@@ -515,6 +554,7 @@ impl<'c> Resolver<'c> {
             link.case_revision = Some(case_revision);
             return Ok(link);
         }
+        let mut case_revision = Some(case_revision);
         // The flow: an advanced case's flow named like the scenario.
         let scenario = scenario_name(f.name, f.suite);
         let flow_id = self
@@ -546,13 +586,12 @@ impl<'c> Resolver<'c> {
         if let Some(found) = self.items.get(&item_key).filter(|v| v.len() == 1) {
             let (item, rev) = found[0].clone();
             if rev != revision_id {
-                if let Some((_, n, _)) = self
+                // Unknown until the frozen revision arrives by pull.
+                case_revision = self
                     .revisions
                     .get(&case)
                     .and_then(|l| l.iter().find(|(id, _, _)| *id == rev))
-                {
-                    case_revision = *n;
-                }
+                    .map(|(_, n, _)| *n);
                 revision_id = rev;
             }
             link.run_item_id = Some(item);
@@ -562,7 +601,7 @@ impl<'c> Resolver<'c> {
             .match_steps(f.steps);
         link.case_id = Some(case);
         link.revision_id = Some(revision_id);
-        link.case_revision = Some(case_revision);
+        link.case_revision = case_revision;
         link.flow_id = flow_id;
         link.example_row_id = row_id;
         Ok(link)
@@ -669,6 +708,7 @@ pub(crate) fn fill_views(
         v.effective_step_ids = link.step_ids.clone();
         v.link_reason = link.reason.map(String::from);
         v.case_deleted = link.case_deleted;
+        v.effective_configuration_id = link.configuration_id.clone();
     }
     Ok(())
 }

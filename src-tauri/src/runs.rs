@@ -280,6 +280,8 @@ pub struct ResultView {
     pub(crate) link_reason: Option<String>,
     /// Its case is deleted (shown as «caso borrado»).
     pub(crate) case_deleted: bool,
+    /// Its configuration: an imported result's is derived (step 6).
+    pub(crate) effective_configuration_id: Option<String>,
     #[serde(skip)]
     #[cfg_attr(test, ts(skip))]
     pub(crate) hlc: String,
@@ -1030,10 +1032,10 @@ pub(crate) fn list_results(
     }
     let mut out: Vec<ResultView> = {
         let mut stmt = conn
-            .prepare(
+            .prepare(&format!(
                 // One mapping per (project, test_key) by its deterministic id;
                 // a subquery, not a join, so stray rows can never duplicate
-                // a result.
+                // a result. A shard superseded by a newer normalizer is out.
                 "SELECT x.*, s.imported_at AS shard_imported_at,
                         coalesce(x.test_case_id,
                                  (SELECT m.test_case_id FROM unlinked_mappings m
@@ -1042,9 +1044,10 @@ pub(crate) fn list_results(
                                    ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)) AS effective_case
                    FROM results x
                    LEFT JOIN run_shards s ON s.id = x.shard_id
-                  WHERE x.run_id = ?1
+                  WHERE x.run_id = ?1 AND {}
                   ORDER BY x.created_at, x.rowid",
-            )
+                link::CURRENT_SHARD
+            ))
             .map_err(err)?;
         let rows = stmt
             .query_map(params![run_id], |r| {
@@ -1083,6 +1086,8 @@ pub(crate) fn list_results(
                     effective_step_ids: Vec::new(),
                     link_reason: None,
                     case_deleted: false,
+                    // A manual result stores it; an imported one derives it.
+                    effective_configuration_id: r.get("configuration_id")?,
                     steps: Vec::new(),
                     hlc: r.get("hlc")?,
                     shard_imported_at: r.get("shard_imported_at")?,
@@ -1552,6 +1557,7 @@ pub fn shard_payload(conn: &Connection, id: &str) -> Result<Option<Value>, Strin
             "runId": s("run_id")?, "shardIndex": i("shard_index")?, "shardTotal": i("shard_total")?,
             "sourceFormat": s("source_format")?, "sourceFileSha256": s("source_file_sha256")?,
             "sourceAttachmentId": s("source_attachment_id")?, "formatVersion": s("format_version")?,
+            "normalizerVersion": i("normalizer_version")?,
             "importedBy": s("imported_by")?, "importedAt": s("imported_at")?, "hlc": s("hlc")?,
         }))
     })
@@ -1577,8 +1583,8 @@ pub fn shard_insert_if_absent(conn: &Connection, _user: &str, p: &Value) -> Resu
     conn.execute(
         "INSERT OR IGNORE INTO run_shards (id, workspace_id, project_id, run_id, shard_index,
                 shard_total, source_format, source_file_sha256, source_attachment_id, format_version,
-                imported_by, imported_at, hlc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                imported_by, imported_at, hlc, normalizer_version)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
         params![
             id,
             ensure_workspace(conn)?,
@@ -1593,6 +1599,7 @@ pub fn shard_insert_if_absent(conn: &Connection, _user: &str, p: &Value) -> Resu
             ps(p, "importedBy").unwrap_or_default(),
             ps(p, "importedAt").unwrap_or_default(),
             ps(p, "hlc").unwrap_or_default(),
+            pi(p, "normalizerVersion").unwrap_or(0),
         ],
     )
     .map_err(err)?;

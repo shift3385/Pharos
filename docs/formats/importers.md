@@ -70,6 +70,9 @@ de un Outline de Cucumber comparten nombre).
 intento final (`attributes.finishedAtInferred`) para que el intento final
 derivado no caiga en la hora de importación.
 
+Cada shard lleva `normalizerVersion`, la versión de estos parsers: todo cambio
+en lo que producen la sube (ADR-0013).
+
 Un adjunto de Messages enviado por URL se guarda como ruta y no se descarga (aviso
 `attachment-url`). El shard (`shardIndex`/`shardTotal`) sale solo del informe:
 es contenido inmutable; un índice fuera de 1..total se rechaza.
@@ -82,10 +85,10 @@ con un aviso: pierde el shard y su duración no es fiable (ING-01 §4).
 El resultado importado no guarda el vínculo (ADR-0013, «Vínculo derivado»):
 se deriva igual en todos los equipos.
 
-- **Caso:** gana una regla de enlace posterior. Si no, las etiquetas (con o
-  sin `@`) y el `caseKey` se comparan con todas las claves que tuvo cada caso
-  del proyecto (la actual y las de sus revisiones), así que una clave libre,
-  un prefijo antiguo o un cambio de prefijo siguen vinculando. Una etiqueta
+- **Caso:** gana una regla de enlace posterior. Si no, cada etiqueta (con o
+  sin `@`) y el `caseKey` nombran el caso vivo que lleva esa clave ahora; si
+  ninguno, los que la llevaron antes (claves de sus revisiones), así que una
+  clave libre, un prefijo antiguo o un cambio de prefijo siguen vinculando. Una etiqueta
   con la forma `<case_id_prefix><n>` que no es de nadie es «clave
   desconocida». Un caso vincula; sin ninguno, con dos o con un conflicto de
   clave abierto, el test va a la bandeja con su motivo. Un caso borrado sigue

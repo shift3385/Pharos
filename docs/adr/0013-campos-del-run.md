@@ -444,20 +444,48 @@ de clave conocido solo allí). Por eso no forma parte de su contenido:
   La web no lo necesita hasta que lea resultados (INT-02); entonces tendrá
   su gemelo.
 - **Caso.** Gana una regla de enlace posterior viva (`unlinked_mapping`). Si
-  no, las etiquetas y el `caseKey` se comparan con **todas las claves que tuvo
-  cada caso**: su `scenario_id` actual y los de sus revisiones sincronizadas.
-  Un cambio de prefijo no desvincula ni revincula una importación antigua.
-  Si las etiquetas nombran **más de un caso** (hoy o por una clave antigua), o
-  un caso y una clave con forma de clave que no es de nadie, queda sin vincular
-  con aviso (`two-case-tags`): nunca se adivina. Un **caso borrado** sigue
+  no, cada etiqueta (y el `caseKey`) nombra **el caso vivo que la lleva
+  ahora** como `scenario_id`; solo si ningún caso la lleva ahora, los casos que
+  la llevaron antes (claves de sus revisiones sincronizadas y la última clave
+  de un caso borrado). Un cambio de prefijo no desvincula una importación
+  antigua, y una clave que otro caso toma después pasa a ese caso (decisión
+  del coordinador en la segunda revisión, 2026-10-31). Si las etiquetas
+  nombran **más de un caso** (dos que la llevaron antes y ninguno ahora, o
+  etiquetas de casos distintos), o un caso y una clave con forma de clave que
+  no es de nadie, queda sin vincular con aviso (`two-case-tags`): nunca se
+  adivina. Un **caso borrado** sigue
   vinculado y se muestra como «caso borrado» (`caseDeleted`); no va a la
   bandeja. Un caso purgado ya no existe: su resultado queda como «clave
   desconocida». Un conflicto de clave abierto deja el resultado sin vincular
-  mientras dure.
-- **Revisión:** la congelada del elemento del run para ese caso, flujo y fila; si
-  no, la revisión sincronizada más alta escrita en o antes de
-  `run.started_at`; si no hay ninguna, la más antigua. Empates por id. Una
-  edición posterior al inicio del run nunca mueve un resultado.
+  mientras dure, **solo en el equipo que lo tiene** (`case-key-conflict` es
+  local, como el conflicto): al resolverse, el resultado sigue a su caso.
+- **Revisión:** la congelada del elemento del run para ese caso, flujo y fila
+  (su número queda vacío hasta que esa revisión llega por pull); si no, entre
+  las revisiones que tienen todos los equipos escritas en o antes de
+  `run.started_at` (solo `started_at`, nunca la hora local de guardado), la
+  de número más alto, después la escrita más tarde y después el id; si no hay
+  ninguna, la más antigua. Una edición posterior al inicio del run nunca mueve
+  un resultado. `created_at` tiene precisión de segundos: una revisión escrita
+  en el mismo segundo en que empieza el run cuenta como anterior.
+- **Revisiones que no ven los demás:** una fila escrita sin push
+  (`ensure_current(.., push = false)`: el estado que trajo un pull o una clave
+  provisional con conflicto abierto) queda marcada `local_only` (migración
+  0031) y el resolvedor no la usa, ni su clave, hasta que la misma fila llega
+  por pull.
+- **Configuración:** el `configuration_id` de un resultado importado también se
+  deriva (de su `configurationLabel`, con los ganchos del paso 6 dentro del
+  resolvedor), nunca se guarda; el servidor lo rechaza en un resultado con
+  `shardId`.
+- **Versión del normalizador:** el shard lleva `normalizerVersion` (la de los
+  parsers TS) en su contenido y en su id,
+  `UUIDv5([run, sha256, normalizerVersion])`. Dos equipos con el mismo build
+  convergen; dos builds distintos dan dos shards, nunca un `appendRejected`.
+  Los lectores ignoran los resultados de un shard si el mismo run tiene el
+  mismo archivo leído por una versión mayor. **Todo cambio en lo que produce un
+  parser sube `NORMALIZER_VERSION`** (VERSIONING §6.5).
+- **Orden de la bandeja:** el resultado «más reciente» de cada `test_key` es el
+  de hora del informe (si no, inicio del run) más tardía y después el id: lo
+  mismo en todos los equipos.
 - **`createdAt` de las revisiones converge:** la misma revisión congelada en
   dos equipos (su id es su contenido) toma, al recibirse, el `createdAt` del
   servidor, que guarda el primero. Solo filas de revisión con id por

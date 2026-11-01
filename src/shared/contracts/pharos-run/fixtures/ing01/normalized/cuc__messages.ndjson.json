@@ -20,6 +20,7 @@
       {
         "ref": "s1",
         "sourceFormat": "cucumber_messages",
+        "normalizerVersion": 1,
         "formatVersion": "34.2.1"
       }
     ],

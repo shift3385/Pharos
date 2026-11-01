@@ -65,6 +65,12 @@ export class ReportError extends Error {
   }
 }
 
+/** Version of these parsers (the normalizer). It is part of a shard's
+ *  content and id (ADR-0013): **any change to what a parser produces bumps
+ *  it** (VERSIONING §6.5), so two builds never write different content under
+ *  one id, and readers prefer the shard of the highest version. */
+export const NORMALIZER_VERSION = 1;
+
 /** Largest report (the raw report is evidence: ADR-0014's 200 MB). NDJSON is
  *  read line by line; JSON and XML are parsed whole, so they stop earlier. */
 export const MAX_REPORT_BYTES = 200 * 1024 * 1024;
@@ -205,7 +211,7 @@ export function emptyDoc(format: SourceFormat): ImportDoc {
   return {
     schemaVersion: "1.0.0",
     run: { trigger: "import" },
-    shards: [{ ref: "s1", sourceFormat: format }],
+    shards: [{ ref: "s1", sourceFormat: format, normalizerVersion: NORMALIZER_VERSION }],
     results: [],
     attachments: [],
   };

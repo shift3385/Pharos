@@ -160,6 +160,8 @@ describe("execution entities (runs feature)", () => {
       result("x", { steps: [{ text: "a", status: "ok" }] }),
       // An imported result carries no link: it is derived (B1).
       result("x", { shardId: "s1", testCaseId: "c1" }),
+      result("x", { shardId: "s1", configurationId: "cfg1" }),
+      shard("x", { normalizerVersion: -1 }),
       result("x", { shardId: "s1", steps: [{ text: "a", status: "passed", stepId: "A1" }] }),
       shard("x", { sourceFileSha256: "nope" }),
       run("x", { status: "done" }),

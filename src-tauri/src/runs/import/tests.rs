@@ -203,7 +203,7 @@ fn a_ctrf_report_links_by_tag_rows_and_steps_into_a_new_closed_run() {
     assert!(one.effective_revision_id.is_some());
     assert!(one.executed_by.starts_with("tool:"));
     // Ids are deterministic: shard by run and file, steps by result and position.
-    assert_eq!(out.shard_id, ids::shard_id(&out.run_id, SHA));
+    assert_eq!(out.shard_id, ids::shard_id(&out.run_id, SHA, 1));
     assert_eq!(
         one.id,
         ids::imported_result_id(&out.shard_id, &one.test_key, None, 0)
@@ -860,7 +860,8 @@ fn helpers_cut_and_convert_deterministically() {
 // ---- review of step 9 ------------------------------------------------------------
 
 fn pharos_doc(results: Value) -> Value {
-    json!({"schemaVersion": "1.0.0", "shards": [{"sourceFormat": "pharos_run_json"}],
+    json!({"schemaVersion": "1.0.0",
+           "shards": [{"sourceFormat": "pharos_run_json", "normalizerVersion": 1}],
            "results": results})
 }
 
@@ -1197,16 +1198,212 @@ fn a_prefix_change_keeps_an_old_import_on_its_case() {
 }
 
 #[test]
-fn an_old_key_now_worn_by_another_case_is_ambiguous() {
+fn a_key_links_to_the_case_wearing_it_now_else_to_its_only_former_wearer() {
     let c = device();
     let p = new_project(&c);
     let (tc1, tc2, _) = ing01_cases(&c, &p);
     let out = import(&c, &new_run(&p, tagged("k", "@TC-001"))).unwrap();
+    let case_of = |c: &Connection| list_results(c, &out.run_id, U).unwrap()[0].clone();
+    // TC-001 moves to ATS_001: nobody wears TC-001 now, its only former
+    // wearer is TC-001's case.
     rekey(&c, &tc1, "ATS_001");
+    assert_eq!(
+        case_of(&c).effective_test_case_id.as_deref(),
+        Some(tc1.as_str())
+    );
+    // Another case takes TC-001: the case wearing it now wins.
     rekey(&c, &tc2, "TC-001");
-    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
-    assert_eq!(r.effective_test_case_id, None, "never a guess");
+    assert_eq!(
+        case_of(&c).effective_test_case_id.as_deref(),
+        Some(tc2.as_str())
+    );
+    // It leaves TC-001 too: two former wearers and nobody now, never a guess.
+    rekey(&c, &tc2, "ATS_002");
+    let r = case_of(&c);
+    assert_eq!(r.effective_test_case_id, None);
     assert_eq!(r.link_reason.as_deref(), Some("two-case-tags"));
+}
+
+#[test]
+fn an_open_key_conflict_unlinks_on_this_device_until_resolved() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, _, _) = ing01_cases(&c, &p);
+    let out = import(&c, &new_run(&p, tagged("k", "@TC-001"))).unwrap();
+    c.execute(
+        "INSERT INTO key_conflicts (id, user_id, entity, entity_id, project_id, lost_key, detected_at)
+         VALUES ('kc', ?1, 'test_case', ?2, ?3, 'TC-001', datetime('now'))",
+        params![U, tc1, p],
+    )
+    .unwrap();
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.link_reason.as_deref(), Some("case-key-conflict"));
+    // Renamed and resolved: the old import follows its case.
+    rekey(&c, &tc1, "TC-004");
+    c.execute(
+        "UPDATE key_conflicts SET resolved_at = datetime('now'), resolution = 'renamed'",
+        [],
+    )
+    .unwrap();
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_test_case_id.as_deref(), Some(tc1.as_str()));
+}
+
+#[test]
+fn local_only_revisions_are_never_chosen_and_ties_go_to_the_latest_written() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, _, _) = ing01_cases(&c, &p);
+    c.execute(
+        "UPDATE test_case_revisions SET created_at = '2026-01-01 00:00:00'",
+        [],
+    )
+    .unwrap();
+    let synced: String = c
+        .query_row(
+            "SELECT id FROM test_case_revisions WHERE test_case_id = ?1",
+            [&tc1],
+            |r| r.get(0),
+        )
+        .unwrap();
+    // A provisional-key revision this device never pushes.
+    c.execute(
+        "UPDATE test_cases SET scenario_id = 'TC-900', revision = revision + 1 WHERE id = ?1",
+        [&tc1],
+    )
+    .unwrap();
+    crate::revisions::ensure_current_local(&c, &tc1).unwrap();
+    c.execute(
+        "UPDATE test_case_revisions SET created_at = '2026-02-01 00:00:00' WHERE local_only = 1",
+        [],
+    )
+    .unwrap();
+    let doc = json!({"schemaVersion": "1.0.0", "run": {"startedAt": "2026-06-01T00:00:00Z"},
+        "shards": [{"sourceFormat": "pharos_run_json", "normalizerVersion": 1}],
+        "results": [{"name": "t", "status": "passed", "testKey": "k", "tags": ["@TC-001"]}]});
+    let out = import(&c, &new_run(&p, doc)).unwrap();
+    let r = &list_results(&c, &out.run_id, U).unwrap()[0];
+    assert_eq!(r.effective_revision_id.as_deref(), Some(synced.as_str()));
+    // The provisional key is no key of the case for the link either.
+    let req = request(
+        &p,
+        tagged("k2", "@TC-900"),
+        json!({"newRun": {}, "sha256": "ee".repeat(32)}),
+    );
+    let other = in_tx(&c, |tx| {
+        commit(
+            tx,
+            &req,
+            &Stored {
+                sha256: "ee".repeat(32),
+                size: 1,
+            },
+        )
+    })
+    .unwrap();
+    let r = &list_results(&c, &other.run_id, U).unwrap()[0];
+    assert_eq!(
+        r.effective_test_case_id.as_deref(),
+        Some(tc1.as_str()),
+        "TC-900 is its current key"
+    );
+}
+
+#[test]
+fn the_tray_orders_by_report_times_the_same_on_every_device() {
+    // A imports an untagged attempt that ran at 10:00; B, earlier in wall
+    // time, imports a tagged one that ran at 11:00. After the exchange both
+    // agree the latest one is tagged: the key is not in either tray.
+    let (a, b) = (device(), device());
+    let p = new_project(&a);
+    ing01_cases(&a, &p);
+    pull(&b, &push(&a));
+    let doc = |at: &str, tags: Value| {
+        pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k",
+                            "startedAt": at, "tags": tags}]))
+    };
+    let req = request(
+        &p,
+        doc("2026-10-31T11:00:00Z", json!(["@TC-001"])),
+        json!({"newRun": {}}),
+    );
+    in_tx(&b, |tx| commit(tx, &req, &stored())).unwrap();
+    let req = request(
+        &p,
+        doc("2026-10-31T10:00:00Z", json!([])),
+        json!({"newRun": {}, "sha256": "ff".repeat(32)}),
+    );
+    in_tx(&a, |tx| {
+        commit(
+            tx,
+            &req,
+            &Stored {
+                sha256: "ff".repeat(32),
+                size: 1,
+            },
+        )
+    })
+    .unwrap();
+    let (from_a, from_b) = (push(&a), push(&b));
+    pull(&a, &from_b);
+    pull(&b, &from_a);
+    assert!(unlinked_list(&a, &p, U).unwrap().is_empty());
+    assert!(unlinked_list(&b, &p, U).unwrap().is_empty());
+}
+
+#[test]
+fn a_newer_normalizer_makes_another_shard_and_readers_keep_only_it() {
+    let c = device();
+    let p = new_project(&c);
+    ing01_cases(&c, &p);
+    let doc = |v: i64, status: &str| {
+        json!({"schemaVersion": "1.0.0",
+               "shards": [{"sourceFormat": "pharos_run_json", "normalizerVersion": v}],
+               "results": [{"name": "t", "status": status, "testKey": "k", "tags": ["@TC-001"]}]})
+    };
+    let first = import(
+        &c,
+        &request(&p, doc(1, "failed"), json!({"newRun": {"keepOpen": true}})),
+    )
+    .unwrap();
+    // The same file again on the same build: nothing.
+    assert!(
+        import(
+            &c,
+            &request(&p, doc(1, "failed"), json!({"runId": first.run_id}))
+        )
+        .unwrap()
+        .already_imported
+    );
+    // The same file read by a newer normalizer: another shard (another id),
+    // and the readers keep only it.
+    let newer = import(
+        &c,
+        &request(&p, doc(2, "passed"), json!({"runId": first.run_id})),
+    )
+    .unwrap();
+    assert!(!newer.already_imported);
+    assert_ne!(newer.shard_id, first.shard_id);
+    assert_eq!(newer.shard_id, ids::shard_id(&first.run_id, SHA, 2));
+    let r = list_results(&c, &first.run_id, U).unwrap();
+    assert_eq!(r.len(), 1);
+    assert_eq!(r[0].status, "passed");
+    let counts = run_counts(&c, &p, U).unwrap();
+    assert_eq!((counts[0].passed, counts[0].failed), (1, 0));
+    let version: i64 = c
+        .query_row(
+            "SELECT normalizer_version FROM run_shards WHERE id = ?1",
+            [&newer.shard_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(version, 2);
+    assert_eq!(
+        crate::runs::shard_payload(&c, &newer.shard_id)
+            .unwrap()
+            .unwrap()["normalizerVersion"],
+        2
+    );
 }
 
 #[test]

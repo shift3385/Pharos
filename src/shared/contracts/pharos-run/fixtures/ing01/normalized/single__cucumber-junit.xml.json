@@ -13,7 +13,8 @@
     "shards": [
       {
         "ref": "s1",
-        "sourceFormat": "junit"
+        "sourceFormat": "junit",
+        "normalizerVersion": 1
       }
     ],
     "results": [

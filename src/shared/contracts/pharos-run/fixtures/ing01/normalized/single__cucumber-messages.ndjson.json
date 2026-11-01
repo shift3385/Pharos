@@ -33,6 +33,7 @@
       {
         "ref": "s1",
         "sourceFormat": "cucumber_messages",
+        "normalizerVersion": 1,
         "formatVersion": "32.2.0"
       }
     ],

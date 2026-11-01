@@ -33,4 +33,8 @@ linkReason: string | null,
 /**
  * Its case is deleted (shown as «caso borrado»).
  */
-caseDeleted: boolean, };
+caseDeleted: boolean, 
+/**
+ * Its configuration: an imported result's is derived (step 6).
+ */
+effectiveConfigurationId: string | null, };

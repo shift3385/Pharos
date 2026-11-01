@@ -23,7 +23,7 @@ describe("execution ids (twin of runs/ids.rs)", () => {
   });
 
   it("match the shared vectors", () => {
-    for (const s of vectors.shards) expect(shardId(s.runId, s.sha256.toUpperCase())).toBe(s.id);
+    for (const s of vectors.shards) expect(shardId(s.runId, s.sha256.toUpperCase(), s.normalizerVersion)).toBe(s.id);
     for (const r of vectors.results) {
       expect(importedResultId(r.shardId, r.testKey, r.configurationLabel, r.attempt)).toBe(r.id);
     }

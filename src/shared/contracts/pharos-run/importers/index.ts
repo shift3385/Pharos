@@ -12,6 +12,7 @@ import {
   type ImportDoc,
   type ParsedReport,
   MAX_IMPORT_RESULTS,
+  NORMALIZER_VERSION,
   MAX_REPORT_BYTES,
   MAX_WHOLE_REPORT_BYTES,
   ReportError,
@@ -85,8 +86,9 @@ export function parsePharosRunFile(input: unknown): ParsedReport {
       ]),
     };
   });
-  if (!doc.shards.length)
-    doc.shards = [{ ref: "s1", sourceFormat: "pharos_run_json" }];
+  if (!doc.shards.length) doc.shards = [{ ref: "s1", sourceFormat: "pharos_run_json" }];
+  // This normalizer read it (ADR-0013): its version goes with the shard.
+  doc.shards = doc.shards.map((s, i) => (i === 0 ? { ...s, normalizerVersion: NORMALIZER_VERSION } : s));
   return { format: "pharos_run_json", doc, inline: new Map(), warnings: [] };
 }
 

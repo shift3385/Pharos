@@ -21,6 +21,7 @@
       {
         "ref": "s1",
         "sourceFormat": "ctrf",
+        "normalizerVersion": 1,
         "formatVersion": "0.2.0",
         "shardIndex": 1,
         "shardTotal": 2

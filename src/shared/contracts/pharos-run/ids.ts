@@ -13,9 +13,10 @@ export const NS_STEP_RESULT = "e2b74c18-6d3a-5f91-b0c5-8a1d4e6f2b37";
 
 const name = (parts: (string | number)[]) => JSON.stringify(parts);
 
-/** The same file in the same run is the same shard on every device. */
-export const shardId = (runId: string, sourceFileSha256: string) =>
-  v5(name([runId, sourceFileSha256.toLowerCase()]), NS_RUN_SHARD);
+/** The same file in the same run, read by the same parsers (normalizer
+ *  version), is the same shard on every device. */
+export const shardId = (runId: string, sourceFileSha256: string, normalizerVersion: number) =>
+  v5(name([runId, sourceFileSha256.toLowerCase(), normalizerVersion]), NS_RUN_SHARD);
 
 export const importedResultId = (
   shard: string,

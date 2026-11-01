@@ -40,7 +40,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::link::{Facts, Link, Resolver, StoredFacts};
+use super::link::{Link, Resolver, StoredFacts, CURRENT_SHARD};
 use super::{
     err, ids, insert_run, insert_steps, owned_run, require_open, text, update_run, within,
     RunInput, StepResult, MAX_STEPS, MAX_TEST_KEY, MAX_TITLE, RESULT, RESULT_STATUSES, RUN_SHARD,
@@ -111,6 +111,8 @@ struct DocShard {
     shard_total: Option<i64>,
     source_format: Option<String>,
     format_version: Option<String>,
+    /// Version of the TS parsers that wrote this document.
+    normalizer_version: Option<i64>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -587,29 +589,6 @@ fn plan(
             })
             .collect();
         let suite = suite_of(r);
-        let link = match linker.as_mut() {
-            Some(l) => {
-                let texts: Vec<String> = steps_in.iter().map(|(_, t)| t.clone()).collect();
-                let facts = Facts {
-                    tags: &r.tags,
-                    case_key: r.case_key.as_deref(),
-                    name: &r.name,
-                    suite: &suite,
-                    example_row: r.example_row,
-                    steps: &texts,
-                };
-                let link = l.resolve(target_run, &key, &facts, true)?;
-                for (code, detail) in &link.warnings {
-                    warnings.push(ReportImportWarning {
-                        code: (*code).into(),
-                        test_key: Some(key.clone()),
-                        detail: Some(detail.clone()),
-                    });
-                }
-                link
-            }
-            None => Link::none(steps_in.len(), None),
-        };
         let mut steps = Vec::with_capacity(r.steps.len());
         let mut step_attachment_refs = Vec::new();
         for (i, (s, (keyword, step_text))) in r.steps.iter().zip(steps_in.iter()).enumerate() {
@@ -642,7 +621,12 @@ fn plan(
         truncated |= message.as_ref().is_some_and(|x| x.1) || trace.as_ref().is_some_and(|x| x.1);
         // attributes: the document's own, the tool's flaky, what has no
         // column (name, tags, file, suite) and the unknown keys.
+        // The link reads `tags`, `name` and `suite` from here: they come
+        // from the report's own fields only, never from its `attributes`.
         let mut attrs = r.attributes.clone().unwrap_or_default();
+        for k in ["tags", "suite"] {
+            attrs.remove(k);
+        }
         attrs.insert("name".into(), json!(clip(&r.name, MAX_TITLE).0));
         if !r.tags.is_empty() {
             attrs.insert("tags".into(), json!(r.tags));
@@ -697,7 +681,7 @@ fn plan(
                 .map(Value::to_string),
             case_key: text(&r.case_key).map(|k| clip(&k, MAX_LABEL).0),
             attributes,
-            link,
+            link: Link::none(steps.len(), None),
             steps,
             attachment_refs: r
                 .attachments
@@ -720,6 +704,25 @@ fn plan(
                 detail: None,
             });
             continue;
+        }
+        // The preview resolves what will be stored (clipped texts, the
+        // attributes as written), exactly as every reader will.
+        if let Some(l) = linker.as_mut() {
+            let texts: Vec<String> = planned.steps.iter().map(|s| s.text.clone()).collect();
+            let stored = StoredFacts::of(
+                &planned.attributes,
+                planned.case_key.as_deref(),
+                planned.example_row,
+                texts,
+            );
+            planned.link = l.resolve(target_run, &key, &stored.facts(), true)?;
+            for (code, detail) in &planned.link.warnings {
+                warnings.push(ReportImportWarning {
+                    code: (*code).into(),
+                    test_key: Some(key.clone()),
+                    detail: Some(detail.clone()),
+                });
+            }
         }
         if truncated {
             warnings.push(ReportImportWarning {
@@ -780,6 +783,15 @@ fn duplicate_of(
 fn raw_report_name(req: &ReportImportRequest, format: &str) -> String {
     let name = text(&req.file_name).unwrap_or_else(|| format!("{format}.report"));
     clip(&name, MAX_TITLE).0
+}
+
+/// The normalizer version of a document (0 when it does not say).
+fn normalizer_of(doc: &Doc) -> i64 {
+    doc.shards
+        .first()
+        .and_then(|s| s.normalizer_version)
+        .unwrap_or(0)
+        .max(0)
 }
 
 fn check_sha(sha: &str) -> Result<String, String> {
@@ -848,7 +860,11 @@ pub(crate) fn preview(
         }
         None => None,
     };
-    let shard_id = ids::shard_id(run.as_ref().map_or("preview", |(id, _)| id.as_str()), &sha);
+    let shard_id = ids::shard_id(
+        run.as_ref().map_or("preview", |(id, _)| id.as_str()),
+        &sha,
+        normalizer_of(&doc),
+    );
     let p = plan(
         conn,
         req,
@@ -861,7 +877,7 @@ pub(crate) fn preview(
         Some((id, _)) => conn
             .query_row(
                 "SELECT r.run_key FROM run_shards s JOIN runs r ON r.id = s.run_id WHERE s.id = ?1",
-                params![ids::shard_id(id, &sha)],
+                params![ids::shard_id(id, &sha, normalizer_of(&doc))],
                 |r| r.get(0),
             )
             .optional()
@@ -940,7 +956,7 @@ pub(crate) fn commit(
             if project != req.project_id {
                 return Err("run not found".into());
             }
-            let shard_id = ids::shard_id(id, &sha);
+            let shard_id = ids::shard_id(id, &sha, normalizer_of(&doc));
             let exists: bool = conn
                 .query_row(
                     "SELECT EXISTS (SELECT 1 FROM run_shards WHERE id = ?1)",
@@ -1032,7 +1048,7 @@ pub(crate) fn commit(
         }
         _ => return Err("invalid-target: give either runId or newRun".into()),
     };
-    let shard_id = ids::shard_id(&run_id, &sha);
+    let shard_id = ids::shard_id(&run_id, &sha, normalizer_of(&doc));
     let (run_key, started): (String, Option<String>) = conn
         .query_row(
             "SELECT run_key, started_at FROM runs WHERE id = ?1",
@@ -1053,9 +1069,9 @@ pub(crate) fn commit(
     conn.execute(
         "INSERT INTO run_shards (id, workspace_id, project_id, run_id, shard_index, shard_total,
                 source_format, source_file_sha256, source_attachment_id, format_version,
-                imported_by, imported_at, hlc)
+                imported_by, imported_at, hlc, normalizer_version)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, ?9, ?10,
-                strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?11)",
+                strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?11, ?12)",
         params![
             shard_id,
             workspace,
@@ -1068,6 +1084,7 @@ pub(crate) fn commit(
             p.format_version.as_deref().map(|v| clip(v, MAX_LABEL).0),
             user,
             hlc,
+            normalizer_of(&doc),
         ],
     )
     .map_err(err)?;
@@ -1372,20 +1389,23 @@ pub(crate) fn unlinked_list(
     }
     let rows: Vec<Last> = {
         let mut stmt = conn
-            .prepare(
+            // "Latest" by what every device has (the report's time, else the
+            // run's start, then the id), never by when this device stored it.
+            .prepare(&format!(
                 "WITH last AS (
-                   SELECT x.*, row_number() OVER (PARTITION BY x.test_key
-                            ORDER BY x.created_at DESC, x.rowid DESC) AS n,
+                   SELECT x.*, coalesce(x.started_at, r.started_at) AS seen,
+                          row_number() OVER (PARTITION BY x.test_key
+                            ORDER BY coalesce(x.started_at, r.started_at) DESC, x.id DESC) AS n,
                           count(*) OVER (PARTITION BY x.test_key) AS total
                      FROM results x
                      JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
-                    WHERE x.project_id = ?1 AND x.shard_id IS NOT NULL)
-                 SELECT l.test_key, l.total, l.status, l.run_id, r.run_key, l.created_at,
-                        l.attributes, l.case_key, l.example_row
+                    WHERE x.project_id = ?1 AND x.shard_id IS NOT NULL AND {CURRENT_SHARD})
+                 SELECT l.test_key, l.total, l.status, l.run_id, r.run_key,
+                        coalesce(l.seen, ''), l.attributes, l.case_key, l.example_row
                    FROM last l LEFT JOIN runs r ON r.id = l.run_id
                   WHERE l.n = 1
-                  ORDER BY l.created_at DESC, l.test_key",
-            )
+                  ORDER BY l.seen DESC, l.id DESC"
+            ))
             .map_err(err)?;
         let mapped = stmt
             .query_map(params![project_id], |r| {
@@ -1491,7 +1511,7 @@ pub(crate) fn run_counts(
     }
     let rows: Vec<Row> = {
         let mut stmt = conn
-            .prepare(
+            .prepare(&format!(
                 "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
                         x.started_at, x.finished_at, s.imported_at, x.hlc,
                         json_extract(x.attributes, '$.flaky') = 1,
@@ -1500,8 +1520,8 @@ pub(crate) fn run_counts(
                    FROM results x
                    JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
                    LEFT JOIN run_shards s ON s.id = x.shard_id
-                  WHERE x.project_id = ?1",
-            )
+                  WHERE x.project_id = ?1 AND {CURRENT_SHARD}"
+            ))
             .map_err(err)?;
         let mapped = stmt
             .query_map(params![project_id], |r| {

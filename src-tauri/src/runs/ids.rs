@@ -20,12 +20,18 @@ fn v5(ns: &Uuid, parts: Value) -> String {
     Uuid::new_v5(ns, crate::steps::jcs(&parts).as_bytes()).to_string()
 }
 
-/// `UUIDv5(NS_RUN_SHARD, [run_id, source_file_sha256])`: the same file in the
-/// same run is the same shard on every device, so re-uploading it adds nothing.
-pub fn shard_id(run_id: &str, source_file_sha256: &str) -> String {
+/// `UUIDv5(NS_RUN_SHARD, [run_id, source_file_sha256, normalizer_version])`:
+/// the same file in the same run, read by the same parsers, is the same shard
+/// on every device, so re-uploading it adds nothing; a newer normalizer makes
+/// another shard instead of colliding with different content.
+pub fn shard_id(run_id: &str, source_file_sha256: &str, normalizer_version: i64) -> String {
     v5(
         &NS_RUN_SHARD,
-        json!([run_id, source_file_sha256.to_ascii_lowercase()]),
+        json!([
+            run_id,
+            source_file_sha256.to_ascii_lowercase(),
+            normalizer_version
+        ]),
     )
 }
 
@@ -81,7 +87,11 @@ mod tests {
         let v: Value = serde_json::from_str(VECTORS).unwrap();
         let s = |x: &Value, k: &str| x[k].as_str().unwrap().to_string();
         for x in v["shards"].as_array().unwrap() {
-            assert_eq!(shard_id(&s(x, "runId"), &s(x, "sha256")), s(x, "id"));
+            let version = x["normalizerVersion"].as_i64().unwrap();
+            assert_eq!(
+                shard_id(&s(x, "runId"), &s(x, "sha256"), version),
+                s(x, "id")
+            );
         }
         for x in v["results"].as_array().unwrap() {
             let label = x["configurationLabel"].as_str();
@@ -122,6 +132,7 @@ mod tests {
             imported_result_id("s", "k", None, 1),
             imported_result_id("s", "k", Some("1"), 0)
         );
-        assert_eq!(shard_id("r", "ABC"), shard_id("r", "abc"));
+        assert_eq!(shard_id("r", "ABC", 1), shard_id("r", "abc", 1));
+        assert_ne!(shard_id("r", "abc", 1), shard_id("r", "abc", 2));
     }
 }
