@@ -254,6 +254,12 @@ sobre lo decidido, sin cambiar la decisión:
     `append_only`). El servidor puede, por tanto, confirmar si un archivo
     concreto se adjuntó. Es coherente con SYNC-04b, donde el servidor guarda
     el sha256 en claro y el contenido cifrado solo en reposo.
+- **Defectos (DEF-01, paso 8).** `owner_entity = 'defect'` ya se usa: los
+  adjuntos de una tarjeta de defecto pasan a su defecto en la migración 0029
+  (mismo id, mismo contenido), y un defecto creado desde un resultado recibe
+  una fila nueva de `attachments` por cada adjunto del resultado y de sus
+  pasos, con el mismo `sha256`: no se copian bytes ni cambia el estado del
+  contenido en `blobs`. Borrar el defecto libera solo las filas suyas.
 - **Orden con el paso 2.** Las migraciones 0020–0021 (paso 2) llegarán
   después que estas. Una BD que ya tenga 0022–0023 las aplicará después de
   0023, así que no deben tocar `planner_attachments`. Sus borradores no lo

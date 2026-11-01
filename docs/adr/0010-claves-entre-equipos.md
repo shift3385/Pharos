@@ -231,3 +231,8 @@
   - **La web** numera con su caché hasta BASE-10. Si el servidor rechaza una
     clave suya, el cambio queda en la bandeja de salida marcado como
     rechazado, igual que un cambio demasiado grande.
+- **Nota DEF-01 (2026-10-31).** La serie `DEF-` pasa de `planner_cards.card_key`
+  a `defects.defect_key` con el mismo tipo `defect` en `key_counters`,
+  `retired_keys` y `key_blocks` (no hizo falta reconstruir ningún `CHECK`). La
+  clave de una tarea que fue defecto queda en `retired_keys`. El servidor busca
+  el `defectKey` en `documents_key_idx` desde su migración 0010.
