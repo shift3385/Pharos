@@ -1176,6 +1176,8 @@ const AUDITED: &[&str] = &[
     "runs::run_items_add",
     "runs::result_record",
     "runs::unlinked_mapping_set",
+    "runs::import::run_import",
+    "runs::import::run_import_attach",
     "planner::planner_create",
     "planner::planner_update",
     "planner::planner_delete",
@@ -1270,6 +1272,10 @@ const EXEMPT: &[(&str, &str)] = &[
     (
         "planner::planner_attachment_save",
         "read (writes a file the user exports)",
+    ),
+    (
+        "runs::import::run_import_preview",
+        "read: what an import would do, rolled back",
     ),
 ];
 
@@ -1441,6 +1447,41 @@ fn every_audited_command_leaves_an_event() {
     });
     step("runs::unlinked_mapping_set", &mut |tx| {
         crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)
+    });
+    let report: crate::runs::import::ReportImportRequest = serde_json::from_value(json!({
+        "projectId": p, "userId": U, "newRun": {}, "sha256": "ab".repeat(32),
+        "doc": {"schemaVersion": "1.0.0", "shards": [{"sourceFormat": "pharos_run_json"}],
+                "results": [{"name": "t", "status": "passed", "testKey": "k"}]}
+    }))
+    .unwrap();
+    let stored = crate::evidence::Stored {
+        sha256: "ab".repeat(32),
+        size: 1,
+    };
+    let mut imported = None;
+    step("runs::import::run_import", &mut |tx| {
+        imported = Some(crate::runs::import::commit(tx, &report, &stored)?);
+        Ok(())
+    });
+    let result_id = c
+        .query_row(
+            "SELECT id FROM results WHERE shard_id = ?1",
+            [&imported.unwrap().shard_id],
+            |r| r.get::<_, String>(0),
+        )
+        .unwrap();
+    step("runs::import::run_import_attach", &mut |tx| {
+        crate::runs::import::attach(
+            tx,
+            "result",
+            &result_id,
+            &stored,
+            "shot.png",
+            None,
+            "screenshot",
+            U,
+        )
+        .map(drop)
     });
     step("requirement::requirement_delete", &mut |tx| {
         requirement::delete_requirement(tx, &req, U)

@@ -1558,7 +1558,8 @@ fn write_result(
     journal::record_append(conn, RESULT, &r.id, user)
 }
 
-/// An `attachments` row for a stored content (not synced yet: ADR-0014).
+/// An `attachments` row for a stored content (not synced yet: ADR-0014), and
+/// whether it is new (the same content on the same owner is one row).
 #[allow(clippy::too_many_arguments)]
 fn insert_attachment(
     conn: &Connection,
@@ -1570,7 +1571,7 @@ fn insert_attachment(
     mime: Option<&str>,
     kind: &str,
     user: &str,
-) -> Result<String, String> {
+) -> Result<(String, bool), String> {
     let existing: Option<String> = conn
         .query_row(
             "SELECT id FROM attachments WHERE owner_entity = ?1 AND owner_id = ?2 AND sha256 = ?3
@@ -1581,7 +1582,7 @@ fn insert_attachment(
         .optional()
         .map_err(err)?;
     if let Some(id) = existing {
-        return Ok(id);
+        return Ok((id, false));
     }
     evidence::record_blob(conn, stored, mime)?;
     let id = Uuid::new_v4().to_string();
@@ -1605,7 +1606,7 @@ fn insert_attachment(
         ],
     )
     .map_err(err)?;
-    Ok(id)
+    Ok((id, true))
 }
 
 const ATTACHMENT_KINDS: [&str; 5] = ["evidence", "screenshot", "video", "trace", "log"];
@@ -1635,8 +1636,9 @@ fn owner_project(
         .ok_or_else(|| format!("{owner_entity} not found"))
 }
 
-/// Attaches one stored content of a report to its result or step result.
-/// Idempotent: the same content on the same owner is one attachment.
+/// Attaches one stored content of a report to its result or step result,
+/// with a `link` audit event as the planner's attachments have. Idempotent:
+/// the same content on the same owner is one attachment and one event.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn attach(
     conn: &Connection,
@@ -1655,17 +1657,39 @@ pub(crate) fn attach(
     };
     let name = text(&Some(name.to_string())).ok_or("name is required")?;
     let project = owner_project(conn, owner_entity, owner_id, user)?;
-    insert_attachment(
+    let name = clip(&name, MAX_TITLE).0;
+    let (id, created) = insert_attachment(
         conn,
         &project,
         owner_entity,
         owner_id,
         stored,
-        &clip(&name, MAX_TITLE).0,
+        &name,
         mime,
         kind,
         user,
-    )
+    )?;
+    if created {
+        let mut changes = Map::new();
+        changes.insert(
+            "attachment".into(),
+            json!([
+                null,
+                evidence::attachment_fact(&id, &name, mime, stored.size as i64, &stored.sha256)
+            ]),
+        );
+        journal::record_event_in(
+            conn,
+            Actor::user(user),
+            Action::Link,
+            owner_entity,
+            owner_id,
+            Some(&project),
+            changes,
+            None,
+        )?;
+    }
+    Ok(id)
 }
 
 // ---- the tray (ING-05) -------------------------------------------------------
