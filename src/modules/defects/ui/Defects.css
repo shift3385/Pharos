@@ -126,7 +126,7 @@
 /* Board */
 .df-board {
   display: grid;
-  grid-template-columns: repeat(7, minmax(min(232px, 78cqi), 1fr));
+  grid-template-columns: repeat(7, minmax(min(200px, 78cqi), 1fr));
   gap: 12px;
   align-items: start;
   padding-bottom: 6px;
@@ -281,6 +281,10 @@
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+}
+
+.df-section > .ui-btn {
+  align-self: flex-start;
 }
 
 .df-section__title {

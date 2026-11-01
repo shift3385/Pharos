@@ -11,6 +11,7 @@ import {
   useSensors,
   type Announcements,
   type DragEndEvent,
+  type KeyboardCoordinateGetter,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Link2 } from "lucide-react";
@@ -28,6 +29,22 @@ import {
 import { SeverityPill, StatusBadge } from "./badges";
 import { PRIORITY_TONE } from "./tones";
 import { TransitionDialog } from "./TransitionDialog";
+
+/** The keyboard moves a picked-up defect a whole column at a time (left and
+ *  right arrows): its status is its column, so there is nothing to move to
+ *  inside one. */
+const toNextColumn: KeyboardCoordinateGetter = (event, { context }) => {
+  const step = event.code === "ArrowRight" ? 1 : event.code === "ArrowLeft" ? -1 : 0;
+  const rect = context.collisionRect;
+  if (!step || !rect) return undefined;
+  event.preventDefault();
+  const columns = [...context.droppableRects.values()].sort((a, b) => a.left - b.left);
+  const center = rect.left + rect.width / 2;
+  const at = columns.findIndex((c) => center >= c.left && center <= c.left + c.width);
+  const next = columns[(at < 0 ? 0 : at) + step];
+  if (!next) return undefined;
+  return { x: next.left + next.width / 2 - rect.width / 2, y: rect.top };
+};
 
 /**
  * The board by status (ADR-0016, user decision 1). Columns follow the main
@@ -50,9 +67,11 @@ export function DefectBoard({
   const { t } = useTranslation();
   const toast = useToast();
   const [asking, setAsking] = useState<{ defect: Defect; statuses: DefectStatus[] } | null>(null);
+  // The mouse drags the whole card; the keyboard picks it up with its handle
+  // and moves it column by column (WCAG 2.1.1, as on the planner).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: toNextColumn }),
   );
   const byColumn = (c: BoardColumn) =>
     defects
