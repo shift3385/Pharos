@@ -2016,3 +2016,54 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
         "both key tables were checked with rows in them"
     );
 }
+
+// ---- 0028: configurations and test cycles (CYC-01) ----------------------------
+
+#[test]
+fn both_fixtures_and_a_0027_image_get_the_cycle_tables_and_keep_their_runs() {
+    for image in [
+        fixture_image as fn() -> Connection,
+        fixture_020a1_image as fn() -> Connection,
+    ] {
+        let dir = temp_dir();
+        write_image(&dir, &image());
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        db.with_conn(|new| {
+            for t in ["configurations", "test_cycles", "test_cycle_items"] {
+                assert!(tables(new).iter().any(|x| x == t), "{t} missing");
+                assert_eq!(count(new, &format!("SELECT count(*) FROM {t}")), 0, "{t}");
+            }
+            Ok(())
+        })
+        .unwrap();
+        drop(db);
+        let again = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        again
+            .with_conn(|c| {
+                assert_eq!(pending_migrations(c)?.len(), 0);
+                Ok(())
+            })
+            .unwrap();
+        drop(again);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+    // A database of the build before this step (0027): its runs, with the
+    // cycle and configuration ids step 4 already stored, are kept byte for
+    // byte; the new tables start empty.
+    let old = Connection::open_in_memory().unwrap();
+    migrate_until(&old, "0027_case_fields_restore.sql");
+    old.execute_batch(
+        "INSERT INTO runs (id, workspace_id, project_id, run_key, title, trigger, cycle_id,
+                configuration_id, created_by, updated_by, created_at, updated_at)
+         VALUES ('r1', 'w', 'p1', 'RUN-001', 'CI', 'ci', 'c-from-elsewhere', 'cfg-1', 'u', 'u',
+                '2026-10-30 10:00:00', '2026-10-30 10:00:00');",
+    )
+    .unwrap();
+    let before = rows(&old, "runs", &columns(&old, "runs"));
+    run_migrations(&old).unwrap();
+    assert_eq!(rows(&old, "runs", &columns(&old, "runs")), before);
+    for t in ["configurations", "test_cycles", "test_cycle_items"] {
+        assert_eq!(count(&old, &format!("SELECT count(*) FROM {t}")), 0, "{t}");
+    }
+    assert_eq!(pending_migrations(&old).unwrap().len(), 0);
+}

@@ -38,7 +38,7 @@ fn table_for(entity: &str) -> Option<&'static str> {
         "requirement" => Some("requirements"),
         "planner_card" => Some("planner_cards"),
         "custom_field" => Some("custom_fields"),
-        other => crate::runs::table_for(other),
+        other => crate::runs::table_for(other).or_else(|| crate::cycles::table_for(other)),
     }
 }
 
@@ -131,6 +131,9 @@ pub(crate) fn read_payload(
     }
     if crate::runs::table_for(entity).is_some() {
         return crate::runs::read_payload(conn, entity, id);
+    }
+    if crate::cycles::table_for(entity).is_some() {
+        return crate::cycles::read_payload(conn, entity, id);
     }
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
@@ -385,6 +388,18 @@ pub(crate) fn server_takes_runs(conn: &Connection, user: &str) -> Result<bool, S
     server_lists(conn, user, RUNS)
 }
 
+/// The server feature that stores configurations, test cycles and their items
+/// (CYC-01, ADR-0017) and leases `cycle` key blocks. A server without it
+/// would refuse the whole push (or lease request) for an entity or key kind it
+/// does not know.
+pub(crate) const CYCLES: &str = "cycles";
+
+/// True once the account's server has listed `cycles`. Until then this build
+/// keeps its cycle entities pending and asks for no `cycle` key blocks.
+pub(crate) fn server_takes_cycles(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, CYCLES)
+}
+
 /// True if the account's server listed `feature` in its last answer.
 fn server_lists(conn: &Connection, user: &str, feature: &str) -> Result<bool, String> {
     let features = state_value(conn, &server_features_key(user))?;
@@ -470,7 +485,7 @@ pub(crate) fn held_back_cases(conn: &Connection) -> Result<i64, String> {
 pub(crate) fn assume_stable_steps_server(conn: &Connection) {
     assume_server_features(
         conn,
-        "key-conflicts,append-only,stable-steps,runs,custom-fields",
+        "key-conflicts,append-only,stable-steps,runs,custom-fields,cycles",
     );
 }
 
@@ -505,6 +520,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     // Runs and their children wait for a server with `runs` (EJE-01).
     let runs_too = server_takes_runs(conn, user)?;
     let fields_too = server_lists(conn, user, CUSTOM_FIELDS)?;
+    // Configurations, cycles and items wait for a server with `cycles` (CYC-01).
+    let cycles_too = server_takes_cycles(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -522,21 +539,26 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                    AND (o.entity <> 'test_case' OR ?2)
                    AND (o.entity NOT IN ({}) OR ?3)
                    AND (o.entity <> 'custom_field' OR ?4)
+                   AND (o.entity NOT IN ({}) OR ?5)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list(),
-                crate::runs::entities_sql_list()
+                crate::runs::entities_sql_list(),
+                crate::cycles::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
-            .query_map(params![user, cases_too, runs_too, fields_too], |r| {
-                Ok((
-                    r.get::<_, String>(0)?,
-                    r.get::<_, String>(1)?,
-                    r.get::<_, String>(2)?,
-                    r.get::<_, String>(3)?,
-                    r.get::<_, String>(4)?,
-                ))
-            })
+            .query_map(
+                params![user, cases_too, runs_too, fields_too, cycles_too],
+                |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, String>(1)?,
+                        r.get::<_, String>(2)?,
+                        r.get::<_, String>(3)?,
+                        r.get::<_, String>(4)?,
+                    ))
+                },
+            )
             .map_err(|e| e.to_string())?;
         for row in rows {
             let (entity, entity_id, id, row_hlc, author) = row.map_err(|e| e.to_string())?;
@@ -899,6 +921,7 @@ fn write_doc(
         "requirement" => Some("requirementKey"),
         "planner_card" => Some("cardKey"),
         "run" => Some("runKey"),
+        crate::cycles::CYCLE => Some("cycleKey"),
         _ => None,
     };
     let pulled_key = key_field.map_or("", |f| field(p, f));
@@ -1073,6 +1096,15 @@ fn write_doc(
             )
             .map_err(|e| e.to_string())?;
         }
+        entity if crate::cycles::table_for(entity).is_some() => crate::cycles::write_doc(
+            conn,
+            workspace_id,
+            user,
+            entity,
+            &doc.entity_id,
+            p,
+            doc.revision,
+        )?,
         entity => crate::runs::write_doc(
             conn,
             workspace_id,
@@ -1396,6 +1428,9 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
         ("run", "runs"),
         ("run_item", "run_items"),
         ("unlinked_mapping", "unlinked_mappings"),
+        ("configuration", "configurations"),
+        ("test_cycle", "test_cycles"),
+        ("test_cycle_item", "test_cycle_items"),
     ] {
         conn.execute(
             &format!(

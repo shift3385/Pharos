@@ -37,14 +37,16 @@ export interface DomainTx {
    *  update or a delete with the field diff, and none for an update that
    *  changed nothing. `audit: "folded"`: a row of a bulk operation that
    *  writes one summary event instead (`audit`). A project delete is one
-   *  event with the cascade counts; its children get none. */
+   *  event with the cascade counts; its children get none. `summary`: the
+   *  event's summary for a change that carries its own (a cycle's clone or
+   *  delete, CYC-01), as the desktop's `Change::summary`. */
   put(
     entity: string,
     id: string,
     payload: Record<string, unknown>,
     current: RemoteDoc | null,
     deleted?: boolean,
-    opts?: { audit?: "event" | "folded" },
+    opts?: { audit?: "event" | "folded"; summary?: Record<string, unknown> },
   ): Promise<RemoteDoc>;
   /** An audit event with no write of its own: the summary of a bulk
    *  operation (an import, with its counts), as on the desktop
@@ -122,7 +124,7 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
           const after = snapshot(stored.payload, deleted);
           const action: AuditAction = deleted ? "delete" : current ? "update" : "create";
           const changes = action === "create" ? diff(null, after) : action === "delete" ? diff(before, null) : diff(before, after);
-          const summary = stored.cascade ? { cascade: stored.cascade } : null;
+          const summary = stored.cascade ? { cascade: stored.cascade } : (opts.summary ?? null);
           if (action !== "update" || Object.keys(changes).length > 0 || summary) {
             await appendWebEvent(
               client,

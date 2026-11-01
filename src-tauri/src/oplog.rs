@@ -90,8 +90,9 @@ pub fn observe_hlc(conn: &Connection, remote: &str) -> Result<(), String> {
 /// and the push are both built from this list, so the indicator only counts
 /// what a sync actually sends (FIX-01). Templates and attachments still write
 /// to the oplog and wait for SYNC-04b. The execution entities (EJE-01) join
-/// with `runs.rs`; custom field definitions (FLD-01) with `custom_fields.rs`.
-pub const SYNCED: [&str; 9] = [
+/// with `runs.rs`; custom field definitions (FLD-01) with `custom_fields.rs`;
+/// configurations, test cycles and their items (CYC-01) with `cycles.rs`.
+pub const SYNCED: [&str; 12] = [
     "project",
     "test_plan",
     "test_case",
@@ -101,6 +102,9 @@ pub const SYNCED: [&str; 9] = [
     "run_item",
     "unlinked_mapping",
     "custom_field",
+    "configuration",
+    "test_cycle",
+    "test_cycle_item",
 ];
 
 /// `SYNCED` as an SQL list literal, for `entity IN (...)`.
@@ -132,6 +136,9 @@ pub fn owner_of(
         }
         "template" => "SELECT owner_id FROM templates WHERE id = ?1",
         "run" | "run_item" | "unlinked_mapping" => crate::runs::owner_sql(entity).unwrap_or_default(),
+        "configuration" | "test_cycle" | "test_cycle_item" => {
+            crate::cycles::owner_sql(entity).unwrap_or_default()
+        }
         // Append-only entities say it themselves (sync_class registry).
         _ => {
             return match crate::sync_class::append_only(entity) {

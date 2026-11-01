@@ -8,6 +8,7 @@ mod audit_tests;
 mod custom_fields;
 #[cfg(test)]
 mod custom_fields_tests;
+mod cycles;
 mod db;
 mod diag;
 mod downloads;
@@ -173,6 +174,27 @@ pub fn run() {
             runs::result_record,
             runs::results_list,
             runs::unlinked_mapping_set,
+            cycles::configuration_list,
+            cycles::configuration_create,
+            cycles::configuration_update,
+            cycles::configuration_archive,
+            cycles::configuration_reorder,
+            cycles::cycle_list,
+            cycles::cycle_get,
+            cycles::cycle_create,
+            cycles::cycle_update,
+            cycles::cycle_clone,
+            cycles::cycle_delete,
+            cycles::cycle_items_list,
+            cycles::cycle_items_add,
+            cycles::cycle_items_add_by_filter,
+            cycles::cycle_filter_preview,
+            cycles::cycle_item_update,
+            cycles::cycle_items_remove,
+            cycles::cycle_items_reorder,
+            cycles::cycle_execute,
+            cycles::cycle_runs,
+            cycles::cycle_progress_get,
             planner::planner_list,
             planner::planner_create,
             planner::planner_update,
