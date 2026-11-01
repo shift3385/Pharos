@@ -125,7 +125,7 @@ export class MessagesCollector {
           : undefined,
       },
     };
-    const rel = relativizer([...this.pickles.values()].map((p) => p.uri));
+    const rel = relativizer();
     // Attachments of an attempt, by test step (a hook's go to the result).
     const attachmentsOf = new Map<string, M.Attachment[]>();
     for (const a of this.attachments) {
@@ -134,6 +134,9 @@ export class MessagesCollector {
       list.push(a);
       attachmentsOf.set(a.testCaseStartedId, list);
     }
+    // Attachments sent by URL (newer protocols): kept as a path, never
+    // downloaded; the preview says so.
+    let byUrl = 0;
     const addAttachment = (a: M.Attachment): string | undefined => {
       const ref = nextRef();
       const name = a.fileName || a.mediaType || "attachment";
@@ -143,6 +146,7 @@ export class MessagesCollector {
           encoding: String(a.contentEncoding) === "BASE64" ? "base64" : "text",
         });
       } else if (!a.url) return undefined;
+      else byUrl++;
       doc.attachments.push({
         ref,
         name,
@@ -251,7 +255,12 @@ export class MessagesCollector {
       format: "cucumber_messages",
       doc,
       inline,
-      warnings: doc.results.length ? [] : [{ code: "no-results" }],
+      warnings: [
+        ...(doc.results.length ? [] : [{ code: "no-results" as const }]),
+        ...(byUrl
+          ? [{ code: "attachment-url" as const, detail: String(byUrl) }]
+          : []),
+      ],
     };
   }
 }

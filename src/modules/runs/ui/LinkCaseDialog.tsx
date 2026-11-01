@@ -11,7 +11,7 @@ const SHOWN = 50;
 
 /** Links one test of the tray to a case (ING-05): every past and future
  *  result with that `test_key`, without touching the results. Search by key
- *  or title; a case the report's tag named is offered first. */
+ *  or title. A failure keeps the dialog open and says so. */
 export function LinkCaseDialog({
   test,
   cases,
@@ -28,6 +28,7 @@ export function LinkCaseDialog({
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = q
@@ -43,8 +44,11 @@ export function LinkCaseDialog({
   async function confirm() {
     if (!chosen) return;
     setSaving(true);
+    setFailed(false);
     try {
       await onLink(chosen);
+    } catch {
+      setFailed(true);
     } finally {
       setSaving(false);
     }
@@ -93,6 +97,11 @@ export function LinkCaseDialog({
           </label>
         ))}
       </fieldset>
+      {failed && (
+        <p className="rn-error" role="alert">
+          {t("runs.tray.linkError")}
+        </p>
+      )}
       <div className="cd__actions">
         <button
           type="button"

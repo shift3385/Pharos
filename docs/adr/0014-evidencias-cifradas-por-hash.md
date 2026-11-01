@@ -273,5 +273,7 @@ sobre lo decidido, sin cambiar la decisión:
   en una carpeta que elige el usuario) se guardan después de importar, uno a
   uno (`run_import_attach`, idempotente por propietario y contenido), como
   adjuntos de su resultado o de su paso (`result`, `step_result`), con un
-  evento `link` de auditoría por adjunto nuevo, como en el planificador. Pharos
+  evento `link` de auditoría por adjunto nuevo, como en el planificador. Al
+  purgar un run se borran también estas filas y el informe en bruto, y la
+  recogida libera sus archivos. Pharos
   nunca lee una ruta del informe por su cuenta.

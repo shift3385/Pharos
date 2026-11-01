@@ -25,6 +25,7 @@
 pub mod derive;
 pub mod ids;
 pub mod import;
+pub mod link;
 #[cfg(test)]
 mod tests;
 

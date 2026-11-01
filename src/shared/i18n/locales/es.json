@@ -1898,7 +1898,9 @@
       "build": "build {{build}}",
       "unlinked_one": "{{count}} sin vincular",
       "unlinked_other": "{{count}} sin vincular",
-      "countsSr": "{{passed}} pasan, {{failed}} fallan, {{other}} otros"
+      "countsSr": "{{passed}} pasan, {{failed}} fallan, {{other}} otros",
+      "loadError": "No se pudieron cargar los runs.",
+      "retry": "Reintentar"
     },
     "trigger": {
       "manual": "Manual",
@@ -1952,9 +1954,6 @@
       "noOpenRuns": "No hay runs en curso en este proyecto",
       "run": "Run",
       "keepOpen": "Dejar el run abierto para importar más shards",
-      "shardIndex": "Shard",
-      "shardTotal": "de",
-      "shardHint": "Se rellena si el informe lo trae (CTRF shardId, Playwright --shard).",
       "preview": "Vista previa",
       "previewSummary": "{{tests}} tests, {{results}} intentos: {{linked}} se vinculan a un caso y {{unlinked}} quedan sin vincular.",
       "attachments_one": "{{count}} adjunto",
@@ -1991,7 +1990,8 @@
         "result-too-large": "Resultado demasiado grande para sincronizarse: no se importa.",
         "merged-without-shard": "Informe fusionado (merge-reports): ha perdido el shard y su duración es poco fiable. Mejor importa el informe de cada shard.",
         "no-results": "El informe no tiene resultados.",
-        "attachment-url": "Un adjunto es una URL: no se descarga."
+        "attachment-url": "{{detail}} adjuntos son URLs: no se descargan.",
+        "no-revision": "El caso {{detail}} no tiene ninguna revisión: queda sin vincular."
       },
       "error": {
         "unknown-format": "No se reconoce el formato del archivo.",
@@ -2007,8 +2007,14 @@
         "run-closed": "El run está cerrado: elige uno en curso o crea uno nuevo.",
         "report-changed": "El archivo cambió mientras se importaba. Vuelve a elegirlo.",
         "evidence-too-large": "El archivo supera los 200 MB.",
-        "generic": "No se pudo importar: {{detail}}"
-      }
+        "generic": "No se pudo importar: {{detail}}",
+        "project-not-found": "El proyecto no existe o no es tuyo.",
+        "test-key-required": "Un resultado no tiene identidad de test ({{detail}}).",
+        "invalid-sha256": "La huella del archivo no es válida. Vuelve a elegirlo.",
+        "invalid-shard": "El informe trae un shard incoherente: el índice debe estar entre 1 y el total.",
+        "invalid-target": "Elige un run nuevo o uno abierto."
+      },
+      "shard": "Shard {{index}} de {{total}} (lo dice el informe)."
     },
     "tray": {
       "title": "Tests sin vincular",
@@ -2043,7 +2049,8 @@
         "unlinked": "No hay tests sin vincular.",
         "mapped": "Ningún test vinculado a mano.",
         "all": "Ningún test importado sin caso."
-      }
+      },
+      "linkError": "No se pudo guardar el vínculo. Inténtalo de nuevo."
     }
   }
 }

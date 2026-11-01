@@ -31,7 +31,6 @@ mod tests;
 
 use std::collections::{HashMap, HashSet};
 
-use regex::Regex;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
@@ -41,7 +40,7 @@ use tauri::State;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::derive::instant_ms;
+use super::link::{Facts, Link, Linker};
 use super::{
     err, ids, insert_run, insert_steps, owned_run, require_open, text, update_run, within,
     RunInput, StepResult, MAX_STEPS, MAX_TEST_KEY, MAX_TITLE, RESULT, RESULT_STATUSES, RUN_SHARD,
@@ -207,8 +206,6 @@ pub struct ReportImportRequest {
     /// uploaded raw report on commit).
     pub(crate) sha256: String,
     pub(crate) file_name: Option<String>,
-    pub(crate) shard_index: Option<i64>,
-    pub(crate) shard_total: Option<i64>,
     /// Import a file this project already has as another new run.
     pub(crate) allow_duplicate: Option<bool>,
 }
@@ -396,19 +393,6 @@ fn split_keyword(keyword: Option<&str>, text: &str) -> (Option<String>, String) 
     (None, text.to_string())
 }
 
-/// The scenario a test belongs to: an Outline row's test is titled
-/// `Example #n` (Playwright, CTRF) or `<name> - #b.f` (cucumber-js JUnit).
-fn scenario_name(r: &DocResult) -> String {
-    let example = Regex::new(r"^Example #\d+$").expect("static regex");
-    if example.is_match(&r.name) {
-        if let Some(last) = suite_of(r).last() {
-            return last.clone();
-        }
-    }
-    let cucumber = Regex::new(r" - #\d+\.\d+(:.*)?$").expect("static regex");
-    cucumber.replace(&r.name, "").to_string()
-}
-
 fn suite_of(r: &DocResult) -> Vec<String> {
     match &r.suite {
         Some(Value::Array(a)) => a
@@ -420,387 +404,8 @@ fn suite_of(r: &DocResult) -> Vec<String> {
     }
 }
 
-/// The step texts of one flow of a revision, in execution order: the
-/// background, then the flow's (or the case's) preconditions and steps.
-fn ordered_steps(data: &Value, flow_id: Option<&str>) -> Vec<(String, String)> {
-    let list = |v: Option<&Value>| -> Vec<(String, String)> {
-        v.and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter_map(|s| {
-                Some((
-                    s.get("id")?.as_str()?.to_string(),
-                    s.get("text")?.as_str()?.to_string(),
-                ))
-            })
-            .collect()
-    };
-    let mut out = list(data.get("background"));
-    let scope = match flow_id {
-        None => data,
-        Some(id) => match data.get("flows").and_then(Value::as_array).and_then(|f| {
-            f.iter()
-                .find(|x| x.get("id").and_then(Value::as_str) == Some(id))
-        }) {
-            Some(flow) => flow,
-            None => return out,
-        },
-    };
-    out.extend(list(scope.get("preconditions")));
-    out.extend(list(scope.get("steps")));
-    out
-}
-
-/// A revision step text as a pattern: an Outline's `<param>` matches any
-/// value, everything else literally.
-fn step_pattern(text: &str) -> Regex {
-    let parts: Vec<String> = Regex::new(r"<[^<>]+>")
-        .expect("static regex")
-        .split(text.trim())
-        .map(regex::escape)
-        .collect();
-    Regex::new(&format!("^{}$", parts.join(".*?"))).expect("escaped pattern")
-}
-
 fn ref_of(v: &Value) -> Option<String> {
     v.as_str().map(String::from)
-}
-
-// ---- linking -----------------------------------------------------------------
-
-/// A run item by what it plans: (case, flow, row).
-type ItemKey = (String, Option<String>, Option<String>);
-
-struct CaseRef {
-    id: String,
-    key_conflict: bool,
-}
-
-/// Per-import caches over the project's cases and revisions.
-struct Linker<'c> {
-    conn: &'c Connection,
-    project_id: String,
-    user: String,
-    tag: Regex,
-    started_at_ms: Option<i64>,
-    cases: HashMap<String, Option<CaseRef>>,
-    revisions: HashMap<String, Option<(String, Value)>>,
-    /// Run items of the target run: (case, flow, row) → (item, revision).
-    items: HashMap<ItemKey, Vec<(String, String)>>,
-}
-
-struct Link {
-    case_id: Option<String>,
-    case_key: Option<String>,
-    revision_id: Option<String>,
-    case_revision: Option<i64>,
-    run_item_id: Option<String>,
-    flow_id: Option<String>,
-    example_row_id: Option<String>,
-    /// Revision step ids by position, when the texts match.
-    step_ids: Vec<Option<String>>,
-    reason: Option<&'static str>,
-}
-
-impl Link {
-    /// No case (the tray), or not looked up (a re-import that writes nothing).
-    fn none(steps: usize, reason: Option<&'static str>) -> Self {
-        Link {
-            case_id: None,
-            case_key: None,
-            revision_id: None,
-            case_revision: None,
-            run_item_id: None,
-            flow_id: None,
-            example_row_id: None,
-            step_ids: vec![None; steps],
-            reason,
-        }
-    }
-}
-
-impl<'c> Linker<'c> {
-    fn new(
-        conn: &'c Connection,
-        project_id: &str,
-        user: &str,
-        run_id: Option<&str>,
-        started_at: Option<&str>,
-    ) -> Result<Self, String> {
-        let prefix: String = conn
-            .query_row(
-                "SELECT case_id_prefix FROM projects WHERE id = ?1",
-                params![project_id],
-                |r| r.get(0),
-            )
-            .map_err(err)?;
-        let tag = Regex::new(&format!("^@({}[0-9]{{1,9}})$", regex::escape(&prefix)))
-            .map_err(|e| e.to_string())?;
-        let mut items: HashMap<ItemKey, Vec<(String, String)>> = HashMap::new();
-        if let Some(run) = run_id {
-            let mut stmt = conn
-                .prepare(
-                    "SELECT id, test_case_id, test_case_revision_id, flow_id, example_row_id
-                       FROM run_items WHERE run_id = ?1 AND deleted_at IS NULL ORDER BY position",
-                )
-                .map_err(err)?;
-            let rows = stmt
-                .query_map(params![run], |r| {
-                    Ok((
-                        r.get::<_, String>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, String>(2)?,
-                        r.get::<_, Option<String>>(3)?,
-                        r.get::<_, Option<String>>(4)?,
-                    ))
-                })
-                .map_err(err)?;
-            for row in rows {
-                let (id, case, rev, flow, ex) = row.map_err(err)?;
-                items.entry((case, flow, ex)).or_default().push((id, rev));
-            }
-        }
-        Ok(Linker {
-            conn,
-            project_id: project_id.to_string(),
-            user: user.to_string(),
-            tag,
-            started_at_ms: started_at.and_then(instant_ms),
-            cases: HashMap::new(),
-            revisions: HashMap::new(),
-            items,
-        })
-    }
-
-    /// The case keys among a test's tags.
-    fn case_keys(&self, r: &DocResult) -> Vec<String> {
-        let mut keys: Vec<String> = r
-            .tags
-            .iter()
-            .filter_map(|t| self.tag.captures(t.trim()).map(|c| c[1].to_string()))
-            .collect();
-        if let Some(k) = r
-            .case_key
-            .as_deref()
-            .map(str::trim)
-            .filter(|k| !k.is_empty())
-        {
-            keys.push(k.to_string());
-        }
-        keys.sort();
-        keys.dedup();
-        keys
-    }
-
-    fn case(&mut self, key: &str) -> Result<Option<&CaseRef>, String> {
-        if !self.cases.contains_key(key) {
-            let found = self
-                .conn
-                .query_row(
-                    "SELECT c.id, EXISTS (SELECT 1 FROM key_conflicts k WHERE k.entity = 'test_case'
-                            AND k.entity_id = c.id AND k.resolved_at IS NULL)
-                       FROM test_cases c
-                      WHERE c.project_id = ?1 AND c.scenario_id = ?2 AND c.deleted_at IS NULL
-                      ORDER BY c.created_at, c.rowid LIMIT 1",
-                    params![self.project_id, key],
-                    |r| {
-                        Ok(CaseRef {
-                            id: r.get(0)?,
-                            key_conflict: r.get(1)?,
-                        })
-                    },
-                )
-                .optional()
-                .map_err(err)?;
-            self.cases.insert(key.to_string(), found);
-        }
-        Ok(self.cases.get(key).and_then(Option::as_ref))
-    }
-
-    /// The synced revision of a case current at the run's start, else the
-    /// current one (created now if missing).
-    fn revision(&mut self, case_id: &str) -> Result<Option<(String, Value)>, String> {
-        if let Some(r) = self.revisions.get(case_id) {
-            return Ok(r.clone());
-        }
-        let mut chosen: Option<String> = None;
-        if let Some(at) = self.started_at_ms {
-            let mut stmt = self
-                .conn
-                .prepare(
-                    "SELECT id, created_at FROM test_case_revisions
-                      WHERE test_case_id = ?1 AND content_sha256 IS NOT NULL
-                      ORDER BY revision DESC, created_at DESC",
-                )
-                .map_err(err)?;
-            let rows = stmt
-                .query_map(params![case_id], |r| {
-                    Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
-                })
-                .map_err(err)?;
-            for row in rows {
-                let (id, created) = row.map_err(err)?;
-                if instant_ms(&created).is_some_and(|c| c <= at) {
-                    chosen = Some(id);
-                    break;
-                }
-            }
-        }
-        let id = match chosen {
-            Some(id) => Some(id),
-            None => crate::revisions::ensure_current(self.conn, case_id, &self.user, true)?,
-        };
-        let out = match id {
-            Some(id) => {
-                let data: Option<String> = self
-                    .conn
-                    .query_row(
-                        "SELECT data FROM test_case_revisions WHERE id = ?1",
-                        params![id],
-                        |r| r.get(0),
-                    )
-                    .optional()
-                    .map_err(err)?;
-                let data = data
-                    .and_then(|d| serde_json::from_str(&d).ok())
-                    .unwrap_or(Value::Null);
-                Some((id, data))
-            }
-            None => None,
-        };
-        self.revisions.insert(case_id.to_string(), out.clone());
-        Ok(out)
-    }
-
-    fn link(
-        &mut self,
-        r: &DocResult,
-        steps: &[(Option<String>, String)],
-        warn: &mut Vec<ReportImportWarning>,
-        key: &str,
-    ) -> Result<Link, String> {
-        let mut link = Link::none(steps.len(), None);
-        let keys = self.case_keys(r);
-        let w = |code: &str, detail: Option<String>| ReportImportWarning {
-            code: code.into(),
-            test_key: Some(key.to_string()),
-            detail,
-        };
-        match keys.len() {
-            0 => {
-                link.reason = Some("no-tag");
-                return Ok(link);
-            }
-            1 => {}
-            _ => {
-                link.reason = Some("two-case-tags");
-                warn.push(w("two-case-tags", Some(keys.join(", "))));
-                return Ok(link);
-            }
-        }
-        let case_key = keys[0].clone();
-        link.case_key = Some(case_key.clone());
-        let case = match self.case(&case_key)? {
-            None => {
-                link.reason = Some("unknown-case");
-                warn.push(w("unknown-case", Some(case_key)));
-                return Ok(link);
-            }
-            Some(c) if c.key_conflict => {
-                link.reason = Some("case-key-conflict");
-                warn.push(w("case-key-conflict", Some(case_key)));
-                return Ok(link);
-            }
-            Some(c) => c.id.clone(),
-        };
-        let Some((mut revision_id, mut data)) = self.revision(&case)? else {
-            link.reason = Some("unknown-case");
-            return Ok(link);
-        };
-        // The flow: an advanced case's flow named like the scenario.
-        let scenario = scenario_name(r);
-        let flow_id = data
-            .get("flows")
-            .and_then(Value::as_array)
-            .and_then(|flows| {
-                flows.iter().find(|f| {
-                    f.get("name").and_then(Value::as_str).map(str::trim) == Some(scenario.trim())
-                })
-            })
-            .and_then(|f| f.get("id").and_then(Value::as_str).map(String::from));
-        let rows_of = |data: &Value, flow: Option<&str>| -> Vec<String> {
-            let scope = match flow {
-                None => Some(data),
-                Some(id) => data.get("flows").and_then(Value::as_array).and_then(|f| {
-                    f.iter()
-                        .find(|x| x.get("id").and_then(Value::as_str) == Some(id))
-                }),
-            };
-            scope
-                .and_then(|s| s.get("examples"))
-                .and_then(|e| e.get("rows"))
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter_map(|row| row.get("id").and_then(Value::as_str).map(String::from))
-                .collect()
-        };
-        let mut row_id = None;
-        if let Some(n) = r.example_row {
-            let rows = rows_of(&data, flow_id.as_deref());
-            row_id = usize::try_from(n).ok().and_then(|n| rows.get(n).cloned());
-            if row_id.is_none() {
-                warn.push(w("row-not-found", Some(format!("{}", n + 1))));
-            }
-        }
-        // A run item of the target run for exactly this case, flow and row:
-        // the result fulfils it, against the item's frozen revision.
-        if let Some(found) = self
-            .items
-            .get(&(case.clone(), flow_id.clone(), row_id.clone()))
-            .filter(|v| v.len() == 1)
-        {
-            let (item, rev) = found[0].clone();
-            if rev != revision_id {
-                let d: Option<String> = self
-                    .conn
-                    .query_row(
-                        "SELECT data FROM test_case_revisions WHERE id = ?1",
-                        params![rev],
-                        |r| r.get(0),
-                    )
-                    .optional()
-                    .map_err(err)?;
-                data = d
-                    .and_then(|d| serde_json::from_str(&d).ok())
-                    .unwrap_or(Value::Null);
-                revision_id = rev;
-            }
-            link.run_item_id = Some(item);
-        }
-        let ordered = ordered_steps(&data, flow_id.as_deref());
-        for (i, (_, step_text)) in steps.iter().enumerate() {
-            if let Some((id, rev_text)) = ordered.get(i) {
-                if step_pattern(rev_text).is_match(step_text.trim()) {
-                    link.step_ids[i] = Some(id.clone());
-                }
-            }
-        }
-        link.case_revision = self
-            .conn
-            .query_row(
-                "SELECT revision FROM test_case_revisions WHERE id = ?1",
-                params![revision_id],
-                |r| r.get(0),
-            )
-            .optional()
-            .map_err(err)?;
-        link.case_id = Some(case);
-        link.revision_id = Some(revision_id);
-        link.flow_id = flow_id;
-        link.example_row_id = row_id;
-        Ok(link)
-    }
 }
 
 // ---- planning ----------------------------------------------------------------
@@ -885,11 +490,19 @@ fn plan(
         .and_then(|s| s.source_format.clone())
         .unwrap_or_else(|| "pharos_run_json".into());
     if !FORMATS.contains(&format.as_str()) {
-        return Err(format!("unknown source format: {format}"));
+        return Err(format!("unknown-format: {format}"));
     }
     let started = run
         .and_then(|(_, s)| s.map(String::from))
         .or_else(|| time_of(doc.run.started_at.as_ref()));
+    let shard_index = shard.and_then(|s| s.shard_index);
+    let shard_total = shard.and_then(|s| s.shard_total);
+    // The shard is what the report says (immutable content, ADR-0013).
+    match (shard_index, shard_total) {
+        (None, None) => {}
+        (Some(i), Some(t)) if i >= 1 && i <= t => {}
+        _ => return Err("invalid-shard: the index must be between 1 and the total".into()),
+    }
     let mut linker = if link {
         Some(Linker::new(
             conn,
@@ -914,7 +527,7 @@ fn plan(
         let raw_key = r.test_key.clone().unwrap_or_default();
         let raw_key = raw_key.trim();
         if raw_key.is_empty() {
-            return Err(format!("testKey is required: {}", r.name));
+            return Err(format!("test-key-required: {}", r.name));
         }
         let (mut key, long) = bounded_key(raw_key);
         if long {
@@ -941,7 +554,7 @@ fn plan(
                 .or_insert(1);
             loop {
                 *n += 1;
-                let candidate = format!("{key} #{n}");
+                let candidate = bounded_key(&format!("{key} #{n}")).0;
                 let cid = ids::imported_result_id(shard_id, &candidate, label.as_deref(), attempt);
                 if ids_seen.insert(cid.clone()) {
                     warnings.push(ReportImportWarning {
@@ -971,8 +584,27 @@ fn plan(
                 split_keyword(s.keyword.as_deref(), &t)
             })
             .collect();
+        let suite = suite_of(r);
         let link = match linker.as_mut() {
-            Some(l) => l.link(r, &steps_in, &mut warnings, &key)?,
+            Some(l) => {
+                let texts: Vec<String> = steps_in.iter().map(|(_, t)| t.clone()).collect();
+                let link = l.link(&Facts {
+                    tags: &r.tags,
+                    case_key: r.case_key.as_deref(),
+                    name: &r.name,
+                    suite: &suite,
+                    example_row: r.example_row,
+                    steps: &texts,
+                })?;
+                for (code, detail) in &link.warnings {
+                    warnings.push(ReportImportWarning {
+                        code: (*code).into(),
+                        test_key: Some(key.clone()),
+                        detail: Some(detail.clone()),
+                    });
+                }
+                link
+            }
             None => Link::none(steps_in.len(), None),
         };
         let mut steps = Vec::with_capacity(r.steps.len());
@@ -1014,7 +646,6 @@ fn plan(
         if let Some(p) = &r.file_path {
             attrs.insert("filePath".into(), json!(p));
         }
-        let suite = suite_of(r);
         if !suite.is_empty() {
             attrs.insert("suite".into(), json!(suite));
         }
@@ -1104,28 +735,25 @@ fn plan(
         executed_by: clip(&executed_by, MAX_LABEL).0,
         format,
         format_version: shard.and_then(|s| s.format_version.clone()),
-        shard_index: req.shard_index.or(shard.and_then(|s| s.shard_index)),
-        shard_total: req.shard_total.or(shard.and_then(|s| s.shard_total)),
+        shard_index,
+        shard_total,
         results: out,
         attachments: doc.attachments.len(),
         warnings,
     })
 }
 
-/// Bytes of the texts of a result document (a close upper bound of its JSON).
+/// Bytes of the result document as it is pushed (JSON, so escapes such as
+/// a trace's ANSI colour codes count at their real size).
 fn doc_size(p: &Planned) -> usize {
-    let s = |o: &Option<String>| o.as_ref().map_or(0, |x| x.len() * 2);
-    let steps: usize = p
-        .steps
-        .iter()
-        .map(|st| 256 + st.text.len() * 2 + s(&st.actual) + s(&st.keyword))
-        .sum();
-    2048 + p.test_key.len() * 2
-        + s(&p.error_message)
-        + s(&p.error_trace)
-        + p.attributes.to_string().len()
-        + p.example_values.as_ref().map_or(0, String::len)
-        + steps
+    let doc = json!({
+        "testKey": p.test_key, "configurationLabel": p.label, "status": p.status,
+        "rawStatus": p.raw_status, "errorMessage": p.error_message,
+        "errorTrace": p.error_trace, "externalId": p.external_id,
+        "exampleValues": p.example_values, "attributes": p.attributes, "steps": p.steps,
+    });
+    // The fixed fields (ids, times, the link) fit in 2 KiB.
+    2048 + serde_json::to_string(&doc).map_or(usize::MAX, |s| s.len())
 }
 
 /// A run of the project already holding this file (its key), if any.
@@ -1145,10 +773,16 @@ fn duplicate_of(
     .map_err(err)
 }
 
+/// The name the raw report is stored under.
+fn raw_report_name(req: &ReportImportRequest, format: &str) -> String {
+    let name = text(&req.file_name).unwrap_or_else(|| format!("{format}.report"));
+    clip(&name, MAX_TITLE).0
+}
+
 fn check_sha(sha: &str) -> Result<String, String> {
     let sha = sha.trim().to_ascii_lowercase();
     if sha.len() != 64 || !sha.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return Err("sha256 must be 64 hex characters".into());
+        return Err("invalid-sha256: 64 hex characters".into());
     }
     Ok(sha)
 }
@@ -1189,7 +823,7 @@ pub(crate) fn preview(
     req: &ReportImportRequest,
 ) -> Result<ReportImportPreview, String> {
     if !project::owns(conn, &req.project_id, &req.user_id)? {
-        return Err("project not found".into());
+        return Err("project-not-found".into());
     }
     let sha = check_sha(&req.sha256)?;
     let doc = parse_doc(&req.doc)?;
@@ -1290,7 +924,7 @@ pub(crate) fn commit(
 ) -> Result<ReportImportOutcome, String> {
     let user = &req.user_id;
     if !project::owns(conn, &req.project_id, user)? {
-        return Err("project not found".into());
+        return Err("project-not-found".into());
     }
     let sha = check_sha(&req.sha256)?;
     if raw.sha256 != sha {
@@ -1333,6 +967,20 @@ pub(crate) fn commit(
                     Some((id, started.as_deref())),
                     &shard_id,
                     false,
+                )?;
+                // A device that pulled the shard has no raw report yet: the
+                // upload just stored becomes it, so its file is never orphaned.
+                // It is evidence only (no oplog row, no event), like on import.
+                insert_attachment(
+                    conn,
+                    &req.project_id,
+                    RUN_SHARD,
+                    &shard_id,
+                    raw,
+                    &raw_report_name(req, &p.format),
+                    None,
+                    "raw_report",
+                    user,
                 )?;
                 return Ok(ReportImportOutcome {
                     run_id: id.clone(),
@@ -1379,7 +1027,7 @@ pub(crate) fn commit(
             };
             (insert_run(conn, &input)?, true)
         }
-        _ => return Err("give either runId or newRun".into()),
+        _ => return Err("invalid-target: give either runId or newRun".into()),
     };
     let shard_id = ids::shard_id(&run_id, &sha);
     let (run_key, started): (String, Option<String>) = conn
@@ -1423,14 +1071,13 @@ pub(crate) fn commit(
     // The raw report: evidence of the shard (ADR-0014, kind raw_report). The
     // shard's `source_attachment_id` stays NULL: it is part of the shard's
     // immutable content and an attachment is local until SYNC-04b.
-    let file_name = text(&req.file_name).unwrap_or_else(|| format!("{}.report", p.format));
     insert_attachment(
         conn,
         &req.project_id,
         RUN_SHARD,
         &shard_id,
         raw,
-        &clip(&file_name, MAX_TITLE).0,
+        &raw_report_name(req, &p.format),
         None,
         "raw_report",
         user,
@@ -1694,7 +1341,8 @@ pub(crate) fn attach(
 
 // ---- the tray (ING-05) -------------------------------------------------------
 
-/// Every `test_key` of the project with results and no case of their own,
+/// Every `test_key` of the project whose latest imported result has no case
+/// of its own (a test tagged later leaves the tray),
 /// newest first, with the later link (`unlinked_mapping`) when there is one.
 pub(crate) fn unlinked_list(
     conn: &Connection,
@@ -1712,7 +1360,7 @@ pub(crate) fn unlinked_list(
                       count(*) OVER (PARTITION BY x.test_key) AS total
                  FROM results x
                  JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
-                WHERE x.project_id = ?1 AND x.test_case_id IS NULL AND x.shard_id IS NOT NULL)
+                WHERE x.project_id = ?1 AND x.shard_id IS NOT NULL)
              SELECT l.test_key, l.total, l.status, l.run_id, r.run_key, l.created_at,
                     l.attributes, l.case_key,
                     (SELECT m.test_case_id FROM unlinked_mappings m
@@ -1720,7 +1368,7 @@ pub(crate) fn unlinked_list(
                         AND m.deleted_at IS NULL
                       ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1) AS mapped
                FROM last l LEFT JOIN runs r ON r.id = l.run_id
-              WHERE l.n = 1
+              WHERE l.n = 1 AND l.test_case_id IS NULL
               ORDER BY l.created_at DESC, l.test_key",
         )
         .map_err(err)?;
@@ -1760,7 +1408,130 @@ pub(crate) fn unlinked_list(
     rows.collect::<rusqlite::Result<_>>().map_err(err)
 }
 
+// ---- counts per run --------------------------------------------------------------
+
+/// What the runs list shows of each run: its final results by status, and
+/// how many of them have no case (not even by a later link).
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Serialize, Debug, Clone, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RunCounts {
+    pub(crate) run_id: String,
+    pub(crate) passed: i64,
+    pub(crate) failed: i64,
+    pub(crate) other: i64,
+    pub(crate) unlinked: i64,
+}
+
+/// The counts of every live run of the project, in one read (the list would
+/// otherwise ask for every result of every run).
+pub(crate) fn run_counts(
+    conn: &Connection,
+    project_id: &str,
+    user: &str,
+) -> Result<Vec<RunCounts>, String> {
+    if !project::owns(conn, project_id, user)? {
+        return Ok(Vec::new());
+    }
+    struct Row {
+        id: String,
+        run_id: String,
+        test_key: String,
+        label: Option<String>,
+        attempt: i64,
+        status: String,
+        started_at: Option<String>,
+        finished_at: Option<String>,
+        imported_at: Option<String>,
+        hlc: String,
+        flaky: bool,
+        linked: bool,
+    }
+    let rows: Vec<Row> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
+                        x.started_at, x.finished_at, s.imported_at, x.hlc,
+                        json_extract(x.attributes, '$.flaky') = 1,
+                        x.test_case_id IS NOT NULL OR EXISTS (
+                          SELECT 1 FROM unlinked_mappings m
+                           WHERE m.project_id = x.project_id AND m.test_key = x.test_key
+                             AND m.deleted_at IS NULL AND m.test_case_id IS NOT NULL)
+                   FROM results x
+                   JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+                   LEFT JOIN run_shards s ON s.id = x.shard_id
+                  WHERE x.project_id = ?1",
+            )
+            .map_err(err)?;
+        let mapped = stmt
+            .query_map(params![project_id], |r| {
+                Ok(Row {
+                    id: r.get(0)?,
+                    run_id: r.get(1)?,
+                    test_key: r.get(2)?,
+                    label: r.get(3)?,
+                    attempt: r.get(4)?,
+                    status: r.get(5)?,
+                    started_at: r.get(6)?,
+                    finished_at: r.get(7)?,
+                    imported_at: r.get(8)?,
+                    hlc: r.get(9)?,
+                    flaky: r.get::<_, Option<bool>>(10)?.unwrap_or(false),
+                    linked: r.get(11)?,
+                })
+            })
+            .map_err(err)?;
+        mapped.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    let attempts: Vec<super::derive::Attempt> = rows
+        .iter()
+        .map(|r| super::derive::Attempt {
+            id: &r.id,
+            run_id: &r.run_id,
+            test_key: &r.test_key,
+            configuration_label: r.label.as_deref(),
+            attempt: r.attempt,
+            status: &r.status,
+            started_at: r.started_at.as_deref(),
+            finished_at: r.finished_at.as_deref(),
+            shard_imported_at: r.imported_at.as_deref(),
+            hlc: &r.hlc,
+            declared_flaky: r.flaky,
+        })
+        .collect();
+    let finals: HashSet<&str> = super::derive::final_attempts(&attempts)
+        .into_iter()
+        .collect();
+    let mut by_run: HashMap<&str, RunCounts> = HashMap::new();
+    for r in rows.iter().filter(|r| finals.contains(r.id.as_str())) {
+        let c = by_run.entry(&r.run_id).or_insert_with(|| RunCounts {
+            run_id: r.run_id.clone(),
+            ..Default::default()
+        });
+        match r.status.as_str() {
+            "passed" => c.passed += 1,
+            "failed" => c.failed += 1,
+            _ => c.other += 1,
+        }
+        if !r.linked {
+            c.unlinked += 1;
+        }
+    }
+    let mut out: Vec<RunCounts> = by_run.into_values().collect();
+    out.sort_by(|a, b| a.run_id.cmp(&b.run_id));
+    Ok(out)
+}
+
 // ---- commands ------------------------------------------------------------------
+
+#[tauri::command]
+pub fn run_counts_list(
+    db: State<Db>,
+    project_id: String,
+    user_id: String,
+) -> Result<Vec<RunCounts>, String> {
+    db.with_conn(|conn| run_counts(conn, &project_id, &user_id))
+}
 
 #[tauri::command]
 pub fn run_import_preview(

@@ -71,10 +71,10 @@ export function parsePharosRunFile(input: unknown): ParsedReport {
     );
   }
   const doc = parsed.value as ImportDoc;
-  const rel = relativizer(
-    doc.results.flatMap((r) => (r.filePath ? [r.filePath] : [])),
-  );
+  const rel = relativizer();
   doc.results = doc.results.map((r) => {
+    // The file path goes to the synced attributes: relative, like the key.
+    if (r.filePath) r = { ...r, filePath: rel(r.filePath) };
     if (r.testKey) return r;
     const suite = Array.isArray(r.suite) ? r.suite : r.suite ? [r.suite] : [];
     return {
@@ -167,7 +167,10 @@ export async function parseReportFile(file: Blob): Promise<ParsedReport> {
   if (file.size > MAX_REPORT_BYTES)
     throw new ReportError("too-large", `${MAX_REPORT_BYTES} bytes`);
   const head = await file.slice(0, 64 * 1024).text();
-  const first = head.replace(/^\uFEFF/, "").trimStart().split(/\r?\n/, 1)[0];
+  const first = head
+    .replace(/^\uFEFF/, "")
+    .trimStart()
+    .split(/\r?\n/, 1)[0];
   let ndjson = false;
   try {
     ndjson = isEnvelope(JSON.parse(first));

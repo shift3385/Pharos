@@ -72,7 +72,7 @@ export function parseJunit(text: string): ParsedReport {
     c.el.getAttribute("file") ||
     c.suites[c.suites.length - 1]?.getAttribute("name") ||
     "";
-  const rel = relativizer(cases.map(pathOf).filter((p) => /[\\/]/.test(p)));
+  const rel = relativizer();
 
   for (const c of cases) {
     const el = c.el;
@@ -129,7 +129,17 @@ export function parseJunit(text: string): ParsedReport {
     };
     const messageOf = (x: Element) => x.getAttribute("message") || undefined;
     const traceOf = (x: Element) => (x.textContent ?? "").trim() || undefined;
-    retries.forEach((r, i) => {
+    // A test that failed after reruns: in Surefire the <failure> is the
+    // first run and each <rerunFailure>/<rerunError> a later one, so the
+    // last rerun is the final attempt. Flaky elements precede a pass.
+    const reruns = retries.filter((r) => r.localName.startsWith("rerun"));
+    const runs =
+      fail && reruns.length
+        ? [fail, ...reruns]
+        : [...retries, ...(fail ? [fail] : [])];
+    const last = fail ? runs[runs.length - 1] : undefined;
+    const earlier = fail ? runs.slice(0, -1) : retries;
+    earlier.forEach((r, i) => {
       doc.results.push({
         ...base,
         status: "failed",
@@ -161,13 +171,13 @@ export function parseJunit(text: string): ParsedReport {
     doc.results.push({
       ...base,
       status,
-      rawStatus: fail?.localName ?? (skipped ? "skipped" : "passed"),
-      attempt: retries.length,
+      rawStatus: last?.localName ?? (skipped ? "skipped" : "passed"),
+      attempt: earlier.length,
       ...(seconds(el.getAttribute("time")) !== undefined
         ? { duration: seconds(el.getAttribute("time")) }
         : {}),
-      ...(fail && messageOf(fail) ? { message: messageOf(fail) } : {}),
-      ...(fail && traceOf(fail) ? { trace: traceOf(fail) } : {}),
+      ...(last && messageOf(last) ? { message: messageOf(last) } : {}),
+      ...(last && traceOf(last) ? { trace: traceOf(last) } : {}),
       ...(skipped && messageOf(skipped) ? { message: messageOf(skipped) } : {}),
       ...(refs.length ? { attachments: refs } : {}),
       attributes,

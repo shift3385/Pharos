@@ -4,6 +4,7 @@ import type { UnlinkedTest } from "@shared/contracts/contract";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { StatusPill } from "@shared/ui/StatusPill";
+import { useToast } from "@shared/ui/Toast";
 import { statusTone, type LinkableCase } from "../model/types";
 import { LinkCaseDialog } from "./LinkCaseDialog";
 import "@shared/ui/buttons.css";
@@ -27,6 +28,15 @@ export function UnlinkedTray({
   const { t } = useTranslation();
   const [filter, setFilter] = useState<Filter>("unlinked");
   const [linking, setLinking] = useState<UnlinkedTest | null>(null);
+  const toast = useToast();
+  /** Unlinking has no dialog: a failure is said in a toast. */
+  const unlink = async (x: UnlinkedTest) => {
+    try {
+      await onLink(x.testKey, null);
+    } catch {
+      toast(t("runs.tray.linkError"), "error");
+    }
+  };
   const byId = useMemo(() => new Map(cases.map((c) => [c.id, c])), [cases]);
   const unlinked = tests.filter((x) => !x.mappedCaseId);
   const mapped = tests.filter((x) => x.mappedCaseId);
@@ -58,7 +68,7 @@ export function UnlinkedTray({
       <button
         type="button"
         className="ui-btn ui-btn--small ui-btn--ghost"
-        onClick={() => void onLink(x.testKey, null)}
+        onClick={() => void unlink(x)}
       >
         {t("runs.tray.unlink")}
         <span className="sr-only"> {x.name}</span>

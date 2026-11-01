@@ -31,9 +31,13 @@ y `[n]` (1-based) solo cuando los títulos no distinguen la fila (los pickles
 de un Outline de Cucumber comparten nombre).
 
 - Las rutas absolutas se relativizan contra `config.rootDir` de Playwright, si
-  lo hay. Si no, se quita el directorio común de las rutas absolutas del
-  archivo, para que la carpeta del usuario no llegue a un `test_key`
-  sincronizado.
+  lo hay. Si no, se quitan solo **prefijos estables**: la carpeta del usuario
+  (`C:/Users/<u>/`, `/home/<u>/`, `/Users/<u>/`), los espacios de trabajo de
+  CI (GitHub Actions, GitLab, Jenkins, Azure Pipelines, Bitbucket, CircleCI,
+  `/workspace/`…) y la letra de unidad. Nunca depende de qué otros archivos
+  trae el informe: el informe de un shard y el fusionado dan la misma clave.
+  El `filePath` de un Pharos Run JSON se relativiza igual, porque va a los
+  atributos sincronizados.
 - Los reporters de Playwright (JSON, CTRF y JUnit) dan la **misma** clave a un
   mismo test.
 
@@ -42,7 +46,7 @@ de un Outline de Cucumber comparten nombre).
 | Cucumber Messages | `pickle.uri`                                  | `pickle.name` (+ `[n]`)                    | uno por `testCaseStarted.attempt`                                                          |
 | CTRF              | `suite[0]` si es un archivo; si no, `filePath` | resto de `suite[]` + `name`                | `retryAttempts[].attempt` (1-based) − 1; el test es el intento `retries`                   |
 | Playwright JSON   | `spec.file`                                   | `describe`s + `spec.title`                 | uno por `tests[].results[].retry`; `projectName` → `configurationLabel`                    |
-| JUnit XML         | `classname` (o `file`, o el `testsuite`)      | `name`                                     | `flakyFailure`/`flakyError`/`rerunFailure`/`rerunError` son intentos fallidos previos      |
+| JUnit XML         | `classname` (o `file`, o el `testsuite`)      | `name`                                     | `flakyFailure`/`flakyError` preceden a un pase; en un test fallido, `<failure>` es la 1.ª ejecución y cada `rerun*` la siguiente |
 | Pharos Run JSON   | el suyo                                       | `testKey`, o `filePath` + `suite` + `name` | `attempt`                                                                                  |
 
 ## Campos
@@ -66,15 +70,21 @@ de un Outline de Cucumber comparten nombre).
 intento final (`attributes.finishedAtInferred`) para que el intento final
 derivado no caiga en la hora de importación.
 
+Un adjunto de Messages enviado por URL se guarda como ruta y no se descarga (aviso
+`attachment-url`). El shard (`shardIndex`/`shardTotal`) sale solo del informe:
+es contenido inmutable; un índice fuera de 1..total se rechaza.
+
 Un informe fusionado con `merge-reports` (Playwright, `argv` vacío) se importa
 con un aviso: pierde el shard y su duración no es fiable (ING-01 §4).
 
 ## Vínculo (persistente)
 
-- **Caso:** exactamente una etiqueta `@<case_id_prefix><n>` (anclada, sensible a
-  mayúsculas). Sin ninguna, con dos, con una clave que no es un caso vivo del
-  proyecto o con un conflicto de clave abierto, el test va a la bandeja con su
-  motivo en `attributes.link`.
+- **Caso:** las etiquetas (con o sin `@`) y el `caseKey` se comparan con los
+  `scenario_id` vivos del proyecto, así que también vinculan una clave libre o
+  con un prefijo antiguo. Una etiqueta con la forma `<case_id_prefix><n>` que no
+  es un caso vivo es «clave desconocida». Un caso vincula; sin ninguno, con dos
+  (vivos o desconocidos) o con un conflicto de clave abierto, el test va a la
+  bandeja con su motivo en `attributes.link`.
 - **Revisión:** la del elemento del run de destino para ese caso, flujo y fila;
   si no, la revisión sincronizada vigente en `run.started_at`; si no, la actual.
 - **Flujo:** el del caso avanzado que se llama como el escenario (`Example #n`

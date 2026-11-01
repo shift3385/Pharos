@@ -14,11 +14,12 @@ import type {
   Run,
   UnlinkedTest,
 } from "@shared/contracts/contract";
+import { ToastProvider } from "@shared/ui/Toast";
 import { RunsPage } from "./RunsPage";
 
 const api = vi.hoisted(() => ({
   list: vi.fn(),
-  results: vi.fn(),
+  counts: vi.fn(),
   unlinked: vi.fn(),
   link: vi.fn(),
   preview: vi.fn(),
@@ -136,10 +137,15 @@ beforeEach(async () => {
       status: "in_progress",
     }),
   ]);
-  api.results.mockResolvedValue([
-    { isFinal: true, status: "passed", effectiveTestCaseId: "c1" },
-    { isFinal: true, status: "failed", effectiveTestCaseId: null },
-  ]);
+  api.counts.mockResolvedValue(
+    ["r1", "r2"].map((runId) => ({
+      runId,
+      passed: 1,
+      failed: 1,
+      other: 0,
+      unlinked: 1,
+    })),
+  );
   api.unlinked.mockResolvedValue(tray);
   api.link.mockResolvedValue("m");
   api.preview.mockResolvedValue(preview);
@@ -229,10 +235,10 @@ describe("RunsPage", () => {
       within(dialog).getByLabelText(/^Informe/),
       new File(["{}"], "ctrf.json"),
     );
-    // Shard from the report (CTRF environment.shardId "2-of-2").
-    await waitFor(() =>
-      expect(within(dialog).getByLabelText(/^Shard/)).toHaveValue("2"),
-    );
+    // The shard comes from the report (CTRF environment.shardId "2-of-2"),
+    // shown and never edited.
+    expect(await within(dialog).findByText(/Shard 2 de 2/)).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/^Shard/)).not.toBeInTheDocument();
     await within(dialog).findByText(/2 tests, 3 intentos: 3 se vinculan/);
     expect(
       within(dialog).getByText(/TC-009 no es un caso de este proyecto/),
@@ -247,9 +253,9 @@ describe("RunsPage", () => {
       await within(dialog).findByText(/RUN-003: 3 resultados importados/),
     ).toBeInTheDocument();
     const request = api.importReport.mock.calls[0][0];
-    expect(request).toMatchObject({
-      projectId: "p",
-      userId: "test-user",
+    expect(request).toMatchObject({ projectId: "p", userId: "test-user" });
+    expect(request).not.toHaveProperty("shardIndex");
+    expect(request.doc.shards[0]).toMatchObject({
       shardIndex: 2,
       shardTotal: 2,
     });
@@ -280,5 +286,63 @@ describe("RunsPage", () => {
     expect(await within(dialog).findByRole("alert")).toHaveTextContent(
       "El run está cerrado",
     );
+  });
+
+  it("says when the runs cannot be loaded and retries", async () => {
+    api.list.mockRejectedValueOnce(new Error("db"));
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("No se pudieron cargar los runs.");
+    await userEvent.click(
+      within(alert).getByRole("button", { name: "Reintentar" }),
+    );
+    expect(
+      await screen.findByRole("table", { name: "Runs" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the link dialog open on a failure and says so; a failed unlink is a toast", async () => {
+    api.link.mockRejectedValueOnce(new Error("db"));
+    renderWithProviders(
+      <ToastProvider>
+        <RunsPage projectId="p" cases={cases} />
+      </ToastProvider>,
+    );
+    await userEvent.click(
+      await screen.findByRole("tab", { name: /Sin vincular/ }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Vincular… pays" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Vincular a un caso" });
+    await userEvent.click(
+      within(dialog).getByRole("radio", { name: /TC-001/ }),
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Vincular" }),
+    );
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "No se pudo guardar el vínculo",
+    );
+    expect(
+      screen.getByRole("dialog", { name: "Vincular a un caso" }),
+    ).toBeInTheDocument();
+    // Trying again works and closes it.
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Vincular" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    api.link.mockRejectedValueOnce(new Error("db"));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Vinculados a mano/ }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Desvincular other" }),
+    );
+    expect(
+      await screen.findByText(/No se pudo guardar el vínculo/),
+    ).toBeInTheDocument();
   });
 });

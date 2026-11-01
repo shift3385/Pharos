@@ -6,6 +6,7 @@ import type {
   ReportImportRequest,
   ResultView,
   Run,
+  RunCounts,
   UnlinkedTest,
 } from "@shared/contracts/contract";
 
@@ -43,6 +44,11 @@ export const runsApi = {
     isTauri() ? invoke("run_list", { projectId, userId }) : Promise.resolve([]),
   results: (runId: string, userId: string): Promise<ResultView[]> =>
     isTauri() ? invoke("results_list", { runId, userId }) : Promise.resolve([]),
+  /** Final results by status of every run of the project, in one call. */
+  counts: (projectId: string, userId: string): Promise<RunCounts[]> =>
+    isTauri()
+      ? invoke("run_counts_list", { projectId, userId })
+      : Promise.resolve([]),
   unlinked: (projectId: string, userId: string): Promise<UnlinkedTest[]> =>
     isTauri()
       ? invoke("unlinked_tests_list", { projectId, userId })

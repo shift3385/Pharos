@@ -15,6 +15,7 @@ import type {
   ReportImportRequest,
 } from "@shared/contracts/contract";
 import { runsApi } from "../api/runsApi";
+import { sha256OfBlob } from "./sha256";
 
 export interface ReadReport {
   file: File;
@@ -23,17 +24,11 @@ export interface ReadReport {
   sha256: string;
 }
 
-const hex = (buf: ArrayBuffer) =>
-  Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join(
-    "",
-  );
-
 /** Parses a report and hashes it. */
 export async function readReport(file: File): Promise<ReadReport> {
   const parsed = await parseReportFile(file);
-  const sha256 = hex(
-    await crypto.subtle.digest("SHA-256", await file.arrayBuffer()),
-  );
+  // Hashed as a stream: a 200 MB report is never whole in memory for it.
+  const sha256 = await sha256OfBlob(file);
   return { file, parsed, sha256 };
 }
 
@@ -46,7 +41,6 @@ export function buildRequest(
   userId: string,
   report: ReadReport,
   target: ImportTarget,
-  shard: { index?: number; total?: number },
   allowDuplicate = false,
 ): ReportImportRequest {
   return {
@@ -58,8 +52,6 @@ export function buildRequest(
     doc: report.parsed.doc as unknown as Record<string, unknown>,
     sha256: report.sha256,
     fileName: report.file.name,
-    ...(shard.index !== undefined ? { shardIndex: shard.index } : {}),
-    ...(shard.total !== undefined ? { shardTotal: shard.total } : {}),
     ...(allowDuplicate ? { allowDuplicate: true } : {}),
   };
 }

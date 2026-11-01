@@ -404,3 +404,27 @@ Los importadores de ING-02..05 están en el código: los parsers en TypeScript
   Playwright, `browser` de CTRF) se guarda; asignar `configuration_id` con
   `cycles::match_configuration` y el elemento del ciclo queda pendiente para
   quien fusione segundo (TODO en `write_result`).
+
+Tras la revisión independiente del paso 9 (2026-10-31):
+
+- **El shard sale solo del informe.** Es contenido inmutable del shard: la
+  interfaz lo muestra y no lo deja editar, y un índice fuera de 1..total se
+  rechaza (`invalid-shard`).
+- **Etiquetas contra las claves vivas.** Una etiqueta vincula si es un
+  `scenario_id` vivo del proyecto (clave libre o con un prefijo antiguo
+  incluidas); la expresión del prefijo solo marca las que parecen clave y no
+  lo son. La lógica del vínculo vive en `runs/link.rs`, con las expresiones
+  compiladas una vez y los pasos de cada revisión cacheados; si el informe
+  omite el Background, se compara desde el primer paso tras él.
+- **`test_key` estable entre shard e informe fusionado:** solo se quitan
+  prefijos estables (carpeta del usuario, espacios de trabajo de CI, letra de
+  unidad), nunca el directorio común del archivo.
+- **La bandeja** muestra una clave solo si su resultado importado más reciente
+  sigue sin caso: un test etiquetado después sale de ella.
+- **Purga:** borrar un run borra también los adjuntos de sus shards,
+  resultados y pasos; la recogida de evidencias libera los archivos.
+- **Re-importar en un equipo que recibió el shard** adjunta la subida como su
+  informe en bruto, así que su archivo nunca queda huérfano.
+- **Pendiente de aprobación (B1):** sacar el vínculo del contenido inmutable y
+  derivarlo al leer, para que sea el mismo en todos los equipos (en
+  revisión; se documenta aquí cuando se apruebe).

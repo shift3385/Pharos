@@ -177,6 +177,7 @@ pub fn run() {
             runs::import::run_import,
             runs::import::run_import_attach,
             runs::import::unlinked_tests_list,
+            runs::import::run_counts_list,
             planner::planner_list,
             planner::planner_create,
             planner::planner_update,

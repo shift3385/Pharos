@@ -1898,7 +1898,9 @@
       "build": "build {{build}}",
       "unlinked_one": "{{count}} unlinked",
       "unlinked_other": "{{count}} unlinked",
-      "countsSr": "{{passed}} passed, {{failed}} failed, {{other}} other"
+      "countsSr": "{{passed}} passed, {{failed}} failed, {{other}} other",
+      "loadError": "The runs could not be loaded.",
+      "retry": "Retry"
     },
     "trigger": {
       "manual": "Manual",
@@ -1952,9 +1954,6 @@
       "noOpenRuns": "No runs in progress in this project",
       "run": "Run",
       "keepOpen": "Keep the run open to import more shards",
-      "shardIndex": "Shard",
-      "shardTotal": "of",
-      "shardHint": "Filled in when the report carries it (CTRF shardId, Playwright --shard).",
       "preview": "Preview",
       "previewSummary": "{{tests}} tests, {{results}} attempts: {{linked}} link to a case and {{unlinked}} stay unlinked.",
       "attachments_one": "{{count}} attachment",
@@ -1991,7 +1990,8 @@
         "result-too-large": "Result too large to sync: not imported.",
         "merged-without-shard": "Merged report (merge-reports): it lost its shard and its duration is unreliable. Prefer importing each shard's report.",
         "no-results": "The report has no results.",
-        "attachment-url": "An attachment is a URL: it is not downloaded."
+        "attachment-url": "{{detail}} attachments are URLs: they are not downloaded.",
+        "no-revision": "Case {{detail}} has no revision: left unlinked."
       },
       "error": {
         "unknown-format": "The file format is not recognized.",
@@ -2007,8 +2007,14 @@
         "run-closed": "The run is closed: pick one in progress or create a new one.",
         "report-changed": "The file changed while importing. Pick it again.",
         "evidence-too-large": "The file is larger than 200 MB.",
-        "generic": "Could not import: {{detail}}"
-      }
+        "generic": "Could not import: {{detail}}",
+        "project-not-found": "The project does not exist or is not yours.",
+        "test-key-required": "A result has no test identity ({{detail}}).",
+        "invalid-sha256": "The file's fingerprint is not valid. Pick it again.",
+        "invalid-shard": "The report has an inconsistent shard: the index must be between 1 and the total.",
+        "invalid-target": "Pick a new run or an open one."
+      },
+      "shard": "Shard {{index}} of {{total}} (from the report)."
     },
     "tray": {
       "title": "Unlinked tests",
@@ -2043,7 +2049,8 @@
         "unlinked": "No unlinked tests.",
         "mapped": "No test linked by hand.",
         "all": "No imported test without a case."
-      }
+      },
+      "linkError": "The link could not be saved. Try again."
     }
   }
 }

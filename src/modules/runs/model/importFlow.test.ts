@@ -40,20 +40,17 @@ beforeEach(() => attach.mockReset().mockResolvedValue("att"));
 describe("import flow", () => {
   it("builds the request for a new or an open run", () => {
     const r = report("single/ctrf.json");
-    const req = buildRequest(
-      "p",
-      "u",
-      r,
-      { kind: "new", run: { title: "CI" } },
-      { index: 1, total: 2 },
-    );
+    const req = buildRequest("p", "u", r, {
+      kind: "new",
+      run: { title: "CI" },
+    });
     expect(req).toMatchObject({
       projectId: "p",
       userId: "u",
       newRun: { title: "CI" },
-      shardIndex: 1,
-      shardTotal: 2,
     });
+    // The shard travels in the document only (immutable, ADR-0013).
+    expect(req).not.toHaveProperty("shardIndex");
     expect(req.fileName).toBe("ctrf.json");
     expect(req).not.toHaveProperty("runId");
     const open = buildRequest(
@@ -61,11 +58,9 @@ describe("import flow", () => {
       "u",
       r,
       { kind: "existing", runId: "r1" },
-      {},
       true,
     );
     expect(open).toMatchObject({ runId: "r1", allowDuplicate: true });
-    expect(open).not.toHaveProperty("shardIndex");
   });
 
   it("finds an attachment by the longest tail of its path", () => {

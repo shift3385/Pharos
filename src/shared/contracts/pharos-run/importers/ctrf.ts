@@ -106,7 +106,7 @@ export function parseCtrf(report: Ctrf): ParsedReport {
       return { path: slashes(s[0]), titles: s.slice(1) };
     return { path: t.filePath, titles: s };
   };
-  const rel = relativizer(r.tests.flatMap((t) => pathOf(t).path ?? []));
+  const rel = relativizer();
   const attach = (list: CtrfAttachment[] | undefined): string[] =>
     (list ?? []).flatMap((a) => {
       if (!a.path && !a.name) return [];
@@ -156,8 +156,11 @@ export function parseCtrf(report: Ctrf): ParsedReport {
         // the latest, when the final one started. Without it the derived
         // final attempt (ADR-0013) would fall back to the import time and
         // put the earlier attempt last.
-        finishedAt: iso(a.stop) ?? (a.start === undefined ? iso(t.start) : undefined),
-        ...(a.stop === undefined && a.start === undefined && t.start !== undefined
+        finishedAt:
+          iso(a.stop) ?? (a.start === undefined ? iso(t.start) : undefined),
+        ...(a.stop === undefined &&
+        a.start === undefined &&
+        t.start !== undefined
           ? { attributes: { finishedAtInferred: true } }
           : {}),
         ...(a.message ? { message: a.message } : {}),

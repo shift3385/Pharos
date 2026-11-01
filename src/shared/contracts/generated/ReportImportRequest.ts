@@ -14,7 +14,7 @@ doc: Record<string, unknown>,
  * sha256 of the report file, as the UI computed it (checked against the
  * uploaded raw report on commit).
  */
-sha256: string, fileName?: string, shardIndex?: number, shardTotal?: number, 
+sha256: string, fileName?: string, 
 /**
  * Import a file this project already has as another new run.
  */

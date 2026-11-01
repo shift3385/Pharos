@@ -57,8 +57,6 @@ export function ImportReportDialog({
   const [commit, setCommit] = useState("");
   const [branch, setBranch] = useState("");
   const [keepOpen, setKeepOpen] = useState(false);
-  const [shardIndex, setShardIndex] = useState("");
-  const [shardTotal, setShardTotal] = useState("");
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [preview, setPreview] = useState<ReportImportPreview | null>(null);
   const [error, setError] = useState<{ key: string; detail?: string } | null>(
@@ -74,8 +72,6 @@ export function ImportReportDialog({
     attach: AttachResult;
   } | null>(null);
 
-  const num = (s: string) =>
-    /^\d+$/.test(s.trim()) ? Number(s.trim()) : undefined;
   const target = () =>
     kind === "new"
       ? {
@@ -91,14 +87,7 @@ export function ImportReportDialog({
         }
       : { kind: "existing" as const, runId };
   const request = (r: ReadReport) =>
-    buildRequest(
-      projectId,
-      userId,
-      r,
-      target(),
-      { index: num(shardIndex), total: num(shardTotal) },
-      allowDuplicate,
-    );
+    buildRequest(projectId, userId, r, target(), allowDuplicate);
 
   async function pick(file: File | undefined) {
     setPreview(null);
@@ -109,9 +98,6 @@ export function ImportReportDialog({
     try {
       const r = await readReport(file);
       setReport(r);
-      const s = r.parsed.doc.shards[0];
-      setShardIndex(s?.shardIndex !== undefined ? String(s.shardIndex) : "");
-      setShardTotal(s?.shardTotal !== undefined ? String(s.shardTotal) : "");
       const run = r.parsed.doc.run;
       setTitle(
         (prev) =>
@@ -372,31 +358,16 @@ export function ImportReportDialog({
               </FormField>
             )}
 
-            <div className="rn-grid">
-              <FormField
-                label={t("runs.import.shardIndex")}
-                hint={t("runs.import.shardHint")}
-              >
-                {(p) => (
-                  <input
-                    {...p}
-                    inputMode="numeric"
-                    value={shardIndex}
-                    onChange={(e) => setShardIndex(e.target.value)}
-                  />
-                )}
-              </FormField>
-              <FormField label={t("runs.import.shardTotal")}>
-                {(p) => (
-                  <input
-                    {...p}
-                    inputMode="numeric"
-                    value={shardTotal}
-                    onChange={(e) => setShardTotal(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
+            {/* The shard is part of the report (immutable, ADR-0013): it is
+                shown, never edited. */}
+            {report?.parsed.doc.shards[0]?.shardIndex !== undefined && (
+              <p className="tp-field__hint">
+                {t("runs.import.shard", {
+                  index: report.parsed.doc.shards[0].shardIndex,
+                  total: report.parsed.doc.shards[0].shardTotal,
+                })}
+              </p>
+            )}
           </div>
 
           {preview && (

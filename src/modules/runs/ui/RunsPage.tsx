@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload } from "lucide-react";
 import { useAuth } from "@modules/auth";
-import type { Run, UnlinkedTest } from "@shared/contracts/contract";
+import type { Run, RunCounts, UnlinkedTest } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { FilterChips } from "@shared/ui/FilterChips";
@@ -14,7 +14,7 @@ import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useToast } from "@shared/ui/Toast";
 import { runsApi } from "../api/runsApi";
-import { statusTone, type LinkableCase } from "../model/types";
+import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { ImportReportDialog } from "./ImportReportDialog";
 import { UnlinkedTray } from "./UnlinkedTray";
 import "@shared/ui/buttons.css";
@@ -22,14 +22,6 @@ import "./Runs.css";
 
 type Tab = "runs" | "unlinked";
 type Origin = "all" | "import";
-
-/** Counts of a run's final results, for the list. */
-interface RunCounts {
-  passed: number;
-  failed: number;
-  other: number;
-  unlinked: number;
-}
 
 /** «Ejecuciones» (`/projects/:id/runs`): the project's runs and the tray of
  *  unlinked imported tests (ING-05), with «Importar informe» in the header.
@@ -53,33 +45,27 @@ export function RunsPage({
   const [counts, setCounts] = useState<Record<string, RunCounts>>({});
   const [unlinked, setUnlinked] = useState<UnlinkedTest[]>([]);
   const [importing, setImporting] = useState(false);
+  const [failed, setFailed] = useState(false);
   const latest = useRef(0);
 
+  /** Loads the runs, their counts (one call) and the tray; a failure shows
+   *  an error with «Reintentar» instead of loading for ever. */
   async function refresh() {
     const request = ++latest.current;
-    const [list, tray] = await Promise.all([
-      runsApi.list(projectId, userId),
-      runsApi.unlinked(projectId, userId),
-    ]);
-    if (request !== latest.current) return;
-    setRuns(list);
-    setUnlinked(tray);
-    const entries = await Promise.all(
-      list.map(async (r) => {
-        const finals = (await runsApi.results(r.id, userId)).filter(
-          (x) => x.isFinal,
-        );
-        const c: RunCounts = { passed: 0, failed: 0, other: 0, unlinked: 0 };
-        for (const x of finals) {
-          if (x.status === "passed") c.passed++;
-          else if (x.status === "failed") c.failed++;
-          else c.other++;
-          if (!x.effectiveTestCaseId) c.unlinked++;
-        }
-        return [r.id, c] as const;
-      }),
-    );
-    if (request === latest.current) setCounts(Object.fromEntries(entries));
+    try {
+      const [list, tray, all] = await Promise.all([
+        runsApi.list(projectId, userId),
+        runsApi.unlinked(projectId, userId),
+        runsApi.counts(projectId, userId),
+      ]);
+      if (request !== latest.current) return;
+      setRuns(list);
+      setUnlinked(tray);
+      setCounts(Object.fromEntries(all.map((c) => [c.runId, c])));
+      setFailed(false);
+    } catch {
+      if (request === latest.current) setFailed(true);
+    }
   }
   useEffect(() => {
     void refresh();
@@ -101,12 +87,10 @@ export function RunsPage({
   );
   useHeaderActions(actions);
 
-  const date = (s: string | null) =>
-    s
-      ? new Date(
-          s.includes("T") ? s : `${s.replace(" ", "T")}Z`,
-        ).toLocaleString(i18n.resolvedLanguage)
-      : "—";
+  const date = (s: string | null) => {
+    const at = s ? instantOf(s) : undefined;
+    return at ? at.toLocaleString(i18n.resolvedLanguage) : "—";
+  };
   const pending = unlinked.filter((x) => !x.mappedCaseId).length;
   const shown = (runs ?? []).filter(
     (r) => origin === "all" || r.trigger === "import",
@@ -210,7 +194,18 @@ export function RunsPage({
         ]}
       />
       <TabPanel id={tab}>
-        {runs === null ? (
+        {failed ? (
+          <div className="rn-error-state" role="alert">
+            <p>{t("runs.list.loadError")}</p>
+            <button
+              type="button"
+              className="ui-btn ui-btn--small"
+              onClick={() => void refresh()}
+            >
+              {t("runs.list.retry")}
+            </button>
+          </div>
+        ) : runs === null ? (
           <p className="tp-field__hint">{t("common.loading")}</p>
         ) : tab === "runs" ? (
           <>
@@ -250,13 +245,15 @@ export function RunsPage({
             tests={unlinked}
             cases={cases}
             onLink={async (testKey, caseId) => {
+              // A failure reaches the tray, which says so and keeps the
+              // dialog open; the list reloads only after a link.
               await runsApi.link(projectId, testKey, caseId, userId);
               toast(
                 caseId
                   ? t("runs.tray.linkedToast")
                   : t("runs.tray.unlinkedToast"),
               );
-              await refresh();
+              void refresh();
             }}
           />
         )}

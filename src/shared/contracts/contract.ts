@@ -37,6 +37,7 @@ export type * from "./generated/RequirementInput";
 export type * from "./generated/ResultInput";
 export type * from "./generated/ResultView";
 export type * from "./generated/Run";
+export type * from "./generated/RunCounts";
 export type * from "./generated/RunInput";
 export type * from "./generated/RunItem";
 export type * from "./generated/RunItemInput";

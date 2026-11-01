@@ -132,10 +132,7 @@ export function parsePlaywright(report: PwReport): ParsedReport {
     for (const child of s.suites ?? []) walk(child, here, false);
   };
   for (const s of report.suites) walk(s, [], true);
-  const rel = relativizer(
-    specs.map((x) => x.spec.file),
-    report.config.rootDir,
-  );
+  const rel = relativizer(report.config.rootDir);
   const attach = (list: PwAttachment[] | undefined): string[] =>
     (list ?? []).flatMap((a) => {
       if (!a.body && !a.path) return [];

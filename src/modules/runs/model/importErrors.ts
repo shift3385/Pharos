@@ -15,6 +15,12 @@ export function importErrorKey(e: unknown): { key: string; detail?: string } {
     "invalid-report",
     "steps-too-many",
     "evidence-too-large",
+    "project-not-found",
+    "test-key-required",
+    "unknown-format",
+    "invalid-sha256",
+    "invalid-shard",
+    "invalid-target",
   ];
   if (m && known.includes(m[1]))
     return { key: `runs.import.error.${m[1]}`, detail: m[2] };

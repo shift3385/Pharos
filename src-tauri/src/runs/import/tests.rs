@@ -818,8 +818,215 @@ fn helpers_cut_and_convert_deterministically() {
         (Some("When".into()), "x".into())
     );
     assert_eq!(split_keyword(None, "Givenx"), (None, "Givenx".into()));
-    assert!(step_pattern("inicia con \"<email>\" y <c>").is_match("inicia con \"x@y\" y 3"));
-    assert!(!step_pattern("a.b").is_match("axb"));
+    assert!(
+        crate::runs::link::step_pattern("inicia con \"<email>\" y <c>")
+            .is_match("inicia con \"x@y\" y 3")
+    );
+    assert!(!crate::runs::link::step_pattern("a.b").is_match("axb"));
     assert_eq!(status_of("pending"), "skipped");
     assert_eq!(status_of("weird"), "other");
+}
+
+// ---- review of step 9 ------------------------------------------------------------
+
+fn pharos_doc(results: Value) -> Value {
+    json!({"schemaVersion": "1.0.0", "shards": [{"sourceFormat": "pharos_run_json"}],
+           "results": results})
+}
+
+#[test]
+fn tags_link_to_any_live_key_of_the_project() {
+    let c = device();
+    let p = new_project(&c);
+    let free = new_case(&c, &p, "LOGIN_OK", json!({"steps": ["entra"]}));
+    let old = new_case(&c, &p, "ATS_007", json!({"steps": ["sale"]}));
+    let doc = pharos_doc(json!([
+        {"name": "a", "status": "passed", "testKey": "k1", "tags": ["@LOGIN_OK", "@smoke"]},
+        {"name": "b", "status": "passed", "testKey": "k2", "tags": ["ATS_007"]},
+        {"name": "c", "status": "passed", "testKey": "k3", "tags": ["@TC-404"]},
+        {"name": "d", "status": "passed", "testKey": "k4", "tags": ["@LOGIN_OK", "@TC-404"]}
+    ]));
+    let out = import(&c, &new_run(&p, doc)).unwrap();
+    let r = list_results(&c, &out.run_id, U).unwrap();
+    let case_of = |k: &str| {
+        r.iter()
+            .find(|x| x.test_key == k)
+            .unwrap()
+            .test_case_id
+            .clone()
+    };
+    assert_eq!(case_of("k1"), Some(free));
+    assert_eq!(case_of("k2"), Some(old));
+    // A tag that only looks like a key of the project names an unknown case.
+    assert_eq!(case_of("k3"), None);
+    assert_eq!(
+        case_of("k4"),
+        None,
+        "a live key and an unknown one are two tags"
+    );
+    let tray = unlinked_list(&c, &p, U).unwrap();
+    let reason = |k: &str| {
+        tray.iter()
+            .find(|t| t.test_key == k)
+            .and_then(|t| t.reason.clone())
+    };
+    assert_eq!(reason("k3").as_deref(), Some("unknown-case"));
+    assert_eq!(reason("k4").as_deref(), Some("two-case-tags"));
+}
+
+#[test]
+fn the_shard_is_the_documents_and_must_be_valid() {
+    let c = device();
+    let p = new_project(&c);
+    let bad = json!({"schemaVersion": "1.0.0",
+        "shards": [{"sourceFormat": "ctrf", "shardIndex": 3, "shardTotal": 2}], "results": []});
+    assert!(import(&c, &new_run(&p, bad))
+        .unwrap_err()
+        .starts_with("invalid-shard"));
+    let half = json!({"schemaVersion": "1.0.0",
+        "shards": [{"sourceFormat": "ctrf", "shardIndex": 1}], "results": []});
+    assert!(import(&c, &new_run(&p, half))
+        .unwrap_err()
+        .starts_with("invalid-shard"));
+}
+
+#[test]
+fn a_test_tagged_later_leaves_the_tray() {
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, _, _) = ing01_cases(&c, &p);
+    let first = pharos_doc(json!([{"name": "t", "status": "failed", "testKey": "k"}]));
+    let out = import(
+        &c,
+        &request(&p, first, json!({"newRun": {"keepOpen": true}})),
+    )
+    .unwrap();
+    assert_eq!(unlinked_list(&c, &p, U).unwrap().len(), 1);
+    let tagged =
+        pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k", "tags": ["@TC-001"]}]));
+    let req = request(
+        &p,
+        tagged,
+        json!({"runId": out.run_id, "sha256": "bb".repeat(32)}),
+    );
+    in_tx(&c, |tx| {
+        commit(
+            tx,
+            &req,
+            &Stored {
+                sha256: "bb".repeat(32),
+                size: 1,
+            },
+        )
+    })
+    .unwrap();
+    assert!(unlinked_list(&c, &p, U).unwrap().is_empty());
+    let r = list_results(&c, &out.run_id, U).unwrap();
+    assert!(r
+        .iter()
+        .any(|x| x.test_case_id.as_deref() == Some(tc1.as_str())));
+}
+
+#[test]
+fn a_device_that_pulled_the_shard_keeps_the_upload_as_its_raw_report() {
+    let (a, b) = (device(), device());
+    let p = new_project(&a);
+    let run = crate::runs::insert_run(
+        &a,
+        &serde_json::from_value(json!({"projectId": p, "title": "CI", "userId": U})).unwrap(),
+    )
+    .unwrap();
+    pull(&b, &push(&a));
+    let doc = pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k"}]));
+    import(&a, &request(&p, doc.clone(), json!({"runId": run}))).unwrap();
+    pull(&b, &push(&a));
+    assert_eq!(count(&b, "SELECT count(*) FROM run_shards"), 1);
+    assert_eq!(count(&b, "SELECT count(*) FROM attachments"), 0);
+    let again = import(&b, &request(&p, doc, json!({"runId": run}))).unwrap();
+    assert!(again.already_imported);
+    // The bytes B just uploaded are its raw report now: no orphan file.
+    assert_eq!(
+        count(&b, "SELECT count(*) FROM attachments WHERE owner_entity = 'run_shard' AND kind = 'raw_report'"),
+        1
+    );
+    assert_eq!(count(&b, "SELECT count(*) FROM blobs"), 1);
+    assert_eq!(
+        count(&b, "SELECT count(*) FROM oplog WHERE synced_at IS NULL"),
+        0
+    );
+}
+
+#[test]
+fn purging_a_run_removes_its_evidence_rows() {
+    let c = device();
+    let p = new_project(&c);
+    ing01_cases(&c, &p);
+    let out = import(
+        &c,
+        &new_run(&p, doc_of(snapshot!("single__cucumber-messages.ndjson"))),
+    )
+    .unwrap();
+    let blob = Stored {
+        sha256: "ee".repeat(32),
+        size: 10,
+    };
+    for t in &out.attachments {
+        in_tx(&c, |tx| {
+            attach(
+                tx,
+                &t.owner_entity,
+                &t.owner_id,
+                &blob,
+                "x.md",
+                None,
+                "log",
+                U,
+            )
+        })
+        .unwrap();
+    }
+    assert!(count(&c, "SELECT count(*) FROM attachments") > 1);
+    c.execute("UPDATE oplog SET synced_at = datetime('now')", [])
+        .unwrap();
+    for t in ["runs", "run_items", "test_cases", "projects"] {
+        c.execute(
+            &format!("UPDATE {t} SET deleted_at = '2000-01-01 00:00:00'"),
+            [],
+        )
+        .unwrap();
+    }
+    in_tx(&c, |tx| {
+        crate::purge::purge(tx, U, 30)?;
+        crate::purge::purge_evidence(tx, U, 30)
+    })
+    .unwrap();
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 0);
+    assert_eq!(count(&c, "SELECT count(*) FROM attachments"), 0);
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM blobs WHERE local_state <> 'deleting'"
+        ),
+        0
+    );
+}
+
+#[test]
+fn run_counts_are_of_final_results() {
+    let c = device();
+    let p = new_project(&c);
+    ing01_cases(&c, &p);
+    let out = import(&c, &new_run(&p, doc_of(snapshot!("single__ctrf.json")))).unwrap();
+    let counts = run_counts(&c, &p, U).unwrap();
+    assert_eq!(
+        counts,
+        vec![RunCounts {
+            run_id: out.run_id,
+            passed: 3,
+            failed: 1,
+            other: 0,
+            unlinked: 0
+        }]
+    );
+    assert!(run_counts(&c, &p, "someone-else").unwrap().is_empty());
 }

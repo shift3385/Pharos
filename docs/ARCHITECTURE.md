@@ -307,8 +307,10 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   (raw report upload + one transaction: the run if new, the shard, results
   with steps, one `import` audit event; a new run closes unless kept open),
   `run_import_attach` (one report attachment to its result or step result,
-  idempotent by owner and content) and `unlinked_tests_list` (the tray).
-  Linking: the one `@<case_id_prefix><n>` tag (anchored); the revision is the
+  idempotent by owner and content), `unlinked_tests_list` (the tray: the keys
+  whose latest imported result has no case) and `run_counts_list` (final
+  results per run, one read for the list). Linking (`runs/link.rs`): the
+  tags against the project's live `scenario_id`s (one case links); the revision is the
   target run's item for that case/flow/row, else the synced revision current
   at `run.started_at`, else the current one; flow by scenario name, Outline
   row by index and step ids only when the texts match the revision. Ids:
@@ -318,6 +320,8 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
 - **Evidence.** The raw report is an attachment of the shard (`raw_report`);
   attachments the report embeds (Messages, Playwright `body`) or names by
   path (resolved against a folder the user picks) go to their result or step.
+  Purging a run deletes those rows too, and the evidence collection frees the
+  files.
   None of them syncs yet (ADR-0014).
 - **Sync.** Nothing new: the import writes `run`, `run_shard`, `result` and,
   from the tray, `unlinked_mapping`, all under the `runs` feature.

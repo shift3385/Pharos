@@ -85,42 +85,46 @@ export function slashes(path: string): string {
 export const isAbsolute = (p: string) =>
   /^[a-zA-Z]:\//.test(p) || p.startsWith("/") || p.startsWith("//");
 
-/** Relative paths for every path of one report (ING-01 R9): a known root is
- *  stripped first; the absolute paths left lose their common directory, so a
- *  user's home folder never reaches a synced `test_key`. */
-export function relativizer(
-  paths: Iterable<string>,
-  root?: string,
-): (path: string) => string {
+/** Prefixes no repository path keeps: a user's home and the workspaces of
+ *  the usual CI runners. Stripping them, and nothing that depends on which
+ *  other files the report holds, keeps a `test_key` the same in a shard's
+ *  report and in the merged one. */
+const STABLE_PREFIXES: RegExp[] = [
+  // GitHub Actions: /home/runner/work/<repo>/<repo>/, D:/a/<repo>/<repo>/
+  /^\/home\/runner\/work\/[^/]+\/[^/]+\//i,
+  /^[a-z]:\/a\/[^/]+\/[^/]+\//i,
+  /^\/github\/workspace\//i,
+  // GitLab: /builds/<group>/<project>/ (a nested group keeps its subgroups)
+  /^\/builds\/[^/]+\/[^/]+\//i,
+  // Jenkins, Azure Pipelines, Bitbucket, CircleCI and plain containers.
+  /^\/var\/lib\/jenkins\/workspace\/[^/]+\//i,
+  /^[a-z]:\/(?:jenkins|agent)\/workspace\/[^/]+\//i,
+  /^\/home\/vsts\/work\/\d+\/s\//i,
+  /^[a-z]:\/agent\/_work\/\d+\/s\//i,
+  /^\/opt\/atlassian\/pipelines\/agent\/build\//i,
+  /^\/home\/circleci\/(?:project\/)?/i,
+  /^\/(?:workspace|app|src)\//i,
+  // A user's home on Windows, macOS and Linux.
+  /^[a-z]:\/users\/[^/]+\//i,
+  /^\/users\/[^/]+\//i,
+  /^\/home\/[^/]+\//i,
+  /^\/root\//i,
+];
+
+/** A path as a `test_key` keeps it (ING-01 R9): `/`, the known root of the
+ *  report stripped (Playwright `rootDir`), else a home or CI workspace
+ *  prefix, and never a drive letter or a leading `/`. */
+export function relativizer(root?: string): (path: string) => string {
   const rootN = root ? slashes(root).replace(/\/+$/, "") : undefined;
-  const strip = (p: string) => {
+  return (p) => {
     const n = slashes(p);
     if (rootN && n.toLowerCase().startsWith(`${rootN.toLowerCase()}/`))
       return n.slice(rootN.length + 1);
-    return n;
-  };
-  const absolute = [...paths].map(strip).filter(isAbsolute);
-  let common: string[] | undefined;
-  for (const p of absolute) {
-    const dirs = p.split("/").slice(0, -1);
-    if (!common) common = dirs;
-    else {
-      let n = 0;
-      while (
-        n < common.length &&
-        n < dirs.length &&
-        common[n].toLowerCase() === dirs[n].toLowerCase()
-      )
-        n++;
-      common = common.slice(0, n);
+    if (!isAbsolute(n)) return n;
+    for (const prefix of STABLE_PREFIXES) {
+      if (prefix.test(n)) return n.replace(prefix, "");
     }
-  }
-  const prefix = common && common.length ? `${common.join("/")}/` : undefined;
-  return (p) => {
-    const n = strip(p);
-    if (prefix && n.toLowerCase().startsWith(prefix.toLowerCase()))
-      return n.slice(prefix.length);
-    return n.replace(/^\/+/, "");
+    return n.replace(/^[a-zA-Z]:\//, "").replace(/^\/+/, "");
   };
 }
 

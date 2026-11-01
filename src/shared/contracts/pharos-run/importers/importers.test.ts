@@ -237,6 +237,11 @@ describe("importers · ING-01 samples", () => {
     ]);
     expect(r[2]).toMatchObject({ duration: 1500, attributes: { flaky: true } });
     expect(r[4].attributes?.flaky).toBeUndefined();
+    // Surefire: the <failure> is the first run, the rerun the final one.
+    expect(r.slice(3).map((x) => [x.rawStatus, x.message])).toEqual([
+      ["failure", "y"],
+      ["rerunFailure", "x"],
+    ]);
   });
 
   it("Pharos Run JSON is taken as it is, deriving a missing testKey", () => {
@@ -254,7 +259,7 @@ describe("importers · ING-01 samples", () => {
       }),
     );
     expect(r.format).toBe("pharos_run_json");
-    expect(r.doc.results[0].testKey).toBe("a.spec.ts::S › n");
+    expect(r.doc.results[0].testKey).toBe("repo/tests/a.spec.ts::S › n");
     expect(() =>
       parseReportText(JSON.stringify({ schemaVersion: "2.0.0" })),
     ).toThrow(/invalid-pharos-run/);
@@ -269,17 +274,42 @@ describe("importers · ING-01 samples", () => {
 });
 
 describe("importers · helpers", () => {
-  it("relativizes against a root, then strips the common directory of absolute paths", () => {
-    const rel = relativizer([
-      "C:\\Users\\me\\repo\\tests\\a.ts",
-      "C:\\Users\\me\\repo\\tests\\sub\\b.ts",
-      "rel/c.ts",
-    ]);
-    expect(rel("C:\\Users\\me\\repo\\tests\\sub\\b.ts")).toBe("sub/b.ts");
-    expect(rel("rel/c.ts")).toBe("rel/c.ts");
-    expect(relativizer(["/home/x/r/f.ts"], "/home/x/r")("/home/x/r/f.ts")).toBe(
-      "f.ts",
+  it("relativizes against a root, then strips only stable prefixes", () => {
+    const rel = relativizer();
+    expect(rel(String.raw`C:\Users\me\repo\tests\sub\b.ts`)).toBe(
+      "repo/tests/sub/b.ts",
     );
+    expect(rel("/home/runner/work/app/app/tests/a.spec.ts")).toBe(
+      "tests/a.spec.ts",
+    );
+    expect(rel(String.raw`D:\a\app\app\tests\a.spec.ts`)).toBe(
+      "tests/a.spec.ts",
+    );
+    expect(rel("/builds/group/app/tests/a.spec.ts")).toBe("tests/a.spec.ts");
+    expect(rel("rel/c.ts")).toBe("rel/c.ts");
+    expect(rel(String.raw`E:\ci\tests\a.ts`)).toBe("ci/tests/a.ts");
+    expect(relativizer("/home/x/r")("/home/x/r/f.ts")).toBe("f.ts");
+  });
+
+  it("gives a shard's report and the merged one the same keys (absolute paths)", () => {
+    const doc = (files: string[]) =>
+      JSON.stringify({
+        schemaVersion: "1.0.0",
+        results: files.map((f) => ({
+          name: "t",
+          status: "passed",
+          filePath: f,
+          suite: ["S"],
+        })),
+      });
+    const a = "/home/runner/work/app/app/tests/login/a.spec.ts";
+    const b = "/home/runner/work/app/app/tests/pay/b.spec.ts";
+    const shard = parseReportText(doc([a])).doc.results;
+    const merged = parseReportText(doc([a, b])).doc.results;
+    expect(shard[0].testKey).toBe(merged[0].testKey);
+    expect(shard[0].testKey).toBe("tests/login/a.spec.ts::S › t");
+    // The synced file path is relative too.
+    expect(merged[1].filePath).toBe("tests/pay/b.spec.ts");
   });
 
   it("builds test keys and reads rows and shards", () => {
