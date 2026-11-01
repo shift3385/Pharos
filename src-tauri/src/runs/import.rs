@@ -1375,8 +1375,11 @@ pub(crate) fn unlinked_list(
     if !project::owns(conn, project_id, user)? {
         return Ok(Vec::new());
     }
-    // The latest imported result of every test_key, then the link of its
+    // The latest imported results of every test_key, then the link of their
     // tags (runs/link.rs): a key stays in the tray while it names no case.
+    // Two results can tie for latest (two shards of one run with no times of
+    // their own): then the key leaves the tray if any of them names a case,
+    // never by the order of their ids.
     struct Last {
         test_key: String,
         total: i64,
@@ -1391,12 +1394,13 @@ pub(crate) fn unlinked_list(
     let rows: Vec<Last> = {
         let mut stmt = conn
             // "Latest" by what every device has (the report's time, else the
-            // run's start, then the id), never by when this device stored it.
+            // run's start), never by when this device stored it. Every tied
+            // result is read; the id only picks which one the row shows.
             .prepare(&format!(
                 "WITH last AS (
                    SELECT x.*, coalesce(x.started_at, r.started_at) AS seen,
-                          row_number() OVER (PARTITION BY x.test_key
-                            ORDER BY coalesce(x.started_at, r.started_at) DESC, x.id DESC) AS n,
+                          rank() OVER (PARTITION BY x.test_key
+                            ORDER BY coalesce(x.started_at, r.started_at) DESC) AS n,
                           count(*) OVER (PARTITION BY x.test_key) AS total
                      FROM results x
                      JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
@@ -1429,15 +1433,31 @@ pub(crate) fn unlinked_list(
         mapped.collect::<rusqlite::Result<_>>().map_err(err)?
     };
     let resolver = Resolver::for_project(conn, project_id)?;
+    let tied: Vec<_> = rows
+        .into_iter()
+        .map(|l| {
+            let stored = StoredFacts::of(
+                &l.attributes,
+                l.case_key.as_deref(),
+                l.example_row,
+                Vec::new(),
+            );
+            let by_tags = resolver.case_by_tags(&stored.facts());
+            (l, stored, by_tags)
+        })
+        .collect();
+    let linked: HashSet<String> = tied
+        .iter()
+        .filter(|(_, _, by_tags)| by_tags.is_ok())
+        .map(|(l, _, _)| l.test_key.clone())
+        .collect();
+    let mut shown = HashSet::new();
     let mut out = Vec::new();
-    for l in rows {
-        let stored = StoredFacts::of(
-            &l.attributes,
-            l.case_key.as_deref(),
-            l.example_row,
-            Vec::new(),
-        );
-        let Err((reason, detail)) = resolver.case_by_tags(&stored.facts()) else {
+    for (l, stored, by_tags) in tied {
+        if linked.contains(&l.test_key) || !shown.insert(l.test_key.clone()) {
+            continue;
+        }
+        let Err((reason, detail)) = by_tags else {
             continue;
         };
         let name = if stored.name.is_empty() {

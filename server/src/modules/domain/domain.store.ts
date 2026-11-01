@@ -25,8 +25,9 @@ import type { KeyKind } from "../sync/sync.schemas";
 export interface DomainTx {
   /** The stored version of an entity (live or tombstone), locked. */
   get(entity: string, id: string): Promise<RemoteDoc | null>;
-  /** Live documents of an entity, optionally of one project. */
-  list(entity: string, projectId?: string): Promise<RemoteDoc[]>;
+  /** Live documents of an entity, optionally of one project; with
+   *  `withDeleted`, its tombstones too. */
+  list(entity: string, projectId?: string, opts?: { withDeleted?: boolean }): Promise<RemoteDoc[]>;
   /** Whether a key of the project is used by another document of the entity:
    *  "live", "deleted" (a key is never reused, ADR-0010) or null. */
   keyUse(entity: string, projectId: string, key: string, exceptId?: string): Promise<"live" | "deleted" | null>;
@@ -78,12 +79,12 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
         );
         return rows[0] ? toDoc(rows[0]) : null;
       },
-      async list(entity, projectId) {
+      async list(entity, projectId, opts) {
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents
-            WHERE user_id = $1 AND entity = $2 AND NOT deleted
+            WHERE user_id = $1 AND entity = $2 AND ($4 OR NOT deleted)
               AND ($3::text IS NULL OR payload->>'projectId' = $3)`,
-          [userId, entity, projectId ?? null],
+          [userId, entity, projectId ?? null, opts?.withDeleted === true],
         );
         return rows.map(toDoc);
       },

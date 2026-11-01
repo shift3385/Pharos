@@ -457,8 +457,23 @@ de clave conocido solo allí). Por eso no forma parte de su contenido:
   comprueban con los mismos vectores, `src-tauri/tests/fixtures/link-vectors.json`
   (caso renombrado, borrado, dos antiguos portadores de una clave, regla de
   enlace, elemento del run, flujo y fila, configuración por etiqueta o
-  nombre, elemento del ciclo), y los dos ignoran los shards que supera un
-  normalizador más nuevo.
+  nombre, empate de etiqueta, elemento del ciclo exacto, regla retirada,
+  run sin inicio, revisión congelada aún no recibida, clave del caso borrado,
+  fila sin id), y los dos ignoran los shards que supera un normalizador más
+  nuevo.
+- **Reglas que los dos lados aplican igual** (revisión final del paso 9):
+  - una regla de enlace vale mientras el caso exista, vivo o borrado (no
+    purgado); el servidor lee los casos borrados (`withDeleted`) para eso y
+    para la última clave de un caso borrado. La purga es local: un equipo que
+    ya purgó el caso deja de vincular, como con cualquier dato purgado;
+  - una fila de Outline sin id conserva su posición (su resultado queda sin
+    fila) y un id vacío, de flujo o de fila, no es un id;
+  - las **listas** (progreso, candidatos para un defecto, resultados, bandeja,
+    recuentos) ignoran los shards superados; leer **un** resultado por su id
+    (el enlace de un defecto) no, porque nombra ese resultado.
+- **`cycleItemId`** (`cycles::pick_item`, `item_for`) se expone para los
+  lectores futuros (la matriz, paso 10) y lo comprueban los vectores; el
+  progreso de ciclos coloca cada resultado con su caso, flujo y fila.
 - **Caso.** Gana una regla de enlace posterior viva (`unlinked_mapping`). Si
   no, cada etiqueta (y el `caseKey`) nombra **el caso vivo que la lleva
   ahora** como `scenario_id`; solo si ningún caso la lleva ahora, los casos que
@@ -503,8 +518,10 @@ de clave conocido solo allí). Por eso no forma parte de su contenido:
   mismo archivo leído por una versión mayor. **Todo cambio en lo que produce un
   parser sube `NORMALIZER_VERSION`** (VERSIONING §6.5).
 - **Orden de la bandeja:** el resultado «más reciente» de cada `test_key` es el
-  de hora del informe (si no, inicio del run) más tardía y después el id: lo
-  mismo en todos los equipos.
+  de hora del informe (si no, inicio del run) más tardía: lo mismo en todos
+  los equipos. **Empates** (dos shards de un run sin horas propias): la clave
+  sale de la bandeja si alguno de los resultados empatados nombra un caso,
+  nunca por el orden de sus ids; el id solo elige qué fila se muestra.
 - **`createdAt` de las revisiones converge:** la misma revisión congelada en
   dos equipos (su id es su contenido) toma, al recibirse, el `createdAt` del
   servidor, que guarda el primero. Solo filas de revisión con id por

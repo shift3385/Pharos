@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { factsOf, instantMs, linkResolver, type LinkData } from "../src/modules/domain/resultLink";
+import type { RemoteDoc } from "../src/modules/sync/sync.repository";
+import { factsOf, instantMs, linkResolver, supersededShards, type LinkData } from "../src/modules/domain/resultLink";
 
 // The server twin of the desktop's link resolver (runs/link.rs) against the
 // vectors both check.
@@ -14,10 +15,11 @@ function dataOf(v: Raw): LinkData {
   const list = (k: string) => v[k] as Raw[];
   return {
     caseIdPrefix: (v.project as Raw).caseIdPrefix as string,
-    // The server lists live cases only: a deleted one is known by its revisions.
-    cases: list("cases")
-      .filter((c) => !c.deleted)
-      .map((c) => ({ id: c.id as string, scenarioId: c.scenarioId as string })),
+    cases: list("cases").map((c) => ({
+      id: c.id as string,
+      scenarioId: c.scenarioId as string,
+      deleted: c.deleted as boolean,
+    })),
     revisions: list("revisions").map((r) => ({
       id: r.id as string,
       testCaseId: r.testCaseId as string,
@@ -57,6 +59,13 @@ describe("derived link of imported results (twin of runs/link.rs)", () => {
       }) as unknown as Raw;
       for (const [k, want] of Object.entries(x.expect as Raw)) expect(link[k], `${x.id as string}.${k}`).toEqual(want);
     }
+  });
+
+  it("leaves out the shards a newer normalizer supersedes", () => {
+    const docs = (vectors.shards as Raw[]).map(
+      (x) => ({ entity: "run_shard", entityId: x.id as string, payload: x }) as unknown as RemoteDoc,
+    );
+    expect([...supersededShards(docs)].sort()).toEqual(vectors.supersededShards);
   });
 
   it("reads the facts as the desktop writes them and times as instants", () => {

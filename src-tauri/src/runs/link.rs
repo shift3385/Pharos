@@ -152,6 +152,13 @@ fn ids_texts(v: Option<&Value>) -> Vec<(String, String)> {
         .collect()
 }
 
+/// A non-empty string id (an empty one is no id, as on the server).
+fn non_empty(v: Option<&Value>) -> Option<String> {
+    v.and_then(Value::as_str)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+}
+
 fn flow_of<'v>(data: &'v Value, flow_id: Option<&str>) -> Option<&'v Value> {
     match flow_id {
         None => Some(data),
@@ -167,7 +174,8 @@ fn flow_of<'v>(data: &'v Value, flow_id: Option<&str>) -> Option<&'v Value> {
 struct FlowSteps {
     background: usize,
     steps: Vec<(String, Regex)>,
-    rows: Vec<String>,
+    /// The id of each Outline row, by position (None: a row without one).
+    rows: Vec<Option<String>>,
 }
 
 impl FlowSteps {
@@ -185,7 +193,7 @@ impl FlowSteps {
             .and_then(Value::as_array)
             .into_iter()
             .flatten()
-            .filter_map(|row| row.get("id").and_then(Value::as_str).map(String::from))
+            .map(|row| non_empty(row.get("id")))
             .collect();
         FlowSteps {
             background,
@@ -620,11 +628,13 @@ impl<'c> Resolver<'c> {
                     x.get("name").and_then(Value::as_str).map(str::trim) == Some(scenario.trim())
                 })
             })
-            .and_then(|x| x.get("id").and_then(Value::as_str).map(String::from));
+            .and_then(|x| non_empty(x.get("id")));
         let mut row_id = None;
         if let Some(n) = f.example_row {
             let rows = &self.flow_steps(&revision_id, flow_id.as_deref())?.rows;
-            row_id = usize::try_from(n).ok().and_then(|n| rows.get(n).cloned());
+            row_id = usize::try_from(n)
+                .ok()
+                .and_then(|n| rows.get(n).cloned().flatten());
             if row_id.is_none() {
                 link.warnings.push(("row-not-found", format!("{}", n + 1)));
             }
@@ -887,6 +897,23 @@ mod tests {
             )
             .unwrap();
         }
+        for x in v["shards"].as_array().unwrap() {
+            c.execute(
+                "INSERT INTO run_shards (id, workspace_id, project_id, run_id, source_format,
+                        source_file_sha256, imported_by, imported_at, hlc, normalizer_version)
+                 VALUES (?1, ?2, ?3, ?4, 'ctrf', ?5, 'u', ?6, 'h', ?7)",
+                params![
+                    s(x, "id"),
+                    ws,
+                    project,
+                    s(x, "runId"),
+                    s(x, "sourceFileSha256"),
+                    now,
+                    x["normalizerVersion"].as_i64()
+                ],
+            )
+            .unwrap();
+        }
         for x in v["runItems"].as_array().unwrap() {
             c.execute(
                 "INSERT INTO run_items (id, workspace_id, project_id, run_id, test_case_id,
@@ -953,6 +980,18 @@ mod tests {
     fn the_shared_link_vectors_resolve_as_written() {
         let v: Value = serde_json::from_str(VECTORS).unwrap();
         let c = vector_db(&v);
+        // The shards a newer normalizer supersedes (`CURRENT_SHARD`).
+        let superseded: Vec<String> = c
+            .prepare(&format!(
+                "SELECT x.shard_id FROM (SELECT id AS shard_id FROM run_shards) x
+                  WHERE NOT {CURRENT_SHARD} ORDER BY x.shard_id"
+            ))
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        assert_eq!(serde_json::json!(superseded), v["supersededShards"]);
         let mut r = Resolver::for_project(&c, v["project"]["id"].as_str().unwrap()).unwrap();
         let strings = |x: &Value, k: &str| -> Vec<String> {
             x[k].as_array()

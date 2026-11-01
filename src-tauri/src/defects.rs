@@ -503,15 +503,17 @@ pub(crate) fn result_candidates(
     if !project::owns(conn, project_id, user)? {
         return Ok(Vec::new());
     }
+    // A shard superseded by a newer normalizer is not read (ADR-0013).
     let mut stmt = conn
-        .prepare(
+        .prepare(&format!(
             "SELECT x.id, x.run_id, coalesce(r.run_key, ''), coalesce(r.title, ''),
                     NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at
                FROM results x LEFT JOIN runs r ON r.id = x.run_id
               WHERE x.project_id = ?1 AND x.status IN ('failed', 'blocked', 'other')
-                AND (r.id IS NULL OR r.deleted_at IS NULL)
+                AND (r.id IS NULL OR r.deleted_at IS NULL) AND {}
               ORDER BY x.created_at DESC, x.rowid DESC LIMIT 500",
-        )
+            crate::runs::link::CURRENT_SHARD
+        ))
         .map_err(err)?;
     let rows = stmt
         .query_map(params![project_id], |r| {

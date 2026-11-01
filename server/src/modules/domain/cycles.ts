@@ -281,11 +281,13 @@ function attemptOf(d: RemoteDoc, run: Payload, shard: Payload | undefined, link:
 async function loadExecution(tx: DomainTx, projectId: string): Promise<ExecutionData> {
   const push = <T>(m: Map<string, T[]>, k: string, v: T) => m.set(k, [...(m.get(k) ?? []), v]);
   const items = new Map<string, RemoteDoc[]>();
-  for (const d of await tx.list("test_cycle_item", projectId)) push(items, str(d.payload, "cycleId"), d);
+  const itemDocs = await tx.list("test_cycle_item", projectId);
+  for (const d of itemDocs) push(items, str(d.payload, "cycleId"), d);
   for (const list of items.values()) list.sort(byPosition);
   const runCycle = new Map<string, { cycle: string; payload: Payload }>();
   const runs = new Map<string, number>();
-  for (const d of await tx.list("run", projectId)) {
+  const runDocs = await tx.list("run", projectId);
+  for (const d of runDocs) {
     const cycle = str(d.payload, "cycleId");
     if (!cycle) continue;
     runCycle.set(d.entityId, { cycle, payload: d.payload });
@@ -303,7 +305,7 @@ async function loadExecution(tx: DomainTx, projectId: string): Promise<Execution
     if (superseded.has(shard)) continue;
     let link: ResultLink | null = null;
     if (isImported(d.payload)) {
-      links ??= await projectLinks(tx, projectId);
+      links ??= await projectLinks(tx, projectId, { run: runDocs, test_cycle_item: itemDocs });
       link = links(d.payload);
     }
     push(attempts, run.cycle, attemptOf(d, run.payload, shards.get(shard), link));

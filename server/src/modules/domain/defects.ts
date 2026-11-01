@@ -99,19 +99,32 @@ export async function dropLink(tx: DomainTx, id: string): Promise<boolean> {
 export interface LinkContext {
   links: RemoteDoc[];
   byId: Map<string, RemoteDoc>;
-  /** The derived link of an imported result (`resultLink.ts`). */
-  derive: (result: Payload) => ResultLink;
+  /** The derived link of an imported result (`resultLink.ts`); null when no
+   *  link of the project reaches an imported result. */
+  derive: ((result: Payload) => ResultLink) | null;
 }
 
 /** The documents a project's defects may point at, and what derives the
- *  link of its imported results, in one read per entity. */
+ *  link of its imported results, in one read per entity. The link data is
+ *  read only when a link reaches an imported result, and reuses these lists
+ *  (cases with their tombstones, as the resolver needs). */
 export async function linkContext(tx: DomainTx, projectId: string): Promise<LinkContext> {
-  const [links, cases, requirements, results, runs] = await Promise.all(
-    ["defect_link", "test_case", "requirement", "result", "run"].map((e) => tx.list(e, projectId)),
-  );
+  const [links, allCases, requirements, results, runs] = await Promise.all([
+    tx.list("defect_link", projectId),
+    tx.list("test_case", projectId, { withDeleted: true }),
+    tx.list("requirement", projectId),
+    tx.list("result", projectId),
+    tx.list("run", projectId),
+  ]);
+  const cases = allCases.filter((d) => !d.deleted);
   const byId = new Map<string, RemoteDoc>();
   for (const d of [...cases, ...requirements, ...results, ...runs]) byId.set(`${d.entity}:${d.entityId}`, d);
-  return { links, byId, derive: await projectLinks(tx, projectId) };
+  const needed = links.some((l) => {
+    const found = str(l.payload, "targetKind") === "result" && byId.get(`result:${str(l.payload, "targetId")}`);
+    return !!found && isImported(found.payload);
+  });
+  const derive = needed ? await projectLinks(tx, projectId, { test_case: allCases, run: runs }) : null;
+  return { links, byId, derive };
 }
 
 /** The case a result is the execution of: **the one place the web reads it**
@@ -119,7 +132,7 @@ export async function linkContext(tx: DomainTx, projectId: string): Promise<Link
  *  an imported one (with a shard) gets it from the link resolver (step 9). */
 export function resultCase(ctx: LinkContext, result: RemoteDoc | undefined): string | null {
   if (!result) return null;
-  if (isImported(result.payload)) return ctx.derive(result.payload).caseId;
+  if (isImported(result.payload)) return ctx.derive?.(result.payload).caseId ?? null;
   return str(result.payload, "testCaseId") || null;
 }
 

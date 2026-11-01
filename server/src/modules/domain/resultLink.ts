@@ -21,8 +21,9 @@ const normalizeLabel = (label: string) => label.trim().toLowerCase();
 /** The project data the link reads: every list as the server stores it. */
 export interface LinkData {
   caseIdPrefix: string;
-  /** Live cases; a case missing here but known by its revisions is deleted. */
-  cases: { id: string; scenarioId: string }[];
+  /** Every case the store keeps, deleted ones flagged (a deleted case still
+   *  links, and its last key still names it, as on the desktop). */
+  cases: { id: string; scenarioId: string; deleted: boolean }[];
   revisions: {
     id: string;
     testCaseId: string;
@@ -112,7 +113,8 @@ export function factsOf(payload: Payload): ResultFacts {
   };
 }
 
-/** The project's link data from its documents (live ones, as `tx.list`). */
+/** The project's link data from its documents: live ones, as `tx.list`, but
+ *  `test_case` with its tombstones (`withDeleted`). */
 export function linkDataOf(
   caseIdPrefix: string,
   docs: Record<
@@ -127,6 +129,7 @@ export function linkDataOf(
     cases: docs.test_case.map((d) => ({
       id: d.entityId,
       scenarioId: str(d.payload, "scenarioId"),
+      deleted: d.deleted,
     })),
     revisions: docs.test_case_revision.map((d) => ({
       id: d.entityId,
@@ -187,7 +190,10 @@ export function scenarioName(name: string, suite: string[]): string {
 export function linkResolver(data: LinkData): (f: ResultFacts) => ResultLink {
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const prefix = new RegExp(`^${escape(data.caseIdPrefix)}[0-9]{1,9}$`);
-  const live = new Set(data.cases.map((c) => c.id));
+  // As the desktop: a case is known while the store keeps it (live or
+  // deleted); a revision of a case it no longer keeps is not read.
+  const known = new Set(data.cases.map((c) => c.id));
+  const live = new Set(data.cases.filter((c) => !c.deleted).map((c) => c.id));
   const add = (m: Map<string, string[]>, k: string, id: string) => {
     if (!k) return;
     const l = m.get(k) ?? [];
@@ -196,9 +202,10 @@ export function linkResolver(data: LinkData): (f: ResultFacts) => ResultLink {
   };
   const current = new Map<string, string[]>();
   const historical = new Map<string, string[]>();
-  for (const c of data.cases) add(current, c.scenarioId, c.id);
+  for (const c of data.cases) add(c.deleted ? historical : current, c.scenarioId, c.id);
   const revisions = new Map<string, { id: string; revision: number; created: number | null; data: Payload }[]>();
   for (const r of data.revisions) {
+    if (!known.has(r.testCaseId)) continue;
     add(historical, r.scenarioId, r.testCaseId);
     const l = revisions.get(r.testCaseId) ?? [];
     l.push({
@@ -279,7 +286,7 @@ export function linkResolver(data: LinkData): (f: ResultFacts) => ResultLink {
     };
     const mapped = mappings.get(f.testKey);
     let caseId: string;
-    if (mapped && (live.has(mapped) || revisions.has(mapped))) caseId = mapped;
+    if (mapped && known.has(mapped)) caseId = mapped;
     else {
       const { found, unknown } = casesOf(f);
       if (found.length === 0 && unknown.length === 0) return { ...link, reason: "no-tag" };
@@ -346,9 +353,17 @@ export function supersededShards(shards: RemoteDoc[]): Set<string> {
   return new Set(shards.filter((s) => version(s.payload) < (newest.get(key(s.payload)) ?? 0)).map((s) => s.entityId));
 }
 
-/** The link of a project's imported results, read once: one list per entity. */
-export async function projectLinks(tx: DomainTx, projectId: string): Promise<(result: Payload) => ResultLink> {
-  const entities = [
+type LinkEntity = keyof Parameters<typeof linkDataOf>[1];
+
+/** The link of a project's imported results, read once: one list per entity.
+ *  `have` takes the lists the caller already read (`test_case` only with
+ *  its tombstones, `withDeleted`). */
+export async function projectLinks(
+  tx: DomainTx,
+  projectId: string,
+  have: Partial<Record<LinkEntity, RemoteDoc[]>> = {},
+): Promise<(result: Payload) => ResultLink> {
+  const entities: LinkEntity[] = [
     "test_case",
     "test_case_revision",
     "unlinked_mapping",
@@ -356,10 +371,10 @@ export async function projectLinks(tx: DomainTx, projectId: string): Promise<(re
     "run_item",
     "configuration",
     "test_cycle_item",
-  ] as const;
+  ];
   const [project, ...lists] = await Promise.all([
     tx.get("project", projectId),
-    ...entities.map((e) => tx.list(e, projectId)),
+    ...entities.map((e) => have[e] ?? tx.list(e, projectId, { withDeleted: e === "test_case" })),
   ]);
   const docs = Object.fromEntries(entities.map((e, i) => [e, lists[i]])) as Parameters<typeof linkDataOf>[1];
   const resolve = linkResolver(linkDataOf((project && str(project.payload, "caseIdPrefix")) || "ATS_", docs));

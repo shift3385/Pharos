@@ -989,6 +989,8 @@ pub(crate) fn list_cycles(
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
     let mut out = Vec::new();
+    // One link resolver for every cycle of the project, built on first use.
+    let mut resolver = None;
     for cycle in cycles {
         let items: i64 = conn
             .query_row(
@@ -1004,7 +1006,7 @@ pub(crate) fn list_cycles(
                 |r| r.get(0),
             )
             .map_err(err)?;
-        let progress = cycle_progress_of(conn, &cycle)?.summary;
+        let progress = cycle_progress_of(conn, &cycle, &mut resolver)?.summary;
         out.push(CycleSummary {
             cycle,
             items,
@@ -2115,7 +2117,13 @@ struct ResultRow {
 /// imported one gets it from the link resolver (`runs/link.rs`, step 9):
 /// case, flow, row and its configuration (the run's, else the one its label
 /// stands for). A shard superseded by a newer normalizer is left out.
-fn cycle_results(conn: &Connection, cycle_id: &str) -> Result<Vec<ResultRow>, String> {
+/// `resolver` is built on the first imported result and may be shared by the
+/// cycles of one project (`list_cycles`).
+fn cycle_results<'c>(
+    conn: &'c Connection,
+    cycle_id: &str,
+    resolver: &mut Option<runs::link::Resolver<'c>>,
+) -> Result<Vec<ResultRow>, String> {
     struct Raw {
         row: ResultRow,
         project_id: String,
@@ -2175,12 +2183,11 @@ fn cycle_results(conn: &Connection, cycle_id: &str) -> Result<Vec<ResultRow>, St
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
-    let mut resolver: Option<runs::link::Resolver> = None;
     let mut out = Vec::with_capacity(raw.len());
     for mut x in raw {
         if x.imported {
             if resolver.is_none() {
-                resolver = Some(runs::link::Resolver::for_project(conn, &x.project_id)?);
+                *resolver = Some(runs::link::Resolver::for_project(conn, &x.project_id)?);
             }
             let stored = runs::link::StoredFacts::of(
                 &x.attributes,
@@ -2205,14 +2212,18 @@ fn cycle_results(conn: &Connection, cycle_id: &str) -> Result<Vec<ResultRow>, St
     Ok(out)
 }
 
-fn cycle_progress_of(conn: &Connection, cycle: &TestCycle) -> Result<CycleProgress, String> {
+fn cycle_progress_of<'c>(
+    conn: &'c Connection,
+    cycle: &TestCycle,
+    resolver: &mut Option<runs::link::Resolver<'c>>,
+) -> Result<CycleProgress, String> {
     let items = live_items(conn, &cycle.id)?;
     let columns: Vec<Option<String>> = if cycle.configuration_ids.is_empty() {
         vec![None]
     } else {
         cycle.configuration_ids.iter().cloned().map(Some).collect()
     };
-    let rows = cycle_results(conn, &cycle.id)?;
+    let rows = cycle_results(conn, &cycle.id, resolver)?;
     let attempts: Vec<progress::CycleAttempt> = rows
         .iter()
         .map(|r| progress::CycleAttempt {
@@ -2286,7 +2297,7 @@ pub(crate) fn cycle_progress(
     user: &str,
 ) -> Result<Option<CycleProgress>, String> {
     match get_cycle(conn, cycle_id, user)? {
-        Some(cycle) => cycle_progress_of(conn, &cycle).map(Some),
+        Some(cycle) => cycle_progress_of(conn, &cycle, &mut None).map(Some),
         None => Ok(None),
     }
 }

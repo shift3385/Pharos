@@ -926,15 +926,17 @@ fn a_test_tagged_later_leaves_the_tray() {
     let c = device();
     let p = new_project(&c);
     let (tc1, _, _) = ing01_cases(&c, &p);
-    let first = pharos_doc(json!([{"name": "t", "status": "failed", "testKey": "k"}]));
+    // Explicit, distinct times: the later result decides.
+    let first = pharos_doc(json!([{"name": "t", "status": "failed", "testKey": "k",
+                                   "startedAt": "2026-10-01T10:00:00Z"}]));
     let out = import(
         &c,
         &request(&p, first, json!({"newRun": {"keepOpen": true}})),
     )
     .unwrap();
     assert_eq!(unlinked_list(&c, &p, U).unwrap().len(), 1);
-    let tagged =
-        pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k", "tags": ["@TC-001"]}]));
+    let tagged = pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k",
+                                    "tags": ["@TC-001"], "startedAt": "2026-10-01T11:00:00Z"}]));
     let req = request(
         &p,
         tagged,
@@ -956,6 +958,68 @@ fn a_test_tagged_later_leaves_the_tray() {
     assert!(r
         .iter()
         .any(|x| x.effective_test_case_id.as_deref() == Some(tc1.as_str())));
+}
+
+/// Imports two reports into one run; `second` goes in as another shard.
+fn two_shards(c: &Connection, p: &str, first: Value, second: Value) {
+    let out = import(c, &request(p, first, json!({"newRun": {"keepOpen": true}}))).unwrap();
+    let req = request(
+        p,
+        second,
+        json!({"runId": out.run_id, "sha256": "bb".repeat(32)}),
+    );
+    let stored = Stored {
+        sha256: "bb".repeat(32),
+        size: 1,
+    };
+    in_tx(c, |tx| commit(tx, &req, &stored)).unwrap();
+}
+
+#[test]
+fn an_untagged_later_result_puts_the_test_back_in_the_tray() {
+    let c = device();
+    let p = new_project(&c);
+    ing01_cases(&c, &p);
+    two_shards(
+        &c,
+        &p,
+        pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k",
+                            "tags": ["@TC-001"], "startedAt": "2026-10-01T10:00:00Z"}])),
+        pharos_doc(json!([{"name": "t", "status": "failed", "testKey": "k",
+                            "startedAt": "2026-10-01T11:00:00Z"}])),
+    );
+    let tray = unlinked_list(&c, &p, U).unwrap();
+    assert_eq!(
+        (tray.len(), tray[0].last_status.as_str(), tray[0].results),
+        (1, "failed", 2)
+    );
+}
+
+/// Two shards of one run whose results have no times of their own tie for
+/// latest: the test leaves the tray if any of them names a case, whatever
+/// their ids and the order they were imported in.
+#[test]
+fn results_tied_for_latest_leave_the_tray_if_any_names_a_case() {
+    let untagged = pharos_doc(json!([{"name": "t", "status": "failed", "testKey": "k"}]));
+    let tagged = pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k",
+                                     "tags": ["@TC-001"]}]));
+    for (first, second) in [
+        (untagged.clone(), tagged.clone()),
+        (tagged.clone(), untagged.clone()),
+    ] {
+        let c = device();
+        let p = new_project(&c);
+        ing01_cases(&c, &p);
+        two_shards(&c, &p, first, second);
+        assert!(unlinked_list(&c, &p, U).unwrap().is_empty());
+    }
+    // Tied and none names a case: one row, with every result counted.
+    let c = device();
+    let p = new_project(&c);
+    let other = pharos_doc(json!([{"name": "t", "status": "passed", "testKey": "k"}]));
+    two_shards(&c, &p, untagged, other);
+    let tray = unlinked_list(&c, &p, U).unwrap();
+    assert_eq!((tray.len(), tray[0].results), (1, 2));
 }
 
 #[test]

@@ -387,7 +387,9 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   the cases that wore it before (keys of their synced revisions; two cases →
   unlinked, a deleted case → `caseDeleted`); the configuration comes from
   the label (`cycles::match_configuration`) and the cycle item from
-  `cycles::pick_item`; the revision is the
+  `cycles::pick_item` (exposed for the matrix and the vectors; progress
+  places results by case, flow and row); lists skip superseded shards, a
+  read by id does not; the revision is the
   run's item for that case/flow/row, else the synced revision current
   at `run.started_at`, else the oldest (a pulled revision takes the
   server's `createdAt`, so this converges); flow by scenario name, Outline
