@@ -58,7 +58,7 @@ describe("documents written by the web (shared fixture)", () => {
     const headers = {
       authorization: `Bearer ${reg.json().accessToken}`,
       [VERSION_HEADER]: SERVER_VERSION,
-      [FEATURES_HEADER]: "key-conflicts,stable-steps",
+      [FEATURES_HEADER]: "key-conflicts,stable-steps,defects",
     };
     const post = async (url: string, payload: object) => (await app.inject({ method: "POST", url, headers, payload })).json();
     const project = await post("/api/projects", { name: "Checkout" });
@@ -66,7 +66,20 @@ describe("documents written by the web (shared fixture)", () => {
     await post("/api/test-plans", { projectId, title: "Plan", author: "QA", data: {}, planDate: "2026-11-01" });
     await post("/api/test-cases", { projectId, title: "Pay", author: "QA", data: {} });
     await post("/api/requirements", { projectId, title: "Cards" });
-    await post("/api/planner-cards", { projectId, kind: "defect", title: "Bug", data: {} });
+    const testCase = await post("/api/test-cases", { projectId, title: "Refund", author: "QA", data: {} });
+    await post("/api/planner-cards", { projectId, kind: "task", title: "Users", data: { description: "Two" } });
+    await post("/api/defects", {
+      projectId,
+      title: "Bug",
+      description: "d",
+      stepsToReproduce: "1. Pay",
+      actual: "Charged twice",
+      severity: "critical",
+      priority: "high",
+      foundInBuild: "1.4.2",
+      data: { labels: ["payments"] },
+      links: [{ targetKind: "test_case", targetId: testCase.id }],
+    });
     await post("/api/custom-fields", {
       projectId,
       fieldKey: "browser",

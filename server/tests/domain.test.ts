@@ -267,26 +267,23 @@ describe("domain API", () => {
     ]);
   });
 
-  it("planner cards: positions per column, defect keys kept, reorder", async () => {
+  it("planner cards: positions per column, no more defects, reorder", async () => {
     const token = await tokenFor();
     const p = await project(token);
     const card = (input: object) =>
       call(token, "POST", "/api/planner-cards", { projectId: p.id, kind: "task", title: "T", data: {}, ...input });
     const t1 = (await card({})).body;
     const t2 = (await card({})).body;
-    const d1 = (await card({ kind: "defect", status: "todo" })).body;
+    const d1 = (await card({ kind: "test_data", status: "todo" })).body;
     expect([t1.position, t2.position, d1.position]).toEqual([0, 1, 0]);
-    expect([t1.cardKey, d1.cardKey]).toEqual([null, "DEF-001"]);
-
+    expect([t1.cardKey, d1.cardKey]).toEqual([null, null]);
+    // Defects have their own module since DEF-01 (ADR-0016).
+    expect((await card({ kind: "defect" })).body.code).toBe("defect_moved");
     const asDefect = await call(token, "PUT", `/api/planner-cards/${t1.id}`, {
       input: { projectId: p.id, kind: "defect", title: "Now a defect", data: {} },
       revision: 1,
     });
-    expect(asDefect.body.cardKey).toBe("DEF-002");
-    const back = await call(token, "PUT", `/api/planner-cards/${t1.id}`, {
-      input: { projectId: p.id, kind: "task", title: "Task again", data: {} },
-    });
-    expect(back.body.cardKey).toBe("DEF-002");
+    expect([asDefect.status, asDefect.body.code]).toEqual([400, "defect_moved"]);
 
     expect((await call(token, "POST", "/api/planner-cards/reorder", { status: "done", ids: [t2.id, t1.id, "x"] })).status).toBe(
       204,

@@ -8,6 +8,7 @@
 import type { z } from "zod";
 import type { Assert, Contract, Covers } from "../../../../src/shared/contracts";
 import type {
+  defectInputSchema,
   plannerCardInputSchema,
   projectInputSchema,
   requirementImportSchema,
@@ -36,4 +37,5 @@ export type _RustContract = [
   Assert<Covers<Contract.RequirementInput, Sent<typeof requirementInputSchema>>>,
   Assert<Covers<Contract.RequirementImportRow, Sent<typeof requirementImportSchema>["rows"][number]>>,
   Assert<Covers<Contract.PlannerCardInput, Sent<typeof plannerCardInputSchema>>>,
+  Assert<Covers<Contract.DefectInput, Sent<typeof defectInputSchema>>>,
 ];

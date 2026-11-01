@@ -66,6 +66,7 @@ export const SERVER_FEATURES = [
   "stable-steps",
   "runs",
   "custom-fields",
+  "defects",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -115,6 +116,14 @@ export function sendsStableSteps(req: FastifyRequest): boolean {
  *  pull, and its requirement upserts keep the risk the server has. */
 export function understandsRuns(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("runs");
+}
+
+/** True if the client knows defects as their own entity (DEF-01,
+ *  ADR-0016): `defect` and `defect_link`, with no planner defect cards.
+ *  Without it a client never sees them (nor the planner cards converted into
+ *  them) on pull, and its push that touches a defect card is refused. */
+export function understandsDefects(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("defects");
 }
 
 /** Features of `SERVER_FEATURES` the client did not send. */

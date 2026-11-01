@@ -1,9 +1,17 @@
 import { z } from "zod";
 import { FIELD_ENTITIES, fieldId, validKey } from "../domain/custom-fields";
+import {
+  DEFECT_PRIORITIES,
+  DEFECT_RESOLUTIONS,
+  DEFECT_SEVERITIES,
+  DEFECT_STATUSES,
+  LINK_TARGET_KINDS,
+  linkId,
+} from "./defects";
 
 /** Entities of the `lww` sync class (Phase 8B core + SYNC-04a requirements
  *  and planner cards, EJE-01 runs, run items and unlinked mappings, FLD-01
- *  custom field definitions): base check, then last-write-wins by HLC
+ *  custom field definitions, DEF-01 defects and their links): base check, then last-write-wins by HLC
  *  (ADR-0002). Templates and attachments follow in SYNC-04b. */
 export const LWW_ENTITIES = [
   "project",
@@ -15,6 +23,8 @@ export const LWW_ENTITIES = [
   "run_item",
   "unlinked_mapping",
   "custom_field",
+  "defect",
+  "defect_link",
 ] as const;
 
 /** Entities of the `append_only` sync class (design 0.2.0 §3.2, ADR-0011):
@@ -36,6 +46,13 @@ export const EXECUTION_ENTITIES = ["run", "run_item", "unlinked_mapping", "run_s
 
 export const isExecution = (entity: string): boolean =>
   (EXECUTION_ENTITIES as readonly string[]).includes(entity);
+
+/** The defect entities (DEF-01, ADR-0016). Only clients that send the
+ *  `defects` feature pull them; the others never knew them and get the
+ *  answers they got before (VERSIONING §6.5). */
+export const DEFECT_ENTITIES = ["defect", "defect_link"] as const;
+
+export const isDefectEntity = (entity: string): boolean => (DEFECT_ENTITIES as readonly string[]).includes(entity);
 
 /** Payload keys a feature introduced on existing entities. A client without
  *  the feature does not know them, so its upsert keeps the stored values even
@@ -99,6 +116,8 @@ export const PROJECT_CHILDREN = [
   "run_shard",
   "result",
   "custom_field",
+  "defect",
+  "defect_link",
 ] as const;
 
 const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"] as const;
@@ -131,6 +150,38 @@ const EXECUTION_PAYLOADS: Partial<Record<string, z.ZodType>> = {
       .array(z.looseObject({ text: z.string(), status: z.enum(RESULT_STATUSES) }))
       .max(5000)
       .default([]),
+  }),
+};
+
+const text = (max: number) => z.string().max(max).nullish();
+
+/** What the server checks of a defect document (DEF-01): the enums and the
+ *  limits the desktop checks too (`defects.rs`). Extra keys pass. */
+const DEFECT_PAYLOADS: Partial<Record<string, z.ZodType>> = {
+  defect: z.looseObject({
+    projectId: id,
+    defectKey: z.string().max(100),
+    title: z.string().min(1).max(500),
+    description: z.string().max(20_000).default(""),
+    stepsToReproduce: z.string().max(20_000).default(""),
+    expected: text(20_000),
+    actual: text(20_000),
+    severity: z.enum(DEFECT_SEVERITIES),
+    priority: z.enum(DEFECT_PRIORITIES),
+    status: z.enum(DEFECT_STATUSES),
+    resolution: z.enum(DEFECT_RESOLUTIONS).nullish(),
+    foundInBuild: text(200),
+    foundInEnvironment: text(200),
+    fixedInBuild: text(200),
+    assignee: text(200),
+    externalKey: text(200),
+    externalUrl: text(2000),
+  }),
+  defect_link: z.looseObject({
+    projectId: id,
+    defectId: id,
+    targetKind: z.enum(LINK_TARGET_KINDS),
+    targetId: id,
   }),
 };
 
@@ -182,7 +233,22 @@ export const deltaSchema = z
           path: ["entityId"],
         });
     }
-    const schema = d.op === "delete" ? undefined : EXECUTION_PAYLOADS[d.entity];
+    // A link is what it links (design §3.3): its id derives from it.
+    if (d.entity === "defect_link" && d.op === "upsert") {
+      const p = d.payload;
+      if (
+        typeof p.defectId === "string" &&
+        typeof p.targetKind === "string" &&
+        typeof p.targetId === "string" &&
+        d.entityId !== linkId(p.defectId, p.targetKind, p.targetId)
+      )
+        ctx.addIssue({
+          code: "custom",
+          message: "A defect link's id must be linkId(defectId, targetKind, targetId).",
+          path: ["entityId"],
+        });
+    }
+    const schema = d.op === "delete" ? undefined : (EXECUTION_PAYLOADS[d.entity] ?? DEFECT_PAYLOADS[d.entity]);
     const parsed = schema?.safeParse(d.payload);
     if (parsed && !parsed.success) {
       for (const issue of parsed.error.issues) {
@@ -211,7 +277,7 @@ export type KeyKind = (typeof KEY_KINDS)[number];
 export const KEY_ENTITY: Record<KeyKind, string> = {
   case: "test_case",
   requirement: "requirement",
-  defect: "planner_card",
+  defect: "defect",
   run: "run",
   cycle: "test_cycle",
 };
@@ -220,6 +286,7 @@ export const KEY_FIELD: Record<string, string> = {
   requirement: "requirementKey",
   planner_card: "cardKey",
   run: "runKey",
+  defect: "defectKey",
 };
 
 /** Numbers per leased block; the desktop asks for another when fewer than 10

@@ -22,8 +22,23 @@ import {
   type FieldOption,
   type FieldRule,
 } from "./custom-fields";
+import {
+  checkStatus,
+  checkTarget,
+  DEFECT_DIGITS,
+  DEFECT_PREFIX,
+  dropLink,
+  editable,
+  newDefectId,
+  putLink,
+  withLinks,
+} from "./defects";
+import { linkId } from "../sync/defects";
 import type {
   CustomFieldInput,
+  DefectInput,
+  DefectTransition,
+  LinkTargetInput,
   PlannerCardInput,
   ProjectInput,
   RequirementImportRow,
@@ -48,8 +63,6 @@ const DEFAULT_PREFIX = "ATS_";
 const DEFAULT_DIGITS = 3;
 const REQUIREMENT_PREFIX = "REQ-";
 const REQUIREMENT_DIGITS = 3;
-const DEFECT_PREFIX = "DEF-";
-const DEFECT_DIGITS = 3;
 const PRIORITIES = ["low", "medium", "high"];
 /** Not a real workspace yet (TEN-01); the desktop ignores it on pull. */
 const WORKSPACE = "local";
@@ -516,17 +529,18 @@ export function createDomainService(store: DomainStore) {
   const byPosition = (a: RemoteDoc, b: RemoteDoc) =>
     num(a.payload, "position") - num(b.payload, "position") || byTime("createdAt")(a, b);
 
-  /** A defect gets its key the first time it is a defect and keeps it. */
-  async function defectKey(tx: DomainTx, projectId: string, kind: string, existing: unknown) {
-    if (typeof existing === "string" && existing) return existing;
-    return kind === "defect" ? nextKey(tx, projectId, "defect", DEFECT_PREFIX, DEFECT_DIGITS) : null;
-  }
+  /** Defects left the board for their own module (DEF-01, ADR-0016). */
+  const refuseDefect = (kind: string) => {
+    if (kind === "defect")
+      throw new AppError(400, "defect_moved", "Defects live in the defects module; a card can no longer be one.");
+  };
 
   const plannerCards = {
     list: (userId: string, projectId: string) =>
       run(userId, async (tx) => (await tx.list("planner_card", projectId)).sort(byPosition).map((d) => d.payload)),
     create: (userId: string, input: PlannerCardInput) =>
       run(userId, async (tx) => {
+        refuseDefect(input.kind);
         await liveProject(tx, input.projectId);
         const status = input.status ?? "backlog";
         const column = (await tx.list("planner_card", input.projectId)).filter((d) => d.payload.status === status);
@@ -539,7 +553,7 @@ export function createDomainService(store: DomainStore) {
           projectId: input.projectId,
           ownerId: userId,
           kind: input.kind,
-          cardKey: await defectKey(tx, input.projectId, input.kind, null),
+          cardKey: null,
           title: input.title,
           status,
           priority: input.priority ?? "medium",
@@ -552,11 +566,11 @@ export function createDomainService(store: DomainStore) {
       }),
     update: (userId: string, id: string, input: PlannerCardInput, revision?: number) =>
       run(userId, async (tx) => {
+        refuseDefect(input.kind);
         const doc = current(await tx.get("planner_card", id), "Card", revision);
         const payload = {
           ...doc.payload,
           kind: input.kind,
-          cardKey: await defectKey(tx, str(doc.payload, "projectId"), input.kind, doc.payload.cardKey),
           title: input.title,
           priority: input.priority ?? "medium",
           data: input.data,
@@ -740,7 +754,100 @@ export function createDomainService(store: DomainStore) {
       }),
   };
 
-  return { projects, testPlans, testCases, requirements, plannerCards, customFields };
+  const liveDefect = async (tx: DomainTx, id: string, revision?: number) =>
+    current(await tx.get("defect", id), "Defect", revision);
+
+  const defectView = async (tx: DomainTx, doc: RemoteDoc) =>
+    withLinks(tx, doc, await tx.list("defect_link", str(doc.payload, "projectId")));
+
+  /** Defects (DEF-01, `defects.rs`): the project's, newest first, with their
+   *  links; created with the next DEF key; the fixed lifecycle on every status
+   *  change; links with deterministic ids, folded into one event. */
+  const defects = {
+    list: (userId: string, projectId: string) =>
+      run(userId, async (tx) => {
+        await liveProject(tx, projectId);
+        const links = await tx.list("defect_link", projectId);
+        const docs = (await tx.list("defect", projectId)).sort((a, b) => byTime("createdAt")(b, a));
+        return Promise.all(docs.map((d) => withLinks(tx, d, links)));
+      }),
+    get: (userId: string, id: string) => run(userId, async (tx) => defectView(tx, await liveDefect(tx, id))),
+    create: (userId: string, input: DefectInput) =>
+      run(userId, async (tx) => {
+        await liveProject(tx, input.projectId);
+        const status = input.status ?? "new";
+        const resolution = checkStatus(status, status, input.resolution);
+        for (const t of input.links ?? []) await checkTarget(tx, input.projectId, t);
+        const id = newDefectId();
+        const at = now();
+        const payload = {
+          id,
+          workspaceId: WORKSPACE,
+          projectId: input.projectId,
+          defectKey: await nextKey(tx, input.projectId, "defect", DEFECT_PREFIX, DEFECT_DIGITS),
+          ...editable(input),
+          status,
+          resolution,
+          reporter: userId,
+          externalSyncedAt: null,
+          createdAt: at,
+          updatedAt: at,
+        };
+        const doc = await tx.put("defect", id, payload, null);
+        for (const t of input.links ?? []) await putLink(tx, doc.payload, t, at);
+        return defectView(tx, doc);
+      }),
+    update: (userId: string, id: string, input: DefectInput, revision?: number) =>
+      run(userId, async (tx) => {
+        const doc = await liveDefect(tx, id, revision);
+        const from = str(doc.payload, "status");
+        const status = input.status ?? from;
+        const payload = {
+          ...doc.payload,
+          ...editable(input),
+          status,
+          resolution: checkStatus(from, status, input.resolution),
+          updatedAt: now(),
+        };
+        return defectView(tx, await tx.put("defect", id, payload, doc));
+      }),
+    transition: (userId: string, id: string, t: DefectTransition) =>
+      run(userId, async (tx) => {
+        const doc = await liveDefect(tx, id, t.revision);
+        const resolution = checkStatus(str(doc.payload, "status"), t.status, t.resolution);
+        const payload = {
+          ...doc.payload,
+          status: t.status,
+          resolution,
+          fixedInBuild: t.fixedInBuild?.trim() || doc.payload.fixedInBuild || null,
+          updatedAt: now(),
+        };
+        return defectView(tx, await tx.put("defect", id, payload, doc));
+      }),
+    remove: (userId: string, id: string, revision?: number) =>
+      run(userId, async (tx) => {
+        const doc = await liveDefect(tx, id, revision);
+        const links = (await tx.list("defect_link", str(doc.payload, "projectId"))).filter(
+          (l) => str(l.payload, "defectId") === id,
+        );
+        for (const l of links) await dropLink(tx, l.entityId);
+        await tx.put("defect", id, doc.payload, doc, true);
+      }),
+    link: (userId: string, id: string, target: LinkTargetInput, linked: boolean) =>
+      run(userId, async (tx) => {
+        const doc = await liveDefect(tx, id);
+        const fact = { targetKind: target.targetKind, targetId: target.targetId };
+        if (linked) {
+          await checkTarget(tx, str(doc.payload, "projectId"), target);
+          if (await putLink(tx, doc.payload, target, now())) await tx.audit("link", "defect", id, fact);
+        } else if (await dropLink(tx, linkId(id, target.targetKind, target.targetId))) {
+          await tx.audit("unlink", "defect", id, fact);
+        }
+        return defectView(tx, doc);
+      }),
+  };
+
+  return { projects, testPlans, testCases, requirements, plannerCards, customFields, defects };
 }
 
 export type DomainService = ReturnType<typeof createDomainService>;
