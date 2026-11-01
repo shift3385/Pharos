@@ -66,9 +66,10 @@ describe("syncRequest (SYNC-08)", () => {
     expect(headers[VERSION_HEADER]).toBe(rootPackage.version);
     expect(headers.authorization).toBe("Bearer tok");
     // DAT-01: tells the server it reads `keyConflicts` (else a taken key is a 426);
-    // AUD-01: that it knows the append-only class and pushes whole payloads.
+    // AUD-01: that it knows the append-only class and pushes whole payloads;
+    // DEF-01: that it syncs defects and has no planner defect cards.
     expect(headers[FEATURES_HEADER]).toBe(
-      "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields",
+      "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,defects",
     );
   });
 

@@ -13,10 +13,10 @@ const tc = (id: string, scenarioId: string, keys: string[], status = "draft"): M
   status,
   requirementKeys: keys,
 });
-const defect = (id: string, cardKey: string, testCaseIds: string[], status = "backlog"): MatrixDefect => ({
+const defect = (id: string, defectKey: string, testCaseIds: string[], status = "new"): MatrixDefect => ({
   id,
-  cardKey,
-  title: `Bug ${cardKey}`,
+  defectKey,
+  title: `Bug ${defectKey}`,
   status,
   testCaseIds,
 });
@@ -61,10 +61,18 @@ describe("buildMatrix", () => {
     const m = buildMatrix(
       [req("REQ-001")],
       [tc("a", "TC-001", ["REQ-001"]), tc("b", "TC-002", ["REQ-001"])],
-      [defect("d2", "DEF-002", ["a"], "done"), defect("d1", "DEF-001", ["a"]), defect("d3", "DEF-003", ["b"], "done")],
+      [defect("d2", "DEF-002", ["a"], "closed"), defect("d1", "DEF-001", ["a"]), defect("d3", "DEF-003", ["b"], "rejected")],
     );
     expect(m.rows[0]).toMatchObject({ scenarioId: "TC-001", defectKeys: ["DEF-001", "DEF-002"], notes: ["openDefect"] });
     expect(m.rows[1]).toMatchObject({ scenarioId: "TC-002", defectKeys: ["DEF-003"], notes: [] });
+  });
+
+  it("counts a defect as open unless it is closed or rejected (ADR-0016)", () => {
+    const open = (status: string) =>
+      buildMatrix([req("REQ-001")], [tc("a", "TC-001", ["REQ-001"])], [defect("d", "DEF-001", ["a"], status)]).rows[0]
+        .notes;
+    for (const s of ["new", "open", "in_progress", "fixed", "retest", "deferred"]) expect(open(s), s).toEqual(["openDefect"]);
+    for (const s of ["closed", "rejected"]) expect(open(s), s).toEqual([]);
   });
 
   it("counts distinct requirements in the summary, not rows", () => {
@@ -86,7 +94,7 @@ describe("buildMatrix", () => {
     );
     expect(m.gaps.casesWithoutRequirement.map((c) => c.scenarioId)).toEqual(["TC-002", "TC-003"]);
     expect(m.gaps.unknownLinks).toEqual([{ caseId: "c", scenarioId: "TC-003", requirementKey: "REQ-404" }]);
-    expect(m.gaps.defectsWithoutCase.map((d) => d.cardKey)).toEqual(["DEF-001", "DEF-002"]);
+    expect(m.gaps.defectsWithoutCase.map((d) => d.defectKey)).toEqual(["DEF-001", "DEF-002"]);
     expect(m.gaps.uncoveredRequirements).toEqual([]);
   });
 });

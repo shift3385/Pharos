@@ -27,7 +27,7 @@ vi.mock("@modules/test-cases", async (importOriginal) => ({
   createProposedCases,
   projectTraceableCases: async () => [],
 }));
-vi.mock("@modules/planner", () => ({ projectDefects: async () => [] }));
+vi.mock("@modules/defects", () => ({ projectDefects: async () => [] }));
 
 // The modal flows click through several steps with axe checks; under a loaded
 // runner they can pass the 5 s default, so they get an explicit timeout.

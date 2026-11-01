@@ -12,7 +12,6 @@ import {
   type CardKind,
   type CardPriority,
   type CardStatus,
-  type LinkableCase,
   type PlannerCard,
 } from "../model/types";
 
@@ -34,15 +33,12 @@ export function CardEditor({
   ownerId,
   card,
   initialStatus,
-  cases = [],
   onClose,
 }: {
   projectId: string;
   ownerId: string;
   card: PlannerCard | null;
   initialStatus: CardStatus;
-  /** Test cases of the project a defect can be linked to. */
-  cases?: LinkableCase[];
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -52,7 +48,6 @@ export function CardEditor({
   const [priority, setPriority] = useState<CardPriority>(card?.priority ?? "medium");
   const [description, setDescription] = useState(card?.data.description ?? "");
   const [labels, setLabels] = useState<string[]>(card?.data.labels ?? []);
-  const [testCaseIds, setTestCaseIds] = useState<string[]>(card?.data.testCaseIds ?? []);
   const [attachments, setAttachments] = useState<AttachmentSummary[]>([]);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -74,7 +69,6 @@ export function CardEditor({
       data: {
         description,
         labels: labels.map((l) => l.trim()).filter(Boolean),
-        testCaseIds: kind === "defect" ? testCaseIds : card?.data.testCaseIds,
       },
     };
     try {
@@ -180,34 +174,6 @@ export function CardEditor({
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
-
-        {kind === "defect" && (
-          <>
-            <p className="tp-field__grouplabel">{t("planner.linkedCases")}</p>
-            {cases.length === 0 ? (
-              <p className="tp-field__hint">{t("planner.noCasesToLink")}</p>
-            ) : (
-              <ul className="pl-links">
-                {cases.map((c) => (
-                  <li key={c.id}>
-                    <label className="pl-links__item">
-                      <input
-                        type="checkbox"
-                        checked={testCaseIds.includes(c.id)}
-                        onChange={(e) =>
-                          setTestCaseIds((prev) =>
-                            e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id),
-                          )
-                        }
-                      />
-                      <span className="pl-links__id">{c.scenarioId}</span> {c.title}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
 
         <p className="tp-field__grouplabel">{t("planner.labels")}</p>
         <ListField label={t("planner.labels")} items={labels} onChange={setLabels} />

@@ -1,11 +1,11 @@
 import { projectApi } from "@modules/projects";
 import { projectLiveCases } from "@modules/test-cases";
 import { projectPlanClosure } from "@modules/test-plan";
-import { projectDefects } from "@modules/planner";
+import { isOpenDefect, projectDefects } from "@modules/defects";
 import { projectKey, type HomeProject } from "./homeData";
 
 /** Reads everything the Home shows (read-only): one project list, then three
- *  reads per project (live cases, plan closure, planner defects). Projects
+ *  reads per project (live cases, plan closure, defects). Projects
  *  come most recently updated first. */
 export async function loadHome(ownerId: string): Promise<HomeProject[]> {
   const projects = [...(await projectApi.list(ownerId))].sort((a, b) =>
@@ -18,7 +18,9 @@ export async function loadHome(ownerId: string): Promise<HomeProject[]> {
         projectPlanClosure(p.id, ownerId),
         projectDefects(p.id, ownerId),
       ]);
-      const open = defects.filter((d) => d.status !== "done");
+      // Open: not closed nor rejected (ADR-0016); critical is the severity,
+      // the impact on the system, not the urgency of the fix.
+      const open = defects.filter((d) => isOpenDefect(d.status));
       return {
         id: p.id,
         name: p.name,
@@ -33,7 +35,7 @@ export async function loadHome(ownerId: string): Promise<HomeProject[]> {
         hasPlan: closure !== null,
         criteria: closure?.criteria ?? [],
         openDefects: open.length,
-        criticalDefects: open.filter((d) => d.priority === "critical").length,
+        criticalDefects: open.filter((d) => d.severity === "critical").length,
       };
     }),
   );

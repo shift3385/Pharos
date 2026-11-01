@@ -52,13 +52,16 @@ vi.mock("@modules/test-plan", () => ({
       : null,
   ),
 }));
-vi.mock("@modules/planner", () => ({
+vi.mock("@modules/defects", () => ({
+  isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
   projectDefects: vi.fn(async (projectId: string) =>
     projectId === "new"
       ? [
-          { id: "d1", kind: "defect", status: "backlog", priority: "critical" },
-          { id: "d2", kind: "defect", status: "in_review", priority: "high" },
-          { id: "d3", kind: "defect", status: "done", priority: "critical" },
+          // Critical is the severity (DEF-01); a deferred defect is open.
+          { id: "d1", status: "new", severity: "critical", priority: "low" },
+          { id: "d2", status: "deferred", severity: "major", priority: "critical" },
+          { id: "d3", status: "closed", severity: "critical", priority: "critical" },
+          { id: "d4", status: "rejected", severity: "minor", priority: "high" },
         ]
       : [],
   ),

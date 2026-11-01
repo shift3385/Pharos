@@ -1,4 +1,5 @@
 import {
+  Bug,
   CircleUser,
   FileText,
   Folder,
@@ -41,6 +42,7 @@ export const BOTTOM_NAV: NavItem[] = [HOME, PROJECTS, ADMIN, PROFILE];
 export const PROJECT_NAV: { section: ProjectSection; icon: LucideIcon }[] = [
   { section: "plan", icon: FileText },
   { section: "cases", icon: ListChecks },
+  { section: "defects", icon: Bug },
   { section: "planner", icon: SquareKanban },
   { section: "traceability", icon: GitFork },
   { section: "settings", icon: SlidersHorizontal },

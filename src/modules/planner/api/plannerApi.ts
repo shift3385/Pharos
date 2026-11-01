@@ -13,7 +13,7 @@ const path = (id: string) => `/api/planner-cards/${encodeURIComponent(id)}`;
 // The desktop reads and writes its encrypted local store (cards in the
 // database, attachment contents in the evidence store, ADR-0014); the web is a
 // client of the server, which applies the same rules (BASE-10, ADR-0004):
-// positions per column, defect keys never reused. Attachments stay on the
+// positions per column. Attachments stay on the
 // desktop until the server stores them (SYNC-04b): the web lists none and
 // cannot add one.
 
@@ -73,11 +73,6 @@ export const plannerApi = {
   attachmentDelete: async (id: string, ownerId: string): Promise<void> =>
     isTauri() ? invoke("planner_attachment_delete", { id, ownerId }) : desktopOnly("attachments"),
 };
-
-/** Defect cards of a project (for the traceability matrix). */
-export async function projectDefects(projectId: string, ownerId: string): Promise<PlannerCard[]> {
-  return (await plannerApi.list(projectId, ownerId)).filter((c) => c.kind === "defect");
-}
 
 /** How many cards a project's board has (all kinds and columns). */
 export async function projectCardCount(projectId: string, ownerId: string): Promise<number> {

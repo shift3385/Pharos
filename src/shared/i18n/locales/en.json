@@ -287,7 +287,9 @@
         "test_case": "Test case",
         "requirement": "Requirement",
         "planner_card": "Planner card",
-        "custom_field": "Custom field"
+        "custom_field": "Custom field",
+        "defect": "Defect",
+        "defect_link": "Defect link"
       },
       "fields": {
         "title": "Title",
@@ -491,9 +493,11 @@
         "cases": "Cases",
         "planner": "Board",
         "traceability": "Trace",
-        "settings": "Project"
+        "settings": "Project",
+        "defects": "Defects"
       }
-    }
+    },
+    "defects": "Defects"
   },
   "projects": {
     "title": "Projects",
@@ -522,7 +526,8 @@
       "cases": "Test cases",
       "settings": "Project settings",
       "planner": "Planner",
-      "traceability": "Traceability"
+      "traceability": "Traceability",
+      "defects": "Defects"
     },
     "deleteTitle": "Delete project",
     "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
@@ -1473,7 +1478,9 @@
     "deleteTitle": "Delete the card?",
     "deleteMessage": "«{{card}}» is removed from the planner.",
     "deleteConfirm": "Yes, delete",
-    "deleteFailed": "The card could not be deleted. Try again."
+    "deleteFailed": "The card could not be deleted. Try again.",
+    "defectsMoved": "Defects now have their own module, with their lifecycle and severity.",
+    "openDefects": "Go to Defects"
   },
   "traceability": {
     "title": "Traceability",
@@ -1875,6 +1882,166 @@
       "field": "Field",
       "key": "Key",
       "value": "Value"
+    }
+  },
+  "defects": {
+    "title": "Defects",
+    "newDefect": "New defect",
+    "fromResult": "From a result",
+    "editDefect": "Edit defect",
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving…",
+    "savedToast": "Defect saved",
+    "saveFailed": "The defect could not be saved: {{reason}}",
+    "titleRequired": "The title is required.",
+    "empty": "This project has no defects yet.",
+    "noMatch": "No defect matches the filters.",
+    "clearFilters": "Clear filters",
+    "count_one": "{{count}} defect",
+    "count_other": "{{count}} defects",
+    "view": {
+      "label": "View",
+      "list": "List",
+      "board": "Board"
+    },
+    "filter": {
+      "label": "Status",
+      "open": "Open",
+      "all": "All",
+      "closed": "Closed",
+      "search": "Search defects…",
+      "searchLabel": "Search defects",
+      "severity": "Severity"
+    },
+    "column": {
+      "key": "ID",
+      "title": "Title",
+      "severity": "Severity",
+      "priority": "Priority",
+      "status": "Status",
+      "cases": "Cases",
+      "updated": "Updated"
+    },
+    "status": {
+      "new": "New",
+      "open": "Open",
+      "in_progress": "In progress",
+      "fixed": "Fixed",
+      "retest": "Retest",
+      "closed": "Closed",
+      "rejected": "Rejected",
+      "deferred": "Deferred",
+      "other": "Other"
+    },
+    "severity": {
+      "critical": "Critical",
+      "major": "Major",
+      "minor": "Minor",
+      "trivial": "Trivial"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "resolution": {
+      "label": "Resolution",
+      "none": "Choose a resolution",
+      "fixed": "Fixed",
+      "duplicate": "Duplicate",
+      "not_reproducible": "Not reproducible",
+      "wont_fix": "Won't fix",
+      "by_design": "Works as designed"
+    },
+    "board": {
+      "label": "Defect board by status",
+      "notAllowed": "A «{{from}}» defect cannot move to «{{to}}».",
+      "moveFailed": "The status could not be changed: {{reason}}",
+      "chooseStatus": "Which status does «{{title}}» move to?",
+      "drag": {
+        "handle": "Move defect «{{defect}}»",
+        "help": "To move a defect, press Space or Enter on its handle, move it across columns with the arrows and press Space or Enter to drop it. Escape cancels. Only lifecycle changes are allowed.",
+        "start": "Defect «{{defect}}» picked up.",
+        "over": "Defect «{{defect}}» over column {{column}}.",
+        "end": "Defect «{{defect}}» dropped on {{column}}.",
+        "cancel": "Move cancelled; defect «{{defect}}» goes back."
+      }
+    },
+    "resolutionDialog": {
+      "title": "Close {{key}}",
+      "rejectTitle": "Reject {{key}}",
+      "message": "«{{title}}» moves to «{{status}}». Give the resolution.",
+      "fixedInBuild": "Fixed in build (optional)",
+      "confirm": "Apply",
+      "cancel": "Cancel"
+    },
+    "section": {
+      "details": "Details",
+      "reproduce": "Reproduction",
+      "found": "Where it was found",
+      "links": "Links",
+      "external": "External tracking",
+      "attachments": "Evidence",
+      "custom": "Custom fields"
+    },
+    "field": {
+      "title": "Title",
+      "description": "Description",
+      "steps": "Steps to reproduce",
+      "expected": "Expected result",
+      "actual": "Actual result",
+      "severity": "Severity",
+      "severityHint": "Impact on the system. Priority is how urgent the fix is.",
+      "priority": "Priority",
+      "status": "Status",
+      "foundInBuild": "Build",
+      "foundInEnvironment": "Environment",
+      "fixedInBuild": "Fixed in build",
+      "assignee": "Assignee",
+      "reporter": "Reported by",
+      "externalKey": "External key",
+      "externalUrl": "External link",
+      "externalHint": "To note the issue in another tool. Jira sync comes with INT-05.",
+      "labels": "Labels"
+    },
+    "links": {
+      "cases": "Test cases",
+      "requirements": "Requirements",
+      "results": "Results",
+      "noCases": "This project has no test cases yet.",
+      "noRequirements": "This project has no requirements yet.",
+      "noResults": "No result linked.",
+      "addResult": "Link a result",
+      "remove": "Remove the link to {{label}}",
+      "afterSave": "Results are linked once the defect is saved."
+    },
+    "results": {
+      "title": "Results that did not pass",
+      "pickToCreate": "Choose the failed attempt the defect comes from: the steps of the executed revision, the actual result, the build and the environment are filled in, and its evidence is added.",
+      "pickToLink": "Choose the attempt to link to this defect.",
+      "empty": "No failed results in this project's runs.",
+      "search": "Search by run, case or test…",
+      "searchLabel": "Search results",
+      "attempt": "attempt {{n}}",
+      "choose": "Choose",
+      "close": "Close"
+    },
+    "fromResultBanner": "Prefilled from {{label}}. On save the defect is linked to the result and its case, and its evidence is added without copying the files.",
+    "attachAfterSave": "Save the defect to add evidence.",
+    "deleteTitle": "Delete the defect?",
+    "deleteMessage": "«{{defect}}» is deleted with its links. Its key is never used again.",
+    "deleteConfirm": "Yes, delete",
+    "deleteFailed": "The defect could not be deleted. Try again.",
+    "delete": "Delete defect",
+    "webOnlyDesktop": "Evidence and results are in the desktop app.",
+    "casesTitle_one": "{{count}} linked test case",
+    "casesTitle_other": "{{count}} linked test cases",
+    "resultStatus": {
+      "failed": "Failed",
+      "blocked": "Blocked",
+      "other": "Other"
     }
   }
 }

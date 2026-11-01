@@ -406,3 +406,23 @@
   color: var(--color-text-primary);
 }
 
+
+/* Defects left the board (DEF-01): a note with the way to their module. */
+.pl-moved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.pl-moved__link {
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+}
