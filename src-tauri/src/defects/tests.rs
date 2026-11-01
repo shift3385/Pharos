@@ -822,13 +822,13 @@ fn a_result_without_a_case_reaches_the_case_its_test_key_is_mapped_to() {
     let c = device();
     let p = new_project(&c);
     let case = new_case(&c, &p);
-    // An imported result with no case of its own (step 9 resolves these at
-    // read time; today the mapping does), then mapped to the case.
+    // An imported result (with a shard) and no case tag: the link resolver
+    // (runs/link.rs) gives it none, then the case it is mapped to.
     c.execute(
-        "INSERT INTO results (id, workspace_id, project_id, run_id, test_key, attempt, status,
-                executed_by, created_by, created_at, hlc)
-         VALUES ('imp1', 'w', ?1, 'run-x', 'tests/pay.spec.ts::pays', 0, 'failed', 'ci', ?2,
-                datetime('now'), 'h')",
+        "INSERT INTO results (id, workspace_id, project_id, run_id, shard_id, test_key, attempt,
+                status, executed_by, created_by, created_at, hlc)
+         VALUES ('imp1', 'w', ?1, 'run-x', 'shard-x', 'tests/pay.spec.ts::pays', 0, 'failed',
+                'ci', ?2, datetime('now'), 'h')",
         rusqlite::params![p, U],
     )
     .unwrap();

@@ -317,6 +317,52 @@ describe("cycles through the web's domain API", () => {
     // A run whose cycle is gone still pulls and pushes.
     expect((await push(h, [run("run3", chrome.id)])).statusCode).toBe(200);
   });
+
+  it("an imported result gets its case and configuration derived; a superseded shard is left out", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/auth/register",
+      payload: { email: "import@pharos.dev", password: "supersecret1", displayName: "S", firstName: "A", lastName: "B" },
+    });
+    const call = api(res.json().accessToken as string);
+    const userId = res.json().user.id as string;
+    const { projectId, chrome, smoke } = await seed(call);
+    const c = (await call("POST", "/api/cycles", { projectId, title: "R", configurationIds: [chrome.id] })).body;
+    const item = (await call("POST", `/api/cycles/${c.id}/items`, { items: [{ testCaseId: smoke.id }] })).body.added[0];
+    // An imported run with no configuration: the result's label names it, and
+    // its tag names the case (step 9: neither is stored in the result).
+    const shard = (id: string, normalizerVersion: number) => ({ id, projectId, runId: "run1", sourceFileSha256: "abc", normalizerVersion });
+    const result = (id: string, shardId: string, status: string, finishedAt: string) => ({
+      id,
+      projectId,
+      runId: "run1",
+      shardId,
+      testKey: "pay.spec.ts::pays",
+      configurationLabel: "Chromium",
+      status,
+      attempt: 0,
+      finishedAt,
+      attributes: { tags: [`@${smoke.scenarioId as string}`] },
+    });
+    for (const [entity, id, payload] of [
+      ["run", "run1", { id: "run1", projectId, runKey: "RUN-001", title: "R", status: "completed", cycleId: c.id }],
+      ["run_shard", "s1", shard("s1", 1)],
+      ["run_shard", "s2", shard("s2", 2)],
+      // The old normalizer's result is later: it would win if it were read.
+      ["result", "x1", result("x1", "s1", "failed", "2026-10-01T11:00:00Z")],
+      ["result", "x2", result("x2", "s2", "passed", "2026-10-01T10:00:00Z")],
+    ] as const) {
+      await pool.query(
+        `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
+         VALUES ($1, $2, $3, $4, 1, 'u', false, $5)`,
+        [userId, entity, id, payload, H(Date.now())],
+      );
+    }
+    const progress = (await call("GET", `/api/cycles/${c.id}/progress`)).body;
+    expect(progress.cells).toEqual([
+      { itemId: item, configurationId: chrome.id, status: "passed", resultId: "x2", runId: "run1" },
+    ]);
+  });
 });
 
 describe("cycles on the web: audit events and review fixes", () => {

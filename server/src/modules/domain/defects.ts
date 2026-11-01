@@ -9,6 +9,7 @@ import { AppError } from "../auth/errors";
 import type { RemoteDoc } from "../sync/sync.repository";
 import { linkId, needsResolution, transitionAllowed } from "../sync/defects";
 import type { DomainTx } from "./domain.store";
+import { isImported, projectLinks, type ResultLink } from "./resultLink";
 import type { DefectInput, DefectTransition, LinkTargetInput } from "./domain.schemas";
 
 type Payload = Record<string, unknown>;
@@ -98,32 +99,28 @@ export async function dropLink(tx: DomainTx, id: string): Promise<boolean> {
 export interface LinkContext {
   links: RemoteDoc[];
   byId: Map<string, RemoteDoc>;
-  mappings: Map<string, string>;
+  /** The derived link of an imported result (`resultLink.ts`). */
+  derive: (result: Payload) => ResultLink;
 }
 
-/** The documents a project's defects may point at, and its unlinked mappings,
- *  in one read per entity. */
+/** The documents a project's defects may point at, and what derives the
+ *  link of its imported results, in one read per entity. */
 export async function linkContext(tx: DomainTx, projectId: string): Promise<LinkContext> {
-  const [links, cases, requirements, results, runs, mappings] = await Promise.all(
-    ["defect_link", "test_case", "requirement", "result", "run", "unlinked_mapping"].map((e) => tx.list(e, projectId)),
+  const [links, cases, requirements, results, runs] = await Promise.all(
+    ["defect_link", "test_case", "requirement", "result", "run"].map((e) => tx.list(e, projectId)),
   );
   const byId = new Map<string, RemoteDoc>();
   for (const d of [...cases, ...requirements, ...results, ...runs]) byId.set(`${d.entity}:${d.entityId}`, d);
-  const mapped = new Map<string, string>();
-  for (const m of mappings) {
-    const caseId = str(m.payload, "testCaseId");
-    if (caseId) mapped.set(str(m.payload, "testKey"), caseId);
-  }
-  return { links, byId, mappings: mapped };
+  return { links, byId, derive: await projectLinks(tx, projectId) };
 }
 
 /** The case a result is the execution of: **the one place the web reads it**
- *  (as `defects::result_link` on the desktop). Today the result's own case,
- *  else its `test_key` mapping; step 9's read-time resolver replaces this
- *  function only. */
+ *  (as `defects::result_link` on the desktop). A manual result carries it;
+ *  an imported one (with a shard) gets it from the link resolver (step 9). */
 export function resultCase(ctx: LinkContext, result: RemoteDoc | undefined): string | null {
   if (!result) return null;
-  return str(result.payload, "testCaseId") || ctx.mappings.get(str(result.payload, "testKey")) || null;
+  if (isImported(result.payload)) return ctx.derive(result.payload).caseId;
+  return str(result.payload, "testCaseId") || null;
 }
 
 /** A defect as the module's screens read it: its payload with its live links

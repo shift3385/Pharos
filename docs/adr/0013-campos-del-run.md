@@ -405,9 +405,9 @@ Los importadores de ING-02..05 están en el código: los parsers en TypeScript
   `test_key` de más de 2 000 caracteres conserva el principio y un hash. Dos
   tests del mismo archivo con la misma identidad se numeran (` #2`).
 - **Configuración (paso 6):** el `configurationLabel` (proyecto de
-  Playwright, `browser` de CTRF) se guarda; asignar `configuration_id` con
-  `cycles::match_configuration` y el elemento del ciclo queda pendiente para
-  quien fusione segundo (TODO en `write_result`).
+  Playwright, `browser` de CTRF) se guarda; la configuración y el elemento del
+  ciclo se derivan al leer (`cycles::match_configuration` y
+  `cycles::pick_item` dentro del resolvedor; ver «Vínculo derivado»).
 
 Tras la revisión independiente del paso 9 (2026-10-31):
 
@@ -447,9 +447,18 @@ de clave conocido solo allí). Por eso no forma parte de su contenido:
   consultas de conjunto (casos, claves, revisiones sincronizadas, reglas de
   enlace, runs y elementos) y deriva el vínculo de cualquier cantidad de
   resultados: la lista de resultados, la bandeja, los recuentos, la vista
-  previa y, al fusionarse, el progreso de ciclos, los defectos y la matriz.
-  La web no lo necesita hasta que lea resultados (INT-02); entonces tendrá
-  su gemelo.
+  previa, el progreso de ciclos (`cycles::cycle_results`) y los defectos
+  (`defects::result_links`).
+- **Gemelo del servidor:** `server/src/modules/domain/resultLink.ts`, puro y
+  con índices por proyecto, aplica las mismas reglas para lo que la web lee:
+  el progreso de ciclos (`attemptOf`) y el caso de un resultado enlazado a un
+  defecto (`resultCase`). No deriva `stepId` (solo los muestra la pantalla
+  del run del escritorio) ni ve conflictos de clave (son locales). Los dos lo
+  comprueban con los mismos vectores, `src-tauri/tests/fixtures/link-vectors.json`
+  (caso renombrado, borrado, dos antiguos portadores de una clave, regla de
+  enlace, elemento del run, flujo y fila, configuración por etiqueta o
+  nombre, elemento del ciclo), y los dos ignoran los shards que supera un
+  normalizador más nuevo.
 - **Caso.** Gana una regla de enlace posterior viva (`unlinked_mapping`). Si
   no, cada etiqueta (y el `caseKey`) nombra **el caso vivo que la lleva
   ahora** como `scenario_id`; solo si ningún caso la lleva ahora, los casos que
@@ -482,7 +491,10 @@ de clave conocido solo allí). Por eso no forma parte de su contenido:
 - **Configuración:** el `configuration_id` de un resultado importado también se
   deriva (de su `configurationLabel`, con los ganchos del paso 6 dentro del
   resolvedor), nunca se guarda; el servidor lo rechaza en un resultado con
-  `shardId`.
+  `shardId`. En el progreso de ciclos gana la configuración del run; si no
+  tiene, la de la etiqueta. El **elemento del ciclo** del run se deriva con la
+  misma regla que `cycles::item_for` (caso + flujo + fila, luego flujo, luego
+  el caso): `cycles::pick_item`, sobre los elementos leídos una vez.
 - **Versión del normalizador:** el shard lleva `normalizerVersion` (la de los
   parsers TS) en su contenido y en su id,
   `UUIDv5([run, sha256, normalizerVersion])`. Dos equipos con el mismo build

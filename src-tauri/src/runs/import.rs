@@ -714,7 +714,8 @@ fn plan(
                 planned.case_key.as_deref(),
                 planned.example_row,
                 texts,
-            );
+            )
+            .with_label(planned.label.as_deref());
             planned.link = l.resolve(target_run, &key, &stored.facts(), true)?;
             for (code, detail) in &planned.link.warnings {
                 warnings.push(ReportImportWarning {
@@ -1178,8 +1179,8 @@ fn write_result(
 ) -> Result<(), String> {
     within("testKey", &r.test_key, MAX_TEST_KEY)?;
     let hlc = crate::oplog::next_hlc(conn)?;
-    // TODO(step 6, CYC-01): configuration_id from `cycles::match_configuration`
-    // (the label), and the cycle item when the run belongs to a cycle.
+    // The configuration and the cycle item are derived from the label when
+    // read (`runs/link.rs`), never stored: `configuration_id` stays NULL.
     conn.execute(
         "INSERT INTO results (id, workspace_id, project_id, run_id, shard_id, run_item_id, test_key,
                 test_case_id, test_case_revision_id, case_revision, case_key, flow_id, example_row_id,

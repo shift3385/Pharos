@@ -61,6 +61,8 @@ pub(crate) struct Facts<'a> {
     pub example_row: Option<i64>,
     /// Step texts without their keyword, in order.
     pub steps: &'a [String],
+    /// The tool's configuration label (Playwright project, CTRF browser).
+    pub configuration_label: Option<&'a str>,
 }
 
 /// Why a test has no case.
@@ -84,8 +86,12 @@ pub(crate) struct Link {
     pub reason: Option<&'static str>,
     /// The case is deleted: shown as «caso borrado», never in the tray.
     pub case_deleted: bool,
-    /// The configuration of the result's `configurationLabel` (step 6).
+    /// The configuration of the result's `configurationLabel` (step 6,
+    /// `cycles::match_configuration`).
     pub configuration_id: Option<String>,
+    /// The item of the run's cycle the result belongs to (step 6,
+    /// `cycles::pick_item`, as `cycles::item_for`).
+    pub cycle_item_id: Option<String>,
     /// What the preview warns about: `(code, detail)`.
     pub warnings: Vec<(&'static str, String)>,
 }
@@ -105,6 +111,7 @@ impl Link {
             reason,
             case_deleted: false,
             configuration_id: None,
+            cycle_item_id: None,
             warnings: Vec::new(),
         }
     }
@@ -230,6 +237,9 @@ struct CaseInfo {
     key_conflict: bool,
 }
 
+/// A live item of a cycle: `(id, case, flow, row)`.
+type CycleItemRow = (String, String, Option<String>, Option<String>);
+
 /// One synced revision of a case: `(id, revision, created_at in ms)`.
 type RevisionRow = (String, i64, Option<i64>);
 
@@ -253,6 +263,13 @@ pub(crate) struct Resolver<'c> {
     /// `test_key` → case of the live later link (ING-05).
     mappings: HashMap<String, String>,
     run_starts: HashMap<String, i64>,
+    /// The cycle of each run of a cycle.
+    run_cycles: HashMap<String, String>,
+    /// The live items of each cycle: `(id, case, flow, row)`.
+    cycle_items: HashMap<String, Vec<CycleItemRow>>,
+    project_id: String,
+    /// `match_configuration` by label, asked once per label.
+    configurations: HashMap<String, Option<String>>,
     items: HashMap<ItemKey, Vec<(String, String)>>,
     revision_data: HashMap<String, Value>,
     flows: HashMap<(String, Option<String>), FlowSteps>,
@@ -359,12 +376,16 @@ impl<'c> Resolver<'c> {
             },
         )?;
         let mut run_starts = HashMap::new();
+        let mut run_cycles = HashMap::new();
         each(
             conn,
             // The start only: `created_at` is when this device stored it.
-            "SELECT id, started_at FROM runs WHERE project_id = ?1",
+            "SELECT id, started_at, cycle_id FROM runs WHERE project_id = ?1",
             project_id,
             |r| {
+                if let Some(cycle) = r.get::<_, Option<String>>(2)? {
+                    run_cycles.insert(r.get(0)?, cycle);
+                }
                 let at: Option<String> = r.get(1)?;
                 if let Some(ms) = at.as_deref().and_then(instant_ms) {
                     run_starts.insert(r.get(0)?, ms);
@@ -387,8 +408,28 @@ impl<'c> Resolver<'c> {
                 Ok(())
             },
         )?;
+        let mut cycle_items: HashMap<String, Vec<_>> = HashMap::new();
+        each(
+            conn,
+            "SELECT cycle_id, id, test_case_id, flow_id, example_row_id FROM test_cycle_items
+              WHERE project_id = ?1 AND deleted_at IS NULL ORDER BY position, id",
+            project_id,
+            |r| {
+                cycle_items.entry(r.get(0)?).or_default().push((
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                ));
+                Ok(())
+            },
+        )?;
         Ok(Resolver {
             conn,
+            run_cycles,
+            cycle_items,
+            project_id: project_id.to_string(),
+            configurations: HashMap::new(),
             prefix,
             cases,
             current,
@@ -407,6 +448,20 @@ impl<'c> Resolver<'c> {
         if let Some(ms) = started_at.and_then(instant_ms) {
             self.run_starts.insert(run_id.to_string(), ms);
         }
+    }
+
+    /// The configuration a label stands for (`cycles::match_configuration`),
+    /// asked once per distinct label.
+    fn configuration(&mut self, label: Option<&str>) -> Result<Option<String>, String> {
+        let Some(label) = label.map(str::trim).filter(|l| !l.is_empty()) else {
+            return Ok(None);
+        };
+        if let Some(found) = self.configurations.get(label) {
+            return Ok(found.clone());
+        }
+        let found = crate::cycles::match_configuration(self.conn, &self.project_id, label)?;
+        self.configurations.insert(label.to_string(), found.clone());
+        Ok(found)
     }
 
     /// The case of a later link (ING-05) for a `test_key`, if any.
@@ -522,6 +577,9 @@ impl<'c> Resolver<'c> {
         full: bool,
     ) -> Result<Link, String> {
         let mut link = Link::none(f.steps.len(), None);
+        // The configuration does not depend on the case: an unlinked result
+        // still ran somewhere.
+        link.configuration_id = self.configuration(f.configuration_label)?;
         let by_tags = self.case_by_tags(f);
         let case = match (self.mapping(test_key), by_tags) {
             (Some(mapped), _) if self.cases.contains_key(mapped) => mapped.to_string(),
@@ -539,10 +597,6 @@ impl<'c> Resolver<'c> {
         };
         link.case_deleted = self.cases.get(&case).is_some_and(|c| c.deleted);
         let at = self.run_starts.get(run_id).copied();
-        // TODO(step 6, after step 8 lands): `link.configuration_id` from the
-        // result's `configurationLabel` (`cycles::match_configuration`) and the
-        // cycle item (`cycles::item_for`), here and never in the stored
-        // result (the server refuses an imported `configurationId`).
         let Some((mut revision_id, case_revision)) = self.revision_at(&case, at) else {
             link.warnings.push(("no-revision", case.clone()));
             link.case_id = Some(case);
@@ -596,6 +650,21 @@ impl<'c> Resolver<'c> {
             }
             link.run_item_id = Some(item);
         }
+        // The item of the run's cycle this result belongs to (step 6).
+        link.cycle_item_id = self
+            .run_cycles
+            .get(run_id)
+            .and_then(|cycle| self.cycle_items.get(cycle))
+            .and_then(|items| {
+                crate::cycles::pick_item(
+                    items.iter().map(|(id, c, fl, r)| {
+                        (id.as_str(), c.as_str(), fl.as_deref(), r.as_deref())
+                    }),
+                    &case,
+                    flow_id.as_deref(),
+                    row_id.as_deref(),
+                )
+            });
         link.step_ids = self
             .flow_steps(&revision_id, flow_id.as_deref())?
             .match_steps(f.steps);
@@ -626,6 +695,7 @@ fn each(
 /// The facts of a stored imported result, owned (the views and the tray
 /// read them from the row: tags, name and suite live in `attributes`).
 pub(crate) struct StoredFacts {
+    pub configuration_label: Option<String>,
     pub tags: Vec<String>,
     pub case_key: Option<String>,
     pub name: String,
@@ -651,6 +721,7 @@ impl StoredFacts {
                 .collect()
         };
         StoredFacts {
+            configuration_label: None,
             tags: strings("tags"),
             case_key: case_key.map(String::from),
             name: attributes
@@ -664,6 +735,12 @@ impl StoredFacts {
         }
     }
 
+    /// The same facts with the tool's configuration label.
+    pub(crate) fn with_label(mut self, label: Option<&str>) -> Self {
+        self.configuration_label = label.map(String::from);
+        self
+    }
+
     pub(crate) fn facts(&self) -> Facts<'_> {
         Facts {
             tags: &self.tags,
@@ -672,6 +749,7 @@ impl StoredFacts {
             suite: &self.suite,
             example_row: self.example_row,
             steps: &self.steps,
+            configuration_label: self.configuration_label.as_deref(),
         }
     }
 }
@@ -697,7 +775,8 @@ pub(crate) fn fill_views(
             continue;
         }
         let texts: Vec<String> = v.steps.iter().map(|s| s.text.clone()).collect();
-        let stored = StoredFacts::of(&v.attributes, v.case_key.as_deref(), v.example_row, texts);
+        let stored = StoredFacts::of(&v.attributes, v.case_key.as_deref(), v.example_row, texts)
+            .with_label(v.configuration_label.as_deref());
         let link = resolver.resolve(&v.run_id, &v.test_key, &stored.facts(), true)?;
         v.effective_test_case_id = link.case_id.clone();
         v.effective_revision_id = link.revision_id.clone();
@@ -716,6 +795,7 @@ pub(crate) fn fill_views(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rusqlite::Connection;
     use serde_json::json;
 
     #[test]
@@ -741,6 +821,179 @@ mod tests {
         );
         let other = ["pays 10".to_string()];
         assert_eq!(f.match_steps(&other), vec![None]);
+    }
+
+    const VECTORS: &str = include_str!("../../tests/fixtures/link-vectors.json");
+
+    /// The vectors' project in a fresh database: the rows the resolver reads.
+    fn vector_db(v: &Value) -> Connection {
+        let c = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&c).unwrap();
+        let ws = crate::db::ensure_workspace(&c).unwrap();
+        let p = &v["project"];
+        let s = |x: &Value, k: &str| x[k].as_str().map(String::from);
+        let now = "2026-10-01 00:00:00";
+        c.execute(
+            "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
+                    created_by, updated_by, created_at, updated_at, revision)
+             VALUES (?1, ?2, 'u', 'P', ?3, 3, 'u', 'u', ?4, ?4, 1)",
+            params![s(p, "id"), ws, s(p, "caseIdPrefix"), now],
+        )
+        .unwrap();
+        let project = s(p, "id").unwrap();
+        for x in v["cases"].as_array().unwrap() {
+            let deleted = x["deleted"].as_bool().unwrap().then_some(now);
+            c.execute(
+                "INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, author,
+                        created_by, updated_by, created_at, updated_at, deleted_at)
+                 VALUES (?1, ?2, ?3, ?4, 't', 'a', 'u', 'u', ?5, ?5, ?6)",
+                params![s(x, "id"), ws, project, s(x, "scenarioId"), now, deleted],
+            )
+            .unwrap();
+        }
+        for x in v["revisions"].as_array().unwrap() {
+            c.execute(
+                "INSERT INTO test_case_revisions (id, test_case_id, revision, title, data, created_at,
+                        created_by, workspace_id, project_id, scenario_id, content_sha256, hlc)
+                 VALUES (?1, ?2, ?3, 't', ?4, ?5, 'u', ?6, ?7, ?8, 'sha', '')",
+                params![
+                    s(x, "id"),
+                    s(x, "testCaseId"),
+                    x["revision"].as_i64(),
+                    x["data"].to_string(),
+                    s(x, "createdAt"),
+                    ws,
+                    project,
+                    s(x, "scenarioId")
+                ],
+            )
+            .unwrap();
+        }
+        for x in v["mappings"].as_array().unwrap() {
+            c.execute(
+                "INSERT INTO unlinked_mappings (id, workspace_id, project_id, test_key, test_case_id,
+                        created_by, updated_by, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?1, ?4, 'u', 'u', ?5, ?5)",
+                params![s(x, "testKey"), ws, project, s(x, "testCaseId"), now],
+            )
+            .unwrap();
+        }
+        for x in v["runs"].as_array().unwrap() {
+            c.execute(
+                "INSERT INTO runs (id, workspace_id, project_id, run_key, title, trigger, started_at,
+                        cycle_id, created_by, updated_by, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?1, 't', 'import', ?4, ?5, 'u', 'u', ?6, ?6)",
+                params![s(x, "id"), ws, project, s(x, "startedAt"), s(x, "cycleId"), now],
+            )
+            .unwrap();
+        }
+        for x in v["runItems"].as_array().unwrap() {
+            c.execute(
+                "INSERT INTO run_items (id, workspace_id, project_id, run_id, test_case_id,
+                        test_case_revision_id, flow_id, example_row_id, created_by, updated_by,
+                        created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'u', 'u', ?9, ?9)",
+                params![
+                    s(x, "id"),
+                    ws,
+                    project,
+                    s(x, "runId"),
+                    s(x, "testCaseId"),
+                    s(x, "revisionId"),
+                    s(x, "flowId"),
+                    s(x, "exampleRowId"),
+                    now
+                ],
+            )
+            .unwrap();
+        }
+        for (n, x) in v["configurations"].as_array().unwrap().iter().enumerate() {
+            let archived = x["archived"].as_bool().unwrap().then_some(now);
+            c.execute(
+                "INSERT INTO configurations (id, workspace_id, project_id, name, match_labels,
+                        position, archived_at, created_by, updated_by, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'u', 'u', ?8, ?8)",
+                params![
+                    s(x, "id"),
+                    ws,
+                    project,
+                    s(x, "name"),
+                    x["matchLabels"].to_string(),
+                    n as i64,
+                    archived,
+                    now
+                ],
+            )
+            .unwrap();
+        }
+        for (n, x) in v["cycleItems"].as_array().unwrap().iter().enumerate() {
+            c.execute(
+                "INSERT INTO test_cycle_items (id, workspace_id, cycle_id, project_id, test_case_id,
+                        flow_id, example_row_id, position, created_by, updated_by, created_at,
+                        updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'u', 'u', ?9, ?9)",
+                params![
+                    s(x, "id"),
+                    ws,
+                    s(x, "cycleId"),
+                    project,
+                    s(x, "testCaseId"),
+                    s(x, "flowId"),
+                    s(x, "exampleRowId"),
+                    n as i64,
+                    now
+                ],
+            )
+            .unwrap();
+        }
+        c
+    }
+
+    #[test]
+    fn the_shared_link_vectors_resolve_as_written() {
+        let v: Value = serde_json::from_str(VECTORS).unwrap();
+        let c = vector_db(&v);
+        let mut r = Resolver::for_project(&c, v["project"]["id"].as_str().unwrap()).unwrap();
+        let strings = |x: &Value, k: &str| -> Vec<String> {
+            x[k].as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|t| t.as_str().map(String::from))
+                .collect()
+        };
+        for x in v["results"].as_array().unwrap() {
+            let id = x["id"].as_str().unwrap();
+            let tags = strings(x, "tags");
+            let suite = strings(x, "suite");
+            let facts = Facts {
+                tags: &tags,
+                case_key: x["caseKey"].as_str(),
+                name: x["name"].as_str().unwrap_or("t"),
+                suite: &suite,
+                example_row: x["exampleRow"].as_i64(),
+                steps: &[],
+                configuration_label: x["configurationLabel"].as_str(),
+            };
+            let link = r
+                .resolve(
+                    x["runId"].as_str().unwrap(),
+                    x["testKey"].as_str().unwrap(),
+                    &facts,
+                    true,
+                )
+                .unwrap();
+            let got = serde_json::json!({
+                "caseId": link.case_id, "revisionId": link.revision_id,
+                "caseRevision": link.case_revision, "runItemId": link.run_item_id,
+                "flowId": link.flow_id, "exampleRowId": link.example_row_id,
+                "configurationId": link.configuration_id, "cycleItemId": link.cycle_item_id,
+                "reason": link.reason, "caseDeleted": link.case_deleted,
+                "caseKey": link.case_key,
+            });
+            for (k, want) in x["expect"].as_object().unwrap() {
+                assert_eq!(&got[k.as_str()], want, "{id}.{k}");
+            }
+        }
     }
 
     #[test]

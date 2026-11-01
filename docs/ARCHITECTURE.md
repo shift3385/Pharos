@@ -378,10 +378,16 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
   results per run, one read for the list). **The link is never stored** for
   an imported result (its content is the same on every device): the one
   resolver, `runs/link.rs` (`Resolver`, set queries per project), derives it
-  for every reader (results list, tray, counts, preview; cycles, defects and
-  the matrix call it too). A later link wins; else the tags against every key
-  a case ever had (current `scenario_id` and those of its synced revisions;
-  two cases → unlinked, a deleted case → `caseDeleted`); the revision is the
+  for every reader (results list, tray, counts, preview, cycle progress
+  and the case of a result a defect links to); the server's twin
+  `server/src/modules/domain/resultLink.ts` does the same for the web's
+  cycle progress and defects, and both check
+  `src-tauri/tests/fixtures/link-vectors.json`. A later link wins; else a
+  tag names the live case that wears that key now, and only when none does
+  the cases that wore it before (keys of their synced revisions; two cases →
+  unlinked, a deleted case → `caseDeleted`); the configuration comes from
+  the label (`cycles::match_configuration`) and the cycle item from
+  `cycles::pick_item`; the revision is the
   run's item for that case/flow/row, else the synced revision current
   at `run.started_at`, else the oldest (a pulled revision takes the
   server's `createdAt`, so this converges); flow by scenario name, Outline

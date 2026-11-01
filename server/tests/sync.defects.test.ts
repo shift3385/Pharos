@@ -369,13 +369,18 @@ describe("review (DEF-01)", () => {
     expect(fields(KEY_SQL)).toEqual(["scenarioId", "requirementKey", "cardKey", "runKey", "cycleKey", "defectKey"]);
   });
 
-  it("reaches a result's case through its mapping on the web too", async () => {
+  it("reaches an imported result's case through its derived link on the web too", async () => {
     const { token, userId } = await register();
     const p = (await call(token, "POST", "/api/projects", { name: "Checkout" })).json();
     const c = (await call(token, "POST", "/api/test-cases", { projectId: p.id, title: "Pay", author: "QA", data: {} })).json();
+    const c2 = (await call(token, "POST", "/api/test-cases", { projectId: p.id, title: "Refund", author: "QA", data: {} })).json();
+    // Imported results store no link (step 9): one is linked by a later
+    // mapping of its test key, the other by its tag.
+    const imported = { projectId: p.id, runId: "r1", shardId: "s1", status: "failed", attempt: 0 };
     for (const [entity, id, payload] of [
-      ["result", "res1", { id: "res1", projectId: p.id, runId: "r1", testKey: "t::pays", status: "failed", attempt: 0 }],
+      ["result", "res1", { ...imported, id: "res1", testKey: "t::pays" }],
       ["unlinked_mapping", "m1", { id: "m1", projectId: p.id, testKey: "t::pays", testCaseId: c.id }],
+      ["result", "res2", { ...imported, id: "res2", testKey: "t::refunds", attributes: { tags: [`@${c2.scenarioId}`] } }],
     ] as const) {
       await pool.query(
         `INSERT INTO documents (user_id, entity, entity_id, payload, revision, author, deleted, hlc)
@@ -388,9 +393,12 @@ describe("review (DEF-01)", () => {
         projectId: p.id,
         title: "Bug",
         data: {},
-        links: [{ targetKind: "result", targetId: "res1" }],
+        links: [
+          { targetKind: "result", targetId: "res1" },
+          { targetKind: "result", targetId: "res2" },
+        ],
       })
     ).json();
-    expect(d.caseIds).toEqual([c.id]);
+    expect(d.caseIds).toEqual([c.id, c2.id]);
   });
 });

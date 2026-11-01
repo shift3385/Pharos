@@ -886,9 +886,7 @@ fn reorder_rows(
 /// not archived configuration of the project with that match label
 /// (trimmed, case-insensitive), else one with that name. When two have it
 /// (created offline on two devices), the smallest id wins, on every device
-/// alike; never two.
-// The importers (step 9) are its production caller.
-#[cfg_attr(not(test), allow(dead_code))]
+/// alike; never two. Called by the link resolver (`runs/link.rs`).
 pub fn match_configuration(
     conn: &Connection,
     project_id: &str,
@@ -1844,8 +1842,9 @@ pub(crate) fn reorder_items(
 
 /// The live item of a cycle an imported result belongs to (step 9, ADR-0017:
 /// case + flow + row): the most specific one — flow and row, then flow, then
-/// the whole case. None when the cycle has no such item.
-// The importers (step 9) are its production caller.
+/// the whole case. None when the cycle has no such item. The link resolver
+/// applies the same rule (`pick_item`) to items it read once.
+// The resolver reads the items itself; this one is for single questions.
 #[cfg_attr(not(test), allow(dead_code))]
 pub fn item_for(
     conn: &Connection,
@@ -1855,17 +1854,39 @@ pub fn item_for(
     example_row_id: Option<&str>,
 ) -> Result<Option<String>, String> {
     let items = live_items(conn, cycle_id)?;
+    Ok(pick_item(
+        items.iter().map(|i| {
+            (
+                i.id.as_str(),
+                i.test_case_id.as_str(),
+                i.flow_id.as_deref(),
+                i.example_row_id.as_deref(),
+            )
+        }),
+        test_case_id,
+        flow_id,
+        example_row_id,
+    ))
+}
+
+/// `item_for` over items already read, `(id, case, flow, row)` in their
+/// order: the link resolver (`runs/link.rs`) reads a project's items once.
+pub(crate) fn pick_item<'a>(
+    items: impl Iterator<Item = (&'a str, &'a str, Option<&'a str>, Option<&'a str>)> + Clone,
+    test_case_id: &str,
+    flow_id: Option<&str>,
+    example_row_id: Option<&str>,
+) -> Option<String> {
     let candidates = [(flow_id, example_row_id), (flow_id, None), (None, None)];
     for (f, r) in candidates {
-        if let Some(i) = items.iter().find(|i| {
-            i.test_case_id == test_case_id
-                && i.flow_id.as_deref() == f
-                && i.example_row_id.as_deref() == r
-        }) {
-            return Ok(Some(i.id.clone()));
+        if let Some((id, ..)) = items
+            .clone()
+            .find(|(_, c, fl, row)| *c == test_case_id && *fl == f && *row == r)
+        {
+            return Some(id.to_string());
         }
     }
-    Ok(None)
+    None
 }
 
 // ---- execute and runs ----------------------------------------------------------------
@@ -2090,47 +2111,98 @@ struct ResultRow {
 }
 
 /// The results of the cycle's live runs as progress reads them. The one place
-/// that reads a result for progress: step 9 moves the case/revision link out of
-/// the result content, and only this function changes then.
+/// that reads a result for progress: a manual result carries its link, an
+/// imported one gets it from the link resolver (`runs/link.rs`, step 9):
+/// case, flow, row and its configuration (the run's, else the one its label
+/// stands for). A shard superseded by a newer normalizer is left out.
 fn cycle_results(conn: &Connection, cycle_id: &str) -> Result<Vec<ResultRow>, String> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
-                    x.started_at, x.finished_at, s.imported_at, x.hlc,
-                    coalesce(r.configuration_id, x.configuration_id) AS configuration,
-                    coalesce(x.test_case_id,
-                             (SELECT m.test_case_id FROM unlinked_mappings m
-                               WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                                 AND m.deleted_at IS NULL
-                               ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)) AS case_id,
-                    x.flow_id, x.example_row_id
-               FROM results x
-               JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
-               LEFT JOIN run_shards s ON s.id = x.shard_id
-              WHERE r.cycle_id = ?1",
-        )
-        .map_err(err)?;
-    let rows = stmt
-        .query_map(params![cycle_id], |r| {
-            Ok(ResultRow {
-                id: r.get(0)?,
-                run_id: r.get(1)?,
-                test_key: r.get(2)?,
-                configuration_label: r.get(3)?,
-                attempt: r.get(4)?,
-                status: r.get(5)?,
-                started_at: r.get(6)?,
-                finished_at: r.get(7)?,
-                shard_imported_at: r.get(8)?,
-                hlc: r.get(9)?,
-                configuration_id: r.get(10)?,
-                case_id: r.get(11)?,
-                flow_id: r.get(12)?,
-                row_id: r.get(13)?,
+    struct Raw {
+        row: ResultRow,
+        project_id: String,
+        imported: bool,
+        run_configuration: Option<String>,
+        attributes: Value,
+        case_key: Option<String>,
+        example_row: Option<i64>,
+    }
+    let raw: Vec<Raw> = {
+        let mut stmt = conn
+            .prepare(&format!(
+                "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
+                        x.started_at, x.finished_at, s.imported_at, x.hlc,
+                        r.configuration_id, x.configuration_id, x.test_case_id,
+                        x.flow_id, x.example_row_id, x.project_id, x.shard_id IS NOT NULL,
+                        x.attributes, x.case_key, x.example_row
+                   FROM results x
+                   JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
+                   LEFT JOIN run_shards s ON s.id = x.shard_id
+                  WHERE r.cycle_id = ?1 AND {}",
+                runs::link::CURRENT_SHARD
+            ))
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![cycle_id], |r| {
+                let run_configuration: Option<String> = r.get(10)?;
+                let own_configuration: Option<String> = r.get(11)?;
+                Ok(Raw {
+                    row: ResultRow {
+                        id: r.get(0)?,
+                        run_id: r.get(1)?,
+                        test_key: r.get(2)?,
+                        configuration_label: r.get(3)?,
+                        attempt: r.get(4)?,
+                        status: r.get(5)?,
+                        started_at: r.get(6)?,
+                        finished_at: r.get(7)?,
+                        shard_imported_at: r.get(8)?,
+                        hlc: r.get(9)?,
+                        configuration_id: run_configuration.clone().or(own_configuration),
+                        case_id: r.get(12)?,
+                        flow_id: r.get(13)?,
+                        row_id: r.get(14)?,
+                    },
+                    project_id: r.get(15)?,
+                    imported: r.get(16)?,
+                    run_configuration,
+                    attributes: r
+                        .get::<_, Option<String>>(17)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_else(|| json!({})),
+                    case_key: r.get(18)?,
+                    example_row: r.get(19)?,
+                })
             })
-        })
-        .map_err(err)?;
-    rows.collect::<rusqlite::Result<_>>().map_err(err)
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    let mut resolver: Option<runs::link::Resolver> = None;
+    let mut out = Vec::with_capacity(raw.len());
+    for mut x in raw {
+        if x.imported {
+            if resolver.is_none() {
+                resolver = Some(runs::link::Resolver::for_project(conn, &x.project_id)?);
+            }
+            let stored = runs::link::StoredFacts::of(
+                &x.attributes,
+                x.case_key.as_deref(),
+                x.example_row,
+                Vec::new(),
+            )
+            .with_label(x.row.configuration_label.as_deref());
+            let link = resolver.as_mut().expect("set above").resolve(
+                &x.row.run_id,
+                &x.row.test_key,
+                &stored.facts(),
+                true,
+            )?;
+            x.row.case_id = link.case_id;
+            x.row.flow_id = link.flow_id;
+            x.row.row_id = link.example_row_id;
+            x.row.configuration_id = x.run_configuration.or(link.configuration_id);
+        }
+        out.push(x.row);
+    }
+    Ok(out)
 }
 
 fn cycle_progress_of(conn: &Connection, cycle: &TestCycle) -> Result<CycleProgress, String> {
