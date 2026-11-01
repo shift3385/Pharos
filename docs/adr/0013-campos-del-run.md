@@ -360,3 +360,47 @@ Tras la revisión independiente (2026-10-31):
   a los resultados: si no, dos equipos que importan el mismo archivo
   producirían el mismo resultado con pasos distintos y el servidor lo
   rechazaría (`content_changed`).
+
+## Implementación (E4, paso 9: importadores, 2026-10-31)
+
+Los importadores de ING-02..05 están en el código: los parsers en TypeScript
+(`src/shared/contracts/pharos-run/importers/`) y un único persistente en
+`src-tauri/src/runs/import.rs`. Precisiones:
+
+- **Ids de los resultados de paso:** `UUIDv5(NS_STEP_RESULT, [result_id,
+  posición])`, con gemelo en TS y vectores compartidos (la nota de arriba).
+  Dos equipos que importan el mismo archivo en el mismo run escriben los mismos
+  documentos (lo comprueba un test que compara las cargas de dos bases).
+- **El mismo archivo como run nuevo en dos equipos da dos runs.** El id del
+  shard depende del run, y cada equipo crea el suyo. La vista previa avisa
+  («ya está en RUN-004») y el commit lo rechaza salvo que el usuario lo pida,
+  pero esa comprobación es **solo local**: no ve lo que otro equipo importó y
+  aún no se ha sincronizado. Para varios shards de una misma ejecución, se
+  importa el primero como run nuevo («dejar abierto») y los demás en ese run.
+- **El vínculo se decide al importar con los datos locales.** Si dos equipos
+  importan el mismo archivo en el mismo run con datos distintos (uno no tiene
+  aún el caso o su revisión), el contenido difiere: el servidor guarda el
+  primero y marca el segundo como rechazado (`appendRejected`, como
+  cualquier `append_only`), que se queda con su copia local. La regla de
+  enlace posterior sigue funcionando en los dos.
+- **Revisión:** la del elemento del run de destino para ese caso, flujo y
+  fila (el resultado lo «cumple», `run_item_id`); si no, la revisión
+  sincronizada vigente en `run.started_at`; si no hay ninguna anterior, la
+  actual. El flujo se elige por el nombre del escenario; la fila del Outline,
+  por su índice; un `step_id`, solo si el texto coincide con el de la revisión
+  (los `<parámetros>` del Outline casan con cualquier valor).
+- **`executed_by`** de un resultado importado es `tool:<herramienta>` (o el
+  formato), igual en todos los equipos.
+- **Intentos de CTRF sin tiempos.** El reporter no da tiempos a los
+  `retryAttempts`; sin ellos el intento final derivado caería en la hora de
+  importación. El parser pone `finishedAt` = inicio del intento final, con
+  `attributes.finishedAtInferred`.
+- **Límites:** además de los del servidor (título, `test_key`, pasos), los
+  textos se recortan de forma determinista (mensaje 8 000, traza 64 000, paso
+  4 000, atributos 16 KiB) y ningún documento de resultado pasa de 1 MiB. Un
+  `test_key` de más de 2 000 caracteres conserva el principio y un hash. Dos
+  tests del mismo archivo con la misma identidad se numeran (` #2`).
+- **Configuración (paso 6):** el `configurationLabel` (proyecto de
+  Playwright, `browser` de CTRF) se guarda; asignar `configuration_id` con
+  `cycles::match_configuration` y el elemento del ciclo queda pendiente para
+  quien fusione segundo (TODO en `write_result`).

@@ -287,6 +287,41 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
   validated only. The importers of step 9 produce it.
 
+**Result import and the unlinked tray (ING-02..05; ADR-0005, ADR-0012,
+ADR-0013; built in E4, step 9).** The section «Ejecuciones»
+(`/projects/:id/runs`, `src/modules/runs/`) lists the runs and the tray, and
+«Importar informe» runs the pipeline:
+
+- **Parsers in TypeScript** (`src/shared/contracts/pharos-run/importers/`):
+  Cucumber Messages (NDJSON, read line by line), CTRF, JUnit XML (the webview's
+  `DOMParser`, no XML dependency), Playwright JSON and Pharos Run JSON itself.
+  The format is detected by content (Cucumber JSON is refused). Each produces a
+  Pharos Run JSON document checked by `parsePharosRun`, with a `testKey` per
+  result (relative path + title path, `[n]` for a Cucumber Outline row; the
+  three Playwright reporters give the same key) and one result per attempt.
+  Parsers never link: they keep every tag. Contract tests run the sanitized
+  ING-01 samples against committed normalized snapshots
+  (`fixtures/ing01/normalized/`), the vectors of a later port (INT-01).
+- **One persister in Rust** (`src-tauri/src/runs/import.rs`, a child of
+  `runs`): `run_import_preview` (read-only, rolled back), `run_import`
+  (raw report upload + one transaction: the run if new, the shard, results
+  with steps, one `import` audit event; a new run closes unless kept open),
+  `run_import_attach` (one report attachment to its result or step result,
+  idempotent by owner and content) and `unlinked_tests_list` (the tray).
+  Linking: the one `@<case_id_prefix><n>` tag (anchored); the revision is the
+  target run's item for that case/flow/row, else the synced revision current
+  at `run.started_at`, else the current one; flow by scenario name, Outline
+  row by index and step ids only when the texts match the revision. Ids:
+  shard and result as above, step `UUIDv5(NS_STEP_RESULT, [result, position])`;
+  re-importing a file into its run writes nothing. Texts are cut
+  deterministically so no result document exceeds 1 MiB.
+- **Evidence.** The raw report is an attachment of the shard (`raw_report`);
+  attachments the report embeds (Messages, Playwright `body`) or names by
+  path (resolved against a folder the user picks) go to their result or step.
+  None of them syncs yet (ADR-0014).
+- **Sync.** Nothing new: the import writes `run`, `run_shard`, `result` and,
+  from the tray, `unlinked_mapping`, all under the `runs` feature.
+
 **Journal and audit log (AUD-01, ADR-0015).** Every audited mutation goes
 through `src-tauri/src/journal.rs`:
 

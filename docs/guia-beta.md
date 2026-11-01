@@ -152,6 +152,28 @@ seguir.
 - [ ] El `.feature` lleva `@REQ-xxx` y el ID de cada caso, y se puede filtrar
       por `@ATS_xxx` con playwright-bdd o Cucumber.
 
+### 4.4b Importar resultados de pruebas automáticas (ING-02..05)
+
+En un proyecto, **Ejecuciones → Importar informe** acepta Cucumber Messages
+(`--format message:informe.ndjson`), CTRF, JUnit XML, el JSON de Playwright
+(`--reporter=json`) o Pharos Run JSON. Un test se vincula a su caso por la
+etiqueta del caso (`@TC-001`, con el prefijo del proyecto). Con JUnit solo
+se vincula si el test lleva la propiedad `test_id`, porque JUnit no
+conserva las etiquetas.
+
+- [ ] Importar el informe de Playwright o Messages de un proyecto con esos
+      casos: la vista previa dice cuántos se vinculan, y el run aparece en
+      **Runs** con sus resultados.
+- [ ] Importar el mismo archivo otra vez en el mismo run: no se duplica nada.
+      Como run nuevo, Pharos avisa y pide confirmarlo.
+- [ ] Con un CI por shards, importar el primer shard como run nuevo con
+      «Dejar el run abierto» y los demás en ese run.
+- [ ] Si el informe nombra capturas o trazas por su ruta (CTRF, Playwright,
+      JUnit), elegir la carpeta `test-results`: se guardan como evidencias.
+- [ ] **Sin vincular** lista los tests sin caso y el motivo; «Vincular…» los
+      asigna a un caso (sus resultados no cambian) y «Desvincular» lo retira.
+- [ ] Un Cucumber JSON se rechaza con un mensaje que indica usar Messages.
+
 ### 4.5 Sincronización
 
 - [ ] Dos cuentas en el mismo equipo: cada una solo ve y envía lo suyo
