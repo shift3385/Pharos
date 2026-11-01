@@ -22,6 +22,7 @@ vi.mock("@modules/test-cases", () => ({
   projectCaseCount: async () => 240,
 }));
 vi.mock("@modules/defects", () => ({
+  isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
   DefectsPage: () => <p>sección defectos</p>,
 }));
 vi.mock("@modules/planner", () => ({

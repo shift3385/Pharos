@@ -25,6 +25,7 @@ vi.mock("@modules/test-cases", () => ({
   caseLink: (p: string, c: string) => `/projects/${p}/cases?case=${c}`,
 }));
 vi.mock("@modules/defects", () => ({
+  isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
   projectDefects: async () => [
     { id: "d1", defectKey: "DEF-018", title: "Doble cargo", status: "in_progress", caseIds: ["c1"] },
   ],

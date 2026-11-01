@@ -29,7 +29,9 @@ migration 0029); the web is a client of the server's `/api/defects`
   links plus the case of each linked result.
 - Evidence: `attachments` with `owner_entity = 'defect'` in the evidence store
   (desktop only until SYNC-04b). A defect created from a result points at the
-  result's contents (same sha256, no bytes copied).
+  result's contents (same sha256, no bytes copied). Only the result is
+  linked: its case is derived through it (`result_link` on the desktop,
+  `resultCase` on the server), the one place each side reads it.
 - Custom fields of entity `defect` live in `data.custom` (ADR-0018).
 
 ## Screens

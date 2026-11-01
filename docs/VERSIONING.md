@@ -219,7 +219,10 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      - **Pull** de un cliente sin `defects`: ni defectos, ni vínculos, ni
        tarjetas de defecto (son las lápidas de la conversión). Así un 0.1.x o
        un 0.2.0-alpha.1, que solo leen, **conservan la copia congelada de su
-       planificador hasta que se actualizan**; al actualizar, su migración
+       planificador hasta que se actualizan**. El filtro también oculta el
+       borrado de una tarjeta de defecto anterior a la migración: ese cliente
+       la sigue viendo hasta actualizarse, y entonces la migración la trae como
+       defecto borrado; al actualizar, su migración
        local 0029 convierte esas tarjetas con la misma función y el reinicio
        del cursor trae los defectos del servidor.
      - **Push** de un cliente sin `defects` que lleva un `defect`, un

@@ -210,6 +210,46 @@ recomendadas del plan) y precisiones sobre el boceto:
   se encolan, y los conflictos de clave y de versión abiertos pasan al defecto.
   Un vínculo quitado sin conexión justo antes de actualizar puede volver con el
   pull: el escritorio no sabe qué vínculos tiene el servidor.
+- **Límites del servidor en la conversión** (revisión del 2026-10-31): las
+  tarjetas no tenían límites, así que un defecto convertido podría quedar
+  rechazado por el servidor para siempre y bloquear el sync de la cuenta. La
+  función común corta el título a 500 unidades UTF-16 y la descripción a
+  20 000, por puntos de código enteros; un título vacío pasa a ser la clave (o
+  «—»). `data.fromCard` guarda el texto completo de lo que se cortó o se
+  sustituyó, y los casos de la tarjeta.
+- **Los vínculos de una tarjeta se reconcilian** con la conversión del
+  servidor, que pudo partir de una tarjeta más nueva o más vieja
+  (`defects::reconcile_pulled`, con lo que la conversión local apuntó en
+  `sync_state`, `converted_card:<id>`):
+  - sin edición local pendiente, cuando llega el defecto del servidor, un
+    vínculo que la conversión local inventó, que el servidor no tiene
+    (`data.fromCard.testCaseIds`) y que nada pendiente toca, se quita aquí
+    sin fila de oplog;
+  - con edición pendiente, esa edición gana: un vínculo de la conversión del
+    servidor (revisión 1, el HLC de la tarjeta) que la tarjeta editada ya no
+    tiene se borra y se encola el borrado, así que el servidor también lo
+    pierde. Un vínculo posterior (otro HLC) no se toca;
+  - una tarjeta más nueva que llega de un servidor anterior quita los
+    vínculos de caso que ya no tiene.
+- **Tarea en local, defecto en el servidor:** si una tarjeta que el servidor
+  tiene como defecto se cambió a tarea sin conexión, al actualizar la
+  tarjeta local (tarea) no se convierte y su cambio pendiente choca con la
+  lápida que dejó la conversión del servidor: aparece en el panel de
+  conflictos. El defecto del servidor llega igualmente.
+- **Una tarjeta de defecto nunca vuelve al tablero:** ni al restaurar los
+  hijos de un proyecto (`restore_project_children`) ni si algo la revive
+  (`planner::list_cards` las excluye).
+- **Las claves `DEF-` que conservan las tareas** cuentan también en los
+  bloques del servidor (`leaseRange` mira `planner_card` además de
+  `defect`), así que la web nunca las reparte.
+- **Crear desde un resultado guarda solo el vínculo al resultado:** su caso se
+  deriva a través de él (`result_link`), para que un nuevo enlace del
+  resultado no deje una copia antigua. En el servidor, la web también lee el
+  caso de un resultado en una sola función (`resultCase`).
+- **Orden con el paso 6:** la `0009` del servidor (ciclos) va antes que la
+  `0010`; el índice de claves de la `0010` conserva `cycleKey` y añade
+  `defectKey`, y `KEY_SQL` es textualmente igual a su expresión (lo comprueba
+  un test).
 - **Tarjetas que llegan de un servidor anterior** (o escritas antes de su 0010)
   se convierten al aplicarlas con la misma función y por el camino lww normal:
   un cambio local pendiente se vuelve conflicto. Una tarjeta nunca pisa un

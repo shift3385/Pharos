@@ -325,7 +325,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   (`migrate_planner_defects`, same savepoint) and the server's migration 0010
   call one pure function (`convert::from_card` / `fromCard`): same id and
   key, column → status (`done` → `closed` + `fixed`), severity `major`,
-  `data.testCaseIds` → links. Locally the card's base becomes the defect's,
+  `data.testCaseIds` → links; the server's limits always hold (title and
+  description cut, an empty title becomes the key) and `data.fromCard` keeps
+  the full text and the card's case ids. Locally the card's base becomes the defect's,
   its unsynced oplog rows become the defect's, never-synced links are
   journaled, key and version conflicts move with it, its attachments become
   the defect's, and the card is soft-deleted without an oplog row; the DEF
@@ -334,7 +336,10 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   nothing (or a normal update for an offline edit) and never conflicts. A live
   defect card still pulled from an older server is converted the same way
   (`apply_pulled_card`) and never overwrites a defect at that revision or
-  later.
+  later. When the server's conversion started from another card, the links
+  reconcile (`reconcile_pulled`): without a pending edit, a made-up link the
+  server lacks goes locally; with one, the server's links the edited card
+  dropped are deleted and pushed.
 - **Sync.** `defect` and `defect_link` are lww (`oplog::SYNCED`;
   `APPLIED_SET_VERSION` 5) and wait for a server that lists `defects`
   (`heldBackDefects` in the diagnostics, with `defectsByStatus`). A project

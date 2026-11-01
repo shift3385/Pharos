@@ -7,6 +7,7 @@
 //  - execution status is `not_run` until execution exists (v0.0.3, EJE-04);
 //  - defects reach a row through the case they are linked to.
 
+import { isOpenDefect } from "@modules/defects";
 import type { RequirementPriority } from "./types";
 
 export type Coverage = "covered" | "not_covered";
@@ -37,9 +38,9 @@ export interface MatrixDefect {
   testCaseIds: string[];
 }
 
-/** A defect counts as open unless it is closed or rejected (ADR-0016): a
- *  deferred one is still open. */
-export const isOpen = (d: MatrixDefect) => d.status !== "closed" && d.status !== "rejected";
+/** Open as the defects module says (`isOpenDefect`, ADR-0016): not closed
+ *  nor rejected; a deferred one is still open. */
+const isOpen = (d: MatrixDefect) => isOpenDefect(d.status);
 
 export interface MatrixRow {
   requirementKey: string;
