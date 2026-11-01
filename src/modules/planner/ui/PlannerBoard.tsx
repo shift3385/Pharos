@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState, type KeyboardEventHandler } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import {
   DndContext,
   KeyboardSensor,
@@ -18,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Bug, Database, Flag, GripVertical, Link2, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
+import { Bug, Database, Flag, GripVertical, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
@@ -33,7 +34,6 @@ import {
   CARD_STATUSES,
   type CardKind,
   type CardStatus,
-  type LinkableCase,
   type PlannerCard,
 } from "../model/types";
 import { CardEditor } from "./CardEditor";
@@ -41,7 +41,7 @@ import "@shared/ui/buttons.css";
 import "@shared/ui/filters.css";
 import "./Planner.css";
 
-const KIND_ICON = { task: SquareCheck, defect: Bug, test_data: Database } as const;
+const KIND_ICON = { task: SquareCheck, test_data: Database } as const;
 const PRIORITY_TONE: Record<string, FlagTone> = { critical: "error", high: "warning", medium: "info", low: "muted" };
 
 const fold = (v: string) =>
@@ -75,16 +75,7 @@ function group(cards: PlannerCard[]): Record<CardStatus, PlannerCard[]> {
   return by;
 }
 
-export function PlannerBoard({
-  projectId,
-  ownerId,
-  cases,
-}: {
-  projectId: string;
-  ownerId: string;
-  /** Test cases a defect can be linked to (supplied by the projects module). */
-  cases?: LinkableCase[];
-}) {
+export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerId: string }) {
   const { t } = useTranslation();
   const [cards, setCards] = useState<PlannerCard[]>([]);
   const [editing, setEditing] = useState<EditView | null>(null);
@@ -191,7 +182,6 @@ export function PlannerBoard({
         ownerId={ownerId}
         card={editing.card}
         initialStatus={editing.status}
-        cases={cases}
         onClose={() => {
           setEditing(null);
           void refresh();
@@ -203,6 +193,13 @@ export function PlannerBoard({
   return (
     <div className="pl">
       {!inHeader && <div className="pl-head">{newCard}</div>}
+      <p className="pl-moved" role="note">
+        <Bug size={16} aria-hidden="true" />
+        <span>{t("planner.defectsMoved")}</span>
+        <Link to="../defects" relative="path" className="pl-moved__link">
+          {t("planner.openDefects")}
+        </Link>
+      </p>
       <div className="pl-toolbar">
         <FilterChips
           label={t("planner.kind")}
@@ -336,8 +333,7 @@ function Card({
   // The card itself only takes the mouse drag; the keyboard drag and the
   // sortable role live on the handle, so the card holds no nested controls.
   const { onKeyDown, ...pointer } = listeners ?? {};
-  const Icon = KIND_ICON[card.kind];
-  const links = card.data.testCaseIds?.length ?? 0;
+  const Icon = KIND_ICON[card.kind] ?? SquareCheck;
   const del = `${t("common.delete")}: ${card.title}`;
   return (
     <article ref={setNodeRef} style={style} className="pl-card" data-priority={card.priority} {...pointer}>
@@ -391,13 +387,6 @@ function Card({
           label={t(`planner.priorityLabel.${card.priority}`)}
           showLabel
         />
-        {links > 0 && (
-          <span className="pl-card__links" title={t("planner.linksTitle", { count: links })}>
-            <Link2 size={13} aria-hidden="true" />
-            <span className="sr-only">{t("planner.linksTitle", { count: links })}</span>
-            <span aria-hidden="true">{links}</span>
-          </span>
-        )}
       </div>
     </article>
   );

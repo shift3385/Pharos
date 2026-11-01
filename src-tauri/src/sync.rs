@@ -38,7 +38,9 @@ fn table_for(entity: &str) -> Option<&'static str> {
         "requirement" => Some("requirements"),
         "planner_card" => Some("planner_cards"),
         "custom_field" => Some("custom_fields"),
-        other => crate::runs::table_for(other).or_else(|| crate::cycles::table_for(other)),
+        other => crate::runs::table_for(other)
+            .or_else(|| crate::cycles::table_for(other))
+            .or_else(|| crate::defects::table_for(other)),
     }
 }
 
@@ -134,6 +136,9 @@ pub(crate) fn read_payload(
     }
     if crate::cycles::table_for(entity).is_some() {
         return crate::cycles::read_payload(conn, entity, id);
+    }
+    if crate::defects::table_for(entity).is_some() {
+        return crate::defects::read_payload(conn, entity, id);
     }
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
@@ -400,6 +405,18 @@ pub(crate) fn server_takes_cycles(conn: &Connection, user: &str) -> Result<bool,
     server_lists(conn, user, CYCLES)
 }
 
+/// The server feature that stores defects and their links (DEF-01,
+/// ADR-0016) and has converted its planner defect cards (server migration
+/// 0010). A server without it would refuse the whole push for an entity it
+/// does not know.
+pub(crate) const DEFECTS: &str = "defects";
+
+/// True once the account's server has listed `defects`. Until then this
+/// build keeps its defects and links pending.
+pub(crate) fn server_takes_defects(conn: &Connection, user: &str) -> Result<bool, String> {
+    server_lists(conn, user, DEFECTS)
+}
+
 /// True if the account's server listed `feature` in its last answer.
 fn server_lists(conn: &Connection, user: &str, feature: &str) -> Result<bool, String> {
     let features = state_value(conn, &server_features_key(user))?;
@@ -485,7 +502,7 @@ pub(crate) fn held_back_cases(conn: &Connection) -> Result<i64, String> {
 pub(crate) fn assume_stable_steps_server(conn: &Connection) {
     assume_server_features(
         conn,
-        "key-conflicts,append-only,stable-steps,runs,custom-fields,cycles",
+        "key-conflicts,append-only,stable-steps,runs,custom-fields,cycles,defects",
     );
 }
 
@@ -522,6 +539,8 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
     let fields_too = server_lists(conn, user, CUSTOM_FIELDS)?;
     // Configurations, cycles and items wait for a server with `cycles` (CYC-01).
     let cycles_too = server_takes_cycles(conn, user)?;
+    // Defects and their links wait for a server with `defects` (DEF-01).
+    let defects_too = server_takes_defects(conn, user)?;
     // (entity, entity_id) → (op ids, max hlc, author of the latest change), in
     // first-change order.
     let mut order: Vec<(String, String)> = Vec::new();
@@ -540,15 +559,24 @@ pub(crate) fn build_pending(conn: &Connection, user: &str) -> Result<Pending, St
                    AND (o.entity NOT IN ({}) OR ?3)
                    AND (o.entity <> 'custom_field' OR ?4)
                    AND (o.entity NOT IN ({}) OR ?5)
+                   AND (o.entity NOT IN ({}) OR ?6)
                  ORDER BY o.rowid",
                 oplog::synced_sql_list(),
                 crate::runs::entities_sql_list(),
-                crate::cycles::entities_sql_list()
+                crate::cycles::entities_sql_list(),
+                crate::defects::entities_sql_list()
             ))
             .map_err(|e| e.to_string())?;
         let rows = stmt
             .query_map(
-                params![user, cases_too, runs_too, fields_too, cycles_too],
+                params![
+                    user,
+                    cases_too,
+                    runs_too,
+                    fields_too,
+                    cycles_too,
+                    defects_too
+                ],
                 |r| {
                     Ok((
                         r.get::<_, String>(0)?,
@@ -840,6 +868,33 @@ pub(crate) fn apply_doc(
         }
         return Ok(());
     }
+    // A defect card an older server still has (DEF-01): converted here as its
+    // migration 0010 converts it there, so both end with the same defect.
+    if doc.entity == "planner_card"
+        && !doc.deleted
+        && doc.payload.get("kind").and_then(Value::as_str) == Some("defect")
+    {
+        if oplog::owner_of(conn, &doc.entity, &doc.entity_id)?.is_some_and(|owner| owner != user) {
+            return Ok(());
+        }
+        oplog::observe_hlc(conn, &doc.hlc)?;
+        crate::defects::apply_pulled_card(
+            conn,
+            workspace_id,
+            user,
+            &doc.payload,
+            doc.revision,
+            &doc.hlc,
+        )?;
+        return set_base(
+            conn,
+            user,
+            &doc.entity,
+            &doc.entity_id,
+            doc.revision,
+            &doc.hlc,
+        );
+    }
     if !SYNCED.contains(&doc.entity.as_str()) {
         return Ok(());
     }
@@ -865,7 +920,43 @@ pub(crate) fn apply_doc(
         &doc.entity_id,
         doc.revision,
         &doc.hlc,
-    )
+    )?;
+    if !doc.deleted {
+        crate::defects::reconcile_pulled(
+            conn,
+            user,
+            &doc.entity,
+            &doc.entity_id,
+            &doc.payload,
+            doc.revision,
+            &doc.hlc,
+        )?;
+    }
+    Ok(())
+}
+
+/// Applies one document built here rather than pulled (a converted defect
+/// card, DEF-01) through the same path as a pulled one.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn apply_remote_doc(
+    conn: &Connection,
+    workspace_id: &str,
+    user: &str,
+    entity: &str,
+    id: &str,
+    payload: Value,
+    revision: i64,
+    hlc: &str,
+) -> Result<(), String> {
+    let doc = RemoteDoc {
+        entity: entity.to_string(),
+        entity_id: id.to_string(),
+        payload,
+        revision,
+        deleted: false,
+        hlc: hlc.to_string(),
+    };
+    apply_doc(conn, workspace_id, user, &doc)
 }
 
 /// Overwrites the local row with a remote document's state. `created_by` and
@@ -922,6 +1013,7 @@ fn write_doc(
         "planner_card" => Some("cardKey"),
         "run" => Some("runKey"),
         crate::cycles::CYCLE => Some("cycleKey"),
+        "defect" => Some("defectKey"),
         _ => None,
     };
     let pulled_key = key_field.map_or("", |f| field(p, f));
@@ -1097,6 +1189,15 @@ fn write_doc(
             .map_err(|e| e.to_string())?;
         }
         entity if crate::cycles::table_for(entity).is_some() => crate::cycles::write_doc(
+            conn,
+            workspace_id,
+            user,
+            entity,
+            &doc.entity_id,
+            p,
+            doc.revision,
+        )?,
+        entity if crate::defects::table_for(entity).is_some() => crate::defects::write_doc(
             conn,
             workspace_id,
             user,
@@ -1431,13 +1532,20 @@ fn restore_project_children(conn: &Connection, project_id: &str) -> Result<(), S
         ("configuration", "configurations"),
         ("test_cycle", "test_cycles"),
         ("test_cycle_item", "test_cycle_items"),
+        ("defect", "defects"),
+        ("defect_link", "defect_links"),
     ] {
         conn.execute(
             &format!(
                 "UPDATE {table} SET deleted_at = NULL
                   WHERE project_id = ?1 AND deleted_at >= ?2
-                    AND id NOT IN (SELECT entity_id FROM oplog WHERE entity = ?3 AND op = 'delete')"
-            ),
+                    AND id NOT IN (SELECT entity_id FROM oplog WHERE entity = ?3 AND op = 'delete'){}"
+            , if table == "planner_cards" {
+                // A defect card is a defect now (DEF-01): it never comes back.
+                " AND kind <> 'defect'"
+            } else {
+                ""
+            }),
             params![project_id, deleted_at, entity],
         )
         .map_err(|e| e.to_string())?;
@@ -1790,16 +1898,25 @@ mod tests {
             )
             .unwrap();
         assert_eq!(linked, "Login");
-        let card: (String, String, String) = b
+        // A defect card of a build before DEF-01 arrives as a defect, linked to
+        // its case, and never lands on the board (ADR-0016).
+        let defect: (String, String) = b
             .query_row(
-                "SELECT card_key, owner_id, data FROM planner_cards WHERE id = 'd1'",
+                "SELECT d.defect_key, l.target_id FROM defects d
+                   JOIN defect_links l ON l.defect_id = d.id WHERE d.id = 'd1'",
                 [],
-                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .unwrap();
-        assert_eq!(card.0, "DEF-001");
-        assert_eq!(card.1, U1);
-        assert!(card.2.contains("c1"));
+        assert_eq!(defect, ("DEF-001".into(), "c1".into()));
+        let cards: i64 = b
+            .query_row(
+                "SELECT count(*) FROM planner_cards WHERE id = 'd1' AND deleted_at IS NULL",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(cards, 0);
         // Nothing echoes back from B.
         assert!(build_pending(&b, U1).unwrap().deltas.is_empty());
     }
@@ -2192,7 +2309,13 @@ mod tests {
             doc(
                 "planner_card",
                 "d1",
-                json!({ "id": "d1", "projectId": "p1", "ownerId": U1, "kind": "defect", "title": "Bug" }),
+                json!({ "id": "d1", "projectId": "p1", "ownerId": U1, "kind": "task", "title": "Prepare" }),
+            ),
+            doc(
+                "defect",
+                "x1",
+                json!({ "id": "x1", "projectId": "p1", "defectKey": "DEF-001", "title": "Bug",
+                        "reporter": "Ada", "severity": "major", "priority": "low", "status": "new" }),
             ),
         ];
         for d in &docs {
@@ -2214,6 +2337,7 @@ mod tests {
             ("test_cases", "c1"),
             ("requirements", "r1"),
             ("planner_cards", "d1"),
+            ("defects", "x1"),
         ] {
             let (created_by, updated_by): (String, String) = c
                 .query_row(

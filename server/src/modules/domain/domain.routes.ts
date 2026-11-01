@@ -5,6 +5,9 @@ import { requireSupportedVersion } from "../sync/sync.version";
 import type { DomainService } from "./domain.service";
 import {
   deleteQuerySchema,
+  defectInputSchema,
+  defectLinkSchema,
+  defectTransitionSchema,
   plannerCardInputSchema,
   projectInputSchema,
   projectQuerySchema,
@@ -118,6 +121,29 @@ export function domainRoutes(app: FastifyInstance, deps: { domain: DomainService
   });
   app.delete("/api/requirements/:id", { preHandler }, async (req, reply) => {
     await domain.requirements.remove(user(req), id(req), revisionOf(req));
+    return reply.code(204).send();
+  });
+
+  // Defects (DEF-01, ADR-0016). Attachments and «create from a result»
+  // with its evidence are desktop only (SYNC-04b).
+  app.get("/api/defects", { preHandler }, (req) =>
+    domain.defects.list(user(req), projectQuerySchema.parse(req.query).projectId),
+  );
+  app.get("/api/defects/:id", { preHandler }, (req) => domain.defects.get(user(req), id(req)));
+  app.post("/api/defects", { preHandler }, (req) => domain.defects.create(user(req), defectInputSchema.parse(req.body)));
+  app.put("/api/defects/:id", { preHandler }, (req) => {
+    const { input, revision } = updateOf(defectInputSchema).parse(req.body);
+    return domain.defects.update(user(req), id(req), input, revision);
+  });
+  app.post("/api/defects/:id/transition", { preHandler }, (req) =>
+    domain.defects.transition(user(req), id(req), defectTransitionSchema.parse(req.body)),
+  );
+  app.post("/api/defects/:id/links", { preHandler }, (req) => {
+    const { target, linked } = defectLinkSchema.parse(req.body);
+    return domain.defects.link(user(req), id(req), target, linked);
+  });
+  app.delete("/api/defects/:id", { preHandler }, async (req, reply) => {
+    await domain.defects.remove(user(req), id(req), revisionOf(req));
     return reply.code(204).send();
   });
 

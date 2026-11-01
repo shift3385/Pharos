@@ -12,4 +12,8 @@ runs: number,
 /**
  * Test cycles, their items and configurations (CYC-01).
  */
-cycles: number, templates: number, };
+cycles: number, 
+/**
+ * Defects and defect links (DEF-01); a defect takes its attachments.
+ */
+defects: number, templates: number, };

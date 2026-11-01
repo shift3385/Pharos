@@ -120,15 +120,21 @@ describe("web audit (AUD-01b)", () => {
     expect(events[3].hlc > doc.rows[0].hlc).toBe(true);
   });
 
-  it("covers plans, requirements and planner cards too", async () => {
+  it("covers plans, requirements, planner cards and defects too", async () => {
     const { token, userId } = await register();
     const p = await newProject(token);
     const plan = (await call(token, "POST", "/api/test-plans", { projectId: p.id, title: "Plan", data: {} })).body;
     await call(token, "PUT", `/api/test-plans/${plan.id}`, { input: { projectId: p.id, title: "Plan 2", data: {} } });
     const req = (await call(token, "POST", "/api/requirements", { projectId: p.id, title: "Pay" })).body;
     await call(token, "PUT", `/api/requirements/${req.id}`, { input: { projectId: p.id, title: "Pay fast" } });
-    const card = (await call(token, "POST", "/api/planner-cards", { projectId: p.id, kind: "defect", title: "Bug", data: {} })).body;
-    await call(token, "PUT", `/api/planner-cards/${card.id}`, { input: { projectId: p.id, kind: "defect", title: "Bug 2", data: {} } });
+    const card = (await call(token, "POST", "/api/planner-cards", { projectId: p.id, kind: "task", title: "Do", data: {} })).body;
+    await call(token, "PUT", `/api/planner-cards/${card.id}`, { input: { projectId: p.id, kind: "task", title: "Do 2", data: {} } });
+    const bug = (await call(token, "POST", "/api/defects", { projectId: p.id, title: "Bug", data: {} })).body;
+    await call(token, "POST", `/api/defects/${bug.id}/transition`, { status: "open" });
+    await call(token, "POST", `/api/defects/${bug.id}/links`, {
+      target: { targetKind: "requirement", targetId: req.id },
+      linked: true,
+    });
     await call(token, "PUT", `/api/projects/${p.id}`, { input: { name: "Checkout 2" } });
 
     const events = await chain(userId);
@@ -138,11 +144,15 @@ describe("web audit (AUD-01b)", () => {
       "update test_plan -",
       "create requirement REQ-001",
       "update requirement REQ-001",
-      "create planner_card DEF-001",
-      "update planner_card DEF-001",
+      "create planner_card -",
+      "update planner_card -",
+      "create defect DEF-001",
+      "update defect DEF-001",
+      "link defect DEF-001",
       "update project -",
     ]);
-    expect(changesOf(events[7])).toEqual({ name: ["Checkout", "Checkout 2"] });
+    expect(changesOf(events[8])).toEqual({ status: ["new", "open"] });
+    expect(changesOf(events[10])).toEqual({ name: ["Checkout", "Checkout 2"] });
     expect(verifyChain(events).ok).toBe(true);
   });
 
@@ -245,6 +255,8 @@ describe("web audit (AUD-01b)", () => {
         configurations: 0,
         test_cycles: 0,
         test_cycle_items: 0,
+        defects: 0,
+        defect_links: 0,
       },
     });
     expect(changesOf(events[0])).toMatchObject({ name: ["Checkout", null] });

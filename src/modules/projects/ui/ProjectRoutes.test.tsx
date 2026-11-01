@@ -21,6 +21,10 @@ vi.mock("@modules/test-cases", () => ({
   projectTraceableCases: async () => [],
   projectCaseCount: async () => 240,
 }));
+vi.mock("@modules/defects", () => ({
+  isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
+  DefectsPage: () => <p>sección defectos</p>,
+}));
 vi.mock("@modules/planner", () => ({
   PlannerBoard: () => <p>sección planificador</p>,
   projectCardCount: async () => 0,

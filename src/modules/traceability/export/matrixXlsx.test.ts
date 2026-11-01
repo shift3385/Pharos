@@ -17,7 +17,7 @@ const matrix = buildMatrix(
     { id: "a", scenarioId: "TC-001", title: "Login OK", status: "approved", requirementKeys: ["REQ-001"] },
     { id: "b", scenarioId: "TC-002", title: "Login KO", status: "draft", requirementKeys: ["REQ-001"] },
   ],
-  [{ id: "d", cardKey: "DEF-014", title: "Error 500", status: "backlog", testCaseIds: ["b"] }],
+  [{ id: "d", defectKey: "DEF-014", title: "Error 500", status: "open", testCaseIds: ["b"] }],
 );
 
 const meta = {

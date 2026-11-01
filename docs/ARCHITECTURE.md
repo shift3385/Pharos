@@ -39,7 +39,7 @@ src/
   modules/     # domain modules (each: domain/ application/ infrastructure/ ui/)
     projects/  test-plan/  test-cases/  planner/  templates/
     integrations/  ai/  sync-offline/  admin/  auth/  traceability/
-    custom-fields/  cycles/
+    custom-fields/  cycles/  defects/
   shared/      # design system (theme tokens), i18n, ui kit, form validation, fonts, diagnostics, version, platform, contracts
   test/        # test utilities (renderWithProviders, axe helper, fake server)
 src-tauri/     # Tauri 2 (Rust): encrypted local DB, repositories, oplog, sync, logs
@@ -165,7 +165,8 @@ the redesign. `model/loadHome.ts` reads only public read APIs, one project
 list and three reads per project, most recently updated first:
 `projectApi.list` (case-id prefix → key), `projectLiveCases` (`test-cases`),
 `projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
-closure criteria) and `projectDefects` (`planner`: open = not `done`).
+closure criteria) and `projectDefects` (`defects`: open = not closed nor
+rejected; critical = severity).
 `model/homeData.ts` aggregates it as pure functions (KPIs, the queue by
 priority, the exit-criteria choices and default, the period days and which day
 labels show). The widgets — `KpiCards`, `PeriodSelector`,
@@ -197,9 +198,9 @@ Administración › Seguridad (RED-V4) can mount it and take it out of Perfil.
 
 **Traceability (0.1.0).** `traceability` owns requirements (`REQ-xxx`, stable
 keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`,
-`planner` and `test-plan` through their public APIs; none of them imports it.
+`defects` and `test-plan` through their public APIs; none of them imports it.
 `projects` is the composition root: it hands requirement options to
-`test-cases` and linkable cases to `planner` as props, so the module graph stays
+`test-cases` and linkable cases and requirements to `defects` as props, so the module graph stays
 acyclic. The link itself lives in the case (`data.requirementKeys`) so it is
 revisioned and synced with the case, and travels as Gherkin tags (`@REQ-xxx` on
 the Feature, `@<case id>` on each Scenario — never the scenario name).
@@ -224,7 +225,8 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   hash) — **built in E2 (DAT-03)**, see "Evidence store" below.
 - One write path (`journal::record`) feeds both the oplog and an append-only
   `audit_log` — **built in E1 (AUD-01)**, see "Journal and audit log" below.
-- Defects become their own `defects` module.
+- Defects become their own `defects` module — **built in E4 (step 8, DEF-01)**,
+  see "Defects" below.
 - Sync gains an `append_only` class (**built in E1**: `audit_event` is the
   first entity); from 0.3.0 the server is keyed by workspace (ADR-0019).
 
@@ -286,6 +288,70 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
   `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
   validated only. The importers of step 9 produce it.
+
+**Defects (DEF-01, ADR-0016).** Migration 0029, `src-tauri/src/defects.rs`
+(+ `defects/{ids,lifecycle,convert}.rs`) and `src/modules/defects/`:
+
+- **Tables.** `defects` (key `DEF-001` from the project's `defect` key
+  counter, which already existed; severity `critical | major | minor |
+  trivial` apart from priority; status, resolution; found in run, build and
+  environment; fixed in build; reporter, assignee; `external_*` for INT-05;
+  `data` with labels and `custom`) and `defect_links` (`result |
+  test_case | requirement | finding | session_note`, id
+  `UUIDv5(NS_DEFECT_LINK, JCS([defect, kind, target]))`, soft-deleted to
+  unlink, revived to link again). No foreign key to `defects`; a partial
+  UNIQUE index on the live key, like the other keys (the pull vacates the local
+  holder first, ADR-0010 A3). Enums have CHECKs; a pulled value outside them is
+  normalised, never failing the pull.
+- **Lifecycle** (`lifecycle.rs`, TS twin `model/lifecycle.ts`, server
+  `sync/defects.ts`, one table in `tests/fixtures/defect-vectors.json`):
+  `new → open → in_progress → fixed → retest → closed`, `retest → open`,
+  `new|open → rejected|deferred`, and `closed|rejected|deferred → open`.
+  A resolution goes with `closed`/`rejected` only. Open = not closed nor
+  rejected (the matrix and the dashboard).
+- **Commands.** `defect_list`/`_get` (with live links and the derived
+  `caseIds`: direct case links plus the case of each linked result, through
+  its mapping), `defect_create` (optional `links` and `fromResult`),
+  `defect_update`, `defect_transition`, `defect_delete` (links folded into
+  one event; attachments released), `defect_link_set` (`link`/`unlink`
+  events), `defect_draft_from_result` (read only: the steps of the executed
+  revision, what the step result obtained, the run's build and environment),
+  `defect_result_list` (the project's attempts that did not pass) and
+  `defect_attachment_add/list/save/delete`. Creating from a result links the
+  result and its case and adds a new `attachments` row per attachment of the
+  result and its step results with the same sha256 (no bytes copied,
+  ADR-0014). Every row belongs to the project's owner, not to a card owner.
+- **Conversion of planner defect cards.** The Rust step of 0029
+  (`migrate_planner_defects`, same savepoint) and the server's migration 0010
+  call one pure function (`convert::from_card` / `fromCard`): same id and
+  key, column → status (`done` → `closed` + `fixed`), severity `major`,
+  `data.testCaseIds` → links; the server's limits always hold (title and
+  description cut, an empty title becomes the key) and `data.fromCard` keeps
+  the full text and the card's case ids. Locally the card's base becomes the defect's,
+  its unsynced oplog rows become the defect's, never-synced links are
+  journaled, key and version conflicts move with it, its attachments become
+  the defect's, and the card is soft-deleted without an oplog row; the DEF
+  keys of tasks that once were defects go to `retired_keys`. The server keeps
+  the card's revision and HLC, so a device that converted on its own pushes
+  nothing (or a normal update for an offline edit) and never conflicts. A live
+  defect card still pulled from an older server is converted the same way
+  (`apply_pulled_card`) and never overwrites a defect at that revision or
+  later. When the server's conversion started from another card, the links
+  reconcile (`reconcile_pulled`): without a pending edit, a made-up link the
+  server lacks goes locally; with one, the server's links the edited card
+  dropped are deleted and pushed.
+- **Sync.** `defect` and `defect_link` are lww (`oplog::SYNCED`;
+  `APPLIED_SET_VERSION` 6) and wait for a server that lists `defects`
+  (`heldBackDefects` in the diagnostics, with `defectsByStatus`). A project
+  delete soft-deletes both here and tombstones them on the server; the purge
+  takes links, defects and their attachments and retires the key.
+- **UI.** `DefectsPage` (section `defects` of a project): a `DataTable` list
+  and a board by status (dnd-kit; a drop follows the lifecycle, closing,
+  rejecting or a drop on «Otros» ask in `TransitionDialog`), `DefectEditor`,
+  and «Desde un resultado» (`ResultPickerDialog`, desktop). No screen design
+  exists in `docs/rediseno/`: they reuse the list and board primitives.
+  `createDefectFromResult` and `DefectEditor` are exported for the execution
+  screen (EJE-02). The planner keeps tasks and test data only.
 
 **Journal and audit log (AUD-01, ADR-0015).** Every audited mutation goes
 through `src-tauri/src/journal.rs`:
@@ -611,8 +677,8 @@ through `src-tauri/src/journal.rs`:
   «Cambios sin guardar» and asks before leaving with changes.
 - **Cross-module read APIs** used by other screens (each additive, with a
   test):
-  - `projectDefects(projectId, ownerId)` (`@modules/planner`): the defect
-    cards of a project, for the traceability matrix;
+  - `projectDefects(projectId, userId)` (`@modules/defects`): the live
+    defects of a project with their `caseIds`, for the matrix and Inicio;
   - `projectCardCount(projectId, ownerId)` (`@modules/planner`): how many
     cards a board has (Proyectos);
   - `projectCoverage(projectId, ownerId)` (`@modules/traceability`): the
@@ -857,7 +923,12 @@ E2E smoke runs in the `e2e` job (BASE-14) and the frontend coverage report in
 either a native service or the `db` container of the root `docker-compose.yml`
 (`postgres:15-alpine`). Layered per domain module (routes → service/merge →
 repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
-`migrations/`) that the server also runs on start. Modules:
+`migrations/`) that the server also runs on start. A migration may have a
+TypeScript data step (`DATA_STEPS` in `migrate.ts`, the twin of the desktop's
+`RUST_STEPS`), run right after its SQL in the same transaction: if it throws,
+the SQL is rolled back and the migration is not recorded. The first is
+`0010_defects.sql` → `convertPlannerDefects` (DEF-01: UUIDv5 needs SHA-1, which
+core Postgres lacks). Modules:
 
 - `auth` — accounts and sessions (below).
 - `sync` — per-user document store for the oplog: `POST /sync/push` (one
@@ -872,10 +943,13 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
   `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`,
-  `cycles`). Configurations, test cycles and their items (CYC-01) only reach
-  clients that send `cycles`, and only those may push them (else 400
-  `cycles_unsupported`); `cycleKey` is a key like the others (migration 0009
-  rebuilds `documents_key_idx` with it). A
+  `cycles`, `defects`). Configurations, test cycles and their items (CYC-01)
+  only reach clients that send `cycles`, and only those may push them (else
+  400 `cycles_unsupported`); `cycleKey` is a key like the others (migration
+  0009 rebuilds `documents_key_idx` with it). Without `defects` (DEF-01) a
+  client neither pulls defects, their links nor the converted defect cards,
+  and its push that touches one is refused with 400 `defects_unsupported`;
+  migration 0010 rebuilds the key index with `defectKey` too. A
   test_case upsert from a client without `custom-fields` keeps the stored
   `caseType`, `automationStatus` (`FEATURE_KEYS`) and `data.custom`
   (`FEATURE_DATA_KEYS`); read-only clients pull the first two in
@@ -912,10 +986,12 @@ repository), with a minimal forward-only SQL migration runner (`db/migrate.ts` +
   `SYNC_TOMBSTONE_DAYS` is cleared (SYNC-06). See `src/modules/sync-offline/README.md`.
 - `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`,
   `/api/test-plans`, `/api/test-cases`, `/api/requirements` (+ `/import`),
-  `/api/planner-cards` (+ `/reorder`), `/api/custom-fields` (+ `/reorder`,
-  `/copy`, `/:id/archive`; FLD-01), and `/api/configurations` and
-  `/api/cycles` (items, filter, clone, progress, runs; CYC-01,
-  `domain/cycles.ts`; runs are not created on the web). `domain.service.ts` applies the
+  `/api/planner-cards` (+ `/reorder`; a `defect` card is refused with
+  `defect_moved`), `/api/custom-fields` (+ `/reorder`, `/copy`,
+  `/:id/archive`; FLD-01), `/api/configurations` and `/api/cycles` (items,
+  filter, clone, progress, runs; CYC-01, `domain/cycles.ts`; runs are not
+  created on the web), and `/api/defects` (+ `/:id/transition`,
+  `/:id/links`; DEF-01, `domain/defects.ts`). `domain.service.ts` applies the
   desktop core's rules (defaults, immutable keys, keys never reused,
   positions per column, upsert-by-key import) to the same document store, in
   one transaction under the user's sync write lock (`domain.store.ts`). Every

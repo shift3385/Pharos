@@ -7,6 +7,7 @@ import {
   KEY_FIELD,
   APPEND_ONLY_ENTITIES,
   CYCLE_ENTITIES,
+  DEFECT_ENTITIES,
   EXECUTION_ENTITIES,
   isAppendOnly,
   LOCATION_KEYS,
@@ -72,10 +73,11 @@ export interface KeyBlock {
   end: number;
 }
 
-/** The key expression of `documents_key_idx` (migration 0006; `runKey`
- *  since 0008, `cycleKey` since 0009). */
+/** The key expression of `documents_key_idx`, textually equal to it
+ *  (migration 0006; `runKey` since 0008, `cycleKey` since 0009,
+ *  `defectKey` since 0010). */
 export const KEY_SQL =
-  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey', payload->>'cycleKey')";
+  "coalesce(payload->>'scenarioId', payload->>'requirementKey', payload->>'cardKey', payload->>'runKey', payload->>'cycleKey', payload->>'defectKey')";
 
 /** One pull page: documents after the cursor and whether more remain. */
 export interface PullPage {
@@ -146,6 +148,8 @@ const CASCADE_KEY: Partial<Record<(typeof PROJECT_CHILDREN)[number], string>> = 
   configuration: "configurations",
   test_cycle: "test_cycles",
   test_cycle_item: "test_cycle_items",
+  defect: "defects",
+  defect_link: "defect_links",
 };
 
 /** The live document of the same project that already uses the key of an
@@ -338,8 +342,9 @@ export async function leaseRange(
         `SELECT max(CASE WHEN left(k, length($4)) = $4 AND substr(k, length($4) + 1) ~ '^[0-9]{1,15}$'
                          THEN substr(k, length($4) + 1)::bigint END) AS max
            FROM (SELECT ${KEY_SQL} AS k FROM documents
-                  WHERE user_id = $1 AND entity = $2 AND payload->>'projectId' = $3) AS keyed`,
-        [userId, KEY_ENTITY[r.kind], r.projectId, r.prefix],
+                  WHERE user_id = $1 AND entity = ANY($2::text[]) AND payload->>'projectId' = $3) AS keyed`,
+        // A DEF key a task card kept from before DEF-01 is still taken.
+        [userId, r.kind === "defect" ? [KEY_ENTITY.defect, "planner_card"] : [KEY_ENTITY[r.kind]], r.projectId, r.prefix],
       )
     : null;
   const floor = Math.max(r.floor, Number(stored?.rows[0]?.max ?? 0) + 1);
@@ -361,6 +366,23 @@ export function createSyncRepository(pool: Pool) {
      *  `sync.merge.ts` (base check, then last-write-wins by HLC). `merge`: the
      *  client is old and its upserts keep the keys it left out (`storeDoc`);
      *  `keep` / `keepData`: keys of features it lacks (FLD-01, EJE-01). */
+    /** True if the push touches a planner defect card: an upsert with
+     *  `kind: "defect"`, or any change of a card stored as one (all of them
+     *  are tombstones since migration 0010, DEF-01). Only a client without
+     *  `defects` can still send one; it is refused whole (VERSIONING §6.5). */
+    async touchesDefectCards(userId: string, deltas: Delta[]): Promise<boolean> {
+      const cards = deltas.filter((d) => d.entity === "planner_card");
+      if (cards.some((d) => d.payload.kind === "defect")) return true;
+      if (cards.length === 0) return false;
+      const { rowCount } = await pool.query(
+        `SELECT 1 FROM documents
+          WHERE user_id = $1 AND entity = 'planner_card' AND entity_id = ANY($2::text[])
+            AND payload->>'kind' = 'defect' LIMIT 1`,
+        [userId, cards.map((d) => d.entityId)],
+      );
+      return (rowCount ?? 0) > 0;
+    },
+
     /** Ids of `custom_field` deltas whose stored live field has another
      *  `fieldType`: the type never changes (FLD-01, ADR-0018). */
     async changedFieldTypes(userId: string, deltas: Delta[]): Promise<string[]> {
@@ -426,20 +448,25 @@ export function createSyncRepository(pool: Pool) {
       userId: string,
       since: number,
       limit = MAX_PULL_LIMIT,
-      opts: { appendOnly: boolean; runs?: boolean; cycles?: boolean } = { appendOnly: false },
+      opts: { appendOnly: boolean; runs?: boolean; cycles?: boolean; defects?: boolean } = { appendOnly: false },
     ): Promise<PullPage> {
       const skipped: string[] = [
         ...(opts.appendOnly ? [] : APPEND_ONLY_ENTITIES),
         ...(opts.runs ? [] : EXECUTION_ENTITIES),
         ...(opts.cycles ? [] : CYCLE_ENTITIES),
+        ...(opts.defects ? [] : DEFECT_ENTITIES),
       ];
+      // A client without `defects` (DEF-01) gets no planner defect card
+      // either: since migration 0010 they are the conversion's tombstones,
+      // and its read-only kanban keeps the copy it has (VERSIONING §6.5).
       const { rows } = await pool.query(
         `SELECT ${COLS}
            FROM documents
           WHERE user_id = $1 AND seq > $2 AND entity <> ALL($4::text[])
+            AND ($5 OR entity <> 'planner_card' OR payload->>'kind' IS DISTINCT FROM 'defect')
           ORDER BY seq ASC
           LIMIT $3`,
-        [userId, since, limit + 1, skipped],
+        [userId, since, limit + 1, skipped, opts.defects ?? false],
       );
       return { docs: rows.slice(0, limit).map(toDoc), hasMore: rows.length > limit };
     },

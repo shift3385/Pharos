@@ -1,9 +1,10 @@
-// Planner model (spec §7). A per-project kanban whose cards are tasks, defects
-// or test data, moved across four columns.
+// Planner model (spec §7). A per-project kanban whose cards are tasks or test
+// data, moved across four columns. Defects have their own module since DEF-01
+// (ADR-0016); the planner no longer creates or shows them.
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 
-export type CardKind = "task" | "defect" | "test_data";
+export type CardKind = "task" | "test_data";
 export type CardStatus = "backlog" | "in_progress" | "in_review" | "done";
 export type CardPriority = "low" | "medium" | "high" | "critical";
 
@@ -13,7 +14,7 @@ export const CARD_STATUSES: CardStatus[] = [
   "in_review",
   "done",
 ];
-export const CARD_KINDS: CardKind[] = ["task", "defect", "test_data"];
+export const CARD_KINDS: CardKind[] = ["task", "test_data"];
 export const CARD_PRIORITIES: CardPriority[] = [
   "low",
   "medium",
@@ -24,24 +25,14 @@ export const CARD_PRIORITIES: CardPriority[] = [
 export interface CardData {
   description?: string;
   labels?: string[];
-  /** Test cases a defect is linked to (traceability matrix, TRZ-02). */
-  testCaseIds?: string[];
 }
-
-/** A test case a defect can be linked to (supplied by the projects module). */
-export interface LinkableCase {
-  id: string;
-  scenarioId: string;
-  title: string;
-}
-
-export const DEFECT_KEY_PREFIX = "DEF-";
 
 export interface PlannerCard {
   id: string;
   projectId: string;
   kind: CardKind;
-  /** Visible id of a defect (DEF-001…), numbered per project; null otherwise. */
+  /** The DEF key a card kept from before DEF-01 (a task that was once a
+   *  defect); new cards never get one. */
   cardKey?: string | null;
   title: string;
   status: CardStatus;

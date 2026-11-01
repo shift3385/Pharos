@@ -154,6 +154,16 @@ resolution can be added without a schema change.
   diagnostics count them (`heldBackCycles`). The server only sends them to
   clients with `cycles` and refuses their push without it (400
   `cycles_unsupported`); a project delete tombstones the three.
+- **Defects (DEF-01).** The client sends `defects` too: it pushes and pulls
+  `defect` and `defect_link` (lww). Until the account's server lists
+  `defects`, `oplog_pending` leaves them out (`heldBackDefects` in the
+  diagnostics). The server converts its planner defect cards in migration
+  0010, keeping their revision and HLC, so the defect a device converted on
+  its own (local migration 0029, which hands over the card's base and pending
+  rows) needs no push. A live defect card pulled from an older server is
+  converted on apply and never overwrites a newer defect. Without `defects` a
+  client pulls no defects, links or defect cards, and its push that touches
+  one is refused (400 `defects_unsupported`).
 - **Cursor reset.** `sync_cursor_get` returns `0` when the cursor was stored
   under an older set of applied entities (`cursor_set:<user_id>` ≠
   `APPLIED_SET_VERSION`): an older build moved its cursor past documents it

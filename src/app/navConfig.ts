@@ -1,4 +1,5 @@
 import {
+  Bug,
   CalendarRange,
   CircleUser,
   FileText,
@@ -43,6 +44,7 @@ export const PROJECT_NAV: { section: ProjectSection; icon: LucideIcon }[] = [
   { section: "plan", icon: FileText },
   { section: "cases", icon: ListChecks },
   { section: "cycles", icon: CalendarRange },
+  { section: "defects", icon: Bug },
   { section: "planner", icon: SquareKanban },
   { section: "traceability", icon: GitFork },
   { section: "settings", icon: SlidersHorizontal },

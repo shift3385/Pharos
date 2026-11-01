@@ -287,7 +287,9 @@
         "test_case": "Caso de prueba",
         "requirement": "Requisito",
         "planner_card": "Tarjeta del planificador",
-        "custom_field": "Campo personalizado"
+        "custom_field": "Campo personalizado",
+        "defect": "Defecto",
+        "defect_link": "Vínculo de defecto"
       },
       "fields": {
         "title": "Título",
@@ -492,9 +494,11 @@
         "cycles": "Ciclos",
         "planner": "Tablero",
         "traceability": "Trazab.",
-        "settings": "Proyecto"
+        "settings": "Proyecto",
+        "defects": "Defectos"
       }
-    }
+    },
+    "defects": "Defectos"
   },
   "projects": {
     "title": "Proyectos",
@@ -524,7 +528,8 @@
       "cycles": "Ciclos de prueba",
       "settings": "Ajustes del proyecto",
       "planner": "Planificador",
-      "traceability": "Trazabilidad"
+      "traceability": "Trazabilidad",
+      "defects": "Defectos"
     },
     "deleteTitle": "Eliminar proyecto",
     "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
@@ -1475,7 +1480,9 @@
     "deleteTitle": "¿Eliminar la tarjeta?",
     "deleteMessage": "Se elimina «{{card}}» del planificador.",
     "deleteConfirm": "Sí, eliminar",
-    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo."
+    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo.",
+    "defectsMoved": "Los defectos tienen ahora su propio módulo, con su ciclo de vida y su severidad.",
+    "openDefects": "Ir a Defectos"
   },
   "traceability": {
     "title": "Trazabilidad",
@@ -2125,6 +2132,166 @@
       "rowGone": "La fila elegida de {{key}} ya no existe en el caso. Quita ese elemento y vuelve a añadirlo.",
       "noConfigurationChosen": "Elige al menos una configuración.",
       "configurationMissing": "Las configuraciones del ciclo aún no han llegado a este equipo. Sincroniza y vuelve a intentarlo."
+    }
+  },
+  "defects": {
+    "title": "Defectos",
+    "newDefect": "Nuevo defecto",
+    "fromResult": "Desde un resultado",
+    "editDefect": "Editar defecto",
+    "back": "Volver",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "savedToast": "Defecto guardado",
+    "saveFailed": "No se pudo guardar el defecto: {{reason}}",
+    "titleRequired": "El título es obligatorio.",
+    "empty": "Aún no hay defectos en este proyecto.",
+    "noMatch": "Ningún defecto coincide con los filtros.",
+    "clearFilters": "Quitar filtros",
+    "count_one": "{{count}} defecto",
+    "count_other": "{{count}} defectos",
+    "view": {
+      "label": "Vista",
+      "list": "Lista",
+      "board": "Tablero"
+    },
+    "filter": {
+      "label": "Estado",
+      "open": "Abiertos",
+      "all": "Todos",
+      "closed": "Cerrados",
+      "search": "Buscar defectos…",
+      "searchLabel": "Buscar defectos",
+      "severity": "Severidad"
+    },
+    "column": {
+      "key": "ID",
+      "title": "Título",
+      "severity": "Severidad",
+      "priority": "Prioridad",
+      "status": "Estado",
+      "cases": "Casos",
+      "updated": "Actualizado"
+    },
+    "status": {
+      "new": "Nuevo",
+      "open": "Abierto",
+      "in_progress": "En curso",
+      "fixed": "Corregido",
+      "retest": "En retest",
+      "closed": "Cerrado",
+      "rejected": "Rechazado",
+      "deferred": "Aplazado",
+      "other": "Otros"
+    },
+    "severity": {
+      "critical": "Crítica",
+      "major": "Mayor",
+      "minor": "Menor",
+      "trivial": "Trivial"
+    },
+    "priority": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "critical": "Crítica"
+    },
+    "resolution": {
+      "label": "Resolución",
+      "none": "Elige una resolución",
+      "fixed": "Corregido",
+      "duplicate": "Duplicado",
+      "not_reproducible": "No reproducible",
+      "wont_fix": "No se corregirá",
+      "by_design": "Funciona según el diseño"
+    },
+    "board": {
+      "label": "Tablero de defectos por estado",
+      "notAllowed": "Un defecto «{{from}}» no puede pasar a «{{to}}».",
+      "moveFailed": "No se pudo cambiar el estado: {{reason}}",
+      "chooseStatus": "¿A qué estado pasa «{{title}}»?",
+      "drag": {
+        "handle": "Mover el defecto «{{defect}}»",
+        "help": "Para mover un defecto, pulsa Espacio o Intro en su asa, muévelo con las flechas entre columnas y pulsa Espacio o Intro para soltarlo. Escape cancela. Solo se admiten los cambios del ciclo de vida.",
+        "start": "Defecto «{{defect}}» seleccionado para mover.",
+        "over": "Defecto «{{defect}}» sobre la columna {{column}}.",
+        "end": "Defecto «{{defect}}» soltado en {{column}}.",
+        "cancel": "Movimiento cancelado; el defecto «{{defect}}» vuelve a su sitio."
+      }
+    },
+    "resolutionDialog": {
+      "title": "Cerrar {{key}}",
+      "rejectTitle": "Rechazar {{key}}",
+      "message": "«{{title}}» pasa a «{{status}}». Indica la resolución.",
+      "fixedInBuild": "Corregido en la build (opcional)",
+      "confirm": "Aplicar",
+      "cancel": "Cancelar"
+    },
+    "section": {
+      "details": "Detalles",
+      "reproduce": "Reproducción",
+      "found": "Dónde se encontró",
+      "links": "Vínculos",
+      "external": "Seguimiento externo",
+      "attachments": "Evidencias",
+      "custom": "Campos personalizados"
+    },
+    "field": {
+      "title": "Título",
+      "description": "Descripción",
+      "steps": "Pasos para reproducir",
+      "expected": "Resultado esperado",
+      "actual": "Resultado obtenido",
+      "severity": "Severidad",
+      "severityHint": "Impacto en el sistema. La prioridad es la urgencia del arreglo.",
+      "priority": "Prioridad",
+      "status": "Estado",
+      "foundInBuild": "Build",
+      "foundInEnvironment": "Entorno",
+      "fixedInBuild": "Corregido en la build",
+      "assignee": "Asignado a",
+      "reporter": "Reportado por",
+      "externalKey": "Clave externa",
+      "externalUrl": "Enlace externo",
+      "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llega con INT-05.",
+      "labels": "Etiquetas"
+    },
+    "links": {
+      "cases": "Casos de prueba",
+      "requirements": "Requisitos",
+      "results": "Resultados",
+      "noCases": "Este proyecto aún no tiene casos de prueba.",
+      "noRequirements": "Este proyecto aún no tiene requisitos.",
+      "noResults": "Ningún resultado vinculado.",
+      "addResult": "Vincular un resultado",
+      "remove": "Quitar el vínculo con {{label}}",
+      "afterSave": "Los resultados se vinculan una vez guardado el defecto."
+    },
+    "results": {
+      "title": "Resultados que no pasaron",
+      "pickToCreate": "Elige el intento fallido del que nace el defecto: se rellenan los pasos de la revisión ejecutada, lo obtenido, la build y el entorno, y se añaden sus evidencias.",
+      "pickToLink": "Elige el intento que quieres vincular a este defecto.",
+      "empty": "No hay resultados fallidos en los runs de este proyecto.",
+      "search": "Buscar por run, caso o test…",
+      "searchLabel": "Buscar resultados",
+      "attempt": "intento {{n}}",
+      "choose": "Elegir",
+      "close": "Cerrar"
+    },
+    "fromResultBanner": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso, y sus evidencias se añaden sin copiar los archivos.",
+    "attachAfterSave": "Guarda el defecto para poder añadir evidencias.",
+    "deleteTitle": "¿Eliminar el defecto?",
+    "deleteMessage": "Se elimina «{{defect}}» con sus vínculos. Su clave no se vuelve a usar.",
+    "deleteConfirm": "Sí, eliminar",
+    "deleteFailed": "No se pudo eliminar el defecto. Inténtalo de nuevo.",
+    "delete": "Eliminar defecto",
+    "webOnlyDesktop": "Las evidencias y los resultados están en la app de escritorio.",
+    "casesTitle_one": "{{count}} caso de prueba vinculado",
+    "casesTitle_other": "{{count}} casos de prueba vinculados",
+    "resultStatus": {
+      "failed": "Falla",
+      "blocked": "Bloqueado",
+      "other": "Otro"
     }
   }
 }

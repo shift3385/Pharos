@@ -18,7 +18,7 @@ import { hashOf, sha256Hex, type AuditEvent } from "./audit.chain";
 export const WEB_DEVICE = WEB_AUDIT_DEVICE;
 export const WEB_CHAIN_WORKSPACE = "web";
 
-export type AuditAction = "create" | "update" | "delete" | "import";
+export type AuditAction = "create" | "update" | "delete" | "import" | "link" | "unlink";
 
 /** A new web event, before it is linked. */
 export interface NewWebEvent {

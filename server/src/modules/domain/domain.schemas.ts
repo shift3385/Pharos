@@ -1,5 +1,12 @@
 import { z } from "zod";
 import { AUTOMATION_STATUSES, CASE_TYPES, FIELD_ENTITIES } from "./custom-fields";
+import {
+  DEFECT_PRIORITIES,
+  DEFECT_RESOLUTIONS,
+  DEFECT_SEVERITIES,
+  DEFECT_STATUSES,
+  LINK_TARGET_KINDS,
+} from "../sync/defects";
 
 /** Inputs of the web's domain endpoints (BASE-10). They mirror the inputs of
  *  the desktop's Tauri commands; the owner always comes from the access token,
@@ -113,6 +120,47 @@ export const plannerCardInputSchema = z.object({
   data,
 });
 
+/** What a defect links to (DEF-01, `defects.rs::LinkTarget`). */
+export const linkTargetSchema = z.object({
+  targetKind: z.enum(LINK_TARGET_KINDS),
+  targetId: text(200).min(1),
+});
+
+/** A defect as the editor sends it (`defects.rs::DefectInput`; the result
+ *  it comes from is desktop only: its evidence lives there). */
+export const defectInputSchema = z.object({
+  projectId: text(200).min(1),
+  title: text(500).trim().min(1),
+  description: text(20_000).optional(),
+  stepsToReproduce: text(20_000).optional(),
+  expected: text(20_000).nullish(),
+  actual: text(20_000).nullish(),
+  severity: z.enum(DEFECT_SEVERITIES).optional(),
+  priority: z.enum(DEFECT_PRIORITIES).optional(),
+  status: z.enum(DEFECT_STATUSES).optional(),
+  resolution: z.enum(DEFECT_RESOLUTIONS).nullish(),
+  foundInRunId: text(200).nullish(),
+  foundInBuild: text(200).nullish(),
+  foundInEnvironment: text(200).nullish(),
+  fixedInBuild: text(200).nullish(),
+  assignee: text(200).nullish(),
+  externalSystem: text(200).nullish(),
+  externalKey: text(200).nullish(),
+  externalUrl: text(2000).nullish(),
+  data,
+  links: z.array(linkTargetSchema).max(500).optional(),
+});
+
+/** The board's move (`defect_transition`). */
+export const defectTransitionSchema = z.object({
+  status: z.enum(DEFECT_STATUSES),
+  resolution: z.enum(DEFECT_RESOLUTIONS).nullish(),
+  fixedInBuild: text(200).nullish(),
+  revision: z.number().int().nonnegative().optional(),
+});
+
+export const defectLinkSchema = z.object({ target: linkTargetSchema, linked: z.boolean() });
+
 export const reorderSchema = z.object({
   status: text(50).min(1),
   ids: z.array(text(200)).max(2000),
@@ -136,3 +184,6 @@ export type RequirementInput = z.infer<typeof requirementInputSchema>;
 export type RequirementImportRow = z.infer<typeof requirementImportSchema>["rows"][number];
 export type PlannerCardInput = z.infer<typeof plannerCardInputSchema>;
 export type CustomFieldInput = z.infer<typeof customFieldInputSchema>;
+export type DefectInput = z.infer<typeof defectInputSchema>;
+export type DefectTransition = z.infer<typeof defectTransitionSchema>;
+export type LinkTargetInput = z.infer<typeof linkTargetSchema>;

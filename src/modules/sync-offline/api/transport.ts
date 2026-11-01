@@ -26,11 +26,13 @@ export const VERSION_HEADER = "x-pharos-version";
  *  the case type, automation status and `data.custom` with every case and
  *  syncs custom field definitions; the server keeps those case fields for a
  *  client without it. `cycles` (CYC-01): it syncs configurations, test
- *  cycles and their items and leases `cycle` key blocks. Inside one minor the version string does not change
+ *  cycles and their items and leases `cycle` key blocks. `defects`
+ *  (DEF-01): it syncs defects and their links, and has no planner defect
+ *  cards. Inside one minor the version string does not change
  *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 export const SYNC_FEATURES =
-  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles";
+  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };

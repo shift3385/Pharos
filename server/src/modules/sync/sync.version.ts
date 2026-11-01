@@ -67,6 +67,7 @@ export const SERVER_FEATURES = [
   "runs",
   "custom-fields",
   "cycles",
+  "defects",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not
@@ -123,6 +124,14 @@ export function understandsRuns(req: FastifyRequest): boolean {
  *  them on pull, and may not push them. */
 export function understandsCycles(req: FastifyRequest): boolean {
   return clientFeatures(req).includes("cycles");
+}
+
+/** True if the client knows defects as their own entity (DEF-01,
+ *  ADR-0016): `defect` and `defect_link`, with no planner defect cards.
+ *  Without it a client never sees them (nor the planner cards converted into
+ *  them) on pull, and its push that touches a defect card is refused. */
+export function understandsDefects(req: FastifyRequest): boolean {
+  return clientFeatures(req).includes("defects");
 }
 
 /** Features of `SERVER_FEATURES` the client did not send. */

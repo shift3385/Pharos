@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeftRight, Download, Plus, Upload } from "lucide-react";
 import { aiAvailable } from "@modules/ai";
 import { useAuth } from "@modules/auth";
-import { projectDefects } from "@modules/planner";
+import { projectDefects } from "@modules/defects";
 import { projectTraceableCases, setCaseRequirementKeys, type TraceableCase } from "@modules/test-cases";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
@@ -70,7 +70,7 @@ export function TraceabilityPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
-    const [requirements, cases, cards] = await Promise.all([
+    const [requirements, cases, defects] = await Promise.all([
       requirementApi.list(projectId, userId),
       projectTraceableCases(projectId, userId),
       projectDefects(projectId, userId),
@@ -78,12 +78,12 @@ export function TraceabilityPage({
     setData({
       requirements: requirements.sort(byKey),
       cases,
-      defects: cards.map((c) => ({
-        id: c.id,
-        cardKey: c.cardKey,
-        title: c.title,
-        status: c.status,
-        testCaseIds: c.data.testCaseIds ?? [],
+      defects: defects.map((d) => ({
+        id: d.id,
+        defectKey: d.defectKey,
+        title: d.title,
+        status: d.status,
+        testCaseIds: d.caseIds,
       })),
     });
   }

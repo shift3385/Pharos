@@ -27,7 +27,7 @@ vi.mock("@shared/ui/notify", async (actual) => ({
 const card: PlannerCard = {
   id: "k1",
   projectId: "p1",
-  kind: "defect",
+  kind: "task",
   title: "Bug",
   status: "backlog",
   priority: "medium",

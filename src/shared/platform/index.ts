@@ -35,6 +35,9 @@ export const capabilities = {
   attachments: () => isTauri(),
   userTemplates: () => isTauri(),
   revisionHistory: () => isTauri(),
+  /** Run results and creating a defect from one (DEF-01): the web reads no
+   *  results until INT-02. */
+  results: () => isTauri(),
 };
 
 /** Raised on the web for something only the desktop app can do, after the

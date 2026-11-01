@@ -38,7 +38,7 @@ impl KeyKind {
         match self {
             KeyKind::Case => ("test_cases", "scenario_id"),
             KeyKind::Requirement => ("requirements", "requirement_key"),
-            KeyKind::Defect => ("planner_cards", "card_key"),
+            KeyKind::Defect => ("defects", "defect_key"),
             KeyKind::Run => ("runs", "run_key"),
             KeyKind::Cycle => ("test_cycles", "cycle_key"),
         }
@@ -216,7 +216,10 @@ pub(crate) fn numbering(
             crate::requirement::KEY_PREFIX.to_string(),
             crate::requirement::KEY_DIGITS,
         ),
-        KeyKind::Defect => (crate::planner::DEFECT_KEY_PREFIX.to_string(), 3),
+        KeyKind::Defect => (
+            crate::defects::KEY_PREFIX.to_string(),
+            crate::defects::KEY_DIGITS,
+        ),
         KeyKind::Run => (crate::runs::KEY_PREFIX.to_string(), crate::runs::KEY_DIGITS),
         KeyKind::Cycle => (
             crate::cycles::KEY_PREFIX.to_string(),
@@ -326,7 +329,7 @@ impl KeyKind {
         let entity = match self {
             KeyKind::Case => "test_case",
             KeyKind::Requirement => "requirement",
-            KeyKind::Defect => "planner_card",
+            KeyKind::Defect => "defect",
             KeyKind::Run => "run",
             KeyKind::Cycle => crate::cycles::CYCLE,
         };

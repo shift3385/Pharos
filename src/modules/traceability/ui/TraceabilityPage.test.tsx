@@ -24,9 +24,10 @@ vi.mock("@modules/test-cases", () => ({
   setCaseRequirementKeys: vi.fn(),
   caseLink: (p: string, c: string) => `/projects/${p}/cases?case=${c}`,
 }));
-vi.mock("@modules/planner", () => ({
+vi.mock("@modules/defects", () => ({
+  isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
   projectDefects: async () => [
-    { id: "d1", cardKey: "DEF-018", title: "Doble cargo", status: "in_progress", data: { testCaseIds: ["c1"] } },
+    { id: "d1", defectKey: "DEF-018", title: "Doble cargo", status: "in_progress", caseIds: ["c1"] },
   ],
 }));
 vi.mock("@modules/ai", async (orig) => ({
