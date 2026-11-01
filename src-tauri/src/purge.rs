@@ -47,6 +47,8 @@ pub struct PurgeSummary {
     /// Runs, run items and unlinked mappings (EJE-01); a run takes its shards,
     /// results and step results with it.
     pub(crate) runs: usize,
+    /// Test cycles, their items and configurations (CYC-01).
+    pub(crate) cycles: usize,
     pub(crate) templates: usize,
 }
 
@@ -59,6 +61,7 @@ impl PurgeSummary {
             + self.planner_cards
             + self.custom_fields
             + self.runs
+            + self.cycles
             + self.templates
     }
 }
@@ -142,7 +145,7 @@ struct Child {
     dependents: &'static [&'static str],
 }
 
-const CHILDREN: [Child; 8] = [
+const CHILDREN: [Child; 11] = [
     Child {
         entity: "test_plan",
         table: "test_plans",
@@ -196,6 +199,27 @@ const CHILDREN: [Child; 8] = [
     Child {
         entity: "custom_field",
         table: "custom_fields",
+        key: None,
+        dependents: &[],
+    },
+    // A purged cycle leaves its runs with a dangling `cycle_id` (CYC-01): a
+    // run without its cycle is still valid.
+    Child {
+        entity: "test_cycle",
+        table: "test_cycles",
+        key: Some(("cycle_key", KeyKind::Cycle)),
+        dependents: &[],
+    },
+    Child {
+        entity: "test_cycle_item",
+        table: "test_cycle_items",
+        key: None,
+        dependents: &[],
+    },
+    // Only a project's cascade deletes a configuration: it goes with it.
+    Child {
+        entity: "configuration",
+        table: "configurations",
         key: None,
         dependents: &[],
     },
@@ -362,7 +386,7 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
         *n = purge_children(conn, user, days, child)?;
     }
-    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields] =
+    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields, cycles, cycle_items, configurations] =
         counts;
     Ok(PurgeSummary {
         test_plans,
@@ -371,6 +395,7 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
         planner_cards,
         custom_fields,
         runs: runs + run_items + mappings + purge_orphan_results(conn, user, days)?,
+        cycles: cycles + cycle_items + configurations,
         projects: purge_projects(conn, user, days)?,
         templates: purge_templates(conn, user, days)?,
     })

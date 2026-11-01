@@ -406,6 +406,11 @@ struct DatabaseInfo {
     /// would refuse the whole push. Absent when the database is not open.
     #[serde(skip_serializing_if = "Option::is_none")]
     held_back_runs: Option<i64>,
+    /// Configurations, test cycles and items with pending changes held back
+    /// because the server has not listed `cycles` (CYC-01). Absent when the
+    /// database is not open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    held_back_cycles: Option<i64>,
     /// Why the local database is not open; absent when it is.
     #[serde(skip_serializing_if = "Option::is_none")]
     open_error: Option<String>,
@@ -550,6 +555,7 @@ fn build_bundle(
                 .then_some("server-without-stable-steps"),
             held_back_fields: Some(crate::sync::held_back_fields(conn)?),
             held_back_runs: Some(crate::runs::held_back(conn)?),
+            held_back_cycles: Some(crate::cycles::held_back(conn)?),
             open_error: None,
             evidence,
         },
@@ -561,6 +567,7 @@ fn build_bundle(
             held_back_reason: None,
             held_back_fields: None,
             held_back_runs: None,
+            held_back_cycles: None,
             open_error: Some(redact(open_error.as_deref().unwrap_or("database not open"))),
             evidence: None,
         },

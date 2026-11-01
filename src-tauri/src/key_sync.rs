@@ -104,13 +104,18 @@ fn projects_of(conn: &Connection, user: &str) -> Result<Vec<String>, String> {
 
 /// The blocks the account's projects need: every project and kind with fewer
 /// than `LOW_WATER` numbers left. `run` blocks only from a server that lists
-/// `runs`: an older one refuses the whole request for a kind it does not know.
+/// `runs`, and `cycle` blocks only from one that lists `cycles`: an older one
+/// refuses the whole request for a kind it does not know.
 pub(crate) fn lease_requests(conn: &Connection, user: &str) -> Result<Vec<LeaseRequest>, String> {
     let runs_too = crate::sync::server_takes_runs(conn, user)?;
+    let cycles_too = crate::sync::server_takes_cycles(conn, user)?;
     let mut out = Vec::new();
     for project_id in projects_of(conn, user)? {
         for kind in KeyKind::ALL {
             if matches!(kind, KeyKind::Run) && !runs_too {
+                continue;
+            }
+            if matches!(kind, KeyKind::Cycle) && !cycles_too {
                 continue;
             }
             let (left, next) = keys::remaining(conn, kind, &project_id)?;
@@ -764,8 +769,8 @@ mod tests {
         let reqs = lease_requests(&c, U).unwrap();
         assert_eq!(
             reqs.len(),
-            4,
-            "one per kind (case, requirement, defect, run), only for the account's projects"
+            5,
+            "one per kind (case, requirement, defect, run, cycle), only for the account's projects"
         );
         assert_eq!(
             reqs[0],
