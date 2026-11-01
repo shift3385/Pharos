@@ -2,6 +2,7 @@
 // one file per type in generated/. `npm run check:contracts` fails if a file is
 // missing here.
 export type * from "./generated/AttachmentSummary";
+export type * from "./generated/AttachmentTarget";
 export type * from "./generated/Conflict";
 export type * from "./generated/ConflictSide";
 export type * from "./generated/CopySummary";
@@ -9,6 +10,7 @@ export type * from "./generated/CustomField";
 export type * from "./generated/CustomFieldInput";
 export type * from "./generated/Delta";
 export type * from "./generated/FieldOption";
+export type * from "./generated/ImportNewRun";
 export type * from "./generated/ImportSummary";
 export type * from "./generated/KeyBlock";
 export type * from "./generated/KeyConflict";
@@ -25,6 +27,10 @@ export type * from "./generated/PurgeSummary";
 export type * from "./generated/PushedDelta";
 export type * from "./generated/RejectedKey";
 export type * from "./generated/RemoteDoc";
+export type * from "./generated/ReportImportOutcome";
+export type * from "./generated/ReportImportPreview";
+export type * from "./generated/ReportImportRequest";
+export type * from "./generated/ReportImportWarning";
 export type * from "./generated/Requirement";
 export type * from "./generated/RequirementImportRow";
 export type * from "./generated/RequirementInput";
@@ -51,3 +57,4 @@ export type * from "./generated/TestPlanInput";
 export type * from "./generated/TestPlanRevisionDetail";
 export type * from "./generated/TestPlanRevisionSummary";
 export type * from "./generated/TestPlanSummary";
+export type * from "./generated/UnlinkedTest";

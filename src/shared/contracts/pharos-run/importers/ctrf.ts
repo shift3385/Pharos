@@ -152,7 +152,14 @@ export function parseCtrf(report: Ctrf): ParsedReport {
         attempt: a.attempt !== undefined && a.attempt >= 1 ? a.attempt - 1 : i,
         ...(a.duration !== undefined ? { duration: a.duration } : {}),
         startedAt: iso(a.start),
-        finishedAt: iso(a.stop),
+        // The reporter sends no times for earlier attempts: one ended, at
+        // the latest, when the final one started. Without it the derived
+        // final attempt (ADR-0013) would fall back to the import time and
+        // put the earlier attempt last.
+        finishedAt: iso(a.stop) ?? (a.start === undefined ? iso(t.start) : undefined),
+        ...(a.stop === undefined && a.start === undefined && t.start !== undefined
+          ? { attributes: { finishedAtInferred: true } }
+          : {}),
         ...(a.message ? { message: a.message } : {}),
         ...(a.trace ? { trace: a.trace } : {}),
         ...(refs.length ? { attachments: refs } : {}),

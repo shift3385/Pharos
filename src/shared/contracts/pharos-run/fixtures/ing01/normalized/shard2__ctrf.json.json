@@ -47,6 +47,10 @@
         "rawStatus": "failed",
         "attempt": 0,
         "duration": 23,
+        "finishedAt": "2026-10-27T03:53:31.597Z",
+        "attributes": {
+          "finishedAtInferred": true
+        },
         "message": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
         "trace": "AssertionError: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:8:60)\n    at C:\\work\\ing01\\.features-gen\\features\\auth.feature.spec.js:21:7",
         "attachments": [
@@ -113,6 +117,10 @@
         "rawStatus": "failed",
         "attempt": 0,
         "duration": 20,
+        "finishedAt": "2026-10-27T03:53:31.587Z",
+        "attributes": {
+          "finishedAtInferred": true
+        },
         "message": "Error: first attempt fails (flaky demo)",
         "trace": "Error: first attempt fails (flaky demo)\n    at Object.<anonymous> (C:\\work\\ing01\\steps\\steps.js:11:36)\n    at C:\\work\\ing01\\.features-gen\\features\\flaky.feature.spec.js:8:5",
         "attachments": [
