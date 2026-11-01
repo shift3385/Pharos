@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<testsuite name="Cucumber" time="0.765729003" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-27T03:53:27.102Z">
+  <testcase classname="Autenticacion" name="Login con credenciales validas" time="0.016">
+    <system-out><![CDATA[Given el usuario "qa@pharos.dev" esta registrado............................passed
+When inicia sesion con contrasena valida....................................passed
+Then ve el panel principal..................................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Autenticacion" name="Login rechazado - #1.1" time="0.018">
+    <system-out><![CDATA[When inicia sesion con "x@y" y "mala".......................................passed
+Then el resultado es "ok"...................................................passed]]></system-out>
+  </testcase>
+</testsuite>

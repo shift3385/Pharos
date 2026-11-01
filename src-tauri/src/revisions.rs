@@ -189,10 +189,26 @@ pub fn ensure_current(
             ],
         )
         .map_err(|e| e.to_string())?;
+    // Not pushed: other devices may never have it, so the link resolver
+    // (runs/link.rs) leaves it out until the same row arrives by pull. The
+    // data step of 0021 runs this before 0031 adds the column.
+    if inserted == 1 && !push && has_local_only(conn) {
+        conn.execute(
+            "UPDATE test_case_revisions SET local_only = 1 WHERE id = ?1",
+            params![id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
     if inserted == 1 && push {
         journal::record_append(conn, ENTITY, &id, author)?;
     }
     Ok(Some(id))
+}
+
+/// True once migration 0031 added `test_case_revisions.local_only`.
+fn has_local_only(conn: &Connection) -> bool {
+    conn.prepare_cached("SELECT local_only FROM test_case_revisions LIMIT 0")
+        .is_ok()
 }
 
 /// `ensure_current` for a state that is not journaled (a key the server gave
@@ -324,6 +340,19 @@ pub fn insert_if_absent(conn: &Connection, user: &str, p: &Value) -> Result<(), 
             sha,
             s("hlc"),
         ],
+    )
+    .map_err(|e| e.to_string())?;
+    // The same revision frozen on two devices (its id is its content) has two
+    // `createdAt`s; the server keeps the first one stored. Taking the
+    // server's here makes them converge, so the revision an import resolves
+    // to (`runs/link.rs`: the one current at the run's start) is the same on
+    // every device. Bookkeeping only: the content and its hash never change.
+    // It arrived from the server: every device has it now.
+    conn.execute(
+        "UPDATE test_case_revisions SET local_only = 0,
+                created_at = coalesce(?2, created_at)
+          WHERE id = ?1 AND content_sha256 IS NOT NULL",
+        params![id, s("createdAt")],
     )
     .map_err(|e| e.to_string())?;
     Ok(())

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<testsuite name="Cucumber" time="4.612681884" tests="4" skipped="1" failures="1" errors="0" timestamp="2026-10-27T03:53:27.102Z">
+  <testcase classname="Autenticacion" name="Login con credenciales validas" time="0.016">
+    <system-out><![CDATA[Given el usuario "qa@pharos.dev" esta registrado............................passed
+When inicia sesion con contrasena valida....................................passed
+Then ve el panel principal..................................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Autenticacion" name="Login rechazado - #1.1" time="0.018">
+    <system-out><![CDATA[When inicia sesion con "x@y" y "mala".......................................passed
+Then el resultado es "ok"...................................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Autenticacion" name="Login rechazado - #1.2" time="0.027">
+    <failure type="Error" message="AssertionError: Expected values to be strictly equal:&#xA;&#xA;'fallo' !== 'ok'&#xA;&#xA;   at ..\steps\steps.js:8&#xA;&#xA;   6 | Then('ve el panel principal', async ({}) => {});&#xA;   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});&#xA;>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });&#xA;     |                                                            ^&#xA;   9 | Given('la sesion esta expirada', async ({}) => {});&#xA;  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {&#xA;  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');"><![CDATA[AssertionError: Expected values to be strictly equal:
+
+'fallo' !== 'ok'
+
+   at ..\steps\steps.js:8
+
+   6 | Then('ve el panel principal', async ({}) => {});
+   7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});
+>  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });
+     |                                                            ^
+   9 | Given('la sesion esta expirada', async ({}) => {});
+  10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {
+  11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');
+
+    at Object.<anonymous> (C:\work\ing01\steps\steps.js:8:60)
+    at C:\work\ing01\.features-gen\features\auth.feature.spec.js:21:7]]></failure>
+    <system-out><![CDATA[When inicia sesion con "z@y" y "peor".......................................passed
+Then el resultado es "fallo"................................................failed]]></system-out>
+  </testcase>
+  <testcase classname="Sesion" name="Reintento de sesion expirada" time="0.016">
+    <skipped/>
+    <system-out><![CDATA[Given la sesion esta expirada...............................................passed
+Then la sesion se renueva al segundo intento................................passed]]></system-out>
+  </testcase>
+</testsuite>

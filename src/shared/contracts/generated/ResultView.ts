@@ -16,4 +16,25 @@ isFinal: boolean,
 /**
  * Its test is flaky (derived; only meaningful on the final attempt).
  */
-flaky: boolean, steps: Array<StepResult>, };
+flaky: boolean, steps: Array<StepResult>, 
+/**
+ * The link as read (`runs/link.rs`): an imported result's is derived,
+ * a manual one's is the stored one.
+ */
+effectiveRevisionId: string | null, effectiveCaseRevision: number | null, effectiveFlowId: string | null, effectiveExampleRowId: string | null, effectiveRunItemId: string | null, 
+/**
+ * The revision step id of each step, by position.
+ */
+effectiveStepIds: Array<string | null>, 
+/**
+ * Why an imported result has no case (`no-tag`, `two-case-tags`…).
+ */
+linkReason: string | null, 
+/**
+ * Its case is deleted (shown as «caso borrado»).
+ */
+caseDeleted: boolean, 
+/**
+ * Its configuration: an imported result's is derived (step 6).
+ */
+effectiveConfigurationId: string | null, };

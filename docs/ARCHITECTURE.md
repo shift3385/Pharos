@@ -353,6 +353,59 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   `createDefectFromResult` and `DefectEditor` are exported for the execution
   screen (EJE-02). The planner keeps tasks and test data only.
 
+**Result import and the unlinked tray (ING-02..05; ADR-0005, ADR-0012,
+ADR-0013; built in E4, step 9).** The section «Ejecuciones»
+(`/projects/:id/runs`, `src/modules/runs/`) lists the runs and the tray, and
+«Importar informe» runs the pipeline:
+
+- **Parsers in TypeScript** (`src/shared/contracts/pharos-run/importers/`):
+  Cucumber Messages (NDJSON, read line by line), CTRF, JUnit XML (the webview's
+  `DOMParser`, no XML dependency), Playwright JSON and Pharos Run JSON itself.
+  The format is detected by content (Cucumber JSON is refused). Each produces a
+  Pharos Run JSON document checked by `parsePharosRun`, with a `testKey` per
+  result (relative path + title path, `[n]` for a Cucumber Outline row; the
+  three Playwright reporters give the same key) and one result per attempt.
+  Parsers never link: they keep every tag. Contract tests run the sanitized
+  ING-01 samples against committed normalized snapshots
+  (`fixtures/ing01/normalized/`), the vectors of a later port (INT-01).
+- **One persister in Rust** (`src-tauri/src/runs/import.rs`, a child of
+  `runs`): `run_import_preview` (read-only, rolled back), `run_import`
+  (raw report upload + one transaction: the run if new, the shard, results
+  with steps, one `import` audit event; a new run closes unless kept open),
+  `run_import_attach` (one report attachment to its result or step result,
+  idempotent by owner and content), `unlinked_tests_list` (the tray: the keys
+  whose latest imported result has no case) and `run_counts_list` (final
+  results per run, one read for the list). **The link is never stored** for
+  an imported result (its content is the same on every device): the one
+  resolver, `runs/link.rs` (`Resolver`, set queries per project), derives it
+  for every reader (results list, tray, counts, preview, cycle progress
+  and the case of a result a defect links to); the server's twin
+  `server/src/modules/domain/resultLink.ts` does the same for the web's
+  cycle progress and defects, and both check
+  `src-tauri/tests/fixtures/link-vectors.json`. A later link wins; else a
+  tag names the live case that wears that key now, and only when none does
+  the cases that wore it before (keys of their synced revisions; two cases →
+  unlinked, a deleted case → `caseDeleted`); the configuration comes from
+  the label (`cycles::match_configuration`) and the cycle item from
+  `cycles::pick_item` (exposed for the matrix and the vectors; progress
+  places results by case, flow and row); lists skip superseded shards, a
+  read by id does not; the revision is the
+  run's item for that case/flow/row, else the synced revision current
+  at `run.started_at`, else the oldest (a pulled revision takes the
+  server's `createdAt`, so this converges); flow by scenario name, Outline
+  row by index and step ids only when the texts match the revision. Ids:
+  shard and result as above, step `UUIDv5(NS_STEP_RESULT, [result, position])`;
+  re-importing a file into its run writes nothing. Texts are cut
+  deterministically so no result document exceeds 1 MiB.
+- **Evidence.** The raw report is an attachment of the shard (`raw_report`);
+  attachments the report embeds (Messages, Playwright `body`) or names by
+  path (resolved against a folder the user picks) go to their result or step.
+  Purging a run deletes those rows too, and the evidence collection frees the
+  files.
+  None of them syncs yet (ADR-0014).
+- **Sync.** Nothing new: the import writes `run`, `run_shard`, `result` and,
+  from the tray, `unlinked_mapping`, all under the `runs` feature.
+
 **Journal and audit log (AUD-01, ADR-0015).** Every audited mutation goes
 through `src-tauri/src/journal.rs`:
 

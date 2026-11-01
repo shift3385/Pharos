@@ -1,20 +1,23 @@
 {
-  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and src/shared/contracts/pharos-run/ids.test.ts.",
+  "$comment": "Deterministic execution ids (ADR-0013, design 0.2.0 §3.3). UUIDv5 over the JCS of the parts as a JSON array. Generated with Node's uuid; checked by src-tauri/src/runs/ids.rs and src/shared/contracts/pharos-run/ids.test.ts. Shard: [run, sha256, normalizerVersion].",
   "namespaces": {
     "runShard": "3b6d1f0a-8c2e-5d47-a913-6e0f2b8c4d71",
     "result": "9a4e7c21-0b5f-5e83-b6d2-1c9a3f70e845",
-    "unlinkedMapping": "5c8f2d93-e1a4-5b06-8f37-d4b26a10c9e2"
+    "unlinkedMapping": "5c8f2d93-e1a4-5b06-8f37-d4b26a10c9e2",
+    "stepResult": "e2b74c18-6d3a-5f91-b0c5-8a1d4e6f2b37"
   },
   "shards": [
     {
       "runId": "7d3f2a9e-1b4c-4e8a-9f0d-2c6b8a1e5f30",
       "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-      "id": "24c34608-f52e-56e5-a8c6-1d2faf2b8c31"
+      "normalizerVersion": 1,
+      "id": "10728f95-0f26-5cd5-9103-05cd010165bc"
     },
     {
       "runId": "run-2",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "id": "de607cb2-0b72-561d-8eb6-049dc5be2cb7"
+      "normalizerVersion": 2,
+      "id": "a52fe7bf-6873-505a-a4b0-173abd7c141f"
     }
   ],
   "results": [
@@ -96,6 +99,23 @@
       "flowId": "",
       "rowId": "r3",
       "testKey": "manual:c1/-/r3"
+    }
+  ],
+  "stepResults": [
+    {
+      "resultId": "fb9481a0-7c0b-5497-9e08-ac0cae7cc073",
+      "position": 0,
+      "id": "50ba9528-1f55-55a3-9185-950f7245964b"
+    },
+    {
+      "resultId": "fb9481a0-7c0b-5497-9e08-ac0cae7cc073",
+      "position": 1,
+      "id": "1a9e1420-0b70-5bf4-9bc4-bfb7d78f4720"
+    },
+    {
+      "resultId": "c5c69948-b813-5143-a901-a17a4c59a766",
+      "position": 4999,
+      "id": "16e6c595-1357-5865-9e35-928566106d2a"
     }
   ]
 }

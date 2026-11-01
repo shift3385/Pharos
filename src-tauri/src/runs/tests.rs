@@ -351,7 +351,7 @@ fn a_mapping_links_results_without_touching_them() {
     let p = new_project(&c);
     let case = new_case(&c, &p, json!({}));
     let run = insert_run(&c, &run_input(&p, json!({"trigger": "import"}))).unwrap();
-    let shard = ids::shard_id(&run, "aa");
+    let shard = ids::shard_id(&run, "aa", 1);
     let rid = ids::imported_result_id(&shard, "tests/a.spec.ts::untagged", None, 0);
     let doc = json!({
         "id": rid, "projectId": p, "runId": run, "shardId": shard,
@@ -515,7 +515,7 @@ fn the_same_import_on_two_devices_leaves_one_copy() {
     let run = insert_run(&a, &run_input(&p, json!({"trigger": "import"}))).unwrap();
     pull(&b, &push(&a));
     // Both import the same file: deterministic shard and result ids.
-    let shard = ids::shard_id(&run, "ab");
+    let shard = ids::shard_id(&run, "ab", 1);
     for dev in [&a, &b] {
         let doc = json!({
             "id": shard, "projectId": p, "runId": run, "sourceFormat": "ctrf",

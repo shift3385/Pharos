@@ -180,7 +180,16 @@ const CHILDREN: [Child; 13] = [
         entity: "run",
         table: "runs",
         key: Some(("run_key", KeyKind::Run)),
+        // Its evidence first (raw reports and report attachments, ADR-0014):
+        // the rows go, and the files with the next collection.
         dependents: &[
+            "DELETE FROM attachments WHERE owner_entity = 'step_result' AND owner_id IN
+                (SELECT s.id FROM step_results s JOIN results r ON r.id = s.result_id
+                  WHERE r.run_id = ?1)",
+            "DELETE FROM attachments WHERE owner_entity = 'result'
+                AND owner_id IN (SELECT id FROM results WHERE run_id = ?1)",
+            "DELETE FROM attachments WHERE owner_entity = 'run_shard'
+                AND owner_id IN (SELECT id FROM run_shards WHERE run_id = ?1)",
             "DELETE FROM step_results WHERE result_id IN (SELECT id FROM results WHERE run_id = ?1)",
             "DELETE FROM results WHERE run_id = ?1",
             "DELETE FROM run_shards WHERE run_id = ?1",
@@ -343,9 +352,20 @@ fn purge_orphan_results(conn: &Connection, user: &str, days: i64) -> Result<usiz
         );
         for (id, _, _) in candidates(conn, &sql, user, days)? {
             if entity == "result" {
+                conn.execute(
+                    "DELETE FROM attachments WHERE owner_entity = 'step_result' AND owner_id IN
+                        (SELECT id FROM step_results WHERE result_id = ?1)",
+                    params![id],
+                )
+                .map_err(|e| e.to_string())?;
                 conn.execute("DELETE FROM step_results WHERE result_id = ?1", params![id])
                     .map_err(|e| e.to_string())?;
             }
+            conn.execute(
+                "DELETE FROM attachments WHERE owner_entity = ?1 AND owner_id = ?2",
+                params![entity, id],
+            )
+            .map_err(|e| e.to_string())?;
             conn.execute(&format!("DELETE FROM {table} WHERE id = ?1"), params![id])
                 .map_err(|e| e.to_string())?;
             forget(conn, entity, &id)?;

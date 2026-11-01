@@ -367,3 +367,173 @@ comprueban que un ciclo dado está vivo, no cerrado y es del mismo proyecto, y
 que la configuración es del proyecto (solo cuando el valor cambia: un run
 conserva el id de un ciclo borrado y purgado). «Ejecutar» un ciclo crea los
 runs con `runs::add_items`, sin cambios en su lógica.
+
+## Implementación (E4, paso 9: importadores, 2026-10-31)
+
+Los importadores de ING-02..05 están en el código: los parsers en TypeScript
+(`src/shared/contracts/pharos-run/importers/`) y un único persistente en
+`src-tauri/src/runs/import.rs`. Precisiones:
+
+- **Ids de los resultados de paso:** `UUIDv5(NS_STEP_RESULT, [result_id,
+  posición])`, con gemelo en TS y vectores compartidos (la nota de arriba).
+  Dos equipos que importan el mismo archivo en el mismo run escriben los mismos
+  documentos (lo comprueba un test que compara las cargas de dos bases).
+- **El mismo archivo como run nuevo en dos equipos da dos runs.** El id del
+  shard depende del run, y cada equipo crea el suyo. La vista previa avisa
+  («ya está en RUN-004») y el commit lo rechaza salvo que el usuario lo pida,
+  pero esa comprobación es **solo local**: no ve lo que otro equipo importó y
+  aún no se ha sincronizado. Para varios shards de una misma ejecución, se
+  importa el primero como run nuevo («dejar abierto») y los demás en ese run.
+- **El vínculo no se guarda: se deriva al leer** (ver «Vínculo derivado»,
+  abajo). Dos equipos que importan el mismo archivo en el mismo run guardan
+  siempre el mismo contenido, tengan o no el caso.
+- **Revisión:** la del elemento del run para ese caso, flujo y fila (el
+  resultado lo «cumple»); si no, la revisión sincronizada vigente en
+  `run.started_at`; si no hay ninguna anterior, la más antigua (nunca el
+  estado actual). El flujo se elige por el nombre del escenario; la fila del Outline,
+  por su índice; un `step_id`, solo si el texto coincide con el de la revisión
+  (los `<parámetros>` del Outline casan con cualquier valor).
+- **`executed_by`** de un resultado importado es `tool:<herramienta>` (o el
+  formato), igual en todos los equipos.
+- **Intentos de CTRF sin tiempos.** El reporter no da tiempos a los
+  `retryAttempts`; sin ellos el intento final derivado caería en la hora de
+  importación. El parser pone `finishedAt` = inicio del intento final, con
+  `attributes.finishedAtInferred`.
+- **Límites:** además de los del servidor (título, `test_key`, pasos), los
+  textos se recortan de forma determinista (mensaje 8 000, traza 64 000, paso
+  4 000, atributos 16 KiB) y ningún documento de resultado pasa de 1 MiB. Un
+  `test_key` de más de 2 000 caracteres conserva el principio y un hash. Dos
+  tests del mismo archivo con la misma identidad se numeran (` #2`).
+- **Configuración (paso 6):** el `configurationLabel` (proyecto de
+  Playwright, `browser` de CTRF) se guarda; la configuración y el elemento del
+  ciclo se derivan al leer (`cycles::match_configuration` y
+  `cycles::pick_item` dentro del resolvedor; ver «Vínculo derivado»).
+
+Tras la revisión independiente del paso 9 (2026-10-31):
+
+- **El shard sale solo del informe.** Es contenido inmutable del shard: la
+  interfaz lo muestra y no lo deja editar, y un índice fuera de 1..total se
+  rechaza (`invalid-shard`).
+- **Etiquetas contra las claves vivas.** Una etiqueta vincula si es un
+  `scenario_id` vivo del proyecto (clave libre o con un prefijo antiguo
+  incluidas); la expresión del prefijo solo marca las que parecen clave y no
+  lo son. La lógica del vínculo vive en `runs/link.rs`, con las expresiones
+  compiladas una vez y los pasos de cada revisión cacheados; si el informe
+  omite el Background, se compara desde el primer paso tras él.
+- **`test_key` estable entre shard e informe fusionado:** solo se quitan
+  prefijos estables (carpeta del usuario, espacios de trabajo de CI, letra de
+  unidad), nunca el directorio común del archivo.
+- **La bandeja** muestra una clave solo si su resultado importado más reciente
+  sigue sin caso: un test etiquetado después sale de ella.
+- **Purga:** borrar un run borra también los adjuntos de sus shards,
+  resultados y pasos; la recogida de evidencias libera los archivos.
+- **Re-importar en un equipo que recibió el shard** adjunta la subida como su
+  informe en bruto, así que su archivo nunca queda huérfano.
+
+#### Vínculo derivado (B1, aprobado 2026-10-31)
+
+El vínculo de un resultado **importado** dependía de los datos locales del
+equipo que importaba (un caso o una revisión aún no recibidos, un conflicto
+de clave conocido solo allí). Por eso no forma parte de su contenido:
+
+- **Lo que guarda el resultado importado** (`append_only`): solo lo que dijo el
+  informe: `testKey`, `caseKey` (si el informe lo trae), las etiquetas,
+  el nombre y la suite en `attributes`, `exampleRow`, intentos, tiempos,
+  errores y los pasos con su texto. `testCaseId`, `testCaseRevisionId`,
+  `caseRevision`, `flowId`, `exampleRowId`, `runItemId` y el `stepId` de los
+  pasos van siempre vacíos. El servidor rechaza un `result` con `shardId` que
+  los traiga (VERSIONING §6.5).
+- **Un solo resolvedor**, `runs/link.rs` (`Resolver`), lee por proyecto en
+  consultas de conjunto (casos, claves, revisiones sincronizadas, reglas de
+  enlace, runs y elementos) y deriva el vínculo de cualquier cantidad de
+  resultados: la lista de resultados, la bandeja, los recuentos, la vista
+  previa, el progreso de ciclos (`cycles::cycle_results`) y los defectos
+  (`defects::result_links`).
+- **Gemelo del servidor:** `server/src/modules/domain/resultLink.ts`, puro y
+  con índices por proyecto, aplica las mismas reglas para lo que la web lee:
+  el progreso de ciclos (`attemptOf`) y el caso de un resultado enlazado a un
+  defecto (`resultCase`). No deriva `stepId` (solo los muestra la pantalla
+  del run del escritorio) ni ve conflictos de clave (son locales). Los dos lo
+  comprueban con los mismos vectores, `src-tauri/tests/fixtures/link-vectors.json`
+  (caso renombrado, borrado, dos antiguos portadores de una clave, regla de
+  enlace, elemento del run, flujo y fila, configuración por etiqueta o
+  nombre, empate de etiqueta, elemento del ciclo exacto, regla retirada,
+  run sin inicio, revisión congelada aún no recibida, clave del caso borrado,
+  fila sin id), y los dos ignoran los shards que supera un normalizador más
+  nuevo.
+- **Reglas que los dos lados aplican igual** (revisión final del paso 9):
+  - una regla de enlace vale mientras el caso exista, vivo o borrado (no
+    purgado); el servidor lee los casos borrados (`withDeleted`) para eso y
+    para la última clave de un caso borrado. La purga es local: un equipo que
+    ya purgó el caso deja de vincular, como con cualquier dato purgado;
+  - una fila de Outline sin id conserva su posición (su resultado queda sin
+    fila) y un id vacío, de flujo o de fila, no es un id;
+  - las **listas** (progreso, candidatos para un defecto, resultados, bandeja,
+    recuentos) ignoran los shards superados; leer **un** resultado por su id
+    (el enlace de un defecto) no, porque nombra ese resultado.
+- **`cycleItemId`** (`cycles::pick_item`, `item_for`) se expone para los
+  lectores futuros (la matriz, paso 10) y lo comprueban los vectores; el
+  progreso de ciclos coloca cada resultado con su caso, flujo y fila.
+- **Caso.** Gana una regla de enlace posterior viva (`unlinked_mapping`). Si
+  no, cada etiqueta (y el `caseKey`) nombra **el caso vivo que la lleva
+  ahora** como `scenario_id`; solo si ningún caso la lleva ahora, los casos que
+  la llevaron antes (claves de sus revisiones sincronizadas y la última clave
+  de un caso borrado). Un cambio de prefijo no desvincula una importación
+  antigua, y una clave que otro caso toma después pasa a ese caso (decisión
+  del coordinador en la segunda revisión, 2026-10-31). Si las etiquetas
+  nombran **más de un caso** (dos que la llevaron antes y ninguno ahora, o
+  etiquetas de casos distintos), o un caso y una clave con forma de clave que
+  no es de nadie, queda sin vincular con aviso (`two-case-tags`): nunca se
+  adivina. Un **caso borrado** sigue
+  vinculado y se muestra como «caso borrado» (`caseDeleted`); no va a la
+  bandeja. Un caso purgado ya no existe: su resultado queda como «clave
+  desconocida». Un conflicto de clave abierto deja el resultado sin vincular
+  mientras dure, **solo en el equipo que lo tiene** (`case-key-conflict` es
+  local, como el conflicto): al resolverse, el resultado sigue a su caso.
+- **Revisión:** la congelada del elemento del run para ese caso, flujo y fila
+  (su número queda vacío hasta que esa revisión llega por pull); si no, entre
+  las revisiones que tienen todos los equipos escritas en o antes de
+  `run.started_at` (solo `started_at`, nunca la hora local de guardado), la
+  de número más alto, después la escrita más tarde y después el id; si no hay
+  ninguna, la más antigua. Una edición posterior al inicio del run nunca mueve
+  un resultado. `created_at` tiene precisión de segundos: una revisión escrita
+  en el mismo segundo en que empieza el run cuenta como anterior.
+- **Revisiones que no ven los demás:** una fila escrita sin push
+  (`ensure_current(.., push = false)`: el estado que trajo un pull o una clave
+  provisional con conflicto abierto) queda marcada `local_only` (migración
+  0031) y el resolvedor no la usa, ni su clave, hasta que la misma fila llega
+  por pull.
+- **Configuración:** el `configuration_id` de un resultado importado también se
+  deriva (de su `configurationLabel`, con los ganchos del paso 6 dentro del
+  resolvedor), nunca se guarda; el servidor lo rechaza en un resultado con
+  `shardId`. En el progreso de ciclos gana la configuración del run; si no
+  tiene, la de la etiqueta. El **elemento del ciclo** del run se deriva con la
+  misma regla que `cycles::item_for` (caso + flujo + fila, luego flujo, luego
+  el caso): `cycles::pick_item`, sobre los elementos leídos una vez.
+- **Versión del normalizador:** el shard lleva `normalizerVersion` (la de los
+  parsers TS) en su contenido y en su id,
+  `UUIDv5([run, sha256, normalizerVersion])`. Dos equipos con el mismo build
+  convergen; dos builds distintos dan dos shards, nunca un `appendRejected`.
+  Los lectores ignoran los resultados de un shard si el mismo run tiene el
+  mismo archivo leído por una versión mayor. **Todo cambio en lo que produce un
+  parser sube `NORMALIZER_VERSION`** (VERSIONING §6.5).
+- **Orden de la bandeja:** el resultado «más reciente» de cada `test_key` es el
+  de hora del informe (si no, inicio del run) más tardía: lo mismo en todos
+  los equipos. **Empates** (dos shards de un run sin horas propias): la clave
+  sale de la bandeja si alguno de los resultados empatados nombra un caso,
+  nunca por el orden de sus ids; el id solo elige qué fila se muestra.
+- **`createdAt` de las revisiones converge:** la misma revisión congelada en
+  dos equipos (su id es su contenido) toma, al recibirse, el `createdAt` del
+  servidor, que guarda el primero. Solo filas de revisión con id por
+  contenido.
+- **Lectura:** `ResultView` lleva `effectiveTestCaseId`, `effectiveRevisionId`,
+  `effectiveCaseRevision`, `effectiveFlowId`, `effectiveExampleRowId`,
+  `effectiveRunItemId`, `effectiveStepIds`, `linkReason` y `caseDeleted`. El
+  vínculo puede cambiar tras un pull (converge), nunca por una edición
+  posterior.
+- **Los resultados manuales** (paso 7, sin `shardId`) no cambian: su vínculo
+  es parte de su contenido, como se escribió; sus `effective*` son los
+  guardados.
+- **Rendimiento:** 20 000 resultados se resuelven en consultas de conjunto
+  (test con un proyecto de 200 casos). De paso, `flaky_tests` pasa a ser
+  lineal y `results_list` lee los pasos de un run en una consulta.

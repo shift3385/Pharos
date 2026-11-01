@@ -19,6 +19,7 @@ import { PlannerBoard } from "@modules/planner";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { TraceabilityPage, requirementApi } from "@modules/traceability";
+import { RunsPage } from "@modules/runs";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import { recordProjectAccess } from "../model/lastAccess";
@@ -77,7 +78,7 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
 
   useEffect(() => {
     let live = true;
-    if (tab === "defects") {
+    if (tab === "defects" || tab === "runs") {
       void projectTraceableCases(projectId, ownerId).then((list) => {
         if (live) setLinkableCases(list.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title })));
       });
@@ -143,6 +144,12 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
             userId={ownerId}
             cases={linkableCases}
             requirements={linkableRequirements}
+          />
+        )}
+        {tab === "runs" && (
+          <RunsPage
+            projectId={projectId}
+            cases={linkableCases.map((c) => ({ id: c.id, scenarioId: c.key, title: c.title }))}
           />
         )}
         {tab === "planner" && <PlannerBoard projectId={projectId} ownerId={ownerId} />}

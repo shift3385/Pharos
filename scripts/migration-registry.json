@@ -13,6 +13,8 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {},
-    "retired": {}
+    "retired": {
+      "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities"
+    }
   }
 }

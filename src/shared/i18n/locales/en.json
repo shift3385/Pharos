@@ -495,7 +495,8 @@
         "planner": "Board",
         "traceability": "Trace",
         "settings": "Project",
-        "defects": "Defects"
+        "defects": "Defects",
+        "runs": "Runs"
       }
     },
     "defects": "Defects"
@@ -529,7 +530,8 @@
       "settings": "Project settings",
       "planner": "Planner",
       "traceability": "Traceability",
-      "defects": "Defects"
+      "defects": "Defects",
+      "runs": "Runs"
     },
     "deleteTitle": "Delete project",
     "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
@@ -2292,6 +2294,180 @@
       "failed": "Failed",
       "blocked": "Blocked",
       "other": "Other"
+    }
+  },
+  "runs": {
+    "tabs": {
+      "runs": "Runs",
+      "unlinked": "Unlinked",
+      "unlinkedBadge": "{{count}} unlinked tests"
+    },
+    "list": {
+      "key": "Key",
+      "title": "Run",
+      "status": "Status",
+      "results": "Results",
+      "started": "Started",
+      "origin": "Origin of the runs",
+      "all": "All",
+      "imported": "Imported",
+      "empty": "No runs yet. Import a report with “Import report”.",
+      "build": "build {{build}}",
+      "unlinked_one": "{{count}} unlinked",
+      "unlinked_other": "{{count}} unlinked",
+      "countsSr": "{{passed}} passed, {{failed}} failed, {{other}} other",
+      "loadError": "The runs could not be loaded.",
+      "retry": "Retry"
+    },
+    "trigger": {
+      "manual": "Manual",
+      "local": "Local",
+      "agent": "Agent",
+      "ci": "CI",
+      "cloud": "Cloud",
+      "import": "Imported"
+    },
+    "runStatus": {
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "aborted": "Aborted"
+    },
+    "status": {
+      "passed": "Passed",
+      "failed": "Failed",
+      "blocked": "Blocked",
+      "skipped": "Skipped",
+      "pending": "Pending",
+      "other": "Other"
+    },
+    "format": {
+      "cucumber_messages": "Cucumber Messages",
+      "ctrf": "CTRF",
+      "junit": "JUnit XML",
+      "playwright_json": "Playwright JSON",
+      "pharos_run_json": "Pharos Run JSON"
+    },
+    "field": {
+      "title": "Run title",
+      "environment": "Environment",
+      "build": "Build",
+      "commit": "Commit",
+      "branch": "Branch"
+    },
+    "import": {
+      "open": "Import report",
+      "title": "Import a test report",
+      "intro": "Cucumber Messages (NDJSON), CTRF, JUnit XML, Playwright JSON or Pharos Run JSON. Tests tagged with a case ID (@TC-001) link to that case; the rest go to “Unlinked”.",
+      "file": "Report",
+      "fileHint": "The format is detected from the content. Up to 200 MB (50 MB for JSON or XML).",
+      "reading": "Reading the report…",
+      "parsed_one": "{{count}} result",
+      "parsed_other": "{{count}} results",
+      "folder": "Attachments folder (optional)",
+      "folderHint": "The report names screenshots, videos or traces by path. Pick the folder that holds them (e.g. test-results) to store them as evidence.",
+      "target": "Target",
+      "newRun": "New run",
+      "existingRun": "Open run",
+      "noOpenRuns": "No runs in progress in this project",
+      "run": "Run",
+      "keepOpen": "Keep the run open to import more shards",
+      "preview": "Preview",
+      "previewSummary": "{{tests}} tests, {{results}} attempts: {{linked}} link to a case and {{unlinked}} stay unlinked.",
+      "attachments_one": "{{count}} attachment",
+      "attachments_other": "{{count}} attachments",
+      "warnings_one": "{{count}} warning",
+      "warnings_other": "{{count}} warnings",
+      "moreWarnings_one": "and {{count}} more warning",
+      "moreWarnings_other": "and {{count}} more warnings",
+      "alreadyInRun": "This file is already in {{run}}: nothing will be written. You can complete any missing attachments.",
+      "duplicate": "This file was already imported in {{run}}. Import it again as a new run",
+      "confirm": "Import",
+      "completeAttachments": "Complete attachments",
+      "importing": "Importing…",
+      "attaching": "Storing attachments: {{done}} of {{total}}…",
+      "done": {
+        "summary_one": "{{run}}: {{count}} result imported, {{unlinked}} unlinked.",
+        "summary_other": "{{run}}: {{count}} results imported, {{unlinked}} unlinked.",
+        "already": "The file was already in {{run}}: nothing was duplicated.",
+        "attached_one": "{{count}} attachment stored as evidence.",
+        "attached_other": "{{count}} attachments stored as evidence.",
+        "missing_one": "{{count}} attachment was not found in the chosen folder.",
+        "missing_other": "{{count}} attachments were not found in the chosen folder.",
+        "failed_one": "{{count}} attachment could not be stored.",
+        "failed_other": "{{count}} attachments could not be stored."
+      },
+      "warning": {
+        "two-case-tags": "Two case tags ({{detail}}): left unlinked.",
+        "unknown-case": "Tag {{detail}} is not a case of this project: left unlinked.",
+        "case-key-conflict": "Case {{detail}} has an open key conflict: left unlinked.",
+        "row-not-found": "Outline row {{detail}} is not in the case revision.",
+        "duplicate-test": "Two tests with the same identity: the repeat is numbered.",
+        "key-too-long": "Test identity too long: shortened.",
+        "text-truncated": "Messages or steps too long: cut.",
+        "result-too-large": "Result too large to sync: not imported.",
+        "merged-without-shard": "Merged report (merge-reports): it lost its shard and its duration is unreliable. Prefer importing each shard's report.",
+        "no-results": "The report has no results.",
+        "attachment-url": "{{detail}} attachments are URLs: they are not downloaded.",
+        "no-revision": "Case {{detail}} has no revision: left unlinked."
+      },
+      "error": {
+        "unknown-format": "The file format is not recognized.",
+        "cucumber-json": "This is Cucumber JSON, which is not imported. Use Cucumber Messages (--format message): it keeps retries and rows.",
+        "invalid-json": "The file is not valid JSON.",
+        "invalid-xml": "The file is not valid XML.",
+        "invalid-pharos-run": "The Pharos Run JSON is not valid.",
+        "too-large": "The report is too large.",
+        "unsupported-version": "Unsupported Pharos Run JSON version: update Pharos.",
+        "invalid-report": "The report does not have the expected shape.",
+        "steps-too-many": "A result has more than 5000 steps.",
+        "already-imported": "This file was already imported in {{detail}}.",
+        "run-closed": "The run is closed: pick one in progress or create a new one.",
+        "report-changed": "The file changed while importing. Pick it again.",
+        "evidence-too-large": "The file is larger than 200 MB.",
+        "generic": "Could not import: {{detail}}",
+        "project-not-found": "The project does not exist or is not yours.",
+        "test-key-required": "A result has no test identity ({{detail}}).",
+        "invalid-sha256": "The file's fingerprint is not valid. Pick it again.",
+        "invalid-shard": "The report has an inconsistent shard: the index must be between 1 and the total.",
+        "invalid-target": "Pick a new run or an open one."
+      },
+      "shard": "Shard {{index}} of {{total}} (from the report)."
+    },
+    "tray": {
+      "title": "Unlinked tests",
+      "intro": "Imported tests with no case of their own. Linking one makes all its past and future results count for that case; the results themselves do not change.",
+      "filter": "Show",
+      "filterUnlinked": "Unlinked",
+      "filterMapped": "Linked by hand",
+      "filterAll": "All",
+      "test": "Test",
+      "why": "Reason",
+      "lastStatus": "Last status",
+      "results": "Results",
+      "lastRun": "Last run",
+      "actions": "Actions",
+      "linkAction": "Link…",
+      "unlink": "Unlink",
+      "mappedTo": "Linked to {{key}}",
+      "linkTitle": "Link to a case",
+      "search": "Search a case by key or title",
+      "cases": "Cases of the project",
+      "noCases": "No case matches.",
+      "link": "Link",
+      "linkedToast": "Test linked: its results count for the case.",
+      "unlinkedToast": "Link removed.",
+      "reason": {
+        "no-tag": "No case tag",
+        "two-case-tags": "Two case tags",
+        "unknown-case": "{{key}} is not a case of the project",
+        "case-key-conflict": "Case with a key conflict"
+      },
+      "empty": {
+        "unlinked": "No unlinked tests.",
+        "mapped": "No test linked by hand.",
+        "all": "No imported test without a case."
+      },
+      "linkError": "The link could not be saved. Try again."
     }
   }
 }

@@ -1,0 +1,172 @@
+{
+  "$comment": "The derived link of imported results (ADR-0013 «Vínculo derivado»): one project's synced data and the link each result must resolve to. Checked by src-tauri/src/runs/link.rs (Resolver) and by the server's twin server/src/modules/domain/resultLink.ts. Times are UTC; a revision's createdAt is the server's (first stored).",
+  "project": { "id": "p1", "caseIdPrefix": "TC-" },
+  "cases": [
+    { "id": "c1", "scenarioId": "TC-001", "deleted": false },
+    { "id": "c2", "scenarioId": "ATS_002", "deleted": false },
+    { "id": "c3", "scenarioId": "TC-003", "deleted": true },
+    { "id": "c4", "scenarioId": "TC-004", "deleted": false },
+    { "id": "c5", "scenarioId": "ATS_005", "deleted": false },
+    { "id": "c6", "scenarioId": "ATS_006", "deleted": false },
+    { "id": "c7", "scenarioId": "TC-007", "deleted": false },
+    { "id": "c8", "scenarioId": "TC-008", "deleted": true }
+  ],
+  "revisions": [
+    { "id": "r1a", "testCaseId": "c1", "revision": 1, "createdAt": "2026-10-01 09:00:00", "scenarioId": "TC-001", "data": {} },
+    { "id": "r1b", "testCaseId": "c1", "revision": 2, "createdAt": "2026-10-10 09:00:00", "scenarioId": "TC-001", "data": {} },
+    { "id": "r2a", "testCaseId": "c2", "revision": 1, "createdAt": "2026-10-01 09:00:00", "scenarioId": "TC-002", "data": {} },
+    { "id": "r2b", "testCaseId": "c2", "revision": 2, "createdAt": "2026-10-02 09:00:00", "scenarioId": "ATS_002", "data": {} },
+    { "id": "r3a", "testCaseId": "c3", "revision": 1, "createdAt": "2026-10-01 09:00:00", "scenarioId": "TC-003", "data": {} },
+    {
+      "id": "r4a",
+      "testCaseId": "c4",
+      "revision": 1,
+      "createdAt": "2026-10-01 09:00:00",
+      "scenarioId": "TC-004",
+      "data": {
+        "flows": [
+          { "id": "f1", "name": "Pago ok", "steps": [], "examples": { "headers": ["n"], "rows": [{ "id": "row-a" }, { "id": "row-b" }, {}] } },
+          { "id": "f2", "name": "Pago rechazado", "steps": [] },
+          { "id": "", "name": "Sin id", "steps": [] }
+        ]
+      }
+    },
+    { "id": "r5a", "testCaseId": "c5", "revision": 1, "createdAt": "2026-09-01 09:00:00", "scenarioId": "TC-009", "data": {} },
+    { "id": "r5b", "testCaseId": "c5", "revision": 2, "createdAt": "2026-09-02 09:00:00", "scenarioId": "ATS_005", "data": {} },
+    { "id": "r6a", "testCaseId": "c6", "revision": 1, "createdAt": "2026-09-03 09:00:00", "scenarioId": "TC-009", "data": {} },
+    { "id": "r6b", "testCaseId": "c6", "revision": 2, "createdAt": "2026-09-04 09:00:00", "scenarioId": "ATS_006", "data": {} },
+    { "id": "r7a", "testCaseId": "c7", "revision": 1, "createdAt": "2026-11-01 09:00:00", "scenarioId": "TC-007", "data": {} },
+    { "id": "r8a", "testCaseId": "c8", "revision": 1, "createdAt": "2026-10-01 09:00:00", "scenarioId": "TC-080", "data": {} }
+  ],
+  "mappings": [
+    { "testKey": "mapped::x", "testCaseId": "c2" },
+    { "testKey": "retired::x", "testCaseId": null },
+    { "testKey": "mapped::deleted", "testCaseId": "c3" }
+  ],
+  "runs": [
+    { "id": "run1", "startedAt": "2026-10-05T00:00:00Z", "cycleId": "cy1" },
+    { "id": "run2", "startedAt": "2026-10-20T00:00:00Z", "cycleId": null },
+    { "id": "run3", "startedAt": null, "cycleId": null }
+  ],
+  "shards": [
+    { "id": "s1", "runId": "run1", "sourceFileSha256": "abc", "normalizerVersion": 1 },
+    { "id": "s2", "runId": "run1", "sourceFileSha256": "abc", "normalizerVersion": 2 },
+    { "id": "s3", "runId": "run1", "sourceFileSha256": "def", "normalizerVersion": 1 }
+  ],
+  "supersededShards": ["s1"],
+  "runItems": [
+    { "id": "i1", "runId": "run2", "testCaseId": "c1", "revisionId": "r1a", "flowId": null, "exampleRowId": null },
+    { "id": "i2", "runId": "run2", "testCaseId": "c6", "revisionId": "r6-frozen", "flowId": null, "exampleRowId": null }
+  ],
+  "configurations": [
+    { "id": "cfg1", "name": "Chrome", "matchLabels": ["chromium"], "archived": false },
+    { "id": "cfg2", "name": "Firefox", "matchLabels": ["firefox"], "archived": true },
+    { "id": "cfg3", "name": "WebKit", "matchLabels": [], "archived": false },
+    { "id": "cfg4", "name": "Edge A", "matchLabels": ["edge"], "archived": false },
+    { "id": "cfg5", "name": "Edge B", "matchLabels": ["edge"], "archived": false },
+    { "id": "cfg6", "name": "Safari", "matchLabels": [], "archived": false },
+    { "id": "cfg7", "name": "Apple", "matchLabels": ["safari"], "archived": false }
+  ],
+  "cycleItems": [
+    { "id": "cyi1", "cycleId": "cy1", "testCaseId": "c4", "flowId": "f1", "exampleRowId": null },
+    { "id": "cyi2", "cycleId": "cy1", "testCaseId": "c1", "flowId": null, "exampleRowId": null },
+    { "id": "cyi3", "cycleId": "cy1", "testCaseId": "c4", "flowId": "f1", "exampleRowId": "row-a" }
+  ],
+  "results": [
+    {
+      "id": "x1", "runId": "run1", "testKey": "a::x1", "tags": ["@TC-001"], "configurationLabel": "Chromium",
+      "expect": { "caseId": "c1", "revisionId": "r1a", "caseRevision": 1, "configurationId": "cfg1", "cycleItemId": "cyi2", "reason": null, "caseDeleted": false }
+    },
+    {
+      "id": "x2", "runId": "run2", "testKey": "a::x2", "tags": ["TC-001"],
+      "expect": { "caseId": "c1", "revisionId": "r1a", "caseRevision": 1, "runItemId": "i1", "reason": null }
+    },
+    {
+      "id": "x2b", "runId": "run2", "testKey": "a::x2b", "tags": ["@TC-002"],
+      "expect": { "caseId": "c2", "revisionId": "r2b", "caseRevision": 2, "reason": null }
+    },
+    {
+      "id": "x3", "runId": "run1", "testKey": "a::x3", "tags": ["@TC-003"],
+      "expect": { "caseId": "c3", "revisionId": "r3a", "caseDeleted": true, "reason": null }
+    },
+    {
+      "id": "x5", "runId": "run1", "testKey": "a::x5", "tags": ["@TC-009"],
+      "expect": { "caseId": null, "reason": "two-case-tags" }
+    },
+    {
+      "id": "x6", "runId": "run1", "testKey": "a::x6", "tags": ["@TC-404", "@smoke"],
+      "expect": { "caseId": null, "reason": "unknown-case", "caseKey": "TC-404" }
+    },
+    {
+      "id": "x7", "runId": "run1", "testKey": "a::x7", "tags": ["@smoke"], "configurationLabel": "firefox",
+      "expect": { "caseId": null, "reason": "no-tag", "configurationId": null }
+    },
+    {
+      "id": "x8", "runId": "run1", "testKey": "mapped::x", "tags": ["@TC-001"],
+      "expect": { "caseId": "c2", "revisionId": "r2b", "reason": null }
+    },
+    {
+      "id": "x9", "runId": "run1", "testKey": "a::x9", "tags": ["@TC-004"], "name": "Example #2",
+      "suite": ["features/pay.feature", "Pago ok"], "exampleRow": 1, "configurationLabel": "webkit",
+      "expect": { "caseId": "c4", "revisionId": "r4a", "flowId": "f1", "exampleRowId": "row-b", "configurationId": "cfg3", "cycleItemId": "cyi1", "reason": null }
+    },
+    {
+      "id": "x9b", "runId": "run1", "testKey": "a::x9b", "tags": ["@TC-004"], "name": "Pago rechazado", "exampleRow": 5,
+      "expect": { "caseId": "c4", "flowId": "f2", "exampleRowId": null, "cycleItemId": null, "reason": null }
+    },
+    {
+      "id": "x10", "runId": "run1", "testKey": "a::x10", "tags": ["@TC-007"],
+      "expect": { "caseId": "c7", "revisionId": "r7a", "caseRevision": 1, "reason": null }
+    },
+    {
+      "id": "x11", "runId": "run1", "testKey": "a::x11", "tags": ["@TC-001", "@ATS_002"],
+      "expect": { "caseId": null, "reason": "two-case-tags" }
+    },
+    {
+      "id": "x12", "runId": "run1", "testKey": "a::x12", "tags": [], "caseKey": "TC-001",
+      "expect": { "caseId": "c1", "revisionId": "r1a", "reason": null }
+    },
+    {
+      "id": "x13", "runId": "run1", "testKey": "a::x13", "tags": ["@TC-008"], "$comment": "a deleted case's last key, in no revision",
+      "expect": { "caseId": "c8", "revisionId": "r8a", "caseDeleted": true, "reason": null }
+    },
+    {
+      "id": "x14", "runId": "run1", "testKey": "mapped::deleted", "tags": [], "$comment": "a mapping to a deleted (not purged) case still links",
+      "expect": { "caseId": "c3", "caseDeleted": true, "reason": null }
+    },
+    {
+      "id": "x15", "runId": "run1", "testKey": "retired::x", "tags": ["@TC-001"], "$comment": "a mapping retired with a null case: the tags decide",
+      "expect": { "caseId": "c1", "reason": null }
+    },
+    {
+      "id": "x16", "runId": "run3", "testKey": "a::x16", "tags": ["@TC-001"], "$comment": "a run without startedAt: the oldest revision",
+      "expect": { "caseId": "c1", "revisionId": "r1a", "caseRevision": 1, "reason": null }
+    },
+    {
+      "id": "x17", "runId": "run2", "testKey": "a::x17", "tags": ["@ATS_006"], "$comment": "the run item's frozen revision is not pulled yet",
+      "expect": { "caseId": "c6", "revisionId": "r6-frozen", "caseRevision": null, "runItemId": "i2", "reason": null }
+    },
+    {
+      "id": "x18", "runId": "run1", "testKey": "a::x18", "tags": [], "configurationLabel": "edge", "$comment": "two configurations with one label: the smallest id",
+      "expect": { "caseId": null, "reason": "no-tag", "configurationId": "cfg4" }
+    },
+    {
+      "id": "x19", "runId": "run1", "testKey": "a::x19", "tags": [], "configurationLabel": " Safari ", "$comment": "a match label beats a name",
+      "expect": { "configurationId": "cfg7" }
+    },
+    {
+      "id": "x20", "runId": "run1", "testKey": "a::x20", "tags": ["@TC-004"], "name": "Example #1",
+      "suite": ["features/pay.feature", "Pago ok"], "exampleRow": 0, "$comment": "an exact (flow, row) cycle item",
+      "expect": { "flowId": "f1", "exampleRowId": "row-a", "cycleItemId": "cyi3" }
+    },
+    {
+      "id": "x21", "runId": "run1", "testKey": "a::x21", "tags": ["@TC-004"], "name": "Example #3",
+      "suite": ["features/pay.feature", "Pago ok"], "exampleRow": 2, "$comment": "an Outline row without an id keeps its position",
+      "expect": { "flowId": "f1", "exampleRowId": null, "cycleItemId": "cyi1" }
+    },
+    {
+      "id": "x22", "runId": "run1", "testKey": "a::x22", "tags": ["@TC-004"], "name": "Sin id", "$comment": "a flow with an empty id is no flow",
+      "expect": { "caseId": "c4", "flowId": null, "cycleItemId": null }
+    }
+  ]
+}

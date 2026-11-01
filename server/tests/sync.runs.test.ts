@@ -90,7 +90,7 @@ const result = (id = "res1", over: Record<string, unknown> = {}) =>
     status: "passed",
     attempt: 0,
     attributes: {},
-    steps: [{ id: "st1", position: 0, stepId: "A1", text: "open", status: "passed" }],
+    steps: [{ id: "st1", position: 0, text: "open", status: "passed" }],
     createdBy: "u",
     createdAt: "2026-10-31 10:00:00",
     hlc: H(201),
@@ -144,7 +144,7 @@ describe("execution entities (runs feature)", () => {
     const changed = await push(h, [result("res1", { status: "failed" })]);
     expect(changed.json().appendRejected).toEqual([{ entity: "result", entityId: "res1", reason: "content_changed" }]);
     const steps = await push(h, [
-      result("res1", { steps: [{ id: "st1", position: 0, stepId: "A1", text: "open", status: "failed" }] }),
+      result("res1", { steps: [{ id: "st1", position: 0, text: "open", status: "failed" }] }),
     ]);
     expect(steps.json().appendRejected).toHaveLength(1);
     const stored = await pool.query("SELECT payload FROM documents WHERE entity = 'result'");
@@ -158,6 +158,11 @@ describe("execution entities (runs feature)", () => {
       result("x", { testKey: "" }),
       result("x", { attempt: -1 }),
       result("x", { steps: [{ text: "a", status: "ok" }] }),
+      // An imported result carries no link: it is derived (B1).
+      result("x", { shardId: "s1", testCaseId: "c1" }),
+      result("x", { shardId: "s1", configurationId: "cfg1" }),
+      shard("x", { normalizerVersion: -1 }),
+      result("x", { shardId: "s1", steps: [{ text: "a", status: "passed", stepId: "A1" }] }),
       shard("x", { sourceFileSha256: "nope" }),
       run("x", { status: "done" }),
       lww("run_item", "x", { projectId: "p1", runId: "r1" }),
@@ -166,6 +171,15 @@ describe("execution entities (runs feature)", () => {
       expect(res.statusCode, JSON.stringify(bad.payload)).toBe(400);
     }
     expect((await pool.query("SELECT count(*)::int AS n FROM documents")).rows[0].n).toBe(0);
+    // A manual result (no shard) keeps its link in its content.
+    const manual = result("m1", {
+      shardId: null,
+      runItemId: "i1",
+      testCaseId: "c1",
+      steps: [{ id: "st9", position: 0, stepId: "A1", text: "open", status: "passed" }],
+    });
+    expect((await push(h, [manual])).statusCode).toBe(200);
+    await pool.query("DELETE FROM documents");
     // A tombstone carries no payload to check.
     expect((await push(h, [lww("run", "r9", {}, { op: "delete" })])).statusCode).toBe(200);
   });

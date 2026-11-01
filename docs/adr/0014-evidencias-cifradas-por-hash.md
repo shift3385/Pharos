@@ -264,3 +264,22 @@ sobre lo decidido, sin cambiar la decisión:
   después que estas. Una BD que ya tenga 0022–0023 las aplicará después de
   0023, así que no deben tocar `planner_attachments`. Sus borradores no lo
   hacen (comprobado el 2026-10-31).
+
+## Implementación (E4, paso 9: importadores, 2026-10-31)
+
+- **Informe en bruto:** cada importación sube el archivo del informe por el
+  mismo canal por trozos (`evidence_upload_*`) y lo guarda como adjunto del
+  shard (`owner_entity = run_shard`, `kind = raw_report`, retención de 90
+  días). Su sha256 es el `source_file_sha256` del shard; si no coincide con el
+  que leyó la interfaz, la importación se rechaza. `source_attachment_id` del
+  shard queda NULL: forma parte del contenido inmutable que se sincroniza y
+  los adjuntos aún son locales.
+- **Adjuntos del informe:** los que el informe incluye (Messages en base64,
+  `body` de Playwright) o nombra por ruta (CTRF, Playwright, JUnit; se buscan
+  en una carpeta que elige el usuario) se guardan después de importar, uno a
+  uno (`run_import_attach`, idempotente por propietario y contenido), como
+  adjuntos de su resultado o de su paso (`result`, `step_result`), con un
+  evento `link` de auditoría por adjunto nuevo, como en el planificador. Al
+  purgar un run se borran también estas filas y el informe en bruto, y la
+  recogida libera sus archivos. Pharos
+  nunca lee una ruta del informe por su cuenta.

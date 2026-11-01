@@ -556,6 +556,83 @@ fn progress_is_the_latest_final_result_per_item_and_configuration() {
     assert_eq!((listed[0].items, listed[0].runs), (2, 2));
 }
 
+/// The twin of the server's `cycles.test.ts` (imported results in progress).
+#[test]
+fn an_imported_result_gets_its_case_and_configuration_derived_and_a_superseded_shard_is_left_out() {
+    let c = device();
+    let (p, case, chrome, firefox, cycle) = setup(&c);
+    let key: String = c
+        .query_row(
+            "SELECT scenario_id FROM test_cases WHERE id = ?1",
+            params![case],
+            |r| r.get(0),
+        )
+        .unwrap();
+    // An imported run of the cycle with no configuration: the result's label
+    // names it, and its tag names the case (neither is stored in the result).
+    let run = execute(&c, &cycle, &exec(Some(vec![chrome.clone()])))
+        .unwrap()
+        .run_ids
+        .remove(0);
+    c.execute(
+        "UPDATE runs SET configuration_id = NULL WHERE id = ?1",
+        params![run],
+    )
+    .unwrap();
+    for (id, version) in [("s1", 1), ("s2", 2)] {
+        c.execute(
+            "INSERT INTO run_shards (id, workspace_id, project_id, run_id, source_format,
+                    source_file_sha256, imported_by, imported_at, hlc, normalizer_version)
+             VALUES (?1, 'w', ?2, ?3, 'ctrf', 'abc', ?4, '2026-10-01 10:00:00', 'h', ?5)",
+            params![id, p, run, U, version],
+        )
+        .unwrap();
+    }
+    // The old normalizer's result is later: it would win if it were read.
+    for (id, shard, status, finished) in [
+        ("x1", "s1", "failed", "2026-10-01T11:00:00Z"),
+        ("x2", "s2", "passed", "2026-10-01T10:00:00Z"),
+    ] {
+        c.execute(
+            "INSERT INTO results (id, workspace_id, project_id, run_id, shard_id, test_key,
+                    configuration_label, attempt, status, finished_at, executed_by, attributes,
+                    created_by, created_at, hlc)
+             VALUES (?1, 'w', ?2, ?3, ?4, 'pay.spec.ts::pays', 'Chromium', 0, ?5, ?6,
+                     'tool:ctrf', ?7, ?8, '2026-10-01 12:00:00', 'h')",
+            params![
+                id,
+                p,
+                run,
+                shard,
+                status,
+                finished,
+                json!({"tags": [format!("@{key}")]}).to_string(),
+                U
+            ],
+        )
+        .unwrap();
+    }
+    let progress = cycle_progress(&c, &cycle, U).unwrap().unwrap();
+    let cell = |cfg: &str| {
+        progress
+            .cells
+            .iter()
+            .find(|x| x.configuration_id.as_deref() == Some(cfg))
+            .unwrap()
+    };
+    assert_eq!(
+        (
+            cell(&chrome).status.as_str(),
+            cell(&chrome).result_id.as_deref()
+        ),
+        ("passed", Some("x2"))
+    );
+    assert_eq!(cell(&firefox).status, "not_run");
+    // The list reads it the same way, with one resolver for every cycle.
+    let listed = list_cycles(&c, &p, U).unwrap();
+    assert_eq!(listed[0].progress, progress.summary);
+}
+
 #[test]
 fn import_hooks_find_the_configuration_and_the_most_specific_item() {
     let c = device();

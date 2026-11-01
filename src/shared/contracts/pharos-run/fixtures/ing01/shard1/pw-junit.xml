@@ -1,0 +1,8 @@
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="0.7657289999999999">
+<testsuite name="features\auth.feature.spec.js" timestamp="2026-10-27T03:53:27.133Z" hostname="" tests="2" failures="0" skipped="0" time="0.034" errors="0">
+<testcase name="Autenticacion › Login con credenciales validas" classname="features\auth.feature.spec.js" time="0.016">
+</testcase>
+<testcase name="Autenticacion › Login rechazado › Example #1" classname="features\auth.feature.spec.js" time="0.018">
+</testcase>
+</testsuite>
+</testsuites>

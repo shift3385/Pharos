@@ -306,10 +306,8 @@ fn links_by_defect(
 /// What a result is the execution of: its effective case, the revision and
 /// the flow. **The one place this module reads it** (cases a defect reaches,
 /// the candidates, the draft and the create from a result): a manual result
-/// carries the link in its content, an imported one gets it at read time
-/// (step 9, `runs/link.rs::resolve`), so switching to that resolver is a
-/// change here only. Today: the result's own case, else the project's
-/// mapping of its `test_key` (as `runs::list_results`).
+/// carries the link in its content; an imported one (with a shard) gets it
+/// from the link resolver (`runs/link.rs`, step 9), as every reader does.
 pub(crate) struct ResultLink {
     pub case_id: Option<String>,
     pub revision_id: Option<String>,
@@ -324,32 +322,84 @@ pub(crate) fn result_links(
     if result_ids.is_empty() {
         return Ok(HashMap::new());
     }
-    let mut stmt = conn
-        .prepare(
-            "SELECT x.id,
-                    coalesce(x.test_case_id,
-                             (SELECT m.test_case_id FROM unlinked_mappings m
-                               WHERE m.project_id = x.project_id AND m.test_key = x.test_key
-                                 AND m.deleted_at IS NULL
-                               ORDER BY m.updated_at DESC, m.rowid DESC LIMIT 1)),
-                    x.test_case_revision_id, x.flow_id
-               FROM results x WHERE x.id IN (SELECT value FROM json_each(?1))",
-        )
-        .map_err(err)?;
-    let ids = serde_json::to_string(result_ids).map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map(params![ids], |r| {
-            Ok((
-                r.get::<_, String>(0)?,
-                ResultLink {
-                    case_id: r.get(1)?,
-                    revision_id: r.get(2)?,
-                    flow_id: r.get(3)?,
-                },
-            ))
-        })
-        .map_err(err)?;
-    rows.collect::<rusqlite::Result<_>>().map_err(err)
+    struct Raw {
+        id: String,
+        link: ResultLink,
+        project_id: String,
+        run_id: String,
+        test_key: String,
+        imported: bool,
+        attributes: Value,
+        case_key: Option<String>,
+        example_row: Option<i64>,
+        configuration_label: Option<String>,
+    }
+    let raw: Vec<Raw> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT x.id, x.test_case_id, x.test_case_revision_id, x.flow_id, x.project_id,
+                        x.run_id, x.test_key, x.shard_id IS NOT NULL, x.attributes, x.case_key,
+                        x.example_row, x.configuration_label
+                   FROM results x WHERE x.id IN (SELECT value FROM json_each(?1))",
+            )
+            .map_err(err)?;
+        let ids = serde_json::to_string(result_ids).map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params![ids], |r| {
+                Ok(Raw {
+                    id: r.get(0)?,
+                    link: ResultLink {
+                        case_id: r.get(1)?,
+                        revision_id: r.get(2)?,
+                        flow_id: r.get(3)?,
+                    },
+                    project_id: r.get(4)?,
+                    run_id: r.get(5)?,
+                    test_key: r.get(6)?,
+                    imported: r.get(7)?,
+                    attributes: r
+                        .get::<_, Option<String>>(8)?
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_else(|| serde_json::json!({})),
+                    case_key: r.get(9)?,
+                    example_row: r.get(10)?,
+                    configuration_label: r.get(11)?,
+                })
+            })
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    // One resolver per project (the results of a defect's links are of one).
+    let mut resolvers: HashMap<String, crate::runs::link::Resolver> = HashMap::new();
+    let mut out = HashMap::new();
+    for x in raw {
+        let link = if x.imported {
+            if !resolvers.contains_key(&x.project_id) {
+                let r = crate::runs::link::Resolver::for_project(conn, &x.project_id)?;
+                resolvers.insert(x.project_id.clone(), r);
+            }
+            let stored = crate::runs::link::StoredFacts::of(
+                &x.attributes,
+                x.case_key.as_deref(),
+                x.example_row,
+                Vec::new(),
+            )
+            .with_label(x.configuration_label.as_deref());
+            let derived = resolvers
+                .get_mut(&x.project_id)
+                .expect("inserted above")
+                .resolve(&x.run_id, &x.test_key, &stored.facts(), true)?;
+            ResultLink {
+                case_id: derived.case_id,
+                revision_id: derived.revision_id,
+                flow_id: derived.flow_id,
+            }
+        } else {
+            x.link
+        };
+        out.insert(x.id, link);
+    }
+    Ok(out)
 }
 
 /// `result_links` of one result.
@@ -453,15 +503,17 @@ pub(crate) fn result_candidates(
     if !project::owns(conn, project_id, user)? {
         return Ok(Vec::new());
     }
+    // A shard superseded by a newer normalizer is not read (ADR-0013).
     let mut stmt = conn
-        .prepare(
+        .prepare(&format!(
             "SELECT x.id, x.run_id, coalesce(r.run_key, ''), coalesce(r.title, ''),
                     NULL, x.case_key, x.test_key, x.attempt, x.status, x.created_at
                FROM results x LEFT JOIN runs r ON r.id = x.run_id
               WHERE x.project_id = ?1 AND x.status IN ('failed', 'blocked', 'other')
-                AND (r.id IS NULL OR r.deleted_at IS NULL)
+                AND (r.id IS NULL OR r.deleted_at IS NULL) AND {}
               ORDER BY x.created_at DESC, x.rowid DESC LIMIT 500",
-        )
+            crate::runs::link::CURRENT_SHARD
+        ))
         .map_err(err)?;
     let rows = stmt
         .query_map(params![project_id], |r| {

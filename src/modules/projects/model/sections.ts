@@ -8,6 +8,7 @@ export const PROJECT_SECTIONS = [
   "defects",
   "planner",
   "traceability",
+  "runs",
   "settings",
 ] as const;
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number];

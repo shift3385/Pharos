@@ -256,9 +256,10 @@ Tras la revisión independiente (2026-10-31):
   más antiguo que la retención; uno que llegó antes que su ciclo espera.
 - **Lectura del progreso.** El progreso lee el caso, el flujo y la fila de
   cada resultado en un solo sitio (`cycles::cycle_results`; servidor:
-  `attemptOf`), para que el cambio del
-  paso 9 (el vínculo caso/revisión sale del contenido inmutable del
-  resultado) solo toque ahí.
+  `attemptOf`). Desde el paso 9, un resultado importado no guarda su vínculo:
+  ahí se deriva con el resolvedor (`runs/link.rs`; en el servidor, su gemelo
+  `domain/resultLink.ts`), con la configuración del run o, si no tiene, la
+  de su etiqueta (ADR-0013 «Vínculo derivado»).
 
 - **UI.** No hay diseño en `docs/rediseno/` para estas pantallas: la sección
   «Ciclos» del proyecto y la tarjeta «Configuraciones» de Ajustes usan las

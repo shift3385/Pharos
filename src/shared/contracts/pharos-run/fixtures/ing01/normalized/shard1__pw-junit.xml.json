@@ -1,0 +1,54 @@
+{
+  "format": "junit",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "startedAt": "2026-10-27T03:53:27.133Z",
+      "context": {}
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "junit",
+        "normalizerVersion": 1
+      }
+    ],
+    "results": [
+      {
+        "name": "Autenticacion › Login con credenciales validas",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login con credenciales validas",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [],
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 16,
+        "attributes": {}
+      },
+      {
+        "name": "Autenticacion › Login rechazado › Example #1",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #1",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "features/auth.feature.spec.js"
+        ],
+        "tags": [],
+        "exampleRow": 0,
+        "shardRef": "s1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "attempt": 0,
+        "duration": 18,
+        "attributes": {}
+      }
+    ],
+    "attachments": []
+  }
+}

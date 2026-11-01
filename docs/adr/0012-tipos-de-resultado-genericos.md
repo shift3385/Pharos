@@ -200,3 +200,15 @@ reales a la API.
   conserva entero como informe en bruto del shard.
 - Los adjuntos del documento se nombran por `ref`; una referencia a un adjunto
   o shard que no existe es un error de validación.
+
+## Implementación (E4, paso 9, 2026-10-31)
+
+- Los cuatro formatos de ADR-0005 y el propio Pharos Run JSON se importan
+  produciendo un documento 1.0.0 que pasa por `parsePharosRun`; el formato se
+  detecta por el contenido y Cucumber JSON se rechaza (usar Messages).
+- Las claves que el persistente no conoce de un resultado van a `attributes`
+  (con `name`, `tags`, `filePath` y `suite`). Un documento con `findings[]`,
+  `metrics[]` o `exploratorySession` se importa igual: sus resultados se
+  guardan y el archivo entero queda como informe en bruto del shard.
+- La correspondencia campo a campo de cada formato está en
+  [`docs/formats/importers.md`](../formats/importers.md).

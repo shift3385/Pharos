@@ -1,0 +1,72 @@
+<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="1" time="4.612681884765625">
+<testsuite name="features\auth.feature.spec.js" timestamp="2026-10-27T03:55:04.402Z" hostname="" tests="2" failures="0" skipped="0" time="0.034" errors="0">
+<testcase name="Autenticacion › Login con credenciales validas" classname="features\auth.feature.spec.js" time="0.016">
+</testcase>
+<testcase name="Autenticacion › Login rechazado › Example #1" classname="features\auth.feature.spec.js" time="0.018">
+</testcase>
+</testsuite>
+<testsuite name="features\auth.feature.spec.js" timestamp="2026-10-27T03:55:04.402Z" hostname="" tests="1" failures="0" skipped="0" time="0.05" errors="1">
+<testcase name="Autenticacion › Login rechazado › Example #2" classname="features\auth.feature.spec.js" time="0.05">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|..\..\blobs\all\resources\eec759646848714db721e1526339377bddca68b5.md]]
+
+[[ATTACHMENT|..\..\blobs\all\resources\caed2e759497893cd1c1206783e2bd5d58b9be93.md]]
+]]>
+</system-out>
+<error message="Expected values to be strictly equal:" type="AssertionError">
+<![CDATA[  features\auth.feature.spec.js:19:9 › Autenticacion › Login rechazado › Example #2 @REQ-014 @priority:high @TC-002 › Then el resultado es "fallo" 
+
+    AssertionError: Expected values to be strictly equal:
+
+    'fallo' !== 'ok'
+
+
+       at ..\steps\steps.js:8
+
+       6 | Then('ve el panel principal', async ({}) => {});
+       7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});
+    >  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });
+         |                                                            ^
+       9 | Given('la sesion esta expirada', async ({}) => {});
+      10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {
+      11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');
+        at Object.<anonymous> (C:\work\ing01\steps\steps.js:8:60)
+        at C:\work\ing01\.features-gen\features\auth.feature.spec.js:21:7
+
+    Error Context: ..\blobs\all\resources\eec759646848714db721e1526339377bddca68b5.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    AssertionError: Expected values to be strictly equal:
+
+    'fallo' !== 'ok'
+
+
+       at ..\steps\steps.js:8
+
+       6 | Then('ve el panel principal', async ({}) => {});
+       7 | When('inicia sesion con {string} y {string}', async ({}, e, c) => {});
+    >  8 | Then('el resultado es {string}', async ({}, r) => { assert.strictEqual(r, 'ok'); });
+         |                                                            ^
+       9 | Given('la sesion esta expirada', async ({}) => {});
+      10 | Then('la sesion se renueva al segundo intento', async ({ $testInfo }) => {
+      11 |   if ($testInfo.retry === 0) throw new Error('first attempt fails (flaky demo)');
+        at Object.<anonymous> (C:\work\ing01\steps\steps.js:8:60)
+        at C:\work\ing01\.features-gen\features\auth.feature.spec.js:21:7
+
+    Error Context: ..\blobs\all\resources\caed2e759497893cd1c1206783e2bd5d58b9be93.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="features\flaky.feature.spec.js" timestamp="2026-10-27T03:55:04.402Z" hostname="" tests="1" failures="0" skipped="0" time="0.036" errors="0">
+<testcase name="Sesion › Reintento de sesion expirada" classname="features\flaky.feature.spec.js" time="0.036">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|..\..\blobs\all\resources\5e48851b0eaeec8c9819cb1e35f916eac161be2a.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

@@ -1,0 +1,268 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\work\\ing01\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--shard=1/2"
+    ],
+    "configFile": "C:\\work\\ing01\\playwright.config.js",
+    "rootDir": "C:/work/ing01/.features-gen",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/work/ing01/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/work/ing01/.features-gen",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "C:\\work\\ing01\\test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "name": "",
+        "testDir": "C:\\work\\ing01\\.features-gen",
+        "snapshotDir": "C:\\work\\ing01\\.features-gen",
+        "testIgnore": [],
+        "testMatch": "**/*.@(spec|test).?(c|m)[jt]s?(x)",
+        "timeout": 30000,
+        "use": {},
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": ""
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "blob",
+        {
+          "outputDir": "blobs/s1",
+          "fileName": "report-shard1.zip"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "out/shard1/pw-junit.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "out/shard1/pw.json"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-ctrf-json-reporter\\dist\\index.cjs",
+        {
+          "outputDir": "out/shard1",
+          "outputFile": "ctrf.json"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-bdd\\dist\\reporter\\cucumber\\index.js",
+        {
+          "$type": "message",
+          "outputFile": "out/shard1/cucumber-messages.ndjson"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-bdd\\dist\\reporter\\cucumber\\index.js",
+        {
+          "$type": "json",
+          "outputFile": "out/shard1/cucumber.json"
+        }
+      ],
+      [
+        "C:\\work\\ing01\\node_modules\\playwright-bdd\\dist\\reporter\\cucumber\\index.js",
+        {
+          "$type": "junit",
+          "outputFile": "out/shard1/cucumber-junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": {
+      "current": 1,
+      "total": 2
+    },
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "features\\auth.feature.spec.js",
+      "file": "features/auth.feature.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Autenticacion",
+          "file": "features/auth.feature.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Login con credenciales validas",
+              "ok": true,
+              "tags": [
+                "REQ-014",
+                "priority:high",
+                "TC-001",
+                "smoke"
+              ],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 16,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Given el usuario \"qa@pharos.dev\" esta registrado",
+                          "duration": 0
+                        },
+                        {
+                          "title": "When inicia sesion con contrasena valida",
+                          "duration": 1
+                        },
+                        {
+                          "title": "Then ve el panel principal",
+                          "duration": 0
+                        }
+                      ],
+                      "startTime": "2026-10-27T03:53:27.743Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "87eeb78f3f16ad2ab0ca-e4375238820b29cd6b21",
+              "file": "features/auth.feature.spec.js",
+              "line": 6,
+              "column": 7
+            }
+          ],
+          "suites": [
+            {
+              "title": "Login rechazado",
+              "file": "features/auth.feature.spec.js",
+              "line": 12,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "Example #1",
+                  "ok": true,
+                  "tags": [
+                    "REQ-014",
+                    "priority:high",
+                    "TC-002"
+                  ],
+                  "tests": [
+                    {
+                      "timeout": 30000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "",
+                      "projectName": "",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 1,
+                          "status": "passed",
+                          "duration": 18,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "steps": [
+                            {
+                              "title": "When inicia sesion con \"x@y\" y \"mala\"",
+                              "duration": 0
+                            },
+                            {
+                              "title": "Then el resultado es \"ok\"",
+                              "duration": 0
+                            }
+                          ],
+                          "startTime": "2026-10-27T03:53:27.776Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "87eeb78f3f16ad2ab0ca-90ff2bc2345914e39b1f",
+                  "file": "features/auth.feature.spec.js",
+                  "line": 14,
+                  "column": 9
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-27T03:53:27.102Z",
+    "duration": 765.7289999999999,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

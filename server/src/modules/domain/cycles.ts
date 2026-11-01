@@ -7,6 +7,7 @@ import type { TokenService } from "../auth/tokens";
 import type { RemoteDoc } from "../sync/sync.repository";
 import { requireSupportedVersion } from "../sync/sync.version";
 import { cells, count, emptySummary, type ProgressAttempt, type ProgressSummary } from "./cycle-progress";
+import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink";
 import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
 import { sortable, timestamp } from "./domain.service";
 
@@ -233,8 +234,8 @@ function rowsOf(data: Payload, flowId: string | null): Set<string> | null {
 }
 
 /** What progress reads of the project, loaded once for every cycle in it
- *  (the list shows them all): live items, runs, shards, unlinked mappings and
- *  results, grouped by cycle. */
+ *  (the list shows them all): live items, runs, shards and results, grouped
+ *  by cycle. */
 interface ExecutionData {
   items: Map<string, RemoteDoc[]>;
   runs: Map<string, number>;
@@ -242,15 +243,26 @@ interface ExecutionData {
 }
 
 /** The progress view of one result: what places it in a cell. The one place
- *  that reads a result for progress (step 9 moves the case/revision link out
- *  of the result content; only this function changes then). */
-function attemptOf(
-  d: RemoteDoc,
-  run: Payload,
-  shard: Payload | undefined,
-  mappings: Map<string, string | null>,
-): ProgressAttempt {
+ *  that reads a result for progress: a manual result carries its link, an
+ *  imported one gets it from the link resolver (`resultLink.ts`, step 9, the
+ *  twin of the desktop's): case, flow, row and its configuration (the run's,
+ *  else the one its label stands for). */
+function attemptOf(d: RemoteDoc, run: Payload, shard: Payload | undefined, link: ResultLink | null): ProgressAttempt {
   const p = d.payload;
+  const own = {
+    configurationId: strOrNull(run, "configurationId") ?? strOrNull(p, "configurationId"),
+    caseId: strOrNull(p, "testCaseId"),
+    flowId: strOrNull(p, "flowId"),
+    rowId: strOrNull(p, "exampleRowId"),
+  };
+  const linked = link
+    ? {
+        configurationId: strOrNull(run, "configurationId") ?? link.configurationId,
+        caseId: link.caseId,
+        flowId: link.flowId,
+        rowId: link.exampleRowId,
+      }
+    : own;
   return {
     id: d.entityId,
     runId: str(p, "runId"),
@@ -262,35 +274,41 @@ function attemptOf(
     finishedAt: strOrNull(p, "finishedAt"),
     shardImportedAt: shard ? strOrNull(shard, "importedAt") : null,
     hlc: str(p, "hlc"),
-    configurationId: strOrNull(run, "configurationId") ?? strOrNull(p, "configurationId"),
-    caseId: strOrNull(p, "testCaseId") ?? mappings.get(str(p, "testKey")) ?? null,
-    flowId: strOrNull(p, "flowId"),
-    rowId: strOrNull(p, "exampleRowId"),
+    ...linked,
   };
 }
 
 async function loadExecution(tx: DomainTx, projectId: string): Promise<ExecutionData> {
   const push = <T>(m: Map<string, T[]>, k: string, v: T) => m.set(k, [...(m.get(k) ?? []), v]);
   const items = new Map<string, RemoteDoc[]>();
-  for (const d of await tx.list("test_cycle_item", projectId)) push(items, str(d.payload, "cycleId"), d);
+  const itemDocs = await tx.list("test_cycle_item", projectId);
+  for (const d of itemDocs) push(items, str(d.payload, "cycleId"), d);
   for (const list of items.values()) list.sort(byPosition);
   const runCycle = new Map<string, { cycle: string; payload: Payload }>();
   const runs = new Map<string, number>();
-  for (const d of await tx.list("run", projectId)) {
+  const runDocs = await tx.list("run", projectId);
+  for (const d of runDocs) {
     const cycle = str(d.payload, "cycleId");
     if (!cycle) continue;
     runCycle.set(d.entityId, { cycle, payload: d.payload });
     runs.set(cycle, (runs.get(cycle) ?? 0) + 1);
   }
-  const shards = new Map((await tx.list("run_shard", projectId)).map((d) => [d.entityId, d.payload] as const));
-  const mappings = new Map<string, string | null>();
-  for (const d of (await tx.list("unlinked_mapping", projectId)).sort((a, b) => a.seq - b.seq))
-    mappings.set(str(d.payload, "testKey"), strOrNull(d.payload, "testCaseId"));
+  const shardDocs = await tx.list("run_shard", projectId);
+  const shards = new Map(shardDocs.map((d) => [d.entityId, d.payload] as const));
+  const superseded = supersededShards(shardDocs);
   const attempts = new Map<string, ProgressAttempt[]>();
+  let links: ((result: Payload) => ResultLink) | null = null;
   for (const d of await tx.list("result", projectId)) {
     const run = runCycle.get(str(d.payload, "runId"));
     if (!run) continue;
-    push(attempts, run.cycle, attemptOf(d, run.payload, shards.get(str(d.payload, "shardId")), mappings));
+    const shard = str(d.payload, "shardId");
+    if (superseded.has(shard)) continue;
+    let link: ResultLink | null = null;
+    if (isImported(d.payload)) {
+      links ??= await projectLinks(tx, projectId, { run: runDocs, test_cycle_item: itemDocs });
+      link = links(d.payload);
+    }
+    push(attempts, run.cycle, attemptOf(d, run.payload, shards.get(shard), link));
   }
   return { items, runs, attempts };
 }

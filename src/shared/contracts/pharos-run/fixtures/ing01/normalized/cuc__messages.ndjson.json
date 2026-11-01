@@ -1,0 +1,279 @@
+{
+  "format": "cucumber_messages",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "cucumber-js",
+      "sourceToolVersion": "13.3.0",
+      "startedAt": "2026-10-27T03:55:37.047Z",
+      "finishedAt": "2026-10-27T03:55:37.077Z",
+      "context": {
+        "protocolVersion": "34.2.1",
+        "os": "win32",
+        "runtime": "node.js 24.11.0"
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "cucumber_messages",
+        "normalizerVersion": 1,
+        "formatVersion": "34.2.1"
+      }
+    ],
+    "results": [
+      {
+        "name": "Login con credenciales validas",
+        "status": "passed",
+        "rawStatus": "PASSED",
+        "testKey": "features/auth.feature::Login con credenciales validas",
+        "filePath": "features/auth.feature",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-001",
+          "@smoke"
+        ],
+        "attempt": 0,
+        "externalId": "627a50e0-be69-4ccb-8149-04550b337ba2",
+        "startedAt": "2026-10-27T03:55:37.068Z",
+        "finishedAt": "2026-10-27T03:55:37.071Z",
+        "duration": 1,
+        "steps": [
+          {
+            "text": "el usuario \"qa@pharos.dev\" esta registrado",
+            "status": "passed",
+            "keyword": "Given",
+            "gherkinLine": 6,
+            "durationMs": 1
+          },
+          {
+            "text": "inicia sesion con contrasena valida",
+            "status": "passed",
+            "keyword": "When",
+            "gherkinLine": 7,
+            "durationMs": 0
+          },
+          {
+            "text": "ve el panel principal",
+            "status": "passed",
+            "keyword": "Then",
+            "gherkinLine": 8,
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": false,
+          "gherkinLine": 5
+        }
+      },
+      {
+        "name": "Login rechazado",
+        "status": "passed",
+        "rawStatus": "PASSED",
+        "testKey": "features/auth.feature::Login rechazado[1]",
+        "filePath": "features/auth.feature",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "attempt": 0,
+        "externalId": "bae1c6c6-a9cc-4154-9922-93a263830fbb",
+        "exampleRow": 0,
+        "startedAt": "2026-10-27T03:55:37.071Z",
+        "finishedAt": "2026-10-27T03:55:37.072Z",
+        "duration": 0,
+        "steps": [
+          {
+            "text": "inicia sesion con \"x@y\" y \"mala\"",
+            "status": "passed",
+            "keyword": "When",
+            "gherkinLine": 12,
+            "durationMs": 0
+          },
+          {
+            "text": "el resultado es \"ok\"",
+            "status": "passed",
+            "keyword": "Then",
+            "gherkinLine": 13,
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": false,
+          "gherkinLine": 17
+        }
+      },
+      {
+        "name": "Login rechazado",
+        "status": "failed",
+        "rawStatus": "FAILED",
+        "testKey": "features/auth.feature::Login rechazado[2]",
+        "filePath": "features/auth.feature",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "attempt": 0,
+        "externalId": "a79391c2-d5d9-4d2d-99df-270ea64d0dd4",
+        "exampleRow": 1,
+        "startedAt": "2026-10-27T03:55:37.072Z",
+        "finishedAt": "2026-10-27T03:55:37.075Z",
+        "duration": 1,
+        "message": "Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    + expected - actual\n\n    -fallo\n    +ok\n\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:7:56)",
+        "steps": [
+          {
+            "text": "inicia sesion con \"z@y\" y \"peor\"",
+            "status": "passed",
+            "keyword": "When",
+            "gherkinLine": 12,
+            "durationMs": 0
+          },
+          {
+            "text": "el resultado es \"fallo\"",
+            "status": "failed",
+            "keyword": "Then",
+            "gherkinLine": 13,
+            "durationMs": 1,
+            "actual": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    + expected - actual\n\n    -fallo\n    +ok\n\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:7:56)"
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": true,
+          "gherkinLine": 18
+        }
+      },
+      {
+        "name": "Login rechazado",
+        "status": "failed",
+        "rawStatus": "FAILED",
+        "testKey": "features/auth.feature::Login rechazado[2]",
+        "filePath": "features/auth.feature",
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "attempt": 1,
+        "externalId": "a79391c2-d5d9-4d2d-99df-270ea64d0dd4",
+        "exampleRow": 1,
+        "startedAt": "2026-10-27T03:55:37.076Z",
+        "finishedAt": "2026-10-27T03:55:37.076Z",
+        "duration": 0,
+        "message": "Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n",
+        "trace": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    + expected - actual\n\n    -fallo\n    +ok\n\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:7:56)",
+        "steps": [
+          {
+            "text": "inicia sesion con \"z@y\" y \"peor\"",
+            "status": "passed",
+            "keyword": "When",
+            "gherkinLine": 12,
+            "durationMs": 0
+          },
+          {
+            "text": "el resultado es \"fallo\"",
+            "status": "failed",
+            "keyword": "Then",
+            "gherkinLine": 13,
+            "durationMs": 0,
+            "actual": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'fallo' !== 'ok'\n\n    + expected - actual\n\n    -fallo\n    +ok\n\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:7:56)"
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": false,
+          "gherkinLine": 18
+        }
+      },
+      {
+        "name": "Reintento de sesion expirada",
+        "status": "failed",
+        "rawStatus": "FAILED",
+        "testKey": "features/flaky.feature::Reintento de sesion expirada",
+        "filePath": "features/flaky.feature",
+        "tags": [
+          "@REQ-015",
+          "@TC-003",
+          "@flaky-demo"
+        ],
+        "attempt": 0,
+        "externalId": "93da2dd5-c325-4a19-870c-86aa7778d12a",
+        "startedAt": "2026-10-27T03:55:37.076Z",
+        "finishedAt": "2026-10-27T03:55:37.077Z",
+        "duration": 0,
+        "message": "first attempt fails (flaky demo)",
+        "trace": "Error: first attempt fails (flaky demo)\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:10:91)",
+        "steps": [
+          {
+            "text": "la sesion esta expirada",
+            "status": "passed",
+            "keyword": "Given",
+            "gherkinLine": 6,
+            "durationMs": 0
+          },
+          {
+            "text": "la sesion se renueva al segundo intento",
+            "status": "failed",
+            "keyword": "Then",
+            "gherkinLine": 7,
+            "durationMs": 0,
+            "actual": "Error: first attempt fails (flaky demo)\n    at World.<anonymous> (C:\\work\\ing01\\steps\\cucumber-steps.js:10:91)"
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": true,
+          "gherkinLine": 5
+        }
+      },
+      {
+        "name": "Reintento de sesion expirada",
+        "status": "passed",
+        "rawStatus": "PASSED",
+        "testKey": "features/flaky.feature::Reintento de sesion expirada",
+        "filePath": "features/flaky.feature",
+        "tags": [
+          "@REQ-015",
+          "@TC-003",
+          "@flaky-demo"
+        ],
+        "attempt": 1,
+        "externalId": "93da2dd5-c325-4a19-870c-86aa7778d12a",
+        "startedAt": "2026-10-27T03:55:37.077Z",
+        "finishedAt": "2026-10-27T03:55:37.077Z",
+        "duration": 0,
+        "steps": [
+          {
+            "text": "la sesion esta expirada",
+            "status": "passed",
+            "keyword": "Given",
+            "gherkinLine": 6,
+            "durationMs": 0
+          },
+          {
+            "text": "la sesion se renueva al segundo intento",
+            "status": "passed",
+            "keyword": "Then",
+            "gherkinLine": 7,
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "willBeRetried": false,
+          "gherkinLine": 5
+        }
+      }
+    ],
+    "attachments": []
+  }
+}

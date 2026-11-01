@@ -7,8 +7,6 @@
 //! simultaneous attempts are two facts. The TS twin is
 //! `src/shared/contracts/pharos-run/ids.ts`; both check
 //! `tests/fixtures/run-id-vectors.json`.
-// The importers (step 9) call the shard and imported-result ids.
-#![cfg_attr(not(test), allow(dead_code))]
 
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -16,17 +14,24 @@ use uuid::Uuid;
 pub const NS_RUN_SHARD: Uuid = Uuid::from_u128(0x3b6d_1f0a_8c2e_5d47_a913_6e0f_2b8c_4d71);
 pub const NS_RESULT: Uuid = Uuid::from_u128(0x9a4e_7c21_0b5f_5e83_b6d2_1c9a_3f70_e845);
 pub const NS_UNLINKED_MAPPING: Uuid = Uuid::from_u128(0x5c8f_2d93_e1a4_5b06_8f37_d4b2_6a10_c9e2);
+pub const NS_STEP_RESULT: Uuid = Uuid::from_u128(0xe2b7_4c18_6d3a_5f91_b0c5_8a1d_4e6f_2b37);
 
 fn v5(ns: &Uuid, parts: Value) -> String {
     Uuid::new_v5(ns, crate::steps::jcs(&parts).as_bytes()).to_string()
 }
 
-/// `UUIDv5(NS_RUN_SHARD, [run_id, source_file_sha256])`: the same file in the
-/// same run is the same shard on every device, so re-uploading it adds nothing.
-pub fn shard_id(run_id: &str, source_file_sha256: &str) -> String {
+/// `UUIDv5(NS_RUN_SHARD, [run_id, source_file_sha256, normalizer_version])`:
+/// the same file in the same run, read by the same parsers, is the same shard
+/// on every device, so re-uploading it adds nothing; a newer normalizer makes
+/// another shard instead of colliding with different content.
+pub fn shard_id(run_id: &str, source_file_sha256: &str, normalizer_version: i64) -> String {
     v5(
         &NS_RUN_SHARD,
-        json!([run_id, source_file_sha256.to_ascii_lowercase()]),
+        json!([
+            run_id,
+            source_file_sha256.to_ascii_lowercase(),
+            normalizer_version
+        ]),
     )
 }
 
@@ -47,6 +52,13 @@ pub fn imported_result_id(
             attempt
         ]),
     )
+}
+
+/// `UUIDv5(NS_STEP_RESULT, [result_id, position])`: a step of an imported
+/// result, so two devices importing the same file write the same document
+/// (ADR-0013, step 9 note).
+pub fn imported_step_result_id(result_id: &str, position: i64) -> String {
+    v5(&NS_STEP_RESULT, json!([result_id, position]))
 }
 
 /// `UUIDv5(NS_UNLINKED_MAPPING, [project_id, test_key])`: one rule per key on
@@ -75,7 +87,11 @@ mod tests {
         let v: Value = serde_json::from_str(VECTORS).unwrap();
         let s = |x: &Value, k: &str| x[k].as_str().unwrap().to_string();
         for x in v["shards"].as_array().unwrap() {
-            assert_eq!(shard_id(&s(x, "runId"), &s(x, "sha256")), s(x, "id"));
+            let version = x["normalizerVersion"].as_i64().unwrap();
+            assert_eq!(
+                shard_id(&s(x, "runId"), &s(x, "sha256"), version),
+                s(x, "id")
+            );
         }
         for x in v["results"].as_array().unwrap() {
             let label = x["configurationLabel"].as_str();
@@ -88,6 +104,13 @@ mod tests {
         for x in v["mappings"].as_array().unwrap() {
             assert_eq!(
                 unlinked_mapping_id(&s(x, "projectId"), &s(x, "testKey")),
+                s(x, "id")
+            );
+        }
+        for x in v["stepResults"].as_array().unwrap() {
+            let position = x["position"].as_i64().unwrap();
+            assert_eq!(
+                imported_step_result_id(&s(x, "resultId"), position),
                 s(x, "id")
             );
         }
@@ -109,6 +132,7 @@ mod tests {
             imported_result_id("s", "k", None, 1),
             imported_result_id("s", "k", Some("1"), 0)
         );
-        assert_eq!(shard_id("r", "ABC"), shard_id("r", "abc"));
+        assert_eq!(shard_id("r", "ABC", 1), shard_id("r", "abc", 1));
+        assert_ne!(shard_id("r", "abc", 1), shard_id("r", "abc", 2));
     }
 }

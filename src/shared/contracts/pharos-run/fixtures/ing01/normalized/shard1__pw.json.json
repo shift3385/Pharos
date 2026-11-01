@@ -1,0 +1,115 @@
+{
+  "format": "playwright_json",
+  "warnings": [],
+  "inline": {},
+  "doc": {
+    "schemaVersion": "1.0.0",
+    "run": {
+      "trigger": "import",
+      "sourceTool": "playwright",
+      "sourceToolVersion": "1.64.1",
+      "startedAt": "2026-10-27T03:53:27.102Z",
+      "finishedAt": "2026-10-27T03:53:27.868Z",
+      "context": {
+        "metadata": {
+          "actualWorkers": 2
+        }
+      }
+    },
+    "shards": [
+      {
+        "ref": "s1",
+        "sourceFormat": "playwright_json",
+        "normalizerVersion": 1,
+        "shardIndex": 1,
+        "shardTotal": 2,
+        "formatVersion": "1.64.1"
+      }
+    ],
+    "results": [
+      {
+        "name": "Login con credenciales validas",
+        "status": "passed",
+        "rawStatus": "passed",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login con credenciales validas",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "Autenticacion"
+        ],
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-001",
+          "@smoke"
+        ],
+        "externalId": "87eeb78f3f16ad2ab0ca-e4375238820b29cd6b21",
+        "attempt": 0,
+        "duration": 16,
+        "startedAt": "2026-10-27T03:53:27.743Z",
+        "finishedAt": "2026-10-27T03:53:27.759Z",
+        "steps": [
+          {
+            "text": "Given el usuario \"qa@pharos.dev\" esta registrado",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "text": "When inicia sesion con contrasena valida",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "text": "Then ve el panel principal",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "outcome": "expected",
+          "line": 6
+        }
+      },
+      {
+        "name": "Example #1",
+        "status": "passed",
+        "rawStatus": "passed",
+        "testKey": "features/auth.feature.spec.js::Autenticacion › Login rechazado › Example #1",
+        "filePath": "features/auth.feature.spec.js",
+        "suite": [
+          "Autenticacion",
+          "Login rechazado"
+        ],
+        "tags": [
+          "@REQ-014",
+          "@priority:high",
+          "@TC-002"
+        ],
+        "externalId": "87eeb78f3f16ad2ab0ca-90ff2bc2345914e39b1f",
+        "attempt": 0,
+        "exampleRow": 0,
+        "duration": 18,
+        "startedAt": "2026-10-27T03:53:27.776Z",
+        "finishedAt": "2026-10-27T03:53:27.794Z",
+        "steps": [
+          {
+            "text": "When inicia sesion con \"x@y\" y \"mala\"",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "text": "Then el resultado es \"ok\"",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "shardRef": "s1",
+        "attributes": {
+          "outcome": "expected",
+          "line": 14
+        }
+      }
+    ],
+    "attachments": []
+  }
+}
