@@ -361,6 +361,13 @@ Tras la revisión independiente (2026-10-31):
   producirían el mismo resultado con pasos distintos y el servidor lo
   rechazaría (`content_changed`).
 
+**Nota (E4, paso 6, CYC-01, 2026-10-31).** `runs.cycle_id` y
+`runs.configuration_id` se llenan desde ADR-0017: `run_create`/`run_update`
+comprueban que un ciclo dado está vivo, no cerrado y es del mismo proyecto, y
+que la configuración es del proyecto (solo cuando el valor cambia: un run
+conserva el id de un ciclo borrado y purgado). «Ejecutar» un ciclo crea los
+runs con `runs::add_items`, sin cambios en su lógica.
+
 ## Implementación (E4, paso 9: importadores, 2026-10-31)
 
 Los importadores de ING-02..05 están en el código: los parsers en TypeScript

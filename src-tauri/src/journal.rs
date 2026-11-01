@@ -259,7 +259,9 @@ fn location(
     let key = either("scenarioId")
         .or_else(|| either("requirementKey"))
         .or_else(|| either("cardKey"))
-        .or_else(|| either("runKey"));
+        .or_else(|| either("runKey"))
+        .or_else(|| either("cycleKey"))
+        .or_else(|| either("defectKey"));
     (project, key)
 }
 

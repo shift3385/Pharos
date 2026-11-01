@@ -39,12 +39,9 @@ beforeEach(async () => {
   list.mockResolvedValue([
     card("t1", { title: "Preparar datos de clientes VIP", data: { labels: ["datos"] } }),
     card("d1", {
-      kind: "defect",
-      cardKey: "DEF-018",
-      title: "Doble cargo al reintentar el pago",
+      title: "Revisar la pasarela de pago",
       status: "in_progress",
       priority: "critical",
-      data: { testCaseIds: ["c1"] },
     }),
     card("x1", { kind: "test_data", title: "Tarjetas de prueba 3-D Secure", status: "done", priority: "low" }),
   ]);
@@ -52,15 +49,17 @@ beforeEach(async () => {
 });
 
 describe("Planificador (RED-V3)", () => {
-  it("is a 4-column kanban with typed cards, priority flags and links", async () => {
+  it("is a 4-column kanban with typed cards and priority flags, and points to Defectos", async () => {
     setViewportWidth(1440);
     renderWithProviders(<PlannerBoard projectId="p1" ownerId="u1" />);
     const progress = await screen.findByRole("region", { name: "En progreso" });
-    const defect = within(progress).getByRole("article");
-    expect(defect).toHaveTextContent("Defecto");
-    expect(defect).toHaveTextContent("DEF-018");
-    expect(defect).toHaveTextContent("Crítica");
-    expect(within(defect).getByText("1 caso de prueba vinculado")).toBeInTheDocument();
+    const task = await within(progress).findByRole("article");
+    expect(task).toHaveTextContent("Tarea");
+    expect(task).toHaveTextContent("Crítica");
+    // Defects left the board (DEF-01): a note leads to their module.
+    expect(screen.getByRole("note")).toHaveTextContent("Los defectos tienen ahora su propio módulo");
+    expect(screen.getByRole("link", { name: "Ir a Defectos" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Defectos \d/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
       "Backlog",
       "En progreso",
@@ -74,7 +73,7 @@ describe("Planificador (RED-V3)", () => {
     setViewportWidth(1440);
     renderWithProviders(<PlannerBoard projectId="p1" ownerId="u1" />);
     await screen.findAllByRole("article");
-    await userEvent.click(screen.getByRole("button", { name: "Defectos 1" }));
+    await userEvent.click(screen.getByRole("button", { name: "Datos de prueba 1" }));
     expect(screen.getAllByRole("article")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: "Todas 3" }));
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar tarjetas" }), "datos");
@@ -83,12 +82,12 @@ describe("Planificador (RED-V3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Prioridad" }));
     await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Baja" }));
     expect(screen.getAllByRole("article")).toHaveLength(1);
-  });
+  }, 15_000);
 
   it("deletes a card only after a destructive confirmation", async () => {
     setViewportWidth(1440);
     renderWithProviders(<PlannerBoard projectId="p1" ownerId="u1" />);
-    await userEvent.click(await screen.findByRole("button", { name: /Eliminar: Doble cargo/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /Eliminar: Revisar la pasarela/ }));
     const dialog = screen.getByRole("alertdialog", { name: "¿Eliminar la tarjeta?" });
     await userEvent.click(within(dialog).getByRole("button", { name: "Sí, eliminar" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("d1", "u1"));

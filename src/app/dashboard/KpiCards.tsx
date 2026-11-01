@@ -60,7 +60,7 @@ export function KpiCards({
         testId="kpi-rate"
       />
       <Kpi
-        to={only ? projectPath(only.id, "planner") : "/projects"}
+        to={only ? projectPath(only.id, "defects") : "/projects"}
         icon={Bug}
         label={t("dashboard.kpi.defects")}
         title={t("dashboard.kpi.defectsTitle")}

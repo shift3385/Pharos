@@ -161,3 +161,133 @@ Son precisiones; la decisión no cambia.
 - `defect_links` lleva id determinista y los campos LWW completos.
 - El dueño se toma de `project_id`.
 - Se acota la conversión de tarjetas que llegan de clientes 0.1.
+
+## Implementación (E4, paso 8, 2026-10-31)
+
+El esquema, el módulo, la migración de las tarjetas, el sync y la UI están en el
+código (migración local `0029_defects.sql` con su paso Rust,
+`src-tauri/src/defects.rs`, servidor `0010_defects.sql` con su paso de datos,
+`src/modules/defects/`). Decisiones del usuario del 2026-10-31 (las respuestas
+recomendadas del plan) y precisiones sobre el boceto:
+
+- **Enmienda: índice `UNIQUE` parcial sobre la clave viva.** Sustituye a «sin
+  índice único» de «Claves repetidas» y de «Revisión». Es el mecanismo de todas
+  las demás claves desde la [Enmienda A3 de ADR-0010](0010-claves-entre-equipos.md):
+  un pull nunca falla en el índice, porque antes de escribir el documento la
+  fila local que tenía esa clave la deja (`key_sync::vacate`), recibe una clave
+  provisional y un conflicto de clave, y la persona elige otra en el panel de
+  conflictos. Una clave definitiva nunca se renombra sola.
+- **Enmienda: dos transiciones más.** `deferred → open` y `rejected → open`
+  (reactivar), además de `closed → open`; sin ellas, Aplazado y Rechazado eran
+  callejones sin salida (Jira y Azure DevOps permiten reactivar). La tabla vive
+  en `tests/fixtures/defect-vectors.json` y la comprueban Rust, el cliente y el
+  servidor. Un defecto `deferred` cuenta como abierto en la matriz.
+- **«Críticos» en Inicio** son los de severidad `critical` (el impacto), no los
+  de prioridad crítica.
+- **Sin claves foráneas hacia `defects`** desde `defect_links`: un pull puede
+  traer el vínculo antes que su defecto (la lección de 0020 y 0024). El
+  repositorio comprueba los vínculos. Un valor de un pull fuera de los enums
+  (severidad, estado…) se normaliza en lugar de hacer fallar el pull.
+- **No hizo falta un tipo de clave nuevo:** `defect` ya estaba en
+  `key_counters`, `retired_keys` y `key_blocks`; la serie pasa de
+  `planner_cards.card_key` a `defects.defect_key`. La clave de una tarea que fue
+  defecto queda en `retired_keys`.
+- **El servidor también convierte** (decisión del usuario): la migración de
+  servidor `0010` tiene un paso de datos en TypeScript (`DATA_STEPS` de
+  `migrate.ts`, en la misma transacción que su SQL) que convierte cada
+  documento `planner_card` de tipo `defect` con la misma función que el
+  escritorio (`fromCard`), **conservando la revisión y el HLC** de la tarjeta, y
+  deja la tarjeta como lápida. Sin esto, la web y las cuentas cuyo escritorio
+  aún no se ha actualizado verían los defectos como tarjetas para siempre. Es
+  TypeScript porque el id de un vínculo es UUIDv5 y el Postgres base no tiene
+  SHA-1.
+- **La migración local** (paso Rust de 0029, en el mismo savepoint) convierte
+  las tarjetas vivas y borradas, pasa sus adjuntos al defecto (mismos ids) y
+  borra la tarjeta de forma lógica **sin fila de oplog** (el servidor convierte
+  su copia). Para que nada se pierda ni choque, la base de sync de la tarjeta
+  pasa al defecto, sus filas de oplog pendientes pasan a ser del defecto, los
+  vínculos de una tarjeta que el servidor no conocía (o con cambios pendientes)
+  se encolan, y los conflictos de clave y de versión abiertos pasan al defecto.
+  Un vínculo quitado sin conexión justo antes de actualizar puede volver con el
+  pull: el escritorio no sabe qué vínculos tiene el servidor.
+- **Límites del servidor en la conversión** (revisión del 2026-10-31): las
+  tarjetas no tenían límites, así que un defecto convertido podría quedar
+  rechazado por el servidor para siempre y bloquear el sync de la cuenta. La
+  función común corta el título a 500 unidades UTF-16 y la descripción a
+  20 000, por puntos de código enteros; un título vacío pasa a ser la clave (o
+  «—»). `data.fromCard` guarda el texto completo de lo que se cortó o se
+  sustituyó, y los casos de la tarjeta.
+- **Los vínculos de una tarjeta se reconcilian** con la conversión del
+  servidor, que pudo partir de una tarjeta más nueva o más vieja
+  (`defects::reconcile_pulled`, con lo que la conversión local apuntó en
+  `sync_state`, `converted_card:<id>`):
+  - sin edición local pendiente, cuando llega el defecto del servidor, un
+    vínculo que la conversión local inventó, que el servidor no tiene
+    (`data.fromCard.testCaseIds`) y que nada pendiente toca, se quita aquí
+    sin fila de oplog;
+  - con edición pendiente, esa edición gana: un vínculo de la conversión del
+    servidor (revisión 1, el HLC de la tarjeta) que la tarjeta editada ya no
+    tiene se borra y se encola el borrado, así que el servidor también lo
+    pierde. Un vínculo posterior (otro HLC) no se toca;
+  - una tarjeta más nueva que llega de un servidor anterior quita los
+    vínculos de caso que ya no tiene.
+- **Tarea en local, defecto en el servidor:** si una tarjeta que el servidor
+  tiene como defecto se cambió a tarea sin conexión, al actualizar la
+  tarjeta local (tarea) no se convierte y su cambio pendiente choca con la
+  lápida que dejó la conversión del servidor: aparece en el panel de
+  conflictos. El defecto del servidor llega igualmente.
+- **Una tarjeta de defecto nunca vuelve al tablero:** ni al restaurar los
+  hijos de un proyecto (`restore_project_children`) ni si algo la revive
+  (`planner::list_cards` las excluye).
+- **Las claves `DEF-` que conservan las tareas** cuentan también en los
+  bloques del servidor (`leaseRange` mira `planner_card` además de
+  `defect`), así que la web nunca las reparte.
+- **Crear desde un resultado guarda solo el vínculo al resultado:** su caso se
+  deriva a través de él (`result_link`), para que un nuevo enlace del
+  resultado no deje una copia antigua. En el servidor, la web también lee el
+  caso de un resultado en una sola función (`resultCase`).
+- **Orden con el paso 6:** la `0009` del servidor (ciclos) va antes que la
+  `0010`; el índice de claves de la `0010` conserva `cycleKey` y añade
+  `defectKey`, y `KEY_SQL` es textualmente igual a su expresión (lo comprueba
+  un test).
+- **Tarjetas que llegan de un servidor anterior** (o escritas antes de su 0010)
+  se convierten al aplicarlas con la misma función y por el camino lww normal:
+  un cambio local pendiente se vuelve conflicto. Una tarjeta nunca pisa un
+  defecto que ya está en esa revisión o en una posterior.
+- **Funcionalidad de sync `defects`** (decisión del usuario):
+  - el escritorio retiene defectos y vínculos hasta que el servidor de esa
+    cuenta lista `defects`;
+  - el servidor no envía defectos, vínculos ni tarjetas de defecto a quien no
+    la manda: un 0.1.x o un 0.2.0-alpha.1, que solo leen, conservan la copia
+    congelada de su planificador hasta que se actualizan (VERSIONING §6.5);
+  - un push sin `defects` que trae un `defect`, un `defect_link` o cualquier
+    cambio de una tarjeta de defecto recibe 400 `defects_unsupported` y no se
+    guarda nada del lote;
+  - `APPLIED_SET_VERSION = 6` (5 es el de los ciclos): el cursor vuelve a 0
+    y trae lo convertido.
+- **El dueño es el del proyecto** (ADR-0020 regla 1), no el `owner_id` de la
+  tarjeta; los comandos filtran por el dueño del proyecto.
+- **Crear desde un resultado** (`defect_draft_from_result`, solo lectura, y
+  `fromResult` en `defect_create`): pasos de la revisión ejecutada (del flujo
+  del resultado), lo obtenido del paso fallido (o el mensaje de error), build y
+  entorno del run, vínculos al resultado y a su caso, y una fila nueva de
+  `attachments` por evidencia del resultado y de sus pasos, con el mismo
+  `sha256` (ADR-0014). En la web no existe hasta que la API lea resultados
+  (INT-02).
+- **Caso de un resultado, en un solo sitio:** el caso, la revisión y el flujo
+  de un resultado se leen solo en `defects::result_link` (hoy: el del
+  resultado o la regla de enlace de su `test_key`). Los resultados importados
+  los resuelven al leer (paso 9, `runs/link.rs::resolve`): pasar a ese
+  resolvedor es un cambio en esa función.
+- **UI:** `docs/rediseno/` no tiene diseño de estas pantallas; se construyen
+  con los componentes de la lista de casos y del tablero del planificador. El
+  tablero tiene las seis columnas del flujo principal y «Otros» para Rechazado
+  y Aplazado; un movimiento que el ciclo no admite se rechaza con un aviso, y
+  cerrar, rechazar o soltar en «Otros» preguntan antes. `DefectEditor` y
+  `createDefectFromResult` se exportan para la pantalla de ejecución (EJE-02).
+- **Campos personalizados** (`data.custom`): el editor muestra los campos
+  definidos para la entidad `defect`. Ajustes del proyecto solo define hoy
+  campos de casos; definirlos para defectos queda como tarea aparte.
+- **Pendiente para INT-05:** `external_system`, `external_key`, `external_url`
+  y `external_synced_at` existen y se editan a mano (clave y enlace); la
+  correspondencia de estados con Jira la define INT-05.

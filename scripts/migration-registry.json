@@ -3,14 +3,11 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {
-      "0028": "E4 step 6 (CYC-01), already on main: comes with the merge of main",
-      "0029": "E4 step 8 (DEF-01): comes with the merge of main",
-      "0030": "E4 step 8 (DEF-01): comes with the merge of main"
-    },
+    "reserved": {},
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
-      "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024"
+      "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
+      "0030": "E4 step 8 (DEF-01) spare, never used: step 8 shipped as the single 0029 with its Rust step"
     }
   },
   "server": {

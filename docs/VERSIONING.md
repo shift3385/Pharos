@@ -193,12 +193,20 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      práctica recomendada, no un requisito.
    - **Dentro de una MENOR**, la versión no distingue un build de otro: lo
      hace la cabecera `x-pharos-sync-features` (`key-conflicts`, `append-only`,
-     `complete-payload`, `stable-steps`, `runs`, `custom-fields`). Un cliente que
+     `complete-payload`, `stable-steps`, `runs`, `custom-fields`, `cycles`,
+     `defects`). Un cliente que
      aún no ha visto `stable-steps` en las respuestas del servidor no le envía
      casos ni revisiones (los retiene y el diagnóstico los cuenta). Del mismo
      modo, sin `runs` no le envía runs, elementos, reglas de enlace, shards ni
-     resultados, ni le pide bloques de claves `run` (EJE-01), y sin
-     `custom-fields` no le envía definiciones de campos (FLD-01).
+     resultados, ni le pide bloques de claves `run` (EJE-01); sin
+     `custom-fields` no le envía definiciones de campos (FLD-01); sin
+     `cycles` no le envía configuraciones, ciclos ni elementos, ni le pide
+     bloques de claves `cycle` (CYC-01), y sin `defects` no le envía
+     defectos ni vínculos de defecto (DEF-01). El servidor valida
+     `test_cycle.status` con una lista cerrada (`planned`, `active`,
+     `closed`): un estado nuevo exige desplegar **antes** el servidor que lo
+     admite, porque un servidor anterior rechazaría con 400 todo el push que
+     lo lleve (el escritorio ya lee un estado desconocido como `planned`).
    - **Una funcionalidad que añade campos a una entidad existente** los
      protege de quien no la conoce: el push de un cliente sin ella conserva
      esos campos aunque envíe su estado completo (`FEATURE_KEYS` del servidor,
@@ -211,6 +219,30 @@ Los cambios que vienen tocan el formato de los datos, así que estas reglas son
      mismo número y distinto contenido, sin pérdida de datos (ADR-0018).
      Un cambio de protocolo dentro de una MENOR añade una funcionalidad ahí y
      el servidor responde lo de antes a quien no la envía.
+   - **`defects` (DEF-01, ADR-0016)** saca los defectos del planificador:
+     son entidades `defect` y `defect_link`, y la migración de servidor
+     `0010` convierte las tarjetas `planner_card` de tipo `defect` que guarda
+     (mismo id, revisión y HLC) y las deja como lápidas.
+     - **Pull** de un cliente sin `defects`: ni defectos, ni vínculos, ni
+       tarjetas de defecto (son las lápidas de la conversión). Así un 0.1.x o
+       un 0.2.0-alpha.1, que solo leen, **conservan la copia congelada de su
+       planificador hasta que se actualizan**. El filtro también oculta el
+       borrado de una tarjeta de defecto anterior a la migración: ese cliente
+       la sigue viendo hasta actualizarse, y entonces la migración la trae como
+       defecto borrado; al actualizar, su migración
+       local 0029 convierte esas tarjetas con la misma función y el reinicio
+       del cursor trae los defectos del servidor.
+     - **Push** de un cliente sin `defects` que lleva un `defect`, un
+       `defect_link` o cualquier cambio de una tarjeta de defecto (por su
+       carga o por lo que el servidor guarda de ella): 400
+       `defects_unsupported` y no se guarda nada del lote. Solo puede pasarle a
+       un build de esta MENOR anterior a DEF-01 (los publicados ya son de solo
+       lectura); sus cambios pendientes se quedan en el equipo y se convierten
+       al actualizar.
+     - **Escritorio actual con un servidor anterior**: retiene defectos y
+       vínculos hasta que el servidor lista `defects`; una tarjeta de defecto
+       que aún le llegue por pull la convierte al aplicarla, sin pisar un
+       defecto que ya tenga en esa revisión o en una posterior.
    - **Una clave nueva dentro de un blob opaco no necesita puerta** si se
      cumplen las tres: el escritorio y el servidor guardan el blob tal cual sin
      leer esa parte; todo cliente que aún puede hacer push la conoce; y el

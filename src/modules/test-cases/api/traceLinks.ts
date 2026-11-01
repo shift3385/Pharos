@@ -23,6 +23,21 @@ export async function projectTraceableCases(
   return out;
 }
 
+/** The project's cases as a picker lists them (a cycle's «Añadir casos»,
+ *  CYC-01): key, title, status and priority, from the summaries alone. */
+export async function projectCaseOptions(
+  projectId: string,
+  userId: string,
+): Promise<{ id: string; scenarioId: string; title: string; status: string; priority: string }[]> {
+  return (await testCaseApi.list(projectId, userId)).map((s) => ({
+    id: s.id,
+    scenarioId: s.scenarioId,
+    title: s.title,
+    status: s.status,
+    priority: s.priority,
+  }));
+}
+
 /** Replaces a case's requirement links, saving a new revision of the case (the
  *  rest of the case is untouched). Used by the free-text traceability migration. */
 export async function setCaseRequirementKeys(

@@ -30,7 +30,7 @@ afterEach(() => {
   delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
 });
 
-const input = { projectId: "p1", ownerId: "u1", kind: "defect" as const, title: "Bug", data: {} };
+const input = { projectId: "p1", ownerId: "u1", kind: "task" as const, title: "Prepare", data: {} };
 
 describe("plannerApi", () => {
   it("web: /api/planner-cards and reorder", async () => {

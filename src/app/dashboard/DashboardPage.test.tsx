@@ -148,7 +148,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     );
     expect(screen.getByTestId("kpi-defects")).toHaveAttribute(
       "href",
-      "/projects/p-pcl/planner",
+      "/projects/p-pcl/defects",
     );
   });
 

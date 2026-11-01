@@ -162,6 +162,14 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("../migrations/0027_case_fields_restore.sql"),
     ),
     (
+        "0028_cycles.sql",
+        include_str!("../migrations/0028_cycles.sql"),
+    ),
+    (
+        "0029_defects.sql",
+        include_str!("../migrations/0029_defects.sql"),
+    ),
+    (
         "0031_import_review.sql",
         include_str!("../migrations/0031_import_review.sql"),
     ),
@@ -184,6 +192,7 @@ const RUST_STEPS: &[(&str, RustStep)] = &[
         "0027_case_fields_restore.sql",
         crate::custom_fields::migrate_restore,
     ),
+    ("0029_defects.sql", crate::defects::migrate_planner_defects),
 ];
 
 pub struct Db {

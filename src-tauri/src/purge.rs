@@ -47,6 +47,10 @@ pub struct PurgeSummary {
     /// Runs, run items and unlinked mappings (EJE-01); a run takes its shards,
     /// results and step results with it.
     pub(crate) runs: usize,
+    /// Test cycles, their items and configurations (CYC-01).
+    pub(crate) cycles: usize,
+    /// Defects and defect links (DEF-01); a defect takes its attachments.
+    pub(crate) defects: usize,
     pub(crate) templates: usize,
 }
 
@@ -59,6 +63,8 @@ impl PurgeSummary {
             + self.planner_cards
             + self.custom_fields
             + self.runs
+            + self.cycles
+            + self.defects
             + self.templates
     }
 }
@@ -142,7 +148,7 @@ struct Child {
     dependents: &'static [&'static str],
 }
 
-const CHILDREN: [Child; 8] = [
+const CHILDREN: [Child; 13] = [
     Child {
         entity: "test_plan",
         table: "test_plans",
@@ -208,6 +214,41 @@ const CHILDREN: [Child; 8] = [
         key: None,
         dependents: &[],
     },
+    // A purged cycle leaves its runs with a dangling `cycle_id` (CYC-01): a
+    // run without its cycle is still valid.
+    Child {
+        entity: "test_cycle",
+        table: "test_cycles",
+        key: Some(("cycle_key", KeyKind::Cycle)),
+        dependents: &[],
+    },
+    Child {
+        entity: "test_cycle_item",
+        table: "test_cycle_items",
+        key: None,
+        dependents: &[],
+    },
+    // Only a project's cascade deletes a configuration: it goes with it.
+    Child {
+        entity: "configuration",
+        table: "configurations",
+        key: None,
+        dependents: &[],
+    },
+    // A defect's links are deleted with it (DEF-01) and go first.
+    Child {
+        entity: "defect_link",
+        table: "defect_links",
+        key: None,
+        dependents: &[],
+    },
+    Child {
+        entity: "defect",
+        table: "defects",
+        key: Some(("defect_key", KeyKind::Defect)),
+        // Its files go with the next evidence collection (ADR-0014).
+        dependents: &["DELETE FROM attachments WHERE owner_entity = 'defect' AND owner_id = ?1"],
+    },
 ];
 
 fn purge_children(
@@ -226,8 +267,21 @@ fn purge_children(
     } else {
         "x.project_id IN (SELECT id FROM projects WHERE owner_id = ?1)"
     };
+    // A cycle item still live under a cycle that is deleted or gone (another
+    // device added it while this one deleted the cycle) goes too, once it is
+    // older than the retention: an item pulled before its cycle waits.
+    let expired = if child.table == "test_cycle_items" {
+        format!(
+            "(({EXPIRED}) OR (x.deleted_at IS NULL
+               AND x.cycle_id NOT IN (SELECT id FROM test_cycles WHERE deleted_at IS NULL
+                                       OR julianday(deleted_at) > julianday('now') - ?2)
+               AND julianday(x.updated_at) <= julianday('now') - ?2))"
+        )
+    } else {
+        EXPIRED.to_string()
+    };
     let sql = format!(
-        "SELECT x.id, x.project_id, {key_col} FROM {} x WHERE {owned} AND {EXPIRED}",
+        "SELECT x.id, x.project_id, {key_col} FROM {} x WHERE {owned} AND {expired}",
         child.table
     );
     let mut purged = 0;
@@ -382,7 +436,7 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
         *n = purge_children(conn, user, days, child)?;
     }
-    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields] =
+    let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields, cycles, cycle_items, configurations, defect_links, defects] =
         counts;
     Ok(PurgeSummary {
         test_plans,
@@ -391,6 +445,8 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
         planner_cards,
         custom_fields,
         runs: runs + run_items + mappings + purge_orphan_results(conn, user, days)?,
+        cycles: cycles + cycle_items + configurations,
+        defects: defects + defect_links,
         projects: purge_projects(conn, user, days)?,
         templates: purge_templates(conn, user, days)?,
     })
@@ -410,7 +466,18 @@ pub(crate) fn purge_evidence(conn: &Connection, user: &str, days: i64) -> Result
             ),
             params![user, days],
         )
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?
+        + conn
+            .execute(
+                &format!(
+                    "DELETE FROM attachments AS x WHERE x.owner_entity = 'defect' \
+                     AND x.owner_id IN (SELECT d.id FROM defects d \
+                                        JOIN projects p ON p.id = d.project_id \
+                                        WHERE p.owner_id = ?1) AND {EXPIRED}"
+                ),
+                params![user, days],
+            )
+            .map_err(|e| e.to_string())?;
     let expired = crate::evidence::expire(conn)?;
     crate::evidence::release_unreferenced(conn)?;
     Ok(removed + expired)

@@ -678,6 +678,49 @@ pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize,
     Ok(removed)
 }
 
+/// One `attachments` row: a use of a stored content by a planner card, a
+/// defect or (step 7) a result.
+pub(crate) struct AttachmentRow<'a> {
+    pub id: &'a str,
+    pub workspace_id: &'a str,
+    pub project_id: &'a str,
+    pub owner_entity: &'a str,
+    pub owner_id: &'a str,
+    pub name: &'a str,
+    pub mime: Option<&'a str>,
+    pub kind: &'a str,
+    pub sha256: &'a str,
+    pub size: i64,
+    pub user: &'a str,
+}
+
+/// Inserts an attachment row. The caller records the content (`record_blob`)
+/// when it stored it; a new use of content already here (a defect created
+/// from a result) does not touch its `blobs` state.
+pub(crate) fn insert_attachment(conn: &Connection, a: &AttachmentRow) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO attachments (id, workspace_id, project_id, sha256, size, mime, name, \
+         owner_entity, owner_id, kind, created_by, updated_by, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?11, \
+                 strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        params![
+            a.id,
+            a.workspace_id,
+            a.project_id,
+            a.sha256,
+            a.size,
+            a.mime,
+            a.name,
+            a.owner_entity,
+            a.owner_id,
+            a.kind,
+            a.user
+        ],
+    )
+    .map(drop)
+    .map_err(|e| e.to_string())
+}
+
 /// What the audit keeps of an attachment: never its bytes.
 pub(crate) fn attachment_fact(
     id: &str,

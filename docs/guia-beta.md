@@ -58,6 +58,17 @@ los controles de ejecución salen deshabilitados con «Próximamente»), sincron
 adjuntos y plantillas propias, ni instalador firmado. Si la base local no
 abre, la pantalla que lo explica no ofrece "Exportar diagnóstico" (apartado 5).
 
+### 1.2 Lo que llega con la próxima 0.2.0: Defectos (DEF-01)
+
+- **Los defectos tienen su propio módulo,** «Defectos», dentro de cada
+  proyecto: lista y tablero por estado, severidad aparte de la prioridad,
+  ciclo de vida (Nuevo → Abierto → En curso → Corregido → En retest →
+  Cerrado, con Rechazado y Aplazado), resolución al cerrar o rechazar, y
+  vínculos a casos, requisitos y resultados.
+- **El planificador queda para tareas y datos de prueba.** Al actualizar,
+  cada tarjeta «Defecto» pasa a Defectos con la misma clave `DEF-xxx`, sus
+  casos vinculados y sus adjuntos.
+
 ## 2. Antes de empezar
 
 La app instalada inicia sesión y sincroniza contra la API de Pharos en
@@ -152,7 +163,18 @@ seguir.
 - [ ] El `.feature` lleva `@REQ-xxx` y el ID de cada caso, y se puede filtrar
       por `@ATS_xxx` con playwright-bdd o Cucumber.
 
-### 4.4b Importar resultados de pruebas automáticas (ING-02..05)
+### 4.4b Defectos (próxima 0.2.0)
+
+- [ ] Con defectos en el planificador de la versión anterior: tras actualizar,
+      aparecen en «Defectos» con la misma clave, los mismos casos vinculados y
+      los mismos adjuntos; el planificador ya no los muestra y lo avisa.
+- [ ] Crear un defecto, vincularlo a un caso y verlo en la matriz de
+      Trazabilidad; cerrarlo (pide la resolución) y comprobar que la matriz
+      deja de marcarlo como abierto.
+- [ ] En el tablero, arrastrar un defecto «Nuevo» a «Corregido»: no se deja y
+      lo explica.
+
+### 4.4c Importar resultados de pruebas automáticas (ING-02..05)
 
 En un proyecto, **Ejecuciones → Importar informe** acepta Cucumber Messages
 (`--format message:informe.ndjson`), CTRF, JUnit XML, el JSON de Playwright

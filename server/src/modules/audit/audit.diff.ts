@@ -63,6 +63,11 @@ export function location(entity: string, id: string, before: Obj | null, after: 
   const either = (key: string) => strField(after, key) ?? strField(before, key);
   return {
     projectId: entity === "project" ? id : either("projectId"),
-    entityKey: either("scenarioId") ?? either("requirementKey") ?? either("cardKey"),
+    entityKey:
+      either("scenarioId") ??
+      either("requirementKey") ??
+      either("cardKey") ??
+      either("runKey") ??
+      either("defectKey"),
   };
 }

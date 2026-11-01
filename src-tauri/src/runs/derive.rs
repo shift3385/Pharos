@@ -126,8 +126,9 @@ fn cmp_time(a: Option<i64>, b: Option<i64>) -> Ordering {
     a.cmp(&b)
 }
 
-/// The order of attempts of one test: time, then `attempt`, then HLC.
-fn cmp_attempts(a: &Attempt, b: &Attempt) -> Ordering {
+/// The order of attempts of one test: time, then `attempt`, then HLC. Also
+/// orders the finals of a test across the runs of a cycle (`cycles::progress`).
+pub(crate) fn cmp_attempts(a: &Attempt, b: &Attempt) -> Ordering {
     cmp_time(a.time(), b.time())
         .then(a.attempt.cmp(&b.attempt))
         .then_with(|| crate::hlc::cmp_encoded(a.hlc, b.hlc))

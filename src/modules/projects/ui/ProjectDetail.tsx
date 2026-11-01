@@ -11,10 +11,13 @@ import {
 import {
   TestCasesPage,
   projectCaseCount,
+  projectCaseOptions,
   projectTraceableCases,
   type RequirementOption,
 } from "@modules/test-cases";
-import { PlannerBoard, type LinkableCase } from "@modules/planner";
+import { PlannerBoard } from "@modules/planner";
+import { CyclesPage } from "@modules/cycles";
+import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { TraceabilityPage, requirementApi } from "@modules/traceability";
 import { RunsPage } from "@modules/runs";
 import { projectApi } from "../api/projectApi";
@@ -52,8 +55,9 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const latest = useRef(0);
   // Cross-module options, loaded by this composing module so test-cases and
-  // planner never depend on traceability (or on each other).
-  const [linkableCases, setLinkableCases] = useState<LinkableCase[]>([]);
+  // defects never depend on traceability (or on each other).
+  const [linkableCases, setLinkableCases] = useState<LinkableItem[]>([]);
+  const [linkableRequirements, setLinkableRequirements] = useState<LinkableItem[]>([]);
 
   /** Loads the project; an answer that arrives after a newer request is
    *  dropped, so a slow response never overwrites newer data. */
@@ -74,10 +78,12 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
 
   useEffect(() => {
     let live = true;
-    if (tab === "planner" || tab === "runs") {
+    if (tab === "defects" || tab === "runs") {
       void projectTraceableCases(projectId, ownerId).then((list) => {
-        if (live)
-          setLinkableCases(list.map((c) => ({ id: c.id, scenarioId: c.scenarioId, title: c.title })));
+        if (live) setLinkableCases(list.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title })));
+      });
+      void requirementApi.list(projectId, ownerId).then((list) => {
+        if (live) setLinkableRequirements(list.map((r) => ({ id: r.id, key: r.requirementKey, title: r.title })));
       });
     }
     return () => {
@@ -117,6 +123,13 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
             requirements={facts?.requirements ?? []}
           />
         )}
+        {tab === "cycles" && (
+          <CyclesPage
+            projectId={projectId}
+            loadCases={() => projectCaseOptions(projectId, ownerId)}
+            requirementKeys={(facts?.requirements ?? []).map((r) => r.requirementKey)}
+          />
+        )}
         {tab === "traceability" && (
           <TraceabilityPage
             projectId={projectId}
@@ -125,10 +138,21 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
             caseIdDigits={project.caseIdDigits}
           />
         )}
-        {tab === "planner" && (
-          <PlannerBoard projectId={projectId} ownerId={ownerId} cases={linkableCases} />
+        {tab === "defects" && (
+          <DefectsPage
+            projectId={projectId}
+            userId={ownerId}
+            cases={linkableCases}
+            requirements={linkableRequirements}
+          />
         )}
-        {tab === "runs" && <RunsPage projectId={projectId} cases={linkableCases} />}
+        {tab === "runs" && (
+          <RunsPage
+            projectId={projectId}
+            cases={linkableCases.map((c) => ({ id: c.id, scenarioId: c.key, title: c.title }))}
+          />
+        )}
+        {tab === "planner" && <PlannerBoard projectId={projectId} ownerId={ownerId} />}
         {tab === "settings" && (
           <ProjectSettings project={project} onSaved={refresh} />
         )}

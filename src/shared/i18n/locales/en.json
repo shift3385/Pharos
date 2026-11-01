@@ -287,7 +287,9 @@
         "test_case": "Test case",
         "requirement": "Requirement",
         "planner_card": "Planner card",
-        "custom_field": "Custom field"
+        "custom_field": "Custom field",
+        "defect": "Defect",
+        "defect_link": "Defect link"
       },
       "fields": {
         "title": "Title",
@@ -489,12 +491,15 @@
       "project": {
         "plan": "Plan",
         "cases": "Cases",
+        "cycles": "Cycles",
         "planner": "Board",
         "traceability": "Trace",
         "settings": "Project",
+        "defects": "Defects",
         "runs": "Runs"
       }
-    }
+    },
+    "defects": "Defects"
   },
   "projects": {
     "title": "Projects",
@@ -521,9 +526,11 @@
     "tab": {
       "plan": "Test plan",
       "cases": "Test cases",
+      "cycles": "Test cycles",
       "settings": "Project settings",
       "planner": "Planner",
       "traceability": "Traceability",
+      "defects": "Defects",
       "runs": "Runs"
     },
     "deleteTitle": "Delete project",
@@ -1475,7 +1482,9 @@
     "deleteTitle": "Delete the card?",
     "deleteMessage": "«{{card}}» is removed from the planner.",
     "deleteConfirm": "Yes, delete",
-    "deleteFailed": "The card could not be deleted. Try again."
+    "deleteFailed": "The card could not be deleted. Try again.",
+    "defectsMoved": "Defects now have their own module, with their lifecycle and severity.",
+    "openDefects": "Go to Defects"
   },
   "traceability": {
     "title": "Traceability",
@@ -1877,6 +1886,414 @@
       "field": "Field",
       "key": "Key",
       "value": "Value"
+    }
+  },
+  "configurations": {
+    "title": "Configurations",
+    "desc": "Where cycles run: browser, OS, device and locale. Labels are the texts an import recognizes each configuration by (e.g. chromium or a Playwright project name).",
+    "new": "New configuration",
+    "newTitle": "New configuration",
+    "editTitle": "Edit configuration",
+    "dialogHint": "A label belongs to one configuration of the project.",
+    "name": "Name",
+    "namePlaceholder": "Chrome · Windows 11",
+    "attr": {
+      "browser": "Browser",
+      "os": "Operating system",
+      "device": "Device",
+      "locale": "Locale"
+    },
+    "attrPlaceholder": {
+      "browser": "Chrome",
+      "os": "Windows 11",
+      "device": "Desktop",
+      "locale": "en-US"
+    },
+    "labels": "Import labels",
+    "labelsHint": "Type a label and press Enter or a comma.",
+    "labelsPlaceholder": "chromium, Desktop Chrome",
+    "removeLabel": "Remove the label {{label}}",
+    "save": "Save",
+    "saving": "Saving…",
+    "empty": "No configurations yet. Create one to run cycles on several browsers or devices.",
+    "listLabel": "Configurations of the project",
+    "actions": "Actions of {{name}}",
+    "edit": "Edit",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "archive": "Archive",
+    "unarchive": "Restore",
+    "archived": "Archived",
+    "showArchived": "Show archived",
+    "savedToast": "Configuration “{{name}}” saved",
+    "archivedToast": "Configuration “{{name}}” archived",
+    "restoredToast": "Configuration “{{name}}” restored",
+    "moved": "{{name}} moved to position {{n}}",
+    "loadFailed": "Could not load the configurations",
+    "saveFailed": "Could not save the configuration",
+    "error": {
+      "labelTaken": "Another configuration already uses that label: {{detail}}."
+    },
+    "clashWins": "Label repeated in “{{other}}” (created on another device): imports with {{labels}} use this one.",
+    "clashLoses": "Repeated label: imports with {{labels}} use “{{other}}”. Remove it from one of them."
+  },
+  "cycles": {
+    "title": "Test cycles",
+    "subtitle": "What runs, where, against which build and when. Running a cycle creates one run per configuration.",
+    "new": "New cycle",
+    "newTitle": "New cycle",
+    "editTitle": "Edit {{key}}",
+    "create": "Create cycle",
+    "save": "Save",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "clone": "Clone",
+    "delete": "Delete",
+    "moreActions": "More cycle actions",
+    "back": "Cycles",
+    "all": "All",
+    "filterLabel": "Filter by status",
+    "listLabel": "Cycles of the project",
+    "empty": "No cycles yet. Create one to plan which cases run and on which configurations.",
+    "emptyFilter": "No cycle with this status.",
+    "notFound": "This cycle no longer exists.",
+    "loadFailed": "Could not load the cycles",
+    "saveFailed": "Could not save the cycle",
+    "createdToast": "Cycle {{key}} created",
+    "savedToast": "Cycle saved",
+    "clonedToast": "Cycle cloned as {{key}}",
+    "deletedToast": "Cycle {{key}} deleted",
+    "deleteTitle": "Delete {{key}}",
+    "deleteMessage_one": "The cycle and its items are deleted. Its run is kept, without a cycle.",
+    "deleteMessage_other": "The cycle and its items are deleted. Its {{count}} runs are kept, without a cycle.",
+    "deleteConfirm": "Yes, delete",
+    "notApproved": "Not approved",
+    "noConfigurations": "The project has no configurations. Create them in Project settings.",
+    "configurationsHint": "Without configurations, the cycle runs as a single run.",
+    "tabsLabel": "Cycle content",
+    "tab": {
+      "items": "Items",
+      "runs": "Runs"
+    },
+    "status": {
+      "planned": "Planned",
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "statusPlural": {
+      "planned": "Planned",
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "runStatus": {
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "aborted": "Aborted"
+    },
+    "field": {
+      "title": "Title",
+      "description": "Description",
+      "build": "Build",
+      "environment": "Environment",
+      "milestone": "Plan milestone",
+      "sprint": "Sprint",
+      "startsOn": "Starts",
+      "endsOn": "Ends",
+      "status": "Status",
+      "configurations": "Configurations"
+    },
+    "placeholder": {
+      "title": "Regression 1.4",
+      "build": "1.4.2",
+      "environment": "staging",
+      "milestone": "Milestone 2",
+      "sprint": "Sprint 5"
+    },
+    "meta": {
+      "build": "Build {{build}}",
+      "environment": "Environment {{environment}}",
+      "milestone": "{{milestone}}",
+      "sprint": "{{sprint}}"
+    },
+    "col": {
+      "key": "Key",
+      "title": "Cycle",
+      "status": "Status",
+      "dates": "Dates",
+      "configurations": "Configs",
+      "progress": "Progress",
+      "runs": "Runs"
+    },
+    "progress": {
+      "words": "{{executed}} of {{total}} executed, {{passed}} pass",
+      "label": "{{executed}} % executed, {{passed}} % pass, {{failed}} fail, {{blocked}} blocked",
+      "none": "No items",
+      "countsLabel": "Cycle results"
+    },
+    "cell": {
+      "passed": "Pass",
+      "failed": "Fail",
+      "blocked": "Blocked",
+      "skipped": "Skipped",
+      "other": "Other",
+      "not_run": "Not run"
+    },
+    "items": {
+      "label": "Items of the cycle",
+      "case": "Case",
+      "title": "Title",
+      "assignee": "Assignee",
+      "assigneeOf": "Assignee of {{key}}",
+      "unassigned": "Unassigned",
+      "result": "Result",
+      "unknownConfiguration": "Deleted configuration",
+      "caseGone": "Deleted case",
+      "flow": "Flow {{id}}",
+      "row": "Row {{id}}",
+      "empty": "The cycle has no cases. Add them one by one or by filter.",
+      "actions": "Actions of {{key}}",
+      "actionsHeader": "Actions",
+      "remove": "Remove from the cycle",
+      "removedToast": "{{key}} removed from the cycle"
+    },
+    "add": {
+      "action": "Add cases",
+      "title": "Add cases to the cycle",
+      "search": "Search by key or title",
+      "none": "No case matches.",
+      "listLabel": "Cases of the project",
+      "inCycle": "Already in the cycle",
+      "assignee": "Assign to",
+      "assigneeHint": "Optional; you can change it later on each item.",
+      "notApprovedWarning_one": "{{count}} chosen case is not approved. It is added anyway.",
+      "notApprovedWarning_other": "{{count}} chosen cases are not approved. They are added anyway.",
+      "confirm_one": "Add {{count}} case",
+      "confirm_other": "Add {{count}} cases",
+      "addedToast_one": "{{count}} case added.",
+      "addedToast_other": "{{count}} cases added.",
+      "skippedToast_one": "{{count}} was already in the cycle.",
+      "skippedToast_other": "{{count}} were already in the cycle.",
+      "notApprovedToast": "Not approved: {{keys}}.",
+      "overlappingToast": "Already covered by another item of the cycle: {{keys}}."
+    },
+    "filter": {
+      "action": "Add by filter",
+      "title": "Add cases by filter",
+      "hint": "The cases that match now are added; if they change later, the cycle does not.",
+      "tags": "Tags",
+      "tagsHint": "Any of them, separated by commas.",
+      "priorities": "Priority",
+      "statuses": "Case status",
+      "requirements": "Requirements",
+      "minRisk": "Minimum risk",
+      "minRiskHint": "The highest risk of the case's requirements.",
+      "anyRisk": "Any",
+      "risk": {
+        "medium": "Medium or high (≥ 5)",
+        "high": "High (≥ 13)"
+      },
+      "matches_one": "{{count}} case matches.",
+      "matches_other": "{{count}} cases match.",
+      "confirm": "Add"
+    },
+    "execute": {
+      "action": "Run",
+      "title": "Run {{key}}",
+      "hint_one": "One run per configuration is created with {{count}} item; each case is frozen at its current revision.",
+      "hint_other": "One run per configuration is created with {{count}} items; each case is frozen at its current revision.",
+      "configurations": "Configurations",
+      "confirm_one": "Create {{count}} run",
+      "confirm_other": "Create {{count}} runs",
+      "running": "Creating…",
+      "doneToast_one": "Run created: {{keys}}",
+      "doneToast_other": "{{count}} runs created: {{keys}}",
+      "desktopOnly": "Runs are created from the desktop app.",
+      "goneHint": "Cannot run: remove the deleted cases from the cycle ({{keys}}).",
+      "missingToast_one": "{{count}} configuration has not reached this device yet and was skipped.",
+      "missingToast_other": "{{count}} configurations have not reached this device yet and were skipped."
+    },
+    "runs": {
+      "label": "Runs of the cycle",
+      "hint": "Step-by-step execution of each run comes with the Executions screen.",
+      "empty": "No runs yet. Press “Run” to create one per configuration.",
+      "key": "Run",
+      "title": "Title",
+      "configuration": "Configuration",
+      "status": "Status",
+      "started": "Started"
+    },
+    "error": {
+      "dates": "The cycle ends before it starts.",
+      "archivedConfiguration": "An archived configuration cannot be added.",
+      "closed": "The cycle is closed. Reopen it to change or run it.",
+      "empty": "The cycle has no cases.",
+      "noConfiguration": "Every configuration of the cycle is archived.",
+      "keyConflict": "{{key}} has an open key conflict. Resolve it before running.",
+      "caseGone": "The case {{key}} was deleted. Remove it from the cycle to run it.",
+      "flowGone": "The chosen flow of {{key}} no longer exists in the case. Remove that item and add it again.",
+      "rowGone": "The chosen row of {{key}} no longer exists in the case. Remove that item and add it again.",
+      "noConfigurationChosen": "Choose at least one configuration.",
+      "configurationMissing": "The cycle's configurations have not reached this device yet. Sync and try again."
+    }
+  },
+  "defects": {
+    "title": "Defects",
+    "newDefect": "New defect",
+    "fromResult": "From a result",
+    "editDefect": "Edit defect",
+    "back": "Back",
+    "save": "Save",
+    "saving": "Saving…",
+    "savedToast": "Defect saved",
+    "saveFailed": "The defect could not be saved: {{reason}}",
+    "titleRequired": "The title is required.",
+    "empty": "This project has no defects yet.",
+    "noMatch": "No defect matches the filters.",
+    "clearFilters": "Clear filters",
+    "count_one": "{{count}} defect",
+    "count_other": "{{count}} defects",
+    "view": {
+      "label": "View",
+      "list": "List",
+      "board": "Board"
+    },
+    "filter": {
+      "label": "Status",
+      "open": "Open",
+      "all": "All",
+      "closed": "Closed",
+      "search": "Search defects…",
+      "searchLabel": "Search defects",
+      "severity": "Severity"
+    },
+    "column": {
+      "key": "ID",
+      "title": "Title",
+      "severity": "Severity",
+      "priority": "Priority",
+      "status": "Status",
+      "cases": "Cases",
+      "updated": "Updated"
+    },
+    "status": {
+      "new": "New",
+      "open": "Open",
+      "in_progress": "In progress",
+      "fixed": "Fixed",
+      "retest": "Retest",
+      "closed": "Closed",
+      "rejected": "Rejected",
+      "deferred": "Deferred",
+      "other": "Other"
+    },
+    "severity": {
+      "critical": "Critical",
+      "major": "Major",
+      "minor": "Minor",
+      "trivial": "Trivial"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "resolution": {
+      "label": "Resolution",
+      "none": "Choose a resolution",
+      "fixed": "Fixed",
+      "duplicate": "Duplicate",
+      "not_reproducible": "Not reproducible",
+      "wont_fix": "Won't fix",
+      "by_design": "Works as designed"
+    },
+    "board": {
+      "label": "Defect board by status",
+      "notAllowed": "A «{{from}}» defect cannot move to «{{to}}».",
+      "moveFailed": "The status could not be changed: {{reason}}",
+      "chooseStatus": "Which status does «{{title}}» move to?",
+      "drag": {
+        "handle": "Move defect «{{defect}}»",
+        "help": "To move a defect, press Space or Enter on its handle, move it across columns with the arrows and press Space or Enter to drop it. Escape cancels. Only lifecycle changes are allowed.",
+        "start": "Defect «{{defect}}» picked up.",
+        "over": "Defect «{{defect}}» over column {{column}}.",
+        "end": "Defect «{{defect}}» dropped on {{column}}.",
+        "cancel": "Move cancelled; defect «{{defect}}» goes back."
+      }
+    },
+    "resolutionDialog": {
+      "title": "Close {{key}}",
+      "rejectTitle": "Reject {{key}}",
+      "message": "«{{title}}» moves to «{{status}}». Give the resolution.",
+      "fixedInBuild": "Fixed in build (optional)",
+      "confirm": "Apply",
+      "cancel": "Cancel"
+    },
+    "section": {
+      "details": "Details",
+      "reproduce": "Reproduction",
+      "found": "Where it was found",
+      "links": "Links",
+      "external": "External tracking",
+      "attachments": "Evidence",
+      "custom": "Custom fields"
+    },
+    "field": {
+      "title": "Title",
+      "description": "Description",
+      "steps": "Steps to reproduce",
+      "expected": "Expected result",
+      "actual": "Actual result",
+      "severity": "Severity",
+      "severityHint": "Impact on the system. Priority is how urgent the fix is.",
+      "priority": "Priority",
+      "status": "Status",
+      "foundInBuild": "Build",
+      "foundInEnvironment": "Environment",
+      "fixedInBuild": "Fixed in build",
+      "assignee": "Assignee",
+      "reporter": "Reported by",
+      "externalKey": "External key",
+      "externalUrl": "External link",
+      "externalHint": "To note the issue in another tool. Jira sync comes with INT-05.",
+      "labels": "Labels"
+    },
+    "links": {
+      "cases": "Test cases",
+      "requirements": "Requirements",
+      "results": "Results",
+      "noCases": "This project has no test cases yet.",
+      "noRequirements": "This project has no requirements yet.",
+      "noResults": "No result linked.",
+      "addResult": "Link a result",
+      "remove": "Remove the link to {{label}}",
+      "afterSave": "Results are linked once the defect is saved."
+    },
+    "results": {
+      "title": "Results that did not pass",
+      "pickToCreate": "Choose the failed attempt the defect comes from: the steps of the executed revision, the actual result, the build and the environment are filled in, and its evidence is added.",
+      "pickToLink": "Choose the attempt to link to this defect.",
+      "empty": "No failed results in this project's runs.",
+      "search": "Search by run, case or test…",
+      "searchLabel": "Search results",
+      "attempt": "attempt {{n}}",
+      "choose": "Choose",
+      "close": "Close"
+    },
+    "fromResultBanner": "Prefilled from {{label}}. On save the defect is linked to the result and its case, and its evidence is added without copying the files.",
+    "attachAfterSave": "Save the defect to add evidence.",
+    "deleteTitle": "Delete the defect?",
+    "deleteMessage": "«{{defect}}» is deleted with its links. Its key is never used again.",
+    "deleteConfirm": "Yes, delete",
+    "deleteFailed": "The defect could not be deleted. Try again.",
+    "delete": "Delete defect",
+    "webOnlyDesktop": "Evidence and results are in the desktop app.",
+    "casesTitle_one": "{{count}} linked test case",
+    "casesTitle_other": "{{count}} linked test cases",
+    "resultStatus": {
+      "failed": "Failed",
+      "blocked": "Blocked",
+      "other": "Other"
     }
   },
   "runs": {

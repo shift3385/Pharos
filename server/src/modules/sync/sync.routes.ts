@@ -11,6 +11,8 @@ import {
   FEATURE_DATA_KEYS,
   FEATURE_KEYS,
   isAppendOnly,
+  isCycleEntity,
+  isDefectEntity,
   isExecution,
   keyBlocksSchema,
   pullSchema,
@@ -27,7 +29,9 @@ import {
   missingFeatures,
   sendsStableSteps,
   understandsAppendOnly,
+  understandsCycles,
   understandsKeyConflicts,
+  understandsDefects,
   understandsRuns,
 } from "./sync.version";
 
@@ -85,6 +89,24 @@ export function syncRoutes(
         message: "This client did not announce the runs sync feature.",
       });
     }
+    if (!understandsCycles(req) && deltas.some((d) => isCycleEntity(d.entity))) {
+      return reply.code(400).send({
+        code: "cycles_unsupported",
+        message: "This client did not announce the cycles sync feature.",
+      });
+    }
+    // Defects have their own entity since DEF-01: a client that does not
+    // know it can neither push one nor touch a planner defect card, which the
+    // server converted (migration 0010). Nothing of the batch is stored.
+    if (
+      !understandsDefects(req) &&
+      (deltas.some((d) => isDefectEntity(d.entity)) || (await repo.touchesDefectCards(userId, deltas)))
+    ) {
+      return reply.code(400).send({
+        code: "defects_unsupported",
+        message: "This client did not announce the defects sync feature; update Pharos to change defects.",
+      });
+    }
     // An old client (no `complete-payload`) never resets a field it does not
     // know: its upserts keep the keys it leaves out. A newer one that lacks a
     // feature keeps the keys that feature added (`FEATURE_KEYS`).
@@ -128,6 +150,8 @@ export function syncRoutes(
     const page = await repo.since(req.userId as string, since, limit, {
       appendOnly,
       runs: understandsRuns(req),
+      cycles: understandsCycles(req),
+      defects: understandsDefects(req),
     });
     const { hasMore } = page;
     const cursor = page.docs.length

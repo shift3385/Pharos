@@ -8,7 +8,9 @@ mod audit_tests;
 mod custom_fields;
 #[cfg(test)]
 mod custom_fields_tests;
+mod cycles;
 mod db;
+mod defects;
 mod diag;
 mod downloads;
 mod evidence;
@@ -173,6 +175,40 @@ pub fn run() {
             runs::result_record,
             runs::results_list,
             runs::unlinked_mapping_set,
+            cycles::configuration_list,
+            cycles::configuration_create,
+            cycles::configuration_update,
+            cycles::configuration_archive,
+            cycles::configuration_reorder,
+            cycles::cycle_list,
+            cycles::cycle_get,
+            cycles::cycle_create,
+            cycles::cycle_update,
+            cycles::cycle_clone,
+            cycles::cycle_delete,
+            cycles::cycle_items_list,
+            cycles::cycle_items_add,
+            cycles::cycle_items_add_by_filter,
+            cycles::cycle_filter_preview,
+            cycles::cycle_item_update,
+            cycles::cycle_items_remove,
+            cycles::cycle_items_reorder,
+            cycles::cycle_execute,
+            cycles::cycle_runs,
+            cycles::cycle_progress_get,
+            defects::defect_list,
+            defects::defect_get,
+            defects::defect_create,
+            defects::defect_update,
+            defects::defect_transition,
+            defects::defect_delete,
+            defects::defect_link_set,
+            defects::defect_draft_from_result,
+            defects::defect_result_list,
+            defects::defect_attachment_add,
+            defects::defect_attachment_list,
+            defects::defect_attachment_save,
+            defects::defect_attachment_delete,
             runs::import::run_import_preview,
             runs::import::run_import,
             runs::import::run_import_attach,

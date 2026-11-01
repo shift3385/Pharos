@@ -7,6 +7,7 @@
 //  - execution status is `not_run` until execution exists (v0.0.3, EJE-04);
 //  - defects reach a row through the case they are linked to.
 
+import { isOpenDefect } from "@modules/defects";
 import type { RequirementPriority } from "./types";
 
 export type Coverage = "covered" | "not_covered";
@@ -29,12 +30,17 @@ export interface MatrixCase {
 
 export interface MatrixDefect {
   id: string;
-  cardKey?: string | null;
+  defectKey?: string | null;
   title: string;
-  /** Planner column; a defect not in `done` is open. */
+  /** Lifecycle status (ADR-0016): open unless closed or rejected. */
   status: string;
+  /** Cases it reaches, directly or through a linked result. */
   testCaseIds: string[];
 }
+
+/** Open as the defects module says (`isOpenDefect`, ADR-0016): not closed
+ *  nor rejected; a deferred one is still open. */
+const isOpen = (d: MatrixDefect) => isOpenDefect(d.status);
 
 export interface MatrixRow {
   requirementKey: string;
@@ -80,7 +86,7 @@ export interface TraceabilityMatrix {
 const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
 
 /** Visible id of a defect: its DEF key, or its title when it has none yet. */
-export const defectLabel = (d: MatrixDefect) => d.cardKey || d.title;
+export const defectLabel = (d: MatrixDefect) => d.defectKey || d.title;
 
 export function buildMatrix(
   requirements: MatrixRequirement[],
@@ -111,7 +117,7 @@ export function buildMatrix(
       const caseDefects = defectsOf(c.id);
       const notes: MatrixNote[] = [];
       if (c.status === "obsolete") notes.push("obsoleteCase");
-      if (caseDefects.some((d) => d.status !== "done")) notes.push("openDefect");
+      if (caseDefects.some(isOpen)) notes.push("openDefect");
       execution.not_run++;
       rows.push({
         ...base,

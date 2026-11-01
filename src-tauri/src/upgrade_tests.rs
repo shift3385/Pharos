@@ -84,8 +84,18 @@ fn count(conn: &Connection, sql: &str) -> i64 {
 }
 
 /// Tables an upgrade may only append to: the migration record, the revision
-/// rows of 0021 (one per case) and the oplog rows that push them.
-const GROWS: [&str; 3] = ["schema_migrations", "test_case_revisions", "oplog"];
+/// rows of 0021 (one per case), the oplog rows that push them, and the bases a
+/// converted defect card hands to its defect and links, the DEF keys of tasks
+/// that were once defects, and what a conversion made up (`converted_card:`,
+/// DEF-01).
+const GROWS: [&str; 6] = [
+    "schema_migrations",
+    "test_case_revisions",
+    "oplog",
+    "sync_base",
+    "retired_keys",
+    "sync_state",
+];
 
 /// JSON columns 0021 rewrites into the stable-steps shape (DAT-02).
 fn stable_steps_column(table: &str, column: &str) -> bool {
@@ -182,11 +192,158 @@ fn assert_stable_rewrite(
     }
 }
 
+/// The changes migration 0029 makes to rows of the old image (DEF-01): a
+/// defect card is soft-deleted (it is a defect now), and the unsynced journal
+/// rows, open conflicts and attachments of one belong to the defect. Everything else of
+/// the card stays; the defects themselves are checked apart
+/// (`assert_defects_converted`).
+fn converted_to_defect(
+    table: &str,
+    col: &str,
+    cols: &[String],
+    old: &[rusqlite::types::Value],
+    new: &rusqlite::types::Value,
+) -> bool {
+    let at = |name: &str| cols.iter().position(|c| c == name).map(|i| &old[i]);
+    match (table, col) {
+        ("planner_cards", "deleted_at") => {
+            at("kind") == Some(&Value::Text("defect".into())) && *new != Value::Null
+        }
+        ("oplog" | "key_conflicts" | "sync_conflicts", "entity") => {
+            at("entity") == Some(&Value::Text("planner_card".into()))
+                && *new == Value::Text("defect".into())
+        }
+        ("attachments", "owner_entity") => {
+            *new == Value::Text("defect".into())
+                && at("owner_entity") == Some(&Value::Text("planner_card".into()))
+        }
+        ("sync_conflicts", "local_payload" | "remote_payload") => {
+            at("entity") == Some(&Value::Text("planner_card".into()))
+        }
+        _ => false,
+    }
+}
+
+/// Every defect card of the old image is a defect of the new one (DEF-01,
+/// ADR-0016 "Test de actualización"): same id, key, title, priority and
+/// column mapped to its status; its test case links; its attachments.
+fn assert_defects_converted(old: &Connection, new: &Connection) {
+    let has_cards = tables(old).iter().any(|t| t == "planner_cards");
+    if !has_cards {
+        return;
+    }
+    let has_key = columns(old, "planner_cards")
+        .iter()
+        .any(|c| c == "card_key");
+    let mut stmt = old
+        .prepare(&format!(
+            "SELECT id, {}, title, priority, status, data FROM planner_cards WHERE kind = 'defect'",
+            if has_key {
+                "coalesce(card_key, '')"
+            } else {
+                "''"
+            }
+        ))
+        .unwrap();
+    let cards: Vec<(String, String, String, String, String, String)> = stmt
+        .query_map([], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+                r.get(4)?,
+                r.get(5)?,
+            ))
+        })
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    for (id, key, title, priority, column, data) in cards {
+        let row: (String, String, String, String, Option<String>) = new
+            .query_row(
+                "SELECT defect_key, title, priority, status, resolution FROM defects WHERE id = ?1",
+                [&id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            )
+            .unwrap_or_else(|e| panic!("defect card {id} not converted: {e}"));
+        let (status, resolution) = crate::defects::convert::status_of(&column);
+        // The server's limits hold (500 UTF-16 units, never empty); the full
+        // text stays in `data.fromCard`.
+        let expected_title = if title.trim().is_empty() {
+            if key.is_empty() {
+                "—".to_string()
+            } else {
+                key.clone()
+            }
+        } else {
+            crate::defects::convert::cut(&title, crate::defects::convert::MAX_TITLE)
+                .unwrap_or_else(|| title.clone())
+        };
+        if expected_title != title {
+            let kept: String = new
+                .query_row(
+                    "SELECT json_extract(data, '$.fromCard.title') FROM defects WHERE id = ?1",
+                    [&id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(kept, title, "original title of {id}");
+        }
+        assert_eq!(
+            row,
+            (
+                key,
+                expected_title,
+                priority,
+                status.to_string(),
+                resolution.map(String::from)
+            ),
+            "defect {id}"
+        );
+        let mut expected: Vec<String> = serde_json::from_str::<serde_json::Value>(&data)
+            .ok()
+            .and_then(|d| d.get("testCaseIds").cloned())
+            .and_then(|v| v.as_array().cloned())
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|v| v.as_str().filter(|s| !s.is_empty()).map(String::from))
+            .collect();
+        expected.sort();
+        expected.dedup();
+        let links: i64 = new
+            .query_row(
+                "SELECT count(*) FROM defect_links WHERE defect_id = ?1 AND target_kind = 'test_case'",
+                [&id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(links, expected.len() as i64, "links of {id}");
+        let stray: i64 = new
+            .query_row(
+                "SELECT count(*) FROM attachments WHERE owner_entity = 'planner_card' AND owner_id = ?1",
+                [&id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(stray, 0, "attachments of {id} still on the card");
+    }
+}
+
 /// Compares every table of `old` with `new` after an upgrade: rows keep their
 /// values, except the audit fields of FIX-06 (`repaired`, when `repairs`) and
 /// the stable-steps rewrite of 0021; the tables in `GROWS` only gain rows.
 /// `planner_attachments` is gone (0023): its rows are checked apart.
 fn assert_rows_kept(old: &Connection, new: &Connection, repairs: bool) {
+    assert!(
+        rows_kept(old, new, repairs) > 0,
+        "the fixture has steps to migrate"
+    );
+}
+
+/// `assert_rows_kept` for an image already past 0021 (nothing to rewrite):
+/// returns how many values 0021 rewrote.
+fn rows_kept(old: &Connection, new: &Connection, repairs: bool) -> usize {
     let mut rewritten = 0;
     for table in tables(old) {
         if table == "planner_attachments" {
@@ -208,6 +365,9 @@ fn assert_rows_kept(old: &Connection, new: &Connection, repairs: bool) {
             assert_eq!(rowid, new_rowid, "{table}");
             for (i, col) in cols.iter().enumerate() {
                 if repairs && repaired(&table, col) {
+                    continue;
+                }
+                if converted_to_defect(&table, col, &cols, old_values, &new_values[i]) {
                     continue;
                 }
                 if stable_steps_column(&table, col) && old_values[i] != new_values[i] {
@@ -236,7 +396,7 @@ fn assert_rows_kept(old: &Connection, new: &Connection, repairs: bool) {
             }
         }
     }
-    assert!(rewritten > 0, "the fixture has steps to migrate");
+    rewritten
 }
 
 /// Every step and row id of a case data, in visiting order.
@@ -406,6 +566,7 @@ fn opening_the_alpha_1_fixture_with_head_keeps_every_row() {
     db.with_conn(|new| {
         assert_eq!(pending_migrations(new)?.len(), 0);
         assert_rows_kept(&old, new, true);
+        assert_defects_converted(&old, new);
         assert_stable_steps(new);
 
         // FIX-06: every audit field now names the owner of the row's project.
@@ -523,19 +684,20 @@ fn the_migrated_fixture_reads_back_through_the_owner_scoped_commands() {
         );
         assert!(crate::test_plan::get_plan_by_project(c, &p1, USER_2)?.is_none());
 
-        // Planner: the defect keeps DEF-001 and its attachment, for its owner only.
+        // The defect card is a defect now (DEF-01): it keeps DEF-001 and its
+        // attachment, for the project owner only; the task stays on the board.
         let cards = crate::planner::list_cards(c, &p1, USER_1)?;
-        assert_eq!(cards.len(), 2);
-        let defect = cards
+        assert_eq!(cards.len(), 1);
+        assert!(cards
             .iter()
-            .map(|card| serde_json::to_value(card).unwrap())
-            .find(|v| v["kind"] == "defect")
-            .unwrap();
-        assert_eq!(defect["cardKey"], "DEF-001");
-        let defect_id = defect["id"].as_str().unwrap();
-        let files = crate::planner::list_attachments(c, defect_id, USER_1)?;
+            .all(|card| serde_json::to_value(card).unwrap()["kind"] != "defect"));
+        let defects = crate::defects::list_defects(c, &p1, USER_1)?;
+        assert_eq!(field_of(&defects, "defectKey"), vec!["DEF-001"]);
+        let defect_id = defects[0].id.as_str();
+        let files = crate::defects::list_attachments(c, defect_id, USER_1)?;
         assert_eq!(field_of(&files, "name"), vec!["log.txt"]);
-        assert!(crate::planner::list_attachments(c, defect_id, USER_2)?.is_empty());
+        assert!(crate::defects::list_attachments(c, defect_id, USER_2)?.is_empty());
+        assert!(crate::defects::list_defects(c, &p1, USER_2)?.is_empty());
         assert!(crate::planner::list_cards(c, &p1, USER_2)?.is_empty());
         Ok(())
     })
@@ -763,6 +925,7 @@ fn opening_the_0_2_0_alpha_1_fixture_with_head_keeps_every_row_and_starts_the_au
         assert_eq!(pending_migrations(new)?.len(), 0);
         // Nothing changes but the stable-steps rewrite of 0021 and its rows.
         assert_rows_kept(&old, new, false);
+        assert_defects_converted(&old, new);
         assert_stable_steps(new);
         // Until the server lists stable-steps, the pending cases wait (DAT-02).
         assert!(
@@ -902,7 +1065,20 @@ fn assert_attachments_moved(old: &Connection, db: &Db) {
                     },
                 )
                 .unwrap();
-            assert_eq!(row.0, "planner_card");
+            // A defect card's attachments belong to its defect (DEF-01).
+            let kind: String = old
+                .query_row(
+                    "SELECT kind FROM planner_cards WHERE id = ?1",
+                    params![a.card_id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            let owner_entity = if kind == "defect" {
+                "defect"
+            } else {
+                "planner_card"
+            };
+            assert_eq!(row.0, owner_entity);
             assert_eq!(row.1, a.card_id);
             assert_eq!((&row.2, &row.3), (&a.name, &a.mime));
             assert_eq!(row.4, a.bytes.len() as i64);
@@ -1307,6 +1483,8 @@ fn every_gherkin_level_written_by_0_1_migrates_to_stable_ids_without_loss() {
     run_migrations(&new).unwrap();
 
     assert_rows_kept(&old, &new, true);
+
+    assert_defects_converted(&old, &new);
     assert_stable_steps(&new);
 
     let data_of = |id: &str| -> serde_json::Value {
@@ -1423,6 +1601,7 @@ fn stable_steps_migrate_after_or_before_the_evidence_store() {
         db.with_conn(|new| {
             assert_eq!(pending_migrations(new)?.len(), 0);
             assert_rows_kept(&old, new, false);
+            assert_defects_converted(&old, new);
             assert_stable_steps(new);
             Ok(())
         })
@@ -2015,4 +2194,327 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
         key_rows_checked >= 2,
         "both key tables were checked with rows in them"
     );
+}
+
+/// The image a build before DEF-01 leaves (every migration up to 0028) with
+/// defect cards in the four columns, a deleted one, a task that was once a
+/// defect, case links, attachments (one content shared by two cards), an open
+/// key conflict, and the sync state of three kinds of card: synced and
+/// untouched, synced with a pending edit, and never synced.
+fn image_before_defects() -> Connection {
+    let c = Connection::open_in_memory().unwrap();
+    migrate_until(&c, "0028_cycles.sql");
+    let ws = ensure_workspace(&c).unwrap();
+    c.execute_batch(&format!(
+        "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, created_at, updated_at)
+         VALUES ('p1', '{ws}', '{USER_1}', 'Checkout', '{USER_1}', '{USER_1}', 'now', 'now');
+         INSERT INTO test_cases (id, workspace_id, project_id, scenario_id, title, author, data,
+                created_by, updated_by, created_at, updated_at)
+         VALUES ('c1', '{ws}', 'p1', 'ATS_001', 'Pay', 'Ada', '{{}}', '{USER_1}', '{USER_1}', 'now', 'now'),
+                ('c2', '{ws}', 'p1', 'ATS_002', 'Refund', 'Ada', '{{}}', '{USER_1}', '{USER_1}', 'now', 'now');"
+    ))
+    .unwrap();
+    for (id, key, kind, status, data, deleted) in [
+        (
+            "k-backlog",
+            "DEF-001",
+            "defect",
+            "backlog",
+            r#"{"testCaseIds":["c1","c2"],"description":"d"}"#,
+            false,
+        ),
+        (
+            "k-progress",
+            "DEF-002",
+            "defect",
+            "in_progress",
+            r#"{"testCaseIds":["c1"]}"#,
+            false,
+        ),
+        (
+            "k-review",
+            "DEF-003",
+            "defect",
+            "in_review",
+            r#"{"labels":["ui"]}"#,
+            false,
+        ),
+        (
+            "k-done",
+            "DEF-004",
+            "defect",
+            "done",
+            r#"{"testCaseIds":["c2"]}"#,
+            false,
+        ),
+        ("k-gone", "DEF-005", "defect", "backlog", "{}", true),
+        ("k-task", "DEF-006", "task", "backlog", "{}", false),
+        (
+            "k-long",
+            "DEF-007",
+            "defect",
+            "backlog",
+            r#"{"description":"__LONG__"}"#,
+            false,
+        ),
+    ] {
+        c.execute(
+            "INSERT INTO planner_cards (id, workspace_id, project_id, owner_id, kind, card_key, title,
+                    status, priority, position, data, created_by, updated_by, created_at, updated_at,
+                    revision, deleted_at)
+             VALUES (?1, ?2, 'p1', ?3, ?4, ?5, 'Bug ' || ?1, ?6, 'high', 0, ?7, ?3, ?3,
+                    '2026-10-01 10:00:00', '2026-10-02 10:00:00', 3,
+                    CASE WHEN ?8 THEN '2026-10-03 10:00:00' END)",
+            params![id, ws, USER_1, kind, key, status, data, deleted],
+        )
+        .unwrap();
+    }
+    c.execute(
+        "UPDATE planner_cards SET title = ?1, data = json_object('description', ?2) WHERE id = 'k-long'",
+        params!["ü".repeat(700), "x".repeat(25_000)],
+    )
+    .unwrap();
+    for (id, card, sha) in [
+        ("a1", "k-backlog", "aa"),
+        ("a2", "k-done", "aa"),
+        ("a3", "k-task", "bb"),
+    ] {
+        c.execute(
+            "INSERT INTO attachments (id, workspace_id, project_id, sha256, size, name, owner_entity,
+                    owner_id, created_by, updated_by, created_at, updated_at)
+             VALUES (?1, ?2, 'p1', ?3, 1, 'shot.png', 'planner_card', ?4, ?5, ?5, 'now', 'now')",
+            params![id, ws, sha, card, USER_1],
+        )
+        .unwrap();
+    }
+    // Synced: the project and three cards; one of them edited since.
+    for (entity, id) in [
+        ("project", "p1"),
+        ("planner_card", "k-progress"),
+        ("planner_card", "k-review"),
+        ("planner_card", "k-done"),
+    ] {
+        c.execute(
+            "INSERT INTO sync_base (user_id, entity, entity_id, revision, hlc)
+             VALUES (?1, ?2, ?3, 3, 'H-' || ?3)",
+            params![USER_1, entity, id],
+        )
+        .unwrap();
+    }
+    crate::oplog::record(&c, "planner_card", "k-review", "upsert", "{}", 3, USER_1).unwrap();
+    crate::oplog::record(&c, "planner_card", "k-backlog", "upsert", "{}", 1, USER_1).unwrap();
+    c.execute(
+        "INSERT INTO key_conflicts (id, user_id, entity, entity_id, project_id, lost_key, detected_at)
+         VALUES ('kc1', ?1, 'planner_card', 'k-done', 'p1', 'DEF-004', 'now')",
+        params![USER_1],
+    )
+    .unwrap();
+    c
+}
+
+/// Per case, the keys of the open defects that reach it: before, from the
+/// cards (not in `done`, linked by `data.testCaseIds`); after, from the
+/// defects (not closed nor rejected, through their links).
+fn open_defects_per_case(c: &Connection, cards: bool) -> Vec<(String, String)> {
+    let sql = if cards {
+        "SELECT k.value, x.card_key FROM planner_cards x, json_each(x.data, '$.testCaseIds') k
+          WHERE x.kind = 'defect' AND x.deleted_at IS NULL AND x.status <> 'done'"
+    } else {
+        "SELECT l.target_id, d.defect_key FROM defects d JOIN defect_links l ON l.defect_id = d.id
+          WHERE d.deleted_at IS NULL AND l.deleted_at IS NULL AND l.target_kind = 'test_case'
+            AND d.status NOT IN ('closed', 'rejected')"
+    };
+    let mut stmt = c.prepare(&format!("{sql} ORDER BY 1, 2")).unwrap();
+    let rows = stmt
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<Vec<(String, String)>>>()
+        .unwrap();
+    rows
+}
+
+#[test]
+fn upgrading_converts_every_defect_card_with_its_keys_links_files_and_pending_changes() {
+    let old = image_before_defects();
+    let matrix_before = open_defects_per_case(&old, true);
+    assert_eq!(matrix_before.len(), 3);
+    let image = old.serialize(rusqlite::DatabaseName::Main).unwrap();
+    let mut new = Connection::open_in_memory().unwrap();
+    load_image(&mut new, &image).unwrap();
+    run_migrations(&new).unwrap();
+
+    assert_eq!(rows_kept(&old, &new, false), 0);
+    assert_defects_converted(&old, &new);
+    // The same DEF keys and the same matrix.
+    assert_eq!(open_defects_per_case(&new, false), matrix_before);
+    assert_eq!(
+        count(
+            &new,
+            "SELECT count(*) FROM defects WHERE deleted_at IS NOT NULL"
+        ),
+        1
+    );
+    // A card without limits converts into a defect the server accepts.
+    assert_eq!(
+        count(
+            &new,
+            "SELECT length(description) FROM defects WHERE id = 'k-long'"
+        ),
+        20_000
+    );
+    assert_eq!(
+        count(
+            &new,
+            "SELECT length(json_extract(data, '$.fromCard.description')) FROM defects WHERE id = 'k-long'"
+        ),
+        25_000
+    );
+    // Files: the defects own theirs (the shared content twice), the task its own.
+    assert_eq!(
+        count(
+            &new,
+            "SELECT count(*) FROM attachments WHERE owner_entity = 'defect'"
+        ),
+        2
+    );
+    assert_eq!(
+        count(
+            &new,
+            "SELECT count(*) FROM attachments WHERE owner_entity = 'planner_card'"
+        ),
+        1
+    );
+    // Keys: none is handed out again, not even the task's.
+    for key in ["DEF-001", "DEF-005", "DEF-006"] {
+        assert!(
+            crate::keys::taken(&new, crate::keys::KeyKind::Defect, "p1", key).unwrap(),
+            "{key}"
+        );
+    }
+    // Sync: the edited card's pending row is the defect's, on the card's base;
+    // the never-synced card and its links are pending; the untouched synced
+    // ones push nothing; the key conflict moved with its row.
+    crate::sync::assume_stable_steps_server(&new);
+    let pending = pending_entities(&new, USER_1);
+    assert!(
+        pending.contains(&("defect".into(), "k-review".into())),
+        "{pending:?}"
+    );
+    assert!(
+        pending.contains(&("defect".into(), "k-backlog".into())),
+        "{pending:?}"
+    );
+    let links = pending.iter().filter(|(e, _)| e == "defect_link").count();
+    assert_eq!(links, 2, "{pending:?}");
+    assert!(pending
+        .iter()
+        .all(|(e, id)| e != "planner_card" && id != "k-progress"));
+    assert_eq!(
+        count(
+            &new,
+            "SELECT revision FROM sync_base WHERE entity = 'defect' AND entity_id = 'k-review'"
+        ),
+        3
+    );
+    assert_eq!(
+        count(
+            &new,
+            "SELECT count(*) FROM key_conflicts WHERE entity = 'defect' AND entity_id = 'k-done'"
+        ),
+        1
+    );
+    // Reopening changes nothing.
+    let before = new
+        .serialize(rusqlite::DatabaseName::Main)
+        .unwrap()
+        .to_vec();
+    run_migrations(&new).unwrap();
+    assert_eq!(
+        new.serialize(rusqlite::DatabaseName::Main)
+            .unwrap()
+            .to_vec(),
+        before
+    );
+}
+
+#[test]
+fn a_migration_0029_that_fails_leaves_the_cards_as_they_were() {
+    let c = image_before_defects();
+    // A `defects` table of another shape: 0029's indexes cannot be created,
+    // so its savepoint rolls back and the Rust step never runs.
+    c.execute_batch("CREATE TABLE defects (id TEXT PRIMARY KEY)")
+        .unwrap();
+    assert!(run_migrations(&c).is_err());
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM planner_cards WHERE kind = 'defect' AND deleted_at IS NULL"
+        ),
+        5
+    );
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM schema_migrations WHERE name = '0029_defects.sql'"
+        ),
+        0
+    );
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM attachments WHERE owner_entity = 'planner_card'"
+        ),
+        3
+    );
+}
+
+// ---- 0028: configurations and test cycles (CYC-01) ----------------------------
+
+#[test]
+fn both_fixtures_and_a_0027_image_get_the_cycle_tables_and_keep_their_runs() {
+    for image in [
+        fixture_image as fn() -> Connection,
+        fixture_020a1_image as fn() -> Connection,
+    ] {
+        let dir = temp_dir();
+        write_image(&dir, &image());
+        let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        db.with_conn(|new| {
+            for t in ["configurations", "test_cycles", "test_cycle_items"] {
+                assert!(tables(new).iter().any(|x| x == t), "{t} missing");
+                assert_eq!(count(new, &format!("SELECT count(*) FROM {t}")), 0, "{t}");
+            }
+            Ok(())
+        })
+        .unwrap();
+        drop(db);
+        let again = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
+        again
+            .with_conn(|c| {
+                assert_eq!(pending_migrations(c)?.len(), 0);
+                Ok(())
+            })
+            .unwrap();
+        drop(again);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+    // A database of the build before this step (0027): its runs, with the
+    // cycle and configuration ids step 4 already stored, are kept byte for
+    // byte; the new tables start empty.
+    let old = Connection::open_in_memory().unwrap();
+    migrate_until(&old, "0027_case_fields_restore.sql");
+    old.execute_batch(
+        "INSERT INTO runs (id, workspace_id, project_id, run_key, title, trigger, cycle_id,
+                configuration_id, created_by, updated_by, created_at, updated_at)
+         VALUES ('r1', 'w', 'p1', 'RUN-001', 'CI', 'ci', 'c-from-elsewhere', 'cfg-1', 'u', 'u',
+                '2026-10-30 10:00:00', '2026-10-30 10:00:00');",
+    )
+    .unwrap();
+    let before = rows(&old, "runs", &columns(&old, "runs"));
+    run_migrations(&old).unwrap();
+    assert_eq!(rows(&old, "runs", &columns(&old, "runs")), before);
+    for t in ["configurations", "test_cycles", "test_cycle_items"] {
+        assert_eq!(count(&old, &format!("SELECT count(*) FROM {t}")), 0, "{t}");
+    }
+    assert_eq!(pending_migrations(&old).unwrap().len(), 0);
 }

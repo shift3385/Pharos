@@ -1,6 +1,6 @@
 // Home data (SPEC §8 «Inicio», RED-V1). Pure aggregation over what exists
 // today: projects, their live cases, the plan's schedule and closure criteria,
-// and the planner's defects. Execution results arrive with 0.2.0 (RED-W6):
+// and the project's defects (DEF-01). Execution results arrive with 0.2.0 (RED-W6):
 // until then nothing here invents pass/fail numbers.
 
 /** A case waiting to be run (no case has been executed yet: no run model). */
