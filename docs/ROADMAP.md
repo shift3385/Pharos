@@ -117,6 +117,7 @@ Límites conocidos de FIX-08 (rama A2):
 | BASE-18 | Zod 4 en el servidor (aviso alto GHSA-mrhx-c7xc-m3w5), tras fusionar A1; excepción en la auditoría hasta el 2026-12-15                                       | P1  | Hecho (Q1)                            | `npm run check:audit` pasa sin excepciones en `server/`                    |
 | BASE-19 | `cargo fmt` y clippy limpios en los archivos de A1/A2; vaciar `scripts/rust-gates.allowlist.json`                                                            | P1  | Hecho: project.rs (A3) y planner.rs (U1); allowlist vacía | La allowlist queda vacía y la CI sigue en verde                            |
 | BASE-20 | Avisos moderados: react-router 6 (redirección abierta, arreglado solo en v7) y `uuid` vía exceljs                                                            | P2  | Hecho (D1): react-router 7, `uuid` 11 (el bundle de exceljs aún trae uuid 8, solo usa `v4()`: aviso no aplicable) | `npm audit` de la raíz sin avisos moderados                                |
+| BASE-21 | Tests del cliente lentos o inestables con carga (AiEngineTab, TestPlanWizard, ScheduleStep, ProjectsPage, a11y del plan ~11,6 s; seguimiento de E4): `testTimeout` por archivo en los de axe o menos workers en CI | P2  | Pendiente (0.3.0)                     | `npm test` en CI sin timeouts en 10 ejecuciones seguidas                   |
 
 ### C · Decisiones de modelo (bloquea empezar 0.2.0; cada una cierra con un ADR)
 
@@ -192,6 +193,8 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | EJE-02     | Ejecución manual por pasos con evidencias                                                                                | P0  | Pendiente                                                      | EJE-01, DAT-03 | Pasa/falla por paso, adjunto por paso                                      |
 | ING-02..04 | Importación local de JUnit XML, Cucumber Messages, CTRF y JSON de Playwright ([ADR-0005](adr/0005-alcance-hasta-1-0.md)) | P0  | Hecho (E4, paso 9): parsers TS con contratos sobre las muestras de ING-01, persistente único (`runs/import.rs`), «Importar informe» en «Ejecuciones» | EJE-01         | Importar el informe de Playwright vincula los resultados por `@TC-xxx`. Cada importador produce Pharos Run JSON y da ids deterministas a shards, resultados **y resultados de paso** (ADR-0013, «Implementación») |
 | ING-05     | Resultados "no vinculados" y enlace posterior                                                                            | P0  | Hecho (E4, paso 9): bandeja «Sin vincular» en «Ejecuciones» con vincular / desvincular | ING-02         | Un test sin ID queda en la bandeja y se enlaza a mano                      |
+| CYC-02     | Selector de ciclo en «Importar informe»: un run nuevo importado puede pertenecer a un ciclo (su configuración y sus elementos ya se derivan, ADR-0013) | P2  | 0.3.0                                                          | CYC-01, ING-02 | Importar en un ciclo suma sus resultados al progreso del ciclo sin editar el run después |
+| EJE-06     | API de runs en la web: «Ejecutar» un ciclo y adjuntos de defectos desde la web (hoy solo en el escritorio, ADR-0016/0017) | P2  | 0.3.0                                                          | CYC-01, DEF-01 | «Ejecutar» en la web crea un run por configuración y un defecto acepta adjuntos |
 | EJE-04     | Matriz extendida a resultados y defectos                                                                                 | P0  | Pendiente                                                      | TRZ-02, EJE-02 | Requisito → caso → último resultado → defecto                              |
 | EJE-03     | Informe de estado (29119-3) generado desde los runs                                                                      | P1  | Pendiente                                                      | EJE-02         | Export XLSX/PDF                                                            |
 | ING-06     | SARIF, k6 summary y axe JSON → Finding/Metric                                                                            | P1  | 0.5.0                                                          | KND-01         | Un SARIF y un k6 summary se guardan sin cambiar el formato Pharos Run JSON |
@@ -205,6 +208,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | CAS-02 | Flujo borrador → revisión → aprobado y baselines de suite                   | P1  | 0.3.0   | Editar un caso aprobado lo devuelve a borrador; una baseline queda congelada        |
 | EXP-01 | Sesiones exploratorias (charter, timebox, notas, evidencias desde el móvil) | P2  | 0.4.0   | Una sesión genera un Run con notas y un defecto vinculado                           |
 | FLD-02 | Selector de columnas en la lista de casos (campos personalizados como columnas; ADR-0018, Q4 de E3) | P2  | 0.3.0   | Mostrar u ocultar columnas, también de campos personalizados, y que se recuerde por proyecto |
+| FLD-03 | Campos personalizados de defectos definidos en los Ajustes del proyecto (seguimiento de E4, ADR-0016/0018) | P2  | 0.3.0   | Un campo de defecto creado en Ajustes aparece en el editor de defectos y se sincroniza |
 
 ### Integraciones, CLI y runners
 
@@ -260,6 +264,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | UX-02  | Carpeta de descarga con selector nativo                                                             | P2  | 0.1.0 · Hecho (U1) |
 | PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0 · Hecho (U1) |
 | EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0 · Hecho (U1) |
+| EXP-03 | Ciclos e hitos en los exports `.xlsx` y PDF (seguimiento de E4)                                      | P2  | 0.3.0   |
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | Absorbido por el rediseño (RED-*) |
