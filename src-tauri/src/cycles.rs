@@ -114,7 +114,7 @@ pub struct Configuration {
 pub struct ConfigurationInput {
     pub(crate) project_id: Option<String>,
     pub(crate) name: Option<String>,
-    #[cfg_attr(test, ts(type = "Record<string, string | null>"))]
+    #[cfg_attr(test, ts(type = "Record<string, string | null>", optional))]
     pub(crate) attributes: Option<Value>,
     pub(crate) match_labels: Option<Vec<String>>,
     pub(crate) user_id: String,
@@ -175,7 +175,7 @@ pub struct TestCycleInput {
     pub(crate) starts_on: Option<String>,
     pub(crate) ends_on: Option<String>,
     pub(crate) status: Option<String>,
-    #[cfg_attr(test, ts(type = "Record<string, unknown>"))]
+    #[cfg_attr(test, ts(type = "Record<string, unknown>", optional))]
     pub(crate) data: Option<Value>,
     pub(crate) user_id: String,
 }

@@ -13,6 +13,7 @@ import { required } from "@shared/validation";
 import { useToast } from "@shared/ui/Toast";
 import { useAuth } from "@modules/auth";
 import { CustomFieldsCard } from "@modules/custom-fields";
+import { ConfigurationsCard } from "@modules/cycles";
 import { projectApi } from "../api/projectApi";
 import { deleteConfirmWord } from "../model/projectTable";
 import type { Project } from "../model/types";
@@ -191,6 +192,8 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
         userId={owner}
         loadProjects={loadProjects}
       />
+
+      <ConfigurationsCard projectId={project.id} userId={owner} />
 
       <section className="pj-card-box pj-card-box--row" aria-labelledby="pj-export-title">
         <span className="pj-card-box__icon" aria-hidden="true">

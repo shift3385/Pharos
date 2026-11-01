@@ -4,4 +4,4 @@
  * On create `projectId` and `name` are required; on update a field left out
  * keeps its value.
  */
-export type ConfigurationInput = { projectId?: string, name?: string, attributes: Record<string, string | null>, matchLabels?: Array<string>, userId: string, };
+export type ConfigurationInput = { projectId?: string, name?: string, attributes?: Record<string, string | null>, matchLabels?: Array<string>, userId: string, };

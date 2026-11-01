@@ -489,6 +489,7 @@
       "project": {
         "plan": "Plan",
         "cases": "Cases",
+        "cycles": "Cycles",
         "planner": "Board",
         "traceability": "Trace",
         "settings": "Project"
@@ -520,6 +521,7 @@
     "tab": {
       "plan": "Test plan",
       "cases": "Test cases",
+      "cycles": "Test cycles",
       "settings": "Project settings",
       "planner": "Planner",
       "traceability": "Traceability"
@@ -1875,6 +1877,245 @@
       "field": "Field",
       "key": "Key",
       "value": "Value"
+    }
+  },
+  "configurations": {
+    "title": "Configurations",
+    "desc": "Where cycles run: browser, OS, device and locale. Labels are the texts an import recognizes each configuration by (e.g. chromium or a Playwright project name).",
+    "new": "New configuration",
+    "newTitle": "New configuration",
+    "editTitle": "Edit configuration",
+    "dialogHint": "A label belongs to one configuration of the project.",
+    "name": "Name",
+    "namePlaceholder": "Chrome · Windows 11",
+    "attr": {
+      "browser": "Browser",
+      "os": "Operating system",
+      "device": "Device",
+      "locale": "Locale"
+    },
+    "attrPlaceholder": {
+      "browser": "Chrome",
+      "os": "Windows 11",
+      "device": "Desktop",
+      "locale": "en-US"
+    },
+    "labels": "Import labels",
+    "labelsHint": "Type a label and press Enter or a comma.",
+    "labelsPlaceholder": "chromium, Desktop Chrome",
+    "removeLabel": "Remove the label {{label}}",
+    "save": "Save",
+    "saving": "Saving…",
+    "empty": "No configurations yet. Create one to run cycles on several browsers or devices.",
+    "listLabel": "Configurations of the project",
+    "actions": "Actions of {{name}}",
+    "edit": "Edit",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "archive": "Archive",
+    "unarchive": "Restore",
+    "archived": "Archived",
+    "showArchived": "Show archived",
+    "savedToast": "Configuration “{{name}}” saved",
+    "archivedToast": "Configuration “{{name}}” archived",
+    "restoredToast": "Configuration “{{name}}” restored",
+    "moved": "{{name}} moved to position {{n}}",
+    "loadFailed": "Could not load the configurations",
+    "saveFailed": "Could not save the configuration",
+    "error": {
+      "labelTaken": "Another configuration already uses that label: {{detail}}."
+    },
+    "clashWins": "Label repeated in “{{other}}” (created on another device): imports with {{labels}} use this one.",
+    "clashLoses": "Repeated label: imports with {{labels}} use “{{other}}”. Remove it from one of them."
+  },
+  "cycles": {
+    "title": "Test cycles",
+    "subtitle": "What runs, where, against which build and when. Running a cycle creates one run per configuration.",
+    "new": "New cycle",
+    "newTitle": "New cycle",
+    "editTitle": "Edit {{key}}",
+    "create": "Create cycle",
+    "save": "Save",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "clone": "Clone",
+    "delete": "Delete",
+    "moreActions": "More cycle actions",
+    "back": "Cycles",
+    "all": "All",
+    "filterLabel": "Filter by status",
+    "listLabel": "Cycles of the project",
+    "empty": "No cycles yet. Create one to plan which cases run and on which configurations.",
+    "emptyFilter": "No cycle with this status.",
+    "notFound": "This cycle no longer exists.",
+    "loadFailed": "Could not load the cycles",
+    "saveFailed": "Could not save the cycle",
+    "createdToast": "Cycle {{key}} created",
+    "savedToast": "Cycle saved",
+    "clonedToast": "Cycle cloned as {{key}}",
+    "deletedToast": "Cycle {{key}} deleted",
+    "deleteTitle": "Delete {{key}}",
+    "deleteMessage_one": "The cycle and its items are deleted. Its run is kept, without a cycle.",
+    "deleteMessage_other": "The cycle and its items are deleted. Its {{count}} runs are kept, without a cycle.",
+    "deleteConfirm": "Yes, delete",
+    "notApproved": "Not approved",
+    "noConfigurations": "The project has no configurations. Create them in Project settings.",
+    "configurationsHint": "Without configurations, the cycle runs as a single run.",
+    "tabsLabel": "Cycle content",
+    "tab": {
+      "items": "Items",
+      "runs": "Runs"
+    },
+    "status": {
+      "planned": "Planned",
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "statusPlural": {
+      "planned": "Planned",
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "runStatus": {
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "aborted": "Aborted"
+    },
+    "field": {
+      "title": "Title",
+      "description": "Description",
+      "build": "Build",
+      "environment": "Environment",
+      "milestone": "Plan milestone",
+      "sprint": "Sprint",
+      "startsOn": "Starts",
+      "endsOn": "Ends",
+      "status": "Status",
+      "configurations": "Configurations"
+    },
+    "placeholder": {
+      "title": "Regression 1.4",
+      "build": "1.4.2",
+      "environment": "staging",
+      "milestone": "Milestone 2",
+      "sprint": "Sprint 5"
+    },
+    "meta": {
+      "build": "Build {{build}}",
+      "environment": "Environment {{environment}}",
+      "milestone": "Milestone {{milestone}}",
+      "sprint": "{{sprint}}"
+    },
+    "col": {
+      "key": "Key",
+      "title": "Cycle",
+      "status": "Status",
+      "dates": "Dates",
+      "configurations": "Configs",
+      "progress": "Progress",
+      "runs": "Runs"
+    },
+    "progress": {
+      "words": "{{executed}} of {{total}} executed, {{passed}} pass",
+      "label": "{{executed}} % executed, {{passed}} % pass, {{failed}} fail, {{blocked}} blocked",
+      "none": "No items",
+      "countsLabel": "Cycle results"
+    },
+    "cell": {
+      "passed": "Pass",
+      "failed": "Fail",
+      "blocked": "Blocked",
+      "skipped": "Skipped",
+      "other": "Other",
+      "not_run": "Not run"
+    },
+    "items": {
+      "label": "Items of the cycle",
+      "case": "Case",
+      "title": "Title",
+      "assignee": "Assignee",
+      "assigneeOf": "Assignee of {{key}}",
+      "unassigned": "Unassigned",
+      "result": "Result",
+      "unknownConfiguration": "Deleted configuration",
+      "caseGone": "Deleted case",
+      "flow": "Flow {{id}}",
+      "row": "Row {{id}}",
+      "empty": "The cycle has no cases. Add them one by one or by filter.",
+      "actions": "Actions of {{key}}",
+      "actionsHeader": "Actions",
+      "remove": "Remove from the cycle",
+      "removedToast": "{{key}} removed from the cycle"
+    },
+    "add": {
+      "action": "Add cases",
+      "title": "Add cases to the cycle",
+      "search": "Search by key or title",
+      "none": "No case matches.",
+      "listLabel": "Cases of the project",
+      "inCycle": "Already in the cycle",
+      "assignee": "Assign to",
+      "assigneeHint": "Optional; you can change it later on each item.",
+      "notApprovedWarning_one": "{{count}} chosen case is not approved. It is added anyway.",
+      "notApprovedWarning_other": "{{count}} chosen cases are not approved. They are added anyway.",
+      "confirm_one": "Add {{count}} case",
+      "confirm_other": "Add {{count}} cases",
+      "addedToast_one": "{{count}} case added.",
+      "addedToast_other": "{{count}} cases added.",
+      "skippedToast_one": "{{count}} was already in the cycle.",
+      "skippedToast_other": "{{count}} were already in the cycle.",
+      "notApprovedToast": "Not approved: {{keys}}."
+    },
+    "filter": {
+      "action": "Add by filter",
+      "title": "Add cases by filter",
+      "hint": "The cases that match now are added; if they change later, the cycle does not.",
+      "tags": "Tags",
+      "tagsHint": "Any of them, separated by commas.",
+      "priorities": "Priority",
+      "statuses": "Case status",
+      "requirements": "Requirements",
+      "minRisk": "Minimum risk",
+      "minRiskHint": "The highest risk of the case's requirements.",
+      "anyRisk": "Any",
+      "risk": {
+        "medium": "Medium or high (≥ 5)",
+        "high": "High (≥ 13)"
+      },
+      "matches_one": "{{count}} case matches.",
+      "matches_other": "{{count}} cases match.",
+      "confirm": "Add"
+    },
+    "execute": {
+      "action": "Run",
+      "title": "Run {{key}}",
+      "hint_one": "One run per configuration is created with {{count}} item; each case is frozen at its current revision.",
+      "hint_other": "One run per configuration is created with {{count}} items; each case is frozen at its current revision.",
+      "configurations": "Configurations",
+      "confirm_one": "Create {{count}} run",
+      "confirm_other": "Create {{count}} runs",
+      "running": "Creating…",
+      "doneToast_one": "Run created: {{keys}}",
+      "doneToast_other": "{{count}} runs created: {{keys}}",
+      "desktopOnly": "Runs are created from the desktop app."
+    },
+    "runs": {
+      "label": "Runs of the cycle",
+      "hint": "Step-by-step execution of each run comes with the Executions screen.",
+      "empty": "No runs yet. Press “Run” to create one per configuration.",
+      "key": "Run",
+      "title": "Title",
+      "configuration": "Configuration",
+      "status": "Status",
+      "started": "Started"
+    },
+    "error": {
+      "dates": "The cycle ends before it starts.",
+      "archivedConfiguration": "An archived configuration cannot be added.",
+      "closed": "The cycle is closed. Reopen it to change or run it.",
+      "empty": "The cycle has no cases.",
+      "noConfiguration": "Every configuration of the cycle is archived.",
+      "keyConflict": "A case of the cycle has an open key conflict. Resolve it before running."
     }
   }
 }

@@ -489,6 +489,7 @@
       "project": {
         "plan": "Plan",
         "cases": "Casos",
+        "cycles": "Ciclos",
         "planner": "Tablero",
         "traceability": "Trazab.",
         "settings": "Proyecto"
@@ -520,6 +521,7 @@
     "tab": {
       "plan": "Plan de pruebas",
       "cases": "Casos de prueba",
+      "cycles": "Ciclos de prueba",
       "settings": "Ajustes del proyecto",
       "planner": "Planificador",
       "traceability": "Trazabilidad"
@@ -1875,6 +1877,245 @@
       "field": "Campo",
       "key": "Clave",
       "value": "Valor"
+    }
+  },
+  "configurations": {
+    "title": "Configuraciones",
+    "desc": "Dónde se ejecutan los ciclos: navegador, sistema, dispositivo e idioma. Las etiquetas son los textos con los que una importación reconoce cada configuración (p. ej. chromium o el nombre de un proyecto de Playwright).",
+    "new": "Nueva configuración",
+    "newTitle": "Nueva configuración",
+    "editTitle": "Editar configuración",
+    "dialogHint": "Una etiqueta pertenece a una sola configuración del proyecto.",
+    "name": "Nombre",
+    "namePlaceholder": "Chrome · Windows 11",
+    "attr": {
+      "browser": "Navegador",
+      "os": "Sistema operativo",
+      "device": "Dispositivo",
+      "locale": "Idioma"
+    },
+    "attrPlaceholder": {
+      "browser": "Chrome",
+      "os": "Windows 11",
+      "device": "Escritorio",
+      "locale": "es-ES"
+    },
+    "labels": "Etiquetas de importación",
+    "labelsHint": "Escribe una etiqueta y pulsa Intro o coma.",
+    "labelsPlaceholder": "chromium, Desktop Chrome",
+    "removeLabel": "Quitar la etiqueta {{label}}",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "empty": "Aún no hay configuraciones. Crea una para ejecutar ciclos en varios navegadores o dispositivos.",
+    "listLabel": "Configuraciones del proyecto",
+    "actions": "Acciones de {{name}}",
+    "edit": "Editar",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "archive": "Archivar",
+    "unarchive": "Restaurar",
+    "archived": "Archivada",
+    "showArchived": "Mostrar archivadas",
+    "savedToast": "Configuración «{{name}}» guardada",
+    "archivedToast": "Configuración «{{name}}» archivada",
+    "restoredToast": "Configuración «{{name}}» restaurada",
+    "moved": "{{name}} movida a la posición {{n}}",
+    "loadFailed": "No se pudieron cargar las configuraciones",
+    "saveFailed": "No se pudo guardar la configuración",
+    "error": {
+      "labelTaken": "La etiqueta ya la usa otra configuración: {{detail}}."
+    },
+    "clashWins": "Etiqueta repetida en «{{other}}» (creada en otro equipo): las importaciones con {{labels}} usan esta.",
+    "clashLoses": "Etiqueta repetida: las importaciones con {{labels}} usan «{{other}}». Quítala de una de las dos."
+  },
+  "cycles": {
+    "title": "Ciclos de prueba",
+    "subtitle": "Qué se ejecuta, dónde, contra qué build y cuándo. Ejecutar un ciclo crea un run por configuración.",
+    "new": "Nuevo ciclo",
+    "newTitle": "Nuevo ciclo",
+    "editTitle": "Editar {{key}}",
+    "create": "Crear ciclo",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "edit": "Editar",
+    "clone": "Clonar",
+    "delete": "Eliminar",
+    "moreActions": "Más acciones del ciclo",
+    "back": "Ciclos",
+    "all": "Todos",
+    "filterLabel": "Filtrar por estado",
+    "listLabel": "Ciclos del proyecto",
+    "empty": "Aún no hay ciclos. Crea uno para planificar qué casos se ejecutan y en qué configuraciones.",
+    "emptyFilter": "Ningún ciclo con este estado.",
+    "notFound": "Este ciclo ya no existe.",
+    "loadFailed": "No se pudieron cargar los ciclos",
+    "saveFailed": "No se pudo guardar el ciclo",
+    "createdToast": "Ciclo {{key}} creado",
+    "savedToast": "Ciclo guardado",
+    "clonedToast": "Ciclo clonado como {{key}}",
+    "deletedToast": "Ciclo {{key}} eliminado",
+    "deleteTitle": "Eliminar {{key}}",
+    "deleteMessage_one": "Se eliminan el ciclo y sus elementos. Su run se conserva, sin ciclo.",
+    "deleteMessage_other": "Se eliminan el ciclo y sus elementos. Sus {{count}} runs se conservan, sin ciclo.",
+    "deleteConfirm": "Sí, eliminar",
+    "notApproved": "No aprobado",
+    "noConfigurations": "El proyecto no tiene configuraciones. Créalas en Ajustes del proyecto.",
+    "configurationsHint": "Sin configuraciones, el ciclo se ejecuta como un único run.",
+    "tabsLabel": "Contenido del ciclo",
+    "tab": {
+      "items": "Elementos",
+      "runs": "Runs"
+    },
+    "status": {
+      "planned": "Planificado",
+      "active": "Activo",
+      "closed": "Cerrado"
+    },
+    "statusPlural": {
+      "planned": "Planificados",
+      "active": "Activos",
+      "closed": "Cerrados"
+    },
+    "runStatus": {
+      "in_progress": "En curso",
+      "completed": "Completado",
+      "aborted": "Abortado"
+    },
+    "field": {
+      "title": "Título",
+      "description": "Descripción",
+      "build": "Build",
+      "environment": "Entorno",
+      "milestone": "Hito del plan",
+      "sprint": "Sprint",
+      "startsOn": "Empieza",
+      "endsOn": "Termina",
+      "status": "Estado",
+      "configurations": "Configuraciones"
+    },
+    "placeholder": {
+      "title": "Regresión 1.4",
+      "build": "1.4.2",
+      "environment": "staging",
+      "milestone": "Hito 2",
+      "sprint": "Sprint 5"
+    },
+    "meta": {
+      "build": "Build {{build}}",
+      "environment": "Entorno {{environment}}",
+      "milestone": "Hito {{milestone}}",
+      "sprint": "{{sprint}}"
+    },
+    "col": {
+      "key": "Clave",
+      "title": "Ciclo",
+      "status": "Estado",
+      "dates": "Fechas",
+      "configurations": "Config.",
+      "progress": "Progreso",
+      "runs": "Runs"
+    },
+    "progress": {
+      "words": "{{executed}} de {{total}} ejecutados, {{passed}} pasan",
+      "label": "{{executed}} % ejecutado, {{passed}} % pasa, {{failed}} fallan, {{blocked}} bloqueados",
+      "none": "Sin elementos",
+      "countsLabel": "Resultados del ciclo"
+    },
+    "cell": {
+      "passed": "Pasa",
+      "failed": "Falla",
+      "blocked": "Bloqueado",
+      "skipped": "Omitido",
+      "other": "Otro",
+      "not_run": "Sin ejecutar"
+    },
+    "items": {
+      "label": "Elementos del ciclo",
+      "case": "Caso",
+      "title": "Título",
+      "assignee": "Asignado",
+      "assigneeOf": "Asignado de {{key}}",
+      "unassigned": "Sin asignar",
+      "result": "Resultado",
+      "unknownConfiguration": "Configuración eliminada",
+      "caseGone": "Caso eliminado",
+      "flow": "Flujo {{id}}",
+      "row": "Fila {{id}}",
+      "empty": "El ciclo no tiene casos. Añádelos uno a uno o por filtro.",
+      "actions": "Acciones de {{key}}",
+      "actionsHeader": "Acciones",
+      "remove": "Quitar del ciclo",
+      "removedToast": "{{key}} quitado del ciclo"
+    },
+    "add": {
+      "action": "Añadir casos",
+      "title": "Añadir casos al ciclo",
+      "search": "Buscar por clave o título",
+      "none": "Ningún caso coincide.",
+      "listLabel": "Casos del proyecto",
+      "inCycle": "Ya en el ciclo",
+      "assignee": "Asignar a",
+      "assigneeHint": "Opcional; puedes cambiarlo después en cada elemento.",
+      "notApprovedWarning_one": "{{count}} caso elegido no está aprobado. Se añade igualmente.",
+      "notApprovedWarning_other": "{{count}} casos elegidos no están aprobados. Se añaden igualmente.",
+      "confirm_one": "Añadir {{count}} caso",
+      "confirm_other": "Añadir {{count}} casos",
+      "addedToast_one": "{{count}} caso añadido.",
+      "addedToast_other": "{{count}} casos añadidos.",
+      "skippedToast_one": "{{count}} ya estaba en el ciclo.",
+      "skippedToast_other": "{{count}} ya estaban en el ciclo.",
+      "notApprovedToast": "Sin aprobar: {{keys}}."
+    },
+    "filter": {
+      "action": "Añadir por filtro",
+      "title": "Añadir casos por filtro",
+      "hint": "Se añaden los casos que coinciden ahora; si después cambian, el ciclo no cambia.",
+      "tags": "Etiquetas",
+      "tagsHint": "Cualquiera de ellas, separadas por comas.",
+      "priorities": "Prioridad",
+      "statuses": "Estado del caso",
+      "requirements": "Requisitos",
+      "minRisk": "Riesgo mínimo",
+      "minRiskHint": "El mayor riesgo de los requisitos del caso.",
+      "anyRisk": "Cualquiera",
+      "risk": {
+        "medium": "Medio o alto (≥ 5)",
+        "high": "Alto (≥ 13)"
+      },
+      "matches_one": "{{count}} caso coincide.",
+      "matches_other": "{{count}} casos coinciden.",
+      "confirm": "Añadir"
+    },
+    "execute": {
+      "action": "Ejecutar",
+      "title": "Ejecutar {{key}}",
+      "hint_one": "Se crea un run por configuración con {{count}} elemento; cada caso se congela en su revisión actual.",
+      "hint_other": "Se crea un run por configuración con {{count}} elementos; cada caso se congela en su revisión actual.",
+      "configurations": "Configuraciones",
+      "confirm_one": "Crear {{count}} run",
+      "confirm_other": "Crear {{count}} runs",
+      "running": "Creando…",
+      "doneToast_one": "Run creado: {{keys}}",
+      "doneToast_other": "{{count}} runs creados: {{keys}}",
+      "desktopOnly": "Los runs se crean desde la app de escritorio."
+    },
+    "runs": {
+      "label": "Runs del ciclo",
+      "hint": "La ejecución paso a paso de cada run llega con la pantalla de Ejecuciones.",
+      "empty": "Aún no hay runs. Pulsa «Ejecutar» para crear uno por configuración.",
+      "key": "Run",
+      "title": "Título",
+      "configuration": "Configuración",
+      "status": "Estado",
+      "started": "Inicio"
+    },
+    "error": {
+      "dates": "El ciclo termina antes de empezar.",
+      "archivedConfiguration": "No se puede añadir una configuración archivada.",
+      "closed": "El ciclo está cerrado. Reábrelo para cambiarlo o ejecutarlo.",
+      "empty": "El ciclo no tiene casos.",
+      "noConfiguration": "Todas las configuraciones del ciclo están archivadas.",
+      "keyConflict": "Un caso del ciclo tiene un conflicto de clave abierto. Resuélvelo antes de ejecutar."
     }
   }
 }

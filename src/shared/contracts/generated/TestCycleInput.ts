@@ -4,4 +4,4 @@
  * On create `projectId` and `title` are required. On update a field left out
  * keeps its value and an empty text clears an optional one.
  */
-export type TestCycleInput = { projectId?: string, title?: string, description?: string, testPlanId?: string, milestone?: string, sprint?: string, build?: string, environment?: string, configurationIds?: Array<string>, startsOn?: string, endsOn?: string, status?: string, data: Record<string, unknown>, userId: string, };
+export type TestCycleInput = { projectId?: string, title?: string, description?: string, testPlanId?: string, milestone?: string, sprint?: string, build?: string, environment?: string, configurationIds?: Array<string>, startsOn?: string, endsOn?: string, status?: string, data?: Record<string, unknown>, userId: string, };
