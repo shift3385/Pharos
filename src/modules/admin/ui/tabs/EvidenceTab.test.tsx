@@ -2,6 +2,7 @@
 // evidencias» and its report, and deleting files without a record only after
 // picking them and confirming. Desktop only: the web shows a note.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
