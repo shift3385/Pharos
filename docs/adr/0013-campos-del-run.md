@@ -590,3 +590,31 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   borra pasos, añade un flujo, cambia el título) y comprueba que los
   resultados, sus adjuntos, la revisión mostrada, los objetivos, el progreso
   del ciclo y el documento que se sincroniza no cambian.
+
+**Tras la revisión independiente (E5, paso 7, 2026-11-04):**
+
+- **Un intento se registra una sola vez.** El borrador de cada objetivo lleva
+  un `attemptId` (UUID) que elige la interfaz; es el id del resultado.
+  `execution_record` devuelve el resultado si ese id ya existe (doble
+  Ctrl+Enter, reintento tras un fallo al guardar el archivo) y rechaza
+  (`draft-stale`) un id cuyo borrador ya no está. `result_record` acepta el
+  mismo `attemptId` opcional; el id de un resultado de otro elemento da
+  `attempt-id-taken`.
+- **Un borrador caducado no vuelve.** `execution_draft_save` rechaza
+  (`draft-stale`) otro `attemptId` para el mismo objetivo o uno ya
+  registrado; la interfaz recarga lo guardado.
+- **Un intento es uno de los objetivos del elemento** (`target-not-in-item`):
+  en un elemento con flujos o filas, un intento sin flujo ni fila se rechaza,
+  para que la pantalla del run y el progreso del ciclo cuenten lo mismo.
+- **Sin elementos solapados:** `run_items_add` rechaza (`item-overlap`) un
+  caso cuyos objetivos ya cubre otro elemento del run; compartirían
+  `test_key`, finales y números de intento. Los elementos de un ciclo ya no
+  se solapan (paso 6), así que «Ejecutar» no los crea.
+- **Un run de un ciclo cerrado no se reabre** (`cycle-closed`); primero se
+  reabre el ciclo (nota en ADR-0017).
+- **«Nuevo run manual»** es un solo comando, `run_create_manual`: el run y sus
+  elementos en una transacción.
+- **Cerrar** es `run_close`: como `aborted` descarta siempre los borradores
+  del run y sus adjuntos; como `completed`, si el usuario lo pide.
+- **Sin etiqueta de configuración** en los intentos manuales: los identifica
+  el `configuration_id` del run, cuyo nombre se puede editar.

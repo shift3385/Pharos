@@ -2559,7 +2559,9 @@
       "tooLarge": "The file is larger than 200 MB.",
       "draftTooLarge": "The draft is too large (more than 1 MB of text).",
       "target": "That flow, row or step is not in the executed revision.",
-      "generic": "The action could not be completed. Try again."
+      "generic": "The action could not be completed. Try again.",
+      "cycleClosed": "This run's cycle is closed. Reopen the cycle before the run.",
+      "overlap": "That case is already in the run with some of those flows or rows."
     },
     "webReadOnly": "Runs are executed in the desktop app. The web cannot show or record them yet (EJE-06).",
     "evidenceLocal": "Evidence is stored encrypted on this device and does not sync yet (SYNC-04b).",
@@ -2600,7 +2602,9 @@
       "closeDrafts_one": "{{count}} item has an unsaved draft; it is kept on this device.",
       "closeDrafts_other": "{{count}} items have unsaved drafts; they are kept on this device.",
       "closeAs": "Close as",
-      "save": "Save"
+      "save": "Save",
+      "closeDiscard": "Discard the drafts and their attachments",
+      "closeDiscardAborted": "Drafts and their attachments are discarded when the run is cancelled"
     },
     "picker": {
       "search": "Search by ID or title",
@@ -2616,6 +2620,7 @@
       "create": "Create and open",
       "noConfiguration": "No configuration",
       "created": "{{key}} created."
-    }
+    },
+    "staleDraft": "This attempt was already saved or changed in another window. What is stored has been reloaded."
   }
 }

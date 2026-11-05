@@ -232,6 +232,14 @@ adjuntos.
       resultado guardado no cambia.
 - [ ] «Cerrar run» (Completado o Cancelado) y «Reabrir». Con el run de un
       ciclo, el progreso del ciclo refleja cada intento guardado.
+- [ ] Ojo con un caso con flujos o filas añadido entero a un ciclo: la celda
+      del ciclo muestra el **peor** resultado de lo ya ejecutado (por ejemplo,
+      «Falla» aunque falten flujos), mientras que la pantalla del run cuenta
+      cada flujo y fila por separado («2/3» hechos). Las dos dicen la verdad;
+      miran cosas distintas.
+- [ ] Pulsar Ctrl+Enter dos veces seguidas: se guarda un solo intento.
+      Cancelar un run con borradores los descarta; al completarlo se puede
+      elegir.
 
 ### 4.5 Sincronización
 

@@ -123,20 +123,12 @@ export const runsApi = {
     isTauri()
       ? invoke("run_item_detail", { runItemId, userId })
       : Promise.resolve(null),
-  /** A manual run over the chosen cases (design §4, step 1). */
-  createManual: async (
-    input: RunInput,
-    items: RunItemInput[],
-  ): Promise<Run | null> => {
-    if (!isTauri()) return desktopOnly("attachments");
-    const run = await invoke<Run | null>("run_create", {
-      input: { ...input, trigger: "manual" },
-    });
-    if (run && items.length > 0) {
-      await invoke("run_items_add", { runId: run.id, userId: input.userId, items });
-    }
-    return run;
-  },
+  /** A manual run over the chosen cases (design §4, step 1): the run and
+   *  its items in one transaction, so a refused case leaves no empty run. */
+  createManual: (input: RunInput, items: RunItemInput[]): Promise<Run | null> =>
+    isTauri()
+      ? invoke("run_create_manual", { input, items })
+      : desktopOnly("results"),
   /** The project's live configurations, to give a manual run its context. */
   configurations: (projectId: string, userId: string): Promise<Configuration[]> =>
     isTauri()
@@ -145,7 +137,7 @@ export const runsApi = {
   addItems: (runId: string, userId: string, items: RunItemInput[]): Promise<RunItem[]> =>
     isTauri()
       ? invoke("run_items_add", { runId, userId, items })
-      : desktopOnly("attachments"),
+      : desktopOnly("results"),
   /** Edits the header, closes (`completed`/`aborted`) or reopens
    *  (`in_progress`) a run. `context` is left out so it keeps its value. */
   update: (
@@ -154,7 +146,18 @@ export const runsApi = {
   ): Promise<Run | null> =>
     isTauri()
       ? invoke("run_update", { id, input })
-      : desktopOnly("attachments"),
+      : desktopOnly("results"),
+  /** Closes a run; `aborted` (or `discardDrafts`) also discards its drafts
+   *  and their files. */
+  close: (
+    runId: string,
+    status: "completed" | "aborted",
+    discardDrafts: boolean,
+    userId: string,
+  ): Promise<Run | null> =>
+    isTauri()
+      ? invoke("run_close", { runId, status, discardDrafts, userId })
+      : desktopOnly("results"),
   draftSave: (
     runItemId: string,
     targetKey: string,
@@ -170,7 +173,7 @@ export const runsApi = {
       : Promise.resolve(),
   /** Records the attempt from its draft; returns the result id. */
   record: (input: ResultInput): Promise<string> =>
-    isTauri() ? invoke("execution_record", { input }) : desktopOnly("attachments"),
+    isTauri() ? invoke("execution_record", { input }) : desktopOnly("results"),
   /** A file (or pasted capture) for a draft's target, or one of its steps. */
   attachToDraft: async (
     runItemId: string,

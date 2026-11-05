@@ -315,7 +315,14 @@ and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
   `execution_record` records the attempt, moves those files to the result or
   step result (one `link` event each) and drops the target's draft, in one
   transaction.
-- **Commands.** `run_overview`, `run_item_detail`, `execution_draft_save`,
+- **Once only.** Each draft target carries a client `attemptId`, which
+  becomes the result id: `execution_record` returns a recorded attempt instead
+  of writing it twice and refuses one whose draft is gone; a draft save that
+  would revive a recorded attempt or replace another window's is refused
+  (`draft-stale`). An attempt must be one of the item's targets, and a run
+  refuses overlapping items of one case (`item-overlap`).
+- **Commands.** `run_create_manual` (run + items in one transaction),
+  `run_close` (aborted discards the drafts), `run_overview`, `run_item_detail`, `execution_draft_save`,
   `execution_draft_discard`, `execution_record`, `execution_attach`,
   `execution_attachment_delete` (draft files only), `execution_attachment_save`,
   `execution_attachment_preview`; `run_update` reopens a closed run.

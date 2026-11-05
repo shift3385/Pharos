@@ -83,7 +83,6 @@ export function ExecutionPanel({
   runItemId,
   runKey,
   runOpen,
-  configurationLabel,
   projectId,
   userId,
   onChanged,
@@ -93,7 +92,6 @@ export function ExecutionPanel({
   runItemId: string;
   runKey: string;
   runOpen: boolean;
-  configurationLabel: string | null;
   projectId: string;
   userId: string;
   /** An attempt was recorded or a draft changed: refresh the run. */
@@ -122,6 +120,9 @@ export function ExecutionPanel({
   const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const attachFor = useRef<string | null>(null);
+  // Set while an attempt is being recorded: a second Ctrl+Enter, a click or
+  // an edit typed meanwhile must not record twice or revive the draft.
+  const recording = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -131,9 +132,11 @@ export function ExecutionPanel({
       if (d) {
         const now = new Date();
         const stored = (d.draft?.targets ?? {}) as Record<string, unknown>;
+        const savedAt = d.draft?.updatedAt;
         setDrafts((cur) => {
           const next: Record<string, TargetDraft> = {};
-          for (const [k, v] of Object.entries(stored)) next[k] = cur[k] ?? parseDraft(v, now);
+          for (const [k, v] of Object.entries(stored))
+            next[k] = cur[k] ?? parseDraft(v, now, savedAt);
           return next;
         });
         setTargetKey((k) => {
@@ -207,9 +210,27 @@ export function ExecutionPanel({
     }
   }, [allFiles, previews, userId]);
 
+  /** Another window recorded or replaced this attempt: drop ours and reload
+   *  what is stored (draft-stale). */
+  async function onStale(key: string) {
+    cancelSave(key);
+    setDrafts((cur) => {
+      const next = { ...cur };
+      delete next[key];
+      return next;
+    });
+    toast(t("execution.staleDraft"), "warning");
+    await load();
+  }
+
+  function saveFailed(key: string, e: unknown) {
+    if (String(e instanceof Error ? e.message : e).startsWith("draft-stale")) void onStale(key);
+    else toast(t("execution.draftError"), "error");
+  }
+
   /** Changes the draft of the current target and schedules its save. */
   function change(update: (d: TargetDraft) => TargetDraft) {
-    if (!target || !editable) return;
+    if (!target || !editable || recording.current) return;
     const key = target.key;
     const next = update(drafts[key] ?? newDraft(new Date()));
     setDrafts((cur) => ({ ...cur, [key]: next }));
@@ -220,9 +241,7 @@ export function ExecutionPanel({
       const d = pending.current[key];
       delete pending.current[key];
       if (d)
-        void runsApi
-          .draftSave(runItemId, key, d, userId)
-          .catch(() => toast(t("execution.draftError"), "error"));
+        void runsApi.draftSave(runItemId, key, d, userId).catch((e) => saveFailed(key, e));
     }, SAVE_DELAY);
   }
 
@@ -255,20 +274,24 @@ export function ExecutionPanel({
   }
 
   async function record(): Promise<string | null> {
-    if (!target || !detail || !editable) return null;
+    if (!target || !detail || !editable || recording.current) return null;
+    recording.current = true;
     const d = drafts[target.key] ?? newDraft(new Date());
     cancelSave(target.key);
     setBusy(true);
     try {
-      const input = toResultInput(
-        runItemId,
-        target,
-        steps,
-        d,
-        configurationLabel,
-        userId,
-        new Date(),
-      );
+      // The draft (with its attempt id) is saved first: recording checks it,
+      // and a retry of the same attempt returns the recorded one.
+      try {
+        await runsApi.draftSave(runItemId, target.key, d, userId);
+      } catch (e) {
+        if (String(e instanceof Error ? e.message : e).startsWith("draft-stale")) {
+          await onStale(target.key);
+          return null;
+        }
+        throw e;
+      }
+      const input = toResultInput(runItemId, target, steps, d, userId, new Date());
       const id = await runsApi.record(input);
       toast(t("execution.recorded", { status: t(`runs.status.${input.status}`) }));
       setDrafts((cur) => {
@@ -281,9 +304,14 @@ export function ExecutionPanel({
       onChanged();
       return id;
     } catch (e) {
-      toast(errorText(e, t), "error");
+      if (String(e instanceof Error ? e.message : e).startsWith("draft-stale")) {
+        await onStale(target.key);
+      } else {
+        toast(errorText(e, t), "error");
+      }
       return null;
     } finally {
+      recording.current = false;
       setBusy(false);
     }
   }
@@ -350,6 +378,9 @@ export function ExecutionPanel({
   }
 
   function onPaste(e: ClipboardEvent) {
+    // A paste in a dialog (rendered in a portal, but bubbling here through
+    // React) is the dialog's.
+    if (!e.currentTarget.contains(e.target as Node) || help || discarding) return;
     const files = Array.from(e.clipboardData?.files ?? []).filter((f) =>
       f.type.startsWith("image/"),
     );
@@ -398,6 +429,9 @@ export function ExecutionPanel({
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    // Keys pressed in a dialog (a portal: outside this section in the DOM,
+    // inside it for React's bubbling) are the dialog's.
+    if (!e.currentTarget.contains(e.target as Node) || help || discarding) return;
     const el = e.target as HTMLElement;
     const inField =
       el.isContentEditable ||

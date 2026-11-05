@@ -29,6 +29,9 @@ export interface StepDraft {
 
 /** The draft of one target (one attempt in progress). */
 export interface TargetDraft {
+  /** The attempt's id, chosen here: the result gets it, so recording twice
+   *  (or retrying) writes one attempt, and a stale draft is refused. */
+  attemptId: string;
   steps: Record<string, StepDraft>;
   /** The result status the user chose; unset = derived from the steps. */
   status?: StepStatus;
@@ -111,13 +114,24 @@ export function rowLabel(values: ExecutionTarget["values"]): string {
 }
 
 export function newDraft(now: Date): TargetDraft {
-  return { steps: {}, notes: "", startedAt: now.toISOString(), elapsedMs: 0 };
+  return {
+    attemptId: crypto.randomUUID(),
+    steps: {},
+    notes: "",
+    startedAt: now.toISOString(),
+    elapsedMs: 0,
+  };
 }
 
 /** A stored draft as the executor's shape; anything else is a new draft.
- *  A timer that was running when the app closed comes back paused. */
-export function parseDraft(v: unknown, now: Date): TargetDraft {
+ *  A timer that was running when the app closed comes back paused, with the
+ *  time it had run until the draft was last saved (`savedAt`). */
+export function parseDraft(v: unknown, now: Date, savedAt?: string): TargetDraft {
   if (!isObj(v)) return newDraft(now);
+  const elapsed = typeof v.elapsedMs === "number" && v.elapsedMs >= 0 ? v.elapsedMs : 0;
+  const since = typeof v.runningSince === "string" ? Date.parse(v.runningSince) : NaN;
+  const saved = savedAt ? Date.parse(savedAt) : NaN;
+  const ran = Number.isNaN(since) || Number.isNaN(saved) ? 0 : Math.max(0, saved - since);
   const steps: Record<string, StepDraft> = {};
   if (isObj(v.steps)) {
     for (const [id, s] of Object.entries(v.steps)) {
@@ -131,6 +145,7 @@ export function parseDraft(v: unknown, now: Date): TargetDraft {
     }
   }
   return {
+    attemptId: typeof v.attemptId === "string" && v.attemptId ? v.attemptId : crypto.randomUUID(),
     steps,
     status: STEP_STATUSES.includes(v.status as StepStatus)
       ? (v.status as StepStatus)
@@ -138,7 +153,7 @@ export function parseDraft(v: unknown, now: Date): TargetDraft {
     notes: typeof v.notes === "string" ? v.notes : "",
     startedAt:
       typeof v.startedAt === "string" ? v.startedAt : now.toISOString(),
-    elapsedMs: typeof v.elapsedMs === "number" && v.elapsedMs >= 0 ? v.elapsedMs : 0,
+    elapsedMs: elapsed + ran,
   };
 }
 
@@ -194,13 +209,14 @@ export function nextUnmarked(steps: ExecStep[], d: TargetDraft, from: number): n
 
 const MAX_MESSAGE = 500;
 
-/** The attempt to record from a draft (`execution_record`). */
+/** The attempt to record from a draft (`execution_record`). No
+ *  configuration label: a manual result is identified by the run's
+ *  `configuration_id`, whose name can be edited. */
 export function toResultInput(
   runItemId: string,
   target: ExecutionTarget,
   steps: ExecStep[],
   d: TargetDraft,
-  configurationLabel: string | null,
   userId: string,
   now: Date,
 ): ResultInput {
@@ -227,8 +243,8 @@ export function toResultInput(
     runItemId,
     flowId: target.flowId ?? undefined,
     exampleRowId: target.exampleRowId ?? undefined,
+    attemptId: d.attemptId,
     status,
-    configurationLabel: configurationLabel ?? undefined,
     durationMs: Math.round(elapsedAt(d, now)) || undefined,
     startedAt: d.startedAt,
     finishedAt: now.toISOString(),

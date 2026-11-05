@@ -264,3 +264,8 @@ Tras la revisión independiente (2026-10-31):
 - **UI.** No hay diseño en `docs/rediseno/` para estas pantallas: la sección
   «Ciclos» del proyecto y la tarjeta «Configuraciones» de Ajustes usan las
   primitivas existentes (tabla, píldoras, diálogos).
+
+**Nota (E5, paso 7, EJE-02, 2026-11-04).** Un run de un ciclo `closed` no se
+reabre (`cycle-closed`): primero se reabre el ciclo. La celda de un elemento
+del ciclo que cubre el caso entero es el peor de sus flujos y filas; la
+pantalla del run cuenta además cada flujo y fila por separado.

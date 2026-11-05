@@ -28,6 +28,9 @@ depende de `@modules/auth`, `@modules/sync-offline` y `@modules/defects`
 - **Borrador** (`model/execution.ts`, `TargetDraft`): marcas por paso, «obtenido
   / notas», estado elegido a mano, notas, cronómetro. Se guarda solo
   (`execution_draft_save`, 600 ms) y vive en `execution_drafts` (local).
+- **Una sola vez:** cada borrador lleva un `attemptId` que será el id del
+  resultado; un segundo Ctrl+Enter o un reintento no duplica, y un borrador
+  caducado (otra ventana) se rechaza y se recarga.
 - **Guardar resultado** (`execution_record`): un intento inmutable; los
   adjuntos del borrador pasan al resultado o a su paso. Un paso sin marcar se
   guarda como Omitido.
@@ -52,7 +55,7 @@ depende de `@modules/auth`, `@modules/sync-offline` y `@modules/defects`
 | `run-item-execute` (con `data-case-key`) | Abrir el ejecutor de un elemento |
 | `run-execute-next` | «Ejecutar el siguiente» |
 | `run-add-cases`, `run-edit` | Acciones del run abierto |
-| `run-close`, `run-close-confirm`, `run-reopen` | Cerrar / reabrir el run |
+| `run-close`, `run-close-discard`, `run-close-confirm`, `run-reopen` | Cerrar (con «Descartar borradores») / reabrir el run |
 | `exec-panel` | El ejecutor |
 | `exec-step-<n>-pass`, `-fail`, `-blocked`, `-skip` | Marcar el paso n (desde 1) |
 | `exec-step-<n>-notes`, `exec-step-<n>-attach`, `exec-step-<n>-defect` | Lo obtenido, adjuntar y «Guardar y crear defecto» del paso n |
@@ -67,7 +70,7 @@ depende de `@modules/auth`, `@modules/sync-offline` y `@modules/defects`
 `run_list`, `run_counts_list`, `results_list`, `unlinked_tests_list`,
 `unlinked_mapping_set`, `run_import_preview`, `run_import`,
 `run_import_attach` (importación) y, para la ejecución manual, `run_create`,
-`run_items_add`, `run_update` (también reabre), `run_overview`,
+`run_create_manual`, `run_items_add`, `run_update` (también reabre), `run_close`, `run_overview`,
 `run_item_detail`, `execution_draft_save`, `execution_draft_discard`,
 `execution_record`, `execution_attach`, `execution_attachment_delete`,
 `execution_attachment_save`, `execution_attachment_preview`,

@@ -2559,7 +2559,9 @@
       "tooLarge": "El archivo supera los 200 MB.",
       "draftTooLarge": "El borrador es demasiado grande (más de 1 MB de texto).",
       "target": "Ese flujo, fila o paso no está en la revisión ejecutada.",
-      "generic": "No se pudo completar la acción. Inténtalo de nuevo."
+      "generic": "No se pudo completar la acción. Inténtalo de nuevo.",
+      "cycleClosed": "El ciclo de este run está cerrado. Reabre el ciclo antes que el run.",
+      "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas."
     },
     "webReadOnly": "Los runs se ejecutan en la app de escritorio. En la web aún no se pueden ver ni registrar (llega con EJE-06).",
     "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan (llegará con SYNC-04b).",
@@ -2600,7 +2602,9 @@
       "closeDrafts_one": "{{count}} elemento tiene un borrador sin guardar; se conserva en este equipo.",
       "closeDrafts_other": "{{count}} elementos tienen borradores sin guardar; se conservan en este equipo.",
       "closeAs": "Cerrar como",
-      "save": "Guardar"
+      "save": "Guardar",
+      "closeDiscard": "Descartar los borradores y sus adjuntos",
+      "closeDiscardAborted": "Los borradores y sus adjuntos se descartan al cancelar el run"
     },
     "picker": {
       "search": "Buscar por ID o título",
@@ -2616,6 +2620,7 @@
       "create": "Crear y abrir",
       "noConfiguration": "Sin configuración",
       "created": "{{key}} creado."
-    }
+    },
+    "staleDraft": "Este intento ya se guardó o lo cambió otra ventana. Se ha recargado lo guardado."
   }
 }

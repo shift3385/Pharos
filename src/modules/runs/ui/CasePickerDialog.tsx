@@ -38,7 +38,7 @@ export function CasePickerDialog({
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = q
@@ -53,11 +53,16 @@ export function CasePickerDialog({
 
   async function confirm() {
     setSaving(true);
-    setFailed(false);
+    setFailed(null);
     try {
       await onConfirm([...chosen]);
-    } catch {
-      setFailed(true);
+    } catch (e) {
+      const raw = String(e instanceof Error ? e.message : e);
+      setFailed(
+        raw.startsWith("item-overlap")
+          ? t("execution.error.overlap")
+          : t("execution.error.generic"),
+      );
     } finally {
       setSaving(false);
     }
@@ -121,7 +126,7 @@ export function CasePickerDialog({
       </p>
       {failed && (
         <p className="rn-error" role="alert">
-          {t("execution.error.generic")}
+          {failed}
         </p>
       )}
       <div className="cd__actions">

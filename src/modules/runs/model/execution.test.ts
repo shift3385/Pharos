@@ -82,9 +82,13 @@ describe("the draft", () => {
     const running = toggleTimer({ ...newDraft(at), elapsedMs: 5_000 }, at);
     expect(running.runningSince).toBeDefined();
     expect(elapsedAt(running, new Date(at.getTime() + 2_000))).toBe(7_000);
-    const back = parseDraft(JSON.parse(JSON.stringify(running)), at);
+    // Saved 3 s after it started: those 3 s are kept, the timer is paused.
+    const savedAt = new Date(at.getTime() + 3_000).toISOString();
+    const back = parseDraft(JSON.parse(JSON.stringify(running)), at, savedAt);
     expect(back.runningSince).toBeUndefined();
-    expect(back.elapsedMs).toBe(5_000);
+    expect(back.elapsedMs).toBe(8_000);
+    expect(back.attemptId).toBe(running.attemptId);
+    expect(parseDraft(JSON.parse(JSON.stringify(running)), at).elapsedMs).toBe(5_000);
     expect(parseDraft("junk", at).steps).toEqual({});
     expect(parseDraft({ steps: { S1: { status: "weird" } } }, at).steps.S1.status).toBeUndefined();
     expect(formatElapsed(61_000)).toBe("01:01");
@@ -102,12 +106,12 @@ describe("the draft", () => {
         S2: { status: "passed" as const },
       },
     };
-    const input = toResultInput("item-1", target(), steps, d, "Chrome", "u", at);
+    const input = toResultInput("item-1", target(), steps, d, "u", at);
     expect(input).toMatchObject({
       runItemId: "item-1",
       exampleRowId: "ROW",
+      attemptId: d.attemptId,
       status: "failed",
-      configurationLabel: "Chrome",
       durationMs: 42_000,
       finishedAt: at.toISOString(),
       errorMessage: "declined",
@@ -115,6 +119,8 @@ describe("the draft", () => {
       userId: "u",
     });
     expect(input.flowId).toBeUndefined();
+    expect(input.configurationLabel).toBeUndefined();
+    expect(d.attemptId).toMatch(/^[0-9a-f-]{36}$/);
     expect(input.steps?.map((s) => [s.stepId, s.text, s.status, s.actual])).toEqual([
       ["BG", "logged in", "skipped", undefined],
       ["PRE", "cart has book", "skipped", undefined],
@@ -122,7 +128,7 @@ describe("the draft", () => {
       ["S2", "see receipt", "passed", undefined],
     ]);
     // A chosen status wins over the steps.
-    expect(toResultInput("i", target(), steps, { ...d, status: "blocked" }, null, "u", at).status).toBe(
+    expect(toResultInput("i", target(), steps, { ...d, status: "blocked" }, "u", at).status).toBe(
       "blocked",
     );
   });

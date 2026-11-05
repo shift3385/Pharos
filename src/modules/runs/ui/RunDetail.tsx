@@ -94,6 +94,23 @@ export function RunDetail({
       toast(message);
       setDialog(null);
       await refresh();
+    } catch (e) {
+      const raw = String(e instanceof Error ? e.message : e);
+      toast(
+        raw.startsWith("cycle-closed")
+          ? t("execution.error.cycleClosed")
+          : t("execution.error.generic"),
+        "error",
+      );
+    }
+  }
+
+  async function close(status: "completed" | "aborted", discardDrafts: boolean) {
+    try {
+      await runsApi.close(runId, status, discardDrafts, userId);
+      toast(t("execution.run.closed", { key: run?.runKey ?? "" }));
+      setDialog(null);
+      await refresh();
     } catch {
       toast(t("execution.error.generic"), "error");
     }
@@ -291,7 +308,6 @@ export function RunDetail({
       runItemId={itemId}
       runKey={run.runKey}
       runOpen={open}
-      configurationLabel={data.configurationName}
       projectId={projectId}
       userId={userId}
       onChanged={() => void refresh()}
@@ -411,12 +427,7 @@ export function RunDetail({
           notRun={c.notRun}
           drafts={items.filter((i) => i.hasDraft).length}
           onCancel={() => setDialog(null)}
-          onClose={(status) =>
-            void update(
-              { status, userId },
-              t("execution.run.closed", { key: run.runKey }),
-            )
-          }
+          onClose={(status, discardDrafts) => void close(status, discardDrafts)}
         />
       )}
       {dialog === "edit" && (
@@ -456,11 +467,15 @@ function CloseRunDialog({
   notRun: number;
   drafts: number;
   onCancel: () => void;
-  onClose: (status: "completed" | "aborted") => void;
+  onClose: (status: "completed" | "aborted", discardDrafts: boolean) => void;
 }) {
   const { t } = useTranslation();
   const id = useId();
   const [status, setStatus] = useState<"completed" | "aborted">("completed");
+  const [discard, setDiscard] = useState(false);
+  // A cancelled run's drafts go with it; a completed one keeps them unless
+  // the user discards them (their files would stay on disk otherwise).
+  const discarding = status === "aborted" || discard;
   return (
     <Dialog className="cd rn-modal" labelledBy={`${id}-t`} onClose={onCancel}>
       <h3 id={`${id}-t`} className="cd__title">
@@ -487,6 +502,20 @@ function CloseRunDialog({
           </label>
         ))}
       </fieldset>
+      {drafts > 0 && (
+        <label className="rn-check">
+          <input
+            type="checkbox"
+            checked={discarding}
+            disabled={status === "aborted"}
+            onChange={(e) => setDiscard(e.target.checked)}
+            data-testid="run-close-discard"
+          />
+          {status === "aborted"
+            ? t("execution.run.closeDiscardAborted")
+            : t("execution.run.closeDiscard")}
+        </label>
+      )}
       <div className="cd__actions">
         <button type="button" className="cd__cancel" onClick={onCancel}>
           {t("common.cancel")}
@@ -494,7 +523,7 @@ function CloseRunDialog({
         <button
           type="button"
           className="cd__confirm"
-          onClick={() => onClose(status)}
+          onClick={() => onClose(status, discarding)}
           data-testid="run-close-confirm"
         >
           {t("execution.run.close")}

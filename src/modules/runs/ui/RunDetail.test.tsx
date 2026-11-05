@@ -28,6 +28,7 @@ const api = vi.hoisted(() => ({
   draftDiscard: vi.fn(),
   record: vi.fn(),
   update: vi.fn(),
+  close: vi.fn(),
   addItems: vi.fn(),
   createManual: vi.fn(),
   configurations: vi.fn(),
@@ -230,6 +231,7 @@ beforeEach(async () => {
   api.draftSave.mockResolvedValue(undefined);
   api.record.mockResolvedValue("res-new");
   api.update.mockResolvedValue(run());
+  api.close.mockResolvedValue(run({ status: "completed" }));
   api.previewAttachment.mockResolvedValue(null);
   api.configurations.mockResolvedValue([]);
 });
@@ -277,10 +279,13 @@ describe("run screen", () => {
     expect(input).toMatchObject({
       runItemId: "i1",
       status: "failed",
-      configurationLabel: "Chrome",
       errorMessage: "tarjeta rechazada",
       userId: "test-user",
     });
+    // No editable configuration name; the attempt id is the saved draft's.
+    expect(input.configurationLabel).toBeUndefined();
+    const saved = api.draftSave.mock.calls.at(-1)![2] as { attemptId: string };
+    expect(input.attemptId).toBe(saved.attemptId);
     expect(input.steps.map((s: { status: string }) => s.status)).toEqual([
       "passed",
       "failed",
@@ -320,8 +325,9 @@ describe("run screen", () => {
     expect(within(dialog).getByText("Queda 1 ejecución sin hacer.")).toBeInTheDocument();
     await user.click(within(dialog).getByLabelText("Cancelado"));
     await user.click(within(dialog).getByTestId("run-close-confirm"));
+    // Cancelling always discards the drafts.
     await waitFor(() =>
-      expect(api.update).toHaveBeenCalledWith("r1", { status: "aborted", userId: "test-user" }),
+      expect(api.close).toHaveBeenCalledWith("r1", "aborted", true, "test-user"),
     );
 
     api.overview.mockResolvedValue(overview({ run: run({ status: "completed" }) }));
@@ -334,6 +340,51 @@ describe("run screen", () => {
     await waitFor(() =>
       expect(api.update).toHaveBeenCalledWith("r1", { status: "in_progress", userId: "test-user" }),
     );
+  });
+
+  it("records once when Ctrl+Enter is pressed again while it saves", async () => {
+    const user = userEvent.setup();
+    let finish: (id: string) => void = () => undefined;
+    api.record.mockImplementation(
+      () => new Promise<string>((resolve) => (finish = resolve)),
+    );
+    renderRun();
+    const panel = await screen.findByTestId("exec-panel");
+    within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0].focus();
+    await user.keyboard("p");
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    await waitFor(() => expect(api.record).toHaveBeenCalledTimes(1));
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    await user.click(screen.getByTestId("exec-save"));
+    finish("res-new");
+    await waitFor(() => expect(api.overview.mock.calls.length).toBeGreaterThan(1));
+    expect(api.record).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores the executor's keys while a dialog is open", async () => {
+    const user = userEvent.setup();
+    renderRun();
+    const panel = await screen.findByTestId("exec-panel");
+    await user.click(within(panel).getByRole("button", { name: "Atajos" }));
+    const dialog = await screen.findByRole("dialog", { name: "Atajos" });
+    await user.keyboard("p");
+    await user.keyboard("t");
+    expect(screen.getByTestId("exec-step-1-pass")).toHaveAttribute("aria-pressed", "false");
+    expect(api.draftSave).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole("button", { name: "Cerrar" }));
+  });
+
+  it("reloads when another window already recorded the attempt", async () => {
+    const user = userEvent.setup();
+    api.draftSave.mockRejectedValue("draft-stale: that attempt is already recorded");
+    renderRun();
+    const panel = await screen.findByTestId("exec-panel");
+    within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0].focus();
+    await user.keyboard("p");
+    await user.click(screen.getByTestId("exec-save"));
+    expect(await screen.findByText(/ya se guardó o lo cambió otra ventana/)).toBeInTheDocument();
+    expect(api.record).not.toHaveBeenCalled();
+    expect(api.itemDetail.mock.calls.length).toBeGreaterThan(1);
   });
 
   it("is read only on the web", async () => {

@@ -301,6 +301,10 @@ sobre lo decidido, sin cambiar la decisión:
   permiso en macOS.
 - **Miniaturas:** `execution_attachment_preview` devuelve una URL `data:` de
   las imágenes de hasta 5 MB (sin SVG); el resto muestra un icono.
+- **Cerrar un run** (`run_close`): como «Cancelado» descarta siempre sus
+  borradores y sus adjuntos (se liberan si nadie más los usa); como
+  «Completado», solo si el usuario marca «Descartar los borradores». Si no,
+  se conservan para reabrirlo.
 - **Retención:** hasta que lleguen los ajustes por proyecto en Admin y las
   excepciones de resultados (DAT-03c, 0.3.0), **todo adjunto de `result`,
   `step_result` y `execution_draft` está exento** (`evidence::exempt`): más
