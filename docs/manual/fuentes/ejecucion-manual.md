@@ -19,6 +19,9 @@ y la matriz de trazabilidad.
   equipo al adjuntarlas.
 - Si el caso cambió después de añadirlo al run, se ejecuta la revisión que el
   run congeló: el resultado siempre apunta a lo que se probó.
+- En la versión web se ejecuta igual, pero sin archivos: «Los adjuntos solo en
+  escritorio». El borrador se queda en ese navegador; el intento guardado se ve
+  en todos tus equipos.
 
 ## Véase también
 

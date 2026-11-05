@@ -584,7 +584,7 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   cierra como `aborted`. Queda EJE-07 en el ROADMAP.
 - **Purga:** un elemento purgado se lleva su borrador y los adjuntos del
   borrador; la recogida libera sus archivos.
-- **Web:** la pantalla del run es de solo lectura (aviso) hasta EJE-06.
+- **Web:** la pantalla del run es de solo lectura (aviso) hasta EJE-06 (ya hecho: ver «Implementación (EJE-06)»).
 - **Criterio de salida de 0.2.0:** `editing_an_executed_case_does_not_change_its_results`
   ejecuta un caso con notas y una captura en un paso, edita el caso (cambia y
   borra pasos, añade un flujo, cambia el título) y comprueba que los
@@ -631,3 +631,63 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   del run y sus adjuntos; como `completed`, si el usuario lo pide.
 - **Sin etiqueta de configuración** en los intentos manuales: los identifica
   el `configuration_id` del run, cuyo nombre se puede editar.
+
+## Implementación (EJE-06: runs en la web, 2026-11-05)
+
+EJE-06, adelantado a 0.2.0: la web crea runs, añade casos, ejecuta paso a paso,
+cierra y reabre, y «Ejecutar» un ciclo, a través de la API del servidor
+(`server/src/modules/domain/runs.ts`). Sin migraciones (las 0015 del servidor
+y 0036 local se reservaron y se retiraron) y sin cambios en lo que se
+sincroniza (`APPLIED_SET_VERSION` sigue en 7). Precisiones:
+
+- **Los mismos documentos.** La web escribe `run` y `run_item` (lww) y
+  `result` (append-only, con sus pasos dentro) con las claves exactas de
+  `runs::read_payload` y `runs::result_payload`, y congela la revisión del caso
+  con el mismo id y contenido que `revisions::ensure_current` (datos del caso
+  con sus ids de paso estables), guardándola si el servidor aún no la tiene.
+  `src-tauri/tests/fixtures/web-run-interop.json` lo comprueba en los dos
+  sentidos: lo que escribe un lado, normalizado (ids nuevos y marcas de tiempo,
+  reloj y autor), es lo que escribe el otro; y la pantalla del run y el
+  ejecutor de cada lado leen igual lo que escribió el otro (también lo que el
+  escritorio vuelve a enviar es el mismo documento).
+- **Las mismas reglas,** con el mismo texto de error: `run-closed`,
+  `item-overlap: <clave>` (S5, también dentro de una llamada), flujo o fila
+  fuera de la revisión, `target-outside-item`, `target-not-in-item`,
+  `cycle-closed` al reabrir, `attempt-id-taken`. Un gemelo puro de
+  `targets_of` / `narrow` / el solape (`domain/runs-targets.ts`) se comprueba
+  con `execution-target-vectors.json`, que lee también el escritorio.
+- **`attemptId` obligatorio en la web** (`attempt-id-required`): sin borrador
+  en el servidor, es lo único que hace idempotente un reintento. Se normaliza
+  como en el escritorio; el mismo id para el mismo elemento y objetivo
+  devuelve el resultado guardado (también uno escrito por el escritorio).
+- **Auditoría:** un evento `create` por run; los elementos se pliegan en un
+  `update` con `{itemsAdded}`; un `execute` por intento con `{status: [null,
+  s]}` y su resumen; `update` al cerrar o reabrir. «Ejecutar» un ciclo deja,
+  además, la actualización del ciclo con `{runsCreated}`.
+- **Borradores en el navegador** (`src/modules/runs/model/webDrafts.ts`): una
+  entrada de `localStorage` por cuenta y elemento, con las reglas del
+  escritorio: `draft-stale` si otra pestaña tiene otro intento para ese
+  objetivo o si el intento ya se registró (la pestaña que registra deja la
+  lista de los últimos intentos registrados para las demás), registrar exige el
+  borrador de ese intento y lo quita después, 1 MB por elemento, y cancelar un
+  run descarta sus borradores. Si el navegador no guarda nada (modo privado,
+  sin espacio), el intento se registra igual y la interfaz lo avisa. Un
+  borrador de la web no se ve en el escritorio ni al revés, como entre dos
+  equipos.
+- **Un run cancelado en otro lado** (la web u otro equipo) se lleva, al
+  llegar por pull, los borradores locales del escritorio y sus adjuntos, como
+  cancelarlo aquí (`sync::apply_doc`, `manual::drop_run_drafts`). Si el run
+  tiene un cambio local pendiente, el pull es un conflicto y los borradores
+  esperan a que se resuelva.
+- **Sin archivos en la web** (SYNC-04b): el ejecutor no adjunta ni pega
+  capturas y lo dice («Los adjuntos solo en escritorio»); Ctrl+V no aparece en
+  sus atajos. Importar informes y la bandeja «Sin vincular» siguen en el
+  escritorio, con una nota en la web.
+- **Lecturas:** lista, cuentas por run, resultados, la pantalla del run y el
+  detalle de un elemento, con la misma derivación (final y flaky con el gemelo
+  de `cycle-progress.ts`; vínculo de los importados con `resultLink.ts`). Los
+  ids de paso de un resultado importado no se derivan en el servidor: la web
+  muestra esos pasos por su texto.
+- **Run borrado:** toda escritura lee el run con `liveRun`, el único sitio
+  que decide si un run se puede leer y escribir (hoy, que no sea una lápida);
+  EJE-07 añade ahí su marca.

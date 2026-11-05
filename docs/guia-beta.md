@@ -210,8 +210,9 @@ conserva las etiquetas.
 
 En un proyecto, **Ejecuciones** tiene «Nuevo run manual» (elige casos, entorno,
 build y, si las hay, configuración) y cada run abre su pantalla. Un run de un
-ciclo («Ejecutar» en Ciclos) se abre desde la pestaña Runs del ciclo. Solo en
-la app de escritorio: en la web la pantalla avisa y no muestra nada.
+ciclo («Ejecutar» en Ciclos) se abre desde la pestaña Runs del ciclo. También
+en la web (EJE-06), sin archivos: allí el borrador se guarda en el navegador y
+no se ve en otro equipo ni en otro navegador.
 
 **Atajos** (con un paso enfocado y sin escribir en un campo): **P** pasa,
 **F** falla, **B** bloqueado, **S** omitido, **J/K** o las flechas para moverse,
@@ -250,6 +251,26 @@ adjuntos.
 - [ ] Pulsar Ctrl+Enter dos veces seguidas: se guarda un solo intento.
       Cancelar un run con borradores los descarta; al completarlo se puede
       elegir.
+
+**En la web** (EJE-06; navegador con la sesión iniciada):
+
+- [ ] «Nuevo run manual» y «Ejecutar» en un ciclo funcionan; la pantalla del
+      run dice «Los adjuntos solo en escritorio. Los borradores de ejecución se
+      guardan en este navegador».
+- [ ] Ejecutar un caso con el teclado y guardar: el intento aparece también en
+      el escritorio tras sincronizar, con sus pasos y lo obtenido. Y al revés:
+      un intento guardado en el escritorio se ve en la web.
+- [ ] Marcar pasos, cerrar la pestaña y volver: el borrador sigue. En otro
+      navegador o equipo no está (es de ese navegador).
+- [ ] Con el mismo elemento abierto en dos pestañas, guardar en una: la otra,
+      al marcar, avisa de que ese intento ya se guardó y recarga.
+- [ ] Pegar una captura (Ctrl+V) avisa «Los adjuntos solo en escritorio»; no
+      hay botones de adjuntar. «Crear defecto» desde un intento fallido abre el
+      defecto relleno, sin evidencias.
+- [ ] «Importar informe» está desactivado y la pestaña «Sin vincular» dice que
+      está en la app de escritorio.
+- [ ] Cancelar en la web un run que tenía un borrador en el escritorio: al
+      sincronizar, el escritorio descarta ese borrador y sus adjuntos.
 
 ### 4.5 Sincronización
 

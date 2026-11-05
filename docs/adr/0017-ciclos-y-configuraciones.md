@@ -269,3 +269,9 @@ Tras la revisión independiente (2026-10-31):
 reabre (`cycle-closed`): primero se reabre el ciclo. La celda de un elemento
 del ciclo que cubre el caso entero es el peor de sus flujos y filas; la
 pantalla del run cuenta además cada flujo y fila por separado.
+
+**Nota (EJE-06, 2026-11-05).** «Ejecutar» también en la web:
+`POST /api/cycles/:id/execute` aplica las reglas de `cycles::execute` (un run
+por configuración viva y no archivada, revisiones congeladas al crear cada
+run, todo o nada, `planned` → `active`) y devuelve el mismo
+`ExecuteResult`. El botón ya no se desactiva en la web.

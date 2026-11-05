@@ -60,8 +60,9 @@ se publica:
       carpeta real, que los tours nunca tocan. Lo cubren además los tests de
       Rust de `downloads.rs`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
-      antiguos sin enviar («Descargar» / «Descartar») y los avisos «solo en
-      la app de escritorio» de importar informe, ejecutar ciclo, adjuntos,
+      antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
+      («Los adjuntos solo en escritorio», borrador en el navegador) y los
+      avisos «solo en la app de escritorio» de importar informe, adjuntos,
       plantillas propias, clave de recuperación y carpeta de descarga. *Por
       qué no:* los tours recorren la app de escritorio. Lo cubren además las
       pruebas unitarias (Vitest) con `isTauri() = false`.
