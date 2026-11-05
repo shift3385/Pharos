@@ -6,6 +6,7 @@ import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import {
   PROJECT_A,
+  atLeast,
   clearInput,
   clickButton,
   dialog,
@@ -41,7 +42,8 @@ async function view(which: "list" | "board") {
 chapter("defectos", () => {
   step("vacio", {
     title: "Defectos",
-    caption: "Pulsa «Defectos» en el menú lateral. Arriba, «Desde un resultado» y «Nuevo defecto»; debajo, los filtros (abiertos, todos, cerrados), la búsqueda, la severidad y el cambio entre lista y tablero.",
+    caption:
+      "Un defecto registra algo que no funciona como se esperaba, para que se corrija y se pueda volver a probar. Pulsa «Defectos» en el menú lateral. Arriba están «Desde un resultado» y «Nuevo defecto»; debajo, los filtros por estado (abiertos, todos, cerrados), la búsqueda, la severidad y el cambio entre «Lista» y «Tablero».",
     covers: ["section:defects", "state:defects-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -52,7 +54,8 @@ chapter("defectos", () => {
 
   step("titulo-obligatorio", {
     title: "Nuevo defecto: el título es obligatorio",
-    caption: "«Nuevo defecto» abre el editor. Sin título no se guarda: Pharos lo indica en el campo.",
+    caption:
+      "«Nuevo defecto» abre el editor. El título es obligatorio: sin él, Pharos lo indica en el campo y no guarda.",
     covers: ["state:defect-title-required"],
     run: async () => {
       await clickButton(F.newDefect);
@@ -63,7 +66,8 @@ chapter("defectos", () => {
 
   step("nuevo", {
     title: "Rellenar el defecto",
-    caption: "Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos y seguimiento externo.",
+    caption:
+      "Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena los detalles (severidad, prioridad, estado y etiquetas), la reproducción (pasos, resultado esperado y resultado obtenido), dónde se encontró (build y entorno), los vínculos con casos y requisitos y, si se sigue también fuera de Pharos, la referencia externa (en este ejemplo, «El saldo no se actualiza tras una transferencia», de severidad mayor, encontrado en la build 2.0.0-rc1).",
     covers: ["action:defect-create", "action:defect-links"],
     run: async () => {
       await (await field(F.field.title)).setValue("El saldo no se actualiza tras una transferencia");
@@ -80,7 +84,8 @@ chapter("defectos", () => {
 
   step("evidencias", {
     title: "Evidencias",
-    caption: "Tras guardar, «Evidencias» admite capturas, vídeos o registros; se guardan cifrados en este equipo.",
+    caption:
+      "Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: <archivo>») lo quita.",
     covers: ["upload:src/modules/defects/ui/DefectEditor.tsx"],
     run: async () => {
       await save();
@@ -95,7 +100,8 @@ chapter("defectos", () => {
 
   step("desde-resultado", {
     title: "Un defecto desde un resultado fallido",
-    caption: "«Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (aquí, el del informe importado en el capítulo 8). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado.",
+    caption:
+      "Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (en este ejemplo, el del informe importado en el capítulo 8). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado, así que la trazabilidad no depende de copiar y pegar.",
     covers: ["dialogs:src/modules/defects/ui/ResultPickerDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -108,7 +114,9 @@ chapter("defectos", () => {
 
   step("prerrellenado", {
     title: "Prerrellenado desde el resultado",
-    caption: "El aviso superior indica de qué resultado nace. Revisa el título y guarda.",
+    caption:
+      "El aviso azul de arriba indica de qué resultado nace el defecto. Revisa el título y la severidad que propone (en este ejemplo, se marca como crítico) y guarda.",
+    focus: ".df-banner",
     run: async () => {
       await $(D).$(`button*=${F.results.choose}`).click();
       await expect($(".df-banner")).toBeDisplayed();
@@ -120,7 +128,8 @@ chapter("defectos", () => {
 
   step("lista", {
     title: "La lista de defectos",
-    caption: "La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Filtra por abiertos, todos o cerrados, por severidad o busca por texto.",
+    caption:
+      "La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Cambia entre abiertos, todos o cerrados, filtra por severidad o busca por texto (en este ejemplo, «saldo»).",
     covers: ["action:defects-filter"],
     run: async () => {
       await back();
@@ -133,8 +142,10 @@ chapter("defectos", () => {
 
   step("tablero", {
     title: "El tablero de defectos",
-    caption: "«Tablero» agrupa los defectos por estado. Arrastra una tarjeta (o usa el teclado sobre su asa) para cambiarlo; Pharos solo permite los pasos válidos del ciclo de vida.",
+    caption:
+      "«Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida. Para avanzar un defecto, arrastra su tarjeta (o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas). Pharos solo permite los cambios de estado válidos del ciclo de vida, así que una columna que no admite el defecto no lo acepta.",
     covers: ["screen:defect-board", "action:defect-move", "views:src/modules/defects/ui/DefectsPage.tsx"],
+    focus: "section.df-col[data-column=\"open\"]",
     run: async () => {
       await view("board");
       await expect($(".df-board")).toBeDisplayed();
@@ -149,7 +160,8 @@ chapter("defectos", () => {
 
   step("cerrar", {
     title: "Cerrar un defecto",
-    caption: "Al soltar un defecto en «Cerrado» (o en «Otros»: rechazado, aplazado), Pharos pide la resolución y, si quieres, la build en la que se corrigió.",
+    caption:
+      "Al soltar un defecto en «Cerrado» (o en «Otros»: rechazado o aplazado), Pharos pide la resolución y, si quieres, la build en la que se corrigió. Así el cierre queda justificado y se sabe desde qué versión probar.",
     covers: ["dialogs:src/modules/defects/ui/TransitionDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -166,7 +178,8 @@ chapter("defectos", () => {
 
   step("eliminar", {
     title: "Eliminar un defecto",
-    caption: "En la lista, la papelera de la fila pide confirmación. Su clave no se vuelve a usar.",
+    caption:
+      "Normalmente un defecto se cierra, no se borra. Si se creó por error, la papelera de su fila («Eliminar») pide confirmación con «Sí, eliminar»; su clave no se vuelve a usar.",
     covers: ["dialogs:src/modules/defects/ui/DefectsPage.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -174,15 +187,16 @@ chapter("defectos", () => {
       await $(".cd-overlay").waitForExist({ reverse: true });
       await view("list");
       await $(`button.chips__chip*=${F.filter.all}`).click();
-      const del = $$(`button[aria-label^="${F.delete}: "]`);
-      await (await del)[0].click();
+      const [del] = await atLeast(`button[aria-label^="${F.delete}: "]`, 1);
+      await del.click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
     },
   });
 
   step("eliminado", {
     title: "Defecto eliminado",
-    caption: "Al confirmar desaparece de la lista.",
+    caption:
+      "Al confirmar, el defecto desaparece de la lista.",
     shot: false,
     run: async () => {
       await clickButton(F.deleteConfirm, '[role="alertdialog"]');

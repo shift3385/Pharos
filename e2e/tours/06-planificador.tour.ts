@@ -39,7 +39,8 @@ async function back() {
 chapter("planificador", () => {
   step("tablero", {
     title: "El tablero del planificador",
-    caption: "Pulsa «Planificador» en el menú lateral: cuatro columnas (Backlog, En progreso, En revisión, Hecho), cada una con su «+» para crear una tarjeta directamente en ella, y arriba los filtros por tipo y prioridad.",
+    caption:
+      "El planificador organiza el trabajo del equipo de pruebas que no es un caso: tareas y preparación de datos. Pulsa «Planificador» en el menú lateral: cuatro columnas (Backlog, En progreso, En revisión y Hecho) muestran en qué punto está cada tarjeta; el «+» de cada columna crea una tarjeta directamente en ella. Arriba, los filtros por tipo y prioridad y el buscador.",
     covers: ["section:planner"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -50,7 +51,8 @@ chapter("planificador", () => {
 
   step("nueva-tarjeta", {
     title: "Nueva tarjeta",
-    caption: "Una tarjeta es una tarea o un conjunto de datos de prueba, con prioridad, descripción y etiquetas. «Guardar» la deja en Backlog; después admite adjuntos.",
+    caption:
+      "«Nueva tarjeta» abre el editor. Una tarjeta es una tarea o un conjunto de datos de prueba, con su prioridad, una descripción y etiquetas (en este ejemplo, «Preparar datos de clientes sintéticos», de tipo datos de prueba y prioridad alta). «Guardar» la deja en Backlog; una vez guardada, admite adjuntos.",
     covers: ["action:card-create"],
     run: async () => {
       await clickButton(L.newCard);
@@ -63,8 +65,10 @@ chapter("planificador", () => {
 
   step("adjunto", {
     title: "Adjuntar archivos a una tarjeta",
-    caption: "Tras guardar, «Adjuntos» acepta archivos (hasta el límite indicado); se guardan cifrados en este equipo y se abren desde la propia tarjeta.",
+    caption:
+      "Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: <archivo>») lo quita.",
     covers: ["upload:src/modules/planner/ui/CardEditor.tsx"],
+    focus: ".pl-attach__open",
     run: async () => {
       await $(".tp-editor__save").click();
       await waitForText(L.savedToast);
@@ -77,7 +81,8 @@ chapter("planificador", () => {
 
   step("adjunto-grande", {
     title: "Archivos demasiado grandes",
-    caption: "Un archivo de más de 200 MB no se adjunta: Pharos avisa con su nombre y el límite.",
+    caption:
+      "Un archivo de más de 200 MB no se adjunta: Pharos avisa con su nombre y el límite, y la tarjeta queda como estaba.",
     covers: ["dialogs:src/modules/planner/ui/CardEditor.tsx"],
     shot: false,
     run: async () => {
@@ -100,7 +105,8 @@ chapter("planificador", () => {
 
   step("tarjetas", {
     title: "Tarjetas en el tablero",
-    caption: "Cada tarjeta muestra su tipo, prioridad y etiquetas. Ábrela con un clic en el título; la papelera la elimina.",
+    caption:
+      "Cada tarjeta muestra su tipo, su prioridad y sus etiquetas, para ver de un vistazo qué es urgente. Un clic en el título la abre para editarla; el botón «Eliminar» (la papelera) la borra, tras pedir confirmación.",
     run: async () => {
       await back();
       await newCard("Revisar casos de pagos con QR", { priority: L.priorityLabel.medium });
@@ -113,8 +119,10 @@ chapter("planificador", () => {
 
   step("mover", {
     title: "Mover una tarjeta (también con el teclado)",
-    caption: "Arrastra una tarjeta por su asa a otra columna. Con el teclado: foco en el asa, Espacio para cogerla, flechas para moverla y Espacio para soltarla.",
+    caption:
+      "Cuando una tarea avanza, arrastra su tarjeta por el asa a la columna que corresponda (en este ejemplo, «Revisar casos de pagos con QR» pasa a «En progreso»). Con el teclado: lleva el foco al asa, pulsa Espacio para cogerla, muévela con las flechas y suéltala con Espacio.",
     covers: ["action:card-move"],
+    focus: "section.pl-col[data-status=\"in_progress\"] article.pl-card",
     run: async () => {
       const handle = $(`[aria-label="${tf("planner.drag.handle", { card: "Revisar casos de pagos con QR" })}"]`);
       await handle.click();
@@ -129,7 +137,8 @@ chapter("planificador", () => {
 
   step("filtrar", {
     title: "Filtrar y buscar tarjetas",
-    caption: "Arriba, filtra por tipo (tareas o datos de prueba) y prioridad, o busca por texto.",
+    caption:
+      "Con muchas tarjetas, filtra por tipo (tareas o datos de prueba) y por prioridad, o busca por texto (en este ejemplo, «regresión» deja una sola tarjeta). Los filtros solo cambian lo que ves; las tarjetas siguen en su columna.",
     covers: ["action:planner-filter"],
     run: async () => {
       await $(`button.chips__chip*=${L.filter.test_data}`).click();
@@ -142,7 +151,8 @@ chapter("planificador", () => {
 
   step("eliminar", {
     title: "Eliminar una tarjeta",
-    caption: "La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?»).",
+    caption:
+      "El botón «Eliminar» de la tarjeta pide confirmación («¿Eliminar la tarjeta?») antes de borrarla con sus adjuntos.",
     covers: ["dialogs:src/modules/planner/ui/PlannerBoard.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -153,7 +163,8 @@ chapter("planificador", () => {
 
   step("eliminada", {
     title: "Tarjeta eliminada",
-    caption: "Al confirmar, desaparece del tablero.",
+    caption:
+      "Al confirmar, la tarjeta desaparece del tablero.",
     shot: false,
     run: async () => {
       await clickButton(L.deleteConfirm, '[role="alertdialog"]');
