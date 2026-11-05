@@ -1346,7 +1346,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "read (writes a file the user exports)",
     ),
     ("runs::manual::execution_attachment_preview", "read"),
-    ("runs::delete::run_delete_preview", "read (counts for the delete dialog)"),
+    (
+        "runs::delete::run_delete_preview",
+        "read (counts for the delete dialog)",
+    ),
 ];
 
 fn registered_commands() -> Vec<String> {
