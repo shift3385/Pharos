@@ -2224,7 +2224,6 @@
       "running": "Creando…",
       "doneToast_one": "Run creado: {{keys}}",
       "doneToast_other": "{{count}} runs creados: {{keys}}",
-      "desktopOnly": "Los runs se crean desde la app de escritorio.",
       "goneHint": "No se puede ejecutar: quita del ciclo los casos eliminados ({{keys}}).",
       "missingToast_one": "{{count}} configuración aún no ha llegado a este equipo y se saltó.",
       "missingToast_other": "{{count}} configuraciones aún no han llegado a este equipo y se saltaron."
@@ -2404,7 +2403,7 @@
     "deleteConfirm": "Sí, eliminar",
     "deleteFailed": "No se pudo eliminar el defecto. Inténtalo de nuevo.",
     "delete": "Eliminar defecto",
-    "webOnlyDesktop": "Las evidencias y los resultados están en la app de escritorio.",
+    "webOnlyDesktop": "Los adjuntos solo en escritorio.",
     "casesTitle_one": "{{count}} caso de prueba vinculado",
     "casesTitle_other": "{{count}} casos de prueba vinculados",
     "resultStatus": {
@@ -2680,7 +2679,13 @@
       "cycleClosed": "El ciclo de este run está cerrado. Reabre el ciclo antes que el run.",
       "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas."
     },
-    "webReadOnly": "Los runs se ejecutan en la app de escritorio. En la web aún no se pueden ver ni registrar (llega con EJE-06).",
+    "web": {
+      "note": "Los adjuntos solo en escritorio. Los borradores de ejecución se guardan en este navegador.",
+      "attachmentsDesktopOnly": "Los adjuntos solo en escritorio.",
+      "draftKept": "Borrador guardado en este navegador: sigue aquí si cierras la pestaña, pero no se ve en otro equipo ni en otro navegador.",
+      "draftUnavailable": "Este navegador no deja guardar borradores. Lo marcado se guarda al registrar el resultado.",
+      "importDesktopOnly": "Importar informes y la bandeja «Sin vincular» solo en la app de escritorio."
+    },
     "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan (llegará con SYNC-04b).",
     "run": {
       "addCases": "Añadir casos",

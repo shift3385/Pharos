@@ -69,7 +69,10 @@ export const defectsApi = {
   draftFromResult: async (resultId: string, userId: string, stepId?: string): Promise<DefectInput> =>
     isTauri()
       ? invoke("defect_draft_from_result", { resultId, stepId: stepId ?? null, userId })
-      : desktopOnly("results"),
+      : // The web's draft has no evidence to copy (SYNC-04b, EJE-06).
+        serverApi.get(
+          `/api/results/${encodeURIComponent(resultId)}/defect-draft${stepId ? `?stepId=${encodeURIComponent(stepId)}` : ""}`,
+        ),
   /** The project's failed attempts, newest first (desktop: results live there
    *  until the API queries them, INT-02). */
   results: (projectId: string, userId: string): Promise<ResultCandidate[]> =>

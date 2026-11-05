@@ -213,7 +213,6 @@ export function CycleDetail({
   }
 
   const closed = cycle.status === "closed";
-  const canExecute = cycleApi.canExecute();
   // An item whose case was deleted cannot be frozen: «Ejecutar» waits until
   // it is removed, and says which.
   const gone = items.filter((i) => !i.caseTitle).map((i) => i.caseKey || i.testCaseId);
@@ -405,15 +404,13 @@ export function CycleDetail({
           <button
             type="button"
             className="ui-btn ui-btn--primary"
-            disabled={!canExecute || closed || items.length === 0 || gone.length > 0}
+            disabled={closed || items.length === 0 || gone.length > 0}
             title={
-              !canExecute
-                ? t("cycles.execute.desktopOnly")
-                : closed
-                  ? t("cycles.error.closed")
-                  : gone.length > 0
-                    ? t("cycles.execute.goneHint", { keys: gone.join(", ") })
-                    : undefined
+              closed
+                ? t("cycles.error.closed")
+                : gone.length > 0
+                  ? t("cycles.execute.goneHint", { keys: gone.join(", ") })
+                  : undefined
             }
             onClick={() => {
               setError("");
@@ -467,8 +464,7 @@ export function CycleDetail({
           </Menu>
         </div>
       </div>
-      {!canExecute && <p className="cy-note">{t("cycles.execute.desktopOnly")}</p>}
-      {canExecute && gone.length > 0 && (
+      {gone.length > 0 && (
         <p className="cy-warn" role="status">
           {t("cycles.execute.goneHint", { keys: gone.join(", ") })}
         </p>

@@ -41,12 +41,17 @@ describe("defectsApi", () => {
     expect(server.body(4)).toEqual({ target: { targetKind: "test_case", targetId: "c1" }, linked: true });
   });
 
-  it("web: results, evidence and «from a result» stay on the desktop", async () => {
-    fakeServer();
+  it("web: evidence stays on the desktop; «from a result» has no files (EJE-06)", async () => {
+    const server = fakeServer();
     expect(await defectsApi.results("p1", "u1")).toEqual([]);
     expect(await defectsApi.attachmentList("d1", "u1")).toEqual([]);
-    await expect(defectsApi.draftFromResult("r1", "u1")).rejects.toBeInstanceOf(DesktopOnlyError);
     await expect(defectsApi.attachmentSave("a1", "u1")).rejects.toBeInstanceOf(DesktopOnlyError);
+    await defectsApi.draftFromResult("r1", "u1");
+    await defectsApi.draftFromResult("r 2", "u1", "s1");
+    expect(server.calls()).toEqual([
+      "GET /api/results/r1/defect-draft",
+      "GET /api/results/r%202/defect-draft?stepId=s1",
+    ]);
   });
 
   it("desktop: the Rust commands", async () => {

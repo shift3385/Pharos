@@ -2224,7 +2224,6 @@
       "running": "Creating…",
       "doneToast_one": "Run created: {{keys}}",
       "doneToast_other": "{{count}} runs created: {{keys}}",
-      "desktopOnly": "Runs are created from the desktop app.",
       "goneHint": "Cannot run: remove the deleted cases from the cycle ({{keys}}).",
       "missingToast_one": "{{count}} configuration has not reached this device yet and was skipped.",
       "missingToast_other": "{{count}} configurations have not reached this device yet and were skipped."
@@ -2404,7 +2403,7 @@
     "deleteConfirm": "Yes, delete",
     "deleteFailed": "The defect could not be deleted. Try again.",
     "delete": "Delete defect",
-    "webOnlyDesktop": "Evidence and results are in the desktop app.",
+    "webOnlyDesktop": "Attachments are desktop only.",
     "casesTitle_one": "{{count}} linked test case",
     "casesTitle_other": "{{count}} linked test cases",
     "resultStatus": {
@@ -2680,7 +2679,13 @@
       "cycleClosed": "This run's cycle is closed. Reopen the cycle before the run.",
       "overlap": "That case is already in the run with some of those flows or rows."
     },
-    "webReadOnly": "Runs are executed in the desktop app. The web cannot show or record them yet (EJE-06).",
+    "web": {
+      "note": "Attachments are desktop only. Execution drafts are kept in this browser.",
+      "attachmentsDesktopOnly": "Attachments are desktop only.",
+      "draftKept": "Draft kept in this browser: it is still here if you close the tab, but not on another device or browser.",
+      "draftUnavailable": "This browser does not allow saving drafts. What you mark is kept when you record the result.",
+      "importDesktopOnly": "Importing reports and the «Unlinked» tray are in the desktop app only."
+    },
     "evidenceLocal": "Evidence is stored encrypted on this device and does not sync yet (SYNC-04b).",
     "run": {
       "addCases": "Add cases",

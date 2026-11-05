@@ -25,9 +25,10 @@ import "./Runs.css";
 type Filter = "all" | "not_run" | "failed" | "blocked" | "passed";
 
 /** The run screen (EJE-02, `/projects/:id/runs/:runId`): its header,
- *  progress, items, and the executor of the item in `?item=`. Desktop only:
- *  on the web it says so (EJE-06 brings a runs API). No design in
- *  docs/rediseno: built with the table, chips, pill and dialog primitives. */
+ *  progress, items, and the executor of the item in `?item=`. On the web
+ *  too (EJE-06): there the drafts are the browser's and files stay on the
+ *  desktop. No design in docs/rediseno: built with the table, chips, pill
+ *  and dialog primitives. */
 export function RunDetail({
   projectId,
   runId,
@@ -62,8 +63,7 @@ export function RunDetail({
     }
   }, [runId, userId]);
   useEffect(() => {
-    // The web has no runs API until EJE-06: nothing to load.
-    if (isTauri()) void refresh();
+    void refresh();
   }, [refresh]);
   const inHeader = useContext(HeaderActionsContext) !== null;
 
@@ -116,7 +116,7 @@ export function RunDetail({
     }
   }
 
-  const actions = run && isTauri() && (
+  const actions = run && (
     <div className="ex-run-actions">
       {open ? (
         <>
@@ -175,16 +175,6 @@ export function RunDetail({
     </Link>
   );
 
-  if (!isTauri())
-    return (
-      <div className="rn">
-        {back}
-        <p className="ex-banner ex-banner--info" role="note">
-          <Info size={16} aria-hidden="true" />
-          {t("execution.webReadOnly")}
-        </p>
-      </div>
-    );
   if (failed)
     return (
       <div className="rn">
@@ -366,7 +356,8 @@ export function RunDetail({
             </span>
           </div>
           <p className="tp-field__hint ex-evidence-note">
-            <Info size={14} aria-hidden="true" /> {t("execution.evidenceLocal")}
+            <Info size={14} aria-hidden="true" />{" "}
+            {isTauri() ? t("execution.evidenceLocal") : t("execution.web.note")}
           </p>
         </header>
       )}
