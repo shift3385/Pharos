@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  HardDrive,
   LayoutTemplate,
   LifeBuoy,
   RefreshCw,
@@ -17,6 +18,7 @@ const ICONS: Record<AdminTab, LucideIcon> = {
   general: SlidersHorizontal,
   sync: RefreshCw,
   security: Shield,
+  evidence: HardDrive,
   diagnostics: LifeBuoy,
 };
 

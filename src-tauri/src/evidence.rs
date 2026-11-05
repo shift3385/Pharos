@@ -99,6 +99,9 @@ pub struct EvidenceStore {
     dir: PathBuf,
     name_key: [u8; 32],
     file_key: [u8; 32],
+    /// Contents a check marked `damaged` (DAT-03b, `check.rs`): never trusted
+    /// for dedupe, so attaching one again rewrites its file.
+    damaged: Mutex<std::collections::HashSet<String>>,
 }
 
 impl EvidenceStore {
@@ -116,6 +119,7 @@ impl EvidenceStore {
             dir: data_dir.join(DIR),
             name_key,
             file_key,
+            damaged: Mutex::default(),
         }
     }
 
@@ -451,14 +455,17 @@ impl BlobWriter {
     /// Moves the sealed file to its name. If an intact copy of that content
     /// is already stored (right length and header), the new one is discarded;
     /// a damaged copy (truncated, overwritten) is replaced, so attaching the
-    /// same file again repairs it. Call it with the database lock held, so a
+    /// same file again repairs it. That check is cheap and cannot see a copy
+    /// damaged inside its blocks (same length, same header): one that
+    /// «Verificar evidencias» marked `damaged` is therefore always replaced
+    /// (DAT-03b), and `record_blob` clears the mark in the database. Call it with the database lock held, so a
     /// concurrent `collect` cannot remove the file between this and the row
     /// that references it.
     pub(crate) fn commit(mut self, store: &EvidenceStore) -> Result<Committed, String> {
         self.seal()?;
         let stored = self.sealed.clone().expect("sealed above");
         let dest = store.path_for(&stored.sha256)?;
-        if is_intact(&dest, stored.size) {
+        if is_intact(&dest, stored.size) && !store.is_damaged(&stored.sha256) {
             // Drop removes the temp copy.
             return Ok(Committed {
                 stored,
@@ -470,15 +477,20 @@ impl BlobWriter {
         }
         // `rename` replaces a damaged copy (MOVEFILE_REPLACE_EXISTING on Windows).
         match fs::rename(&self.tmp, &dest) {
-            Ok(()) => Ok(Committed {
-                stored,
-                wrote: true,
-            }),
+            Ok(()) => {
+                store.forget_damaged(&stored.sha256);
+                Ok(Committed {
+                    stored,
+                    wrote: true,
+                })
+            }
             // Another writer of the same content won the race.
-            Err(_) if is_intact(&dest, stored.size) => Ok(Committed {
-                stored,
-                wrote: false,
-            }),
+            Err(_) if is_intact(&dest, stored.size) && !store.is_damaged(&stored.sha256) => {
+                Ok(Committed {
+                    stored,
+                    wrote: false,
+                })
+            }
             Err(e) => Err(format!("failed to store evidence: {e}")),
         }
     }
@@ -1140,6 +1152,8 @@ fn fault_point(moved: usize) -> Result<(), String> {
 fn fault_point(_moved: usize) -> Result<(), String> {
     Ok(())
 }
+
+pub(crate) mod check;
 
 #[cfg(test)]
 pub(crate) mod tests;

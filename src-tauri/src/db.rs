@@ -343,7 +343,7 @@ impl Db {
         recovery::encode(&self.key)
     }
 
-    fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
+    pub(crate) fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
         let enc_path = app_data_dir.join("pharos.db.enc");
         // Read the latest save without changing any file yet: a database from a
@@ -373,6 +373,7 @@ impl Db {
             write_backup(&enc_path, blob, last.as_deref())?;
         }
         run_migrations_with(&conn, Some(&store))?;
+        evidence::check::load_damaged(&conn, &store)?;
         let db = Db {
             conn: Mutex::new(conn),
             enc_path,

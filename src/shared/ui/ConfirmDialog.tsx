@@ -19,6 +19,7 @@ export function ConfirmDialog({
   danger,
   variant = "default",
   confirmText,
+  confirmTestId,
   children,
   onConfirm,
   onCancel,
@@ -32,6 +33,8 @@ export function ConfirmDialog({
   danger?: boolean;
   variant?: "default" | "destructive";
   confirmText?: string;
+  /** `data-testid` of the confirm button (automated tours, MAN-01). */
+  confirmTestId?: string;
   /** Extra content between the message and the actions (e.g. what is lost). */
   children?: ReactNode;
   onConfirm: () => void;
@@ -84,6 +87,7 @@ export function ConfirmDialog({
           type="button"
           className={`cd__confirm${danger || destructive ? " cd__confirm--danger" : ""}`}
           disabled={blocked}
+          data-testid={confirmTestId}
           onClick={onConfirm}
         >
           {confirmLabel}

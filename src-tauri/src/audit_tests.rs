@@ -1152,6 +1152,9 @@ fn a_key_assigned_by_the_system_names_the_account_it_acted_for() {
 /// below through the repository function it calls, inside `in_tx` like the
 /// command (so none of them may open its own transaction).
 const AUDITED: &[&str] = &[
+    // Local events (DAT-03b): marks set by a check, orphans deleted by hand.
+    "evidence::check::evidence_check",
+    "evidence::check::evidence_orphans_delete",
     "project::project_create",
     "project::project_update",
     "project::project_delete",
@@ -1292,6 +1295,8 @@ const EXEMPT: &[(&str, &str)] = &[
         "evidence::evidence_upload_cancel",
         "drops an unfinished upload",
     ),
+    ("evidence::check::evidence_usage", "read"),
+    ("evidence::check::evidence_check_progress", "read"),
     (
         "planner::planner_attachment_save",
         "read (writes a file the user exports)",
@@ -1719,6 +1724,17 @@ fn every_audited_command_leaves_an_event() {
             "sync::sync_conflict_resolve",
             "key_sync::key_conflict_resolve",
             "key_sync::key_blocks_apply",
+        ]
+        .map(String::from),
+    );
+    // «Verificar evidencias» (DAT-03b) writes local events (no project, so the
+    // device chain, not this user's): covered in evidence::check::tests by
+    // `a_check_finds_orphans_missing_and_damaged_contents_and_marks_them` and
+    // `orphans_are_deleted_only_when_confirmed_old_and_still_orphans`.
+    covered.extend(
+        [
+            "evidence::check::evidence_check",
+            "evidence::check::evidence_orphans_delete",
         ]
         .map(String::from),
     );
