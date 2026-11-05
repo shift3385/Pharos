@@ -275,3 +275,10 @@ pantalla del run cuenta además cada flujo y fila por separado.
 `closed` no se ofrece y el escritorio lo rechaza (`cycle-closed`) en la vista
 previa y al importar. El progreso del ciclo (la lista y la pestaña) cuenta sus
 resultados como los de un run de «Ejecutar».
+
+## Nota (E6p, EJE-07: eliminar un run, 2026-11-05)
+
+Un run de un ciclo **cerrado** no se puede eliminar (`cycle-closed`), igual
+que no se reabre: primero se reabre el ciclo. Como la reapertura, lo
+comprueba solo el escritorio; el servidor no valida esa regla en el sync. Un
+run de un ciclo abierto se puede eliminar y deja de contar en su progreso.

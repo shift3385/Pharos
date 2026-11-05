@@ -2,6 +2,7 @@
 // Desktop only: the store is the encrypted `evidence/` folder of this device,
 // and nothing of it reaches the server yet (SYNC-04b).
 
+import type { EvidenceRetention, RetentionPolicy } from "@shared/contracts/contract";
 import type {
   EvidenceDeleted,
   EvidenceProgress,
@@ -27,4 +28,23 @@ export const evidenceApi = {
   /** Deletes the orphans the user confirmed; recent or open ones are skipped. */
   deleteOrphans: (files: string[], userId?: string): Promise<EvidenceDeleted> =>
     invoke("evidence_orphans_delete", { files, userId: userId ?? null }),
+  /** The user's projects, for the retention picker. The same `project_list`
+   *  command as `@modules/projects`, called here so that admin does not
+   *  import the projects module (that import closes a module cycle). */
+  projects: (userId: string): Promise<{ id: string; name: string }[]> =>
+    invoke("project_list", { ownerId: userId }),
+  /** The retention of each kind of evidence in a project (DAT-03c). */
+  retention: (projectId: string, userId: string): Promise<EvidenceRetention> =>
+    invoke("evidence_retention_get", { projectId, userId }),
+  /** How many files a new setting would expire at the next pass. */
+  previewRetention: (projectId: string, kind: string, policy: RetentionPolicy, userId: string): Promise<number> =>
+    invoke("evidence_retention_preview", { projectId, kind, policy, userId }),
+  /** Sets the retention of one kind in a project; a setting of this device. */
+  setRetention: (
+    projectId: string,
+    kind: string,
+    policy: RetentionPolicy,
+    userId: string,
+  ): Promise<EvidenceRetention> =>
+    invoke("evidence_retention_set", { projectId, kind, policy, userId }),
 };

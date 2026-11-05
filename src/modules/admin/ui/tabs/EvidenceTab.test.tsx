@@ -23,6 +23,10 @@ const api = vi.hoisted(() => ({
   check: vi.fn(),
   cancel: vi.fn(),
   deleteOrphans: vi.fn(),
+  retention: vi.fn(),
+  setRetention: vi.fn(),
+  previewRetention: vi.fn(),
+  projects: vi.fn(),
 }));
 vi.mock("../../api/evidenceApi", () => ({
   EVIDENCE_CHECK_BUSY: "evidence-check-busy",
@@ -103,7 +107,45 @@ beforeEach(async () => {
   api.check.mockResolvedValue(report());
   api.cancel.mockResolvedValue(undefined);
   api.deleteOrphans.mockResolvedValue({ deleted: 1, bytes: 2048, skipped: [], saved: true });
+  api.projects.mockResolvedValue([
+    { id: "p1", name: "Tienda" },
+    { id: "p2", name: "Pagos" },
+  ]);
+  api.retention.mockImplementation((projectId: string) => Promise.resolve(retention(projectId)));
+  api.setRetention.mockImplementation((projectId: string, kind: string, policy: { mode: string; days?: number }) =>
+    Promise.resolve(
+      retention(projectId, {
+        [kind]: policy.mode === "default" ? undefined : policy.mode === "always" ? null : (policy.days ?? null),
+      }),
+    ),
+  );
 });
+
+const DEFAULTS: [string, number | null][] = [
+  ["trace", 30],
+  ["video", 30],
+  ["raw_report", 90],
+  ["log", 90],
+  ["screenshot", null],
+  ["evidence", null],
+];
+
+/** The retention of a project; `custom` maps a kind to its own days
+ *  (null = always). */
+function retention(projectId: string, custom: Record<string, number | null | undefined> = {}) {
+  return {
+    projectId,
+    kinds: DEFAULTS.map(([kind, defaultDays]) => {
+      const own = custom[kind];
+      return {
+        kind,
+        defaultDays,
+        days: own === undefined ? defaultDays : own,
+        custom: own !== undefined,
+      };
+    }),
+  };
+}
 
 describe("Administración → Evidencias", () => {
   it("on the web only says it is a desktop feature", () => {
@@ -346,5 +388,92 @@ describe("Administración → Evidencias", () => {
     renderTab();
     expect(await screen.findByTestId("evidence-usage-total")).toHaveTextContent("12 MB · 3 files");
     expect(screen.getByTestId("evidence-verify")).toHaveTextContent("Verify evidence");
+  });
+
+  it("saves the retention of each kind per project only on «Guardar», on this device only", async () => {
+    const user = userEvent.setup();
+    renderTab();
+    const card = await screen.findByTestId("evidence-retention");
+    expect(within(card).getByTestId("evidence-retention-device")).toHaveTextContent("solo de este equipo");
+    expect(within(card).getByTestId("evidence-retention-exceptions")).toHaveTextContent(
+      "resultado final fallido o bloqueado",
+    );
+    const trace = await within(card).findByTestId("evidence-retention-trace");
+    expect(trace).toHaveValue("default");
+    expect(within(trace).getByRole("option", { name: "Por defecto (30 días)" })).toBeInTheDocument();
+    const save = within(card).getByTestId("evidence-retention-save");
+    expect(save).toBeDisabled();
+
+    // Choosing and typing saves nothing.
+    await user.selectOptions(within(card).getByTestId("evidence-retention-video"), "always");
+    await user.selectOptions(trace, "days");
+    const days = within(card).getByTestId("evidence-retention-trace-days");
+    await user.clear(days);
+    await user.type(days, "45");
+    await user.tab();
+    expect(api.setRetention).not.toHaveBeenCalled();
+
+    // Longer settings need no confirmation.
+    await user.click(save);
+    await waitFor(() => expect(api.setRetention).toHaveBeenCalledTimes(2));
+    expect(api.setRetention).toHaveBeenCalledWith("p1", "video", { mode: "always" }, expect.any(String));
+    expect(api.setRetention).toHaveBeenCalledWith("p1", "trace", { mode: "days", days: 45 }, expect.any(String));
+    expect(api.previewRetention).not.toHaveBeenCalled();
+    expect(await screen.findByText("Retención guardada en este equipo.", { exact: false })).toBeInTheDocument();
+
+    // Another project shows its own settings.
+    await user.selectOptions(within(card).getByTestId("evidence-retention-project"), "p2");
+    await waitFor(() => expect(api.retention).toHaveBeenCalledWith("p2", expect.any(String)));
+  });
+
+  it("asks before shortening, with how many files would expire", async () => {
+    const user = userEvent.setup();
+    api.previewRetention.mockResolvedValue(12);
+    renderTab();
+    const card = await screen.findByTestId("evidence-retention");
+    await user.selectOptions(await within(card).findByTestId("evidence-retention-log"), "days");
+    const days = within(card).getByTestId("evidence-retention-log-days");
+    await user.clear(days);
+    await user.type(days, "7");
+    await user.click(within(card).getByTestId("evidence-retention-save"));
+    const dialog = await screen.findByRole("alertdialog", { name: "¿Acortar la retención?" });
+    expect(within(dialog).getByTestId("evidence-retention-shorter")).toHaveTextContent(
+      "Registros (logs): de 90 días a 7 días — 12 archivos caducarían",
+    );
+    expect(api.previewRetention).toHaveBeenCalledWith("p1", "log", { mode: "days", days: 7 }, expect.any(String));
+    expect(api.setRetention).not.toHaveBeenCalled();
+    await expectNoAxeViolations(dialog);
+    await user.click(within(dialog).getByTestId("evidence-retention-confirm"));
+    await waitFor(() =>
+      expect(api.setRetention).toHaveBeenCalledWith("p1", "log", { mode: "days", days: 7 }, expect.any(String)),
+    );
+  });
+
+  it("goes back to what is saved when saving fails", async () => {
+    const user = userEvent.setup();
+    api.setRetention.mockRejectedValue(new Error("disk full"));
+    renderTab();
+    const card = await screen.findByTestId("evidence-retention");
+    const video = await within(card).findByTestId("evidence-retention-video");
+    await user.selectOptions(video, "always");
+    await user.click(within(card).getByTestId("evidence-retention-save"));
+    expect(await screen.findByText("No se pudo leer o guardar la retención.", { exact: false })).toBeInTheDocument();
+    await waitFor(() => expect(within(card).getByTestId("evidence-retention-video")).toHaveValue("default"));
+  });
+
+  it("does not save an out-of-range number of days and says why", async () => {
+    const user = userEvent.setup();
+    renderTab();
+    const card = await screen.findByTestId("evidence-retention");
+    await user.selectOptions(await within(card).findByTestId("evidence-retention-log"), "days");
+    const days = within(card).getByTestId("evidence-retention-log-days");
+    await user.clear(days);
+    await user.type(days, "0");
+    expect(days).toHaveAttribute("aria-invalid", "true");
+    const error = within(card).getByTestId("evidence-retention-log-error");
+    expect(days).toHaveAttribute("aria-describedby", error.id);
+    expect(within(card).getByTestId("evidence-retention-save")).toBeDisabled();
+    expect(api.setRetention).not.toHaveBeenCalled();
+    await expectNoAxeViolations(card);
   });
 });

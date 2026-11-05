@@ -24,6 +24,6 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 10. [Administración](10-administracion.md) (15 pasos)
 11. [Asistente de IA](11-ia.md) (9 pasos)
 12. [Pantallas estrechas y móvil](12-movil.md) (7 pasos)
-13. [Ejecución manual](13-ejecucion-manual.md) (12 pasos)
-14. [Evidencias](14-evidencias.md) (4 pasos)
+13. [Ejecución manual](13-ejecucion-manual.md) (14 pasos)
+14. [Evidencias](14-evidencias.md) (7 pasos)
 15. [Si algo sale mal](15-errores.md) (4 pasos)
