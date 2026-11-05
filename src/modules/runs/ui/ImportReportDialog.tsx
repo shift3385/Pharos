@@ -9,6 +9,7 @@ import type {
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
+import { cycleApi } from "@modules/cycles";
 import { runsApi } from "../api/runsApi";
 import {
   type AttachResult,
@@ -122,8 +123,8 @@ export function ImportReportDialog({
 
   useEffect(() => {
     let live = true;
-    runsApi
-      .cycles(projectId, userId)
+    cycleApi
+      .list(projectId, userId)
       .then((all) => live && setCycles(all))
       .catch(() => live && setCycles([]));
     return () => {

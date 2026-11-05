@@ -29,6 +29,8 @@ const api = vi.hoisted(() => ({
   cycles: vi.fn(),
 }));
 vi.mock("../api/runsApi", () => ({ runsApi: api }));
+// The cycle picker (CYC-02) reads the cycles module's own list.
+vi.mock("@modules/cycles", () => ({ cycleApi: { list: api.cycles } }));
 vi.mock("@shared/platform", async (orig) => ({
   ...(await orig<typeof import("@shared/platform")>()),
   isTauri: () => true,

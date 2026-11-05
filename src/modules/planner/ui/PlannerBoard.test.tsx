@@ -68,7 +68,7 @@ describe("Planificador (RED-V3)", () => {
       "Hecho",
     ]);
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("filters by kind, search and priority, with counts", async () => {
     setViewportWidth(1440);
@@ -83,7 +83,7 @@ describe("Planificador (RED-V3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Prioridad" }));
     await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Baja" }));
     expect(screen.getAllByRole("article")).toHaveLength(1);
-  }, 15_000);
+  });
 
   it("deletes a card only after a destructive confirmation", async () => {
     setViewportWidth(1440);
@@ -100,5 +100,5 @@ describe("Planificador (RED-V3)", () => {
     expect(await screen.findAllByRole("article")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: "Prioridad" })).not.toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 });

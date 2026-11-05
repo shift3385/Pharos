@@ -162,7 +162,7 @@ describe("Ajustes · Configuraciones", () => {
     await userEvent.click(screen.getByRole("switch", { name: /Mostrar archivadas/ }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("creates one with label chips and shows a refused label in the dialog", async () => {
     vi.mocked(configurationApi.create).mockRejectedValueOnce(new Error("match-label-taken: chromium (Chrome)"));
@@ -179,7 +179,7 @@ describe("Ajustes · Configuraciones", () => {
     );
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("La etiqueta ya la usa otra configuración: chromium (Chrome).");
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 });
 
 describe("Ciclos", () => {
@@ -203,7 +203,7 @@ describe("Ciclos", () => {
     expect(cycleApi.create).toHaveBeenCalledWith(
       expect.objectContaining({ projectId: "p1", title: "Humo", configurationIds: ["chrome"], userId: expect.any(String) }),
     );
-  }, 15_000);
+  });
 
   it("shows a cycle's items with one result column per configuration and warns about cases not approved", async () => {
     page("/projects/p1/cycles?cycle=cy1");
@@ -217,7 +217,7 @@ describe("Ciclos", () => {
     expect(rows[1]).toHaveTextContent("No aprobado");
     expect(screen.getByText(/Build 1\.4\.2 · Entorno staging/)).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("adds cases: those already in the cycle cannot be picked, a draft is warned", async () => {
     vi.mocked(cycleApi.addItems).mockResolvedValue({ added: ["i3"], skipped: 0, overlapping: [], notApproved: ["ATS_003"] });
@@ -232,7 +232,7 @@ describe("Ciclos", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Añadir 1 caso" }));
     expect(cycleApi.addItems).toHaveBeenCalledWith("cy1", [{ testCaseId: "c3", assignee: undefined }], expect.any(String));
     expect(await screen.findByText(/1 caso añadido\. Sin aprobar: ATS_003\./)).toBeInTheDocument();
-  }, 15_000);
+  });
 
   it("executes one run per chosen configuration on the desktop", async () => {
     vi.mocked(cycleApi.execute).mockResolvedValue({
@@ -254,7 +254,7 @@ describe("Ciclos", () => {
     expect(
       (await screen.findAllByText(/Run creado: RUN-001 1 configuración aún no ha llegado a este equipo y se saltó\./)).length,
     ).toBeGreaterThan(0);
-  }, 15_000);
+  });
 
   it("«Ejecutar» waits, and names them, while an item's case was deleted", async () => {
     vi.mocked(cycleApi.items).mockResolvedValue([

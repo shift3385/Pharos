@@ -125,7 +125,7 @@ describe("Defectos (DEF-01)", () => {
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar defectos" }), "recibo");
     expect(within(table).getAllByRole("row")).toHaveLength(2);
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("shows a board by status where a drop follows the lifecycle", async () => {
     setViewportWidth(1440);
@@ -145,7 +145,7 @@ describe("Defectos (DEF-01)", () => {
     const other = within(board).getByRole("region", { name: "Otros" });
     expect(within(other).getByRole("article")).toHaveTextContent("Aplazado");
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("creates a defect from a failed result, prefilled", async () => {
     setViewportWidth(1440);
@@ -177,7 +177,7 @@ describe("Defectos (DEF-01)", () => {
       foundInRunId: "run1",
       fromResult: { resultId: "r1", stepId: "s2" },
     });
-  }, 20_000);
+  });
 });
 
 describe("DefectEditor", () => {
@@ -204,7 +204,7 @@ describe("DefectEditor", () => {
     expect(update.mock.calls[0][1]).toMatchObject({ status: "closed", resolution: "fixed" });
     expect(link).toHaveBeenCalledWith("def-002", "u1", { targetKind: "test_case", targetId: "c1" }, true);
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("needs a title", async () => {
     renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);

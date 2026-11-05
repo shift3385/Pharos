@@ -105,7 +105,7 @@ describe("Ajustes · Campos personalizados", () => {
     );
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("proposes the key from the name, checks it, and creates the field", async () => {
     vi.mocked(customFieldApi.create).mockImplementation(async (input) =>
@@ -168,7 +168,7 @@ describe("Ajustes · Campos personalizados", () => {
         required: false,
       }),
     );
-  }, 15_000);
+  });
 
   it("an edited field keeps its key and type read-only", async () => {
     card();
@@ -188,7 +188,7 @@ describe("Ajustes · Campos personalizados", () => {
       within(dialog).getByRole("button", { name: "Recuperar la opción 2" }),
     ).toHaveAttribute("aria-pressed", "true");
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("archives from the row menu and moves a field down", async () => {
     vi.mocked(customFieldApi.archive).mockResolvedValue({
@@ -214,7 +214,7 @@ describe("Ajustes · Campos personalizados", () => {
     );
     await userEvent.click(screen.getByRole("menuitem", { name: "Archivar" }));
     expect(customFieldApi.archive).toHaveBeenCalledWith("points", true, "u1");
-  }, 15_000);
+  });
 
   // FLD-03: the same card defines the fields of the project's defects.
   it("«Defectos» lists, creates and copies defect fields", async () => {
@@ -285,7 +285,7 @@ describe("Ajustes · Campos personalizados", () => {
       "u1",
       "defect",
     );
-  }, 20_000);
+  });
 });
 
 function Section({
@@ -337,14 +337,14 @@ describe("Editor · Campos personalizados", () => {
       screen.getByText(/from_elsewhere · campo desconocido/),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("an archived option the case already has stays selectable", () => {
     renderWithProviders(<Section start={{ browser: "OPT00002" }} />);
     const browser = screen.getByRole("combobox", { name: /Navegador/ });
     expect(browser).toHaveValue("OPT00002");
     expect(screen.queryByRole("alert")).toBeNull();
-  }, 15_000);
+  });
 
   it("a missing required value shows after a save attempt", async () => {
     renderWithProviders(<Section start={{}} attempted />);
@@ -352,5 +352,5 @@ describe("Editor · Campos personalizados", () => {
     expect(browser).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Este campo es obligatorio.")).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 });
