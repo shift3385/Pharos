@@ -11,6 +11,7 @@ import { requireSupportedVersion } from "../sync/sync.version";
 
 const MAX_DAYS = 400;
 const MAX_WINDOWS = 16;
+const MAX_PROJECTS = 200;
 
 /** Contract v1 `HomeRequest`. */
 export interface HomeRequest {
@@ -45,14 +46,18 @@ export const homeQuerySchema = z
       return fail(`dayStarts must hold 1 to ${MAX_DAYS} integers`);
     if (dayStarts.some((d, i) => i > 0 && d <= dayStarts[i - 1])) return fail("dayStarts must be strictly ascending");
     if (q.now < dayStarts[0]) return fail("now is before the first day");
-    const windows = list(q.windows).map((w) => {
-      const [id, from] = w.split(":");
-      return { id: id ?? "", fromIndex: Number(from) };
-    });
+    // `id:fromIndex`, exactly: anything else is refused (as the desktop does).
+    const pairs = list(q.windows).map((w) => w.split(":"));
+    if (pairs.some((p) => p.length !== 2 || !/^\d+$/.test(p[1])))
+      return fail("windows must be id:fromIndex pairs");
+    const windows = pairs.map(([id, from]) => ({ id, fromIndex: Number(from) }));
     if (windows.length > MAX_WINDOWS) return fail(`at most ${MAX_WINDOWS} windows`);
     if (windows.some((w) => !w.id || !Number.isInteger(w.fromIndex) || w.fromIndex < 0 || w.fromIndex >= dayStarts.length))
       return fail("a window starts outside dayStarts");
-    const projectIds = q.projectIds === undefined ? null : list(q.projectIds);
+    // Same rules as the desktop entry: at most 200 ids, none blank.
+    const projectIds = q.projectIds === undefined ? null : q.projectIds.split(",").map((x) => x.trim());
+    if (projectIds && (projectIds.length > MAX_PROJECTS || projectIds.some((x) => !x)))
+      return fail(`projectIds must hold at most ${MAX_PROJECTS} non-blank ids`);
     return { projectIds, dayStarts, now: q.now, windows, queueLimit: q.queueLimit ?? null };
   });
 

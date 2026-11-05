@@ -97,6 +97,36 @@ describe("GET /api/home/metrics (RED-W6)", () => {
     expect(body.projects[0].queue.notRun[0]).toMatchObject({ title: "Refund", priority: "low" });
   });
 
+  it("never crosses owners: the default scope is the user's own, and another user's ids give nothing", async () => {
+    const account = async (email: string) => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/auth/register",
+        payload: { email, password: "supersecret1", displayName: "H", firstName: "A", lastName: "B" },
+      });
+      const t = res.json().accessToken as string;
+      const headers = { authorization: `Bearer ${t}`, [VERSION_HEADER]: SERVER_VERSION, [FEATURES_HEADER]: SERVER_FEATURES.join(",") };
+      const project = async (name: string) =>
+        (await app.inject({ method: "POST", url: "/api/projects", payload: { name }, headers })).json().id as string;
+      return { t, project };
+    };
+    const a = await account("a@pharos.dev");
+    const b = await account("b@pharos.dev");
+    const a1 = await a.project("A uno");
+    const a2 = await a.project("A dos");
+    const b1 = await b.project("B uno");
+    const q = "/api/home/metrics?dayStarts=1,2&now=3&windows=today:1";
+    const ids = async (t: string, extra = "") =>
+      ((await get(`${q}${extra}`, t)).json().projects as { projectId: string }[]).map((p) => p.projectId).sort();
+
+    expect(await ids(a.t)).toEqual([a1, a2].sort());
+    expect(await ids(b.t)).toEqual([b1]);
+    // B asks for A's projects by id: nothing comes back.
+    expect(await ids(b.t, `&projectIds=${a1},${a2}`)).toEqual([]);
+    // A asks for one of its own and one of B's: only its own.
+    expect(await ids(a.t, `&projectIds=${a1},${b1}`)).toEqual([a1]);
+  });
+
   it("refuses a malformed request", async () => {
     const t = await token();
     for (const q of [
@@ -109,6 +139,14 @@ describe("GET /api/home/metrics (RED-W6)", () => {
       "dayStarts=1,2&now=3&windows=:0",
       "dayStarts=1,a&now=3",
       "dayStarts=1&now=3&queueLimit=0",
+      // Same rules as the desktop entry point.
+      "dayStarts=1,2&now=3&windows=today",
+      "dayStarts=1,2&now=3&windows=today:1:2",
+      "dayStarts=1,2&now=3&windows=today:x",
+      "dayStarts=1,2&now=3&windows=today:-1",
+      "dayStarts=1&now=3&projectIds=a,,b",
+      "dayStarts=1&now=3&projectIds=%20",
+      `dayStarts=1&now=3&projectIds=${Array.from({ length: 201 }, (_, i) => "p" + i).join(",")}`,
     ]) {
       expect((await get(`/api/home/metrics?${q}`, t)).statusCode, q).toBe(400);
     }

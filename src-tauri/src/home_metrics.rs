@@ -124,6 +124,54 @@ mod tests {
         assert!(r.project_ids.is_none());
     }
 
+    const U: &str = "11111111-1111-4111-8111-111111111111";
+    const OTHER: &str = "22222222-2222-4222-8222-222222222222";
+
+    fn device_with_project(owner: &str, name: &str) -> (Connection, String) {
+        let c = Connection::open_in_memory().unwrap();
+        crate::db::run_migrations(&c).unwrap();
+        crate::sync::assume_stable_steps_server(&c);
+        let p = add_project(&c, owner, name);
+        (c, p)
+    }
+
+    fn add_project(c: &Connection, owner: &str, name: &str) -> String {
+        let input: crate::project::ProjectInput = serde_json::from_value(
+            json!({"name": name, "ownerId": owner, "caseIdPrefix": "TC-", "caseIdDigits": 3}),
+        )
+        .unwrap();
+        crate::project::insert_project(c, &input).unwrap()
+    }
+
+    #[test]
+    fn project_ids_narrow_the_read_and_never_cross_owners() {
+        let (c, mine) = device_with_project(U, "Auth");
+        let other = add_project(&c, U, "Pagos");
+        let theirs = add_project(&c, OTHER, "Ajeno");
+        let mut r = request(vec![1_793_833_200_000], &[("today", 0)]);
+        r.now = 1_793_966_400_000;
+
+        // Default scope: every project of the user, none of the other's.
+        let all = home_metrics_of(&c, U, &r).unwrap();
+        let mut ids: Vec<_> = all.projects.iter().map(|p| p.project_id.clone()).collect();
+        ids.sort();
+        let mut expected = vec![mine.clone(), other.clone()];
+        expected.sort();
+        assert_eq!(ids, expected);
+
+        // Only the projects asked for.
+        r.project_ids = Some(vec![mine.clone()]);
+        let one = home_metrics_of(&c, U, &r).unwrap();
+        assert_eq!(one.projects.len(), 1);
+        assert_eq!(one.projects[0].project_id, mine);
+
+        // Another user's ids, or unknown ones, give nothing.
+        r.project_ids = Some(vec![theirs.clone(), "nope".into()]);
+        assert!(home_metrics_of(&c, U, &r).unwrap().projects.is_empty());
+        r.project_ids = Some(vec![mine]);
+        assert!(home_metrics_of(&c, OTHER, &r).unwrap().projects.is_empty());
+    }
+
     #[test]
     fn refuses_before_reading() {
         // An in-memory connection without the schema: a refused request never
