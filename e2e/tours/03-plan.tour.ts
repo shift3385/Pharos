@@ -22,7 +22,7 @@ import {
   openSection,
   selectOption,
   tf,
-  waitForText,
+  waitForToast,
   xpathString,
 } from "./helpers";
 
@@ -343,7 +343,7 @@ chapter("plan", () => {
     covers: ["action:plan-save"],
     run: async () => {
       await button(P.nav.finish).click();
-      await waitForText(P.savedToast);
+      await waitForToast(P.savedToast);
       await expect($(".pj-header")).toHaveText(expect.stringContaining(es.projects.header.plan.draft));
     },
   });
@@ -371,7 +371,7 @@ chapter("plan", () => {
     run: async () => {
       await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
       await button(P.save).click();
-      await waitForText(P.savedToast);
+      await waitForToast(P.savedToast);
       await button(P.revisions).click();
       await expect(dialog().$(".tp-revs__restore")).toBeDisplayed();
     },
@@ -388,7 +388,7 @@ chapter("plan", () => {
       await acceptNativeDialog();
       await browser.keys("Escape");
       await button(P.save).click();
-      await waitForText(P.savedToast);
+      await waitForToast(P.savedToast);
     },
   });
 
@@ -412,7 +412,7 @@ chapter("plan", () => {
     shot: { element: '[role="dialog"]' },
     run: async () => {
       await menuItem(P.io.exportPdf).click();
-      await waitForText(tf("testPlan.exportedToast", { name: "" }).replace(/«»$/, ""), 60_000);
+      await waitForToast(tf("testPlan.exportedToast", { name: "" }).replace(/«»$/, ""), 60_000);
       const before = Date.now();
       await pickFromMenu(P.io.button, P.io.exportXlsx);
       // The new .xlsx, once its size stops changing (written in full).
@@ -447,9 +447,9 @@ chapter("plan", () => {
       const apply = $(`button=${es.importReport.apply}`);
       await apply.waitForEnabled({ timeout: 30_000 });
       await apply.click();
-      await waitForText(P.import.applied);
+      await waitForToast(P.import.applied);
       await button(P.save).click();
-      await waitForText(P.savedToast);
+      await waitForToast(P.savedToast);
     },
   });
 });

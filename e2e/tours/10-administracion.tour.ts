@@ -24,6 +24,7 @@ import {
   repoDir,
   tf,
   waitForText,
+  waitForToast,
 } from "./helpers";
 
 const A = es.admin;
@@ -96,7 +97,7 @@ chapter("administracion", () => {
       await browser.waitUntil(async () => (await $$('[data-testid="template-card"]')).length > 0, { timeoutMsg: "no template cards" });
       await $('[data-testid="template-card"]').$(`button[aria-label^="${tf("templates.moreActions", { name: "" })}"]`).click();
       await menuItem(es.templates.download).click();
-      await waitForText(".xlsx", 30_000);
+      await waitForToast(".xlsx", 30_000);
     },
   });
 
@@ -125,7 +126,7 @@ chapter("administracion", () => {
       await browser.dismissAlert();
       await expect(dialog()).toBeDisplayed();
       await clickButton(es.templates.form.save, D);
-      await waitForText(tf("templates.importedToast", { name: "Plan de pruebas · Banca (propia)" }));
+      await waitForToast(tf("templates.importedToast", { name: "Plan de pruebas · Banca (propia)" }));
       await $(`button[aria-label="${tf("templates.moreActions", { name: "Plan de pruebas · Banca (propia)" })}"]`).click();
       await menuItem(es.common.delete).click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
@@ -164,7 +165,7 @@ chapter("administracion", () => {
     covers: ["admin:sync", "action:sync-now"],
     run: async () => {
       await clickButton(A.sync.now, "#admin-panel");
-      await waitForText(es.sync.doneToast.split("(")[0].trim(), 30_000);
+      await waitForToast(es.sync.doneToast.split("{{")[0], 30_000);
     },
   });
 
@@ -187,9 +188,9 @@ chapter("administracion", () => {
       await $("button.tz-open*=Pago con código QR").click();
       await (await field(es.traceability.requirement.title, D)).setValue("Pago con código QR · versión de este equipo");
       await clickButton(es.traceability.requirement.save, D);
-      await waitForText(es.traceability.requirement.savedToast);
+      await waitForToast(es.traceability.requirement.savedToast);
       await clickButton(es.sync.now);
-      await waitForText(es.sync.conflictToast.split("{{")[0].trim(), 30_000);
+      await waitForToast(es.sync.conflictToast.split("{{")[0].trim(), 30_000);
     },
   });
 
@@ -213,7 +214,7 @@ chapter("administracion", () => {
     shot: false,
     run: async () => {
       await clickButton(es.sync.conflict.keepRemote, D);
-      await waitForText(es.sync.conflict.resolved);
+      await waitForToast(es.sync.conflict.resolved);
       // The panel's own «Cerrar» (Esc may land on a re-rendering list).
       await $(".cp__close").click();
       await $(".cp-overlay").waitForExist({ reverse: true });
@@ -256,7 +257,7 @@ chapter("administracion", () => {
       await clickButton(es.recoveryKey.close, D);
       await openAdminTab("diagnostics");
       await clickButton(es.diagnostics.export);
-      await waitForText(tf("diagnostics.exported", { file: "" }).trim(), 30_000);
+      await waitForToast(tf("diagnostics.exported", { file: "" }).trim(), 30_000);
     },
   });
 });

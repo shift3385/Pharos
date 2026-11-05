@@ -67,25 +67,75 @@ export async function openAdminTab(tab: string) {
   await expect(byTestId(`admin-tab-${tab}`)).toHaveAttribute("aria-selected", "true");
 }
 
-/** Waits for a toast (or any text) to appear on the page. A success toast
- *  lives 3 s and the tours hide all but the newest one, so a toast that came
- *  and went between two polls (on a slow CI runner) is also found in the log
- *  `stabilise()` keeps (tour.ts): each logged toast satisfies one wait, and
- *  only within 15 s of appearing, so an old one never answers a new wait. */
+/** Waits for text that stays on the page (a heading, an inline status). A toast
+ *  needs waitForToast: visible text can miss it or match the wrong moment. */
 export async function waitForText(text: string, timeout = 15_000) {
-  await browser.waitUntil(
-    () =>
-      browser.execute((t: string) => {
-        type Entry = { text: string; at: number; used: boolean };
-        const log = ((window as unknown as { __tourToasts?: Entry[] }).__tourToasts ??= []);
-        const fresh = (e: Entry) => !e.used && Date.now() - e.at < 15_000 && e.text.includes(t);
-        const visible = document.body.innerText.includes(t);
-        const logged = [...log].reverse().find(fresh);
-        if (logged) logged.used = true;
-        return visible || Boolean(logged);
-      }, text),
-    { timeout, interval: 200, timeoutMsg: `text never appeared: ${text}` },
-  );
+  await browser.waitUntil(async () => (await $("body").getText()).includes(text), {
+    timeout,
+    interval: 200,
+    timeoutMsg: `text never appeared: ${text}`,
+  });
+}
+
+interface RecordedToast {
+  text: string;
+  at: number;
+  used: boolean;
+}
+type ToastLog = { __tourToasts?: RecordedToast[] };
+
+/** How long a toast nobody waited for can still answer a wait. Longer than a
+ *  toast lives (Toast.tsx: 3 s, 8 s for warnings and errors). */
+const TOAST_MAX_AGE_MS = 10_000;
+
+/** Records every toast the app raises, in the page. Polling visible text is not
+ *  reliable for them: a toast leaves after 3 s, and the captures' CSS
+ *  (`stabilise`) hides it as soon as a newer one appears. Idempotent; a new page
+ *  starts a new log. */
+export async function recordToasts() {
+  await browser.execute(() => {
+    const w = window as unknown as ToastLog;
+    if (w.__tourToasts) return;
+    const log: RecordedToast[] = (w.__tourToasts = []);
+    const add = (el: Element) =>
+      log.push({ text: (el.textContent ?? "").replace(/\s+/g, " ").trim(), at: Date.now(), used: false });
+    document.querySelectorAll(".toast").forEach(add);
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        change.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          if (node.matches(".toast")) add(node);
+          else node.querySelectorAll(".toast").forEach(add);
+        });
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+}
+
+/** Waits for a toast containing `text`, even one already gone or hidden. Each
+ *  toast answers one wait only, so the toast of an earlier save (still on screen
+ *  for 3 s) cannot pass for the one this step's save has yet to raise. */
+export async function waitForToast(text: string, timeout = 15_000) {
+  await recordToasts();
+  try {
+    await browser.waitUntil(
+      () =>
+        browser.execute(
+          (wanted: string, maxAge: number) => {
+            const log = (window as unknown as ToastLog).__tourToasts ?? [];
+            const hit = log.find((t) => !t.used && t.text.includes(wanted) && Date.now() - t.at < maxAge);
+            if (hit) hit.used = true;
+            return Boolean(hit);
+          },
+          text,
+          TOAST_MAX_AGE_MS,
+        ),
+      { timeout },
+    );
+  } catch {
+    const seen = await browser.execute(() => ((window as unknown as ToastLog).__tourToasts ?? []).map((t) => t.text));
+    throw new Error(`toast never appeared: ${text} (toasts so far: ${JSON.stringify(seen.slice(-5))})`);
+  }
 }
 
 /** Sets a hidden <input type="file"> (WebDriver uploads the local file). */

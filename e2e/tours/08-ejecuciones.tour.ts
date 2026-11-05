@@ -16,6 +16,7 @@ import {
   repoDir,
   tf,
   waitForText,
+  waitForToast,
 } from "./helpers";
 
 const R = es.runs;
@@ -138,7 +139,7 @@ chapter("ejecuciones", () => {
     covers: ["action:tray-filter", "action:tray-unlink"],
     run: async () => {
       await clickButton(R.tray.link, D);
-      await waitForText(R.tray.linkedToast);
+      await waitForToast(R.tray.linkedToast);
       await $(`button.chips__chip*=${R.tray.filterMapped}`).click();
       await expect($(`button=${R.tray.unlink}`)).toBeDisplayed();
     },
@@ -150,7 +151,7 @@ chapter("ejecuciones", () => {
     shot: false,
     run: async () => {
       await clickButton(R.tray.unlink);
-      await waitForText(R.tray.unlinkedToast);
+      await waitForToast(R.tray.unlinkedToast);
       await $(`button.chips__chip*=${R.tray.filterUnlinked}`).click();
     },
   });

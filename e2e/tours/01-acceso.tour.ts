@@ -79,13 +79,14 @@ chapter("acceso", () => {
     caption:
       "Si el correo o la contraseña no corresponden a ninguna cuenta, Pharos no entra y lo indica bajo el formulario: «Correo o contraseña incorrectos.». Por seguridad no dice cuál de los dos falla, así que revisa ambos (el ojo te ayuda con la contraseña) y vuelve a intentarlo. Tras varios intentos seguidos, pide esperar un momento.",
     covers: ["state:login-error"],
-    focus: '[role="alert"]',
+    focus: ".auth-form__error",
     run: async () => {
       await $("#email").setValue(email);
       await clearInput("#password");
       await $("#password").setValue("contraseña-equivocada");
       await button(es.auth.login).click();
-      await expect($('[role="alert"]')).toHaveText(es.auth.error.invalid_credentials);
+      // Not [role="alert"]: the toast stack has an empty one that comes first.
+      await expect($(".auth-form__error")).toHaveText(es.auth.error.invalid_credentials);
     },
   });
 
@@ -181,6 +182,11 @@ chapter("acceso", () => {
     covers: ["action:profile-save"],
     focus: [".profile__audit", `button=${es.profile.save}`],
     run: async () => {
+      // The form shows before the profile loads: its required fields are still
+      // empty (the browser blocks the submit) and the load overwrites what was typed.
+      await browser.waitUntil(async () => (await $("#firstName").getValue()) !== "", {
+        timeoutMsg: "the profile form never loaded",
+      });
       await clearInput("#displayName");
       await $("#displayName").setValue("Smoke QA");
       await button(es.profile.save).click();

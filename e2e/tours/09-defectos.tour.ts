@@ -19,6 +19,7 @@ import {
   selectOption,
   tf,
   waitForText,
+  waitForToast,
 } from "./helpers";
 
 const F = es.defects;
@@ -26,7 +27,7 @@ const D = '[role="dialog"]';
 
 async function save() {
   await $(".tp-editor__save").click();
-  await waitForText(F.savedToast);
+  await waitForToast(F.savedToast);
 }
 
 async function back() {
@@ -122,6 +123,9 @@ chapter("defectos", () => {
       await expect($(".df-banner")).toBeDisplayed();
       await (await field(F.field.title)).setValue("Login rechazado: el ejemplo 2 devuelve «fallo»");
       await selectOption(F.field.severity, F.severity.critical);
+    },
+    // The capture shows the notice, which saving closes with the editor.
+    after: async () => {
       await save();
     },
   });

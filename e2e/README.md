@@ -89,10 +89,16 @@ step("nuevo", {
   action (e.g. «Iniciar sesión» shows the filled form, then signs in).
 
 **Waits, never sleeps.** `field()` looks again until the control is rendered;
-`waitForText()` also finds a toast that came and went (success toasts live
-3 s and only the newest is shown in a capture: `stabilise()` logs every toast,
-and each logged one answers one wait within 15 s); `atLeast(selector, n)`
-replaces one-shot `$$()` counts right after an action.
+`atLeast(selector, n)` replaces one-shot `$$()` counts right after an action.
+Wait for a toast with `waitForToast`, and for text that stays on the page (a
+heading, an inline status) with `waitForText`. Toasts are recorded in the page
+as they appear, so one that has left or that a newer toast hid (the captures
+show only the newest) still counts; each one answers a single wait, so the
+toast of the previous save cannot pass for this one. Don't wait for a word the
+page also shows elsewhere: «Sincronizado» is the sidebar's status too. A form
+filled by an async load is not ready when it first shows: wait for its values
+before typing. And `[role="alert"]` also matches the toast stack's empty
+container: select the message itself.
 
 Every step must assert its outcome: the tours are a functional regression
 suite as well as the manual. After the first failure in a chapter, the rest

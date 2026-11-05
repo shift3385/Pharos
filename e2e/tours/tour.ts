@@ -20,6 +20,7 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser } from "@wdio/globals";
+import { recordToasts } from "./helpers";
 import { CHAPTERS, type ChapterId } from "./manifest";
 import { es, setAppWindow } from "../support";
 
@@ -133,24 +134,7 @@ function record(rec: StepRecord) {
 
 /** Calm, deterministic captures: no animations, transitions or caret. */
 export async function stabilise() {
-  // Every toast that appears, logged with its time (helpers.waitForText):
-  // success toasts live 3 s and only the newest one is shown in a capture,
-  // so a poll can miss one that came and went.
-  await browser.execute(() => {
-    const w = window as unknown as { __tourToasts?: { text: string; at: number; used: boolean }[]; __tourToastLog?: boolean };
-    if (w.__tourToastLog) return;
-    w.__tourToastLog = true;
-    w.__tourToasts ??= [];
-    new MutationObserver((records) => {
-      for (const r of records) {
-        for (const node of Array.from(r.addedNodes)) {
-          if (node instanceof HTMLElement && node.classList.contains("toast")) {
-            w.__tourToasts!.push({ text: node.textContent ?? "", at: Date.now(), used: false });
-          }
-        }
-      }
-    }).observe(document.body, { childList: true, subtree: true });
-  });
+  await recordToasts();
   await browser.execute(() => {
     if (document.getElementById("tour-stable")) return;
     const style = document.createElement("style");

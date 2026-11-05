@@ -14,6 +14,7 @@ import {
   openSection,
   tf,
   waitForText,
+  waitForToast,
 } from "./helpers";
 
 const Y = es.cycles;
@@ -68,7 +69,7 @@ chapter("ciclos", () => {
     caption: "«Crear ciclo» lo crea con su clave (CY-1) y abre su detalle: resumen de resultados y las pestañas «Elementos» y «Runs».",
     run: async () => {
       await clickButton(Y.create, D);
-      await waitForText(Y.createdToast.split("{{")[0]);
+      await waitForToast(Y.createdToast.split("{{")[0]);
       if (!(await $("#cy-detail-title").isExisting())) await $("button.cy-key").click();
       await expect($("#cy-detail-title")).toBeDisplayed();
     },
@@ -94,7 +95,7 @@ chapter("ciclos", () => {
     covers: ["dialogs:src/modules/cycles/ui/ItemDialogs.tsx"],
     run: async () => {
       await clickButton(tf("cycles.add.confirm_other", { count: 2 }), D);
-      await waitForText(tf("cycles.add.addedToast_other", { count: 2 }));
+      await waitForToast(tf("cycles.add.addedToast_other", { count: 2 }));
       await clickButton(Y.filter.action);
       await expect(dialog().$(".cy-preview")).toBeDisplayed();
       const prio = Array.from(await $(D).$$("input[type=checkbox]"));
@@ -136,7 +137,7 @@ chapter("ciclos", () => {
     covers: ["tabs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
       await clickButton(tf("cycles.execute.confirm_other", { count: 2 }), D);
-      await waitForText(tf("cycles.execute.doneToast_other", { count: 2, keys: "" }).split(":")[0]);
+      await waitForToast(tf("cycles.execute.doneToast_other", { count: 2, keys: "" }).split(":")[0]);
       await $('[data-testid="tab-cy-runs"]').click();
       await browser.waitUntil(async () => (await $$("tr.dt__row")).length >= 2, { timeoutMsg: "the cycle shows no runs" });
     },
@@ -158,7 +159,7 @@ chapter("ciclos", () => {
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
       await menuItem(Y.clone).click();
-      await waitForText(Y.clonedToast.split("{{")[0]);
+      await waitForToast(Y.clonedToast.split("{{")[0]);
       await $(`button[aria-label="${Y.moreActions}"]`).click();
       await menuItem(Y.delete).click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
@@ -171,7 +172,7 @@ chapter("ciclos", () => {
     covers: ["action:cycles-filter"],
     run: async () => {
       await clickButton(Y.deleteConfirm, '[role="alertdialog"]');
-      await waitForText(Y.deletedToast.split("{{")[0].trim() || "eliminado");
+      await waitForToast(Y.deletedToast.split("{{")[0].trim() || "eliminado");
       // Deleting returns to the list.
       await $("#cy-title").waitForDisplayed();
       await clickButton(Y.statusPlural.planned);

@@ -20,7 +20,7 @@ import {
   openSection,
   selectOption,
   tf,
-  waitForText,
+  waitForToast,
 } from "./helpers";
 
 const TEMP_PROJECT = "Proyecto de prueba";
@@ -40,7 +40,7 @@ async function setPrefix(prefix: string) {
   await $("#pj-prefix").setValue(prefix);
   await $("#pj-digits").selectByAttribute("value", "3");
   await button(es.projects.save).click();
-  await waitForText(es.projects.savedToast);
+  await waitForToast(es.projects.savedToast);
 }
 
 chapter("proyectos", () => {
@@ -171,13 +171,13 @@ chapter("proyectos", () => {
     covers: ["action:custom-field-create"],
     run: async () => {
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Navegador" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Navegador" }));
       // A second, yes/no field: the case list can filter by it.
       await $('[data-testid="custom-fields-card"]').$(`button=${es.customFields.new}`).click();
       await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Regresión crítica");
       await selectOption(es.customFields.dialog.type, es.customFields.type.boolean, '[role="dialog"]');
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Regresión crítica" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Regresión crítica" }));
       await $('[data-testid="custom-fields-card"]').scrollIntoView();
     },
   });
@@ -191,10 +191,10 @@ chapter("proyectos", () => {
       await card.$(`button=${es.customFields.new}`).click();
       await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Sprint antiguo");
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Sprint antiguo" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Sprint antiguo" }));
       await card.$(`button[aria-label="${tf("customFields.actions", { label: "Sprint antiguo" })}"]`).click();
       await menuItem(es.customFields.archive).click();
-      await waitForText(tf("customFields.archivedToast", { label: "Sprint antiguo" }));
+      await waitForToast(tf("customFields.archivedToast", { label: "Sprint antiguo" }));
       await card.$(`label*=${es.customFields.showArchived}`).click();
       await expect(card.$(hasText(es.customFields.archived))).toBeDisplayed();
       await card.scrollIntoView();
@@ -246,7 +246,7 @@ chapter("proyectos", () => {
     covers: ["action:configuration-create", "action:configuration-archive"],
     run: async () => {
       await dialog().$(`button=${es.configurations.save}`).click();
-      await waitForText(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
+      await waitForToast(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
       const card = $('[data-testid="configurations-card"]');
       for (const [name, browserName, label] of [
         ["Edge · Windows 11", "Edge", "msedge"],
@@ -259,11 +259,11 @@ chapter("proyectos", () => {
         await (await field(es.configurations.labels, d)).click();
         await browser.keys([...label, "Enter"]);
         await dialog().$(`button=${es.configurations.save}`).click();
-        await waitForText(tf("configurations.savedToast", { name }));
+        await waitForToast(tf("configurations.savedToast", { name }));
       }
       await card.$(`button[aria-label="${tf("configurations.actions", { name: "Safari · macOS" })}"]`).click();
       await menuItem(es.configurations.archive).click();
-      await waitForText(tf("configurations.archivedToast", { name: "Safari · macOS" }));
+      await waitForToast(tf("configurations.archivedToast", { name: "Safari · macOS" }));
       await card.scrollIntoView();
     },
   });
@@ -290,7 +290,7 @@ chapter("proyectos", () => {
     covers: ["action:projects-search", "action:projects-sort"],
     run: async () => {
       await dialog().$(`button=${es.customFields.copyDialog.confirm}`).click();
-      await waitForText(tf("customFields.copyDialog.copiedToast_other", { count: 2 }));
+      await waitForToast(tf("customFields.copyDialog.copiedToast_other", { count: 2 }));
       await byTestId("nav-projects").click();
       await $(`input[placeholder="${es.projects.list.search}"]`).setValue("BM");
       await expect($(`a.pj-row__link*=${PROJECT_A.name}`)).toBeDisplayed();
@@ -322,7 +322,7 @@ chapter("proyectos", () => {
     shot: false,
     run: async () => {
       await menuItem(es.projects.exportProject).click();
-      await waitForText("archivos exportados en", 60_000);
+      await waitForToast("archivos exportados en", 60_000);
     },
   });
 

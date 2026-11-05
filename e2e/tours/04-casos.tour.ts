@@ -22,6 +22,7 @@ import {
   selectOption,
   tf,
   waitForText,
+  waitForToast,
   xpathString,
 } from "./helpers";
 
@@ -77,7 +78,7 @@ async function rows(ok: (n: number) => boolean, what: string) {
 
 async function saveCase() {
   await clickButton(C.save, ".tc-nav");
-  await waitForText(C.savedToast);
+  await waitForToast(C.savedToast);
 }
 
 async function backToList() {
@@ -103,7 +104,6 @@ chapter("casos", () => {
     caption:
       "«Nuevo caso» pregunta primero qué tipo de escenario quieres escribir: «Básico», un escenario Given/When/Then; «Básico avanzado», un Scenario Outline que se repite con una tabla de ejemplos; o «Avanzado», con precondiciones comunes (Background) y varios flujos. Empieza por el más simple que te sirva: un caso se puede subir de nivel después.",
     covers: ["screen:level-picker"],
-    focus: "[role=\"dialog\"]",
     run: async () => {
       await clickButton(C.new);
       await expect($$("button.tc-level-card")).toBeElementsArrayOfSize(3);
@@ -119,7 +119,7 @@ chapter("casos", () => {
       await $(`.//button[contains(@class,"tc-level-card")][.//*[normalize-space(.)=${xpathString(C.level.basic.name)}]]`).click();
       await clearInput("#tc-title");
       await clickButton(C.save, ".tc-nav");
-      await expect($('[role="alert"]')).toBeDisplayed();
+      await expect($(".field-summary")).toBeDisplayed();
     },
   });
 
@@ -178,7 +178,7 @@ chapter("casos", () => {
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="split"]').click();
       await $(`button[aria-label="${C.gherkin.copy}"]`).click();
-      await waitForText(C.gherkin.copied);
+      await waitForToast(C.gherkin.copied);
     },
   });
 
@@ -377,7 +377,7 @@ chapter("casos", () => {
     run: async () => {
       await backToList();
       await pickFromMenu(C.list.io, C.exportFeature);
-      await waitForText(".feature", 30_000);
+      await waitForToast(".feature", 30_000);
     },
   });
 

@@ -20,6 +20,7 @@ import {
   selectOption,
   tf,
   waitForText,
+  waitForToast,
 } from "./helpers";
 
 const T = es.traceability;
@@ -40,7 +41,7 @@ async function linkRequirement(key: string) {
 
 async function saveCase() {
   await clickButton(C.save, ".tc-nav");
-  await waitForText(C.savedToast);
+  await waitForToast(C.savedToast);
 }
 
 chapter("trazabilidad", () => {
@@ -79,7 +80,7 @@ chapter("trazabilidad", () => {
     shot: { element: '[role="dialog"]' },
     run: async () => {
       await clickButton(T.requirement.save, '[role="dialog"]');
-      await waitForText(T.requirement.savedToast);
+      await waitForToast(T.requirement.savedToast);
       await clickButton(T.io.label);
       await expect(menuItem(T.io.importCsv)).toBeDisplayed();
       await browser.keys("Escape");
@@ -95,7 +96,7 @@ chapter("trazabilidad", () => {
     toast: true,
     run: async () => {
       await clickButton(tf("traceability.import.confirm", { count: 4 }), '[role="dialog"]');
-      await waitForText(tf("traceability.import.doneToast", { created: 4, updated: 0 }));
+      await waitForToast(tf("traceability.import.doneToast", { created: 4, updated: 0 }));
     },
   });
 
@@ -118,7 +119,7 @@ chapter("trazabilidad", () => {
     shot: false,
     run: async () => {
       await clickButton(T.requirement.save, '[role="dialog"]');
-      await waitForText(T.requirement.savedToast);
+      await waitForToast(T.requirement.savedToast);
       await $(`button.tz-open*=Extracto mensual`).click();
       await (await field(T.requirement.title, '[role="dialog"]')).addValue(" (borrador)");
       await clickButton(es.common.cancel, '[role="dialog"]');
@@ -186,10 +187,10 @@ chapter("trazabilidad", () => {
     shot: false,
     run: async () => {
       await clickButton(T.migrate.apply, '[role="dialog"]');
-      await waitForText(T.migrate.doneToast.split(":")[0]);
+      await waitForToast(T.migrate.doneToast.split(":")[0]);
       await $(".cd-overlay").waitForExist({ reverse: true });
       await pickFromMenu(T.io.label, T.io.exportXlsx);
-      await waitForText(tf("traceability.matrix.exportedToast", { name: "" }).trim(), 30_000);
+      await waitForToast(tf("traceability.matrix.exportedToast", { name: "" }).trim(), 30_000);
     },
   });
 
@@ -211,7 +212,7 @@ chapter("trazabilidad", () => {
     shot: false,
     run: async () => {
       await clickButton(T.requirement.deleteConfirm, '[role="alertdialog"]');
-      await waitForText(tf("traceability.requirement.deletedToast", { key: "REQ-005" }));
+      await waitForToast(tf("traceability.requirement.deletedToast", { key: "REQ-005" }));
     },
   });
 });

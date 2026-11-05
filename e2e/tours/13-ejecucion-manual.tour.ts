@@ -5,7 +5,7 @@
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, waitForText } from "./helpers";
+import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, waitForToast } from "./helpers";
 
 const E = es.execution;
 const D = '[role="dialog"]';
@@ -97,7 +97,7 @@ chapter("ejecucion-manual", () => {
       await browser.keys("Escape");
       await $(".cd-overlay").waitForExist({ reverse: true });
       await chooseFile('[data-testid="exec-panel"] input[type="file"]', join(fixturesDir, "captura-saldo.png"));
-      await waitForText(E.attached_one);
+      await waitForToast(E.attached_one);
     },
   });
 
@@ -133,7 +133,7 @@ chapter("ejecucion-manual", () => {
     caption: "«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (aquí, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento.",
     run: async () => {
       await byTestId("exec-save").click();
-      await waitForText(E.recorded.split("{{")[0]);
+      await waitForToast(E.recorded.split("{{")[0]);
       await expect(byTestId("exec-create-defect")).toBeDisplayed();
     },
   });
@@ -145,7 +145,7 @@ chapter("ejecucion-manual", () => {
       await byTestId("exec-create-defect").click();
       await expect($(".tp-editor__save")).toBeDisplayed();
       await $(".tp-editor__save").click();
-      await waitForText(es.defects.savedToast);
+      await waitForToast(es.defects.savedToast);
     },
   });
 
@@ -186,7 +186,7 @@ chapter("ejecucion-manual", () => {
     shot: { element: D },
     run: async () => {
       await clickButton(E.run.save, D);
-      await waitForText(E.run.saved);
+      await waitForToast(E.run.saved);
       await byTestId("run-close").click();
       await expect(byTestId("run-close-confirm")).toBeDisplayed();
     },

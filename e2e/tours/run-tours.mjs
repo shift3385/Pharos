@@ -26,6 +26,7 @@
 // the build). After the tours, the secret scan runs FIRST; files that contain
 // the key are deleted and a marker tells CI not to upload any results.
 import { spawn, spawnSync, execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { createConnection } from "node:net";
@@ -273,7 +274,16 @@ async function secretScan() {
 // ---- Run --------------------------------------------------------------------------
 
 /** Environment of the API, the migrations and the seed: no AI variables. */
-const childEnv = { ...process.env, PORT: String(port), HOST: "127.0.0.1", DATABASE_URL: dbUrl.toString(), NODE_ENV: "development" };
+// JWT_ACCESS_SECRET: a checkout may have no `.env`, and the tour API signs only
+// tokens for this run's throwaway database, so a random one is enough.
+const childEnv = {
+  ...process.env,
+  PORT: String(port),
+  HOST: "127.0.0.1",
+  DATABASE_URL: dbUrl.toString(),
+  NODE_ENV: "development",
+  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || readDotenv(join(repoDir, ".env")).JWT_ACCESS_SECRET || randomBytes(32).toString("hex"),
+};
 let exitCode = 1;
 
 try {

@@ -15,7 +15,7 @@ import {
   openSection,
   selectOption,
   tf,
-  waitForText,
+  waitForToast,
 } from "./helpers";
 
 const L = es.planner;
@@ -27,7 +27,7 @@ async function newCard(title: string, opts: { kind?: string; priority?: string; 
   if (opts.priority) await selectOption(L.priority, opts.priority);
   if (opts.description) await (await field("Descripción")).setValue(opts.description);
   await $(".tp-editor__save").click();
-  await waitForText(L.savedToast);
+  await waitForToast(L.savedToast);
 }
 
 async function back() {
@@ -71,7 +71,7 @@ chapter("planificador", () => {
     focus: ".pl-attach__open",
     run: async () => {
       await $(".tp-editor__save").click();
-      await waitForText(L.savedToast);
+      await waitForToast(L.savedToast);
       // Saving a new card returns to the board: open it again to attach.
       await $("button.pl-card__title*=Preparar datos").click();
       await $("input.pl-attach__input").setValue(join(fixturesDir, "datos-clientes.csv"));
