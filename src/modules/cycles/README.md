@@ -17,8 +17,13 @@ web: `server/src/modules/domain/cycles.ts`.
   `/api/cycles/:id/execute`).
 - **Progress** comes computed from the core (`cycle_progress_get`, or
   `/api/cycles/:id/progress` on the web): this module only shows it.
+- **Exports (EXP-03):** `loadCycleExport`, `cyclesTable` and `caseCyclesTable`
+  build the «Ciclos» tables that the plan and case exports (`test-plan`,
+  `test-cases`) add as a sheet and a PDF section, from the list's own
+  progress summary.
 
-Boundaries: it depends on no other domain module. The project page passes it
+Boundaries: it depends on no other domain module (`test-plan` and
+`test-cases` depend on it for their exports, never the other way round). The project page passes it
 the cases (`loadCases`, from `@modules/test-cases`) and the requirement keys.
 No design in `docs/rediseno/` covers these screens: they use the shared
 primitives (`DataTable`, `StatusPill`, `SegmentedControl`, `Tabs`, `Dialog`).

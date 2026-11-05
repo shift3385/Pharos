@@ -13,7 +13,7 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 ## Contenido
 
 1. [Acceso y cuenta](01-acceso.md) (11 pasos)
-2. [Inicio, proyectos y ajustes](02-proyectos.md) (21 pasos)
+2. [Inicio, proyectos y ajustes](02-proyectos.md) (22 pasos)
 3. [Plan de pruebas](03-plan.md) (24 pasos)
 4. [Casos de prueba](04-casos.md) (22 pasos)
 5. [Trazabilidad y requisitos](05-trazabilidad.md) (13 pasos)

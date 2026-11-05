@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, Route, Routes, useLocation } from "react-router";
@@ -145,7 +146,7 @@ describe("Casos · lista (RED-V3)", () => {
     expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–3 de 3 casos");
     expect(screen.getByRole("button", { name: "Ejecución" })).toHaveAttribute("aria-disabled", "true");
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("filters by state chip and finds a case by its requirement", async () => {
     setViewportWidth(1440);
@@ -210,7 +211,7 @@ describe("Casos · lista (RED-V3)", () => {
     await userEvent.click(within(sheet).getByRole("button", { name: "Crítica" }));
     expect(within(cards).getAllByRole("listitem")).toHaveLength(1);
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 });
 
 it("puts its buttons in the project header (V2's slot) and clears them in the editor", async () => {
@@ -240,7 +241,7 @@ describe("Casos · editor navigation (RED-V3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Todos los casos" }));
     expect(await screen.findByRole("table")).toBeInTheDocument();
     expect(screen.getByTestId("search")).toBeEmptyDOMElement();
-  }, 15_000);
+  });
 
   it("asks before leaving with unsaved changes", async () => {
     setViewportWidth(1440);
@@ -252,7 +253,7 @@ describe("Casos · editor navigation (RED-V3)", () => {
     const dialog = screen.getByRole("alertdialog", { name: "¿Descartar los cambios?" });
     await userEvent.click(within(dialog).getByRole("button", { name: "Descartar cambios" }));
     expect(await screen.findByRole("heading", { name: "Descarga de factura" })).toBeInTheDocument();
-  }, 15_000);
+  });
 
   it("Ctrl P opens «Ir a un caso» and Enter opens the match", async () => {
     setViewportWidth(1440);
@@ -262,7 +263,7 @@ describe("Casos · editor navigation (RED-V3)", () => {
     const box = await screen.findByRole("combobox", { name: "Ir a un caso" });
     await userEvent.type(box, "reembolso{Enter}");
     expect(await screen.findByRole("heading", { name: "Reembolso parcial" })).toBeInTheDocument();
-  }, 15_000);
+  });
 
   it("explains each priority in its menu and uses a sheet on mobile", async () => {
     setViewportWidth(1440);
@@ -281,7 +282,7 @@ describe("Casos · editor navigation (RED-V3)", () => {
     const sheet = screen.getByRole("dialog", { name: "Estado del caso" });
     await userEvent.click(within(sheet).getByRole("button", { name: "Revisado" }));
     expect(screen.getByRole("button", { name: "Estado Revisado" })).toBeInTheDocument();
-  }, 20_000);
+  });
 
   it("on mobile offers only Editor and Gherkin, and editing Gherkin shows the keyword bar", async () => {
     setViewportWidth(390);
@@ -295,7 +296,7 @@ describe("Casos · editor navigation (RED-V3)", () => {
     expect(within(bar).getByRole("button", { name: "@tag" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Listo" }));
     expect(screen.queryByRole("toolbar", { name: "Palabras clave de Gherkin" })).not.toBeInTheDocument();
-  }, 15_000);
+  });
 });
 
 describe("Casos · ID de escenario (FIX-12)", () => {
@@ -351,7 +352,7 @@ describe("Casos · review fixes (RED-V3)", () => {
       within(screen.getByRole("alertdialog")).getByRole("button", { name: "Descartar cambios" }),
     );
     await waitFor(() => expect(screen.getByTestId("path")).toHaveTextContent("/projects/p1/plan"));
-  }, 15_000);
+  });
 
   // The system «Atrás» (a history pop) is held by the same router blocker:
   // see useUnsavedChangesGuard.test.tsx.
@@ -441,7 +442,7 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     );
     await userEvent.keyboard("{Escape}");
     expect(within(table).getAllByRole("row")).toHaveLength(2);
-  }, 15_000);
+  });
 
   it("filters by a choice custom field", async () => {
     setViewportWidth(1440);
@@ -462,7 +463,7 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(2);
     expect(rows[1]).toHaveTextContent("Sprint 2");
-  }, 15_000);
+  });
 
   it("a required field blocks the save and is named; a checklist hides the Gherkin", async () => {
     setViewportWidth(1440);
@@ -505,5 +506,5 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     });
     // Never set and not touched: not sent, so the stored null stays.
     expect(input.automationStatus).toBeUndefined();
-  }, 20_000);
+  });
 });

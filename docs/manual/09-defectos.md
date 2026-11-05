@@ -26,7 +26,7 @@ Pulsa «Defectos» en el menú lateral. Arriba, «Desde un resultado» y «Nuevo
 
 ### 9.3. Rellenar el defecto
 
-Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos y seguimiento externo.
+Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos, seguimiento externo y los campos personalizados de defectos que definiste en Ajustes (aquí, «Cliente afectado»).
 
 ![Rellenar el defecto](img/defectos/03-nuevo.png)
 

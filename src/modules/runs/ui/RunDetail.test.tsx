@@ -6,6 +6,7 @@
 // in this browser.
 // axe checks the markup of each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";

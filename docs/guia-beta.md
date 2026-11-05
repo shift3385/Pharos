@@ -160,6 +160,10 @@ seguir.
 - [ ] Crear casos: el editor y la vista Gherkin se actualizan entre sí; el
       `.feature` exportado es válido (Fase 4).
 - [ ] Exportar el plan y un caso a `.pdf` y `.xlsx` (Fase 6).
+- [ ] Con hitos en el Cronograma y un ciclo con ese caso: el `.xlsx` del plan
+      trae las hojas «Hitos» y «Ciclos» (con el mismo progreso que la pantalla
+      de Ciclos) y el del caso, la hoja «Ciclos»; los PDF terminan con esas
+      tablas. Importar ese `.xlsx` da el mismo plan o caso (EXP-03).
 - [ ] Importar un plan y casos desde `.xlsx` y usar una plantilla (Fase 6).
 - [ ] Elegir una carpeta de descarga en Administración → General y exportar el
       ZIP del proyecto: lleva el plan y cada caso en `.xlsx` y `.pdf`
@@ -183,6 +187,10 @@ seguir.
       deja de marcarlo como abierto.
 - [ ] En el tablero, arrastrar un defecto «Nuevo» a «Corregido»: no se deja y
       lo explica.
+- [ ] En Ajustes del proyecto → «Campos personalizados», elegir «Defectos» y
+      crear un campo: aparece en el editor de defectos, se guarda con el
+      defecto y llega al otro equipo tras sincronizar; los campos de casos
+      no cambian (FLD-03).
 
 ### 4.4c Importar resultados de pruebas automáticas (ING-02..05)
 
@@ -205,6 +213,9 @@ conserva las etiquetas.
 - [ ] **Sin vincular** lista los tests sin caso y el motivo; «Vincular…» los
       asigna a un caso (sus resultados no cambian) y «Desvincular» lo retira.
 - [ ] Un Cucumber JSON se rechaza con un mensaje que indica usar Messages.
+- [ ] Con un ciclo activo, importar un informe como run nuevo eligiendo ese
+      «Ciclo»: el progreso del ciclo suma sus resultados sin tocar el run.
+      Un ciclo cerrado no aparece en el selector (CYC-02).
 
 ### 4.4d Ejecución manual paso a paso (EJE-02)
 

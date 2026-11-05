@@ -286,8 +286,9 @@ recomendadas del plan) y precisiones sobre el boceto:
   cerrar, rechazar o soltar en «Otros» preguntan antes. `DefectEditor` y
   `createDefectFromResult` se exportan para la pantalla de ejecución (EJE-02).
 - **Campos personalizados** (`data.custom`): el editor muestra los campos
-  definidos para la entidad `defect`. Ajustes del proyecto solo define hoy
-  campos de casos; definirlos para defectos queda como tarea aparte.
+  definidos para la entidad `defect`. Desde FLD-03 (E6p, 0.2.0) se definen en
+  Ajustes del proyecto → «Campos personalizados» con el selector «Casos /
+  Defectos» (ver la nota de FLD-03 en ADR-0018).
 - **Pendiente para INT-05:** `external_system`, `external_key`, `external_url`
   y `external_synced_at` existen y se editan a mano (clave y enlace); la
   correspondencia de estados con Jira la define INT-05.

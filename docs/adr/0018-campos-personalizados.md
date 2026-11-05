@@ -234,3 +234,31 @@ plan (contrastadas con Jira, Xray, Zephyr, TestRail y Azure Test Plans):
   desconocida se conserva. El PDF añade el bloque si hay filas. El `.feature`
   no cambia (los tags siguen siendo del usuario) y el lote no exporta las
   checklists (lo dice el aviso). La IA no rellena campos en 0.2.0.
+
+## Nota de implementación (FLD-03, E6p, 2026-11-05)
+
+- **Campos de defectos en Ajustes.** La tarjeta «Campos personalizados» tiene
+  un selector «Casos / Defectos» (`radiogroup` «Campos de»). Lista, orden,
+  archivado, «Nuevo campo» y «Copiar de otro proyecto» trabajan sobre la
+  entidad elegida; cada entidad es su propio conjunto (id
+  `UUIDv5("<proyecto>:<entidad>:<clave>")`, así la misma clave puede existir
+  en casos y en defectos) con su propio orden.
+- **Sin cambios de esquema ni de sync.** El repositorio (`custom_fields.rs`),
+  la web (`/api/custom-fields?entity=`) y el documento `custom_field` ya
+  llevaban la entidad desde FLD-01; FLD-03 solo añade la UI y pruebas
+  (crear, ordenar y copiar por entidad; viajar entre equipos; las rutas web).
+- **«Se aplica a»** (tipos de caso) solo existe para casos: la UI no lo ofrece
+  para un campo de defecto, y el escritorio y la web rechazan
+  (`custom_field.applies_to`) un campo de otra entidad que nombre tipos de
+  caso, al crearlo y al editarlo.
+- **Valores.** Los defectos guardan sus valores en `data.custom` y se
+  comprueban como los de un caso: el escritorio
+  (`custom_fields::check_defect_values`, en `insert_defect` y
+  `update_defect`) y la web (`defectData` en el servicio de dominio) validan
+  cada valor contra su campo vivo de la entidad `defect`
+  (`custom_field.<código>:<clave>`); un valor que el defecto ya tenía (una
+  opción archivada) se acepta, y las claves desconocidas se conservan. El
+  editor de defectos bloquea además el guardado con un valor que no encaja o
+  un obligatorio vacío, y lo nombra en la sección. Como con los casos,
+  `required` es solo del editor, y la sync no revalida.
+  Requisito, run y ciclo siguen sin pantalla de definición.

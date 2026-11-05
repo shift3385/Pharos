@@ -276,6 +276,12 @@ por configuración viva y no archivada, revisiones congeladas al crear cada
 run, todo o nada, `planned` → `active`) y devuelve el mismo
 `ExecuteResult`. El botón ya no se desactiva en la web.
 
+**Nota (CYC-02, E6p, 2026-11-05).** Un run importado puede nacer en un ciclo
+(«Importar informe» → «Ciclo»; ver la nota de CYC-02 en ADR-0013). Un ciclo
+`closed` no se ofrece y el escritorio lo rechaza (`cycle-closed`) en la vista
+previa y al importar. El progreso del ciclo (la lista y la pestaña) cuenta sus
+resultados como los de un run de «Ejecutar».
+
 ## Nota (E6p, EJE-07: eliminar un run, 2026-11-05)
 
 Un run de un ciclo **cerrado** no se puede eliminar (`cycle-closed`), igual

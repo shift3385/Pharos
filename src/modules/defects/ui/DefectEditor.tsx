@@ -1,7 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Info, Link2, Paperclip, X } from "lucide-react";
-import { CustomFieldsSection, customFieldApi, type CustomField, type CustomValues } from "@modules/custom-fields";
+import {
+  CustomFieldsSection,
+  customFieldApi,
+  customFieldIssues,
+  type CustomField,
+  type CustomValues,
+} from "@modules/custom-fields";
 import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
 import { ListField } from "@shared/ui/fields";
@@ -175,7 +181,17 @@ export function DefectEditor({
 
   async function save() {
     setAttempted(true);
-    if (!form.title.trim() || (needs && !form.resolution)) return;
+    // A defect field (FLD-03) blocks the save like a case field: a required
+    // one without a value, or a value that does not fit its field (a value
+    // the defect already holds, such as an archived option, still does).
+    // The section names it once `attempted` is set.
+    const customIssues = customFieldIssues(
+      fields,
+      "standard",
+      form.custom,
+      (current?.data.custom as CustomValues | undefined) ?? {},
+    );
+    if (!form.title.trim() || (needs && !form.resolution) || customIssues.length) return;
     setSaving(true);
     try {
       const wanted: LinkTarget[] = [

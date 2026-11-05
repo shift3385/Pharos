@@ -3,6 +3,7 @@
 // required named in the error summary, archive and reorder, values the
 // editor does not know kept, and axe on each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { useState } from "react";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -104,7 +105,7 @@ describe("Ajustes · Campos personalizados", () => {
     );
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("proposes the key from the name, checks it, and creates the field", async () => {
     vi.mocked(customFieldApi.create).mockImplementation(async (input) =>
@@ -167,7 +168,7 @@ describe("Ajustes · Campos personalizados", () => {
         required: false,
       }),
     );
-  }, 15_000);
+  });
 
   it("an edited field keeps its key and type read-only", async () => {
     card();
@@ -187,7 +188,7 @@ describe("Ajustes · Campos personalizados", () => {
       within(dialog).getByRole("button", { name: "Recuperar la opción 2" }),
     ).toHaveAttribute("aria-pressed", "true");
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("archives from the row menu and moves a field down", async () => {
     vi.mocked(customFieldApi.archive).mockResolvedValue({
@@ -203,6 +204,7 @@ describe("Ajustes · Campos personalizados", () => {
       "p1",
       ["points", "browser"],
       "u1",
+      "test_case",
     );
     expect(
       screen.getByText("«Navegador» movido a la posición 2"),
@@ -212,7 +214,78 @@ describe("Ajustes · Campos personalizados", () => {
     );
     await userEvent.click(screen.getByRole("menuitem", { name: "Archivar" }));
     expect(customFieldApi.archive).toHaveBeenCalledWith("points", true, "u1");
-  }, 15_000);
+  });
+
+  // FLD-03: the same card defines the fields of the project's defects.
+  it("«Defectos» lists, creates and copies defect fields", async () => {
+    const CUSTOMER = field({
+      fieldKey: "customer",
+      label: "Cliente afectado",
+      entity: "defect",
+    });
+    vi.mocked(customFieldApi.list).mockImplementation(async (_p, _u, entity) =>
+      entity === "defect" ? [CUSTOMER] : [BROWSER, POINTS, OLD],
+    );
+    vi.mocked(customFieldApi.create).mockImplementation(async (input) =>
+      field({ ...input, options: input.options ?? [] }),
+    );
+    vi.mocked(customFieldApi.copy).mockResolvedValue({
+      copied: 1,
+      skipped: [],
+    });
+    card();
+    await screen.findByText("Navegador");
+    const selector = screen.getByRole("radiogroup", { name: "Campos de" });
+    await userEvent.click(
+      within(selector).getByRole("radio", { name: "Defectos" }),
+    );
+    expect(await screen.findByText("Cliente afectado")).toBeInTheDocument();
+    expect(screen.queryByText("Navegador")).not.toBeInTheDocument();
+    expect(customFieldApi.list).toHaveBeenLastCalledWith("p1", "u1", "defect");
+    expect(screen.getByText(/para sus defectos/)).toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    // A defect field has no case type: «Se aplica a» is not offered.
+    await userEvent.click(screen.getByRole("button", { name: "Nuevo campo" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Nuevo campo personalizado",
+    });
+    expect(
+      within(dialog).queryByRole("radiogroup", { name: "Se aplica a" }),
+    ).not.toBeInTheDocument();
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: /Nombre/ }),
+      "Versión corregida",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Crear campo" }),
+    );
+    expect(customFieldApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: "defect",
+        fieldKey: "version_corregida",
+        appliesToCaseTypes: null,
+      }),
+    );
+
+    // «Copiar de otro proyecto» copies the defect fields.
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Copiar de otro proyecto" }),
+    );
+    const copy = screen.getByRole("dialog", {
+      name: "Copiar campos de otro proyecto",
+    });
+    expect(copy).toHaveTextContent("campos de defectos");
+    await userEvent.click(
+      await within(copy).findByRole("button", { name: "Copiar campos" }),
+    );
+    expect(customFieldApi.copy).toHaveBeenCalledWith(
+      "p2",
+      "p1",
+      "u1",
+      "defect",
+    );
+  });
 });
 
 function Section({
@@ -264,14 +337,14 @@ describe("Editor · Campos personalizados", () => {
       screen.getByText(/from_elsewhere · campo desconocido/),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("an archived option the case already has stays selectable", () => {
     renderWithProviders(<Section start={{ browser: "OPT00002" }} />);
     const browser = screen.getByRole("combobox", { name: /Navegador/ });
     expect(browser).toHaveValue("OPT00002");
     expect(screen.queryByRole("alert")).toBeNull();
-  }, 15_000);
+  });
 
   it("a missing required value shows after a save attempt", async () => {
     renderWithProviders(<Section start={{}} attempted />);
@@ -279,5 +352,5 @@ describe("Editor · Campos personalizados", () => {
     expect(browser).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText("Este campo es obligatorio.")).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 });

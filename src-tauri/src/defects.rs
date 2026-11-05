@@ -754,7 +754,8 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
     if !project::owns(conn, &input.project_id, user)? {
         return Err("project not found".into());
     }
-    let f = check_fields(input)?;
+    let mut f = check_fields(input)?;
+    crate::custom_fields::check_defect_values(conn, &input.project_id, &mut f.data, None)?;
     let status = pick(input.status.as_deref(), &STATUSES, "new", "status")?;
     let resolution = lifecycle::check(status, status, input.resolution.as_deref())?;
     let mut links: Vec<LinkTarget> = input.links.clone().unwrap_or_default();
@@ -862,8 +863,16 @@ pub(crate) fn update_defect(
     input: &DefectInput,
 ) -> Result<(), String> {
     let user = &input.user_id;
-    let (_, status, revision) = owned(conn, id, user)?;
-    let f = check_fields(input)?;
+    let (project_id, status, revision) = owned(conn, id, user)?;
+    let mut f = check_fields(input)?;
+    let previous: Option<Value> = conn
+        .query_row("SELECT data FROM defects WHERE id = ?1", params![id], |r| {
+            r.get::<_, String>(0)
+        })
+        .optional()
+        .map_err(err)?
+        .and_then(|s| serde_json::from_str(&s).ok());
+    crate::custom_fields::check_defect_values(conn, &project_id, &mut f.data, previous.as_ref())?;
     let to = input
         .status
         .clone()

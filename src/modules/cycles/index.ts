@@ -6,3 +6,10 @@ export { configurationApi, cycleApi } from "./api/cycleApi";
 export { ConfigurationsCard } from "./ui/ConfigurationsCard";
 export { CyclesPage } from "./ui/CyclesPage";
 export type { CaseOption, Configuration, CycleSummary, TestCycle } from "./model/types";
+// EXP-03: the «Ciclos» tables of the plan and case exports.
+export {
+  caseCyclesTable,
+  cyclesTable,
+  loadCycleExport,
+} from "./export/cycleTables";
+export type { CycleExportData } from "./export/cycleTables";

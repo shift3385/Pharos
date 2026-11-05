@@ -187,6 +187,10 @@ pub struct ImportNewRun {
     pub(crate) build: Option<String>,
     pub(crate) commit_sha: Option<String>,
     pub(crate) branch: Option<String>,
+    /// The cycle the new run belongs to (CYC-02): a live, not closed cycle of
+    /// the project. Only the id is stored; the configuration and the cycle
+    /// items of its results are derived when read (`link.rs`, ADR-0013).
+    pub(crate) cycle_id: Option<String>,
     /// Leave the run `in_progress` so more shards can be imported into it.
     pub(crate) keep_open: Option<bool>,
 }
@@ -859,7 +863,13 @@ pub(crate) fn preview(
                 .map_err(err)?;
             Some((id.clone(), started))
         }
-        None => None,
+        None => {
+            // The cycle of a new run (CYC-02), checked before anything is
+            // uploaded: `cycle-closed` or `cycle-not-found`.
+            let cycle = req.new_run.as_ref().and_then(|n| text(&n.cycle_id));
+            crate::cycles::check_run_links(conn, &req.project_id, cycle.as_deref(), None)?;
+            None
+        }
     };
     let shard_id = ids::shard_id(
         run.as_ref().map_or("preview", |(id, _)| id.as_str()),
@@ -1042,6 +1052,7 @@ pub(crate) fn commit(
                 dataset: text(&doc.run.dataset),
                 context: doc.run.context.clone(),
                 started_at: time_of(doc.run.started_at.as_ref()),
+                cycle_id: text(&new.cycle_id),
                 user_id: user.clone(),
                 ..Default::default()
             };
