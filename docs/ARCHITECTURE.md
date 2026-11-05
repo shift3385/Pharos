@@ -1270,33 +1270,56 @@ and its `VACUUM` can briefly double that image.)
     swept: they may belong to a database the user moved aside.
 - **«Verificar evidencias» (DAT-03b, `evidence/check.rs`).** A manual check in
   Administración → Evidencias, desktop only.
-  - Three phases, so it never races a save or `collect`:
-    1. a snapshot of `blobs` under the database lock;
-    2. the scan of `evidence/<2 hex>/` (never `tmp/`, where open uploads
-       write) and the streamed decryption of every content, **without** the
-       lock;
-    3. a reconciliation under the lock that checks each finding again. A file
+  - Three phases, so it never races a save or `collect` and never decrypts
+    under the database lock:
+    1. a snapshot of `blobs` under the lock;
+    2. on a blocking thread (`spawn_blocking`) and **without** the lock, the
+       scan of `evidence/<2 hex>/` (never `tmp/`, where open uploads write;
+       only names the store writes, `<2 hex>/<64 hex>.pev`) and the streamed
+       decryption of every content, with the file's fingerprint (length,
+       modification and creation times) taken before and after; a file that
+       changed while it was read is read once more;
+    3. a reconciliation under the lock that only compares: a finding stands
+       if its row has the state the snapshot had and its file the same
+       fingerprint; otherwise it is reported as «could not be checked». A file
        an attach committed meanwhile has its row by then (the store commit and
-       the row share one lock); a content collected meanwhile has no row; a
-       damaged candidate is decrypted again.
+       the row share one lock); a content collected meanwhile has no row.
   - It reports orphans (files no row knows), `missing` and `damaged`
     contents with their live uses (owner kind, label, project), and files of a
-    newer format or unreadable now (locked), which are not marked. Marks go
+    newer format or that could not be checked, which are not marked. Marks go
     `present → missing | damaged` and back to `present`, in one transaction;
-    `deleting` and `remote_only` are never touched.
+    `deleting` and `remote_only` are never touched. The marks are rows, so
+    their counts show in the usage section after a restart; the last report
+    itself stays in memory for the session.
+  - It can be cancelled between files (`evidence_check_cancel`): what was
+    read is judged and marked, and the report says `cancelled` with how many
+    of how many. Its progress is polled (`evidence_check_progress`), and the
+    tab follows a check that is still running when it opens.
   - **Repair is by hand.** Orphans are deleted only when the user picks and
     confirms them (`evidence_orphans_delete`), under the lock, each still
-    without a row, older than 24 hours and not open by another process
-    (Windows: an open without sharing fails). Missing and damaged contents are
-    repaired by attaching the same file again: `commit` never deduplicates
-    against a content marked `damaged` (its cheap length-and-header check
-    cannot see a copy damaged inside its blocks; the marks are loaded into
-    `EvidenceStore` at open), and `record_blob` clears the mark.
+    without a row, created or modified more than 24 hours ago (the later of
+    both times: a copy or a restore keeps the source's modification time but
+    gets a new creation time) and not open by another process (detected on
+    Windows only: an open without sharing fails). Nothing is deleted if
+    `pharos.db.enc` changed on disk since this process last read or wrote it
+    (`Db::changed_on_disk`): a second Pharos on the same data folder may have
+    linked those files in a database this one does not see. For each file its
+    audit event is written in a savepoint first and the file removed after;
+    a failed removal rolls the savepoint back. The result is always partial
+    (skipped files with their reason), and a failed save after deleting still
+    reports the deleted files (`saved: false`; the events go with the next
+    save).
+  - Missing and damaged contents are repaired by attaching the same file
+    again: `commit` never deduplicates against a content marked `damaged`
+    (its cheap length-and-header check cannot see a copy damaged inside its
+    blocks; the marks are loaded into `EvidenceStore` at open), and
+    `record_blob` clears the mark. A damaged content released and referenced
+    again before `collect` goes back to `damaged`, not `present`, and
+    `persist_and_collect` saves whatever `collect` changed.
   - One check or repair at a time (managed `EvidenceCheck`); uploads and
-    `MAX_OPEN_UPLOADS` are untouched. Its progress is polled
-    (`evidence_check_progress`); the last report stays in memory for the
-    session, and `evidence_usage` gives the size, contents by state,
-    attachments by owner and the raw report retention.
+    `MAX_OPEN_UPLOADS` are untouched. `evidence_usage` gives the size of what
+    is on this disk (`present` and `damaged`), contents by state, attachments
+    by owner and the raw report retention.
   - Audit: each deleted orphan (`evidence_file`, `delete`) and each check
     that changed a mark (`evidence_check`, `update`, with the counts) leave
     an event through `journal::record_event_in` as `system:evidence` on

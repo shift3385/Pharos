@@ -216,11 +216,16 @@ conserva las etiquetas.
 - [ ] Administración → **Evidencias** muestra cuánto ocupan los adjuntos, por
       tipo, y la retención de los informes en bruto (90 días por defecto).
 - [ ] **Verificar evidencias** con algunos adjuntos: «Todo en orden».
-- [ ] Con Pharos cerrado, borra un archivo de una subcarpeta de `evidence` y
-      copia otro `.pev` con otro nombre en la misma subcarpeta. Abre y
-      verifica: el primero sale en «Faltan», con el adjunto y su proyecto; el
-      segundo, en «Archivos sin registro», como «Reciente» (no se puede borrar
-      durante 24 horas).
+- [ ] Con Pharos cerrado, mueve fuera de `evidence` un archivo de una de sus
+      subcarpetas (guárdalo) y copia otro `.pev` en esa subcarpeta con un
+      nombre nuevo de 64 letras `0-9a-f` que empiece por las mismas dos.
+      Abre y verifica: el primero sale en «Faltan», con el adjunto y su
+      proyecto; el segundo, en «Archivos sin registro», como «Reciente»: una
+      copia cuenta como nueva aunque conserve la fecha del original, y no se
+      puede borrar durante 24 horas. «Marcados por la última verificación»
+      muestra «1 falta», también tras reiniciar.
+- [ ] Pulsa **Cancelar** durante una verificación larga: el informe dice
+      cuántos archivos se comprobaron.
 - [ ] Vuelve a adjuntar el archivo que falta en el mismo sitio y verifica: ya
       no sale.
 - [ ] En la web, la pestaña Evidencias solo dice que está en la app de
