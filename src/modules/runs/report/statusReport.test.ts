@@ -66,6 +66,18 @@ describe("status report model (EJE-03)", () => {
     expect(r.recommendations).toBe(ctx.recommendations);
   });
 
+  it("lists uncovered high-risk requirements as risks too, and leaves out other scopes' covered ones", () => {
+    const extra = {
+      ...SUMMARY,
+      requirements: [
+        ...SUMMARY.requirements,
+        { ...SUMMARY.requirements[1], requirementId: "q3", requirementKey: "REQ-003", title: "Uncovered", covered: false, caseIds: [], executedCases: 0, status: "not_run", inScope: false },
+        { ...SUMMARY.requirements[1], requirementId: "q4", requirementKey: "REQ-004", title: "Elsewhere", inScope: false },
+      ],
+    };
+    expect(buildStatusReport(extra, ctx, t).risky.rows.map((r) => r[0])).toEqual(["REQ-002", "REQ-003"]);
+  });
+
   it("prefills the summary from the numbers", () => {
     expect(autoSummary(SUMMARY, t)).toBe(
       "Se han ejecutado 3 de 4 casos (75.0 %), con una tasa de éxito de 33.3 %. Hay 1 defectos abiertos, 1 críticos. Criterios de salida: 1 de 3 cumplidos.",

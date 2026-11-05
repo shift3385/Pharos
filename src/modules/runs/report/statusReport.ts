@@ -122,8 +122,11 @@ export function buildStatusReport(
 
   const risky = s.requirements
     .filter(
+      // In scope, or with no case at all (an uncovered risk is still a risk).
       (r) =>
-        r.riskBand === "high" && r.inScope !== false && r.status !== "passed",
+        r.riskBand === "high" &&
+        r.status !== "passed" &&
+        (r.inScope || !r.covered),
     )
     .sort((a, b) => (b.riskLevel ?? 0) - (a.riskLevel ?? 0))
     .map((r) => [

@@ -690,8 +690,21 @@
   border: 0;
 }
 
+.tr-risk legend {
+  padding: 0;
+}
+
 .tr-risk__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: 12px;
+}
+
+/* Two filters per row on a phone, so the bar does not fill the screen. */
+@media (max-width: 599px) {
+  .tz-filter {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+    max-width: none;
+  }
 }

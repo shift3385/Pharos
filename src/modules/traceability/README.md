@@ -7,7 +7,7 @@ resultado ↔ defecto (TRZ-02, ampliada por EJE-04 en el paso 10).
 
 | Vista | Componente | Qué hace |
 | --- | --- | --- |
-| «Requisitos» | `RequirementsPanel` | Lista con prioridad, riesgo y casos que cubren cada requisito; nuevo, editar, eliminar, generar casos con IA |
+| «Requisitos» | `RequirementsPanel` | Lista con prioridad y casos que cubren cada requisito; nuevo, editar (con su riesgo), eliminar, generar casos con IA |
 | «Matriz» | `MatrixView` | Los cuatro indicadores, la matriz de 9 columnas del SPEC (§8), «Mostrar solo huecos», tarjetas en móvil y los huecos de la cadena |
 | Diálogos | `RequirementFormModal`, `RequirementImportModal`, `GenerateCasesModal`, `MigrateTraceabilityModal` | Requisito (con riesgo), importar CSV, IA, migrar referencias escritas a mano |
 
