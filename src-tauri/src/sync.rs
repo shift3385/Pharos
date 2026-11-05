@@ -917,6 +917,14 @@ pub(crate) fn apply_doc(
     if doc.deleted && doc.entity == crate::runs::RUN_ITEM {
         crate::runs::manual::drop_item_drafts(conn, &doc.entity_id, user)?;
     }
+    // A run cancelled elsewhere (the web, another device) takes its local
+    // drafts and their files, as cancelling it here does (EJE-06).
+    if !doc.deleted
+        && doc.entity == crate::runs::RUN
+        && doc.payload.get("status").and_then(Value::as_str) == Some("aborted")
+    {
+        crate::runs::manual::drop_run_drafts(conn, &doc.entity_id, user)?;
+    }
     set_base(
         conn,
         user,
