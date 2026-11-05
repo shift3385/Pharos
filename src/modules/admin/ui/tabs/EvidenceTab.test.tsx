@@ -25,9 +25,8 @@ const api = vi.hoisted(() => ({
   deleteOrphans: vi.fn(),
   retention: vi.fn(),
   setRetention: vi.fn(),
+  projects: vi.fn(),
 }));
-const projects = vi.hoisted(() => ({ list: vi.fn() }));
-vi.mock("@modules/projects", () => ({ projectApi: projects }));
 vi.mock("../../api/evidenceApi", () => ({
   EVIDENCE_CHECK_BUSY: "evidence-check-busy",
   EVIDENCE_DB_CHANGED: "evidence-db-changed",
@@ -107,9 +106,9 @@ beforeEach(async () => {
   api.check.mockResolvedValue(report());
   api.cancel.mockResolvedValue(undefined);
   api.deleteOrphans.mockResolvedValue({ deleted: 1, bytes: 2048, skipped: [], saved: true });
-  projects.list.mockResolvedValue([
-    { id: "p1", name: "Tienda", caseIdPrefix: "TC-", caseIdDigits: 3, updatedAt: "", revision: 1 },
-    { id: "p2", name: "Pagos", caseIdPrefix: "TC-", caseIdDigits: 3, updatedAt: "", revision: 1 },
+  api.projects.mockResolvedValue([
+    { id: "p1", name: "Tienda" },
+    { id: "p2", name: "Pagos" },
   ]);
   api.retention.mockImplementation((projectId: string) => Promise.resolve(retention(projectId)));
   api.setRetention.mockImplementation((projectId: string, kind: string, policy: { mode: string; days?: number }) =>

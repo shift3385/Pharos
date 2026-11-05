@@ -2,10 +2,11 @@ import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { EvidenceRetention, EvidenceRetentionKind, RetentionPolicy } from "@shared/contracts/contract";
 import { useAuth } from "@modules/auth";
-import { projectApi, type ProjectSummary } from "@modules/projects";
 import { useToast } from "@shared/ui/Toast";
 import { evidenceApi } from "../../api/evidenceApi";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
+
+type ProjectSummary = { id: string; name: string };
 
 /** Longest retention the backend accepts (evidence/retention.rs). */
 const MAX_DAYS = 3650;
@@ -33,8 +34,8 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
   useEffect(() => {
     if (!userId) return;
     let live = true;
-    projectApi
-      .list(userId)
+    evidenceApi
+      .projects(userId)
       .then((list) => {
         if (!live) return;
         setProjects(list);
