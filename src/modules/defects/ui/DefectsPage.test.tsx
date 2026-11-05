@@ -29,9 +29,10 @@ vi.mock("../api/defectsApi", () => ({
     attachmentList: () => Promise.resolve([]),
   },
 }));
+const fieldList = vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []);
 vi.mock("@modules/custom-fields", async (orig) => ({
   ...(await orig<typeof import("@modules/custom-fields")>()),
-  customFieldApi: { list: () => Promise.resolve([]) },
+  customFieldApi: { list: (...a: unknown[]) => fieldList(...a) },
 }));
 // The desktop: results and evidence are there.
 vi.mock("@shared/platform", async (orig) => {
@@ -210,4 +211,40 @@ describe("DefectEditor", () => {
     expect(screen.getByText("El título es obligatorio.")).toBeInTheDocument();
     expect(create).not.toHaveBeenCalled();
   });
+
+  // FLD-03: the fields defined for defects in Ajustes.
+  it("shows the project's defect fields; a required one blocks the save", async () => {
+    fieldList.mockResolvedValueOnce([
+      {
+        id: "f1",
+        projectId: "p1",
+        entity: "defect",
+        fieldKey: "customer",
+        label: "Cliente afectado",
+        description: "",
+        fieldType: "text",
+        options: [],
+        required: true,
+        defaultValue: null,
+        appliesToCaseTypes: null,
+        position: 0,
+        archivedAt: null,
+        createdAt: "",
+        updatedAt: "",
+        revision: 1,
+      },
+    ]);
+    create.mockResolvedValue(defect("def-009", {}));
+    renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
+    expect(fieldList).toHaveBeenCalledWith("p1", "u1", "defect");
+    const customer = await screen.findByRole("textbox", { name: /Cliente afectado/ });
+    await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), "Cobro doble");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).not.toHaveBeenCalled();
+    await userEvent.type(customer, "ACME");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ custom: { customer: "ACME" } }) }),
+    );
+  }, 15_000);
 });

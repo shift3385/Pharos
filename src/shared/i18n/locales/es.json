@@ -1901,6 +1901,13 @@
     "title": "Campos personalizados",
     "desc": "Campos propios del proyecto para sus casos de prueba. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
     "empty": "Aún no hay campos personalizados. Crea uno para registrar, por ejemplo, el navegador o el sprint de cada caso.",
+    "descDefect": "Campos propios del proyecto para sus defectos. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "emptyDefect": "Aún no hay campos de defectos. Crea uno para registrar, por ejemplo, el cliente afectado o la versión corregida.",
+    "entity": {
+      "label": "Campos de",
+      "test_case": "Casos",
+      "defect": "Defectos"
+    },
     "new": "Nuevo campo",
     "copy": "Copiar de otro proyecto",
     "showArchived": "Mostrar archivados",
@@ -1960,6 +1967,7 @@
       "title": "Copiar campos de otro proyecto",
       "source": "Proyecto de origen",
       "hint": "Se copian los campos no archivados que este proyecto aún no tiene, con sus opciones.",
+      "hintDefect": "Se copian los campos de defectos no archivados que este proyecto aún no tiene, con sus opciones.",
       "none": "No tienes otros proyectos.",
       "confirm": "Copiar campos",
       "copying": "Copiando…",

@@ -183,6 +183,10 @@ seguir.
       deja de marcarlo como abierto.
 - [ ] En el tablero, arrastrar un defecto «Nuevo» a «Corregido»: no se deja y
       lo explica.
+- [ ] En Ajustes del proyecto → «Campos personalizados», elegir «Defectos» y
+      crear un campo: aparece en el editor de defectos, se guarda con el
+      defecto y llega al otro equipo tras sincronizar; los campos de casos
+      no cambian (FLD-03).
 
 ### 4.4c Importar resultados de pruebas automáticas (ING-02..05)
 

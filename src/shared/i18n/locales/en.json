@@ -1901,6 +1901,13 @@
     "title": "Custom fields",
     "desc": "The project's own fields for its test cases. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
     "empty": "No custom fields yet. Create one to record, for example, the browser or the sprint of each case.",
+    "descDefect": "The project's own fields for its defects. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
+    "emptyDefect": "No defect fields yet. Create one to record, for example, the affected customer or the fixed version.",
+    "entity": {
+      "label": "Fields of",
+      "test_case": "Cases",
+      "defect": "Defects"
+    },
     "new": "New field",
     "copy": "Copy from another project",
     "showArchived": "Show archived",
@@ -1960,6 +1967,7 @@
       "title": "Copy fields from another project",
       "source": "Source project",
       "hint": "Copies the fields that are not archived and that this project does not have yet, with their options.",
+      "hintDefect": "Copies the defect fields that are not archived and that this project does not have yet, with their options.",
       "none": "You have no other projects.",
       "confirm": "Copy fields",
       "copying": "Copying…",

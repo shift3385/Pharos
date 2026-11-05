@@ -203,6 +203,7 @@ describe("Ajustes · Campos personalizados", () => {
       "p1",
       ["points", "browser"],
       "u1",
+      "test_case",
     );
     expect(
       screen.getByText("«Navegador» movido a la posición 2"),
@@ -213,6 +214,77 @@ describe("Ajustes · Campos personalizados", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Archivar" }));
     expect(customFieldApi.archive).toHaveBeenCalledWith("points", true, "u1");
   }, 15_000);
+
+  // FLD-03: the same card defines the fields of the project's defects.
+  it("«Defectos» lists, creates and copies defect fields", async () => {
+    const CUSTOMER = field({
+      fieldKey: "customer",
+      label: "Cliente afectado",
+      entity: "defect",
+    });
+    vi.mocked(customFieldApi.list).mockImplementation(async (_p, _u, entity) =>
+      entity === "defect" ? [CUSTOMER] : [BROWSER, POINTS, OLD],
+    );
+    vi.mocked(customFieldApi.create).mockImplementation(async (input) =>
+      field({ ...input, options: input.options ?? [] }),
+    );
+    vi.mocked(customFieldApi.copy).mockResolvedValue({
+      copied: 1,
+      skipped: [],
+    });
+    card();
+    await screen.findByText("Navegador");
+    const selector = screen.getByRole("radiogroup", { name: "Campos de" });
+    await userEvent.click(
+      within(selector).getByRole("radio", { name: "Defectos" }),
+    );
+    expect(await screen.findByText("Cliente afectado")).toBeInTheDocument();
+    expect(screen.queryByText("Navegador")).not.toBeInTheDocument();
+    expect(customFieldApi.list).toHaveBeenLastCalledWith("p1", "u1", "defect");
+    expect(screen.getByText(/para sus defectos/)).toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    // A defect field has no case type: «Se aplica a» is not offered.
+    await userEvent.click(screen.getByRole("button", { name: "Nuevo campo" }));
+    const dialog = screen.getByRole("dialog", {
+      name: "Nuevo campo personalizado",
+    });
+    expect(
+      within(dialog).queryByRole("radiogroup", { name: "Se aplica a" }),
+    ).not.toBeInTheDocument();
+    await userEvent.type(
+      within(dialog).getByRole("textbox", { name: /Nombre/ }),
+      "Versión corregida",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Crear campo" }),
+    );
+    expect(customFieldApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: "defect",
+        fieldKey: "version_corregida",
+        appliesToCaseTypes: null,
+      }),
+    );
+
+    // «Copiar de otro proyecto» copies the defect fields.
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Copiar de otro proyecto" }),
+    );
+    const copy = screen.getByRole("dialog", {
+      name: "Copiar campos de otro proyecto",
+    });
+    expect(copy).toHaveTextContent("campos de defectos");
+    await userEvent.click(
+      await within(copy).findByRole("button", { name: "Copiar campos" }),
+    );
+    expect(customFieldApi.copy).toHaveBeenCalledWith(
+      "p2",
+      "p1",
+      "u1",
+      "defect",
+    );
+  }, 20_000);
 });
 
 function Section({

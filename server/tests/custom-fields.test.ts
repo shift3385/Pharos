@@ -297,4 +297,46 @@ describe("custom fields through the web's domain API", () => {
     const listed = (await call("GET", `/api/test-cases?projectId=${projectId}`)).body;
     expect(listed[0]).toMatchObject({ caseType: "standard", automationStatus: "to_automate", custom: { points: 3 } });
   });
+
+  // FLD-03: Ajustes defines the defect fields through the same routes.
+  it("defect fields are their own set: create, list, reorder and copy by entity", async () => {
+    const call = api(await tokenFor());
+    const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id;
+    await call("POST", "/api/custom-fields", { projectId, fieldKey: "customer", label: "Case customer", fieldType: "text" });
+    for (const fieldKey of ["customer", "fixed_in"]) {
+      const res = await call("POST", "/api/custom-fields", {
+        projectId,
+        entity: "defect",
+        fieldKey,
+        label: fieldKey,
+        fieldType: "text",
+      });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ entity: "defect", id: fieldId(projectId, "defect", fieldKey) });
+    }
+    const keys = async (project: string, entity: string) =>
+      (await call("GET", `/api/custom-fields?projectId=${project}&entity=${entity}`)).body.map(
+        (f: { fieldKey: string }) => f.fieldKey,
+      );
+    expect(await keys(projectId, "defect")).toEqual(["customer", "fixed_in"]);
+    expect(await keys(projectId, "test_case")).toEqual(["customer"]);
+
+    await call("POST", "/api/custom-fields/reorder", {
+      projectId,
+      entity: "defect",
+      ids: [fieldId(projectId, "defect", "fixed_in")],
+    });
+    expect(await keys(projectId, "defect")).toEqual(["fixed_in", "customer"]);
+    expect(await keys(projectId, "test_case")).toEqual(["customer"]);
+
+    const other = (await call("POST", "/api/projects", { name: "Other" })).body.id;
+    const copy = await call("POST", "/api/custom-fields/copy", {
+      fromProjectId: projectId,
+      toProjectId: other,
+      entity: "defect",
+    });
+    expect(copy.body).toEqual({ copied: 2, skipped: [] });
+    expect(await keys(other, "defect")).toEqual(["fixed_in", "customer"]);
+    expect(await keys(other, "test_case")).toEqual([]);
+  });
 });

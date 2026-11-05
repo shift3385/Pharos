@@ -629,3 +629,66 @@ fn migration_0027_restores_the_stash_and_is_idempotent() {
     custom_fields::migrate_restore(&c).unwrap();
     assert_eq!(revision_rows(&c, "s1"), rows, "idempotent");
 }
+
+// ------------------------------------------------------------ defect fields
+
+#[test]
+fn defect_fields_are_their_own_set_copy_by_entity_and_sync() {
+    // FLD-03: the fields of `defect` are defined beside the case fields, with
+    // their own ids and order, and travel like them.
+    let a = device();
+    let p = new_project(&a, "Checkout");
+    let case_field =
+        custom_fields::create_field(&a, field_input(&p, "customer", "text", json!({}))).unwrap();
+    let defect_field = custom_fields::create_field(
+        &a,
+        field_input(&p, "customer", "text", json!({"entity": "defect"})),
+    )
+    .unwrap();
+    assert_eq!(defect_field.entity, "defect");
+    assert_eq!(defect_field.id, custom_fields::field_id(&p, "defect", "customer"));
+    assert_ne!(defect_field.id, case_field.id, "the same key on each entity");
+    // A case type means nothing on a defect field.
+    assert_eq!(
+        custom_fields::create_field(
+            &a,
+            field_input(&p, "x", "text", json!({"entity": "defect", "appliesToCaseTypes": []})),
+        )
+        .unwrap_err(),
+        "custom_field.applies_to"
+    );
+    let keys = |c: &Connection, project: &str, entity: &str| -> Vec<String> {
+        custom_fields::list_fields(c, project, entity, U)
+            .unwrap()
+            .into_iter()
+            .map(|f| f.field_key)
+            .collect()
+    };
+    custom_fields::create_field(
+        &a,
+        field_input(&p, "fixed_in", "text", json!({"entity": "defect"})),
+    )
+    .unwrap();
+    let fixed = custom_fields::field_id(&p, "defect", "fixed_in");
+    custom_fields::reorder(&a, &p, "defect", &[fixed], U).unwrap();
+    assert_eq!(keys(&a, &p, "defect"), ["fixed_in", "customer"]);
+    assert_eq!(keys(&a, &p, "test_case"), ["customer"], "case order untouched");
+
+    // Copy by entity: only the defect fields reach the other project.
+    let q = new_project(&a, "Other");
+    let summary = custom_fields::copy_fields(&a, &p, &q, "defect", U).unwrap();
+    assert_eq!(
+        serde_json::to_value(&summary).unwrap(),
+        json!({"copied": 2, "skipped": []})
+    );
+    assert_eq!(keys(&a, &q, "defect"), ["fixed_in", "customer"]);
+    assert!(keys(&a, &q, "test_case").is_empty());
+
+    // Another device pulls them as defect fields.
+    let docs = push(&a);
+    let b = device();
+    pull(&b, &docs);
+    assert_eq!(keys(&b, &p, "defect"), ["fixed_in", "customer"]);
+    assert_eq!(keys(&b, &q, "defect"), ["fixed_in", "customer"]);
+    assert_eq!(keys(&b, &p, "test_case"), ["customer"]);
+}

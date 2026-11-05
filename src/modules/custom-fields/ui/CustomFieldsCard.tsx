@@ -27,6 +27,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Menu, MenuItem, MenuSeparator } from "@shared/ui/Menu";
+import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { Switch } from "@shared/ui/Switch";
 import { usePopover } from "@shared/ui/usePopover";
@@ -164,10 +165,15 @@ function FieldRow({
   );
 }
 
-/** «Campos personalizados» of the project settings (FLD-01): create, edit,
- *  reorder (drag or the row menu) and archive the definitions of the
- *  project's test cases, and copy them from another project. Archived fields
- *  are hidden unless «Mostrar archivados» is on; they keep their values. */
+/** The entities whose fields the card defines (FLD-01 cases, FLD-03 defects). */
+const CARD_ENTITIES = ["test_case", "defect"] as const;
+type CardEntity = (typeof CARD_ENTITIES)[number];
+
+/** «Campos personalizados» of the project settings (FLD-01, FLD-03): create,
+ *  edit, reorder (drag or the row menu) and archive the definitions of the
+ *  project's test cases or defects (the «Casos / Defectos» selector), and
+ *  copy them from another project. Archived fields are hidden unless
+ *  «Mostrar archivados» is on; they keep their values. */
 export function CustomFieldsCard({
   projectId,
   userId,
@@ -181,6 +187,7 @@ export function CustomFieldsCard({
   const { t } = useTranslation();
   const toast = useToast();
   const titleId = useId();
+  const [entity, setEntity] = useState<CardEntity>("test_case");
   const [fields, setFields] = useState<CustomField[] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [editing, setEditing] = useState<CustomField | "new" | null>(null);
@@ -192,17 +199,30 @@ export function CustomFieldsCard({
   // new ones on each render never loops the request.
   const notify = useRef({ toast, t });
   notify.current = { toast, t };
+  // Only the latest request lands: a list of the entity left behind by a
+  // quick switch never replaces the one now shown.
+  const latest = useRef(0);
   const reload = useCallback(async () => {
+    const ticket = ++latest.current;
     try {
-      setFields(await customFieldApi.list(projectId, userId));
+      const list = await customFieldApi.list(projectId, userId, entity);
+      if (ticket === latest.current) setFields(list);
     } catch {
+      if (ticket !== latest.current) return;
       setFields([]);
       notify.current.toast(notify.current.t("customFields.loadFailed"), "error");
     }
-  }, [projectId, userId]);
+  }, [projectId, userId, entity]);
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  function switchEntity(next: CardEntity) {
+    if (next === entity) return;
+    setFields(null);
+    setShowArchived(false);
+    setEntity(next);
+  }
 
   const live = (fields ?? []).filter((f) => f.archivedAt === null);
   const archived = (fields ?? []).filter((f) => f.archivedAt !== null);
@@ -251,6 +271,7 @@ export function CustomFieldsCard({
         projectId,
         order.map((f) => f.id),
         userId,
+        entity,
       );
     } catch (e) {
       toast(errorText(t, e), "error");
@@ -295,7 +316,13 @@ export function CustomFieldsCard({
           <h2 id={titleId} className="pj-section-title">
             {t("customFields.title")}
           </h2>
-          <p className="pj-card-box__desc">{t("customFields.desc")}</p>
+          <p className="pj-card-box__desc">
+            {t(
+              entity === "defect"
+                ? "customFields.descDefect"
+                : "customFields.desc",
+            )}
+          </p>
         </div>
         <div className="cf-card__actions">
           <button
@@ -319,12 +346,31 @@ export function CustomFieldsCard({
         </div>
       </div>
 
+      <SegmentedControl<CardEntity>
+        label={t("customFields.entity.label")}
+        size="sm"
+        className="cf-entity"
+        testId="custom-fields-entity"
+        value={entity}
+        onChange={switchEntity}
+        options={CARD_ENTITIES.map((e) => ({
+          value: e,
+          label: t(`customFields.entity.${e}`),
+        }))}
+      />
+
       {fields === null ? (
         <p className="tp__muted">{t("common.loading")}</p>
       ) : fields.length === 0 ? (
         <p className="cf-empty">
           <ListPlus size={18} aria-hidden="true" />
-          <span>{t("customFields.empty")}</span>
+          <span>
+            {t(
+              entity === "defect"
+                ? "customFields.emptyDefect"
+                : "customFields.empty",
+            )}
+          </span>
         </p>
       ) : (
         <>
@@ -372,6 +418,7 @@ export function CustomFieldsCard({
       {editing && (
         <CustomFieldDialog
           field={editing === "new" ? null : editing}
+          entity={entity}
           takenKeys={(fields ?? []).map((f) => f.fieldKey)}
           projectId={projectId}
           userId={userId}
@@ -382,6 +429,7 @@ export function CustomFieldsCard({
       {copying && (
         <CopyFieldsDialog
           projectId={projectId}
+          entity={entity}
           userId={userId}
           loadProjects={loadProjects}
           onDone={() => {
