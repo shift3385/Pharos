@@ -25,11 +25,36 @@ tener una explicación.
       `smoke@pharos.dev`): nada personal ni real.
 - [ ] **Ninguna clave visible**: en «Motor de IA» la clave aparece como guardada
       y enmascarada, nunca en claro.
+- [ ] **La captura demuestra el pie** (MAN-02): lo que el texto explica se ve
+      en la imagen. Cada paso tiene su propia captura, centrada en su control;
+      no reutiliza la pantalla de otro paso con un error u otro menú abierto.
+- [ ] **Antes y después** cuando el paso es un cambio de estado (mostrar la
+      contraseña, mover una tarjeta): dos pasos con el mismo `group`, que el PDF
+      imprime uno junto a otro.
+- [ ] **Énfasis** (MAN-02): un paso sobre un control pequeño en una pantalla
+      grande lleva `focus`; el contorno ámbar rodea ese control y el recuadro
+      «Detalle» del PDF lo amplía. Ningún paso de la ejecución avisa de
+      «focus not displayed» (lo lista `build-manual`). En GitHub el Markdown
+      muestra solo el contorno: el «Detalle» es del PDF (se recorta por CSS de
+      la misma imagen, sin archivos de más).
+- [ ] Ningún paso repite la captura de otro (p. ej. iniciar sesión y la
+      primera pantalla de entrada).
 
 ## Textos
 
 - [ ] Cada pie de paso describe lo que muestra su captura, en español, en
       segunda persona y con los nombres de la interfaz entre «comillas».
+- [ ] **El pie explica para qué**, no solo qué botón pulsar: el propósito del
+      paso, qué cambia al hacerlo y cuándo conviene (MAN-02). Un pie que solo
+      enumera clics se amplía (o se completa con una nota «### Paso <id>» en
+      `fuentes/`).
+- [ ] **Los datos de prueba se presentan como ejemplo**: «el nombre de tu
+      proyecto (en este ejemplo, «Banca Móvil»)», nunca como si fueran los del
+      lector.
+- [ ] **Cada pie está al día** con la interfaz: los textos coinciden con
+      `src/shared/i18n/locales/es.json` y los iconos con los de la pantalla
+      (papelera «Quitar: …» para quitar una fila; × en etiquetas; ✕ para
+      cerrar). Nada que ya no exista (p. ej. una sección retirada del perfil).
 - [ ] Cada capítulo nuevo tiene su fuente en `docs/manual/fuentes/<id>.md` con
       «Para qué sirve», «Consejos» y «Véase también».
 - [ ] Los enlaces a [guia-beta.md](../guia-beta.md) y al
@@ -41,6 +66,18 @@ tener una explicación.
       artefacto `manual` de `main`) abre con portada, índice con números de
       página, capítulos numerados, números de página al pie y marcadores.
 - [ ] Ninguna página en blanco de sobra ni imágenes partidas entre páginas.
+- [ ] **Índice navegable** (MAN-02): cada capítulo y cada paso del índice es
+      un enlace a su página y lleva su número de página; los marcadores del
+      PDF siguen ahí.
+- [ ] **Nada huérfano ni partido**: el título, el texto y la captura de un
+      paso van juntos; «Consejos» y «Véase también» no empiezan al pie de una
+      página para seguir en la siguiente; ningún pie ni conclusión queda
+      cortado.
+- [ ] **Ninguna página casi vacía**: una página no lleva solo una imagen y una
+      frase. Si pasa, se agrupan pasos cortos o se amplía la explicación.
+      Recorre todas las páginas, no una muestra.
+- [ ] El índice no explica cómo se genera el manual (eso va en
+      [README.md](README.md) y en esta lista).
 
 ## Fuera de los tours (revisión manual)
 

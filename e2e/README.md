@@ -20,7 +20,12 @@ smoke".
 
 `npm run manual` (`tours/run-tours.mjs`) does, in order:
 
-1. **Guards.** The tour API port is `PHAROS_TOURS_PORT` (default **3100**);
+1. **Guards.** First a **run lock** (MAN-02): every run shares the port and
+   the database, so only one runs at a time on the machine. The lock is
+   `pharos-tours.lock` in the OS temp dir (PID and start time); a second run
+   refuses with «otra ejecución de recorridos en curso (PID …)», a lock whose
+   PID is gone is stale and replaced, and it is released on every exit
+   (`scripts/manual/run-lock.mjs`). Then: the tour API port is `PHAROS_TOURS_PORT` (default **3100**);
    3000 — the user's own API — is refused, and so is a port already in use
    (the tours never stop other programs). The database name is fixed to
    `pharos_test_db_tours`.
@@ -59,9 +64,29 @@ step("nuevo", {
   shot: "page" | { element: '[role="dialog"]' } | false,
   mask: ["#ai-key"],                             // blurred in the capture
   skip: "motivo",                                // recorded as pending
+  focus: '[data-testid="login-language"]',       // the control the step is about (MAN-02)
+  group: "ojo",                                  // consecutive steps printed side by side
   run: async () => { /* action */ await expect(/* outcome */).toBeDisplayed(); },
+  after: async () => { /* runs after the capture, still part of the step */ },
 });
 ```
+
+- **`focus`** (one selector or several, their union box): the tour records
+  the box in capture pixels; the manual draws an amber outline (Faro
+  Nocturno's accent) into the PNG and, in the PDF only, adds a magnified
+  «Detalle» inset cropped by CSS from the same file, beside the capture or
+  below it for a wide strip, and none when the control is already big. Use it
+  when a step is about one control in a big screen. A focus not displayed at
+  capture time is a warning (`focusMissing`), listed by the manual build.
+- **`group`**: a before/after pair (e.g. the password hidden, then shown).
+- **`after`**: capture the state *before* an action and still assert the
+  action (e.g. «Iniciar sesión» shows the filled form, then signs in).
+
+**Waits, never sleeps.** `field()` looks again until the control is rendered;
+`waitForText()` also finds a toast that came and went (success toasts live
+3 s and only the newest is shown in a capture: `stabilise()` logs every toast,
+and each logged one answers one wait within 15 s); `atLeast(selector, n)`
+replaces one-shot `$$()` counts right after an action.
 
 Every step must assert its outcome: the tours are a functional regression
 suite as well as the manual. After the first failure in a chapter, the rest
@@ -132,6 +157,15 @@ chapter without a key, keeps its committed capture),
 Microsoft Edge (`PHAROS_EDGE` to point at another `msedge.exe`). The PDF is
 gitignored: open it locally after `npm run manual`, or download the `manual`
 artifact of the CI on `main`.
+
+PDF layout (MAN-02): the contents link every chapter and step to its page,
+with its number (a draft print with placeholders, then the real numbers read
+from the PDF's named destinations; the build fails if they move). A step's
+heading, text and capture never split; «Consejos» and «Véase también» stay
+whole; captures take 84 % of the text width so two ordinary steps share a
+page. Each print uses its own Edge profile under
+`docs/manual/.build/edge-profiles`, retried once on EPERM; a profile Edge
+still holds never fails the build.
 
 ### AI tours (real key, set by you)
 
