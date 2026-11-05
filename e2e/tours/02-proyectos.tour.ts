@@ -1,6 +1,6 @@
 // Chapter 2 — Inicio, proyectos y ajustes: the home panel, the project list,
 // creating projects, their settings, custom fields and configurations.
-import { $, browser, expect } from "@wdio/globals";
+import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import {
   PROJECT_A,
@@ -46,7 +46,7 @@ async function setPrefix(prefix: string) {
 chapter("proyectos", () => {
   step("inicio", {
     title: "Inicio",
-    caption: "«Inicio» resume tus proyectos: proyectos abiertos, pruebas pendientes, tasa de éxito y defectos abiertos, con la ejecución por proyecto y las próximas pruebas. Con una cuenta nueva aparece vacío.",
+    caption: "«Inicio» resume tus proyectos: proyectos abiertos, pruebas pendientes, tasa de éxito y defectos abiertos, la ejecución por proyecto, los criterios de salida, las ejecuciones diarias y las próximas pruebas. Con una cuenta nueva aparece vacío.",
     covers: ["route:/"],
     run: async () => {
       await goHome();
@@ -56,9 +56,16 @@ chapter("proyectos", () => {
 
   step("periodo", {
     title: "El periodo de los datos",
-    caption: "El selector de periodo («Últimos 14 días») cambia el intervalo de las cifras: hoy, 7, 14 o 30 días o el mes en curso.",
+    caption: "El selector de periodo («Últimos 14 días») elige los días de «Ejecuciones diarias» y de la tasa de éxito: hoy, 7, 14 o 30 días o el mes en curso. El resto del Inicio es el estado actual de cada proyecto. Se recuerda en este equipo.",
     covers: ["action:home-period"],
     run: async () => {
+      // The period really filters: 7 days → 7 columns in «Ejecuciones diarias».
+      await byTestId("home-period").click();
+      await byTestId("period-7d").click();
+      await expect(byTestId("home-period")).toHaveText(expect.stringContaining(es.dashboard.period["7d"]));
+      await browser.waitUntil(async () => (await $$('[data-testid="home-daily"] .home-chart__col')).length === 7);
+      // Ends with the menu open (the capture shows it; the next step picks
+      // «Últimos 30 días» from it).
       await byTestId("home-period").click();
       await expect(byTestId("period-30d")).toBeDisplayed();
     },

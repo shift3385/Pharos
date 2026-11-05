@@ -65,6 +65,13 @@ se publica:
       plantillas propias, clave de recuperación y carpeta de descarga. *Por
       qué no:* los tours recorren la app de escritorio. Lo cubren además las
       pruebas unitarias (Vitest) con `isTauri() = false`.
+- [ ] **Inicio sin ejecuciones cargadas** (RED-W6): con el servidor parado
+      en la versión web (o la lectura de métricas fallando), las tarjetas de
+      ejecución dicen «No se pudieron cargar las ejecuciones» con
+      «Reintentar», y proyectos, planes y criterios siguen visibles; al
+      volver el servidor, «Reintentar» las carga. *Por qué no en el tour:*
+      habría que hacer fallar solo esa lectura con el resto en pie. Lo cubren
+      `DashboardPage.test.tsx` y `loadHomeMetrics.test.ts`.
 
 ## Pendientes
 
