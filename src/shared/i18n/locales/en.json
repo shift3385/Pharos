@@ -2403,14 +2403,14 @@
       "close": "Close"
     },
     "fromResultBanner": "Prefilled from {{label}}. On save the defect is linked to the result and its case, and its evidence is added without copying the files.",
-    "fromResultBannerWeb": "Prefilled from {{label}}. On save the defect is linked to the result and its case. Attachments are desktop only.",
+    "fromResultBannerWeb": "Prefilled from {{label}}. On save the defect is linked to the result and its case. Attachments are only available on the desktop.",
     "attachAfterSave": "Save the defect to add evidence.",
     "deleteTitle": "Delete the defect?",
     "deleteMessage": "«{{defect}}» is deleted with its links. Its key is never used again.",
     "deleteConfirm": "Yes, delete",
     "deleteFailed": "The defect could not be deleted. Try again.",
     "delete": "Delete defect",
-    "webOnlyDesktop": "Attachments are desktop only.",
+    "webOnlyDesktop": "Attachments are only available on the desktop.",
     "casesTitle_one": "{{count}} linked test case",
     "casesTitle_other": "{{count}} linked test cases",
     "resultStatus": {
@@ -2687,8 +2687,8 @@
       "overlap": "That case is already in the run with some of those flows or rows."
     },
     "web": {
-      "note": "Attachments are desktop only. Execution drafts are kept in this browser.",
-      "attachmentsDesktopOnly": "Attachments are desktop only.",
+      "note": "Attachments are only available on the desktop. Execution drafts are kept in this browser.",
+      "attachmentsDesktopOnly": "Attachments are only available on the desktop.",
       "draftKept": "Draft kept in this browser: it is still here if you close the tab, but not on another device or browser.",
       "draftUnavailable": "This browser does not allow saving drafts. What you mark is kept when you record the result.",
       "importDesktopOnly": "Importing reports and the «Unlinked» tray are in the desktop app only."

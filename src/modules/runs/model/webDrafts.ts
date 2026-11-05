@@ -4,9 +4,12 @@
 // its attempt id; a save that would replace another tab's attempt, or bring
 // back one already recorded, is refused (`draft-stale`), and recording needs
 // the draft of that very attempt. Files are not part of a web draft (SYNC-04b).
+// Signing out clears them all; a run read as cancelled or gone, or an item
+// read as gone, takes its drafts. Other tabs: `ExecutionPanel` reloads the
+// item when this entry, or the list of recorded attempts, changes there.
 
 const PREFIX = "pharos:exec-draft:";
-/** At most 1 MB of text per run item, as on the desktop. */
+/** At most 1 MB of text per run item, as on the desktop (UTF-8 bytes). */
 const MAX_BYTES = 1024 * 1024;
 
 interface Entry {
@@ -15,7 +18,8 @@ interface Entry {
   updatedAt: string;
 }
 
-const keyOf = (userId: string, runItemId: string) => `${PREFIX}${userId}:${runItemId}`;
+export const draftKeyOf = (userId: string, runItemId: string) => `${PREFIX}${userId}:${runItemId}`;
+const keyOf = draftKeyOf;
 
 /** Attempt ids this page knows are recorded, by run item: from the last
  *  read of the item and from its own records. */
@@ -72,7 +76,7 @@ function write(userId: string, runItemId: string, entry: Entry) {
     return;
   }
   const text = JSON.stringify(entry);
-  if (text.length > MAX_BYTES) throw new Error("draft-too-large: at most 1 MB of text per run item");
+  if (new TextEncoder().encode(text).length > MAX_BYTES) throw new Error("draft-too-large: at most 1 MB of text per run item");
   try {
     s.setItem(key, text);
   } catch {
@@ -80,11 +84,22 @@ function write(userId: string, runItemId: string, entry: Entry) {
   }
 }
 
-/** An attempt id in one form (lower case, no braces), or null. */
+/** An attempt id in the desktop's one form (`manual::normalize_attempt`,
+ *  Rust's `Uuid::parse_str`): hyphenated, braced, `urn:uuid:` or 32 hex
+ *  digits, any case, become lower-case hyphenated; anything else is null. */
 export function normalizeAttempt(id: unknown): string | null {
   if (typeof id !== "string") return null;
-  const v = id.trim().toLowerCase().replace(/^\{|\}$/g, "");
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v) ? v : null;
+  let v = id.trim();
+  if (/^urn:uuid:/i.test(v)) v = v.slice(9);
+  else if (v.startsWith("{") && v.endsWith("}")) v = v.slice(1, -1);
+  const hex = /^[0-9a-f]{32}$/i.test(v)
+    ? v
+    : /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+      ? v.replace(/-/g, "")
+      : null;
+  if (!hex) return null;
+  const h = hex.toLowerCase();
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 const attemptOf = (state: unknown) =>
@@ -109,6 +124,8 @@ export const webDrafts = {
   /** Saves one target's draft (`execution_draft_save`). */
   save(userId: string, runId: string, runItemId: string, key: string, state: Record<string, unknown>) {
     const entry = read(userId, runItemId) ?? { runId, targets: {}, updatedAt: "" };
+    // Never a draft without its run: cancelling the run must find it.
+    if (!runId && !entry.runId) throw new Error("draft-unavailable: the item's run is not known yet");
     const incoming = attemptOf(state);
     if (incoming) {
       const stored = attemptOf(entry.targets[key]);
@@ -159,8 +176,35 @@ export const webDrafts = {
     const entry = read(userId, runItemId);
     if (entry && attemptOf(entry.targets[key]) === normalizeAttempt(attemptId)) webDrafts.discard(userId, runItemId, key);
   },
+  /** Drops the draft of an item that is gone. */
+  forget(userId: string, runItemId: string) {
+    try {
+      storage()?.removeItem(keyOf(userId, runItemId));
+    } catch {
+      // Nothing to drop.
+    }
+  },
+  /** Every draft and recorded attempt in this browser, of every account
+   *  (signing out). */
+  clearAll() {
+    recorded.clear();
+    unstored.clear();
+    const s = storage();
+    if (!s) return;
+    const keys: string[] = [];
+    for (let i = 0; i < s.length; i++) {
+      const k = s.key(i);
+      if (k?.startsWith(PREFIX) || k?.startsWith(RECORDED)) keys.push(k);
+    }
+    for (const k of keys) s.removeItem(k);
+  },
+  /** Whether a `storage` event of another tab concerns this item: its draft
+   *  or the list of recorded attempts. */
+  concerns(key: string | null, userId: string, runItemId: string) {
+    return key === null || key === keyOf(userId, runItemId) || key === RECORDED + userId;
+  },
   /** Drops every draft of a run in this browser (closing it as cancelled,
-   *  or «Descartar los borradores»). */
+   *  or «Descartar los borradores»; a run read as cancelled or gone). */
   dropRun(userId: string, runId: string) {
     const s = storage();
     if (!s) return;
@@ -176,3 +220,6 @@ export const webDrafts = {
     }
   },
 };
+
+// Signing out leaves no execution draft behind in this browser (FIX-07).
+if (typeof window !== "undefined") window.addEventListener("pharos:signed-out", () => webDrafts.clearAll());

@@ -420,13 +420,13 @@ describe("run screen on the web (EJE-06)", () => {
     // The run's header says where files and drafts are.
     const first = renderRun("/projects/p/runs/r1");
     expect(
-      await screen.findByText(/Los adjuntos solo en escritorio\. Los borradores de ejecución se guardan en este navegador/),
+      await screen.findByText(/Los adjuntos solo están disponibles en el escritorio\. Los borradores de ejecución se guardan en este navegador/),
     ).toBeInTheDocument();
     expect(api.overview).toHaveBeenCalledWith("r1", "test-user");
     first.unmount();
     const { container } = renderRun();
     const panel = await screen.findByTestId("exec-panel");
-    expect(within(panel).getByTestId("exec-attach-desktop-only")).toHaveTextContent("Los adjuntos solo en escritorio.");
+    expect(within(panel).getByTestId("exec-attach-desktop-only")).toHaveTextContent("Los adjuntos solo están disponibles en el escritorio.");
     for (const id of ["exec-step-1-attach", "exec-result-attach", "exec-paste"])
       expect(within(panel).queryByTestId(id)).not.toBeInTheDocument();
     // Run actions are offered too.
@@ -454,11 +454,25 @@ describe("run screen on the web (EJE-06)", () => {
     } as unknown as DataTransfer);
     expect(api.attachToDraft).not.toHaveBeenCalled();
     // The hint in the result block, and the toast that answers the paste.
-    await waitFor(() => expect(screen.getAllByText(/Los adjuntos solo en escritorio\.$/)).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText(/Los adjuntos solo están disponibles en el escritorio\.$/)).toHaveLength(2));
     await user.click(within(panel).getByRole("button", { name: "Atajos" }));
     const dialog = await screen.findByRole("dialog", { name: "Atajos" });
     expect(within(dialog).queryByText("Ctrl+V")).not.toBeInTheDocument();
     expect(within(dialog).getByText("Ctrl+Enter")).toBeInTheDocument();
+  });
+
+  it("reloads the item when another tab changes its draft or records an attempt", async () => {
+    renderRun();
+    await screen.findByTestId("exec-panel");
+    const loads = api.itemDetail.mock.calls.length;
+    // Another account's draft or an unrelated key: nothing to do.
+    window.dispatchEvent(new StorageEvent("storage", { key: "pharos:exec-draft:someone:i1" }));
+    window.dispatchEvent(new StorageEvent("storage", { key: "unrelated" }));
+    expect(api.itemDetail.mock.calls.length).toBe(loads);
+    window.dispatchEvent(new StorageEvent("storage", { key: "pharos:exec-draft:test-user:i1" }));
+    await waitFor(() => expect(api.itemDetail.mock.calls.length).toBe(loads + 1));
+    window.dispatchEvent(new StorageEvent("storage", { key: "pharos:exec-recorded:test-user" }));
+    await waitFor(() => expect(api.itemDetail.mock.calls.length).toBe(loads + 2));
   });
 
   it("offers «Nuevo run manual» and notes the desktop-only import", async () => {

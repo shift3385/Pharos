@@ -54,10 +54,13 @@ depende de `@modules/auth`, `@modules/sync-offline` y `@modules/defects`
 - **Borrador del navegador** (`model/webDrafts.ts`): una entrada de
   `localStorage` por cuenta y elemento, sin adjuntos, con las reglas del
   escritorio (`draft-stale`, `attemptId` por objetivo, 1 MB). La pestaña
-  que registra deja una lista de intentos registrados para las demás. Si el
-  navegador no guarda nada, se registra igual y se avisa.
+  que registra deja una lista de intentos registrados para las demás, y el
+  ejecutor recarga el elemento cuando otra pestaña lo cambia (evento
+  `storage`). Cerrar sesión los borra todos; un run leído como cancelado o
+  inexistente se lleva los suyos. Si el navegador no guarda nada, se registra
+  igual y se avisa.
 - **Sin archivos:** no hay botones de adjuntar ni «Pegar captura», Ctrl+V
-  avisa y no figura en los atajos; la interfaz dice «Los adjuntos solo en
+  avisa y no figura en los atajos; la interfaz dice «Los adjuntos solo están disponibles en el
   escritorio».
 - **Cobertura:** los recorridos de MAN-01 usan la app de escritorio; lo propio
   de la web lo cubren `RunDetail.test.tsx` («run screen on the web»),
@@ -84,7 +87,7 @@ depende de `@modules/auth`, `@modules/sync-offline` y `@modules/defects`
 | `exec-save`, `exec-discard` | Guardar resultado, descartar borrador |
 | `exec-create-defect` | «Crear defecto» de un intento fallido |
 | `exec-next-item` | Siguiente elemento |
-| `exec-attach-desktop-only` | Web: «Los adjuntos solo en escritorio» en lugar de adjuntar |
+| `exec-attach-desktop-only` | Web: «Los adjuntos solo están disponibles en el escritorio» en lugar de adjuntar |
 | `runs-unlinked-desktop-only` | Web: nota de la pestaña «Sin vincular» |
 
 ## Comandos de escritorio

@@ -61,6 +61,7 @@ import {
   type TargetDraft,
 } from "../model/execution";
 import { instantOf, statusTone } from "../model/types";
+import { webDrafts } from "../model/webDrafts";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
@@ -167,6 +168,18 @@ export function ExecutionPanel({
     setFocus(0);
     void load();
   }, [load]);
+
+  // Web: another tab of this browser changed this item's draft or recorded
+  // an attempt: reload what is stored (marks typed here and not saved stay;
+  // their next save meets the desktop's stale rules).
+  useEffect(() => {
+    if (desktop) return;
+    const onStorage = (e: StorageEvent) => {
+      if (webDrafts.concerns(e.key, userId, runItemId)) void load();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [desktop, userId, runItemId, load]);
 
   // Pending autosaves are written when the panel closes or changes item.
   useEffect(() => {

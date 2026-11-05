@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DesktopOnlyError } from "@shared/platform";
 import { cycleApi } from "@modules/cycles";
+import { normalizeAttempt } from "../model/webDrafts";
 import { runsApi } from "./runsApi";
 
 let A1 = "";
@@ -28,7 +29,8 @@ function server(over: Record<string, (body: unknown) => unknown> = {}) {
   const routes: Record<string, (body: unknown) => unknown> = {
     "GET /api/runs/r1/overview": () => overview,
     "GET /api/run-items/i1": () => ({ item: { id: "i1", runId: "r1" }, results: detailResults, draft: null, attachments: [] }),
-    "POST /api/results": (b) => ({ id: (b as { input: { attemptId: string } }).input.attemptId }),
+    // As the server: the attempt id comes back in its one form.
+    "POST /api/results": (b) => ({ id: normalizeAttempt((b as { input: { attemptId: string } }).input.attemptId) }),
     "POST /api/runs/r1/close": () => ({ id: "r1", status: "aborted", revision: 2 }),
     ...over,
   };
@@ -142,6 +144,65 @@ describe("runsApi on the web", () => {
       /already recorded/,
     );
     expect((await runsApi.itemDetail("i1", "u1"))?.draft).toBeNull();
+  });
+
+  it("a run cancelled or deleted elsewhere, or an item gone, takes its drafts here", async () => {
+    let status = "in_progress";
+    let gone = false;
+    server({
+      "GET /api/runs/r1/overview": () => (gone ? null : { ...overview, run: { ...overview.run, status } }),
+      "GET /api/run-items/i2": () => null,
+    });
+    await runsApi.overview("r1", "u1");
+    await runsApi.draftSave("i1", "-/-", { attemptId: A1 }, "u1");
+    await runsApi.draftSave("i2", "-/-", { attemptId: A2 }, "u1");
+    // The item read as gone forgets its draft.
+    expect(await runsApi.itemDetail("i2", "u1")).toBeNull();
+    expect(localStorage.getItem("pharos:exec-draft:u1:i2")).toBeNull();
+    // Cancelled on the web elsewhere or on the desktop: read as aborted.
+    status = "aborted";
+    expect((await runsApi.overview("r1", "u1"))?.items.map((i) => i.hasDraft)).toEqual([false, false]);
+    expect(localStorage.getItem("pharos:exec-draft:u1:i1")).toBeNull();
+    // Deleted elsewhere (EJE-07): read as gone.
+    status = "in_progress";
+    await runsApi.draftSave("i1", "-/-", { attemptId: crypto.randomUUID() }, "u1");
+    gone = true;
+    expect(await runsApi.overview("r1", "u1")).toBeNull();
+    expect(localStorage.getItem("pharos:exec-draft:u1:i1")).toBeNull();
+  });
+
+  it("signing out clears every draft and recorded attempt of this browser", async () => {
+    server();
+    await runsApi.overview("r1", "u1");
+    await runsApi.draftSave("i1", "-/-", { attemptId: A1 }, "u1");
+    await runsApi.draftSave("i2", "-/-", { attemptId: A2 }, "u1");
+    await record(A1);
+    localStorage.setItem("unrelated", "kept");
+    window.dispatchEvent(new CustomEvent("pharos:signed-out"));
+    expect(Object.keys(localStorage).filter((k) => k.startsWith("pharos:exec-"))).toEqual([]);
+    expect(localStorage.getItem("unrelated")).toBe("kept");
+  });
+
+  it("keeps no draft before its run is known, and measures size in UTF-8 bytes", async () => {
+    server();
+    // Saved before any read of the item or its run: refused, not stored with no run.
+    await expect(runsApi.draftSave("i9", "-/-", { attemptId: A1 }, "u1")).rejects.toThrow(/^draft-unavailable/);
+    expect(localStorage.getItem("pharos:exec-draft:u1:i9")).toBeNull();
+    await runsApi.overview("r1", "u1");
+    // 600 000 characters, 1.2 MB in UTF-8: over the limit.
+    await expect(runsApi.draftSave("i1", "-/-", { attemptId: A1, notes: "é".repeat(600_000) }, "u1")).rejects.toThrow(
+      /^draft-too-large/,
+    );
+  });
+
+  it("names an attempt in any form the desktop accepts", async () => {
+    server();
+    await runsApi.itemDetail("i1", "u1");
+    const plain = A1.replace(/-/g, "").toUpperCase();
+    await runsApi.draftSave("i1", "-/-", { attemptId: `urn:uuid:${A1}` }, "u1");
+    // The same attempt written three ways.
+    await runsApi.draftSave("i1", "-/-", { attemptId: plain, notes: "x" }, "u1");
+    expect(await record(`{${A1.toUpperCase()}}`)).toBe(A1);
   });
 
   it("cancelling drops the run's drafts in this browser", async () => {

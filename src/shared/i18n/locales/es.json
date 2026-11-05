@@ -2403,14 +2403,14 @@
       "close": "Cerrar"
     },
     "fromResultBanner": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso, y sus evidencias se añaden sin copiar los archivos.",
-    "fromResultBannerWeb": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso. Los adjuntos solo en escritorio.",
+    "fromResultBannerWeb": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso. Los adjuntos solo están disponibles en el escritorio.",
     "attachAfterSave": "Guarda el defecto para poder añadir evidencias.",
     "deleteTitle": "¿Eliminar el defecto?",
     "deleteMessage": "Se elimina «{{defect}}» con sus vínculos. Su clave no se vuelve a usar.",
     "deleteConfirm": "Sí, eliminar",
     "deleteFailed": "No se pudo eliminar el defecto. Inténtalo de nuevo.",
     "delete": "Eliminar defecto",
-    "webOnlyDesktop": "Los adjuntos solo en escritorio.",
+    "webOnlyDesktop": "Los adjuntos solo están disponibles en el escritorio.",
     "casesTitle_one": "{{count}} caso de prueba vinculado",
     "casesTitle_other": "{{count}} casos de prueba vinculados",
     "resultStatus": {
@@ -2687,8 +2687,8 @@
       "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas."
     },
     "web": {
-      "note": "Los adjuntos solo en escritorio. Los borradores de ejecución se guardan en este navegador.",
-      "attachmentsDesktopOnly": "Los adjuntos solo en escritorio.",
+      "note": "Los adjuntos solo están disponibles en el escritorio. Los borradores de ejecución se guardan en este navegador.",
+      "attachmentsDesktopOnly": "Los adjuntos solo están disponibles en el escritorio.",
       "draftKept": "Borrador guardado en este navegador: sigue aquí si cierras la pestaña, pero no se ve en otro equipo ni en otro navegador.",
       "draftUnavailable": "Este navegador no deja guardar borradores. Lo marcado se guarda al registrar el resultado.",
       "importDesktopOnly": "Importar informes y la bandeja «Sin vincular» solo en la app de escritorio."

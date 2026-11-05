@@ -58,8 +58,17 @@ describe("defectsApi", () => {
     const server = fakeServer();
     await defectsApi.create({ ...input, fromResult: { resultId: "res1", stepId: "s2" } });
     await defectsApi.create({ ...input, links: [{ targetKind: "result", targetId: "res1" }], fromResult: { resultId: "res1" } });
+    await defectsApi.create({ ...input, links: [{ targetKind: "test_case", targetId: "c1" }], fromResult: { resultId: "res1" } });
     expect(server.body(0)).toEqual({ ...input, links: [{ targetKind: "result", targetId: "res1" }] });
     expect(server.body(1)).toEqual({ ...input, links: [{ targetKind: "result", targetId: "res1" }] });
+    // The result first, as the desktop inserts it.
+    expect(server.body(2)).toEqual({
+      ...input,
+      links: [
+        { targetKind: "result", targetId: "res1" },
+        { targetKind: "test_case", targetId: "c1" },
+      ],
+    });
   });
 
   it("desktop: the Rust commands", async () => {

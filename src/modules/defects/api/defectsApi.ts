@@ -44,9 +44,11 @@ async function upload(file: Blob): Promise<string> {
 function webCreate(input: DefectInput): DefectInput {
   const from = input.fromResult;
   if (!from) return input;
-  const links = [...(input.links ?? [])];
-  if (!links.some((l) => l.targetKind === "result" && l.targetId === from.resultId))
-    links.push({ targetKind: "result", targetId: from.resultId });
+  // The result first, as the desktop links it.
+  const links = [
+    { targetKind: "result" as const, targetId: from.resultId },
+    ...(input.links ?? []).filter((l) => !(l.targetKind === "result" && l.targetId === from.resultId)),
+  ];
   const out: DefectInput = { ...input, links };
   delete out.fromResult;
   return out;

@@ -133,6 +133,8 @@ export const runsApi = {
   overview: async (runId: string, userId: string): Promise<RunOverview | null> => {
     if (isTauri()) return invoke("run_overview", { runId, userId });
     const o = await serverApi.get<RunOverview | null>(`/api/runs/${enc(runId)}/overview`);
+    // A run gone (deleted elsewhere) or cancelled keeps no drafts here.
+    if (!o || o.run.status === "aborted") webDrafts.dropRun(userId, runId);
     if (!o) return o;
     return {
       ...o,
@@ -147,8 +149,12 @@ export const runsApi = {
   itemDetail: async (runItemId: string, userId: string): Promise<RunItemDetail | null> => {
     if (isTauri()) return invoke("run_item_detail", { runItemId, userId });
     const d = await serverApi.get<RunItemDetail | null>(`/api/run-items/${enc(runItemId)}`);
-    if (!d) return d;
+    if (!d) {
+      webDrafts.forget(userId, runItemId);
+      return d;
+    }
     runOfItem.set(runItemId, d.item.runId);
+    if (d.runStatus === "aborted") webDrafts.dropRun(userId, d.item.runId);
     webDrafts.noteRecorded(runItemId, d.results.map((r) => r.id));
     return { ...d, draft: webDrafts.load(userId, runItemId) };
   },

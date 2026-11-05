@@ -253,6 +253,22 @@ describe("Ciclos", () => {
     ).toBeGreaterThan(0);
   }, 15_000);
 
+  it("a double click on the confirm executes once", async () => {
+    let finish: () => void = () => undefined;
+    vi.mocked(cycleApi.execute).mockReset().mockImplementation(
+      () => new Promise((resolve) => (finish = () => resolve({ runs: [], missingConfigurations: [] }))),
+    );
+    page("/projects/p1/cycles?cycle=cy1");
+    await userEvent.click(await screen.findByRole("button", { name: "Ejecutar" }));
+    const dialog = screen.getByRole("dialog", { name: "Ejecutar CYC-001" });
+    const confirm = within(dialog).getByRole("button", { name: "Crear 2 runs" });
+    // Both clicks land before React re-renders the disabled button.
+    confirm.click();
+    confirm.click();
+    expect(cycleApi.execute).toHaveBeenCalledTimes(1);
+    finish();
+  });
+
   it("«Ejecutar» waits, and names them, while an item's case was deleted", async () => {
     vi.mocked(cycleApi.items).mockResolvedValue([
       ITEMS[0],
