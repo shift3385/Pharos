@@ -35,8 +35,8 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use super::{
-    derive, err, get_run, ids, list_items, list_results, owned_run, record_result, require_open,
-    text, ResultInput, ResultView, RevisionShape, Run, RunItem, RESULT,
+    derive, err, get_run, ids, list_items, list_results, record_result, require_open, text,
+    ResultInput, ResultView, RevisionShape, Run, RunItem, RESULT,
 };
 use crate::db::{ensure_workspace, in_tx, Db};
 use crate::downloads::{Downloads, SaveResult};
@@ -338,23 +338,32 @@ pub(crate) fn targets_of(
 
 // ---- reads ---------------------------------------------------------------------
 
-/// A live run item of a run the user owns: (run id, run status, project).
+/// A live run item of a live run the user owns: (run id, run status,
+/// project); None if there is none. A database error is an error.
+fn find_item(
+    conn: &Connection,
+    run_item_id: &str,
+    user: &str,
+) -> Result<Option<(String, String, String)>, String> {
+    conn.query_row(
+        "SELECT i.run_id, r.status, r.project_id FROM run_items i
+           JOIN runs r ON r.id = i.run_id JOIN projects p ON p.id = r.project_id
+          WHERE i.id = ?1 AND i.deleted_at IS NULL AND r.deleted_at IS NULL
+            AND p.owner_id = ?2 AND p.deleted_at IS NULL",
+        params![run_item_id, user],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+    )
+    .optional()
+    .map_err(err)
+}
+
+/// As `find_item`, refusing a missing one.
 fn owned_item(
     conn: &Connection,
     run_item_id: &str,
     user: &str,
 ) -> Result<(String, String, String), String> {
-    let run_id: String = conn
-        .query_row(
-            "SELECT run_id FROM run_items WHERE id = ?1 AND deleted_at IS NULL",
-            params![run_item_id],
-            |r| r.get(0),
-        )
-        .optional()
-        .map_err(err)?
-        .ok_or("run item not found")?;
-    let (project, status) = owned_run(conn, &run_id, user)?;
-    Ok((run_id, status, project))
+    find_item(conn, run_item_id, user)?.ok_or_else(|| "run item not found".to_string())
 }
 
 struct CaseFacts {
@@ -536,7 +545,7 @@ pub(crate) fn item_detail(
     run_item_id: &str,
     user: &str,
 ) -> Result<Option<RunItemDetail>, String> {
-    let Ok((run_id, run_status, _)) = owned_item(conn, run_item_id, user) else {
+    let Some((run_id, run_status, _)) = find_item(conn, run_item_id, user)? else {
         return Ok(None);
     };
     let Some(item) = list_items(conn, &run_id, user)?
@@ -801,6 +810,7 @@ pub(crate) fn save_draft(
         Some(v) => {
             require_open(&status)?;
             target_of(conn, run_item_id, key)?;
+            check_fresh(conn, &state, key, v)?;
             state["targets"][key] = v.clone();
         }
         None => {
@@ -811,6 +821,43 @@ pub(crate) fn save_draft(
         }
     }
     write_state(conn, run_item_id, &state)
+}
+
+/// The client's id of a target's attempt (`attemptId` in its draft).
+fn attempt_id_of(target_state: &Value) -> Option<&str> {
+    target_state.get("attemptId").and_then(Value::as_str)
+}
+
+/// Refuses a save that would bring back a draft already recorded, or replace
+/// another window's attempt: the target's stored `attemptId` must be the
+/// same, and a new one must not name a recorded result (`draft-stale`).
+fn check_fresh(
+    conn: &Connection,
+    state: &Value,
+    key: &str,
+    incoming: &Value,
+) -> Result<(), String> {
+    let Some(attempt) = attempt_id_of(incoming) else {
+        return Ok(());
+    };
+    if let Some(stored) = state["targets"].get(key).and_then(attempt_id_of) {
+        return if stored == attempt {
+            Ok(())
+        } else {
+            Err("draft-stale: another attempt is in progress".into())
+        };
+    }
+    let recorded: bool = conn
+        .query_row(
+            "SELECT EXISTS (SELECT 1 FROM results WHERE id = ?1)",
+            params![attempt],
+            |r| r.get(0),
+        )
+        .map_err(err)?;
+    if recorded {
+        return Err("draft-stale: that attempt is already recorded".into());
+    }
+    Ok(())
 }
 
 /// Stores an attachment taken while the attempt is a draft.
@@ -916,6 +963,31 @@ pub(crate) fn delete_draft_attachment(
 /// moved to the result or to the step result of their step with one `link`
 /// event each, and the target's draft removed.
 pub(crate) fn record_from_draft(conn: &Connection, input: &ResultInput) -> Result<String, String> {
+    // Idempotent: the attempt id is the draft's; a retry of a recorded one
+    // (a double submit, a persist that failed after the commit) returns it.
+    let attempt = text(&input.attempt_id).ok_or("attempt-id-required")?;
+    owned_item(conn, &input.run_item_id, &input.user_id)?;
+    let already: Option<Option<String>> = conn
+        .query_row(
+            "SELECT run_item_id FROM results WHERE id = ?1",
+            params![attempt],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(err)?;
+    if already.is_some() {
+        return record_result(conn, input);
+    }
+    // Otherwise the draft of that attempt must still be here.
+    let drafted = stored_state(conn, &input.run_item_id)?.is_some_and(|(s, _)| {
+        s["targets"].as_object().is_some_and(|m| {
+            m.values()
+                .any(|t| attempt_id_of(t) == Some(attempt.as_str()))
+        })
+    });
+    if !drafted {
+        return Err("draft-stale: the draft of this attempt is gone".into());
+    }
     let id = record_result(conn, input)?;
     let (project, flow, row): (String, Option<String>, Option<String>) = conn
         .query_row(
@@ -1098,34 +1170,166 @@ pub fn execution_attach(
     kind: Option<String>,
     user_id: String,
 ) -> Result<ExecutionAttachment, String> {
-    let mut upload = uploads.take(&upload_id)?;
-    upload.seal()?;
-    let id = Uuid::new_v4().to_string();
+    let upload = uploads.take(&upload_id)?;
     let out = db.with_conn(|conn| {
-        owned_item(conn, &run_item_id, &user_id)?;
-        let committed = upload.commit(db.evidence())?;
-        let stored = committed.stored;
-        let added = in_tx(conn, |tx| {
-            add_draft_attachment(
-                tx,
-                &id,
-                &run_item_id,
-                &target_key,
-                text(&step_id).as_deref(),
-                &name,
-                text(&mime).as_deref(),
-                kind.as_deref().unwrap_or("evidence"),
-                &stored,
-                &user_id,
-            )
-        });
-        if added.is_err() && committed.wrote && !evidence::is_known(conn, &stored.sha256)? {
-            db.evidence().remove(&stored.sha256)?;
-        }
-        added
+        attach_upload(
+            conn,
+            db.evidence(),
+            upload,
+            &DraftFile {
+                run_item_id: &run_item_id,
+                target_key: &target_key,
+                step_id: text(&step_id).as_deref(),
+                name: &name,
+                mime: text(&mime).as_deref(),
+                kind: kind.as_deref().unwrap_or("evidence"),
+                user: &user_id,
+            },
+        )
     })?;
     db.persist()?;
     Ok(out)
+}
+
+/// What a draft's file is attached to.
+pub(crate) struct DraftFile<'a> {
+    pub run_item_id: &'a str,
+    pub target_key: &'a str,
+    pub step_id: Option<&'a str>,
+    pub name: &'a str,
+    pub mime: Option<&'a str>,
+    pub kind: &'a str,
+    pub user: &'a str,
+}
+
+/// Stores an upload as a draft's file. If its row cannot be written (closed
+/// run, unknown target or step), a file this upload wrote is removed again,
+/// unless another row already knew its content.
+pub(crate) fn attach_upload(
+    conn: &Connection,
+    store: &evidence::EvidenceStore,
+    mut upload: evidence::BlobWriter,
+    f: &DraftFile,
+) -> Result<ExecutionAttachment, String> {
+    owned_item(conn, f.run_item_id, f.user)?;
+    upload.seal()?;
+    let id = Uuid::new_v4().to_string();
+    let committed = upload.commit(store)?;
+    let stored = committed.stored;
+    let added = in_tx(conn, |tx| {
+        add_draft_attachment(
+            tx,
+            &id,
+            f.run_item_id,
+            f.target_key,
+            f.step_id,
+            f.name,
+            f.mime,
+            f.kind,
+            &stored,
+            f.user,
+        )
+    });
+    if added.is_err() && committed.wrote && !evidence::is_known(conn, &stored.sha256)? {
+        store.remove(&stored.sha256)?;
+    }
+    added
+}
+
+/// «Nuevo run manual»: the run and its items in one transaction, so a case
+/// that cannot be added leaves no empty run behind.
+pub(crate) fn create_manual(
+    conn: &Connection,
+    mut input: super::RunInput,
+    items: &[super::RunItemInput],
+) -> Result<String, String> {
+    input.trigger = Some("manual".into());
+    let id = super::insert_run(conn, &input)?;
+    if !items.is_empty() {
+        super::add_items(conn, &id, &input.user_id, items)?;
+    }
+    Ok(id)
+}
+
+/// Discards every draft of a run (all items, all targets) and their files.
+pub(crate) fn discard_run_drafts(
+    conn: &Connection,
+    run_id: &str,
+    user: &str,
+) -> Result<usize, String> {
+    let items: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT d.run_item_id FROM execution_drafts d
+                   JOIN run_items i ON i.id = d.run_item_id WHERE i.run_id = ?1",
+            )
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![run_id], |r| r.get::<_, String>(0))
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    for item in &items {
+        owned_item(conn, item, user)?;
+        let mut state = stored_state(conn, item)?
+            .map(|(s, _)| s)
+            .unwrap_or_else(|| json!({"targets": {}, "attachments": {}}));
+        drop_attachments(conn, item, &mut state, None, user)?;
+        conn.execute(
+            "DELETE FROM execution_drafts WHERE run_item_id = ?1",
+            params![item],
+        )
+        .map_err(err)?;
+    }
+    Ok(items.len())
+}
+
+/// Closes a run as `completed` or `aborted`. Closing as `aborted` always
+/// discards its drafts and their files; `completed` does when asked.
+pub(crate) fn close_run(
+    conn: &Connection,
+    run_id: &str,
+    status: &str,
+    discard_drafts: bool,
+    user: &str,
+) -> Result<(), String> {
+    if !["completed", "aborted"].contains(&status) {
+        return Err(format!("unknown closing status: {status}"));
+    }
+    let input: super::RunInput = serde_json::from_value(json!({"status": status, "userId": user}))
+        .map_err(|e| e.to_string())?;
+    super::update_run(conn, run_id, &input)?;
+    if discard_drafts || status == "aborted" {
+        discard_run_drafts(conn, run_id, user)?;
+    }
+    Ok(())
+}
+
+/// «Nuevo run manual» (see `create_manual`).
+#[tauri::command]
+pub fn run_create_manual(
+    db: State<Db>,
+    input: super::RunInput,
+    items: Vec<super::RunItemInput>,
+) -> Result<Option<Run>, String> {
+    let user = input.user_id.clone();
+    let id = db.with_tx(move |conn| create_manual(conn, input, &items))?;
+    db.persist()?;
+    db.with_conn(|conn| get_run(conn, &id, &user))
+}
+
+/// Closes a run (see `close_run`).
+#[tauri::command]
+pub fn run_close(
+    db: State<Db>,
+    run_id: String,
+    status: String,
+    discard_drafts: bool,
+    user_id: String,
+) -> Result<Option<Run>, String> {
+    db.with_tx(|conn| close_run(conn, &run_id, &status, discard_drafts, &user_id))?;
+    db.persist_and_collect()?;
+    db.with_conn(|conn| get_run(conn, &run_id, &user_id))
 }
 
 #[tauri::command]

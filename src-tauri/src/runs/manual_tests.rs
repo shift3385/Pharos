@@ -66,6 +66,34 @@ fn attempt(item: &str, status: &str, extra: Value) -> ResultInput {
     serde_json::from_value(v).unwrap()
 }
 
+/// Records an attempt as the executor does: the target's draft carries the
+/// attempt's id (kept if it already has one), then `execution_record`.
+fn exec(c: &Connection, input: &ResultInput) -> Result<String, String> {
+    let mut input = input.clone();
+    let (flow, row): (Option<String>, Option<String>) = c
+        .query_row(
+            "SELECT flow_id, example_row_id FROM run_items WHERE id = ?1",
+            [&input.run_item_id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .map_err(|e| e.to_string())?;
+    let key = target_key(
+        input.flow_id.clone().or(flow).as_deref(),
+        input.example_row_id.clone().or(row).as_deref(),
+    );
+    let mut target = stored_state(c, &input.run_item_id)?
+        .and_then(|(s, _)| s["targets"].get(&key).cloned())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| json!({}));
+    if target.get("attemptId").is_none() {
+        target["attemptId"] = json!(Uuid::new_v4().to_string());
+    }
+    input.attempt_id = target["attemptId"].as_str().map(String::from);
+    // A closed run refuses the save; the record then says why.
+    let _ = save_draft(c, &input.run_item_id, &key, Some(&target), U);
+    record_from_draft(c, &input)
+}
+
 fn count(c: &Connection, sql: &str) -> i64 {
     c.query_row(sql, [], |r| r.get(0)).unwrap()
 }
@@ -228,9 +256,11 @@ fn an_attempt_narrows_a_whole_case_item_to_its_flow_and_row() {
     )
     .is_err());
     assert!(record_result(&c, &attempt(&item, "passed", json!({"flowId": "nope"}))).is_err());
+    // In another run (the same case twice in one run is refused, S5).
+    let other = insert_run(&c, &run_input(&p, json!({}))).unwrap();
     let flow_item = add_items(
         &c,
-        &run,
+        &other,
         U,
         &[serde_json::from_value(json!({"testCaseId": case, "flowId": flow})).unwrap()],
     )
@@ -242,23 +272,24 @@ fn an_attempt_narrows_a_whole_case_item_to_its_flow_and_row() {
     )
     .unwrap_err()
     .contains("example row not in that flow"));
-    // The overview counts targets: 2 of 3 run on the whole item, 0 of 1 on the flow item.
+    // The overview counts targets: 2 of 3 run on the whole item.
     let o = overview(&c, &run, U).unwrap().unwrap();
     assert_eq!(o.items[0].targets, 3);
     assert_eq!(o.items[0].done, 2);
     assert_eq!(o.items[0].status, "failed");
-    assert_eq!(o.items[1].status, "not_run");
-    assert_eq!(o.items[1].flow_name.as_deref(), Some("Refund"));
     assert_eq!(
         o.counts,
         TargetCounts {
             passed: 1,
             failed: 1,
-            not_run: 2,
-            total: 4,
+            not_run: 1,
+            total: 3,
             ..Default::default()
         }
     );
+    let o = overview(&c, &other, U).unwrap().unwrap();
+    assert_eq!(o.items[0].status, "not_run");
+    assert_eq!(o.items[0].flow_name.as_deref(), Some("Refund"));
 }
 
 #[test]
@@ -278,11 +309,11 @@ fn cycle_progress_counts_a_narrowed_attempt_against_its_exact_flow_and_row() {
         ..Default::default()
     };
     cycles::add_items(&c, &cycle, U, &[whole_case]).unwrap();
-    let exec = cycles::ExecuteInput {
+    let exec_in = cycles::ExecuteInput {
         user_id: U.into(),
         ..Default::default()
     };
-    let run = cycles::execute(&c, &cycle, &exec)
+    let run = cycles::execute(&c, &cycle, &exec_in)
         .unwrap()
         .run_ids
         .remove(0);
@@ -294,13 +325,13 @@ fn cycle_progress_counts_a_narrowed_attempt_against_its_exact_flow_and_row() {
         (cell.status.clone(), cell.result_id.clone())
     };
     assert_eq!(cell(&c).0, "not_run");
-    record_from_draft(
+    exec(
         &c,
         &attempt(&item, "passed", json!({"exampleRowId": row_a})),
     )
     .unwrap();
     assert_eq!(cell(&c).0, "passed");
-    let refund = record_from_draft(
+    let refund = exec(
         &c,
         &attempt(
             &item,
@@ -312,14 +343,14 @@ fn cycle_progress_counts_a_narrowed_attempt_against_its_exact_flow_and_row() {
     assert_eq!(cell(&c), ("failed".into(), Some(refund.clone())));
     // A later pass of the main row is that row's final, not the flow's: the
     // flow still fails.
-    record_from_draft(
+    exec(
         &c,
         &attempt(&item, "passed", json!({"exampleRowId": row_a})),
     )
     .unwrap();
     assert_eq!(cell(&c), ("failed".into(), Some(refund)));
     // Re-executing the flow's row replaces its final.
-    record_from_draft(
+    exec(
         &c,
         &attempt(
             &item,
@@ -382,7 +413,15 @@ fn recording_moves_the_drafts_files_to_the_result_and_its_steps_in_one_transacti
     let (_, case, run, item) = simple(&c);
     let data = case_data(&c, &case);
     let pay = id_at(&data, &["steps", "1"]);
-    save_draft(&c, &item, "-/-", Some(&json!({"notes": "draft"})), U).unwrap();
+    let attempt_id = Uuid::new_v4().to_string();
+    save_draft(
+        &c,
+        &item,
+        "-/-",
+        Some(&json!({"notes": "draft", "attemptId": attempt_id})),
+        U,
+    )
+    .unwrap();
     let step_file = add_draft_attachment(
         &c,
         "att-step",
@@ -440,7 +479,8 @@ fn recording_moves_the_drafts_files_to_the_result_and_its_steps_in_one_transacti
         "failed",
         json!({"steps": [
             {"stepId": id_at(&data, &["steps", "0"]), "text": "open", "status": "passed"},
-            {"stepId": pay, "text": "pay", "status": "failed", "actual": "declined"}]}),
+            {"stepId": pay, "text": "pay", "status": "failed", "actual": "declined"}],
+               "attemptId": attempt_id}),
     );
     assert_eq!(
         in_tx(&c, |tx| record_from_draft(tx, &input)).unwrap_err(),
@@ -565,7 +605,7 @@ fn discarding_a_draft_releases_its_files_and_only_draft_files_can_be_deleted() {
     assert_eq!(state("cc"), "deleting");
     assert_eq!(read_draft(&c, &item).unwrap().unwrap().attachments.len(), 1);
     // A recorded attachment is not a draft's: it cannot be deleted here.
-    let id = record_from_draft(
+    let id = exec(
         &c,
         &attempt(
             &item,
@@ -591,10 +631,10 @@ fn discarding_a_draft_releases_its_files_and_only_draft_files_can_be_deleted() {
 fn a_closed_run_can_be_reopened_and_executed_again() {
     let c = device();
     let (p, _, run, item) = simple(&c);
-    record_from_draft(&c, &attempt(&item, "failed", json!({}))).unwrap();
+    exec(&c, &attempt(&item, "failed", json!({}))).unwrap();
     update_run(&c, &run, &run_input(&p, json!({"status": "aborted"}))).unwrap();
     assert!(save_draft(&c, &item, "-/-", Some(&json!({})), U).is_err());
-    assert!(record_from_draft(&c, &attempt(&item, "passed", json!({}))).is_err());
+    assert!(exec(&c, &attempt(&item, "passed", json!({}))).is_err());
     let events = count(&c, "SELECT count(*) FROM audit_log WHERE entity = 'run'");
     // Reopening changes only the status, even if other fields come along.
     update_run(
@@ -611,7 +651,7 @@ fn a_closed_run_can_be_reopened_and_executed_again() {
         count(&c, "SELECT count(*) FROM audit_log WHERE entity = 'run'"),
         events + 1
     );
-    let second = record_from_draft(&c, &attempt(&item, "passed", json!({}))).unwrap();
+    let second = exec(&c, &attempt(&item, "passed", json!({}))).unwrap();
     let detail = item_detail(&c, &item, U).unwrap().unwrap();
     assert_eq!(detail.results.len(), 2);
     let last = detail.results.iter().find(|r| r.id == second).unwrap();
@@ -716,7 +756,7 @@ fn editing_an_executed_case_does_not_change_its_results() {
         U,
     )
     .unwrap();
-    let id = record_from_draft(
+    let id = exec(
         &c,
         &attempt(
             &item,
@@ -767,4 +807,345 @@ fn editing_an_executed_case_does_not_change_its_results() {
     assert_eq!(detail.revision["steps"][1]["text"], "pay");
     assert_eq!(after.0[0]["steps"][1]["text"], "pay");
     assert_eq!(after.0[0]["attributes"]["notes"], "card declined");
+}
+
+// ---- review (S10) -----------------------------------------------------------
+
+fn draft_with(c: &Connection, item: &str, key: &str, attempt: &str) {
+    save_draft(c, item, key, Some(&json!({"attemptId": attempt})), U).unwrap();
+}
+
+#[test]
+fn recording_twice_or_retrying_records_one_attempt() {
+    let c = device();
+    let (_, _, _, item) = simple(&c);
+    let attempt_id = Uuid::new_v4().to_string();
+    draft_with(&c, &item, "-/-", &attempt_id);
+    let input = attempt(&item, "failed", json!({"attemptId": attempt_id}));
+    let first = in_tx(&c, |tx| record_from_draft(tx, &input)).unwrap();
+    assert_eq!(first, attempt_id, "the result id is the draft's attempt id");
+    let events = count(&c, "SELECT count(*) FROM audit_log");
+    // A double submit, or a retry after a persist that failed: same result.
+    let again = in_tx(&c, |tx| record_from_draft(tx, &input)).unwrap();
+    assert_eq!(again, first);
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 1);
+    assert_eq!(count(&c, "SELECT count(*) FROM audit_log"), events);
+    // Without an attempt id, or with one whose draft is gone: refused.
+    let bare = attempt(&item, "passed", json!({}));
+    assert_eq!(
+        record_from_draft(&c, &bare).unwrap_err(),
+        "attempt-id-required"
+    );
+    let gone = attempt(
+        &item,
+        "passed",
+        json!({"attemptId": Uuid::new_v4().to_string()}),
+    );
+    assert!(record_from_draft(&c, &gone)
+        .unwrap_err()
+        .starts_with("draft-stale"));
+    // The id of another item's result is not this item's.
+    let (_, _, _, other_item) = simple(&c);
+    let stolen = attempt(&other_item, "passed", json!({"attemptId": first}));
+    assert_eq!(record_result(&c, &stolen).unwrap_err(), "attempt-id-taken");
+}
+
+#[test]
+fn a_stale_draft_cannot_come_back_after_its_attempt_is_recorded() {
+    let c = device();
+    let (_, _, _, item) = simple(&c);
+    let a = Uuid::new_v4().to_string();
+    draft_with(&c, &item, "-/-", &a);
+    exec(&c, &attempt(&item, "passed", json!({}))).unwrap();
+    assert!(read_draft(&c, &item).unwrap().is_none());
+    // A second window (or a late autosave) saves the recorded attempt again.
+    let late = json!({"attemptId": a, "notes": "late"});
+    assert!(save_draft(&c, &item, "-/-", Some(&late), U)
+        .unwrap_err()
+        .starts_with("draft-stale"));
+    assert!(read_draft(&c, &item).unwrap().is_none());
+    // A new attempt is fine; another window's different attempt is refused.
+    let b = Uuid::new_v4().to_string();
+    draft_with(&c, &item, "-/-", &b);
+    let other = json!({"attemptId": Uuid::new_v4().to_string()});
+    assert!(save_draft(&c, &item, "-/-", Some(&other), U)
+        .unwrap_err()
+        .starts_with("draft-stale"));
+    save_draft(
+        &c,
+        &item,
+        "-/-",
+        Some(&json!({"attemptId": b, "notes": "x"})),
+        U,
+    )
+    .unwrap();
+}
+
+#[test]
+fn an_item_with_flows_or_rows_takes_no_untargeted_attempt() {
+    let c = device();
+    let p = new_project(&c);
+    let case = advanced(&c, &p);
+    let run = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    let item = add_items(&c, &run, U, &[whole(&case)]).unwrap().remove(0);
+    // "-/-" is not one of its targets (the main flow has rows).
+    assert_eq!(
+        record_result(&c, &attempt(&item, "passed", json!({}))).unwrap_err(),
+        "target-not-in-item: -/-"
+    );
+    let data = case_data(&c, &case);
+    let flow = data["flows"][0]["id"].as_str().unwrap().to_string();
+    assert!(
+        record_result(&c, &attempt(&item, "passed", json!({"flowId": flow})))
+            .unwrap_err()
+            .starts_with("target-not-in-item")
+    );
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 0);
+}
+
+#[test]
+fn overlapping_items_of_one_case_are_refused_in_a_run_and_a_cycle_run() {
+    let c = device();
+    let p = new_project(&c);
+    let case = advanced(&c, &p);
+    let data = case_data(&c, &case);
+    let flow = data["flows"][0]["id"].as_str().unwrap().to_string();
+    let row_a = id_at(&data, &["examples", "rows", "0"]);
+    let flow_row = id_at(&data, &["flows", "0", "examples", "rows", "0"]);
+    let item = |f: Option<&str>, r: Option<&str>| -> RunItemInput {
+        serde_json::from_value(json!({"testCaseId": case, "flowId": f, "exampleRowId": r})).unwrap()
+    };
+    let run = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    add_items(&c, &run, U, &[item(Some(&flow), None)]).unwrap();
+    // The whole case, or the flow's row, overlaps the flow; the main row does not.
+    for overlapping in [
+        item(None, None),
+        item(Some(&flow), Some(&flow_row)),
+        item(Some(&flow), None),
+    ] {
+        assert!(add_items(&c, &run, U, &[overlapping])
+            .unwrap_err()
+            .starts_with("item-overlap: "));
+    }
+    add_items(&c, &run, U, &[item(None, Some(&row_a))]).unwrap();
+    // Within one call too, and nothing of it is kept.
+    let run2 = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    assert!(in_tx(&c, |tx| add_items(
+        tx,
+        &run2,
+        U,
+        &[item(None, None), item(None, Some(&row_a))]
+    ))
+    .is_err());
+    assert!(crate::runs::list_items(&c, &run2, U).unwrap().is_empty());
+    // A cycle refuses overlapping items, so «Ejecutar» never creates them.
+    let cycle_input: cycles::TestCycleInput =
+        serde_json::from_value(json!({"projectId": p, "title": "R1", "userId": U})).unwrap();
+    let cycle = cycles::insert_cycle(&c, &cycle_input).unwrap();
+    let ci = |f: Option<&str>| cycles::CycleItemInput {
+        test_case_id: case.clone(),
+        flow_id: f.map(String::from),
+        ..Default::default()
+    };
+    let added = cycles::add_items(&c, &cycle, U, &[ci(Some(&flow)), ci(None)]).unwrap();
+    assert_eq!(added.overlapping.len(), 1);
+    let exec_in = cycles::ExecuteInput {
+        user_id: U.into(),
+        ..Default::default()
+    };
+    let run = cycles::execute(&c, &cycle, &exec_in)
+        .unwrap()
+        .run_ids
+        .remove(0);
+    assert_eq!(crate::runs::list_items(&c, &run, U).unwrap().len(), 1);
+}
+
+#[test]
+fn a_run_of_a_closed_cycle_cannot_be_reopened() {
+    let c = device();
+    let p = new_project(&c);
+    let case = new_case(&c, &p, json!({"steps": ["a"]}));
+    let cycle_input: cycles::TestCycleInput =
+        serde_json::from_value(json!({"projectId": p, "title": "R1", "userId": U})).unwrap();
+    let cycle = cycles::insert_cycle(&c, &cycle_input).unwrap();
+    cycles::add_items(
+        &c,
+        &cycle,
+        U,
+        &[cycles::CycleItemInput {
+            test_case_id: case,
+            ..Default::default()
+        }],
+    )
+    .unwrap();
+    let exec_in = cycles::ExecuteInput {
+        user_id: U.into(),
+        ..Default::default()
+    };
+    let run = cycles::execute(&c, &cycle, &exec_in)
+        .unwrap()
+        .run_ids
+        .remove(0);
+    close_run(&c, &run, "completed", false, U).unwrap();
+    let closed: cycles::TestCycleInput = serde_json::from_value(
+        json!({"projectId": p, "title": "R1", "status": "closed", "userId": U}),
+    )
+    .unwrap();
+    cycles::update_cycle(&c, &cycle, &closed).unwrap();
+    assert_eq!(
+        update_run(&c, &run, &run_input(&p, json!({"status": "in_progress"}))).unwrap_err(),
+        "cycle-closed"
+    );
+    // Reopen the cycle, then the run.
+    let active: cycles::TestCycleInput = serde_json::from_value(
+        json!({"projectId": p, "title": "R1", "status": "active", "userId": U}),
+    )
+    .unwrap();
+    cycles::update_cycle(&c, &cycle, &active).unwrap();
+    update_run(&c, &run, &run_input(&p, json!({"status": "in_progress"}))).unwrap();
+}
+
+#[test]
+fn a_manual_run_is_created_with_its_items_or_not_at_all() {
+    let c = device();
+    let p = new_project(&c);
+    let case = new_case(&c, &p, json!({"steps": ["a"]}));
+    let input = || -> RunInput { run_input(&p, json!({"trigger": "ci"})) };
+    let id = in_tx(&c, |tx| create_manual(tx, input(), &[whole(&case)])).unwrap();
+    let run = crate::runs::get_run(&c, &id, U).unwrap().unwrap();
+    assert_eq!(run.trigger, "manual");
+    assert_eq!(crate::runs::list_items(&c, &id, U).unwrap().len(), 1);
+    let runs = count(&c, "SELECT count(*) FROM runs");
+    let bad: RunItemInput = serde_json::from_value(json!({"testCaseId": "no-such-case"})).unwrap();
+    assert!(in_tx(&c, |tx| create_manual(tx, input(), &[whole(&case), bad])).is_err());
+    assert_eq!(
+        count(&c, "SELECT count(*) FROM runs"),
+        runs,
+        "no empty run left"
+    );
+}
+
+#[test]
+fn closing_as_aborted_discards_drafts_and_completed_on_request() {
+    let c = device();
+    let (p, _, run, item) = simple(&c);
+    let a = Uuid::new_v4().to_string();
+    draft_with(&c, &item, "-/-", &a);
+    add_draft_attachment(
+        &c,
+        "f",
+        &item,
+        "-/-",
+        None,
+        "a.png",
+        None,
+        "screenshot",
+        &stored("aa"),
+        U,
+    )
+    .unwrap();
+    let state = || -> String {
+        c.query_row(
+            "SELECT local_state FROM blobs WHERE sha256 = ?1",
+            ["aa".repeat(32)],
+            |r| r.get(0),
+        )
+        .unwrap()
+    };
+    // Completed without the option keeps them.
+    close_run(&c, &run, "completed", false, U).unwrap();
+    assert!(read_draft(&c, &item).unwrap().is_some());
+    assert_eq!(state(), "present");
+    update_run(&c, &run, &run_input(&p, json!({"status": "in_progress"}))).unwrap();
+    close_run(&c, &run, "aborted", false, U).unwrap();
+    assert!(read_draft(&c, &item).unwrap().is_none());
+    assert_eq!(state(), "deleting");
+    assert_eq!(
+        count(&c, "SELECT count(*) FROM attachments WHERE owner_entity = 'execution_draft' AND deleted_at IS NULL"),
+        0
+    );
+    assert!(close_run(&c, &run, "in_progress", false, U).is_err());
+}
+
+#[test]
+fn a_draft_file_whose_step_is_not_recorded_goes_to_the_result() {
+    let c = device();
+    let (_, case, _, item) = simple(&c);
+    let data = case_data(&c, &case);
+    let pay = id_at(&data, &["steps", "1"]);
+    let a = Uuid::new_v4().to_string();
+    draft_with(&c, &item, "-/-", &a);
+    add_draft_attachment(
+        &c,
+        "f",
+        &item,
+        "-/-",
+        Some(&pay),
+        "a.png",
+        None,
+        "screenshot",
+        &stored("aa"),
+        U,
+    )
+    .unwrap();
+    // The attempt records only the first step.
+    let input = attempt(
+        &item,
+        "passed",
+        json!({"attemptId": a, "steps": [{"stepId": id_at(&data, &["steps", "0"]), "text": "open", "status": "passed"}]}),
+    );
+    let id = record_from_draft(&c, &input).unwrap();
+    let owner: (String, String) = c
+        .query_row(
+            "SELECT owner_entity, owner_id FROM attachments WHERE id = 'f'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(owner, ("result".to_string(), id));
+}
+
+#[test]
+fn attaching_to_a_closed_run_removes_the_file_it_wrote() {
+    let c = device();
+    let (_, _, run, item) = simple(&c);
+    let dir = std::env::temp_dir().join(format!("pharos-attach-{}", Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let store = evidence::EvidenceStore::new(&dir, &[7u8; 32]);
+    let file = |name: &'static str| DraftFile {
+        run_item_id: &item,
+        target_key: "-/-",
+        step_id: None,
+        name,
+        mime: Some("image/png"),
+        kind: "screenshot",
+        user: U,
+    };
+    let upload = |bytes: &[u8]| {
+        let mut w = store.writer(1024 * 1024).unwrap();
+        w.write(bytes).unwrap();
+        w
+    };
+    let ok = attach_upload(&c, &store, upload(b"first capture"), &file("a.png")).unwrap();
+    let kept: String = c
+        .query_row(
+            "SELECT sha256 FROM attachments WHERE id = ?1",
+            [&ok.id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(store.exists(&kept));
+    close_run(&c, &run, "completed", false, U).unwrap();
+    let before = std::fs::read_dir(&dir).unwrap().count();
+    assert!(attach_upload(&c, &store, upload(b"a new capture"), &file("b.png")).is_err());
+    // The refused upload left no file; the existing one is untouched.
+    let sha = {
+        use sha2::{Digest, Sha256};
+        evidence::hex(&Sha256::digest(b"a new capture"))
+    };
+    assert!(!store.exists(&sha));
+    assert!(store.exists(&kept));
+    assert_eq!(std::fs::read_dir(&dir).unwrap().count(), before);
+    drop(store);
+    let _ = std::fs::remove_dir_all(&dir);
 }

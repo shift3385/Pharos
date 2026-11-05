@@ -215,6 +215,8 @@ pub fn run() {
             runs::import::unlinked_tests_list,
             runs::import::run_counts_list,
             runs::manual::run_overview,
+            runs::manual::run_create_manual,
+            runs::manual::run_close,
             runs::manual::run_item_detail,
             runs::manual::execution_draft_save,
             runs::manual::execution_draft_discard,

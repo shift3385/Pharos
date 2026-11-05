@@ -10,4 +10,9 @@ export type ResultInput = { runItemId: string,
  * flow-less item, an Outline row of an item without a row. Each must be
  * inside the item and the frozen revision.
  */
-flowId?: string, exampleRowId?: string, status: string, rawStatus?: string, configurationLabel?: string, durationMs?: number, startedAt?: string, finishedAt?: string, errorMessage?: string, errorTrace?: string, attributes: Record<string, unknown>, steps?: Array<StepResultInput>, userId: string, };
+flowId?: string, exampleRowId?: string, 
+/**
+ * The attempt's id, chosen by the client (a UUID) so a retry or a
+ * double submit records it once (EJE-02); random when left out.
+ */
+attemptId?: string, status: string, rawStatus?: string, configurationLabel?: string, durationMs?: number, startedAt?: string, finishedAt?: string, errorMessage?: string, errorTrace?: string, attributes: Record<string, unknown>, steps?: Array<StepResultInput>, userId: string, };
