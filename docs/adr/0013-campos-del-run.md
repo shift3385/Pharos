@@ -703,6 +703,11 @@ sin cambios en el servidor y sin cambiar el conjunto que se sincroniza
     `delete` propio en el oplog, en el equipo que borró, o su `sync_base`, en
     el que la descargó) es del mismo equipo que el HLC del borrado del run (el
     lado borrado del conflicto) y está a 10 s o menos.
+  - **Caso límite (aceptado):** un elemento quitado por su cuenta en el mismo
+    equipo menos de 10 s antes de eliminar el run no se distingue de la
+    cascada y **vuelve** si el run se recupera. Es el fallo conservador (se
+    puede volver a quitar; nada se pierde), y en 0.2.0 no existe «quitar un
+    elemento».
   - `deleted_at` no sirve: una lápida descargada guarda la hora del pull, no
     la del borrado.
   - Un run de un proyecto borrado no se recupera aquí; lo hace
