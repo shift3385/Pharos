@@ -128,6 +128,12 @@ export const INVENTORY: Item[] = [
   I("proyectos", "action", "action:home-period", "Periodo del panel de Inicio"),
   I("proyectos", "action", "action:home-exit-criteria", "Criterios de salida: elegir proyecto"),
   I("proyectos", "action", "action:home-kpi", "Tarjetas KPI de Inicio"),
+  I("proyectos", "state", "state:home-metrics", "Inicio con ejecuciones: tasa de éxito, ejecución por proyecto, ejecuciones diarias (RED-W6)"),
+  I("proyectos", "action", "action:home-exit-filter", "Criterios de salida: filtros Todos / En riesgo / Cumplen"),
+  I("proyectos", "tab", "tabs:src/app/dashboard/UpcomingTests.tsx", "Próximas pruebas: pestañas No ejecutadas / Bloqueadas / Re-test"),
+  I("proyectos", "state", "state:home-metrics-error", "Inicio: las ejecuciones no se pudieron cargar («Reintentar»)", {
+    skip: "Necesita que falle la lectura de métricas con el resto de la app en pie, algo que el tour aislado no provoca sin trucar la app. Lo cubren las pruebas de DashboardPage.test.tsx y loadHomeMetrics.test.ts (estado de error, «Reintentar» y la caché que se mantiene) y la revisión manual (docs/manual/REVIEW.md).",
+  }),
   I("movil", "tab", "tabs:src/app/dashboard/DashboardPage.tsx", "Pestañas de Inicio (Resumen / Ejecución / Pruebas)"),
   I("proyectos", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda y notificaciones (avisos «próximamente»)"),
   I("proyectos", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),

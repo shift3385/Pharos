@@ -1409,6 +1409,7 @@
     "title": "Inicio",
     "greeting": "Hola, {{name}}",
     "summary": "Tienes <b>{{pending}}</b> en {{projects}}.",
+    "summaryProjects": "Tienes <b>{{projects}}</b>.",
     "pendingTests_one": "{{count}} prueba pendiente",
     "pendingTests_other": "{{count}} pruebas pendientes",
     "openProjects_one": "{{count}} proyecto abierto",
@@ -1425,16 +1426,21 @@
       "noneClosing": "Ninguno cierra este mes",
       "pending": "Pruebas pendientes",
       "pendingOf": "de {{total}}",
-      "pendingTitle": "Casos sin ejecutar en todos los proyectos abiertos",
-      "noRuns": "Sin ejecuciones registradas",
+      "pendingTitle": "Casos sin ejecutar o bloqueados en todos los proyectos abiertos",
       "rate": "Tasa de éxito",
-      "rateTitle": "Se calculará cuando registres ejecuciones (versión 0.2.0)",
-      "rateEmpty": "Sin ejecuciones todavía",
+      "rateTitle": "Casos que pasan sobre los ejecutados en el periodo ({{period}}), en todos los proyectos abiertos",
       "defects": "Defectos abiertos",
       "defectsTitle": "Defectos sin cerrar en el Planificador de tus proyectos",
       "critical_one": "{{count}} crítico",
       "critical_other": "{{count}} críticos",
-      "noCritical": "Ninguno crítico"
+      "noCritical": "Ninguno crítico",
+      "blocked_one": "{{count}} bloqueada",
+      "blocked_other": "{{count}} bloqueadas",
+      "noneBlocked": "Ninguna bloqueada",
+      "rateOf_one": "de {{count}} ejecutado · {{period}}",
+      "rateOf_other": "de {{count}} ejecutados · {{period}}",
+      "rateEmpty": "Sin ejecuciones: {{period}}",
+      "rateError": "No disponible"
     },
     "period": {
       "label": "Periodo",
@@ -1451,7 +1457,7 @@
       "custom": "Rango personalizado…",
       "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
       "compare": "Comparar con el periodo anterior",
-      "compareTitle": "Disponible cuando haya ejecuciones que comparar (versión 0.2.0)",
+      "compareTitle": "Próximamente: comparará con el periodo anterior",
       "lower": {
         "today": "hoy",
         "7d": "últimos 7 días",
@@ -1462,15 +1468,17 @@
     },
     "exec": {
       "title": "Ejecución por proyecto",
-      "subtitle": "Estado de los casos de prueba en cada proyecto abierto",
+      "subtitle": "Último resultado de cada caso en cada proyecto abierto",
       "pass": "Pasa",
       "fail": "Falla",
       "blocked": "Bloqueado",
       "notRun": "No ejecutado",
-      "rowLabel": "{{name}}: {{executed}} de {{total}} casos ejecutados",
-      "noRuns": "Las ejecuciones llegan con la versión 0.2.0: por ahora ningún caso tiene resultado.",
+      "rowLabel": "{{name}}: {{executed}} de {{total}} casos ejecutados; {{passed}} pasan, {{failed}} fallan, {{blocked}} bloqueados",
+      "noRuns": "Aún no hay ejecuciones registradas en tus proyectos.",
       "noCases": "Sin casos todavía",
-      "empty": "Sin proyectos abiertos."
+      "empty": "Sin proyectos abiertos.",
+      "other": "Otro",
+      "rowUnknown": "{{name}}: ejecución sin datos todavía"
     },
     "exit": {
       "title": "Criterios de salida",
@@ -1484,7 +1492,6 @@
       "all": "Todos",
       "risk": "En riesgo",
       "ok": "Cumplen",
-      "filterSoon": "Necesita resultados de ejecución (versión 0.2.0)",
       "byClose": "Por fecha de cierre",
       "closes": "Cierra {{date}}",
       "noDate": "Sin fecha de cierre",
@@ -1500,7 +1507,31 @@
       "noCriteria": "El plan de este proyecto no define criterios de salida.",
       "noPlan": "Este proyecto aún no tiene plan de pruebas.",
       "openPlan": "Abrir el plan",
-      "empty": "Crea un proyecto para ver sus criterios de salida."
+      "empty": "Crea un proyecto para ver sus criterios de salida.",
+      "ringValue": "Porcentaje ejecutado: {{percent}}",
+      "riskHeadline": "Hay criterios que no se cumplen",
+      "riskSub_one": "{{met}} de {{count}} criterio evaluable se cumple.",
+      "riskSub_other": "{{met}} de {{count}} criterios evaluables se cumplen.",
+      "metHeadline": "Listo para cerrar",
+      "metSub": "Todos los criterios evaluables se cumplen.",
+      "executedHeadline": "{{percent}} ejecutado",
+      "unknownSub": "Los criterios del plan no se pueden evaluar automáticamente.",
+      "met": "Cumple",
+      "notMet": "No cumple",
+      "notEvaluable": "Este criterio no se puede evaluar automáticamente",
+      "filterWaiting": "Disponible cuando carguen las ejecuciones",
+      "filterTitle": {
+        "all": "Todos los proyectos",
+        "risk": "Proyectos con algún criterio de salida que no se cumple",
+        "met": "Proyectos que cumplen todos sus criterios evaluables"
+      },
+      "noneIn": {
+        "all": "No hay proyectos.",
+        "risk": "Ningún proyecto está en riesgo.",
+        "met": "Ningún proyecto cumple todavía sus criterios."
+      },
+      "defaults": "Se usan los criterios por defecto.",
+      "ringLoading": "Porcentaje ejecutado: cargando"
     },
     "daily": {
       "title": "Ejecuciones diarias",
@@ -1509,24 +1540,43 @@
       "pass": "Pasa",
       "fail": "Falla",
       "none": "Sin ejecuciones",
-      "dayTitle": "{{date}}: sin ejecuciones",
-      "chartLabel": "Ejecuciones por día, {{period}}: sin ejecuciones registradas"
+      "other": "Otras",
+      "dayTitle_one": "{{date}}: {{count}} ejecución · {{passed}} pasa, {{failed}} fallan, {{other}} otras · {{manual}} manuales, {{imported}} importadas",
+      "dayTitle_other": "{{date}}: {{count}} ejecuciones · {{passed}} pasan, {{failed}} fallan, {{other}} otras · {{manual}} manuales, {{imported}} importadas",
+      "dayEmpty": "{{date}}: sin ejecuciones",
+      "chartLabel_one": "Ejecuciones por día, {{period}}: {{count}} en total",
+      "chartLabel_other": "Ejecuciones por día, {{period}}: {{count}} en total",
+      "chartEmpty": "Ejecuciones por día, {{period}}: sin ejecuciones registradas",
+      "undated_one": "Ejecuciones en el periodo. {{count}} resultado sin fecha válida no aparece en la gráfica",
+      "undated_other": "Ejecuciones en el periodo. {{count}} resultados sin fecha válida no aparecen en la gráfica",
+      "tableCaption": "Ejecuciones por día, {{period}}",
+      "colDay": "Día",
+      "colManual": "Manuales",
+      "colImported": "Importadas",
+      "loading": "Ejecuciones por día, {{period}}: cargando",
+      "unavailable": "Ejecuciones por día, {{period}}: no disponibles",
+      "showData": "Ver los datos",
+      "undatedNote_one": "{{count}} resultado sin fecha válida no está en la tabla.",
+      "undatedNote_other": "{{count}} resultados sin fecha válida no están en la tabla."
     },
     "upcoming": {
       "title": "Próximas pruebas",
-      "subtitle": "Pendientes de ejecutar, por prioridad",
+      "subtitle": "Según su último resultado, por prioridad",
       "viewAll": "Ver todas",
       "filters": "Estado de las pruebas",
       "notRun": "No ejecutadas",
       "blocked": "Bloqueadas",
       "retest": "Re-test",
-      "soonTitle": "Necesita resultados de ejecución (versión 0.2.0)",
-      "empty": "No hay casos pendientes. Crea casos en un proyecto para verlos aquí.",
       "priority": {
         "critical": "Prioridad crítica",
         "high": "Prioridad alta",
         "medium": "Prioridad media",
         "low": "Prioridad baja"
+      },
+      "empty": {
+        "notRun": "No hay casos sin ejecutar.",
+        "blocked": "No hay casos bloqueados.",
+        "retest": "No hay casos esperando re-test."
       }
     },
     "tabs": {
@@ -1535,7 +1585,16 @@
       "execution": "Ejecución",
       "tests": "Pruebas",
       "pendingBubble_one": "{{count}} prueba pendiente",
-      "pendingBubble_other": "{{count}} pruebas pendientes"
+      "pendingBubble_other": "{{count}} pruebas pendientes",
+      "problemsBubble_one": "{{count}} problema",
+      "problemsBubble_other": "{{count}} problemas"
+    },
+    "metrics": {
+      "loading": "Cargando las ejecuciones…",
+      "error": "No se pudieron cargar las ejecuciones.",
+      "retry": "Reintentar",
+      "refreshing": "Actualizando…",
+      "staleAt": "Datos de las {{time}}: no se pudieron actualizar"
     }
   },
   "section": {
