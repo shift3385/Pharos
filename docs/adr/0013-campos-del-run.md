@@ -694,7 +694,9 @@ Reglas (R1–R12 del contrato):
   con texto), con su índice; sin plan o sin criterios, los tres por defecto
   (A3: ≥ 95 % ejecutado, 0 defectos críticos abiertos, ≥ 90 % de cobertura de
   requisitos). El tipo se reconoce por el texto (ejecutad/executed, éxito/pass
-  rate, defecto + crític, cobertura/coverage) y la métrica se lee como
+  rate, defecto + crític, cobertura/coverage; «crític» sin «defecto», como
+  «Casos críticos ejecutados», no se reconoce: es un subconjunto que la
+  derivación no mide) y la métrica se lee como
   operador opcional + número + `%` opcional. Lo que no se reconoce queda «sin
   datos» (`met: null`). La cobertura del criterio es la de la matriz:
   requisitos con al menos un caso vivo no obsoleto.

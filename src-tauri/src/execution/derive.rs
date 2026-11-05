@@ -16,6 +16,9 @@
 //! - `retest`: the case failed and a defect reaching it is `fixed`/`retest`;
 //! - every tie is broken by id, so every side derives the same thing whatever
 //!   order it read the rows in.
+// The Home rollup (`home` and its types) has its production caller in
+// RED-W6's `home_metrics` command; until it lands only the tests call it.
+#![cfg_attr(not(test), allow(dead_code))]
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -687,6 +690,10 @@ fn cmp(a: &AttemptData, b: &AttemptData) -> Ordering {
 }
 
 type TestKey<'a> = (&'a str, &'a str, &'a str);
+/** A target `(case, flow, row)`. */
+type TargetKey<'a> = (&'a str, Option<&'a str>, Option<&'a str>);
+/** A window's target: a case's, or an unlinked test's. */
+type WindowTarget<'a> = (String, Option<&'a str>, Option<&'a str>);
 
 fn test_of(a: &AttemptData) -> TestKey<'_> {
     (
@@ -788,6 +795,10 @@ pub fn criterion_kind(text: &str) -> Option<&'static str> {
     let t = fold(text);
     if t.contains("defect") && t.contains("critic") {
         Some("criticalDefects")
+    } else if t.contains("critic") {
+        // «Casos críticos ejecutados»: a subset the derivation does not
+        // measure; never the whole project's figure.
+        None
     } else if t.contains("exito")
         || t.contains("pass rate")
         || t.contains("aprobad")
@@ -927,7 +938,7 @@ fn empty_daily(day_starts: &[i64]) -> Vec<DailyCount> {
 struct Derived<'a> {
     /// The case's status, its decisive final and its run.
     case_results: HashMap<&'a str, (String, Option<&'a AttemptData>)>,
-    targets: Vec<(&'a str, Option<&'a str>, Option<&'a str>, &'a AttemptData)>,
+    targets: Vec<(TargetKey<'a>, &'a AttemptData)>,
     flaky: HashSet<TestKey<'a>>,
 }
 
@@ -935,8 +946,7 @@ struct Derived<'a> {
 fn derive_results<'a>(data: &'a ProjectData, in_scope: &[&'a AttemptData]) -> Derived<'a> {
     let (finals, flaky) = finals(in_scope);
     let mut by_case: HashMap<&str, Vec<&AttemptData>> = HashMap::new();
-    let mut by_target: BTreeMap<(&str, Option<&str>, Option<&str>), Vec<&AttemptData>> =
-        BTreeMap::new();
+    let mut by_target: BTreeMap<TargetKey, Vec<&AttemptData>> = BTreeMap::new();
     for f in &finals {
         if let Some(case) = f.case_id.as_deref() {
             by_case.entry(case).or_default().push(f);
@@ -949,7 +959,7 @@ fn derive_results<'a>(data: &'a ProjectData, in_scope: &[&'a AttemptData]) -> De
     let mut targets = Vec::new();
     for ((case, flow, row), group) in &by_target {
         if let Some((_, decisive)) = decide(group) {
-            targets.push((*case, *flow, *row, decisive));
+            targets.push(((*case, *flow, *row), decisive));
         }
     }
     // Defects reaching each case, for R7.
@@ -1228,7 +1238,7 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
     let mut targets: Vec<TargetExecution> = derived
         .targets
         .iter()
-        .map(|(case, flow, row, a)| TargetExecution {
+        .map(|((case, flow, row), a)| TargetExecution {
             case_id: case.to_string(),
             flow_id: flow.map(String::from),
             row_id: row.map(String::from),
@@ -1263,7 +1273,7 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         let linked: Vec<&CaseData> = data
             .cases
             .iter()
-            .filter(|c| c.requirement_keys.iter().any(|k| *k == r.requirement_key))
+            .filter(|c| c.requirement_keys.contains(&r.requirement_key))
             .collect();
         let mut linked_sorted = linked.clone();
         linked_sorted.sort_by(|a, b| {
@@ -1292,7 +1302,7 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
             .defects
             .iter()
             .filter(|d| {
-                d.requirement_ids.iter().any(|x| *x == r.id)
+                d.requirement_ids.contains(&r.id)
                     || d.case_ids.iter().any(|c| linked.iter().any(|l| l.id == *c))
             })
             .map(|d| d.id.clone())
@@ -1546,8 +1556,7 @@ pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
                 .filter(|a| time_of(a).is_some_and(|(t, _)| t >= start && t <= request.now))
                 .collect();
             let (finals, _) = finals(&in_window);
-            let mut groups: BTreeMap<(String, Option<&str>, Option<&str>), Vec<&AttemptData>> =
-                BTreeMap::new();
+            let mut groups: BTreeMap<WindowTarget, Vec<&AttemptData>> = BTreeMap::new();
             for f in finals {
                 let key = match f.case_id.as_deref() {
                     Some(case) => (
@@ -1607,6 +1616,8 @@ mod tests {
             Some("criticalDefects")
         );
         assert_eq!(criterion_kind("Sign-off by the PO"), None);
+        assert_eq!(criterion_kind("Casos críticos ejecutados"), None);
+        assert_eq!(criterion_kind("Critical cases executed"), None);
         assert_eq!(parse_metric("≥ 95%", "executed"), Some((">=", 95.0)));
         assert_eq!(parse_metric(">= 90 %", "coverage"), Some((">=", 90.0)));
         assert_eq!(parse_metric("0", "criticalDefects"), Some(("=", 0.0)));

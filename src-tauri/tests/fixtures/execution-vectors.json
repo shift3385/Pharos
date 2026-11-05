@@ -238,7 +238,8 @@
           { "criterion": "% de casos ejecutados", "metric": "≥ 50%" },
           { "criterion": "  ", "metric": "" },
           { "criterion": "Firma del responsable", "metric": "sí" },
-          { "criterion": "Tasa de éxito", "metric": ">= 90 %" }
+          { "criterion": "Tasa de éxito", "metric": ">= 90 %" },
+          { "criterion": "Casos críticos ejecutados", "metric": "100 %" }
         ]
       },
       "filter": { "projectId": "P", "testPlanId": "PL1" },
@@ -249,7 +250,8 @@
         "exitCriteria": [
           { "index": 0, "criterion": "% de casos ejecutados", "kind": "executed", "op": ">=", "target": 50.0, "value": 50.0, "met": true },
           { "index": 2, "kind": null, "op": null, "target": null, "value": null, "met": null },
-          { "index": 3, "kind": "passRate", "op": ">=", "target": 90.0, "value": 100.0, "met": true }
+          { "index": 3, "kind": "passRate", "op": ">=", "target": 90.0, "value": 100.0, "met": true },
+          { "index": 4, "kind": null, "value": null, "met": null }
         ]
       }
     },

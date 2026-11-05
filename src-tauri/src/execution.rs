@@ -307,6 +307,8 @@ pub(crate) fn execution_summary_of(
     Ok(load_project(conn, &filter.project_id, user)?.map(|d| derive::summarize(&d, filter)))
 }
 
+// Its production caller is RED-W6's `home_metrics` command.
+#[cfg_attr(not(test), allow(dead_code))]
 /// The Home metrics (RED-W6's `home_metrics` entry points call this): the
 /// requested projects of the user, or all of them, most recently updated
 /// first.

@@ -78,6 +78,7 @@ describe("shared execution vectors (the desktop checks the same file)", () => {
     expect(criterionKind("Tasa de éxito")).toBe("passRate");
     expect(criterionKind("Cobertura de requisitos")).toBe("coverage");
     expect(criterionKind("Sign-off by the PO")).toBeNull();
+    expect(criterionKind("Casos críticos ejecutados")).toBeNull();
     expect(parseMetric("≥ 95%", "executed")).toEqual([">=", 95]);
     expect(parseMetric("95,5%", "executed")).toEqual([">=", 95.5]);
     expect(parseMetric("0", "criticalDefects")).toEqual(["=", 0]);

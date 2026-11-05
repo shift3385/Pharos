@@ -455,6 +455,8 @@ const fold = (s: string) => [...s.toLowerCase()].map((c) => FOLD[c] ?? c).join("
 export function criterionKind(text: string): string | null {
   const t = fold(text);
   if (t.includes("defect") && t.includes("critic")) return "criticalDefects";
+  // «Casos críticos ejecutados»: a subset the derivation does not measure.
+  if (t.includes("critic")) return null;
   if (t.includes("exito") || t.includes("pass rate") || t.includes("aprobad") || t.includes("passed")) return "passRate";
   if (t.includes("ejecutad") || t.includes("executed") || t.includes("execution")) return "executed";
   if (t.includes("cobertura") || t.includes("coverage")) return "coverage";
