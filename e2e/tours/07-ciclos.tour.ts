@@ -124,7 +124,10 @@ chapter("ciclos", () => {
     covers: ["dialogs:src/modules/cycles/ui/ExecuteDialog.tsx"],
     shot: { element: D },
     run: async () => {
+      // The row menu is gone before the click: a late Escape must not reach
+      // the dialog that opens next.
       await browser.keys("Escape");
+      await menuItem(Y.items.remove).waitForDisplayed({ reverse: true });
       await clickButton(Y.execute.action);
       await expect(dialog()).toBeDisplayed();
     },
