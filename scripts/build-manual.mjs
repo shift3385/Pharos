@@ -17,19 +17,18 @@ import { execFileSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { changedShare, decodePng, drawFocus, encodePng } from "./manual/png.mjs";
 import { markdownToHtml, escapeHtml } from "./manual/markdown.mjs";
 import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
+import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
 import { focusLayout, FOCUS_COLOR, insetStyle } from "./manual/focus.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -428,34 +427,28 @@ function edgePath() {
 }
 
 /** Prints an HTML file to PDF with headless Edge, in a throwaway profile. */
+/** Edge profiles of this build: one fresh directory per print (edge-print.mjs). */
+const profilesDir = join(buildDir, "edge-profiles");
+
 function printPdf(htmlFile, pdfFile) {
-  const profile = mkdtempSync(join(tmpdir(), "pharos-manual-edge-"));
+  const edge = edgePath();
   try {
-    execFileSync(
-      edgePath(),
-      [
-        "--headless=new",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-extensions",
-        `--user-data-dir=${profile}`,
-        "--no-pdf-header-footer",
-        "--generate-pdf-document-outline",
-        "--allow-file-access-from-files",
-        `--print-to-pdf=${pdfFile}`,
-        fileUrl(htmlFile),
-      ],
-      { stdio: "ignore", timeout: 180_000 },
-    );
-  } finally {
-    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
+    const { attempt } = printWithEdge({
+      htmlUrl: fileUrl(htmlFile),
+      pdfFile,
+      profilesDir,
+      exec: (edgeArgs) => execFileSync(edge, edgeArgs, { stdio: ["ignore", "ignore", "pipe"], timeout: 180_000 }),
+    });
+    if (attempt > 1) console.log(`› Edge printed ${relative(repoDir, pdfFile)} on retry (EPERM the first time)`);
+  } catch (err) {
+    fail(`Edge could not print ${relative(repoDir, pdfFile)}: ${err.message.split("\n")[0]}`);
   }
-  if (!existsSync(pdfFile) || statSync(pdfFile).size === 0) fail(`Edge did not print ${pdfFile}.`);
 }
 
 function buildPdf(data, byChapter) {
   mkdirSync(buildDir, { recursive: true });
+  // Profiles an earlier build could not delete (Edge still held them).
+  sweepProfiles(profilesDir);
   const body = MANUAL_CHAPTERS.map((c) => chapterHtml(c, byChapter.get(c.id) ?? [])).join("\n");
   // Pass 1: the whole book with placeholder page numbers. Every contents row
   // links to its anchor, so the PDF's named destinations give each page.

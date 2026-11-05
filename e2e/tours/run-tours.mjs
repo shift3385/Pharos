@@ -33,6 +33,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { owners } from "../../scripts/api-port.mjs";
 import { findAiKey, readDotenv } from "../../scripts/manual/ai-key.mjs";
+import { acquireLock, lockMessage, releaseLock } from "../../scripts/manual/run-lock.mjs";
 import { scanForSecret } from "../../scripts/manual/secret-scan.mjs";
 import { driverVersion, major, webview2Version } from "../scripts/edge-driver.mjs";
 
@@ -90,6 +91,17 @@ function listening(p) {
 }
 
 // ---- Guards -------------------------------------------------------------------
+
+// One run at a time (scripts/manual/run-lock.mjs), taken before anything
+// else: the port check below cannot see a run that is still building, and
+// that run's database would be dropped under it. Released on every exit
+// (fail(), the end of the run, Ctrl+C), never another run's lock.
+const lock = acquireLock();
+if (!lock.ok) {
+  console.error(`\n✖ Tours: ${lockMessage(lock.holder)}`);
+  process.exit(1);
+}
+process.on("exit", () => releaseLock());
 
 if (!isWindows) fail("the tours run on Windows (WebView2 + msedgedriver).");
 if (!Number.isInteger(port) || port <= 0) fail("PHAROS_TOURS_PORT is not a port number.");
@@ -178,6 +190,9 @@ function removeProfileCredentials() {
 process.on("SIGINT", () => {
   interrupted = true;
   stopApi();
+  // The lock goes with the run's `finally`/exit; a second Ctrl+C that kills
+  // the process outright leaves a lock whose PID is gone, which the next run
+  // treats as stale.
 });
 const checkInterrupted = () => {
   if (interrupted) throw new Error("interrupted (Ctrl+C)");
@@ -364,5 +379,6 @@ try {
     console.error(`Could not drop ${TOURS_DB}: ${err.message}`);
     exitCode = 1;
   }
+  releaseLock();
 }
 process.exit(interrupted ? 130 : exitCode);

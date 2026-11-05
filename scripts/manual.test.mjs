@@ -2,7 +2,7 @@
 // subset, the prose-source parser, the AI-key lookup, the secret scan and the
 // coverage check.
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,7 +11,9 @@ import { fileURLToPath } from "node:url";
 import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, markdownToHtml } from "./manual/markdown.mjs";
+import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
 import { focusLayout, FOCUS_COLOR, insetStyle } from "./manual/focus.mjs";
+import { acquireLock, lockMessage, pidAlive, releaseLock } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
 import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
@@ -187,3 +189,52 @@ test("scanForSecret finds the key as text, base64, UTF-16LE and inside a ZIP", a
     assert.deepEqual(await scanForSecret("", [dir], dir), []);
   });
 });
+
+test("the tour run lock: one live holder, stale locks replaced, release only by its owner (MAN-02)", () =>
+  tempDir((dir) => {
+    const file = join(dir, "tours.lock");
+    const alive = new Set([111]);
+    const isAlive = (pid) => alive.has(pid);
+    assert.deepEqual(acquireLock(file, { pid: 111, isAlive }), { ok: true });
+    const refused = acquireLock(file, { pid: 222, isAlive });
+    assert.equal(refused.ok, false);
+    assert.equal(refused.holder.pid, 111);
+    assert.match(lockMessage(refused.holder), /otra ejecución de recorridos en curso \(PID 111/);
+    releaseLock(file, 222);
+    assert.equal(acquireLock(file, { pid: 222, isAlive }).ok, false, "another run's lock is never released");
+    alive.delete(111);
+    assert.deepEqual(acquireLock(file, { pid: 222, isAlive }), { ok: true }, "a dead holder's lock is stale");
+    releaseLock(file, 222);
+    writeFileSync(file, "not json");
+    assert.deepEqual(acquireLock(file, { pid: 333, isAlive }), { ok: true }, "an unreadable lock is replaced");
+    assert.equal(pidAlive(process.pid), true);
+    assert.equal(pidAlive(0), false);
+  }));
+
+test("printWithEdge: a fresh profile per attempt, one retry on EPERM, none otherwise (MAN-02)", () =>
+  tempDir((dir) => {
+    const pdf = join(dir, "out.pdf");
+    const profilesDir = join(dir, "profiles");
+    // A profile left by an earlier build never blocks the next print.
+    mkdirSync(join(profilesDir, "edge-stale"), { recursive: true });
+    const seen = [];
+    let calls = 0;
+    const flaky = (args) => {
+      seen.push(args.find((a) => a.startsWith("--user-data-dir=")));
+      if (++calls === 1) throw Object.assign(new Error("EPERM: operation not permitted"), { code: "EPERM" });
+      writeFileSync(pdf, "%PDF-1.7");
+    };
+    const { attempt } = printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: flaky });
+    assert.equal(attempt, 2);
+    assert.notEqual(seen[0], seen[1], "each attempt gets its own profile");
+    assert.ok(seen.every((p) => !p.endsWith("edge-stale")));
+    assert.equal(readdirSync(profilesDir).filter((n) => n !== "edge-stale").length, 0, "profiles are removed");
+    assert.equal(sweepProfiles(profilesDir), 1);
+    let other = 0;
+    assert.throws(
+      () => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => { other++; throw new Error("timeout"); } }),
+      /timeout/,
+    );
+    assert.equal(other, 1, "no retry for other errors");
+    assert.throws(() => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => {} }), /did not print/, "a stale PDF never passes");
+  }));
