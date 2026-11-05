@@ -8,4 +8,3 @@ section: Añadido
 - **«Crear defecto»** desde un paso o un intento fallido, relleno con el caso, el paso, lo obtenido, el build y el entorno, y con las mismas evidencias.
 - **Cerrar y reabrir un run.** El run de un ciclo se abre desde su pestaña Runs, y el progreso del ciclo cuenta cada flujo y fila ejecutados.
 - **Pensado para el teclado:** P/F/B/S marcan el paso, J/K mueven, Ctrl+Enter guarda; «?» muestra todos los atajos.
-- En la web la pantalla del run es de solo lectura por ahora (EJE-06).

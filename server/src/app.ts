@@ -16,6 +16,7 @@ import { createDomainStore } from "./modules/domain/domain.store";
 import { createDomainService } from "./modules/domain/domain.service";
 import { domainRoutes } from "./modules/domain/domain.routes";
 import { createCycleService, cycleRoutes } from "./modules/domain/cycles";
+import { createRunService, runRoutes } from "./modules/domain/runs";
 import { createExecutionService, executionRoutes } from "./modules/domain/execution";
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { AppError } from "./modules/auth/errors";
@@ -87,6 +88,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const domainStore = createDomainStore(pool, createServerClock());
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
+  const runs = createRunService(domainStore);
   const execution = createExecutionService(domainStore);
 
   app.get("/health", async () => ({ status: "ok" }));
@@ -103,6 +105,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
     cycleRoutes(instance, { cycles, tokens });
   });
   void app.register(async (instance) => {
+    runRoutes(instance, { runs, tokens });
     executionRoutes(instance, { execution, tokens });
   });
   void app.register(async (instance) => {

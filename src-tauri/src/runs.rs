@@ -31,6 +31,8 @@ pub(crate) mod link;
 pub mod manual;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod web_vectors_tests;
 
 use std::collections::HashSet;
 
