@@ -393,6 +393,53 @@ fn a_superseded_shard_and_other_users_projects_are_left_out() {
     .is_none());
 }
 
+/// EJE-07: with the real delete, a deleted run counts nowhere, and a defect
+/// linked to one of its results still reaches the case (the defects rule).
+#[test]
+fn a_deleted_run_counts_nowhere() {
+    let c = device();
+    let p = new_project(&c);
+    let tc1 = test_case::insert_case(&c, &case_input(&p, "TC-001", "Login", tc1_data())).unwrap();
+    let (kept, kept_id) = manual(&c, &p, &tc1, "passed", "2026-11-01T10:00:00Z");
+    let (gone, gone_id) = manual(&c, &p, &tc1, "failed", "2026-11-02T10:00:00Z");
+    let defect: crate::defects::DefectInput = serde_json::from_value(json!({
+        "projectId": p, "title": "Bug", "severity": "major", "userId": U,
+        "links": [{"targetKind": "result", "targetId": gone_id}]
+    }))
+    .unwrap();
+    crate::defects::insert_defect(&c, &defect).unwrap();
+    assert_eq!(case_row(&summary(&c, &p), &tc1).status, "failed");
+
+    in_tx(&c, |tx| crate::runs::delete::delete_run(tx, &gone, U)).unwrap();
+
+    let s = summary(&c, &p);
+    let row = case_row(&s, &tc1);
+    assert_eq!(row.status, "passed");
+    assert_eq!(row.last.as_ref().unwrap().result_id, kept_id);
+    let run_ids: Vec<&str> = s.runs.iter().map(|r| r.id.as_str()).collect();
+    assert_eq!(run_ids, vec![kept.as_str()]);
+    assert_eq!(s.progress.counts.failed, 0);
+    assert_eq!(s.defects.total, 1, "the defect stays");
+    assert_eq!(row.defect_ids.len(), 1, "and still reaches its case");
+    // The Home rollup: neither the daily counts nor the windows see it.
+    let request: HomeRequest = serde_json::from_value(json!({
+        "dayStarts": [derive_ms("2026-11-01T00:00:00Z"), derive_ms("2026-11-02T00:00:00Z")],
+        "now": derive_ms("2026-11-03T00:00:00Z"),
+        "windows": [{"id": "all", "fromIndex": 0}]
+    }))
+    .unwrap();
+    let m = home_metrics(&c, U, &request).unwrap();
+    assert_eq!((m.daily[0].passed, m.daily[1].total), (1, 0));
+    assert_eq!(
+        (m.windows["all"].counts.failed, m.windows["all"].executed),
+        (0, 1)
+    );
+}
+
+fn derive_ms(s: &str) -> i64 {
+    crate::runs::derive::instant_ms(s).unwrap()
+}
+
 #[test]
 fn day_starts_must_be_ascending_and_bounded() {
     assert!(check_day_starts(&[1, 2, 3]).is_ok());

@@ -791,6 +791,10 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
         if !in_project {
             return Err("result not found".into());
         }
+        // A result of a deleted run is hidden (EJE-07): no new defect from it.
+        if result_run_deleted(conn, &from.result_id)? {
+            return Err(crate::runs::delete::RUN_DELETED.into());
+        }
         // Only the result is linked: its case is derived through it
         // (`result_link`), so a later relink of the result never leaves a
         // stale copy of it here.
@@ -1078,6 +1082,18 @@ pub(crate) fn set_link(
 /// What `defect_create` would get from a failed result (ADR-0016): the steps
 /// of the executed revision, what was obtained, the run's build and
 /// environment and the links. Nothing is written; the editor shows it.
+/// True if the result's run is deleted (EJE-07). A result whose run has not
+/// arrived yet is not refused.
+fn result_run_deleted(conn: &Connection, result_id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM results x JOIN runs r ON r.id = x.run_id
+                         WHERE x.id = ?1 AND r.deleted_at IS NOT NULL)",
+        params![result_id],
+        |r| r.get(0),
+    )
+    .map_err(err)
+}
+
 pub(crate) fn draft_from_result(
     conn: &Connection,
     result_id: &str,
@@ -1119,6 +1135,9 @@ pub(crate) fn draft_from_result(
     let Some((project_id, run_id, _, _, case_key, _, message, test_key)) = row else {
         return Err("result not found".into());
     };
+    if result_run_deleted(conn, result_id)? {
+        return Err(crate::runs::delete::RUN_DELETED.into());
+    }
     let link = result_link(conn, result_id)?;
     let revision_id = link.as_ref().and_then(|l| l.revision_id.clone());
     let flow_id = link.as_ref().and_then(|l| l.flow_id.clone());

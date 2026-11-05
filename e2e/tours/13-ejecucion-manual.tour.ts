@@ -1,6 +1,7 @@
 // Chapter 13 — Ejecución manual (EJE-02, wave E5): a manual run, its screen,
 // the keyboard-first executor (marks per step, notes, evidence), saving the
-// attempt, a defect from a failed attempt, and closing / reopening the run.
+// attempt, a defect from a failed attempt, closing / reopening the run, and
+// deleting it (EJE-07).
 // Selectors: the data-testids of src/modules/runs/README.md.
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -220,43 +221,6 @@ chapter("ejecucion-manual", () => {
     },
   });
 
-  step("matriz-resultados", {
-    title: "Los resultados en la matriz",
-    caption: "En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.",
-    covers: ["action:matrix-filters"],
-    run: async () => {
-      await openSection("traceability");
-      await $(`button.chips__chip*=${es.traceability.view.matrix}`).click();
-      await waitForText(es.traceability.matrix.title);
-      await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
-        timeoutMsg: "the matrix shows no run of a result",
-      });
-      const build = $('[data-testid="trace-filter-build"]');
-      await build.scrollIntoView();
-      await build.selectByAttribute("value", "2.0.0-rc1");
-      await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
-      // Under the build filter the matrix keeps its rows, and the manual run
-      // (on that build) is still the last result of its case.
-      await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
-      await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
-        timeoutMsg: "the filtered matrix shows no run",
-      });
-    },
-  });
-
-  step("abrir-run-matriz", {
-    title: "Del resultado a su run",
-    caption: "La clave del run (RUN-…) abre la pantalla de ese run. «Quitar filtros» devuelve todos los resultados.",
-    covers: ["action:matrix-run-link"],
-    shot: false,
-    run: async () => {
-      await byTestId("trace-filters-clear").click();
-      await browser.waitUntil(async () => !(await browser.getUrl()).includes("build="), { timeoutMsg: "the filters were not cleared" });
-      await $('[data-testid="trace-run-link"]').click();
-      await browser.waitUntil(async () => /\/runs\/[^/?]+/.test(await browser.getUrl()), { timeoutMsg: "the run screen did not open" });
-    },
-  });
-
   step("informe-estado", {
     title: "Informe de estado",
     caption: "En «Ejecuciones», «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, en el periodo que elijas: progreso, resultados por estado, defectos (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple) y los bloqueos. El resumen se rellena con las cifras y, con las recomendaciones, se guarda solo en este equipo.",
@@ -295,6 +259,67 @@ chapter("ejecucion-manual", () => {
       await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 60_000);
       await waitForExport(".pdf", since);
       await browser.keys("Escape");
+    },
+  });
+
+  step("matriz-resultados", {
+    title: "Los resultados en la matriz",
+    caption: "En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.",
+    covers: ["action:matrix-filters"],
+    run: async () => {
+      await openSection("traceability");
+      await $(`button.chips__chip*=${es.traceability.view.matrix}`).click();
+      await waitForText(es.traceability.matrix.title);
+      await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
+        timeoutMsg: "the matrix shows no run of a result",
+      });
+      const build = $('[data-testid="trace-filter-build"]');
+      await build.scrollIntoView();
+      await build.selectByAttribute("value", "2.0.0-rc1");
+      await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
+      // Under the build filter the matrix keeps its rows, and the manual run
+      // (on that build) is still the last result of its case.
+      await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
+      await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
+        timeoutMsg: "the filtered matrix shows no run",
+      });
+    },
+  });
+
+  step("abrir-run-matriz", {
+    title: "Del resultado a su run",
+    caption: "La clave del run (RUN-…) abre la pantalla de ese run. «Quitar filtros» devuelve todos los resultados.",
+    covers: ["action:matrix-run-link"],
+    shot: false,
+    run: async () => {
+      await byTestId("trace-filters-clear").click();
+      await browser.waitUntil(async () => !(await browser.getUrl()).includes("build="), { timeoutMsg: "the filters were not cleared" });
+      await $('[data-testid="trace-run-link"]').click();
+      await browser.waitUntil(async () => /\/runs\/[^/?]+/.test(await browser.getUrl()), { timeoutMsg: "the run screen did not open" });
+    },
+  });
+
+  step("borrar-run", {
+    title: "Eliminar un run",
+    caption: "«Eliminar run» lo quita de las listas y del progreso, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede eliminar.",
+    covers: ["dialogs:src/modules/runs/ui/DeleteRunDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      await byTestId("run-delete").click();
+      await expect(byTestId("run-delete-hidden")).toBeDisplayed();
+      await expect(byTestId("run-delete-confirm")).toBeEnabled();
+    },
+  });
+
+  step("run-borrado", {
+    title: "Run eliminado",
+    caption: "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda la eliminación con lo que ocultó.",
+    run: async () => {
+      await byTestId("run-delete-confirm").click();
+      await $(D).waitForExist({ reverse: true });
+      await browser.waitUntil(async () => /\/runs\/?(\?|$)/.test(await browser.getUrl()), {
+        timeoutMsg: "the runs list did not open after deleting the run",
+      });
     },
   });
 });

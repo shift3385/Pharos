@@ -228,6 +228,32 @@ describe("GET /api/execution/summary", () => {
     expect(ciAfter.cases[0].last.stale).toBe(ciAfter.cases[0].last.revisionId !== null);
   });
 
+  it("a deleted run (a synced tombstone, EJE-07) counts nowhere; a defect linked to its result still reaches the case", async () => {
+    const { call, userId } = await register("deleted@pharos.dev");
+    const projectId = (await call("POST", "/api/projects", { name: "Del" })).body.id as string;
+    const pay = (await call("POST", "/api/test-cases", { projectId, title: "Pay", data: { steps: ["open"] } })).body;
+    const run = (id: string, key: string) => ({ id, projectId, runKey: key, title: key, trigger: "manual", status: "completed", createdAt: "2026-11-01T09:00:00Z" });
+    const result = (id: string, runId: string, status: string, finishedAt: string) => ({
+      id, projectId, runId, testKey: `manual:${pay.id as string}/-/-`, testCaseId: pay.id, status, attempt: 0, finishedAt, hlc: H(1),
+    });
+    await store(userId, "run", "kept", run("kept", "RUN-001"));
+    await store(userId, "run", "gone", run("gone", "RUN-002"));
+    await store(userId, "result", "ok", result("ok", "kept", "passed", "2026-11-01T10:00:00Z"));
+    await store(userId, "result", "ko", result("ko", "gone", "failed", "2026-11-02T10:00:00Z"));
+    await store(userId, "defect", "d1", { id: "d1", projectId, defectKey: "DEF-001", title: "Bug", severity: "major", status: "open" });
+    await store(userId, "defect_link", "l1", { id: "l1", projectId, defectId: "d1", targetKind: "result", targetId: "ko" });
+    const summary = async () => (await call("GET", `/api/execution/summary?projectId=${projectId}`)).body;
+    expect((await summary()).cases[0].status).toBe("failed");
+
+    await pool.query("UPDATE documents SET deleted = true WHERE user_id = $1 AND entity = 'run' AND entity_id = 'gone'", [userId]);
+
+    const s = await summary();
+    expect(s.cases[0]).toMatchObject({ status: "passed", last: { resultId: "ok" }, defectIds: ["d1"] });
+    expect(s.runs.map((r: { id: string }) => r.id)).toEqual(["kept"]);
+    expect(s.progress).toMatchObject({ failed: 0, passed: 1 });
+    expect(s.defects.total).toBe(1);
+  });
+
   it("reads each kind once, however many projects (no N+1), without the write lock", async () => {
     const { call, userId } = await register("bulk@pharos.dev");
     const counted = createDomainStore(pool, createServerClock());

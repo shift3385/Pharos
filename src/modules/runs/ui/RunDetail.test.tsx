@@ -1,7 +1,8 @@
 // The run screen and the manual executor (EJE-02) with the desktop commands
 // mocked: header and items, keyboard marking with an autosaved draft,
 // recording an attempt, «Crear defecto», closing and reopening, the frozen
-// revision after the case changed, the new-run dialog and the web notice.
+// revision after the case changed, the new-run dialog, deleting a run
+// (EJE-07) and the web notice.
 // axe checks the markup of each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -36,6 +37,8 @@ const api = vi.hoisted(() => ({
   deleteDraftAttachment: vi.fn(),
   saveAttachment: vi.fn(),
   previewAttachment: vi.fn(),
+  deletePreview: vi.fn(),
+  delete: vi.fn(),
 }));
 vi.mock("../api/runsApi", () => ({ runsApi: api }));
 const platform = vi.hoisted(() => ({ desktop: true }));
@@ -340,6 +343,67 @@ describe("run screen", () => {
     await waitFor(() =>
       expect(api.update).toHaveBeenCalledWith("r1", { status: "in_progress", userId: "test-user" }),
     );
+  });
+
+  it("deletes a run after naming what it hides", async () => {
+    const user = userEvent.setup();
+    api.deletePreview.mockResolvedValue({
+      runKey: "RUN-007",
+      title: "Regresión manual",
+      items: 2,
+      results: 3,
+      imports: 1,
+      attachments: 4,
+      drafts: 1,
+      cycle: { cycleKey: "CYC-002", title: "Sprint 12", closed: false },
+      linkedDefects: 1,
+    });
+    api.delete.mockResolvedValue(undefined);
+    renderRun("/projects/p/runs/r1");
+    await user.click(await screen.findByTestId("run-delete"));
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
+    const hidden = await within(dialog).findByTestId("run-delete-hidden");
+    expect(hidden).toHaveTextContent("2 elementos del run");
+    expect(hidden).toHaveTextContent("3 resultados registrados (no se borran a mano) de 1 importación");
+    expect(hidden).toHaveTextContent("4 evidencias de esos resultados");
+    expect(hidden).toHaveTextContent("1 borrador sin guardar se descarta");
+    expect(hidden).toHaveTextContent("ciclo CYC-002 «Sprint 12» dejará de contar este run");
+    expect(hidden).toHaveTextContent("el defecto conserva el vínculo hasta la purga");
+    expect(dialog).toHaveTextContent("la purga se los lleva con el run pasados");
+    await expectNoAxeViolations(dialog);
+    await user.click(within(dialog).getByTestId("run-delete-confirm"));
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith("r1", "test-user"));
+    expect(await screen.findByText("Run RUN-007 eliminado.", { exact: false })).toBeInTheDocument();
+  });
+
+  it("says when the run was deleted, here or on another device", async () => {
+    api.overview.mockRejectedValue(new Error("run-deleted"));
+    renderRun("/projects/p/runs/r1");
+    expect(await screen.findByTestId("run-deleted-notice")).toHaveTextContent("Este run se eliminó");
+    expect(screen.queryByTestId("run-delete")).not.toBeInTheDocument();
+  });
+
+  it("does not delete a run of a closed cycle", async () => {
+    const user = userEvent.setup();
+    api.deletePreview.mockResolvedValue({
+      runKey: "RUN-007",
+      title: "Regresión manual",
+      items: 1,
+      results: 0,
+      imports: 0,
+      attachments: 0,
+      drafts: 0,
+      cycle: { cycleKey: "CYC-002", title: "Sprint 12", closed: true },
+      linkedDefects: 0,
+    });
+    renderRun("/projects/p/runs/r1");
+    await user.click(await screen.findByTestId("run-delete"));
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
+    expect(await within(dialog).findByTestId("run-delete-cycle-closed")).toHaveTextContent(
+      "El ciclo CYC-002 está cerrado",
+    );
+    expect(within(dialog).getByTestId("run-delete-confirm")).toBeDisabled();
+    expect(api.delete).not.toHaveBeenCalled();
   });
 
   it("records once when Ctrl+Enter is pressed again while it saves", async () => {

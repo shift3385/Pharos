@@ -10,7 +10,8 @@
       "0030": "E4 step 8 (DEF-01) spare, never used: step 8 shipped as the single 0029 with its Rust step",
       "0032": "E5 step 7 (EJE-02) spare, never used: manual execution fits migration 0024 (drafts and attachments)",
       "0033": "E5 DAT-03b spare, never used: verifying evidence needs no schema change (local_state has no CHECK)",
-      "0034": "E6 step 10 (EJE-04/EJE-03) spare, never used: the matrix and the status report are derived on read"
+      "0034": "E6 step 10 (EJE-04/EJE-03) spare, never used: the matrix and the status report are derived on read",
+      "0035": "E6p DAT-03c/EJE-07 spare, never used: retention fits evidence_retention (0022) and a run delete fits runs.deleted_at (0024)"
     }
   },
   "server": {
@@ -19,7 +20,8 @@
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
       "0012": "E5 step 7 (EJE-02) spare, never used: no server change",
-      "0013": "E6 step 10 (EJE-04/EJE-03) spare, never used: the execution summary is derived on read"
+      "0013": "E6 step 10 (EJE-04/EJE-03) spare, never used: the execution summary is derived on read",
+      "0014": "E6p DAT-03c/EJE-07 spare, never used: a run delete is the existing lww tombstone; retention is local"
     }
   }
 }

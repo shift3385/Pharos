@@ -114,7 +114,9 @@ export async function linkContext(tx: DomainTx, projectId: string): Promise<Link
     tx.list("test_case", projectId, { withDeleted: true }),
     tx.list("requirement", projectId),
     tx.list("result", projectId),
-    tx.list("run", projectId),
+    // Deleted runs too (EJE-07): a link to a result of a deleted run keeps its
+    // label, as on the desktop.
+    tx.list("run", projectId, { withDeleted: true }),
   ]);
   const cases = allCases.filter((d) => !d.deleted);
   const byId = new Map<string, RemoteDoc>();

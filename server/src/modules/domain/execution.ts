@@ -121,8 +121,10 @@ export async function loadProjects(r: DomainReader, ids: string[] | null): Promi
   const grouped = new Map<Kind, Map<string, RemoteDoc[]>>();
   for (const kind of KINDS) {
     const groups = new Map<string, RemoteDoc[]>();
-    // Cases with their tombstones: the link resolver needs a deleted case's key.
-    for (const d of await r.list(kind, projectIds, { withDeleted: kind === "test_case" })) {
+    // Cases with their tombstones: the link resolver needs a deleted case's
+    // key. Runs too (EJE-07): a defect's link to a result of a deleted run
+    // keeps its label and its case, as in `linkContext`.
+    for (const d of await r.list(kind, projectIds, { withDeleted: kind === "test_case" || kind === "run" })) {
       const pid = str(d.payload, "projectId");
       groups.set(pid, [...(groups.get(pid) ?? []), d]);
     }
@@ -138,7 +140,8 @@ export async function loadProjects(r: DomainReader, ids: string[] | null): Promi
 /** One project's data from the lists already read (no query). */
 function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): ProjectData {
   const projectId = project.entityId;
-  const runDocs = docs("run");
+  const allRuns = docs("run");
+  const runDocs = allRuns.filter((d) => !d.deleted);
   const shardDocs = docs("run_shard");
   const allCases = docs("test_case");
   const liveCases = allCases.filter((d) => !d.deleted);
@@ -154,7 +157,7 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
           test_case: allCases,
           test_case_revision: docs("test_case_revision"),
           unlinked_mapping: docs("unlinked_mapping"),
-          run: runDocs,
+          run: allRuns,
           run_item: docs("run_item"),
           configuration: docs("configuration"),
           test_cycle_item: docs("test_cycle_item"),
@@ -209,7 +212,7 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
   // The defects' links, with the lists in hand (the defects module's rule).
   const requirementDocs = docs("requirement");
   const byId = new Map<string, RemoteDoc>();
-  for (const d of [...liveCases, ...requirementDocs, ...resultDocs, ...runDocs]) byId.set(`${d.entity}:${d.entityId}`, d);
+  for (const d of [...liveCases, ...requirementDocs, ...resultDocs, ...allRuns]) byId.set(`${d.entity}:${d.entityId}`, d);
   const ctx: LinkContext = { links: docs("defect_link"), byId, derive: linkOf };
   const defects = docs("defect").map((d) => {
     const v = withLinks(ctx, d);

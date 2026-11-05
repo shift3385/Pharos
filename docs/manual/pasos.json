@@ -1380,22 +1380,6 @@
     {
       "chapter": "trazabilidad",
       "n": 6,
-      "id": "riesgo-requisito",
-      "title": "El riesgo de un requisito",
-      "caption": "En el mismo diálogo, «Riesgo» pide la probabilidad y el impacto, de 1 a 5 cada uno. Su producto es el nivel de riesgo, que ordena la matriz: hasta 4 es bajo, hasta 12 medio y por encima alto.",
-      "covers": [
-        "action:requirement-risk"
-      ],
-      "image": "trazabilidad/06-riesgo-requisito.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "trazabilidad",
-      "n": 7,
       "id": "requisito-descartar",
       "title": "Cerrar un requisito sin guardar",
       "caption": "Cerrar el diálogo con cambios sin guardar pide confirmación; «Aceptar» los descarta.",
@@ -1411,14 +1395,30 @@
     },
     {
       "chapter": "trazabilidad",
-      "n": 8,
+      "n": 7,
       "id": "vincular",
       "title": "Vincular casos a requisitos",
       "caption": "En el editor del caso, «Vincular un requisito…» añade el requisito; el caso lleva su tag (@REQ-001) en el Gherkin y la matriz lo cuenta como cubierto.",
       "covers": [
         "action:case-requirement-link"
       ],
-      "image": "trazabilidad/08-vincular.png",
+      "image": "trazabilidad/07-vincular.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 8,
+      "id": "matriz",
+      "title": "La matriz de trazabilidad",
+      "caption": "«Matriz» muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, con la cobertura arriba (requisitos cubiertos y sin cubrir).",
+      "covers": [
+        "screen:matrix"
+      ],
+      "image": "trazabilidad/08-matriz.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1428,13 +1428,13 @@
     {
       "chapter": "trazabilidad",
       "n": 9,
-      "id": "matriz",
-      "title": "La matriz de trazabilidad",
-      "caption": "«Matriz» muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, con la cobertura arriba (requisitos cubiertos y sin cubrir).",
+      "id": "huecos",
+      "title": "Solo los huecos",
+      "caption": "«Mostrar solo huecos» deja los requisitos sin ningún caso. Debajo, «Huecos de trazabilidad» lista casos sin requisito, vínculos a requisitos inexistentes y defectos sin caso.",
       "covers": [
-        "screen:matrix"
+        "action:matrix-gaps"
       ],
-      "image": "trazabilidad/09-matriz.png",
+      "image": "trazabilidad/09-huecos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1444,13 +1444,13 @@
     {
       "chapter": "trazabilidad",
       "n": 10,
-      "id": "orden-filtros",
-      "title": "Orden por riesgo y filtros de resultados",
-      "caption": "Sobre la matriz, los filtros de resultados (ciclo, configuración, build y entorno) y el orden. Por defecto, los requisitos de más riesgo van primero; «ID de requisito» vuelve al orden por clave. El estado de prueba es el último resultado final de las ejecuciones que cumplen los filtros (capítulo 13).",
+      "id": "migrar",
+      "title": "Migrar referencias escritas a mano",
+      "caption": "Si un caso menciona un ID de requisito en su texto libre («Relacionado con REQ-003»), «Migrar trazabilidad» propone convertirlo en un vínculo real. Marca los que quieras y pulsa «Aplicar».",
       "covers": [
-        "action:matrix-sort"
+        "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"
       ],
-      "image": "trazabilidad/10-orden-filtros.png",
+      "image": "trazabilidad/10-migrar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1460,38 +1460,6 @@
     {
       "chapter": "trazabilidad",
       "n": 11,
-      "id": "huecos",
-      "title": "Solo los huecos",
-      "caption": "«Mostrar solo huecos» deja los requisitos sin ningún caso. Debajo, «Huecos de trazabilidad» lista casos sin requisito, vínculos a requisitos inexistentes y defectos sin caso.",
-      "covers": [
-        "action:matrix-gaps"
-      ],
-      "image": "trazabilidad/11-huecos.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "trazabilidad",
-      "n": 12,
-      "id": "migrar",
-      "title": "Migrar referencias escritas a mano",
-      "caption": "Si un caso menciona un ID de requisito en su texto libre («Relacionado con REQ-003»), «Migrar trazabilidad» propone convertirlo en un vínculo real. Marca los que quieras y pulsa «Aplicar».",
-      "covers": [
-        "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"
-      ],
-      "image": "trazabilidad/12-migrar.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "trazabilidad",
-      "n": 13,
       "id": "exportar-matriz",
       "title": "Exportar la matriz",
       "caption": "«Importar / Exportar → Exportar matriz (.xlsx)» guarda requisitos, casos, estados y defectos en un libro de Excel.",
@@ -1507,14 +1475,14 @@
     },
     {
       "chapter": "trazabilidad",
-      "n": 14,
+      "n": 12,
       "id": "eliminar-requisito",
       "title": "Eliminar un requisito",
       "caption": "La papelera de la fila pide confirmación. El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como vínculo a un requisito inexistente.",
       "covers": [
         "dialogs:src/modules/traceability/ui/TraceabilityPage.tsx"
       ],
-      "image": "trazabilidad/14-eliminar-requisito.png",
+      "image": "trazabilidad/12-eliminar-requisito.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1523,7 +1491,7 @@
     },
     {
       "chapter": "trazabilidad",
-      "n": 15,
+      "n": 13,
       "id": "eliminado",
       "title": "Requisito eliminado",
       "caption": "Al confirmar aparece «REQ-005 eliminado».",
@@ -1806,13 +1774,13 @@
     {
       "chapter": "ciclos",
       "n": 9,
-      "id": "informe-ciclo",
-      "title": "Informe de estado de un ciclo",
-      "caption": "«Informe de estado» en la cabecera del ciclo abre el informe con el alcance ya puesto en ese ciclo: el progreso cuenta cada caso en cada configuración, como la pestaña «Elementos». El informe completo se explica en el capítulo 13.",
+      "id": "clonar",
+      "title": "Clonar y eliminar un ciclo",
+      "caption": "El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.",
       "covers": [
-        "action:cycle-report"
+        "dialogs:src/modules/cycles/ui/CycleDetail.tsx"
       ],
-      "image": "ciclos/09-informe-ciclo.png",
+      "image": "ciclos/09-clonar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1822,13 +1790,11 @@
     {
       "chapter": "ciclos",
       "n": 10,
-      "id": "clonar",
-      "title": "Clonar y eliminar un ciclo",
-      "caption": "El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.",
-      "covers": [
-        "dialogs:src/modules/cycles/ui/CycleDetail.tsx"
-      ],
-      "image": "ciclos/10-clonar.png",
+      "id": "eliminar",
+      "title": "Confirmar la eliminación",
+      "caption": "Eliminar un ciclo pide confirmación; sus runs se conservan en «Ejecuciones».",
+      "covers": [],
+      "image": "ciclos/10-eliminar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -1838,27 +1804,13 @@
     {
       "chapter": "ciclos",
       "n": 11,
-      "id": "eliminar",
-      "title": "Confirmar la eliminación",
-      "caption": "Eliminar un ciclo pide confirmación; sus runs se conservan en «Ejecuciones».",
-      "covers": [],
-      "image": "ciclos/11-eliminar.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "ciclos",
-      "n": 12,
       "id": "lista",
       "title": "La lista de ciclos",
       "caption": "La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs; filtra por Planificados, Activos o Cerrados.",
       "covers": [
         "action:cycles-filter"
       ],
-      "image": "ciclos/12-lista.png",
+      "image": "ciclos/11-lista.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2892,13 +2844,13 @@
     {
       "chapter": "ejecucion-manual",
       "n": 13,
-      "id": "matriz-resultados",
-      "title": "Los resultados en la matriz",
-      "caption": "En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.",
+      "id": "borrar-run",
+      "title": "Eliminar un run",
+      "caption": "«Eliminar run» lo quita de las listas y del progreso, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede eliminar.",
       "covers": [
-        "action:matrix-filters"
+        "dialogs:src/modules/runs/ui/DeleteRunDialog.tsx"
       ],
-      "image": "ejecucion-manual/13-matriz-resultados.png",
+      "image": "ejecucion-manual/13-borrar-run.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2908,61 +2860,11 @@
     {
       "chapter": "ejecucion-manual",
       "n": 14,
-      "id": "abrir-run-matriz",
-      "title": "Del resultado a su run",
-      "caption": "La clave del run (RUN-…) abre la pantalla de ese run. «Quitar filtros» devuelve todos los resultados.",
-      "covers": [
-        "action:matrix-run-link"
-      ],
-      "image": null,
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "ejecucion-manual",
-      "n": 15,
-      "id": "informe-estado",
-      "title": "Informe de estado",
-      "caption": "En «Ejecuciones», «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, en el periodo que elijas: progreso, resultados por estado, defectos (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple) y los bloqueos. El resumen se rellena con las cifras y, con las recomendaciones, se guarda solo en este equipo.",
-      "covers": [
-        "dialogs:src/modules/runs/report/StatusReportDialog.tsx"
-      ],
-      "image": "ejecucion-manual/15-informe-estado.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "ejecucion-manual",
-      "n": 16,
-      "id": "informe-xlsx",
-      "title": "Exportar el informe a Excel",
-      "caption": "«Exportar .xlsx» guarda el informe en la carpeta de descargas: una hoja «Resumen» con las nueve secciones y hojas con los resultados por caso, los defectos y la cobertura por requisito.",
-      "covers": [
-        "action:report-export-xlsx"
-      ],
-      "image": null,
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "ejecucion-manual",
-      "n": 17,
-      "id": "informe-pdf",
-      "title": "Exportar el informe a PDF",
-      "caption": "«Exportar PDF» guarda el mismo informe como documento, listo para enviar.",
-      "covers": [
-        "action:report-export-pdf"
-      ],
-      "image": null,
+      "id": "run-borrado",
+      "title": "Run eliminado",
+      "caption": "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda la eliminación con lo que ocultó.",
+      "covers": [],
+      "image": "ejecucion-manual/14-run-borrado.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2989,11 +2891,13 @@
     {
       "chapter": "evidencias",
       "n": 2,
-      "id": "verificar",
-      "title": "Verificar las evidencias",
-      "caption": "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce (huérfanos). No borra nada por sí sola; puedes seguir trabajando mientras tanto.",
-      "covers": [],
-      "image": "evidencias/02-verificar.png",
+      "id": "retencion",
+      "title": "Retención por proyecto",
+      "caption": "«Retención por proyecto» fija, para cada tipo de evidencia de un proyecto, cuánto se conserva antes de que caduque su archivo: el valor por defecto (30 días las trazas y los vídeos, 90 los reportes y los registros), «Siempre» o un número de días. Nunca caduca la evidencia de la ejecución manual, la de un resultado final fallido o bloqueado ni la de un resultado vinculado a un defecto abierto. Nada se guarda hasta pulsar «Guardar». Es un ajuste solo de este equipo: no se sincroniza.",
+      "covers": [
+        "action:evidence-retention"
+      ],
+      "image": "evidencias/02-retencion.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3003,13 +2907,13 @@
     {
       "chapter": "evidencias",
       "n": 3,
-      "id": "reparar",
-      "title": "Borrar los huérfanos",
-      "caption": "Los huérfanos aparecen en su bloque con su tamaño; «Borrar seleccionados» pide confirmación antes de eliminarlos. Los que faltan o están dañados se listan con el elemento que los usa.",
+      "id": "retencion-acortar",
+      "title": "Acortar la retención",
+      "caption": "Un plazo más corto que el actual pide confirmación y dice cuántos archivos caducarían en la próxima pasada (al arrancar o tras sincronizar). Los resultados se conservan; los archivos caducados no se recuperan.",
       "covers": [
-        "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx"
+        "dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx"
       ],
-      "image": "evidencias/03-reparar.png",
+      "image": "evidencias/03-retencion-acortar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3019,6 +2923,50 @@
     {
       "chapter": "evidencias",
       "n": 4,
+      "id": "retencion-acortada",
+      "title": "Retención acortada",
+      "caption": "Al confirmar, el nuevo plazo se guarda en este equipo.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 5,
+      "id": "verificar",
+      "title": "Verificar las evidencias",
+      "caption": "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce (huérfanos). No borra nada por sí sola; puedes seguir trabajando mientras tanto.",
+      "covers": [],
+      "image": "evidencias/05-verificar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 6,
+      "id": "reparar",
+      "title": "Borrar los huérfanos",
+      "caption": "Los huérfanos aparecen en su bloque con su tamaño; «Borrar seleccionados» pide confirmación antes de eliminarlos. Los que faltan o están dañados se listan con el elemento que los usa.",
+      "covers": [
+        "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx"
+      ],
+      "image": "evidencias/06-reparar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 7,
       "id": "reparado",
       "title": "Huérfanos borrados",
       "caption": "Al confirmar se borran y el informe se actualiza; cada borrado queda en el registro de auditoría.",
@@ -3055,8 +3003,8 @@
       "covers": [],
       "image": null,
       "viewport": {
-        "height": 900,
-        "width": 1440
+        "height": 800,
+        "width": 1280
       },
       "status": "passed"
     },
