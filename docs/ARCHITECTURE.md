@@ -692,7 +692,15 @@ through `src-tauri/src/journal.rs`:
     while dirty. `ignore: true` lets query-string-only changes through (or
     pass a predicate, evaluated per path or query change, never for hash-only
     changes; keep it stable, module level or `useCallback`); by default they
-    ask.
+    ask. Router state reaches React in a transition, so a render can still read
+    `blocked` after the router released that navigation, and acting on a
+    released blocker throws. So each hold is answered once (by the dialog or
+    automatically when the form turns clean), through the router only if it still
+    holds it (read through `UNSAFE_DataRouterContext`, because no public API
+    gives the router's current state). If another navigation finished and dropped
+    the hold while React still shows it, «proceed» goes to its location as a new
+    history entry, unless the router is already there. Once React has caught up
+    with no answer given, the hold is gone and that click is not replayed.
   - `bypass(go)` lets the next location change through, sync or after an
     `await` (`navigate(-1)` included), for a navigation the screen starts on
     purpose while still dirty (e.g. right after saving). If `go` throws or
