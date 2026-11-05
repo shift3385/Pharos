@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Info, Link2, Paperclip, X } from "lucide-react";
+import { Link2, Paperclip, Trash2, X } from "lucide-react";
+import { Alert } from "@shared/ui/Alert";
 import { CustomFieldsSection, customFieldApi, type CustomField, type CustomValues } from "@modules/custom-fields";
 import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
@@ -281,10 +282,9 @@ export function DefectEditor({
       </header>
 
       {fromLabel && (
-        <p className="df-banner" role="status">
-          <Info size={16} aria-hidden="true" />
+        <Alert kind="info" className="df-banner">
           {t("defects.fromResultBanner", { label: fromLabel })}
-        </p>
+        </Alert>
       )}
 
       <div className="tc-form df-form">
@@ -527,9 +527,10 @@ export function DefectEditor({
                       type="button"
                       className="pl-attach__del"
                       onClick={() => removeAttachment(a.id)}
-                      aria-label={`${t("common.delete")}: ${a.name}`}
+                      aria-label={`${t("common.remove")}: ${a.name}`}
+                      title={`${t("common.remove")}: ${a.name}`}
                     >
-                      <X size={14} aria-hidden="true" />
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </li>
                 ))}

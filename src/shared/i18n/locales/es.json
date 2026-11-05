@@ -29,7 +29,16 @@
     "noData": "Sin datos",
     "edit": "Editar",
     "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "remove": "Quitar",
+    "moreInfo": "Más información: {{label}}",
+    "moreInfoPlain": "Más información",
+    "status": {
+      "success": "Hecho",
+      "error": "Error",
+      "warning": "Aviso",
+      "info": "Información"
+    }
   },
   "templates": {
     "kind": {

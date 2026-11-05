@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 import { FieldMessage } from "@shared/ui/FormField";
 import { duplicateRow, duplicateRows } from "@shared/validation";
 import type { ExampleTable } from "../model/types";
@@ -111,7 +112,7 @@ export function ExamplesTable({
                     aria-label={`${t("testCase.examples.removeColumn")}: ${columnName(i)}`}
                     onClick={() => removeColumn(i)}
                   >
-                    ×
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </div>
               </th>
@@ -142,7 +143,7 @@ export function ExamplesTable({
                   aria-label={`${t("testCase.examples.removeRow")}: ${rowName(ri)}`}
                   onClick={() => removeRow(ri)}
                 >
-                  ×
+                  <Trash2 size={14} aria-hidden="true" />
                 </button>
               </td>
             </tr>

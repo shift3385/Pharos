@@ -161,7 +161,7 @@ describe("shared form parts", () => {
       screen.getByRole("textbox", { name: "Responsibility · Row 1" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Delete: Scope · Row 2" }),
+      screen.getByRole("button", { name: "Remove: Scope · Row 2" }),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
   });

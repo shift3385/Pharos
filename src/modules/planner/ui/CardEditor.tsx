@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 import { ListField } from "@shared/ui/fields";
 import { useToast } from "@shared/ui/Toast";
 import { saveVia } from "@shared/export/saveFile";
@@ -200,9 +201,10 @@ export function CardEditor({
                     type="button"
                     className="pl-attach__del"
                     onClick={() => removeAttachment(a.id)}
-                    aria-label={t("common.delete")}
+                    aria-label={`${t("common.remove")}: ${a.name}`}
+                    title={`${t("common.remove")}: ${a.name}`}
                   >
-                    ✕
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </li>
               ))}

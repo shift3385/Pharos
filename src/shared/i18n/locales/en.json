@@ -29,7 +29,16 @@
     "noData": "No data",
     "edit": "Edit",
     "discardConfirm": "You have unsaved changes. Discard them?",
-    "close": "Close"
+    "close": "Close",
+    "remove": "Remove",
+    "moreInfo": "More information: {{label}}",
+    "moreInfoPlain": "More information",
+    "status": {
+      "success": "Done",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Information"
+    }
   },
   "templates": {
     "kind": {

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 import type { ExampleTable, Flow, Step } from "../model/types";
 import { StepListField } from "./StepListField";
 import { SortableSteps } from "./SortableSteps";
@@ -60,7 +61,7 @@ export function FlowsEditor({
                 aria-label={`${t("testCase.flow.remove")}: ${flow.name}`}
                 onClick={() => removeFlow(i)}
               >
-                ✕
+                <Trash2 size={16} aria-hidden="true" />
               </button>
             )}
           </div>

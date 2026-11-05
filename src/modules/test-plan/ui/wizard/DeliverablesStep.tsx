@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { DELIVERABLE_GROUPS } from "../../model/catalogs";
 import { toKey } from "@shared/import/xlsx";
 import { DELIVERABLE_REV, isCatalogDeliverable } from "../../model/catalogLabels";
@@ -57,7 +57,7 @@ export function DeliverablesStep({
                     title={t("testPlan.deliverables.remove", { name: v })}
                     onClick={() => onChange(value.filter((x) => x !== v))}
                   >
-                    <X size={14} aria-hidden="true" />
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </span>
               ))}

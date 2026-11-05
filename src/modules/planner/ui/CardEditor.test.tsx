@@ -76,14 +76,14 @@ describe("CardEditor attachments", () => {
     const file = new File(["hola"], "nota.txt", { type: "text/plain" });
     await userEvent.upload(input, file);
     await waitFor(() => expect(attachmentAdd).toHaveBeenCalledWith("k1", "u1", file));
-    await userEvent.click(await screen.findByRole("button", { name: /log\.txt/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /^📎 log\.txt$/u }));
     await waitFor(() => expect(attachmentSave).toHaveBeenCalledWith("a1", "u1"));
   });
 
   it("explains a file that is not on this device", async () => {
     attachmentSave.mockRejectedValue(new Error("evidence-missing: the file is not on this device"));
     editor();
-    await userEvent.click(await screen.findByRole("button", { name: /log\.txt/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /^📎 log\.txt$/u }));
     await waitFor(() =>
       expect(notify).toHaveBeenCalledWith(
         expect.stringContaining("Este archivo no está en este equipo"),

@@ -88,6 +88,9 @@ Fuentes: **Inter** (UI) y **JetBrains Mono** (IDs, código, contadores). Número
 - Pastillas de estado: fondo `color-mix(estado 14%, transparent)` + texto en la variante `-text`.
 - Acciones destructivas: borde/texto `--color-error-text`; botón sólido solo dentro del diálogo de confirmación.
 - Elementos deshabilitados: `opacity:0.45–0.6`, `cursor:not-allowed` y `title` explicando el motivo.
+- **Notificaciones y avisos** (toasts, avisos en línea, banners): color e icono del estado, nunca el ámbar de marca: éxito success + `CircleCheck`, error error + `CircleX`, aviso warning + `TriangleAlert`, información info + `Info`. Superficie teñida, barra de 4 px, texto principal (UX-10, ADR-0028).
+- **Ayuda de un campo:** corta y esencial en línea, debajo del control; larga y secundaria tras un [?] (`InfoTip`) junto a la etiqueta. Orden: etiqueta → control → pista → mensaje (UX-10).
+- **Quitar una fila:** papelera (`Trash2`, «Quitar: …»). La ✕ es solo cerrar o descartar, y la × de una etiqueta/chip (UX-10).
 
 ---
 
