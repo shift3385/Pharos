@@ -1,6 +1,7 @@
 // Chapter 13 — Ejecución manual (EJE-02, wave E5): a manual run, its screen,
 // the keyboard-first executor (marks per step, notes, evidence), saving the
-// attempt, a defect from a failed attempt, and closing / reopening the run.
+// attempt, a defect from a failed attempt, closing / reopening the run, and
+// deleting it (EJE-07).
 // Selectors: the data-testids of src/modules/runs/README.md.
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
@@ -201,6 +202,30 @@ chapter("ejecucion-manual", () => {
       await expect(byTestId("run-reopen")).toBeDisplayed();
       await byTestId("run-reopen").click();
       await expect(byTestId("run-close")).toBeDisplayed();
+    },
+  });
+
+  step("borrar-run", {
+    title: "Borrar un run",
+    caption: "«Borrar run» lo quita de la lista, del progreso, de la matriz y del informe, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede borrar.",
+    covers: ["dialogs:src/modules/runs/ui/DeleteRunDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      await byTestId("run-delete").click();
+      await expect(byTestId("run-delete-hidden")).toBeDisplayed();
+      await expect(byTestId("run-delete-confirm")).toBeEnabled();
+    },
+  });
+
+  step("run-borrado", {
+    title: "Run borrado",
+    caption: "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda el borrado con lo que ocultó.",
+    run: async () => {
+      await byTestId("run-delete-confirm").click();
+      await $(D).waitForExist({ reverse: true });
+      await browser.waitUntil(async () => /\/runs\/?(\?|$)/.test(await browser.getUrl()), {
+        timeoutMsg: "the runs list did not open after deleting the run",
+      });
     },
   });
 });
