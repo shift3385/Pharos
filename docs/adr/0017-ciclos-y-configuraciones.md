@@ -275,3 +275,10 @@ pantalla del run cuenta además cada flujo y fila por separado.
 por configuración viva y no archivada, revisiones congeladas al crear cada
 run, todo o nada, `planned` → `active`) y devuelve el mismo
 `ExecuteResult`. El botón ya no se desactiva en la web.
+
+## Nota (E6p, EJE-07: eliminar un run, 2026-11-05)
+
+Un run de un ciclo **cerrado** no se puede eliminar (`cycle-closed`), igual
+que no se reabre: primero se reabre el ciclo. Como la reapertura, lo
+comprueba solo el escritorio; el servidor no valida esa regla en el sync. Un
+run de un ciclo abierto se puede eliminar y deja de contar en su progreso.

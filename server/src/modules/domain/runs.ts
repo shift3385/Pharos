@@ -772,10 +772,12 @@ export function createRunService(store: DomainStore) {
   /** `manual::overview`. `hasDraft` is the browser's: the client adds it. */
   async function overview(tx: DomainTx, runId: string) {
     const doc = await tx.get("run", runId);
-    if (!isLiveRun(doc)) return null;
+    if (!doc) return null;
     const projectId = str(doc.payload, "projectId");
     const project = await tx.get("project", projectId);
     if (!project || project.deleted) return null;
+    // The screen tells a deleted run from one that does not exist (EJE-07).
+    if (!isLiveRun(doc)) throw runDeleted();
     const { data, cases } = await viewsOf(tx, projectId, runId);
     const p = doc.payload;
     const cycle = strOrNull(p, "cycleId") ? await tx.get("test_cycle", str(p, "cycleId")) : null;

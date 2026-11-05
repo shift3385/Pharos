@@ -264,6 +264,22 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   event in one transaction; a `step_id`, flow or row that is not in the frozen
   revision is refused), `results_list` and `unlinked_mapping_set`;
   `requirement_risk_set` for the risk.
+- **Deleting a run (EJE-07, `runs/delete.rs`).** `run_delete` discards the
+  run's drafts and their files, tombstones its live items (one oplog `delete`
+  each, folded into the run's event) and the run, with one `delete` audit
+  event (`cascade`, `hidden` results/shards/attachments, discarded drafts).
+  Its shards, results and step results are never touched: they stay
+  append-only here and on the server, and every reader hides them through
+  their run — **a run counts iff `runs.deleted_at IS NULL`, and a result or
+  shard only through `JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL`**
+  (the server: `tx.list("run")` without `withDeleted`, skipping any result
+  whose `runId` is not in it). Writing into a deleted run (record, draft,
+  reopen, edit, items, import) is `run-deleted`; a run of a closed cycle
+  cannot be deleted (`cycle-closed`, desktop only, like reopening). A run
+  that comes back through a conflict resolution gets its items back
+  (`revive_items`, lww upserts). The purge takes it with its results
+  past the retention (`CHILDREN["run"]`, `purged_run:`). No server change.
+  `run_delete_preview` gives the dialog its counts.
 - **Derived, never stored** (`runs/derive.rs`): the final attempt of each
   `(run, test_key, configuration_label)` by
   `coalesce(finished_at, started_at, shard.imported_at)`, then `attempt`, then
@@ -352,8 +368,9 @@ its steps; the frozen `test_case_revision`, same id as
   is refused with `run-deleted` (`liveRun` / `isLiveRun`, the one
   predicate); reads leave it out, and its results and shards count only while
   their run is live, as in `cycles.ts`. Deleting a run stays desktop only.
-  The predicate lives in `domain/run-live.ts`; cycle progress and the result
-  links of defects read runs through it too.
+  The run screen answers `run-deleted` too. The predicate lives in
+  `domain/run-live.ts`; cycle progress reads runs through it too. A defect's
+  link to such a result is kept, with its label and case (ADR-0016).
 - **Reads** run outside the user's write lock (`DomainStore.read`: a
   read-only transaction, no `FOR UPDATE`) and are scoped to one run
   (`tx.list(entity, project, { where: { runId } })`); only the per-run counts
@@ -1361,7 +1378,10 @@ and its `VACUUM` can briefly double that image.)
   - `attachments`: one use of a content (`owner_entity`/`owner_id`, `kind`,
     name, mime, size, `blob_purged_at`). Shaped as an LWW entity, but not
     registered for sync yet (step 7 or SYNC-04b).
-  - `evidence_retention`: per-project overrides of the retention by kind.
+  - `evidence_retention`: per-project overrides of the retention by kind
+    (no row = default, `days NULL` = always). **Local to the device, never
+    synced** (DAT-03c): `evidence_retention_get` / `_set` (1..3650 days), one
+    `update` audit event on `evidence_retention` per change, with no oplog row.
 - **Files.** `evidence/<2 hex>/<hmac>.pev`, with
   `hmac = HMAC-SHA256(name key, sha256)`.
   - Keys come from `db_key` by HKDF-SHA256 (`"pharos-evidence-v1"`, then the
@@ -1456,9 +1476,21 @@ and its `VACUUM` can briefly double that image.)
   never cross the webview as base64. Limit: 200 MB per file (`MAX_FILE_BYTES`).
 - **Retention and purge.** `purge_deleted` also:
   - purges soft-deleted planner attachments past the retention;
-  - runs `evidence::expire`: per-kind days (defaults in `DEFAULT_RETENTION`;
-    only `run_shard` evidence can expire until step 7 brings the ADR's result
-    exceptions). Expiry sets `blob_purged_at` and writes a `redact` audit event;
+  - runs `evidence::expire`: per-kind days (defaults in `DEFAULT_RETENTION`,
+    per project in `evidence_retention`, set in Administración → Evidencias,
+    DAT-03c). Only imported evidence can expire: a raw report (`run_shard`)
+    and the evidence of an imported result or step result, except
+    (`evidence/retention.rs`, `exempt`) a manual result (`shard_id IS NULL`),
+    the final attempt of its test when it failed or was blocked (`final_attempts`
+    over the run's `CURRENT_SHARD` results) and a result a live, open defect
+    links to. Planner, defect and draft attachments never expire. The
+    exceptions are evaluated at each pass (a retry that passes or a closed
+    defect ends them; a link whose defect has not arrived counts as open).
+    Result and step evidence ages from `max(created_at, dat03c_enabled_at)`
+    (grace after the upgrade); a pass's clock moves at most 7 days past the
+    last pass and the last HLC; at most 500 per pass. Expiry sets
+    `blob_purged_at` and writes a `redact` audit event; it never touches a
+    result;
   - releases every content no live attachment needs.
 
   Deleting an attachment is a soft delete plus an immediate release. Deleting

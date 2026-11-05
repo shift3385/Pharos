@@ -10,6 +10,7 @@ import type {
   ResultView,
   Run,
   RunCounts,
+  RunDeletePreview,
   RunInput,
   RunItem,
   RunItemDetail,
@@ -132,8 +133,15 @@ export const runsApi = {
    *  the web, `hasDraft` is this browser's. */
   overview: async (runId: string, userId: string): Promise<RunOverview | null> => {
     if (isTauri()) return invoke("run_overview", { runId, userId });
-    const o = await serverApi.get<RunOverview | null>(`/api/runs/${enc(runId)}/overview`);
-    // A run gone (deleted elsewhere) or cancelled keeps no drafts here.
+    let o: RunOverview | null;
+    try {
+      o = await serverApi.get<RunOverview | null>(`/api/runs/${enc(runId)}/overview`);
+    } catch (e) {
+      // Deleted elsewhere (EJE-07): its drafts go, and the screen says so.
+      if (e instanceof Error && e.message.startsWith("run-deleted")) webDrafts.dropRun(userId, runId);
+      throw e;
+    }
+    // A run gone or cancelled keeps no drafts here.
     if (!o || o.run.status === "aborted") webDrafts.dropRun(userId, runId);
     if (!o) return o;
     return {
@@ -195,6 +203,15 @@ export const runsApi = {
     if (status === "aborted" || discardDrafts) webDrafts.dropRun(userId, runId);
     return run;
   },
+  /** What deleting a run hides (EJE-07), for the confirmation dialog. */
+  deletePreview: (runId: string, userId: string): Promise<RunDeletePreview> =>
+    isTauri()
+      ? invoke("run_delete_preview", { runId, userId })
+      : desktopOnly("results"),
+  /** Deletes a run (logically): it and its items become tombstones; its
+   *  results stay until the purge takes them with the run. */
+  delete: (runId: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("run_delete", { runId, userId }) : desktopOnly("results"),
   draftSave: (
     runItemId: string,
     targetKey: string,

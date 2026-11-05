@@ -42,7 +42,10 @@ function server(over: Record<string, (body: unknown) => unknown> = {}) {
       const body = init.body ? JSON.parse(init.body as string) : undefined;
       bodies.push(body);
       const route = routes[key];
-      return new Response(JSON.stringify(route ? route(body) : []), { status: 200 });
+      const answer = route ? route(body) : [];
+      // An answer with `status` is a refusal of the server.
+      const status = (answer as { status?: unknown } | null)?.status;
+      return new Response(JSON.stringify(answer), { status: typeof status === "number" ? status : 200 });
     }),
   );
   return { calls, bodies };
@@ -149,8 +152,14 @@ describe("runsApi on the web", () => {
   it("a run cancelled or deleted elsewhere, or an item gone, takes its drafts here", async () => {
     let status = "in_progress";
     let gone = false;
+    let deleted = false;
     server({
-      "GET /api/runs/r1/overview": () => (gone ? null : { ...overview, run: { ...overview.run, status } }),
+      "GET /api/runs/r1/overview": () =>
+        deleted
+          ? { status: 409, code: "run_deleted", message: "run-deleted" }
+          : gone
+            ? null
+            : { ...overview, run: { ...overview.run, status } },
       "GET /api/run-items/i2": () => null,
     });
     await runsApi.overview("r1", "u1");
@@ -163,11 +172,17 @@ describe("runsApi on the web", () => {
     status = "aborted";
     expect((await runsApi.overview("r1", "u1"))?.items.map((i) => i.hasDraft)).toEqual([false, false]);
     expect(localStorage.getItem("pharos:exec-draft:u1:i1")).toBeNull();
-    // Deleted elsewhere (EJE-07): read as gone.
+    // Gone (not found): read as null.
     status = "in_progress";
     await runsApi.draftSave("i1", "-/-", { attemptId: crypto.randomUUID() }, "u1");
     gone = true;
     expect(await runsApi.overview("r1", "u1")).toBeNull();
+    expect(localStorage.getItem("pharos:exec-draft:u1:i1")).toBeNull();
+    // Deleted on the desktop (EJE-07): refused, the screen says so, drafts go.
+    gone = false;
+    await runsApi.draftSave("i1", "-/-", { attemptId: crypto.randomUUID() }, "u1");
+    deleted = true;
+    await expect(runsApi.overview("r1", "u1")).rejects.toThrow(/^run-deleted/);
     expect(localStorage.getItem("pharos:exec-draft:u1:i1")).toBeNull();
   });
 

@@ -326,6 +326,9 @@ describe("runs on the web", () => {
     expect((await other("PUT", `/api/runs/${run.id}`, { input: { title: "x" } })).status).toBe(404);
     // One attempt before the delete: it stays stored, but no longer counts.
     await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(2), status: "passed" } });
+    const defect = (
+      await call("POST", "/api/defects", { projectId: s.projectId, title: "Bug", data: {}, links: [{ targetKind: "result", targetId: uuid(2) }] })
+    ).body;
     // The desktop deletes the run (EJE-07): its tombstone arrives by push.
     const [stored] = await docs("run");
     const current = (await pool.query<{ revision: number }>("SELECT revision FROM documents WHERE entity = 'run'")).rows[0];
@@ -352,12 +355,19 @@ describe("runs on the web", () => {
     expect((await call("GET", `/api/runs?projectId=${s.projectId}`)).body).toEqual([]);
     expect((await call("GET", `/api/runs/counts?projectId=${s.projectId}`)).body).toEqual([]);
     expect((await call("GET", `/api/runs/${run.id}`)).body).toBeNull();
-    expect((await call("GET", `/api/runs/${run.id}/overview`)).body).toBeNull();
+    // Its screen says so, as the desktop's (`RunDetail` shows a notice).
+    expect(await call("GET", `/api/runs/${run.id}/overview`)).toMatchObject(refused);
     expect((await call("GET", `/api/runs/${run.id}/results`)).body).toEqual([]);
     expect((await call("GET", `/api/run-items/${item}`)).body).toBeNull();
     expect((await docs("result")).map((d) => d.entity_id)).toEqual([uuid(2)]);
     // A defect is not drafted from a result of a deleted run.
     expect(await call("GET", `/api/results/${uuid(2)}/defect-draft`)).toMatchObject(refused);
+    // But one linked before keeps its link, label and case (ADR-0016).
+    const linked = (await call("GET", `/api/defects/${defect.id}`)).body;
+    expect(linked.links.map((l: Payload) => [l.targetKind, l.label])).toEqual([
+      ["result", `${run.runKey} · ${s.simple.key} #0`],
+    ]);
+    expect(linked.caseIds).toEqual([s.simple.id]);
   });
 
   it("reads a run without waiting for the user's write lock", async () => {

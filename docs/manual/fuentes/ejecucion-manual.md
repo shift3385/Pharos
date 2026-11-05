@@ -22,6 +22,11 @@ y la matriz de trazabilidad.
 - En la versión web se ejecuta igual, pero sin archivos: «Los adjuntos solo están disponibles en el
   escritorio». El borrador se queda en ese navegador; el intento guardado se ve
   en todos tus equipos.
+- «Eliminar run» quita un run que sobra (uno de prueba, uno duplicado) de
+  las listas y del progreso, también en los equipos que sincronicen. Sus resultados no se borran a mano: quedan ocultos y la
+  purga se los lleva con el run pasada la retención de «Administración →
+  General». Un run de un ciclo cerrado no se elimina: reabre antes el ciclo.
+  Si solo quieres dejar de ejecutarlo, ciérralo como «Cancelado».
 
 ## Véase también
 

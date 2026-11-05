@@ -83,6 +83,18 @@ En un intento fallido, «Crear defecto» abre el editor de defectos relleno con 
 
 Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.
 
+### 13.13. Eliminar un run
+
+«Eliminar run» lo quita de las listas y del progreso, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede eliminar.
+
+![Eliminar un run](img/ejecucion-manual/13-borrar-run.png)
+
+### 13.14. Run eliminado
+
+Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda la eliminación con lo que ocultó.
+
+![Run eliminado](img/ejecucion-manual/14-run-borrado.png)
+
 ## Consejos
 
 - Trabaja con el teclado: P / F / B / S marcan, J / K mueven, N escribe lo
@@ -96,6 +108,11 @@ Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar
 - En la versión web se ejecuta igual, pero sin archivos: «Los adjuntos solo están disponibles en el
   escritorio». El borrador se queda en ese navegador; el intento guardado se ve
   en todos tus equipos.
+- «Eliminar run» quita un run que sobra (uno de prueba, uno duplicado) de
+  las listas y del progreso, también en los equipos que sincronicen. Sus resultados no se borran a mano: quedan ocultos y la
+  purga se los lleva con el run pasada la retención de «Administración →
+  General». Un run de un ciclo cerrado no se elimina: reabre antes el ciclo.
+  Si solo quieres dejar de ejecutarlo, ciérralo como «Cancelado».
 
 ## Véase también
 

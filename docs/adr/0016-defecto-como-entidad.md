@@ -298,3 +298,19 @@ web: `GET /api/results/:id/defect-draft` da el mismo borrador que
 obtenido, build y entorno del run, vínculos), **sin adjuntos**: las evidencias
 no llegan al servidor hasta SYNC-04b, así que la web dice «Los adjuntos solo están disponibles en el
 escritorio». Los adjuntos de defectos en la web quedan en EJE-06b (ROADMAP).
+
+## Nota (E6p, EJE-07: runs borrados, 2026-11-05)
+
+- **Un vínculo a un resultado de un run borrado se conserva:** el defecto no
+  cambia, su etiqueta sigue nombrando el run y el resultado, y el resultado
+  deja de aparecer en «Vincular resultado» (los candidatos solo leen runs
+  vivos).
+- **`case_ids` (los casos que alcanza un defecto) lo sigue contando**
+  mientras el resultado exista. Borrar un run es limpieza, no una decisión
+  sobre el defecto: si dejara de contar, un defecto abierto desaparecería de
+  la matriz del caso sin que nadie lo tocara. Cuando la purga se lleva el
+  resultado, el vínculo ya no da caso (como un resultado purgado con su
+  proyecto). Quien quiera conservar la relación vincula el caso al defecto;
+  el diálogo de «Borrar run» avisa de cuántos resultados tienen defectos.
+- **Retención (DAT-03c):** la evidencia de un resultado vinculado a un defecto
+  abierto no caduca (ADR-0014).

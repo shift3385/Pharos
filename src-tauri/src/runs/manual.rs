@@ -363,7 +363,8 @@ fn owned_item(
     run_item_id: &str,
     user: &str,
 ) -> Result<(String, String, String), String> {
-    find_item(conn, run_item_id, user)?.ok_or_else(|| "run item not found".to_string())
+    find_item(conn, run_item_id, user)?
+        .ok_or_else(|| super::delete::missing_item_error(conn, run_item_id, user))
 }
 
 struct CaseFacts {
@@ -596,7 +597,11 @@ pub(crate) fn overview(
     user: &str,
 ) -> Result<Option<RunOverview>, String> {
     let Some(run) = get_run(conn, run_id, user)? else {
-        return Ok(None);
+        // A deleted run says so (EJE-07): the screen tells it from a missing one.
+        return match super::delete::deleted_error(conn, run_id, user) {
+            Some(e) => Err(e),
+            None => Ok(None),
+        };
     };
     let cycle: Option<(String, String)> = match &run.cycle_id {
         Some(id) => conn

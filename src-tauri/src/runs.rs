@@ -23,6 +23,7 @@
 //! `run_shard` and `result` are append-only (`sync_class.rs`). All of them wait
 //! for a server that lists `runs` (`sync::server_takes_runs`).
 
+pub mod delete;
 pub mod derive;
 pub mod ids;
 pub mod import;
@@ -316,7 +317,7 @@ impl ResultView {
 
 // ---- helpers -----------------------------------------------------------------
 
-fn err(e: rusqlite::Error) -> String {
+pub(crate) fn err(e: rusqlite::Error) -> String {
     e.to_string()
 }
 
@@ -342,7 +343,11 @@ fn text(v: &Option<String>) -> Option<String> {
 }
 
 /// Project of a live run the user owns, with its status.
-fn owned_run(conn: &Connection, run_id: &str, user: &str) -> Result<(String, String), String> {
+pub(crate) fn owned_run(
+    conn: &Connection,
+    run_id: &str,
+    user: &str,
+) -> Result<(String, String), String> {
     conn.query_row(
         "SELECT r.project_id, r.status FROM runs r JOIN projects p ON p.id = r.project_id
           WHERE r.id = ?1 AND p.owner_id = ?2 AND r.deleted_at IS NULL AND p.deleted_at IS NULL",
@@ -351,7 +356,10 @@ fn owned_run(conn: &Connection, run_id: &str, user: &str) -> Result<(String, Str
     )
     .optional()
     .map_err(err)?
-    .ok_or_else(|| "run not found".to_string())
+    .ok_or_else(|| {
+        // A deleted run is refused with its own error (EJE-07).
+        delete::deleted_error(conn, run_id, user).unwrap_or_else(|| "run not found".to_string())
+    })
 }
 
 fn require_open(status: &str) -> Result<(), String> {
@@ -1034,7 +1042,8 @@ fn item_context(conn: &Connection, run_item_id: &str) -> Result<Option<ItemConte
 /// From then on it never changes; a correction is another attempt.
 pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<String, String> {
     let user = &input.user_id;
-    let item = item_context(conn, &input.run_item_id)?.ok_or("run item not found")?;
+    let item = item_context(conn, &input.run_item_id)?
+        .ok_or_else(|| delete::missing_item_error(conn, &input.run_item_id, user))?;
     let (_, status) = owned_run(conn, &item.run_id, user)?;
     // A retry of an attempt that is already recorded returns it unchanged.
     let chosen_id = match text(&input.attempt_id) {
