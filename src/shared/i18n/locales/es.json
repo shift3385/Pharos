@@ -2397,6 +2397,7 @@
       "close": "Cerrar"
     },
     "fromResultBanner": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso, y sus evidencias se añaden sin copiar los archivos.",
+    "fromResultBannerWeb": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso. Los adjuntos solo en escritorio.",
     "attachAfterSave": "Guarda el defecto para poder añadir evidencias.",
     "deleteTitle": "¿Eliminar el defecto?",
     "deleteMessage": "Se elimina «{{defect}}» con sus vínculos. Su clave no se vuelve a usar.",

@@ -38,6 +38,20 @@ async function upload(file: Blob): Promise<string> {
   return uploadId;
 }
 
+/** On the web a defect made from a result links that result, as
+ *  `defect_create` does with `fromResult` on the desktop (its case is
+ *  derived through it); its evidence stays on the desktop (SYNC-04b). */
+function webCreate(input: DefectInput): DefectInput {
+  const from = input.fromResult;
+  if (!from) return input;
+  const links = [...(input.links ?? [])];
+  if (!links.some((l) => l.targetKind === "result" && l.targetId === from.resultId))
+    links.push({ targetKind: "result", targetId: from.resultId });
+  const out: DefectInput = { ...input, links };
+  delete out.fromResult;
+  return out;
+}
+
 export const defectsApi = {
   list: (projectId: string, userId: string): Promise<Defect[]> =>
     isTauri()
@@ -46,7 +60,7 @@ export const defectsApi = {
   get: (id: string, userId: string): Promise<Defect | null> =>
     isTauri() ? invoke("defect_get", { id, userId }) : serverApi.get(path(id)),
   create: (input: DefectInput): Promise<Defect | null> =>
-    isTauri() ? invoke("defect_create", { input }) : serverApi.post("/api/defects", input),
+    isTauri() ? invoke("defect_create", { input }) : serverApi.post("/api/defects", webCreate(input)),
   update: (id: string, input: DefectInput): Promise<Defect | null> =>
     isTauri() ? invoke("defect_update", { id, input }) : serverApi.put(path(id), id, input),
   transition: (

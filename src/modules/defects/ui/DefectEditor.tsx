@@ -283,7 +283,7 @@ export function DefectEditor({
       {fromLabel && (
         <p className="df-banner" role="status">
           <Info size={16} aria-hidden="true" />
-          {t("defects.fromResultBanner", { label: fromLabel })}
+          {t(desktop ? "defects.fromResultBanner" : "defects.fromResultBannerWeb", { label: fromLabel })}
         </p>
       )}
 

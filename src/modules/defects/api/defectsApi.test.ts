@@ -54,6 +54,14 @@ describe("defectsApi", () => {
     ]);
   });
 
+  it("web: a defect from a result links that result (EJE-06)", async () => {
+    const server = fakeServer();
+    await defectsApi.create({ ...input, fromResult: { resultId: "res1", stepId: "s2" } });
+    await defectsApi.create({ ...input, links: [{ targetKind: "result", targetId: "res1" }], fromResult: { resultId: "res1" } });
+    expect(server.body(0)).toEqual({ ...input, links: [{ targetKind: "result", targetId: "res1" }] });
+    expect(server.body(1)).toEqual({ ...input, links: [{ targetKind: "result", targetId: "res1" }] });
+  });
+
   it("desktop: the Rust commands", async () => {
     onDesktop();
     await defectsApi.list("p1", "u1");

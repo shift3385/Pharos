@@ -2397,6 +2397,7 @@
       "close": "Close"
     },
     "fromResultBanner": "Prefilled from {{label}}. On save the defect is linked to the result and its case, and its evidence is added without copying the files.",
+    "fromResultBannerWeb": "Prefilled from {{label}}. On save the defect is linked to the result and its case. Attachments are desktop only.",
     "attachAfterSave": "Save the defect to add evidence.",
     "deleteTitle": "Delete the defect?",
     "deleteMessage": "«{{defect}}» is deleted with its links. Its key is never used again.",
