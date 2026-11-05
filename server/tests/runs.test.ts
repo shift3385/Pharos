@@ -320,14 +320,55 @@ describe("runs on the web", () => {
     expect((await other("GET", `/api/runs/${run.id}/overview`)).body).toBeNull();
     expect((await other("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(1), status: "passed" } })).status).toBe(404);
     expect((await other("PUT", `/api/runs/${run.id}`, { input: { title: "x" } })).status).toBe(404);
-    // A tombstone (as a delete pushed by a device leaves it).
-    await pool.query("UPDATE documents SET deleted = true WHERE entity = 'run' AND entity_id = $1", [run.id]);
-    expect((await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(1), status: "passed" } })).body.message).toBe("run item not found");
-    expect((await call("POST", `/api/runs/${run.id}/items`, { items: [{ testCaseId: s.outline.id }] })).status).toBe(404);
-    expect((await call("POST", `/api/runs/${run.id}/close`, { status: "completed" })).status).toBe(404);
+    // One attempt before the delete: it stays stored, but no longer counts.
+    await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(2), status: "passed" } });
+    // The desktop deletes the run (EJE-07): its tombstone arrives by push.
+    const [stored] = await docs("run");
+    const current = (await pool.query<{ revision: number }>("SELECT revision FROM documents WHERE entity = 'run'")).rows[0];
+    const pushed = await app.inject({
+      method: "POST",
+      url: "/sync/push",
+      headers: headersOf(mine),
+      payload: {
+        deltas: [
+          { entity: "run", entityId: run.id, op: "delete", revision: current.revision + 1, author: "u", hlc: "999999999999999-00000-desk", payload: stored.payload },
+        ],
+      },
+    });
+    expect(pushed.statusCode).toBe(200);
+    expect((await docs("run"))[0].deleted).toBe(true);
+    // Every write to it is refused with `run-deleted`.
+    const refused = { status: 409, body: { code: "run_deleted", message: "run-deleted" } };
+    expect(await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(1), status: "passed" } })).toMatchObject(refused);
+    expect(await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(2), status: "passed" } })).toMatchObject(refused);
+    expect(await call("POST", `/api/runs/${run.id}/items`, { items: [{ testCaseId: s.outline.id }] })).toMatchObject(refused);
+    expect(await call("POST", `/api/runs/${run.id}/close`, { status: "completed" })).toMatchObject(refused);
+    expect(await call("PUT", `/api/runs/${run.id}`, { input: { status: "in_progress" } })).toMatchObject(refused);
+    // And reads leave it out; its result stays stored but counts nowhere.
     expect((await call("GET", `/api/runs?projectId=${s.projectId}`)).body).toEqual([]);
+    expect((await call("GET", `/api/runs/counts?projectId=${s.projectId}`)).body).toEqual([]);
+    expect((await call("GET", `/api/runs/${run.id}`)).body).toBeNull();
+    expect((await call("GET", `/api/runs/${run.id}/overview`)).body).toBeNull();
+    expect((await call("GET", `/api/runs/${run.id}/results`)).body).toEqual([]);
     expect((await call("GET", `/api/run-items/${item}`)).body).toBeNull();
-    expect(await docs("result")).toEqual([]);
+    expect((await docs("result")).map((d) => d.entity_id)).toEqual([uuid(2)]);
+  });
+
+  it("results of a deleted run do not count in another run's views", async () => {
+    const mine = await tokenFor();
+    const call = api(mine);
+    const s = await seed(call);
+    const kept = (await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "Kept" }, items: [{ testCaseId: s.simple.id }] })).body;
+    const gone = (await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "Gone" }, items: [{ testCaseId: s.simple.id }] })).body;
+    const items = await docs("run_item");
+    const itemOf = (runId: string) => items.find((i) => i.payload.runId === runId)!.entity_id;
+    await call("POST", "/api/results", { input: { runItemId: itemOf(kept.id), attemptId: uuid(1), status: "passed" } });
+    await call("POST", "/api/results", { input: { runItemId: itemOf(gone.id), attemptId: uuid(2), status: "failed" } });
+    await pool.query("UPDATE documents SET deleted = true WHERE entity = 'run' AND entity_id = $1", [gone.id]);
+    expect((await call("GET", `/api/runs/counts?projectId=${s.projectId}`)).body).toEqual([
+      { runId: kept.id, passed: 1, failed: 0, other: 0, unlinked: 0 },
+    ]);
+    expect((await call("GET", `/api/runs?projectId=${s.projectId}`)).body.map((r: Payload) => r.title)).toEqual(["Kept"]);
   });
 
   it("executes a cycle: one run per configuration, all or nothing", async () => {

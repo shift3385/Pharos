@@ -348,8 +348,10 @@ its steps; the frozen `test_case_revision`, same id as
   and target, else `attempt-id-taken`. One `execute` audit event each
   (`DomainTx.audit` takes `changes`; `DomainTx.stamp()` gives the result's
   HLC).
-- **Deleted runs:** every write goes through `liveRun` / `isLiveRun`, the one
-  predicate EJE-07 extends.
+- **Deleted runs** (EJE-07): a deleted run is a tombstone. Every write to it
+  is refused with `run-deleted` (`liveRun` / `isLiveRun`, the one
+  predicate); reads leave it out, and its results and shards count only while
+  their run is live, as in `cycles.ts`. Deleting a run stays desktop only.
 - **Client:** `runsApi` branches to the server on the web; the draft is the
   browser's (`src/modules/runs/model/webDrafts.ts`: `localStorage` per account
   and item, the desktop's stale rules, a shared list of recorded attempts for

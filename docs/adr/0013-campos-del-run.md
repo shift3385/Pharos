@@ -688,6 +688,9 @@ sincroniza (`APPLIED_SET_VERSION` sigue en 7). Precisiones:
   de `cycle-progress.ts`; vínculo de los importados con `resultLink.ts`). Los
   ids de paso de un resultado importado no se derivan en el servidor: la web
   muestra esos pasos por su texto.
-- **Run borrado:** toda escritura lee el run con `liveRun`, el único sitio
-  que decide si un run se puede leer y escribir (hoy, que no sea una lápida);
-  EJE-07 añade ahí su marca.
+- **Run borrado** (regla de EJE-07): un run borrado es una lápida. Toda
+  escritura sobre él (registrar un intento, añadir casos, cerrar, reabrir) se
+  rechaza con `run-deleted`, como en el escritorio; las lecturas lo dejan
+  fuera, y sus resultados y shards siguen guardados pero solo cuentan si su run
+  está vivo, como en `cycles.ts`. Lo decide un solo sitio, `isLiveRun` /
+  `liveRun`. Borrar un run sigue siendo solo del escritorio (EJE-07).

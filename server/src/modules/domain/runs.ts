@@ -66,14 +66,21 @@ function within(field: string, value: string, max: number) {
 }
 
 /** The one predicate of a run that can still be read and written: not a
- *  tombstone. EJE-07 (run delete) adds its own marker here, nowhere else. */
+ *  tombstone (EJE-07: a deleted run is a tombstone; its results and shards
+ *  count only while their run is live, as in `cycles.ts`). */
 export function isLiveRun(doc: RemoteDoc | null): doc is RemoteDoc {
   return !!doc && !doc.deleted;
 }
 
-/** A live run of a live project, or 404 `run not found` (`runs::owned_run`). */
+/** Every write to a deleted run is refused with `run-deleted` (EJE-07),
+ *  as on the desktop. */
+const runDeleted = () => new AppError(409, "run_deleted", "run-deleted");
+
+/** A live run of a live project (`runs::owned_run`): 409 `run-deleted` for
+ *  a deleted one, 404 `run not found` if there is none. */
 export async function liveRun(tx: DomainTx, id: string): Promise<RemoteDoc> {
   const run = await tx.get("run", id);
+  if (run && run.deleted) throw runDeleted();
   if (!isLiveRun(run)) throw notFound("run not found");
   const project = await tx.get("project", str(run.payload, "projectId"));
   if (!project || project.deleted) throw notFound("run not found");
@@ -275,19 +282,24 @@ interface RunData {
 
 async function loadRunData(tx: DomainTx, projectId: string): Promise<RunData> {
   // One client per transaction: the reads go one after the other.
-  const runs = await tx.list("run", projectId);
+  // `tx.list` gives live documents: a deleted run (a tombstone) is not here.
+  const runs = (await tx.list("run", projectId)).filter(isLiveRun);
+  const liveRuns = new Set(runs.map((d) => d.entityId));
   const items = await tx.list("run_item", projectId);
   const results = await tx.list("result", projectId);
-  const shardDocs = await tx.list("run_shard", projectId);
+  const shardDocs = (await tx.list("run_shard", projectId)).filter((d) => liveRuns.has(str(d.payload, "runId")));
   const superseded = supersededShards(shardDocs);
   let resolve: ((r: Payload) => ResultLink) | null = null;
   const imported = results.some((d) => isImported(d.payload));
   if (imported) resolve = await projectLinks(tx, projectId, { run: runs, run_item: items });
   return {
-    runs: runs.filter(isLiveRun),
+    runs,
     items,
     // A shard superseded by a newer normalizer is not read (`CURRENT_SHARD`).
-    results: results.filter((d) => !superseded.has(str(d.payload, "shardId"))),
+    // Only results of live runs count (EJE-07: a deleted run's stay stored).
+    results: results.filter(
+      (d) => liveRuns.has(str(d.payload, "runId")) && !superseded.has(str(d.payload, "shardId")),
+    ),
     shards: new Map(shardDocs.map((d) => [d.entityId, d.payload] as const)),
     link: (r) => {
       if (!resolve) throw new Error("no resolver");
@@ -583,13 +595,17 @@ export function createRunService(store: DomainStore) {
   /** `runs::item_context` with its run: a live item of a live run. */
   async function liveItem(tx: DomainTx, runItemId: string) {
     const item = await tx.get("run_item", runItemId);
-    if (!item || item.deleted) throw notFound("run item not found");
+    if (!item) throw notFound("run item not found");
+    // The run first: an item of a deleted run (tombstoned with it or not)
+    // says the run is deleted.
     let runDoc: RemoteDoc;
     try {
       runDoc = await liveRun(tx, str(item.payload, "runId"));
-    } catch {
+    } catch (e) {
+      if (e instanceof AppError && e.code === "run_deleted") throw e;
       throw notFound("run item not found");
     }
+    if (item.deleted) throw notFound("run item not found");
     return { item, run: runDoc };
   }
 
