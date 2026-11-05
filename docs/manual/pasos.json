@@ -1181,7 +1181,7 @@
       "status": "passed",
       "focus": {
         "x": 300,
-        "y": 977,
+        "y": 405,
         "w": 508,
         "h": 92
       }
@@ -2720,13 +2720,12 @@
       "covers": [
         "ai:disabled-without-key"
       ],
-      "image": null,
+      "image": "ia/01-sin-configurar.png",
       "viewport": {
-        "width": 0,
-        "height": 0
+        "height": 900,
+        "width": 1440
       },
-      "status": "skipped",
-      "reason": "con una clave configurada los botones ya están activos"
+      "status": "passed"
     },
     {
       "chapter": "ia",
