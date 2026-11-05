@@ -3,7 +3,9 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0033": "E5 DAT-03b (verify evidence), only if a local table turns out to be needed"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
