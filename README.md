@@ -64,7 +64,7 @@ The step-by-step checklist for testers, in Spanish, is
 
 | Needed for            | Install                                                                                                                                                                                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Everything            | **Node.js ≥ 22.12** with npm (CI uses the version in `.nvmrc`, Node 24)                                                                                                                                                                           |
+| Everything            | **Node.js ≥ 22.18** with npm (CI uses the version in `.nvmrc`, Node 24)                                                                                                                                                                           |
 | Database (pick one)   | **PostgreSQL ≥ 15** native (verified on 18.6), **or** **Docker Desktop** (needs WSL2)                                                                                                                                                             |
 | Native desktop app    | **Visual Studio 2022** (Community is enough) with the **"Desktop development with C++"** workload, and **Rust** via [rustup](https://rustup.rs) — the MSVC toolchain pinned in `src-tauri/rust-toolchain.toml` installs itself on the first build |
 | Native desktop app    | **WebView2** runtime (preinstalled on Windows 11)                                                                                                                                                                                                 |
@@ -422,6 +422,8 @@ Frontend (repository root):
 | `npm run verify:static`        | `verify` without the Vitest suite (CI runs it, then `npm run coverage`)                                           |
 | `npm run e2e`                  | Desktop smoke of the real binary (see below)                                                                      |
 | `npm run e2e:driver`           | Download the msedgedriver that matches WebView2                                                                   |
+| `npm run manual`               | Guided tours on an isolated API/DB + the user manual (`e2e/README.md` → Tours)                                    |
+| `npm run check:manual`         | Every screen, tab, dialog and action has a tour step or a reason (MAN-01)                                         |
 | `npm run coverage`             | Frontend coverage report into `coverage/`                                                                         |
 | `npm run coverage:rust`        | Rust coverage report into `coverage/rust/`                                                                        |
 
@@ -583,6 +585,10 @@ The choice is saved at once (it is not part of "Guardar ajustes") in
   downloads go.
 
 ## Desktop E2E smoke
+
+> The guided tours and the generated user manual (MAN-01) use the same
+> harness: see [`e2e/README.md`](e2e/README.md) → Tours and
+> [`docs/manual/`](docs/manual/README.md).
 
 `npm run e2e` drives the **real desktop binary**: start → sign in with the test
 account → create a project → restart → the project and the session are still

@@ -997,6 +997,42 @@ The QA tool tests itself at four levels:
   credentials at the end. `WEBVIEW2_USER_DATA_FOLDER` moves the WebView2
   storage. Each spec starts signed out and, at the end, deletes every `E2E …`
   project on the test account, syncs and signs out.
+- **Guided tours + user manual (MAN-01):** `e2e/tours/` drives the same
+  harness through every screen, tab, dialog and main action with realistic
+  data; each step is an action, an assertion, a screenshot and a Spanish
+  caption. `npm run manual` (`e2e/tours/run-tours.mjs`) runs them fully
+  isolated: its own API on `localhost:3100` (3000 is refused), its own
+  database `pharos_test_db_tours` (created and dropped), a debug binary built
+  with that `VITE_API_URL` and a CSP override (`tauri build --config`) into
+  `<target>/tours`, an isolated profile, and downloads redirected to
+  `e2e/results/tours/downloads` (the run fails if anything lands in the
+  user's Downloads). `scripts/build-manual.mjs` turns the steps into
+  `docs/manual/` (Spanish Markdown per chapter, prose from
+  `docs/manual/fuentes/`, deterministic PNGs re-encoded with a zlib-only codec
+  that keeps a committed image unless > 0.5 % of its pixels changed,
+  `pasos.json`) and prints `Pharos-manual-de-usuario.pdf` with headless Edge
+  (cover, contents with page numbers from a two-pass print, numbered chapters,
+  page numbers via `@page` margin boxes, PDF outline). The PDF is not
+  committed. `npm run check:manual` (in `verify:static`, so in the required
+  `client` check) fails when a route, project section, admin tab, plan step,
+  dialog-opening component or file upload in `src/` has no item in
+  `e2e/tours/manifest.ts`, or an item has neither a tour step nor a
+  `pending`/`skip` reason. The AI chapter calls a real provider only with the
+  user's `PHAROS_TOURS_AI_KEY` (handed to the keychain command, never typed or
+  logged; blurred in captures; `check-manual.mjs --secret-scan` fails if the
+  key appears in any generated file; without `PHAROS_TOURS_AI_KEY` the runner
+  falls back to `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` in `.env`). States that
+  need something "outside" are produced for real inside the isolated run: a
+  sync conflict (a second device pushes through the tour API,
+  `e2e/tours/other-device.ts`), an orphan evidence file, a corrupted copy of
+  the profile's database (restored afterwards) and a view that throws. Only
+  four inventory items stay out (Ollama, the native folder picker, two
+  web-only screens), each with its reason and a manual check in
+  `docs/manual/REVIEW.md`. Captures are 8-bit palette PNGs (median cut,
+  zlib only). CI: the non-required jobs `manual` (pull requests) and
+  `manual (main)` (environment `tours-ai`, the `manual` artifact and a drift
+  check of the committed Markdown); the installer workflow prints the PDF
+  from the committed manual and ships it in the installer artifact.
 
 Coverage (BASE-13) is a report, not a gate: `npm run coverage`
 (`@vitest/coverage-v8`) and `npm run coverage:rust` (`cargo llvm-cov`, works
@@ -1008,7 +1044,9 @@ on every PR and push to `main` (`.github/workflows/ci.yml`). The same pipeline
 also runs `cargo deny` (RustSec, licenses) and `zizmor` on the workflows, and
 the Windows installer is built as a CI artifact (`installer.yml`). The desktop
 E2E smoke runs in the `e2e` job (BASE-14) and the frontend coverage report in
-`client` (BASE-13). Policy: [ADR-0021](adr/0021-ci-y-cadena-de-suministro.md).
+`client` (BASE-13). The guided tours run in the non-required `manual` jobs
+(MAN-01), which publish the regenerated manual as an artifact on `main`.
+Policy: [ADR-0021](adr/0021-ci-y-cadena-de-suministro.md).
 
 ## Backend (Phase 1+)
 

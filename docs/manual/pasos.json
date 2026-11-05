@@ -1,0 +1,2966 @@
+{
+  "version": "0.2.0-alpha.1",
+  "date": "2026-11-05",
+  "steps": [
+    {
+      "chapter": "preparacion",
+      "n": 1,
+      "id": "ventana",
+      "title": "Ventana de escritorio y sesión",
+      "caption": "La aplicación arranca a 1440 px, con la cuenta de pruebas.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "preparacion",
+      "n": 2,
+      "id": "tema-claro",
+      "title": "Tema claro",
+      "caption": "El manual usa el tema claro de Faro Nocturno.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 1,
+      "id": "pantalla-entrada",
+      "title": "La pantalla de entrada",
+      "caption": "Al abrir Pharos sin sesión ves «Iniciar sesión»: correo, contraseña y el botón «Entrar». «Continuar con Google» llegará más adelante («Próximamente»). A la derecha, lo que ofrece la aplicación.",
+      "covers": [
+        "screen:login",
+        "action:login-google"
+      ],
+      "image": "acceso/01-pantalla-entrada.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 2,
+      "id": "error-credenciales",
+      "title": "Si la contraseña no es correcta",
+      "caption": "Con un correo o una contraseña incorrectos, Pharos lo dice bajo el formulario y no entra.",
+      "covers": [
+        "state:login-error"
+      ],
+      "image": "acceso/02-error-credenciales.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 3,
+      "id": "mostrar-contrasena",
+      "title": "Ver la contraseña mientras escribes",
+      "caption": "El ojo del campo «Contraseña» la muestra u oculta, para comprobar lo que has tecleado.",
+      "covers": [
+        "action:show-password"
+      ],
+      "image": "acceso/03-mostrar-contrasena.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 4,
+      "id": "idioma-entrada",
+      "title": "Idioma de la aplicación",
+      "caption": "Desde la entrada puedes cambiar el idioma (español o inglés) antes de iniciar sesión.",
+      "covers": [
+        "action:login-language"
+      ],
+      "image": "acceso/04-idioma-entrada.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 5,
+      "id": "registro",
+      "title": "Crear una cuenta",
+      "caption": "«Regístrate» abre «Crear cuenta»: alias, nombre, apellidos, correo y contraseña. El nombre oficial es el que firma los documentos.",
+      "covers": [
+        "screen:register"
+      ],
+      "image": "acceso/05-registro.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 6,
+      "id": "registro-hecho",
+      "title": "Primera entrada con la cuenta nueva",
+      "caption": "«Registrarme» crea la cuenta y entra directamente en «Inicio», todavía sin proyectos.",
+      "covers": [
+        "action:register",
+        "state:home-empty"
+      ],
+      "image": "acceso/06-registro-hecho.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 7,
+      "id": "cerrar-sesion",
+      "title": "Cerrar sesión",
+      "caption": "El menú de usuario (tu avatar, arriba a la derecha) tiene «Cerrar sesión». Al cerrar, Pharos vuelve a la entrada.",
+      "covers": [
+        "action:logout",
+        "screen:user-menu"
+      ],
+      "image": "acceso/07-cerrar-sesion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 8,
+      "id": "entrar",
+      "title": "Iniciar sesión",
+      "caption": "Escribe tu correo y contraseña y pulsa «Entrar». La sesión se recuerda en este equipo hasta que la cierres.",
+      "covers": [
+        "action:login"
+      ],
+      "image": "acceso/08-entrar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 9,
+      "id": "menu-usuario",
+      "title": "El menú de usuario",
+      "caption": "Desde el avatar llegas a «Mi perfil», a «Administración», al idioma (español o inglés) y a «Cerrar sesión».",
+      "covers": [
+        "action:user-menu-language"
+      ],
+      "image": "acceso/09-menu-usuario.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 10,
+      "id": "perfil",
+      "title": "Tu perfil",
+      "caption": "«Mi perfil» muestra tu alias y tu nombre oficial, la auditoría de la cuenta y tus preferencias de idioma y tema.",
+      "covers": [
+        "route:/profile",
+        "action:profile-preferences"
+      ],
+      "image": "acceso/10-perfil.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "acceso",
+      "n": 11,
+      "id": "perfil-guardar",
+      "title": "Cambiar el alias",
+      "caption": "Edita el alias o el nombre y pulsa «Guardar»: aparece «Guardado» y sube la revisión del perfil.",
+      "covers": [
+        "action:profile-save"
+      ],
+      "image": "acceso/11-perfil-guardar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 1,
+      "id": "inicio",
+      "title": "Inicio",
+      "caption": "«Inicio» resume tus proyectos: proyectos abiertos, pruebas pendientes, tasa de éxito y defectos abiertos, con la ejecución por proyecto y las próximas pruebas. Con una cuenta nueva aparece vacío.",
+      "covers": [
+        "route:/"
+      ],
+      "image": "proyectos/01-inicio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 2,
+      "id": "periodo",
+      "title": "El periodo de los datos",
+      "caption": "El selector de periodo («Últimos 14 días») cambia el intervalo de las cifras: hoy, 7, 14 o 30 días o el mes en curso.",
+      "covers": [
+        "action:home-period"
+      ],
+      "image": "proyectos/02-periodo.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 3,
+      "id": "busqueda",
+      "title": "Buscar (Ctrl+K)",
+      "caption": "La lupa de la barra superior, o Ctrl+K desde cualquier pantalla, abre la búsqueda. En esta versión avisa de que la búsqueda global llega más adelante; la campana hace lo mismo con las notificaciones.",
+      "covers": [
+        "keyboard:ctrl-k",
+        "dialogs:src/app/layout/TopbarControls.tsx"
+      ],
+      "image": "proyectos/03-busqueda.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 4,
+      "id": "menu-lateral",
+      "title": "Contraer el menú lateral",
+      "caption": "El botón junto al logotipo contrae el menú a una tira de iconos y lo vuelve a expandir; Pharos recuerda tu elección.",
+      "covers": [
+        "action:sidebar-collapse",
+        "dialogs:src/app/layout/TopbarControls.tsx"
+      ],
+      "image": "proyectos/04-menu-lateral.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 5,
+      "id": "proyectos-vacio",
+      "title": "La lista de proyectos, vacía",
+      "caption": "«Proyectos» lista todos tus proyectos. Sin ninguno, invita a crear el primero.",
+      "covers": [
+        "route:/projects",
+        "state:projects-empty"
+      ],
+      "image": "proyectos/05-proyectos-vacio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 6,
+      "id": "nombre-obligatorio",
+      "title": "El nombre es obligatorio",
+      "caption": "«Nuevo proyecto» abre una fila para escribir el nombre. Si pulsas «Crear» sin escribirlo, Pharos lo pide.",
+      "covers": [
+        "state:project-create-required"
+      ],
+      "image": "proyectos/06-nombre-obligatorio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 7,
+      "id": "crear-proyecto",
+      "title": "Crear un proyecto",
+      "caption": "Escribe el nombre («Banca Móvil») y pulsa «Crear». Pharos abre el proyecto en su plan de pruebas, todavía sin plan.",
+      "covers": [
+        "action:project-create"
+      ],
+      "image": "proyectos/07-crear-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 8,
+      "id": "ajustes",
+      "title": "Ajustes del proyecto: prefijo de los casos",
+      "caption": "En «Ajustes del proyecto» cambias el nombre, el prefijo y los dígitos de los IDs de caso; la vista previa muestra cómo se numerarán. «Guardar» confirma con «Ajustes actualizados».",
+      "covers": [
+        "section:settings",
+        "action:project-settings-save"
+      ],
+      "image": "proyectos/08-ajustes.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 9,
+      "id": "campo-nuevo",
+      "title": "Nuevo campo personalizado",
+      "caption": "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. Aquí, una selección «Navegador» con tres opciones.",
+      "covers": [
+        "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"
+      ],
+      "image": "proyectos/09-campo-nuevo.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 10,
+      "id": "campo-creado",
+      "title": "El campo, en la lista",
+      "caption": "«Crear campo» lo guarda y aparece en la lista; los casos del proyecto ya pueden usarlo. Se reordena arrastrando o con el menú de cada campo.",
+      "covers": [
+        "action:custom-field-create"
+      ],
+      "image": "proyectos/10-campo-creado.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 11,
+      "id": "campo-archivar",
+      "title": "Archivar un campo",
+      "caption": "Un campo no se borra: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+      "covers": [
+        "action:custom-field-archive"
+      ],
+      "image": "proyectos/11-campo-archivar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 12,
+      "id": "campo-descartar",
+      "title": "Cerrar sin guardar",
+      "caption": "Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos.",
+      "covers": [
+        "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 13,
+      "id": "configuracion-nueva",
+      "title": "Nueva configuración",
+      "caption": "En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx",
+        "keyboard:config-labels"
+      ],
+      "image": "proyectos/13-configuracion-nueva.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 14,
+      "id": "configuracion-creada",
+      "title": "Configuraciones del proyecto",
+      "caption": "«Guardar» la añade a la lista. Aquí hay dos (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas».",
+      "covers": [
+        "action:configuration-create",
+        "action:configuration-archive"
+      ],
+      "image": "proyectos/14-configuracion-creada.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 15,
+      "id": "segundo-proyecto",
+      "title": "Crear con Intro y copiar campos",
+      "caption": "Un segundo proyecto («Portal Clientes», creado pulsando Intro tras el nombre) puede copiar los campos personalizados de otro con «Copiar de otro proyecto».",
+      "covers": [
+        "keyboard:project-create-enter",
+        "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx"
+      ],
+      "image": "proyectos/15-segundo-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 16,
+      "id": "lista-proyectos",
+      "title": "Todos los proyectos",
+      "caption": "Con proyectos, la lista muestra los recientes arriba y la tabla de todos: plan, casos, ejecución, cobertura y último acceso. Busca por nombre o prefijo y ordena con «Ordenar por».",
+      "covers": [
+        "action:projects-search",
+        "action:projects-sort"
+      ],
+      "image": "proyectos/16-lista-proyectos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 17,
+      "id": "menu-fila",
+      "title": "Acciones de un proyecto",
+      "caption": "El menú «⋯» de cada fila abre el proyecto, sus ajustes o lo exporta en un ZIP (plan, casos y documentos).",
+      "covers": [
+        "action:projects-row-menu"
+      ],
+      "image": "proyectos/17-menu-fila.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 18,
+      "id": "exportar-zip",
+      "title": "Exportar un proyecto",
+      "caption": "«Exportar proyecto (ZIP)» genera los documentos con una barra de progreso y guarda el ZIP en tu carpeta de descarga; «Exportar todo» hace lo mismo con todos los proyectos.",
+      "covers": [
+        "dialogs:src/modules/projects/ui/ExportProgressModal.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 19,
+      "id": "cambiar-proyecto",
+      "title": "Cambiar de proyecto",
+      "caption": "Dentro de un proyecto, el selector de la parte superior del menú lateral salta a otro proyecto sin volver a la lista.",
+      "covers": [
+        "action:project-switcher"
+      ],
+      "image": "proyectos/19-cambiar-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 20,
+      "id": "eliminar-proyecto",
+      "title": "Eliminar un proyecto",
+      "caption": "«Eliminar proyecto», al pie de los ajustes, cuenta lo que se perderá y pide escribir el prefijo (o el nombre) para confirmar. «Sí, eliminar todo» lo borra y vuelve a la lista.",
+      "covers": [
+        "dialogs:src/modules/projects/ui/ProjectSettings.tsx"
+      ],
+      "image": "proyectos/20-eliminar-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 21,
+      "id": "eliminado",
+      "title": "Proyecto eliminado",
+      "caption": "Tras confirmar, un aviso lo confirma y la lista ya no lo muestra.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 1,
+      "id": "asistente",
+      "title": "El asistente del plan",
+      "caption": "Entra en el proyecto y pulsa «Plan de pruebas» en el menú lateral. A la izquierda, los 19 pasos con su progreso; en el centro, el paso actual (aquí, el título y su estado); a la derecha, «Estado del plan».",
+      "covers": [
+        "section:plan",
+        "wizard:title"
+      ],
+      "image": "plan/01-asistente.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 2,
+      "id": "meta",
+      "title": "Paso 2 · Versión, fecha y autor",
+      "caption": "«Siguiente» avanza al paso 2: versión y fecha del plan. El autor es tu nombre oficial del perfil.",
+      "covers": [
+        "wizard:meta",
+        "action:plan-step-nav"
+      ],
+      "image": "plan/02-meta.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 3,
+      "id": "resumen",
+      "title": "Paso 3 · Resumen",
+      "caption": "El resumen presenta el plan. Con la IA configurada, «✨ Asistir con IA» propone un texto que puedes usar o descartar (capítulo 11).",
+      "covers": [
+        "wizard:summary"
+      ],
+      "image": "plan/03-resumen.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 4,
+      "id": "alcance",
+      "title": "Paso 4 · Alcance",
+      "caption": "Qué entra y qué queda fuera. «+ Añadir» crea una fila; la papelera la quita (pide confirmar si tiene texto).",
+      "covers": [
+        "wizard:scope"
+      ],
+      "image": "plan/04-alcance.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 5,
+      "id": "tipos",
+      "title": "Paso 5 · Tipos de prueba",
+      "caption": "Marca los tipos de prueba, agrupados en cobertura funcional y no funcional. «Otro» añade uno propio.",
+      "covers": [
+        "wizard:types"
+      ],
+      "image": "plan/05-tipos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 6,
+      "id": "metodologia",
+      "title": "Paso 6 · Metodología",
+      "caption": "Ágil (duración del sprint y reuniones con su frecuencia) o tradicional (fases). La duración del sprint se usa luego en el cronograma.",
+      "covers": [
+        "wizard:methodology"
+      ],
+      "image": "plan/06-metodologia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 7,
+      "id": "niveles",
+      "title": "Paso 7 · Niveles de prueba",
+      "caption": "Unitarias, integración, sistema y aceptación: marca los que cubre el plan.",
+      "covers": [
+        "wizard:levels"
+      ],
+      "image": "plan/07-niveles.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 8,
+      "id": "entregables",
+      "title": "Paso 8 · Entregables",
+      "caption": "La lista sigue la documentación de ISO/IEC/IEEE 29119-3. «Otro entregable» añade uno propio, marcado como «Propio».",
+      "covers": [
+        "wizard:deliverables"
+      ],
+      "image": "plan/08-entregables.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 9,
+      "id": "entorno",
+      "title": "Paso 9 · Entorno de pruebas",
+      "caption": "Cómo es el entorno y qué hardware y software necesita.",
+      "covers": [
+        "wizard:environment"
+      ],
+      "image": "plan/09-entorno.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 10,
+      "id": "herramientas",
+      "title": "Paso 10 · Herramientas y automatización",
+      "caption": "Elige herramientas de la lista (las más usadas arriba; «Más herramientas» abre el resto con buscador) o añade una propia, y describe la estrategia de automatización.",
+      "covers": [
+        "wizard:tools"
+      ],
+      "image": "plan/10-herramientas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 11,
+      "id": "datos",
+      "title": "Pasos 11 y 12 · Datos y defectos",
+      "caption": "Cómo se gestionan los datos de prueba y los defectos (este segundo, en el paso 12).",
+      "covers": [
+        "wizard:testData",
+        "wizard:defects"
+      ],
+      "image": "plan/11-datos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 12,
+      "id": "roles",
+      "title": "Paso 13 · Roles y responsabilidades",
+      "caption": "Cada fila es un rol y su responsabilidad.",
+      "covers": [
+        "wizard:roles"
+      ],
+      "image": "plan/12-roles.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 13,
+      "id": "cronograma",
+      "title": "Paso 14 · Cronograma",
+      "caption": "Con «Sprint» marcado, haz clic en el día de inicio y en el de fin para crear un sprint; «Siguiente sprint» añade el siguiente con la duración del paso 6. Cada sprint aparece también en su fila, con fechas editables.",
+      "covers": [
+        "wizard:schedule"
+      ],
+      "image": "plan/13-cronograma.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 14,
+      "id": "cronograma-hito",
+      "title": "Cronograma: hitos con el teclado",
+      "caption": "Con «Hito», un clic en un día añade un hito. También con el teclado: las flechas mueven el foco por el calendario e Intro marca el día.",
+      "covers": [
+        "action:schedule-milestone",
+        "keyboard:schedule-calendar"
+      ],
+      "image": "plan/14-cronograma-hito.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 15,
+      "id": "riesgos",
+      "title": "Paso 15 · Riesgos y mitigación",
+      "caption": "Cada riesgo con su mitigación. Con IA, «✨ Sugerir riesgos con IA» propone una lista para añadir (capítulo 11).",
+      "covers": [
+        "wizard:risks"
+      ],
+      "image": "plan/15-riesgos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 16,
+      "id": "comunicacion",
+      "title": "Pasos 16 a 18 · Comunicación, cierre y propósito",
+      "caption": "El plan de comunicación, los criterios de cierre (criterio y métrica, que «Inicio» muestra como criterios de salida) y el propósito del documento.",
+      "covers": [
+        "wizard:communication",
+        "wizard:closure",
+        "wizard:purpose"
+      ],
+      "image": "plan/16-comunicacion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 17,
+      "id": "conclusion",
+      "title": "Paso 19 · Conclusión y «Antes de terminar»",
+      "caption": "El último paso resume qué falta: «Antes de terminar» lista los pasos incompletos con un enlace a cada uno.",
+      "covers": [
+        "wizard:conclusion"
+      ],
+      "image": "plan/17-conclusion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 18,
+      "id": "guardar",
+      "title": "Guardar el plan",
+      "caption": "«Finalizar plan» (o «Guardar», arriba) guarda el plan: aparece «Plan de pruebas guardado» y la cabecera del proyecto pasa a «Plan borrador».",
+      "covers": [
+        "action:plan-save"
+      ],
+      "image": "plan/18-guardar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 19,
+      "id": "salir-sin-guardar",
+      "title": "Salir con cambios sin guardar",
+      "caption": "Si cambias algo y sales sin guardar, Pharos pregunta antes de descartar los cambios. «Seguir editando» te devuelve al plan.",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/TestPlanWizard.tsx"
+      ],
+      "image": "plan/19-salir-sin-guardar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 20,
+      "id": "revisiones",
+      "title": "Revisiones del plan",
+      "caption": "Cada guardado crea una revisión. «Revisiones» las lista y «Restaurar» recupera el contenido de una (pide confirmación; después guarda para conservarla).",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"
+      ],
+      "image": "plan/20-revisiones.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 21,
+      "id": "restaurar",
+      "title": "Restaurar una revisión",
+      "caption": "Al confirmar, el plan vuelve al contenido de esa revisión, sin guardar todavía.",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/TestPlanWizard.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 22,
+      "id": "exportar",
+      "title": "Exportar el plan",
+      "caption": "«Importar / Exportar» genera el plan en .pdf (listo para firmar) o .xlsx (editable en Excel) en tu carpeta de descarga.",
+      "covers": [
+        "action:plan-export"
+      ],
+      "image": "plan/22-exportar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 23,
+      "id": "importar",
+      "title": "Importar un plan desde .xlsx",
+      "caption": "«Importar .xlsx» rellena el plan desde una plantilla o un plan exportado. El informe muestra qué campos se reconocieron antes de aplicarlos al formulario.",
+      "covers": [
+        "upload:src/modules/test-plan/ui/TestPlanWizard.tsx"
+      ],
+      "image": "plan/23-importar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "plan",
+      "n": 24,
+      "id": "importado",
+      "title": "Plan importado",
+      "caption": "«Aplicar al formulario» carga los datos en el asistente; revisa y guarda.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 1,
+      "id": "lista-vacia",
+      "title": "La lista de casos, vacía",
+      "caption": "Pulsa «Casos de prueba» en el menú lateral. Arriba quedan «Importar / Exportar», «Sugerir casos con IA» y «Nuevo caso»; mientras no haya casos, la lista lo dice.",
+      "covers": [
+        "section:cases",
+        "state:cases-empty"
+      ],
+      "image": "casos/01-lista-vacia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 2,
+      "id": "tipo-escenario",
+      "title": "Elegir el tipo de escenario",
+      "caption": "«Nuevo caso» pregunta el tipo: «Básico» (Given/When/Then), «Básico avanzado» (Scenario Outline con tabla de ejemplos) o «Avanzado» (Background y varios flujos). Se puede subir de nivel después.",
+      "covers": [
+        "screen:level-picker"
+      ],
+      "image": "casos/02-tipo-escenario.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 3,
+      "id": "titulo-obligatorio",
+      "title": "El título es obligatorio",
+      "caption": "Si guardas un caso sin título, Pharos lo marca y no lo guarda.",
+      "covers": [
+        "state:case-title-required"
+      ],
+      "image": "casos/03-titulo-obligatorio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 4,
+      "id": "caso-basico",
+      "title": "Un caso básico",
+      "caption": "Título, precondiciones, pasos (cada uno con «+ Añadir paso»), resultado esperado y, arriba, nivel, tipo, prioridad, estado y automatización. «Guardar» le da su ID (BM-001).",
+      "covers": [
+        "action:case-create-basic",
+        "action:case-meta"
+      ],
+      "image": "casos/04-caso-basico.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 5,
+      "id": "campos-personalizados",
+      "title": "Campos personalizados en el caso",
+      "caption": "Los campos del proyecto aparecen en «Campos personalizados», al final del editor: aquí, «Navegador» (selección) y «Regresión crítica» (sí/no).",
+      "covers": [
+        "action:case-custom-fields"
+      ],
+      "image": "casos/05-campos-personalizados.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 6,
+      "id": "gherkin",
+      "title": "La vista Gherkin",
+      "caption": "«Gherkin» muestra el mismo caso como un escenario .feature, sincronizado con el editor: lo que cambias en uno se ve en el otro. La barra inserta palabras clave en el cursor.",
+      "covers": [
+        "action:case-gherkin",
+        "views:src/modules/test-cases/ui/TestCaseEditor.tsx"
+      ],
+      "image": "casos/06-gherkin.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 7,
+      "id": "vista-dividida",
+      "title": "Vista dividida y copiar el Gherkin",
+      "caption": "«Vista dividida» pone editor y Gherkin uno junto a otro. El botón de copiar lleva el Gherkin al portapapeles («Gherkin copiado»).",
+      "covers": [
+        "action:case-gherkin-copy"
+      ],
+      "image": "casos/07-vista-dividida.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 8,
+      "id": "outline",
+      "title": "Un caso «Básico avanzado» (Outline)",
+      "caption": "Los pasos usan marcadores entre ángulos (<importe>) y la tabla «Examples» da un valor por fila: un mismo escenario se ejecuta con varios datos. «+ Columna» y «+ Fila» la amplían.",
+      "covers": [
+        "action:case-outline"
+      ],
+      "image": "casos/08-outline.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 9,
+      "id": "flujos",
+      "title": "Un caso «Avanzado» con flujos alternos",
+      "caption": "El nivel avanzado añade precondiciones compartidas (Background) y flujos alternos, cada uno con su nombre, pasos y resultado: en Gherkin, un Scenario por flujo.",
+      "covers": [
+        "action:case-flows"
+      ],
+      "image": "casos/09-flujos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 10,
+      "id": "checklist",
+      "title": "Un caso de tipo checklist",
+      "caption": "«Tipo de caso: Checklist» cambia los pasos por una lista de comprobaciones, sin Gherkin. Útil para revisiones rápidas, como una prueba de humo.",
+      "covers": [
+        "action:case-checklist"
+      ],
+      "image": "casos/10-checklist.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 11,
+      "id": "reordenar-teclado",
+      "title": "Reordenar con el teclado",
+      "caption": "Cada paso tiene un asa: con el foco en ella, Espacio la coge, las flechas la mueven e Intro o Espacio la sueltan (también se puede arrastrar con el ratón).",
+      "covers": [
+        "keyboard:steps-reorder"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 12,
+      "id": "lista",
+      "title": "La lista de casos",
+      "caption": "Con casos, la tabla muestra ID, título, requisito, prioridad, estado y edición. Busca por ID, título o requisito y filtra por estado (con su recuento), prioridad, nivel, tipo, automatización o un campo sí/no.",
+      "covers": [
+        "action:cases-search",
+        "action:cases-filter",
+        "action:cases-sort"
+      ],
+      "image": "casos/12-lista.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 13,
+      "id": "sin-coincidencias",
+      "title": "Ningún caso coincide",
+      "caption": "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros».",
+      "covers": [
+        "state:cases-no-match"
+      ],
+      "image": "casos/13-sin-coincidencias.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 14,
+      "id": "recorrer",
+      "title": "Editar y recorrer los casos",
+      "caption": "Al abrir un caso, la barra superior permite pasar al anterior o al siguiente de la lista (respetando el filtro) y muestra si hay cambios sin guardar.",
+      "covers": [
+        "action:case-walk",
+        "action:case-edit"
+      ],
+      "image": "casos/14-recorrer.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 15,
+      "id": "ir-a-caso",
+      "title": "Ir a un caso (Ctrl+P)",
+      "caption": "«Ir a un caso…» o Ctrl+P abre un buscador: escribe parte del ID o del título, elige con las flechas y pulsa Intro.",
+      "covers": [
+        "keyboard:ctrl-p",
+        "dialogs:src/modules/test-cases/ui/GoToCaseDialog.tsx"
+      ],
+      "image": "casos/15-ir-a-caso.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 16,
+      "id": "mas-acciones",
+      "title": "Revisiones y exportación de un caso",
+      "caption": "El menú «⋯» del caso muestra sus revisiones (cada guardado) y lo exporta a .xlsx, .pdf o .feature; el aviso dice dónde se guardó.",
+      "covers": [
+        "action:case-revisions",
+        "action:case-export"
+      ],
+      "image": "casos/16-mas-acciones.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 17,
+      "id": "importar",
+      "title": "Importar un caso desde .xlsx",
+      "caption": "En la lista, «Importar / Exportar → Importar .xlsx» lee un caso de una plantilla o de un .xlsx exportado; el informe enseña qué se reconoció y «Aplicar» abre el editor con los datos.",
+      "covers": [
+        "upload:src/modules/test-cases/ui/TestCasesPage.tsx",
+        "dialogs:src/modules/test-cases/ui/TestCasesPage.tsx"
+      ],
+      "image": "casos/17-importar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 18,
+      "id": "importado",
+      "title": "Caso importado",
+      "caption": "Revisa el caso importado y guárdalo: entra en la lista con el siguiente ID.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 19,
+      "id": "exportar-feature",
+      "title": "Exportar todos los .feature",
+      "caption": "«Importar / Exportar → Exportar .feature» genera un archivo .feature por caso (las checklists no tienen Gherkin), listo para playwright-bdd o Cucumber.",
+      "covers": [
+        "action:cases-export-features"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 20,
+      "id": "seleccion",
+      "title": "Acciones con varios casos",
+      "caption": "Marca varios casos con su casilla: aparece una barra para exportarlos a .feature o eliminarlos.",
+      "covers": [
+        "action:cases-bulk"
+      ],
+      "image": "casos/20-seleccion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 21,
+      "id": "eliminar",
+      "title": "Eliminar casos",
+      "caption": "«Eliminar» pide confirmación («¿Eliminar 1 caso?») antes de quitarlos del proyecto.",
+      "covers": [
+        "dialogs:src/modules/test-cases/ui/TestCaseList.tsx"
+      ],
+      "image": "casos/21-eliminar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "casos",
+      "n": 22,
+      "id": "eliminado",
+      "title": "Casos eliminados",
+      "caption": "Al confirmar, un aviso dice cuántos se eliminaron.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 1,
+      "id": "vacio",
+      "title": "Trazabilidad, sin requisitos",
+      "caption": "Pulsa «Trazabilidad» en el menú lateral y elige la vista «Requisitos». Arriba, «Importar / Exportar» y «Nuevo requisito»; sin requisitos, la lista lo indica.",
+      "covers": [
+        "section:traceability",
+        "state:requirements-empty"
+      ],
+      "image": "trazabilidad/01-vacio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 2,
+      "id": "nuevo-requisito",
+      "title": "Nuevo requisito",
+      "caption": "«Nuevo requisito» pide título, descripción y prioridad. Si dejas vacío el ID, Pharos lo numera solo (REQ-001…); una vez creado, no cambia.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/RequirementFormModal.tsx"
+      ],
+      "image": "trazabilidad/02-nuevo-requisito.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 3,
+      "id": "importar-csv",
+      "title": "Importar requisitos desde CSV",
+      "caption": "«Importar / Exportar → Importar requisitos (.csv)» acepta un CSV con coma o punto y coma (como lo guarda Excel en español). La vista previa muestra las columnas detectadas y qué se creará o actualizará.",
+      "covers": [
+        "upload:src/modules/traceability/ui/TraceabilityPage.tsx",
+        "dialogs:src/modules/traceability/ui/RequirementImportModal.tsx"
+      ],
+      "image": "trazabilidad/03-importar-csv.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 4,
+      "id": "requisitos",
+      "title": "La lista de requisitos",
+      "caption": "«Importar 4» los añade: cada requisito con su ID, prioridad y cuántos casos lo cubren. Desde cada fila, editarlo, generar casos con IA o eliminarlo.",
+      "covers": [],
+      "image": "trazabilidad/04-requisitos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 5,
+      "id": "editar-requisito",
+      "title": "Editar un requisito",
+      "caption": "Haz clic en el título para editarlo; el ID queda fijo. «Guardar» confirma con «Requisito guardado».",
+      "covers": [
+        "action:requirement-edit"
+      ],
+      "image": "trazabilidad/05-editar-requisito.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 6,
+      "id": "requisito-descartar",
+      "title": "Cerrar un requisito sin guardar",
+      "caption": "Cerrar el diálogo con cambios sin guardar pide confirmación; «Aceptar» los descarta.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/RequirementFormModal.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 7,
+      "id": "vincular",
+      "title": "Vincular casos a requisitos",
+      "caption": "En el editor del caso, «Vincular un requisito…» añade el requisito; el caso lleva su tag (@REQ-001) en el Gherkin y la matriz lo cuenta como cubierto.",
+      "covers": [
+        "action:case-requirement-link"
+      ],
+      "image": "trazabilidad/07-vincular.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 8,
+      "id": "matriz",
+      "title": "La matriz de trazabilidad",
+      "caption": "«Matriz» muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, con la cobertura arriba (requisitos cubiertos y sin cubrir).",
+      "covers": [
+        "screen:matrix"
+      ],
+      "image": "trazabilidad/08-matriz.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 9,
+      "id": "huecos",
+      "title": "Solo los huecos",
+      "caption": "«Mostrar solo huecos» deja los requisitos sin ningún caso. Debajo, «Huecos de trazabilidad» lista casos sin requisito, vínculos a requisitos inexistentes y defectos sin caso.",
+      "covers": [
+        "action:matrix-gaps"
+      ],
+      "image": "trazabilidad/09-huecos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 10,
+      "id": "migrar",
+      "title": "Migrar referencias escritas a mano",
+      "caption": "Si un caso menciona un ID de requisito en su texto libre («Relacionado con REQ-003»), «Migrar trazabilidad» propone convertirlo en un vínculo real. Marca los que quieras y pulsa «Aplicar».",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"
+      ],
+      "image": "trazabilidad/10-migrar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 11,
+      "id": "exportar-matriz",
+      "title": "Exportar la matriz",
+      "caption": "«Importar / Exportar → Exportar matriz (.xlsx)» guarda requisitos, casos, estados y defectos en un libro de Excel.",
+      "covers": [
+        "action:matrix-export"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 12,
+      "id": "eliminar-requisito",
+      "title": "Eliminar un requisito",
+      "caption": "La papelera de la fila pide confirmación. El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como vínculo a un requisito inexistente.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/TraceabilityPage.tsx"
+      ],
+      "image": "trazabilidad/12-eliminar-requisito.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "trazabilidad",
+      "n": 13,
+      "id": "eliminado",
+      "title": "Requisito eliminado",
+      "caption": "Al confirmar aparece «REQ-005 eliminado».",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 1,
+      "id": "tablero",
+      "title": "El tablero del planificador",
+      "caption": "Pulsa «Planificador» en el menú lateral: cuatro columnas (Backlog, En progreso, En revisión, Hecho), cada una con su «+» para crear una tarjeta directamente en ella, y arriba los filtros por tipo y prioridad.",
+      "covers": [
+        "section:planner"
+      ],
+      "image": "planificador/01-tablero.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 2,
+      "id": "nueva-tarjeta",
+      "title": "Nueva tarjeta",
+      "caption": "Una tarjeta es una tarea o un conjunto de datos de prueba, con prioridad, descripción y etiquetas. «Guardar» la deja en Backlog; después admite adjuntos.",
+      "covers": [
+        "action:card-create"
+      ],
+      "image": "planificador/02-nueva-tarjeta.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 3,
+      "id": "adjunto",
+      "title": "Adjuntar archivos a una tarjeta",
+      "caption": "Tras guardar, «Adjuntos» acepta archivos (hasta el límite indicado); se guardan cifrados en este equipo y se abren desde la propia tarjeta.",
+      "covers": [
+        "upload:src/modules/planner/ui/CardEditor.tsx"
+      ],
+      "image": "planificador/03-adjunto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 4,
+      "id": "adjunto-grande",
+      "title": "Archivos demasiado grandes",
+      "caption": "Un archivo de más de 200 MB no se adjunta: Pharos avisa con su nombre y el límite.",
+      "covers": [
+        "dialogs:src/modules/planner/ui/CardEditor.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 5,
+      "id": "tarjetas",
+      "title": "Tarjetas en el tablero",
+      "caption": "Cada tarjeta muestra su tipo, prioridad y etiquetas. Ábrela con un clic en el título; la papelera la elimina.",
+      "covers": [],
+      "image": "planificador/05-tarjetas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 6,
+      "id": "mover",
+      "title": "Mover una tarjeta (también con el teclado)",
+      "caption": "Arrastra una tarjeta por su asa a otra columna. Con el teclado: foco en el asa, Espacio para cogerla, flechas para moverla y Espacio para soltarla.",
+      "covers": [
+        "action:card-move"
+      ],
+      "image": "planificador/06-mover.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 7,
+      "id": "filtrar",
+      "title": "Filtrar y buscar tarjetas",
+      "caption": "Arriba, filtra por tipo (tareas o datos de prueba) y prioridad, o busca por texto.",
+      "covers": [
+        "action:planner-filter"
+      ],
+      "image": "planificador/07-filtrar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 8,
+      "id": "eliminar",
+      "title": "Eliminar una tarjeta",
+      "caption": "La papelera de la tarjeta pide confirmación («¿Eliminar la tarjeta?»).",
+      "covers": [
+        "dialogs:src/modules/planner/ui/PlannerBoard.tsx"
+      ],
+      "image": "planificador/08-eliminar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "planificador",
+      "n": 9,
+      "id": "eliminada",
+      "title": "Tarjeta eliminada",
+      "caption": "Al confirmar, desaparece del tablero.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 1,
+      "id": "vacio",
+      "title": "Ciclos de prueba",
+      "caption": "Pulsa «Ciclos de prueba» en el menú lateral. Arriba, «Nuevo ciclo» y los filtros por estado; sin ciclos, la lista lo indica.",
+      "covers": [
+        "section:cycles",
+        "state:cycles-empty"
+      ],
+      "image": "ciclos/01-vacio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 2,
+      "id": "nuevo-ciclo",
+      "title": "Nuevo ciclo",
+      "caption": "«Nuevo ciclo» pide título, build, entorno, hito y sprint del plan, fechas y las configuraciones en las que se ejecutará.",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/CycleDialog.tsx"
+      ],
+      "image": "ciclos/02-nuevo-ciclo.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 3,
+      "id": "detalle",
+      "title": "El ciclo, recién creado",
+      "caption": "«Crear ciclo» lo crea con su clave (CY-1) y abre su detalle: resumen de resultados y las pestañas «Elementos» y «Runs».",
+      "covers": [],
+      "image": "ciclos/03-detalle.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 4,
+      "id": "anadir-casos",
+      "title": "Añadir casos al ciclo",
+      "caption": "«Añadir casos» lista los casos del proyecto con buscador; marca los que quieras, asígnalos a alguien si quieres y confirma. Pharos avisa si alguno no está aprobado.",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/ItemDialogs.tsx"
+      ],
+      "image": "ciclos/04-anadir-casos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 5,
+      "id": "por-filtro",
+      "title": "Añadir por filtro",
+      "caption": "«Añadir por filtro» elige los casos por etiquetas, prioridad, estado, requisitos o riesgo; el recuento se actualiza mientras marcas.",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/ItemDialogs.tsx"
+      ],
+      "image": "ciclos/05-por-filtro.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 6,
+      "id": "elementos",
+      "title": "Los elementos del ciclo",
+      "caption": "Cada elemento muestra el caso, a quién está asignado (se edita en la propia fila; Intro guarda) y su resultado. El menú de la fila lo sube, lo baja o lo quita del ciclo.",
+      "covers": [
+        "action:cycle-assignee",
+        "action:cycle-item-menu"
+      ],
+      "image": "ciclos/06-elementos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 7,
+      "id": "ejecutar",
+      "title": "Ejecutar el ciclo",
+      "caption": "«Ejecutar» crea un run por configuración con todos los elementos. Elige configuraciones, build y entorno y pulsa «Crear N runs».",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/ExecuteDialog.tsx"
+      ],
+      "image": "ciclos/07-ejecutar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 8,
+      "id": "runs",
+      "title": "Los runs del ciclo",
+      "caption": "Los runs creados aparecen en la pestaña «Runs» y en «Ejecuciones» (capítulo 8), listos para registrar resultados.",
+      "covers": [
+        "tabs:src/modules/cycles/ui/CycleDetail.tsx"
+      ],
+      "image": "ciclos/08-runs.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 9,
+      "id": "clonar",
+      "title": "Clonar y eliminar un ciclo",
+      "caption": "El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.",
+      "covers": [
+        "dialogs:src/modules/cycles/ui/CycleDetail.tsx"
+      ],
+      "image": "ciclos/09-clonar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 10,
+      "id": "eliminar",
+      "title": "Confirmar la eliminación",
+      "caption": "Eliminar un ciclo pide confirmación; sus runs se conservan en «Ejecuciones».",
+      "covers": [],
+      "image": "ciclos/10-eliminar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ciclos",
+      "n": 11,
+      "id": "lista",
+      "title": "La lista de ciclos",
+      "caption": "La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs; filtra por Planificados, Activos o Cerrados.",
+      "covers": [
+        "action:cycles-filter"
+      ],
+      "image": "ciclos/11-lista.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 1,
+      "id": "lista",
+      "title": "Ejecuciones",
+      "caption": "Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su estado y resultados; «Sin vincular», los tests importados que esperan un caso. Arriba, «Nuevo run manual» e «Importar informe».",
+      "covers": [
+        "section:runs",
+        "state:runs-empty"
+      ],
+      "image": "ejecuciones/01-lista.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 2,
+      "id": "importar",
+      "title": "Importar un informe",
+      "caption": "«Importar informe» acepta Cucumber Messages, CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON. Elige el archivo y, si el informe enlaza capturas o vídeos, su carpeta de adjuntos.",
+      "covers": [
+        "dialogs:src/modules/runs/ui/ImportReportDialog.tsx",
+        "upload:src/modules/runs/ui/ImportReportDialog.tsx"
+      ],
+      "image": "ejecuciones/02-importar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 3,
+      "id": "vista-previa",
+      "title": "Vista previa antes de importar",
+      "caption": "La vista previa dice cuántos tests e intentos trae el informe, cuántos se vinculan a casos por su etiqueta (@BM-001) y cuántos quedarán «sin vincular». Nada se guarda hasta pulsar «Importar».",
+      "covers": [],
+      "image": "ejecuciones/03-vista-previa.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 4,
+      "id": "importado",
+      "title": "Informe importado",
+      "caption": "Al terminar, el resumen dice qué run se creó y cuántos resultados quedan sin vincular. El run aparece en la lista como «Importado».",
+      "covers": [
+        "action:runs-filter"
+      ],
+      "image": "ejecuciones/04-importado.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 5,
+      "id": "con-adjuntos",
+      "title": "Un informe con adjuntos",
+      "caption": "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo.",
+      "covers": [
+        "action:import-attachments-folder"
+      ],
+      "image": "ejecuciones/05-con-adjuntos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 6,
+      "id": "con-adjuntos-hecho",
+      "title": "Adjuntos guardados",
+      "caption": "El resumen confirma cuántos resultados se importaron y cuántos adjuntos se guardaron como evidencia.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 7,
+      "id": "sin-vincular",
+      "title": "La bandeja «Sin vincular»",
+      "caption": "Los tests del informe que no llevan la etiqueta de un caso del proyecto esperan en «Sin vincular», con el motivo (sin etiqueta, caso desconocido…), su último estado y cuántos resultados tienen.",
+      "covers": [
+        "screen:unlinked-tray",
+        "tabs:src/modules/runs/ui/RunsPage.tsx"
+      ],
+      "image": "ejecuciones/07-sin-vincular.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 8,
+      "id": "vincular",
+      "title": "Vincular un test a un caso",
+      "caption": "«Vincular…» abre el buscador de casos: elige el caso y pulsa «Vincular». Desde ese momento, todos sus resultados (también los de futuras importaciones) cuentan para el caso.",
+      "covers": [
+        "dialogs:src/modules/runs/ui/LinkCaseDialog.tsx"
+      ],
+      "image": "ejecuciones/08-vincular.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 9,
+      "id": "vinculado",
+      "title": "Vinculados a mano",
+      "caption": "El filtro «Vinculados a mano» muestra los tests que vinculaste; «Desvincular» deshace el vínculo.",
+      "covers": [
+        "action:tray-filter",
+        "action:tray-unlink"
+      ],
+      "image": "ejecuciones/09-vinculado.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecuciones",
+      "n": 10,
+      "id": "desvincular",
+      "title": "Desvincular",
+      "caption": "«Desvincular» devuelve el test a la bandeja («Vínculo retirado»).",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 1,
+      "id": "vacio",
+      "title": "Defectos",
+      "caption": "Pulsa «Defectos» en el menú lateral. Arriba, «Desde un resultado» y «Nuevo defecto»; debajo, los filtros (abiertos, todos, cerrados), la búsqueda, la severidad y el cambio entre lista y tablero.",
+      "covers": [
+        "section:defects",
+        "state:defects-empty"
+      ],
+      "image": "defectos/01-vacio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 2,
+      "id": "titulo-obligatorio",
+      "title": "Nuevo defecto: el título es obligatorio",
+      "caption": "«Nuevo defecto» abre el editor. Sin título no se guarda: Pharos lo indica en el campo.",
+      "covers": [
+        "state:defect-title-required"
+      ],
+      "image": "defectos/02-titulo-obligatorio.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 3,
+      "id": "nuevo",
+      "title": "Rellenar el defecto",
+      "caption": "Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos y seguimiento externo.",
+      "covers": [
+        "action:defect-create",
+        "action:defect-links"
+      ],
+      "image": "defectos/03-nuevo.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 4,
+      "id": "evidencias",
+      "title": "Evidencias",
+      "caption": "Tras guardar, «Evidencias» admite capturas, vídeos o registros; se guardan cifrados en este equipo.",
+      "covers": [
+        "upload:src/modules/defects/ui/DefectEditor.tsx"
+      ],
+      "image": "defectos/04-evidencias.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 5,
+      "id": "desde-resultado",
+      "title": "Un defecto desde un resultado fallido",
+      "caption": "«Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (aquí, el del informe importado en el capítulo 8). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado.",
+      "covers": [
+        "dialogs:src/modules/defects/ui/ResultPickerDialog.tsx"
+      ],
+      "image": "defectos/05-desde-resultado.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 6,
+      "id": "prerrellenado",
+      "title": "Prerrellenado desde el resultado",
+      "caption": "El aviso superior indica de qué resultado nace. Revisa el título y guarda.",
+      "covers": [],
+      "image": "defectos/06-prerrellenado.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 7,
+      "id": "lista",
+      "title": "La lista de defectos",
+      "caption": "La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Filtra por abiertos, todos o cerrados, por severidad o busca por texto.",
+      "covers": [
+        "action:defects-filter"
+      ],
+      "image": "defectos/07-lista.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 8,
+      "id": "tablero",
+      "title": "El tablero de defectos",
+      "caption": "«Tablero» agrupa los defectos por estado. Arrastra una tarjeta (o usa el teclado sobre su asa) para cambiarlo; Pharos solo permite los pasos válidos del ciclo de vida.",
+      "covers": [
+        "screen:defect-board",
+        "action:defect-move",
+        "views:src/modules/defects/ui/DefectsPage.tsx"
+      ],
+      "image": "defectos/08-tablero.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 9,
+      "id": "cerrar",
+      "title": "Cerrar un defecto",
+      "caption": "Al soltar un defecto en «Cerrado» (o en «Otros»: rechazado, aplazado), Pharos pide la resolución y, si quieres, la build en la que se corrigió.",
+      "covers": [
+        "dialogs:src/modules/defects/ui/TransitionDialog.tsx"
+      ],
+      "image": "defectos/09-cerrar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 10,
+      "id": "eliminar",
+      "title": "Eliminar un defecto",
+      "caption": "En la lista, la papelera de la fila pide confirmación. Su clave no se vuelve a usar.",
+      "covers": [
+        "dialogs:src/modules/defects/ui/DefectsPage.tsx"
+      ],
+      "image": "defectos/10-eliminar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "defectos",
+      "n": 11,
+      "id": "eliminado",
+      "title": "Defecto eliminado",
+      "caption": "Al confirmar desaparece de la lista.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 1,
+      "id": "inicio-con-datos",
+      "title": "Inicio, con datos",
+      "caption": "Con proyectos en marcha, «Inicio» cuenta proyectos, pruebas pendientes, tasa de éxito y defectos abiertos (cada tarjeta lleva a su lista). «Criterios de salida» muestra los criterios de cierre del plan del proyecto que elijas.",
+      "covers": [
+        "action:home-kpi",
+        "action:home-exit-criteria"
+      ],
+      "image": "administracion/01-inicio-con-datos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 2,
+      "id": "motor-ia",
+      "title": "Administración · Motor de IA",
+      "caption": "«Administración» agrupa los recursos (Motor de IA, Plantillas), la aplicación (General), la cuenta (Sincronización, Seguridad) y el soporte (Diagnóstico). El motor de IA elige modo (automático, solo online, solo local), proveedor, clave y modelo; la IA es opcional y nada se aplica sin que lo aceptes.",
+      "covers": [
+        "route:/admin",
+        "admin:ai",
+        "state:ollama-offline",
+        "tabs:src/modules/admin/ui/AdminTabs.tsx"
+      ],
+      "image": "administracion/02-motor-ia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 3,
+      "id": "ia-descartar-clave",
+      "title": "Cambiar de proveedor con una clave sin guardar",
+      "caption": "Si escribes una clave y cambias de proveedor sin pulsar «Guardar clave», Pharos avisa de que se descartará. La clave real se guarda en el almacén de credenciales de Windows, nunca en un archivo.",
+      "covers": [
+        "dialogs:src/modules/ai/ui/AiEngineTab.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 4,
+      "id": "plantillas",
+      "title": "Plantillas",
+      "caption": "«Plantillas» guarda las de plan y de caso: las incluidas con Pharos y las tuyas. Cada tarjeta se descarga en .xlsx para rellenarla en Excel e importarla después en un plan o en un caso.",
+      "covers": [
+        "admin:templates",
+        "action:template-download"
+      ],
+      "image": "administracion/04-plantillas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 5,
+      "id": "importar-plantilla",
+      "title": "Importar una plantilla",
+      "caption": "«Importar plantilla» lee un .xlsx y pide nombre, tipo, idioma, versión, descripción y un «prompt de uso» que la IA usa al rellenarla.",
+      "covers": [
+        "upload:src/modules/templates/ui/TemplatesTab.tsx",
+        "dialogs:src/modules/templates/ui/TemplateFormModal.tsx"
+      ],
+      "image": "administracion/05-importar-plantilla.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 6,
+      "id": "eliminar-plantilla",
+      "title": "Eliminar una plantilla propia",
+      "caption": "Las plantillas propias se editan o eliminan desde su menú (las incluidas no); eliminar pide confirmación.",
+      "covers": [
+        "dialogs:src/modules/templates/ui/TemplatesTab.tsx",
+        "dialogs:src/modules/templates/ui/TemplateFormModal.tsx"
+      ],
+      "image": "administracion/06-eliminar-plantilla.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 7,
+      "id": "general",
+      "title": "General",
+      "caption": "Tema (claro, oscuro o según el sistema) e idioma se aplican al momento. También un fondo personalizado con su opacidad, la retención de elementos borrados y la carpeta donde se guardan las exportaciones.",
+      "covers": [
+        "admin:general",
+        "upload:src/modules/admin/ui/tabs/GeneralTab.tsx"
+      ],
+      "image": "administracion/07-general.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 8,
+      "id": "cambios-sin-guardar",
+      "title": "Cambiar de pestaña con cambios sin guardar",
+      "caption": "Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios. Aquí se descartan: el fondo vuelve a ser el de siempre.",
+      "covers": [
+        "dialogs:src/modules/admin/ui/AdminPage.tsx"
+      ],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 9,
+      "id": "sincronizacion",
+      "title": "Sincronización",
+      "caption": "Pharos trabaja sin conexión y sincroniza con el servidor al iniciar sesión o con «Sincronizar ahora» (también al pie del menú lateral). Aquí ves el estado, la cuenta y los conflictos pendientes.",
+      "covers": [
+        "admin:sync",
+        "action:sync-now"
+      ],
+      "image": "administracion/09-sincronizacion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 10,
+      "id": "conflicto-otro-equipo",
+      "title": "Un cambio en dos equipos",
+      "caption": "Si el mismo dato se cambia en dos equipos antes de sincronizar (aquí, el título de REQ-002), el segundo en sincronizar recibe un conflicto: Pharos no pisa ninguno de los dos cambios y avisa.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 11,
+      "id": "conflictos",
+      "title": "Revisar conflictos",
+      "caption": "«Sincronización → Revisar conflictos» (o el aviso del menú lateral) muestra cada conflicto campo a campo: tu versión y la del servidor. Elige «Conservar la mía» o «Usar la del servidor».",
+      "covers": [
+        "dialogs:src/modules/sync-offline/ui/ConflictPanel.tsx"
+      ],
+      "image": "administracion/11-conflictos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 12,
+      "id": "conflicto-resuelto",
+      "title": "Conflicto resuelto",
+      "caption": "Al elegir una versión, el conflicto desaparece de la lista («Conflicto resuelto») y la elegida se sincroniza.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 13,
+      "id": "seguridad",
+      "title": "Seguridad · clave de recuperación",
+      "caption": "La base de datos local está cifrada y su clave vive en el almacén de credenciales del equipo. «Mostrar clave de recuperación» pide confirmación: con esa clave y una copia de tus datos se recuperan en otro equipo.",
+      "covers": [
+        "admin:security",
+        "dialogs:src/modules/profile/ui/RecoveryKeySection.tsx"
+      ],
+      "image": "administracion/13-seguridad.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 14,
+      "id": "clave-mostrada",
+      "title": "Guarda la clave",
+      "caption": "La clave aparece en grupos (en este manual, difuminada). Cópiala a un gestor de contraseñas o escríbela en papel, marca «Ya la he guardado» y cierra.",
+      "covers": [
+        "dialogs:src/modules/profile/ui/RecoveryKeySection.tsx"
+      ],
+      "image": "administracion/14-clave-mostrada.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "administracion",
+      "n": 15,
+      "id": "diagnostico",
+      "title": "Diagnóstico",
+      "caption": "«Exportar diagnóstico» guarda un ZIP con la versión, el sistema y el registro de la aplicación para informar de un fallo. Nunca incluye tus datos.",
+      "covers": [
+        "admin:diagnostics",
+        "action:diagnostics-export"
+      ],
+      "image": "administracion/15-diagnostico.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 1,
+      "id": "sin-configurar",
+      "title": "Sin IA configurada",
+      "caption": "Mientras no configures un proveedor (o Ollama), los botones de IA aparecen deshabilitados y explican por qué; el resto de Pharos funciona igual.",
+      "covers": [
+        "ai:disabled-without-key"
+      ],
+      "image": null,
+      "viewport": {
+        "width": 0,
+        "height": 0
+      },
+      "status": "skipped",
+      "reason": "con una clave configurada los botones ya están activos"
+    },
+    {
+      "chapter": "ia",
+      "n": 2,
+      "id": "configurar",
+      "title": "Configurar el proveedor",
+      "caption": "En «Administración → Motor de IA», elige el proveedor, pega tu clave y pulsa «Guardar clave»: queda en el almacén de credenciales de Windows y el campo muestra «Configurada» (en el manual, difuminado). Después elige un modelo («Listar modelos») y guarda.",
+      "covers": [
+        "ai:configure"
+      ],
+      "image": "ia/02-configurar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 3,
+      "id": "probar-conexion",
+      "title": "Probar la conexión",
+      "caption": "«Probar conexión» envía una pregunta mínima y muestra el tiempo de respuesta. Si falla, dice por qué (clave, modelo o red).",
+      "covers": [
+        "ai:test-connection"
+      ],
+      "image": "ia/03-probar-conexion.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 4,
+      "id": "asistir",
+      "title": "«Asistir con IA» en un campo",
+      "caption": "En los campos de texto del plan, «✨ Asistir con IA» propone un borrador a partir del resto del plan. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
+      "covers": [
+        "ai:assist-field"
+      ],
+      "image": "ia/04-asistir.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 5,
+      "id": "riesgos",
+      "title": "Sugerir riesgos",
+      "caption": "En «Riesgos y mitigación», «✨ Sugerir riesgos con IA» propone riesgos con su mitigación; marca los que te sirvan y pulsa «Añadir».",
+      "covers": [
+        "ai:suggest-risks"
+      ],
+      "image": "ia/05-riesgos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 6,
+      "id": "generar-casos",
+      "title": "Generar casos desde un requisito",
+      "caption": "En «Trazabilidad», el botón de IA de un requisito propone escenarios Gherkin y casos para él. Revisa cada propuesta («Ver Gherkin»), marca las buenas y pulsa «Crear N casos»: quedan vinculados al requisito.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/GenerateCasesModal.tsx"
+      ],
+      "image": "ia/06-generar-casos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 7,
+      "id": "sugerir-casos",
+      "title": "Sugerir casos a partir del plan",
+      "caption": "En «Casos de prueba», «Sugerir casos con IA» propone casos según los tipos y niveles del plan; elige los que quieras crear.",
+      "covers": [
+        "dialogs:src/modules/test-cases/ui/SuggestTestsModal.tsx"
+      ],
+      "image": "ia/07-sugerir-casos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 8,
+      "id": "precondiciones",
+      "title": "Sugerir precondiciones",
+      "caption": "En el editor de un caso, «✨ Sugerir precondiciones» propone las condiciones previas a partir del título y los pasos.",
+      "covers": [
+        "ai:suggest-preconditions"
+      ],
+      "image": "ia/08-precondiciones.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 9,
+      "id": "borrar-clave",
+      "title": "Borrar la clave",
+      "caption": "«Borrar clave» la quita del almacén de credenciales; la IA vuelve a quedar sin configurar.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 1,
+      "id": "tableta",
+      "title": "Pantallas medianas: menú de iconos",
+      "caption": "Por debajo de 1280 px, el menú lateral se reduce a una tira de iconos con su nombre corto; el contenido gana espacio.",
+      "covers": [
+        "platform:tablet-icon-strip"
+      ],
+      "image": "movil/01-tableta.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 2,
+      "id": "movil-inicio",
+      "title": "En el móvil: barra inferior",
+      "caption": "A 390 px, Pharos usa una barra superior compacta y una barra inferior con Inicio, Proyectos, Administración y Perfil.",
+      "covers": [
+        "platform:mobile-bottom-nav",
+        "tabs:src/app/dashboard/DashboardPage.tsx"
+      ],
+      "image": "movil/02-movil-inicio.png",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 3,
+      "id": "movil-busqueda",
+      "title": "Buscar en el móvil",
+      "caption": "La lupa convierte la barra superior en un campo de búsqueda; la flecha (o Esc) la cierra.",
+      "covers": [
+        "platform:mobile-search"
+      ],
+      "image": "movil/03-movil-busqueda.png",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 4,
+      "id": "movil-proyecto",
+      "title": "Secciones del proyecto en el móvil",
+      "caption": "Dentro de un proyecto, las secciones (Plan, Casos, Ciclos…) se recorren con las píldoras bajo el título; la flecha vuelve a Proyectos.",
+      "covers": [
+        "platform:mobile-project-pills"
+      ],
+      "image": "movil/04-movil-proyecto.png",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 5,
+      "id": "movil-filtros",
+      "title": "Filtros en una hoja inferior",
+      "caption": "En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtros que en el escritorio.",
+      "covers": [
+        "platform:mobile-filters",
+        "dialogs:src/modules/test-cases/ui/TestCaseList.tsx"
+      ],
+      "image": "movil/05-movil-filtros.png",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 6,
+      "id": "movil-pasos-plan",
+      "title": "Los pasos del plan en el móvil",
+      "caption": "En el plan de pruebas, «Ver pasos» abre la lista de los 19 pasos en una hoja inferior.",
+      "covers": [
+        "dialogs:src/modules/test-plan/ui/wizard/StepNav.tsx"
+      ],
+      "image": "movil/06-movil-pasos-plan.png",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "movil",
+      "n": 7,
+      "id": "escritorio",
+      "title": "De vuelta al escritorio",
+      "caption": "Al ensanchar la ventana, Pharos vuelve al menú lateral completo.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 1,
+      "id": "nuevo-run",
+      "title": "Nuevo run manual",
+      "caption": "En «Ejecuciones», «Nuevo run manual» crea un run para ejecutar a mano: título, entorno, build, configuración y los casos que entran (con su revisión vigente).",
+      "covers": [
+        "dialogs:src/modules/runs/ui/CasePickerDialog.tsx"
+      ],
+      "image": "ejecucion-manual/01-nuevo-run.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 2,
+      "id": "pantalla-run",
+      "title": "La pantalla del run",
+      "caption": "El run abierto muestra su cabecera (clave, entorno, build, configuración, estado), el progreso por resultado y sus elementos. Cada caso Outline o con flujos se ejecuta una vez por fila o por flujo.",
+      "covers": [
+        "route:/projects/:projectId/runs/:runId",
+        "screen:manual-run"
+      ],
+      "image": "ejecucion-manual/02-pantalla-run.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 3,
+      "id": "ejecutor",
+      "title": "El ejecutor",
+      "caption": "«Ejecutar» abre el ejecutor junto a la lista: los pasos del caso con su resultado esperado. Marca cada paso como Pasa, Falla, Bloqueado u Omitido; con el teclado, P / F / B / S marcan y J / K (o las flechas) cambian de paso.",
+      "covers": [
+        "action:manual-run-result",
+        "keyboard:exec-keys"
+      ],
+      "image": "ejecucion-manual/03-ejecutor.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 4,
+      "id": "atajos",
+      "title": "Los atajos de teclado",
+      "caption": "«Atajos» (o «?») muestra todas las teclas del ejecutor.",
+      "covers": [
+        "dialogs:src/modules/runs/ui/ExecutionPanel.tsx"
+      ],
+      "image": "ejecucion-manual/04-atajos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 5,
+      "id": "evidencia",
+      "title": "Adjuntar evidencias",
+      "caption": "Cada paso y el resultado admiten archivos, una imagen pegada (Ctrl+V o «Pegar captura») o una captura del sistema. Se cifran en este equipo al adjuntarlas. El borrador se guarda solo: si cierras, lo encuentras al volver.",
+      "covers": [
+        "upload:src/modules/runs/ui/ExecutionPanel.tsx"
+      ],
+      "image": "ejecucion-manual/05-evidencia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 6,
+      "id": "pegar-captura",
+      "title": "Pegar una captura",
+      "caption": "Con el foco en un paso o en el resultado, Ctrl+V pega la imagen del portapapeles (una captura hecha con Win+Mayús+S) como evidencia, sin guardarla antes en un archivo.",
+      "covers": [
+        "action:exec-paste"
+      ],
+      "image": "ejecucion-manual/06-pegar-captura.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 7,
+      "id": "guardar",
+      "title": "Guardar el resultado",
+      "caption": "«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (aquí, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento.",
+      "covers": [],
+      "image": "ejecucion-manual/07-guardar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 8,
+      "id": "crear-defecto",
+      "title": "Crear un defecto desde el intento fallido",
+      "caption": "En un intento fallido, «Crear defecto» abre el editor de defectos relleno con el caso, el paso y lo obtenido, ya vinculado al resultado.",
+      "covers": [],
+      "image": "ejecucion-manual/08-crear-defecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 9,
+      "id": "descartar",
+      "title": "Descartar un borrador",
+      "caption": "«Descartar» tira el borrador del elemento (y sus adjuntos) después de confirmarlo.",
+      "covers": [
+        "dialogs:src/modules/runs/ui/ExecutionPanel.tsx"
+      ],
+      "image": "ejecucion-manual/09-descartar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 10,
+      "id": "editar-run",
+      "title": "Editar los datos del run",
+      "caption": "«Editar datos» cambia el título, el entorno, la build o la configuración del run.",
+      "covers": [
+        "dialogs:src/modules/runs/ui/RunDetail.tsx"
+      ],
+      "image": "ejecucion-manual/10-editar-run.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 11,
+      "id": "cerrar-run",
+      "title": "Cerrar el run",
+      "caption": "«Cerrar run» avisa de lo que queda sin ejecutar y de los borradores pendientes (que se pueden descartar); un run cerrado no admite intentos nuevos. «Reabrir» lo vuelve a abrir.",
+      "covers": [
+        "dialogs:src/modules/runs/ui/RunDetail.tsx"
+      ],
+      "image": "ejecucion-manual/11-cerrar-run.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ejecucion-manual",
+      "n": 12,
+      "id": "reabrir",
+      "title": "Run cerrado y reabierto",
+      "caption": "Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 1,
+      "id": "almacen",
+      "title": "El almacén de evidencias",
+      "caption": "En «Administración», pulsa la pestaña «Evidencias». «Almacén de evidencias» da el espacio que ocupan, los adjuntos por tipo (planificador, defectos, reportes, resultados, borradores…) y la retención de los reportes importados.",
+      "covers": [
+        "admin:evidence",
+        "screen:evidence-admin"
+      ],
+      "image": "evidencias/01-almacen.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 2,
+      "id": "verificar",
+      "title": "Verificar las evidencias",
+      "caption": "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce (huérfanos). No borra nada por sí sola; puedes seguir trabajando mientras tanto.",
+      "covers": [],
+      "image": "evidencias/02-verificar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 3,
+      "id": "reparar",
+      "title": "Borrar los huérfanos",
+      "caption": "Los huérfanos aparecen en su bloque con su tamaño; «Borrar seleccionados» pide confirmación antes de eliminarlos. Los que faltan o están dañados se listan con el elemento que los usa.",
+      "covers": [
+        "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx"
+      ],
+      "image": "evidencias/03-reparar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 4,
+      "id": "reparado",
+      "title": "Huérfanos borrados",
+      "caption": "Al confirmar se borran y el informe se actualiza; cada borrado queda en el registro de auditoría.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "errores",
+      "n": 1,
+      "id": "base-de-datos",
+      "title": "Si la base de datos local no abre",
+      "caption": "Si los datos locales no se pueden abrir (un archivo dañado, una versión más nueva o la clave que falta en un equipo nuevo), Pharos lo explica, no modifica ningún archivo y, cuando falta la clave, ofrece abrirlos con la clave de recuperación.",
+      "covers": [
+        "state:db-error"
+      ],
+      "image": "errores/01-base-de-datos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "errores",
+      "n": 2,
+      "id": "restaurar",
+      "title": "Restaurar la copia",
+      "caption": "Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 800,
+        "width": 1280
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "errores",
+      "n": 3,
+      "id": "algo-salio-mal",
+      "title": "«Algo salió mal»",
+      "caption": "Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reintentar», «Recargar» y «Exportar diagnóstico», y tus datos siguen a salvo. «Detalles técnicos» enseña el error para el informe.",
+      "covers": [
+        "state:error-boundary"
+      ],
+      "image": "errores/03-algo-salio-mal.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "errores",
+      "n": 4,
+      "id": "reintentar",
+      "title": "Reintentar",
+      "caption": "«Reintentar» vuelve a mostrar la vista cuando el fallo ya no se repite.",
+      "covers": [],
+      "image": null,
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    }
+  ]
+}
