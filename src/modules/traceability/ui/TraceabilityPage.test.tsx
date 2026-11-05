@@ -1,3 +1,4 @@
+import "@test/slow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -110,7 +111,7 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(kpis).toHaveTextContent("2 de prioridad alta");
     expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–3 de 3 requisitos");
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {
     setViewportWidth(1440);
@@ -141,7 +142,7 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(within(items[1]).getByText("Ningún caso cubre este requisito.")).toBeInTheDocument();
     expect(within(items[1]).getByRole("button", { name: "Generar casos con IA" })).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("lists the requirements and deletes one only through «Cancelar»-guarded confirmation", async () => {
     setViewportWidth(1440);
@@ -156,7 +157,7 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(dialog).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole("button", { name: "Eliminar" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("REQ-047", expect.any(String)));
-  }, 15_000);
+  });
 
   it("shows each case's latest result from a manual and an imported run, filters them and orders by risk (EJE-04)", async () => {
     setViewportWidth(1440);
@@ -190,5 +191,5 @@ describe("Trazabilidad (RED-V3)", () => {
     // By ID: REQ-031 first again.
     await userEvent.selectOptions(screen.getByTestId("trace-sort"), "key");
     expect(within(screen.getByRole("table", { name: "Matriz de trazabilidad" })).getAllByRole("row")[1]).toHaveTextContent("REQ-031");
-  }, 20_000);
+  });
 });

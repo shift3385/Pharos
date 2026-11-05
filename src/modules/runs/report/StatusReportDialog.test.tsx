@@ -1,3 +1,4 @@
+import "@test/slow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -49,7 +50,7 @@ describe("Informe de estado (EJE-03)", () => {
     );
     expect(dialog).toHaveTextContent("se guardan solo en este equipo");
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("scopes to a cycle and a period, keeps the texts on this device and exports them", async () => {
     setViewportWidth(1440);
@@ -76,12 +77,12 @@ describe("Informe de estado (EJE-03)", () => {
     expect(exportXlsx.mock.calls[0][2]).toMatch(/^Informe_de_estado_de_pruebas_Portal_\d{4}-\d{2}-\d{2}\.xlsx$/);
     await userEvent.click(screen.getByTestId("report-export-pdf"));
     await waitFor(() => expect(exportPdf).toHaveBeenCalled());
-  }, 20_000);
+  });
 
   it("fits a phone", async () => {
     setViewportWidth(390);
     renderWithProviders(<StatusReportDialog projectId="p1" projectName="Portal" onClose={() => {}} />);
     await screen.findByText("1. Identificación");
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 });

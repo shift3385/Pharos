@@ -2,6 +2,7 @@
 // proposals and only accepted ones are created (failed saves stay for a retry);
 // an invalid answer creates nothing; with no AI the button is disabled.
 
+import "@test/slow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

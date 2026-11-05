@@ -1,3 +1,4 @@
+import "@test/slow";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";

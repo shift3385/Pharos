@@ -1,3 +1,4 @@
+import "@test/slow";
 import { beforeEach, describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import { i18n } from "@test/utils";
