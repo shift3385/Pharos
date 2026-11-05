@@ -17,6 +17,7 @@ import { createDomainService } from "./modules/domain/domain.service";
 import { domainRoutes } from "./modules/domain/domain.routes";
 import { createCycleService, cycleRoutes } from "./modules/domain/cycles";
 import { createExecutionService, executionRoutes } from "./modules/domain/execution";
+import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { AppError } from "./modules/auth/errors";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
@@ -103,6 +104,9 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   void app.register(async (instance) => {
     executionRoutes(instance, { execution, tokens });
+  });
+  void app.register(async (instance) => {
+    homeMetricsRoutes(instance, { tokens, core: execution.homeMetrics });
   });
 
   app.setErrorHandler((error, req, reply) => {

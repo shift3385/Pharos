@@ -1344,6 +1344,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "read (writes a file the user exports)",
     ),
     ("runs::manual::execution_attachment_preview", "read"),
+    (
+        "home_metrics::home_metrics",
+        "read (Inicio metrics, RED-W6)",
+    ),
 ];
 
 fn registered_commands() -> Vec<String> {
