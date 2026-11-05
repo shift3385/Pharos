@@ -1,6 +1,7 @@
-# Continuous integration (BASE-01). Every job name below is a required check of
-# the protected `main` branch (BASE-02, .github/branch-protection.json), `e2e`
-# included since 2026-10-29 (BASE-14).
+# Continuous integration (BASE-01). Every job below is a required check of the
+# protected `main` branch (BASE-02, .github/branch-protection.json), `e2e`
+# included since 2026-10-29 (BASE-14), except the two guided-tour jobs
+# `manual` and `manual (main)` (MAN-01), which are informative.
 # Supply chain (ADR-0021): every action is pinned to a full commit SHA, with its
 # release in a comment; Dependabot keeps the pins current.
 name: CI
@@ -172,6 +173,190 @@ jobs:
             e2e/results/
             server/api.log
             server/api.err.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Guided tours of every screen + the user manual (MAN-01, e2e/README.md →
+  # Tours). NOT required checks (the 8 above stay the gate): they build a
+  # second binary and run ~180 tour steps. The tours run their own API on
+  # localhost:3100 with their own database (pharos_test_db_tours), created and
+  # dropped by `npm run manual`.
+  # - `manual` (pull requests): the tours must pass; no AI key, no manual.
+  # - `manual-main` (push to main, workflow_dispatch): environment `tours-ai`
+  #   (the AI key secret lives there, restricted to main), the regenerated
+  #   manual as the `manual` artifact, and a drift check of docs/manual/.
+  # Results are uploaded only when the secret scan passed (no marker file).
+  manual:
+    name: manual
+    if: github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # Skips the rest when the pull request only changes Markdown outside the
+      # manual's own sources: nothing a tour can see changed.
+      - name: Decide whether the tours are affected
+        id: scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA" HEAD)
+          relevant=$(printf '%s\n' "$changed" | grep -Ev '\.md$' | grep -v '^$' || true)
+          sources=$(printf '%s\n' "$changed" | grep -E '^docs/manual/fuentes/' || true)
+          run=true
+          if [ -z "$relevant" ] && [ -z "$sources" ]; then run=false; fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "Tours affected: $run"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.run == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        if: steps.scope.outputs.run == 'true'
+        working-directory: src-tauri
+        run: rustup toolchain install
+      # Reads the cache `manual-main` saves; never writes one, so the tour
+      # build cannot evict the caches of the required jobs.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        if: steps.scope.outputs.run == 'true'
+        with:
+          workspaces: src-tauri -> target
+          key: tours
+          save-if: false
+      - name: Start PostgreSQL
+        if: steps.scope.outputs.run == 'true'
+        run: |
+          $pg = Get-Service -Name 'postgresql*' | Select-Object -First 1
+          Set-Service -InputObject $pg -StartupType Manual -Status Running
+          & "$env:PGBIN\pg_isready.exe" --host=localhost --timeout=60
+          if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not start" }
+      - name: Write .env
+        if: steps.scope.outputs.run == 'true'
+        shell: bash
+        run: |
+          url="postgres://${PGUSER}:${PGPASSWORD}@localhost:5432"
+          sed -e "s|^DATABASE_URL=.*|DATABASE_URL=${url}/pharos_db|" \
+              -e "s|^TEST_DATABASE_URL=.*|TEST_DATABASE_URL=${url}/pharos_test_db|" \
+              .env.example > .env
+      - run: npm ci
+        if: steps.scope.outputs.run == 'true'
+      - run: npm ci
+        if: steps.scope.outputs.run == 'true'
+        working-directory: server
+      - name: Install tauri-driver
+        if: steps.scope.outputs.run == 'true'
+        run: cargo install tauri-driver --version 2.1.0 --locked
+      - run: npm run e2e:driver
+        if: steps.scope.outputs.run == 'true'
+      - name: Run the tours
+        if: steps.scope.outputs.run == 'true'
+        run: npm run manual -- --no-manual
+      - name: Upload the tour results
+        if: always() && steps.scope.outputs.run == 'true' && hashFiles('e2e/results/tours/SECRET-SCAN-FAILED') == ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: manual-tour-results
+          path: |
+            e2e/results/tours/failures/
+            e2e/results/tours/api.log
+            e2e/results/tours/steps.jsonl
+            e2e/results/tours/app-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  manual-main:
+    name: manual (main)
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 75
+    # The AI key (secret PHAROS_TOURS_AI_KEY) lives in this environment,
+    # restricted to `main` (e2e/README.md → Tours → AI tours).
+    environment: tours-ai
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        working-directory: src-tauri
+        run: rustup toolchain install
+      # The tour binary (target/tours) is cached from `main` only.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: src-tauri -> target
+          key: tours
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Start PostgreSQL
+        run: |
+          $pg = Get-Service -Name 'postgresql*' | Select-Object -First 1
+          Set-Service -InputObject $pg -StartupType Manual -Status Running
+          & "$env:PGBIN\pg_isready.exe" --host=localhost --timeout=60
+          if ($LASTEXITCODE -ne 0) { throw "PostgreSQL did not start" }
+      - name: Write .env
+        shell: bash
+        run: |
+          url="postgres://${PGUSER}:${PGPASSWORD}@localhost:5432"
+          sed -e "s|^DATABASE_URL=.*|DATABASE_URL=${url}/pharos_db|" \
+              -e "s|^TEST_DATABASE_URL=.*|TEST_DATABASE_URL=${url}/pharos_test_db|" \
+              .env.example > .env
+      - run: npm ci
+      - run: npm ci
+        working-directory: server
+      - name: Install tauri-driver
+        run: cargo install tauri-driver --version 2.1.0 --locked
+      - run: npm run e2e:driver
+      - name: Run the tours and build the manual
+        env:
+          PHAROS_TOURS_AI_KEY: ${{ secrets.PHAROS_TOURS_AI_KEY }}
+          PHAROS_TOURS_AI_PROVIDER: ${{ vars.PHAROS_TOURS_AI_PROVIDER }}
+          PHAROS_TOURS_AI_MODEL: ${{ vars.PHAROS_TOURS_AI_MODEL }}
+        run: npm run manual
+      # The committed manual must match what the app produces now: a warning
+      # (with the diff in the summary) when the Markdown or pasos.json drifted.
+      # Images are left out: AI answers and clocks change some on every run.
+      - name: Check that the committed manual is current
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/manual ':(exclude)docs/manual/img'; then
+            echo "The committed manual matches this run."
+          else
+            echo "::warning title=Manual out of date::docs/manual differs from the regenerated manual: run npm run manual and commit docs/manual/ (or take the manual artifact)."
+            { echo '### Manual drift'; echo '```'; git diff --stat -- docs/manual ':(exclude)docs/manual/img'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload the manual
+        if: hashFiles('e2e/results/tours/SECRET-SCAN-FAILED') == ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: manual
+          path: |
+            docs/manual/
+            !docs/manual/.build/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload the tour results
+        if: always() && hashFiles('e2e/results/tours/SECRET-SCAN-FAILED') == ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: manual-tour-results
+          path: |
+            e2e/results/tours/failures/
+            e2e/results/tours/api.log
+            e2e/results/tours/steps.jsonl
+            e2e/results/tours/app-logs/
           if-no-files-found: warn
           retention-days: 14
 
