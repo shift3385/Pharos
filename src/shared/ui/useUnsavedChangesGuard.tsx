@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
 import {
   UNSAFE_DataRouterContext,
+  createPath,
   useBlocker,
   useLocation,
   type Blocker,
@@ -61,6 +62,7 @@ export function useUnsavedChangesGuard(
   const { ignore, message } = options;
   const skip = useRef(false);
   const location = useLocation();
+  // UNSAFE_: no public API reads the router's current state, only React's copy.
   const router = useContext(UNSAFE_DataRouterContext)?.router;
 
   const blocker = useBlocker(
@@ -113,15 +115,22 @@ export function useUnsavedChangesGuard(
   // already answered, or another navigation finished). Acting on it then makes
   // the router throw, which takes the whole window down. So each hold is
   // answered once, and only through the router if it still holds it. Any
-  // navigation that finishes clears every hold: if that dropped this one before
-  // it was answered, «proceed» goes there itself so the user's click is not lost.
+  // navigation that finishes clears every hold: if that dropped this one and
+  // React still shows it, «proceed» goes there itself so the click is not lost.
+  // (Once React catches up with no answer given, the hold is simply gone.)
   const answered = useRef<Blocker | null>(null);
   const release = useCallback(
     (action: "proceed" | "reset") => {
       if (blocker.state !== "blocked" || answered.current === blocker) return;
       answered.current = blocker;
-      if ([...(router?.state.blockers.values() ?? [])].includes(blocker)) blocker[action]();
-      else if (action === "proceed") void router?.navigate(blocker.location, { state: blocker.location.state });
+      if ([...(router?.state.blockers.values() ?? [])].includes(blocker)) {
+        blocker[action]();
+        return;
+      }
+      if (action !== "proceed" || !router) return;
+      if (createPath(blocker.location) === createPath(router.state.location)) return;
+      skip.current = true; // Already answered: it must not ask again.
+      void router.navigate(blocker.location, { state: blocker.location.state });
     },
     [blocker, router],
   );

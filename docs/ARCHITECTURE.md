@@ -653,8 +653,11 @@ through `src-tauri/src/journal.rs`:
     `blocked` after the router released that navigation, and acting on a
     released blocker throws. So each hold is answered once (by the dialog or
     automatically when the form turns clean), through the router only if it still
-    holds it. A hold dropped because another navigation finished still goes to
-    its location on «proceed», as a new history entry, so the click is not lost.
+    holds it (read through `UNSAFE_DataRouterContext`, because no public API
+    gives the router's current state). If another navigation finished and dropped
+    the hold while React still shows it, «proceed» goes to its location as a new
+    history entry, unless the router is already there. Once React has caught up
+    with no answer given, the hold is gone and that click is not replayed.
   - `bypass(go)` lets the next location change through, sync or after an
     `await` (`navigate(-1)` included), for a navigation the screen starts on
     purpose while still dirty (e.g. right after saving). If `go` throws or

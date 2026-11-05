@@ -268,6 +268,23 @@ describe("useUnsavedChangesGuard (RED-V3k)", () => {
       await act(settle);
       expect(router.state.location.pathname).toBe("/otra");
       expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
+      // Already where the held click wanted to go: no second history entry.
+      await act(() => router.navigate(-1));
+      expect(router.state.location.pathname).toBe("/editor");
+    });
+
+    it("«Descartar cambios» on a hold a save just dropped goes there without asking again", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Guardar y abrir por id");
+        await Promise.resolve();
+        await Promise.resolve();
+        click("Descartar cambios");
+        await settle();
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     });
 
     it("the click that was held still opens its section when a save navigates elsewhere meanwhile", async () => {
@@ -281,6 +298,8 @@ describe("useUnsavedChangesGuard (RED-V3k)", () => {
       expect(router.state.location.pathname + router.state.location.search).toBe("/otra");
       expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      await act(() => router.navigate(-1));
+      expect(router.state.location.pathname + router.state.location.search).toBe("/editor?case=1");
     });
 
     it("wired like the app, the screen survives (the error does not reach the app's boundary)", async () => {
