@@ -2496,6 +2496,10 @@
       "noOpenRuns": "No hay runs en curso en este proyecto",
       "run": "Run",
       "keepOpen": "Dejar el run abierto para importar más shards",
+      "cycle": "Ciclo",
+      "noCycle": "Sin ciclo",
+      "cycleHint": "Sus resultados cuentan en el progreso del ciclo. Los ciclos cerrados no aparecen.",
+      "runCycle": "Este run es del ciclo {{cycle}}.",
       "preview": "Vista previa",
       "previewSummary": "{{tests}} tests, {{results}} intentos: {{linked}} se vinculan a un caso y {{unlinked}} quedan sin vincular.",
       "attachments_one": "{{count}} adjunto",
@@ -2554,7 +2558,9 @@
         "test-key-required": "Un resultado no tiene identidad de test ({{detail}}).",
         "invalid-sha256": "La huella del archivo no es válida. Vuelve a elegirlo.",
         "invalid-shard": "El informe trae un shard incoherente: el índice debe estar entre 1 y el total.",
-        "invalid-target": "Elige un run nuevo o uno abierto."
+        "invalid-target": "Elige un run nuevo o uno abierto.",
+        "cycle-closed": "El ciclo está cerrado: reábrelo o elige otro.",
+        "cycle-not-found": "El ciclo ya no existe en este proyecto."
       },
       "shard": "Shard {{index}} de {{total}} (lo dice el informe)."
     },

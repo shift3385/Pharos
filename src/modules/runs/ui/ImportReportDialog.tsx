@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
+  CycleSummary,
   ReportImportOutcome,
   ReportImportPreview,
   Run,
@@ -57,6 +58,10 @@ export function ImportReportDialog({
   const [commit, setCommit] = useState("");
   const [branch, setBranch] = useState("");
   const [keepOpen, setKeepOpen] = useState(false);
+  // CYC-02: a new run can belong to a cycle that is not closed; its
+  // configuration and cycle items are derived when read (ADR-0013).
+  const [cycles, setCycles] = useState<CycleSummary[]>([]);
+  const [cycleId, setCycleId] = useState("");
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [preview, setPreview] = useState<ReportImportPreview | null>(null);
   const [error, setError] = useState<{ key: string; detail?: string } | null>(
@@ -82,6 +87,7 @@ export function ImportReportDialog({
             build: build.trim() || undefined,
             commitSha: commit.trim() || undefined,
             branch: branch.trim() || undefined,
+            cycleId: cycleId || undefined,
             keepOpen,
           },
         }
@@ -114,7 +120,23 @@ export function ImportReportDialog({
     }
   }
 
-  // The preview follows the file and the target run.
+  useEffect(() => {
+    let live = true;
+    runsApi
+      .cycles(projectId, userId)
+      .then((all) => live && setCycles(all))
+      .catch(() => live && setCycles([]));
+    return () => {
+      live = false;
+    };
+  }, [projectId, userId]);
+  const openCycles = cycles.filter((c) => c.status !== "closed");
+  const targetRun = openRuns.find((r) => r.id === runId);
+  const runCycle = targetRun?.cycleId
+    ? cycles.find((c) => c.id === targetRun.cycleId)
+    : undefined;
+
+  // The preview follows the file, the target run and the cycle.
   useEffect(() => {
     if (!report || (kind === "existing" && !runId)) return;
     let live = true;
@@ -126,7 +148,7 @@ export function ImportReportDialog({
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report, kind, runId]);
+  }, [report, kind, runId, cycleId]);
 
   async function confirm() {
     if (!report) return;
@@ -331,6 +353,29 @@ export function ImportReportDialog({
                     />
                   )}
                 </FormField>
+                {openCycles.length > 0 && (
+                  <FormField
+                    label={t("runs.import.cycle")}
+                    hint={t("runs.import.cycleHint")}
+                    className="tp-field rn-grid__wide"
+                  >
+                    {(p) => (
+                      <select
+                        {...p}
+                        data-testid="import-cycle"
+                        value={cycleId}
+                        onChange={(e) => setCycleId(e.target.value)}
+                      >
+                        <option value="">{t("runs.import.noCycle")}</option>
+                        {openCycles.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.cycleKey} · {c.title}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </FormField>
+                )}
                 <label className="rn-check rn-grid__wide">
                   <input
                     type="checkbox"
@@ -356,6 +401,13 @@ export function ImportReportDialog({
                   </select>
                 )}
               </FormField>
+            )}
+            {kind === "existing" && runCycle && (
+              <p className="tp-field__hint">
+                {t("runs.import.runCycle", {
+                  cycle: `${runCycle.cycleKey} · ${runCycle.title}`,
+                })}
+              </p>
             )}
 
             {/* The shard is part of the report (immutable, ADR-0013): it is

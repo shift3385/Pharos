@@ -25,6 +25,7 @@ const api = vi.hoisted(() => ({
   preview: vi.fn(),
   importReport: vi.fn(),
   attach: vi.fn(),
+  cycles: vi.fn(),
 }));
 vi.mock("../api/runsApi", () => ({ runsApi: api }));
 vi.mock("@shared/platform", async (orig) => ({
@@ -149,6 +150,7 @@ beforeEach(async () => {
   api.unlinked.mockResolvedValue(tray);
   api.link.mockResolvedValue("m");
   api.preview.mockResolvedValue(preview);
+  api.cycles.mockResolvedValue([]);
   api.importReport.mockResolvedValue({
     runId: "r3",
     runKey: "RUN-003",
@@ -260,6 +262,79 @@ describe("RunsPage", () => {
       shardTotal: 2,
     });
     expect(request.newRun.title).toContain("ctrf.json");
+  });
+
+  // CYC-02: a new imported run can belong to a cycle that is not closed.
+  it("imports a new run into a cycle; closed cycles are not offered", async () => {
+    const cycle = (id: string, cycleKey: string, status: string) => ({
+      id,
+      cycleKey,
+      title: `Regresión ${cycleKey}`,
+      status,
+      projectId: "p",
+    });
+    api.cycles.mockResolvedValue([
+      cycle("c1", "CYC-001", "active"),
+      cycle("c2", "CYC-002", "closed"),
+    ]);
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    await screen.findByRole("table", { name: "Runs" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Importar informe" }),
+    );
+    const dialog = screen.getByRole("dialog");
+    const picker = await within(dialog).findByRole("combobox", {
+      name: /^Ciclo/,
+    });
+    expect(
+      within(picker)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["Sin ciclo", "CYC-001 · Regresión CYC-001"]);
+    await userEvent.upload(
+      within(dialog).getByLabelText(/^Informe/),
+      new File(["{}"], "ctrf.json"),
+    );
+    await within(dialog).findByText(/2 tests, 3 intentos/);
+    await userEvent.selectOptions(picker, "c1");
+    // The preview follows the cycle (a closed one would fail here).
+    await waitFor(() =>
+      expect(api.preview).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          newRun: expect.objectContaining({ cycleId: "c1" }),
+        }),
+      ),
+    );
+    await expectNoAxeViolations();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Importar" }));
+    await within(dialog).findByText(/RUN-003: 3 resultados importados/);
+    expect(api.importReport.mock.calls[0][0].newRun.cycleId).toBe("c1");
+  });
+
+  it("names a closed cycle when the import is refused", async () => {
+    api.cycles.mockResolvedValue([
+      { id: "c1", cycleKey: "CYC-001", title: "R", status: "planned", projectId: "p" },
+    ]);
+    api.importReport.mockRejectedValue("cycle-closed");
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    await screen.findByRole("table", { name: "Runs" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Importar informe" }),
+    );
+    const dialog = screen.getByRole("dialog");
+    await userEvent.selectOptions(
+      await within(dialog).findByRole("combobox", { name: /^Ciclo/ }),
+      "c1",
+    );
+    await userEvent.upload(
+      within(dialog).getByLabelText(/^Informe/),
+      new File(["{}"], "ctrf.json"),
+    );
+    await within(dialog).findByText(/2 tests, 3 intentos/);
+    await userEvent.click(within(dialog).getByRole("button", { name: "Importar" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "El ciclo está cerrado",
+    );
   });
 
   it("blocks a duplicate new run until the user asks for it, and shows errors", async () => {

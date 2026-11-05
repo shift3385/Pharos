@@ -209,6 +209,9 @@ conserva las etiquetas.
 - [ ] **Sin vincular** lista los tests sin caso y el motivo; «Vincular…» los
       asigna a un caso (sus resultados no cambian) y «Desvincular» lo retira.
 - [ ] Un Cucumber JSON se rechaza con un mensaje que indica usar Messages.
+- [ ] Con un ciclo activo, importar un informe como run nuevo eligiendo ese
+      «Ciclo»: el progreso del ciclo suma sus resultados sin tocar el run.
+      Un ciclo cerrado no aparece en el selector (CYC-02).
 
 ### 4.4d Ejecución manual paso a paso (EJE-02)
 

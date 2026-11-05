@@ -411,7 +411,8 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
 - **One persister in Rust** (`src-tauri/src/runs/import.rs`, a child of
   `runs`): `run_import_preview` (read-only, rolled back), `run_import`
   (raw report upload + one transaction: the run if new, the shard, results
-  with steps, one `import` audit event; a new run closes unless kept open),
+  with steps, one `import` audit event; a new run closes unless kept open,
+  and may belong to a cycle that is not closed: CYC-02, `newRun.cycleId`),
   `run_import_attach` (one report attachment to its result or step result,
   idempotent by owner and content), `unlinked_tests_list` (the tray: the keys
   whose latest imported result has no case) and `run_counts_list` (final

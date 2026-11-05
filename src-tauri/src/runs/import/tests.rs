@@ -1544,3 +1544,82 @@ fn twenty_thousand_results_resolve_in_set_queries() {
         assert!(d < std::time::Duration::from_secs(15), "{d:?}");
     }
 }
+
+// ---- into a cycle (CYC-02) ---------------------------------------------------------
+
+#[test]
+fn a_new_run_imported_into_a_cycle_counts_in_its_progress() {
+    use crate::cycles::{self, CycleItemInput, TestCycleInput};
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, tc2, tc3) = ing01_cases(&c, &p);
+    let input = |extra: Value| -> TestCycleInput {
+        let mut v = json!({"projectId": p, "title": "Regression 1.4", "userId": U});
+        if let (Value::Object(m), Value::Object(e)) = (&mut v, extra) {
+            m.extend(e);
+        }
+        serde_json::from_value(v).unwrap()
+    };
+    let cycle = cycles::insert_cycle(&c, &input(json!({}))).unwrap();
+    let items: Vec<CycleItemInput> = [&tc1, &tc2, &tc3]
+        .iter()
+        .map(|id| CycleItemInput {
+            test_case_id: (*id).clone(),
+            ..Default::default()
+        })
+        .collect();
+    cycles::add_items(&c, &cycle, U, &items).unwrap();
+    let before = cycles::cycle_progress(&c, &cycle, U).unwrap().unwrap();
+    assert_eq!(before.summary.executed, 0);
+
+    let req = request(
+        &p,
+        doc_of(snapshot!("single__ctrf.json")),
+        json!({"newRun": {"title": "CI #12", "cycleId": cycle}}),
+    );
+    in_tx(&c, |tx| preview(tx, &req)).unwrap();
+    let out = import(&c, &req).unwrap();
+    let run = get_run(&c, &out.run_id, U).unwrap().unwrap();
+    assert_eq!(run.cycle_id.as_deref(), Some(cycle.as_str()));
+    assert_eq!(run.configuration_id, None, "derived on read, never stored");
+    // The run's results count in the cycle without touching the run again.
+    let after = cycles::cycle_progress(&c, &cycle, U).unwrap().unwrap();
+    assert_eq!(after.summary.total, before.summary.total);
+    assert_eq!(after.summary.executed, after.summary.total);
+    assert!(after.summary.passed > 0);
+    let listed = cycles::list_cycles(&c, &p, U).unwrap();
+    assert_eq!(
+        serde_json::to_value(&listed[0]).unwrap()["progress"],
+        serde_json::to_value(&after.summary).unwrap(),
+        "the cycle list shows the same progress"
+    );
+
+    // A closed cycle takes no new import, neither in the preview nor on commit.
+    cycles::update_cycle(&c, &cycle, &input(json!({"status": "closed"}))).unwrap();
+    let again = request(
+        &p,
+        doc_of(snapshot!("single__ctrf.json")),
+        json!({"newRun": {"title": "CI #13", "cycleId": cycle}, "allowDuplicate": true}),
+    );
+    assert_eq!(
+        in_tx(&c, |tx| preview(tx, &again)).unwrap_err(),
+        "cycle-closed"
+    );
+    let runs = count(&c, "SELECT count(*) FROM runs");
+    assert_eq!(import(&c, &again).unwrap_err(), "cycle-closed");
+    assert_eq!(
+        count(&c, "SELECT count(*) FROM runs"),
+        runs,
+        "nothing written"
+    );
+    // A cycle of another project is not found.
+    let other = new_project(&c);
+    let foreign = request(
+        &other,
+        doc_of(snapshot!("single__ctrf.json")),
+        json!({"newRun": {"cycleId": cycle}}),
+    );
+    assert!(in_tx(&c, |tx| preview(tx, &foreign))
+        .unwrap_err()
+        .starts_with("cycle-not-found"));
+}

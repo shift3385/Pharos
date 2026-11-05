@@ -2,6 +2,7 @@ import { desktopOnly } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
   Configuration,
+  CycleSummary,
   ExecutionAttachment,
   ReportImportOutcome,
   ReportImportPreview,
@@ -210,4 +211,10 @@ export const runsApi = {
     isTauri()
       ? invoke("execution_attachment_preview", { id, userId })
       : Promise.resolve(null),
+  /** The project's cycles with their progress, for «Importar informe»'s
+   *  cycle picker (CYC-02; the import is desktop only). */
+  cycles: (projectId: string, userId: string): Promise<CycleSummary[]> =>
+    isTauri()
+      ? invoke("cycle_list", { projectId, userId })
+      : Promise.resolve([]),
 };
