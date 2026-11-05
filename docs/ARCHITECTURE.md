@@ -167,13 +167,35 @@ list and three reads per project, most recently updated first:
 `projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
 closure criteria) and `projectDefects` (`defects`: open = not closed nor
 rejected; critical = severity).
-`model/homeData.ts` aggregates it as pure functions (KPIs, the queue by
-priority, the exit-criteria choices and default, the period days and which day
-labels show). The widgets — `KpiCards`, `PeriodSelector`,
-`ExecutionByProject`, `ExitCriteriaCard`, `DailyExecutionsChart`,
-`UpcomingTests` — never invent run data: until the run model (0.2.0, RED-W6)
-every case is "not run", and the pass rate, the daily runs and the criteria
-show an explicit empty state ([ADR-0028](adr/0028-rediseno-de-la-interfaz.md)).
+`model/homeData.ts` aggregates it as pure functions (projects closing this
+month, the exit-criteria choices and default, the period days and which day
+labels show).
+
+**Home execution metrics (RED-W6).** Every execution number of Inicio comes
+from **one read**: the desktop command `home_metrics` (`home_metrics.rs`) or
+`GET /api/home/metrics` (`server/src/modules/domain/home-metrics.ts`). Both
+are thin entry points: they validate the request and call the shared
+execution derivation of step 10 (`execution::home_metrics` in Rust,
+`execution-load.ts::homeMetrics` on the server; contract v1, shared vectors),
+which holds every rule (latest final per case/target, windows, daily buckets,
+exit criteria, re-test, queues). The dashboard derives nothing. The **client**
+builds the request (`model/metrics.ts::metricsRequest`): the local midnights
+of the longest period (30 days, or the month on the 31st) as epoch ms, `now`,
+and one window per period, so neither Rust nor the server handle time zones
+or DST and switching period never refetches. `model/loadHomeMetrics.ts` keeps
+the last payload per (user, local day) in memory (stale-while-revalidate),
+refetches on `pharos:synced`, and on failure shows «Reintentar» in each
+execution widget without hiding projects and plans (a failed refresh keeps
+the cached payload). The rest of `model/metrics.ts` maps the payload to what
+each widget draws (series of the period, stacked bars, KPI sums, the picker's
+En riesgo / Cumplen, the merged queue). Period-scoped: «Ejecuciones diarias»
+and «Tasa de éxito»; everything else is the state of play. Until step 10
+lands, both entry points call a stub that returns the contract's empty shape
+(TODO in each file).
+The widgets — `KpiCards`, `PeriodSelector`, `ExecutionByProject`,
+`ExitCriteriaCard`, `DailyExecutionsChart`, `UpcomingTests` — never invent run
+data: with no runs they show explicit empty states
+([ADR-0028](adr/0028-rediseno-de-la-interfaz.md)).
 On mobile the page is three `Tabs`. The chosen period is a per-device
 convenience in `localStorage` (`pharos.home.period`). The last access is
 device-local metadata kept in `localStorage` per user

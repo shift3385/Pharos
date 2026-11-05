@@ -50,8 +50,9 @@ aplicación cambia: cada paso es también una prueba automática
   inferior. Dentro de un proyecto, el grupo «Proyecto activo» cambia de
   proyecto y de sección. El idioma y «Cerrar sesión» están en el menú del
   usuario.
-- **Inicio** con indicadores, criterios de salida del plan, próximas pruebas
-  y gráficos de ejecución (vacíos hasta que llegue la ejecución).
+- **Inicio** con indicadores, criterios de salida del plan (evaluados con
+  los resultados), próximas pruebas y gráficos de ejecución con datos reales
+  (RED-W6).
 - **Proyectos** con recientes, tabla con búsqueda, orden y paginación;
   **Ajustes del proyecto** con borrado que pide escribir el prefijo.
 - **Plan** de 19 pasos con lista de pasos, barra de progreso y panel de
@@ -332,6 +333,12 @@ Los puntos abiertos de la auditoría están en
       franja de iconos; contraer y expandir el menú se recuerda al reabrir.
 - [ ] Inicio: los indicadores llevan a su sitio; «Criterios de salida» y
       «Próximas pruebas» muestran datos del plan y de los casos.
+- [ ] Inicio con ejecuciones (RED-W6): tras un run manual y un informe
+      importado, la tasa de éxito, «Ejecución por proyecto» y «Ejecuciones
+      diarias» cuentan ambos; cambiar el periodo cambia la gráfica y la tasa,
+      no el resto; «Criterios de salida» dice Cumple / No cumple y filtra
+      «En riesgo» / «Cumplen»; «Próximas pruebas» separa sin ejecutar,
+      bloqueadas y re-test. Con el servidor parado (web), «Reintentar».
 - [ ] Proyectos: buscar, ordenar y paginar; borrar un proyecto desde sus
       Ajustes pide escribir el prefijo y solo se cierra con «Cancelar».
 - [ ] Plan: recorrer los 19 pasos con la lista de pasos; cambiar un campo e
