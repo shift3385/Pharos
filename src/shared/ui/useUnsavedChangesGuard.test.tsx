@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, RouterProvider, createMemoryRouter, useLocation, useNavigate, useSearchParams } from "react-router";
@@ -185,6 +185,90 @@ describe("useUnsavedChangesGuard (RED-V3k)", () => {
       screen.getByRole("button", { name: "Guardar", hidden: true }).click();
     });
     expect(router.state.location.pathname).toBe("/otra");
+  });
+
+  // The router publishes its state to React in a transition, so a render can
+  // still read `blocked` after the router has already released the navigation.
+  describe("when React has not caught up with the router", () => {
+    const click = (name: string) => screen.getByRole("button", { name, hidden: true }).click();
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+
+    // Pages can look right even after the throw (the router's error boundary
+    // recovers on the next location), so the throw itself is what is checked.
+    const invalidTransitions: string[] = [];
+    const collect = (text: unknown) => {
+      if (String(text).includes("Invalid blocker state transition")) invalidTransitions.push(String(text));
+    };
+    const onWindowError = (e: ErrorEvent) => {
+      collect(e.error);
+      e.preventDefault();
+    };
+    beforeEach(() => {
+      invalidTransitions.length = 0;
+      vi.spyOn(console, "error").mockImplementation((...args) => args.forEach(collect));
+      window.addEventListener("error", onWindowError);
+    });
+    afterEach(() => {
+      window.removeEventListener("error", onWindowError);
+      vi.restoreAllMocks();
+      expect(invalidTransitions).toEqual([]);
+    });
+
+    async function held() {
+      const { router } = setup();
+      await type("x");
+      await userEvent.click(screen.getByRole("link", { name: "Otra sección" }));
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+      return router;
+    }
+
+    it("a save that turns clean after «Descartar» does not release the navigation again", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Descartar cambios");
+        await Promise.resolve();
+        await Promise.resolve();
+        click("Guardar");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+      expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
+    });
+
+    it("a save that navigates by itself while a navigation is held does not release it", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Guardar");
+        click("Guardar y salir");
+        await settle();
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+      expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
+    });
+
+    it("«Seguir editando» followed by a save keeps the user on the screen", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Seguir editando");
+        click("Guardar");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/editor");
+      expect(screen.getByRole("textbox", { name: "Nota" })).toHaveValue("");
+    });
+
+    it("a double click on «Descartar cambios» only releases once", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Descartar cambios");
+        await Promise.resolve();
+        await Promise.resolve();
+        click("Descartar cambios");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+    });
   });
 
   it("asks the browser before a reload only while dirty, and stops after unmount", async () => {

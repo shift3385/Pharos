@@ -1,5 +1,11 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
-import { useBlocker, useLocation, type BlockerFunction, type Location } from "react-router";
+import { useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
+import {
+  UNSAFE_DataRouterContext,
+  useBlocker,
+  useLocation,
+  type BlockerFunction,
+  type Location,
+} from "react-router";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "./ConfirmDialog";
 
@@ -54,6 +60,7 @@ export function useUnsavedChangesGuard(
   const { ignore, message } = options;
   const skip = useRef(false);
   const location = useLocation();
+  const router = useContext(UNSAFE_DataRouterContext)?.router;
 
   const blocker = useBlocker(
     useCallback<BlockerFunction>(
@@ -100,10 +107,24 @@ export function useUnsavedChangesGuard(
     wasDirty.current = dirty;
   }, [dirty]);
 
+  // The router publishes its state to React in a transition, so `blocker` can
+  // still read "blocked" after the router let go of that navigation (the user
+  // already answered, or another navigation finished). Acting on it then makes
+  // the router throw, which takes the whole screen down, so every release asks
+  // the router whether it still holds this very blocker.
+  const release = useCallback(
+    (action: "proceed" | "reset") => {
+      if (blocker.state !== "blocked") return;
+      if (![...(router?.state.blockers.values() ?? [])].includes(blocker)) return;
+      blocker[action]();
+    },
+    [blocker, router],
+  );
+
   // Nothing left to protect (saved meanwhile): let a held navigation go.
   useEffect(() => {
-    if (blocker.state === "blocked" && !dirty) blocker.proceed();
-  }, [blocker, dirty]);
+    if (!dirty) release("proceed");
+  }, [release, dirty]);
 
   const bypass = useCallback((go: () => void | Promise<void>) => {
     skip.current = true;
@@ -129,8 +150,8 @@ export function useUnsavedChangesGuard(
         message={message ?? t("dialog.unsaved.message")}
         confirmLabel={t("dialog.unsaved.discard")}
         cancelLabel={t("dialog.unsaved.keep")}
-        onConfirm={() => blocker.proceed()}
-        onCancel={() => blocker.reset()}
+        onConfirm={() => release("proceed")}
+        onCancel={() => release("reset")}
       />
     ) : null;
 
