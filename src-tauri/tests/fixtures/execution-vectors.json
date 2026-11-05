@@ -36,7 +36,7 @@
             "finishedAt": "2026-11-01T10:00:00Z",
             "caseId": "C1",
             "revisionId": "rev1",
-            "caseRevision": 1
+            "execFingerprint": "f1"
           },
           {
             "id": "a2",
@@ -49,7 +49,7 @@
             "imported": true,
             "caseId": "C1",
             "revisionId": "rev2",
-            "caseRevision": 2
+            "execFingerprint": "f2"
           }
         ],
         "cases": [
@@ -62,7 +62,7 @@
             "requirementKeys": [
               "REQ-001"
             ],
-            "revision": 2
+            "execFingerprint": "f2"
           },
           {
             "id": "C2",
@@ -71,7 +71,7 @@
             "status": "draft",
             "priority": "medium",
             "requirementKeys": [],
-            "revision": 1
+            "execFingerprint": "f1"
           },
           {
             "id": "C3",
@@ -82,7 +82,7 @@
             "requirementKeys": [
               "REQ-002"
             ],
-            "revision": 1
+            "execFingerprint": "f1"
           }
         ],
         "requirements": [
@@ -269,7 +269,7 @@
             "finishedAt": "2026-11-02T10:00:00Z",
             "imported": true,
             "caseId": "C1",
-            "caseRevision": 2
+            "execFingerprint": "f2"
           },
           {
             "id": "a3",
@@ -279,7 +279,7 @@
             "finishedAt": "2026-11-03T09:00:00+01:00",
             "caseId": "C1",
             "revisionId": "rev1",
-            "caseRevision": 1
+            "execFingerprint": "f1"
           }
         ],
         "cases": [
@@ -292,7 +292,7 @@
             "requirementKeys": [
               "REQ-001"
             ],
-            "revision": 2
+            "execFingerprint": "f2"
           }
         ],
         "requirements": [
@@ -1586,6 +1586,382 @@
           }
         ],
         "lastExecutedAt": "2026-11-01T10:00:00Z"
+      }
+    },
+    {
+      "name": "medium and low risk bands, skipped and other results, targets per flow and row, defects by severity and status",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "RUN-001",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "t1",
+            "runId": "R1",
+            "testKey": "k1",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F1"
+          },
+          {
+            "id": "t2",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:01:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F2"
+          },
+          {
+            "id": "t3",
+            "runId": "R1",
+            "testKey": "k3",
+            "status": "other",
+            "finishedAt": "2026-11-01T10:02:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W1"
+          },
+          {
+            "id": "t4",
+            "runId": "R1",
+            "testKey": "k4",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:03:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W2"
+          },
+          {
+            "id": "t5",
+            "runId": "R1",
+            "testKey": "k5",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:04:00Z",
+            "imported": true,
+            "caseId": "C3"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "ATS_1",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-1"
+            ]
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "ATS_2",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-2"
+            ]
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "ATS_3",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-3"
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-1",
+            "title": "Medium",
+            "priority": "medium",
+            "riskLikelihood": 3,
+            "riskImpact": 3
+          },
+          {
+            "id": "Q2",
+            "requirementKey": "REQ-2",
+            "title": "Low",
+            "priority": "low",
+            "riskLikelihood": 2,
+            "riskImpact": 2
+          },
+          {
+            "id": "Q3",
+            "requirementKey": "REQ-3",
+            "title": "Medium edge",
+            "priority": "low",
+            "riskLikelihood": 3,
+            "riskImpact": 4
+          }
+        ],
+        "defects": [
+          {
+            "id": "D1",
+            "defectKey": "DEF-001",
+            "severity": "major",
+            "status": "deferred",
+            "caseIds": [
+              "C1"
+            ]
+          },
+          {
+            "id": "D2",
+            "defectKey": "DEF-002",
+            "severity": "trivial",
+            "status": "rejected",
+            "caseIds": [
+              "C2"
+            ]
+          },
+          {
+            "id": "D3",
+            "defectKey": "DEF-003",
+            "severity": "minor",
+            "status": "open",
+            "caseIds": [],
+            "requirementIds": [
+              "Q3"
+            ]
+          }
+        ]
+      },
+      "filter": {
+        "projectId": "P",
+        "dayStarts": [
+          1793491200000
+        ]
+      },
+      "expected": {
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "skipped"
+          },
+          {
+            "caseId": "C2",
+            "status": "other"
+          },
+          {
+            "caseId": "C3",
+            "status": "skipped"
+          }
+        ],
+        "targets": [
+          {
+            "caseId": "C1",
+            "flowId": "F1",
+            "status": "passed"
+          },
+          {
+            "caseId": "C1",
+            "flowId": "F2",
+            "status": "skipped"
+          },
+          {
+            "caseId": "C2",
+            "rowId": "W1",
+            "status": "other"
+          },
+          {
+            "caseId": "C2",
+            "rowId": "W2",
+            "status": "passed"
+          },
+          {
+            "caseId": "C3",
+            "status": "skipped"
+          }
+        ],
+        "progress": {
+          "total": 3,
+          "executed": 3,
+          "passed": 0,
+          "skipped": 2,
+          "other": 1
+        },
+        "coverage": {
+          "byRisk": {
+            "high": {
+              "requirements": 0
+            },
+            "medium": {
+              "requirements": 2,
+              "covered": 2,
+              "executed": 2
+            },
+            "low": {
+              "requirements": 1,
+              "covered": 1,
+              "executed": 1
+            }
+          }
+        },
+        "defects": {
+          "total": 3,
+          "open": 2,
+          "openBySeverity": {
+            "major": 1,
+            "minor": 1,
+            "trivial": 0
+          },
+          "byStatus": {
+            "deferred": 1,
+            "open": 1,
+            "rejected": 1
+          }
+        },
+        "daily": [
+          {
+            "passed": 2,
+            "skipped": 2,
+            "other": 1,
+            "total": 5,
+            "imported": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "a known criterion with an unparseable metric has a value but no verdict; a cycle without configurations has one column",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "RUN-001",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00",
+            "cycleId": "Y1"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "u1",
+            "runId": "R1",
+            "testKey": "k1",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "ATS_1",
+            "status": "approved",
+            "priority": "medium"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "ATS_2",
+            "status": "approved",
+            "priority": "medium"
+          }
+        ],
+        "cycles": [
+          {
+            "id": "Y1",
+            "configurationIds": []
+          }
+        ],
+        "cycleItems": [
+          {
+            "id": "I1",
+            "cycleId": "Y1",
+            "caseId": "C1"
+          },
+          {
+            "id": "I2",
+            "cycleId": "Y1",
+            "caseId": "C2"
+          }
+        ],
+        "planCriteria": [
+          {
+            "criterion": "% de casos ejecutados",
+            "metric": "todos"
+          },
+          {
+            "criterion": "Cobertura de requisitos ejecutados",
+            "metric": "≥ 80%"
+          },
+          {
+            "criterion": "Defectos críticos o mayores abiertos",
+            "metric": "0"
+          },
+          {
+            "criterion": "Defectos críticos abiertos",
+            "metric": "< 1"
+          }
+        ]
+      },
+      "filter": {
+        "projectId": "P",
+        "cycleId": "Y1"
+      },
+      "expected": {
+        "progressUnit": "cell",
+        "progress": {
+          "total": 2,
+          "executed": 1,
+          "passed": 1,
+          "notRun": 1
+        },
+        "exitCriteria": [
+          {
+            "index": 0,
+            "kind": "executed",
+            "op": null,
+            "target": null,
+            "value": 50,
+            "met": null
+          },
+          {
+            "index": 1,
+            "kind": "coverage",
+            "op": ">=",
+            "target": 80,
+            "value": null,
+            "met": null
+          },
+          {
+            "index": 2,
+            "kind": null,
+            "met": null
+          },
+          {
+            "index": 3,
+            "kind": "criticalDefects",
+            "op": "<",
+            "target": 1,
+            "value": 0,
+            "met": true
+          }
+        ]
       }
     },
     {

@@ -1,0 +1,4018 @@
+{
+  "a cycle scope counts the cycle's cells": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "c1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Cycle",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "not_run",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": false,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 25.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": "Y1",
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 3,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 4
+    },
+    "progressUnit": "cell",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": "K1",
+        "cycleId": "Y1",
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "Cycle",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "c1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Cycle",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "a deleted run is hidden through the run: its failed result does not count (EJE-07)": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "k1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Manual",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "One"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [
+      {
+        "blocked": 0,
+        "dayStart": 1793491200000,
+        "failed": 0,
+        "imported": 0,
+        "manual": 1,
+        "other": 0,
+        "passed": 1,
+        "skipped": 0,
+        "total": 1
+      },
+      {
+        "blocked": 0,
+        "dayStart": 1793577600000,
+        "failed": 0,
+        "imported": 0,
+        "manual": 0,
+        "other": 0,
+        "passed": 0,
+        "skipped": 0,
+        "total": 0
+      }
+    ],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": [
+        1793491200000,
+        1793577600000
+      ],
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 0,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 1
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "Manual",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "k1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Manual",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "a known criterion with an unparseable metric has a value but no verdict; a cycle without configurations has one column": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "u1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "priority": "medium",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "ATS_1"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "medium",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "not_run",
+        "title": "ATS_2"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": 0,
+        "kind": "executed",
+        "met": null,
+        "metric": "todos",
+        "op": null,
+        "target": null,
+        "value": 50.0
+      },
+      {
+        "criterion": "Cobertura de requisitos ejecutados",
+        "index": 1,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 80%",
+        "op": ">=",
+        "target": 80.0,
+        "value": null
+      },
+      {
+        "criterion": "Defectos críticos o mayores abiertos",
+        "index": 2,
+        "kind": null,
+        "met": null,
+        "metric": "0",
+        "op": null,
+        "target": null,
+        "value": null
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": 3,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "< 1",
+        "op": "<",
+        "target": 1.0,
+        "value": 0.0
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": "Y1",
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 1,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "cell",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": "Y1",
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "RUN-001",
+        "trigger": "import"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "u1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "a newer manual attempt wins again and an old revision is stale": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-03T09:00:00+01:00",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "a3",
+          "revisionId": "rev1",
+          "runId": "R3",
+          "runKey": "RUN-003",
+          "runTitle": "Retest",
+          "sourceTool": null,
+          "stale": true,
+          "status": "blocked",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [
+          "REQ-001"
+        ],
+        "rowId": null,
+        "scenarioId": "ATS_001",
+        "status": "blocked",
+        "title": "Pay"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 1,
+          "executed": 1,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 1
+        }
+      },
+      "coverageRatio": 1.0,
+      "covered": 1,
+      "executed": 1,
+      "passed": 0,
+      "requirements": 1
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": true,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": 100.0
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-03T09:00:00+01:00",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 0.0,
+    "progress": {
+      "blocked": 1,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 0,
+      "other": 0,
+      "passed": 0,
+      "retest": 0,
+      "skipped": 0,
+      "total": 1
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [
+      {
+        "caseIds": [
+          "C1"
+        ],
+        "covered": true,
+        "defectIds": [],
+        "executedCases": 1,
+        "inScope": true,
+        "priority": "high",
+        "requirementId": "Q1",
+        "requirementKey": "REQ-001",
+        "riskBand": "unassessed",
+        "riskImpact": null,
+        "riskLevel": null,
+        "riskLikelihood": null,
+        "status": "blocked",
+        "title": "Payment"
+      }
+    ],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R3",
+        "runKey": "RUN-003",
+        "sourceTool": null,
+        "startedAt": "2026-11-03T08:00:00Z",
+        "status": "in_progress",
+        "title": "Retest",
+        "trigger": "manual"
+      },
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R2",
+        "runKey": "RUN-002",
+        "sourceTool": "playwright",
+        "startedAt": "2026-11-02T09:00:00Z",
+        "status": "completed",
+        "title": "CI",
+        "trigger": "import"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-03T09:00:00+01:00",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "a3",
+          "revisionId": "rev1",
+          "runId": "R3",
+          "runKey": "RUN-003",
+          "runTitle": "Retest",
+          "sourceTool": null,
+          "stale": true,
+          "status": "blocked",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "blocked"
+      }
+    ],
+    "undated": 0
+  },
+  "a plan scope and the plan's own criteria, aligned by index": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "not_run",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "p2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Plan",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "passed",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": 0,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 50%",
+        "op": ">=",
+        "target": 50.0,
+        "value": 50.0
+      },
+      {
+        "criterion": "Firma del responsable",
+        "index": 2,
+        "kind": null,
+        "met": null,
+        "metric": "sí",
+        "op": null,
+        "target": null,
+        "value": null
+      },
+      {
+        "criterion": "Tasa de éxito",
+        "index": 3,
+        "kind": "passRate",
+        "met": true,
+        "metric": ">= 90 %",
+        "op": ">=",
+        "target": 90.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Casos críticos ejecutados",
+        "index": 4,
+        "kind": null,
+        "met": null,
+        "metric": "100 %",
+        "op": null,
+        "target": null,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": "PL1",
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 1,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "Plan",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "p2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Plan",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "build filter matches trimmed values and lists the options": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-03T00:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "b3",
+          "revisionId": null,
+          "runId": "R2",
+          "runKey": "RUN-002",
+          "runTitle": "B",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "failed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "not_run",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": false,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 50.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": "1.1",
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-03T00:00:00Z",
+    "options": {
+      "builds": [
+        "1.0",
+        "1.1"
+      ],
+      "environments": [
+        "qa",
+        "staging"
+      ]
+    },
+    "passRate": 0.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 1,
+      "notRun": 1,
+      "other": 0,
+      "passed": 0,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": " 1.1 ",
+        "configurationId": null,
+        "cycleId": null,
+        "environment": "staging",
+        "id": "R2",
+        "runKey": "RUN-002",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "B",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-03T00:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "b3",
+          "revisionId": null,
+          "runId": "R2",
+          "runKey": "RUN-002",
+          "runTitle": "B",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "failed"
+      }
+    ],
+    "undated": 0
+  },
+  "configuration filter": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T00:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "b1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "not_run",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": false,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 50.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": "K1",
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T00:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 1,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "A",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T00:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "b1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "daily buckets follow the caller's day starts across a DST change": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-10-25T22:30:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "d2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "failed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-10-25T23:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "d3",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "blocked",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "blocked",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [
+      {
+        "blocked": 0,
+        "dayStart": 1792792800000,
+        "failed": 0,
+        "imported": 0,
+        "manual": 0,
+        "other": 0,
+        "passed": 0,
+        "skipped": 0,
+        "total": 0
+      },
+      {
+        "blocked": 0,
+        "dayStart": 1792879200000,
+        "failed": 1,
+        "imported": 1,
+        "manual": 1,
+        "other": 0,
+        "passed": 1,
+        "skipped": 0,
+        "total": 2
+      },
+      {
+        "blocked": 1,
+        "dayStart": 1792969200000,
+        "failed": 1,
+        "imported": 2,
+        "manual": 1,
+        "other": 0,
+        "passed": 1,
+        "skipped": 0,
+        "total": 3
+      },
+      {
+        "blocked": 0,
+        "dayStart": 1793055600000,
+        "failed": 0,
+        "imported": 0,
+        "manual": 0,
+        "other": 0,
+        "passed": 0,
+        "skipped": 0,
+        "total": 0
+      }
+    ],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": [
+        1792792800000,
+        1792879200000,
+        1792969200000,
+        1793055600000
+      ],
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-10-26T09:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 0.0,
+    "progress": {
+      "blocked": 1,
+      "executed": 2,
+      "failed": 1,
+      "notRun": 0,
+      "other": 0,
+      "passed": 0,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "A",
+        "trigger": "import"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-10-25T22:30:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "d2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "failed"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-10-25T23:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "d3",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "blocked",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "blocked"
+      }
+    ],
+    "undated": 0
+  },
+  "flaky comes from a retry or from the tool": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": true,
+          "origin": "imported",
+          "resultId": "f1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": true,
+          "origin": "imported",
+          "resultId": "g1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "passed",
+        "title": "Two"
+      },
+      {
+        "caseId": "C3",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "h1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_3",
+        "status": "passed",
+        "title": "Three"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 3,
+      "failed": 0,
+      "notRun": 0,
+      "other": 0,
+      "passed": 3,
+      "retest": 0,
+      "skipped": 0,
+      "total": 3
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "CI",
+        "trigger": "import"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": true,
+          "origin": "imported",
+          "resultId": "f1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": true,
+          "origin": "imported",
+          "resultId": "g1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      },
+      {
+        "caseId": "C3",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "h1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "home: windows, queues, a project with zero cases and an undated attempt; a deleted run's attempts count nowhere": {
+    "contractVersion": 1,
+    "daily": [
+      {
+        "blocked": 0,
+        "dayStart": 1793833200000,
+        "failed": 1,
+        "imported": 1,
+        "manual": 0,
+        "other": 0,
+        "passed": 0,
+        "skipped": 0,
+        "total": 1
+      },
+      {
+        "blocked": 1,
+        "dayStart": 1793919600000,
+        "failed": 0,
+        "imported": 2,
+        "manual": 0,
+        "other": 0,
+        "passed": 1,
+        "skipped": 0,
+        "total": 2
+      }
+    ],
+    "projects": [
+      {
+        "counts": {
+          "blocked": 1,
+          "executed": 3,
+          "failed": 1,
+          "notRun": 2,
+          "other": 0,
+          "passed": 1,
+          "retest": 0,
+          "skipped": 0,
+          "total": 5
+        },
+        "coverage": null,
+        "defects": {
+          "open": 0,
+          "openBySeverity": {
+            "critical": 0,
+            "major": 0,
+            "minor": 0,
+            "trivial": 0
+          }
+        },
+        "exitCriteria": [
+          {
+            "criterion": "% de casos ejecutados",
+            "index": null,
+            "kind": "executed",
+            "met": false,
+            "metric": "≥ 95%",
+            "op": ">=",
+            "target": 95.0,
+            "value": 60.0
+          },
+          {
+            "criterion": "Defectos críticos abiertos",
+            "index": null,
+            "kind": "criticalDefects",
+            "met": true,
+            "metric": "0",
+            "op": "=",
+            "target": 0.0,
+            "value": 0.0
+          },
+          {
+            "criterion": "Cobertura de requisitos",
+            "index": null,
+            "kind": "coverage",
+            "met": null,
+            "metric": "≥ 90%",
+            "op": ">=",
+            "target": 90.0,
+            "value": null
+          }
+        ],
+        "lastExecutedAt": "2026-11-07T00:00:00Z",
+        "projectId": "P1",
+        "queue": {
+          "blocked": [
+            {
+              "caseId": "C4",
+              "flowId": null,
+              "lastAt": "2026-11-06T00:00:00Z",
+              "priority": "medium",
+              "rowId": null,
+              "scenarioId": "ATS_4",
+              "title": "Four"
+            }
+          ],
+          "counts": {
+            "blocked": 1,
+            "notRun": 2,
+            "retest": 0
+          },
+          "notRun": [
+            {
+              "caseId": "C2",
+              "flowId": null,
+              "lastAt": null,
+              "priority": "critical",
+              "rowId": null,
+              "scenarioId": "ATS_2",
+              "title": "Two"
+            }
+          ],
+          "retest": []
+        }
+      },
+      {
+        "counts": {
+          "blocked": 0,
+          "executed": 0,
+          "failed": 0,
+          "notRun": 0,
+          "other": 0,
+          "passed": 0,
+          "retest": 0,
+          "skipped": 0,
+          "total": 0
+        },
+        "coverage": null,
+        "defects": {
+          "open": 0,
+          "openBySeverity": {
+            "critical": 0,
+            "major": 0,
+            "minor": 0,
+            "trivial": 0
+          }
+        },
+        "exitCriteria": [
+          {
+            "criterion": "% de casos ejecutados",
+            "index": null,
+            "kind": "executed",
+            "met": null,
+            "metric": "≥ 95%",
+            "op": ">=",
+            "target": 95.0,
+            "value": null
+          },
+          {
+            "criterion": "Defectos críticos abiertos",
+            "index": null,
+            "kind": "criticalDefects",
+            "met": true,
+            "metric": "0",
+            "op": "=",
+            "target": 0.0,
+            "value": 0.0
+          },
+          {
+            "criterion": "Cobertura de requisitos",
+            "index": null,
+            "kind": "coverage",
+            "met": null,
+            "metric": "≥ 90%",
+            "op": ">=",
+            "target": 90.0,
+            "value": null
+          }
+        ],
+        "lastExecutedAt": null,
+        "projectId": "P2",
+        "queue": {
+          "blocked": [],
+          "counts": {
+            "blocked": 0,
+            "notRun": 0,
+            "retest": 0
+          },
+          "notRun": [],
+          "retest": []
+        }
+      }
+    ],
+    "undated": 1,
+    "windows": {
+      "7d": {
+        "blocked": 1,
+        "executed": 2,
+        "failed": 0,
+        "notRun": 0,
+        "other": 0,
+        "passRate": 0.5,
+        "passed": 1,
+        "retest": 0,
+        "skipped": 0
+      },
+      "today": {
+        "blocked": 1,
+        "executed": 2,
+        "failed": 0,
+        "notRun": 0,
+        "other": 0,
+        "passRate": 0.5,
+        "passed": 1,
+        "retest": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "medium and low risk bands, skipped and other results, targets per flow and row, defects by severity and status": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [
+          "D1"
+        ],
+        "flowId": "F2",
+        "last": {
+          "at": "2026-11-01T10:01:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "skipped",
+          "trigger": "import"
+        },
+        "priority": "medium",
+        "requirementKeys": [
+          "REQ-1"
+        ],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "skipped",
+        "title": "ATS_1"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [
+          "D2"
+        ],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:02:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t3",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "other",
+          "trigger": "import"
+        },
+        "priority": "medium",
+        "requirementKeys": [
+          "REQ-2"
+        ],
+        "rowId": "W1",
+        "scenarioId": "ATS_2",
+        "status": "other",
+        "title": "ATS_2"
+      },
+      {
+        "caseId": "C3",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:04:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t5",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "skipped",
+          "trigger": "import"
+        },
+        "priority": "medium",
+        "requirementKeys": [
+          "REQ-3"
+        ],
+        "rowId": null,
+        "scenarioId": "ATS_3",
+        "status": "skipped",
+        "title": "ATS_3"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 1,
+          "executed": 1,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 1
+        },
+        "medium": {
+          "covered": 2,
+          "executed": 2,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 2
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": 1.0,
+      "covered": 3,
+      "executed": 3,
+      "passed": 0,
+      "requirements": 3
+    },
+    "daily": [
+      {
+        "blocked": 0,
+        "dayStart": 1793491200000,
+        "failed": 0,
+        "imported": 5,
+        "manual": 0,
+        "other": 1,
+        "passed": 2,
+        "skipped": 2,
+        "total": 5
+      }
+    ],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 1,
+          "total": 1
+        },
+        "minor": {
+          "open": 1,
+          "total": 1
+        },
+        "trivial": {
+          "open": 0,
+          "total": 1
+        }
+      },
+      "byStatus": {
+        "deferred": 1,
+        "open": 1,
+        "rejected": 1
+      },
+      "open": 2,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 1,
+        "minor": 1,
+        "trivial": 0
+      },
+      "total": 3
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": true,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": 100.0
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": [
+        1793491200000
+      ],
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:04:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 0.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 3,
+      "failed": 0,
+      "notRun": 0,
+      "other": 1,
+      "passed": 0,
+      "retest": 0,
+      "skipped": 2,
+      "total": 3
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [
+      {
+        "caseIds": [
+          "C1"
+        ],
+        "covered": true,
+        "defectIds": [
+          "D1"
+        ],
+        "executedCases": 1,
+        "inScope": true,
+        "priority": "medium",
+        "requirementId": "Q1",
+        "requirementKey": "REQ-1",
+        "riskBand": "medium",
+        "riskImpact": 3,
+        "riskLevel": 9,
+        "riskLikelihood": 3,
+        "status": "skipped",
+        "title": "Medium"
+      },
+      {
+        "caseIds": [
+          "C2"
+        ],
+        "covered": true,
+        "defectIds": [
+          "D2"
+        ],
+        "executedCases": 1,
+        "inScope": true,
+        "priority": "low",
+        "requirementId": "Q2",
+        "requirementKey": "REQ-2",
+        "riskBand": "low",
+        "riskImpact": 2,
+        "riskLevel": 4,
+        "riskLikelihood": 2,
+        "status": "other",
+        "title": "Low"
+      },
+      {
+        "caseIds": [
+          "C3"
+        ],
+        "covered": true,
+        "defectIds": [
+          "D3"
+        ],
+        "executedCases": 1,
+        "inScope": true,
+        "priority": "low",
+        "requirementId": "Q3",
+        "requirementKey": "REQ-3",
+        "riskBand": "medium",
+        "riskImpact": 4,
+        "riskLevel": 12,
+        "riskLikelihood": 3,
+        "status": "skipped",
+        "title": "Medium edge"
+      }
+    ],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "RUN-001",
+        "trigger": "import"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": "F1",
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      },
+      {
+        "caseId": "C1",
+        "flowId": "F2",
+        "last": {
+          "at": "2026-11-01T10:01:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "skipped",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "skipped"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:02:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t3",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "other",
+          "trigger": "import"
+        },
+        "rowId": "W1",
+        "status": "other"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:03:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t4",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": "W2",
+        "status": "passed"
+      },
+      {
+        "caseId": "C3",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:04:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "t5",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "RUN-001",
+          "sourceTool": null,
+          "stale": false,
+          "status": "skipped",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "skipped"
+      }
+    ],
+    "undated": 0
+  },
+  "retest needs a fixed or retest defect and none still being worked": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [
+          "D1"
+        ],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "r1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Manual",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [
+          "REQ-001"
+        ],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "retest",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [
+          "D2",
+          "D3"
+        ],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "r2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Manual",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "failed",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 1,
+          "executed": 1,
+          "failed": 1,
+          "passed": 0,
+          "requirements": 1
+        }
+      },
+      "coverageRatio": 1.0,
+      "covered": 1,
+      "executed": 1,
+      "passed": 0,
+      "requirements": 1
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 2,
+          "total": 2
+        },
+        "major": {
+          "open": 1,
+          "total": 1
+        },
+        "minor": {
+          "open": 0,
+          "total": 1
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {
+        "closed": 1,
+        "fixed": 1,
+        "open": 1,
+        "retest": 1
+      },
+      "open": 3,
+      "openBySeverity": {
+        "critical": 2,
+        "major": 1,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 4
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": false,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 2.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": true,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": 100.0
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 0.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 2,
+      "failed": 1,
+      "notRun": 0,
+      "other": 0,
+      "passed": 0,
+      "retest": 1,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [
+      {
+        "caseIds": [
+          "C1"
+        ],
+        "covered": true,
+        "defectIds": [
+          "D1",
+          "D4"
+        ],
+        "executedCases": 1,
+        "inScope": true,
+        "priority": "high",
+        "requirementId": "Q1",
+        "requirementKey": "REQ-001",
+        "riskBand": "unassessed",
+        "riskImpact": null,
+        "riskLevel": null,
+        "riskLikelihood": null,
+        "status": "failed",
+        "title": "Payment"
+      }
+    ],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "Manual",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "r1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Manual",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "failed"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "r2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Manual",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "failed"
+      }
+    ],
+    "undated": 0
+  },
+  "the latest final wins across a manual and an imported run": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-02T10:00:00Z",
+          "configurationLabel": "chromium",
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "a2",
+          "revisionId": "rev2",
+          "runId": "R2",
+          "runKey": "RUN-002",
+          "runTitle": "CI",
+          "sourceTool": "playwright",
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [
+          "REQ-001"
+        ],
+        "rowId": null,
+        "scenarioId": "ATS_001",
+        "status": "passed",
+        "title": "Pay"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "draft",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "medium",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_002",
+        "status": "not_run",
+        "title": "Refund"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 1,
+          "executed": 1,
+          "failed": 0,
+          "passed": 1,
+          "requirements": 1
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 1
+        }
+      },
+      "coverageRatio": 0.5,
+      "covered": 1,
+      "executed": 1,
+      "passed": 1,
+      "requirements": 2
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": false,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 50.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": false,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": 50.0
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-02T10:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 1,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [
+      {
+        "caseIds": [
+          "C1"
+        ],
+        "covered": true,
+        "defectIds": [],
+        "executedCases": 1,
+        "inScope": true,
+        "priority": "high",
+        "requirementId": "Q1",
+        "requirementKey": "REQ-001",
+        "riskBand": "high",
+        "riskImpact": 4,
+        "riskLevel": 16,
+        "riskLikelihood": 4,
+        "status": "passed",
+        "title": "Payment"
+      },
+      {
+        "caseIds": [
+          "C3"
+        ],
+        "covered": false,
+        "defectIds": [],
+        "executedCases": 0,
+        "inScope": false,
+        "priority": "low",
+        "requirementId": "Q2",
+        "requirementKey": "REQ-002",
+        "riskBand": "unassessed",
+        "riskImpact": null,
+        "riskLevel": null,
+        "riskLikelihood": null,
+        "status": "not_run",
+        "title": "Export"
+      }
+    ],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R2",
+        "runKey": "RUN-002",
+        "sourceTool": "playwright",
+        "startedAt": "2026-11-02T09:00:00Z",
+        "status": "completed",
+        "title": "CI",
+        "trigger": "import"
+      },
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": "2026-11-01T09:00:00Z",
+        "status": "completed",
+        "title": "Manual",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-02T10:00:00Z",
+          "configurationLabel": "chromium",
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "a2",
+          "revisionId": "rev2",
+          "runId": "R2",
+          "runKey": "RUN-002",
+          "runTitle": "CI",
+          "sourceTool": "playwright",
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "the period includes its start and excludes its end; an undated attempt is counted apart": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T00:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "b1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "not_run",
+        "title": "Two"
+      },
+      {
+        "caseId": "C3",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": null,
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_3",
+        "status": "not_run",
+        "title": "Three"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": false,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 33.3
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": 1793491200000,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": 1793577600000
+    },
+    "lastExecutedAt": "2026-11-01T00:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 2,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 3
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "A",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T00:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "b1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 1
+  },
+  "within the latest run the worst configuration wins and equal attempts are decided by id": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": "firefox",
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "x2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "failed",
+        "title": "One"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": true,
+          "origin": "imported",
+          "resultId": "y-b",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_2",
+        "status": "passed",
+        "title": "Two"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-01T11:00:00Z",
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 0.5,
+    "progress": {
+      "blocked": 0,
+      "executed": 2,
+      "failed": 1,
+      "notRun": 0,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "CI",
+        "trigger": "import"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": "firefox",
+          "flaky": false,
+          "origin": "imported",
+          "resultId": "x2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "failed"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": true,
+          "origin": "imported",
+          "resultId": "y-b",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "CI",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "import"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 0
+  },
+  "without a period an undated attempt still decides the state of play": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": null,
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "u1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_1",
+        "status": "passed",
+        "title": "One"
+      }
+    ],
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 0,
+          "total": 0
+        },
+        "major": {
+          "open": 0,
+          "total": 0
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {},
+      "open": 0,
+      "openBySeverity": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 0
+    },
+    "exitCriteria": [
+      {
+        "criterion": "% de casos ejecutados",
+        "index": null,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "criterion": "Defectos críticos abiertos",
+        "index": null,
+        "kind": "criticalDefects",
+        "met": true,
+        "metric": "0",
+        "op": "=",
+        "target": 0.0,
+        "value": 0.0
+      },
+      {
+        "criterion": "Cobertura de requisitos",
+        "index": null,
+        "kind": "coverage",
+        "met": null,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": null,
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": null,
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 1.0,
+    "progress": {
+      "blocked": 0,
+      "executed": 1,
+      "failed": 0,
+      "notRun": 0,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 1
+    },
+    "progressUnit": "case",
+    "projectId": "P",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": null,
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": null,
+        "status": "completed",
+        "title": "A",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": null,
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "u1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "A",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      }
+    ],
+    "undated": 1
+  }
+}

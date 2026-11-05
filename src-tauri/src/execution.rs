@@ -39,6 +39,63 @@ fn strings(v: &Value) -> Vec<String> {
         .collect()
 }
 
+/// What of a case is executed: its steps and what shapes them. A change to
+/// anything else (title, status, priority, key, tags, custom fields) never
+/// makes a result outdated.
+const EXEC_KEYS: [&str; 9] = [
+    "gherkinLevel",
+    "preconditions",
+    "background",
+    "steps",
+    "expectedResult",
+    "examples",
+    "flows",
+    "featureSource",
+    "testData",
+];
+
+/// `v` without its `id` keys, at any depth: a step's, a flow's or a row's id
+/// is its identity, not its content.
+fn without_ids(v: &Value) -> Value {
+    match v {
+        Value::Array(a) => Value::Array(a.iter().map(without_ids).collect()),
+        Value::Object(o) => Value::Object(
+            o.iter()
+                .filter(|(k, _)| k.as_str() != "id")
+                .map(|(k, v)| (k.clone(), without_ids(v)))
+                .collect(),
+        ),
+        _ => v.clone(),
+    }
+}
+
+/// Fingerprint of the executable content of a case's `data` (sha256 of the
+/// canonical JSON of `EXEC_KEYS`, without ids; empty values and the default
+/// level count as absent). Only compared on this side: the server has its own.
+pub(crate) fn exec_fingerprint(data: &Value) -> String {
+    use sha2::{Digest, Sha256};
+    let mut m = serde_json::Map::new();
+    for k in EXEC_KEYS {
+        let v = data.get(k).cloned().unwrap_or(Value::Null);
+        let empty = match &v {
+            Value::Null => true,
+            Value::String(s) => s.is_empty() || (k == "gherkinLevel" && s == "basic"),
+            Value::Array(a) => a.is_empty(),
+            Value::Object(o) => o.is_empty(),
+            _ => false,
+        };
+        if !empty {
+            m.insert(k.to_string(), without_ids(&v));
+        }
+    }
+    // serde_json's map is ordered by key: the text is canonical.
+    let text = serde_json::to_string(&Value::Object(m)).unwrap_or_default();
+    Sha256::digest(text.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
+
 fn rows<T>(
     conn: &Connection,
     sql: &str,
@@ -88,10 +145,43 @@ pub(crate) fn load_project(
             })
         },
     )?;
-    let attempts = load_attempts(conn, project_id)?;
+    let mut attempts = load_attempts(conn, project_id)?;
+    // The executed revisions' executable content, read once.
+    let revision_ids: Vec<&str> = {
+        let mut v: Vec<&str> = attempts
+            .iter()
+            .filter_map(|a| a.revision_id.as_deref())
+            .collect();
+        v.sort_unstable();
+        v.dedup();
+        v
+    };
+    let mut fingerprints: std::collections::HashMap<String, String> = Default::default();
+    {
+        let mut stmt = conn
+            .prepare("SELECT id, data FROM test_case_revisions WHERE id IN (SELECT value FROM json_each(?1))")
+            .map_err(err)?;
+        let ids = serde_json::to_string(&revision_ids).map_err(|e| e.to_string())?;
+        let found = stmt
+            .query_map(params![ids], |r| {
+                Ok((r.get::<_, String>(0)?, json(r.get(1)?)))
+            })
+            .map_err(err)?;
+        for row in found {
+            let (id, data) = row.map_err(err)?;
+            fingerprints.insert(id, exec_fingerprint(&data));
+        }
+    }
+    for a in &mut attempts {
+        a.exec_fingerprint = a
+            .revision_id
+            .as_ref()
+            .and_then(|r| fingerprints.get(r))
+            .cloned();
+    }
     let cases = rows(
         conn,
-        "SELECT id, scenario_id, title, status, priority, data, revision
+        "SELECT id, scenario_id, title, status, priority, data
            FROM test_cases WHERE project_id = ?1 AND deleted_at IS NULL",
         project_id,
         |r| {
@@ -103,7 +193,7 @@ pub(crate) fn load_project(
                 status: r.get(3)?,
                 priority: r.get(4)?,
                 requirement_keys: strings(&data["requirementKeys"]),
-                revision: r.get(6)?,
+                exec_fingerprint: Some(exec_fingerprint(&data)),
             })
         },
     )?;
@@ -220,7 +310,7 @@ fn load_attempts(conn: &Connection, project_id: &str) -> Result<Vec<AttemptData>
             "SELECT x.id, x.run_id, x.test_key, x.configuration_label, x.attempt, x.status,
                     x.started_at, x.finished_at, s.imported_at, x.hlc, x.shard_id IS NOT NULL,
                     r.configuration_id, x.configuration_id, x.test_case_id, x.flow_id,
-                    x.example_row_id, x.test_case_revision_id, x.case_revision, x.attributes,
+                    x.example_row_id, x.test_case_revision_id, x.attributes,
                     x.case_key, x.example_row
                FROM results x
                JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL
@@ -232,7 +322,7 @@ fn load_attempts(conn: &Connection, project_id: &str) -> Result<Vec<AttemptData>
         |r| {
             let run_configuration: Option<String> = r.get(11)?;
             let own: Option<String> = r.get(12)?;
-            let attributes = json(r.get(18)?);
+            let attributes = json(r.get(17)?);
             Ok(Raw {
                 a: AttemptData {
                     id: r.get(0)?,
@@ -252,12 +342,12 @@ fn load_attempts(conn: &Connection, project_id: &str) -> Result<Vec<AttemptData>
                     flow_id: r.get(14)?,
                     row_id: r.get(15)?,
                     revision_id: r.get(16)?,
-                    case_revision: r.get(17)?,
+                    exec_fingerprint: None,
                 },
                 run_configuration,
                 attributes,
-                case_key: r.get(19)?,
-                example_row: r.get(20)?,
+                case_key: r.get(18)?,
+                example_row: r.get(19)?,
             })
         },
     )?;
@@ -290,7 +380,6 @@ fn load_attempts(conn: &Connection, project_id: &str) -> Result<Vec<AttemptData>
             x.a.flow_id = l.flow_id;
             x.a.row_id = l.example_row_id;
             x.a.revision_id = l.revision_id;
-            x.a.case_revision = l.case_revision;
             x.a.configuration_id = x.run_configuration.or(l.configuration_id);
         }
         out.push(x.a);
