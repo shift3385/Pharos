@@ -1764,7 +1764,10 @@
       "passed": "Pass",
       "failed": "Fail",
       "blocked": "Blocked",
-      "not_run": "Not run"
+      "not_run": "Not run",
+      "skipped": "Skipped",
+      "other": "Other",
+      "retest": "Re-test"
     },
     "coverage": {
       "covered": "Covered",
@@ -1772,7 +1775,10 @@
     },
     "note": {
       "obsoleteCase": "Obsolete case (does not cover)",
-      "openDefect": "Open defect"
+      "openDefect": "Open defect",
+      "retest": "Waiting for a re-test (defect fixed)",
+      "flaky": "Flaky: passed after failing",
+      "stale": "An earlier revision of the case was executed"
     },
     "gaps": {
       "title": "Traceability gaps",
@@ -1803,6 +1809,71 @@
       "importHint": "Creates or updates requirements by ID",
       "exportXlsx": "Export matrix (.xlsx)",
       "exportHint": "Requirements, cases, states and defects"
+    },
+    "risk": {
+      "label": "Risk",
+      "badge": "Risk {{level}} · {{band}}",
+      "band": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "unassessed": "Not assessed"
+      },
+      "likelihood": "Likelihood",
+      "impact": "Impact",
+      "notAssessed": "Not assessed",
+      "hint": "Likelihood × impact, 1 to 5 each. Orders the matrix by risk (bands: up to 4 low, up to 12 medium, above high).",
+      "level": "{{value}} of 5"
+    },
+    "result": {
+      "runAt": "{{run}} · {{date}}",
+      "flaky": "Flaky",
+      "stale": "Outdated",
+      "staleTitle": "An earlier revision was executed: the case changed afterwards",
+      "openRun": "Open {{run}}",
+      "origin": {
+        "manual": "Manual",
+        "imported": "Imported"
+      }
+    },
+    "filters": {
+      "label": "Result filters",
+      "cycle": "Cycle",
+      "configuration": "Configuration",
+      "build": "Build",
+      "environment": "Environment",
+      "any": "All",
+      "clear": "Clear filters",
+      "sort": "Order",
+      "sortRisk": "Risk",
+      "sortKey": "Requirement ID",
+      "hint": "The test status is the latest final result of the runs that match the filters.",
+      "loadError": "The results could not be read: the matrix shows the cases as not run."
+    },
+    "resultsSheet": {
+      "name": "Results",
+      "title": "Latest result of each case",
+      "filters": "Filters: {{filters}}",
+      "none": "none",
+      "generated": "Generated: {{date}}",
+      "yes": "Yes",
+      "no": "No",
+      "col": {
+        "requirement": "Requirement ID",
+        "risk": "Risk",
+        "band": "Risk band",
+        "case": "Case ID",
+        "caseTitle": "Test case",
+        "status": "Status",
+        "run": "Run",
+        "runTitle": "Run title",
+        "date": "Date",
+        "configuration": "Configuration",
+        "origin": "Origin",
+        "flaky": "Flaky",
+        "stale": "Outdated",
+        "defects": "Defects"
+      }
     }
   },
   "downloads": {
@@ -2842,5 +2913,114 @@
     },
     "staleDraft": "This attempt was already saved or changed in another window. What is stored has been reloaded.",
     "staleDraftEdits": "This attempt was already saved or changed in another window. What you marked here and had not saved was discarded; what is stored is shown."
+  },
+  "statusReport": {
+    "open": "Status report",
+    "title": "Test status report",
+    "subtitle": "ISO/IEC/IEEE 29119-3, generated from the runs",
+    "scope": "Scope",
+    "scopeProject": "Project",
+    "scopeCycle": "Cycle",
+    "scopePlan": "Plan",
+    "cycle": "Cycle",
+    "noCycles": "The project has no cycles.",
+    "from": "From",
+    "to": "To",
+    "periodAll": "Whole period",
+    "loading": "Calculating…",
+    "loadError": "The report could not be generated.",
+    "exportXlsx": "Export .xlsx",
+    "exportPdf": "Export PDF",
+    "exportedToast": "Report exported: {{name}}",
+    "exportFailed": "The report could not be exported.",
+    "localNote": "The summary and recommendations are kept on this device only and go into the exports.",
+    "asOfToday": "as of today",
+    "noPlan": "The project has no plan: the default exit criteria are used.",
+    "section": {
+      "identification": "1. Identification",
+      "progress": "2. Progress",
+      "results": "3. Results by status",
+      "defects": "4. Defects by severity and status",
+      "coverage": "5. Coverage and risks",
+      "exit": "6. Exit criteria",
+      "issues": "7. Blockers and issues",
+      "summary": "8. Summary",
+      "recommendations": "9. Recommendations"
+    },
+    "field": {
+      "project": "Project",
+      "scope": "Scope",
+      "period": "Period",
+      "generated": "Generated",
+      "author": "Author",
+      "plan": "Test plan",
+      "runs": "Runs included",
+      "unit": "Unit"
+    },
+    "unit": {
+      "case": "cases",
+      "cell": "cycle cells (case × configuration)"
+    },
+    "progress": {
+      "executed": "Executed",
+      "total": "Total",
+      "executedPct": "% executed",
+      "passRate": "Pass rate",
+      "lastExecution": "Last execution"
+    },
+    "col": {
+      "status": "Status",
+      "count": "Count",
+      "severity": "Severity",
+      "open": "Open",
+      "total": "Total",
+      "band": "Risk band",
+      "requirements": "Requirements",
+      "covered": "Covered",
+      "executed": "Executed",
+      "passed": "Passed",
+      "failed": "Failed",
+      "criterion": "Criterion",
+      "target": "Target",
+      "actual": "Value",
+      "result": "Result",
+      "case": "Case",
+      "title": "Title",
+      "run": "Run",
+      "date": "Date",
+      "issue": "Issue",
+      "requirement": "Requirement",
+      "risk": "Risk",
+      "defects": "Defects"
+    },
+    "exit": {
+      "met": "Met",
+      "notMet": "Not met",
+      "noData": "No data",
+      "manual": "Check by hand"
+    },
+    "coverageLine": "Requirement coverage: {{covered}} of {{total}} ({{pct}}).",
+    "risky": "High-risk requirements not passing",
+    "noRisky": "No high-risk requirement is failing or not run.",
+    "issue": {
+      "blocked": "Blocked",
+      "retest": "Waiting for re-test",
+      "flaky": "Flaky",
+      "stale": "Earlier revision"
+    },
+    "noIssues": "No blockers or issues.",
+    "summaryLabel": "Summary",
+    "summaryHint": "Filled in from the numbers; you can change it.",
+    "recommendationsLabel": "Recommendations",
+    "recommendationsPlaceholder": "What you propose: continue, close the cycle, repeat tests…",
+    "autoSummary": "{{executed}} of {{total}} {{unit}} have been executed ({{pct}}), with a pass rate of {{rate}}. There are {{open}} open defects, {{critical}} critical. Exit criteria: {{met}} of {{all}} met.",
+    "sheet": {
+      "summary": "Summary",
+      "results": "Results",
+      "defects": "Defects",
+      "coverage": "Coverage"
+    },
+    "yes": "Yes",
+    "no": "No"
   }
 }

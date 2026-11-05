@@ -319,6 +319,16 @@ pub(crate) fn result_links(
     conn: &Connection,
     result_ids: &[String],
 ) -> Result<HashMap<String, ResultLink>, String> {
+    result_links_using(conn, result_ids, &mut HashMap::new())
+}
+
+/// `result_links` with the caller's resolvers by project, so one already
+/// built for the project (the execution loader's) is reused, not rebuilt.
+pub(crate) fn result_links_using<'c>(
+    conn: &'c Connection,
+    result_ids: &[String],
+    resolvers: &mut HashMap<String, crate::runs::link::Resolver<'c>>,
+) -> Result<HashMap<String, ResultLink>, String> {
     if result_ids.is_empty() {
         return Ok(HashMap::new());
     }
@@ -370,7 +380,6 @@ pub(crate) fn result_links(
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
     // One resolver per project (the results of a defect's links are of one).
-    let mut resolvers: HashMap<String, crate::runs::link::Resolver> = HashMap::new();
     let mut out = HashMap::new();
     for x in raw {
         let link = if x.imported {
@@ -413,11 +422,12 @@ pub(crate) fn result_link(
 /// Attaches their links to defects and derives the cases each reaches:
 /// direct case links, and the case of each linked result (`result_links`),
 /// in link order, once each. Two queries for any number of defects.
-fn attach_links(
-    conn: &Connection,
+fn attach_links<'c>(
+    conn: &'c Connection,
     project_id: &str,
     one: Option<&str>,
     defects: &mut [Defect],
+    resolvers: &mut HashMap<String, crate::runs::link::Resolver<'c>>,
 ) -> Result<(), String> {
     let mut links = links_by_defect(conn, project_id, one)?;
     let result_ids: Vec<String> = links
@@ -426,7 +436,7 @@ fn attach_links(
         .filter(|l| l.target_kind == "result")
         .map(|l| l.target_id.clone())
         .collect();
-    let resolved = result_links(conn, &result_ids)?;
+    let resolved = result_links_using(conn, &result_ids, resolvers)?;
     for d in defects.iter_mut() {
         d.links = links.remove(&d.id).unwrap_or_default();
         let mut cases: Vec<String> = Vec::new();
@@ -466,7 +476,7 @@ pub(crate) fn get_defect(
     };
     let project = d.project_id.clone();
     let mut one = [d];
-    attach_links(conn, &project, Some(id), &mut one)?;
+    attach_links(conn, &project, Some(id), &mut one, &mut HashMap::new())?;
     let [d] = one;
     Ok(Some(d))
 }
@@ -475,6 +485,16 @@ pub(crate) fn list_defects(
     conn: &Connection,
     project_id: &str,
     user: &str,
+) -> Result<Vec<Defect>, String> {
+    list_defects_using(conn, project_id, user, &mut HashMap::new())
+}
+
+/// `list_defects` reusing the caller's resolvers by project.
+pub(crate) fn list_defects_using<'c>(
+    conn: &'c Connection,
+    project_id: &str,
+    user: &str,
+    resolvers: &mut HashMap<String, crate::runs::link::Resolver<'c>>,
 ) -> Result<Vec<Defect>, String> {
     let mut defects: Vec<Defect> = {
         let mut stmt = conn
@@ -489,7 +509,7 @@ pub(crate) fn list_defects(
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
-    attach_links(conn, project_id, None, &mut defects)?;
+    attach_links(conn, project_id, None, &mut defects, resolvers)?;
     Ok(defects)
 }
 

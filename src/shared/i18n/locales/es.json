@@ -1764,7 +1764,10 @@
       "passed": "Pasa",
       "failed": "Falla",
       "blocked": "Bloqueado",
-      "not_run": "No ejecutado"
+      "not_run": "No ejecutado",
+      "skipped": "Omitido",
+      "other": "Otro",
+      "retest": "Re-test"
     },
     "coverage": {
       "covered": "Cubierto",
@@ -1772,7 +1775,10 @@
     },
     "note": {
       "obsoleteCase": "Caso obsoleto (no cubre)",
-      "openDefect": "Defecto abierto"
+      "openDefect": "Defecto abierto",
+      "retest": "Pendiente de re-test (defecto corregido)",
+      "flaky": "Flaky: pasó tras fallar",
+      "stale": "Se ejecutó una revisión anterior del caso"
     },
     "gaps": {
       "title": "Huecos de trazabilidad",
@@ -1803,6 +1809,71 @@
       "importHint": "Crea o actualiza requisitos por ID",
       "exportXlsx": "Exportar matriz (.xlsx)",
       "exportHint": "Requisitos, casos, estados y defectos"
+    },
+    "risk": {
+      "label": "Riesgo",
+      "badge": "Riesgo {{level}} · {{band}}",
+      "band": {
+        "high": "Alto",
+        "medium": "Medio",
+        "low": "Bajo",
+        "unassessed": "Sin evaluar"
+      },
+      "likelihood": "Probabilidad",
+      "impact": "Impacto",
+      "notAssessed": "Sin evaluar",
+      "hint": "Probabilidad × impacto, de 1 a 5 cada uno. Ordena la matriz por riesgo (bandas: hasta 4 bajo, hasta 12 medio, más alto).",
+      "level": "{{value}} de 5"
+    },
+    "result": {
+      "runAt": "{{run}} · {{date}}",
+      "flaky": "Flaky",
+      "stale": "Desactualizado",
+      "staleTitle": "Se ejecutó una revisión anterior: el caso cambió después",
+      "openRun": "Abrir {{run}}",
+      "origin": {
+        "manual": "Manual",
+        "imported": "Importado"
+      }
+    },
+    "filters": {
+      "label": "Filtros de resultados",
+      "cycle": "Ciclo",
+      "configuration": "Configuración",
+      "build": "Build",
+      "environment": "Entorno",
+      "any": "Todos",
+      "clear": "Quitar filtros",
+      "sort": "Orden",
+      "sortRisk": "Riesgo",
+      "sortKey": "ID de requisito",
+      "hint": "El estado de prueba es el último resultado final de las ejecuciones que cumplen los filtros.",
+      "loadError": "No se pudieron leer los resultados: la matriz muestra los casos como no ejecutados."
+    },
+    "resultsSheet": {
+      "name": "Resultados",
+      "title": "Último resultado de cada caso",
+      "filters": "Filtros: {{filters}}",
+      "none": "ninguno",
+      "generated": "Generado: {{date}}",
+      "yes": "Sí",
+      "no": "No",
+      "col": {
+        "requirement": "ID requisito",
+        "risk": "Riesgo",
+        "band": "Banda de riesgo",
+        "case": "ID caso",
+        "caseTitle": "Caso de prueba",
+        "status": "Estado",
+        "run": "Run",
+        "runTitle": "Título del run",
+        "date": "Fecha",
+        "configuration": "Configuración",
+        "origin": "Origen",
+        "flaky": "Flaky",
+        "stale": "Desactualizado",
+        "defects": "Defectos"
+      }
     }
   },
   "downloads": {
@@ -2842,5 +2913,114 @@
     },
     "staleDraft": "Este intento ya se guardó o lo cambió otra ventana. Se ha recargado lo guardado.",
     "staleDraftEdits": "Este intento ya se guardó o lo cambió otra ventana. Lo que marcaste aquí sin guardar se ha descartado; se muestra lo guardado."
+  },
+  "statusReport": {
+    "open": "Informe de estado",
+    "title": "Informe de estado de pruebas",
+    "subtitle": "ISO/IEC/IEEE 29119-3, generado desde las ejecuciones",
+    "scope": "Alcance",
+    "scopeProject": "Proyecto",
+    "scopeCycle": "Ciclo",
+    "scopePlan": "Plan",
+    "cycle": "Ciclo",
+    "noCycles": "El proyecto no tiene ciclos.",
+    "from": "Desde",
+    "to": "Hasta",
+    "periodAll": "Todo el periodo",
+    "loading": "Calculando…",
+    "loadError": "No se pudo generar el informe.",
+    "exportXlsx": "Exportar .xlsx",
+    "exportPdf": "Exportar PDF",
+    "exportedToast": "Informe exportado: {{name}}",
+    "exportFailed": "No se pudo exportar el informe.",
+    "localNote": "El resumen y las recomendaciones se guardan solo en este equipo y van en las exportaciones.",
+    "asOfToday": "a fecha de hoy",
+    "noPlan": "El proyecto no tiene plan: se usan los criterios de salida por defecto.",
+    "section": {
+      "identification": "1. Identificación",
+      "progress": "2. Progreso",
+      "results": "3. Resultados por estado",
+      "defects": "4. Defectos por severidad y estado",
+      "coverage": "5. Cobertura y riesgos",
+      "exit": "6. Criterios de salida",
+      "issues": "7. Bloqueos e incidencias",
+      "summary": "8. Resumen",
+      "recommendations": "9. Recomendaciones"
+    },
+    "field": {
+      "project": "Proyecto",
+      "scope": "Alcance",
+      "period": "Periodo",
+      "generated": "Generado",
+      "author": "Autor",
+      "plan": "Plan de pruebas",
+      "runs": "Ejecuciones incluidas",
+      "unit": "Unidad"
+    },
+    "unit": {
+      "case": "casos",
+      "cell": "celdas del ciclo (caso × configuración)"
+    },
+    "progress": {
+      "executed": "Ejecutados",
+      "total": "Total",
+      "executedPct": "% ejecutado",
+      "passRate": "Tasa de éxito",
+      "lastExecution": "Última ejecución"
+    },
+    "col": {
+      "status": "Estado",
+      "count": "Cantidad",
+      "severity": "Severidad",
+      "open": "Abiertos",
+      "total": "Total",
+      "band": "Banda de riesgo",
+      "requirements": "Requisitos",
+      "covered": "Cubiertos",
+      "executed": "Ejecutados",
+      "passed": "Pasan",
+      "failed": "Fallan",
+      "criterion": "Criterio",
+      "target": "Objetivo",
+      "actual": "Valor",
+      "result": "Resultado",
+      "case": "Caso",
+      "title": "Título",
+      "run": "Run",
+      "date": "Fecha",
+      "issue": "Incidencia",
+      "requirement": "Requisito",
+      "risk": "Riesgo",
+      "defects": "Defectos"
+    },
+    "exit": {
+      "met": "Cumple",
+      "notMet": "No cumple",
+      "noData": "Sin datos",
+      "manual": "Comprobar a mano"
+    },
+    "coverageLine": "Cobertura de requisitos: {{covered}} de {{total}} ({{pct}}).",
+    "risky": "Requisitos de riesgo alto sin pasar",
+    "noRisky": "Ningún requisito de riesgo alto está fallando o sin ejecutar.",
+    "issue": {
+      "blocked": "Bloqueado",
+      "retest": "Pendiente de re-test",
+      "flaky": "Flaky",
+      "stale": "Revisión anterior"
+    },
+    "noIssues": "Sin bloqueos ni incidencias.",
+    "summaryLabel": "Resumen",
+    "summaryHint": "Se rellena con las cifras; puedes cambiarlo.",
+    "recommendationsLabel": "Recomendaciones",
+    "recommendationsPlaceholder": "Qué propones: seguir, cerrar el ciclo, repetir pruebas…",
+    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}} ({{pct}}), con una tasa de éxito de {{rate}}. Hay {{open}} defectos abiertos, {{critical}} críticos. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "sheet": {
+      "summary": "Resumen",
+      "results": "Resultados",
+      "defects": "Defectos",
+      "coverage": "Cobertura"
+    },
+    "yes": "Sí",
+    "no": "No"
   }
 }

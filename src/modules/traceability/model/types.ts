@@ -19,6 +19,9 @@ export interface Requirement {
   title: string;
   description: string;
   priority: RequirementPriority;
+  /** Risk (RUN-00, TRZ-04): 1..5 each, null until assessed. */
+  riskLikelihood?: number | null;
+  riskImpact?: number | null;
   createdAt: string;
   updatedAt: string;
   revision: number;
@@ -31,6 +34,10 @@ export interface RequirementInput {
   title: string;
   description?: string;
   priority?: RequirementPriority;
+  /** Risk factors 1..5 (null clears); left out keeps the stored value. The
+   *  desktop sets them with `requirement_risk_set` after the save. */
+  riskLikelihood?: number | null;
+  riskImpact?: number | null;
   userId: string;
 }
 
