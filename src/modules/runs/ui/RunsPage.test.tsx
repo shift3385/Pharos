@@ -312,6 +312,42 @@ describe("RunsPage", () => {
     expect(api.importReport.mock.calls[0][0].newRun.cycleId).toBe("c1");
   });
 
+  it("an open run keeps its cycle: the dialog names it and the request carries none", async () => {
+    api.list.mockResolvedValue([
+      run({ id: "r2", runKey: "RUN-002", title: "Manual", status: "in_progress", cycleId: "c1" }),
+    ]);
+    api.cycles.mockResolvedValue([
+      { id: "c1", cycleKey: "CYC-001", title: "Regresión", status: "active", projectId: "p" },
+      { id: "c2", cycleKey: "CYC-002", title: "Humo", status: "active", projectId: "p" },
+    ]);
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    await screen.findByRole("table", { name: "Runs" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Importar informe" }),
+    );
+    const dialog = screen.getByRole("dialog");
+    // A cycle picked for a new run is not sent once the target is an open run.
+    await userEvent.selectOptions(
+      await within(dialog).findByRole("combobox", { name: /^Ciclo/ }),
+      "c2",
+    );
+    await userEvent.upload(
+      within(dialog).getByLabelText(/^Informe/),
+      new File(["{}"], "ctrf.json"),
+    );
+    await within(dialog).findByText(/2 tests, 3 intentos/);
+    await userEvent.click(within(dialog).getByRole("radio", { name: "Run abierto" }));
+    expect(
+      await within(dialog).findByText("Este run es del ciclo CYC-001 · Regresión."),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByRole("combobox", { name: /^Ciclo/ })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(api.preview).toHaveBeenLastCalledWith(expect.objectContaining({ runId: "r2" })),
+    );
+    expect(api.preview.mock.lastCall?.[0]).not.toHaveProperty("newRun");
+    await expectNoAxeViolations();
+  });
+
   it("names a closed cycle when the import is refused", async () => {
     api.cycles.mockResolvedValue([
       { id: "c1", cycleKey: "CYC-001", title: "R", status: "planned", projectId: "p" },

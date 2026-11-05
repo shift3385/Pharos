@@ -136,7 +136,8 @@ export function ImportReportDialog({
     ? cycles.find((c) => c.id === targetRun.cycleId)
     : undefined;
 
-  // The preview follows the file, the target run and the cycle.
+  // The preview follows the file, the target run and, for a new run only,
+  // the cycle (an open run keeps its own; the request never carries one).
   useEffect(() => {
     if (!report || (kind === "existing" && !runId)) return;
     let live = true;
@@ -148,7 +149,7 @@ export function ImportReportDialog({
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report, kind, runId, cycleId]);
+  }, [report, kind, runId, kind === "new" ? cycleId : ""]);
 
   async function confirm() {
     if (!report) return;

@@ -1623,3 +1623,116 @@ fn a_new_run_imported_into_a_cycle_counts_in_its_progress() {
         .unwrap_err()
         .starts_with("cycle-not-found"));
 }
+
+#[test]
+fn an_import_into_a_cycle_with_configurations_fills_one_cell_per_configuration() {
+    // CYC-02: two configurations, results labelled for each and one label no
+    // configuration matches; TC-002 is in the cycle row by row. The run
+    // stores only its cycle: configuration and item are derived on read.
+    use crate::cycles::{self, ConfigurationInput, CycleItemInput, TestCycleInput};
+    let c = device();
+    let p = new_project(&c);
+    let (tc1, tc2, tc3) = ing01_cases(&c, &p);
+    let config = |name: &str, label: &str| -> String {
+        let input: ConfigurationInput = serde_json::from_value(
+            json!({"projectId": p, "name": name, "matchLabels": [label], "userId": U}),
+        )
+        .unwrap();
+        cycles::create_configuration(&c, &input).unwrap()
+    };
+    let chrome = config("Chrome", "chromium");
+    let firefox = config("Firefox", "firefox");
+    let input: TestCycleInput = serde_json::from_value(json!({
+        "projectId": p, "title": "Regression 1.4", "userId": U,
+        "configurationIds": [chrome, firefox]
+    }))
+    .unwrap();
+    let cycle = cycles::insert_cycle(&c, &input).unwrap();
+    let rows = row_ids(&c, &tc2);
+    let item = |case: &str, row: Option<&String>| CycleItemInput {
+        test_case_id: case.to_string(),
+        example_row_id: row.cloned(),
+        ..Default::default()
+    };
+    cycles::add_items(
+        &c,
+        &cycle,
+        U,
+        &[
+            item(&tc1, None),
+            item(&tc2, Some(&rows[0])),
+            item(&tc2, Some(&rows[1])),
+            item(&tc3, None),
+        ],
+    )
+    .unwrap();
+    let items = cycles::list_items(&c, &cycle, U).unwrap();
+    let item_of = |case: &str, row: Option<&String>| -> String {
+        items
+            .iter()
+            .find(|i| i.test_case_id == case && i.example_row_id.as_ref() == row)
+            .unwrap()
+            .id
+            .clone()
+    };
+
+    let mut doc = doc_of(snapshot!("single__ctrf.json"));
+    for r in doc["results"].as_array_mut().unwrap() {
+        let tags = r["tags"].to_string();
+        let label = if tags.contains("@TC-001") {
+            "chromium"
+        } else if tags.contains("@TC-002") {
+            "firefox"
+        } else {
+            "webkit" // no configuration of the cycle has it
+        };
+        r["configurationLabel"] = json!(label);
+    }
+    let out = import(
+        &c,
+        &request(
+            &p,
+            doc,
+            json!({"newRun": {"title": "CI", "cycleId": cycle}}),
+        ),
+    )
+    .unwrap();
+    let run = get_run(&c, &out.run_id, U).unwrap().unwrap();
+    assert_eq!(run.configuration_id, None, "derived on read, never stored");
+
+    let progress = cycles::cycle_progress(&c, &cycle, U).unwrap().unwrap();
+    let cell = |item: &str, config: &str| -> String {
+        progress
+            .cells
+            .iter()
+            .find(|x| x.item_id == item && x.configuration_id.as_deref() == Some(config))
+            .unwrap()
+            .status
+            .clone()
+    };
+    assert_eq!(progress.cells.len(), 8, "4 items × 2 configurations");
+    assert_eq!(cell(&item_of(&tc1, None), &chrome), "passed");
+    assert_eq!(cell(&item_of(&tc1, None), &firefox), "not_run");
+    // Each Outline row lands in its own item, in the Firefox column only.
+    assert_eq!(cell(&item_of(&tc2, Some(&rows[0])), &firefox), "passed");
+    assert_eq!(cell(&item_of(&tc2, Some(&rows[1])), &firefox), "failed");
+    assert_eq!(cell(&item_of(&tc2, Some(&rows[0])), &chrome), "not_run");
+    // A label no configuration matches fills no cell.
+    assert_eq!(cell(&item_of(&tc3, None), &chrome), "not_run");
+    assert_eq!(cell(&item_of(&tc3, None), &firefox), "not_run");
+    assert_eq!(progress.summary.executed, 3);
+
+    // A deleted cycle takes no new import.
+    cycles::delete_cycle(&c, &cycle, U).unwrap();
+    let again = request(
+        &p,
+        doc_of(snapshot!("single__ctrf.json")),
+        json!({"newRun": {"cycleId": cycle}, "allowDuplicate": true}),
+    );
+    assert!(in_tx(&c, |tx| preview(tx, &again))
+        .unwrap_err()
+        .starts_with("cycle-not-found"));
+    assert!(import(&c, &again)
+        .unwrap_err()
+        .starts_with("cycle-not-found"));
+}
