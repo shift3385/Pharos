@@ -1149,3 +1149,220 @@ fn attaching_to_a_closed_run_removes_the_file_it_wrote() {
     drop(store);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// ---- second review ---------------------------------------------------------------
+
+#[test]
+fn one_attempt_id_cannot_record_two_targets() {
+    let c = device();
+    let p = new_project(&c);
+    let case = advanced(&c, &p);
+    let run = insert_run(&c, &run_input(&p, json!({}))).unwrap();
+    let item = add_items(&c, &run, U, &[whole(&case)]).unwrap().remove(0);
+    let targets = item_detail(&c, &item, U).unwrap().unwrap().targets;
+    let (main, flow) = (&targets[0], &targets[2]);
+    let shared = Uuid::new_v4().to_string();
+    // Only the main row's draft carries the id.
+    draft_with(&c, &item, &main.key, &shared);
+    let on = |t: &ExecutionTarget| {
+        attempt(
+            &item,
+            "passed",
+            json!({"flowId": t.flow_id, "exampleRowId": t.example_row_id, "attemptId": shared}),
+        )
+    };
+    // Recording the flow's row with it: that target's draft has no such id.
+    assert!(record_from_draft(&c, &on(flow))
+        .unwrap_err()
+        .starts_with("draft-stale"));
+    let id = record_from_draft(&c, &on(main)).unwrap();
+    assert_eq!(id, shared);
+    // Once recorded, the same id for another target is not a retry.
+    assert_eq!(
+        record_from_draft(&c, &on(flow)).unwrap_err(),
+        "attempt-id-taken"
+    );
+    assert_eq!(record_from_draft(&c, &on(main)).unwrap(), shared);
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 1);
+}
+
+#[test]
+fn attempt_ids_are_normalized_and_invalid_ones_refused() {
+    let c = device();
+    let (_, _, _, item) = simple(&c);
+    let id = Uuid::new_v4().to_string();
+    let upper = id.to_uppercase();
+    let braced = format!("{{{id}}}");
+    // The draft stores one form, the record sends another: the same attempt.
+    draft_with(&c, &item, "-/-", &upper);
+    let first =
+        record_from_draft(&c, &attempt(&item, "passed", json!({"attemptId": braced}))).unwrap();
+    assert_eq!(first, id, "stored lower-case and hyphenated");
+    assert_eq!(
+        record_from_draft(&c, &attempt(&item, "passed", json!({"attemptId": upper}))).unwrap(),
+        id
+    );
+    assert_eq!(count(&c, "SELECT count(*) FROM results"), 1);
+    // A late save in another form is still the recorded attempt.
+    assert!(
+        save_draft(&c, &item, "-/-", Some(&json!({"attemptId": braced})), U)
+            .unwrap_err()
+            .starts_with("draft-stale")
+    );
+    assert!(
+        record_from_draft(&c, &attempt(&item, "passed", json!({"attemptId": "nope"})))
+            .unwrap_err()
+            .starts_with("attempt-id-invalid")
+    );
+    assert!(
+        save_draft(&c, &item, "-/-", Some(&json!({"attemptId": "nope"})), U)
+            .unwrap_err()
+            .starts_with("attempt-id-invalid")
+    );
+}
+
+#[test]
+fn a_draft_from_an_earlier_build_gets_an_attempt_id_and_records() {
+    let c = device();
+    let (_, _, _, item) = simple(&c);
+    // Saved before attempt ids existed: no attemptId.
+    save_draft(&c, &item, "-/-", Some(&json!({"notes": "old"})), U).unwrap();
+    add_draft_attachment(
+        &c,
+        "f",
+        &item,
+        "-/-",
+        None,
+        "a.png",
+        None,
+        "screenshot",
+        &stored("aa"),
+        U,
+    )
+    .unwrap();
+    // The executor gives it one on its next save, then records it.
+    let id = Uuid::new_v4().to_string();
+    save_draft(
+        &c,
+        &item,
+        "-/-",
+        Some(&json!({"notes": "old", "attemptId": id})),
+        U,
+    )
+    .unwrap();
+    let recorded =
+        record_from_draft(&c, &attempt(&item, "passed", json!({"attemptId": id}))).unwrap();
+    assert_eq!(recorded, id);
+    let owner: String = c
+        .query_row(
+            "SELECT owner_entity FROM attachments WHERE id = 'f'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(owner, "result");
+}
+
+#[test]
+fn cancelling_a_run_drops_drafts_of_deleted_items_too() {
+    let c = device();
+    let (p, _, run, item) = simple(&c);
+    let other_case = new_case(&c, &p, json!({"steps": ["x"]}));
+    let other = add_items(&c, &run, U, &[whole(&other_case)])
+        .unwrap()
+        .remove(0);
+    for (it, sha) in [(&item, "aa"), (&other, "bb")] {
+        draft_with(&c, it, "-/-", &Uuid::new_v4().to_string());
+        add_draft_attachment(
+            &c,
+            &format!("f-{sha}"),
+            it,
+            "-/-",
+            None,
+            "a.png",
+            None,
+            "screenshot",
+            &stored(sha),
+            U,
+        )
+        .unwrap();
+    }
+    // The second item was deleted (e.g. by a sync) with its draft still here.
+    c.execute(
+        "UPDATE run_items SET deleted_at = datetime('now') WHERE id = ?1",
+        [&other],
+    )
+    .unwrap();
+    close_run(&c, &run, "aborted", false, U).unwrap();
+    assert_eq!(count(&c, "SELECT count(*) FROM execution_drafts"), 0);
+    assert_eq!(
+        count(
+            &c,
+            "SELECT count(*) FROM blobs WHERE local_state = 'deleting'"
+        ),
+        2
+    );
+    // Another account still cannot.
+    let (p2, _, run2, item2) = simple(&c);
+    let _ = p2;
+    draft_with(&c, &item2, "-/-", &Uuid::new_v4().to_string());
+    assert!(discard_run_drafts(&c, &run2, "someone-else").is_err());
+}
+
+#[test]
+fn cancelling_through_run_update_also_discards_drafts() {
+    let c = device();
+    let (p, _, run, item) = simple(&c);
+    draft_with(&c, &item, "-/-", &Uuid::new_v4().to_string());
+    update_run(&c, &run, &run_input(&p, json!({"status": "completed"}))).unwrap();
+    assert!(
+        read_draft(&c, &item).unwrap().is_some(),
+        "completed keeps them"
+    );
+    update_run(&c, &run, &run_input(&p, json!({"status": "in_progress"}))).unwrap();
+    update_run(&c, &run, &run_input(&p, json!({"status": "aborted"}))).unwrap();
+    assert!(read_draft(&c, &item).unwrap().is_none());
+}
+
+#[test]
+fn a_pulled_tombstone_of_a_run_item_takes_its_draft() {
+    let c = device();
+    let (_, _, _, item) = simple(&c);
+    draft_with(&c, &item, "-/-", &Uuid::new_v4().to_string());
+    add_draft_attachment(
+        &c,
+        "f",
+        &item,
+        "-/-",
+        None,
+        "a.png",
+        None,
+        "screenshot",
+        &stored("aa"),
+        U,
+    )
+    .unwrap();
+    // Everything local already reached the server (no pending change, which
+    // would turn the tombstone into a conflict instead).
+    c.execute(
+        "UPDATE oplog SET synced_at = datetime('now') WHERE synced_at IS NULL",
+        [],
+    )
+    .unwrap();
+    let ws = crate::db::ensure_workspace(&c).unwrap();
+    let doc: sync::RemoteDoc = serde_json::from_value(json!({
+        "entity": "run_item", "entityId": item, "payload": {}, "revision": 9,
+        "hlc": crate::oplog::next_hlc(&c).unwrap(), "deleted": true,
+    }))
+    .unwrap();
+    in_tx(&c, |tx| sync::apply_doc(tx, &ws, U, &doc)).unwrap();
+    assert!(read_draft(&c, &item).unwrap().is_none());
+    let deleted: Option<String> = c
+        .query_row(
+            "SELECT deleted_at FROM attachments WHERE id = 'f'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(deleted.is_some());
+}

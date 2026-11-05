@@ -913,6 +913,10 @@ pub(crate) fn apply_doc(
         return upsert_conflict(conn, user, doc, base);
     }
     write_doc(conn, workspace_id, user, doc)?;
+    // A run item deleted elsewhere takes its local draft and files (EJE-02).
+    if doc.deleted && doc.entity == crate::runs::RUN_ITEM {
+        crate::runs::manual::drop_item_drafts(conn, &doc.entity_id, user)?;
+    }
     set_base(
         conn,
         user,

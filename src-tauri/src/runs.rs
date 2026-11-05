@@ -615,6 +615,7 @@ pub(crate) fn update_run(conn: &Connection, id: &str, input: &RunInput) -> Resul
         return Err(format!("unknown run status: {new_status}"));
     }
     let closing = new_status != "in_progress";
+    let cancelling = new_status == "aborted" && status == "in_progress";
     if let Some(title) = text(&input.title) {
         within("title", &title, MAX_TITLE)?;
     }
@@ -682,7 +683,12 @@ pub(crate) fn update_run(conn: &Connection, id: &str, input: &RunInput) -> Resul
             user,
         )
         .before(before),
-    )
+    )?;
+    // A cancelled run keeps no drafts (their files would stay for ever).
+    if cancelling {
+        manual::discard_run_drafts(conn, id, user)?;
+    }
+    Ok(())
 }
 
 /// Reopens a closed run (EJE-02): only the status changes, `finished_at` is
@@ -1034,16 +1040,24 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
             let id = Uuid::parse_str(&id)
                 .map_err(|_| format!("attempt-id-invalid: {id}"))?
                 .to_string();
-            let owner: Option<Option<String>> = conn
+            type Stored = (Option<String>, Option<String>, Option<String>);
+            let stored: Option<Stored> = conn
                 .query_row(
-                    "SELECT run_item_id FROM results WHERE id = ?1",
+                    "SELECT run_item_id, flow_id, example_row_id FROM results WHERE id = ?1",
                     params![id],
-                    |r| r.get(0),
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
                 )
                 .optional()
                 .map_err(err)?;
-            match owner {
-                Some(Some(owner)) if owner == input.run_item_id => return Ok(id),
+            // The same attempt: same item and the same narrowed target.
+            let flow = text(&input.flow_id).or(item.flow_id.clone());
+            let row = text(&input.example_row_id).or(item.example_row_id.clone());
+            match stored {
+                Some((Some(owner), f, r))
+                    if owner == input.run_item_id && f == flow && r == row =>
+                {
+                    return Ok(id)
+                }
                 Some(_) => return Err("attempt-id-taken".into()),
                 None => Some(id),
             }

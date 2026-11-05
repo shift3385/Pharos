@@ -123,6 +123,9 @@ export function ExecutionPanel({
   // Set while an attempt is being recorded: a second Ctrl+Enter, a click or
   // an edit typed meanwhile must not record twice or revive the draft.
   const recording = useRef(false);
+  // Attempts this window already sent to be recorded: a retry of one (its
+  // save failed after the commit) is ours, not another window's.
+  const sent = useRef(new Set<string>());
 
   const load = useCallback(async () => {
     try {
@@ -214,12 +217,18 @@ export function ExecutionPanel({
    *  what is stored (draft-stale). */
   async function onStale(key: string) {
     cancelSave(key);
+    // Marks or notes typed here and not stored are lost: say so plainly.
+    const local = drafts[key];
+    const edited =
+      local !== undefined &&
+      (local.notes.trim() !== "" ||
+        Object.values(local.steps).some((s) => s.status || s.actual?.trim()));
     setDrafts((cur) => {
       const next = { ...cur };
       delete next[key];
       return next;
     });
-    toast(t("execution.staleDraft"), "warning");
+    toast(t(edited ? "execution.staleDraftEdits" : "execution.staleDraft"), "warning");
     await load();
   }
 
@@ -285,13 +294,17 @@ export function ExecutionPanel({
       try {
         await runsApi.draftSave(runItemId, target.key, d, userId);
       } catch (e) {
-        if (String(e instanceof Error ? e.message : e).startsWith("draft-stale")) {
+        const stale = String(e instanceof Error ? e.message : e).startsWith("draft-stale");
+        // Our own attempt, recorded before its save failed: recording it
+        // again returns it. Anything else stale is another window's.
+        if (stale && !sent.current.has(d.attemptId)) {
           await onStale(target.key);
           return null;
         }
-        throw e;
+        if (!stale) throw e;
       }
       const input = toResultInput(runItemId, target, steps, d, userId, new Date());
+      sent.current.add(d.attemptId);
       const id = await runsApi.record(input);
       toast(t("execution.recorded", { status: t(`runs.status.${input.status}`) }));
       setDrafts((cur) => {

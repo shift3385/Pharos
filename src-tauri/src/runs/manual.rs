@@ -840,8 +840,10 @@ fn check_fresh(
     let Some(attempt) = attempt_id_of(incoming) else {
         return Ok(());
     };
+    let attempt = normalize_attempt(attempt)?;
+    // A draft from a build before attempt ids has none: any id may take it.
     if let Some(stored) = state["targets"].get(key).and_then(attempt_id_of) {
-        return if stored == attempt {
+        return if normalize_attempt(stored).ok().as_deref() == Some(attempt.as_str()) {
             Ok(())
         } else {
             Err("draft-stale: another attempt is in progress".into())
@@ -858,6 +860,51 @@ fn check_fresh(
         return Err("draft-stale: that attempt is already recorded".into());
     }
     Ok(())
+}
+
+/// An attempt id in one form (lower-case, hyphenated), whatever the client
+/// sent (upper case, braces); anything else is `attempt-id-invalid`.
+pub(crate) fn normalize_attempt(id: &str) -> Result<String, String> {
+    Uuid::parse_str(id.trim())
+        .map(|u| u.to_string())
+        .map_err(|_| format!("attempt-id-invalid: {id}"))
+}
+
+/// Drops the draft of a run item and its files (soft delete, content
+/// released): when its run is closed as cancelled, or its tombstone arrives.
+pub(crate) fn drop_item_drafts(
+    conn: &Connection,
+    run_item_id: &str,
+    user: &str,
+) -> Result<(), String> {
+    let mut state = stored_state(conn, run_item_id)?
+        .map(|(s, _)| s)
+        .unwrap_or_else(|| json!({"targets": {}, "attachments": {}}));
+    // Files the state lost track of go too: every live draft file of the item.
+    let ids: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id FROM attachments
+                  WHERE owner_entity = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
+            )
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![DRAFT_OWNER, run_item_id], |r| r.get::<_, String>(0))
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    for id in ids {
+        if state["attachments"].get(&id).is_none() {
+            state["attachments"][&id] = json!({"target": null});
+        }
+    }
+    drop_attachments(conn, run_item_id, &mut state, None, user)?;
+    conn.execute(
+        "DELETE FROM execution_drafts WHERE run_item_id = ?1",
+        params![run_item_id],
+    )
+    .map_err(err)
+    .map(drop)
 }
 
 /// Stores an attachment taken while the attempt is a draft.
@@ -965,25 +1012,42 @@ pub(crate) fn delete_draft_attachment(
 pub(crate) fn record_from_draft(conn: &Connection, input: &ResultInput) -> Result<String, String> {
     // Idempotent: the attempt id is the draft's; a retry of a recorded one
     // (a double submit, a persist that failed after the commit) returns it.
-    let attempt = text(&input.attempt_id).ok_or("attempt-id-required")?;
+    let attempt = normalize_attempt(&text(&input.attempt_id).ok_or("attempt-id-required")?)?;
     owned_item(conn, &input.run_item_id, &input.user_id)?;
-    let already: Option<Option<String>> = conn
+    let mut input = input.clone();
+    input.attempt_id = Some(attempt.clone());
+    let input = &input;
+    let already: bool = conn
         .query_row(
-            "SELECT run_item_id FROM results WHERE id = ?1",
+            "SELECT EXISTS (SELECT 1 FROM results WHERE id = ?1)",
             params![attempt],
             |r| r.get(0),
         )
-        .optional()
         .map_err(err)?;
-    if already.is_some() {
+    if already {
+        // record_result returns it only for the same item, flow and row.
         return record_result(conn, input);
     }
-    // Otherwise the draft of that attempt must still be here.
+    // Otherwise the draft of that attempt, for this very target, must still
+    // be here: the input's flow and row, else the item's.
+    let (item_flow, item_row): (Option<String>, Option<String>) = conn
+        .query_row(
+            "SELECT flow_id, example_row_id FROM run_items WHERE id = ?1",
+            params![input.run_item_id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .map_err(err)?;
+    let key = target_key(
+        text(&input.flow_id).or(item_flow).as_deref(),
+        text(&input.example_row_id).or(item_row).as_deref(),
+    );
     let drafted = stored_state(conn, &input.run_item_id)?.is_some_and(|(s, _)| {
-        s["targets"].as_object().is_some_and(|m| {
-            m.values()
-                .any(|t| attempt_id_of(t) == Some(attempt.as_str()))
-        })
+        s["targets"]
+            .get(&key)
+            .and_then(attempt_id_of)
+            .and_then(|a| normalize_attempt(a).ok())
+            .as_deref()
+            == Some(attempt.as_str())
     });
     if !drafted {
         return Err("draft-stale: the draft of this attempt is gone".into());
@@ -1269,17 +1333,11 @@ pub(crate) fn discard_run_drafts(
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
+    // Owned once for the run: items deleted since (by a sync or a project
+    // restore) keep drafts that go too.
+    super::owned_run(conn, run_id, user)?;
     for item in &items {
-        owned_item(conn, item, user)?;
-        let mut state = stored_state(conn, item)?
-            .map(|(s, _)| s)
-            .unwrap_or_else(|| json!({"targets": {}, "attachments": {}}));
-        drop_attachments(conn, item, &mut state, None, user)?;
-        conn.execute(
-            "DELETE FROM execution_drafts WHERE run_item_id = ?1",
-            params![item],
-        )
-        .map_err(err)?;
+        drop_item_drafts(conn, item, user)?;
     }
     Ok(items.len())
 }

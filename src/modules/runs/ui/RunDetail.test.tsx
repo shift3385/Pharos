@@ -382,9 +382,29 @@ describe("run screen", () => {
     within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0].focus();
     await user.keyboard("p");
     await user.click(screen.getByTestId("exec-save"));
-    expect(await screen.findByText(/ya se guardó o lo cambió otra ventana/)).toBeInTheDocument();
+    // What was marked here is named as discarded, not dropped silently.
+    expect(await screen.findByText(/sin guardar se ha descartado/)).toBeInTheDocument();
     expect(api.record).not.toHaveBeenCalled();
     expect(api.itemDetail.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("retries its own attempt after a failed save without calling it stale", async () => {
+    const user = userEvent.setup();
+    // The record committed but saving the file failed: the retry finds the
+    // draft gone (stale) yet it is this window's attempt, so it records again.
+    api.record.mockRejectedValueOnce("persist failed").mockResolvedValueOnce("res-new");
+    renderRun();
+    const panel = await screen.findByTestId("exec-panel");
+    within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0].focus();
+    await user.keyboard("p");
+    await user.click(screen.getByTestId("exec-save"));
+    await waitFor(() => expect(api.record).toHaveBeenCalledTimes(1));
+    api.draftSave.mockRejectedValue("draft-stale: that attempt is already recorded");
+    await user.click(screen.getByTestId("exec-save"));
+    await waitFor(() => expect(api.record).toHaveBeenCalledTimes(2));
+    expect(api.record.mock.calls[1][0].attemptId).toBe(api.record.mock.calls[0][0].attemptId);
+    expect(await screen.findByText(/Intento guardado/)).toBeInTheDocument();
+    expect(screen.queryByText(/otra ventana/)).not.toBeInTheDocument();
   });
 
   it("is read only on the web", async () => {

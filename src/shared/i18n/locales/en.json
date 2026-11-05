@@ -2738,6 +2738,7 @@
       "noConfiguration": "No configuration",
       "created": "{{key}} created."
     },
-    "staleDraft": "This attempt was already saved or changed in another window. What is stored has been reloaded."
+    "staleDraft": "This attempt was already saved or changed in another window. What is stored has been reloaded.",
+    "staleDraftEdits": "This attempt was already saved or changed in another window. What you marked here and had not saved was discarded; what is stored is shown."
   }
 }

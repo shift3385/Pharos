@@ -2738,6 +2738,7 @@
       "noConfiguration": "Sin configuración",
       "created": "{{key}} creado."
     },
-    "staleDraft": "Este intento ya se guardó o lo cambió otra ventana. Se ha recargado lo guardado."
+    "staleDraft": "Este intento ya se guardó o lo cambió otra ventana. Se ha recargado lo guardado.",
+    "staleDraftEdits": "Este intento ya se guardó o lo cambió otra ventana. Lo que marcaste aquí sin guardar se ha descartado; se muestra lo guardado."
   }
 }

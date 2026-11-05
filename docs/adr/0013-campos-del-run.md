@@ -602,7 +602,20 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   `attempt-id-taken`.
 - **Un borrador caducado no vuelve.** `execution_draft_save` rechaza
   (`draft-stale`) otro `attemptId` para el mismo objetivo o uno ya
-  registrado; la interfaz recarga lo guardado.
+  registrado; la interfaz recarga lo guardado y avisa si descartó marcas sin
+  guardar. El mismo intento (mismo `attemptId`) editado en dos ventanas es
+  «el último que guarda gana»: el borrador es local y no se fusiona. Si guardar
+  el archivo falla tras registrar, el reintento de esa ventana no es un
+  borrador caducado: vuelve a registrar y recibe el mismo resultado.
+- **El id se normaliza** (minúsculas, con guiones; se aceptan mayúsculas y
+  llaves) y debe ser el del borrador de **ese** objetivo: un reintento solo
+  devuelve el resultado si coincide el elemento, el flujo y la fila; si no,
+  `attempt-id-taken`. Un id que no es un UUID es `attempt-id-invalid`. Un
+  borrador anterior a los ids no tiene `attemptId`: el siguiente guardado le
+  pone uno.
+- **Cancelar descarta los borradores**, también por `run_update` y también los
+  de elementos borrados desde entonces; la lápida de un elemento que llega por
+  sync se lleva su borrador y sus adjuntos.
 - **Un intento es uno de los objetivos del elemento** (`target-not-in-item`):
   en un elemento con flujos o filas, un intento sin flujo ni fila se rechaza,
   para que la pantalla del run y el progreso del ciclo cuenten lo mismo.
