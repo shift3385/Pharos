@@ -64,7 +64,9 @@ chapter("evidencias", () => {
       await expect(byTestId("evidence-retention-device")).toBeDisplayed();
       // Longer than before: «Guardar» applies it without asking.
       await byTestId("evidence-retention-save").click();
-      await browser.waitUntil(async () => !(await byTestId("evidence-retention-save").isEnabled()), {
+      // Saved when the row shows the new value (the button is also disabled
+      // while it saves, so it is not a signal).
+      await browser.waitUntil(async () => (await byTestId("evidence-retention").getText()).includes("Ahora: 45 días"), {
         timeoutMsg: "the retention was not saved",
       });
     },

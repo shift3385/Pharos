@@ -2845,8 +2845,8 @@
       "chapter": "ejecucion-manual",
       "n": 13,
       "id": "borrar-run",
-      "title": "Borrar un run",
-      "caption": "«Borrar run» lo quita de la lista, del progreso, de la matriz y del informe, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede borrar.",
+      "title": "Eliminar un run",
+      "caption": "«Eliminar run» lo quita de las listas y del progreso, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede eliminar.",
       "covers": [
         "dialogs:src/modules/runs/ui/DeleteRunDialog.tsx"
       ],
@@ -2861,8 +2861,8 @@
       "chapter": "ejecucion-manual",
       "n": 14,
       "id": "run-borrado",
-      "title": "Run borrado",
-      "caption": "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda el borrado con lo que ocultó.",
+      "title": "Run eliminado",
+      "caption": "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda la eliminación con lo que ocultó.",
       "covers": [],
       "image": "ejecucion-manual/14-run-borrado.png",
       "viewport": {
@@ -2893,7 +2893,7 @@
       "n": 2,
       "id": "retencion",
       "title": "Retención por proyecto",
-      "caption": "«Retención por proyecto» fija, para cada tipo de evidencia de un proyecto, cuánto se conserva antes de que caduque su archivo: el valor por defecto (30 días las trazas y los vídeos, 90 los reportes y los registros), «Siempre» o un número de días. Nunca caduca la evidencia de la ejecución manual, la de un resultado final fallido o bloqueado ni la de un resultado vinculado a un defecto abierto. Es un ajuste solo de este equipo: no se sincroniza.",
+      "caption": "«Retención por proyecto» fija, para cada tipo de evidencia de un proyecto, cuánto se conserva antes de que caduque su archivo: el valor por defecto (30 días las trazas y los vídeos, 90 los reportes y los registros), «Siempre» o un número de días. Nunca caduca la evidencia de la ejecución manual, la de un resultado final fallido o bloqueado ni la de un resultado vinculado a un defecto abierto. Nada se guarda hasta pulsar «Guardar». Es un ajuste solo de este equipo: no se sincroniza.",
       "covers": [
         "action:evidence-retention"
       ],
@@ -2907,11 +2907,13 @@
     {
       "chapter": "evidencias",
       "n": 3,
-      "id": "verificar",
-      "title": "Verificar las evidencias",
-      "caption": "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce (huérfanos). No borra nada por sí sola; puedes seguir trabajando mientras tanto.",
-      "covers": [],
-      "image": "evidencias/03-verificar.png",
+      "id": "retencion-acortar",
+      "title": "Acortar la retención",
+      "caption": "Un plazo más corto que el actual pide confirmación y dice cuántos archivos caducarían en la próxima pasada (al arrancar o tras sincronizar). Los resultados se conservan; los archivos caducados no se recuperan.",
+      "covers": [
+        "dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx"
+      ],
+      "image": "evidencias/03-retencion-acortar.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2921,13 +2923,11 @@
     {
       "chapter": "evidencias",
       "n": 4,
-      "id": "reparar",
-      "title": "Borrar los huérfanos",
-      "caption": "Los huérfanos aparecen en su bloque con su tamaño; «Borrar seleccionados» pide confirmación antes de eliminarlos. Los que faltan o están dañados se listan con el elemento que los usa.",
-      "covers": [
-        "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx"
-      ],
-      "image": "evidencias/04-reparar.png",
+      "id": "retencion-acortada",
+      "title": "Retención acortada",
+      "caption": "Al confirmar, el nuevo plazo se guarda en este equipo.",
+      "covers": [],
+      "image": null,
       "viewport": {
         "height": 900,
         "width": 1440
@@ -2937,6 +2937,36 @@
     {
       "chapter": "evidencias",
       "n": 5,
+      "id": "verificar",
+      "title": "Verificar las evidencias",
+      "caption": "«Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce (huérfanos). No borra nada por sí sola; puedes seguir trabajando mientras tanto.",
+      "covers": [],
+      "image": "evidencias/05-verificar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 6,
+      "id": "reparar",
+      "title": "Borrar los huérfanos",
+      "caption": "Los huérfanos aparecen en su bloque con su tamaño; «Borrar seleccionados» pide confirmación antes de eliminarlos. Los que faltan o están dañados se listan con el elemento que los usa.",
+      "covers": [
+        "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx"
+      ],
+      "image": "evidencias/06-reparar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "evidencias",
+      "n": 7,
       "id": "reparado",
       "title": "Huérfanos borrados",
       "caption": "Al confirmar se borran y el informe se actualiza; cada borrado queda en el registro de auditoría.",
