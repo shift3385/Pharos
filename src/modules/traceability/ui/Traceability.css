@@ -610,6 +610,7 @@
   flex-direction: column;
   gap: 4px;
   min-width: min(160px, 100%);
+  max-width: 280px;
   flex: 1 1 140px;
   font-size: 12px;
   font-weight: var(--fw-medium);

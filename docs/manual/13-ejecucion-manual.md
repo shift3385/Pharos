@@ -83,6 +83,30 @@ En un intento fallido, «Crear defecto» abre el editor de defectos relleno con 
 
 Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.
 
+### 13.13. Los resultados en la matriz
+
+En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.
+
+![Los resultados en la matriz](img/ejecucion-manual/13-matriz-resultados.png)
+
+### 13.14. Del resultado a su run
+
+La clave del run (RUN-…) abre la pantalla de ese run. «Quitar filtros» devuelve todos los resultados.
+
+### 13.15. Informe de estado
+
+En «Ejecuciones», «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, en el periodo que elijas: progreso, resultados por estado, defectos (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple) y los bloqueos. El resumen se rellena con las cifras y, con las recomendaciones, se guarda solo en este equipo.
+
+![Informe de estado](img/ejecucion-manual/15-informe-estado.png)
+
+### 13.16. Exportar el informe a Excel
+
+«Exportar .xlsx» guarda el informe en la carpeta de descargas: una hoja «Resumen» con las nueve secciones y hojas con los resultados por caso, los defectos y la cobertura por requisito.
+
+### 13.17. Exportar el informe a PDF
+
+«Exportar PDF» guarda el mismo informe como documento, listo para enviar.
+
 ## Consejos
 
 - Trabaja con el teclado: P / F / B / S marcan, J / K mueven, N escribe lo
@@ -93,11 +117,18 @@ Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar
   equipo al adjuntarlas.
 - Si el caso cambió después de añadirlo al run, se ejecuta la revisión que el
   run congeló: el resultado siempre apunta a lo que se probó.
+- En la matriz de trazabilidad gana siempre el último resultado final, sea de
+  un run manual o de un informe importado: repetir la prueba a mano después de
+  un informe de Playwright cambia lo que muestra la matriz.
+- El **informe de estado** (ISO/IEC/IEEE 29119-3) sale de las ejecuciones: el
+  resumen se rellena con las cifras y las recomendaciones las escribes tú. Los
+  dos textos se guardan solo en este equipo y van en el Excel y el PDF; los
+  defectos se cuentan «a fecha de hoy», no por el periodo elegido.
 
 ## Véase también
 
 - Capítulo 7, «Ciclos y configuraciones» (los runs de un ciclo) y capítulo 9, «Defectos».
-- [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: run, elemento, objetivo, intento.
+- [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: run, elemento, objetivo, intento, último resultado, informe de estado, criterio de salida evaluado.
 
 ---
 

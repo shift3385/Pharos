@@ -61,23 +61,29 @@ Los runs creados aparecen en la pestaña «Runs» y en «Ejecuciones» (capítul
 
 ![Los runs del ciclo](img/ciclos/08-runs.png)
 
-### 7.9. Clonar y eliminar un ciclo
+### 7.9. Informe de estado de un ciclo
+
+«Informe de estado» en la cabecera del ciclo abre el informe con el alcance ya puesto en ese ciclo: el progreso cuenta cada caso en cada configuración, como la pestaña «Elementos». El informe completo se explica en el capítulo 13.
+
+![Informe de estado de un ciclo](img/ciclos/09-informe-ciclo.png)
+
+### 7.10. Clonar y eliminar un ciclo
 
 El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.
 
-![Clonar y eliminar un ciclo](img/ciclos/09-clonar.png)
+![Clonar y eliminar un ciclo](img/ciclos/10-clonar.png)
 
-### 7.10. Confirmar la eliminación
+### 7.11. Confirmar la eliminación
 
 Eliminar un ciclo pide confirmación; sus runs se conservan en «Ejecuciones».
 
-![Confirmar la eliminación](img/ciclos/10-eliminar.png)
+![Confirmar la eliminación](img/ciclos/11-eliminar.png)
 
-### 7.11. La lista de ciclos
+### 7.12. La lista de ciclos
 
 La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs; filtra por Planificados, Activos o Cerrados.
 
-![La lista de ciclos](img/ciclos/11-lista.png)
+![La lista de ciclos](img/ciclos/12-lista.png)
 
 ## Consejos
 
@@ -86,6 +92,9 @@ La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y r
   prioridad, estado, requisitos o riesgo.
 - «Clonar» prepara la siguiente ronda con los mismos elementos y sin
   resultados.
+- «Informe de estado» en la cabecera del ciclo resume esa ronda (progreso por
+  caso y configuración, defectos, cobertura y criterios de salida) para
+  enviarla en Excel o PDF.
 
 ## Véase también
 

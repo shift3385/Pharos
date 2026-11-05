@@ -631,3 +631,84 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   del run y sus adjuntos; como `completed`, si el usuario lo pide.
 - **Sin etiqueta de configuración** en los intentos manuales: los identifica
   el `configuration_id` del run, cuyo nombre se puede editar.
+
+## Implementación (E6, paso 10: matriz extendida e informe de estado, 2026-11-05)
+
+EJE-04 y EJE-03 sobre una **derivación de ejecución** única (contrato v1), que
+también leen las métricas del Inicio (RED-W6). Sin migraciones (0034 y la 0013
+del servidor, reservadas, se retiran) y sin cambios en lo que se sincroniza
+(`APPLIED_SET_VERSION` sigue en 7). Dónde vive:
+
+- **Núcleo puro** en `src-tauri/src/execution/derive.rs` (`summarize`, `home`),
+  sin SQL, sin reloj y sin zona horaria. Reutiliza `runs::derive`
+  (`cmp_attempts`, `worst_status`, `risk_level`, `risk_band`) y
+  `cycles::progress::cells`.
+- **Cargador** en `src-tauri/src/execution.rs`: una lectura del proyecto (runs
+  vivos, resultados sin shard superado, enlace de cada uno —el guardado si es
+  manual, el de `runs::link::Resolver` si es importado—, casos con su revisión
+  vigente, requisitos con riesgo, defectos con los casos que alcanzan, ciclos y
+  elementos, criterios del plan). Comando `execution_summary` (lectura) y
+  `home_metrics(conn, user, request)` para RED-W6.
+- **Gemelo del servidor** en `server/src/modules/domain/execution-summary.ts` y
+  `execution.ts`, con `GET /api/execution/summary`. Los dos lados se comprueban
+  con `src-tauri/tests/fixtures/execution-vectors.json`.
+
+Reglas (R1–R12 del contrato):
+
+- **R1 Alcance.** Intentos de runs vivos del proyecto, sin shard superado, que
+  cumplen los filtros del run (ciclo; plan: el `testPlanId` del run o el de su
+  ciclo; build y entorno, recortados) y la configuración del intento (la del
+  run, si no la del resultado o la que resuelve su etiqueta). El periodo
+  `[from, to)` en ms se aplica a la hora del intento (la regla de
+  `runs::derive`: la primera que se lee de `finished_at`, `started_at` y la
+  importación del shard); con periodo, un intento sin hora queda fuera y se
+  cuenta en `undated`.
+- **R2 Finales y flaky.** El final de cada test `(run, test_key, etiqueta)`
+  por hora, `attempt`, HLC y, al final, el id; flaky si el final pasó y antes
+  falló, o si la herramienta lo declaró.
+- **R4 Objetivo** `(caso, flujo, fila)`: el run de su final más reciente y,
+  dentro de ese run, el peor final entre configuraciones.
+- **R5 Caso** (diseño §4, «Matriz»): el run del final más reciente del caso y,
+  dentro, el peor entre flujos, filas y configuraciones; el resultado decisivo
+  es el más reciente con ese estado. Sin finales, `not_run`.
+  **Desactualizado** (`stale`) cuando la revisión ejecutada no es la vigente
+  (por número de revisión).
+- **R6 Progreso.** Con ciclo, las celdas del ciclo (elemento × configuración,
+  `progressUnit: "cell"`), como la pantalla del ciclo; si no, los casos del
+  alcance: el proyecto (los vivos no obsoletos) o el plan (elementos de sus
+  ciclos y casos con resultados en sus runs). `executed` = distinto de
+  `not_run`; `passRate` = pasados / ejecutados.
+- **R7 Re-test.** Un caso cuyo estado es `failed` y al que llega un defecto
+  `fixed` o `retest` (y ninguno `new`, `open` o `in_progress`) pasa a
+  `retest`: cuenta como ejecutado, no como pasado.
+- **R8 Ventanas** (Inicio): por ventana `[dayStarts[i], now]`, finales y peor
+  por objetivo entre los intentos de todos los proyectos; un intento sin caso
+  es su propio objetivo.
+- **R9 Diario.** Cada intento (no solo los finales), por estado y por origen
+  (manual / importado), en el día de `dayStarts` (medianoches locales que da el
+  cliente) que lo contiene; antes del primer día no cuenta. Así un día de
+  cambio de hora tiene 23 o 25 horas sin lógica de zona en el núcleo.
+- **R10 Defectos.** Foto de hoy, sin filtrar por periodo; con ciclo o plan,
+  los que alcanzan casos del alcance o sus requisitos.
+- **R11 Criterios de salida.** Los del plan del proyecto (`closureCriteria`
+  con texto), con su índice; sin plan o sin criterios, los tres por defecto
+  (A3: ≥ 95 % ejecutado, 0 defectos críticos abiertos, ≥ 90 % de cobertura de
+  requisitos). El tipo se reconoce por el texto (ejecutad/executed, éxito/pass
+  rate, defecto + crític, cobertura/coverage) y la métrica se lee como
+  operador opcional + número + `%` opcional. Lo que no se reconoce queda «sin
+  datos» (`met: null`). La cobertura del criterio es la de la matriz:
+  requisitos con al menos un caso vivo no obsoleto.
+- **R12 Empates** siempre por id: el mismo resultado en el escritorio y en el
+  servidor, se lean las filas en el orden que se lean.
+
+Bandas de riesgo: las de por defecto (hasta 4 bajo, hasta 12 medio, más alto);
+las bandas por proyecto siguen en TRZ-04. El riesgo se edita en el formulario
+del requisito: escritorio con `requirement_risk_set`, web con claves opcionales
+(`riskLikelihood`, `riskImpact`: falta = se conserva, `null` = se borra).
+
+**Criterio de salida de 0.2.0:** `a_manual_and_a_playwright_run_share_the_matrix`
+(Rust) y su gemelo en `server/tests/execution.test.ts`: un intento manual
+falla, un informe de Playwright posterior lo pasa (los dos runs en el resumen,
+gana el último final), otro intento manual posterior gana de nuevo, y editar el
+caso no cambia el resultado, su run ni su revisión (solo lo marca como
+desactualizado).

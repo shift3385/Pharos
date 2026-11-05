@@ -5,7 +5,7 @@
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, waitForText } from "./helpers";
+import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, tf, waitForText } from "./helpers";
 
 const E = es.execution;
 const D = '[role="dialog"]';
@@ -201,6 +201,74 @@ chapter("ejecucion-manual", () => {
       await expect(byTestId("run-reopen")).toBeDisplayed();
       await byTestId("run-reopen").click();
       await expect(byTestId("run-close")).toBeDisplayed();
+    },
+  });
+
+  step("matriz-resultados", {
+    title: "Los resultados en la matriz",
+    caption: "En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.",
+    covers: ["action:matrix-filters"],
+    run: async () => {
+      await openSection("traceability");
+      await $(`button.chips__chip*=${es.traceability.view.matrix}`).click();
+      await waitForText(es.traceability.matrix.title);
+      await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
+        timeoutMsg: "the matrix shows no run of a result",
+      });
+      const build = $('[data-testid="trace-filter-build"]');
+      await build.scrollIntoView();
+      await build.selectByAttribute("value", "2.0.0-rc1");
+      await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
+    },
+  });
+
+  step("abrir-run-matriz", {
+    title: "Del resultado a su run",
+    caption: "La clave del run (RUN-…) abre la pantalla de ese run. «Quitar filtros» devuelve todos los resultados.",
+    covers: ["action:matrix-run-link"],
+    shot: false,
+    run: async () => {
+      await byTestId("trace-filters-clear").click();
+      await browser.waitUntil(async () => !(await browser.getUrl()).includes("build="), { timeoutMsg: "the filters were not cleared" });
+      await $('[data-testid="trace-run-link"]').click();
+      await browser.waitUntil(async () => /\/runs\/[^/?]+/.test(await browser.getUrl()), { timeoutMsg: "the run screen did not open" });
+    },
+  });
+
+  step("informe-estado", {
+    title: "Informe de estado",
+    caption: "En «Ejecuciones», «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, en el periodo que elijas: progreso, resultados por estado, defectos (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple) y los bloqueos. El resumen se rellena con las cifras y, con las recomendaciones, se guarda solo en este equipo.",
+    covers: ["dialogs:src/modules/runs/report/StatusReportDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      await openSection("runs");
+      await byTestId("runs-report").click();
+      await expect(byTestId("status-report")).toBeDisplayed();
+      await waitForText(es.statusReport.section.exit);
+      await byTestId("report-recommendations").setValue("Repetir los casos fallidos tras la corrección de pagos y cerrar el ciclo.");
+    },
+  });
+
+  step("informe-xlsx", {
+    title: "Exportar el informe a Excel",
+    caption: "«Exportar .xlsx» guarda el informe en la carpeta de descargas: una hoja «Resumen» con las nueve secciones y hojas con los resultados por caso, los defectos y la cobertura por requisito.",
+    covers: ["action:report-export-xlsx"],
+    shot: false,
+    run: async () => {
+      await byTestId("report-export-xlsx").click();
+      await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 30_000);
+    },
+  });
+
+  step("informe-pdf", {
+    title: "Exportar el informe a PDF",
+    caption: "«Exportar PDF» guarda el mismo informe como documento, listo para enviar.",
+    covers: ["action:report-export-pdf"],
+    shot: false,
+    run: async () => {
+      await byTestId("report-export-pdf").click();
+      await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 60_000);
+      await browser.keys("Escape");
     },
   });
 });

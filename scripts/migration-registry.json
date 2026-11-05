@@ -3,25 +3,23 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {
-      "0034": "E6 step 10 (EJE-04/EJE-03) spare; expected unused: the matrix and the status report are derived on read"
-    },
+    "reserved": {},
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
       "0030": "E4 step 8 (DEF-01) spare, never used: step 8 shipped as the single 0029 with its Rust step",
       "0032": "E5 step 7 (EJE-02) spare, never used: manual execution fits migration 0024 (drafts and attachments)",
-      "0033": "E5 DAT-03b spare, never used: verifying evidence needs no schema change (local_state has no CHECK)"
+      "0033": "E5 DAT-03b spare, never used: verifying evidence needs no schema change (local_state has no CHECK)",
+      "0034": "E6 step 10 (EJE-04/EJE-03) spare, never used: the matrix and the status report are derived on read"
     }
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {
-      "0013": "E6 step 10 (EJE-04/EJE-03) spare; expected unused: the execution summary is derived on read"
-    },
+    "reserved": {},
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
-      "0012": "E5 step 7 (EJE-02) spare, never used: no server change"
+      "0012": "E5 step 7 (EJE-02) spare, never used: no server change",
+      "0013": "E6 step 10 (EJE-04/EJE-03) spare, never used: the execution summary is derived on read"
     }
   }
 }

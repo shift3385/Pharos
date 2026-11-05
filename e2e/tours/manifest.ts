@@ -229,6 +229,10 @@ export const INVENTORY: Item[] = [
   I("trazabilidad", "action", "action:matrix-gaps", "Mostrar solo huecos"),
   I("trazabilidad", "action", "action:matrix-export", "Exportar la matriz (.xlsx)"),
   I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx", "Migrar referencias escritas a mano a vínculos"),
+  I("trazabilidad", "action", "action:requirement-risk", "Riesgo del requisito (probabilidad × impacto)"),
+  I("trazabilidad", "action", "action:matrix-sort", "Ordenar la matriz por riesgo o por ID"),
+  I("trazabilidad", "action", "action:matrix-filters", "Filtrar los resultados de la matriz (ciclo, configuración, build, entorno)"),
+  I("trazabilidad", "action", "action:matrix-run-link", "Último resultado en la matriz: abrir su run"),
 
   // ---- 6 · Planificador ----------------------------------------------------------------
   I("planificador", "section", "section:planner", "Planificador (tablero)"),
@@ -250,6 +254,7 @@ export const INVENTORY: Item[] = [
   I("ciclos", "dialog", "dialogs:src/modules/cycles/ui/CycleDetail.tsx", "Clonar y eliminar un ciclo (confirmación)"),
   I("ciclos", "action", "action:cycles-filter", "Filtrar ciclos por estado"),
   I("ciclos", "tab", "tabs:src/modules/cycles/ui/CycleDetail.tsx", "Pestañas del ciclo (Elementos / Runs)"),
+  I("ciclos", "action", "action:cycle-report", "Informe de estado de un ciclo"),
 
   // ---- 8 · Ejecuciones ------------------------------------------------------------------
   I("ejecuciones", "section", "section:runs", "Ejecuciones (lista de runs)"),
@@ -263,6 +268,9 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "action", "action:tray-unlink", "Desvincular un test"),
   I("ejecuciones", "action", "action:tray-filter", "Filtrar la bandeja"),
   I("ejecuciones", "action", "action:import-attachments-folder", "Carpeta de adjuntos del informe"),
+  I("ejecuciones", "dialog", "dialogs:src/modules/runs/report/StatusReportDialog.tsx", "Informe de estado (ISO 29119-3): alcance, periodo, resumen y recomendaciones"),
+  I("ejecuciones", "action", "action:report-export-xlsx", "Exportar el informe de estado (.xlsx)"),
+  I("ejecuciones", "action", "action:report-export-pdf", "Exportar el informe de estado (PDF)"),
 
   // ---- 9 · Defectos ----------------------------------------------------------------------
   I("defectos", "section", "section:defects", "Defectos (lista)"),
