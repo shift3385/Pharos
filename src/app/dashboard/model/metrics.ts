@@ -53,16 +53,6 @@ export const metricsKey = (ownerId: string, now: Date) => `${ownerId}|${isoDay(n
 
 // ---- mappers (presentation only) -------------------------------------------------
 
-const ZERO: StatusCounts = {
-  passed: 0,
-  failed: 0,
-  blocked: 0,
-  skipped: 0,
-  other: 0,
-  notRun: 0,
-  retest: 0,
-};
-
 export function byProject(m: HomeMetrics | null): Map<string, ProjectMetrics> {
   return new Map((m?.projects ?? []).map((p) => [p.projectId, p]));
 }
@@ -108,22 +98,18 @@ export function axisMax(points: { total: number }[]): number {
 }
 
 export interface ExecRow {
-  counts: ProgressSummary;
-  /** executed / total, 0..1; null without cases. */
+  /** Null until the metrics load (unknown, never zero). */
+  counts: ProgressSummary | null;
+  /** executed / total, 0..1; null without cases or metrics. */
   executedShare: number | null;
   lastExecutedAt: string | null;
 }
 
-export function execRow(p: HomeProject, m: ProjectMetrics | undefined): ExecRow {
-  const counts = m?.counts ?? {
-    ...ZERO,
-    notRun: p.cases.length,
-    total: p.cases.length,
-    executed: 0,
-  };
+export function execRow(m: ProjectMetrics | undefined): ExecRow {
+  const counts = m?.counts ?? null;
   return {
     counts,
-    executedShare: counts.total ? counts.executed / counts.total : null,
+    executedShare: counts?.total ? counts.executed / counts.total : null,
     lastExecutedAt: m?.lastExecutedAt ?? null,
   };
 }
@@ -138,8 +124,8 @@ export interface ExecutionKpis {
   rate: WindowRollup | null;
 }
 
-/** The KPIs that come from executions. Without metrics (loading, error) the
- *  pending count falls back to the live cases and the defects to `loadHome`. */
+/** The KPIs that come from executions, summed over the open projects. Only
+ *  meaningful with metrics: the cards show «—» / «…» until then. */
 export function executionKpis(
   projects: HomeProject[],
   m: HomeMetrics | null,
@@ -149,12 +135,12 @@ export function executionKpis(
   const out = { pending: 0, blocked: 0, total: 0, openDefects: 0, criticalDefects: 0 };
   for (const p of projects) {
     const x = pm.get(p.id);
-    const c = execRow(p, x).counts;
-    out.pending += c.notRun + c.blocked;
-    out.blocked += c.blocked;
-    out.total += c.total;
-    out.openDefects += x ? x.defects.open : p.openDefects;
-    out.criticalDefects += x ? x.defects.openBySeverity.critical : p.criticalDefects;
+    if (!x) continue;
+    out.pending += x.counts.notRun + x.counts.blocked;
+    out.blocked += x.counts.blocked;
+    out.total += x.counts.total;
+    out.openDefects += x.defects.open;
+    out.criticalDefects += x.defects.openBySeverity.critical;
   }
   return { ...out, rate: m?.windows[period] ?? null };
 }
@@ -178,9 +164,22 @@ export interface QueueRow extends QueueRef {
 const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const rank = (priority: string) => PRIORITY_RANK[priority] ?? 4;
 
-/** A tab of «Próximas pruebas» over every project: each project's refs come
- *  ordered (contract §2.4); merging them keeps that same order (priority,
- *  then newest `lastAt`, then case id), one row per case. */
+/** Milliseconds of a stored time (RFC 3339, or SQLite's zone-less
+ *  `YYYY-MM-DD HH:MM:SS`, which is UTC); null when absent or unparsable. */
+export function instantOf(s: string | null): number | null {
+  if (!s) return null;
+  const t = s.trim().replace(" ", "T");
+  const ms = Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(t) ? t : `${t}Z`);
+  return Number.isNaN(ms) ? null : ms;
+}
+
+/** A tab of «Próximas pruebas» over every project. The derivation gives one
+ *  ref per case (its R5 status), the first `queueLimit` of each project in
+ *  its order, and the full count of cases per tab, so the badge and the rows
+ *  count the same thing: cases. Merging the projects keeps the derivation's
+ *  order: priority, then the newest last execution (compared as instants;
+ *  none last), then the case id in natural order. A case seen twice in a
+ *  project is kept once, before the limit. */
 export function queueRows(
   projects: HomeProject[],
   m: HomeMetrics,
@@ -188,24 +187,23 @@ export function queueRows(
   limit = 5,
 ): QueueRow[] {
   const pm = byProject(m);
-  const rows: QueueRow[] = [];
+  const rows: (QueueRow & { at: number | null })[] = [];
   for (const p of projects) {
     const seen = new Set<string>();
     for (const ref of pm.get(p.id)?.queue[tab] ?? []) {
       if (seen.has(ref.caseId)) continue;
       seen.add(ref.caseId);
-      rows.push({ ...ref, projectId: p.id, projectName: p.name });
+      rows.push({ ...ref, projectId: p.id, projectName: p.name, at: instantOf(ref.lastAt) });
     }
   }
-  const time = (s: string | null) => (s ? s : "");
   rows.sort(
     (a, b) =>
       rank(a.priority) - rank(b.priority) ||
-      (a.lastAt === null ? 1 : 0) - (b.lastAt === null ? 1 : 0) ||
-      time(b.lastAt).localeCompare(time(a.lastAt)) ||
+      (a.at === null ? 1 : 0) - (b.at === null ? 1 : 0) ||
+      (b.at ?? 0) - (a.at ?? 0) ||
       a.scenarioId.localeCompare(b.scenarioId, undefined, { numeric: true }),
   );
-  return rows.slice(0, limit);
+  return rows.slice(0, limit).map(({ at: _at, ...row }) => row);
 }
 
 export function queueCounts(m: HomeMetrics | null): Record<QueueTab, number> | null {

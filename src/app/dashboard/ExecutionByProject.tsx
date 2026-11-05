@@ -82,9 +82,11 @@ export function ExecutionByProject({
             aria-busy={state.status === "loading" || undefined}
           >
             {projects.map((p) => {
-              const row = execRow(p, pm.get(p.id));
-              const c = row.counts;
-              const width = (n: number) => `${(n / (c.total || 1)) * 100}%`;
+              const row = execRow(pm.get(p.id));
+              // Null until the metrics load, or for a project newer than
+              // them: unknown, never «0 %».
+              const c = ready ? row.counts : null;
+              const width = (n: number) => `${(n / (c?.total || 1)) * 100}%`;
               return (
                 <li key={p.id} className="home-exec__row">
                   <span className="home-exec__line">
@@ -96,21 +98,20 @@ export function ExecutionByProject({
                     >
                       {p.name}
                     </Link>
-                    {row.executedShare !== null ? (
+                    {c && c.total > 0 ? (
                       <>
-                        {/* Unknown until the metrics load: never «0 %». */}
                         <span className="home-exec__count">
-                          {ready ? c.executed : "—"} / {c.total}
+                          {c.executed} / {c.total}
                         </span>
                         <span className="home-exec__pct">
-                          {ready ? percent.format(row.executedShare) : "—"}
+                          {percent.format(row.executedShare ?? 0)}
                         </span>
                       </>
                     ) : (
-                      // No cases: nothing to run, no ratio to show.
+                      // No cases (nothing to run), or not known yet.
                       <span
                         className="home-exec__pct"
-                        title={t("dashboard.exec.noCases")}
+                        title={c ? t("dashboard.exec.noCases") : undefined}
                       >
                         —
                       </span>
@@ -119,31 +120,37 @@ export function ExecutionByProject({
                   <span
                     className="home-exec__bar"
                     role="img"
-                    aria-label={t("dashboard.exec.rowLabel", {
-                      name: p.name,
-                      executed: c.executed,
-                      total: c.total,
-                      passed: c.passed,
-                      failed: c.failed + c.retest,
-                      blocked: c.blocked,
-                    })}
+                    aria-label={
+                      c
+                        ? t("dashboard.exec.rowLabel", {
+                            name: p.name,
+                            executed: c.executed,
+                            total: c.total,
+                            passed: c.passed,
+                            failed: c.failed + c.retest,
+                            blocked: c.blocked,
+                          })
+                        : t("dashboard.exec.rowUnknown", { name: p.name })
+                    }
                   >
-                    {c.passed > 0 && (
+                    {/* Re-test is a failed case waiting for its re-run: drawn
+                        right after the failed ones, in the same colour. */}
+                    {c && c.passed > 0 && (
                       <span data-tone="pass" style={{ width: width(c.passed) }} />
                     )}
-                    {c.failed > 0 && (
+                    {c && c.failed > 0 && (
                       <span data-tone="fail" style={{ width: width(c.failed) }} />
                     )}
-                    {c.blocked > 0 && (
+                    {c && c.retest > 0 && (
+                      <span data-tone="retest" style={{ width: width(c.retest) }} />
+                    )}
+                    {c && c.blocked > 0 && (
                       <span
                         data-tone="blocked"
                         style={{ width: width(c.blocked) }}
                       />
                     )}
-                    {c.retest > 0 && (
-                      <span data-tone="fail" style={{ width: width(c.retest) }} />
-                    )}
-                    {c.skipped + c.other > 0 && (
+                    {c && c.skipped + c.other > 0 && (
                       <span
                         data-tone="other"
                         style={{ width: width(c.skipped + c.other) }}

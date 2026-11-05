@@ -54,9 +54,9 @@ export function DashboardPage() {
   const [period, setPeriod] = useState<Period>(storedPeriod);
   const [exitId, setExitId] = useState<string | null>(null);
   const [tab, setTab] = useState<MobileTab>("summary");
-  // Fixed for the life of the page, so the chart does not move under the user.
-  const [today] = useState(() => new Date());
-  const { state: metrics, retry } = useHomeMetrics(ownerId, today);
+  // The local day of the metrics: it moves at midnight with them.
+  const { state: metrics, retry, today } = useHomeMetrics(ownerId);
+  const ready = metrics.status === "ready";
 
   useEffect(() => {
     let alive = true;
@@ -94,7 +94,9 @@ export function DashboardPage() {
     const pm = byProject(metrics.data);
     return list.filter((p) => exitStatus(pm.get(p.id)) === "risk").length;
   }, [list, metrics.data]);
-  const problems = exec.criticalDefects + atRisk;
+  // Unknown until the metrics load: no bubble rather than a guess.
+  const problems = ready ? exec.criticalDefects + atRisk : 0;
+  const pendingBubble = ready ? exec.pending : 0;
   const exitProject =
     list.find((p) => p.id === exitId) ?? defaultExitProject(list, today);
 
@@ -139,6 +141,20 @@ export function DashboardPage() {
               components={{ b: <b /> }}
             />
           )}
+        </p>
+        {/* How fresh the execution numbers are (RED-W6 review): a refresh in
+            flight, or the time of the payload shown after a failed one. */}
+        <p className="home-header__fresh" role="status" data-testid="home-fresh">
+          {metrics.status === "ready" && metrics.stale
+            ? t("dashboard.metrics.staleAt", {
+                time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(metrics.at),
+              })
+            : metrics.status === "ready" && metrics.refreshing
+              ? t("dashboard.metrics.refreshing")
+              : ""}
         </p>
       </div>
       <div className="home-header__actions">
@@ -239,12 +255,12 @@ export function DashboardPage() {
               {
                 id: "tests",
                 label: t("dashboard.tabs.tests"),
-                badge: exec.pending
+                badge: pendingBubble
                   ? {
-                      count: exec.pending,
+                      count: pendingBubble,
                       tone: "navy",
                       title: t("dashboard.tabs.pendingBubble", {
-                        count: exec.pending,
+                        count: pendingBubble,
                       }),
                     }
                   : undefined,

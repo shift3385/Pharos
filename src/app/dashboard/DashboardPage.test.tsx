@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes, useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
@@ -26,20 +26,6 @@ const portal: HomeProject = {
   id: "p-pcl",
   name: "Portal Clientes v3",
   key: "PCL",
-  cases: [
-    {
-      id: "c1",
-      scenarioId: "PCL-0002",
-      title: "Pago con tarjeta",
-      priority: "medium",
-    },
-    {
-      id: "c2",
-      scenarioId: "PCL-0001",
-      title: "Login con 2FA",
-      priority: "critical",
-    },
-  ],
   closeDate: "2026-11-07",
   hasPlan: true,
   criteria: [
@@ -47,37 +33,22 @@ const portal: HomeProject = {
     { criterion: "Defectos críticos abiertos", metric: "0" },
     { criterion: "Revisión del cliente", metric: "" },
   ],
-  openDefects: 3,
-  criticalDefects: 1,
 };
 const banca: HomeProject = {
   id: "p-amb",
   name: "App Móvil Banca",
   key: "AMB",
-  cases: [
-    {
-      id: "c3",
-      scenarioId: "AMB-0001",
-      title: "Consulta de saldo",
-      priority: "high",
-    },
-  ],
   closeDate: "2026-10-31",
   hasPlan: true,
   criteria: [],
-  openDefects: 0,
-  criticalDefects: 0,
 };
 const erp: HomeProject = {
   id: "p-erp",
   name: "Migración ERP",
   key: "ERP",
-  cases: [],
   closeDate: null,
   hasPlan: false,
   criteria: [],
-  openDefects: 0,
-  criticalDefects: 0,
 };
 
 const load = vi.fn(async (): Promise<HomeProject[]> => [portal, banca, erp]);
@@ -340,7 +311,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     const search = screen.getByTestId("exit-search");
     expect(search).toHaveFocus();
     await user.type(search, "zzz");
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByTestId("exit-picker-status")).toHaveTextContent(
       "Ningún proyecto coincide con «zzz».",
     );
     await user.clear(search);
@@ -350,7 +321,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(risk).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByTestId("exit-choice-p-amb")).toBeNull();
     await user.click(screen.getByTestId("exit-filter-met"));
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByTestId("exit-picker-status")).toHaveTextContent(
       "Ningún proyecto cumple todavía sus criterios.",
     );
     await user.click(screen.getByTestId("exit-filter-risk"));
@@ -429,8 +400,21 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     const pcl = within(screen.getByTestId("home-exec"))
       .getAllByRole("listitem")
       .find((r) => r.textContent?.includes("Portal"))!;
-    expect(pcl).toHaveTextContent("— / 2—");
-    expect(screen.getByTestId("kpi-pending")).toHaveTextContent("—de 3");
+    expect(pcl).toHaveTextContent("Portal Clientes v3—");
+    expect(pcl).not.toHaveTextContent("0 %");
+    expect(screen.getByTestId("kpi-pending")).toHaveTextContent("—");
+    expect(screen.getByTestId("kpi-pending")).not.toHaveTextContent("de");
+    expect(screen.getByTestId("kpi-defects")).toHaveTextContent("—No disponible");
+    // Accessible names say «unknown», never zero.
+    expect(within(pcl).getByRole("img")).toHaveAccessibleName(
+      "Portal Clientes v3: ejecución sin datos todavía",
+    );
+    expect(screen.getByTestId("home-daily")).toHaveAccessibleName(
+      "Ejecuciones por día, últimos 14 días: no disponibles",
+    );
+    // No verdicts at all (not even «Sin datos») until the metrics load.
+    expect(screen.queryByText("Sin datos")).toBeNull();
+    expect(screen.queryByText("No cumple")).toBeNull();
     expect(
       screen.getByText((_, el) => el?.textContent === "Tienes 3 proyectos abiertos."),
     ).toBeInTheDocument();
@@ -438,6 +422,81 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     await waitFor(() => expect(screen.queryAllByRole("alert")).toHaveLength(0));
     expect(screen.getByTestId("kpi-rate")).toHaveTextContent("75,0%");
     expect(fetchMetrics).toHaveBeenCalledTimes(2);
+  });
+
+  it("while loading, labels say so and the mobile tabs show no bubbles", async () => {
+    fetchMetrics.mockReturnValueOnce(new Promise(() => {}));
+    renderHome();
+    const pcl = within(await screen.findByTestId("home-exec"))
+      .getAllByRole("listitem")
+      .find((r) => r.textContent?.includes("Portal"))!;
+    expect(within(pcl).getByRole("img")).toHaveAccessibleName(
+      "Portal Clientes v3: ejecución sin datos todavía",
+    );
+    expect(screen.getByTestId("home-daily")).toHaveAccessibleName(
+      "Ejecuciones por día, últimos 14 días: cargando",
+    );
+    expect(screen.getByTestId("exit-ring")).toHaveAccessibleName(
+      "Porcentaje ejecutado: cargando",
+    );
+    expect(screen.getByTestId("kpi-rate")).toHaveTextContent("…");
+    expect(screen.getByTestId("kpi-defects")).toHaveTextContent("…");
+    expect(screen.queryByText("Sin datos")).toBeNull();
+  });
+
+  it("on mobile, no invented bubbles while loading or after an error", async () => {
+    setViewportWidth(390);
+    // Factories: a rejected promise is only made when the page asks for it.
+    const answers = [
+      () => new Promise<HomeMetrics>(() => {}),
+      () => Promise.reject(new Error("offline")),
+    ];
+    for (const answer of answers) {
+      fetchMetrics.mockImplementationOnce(answer);
+      const { unmount } = renderHome();
+      const tabs = await screen.findByRole("tablist", { name: "Secciones del Inicio" });
+      await screen.findByTestId("kpi-projects");
+      expect(within(tabs).getByRole("tab", { name: "Resumen" })).toBeInTheDocument();
+      expect(within(tabs).getByRole("tab", { name: "Pruebas" })).toBeInTheDocument();
+      unmount();
+      clearHomeMetricsCache();
+    }
+  });
+
+  it("says when the numbers are being refreshed, and their time after a failed refresh", async () => {
+    renderHome();
+    await waitFor(() => expect(screen.getByTestId("kpi-rate")).toHaveTextContent("75,0%"));
+    expect(screen.getByTestId("home-fresh")).toHaveTextContent("");
+
+    let fail!: (e: unknown) => void;
+    fetchMetrics.mockReturnValueOnce(new Promise((_, rej) => (fail = rej)));
+    act(() => {
+      window.dispatchEvent(new Event("pharos:synced"));
+    });
+    await waitFor(() => expect(screen.getByTestId("home-fresh")).toHaveTextContent("Actualizando…"));
+    await act(async () => {
+      fail(new Error("offline"));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("home-fresh")).toHaveTextContent(/^Datos de las 10:00: no se pudieron actualizar$/),
+    );
+    // The last numbers stay, with no error banner.
+    expect(screen.getByTestId("kpi-rate")).toHaveTextContent("75,0%");
+    expect(screen.queryAllByRole("alert")).toHaveLength(0);
+  });
+
+  it("opens the per-day numbers as a table (a native disclosure)", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    const data = await screen.findByTestId("home-daily-data");
+    const summary = within(data).getByText("Ver los datos");
+    // A native <summary>: focusable and opened with Enter/Space in every
+    // browser (jsdom does not run that activation, so the test clicks).
+    expect(summary.tagName).toBe("SUMMARY");
+    await user.click(summary);
+    expect(data).toHaveAttribute("open");
+    const table = within(data).getByRole("table", { name: "Ejecuciones por día, últimos 14 días" });
+    expect(within(table).getAllByRole("row")).toHaveLength(3); // header + 2 days
   });
 
   it("says so when there are projects but no runs yet", async () => {

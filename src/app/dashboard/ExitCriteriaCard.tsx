@@ -54,9 +54,9 @@ export function ExitCriteriaCard({
   const percent = new Intl.NumberFormat(lang, { style: "percent" });
 
   const m = selected ? pm.get(selected.id) : undefined;
-  const row = selected ? execRow(selected, m) : null;
-  const share = ready ? (row?.executedShare ?? null) : null;
-  const executed = ready ? (row?.counts.executed ?? 0) : 0;
+  const row = execRow(m);
+  const share = ready ? row.executedShare : null;
+  const executed = ready ? (row.counts?.executed ?? 0) : 0;
   const status = exitStatus(m);
   const evaluable = (m?.exitCriteria ?? []).filter((c) => c.met !== null);
   const metCount = evaluable.filter((c) => c.met).length;
@@ -133,7 +133,9 @@ export function ExitCriteriaCard({
                   ? t("dashboard.exit.ringValue", {
                       percent: percent.format(share),
                     })
-                  : t("dashboard.exit.ringLabel")
+                  : state.status === "loading"
+                    ? t("dashboard.exit.ringLoading")
+                    : t("dashboard.exit.ringLabel")
               }
               data-status={ready && executed > 0 ? status : undefined}
               data-testid="exit-ring"
@@ -201,7 +203,8 @@ export function ExitCriteriaCard({
                   {c.metric && (
                     <span className="home-exit__metric t-id">{c.metric}</span>
                   )}
-                  <CriterionResult evaluation={c.evaluation} />
+                  {/* No verdict until the metrics load (not even «Sin datos»). */}
+                  {ready && <CriterionResult evaluation={c.evaluation} />}
                 </li>
               ))}
             </ul>
@@ -357,7 +360,7 @@ function ExitProjectPicker({
               ))}
             </div>
             {/* In the header: a menu may only hold menu items. */}
-            <p className="home-picker__none" role="status">
+            <p className="home-picker__none" role="status" data-testid="exit-picker-status">
               {choices.length > 0
                 ? ""
                 : query.trim()

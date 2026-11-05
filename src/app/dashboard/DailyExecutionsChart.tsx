@@ -50,8 +50,15 @@ export function DailyExecutionsChart({
       ? monthName(today)
       : `${monthName(first)} – ${monthName(today)}`;
   const pct = (n: number) => `${max ? (n / max) * 100 : 0}%`;
+  // While loading or after an error the days are unknown, not empty.
+  const unknown =
+    state.status === "loading"
+      ? t("dashboard.daily.loading", { period: periodText })
+      : t("dashboard.daily.unavailable", { period: periodText });
   const dayText = (p: (typeof points)[number]) =>
-    p.total
+    !ready
+      ? longDate.format(p.day)
+      : p.total
       ? t("dashboard.daily.dayTitle", {
           date: longDate.format(p.day),
           count: p.total,
@@ -96,12 +103,14 @@ export function DailyExecutionsChart({
         className="home-chart"
         role="img"
         aria-label={
-          ready && total
-            ? t("dashboard.daily.chartLabel", {
-                period: periodText,
-                count: total,
-              })
-            : t("dashboard.daily.chartEmpty", { period: periodText })
+          !ready
+            ? unknown
+            : total
+              ? t("dashboard.daily.chartLabel", {
+                  period: periodText,
+                  count: total,
+                })
+              : t("dashboard.daily.chartEmpty", { period: periodText })
         }
         data-testid="home-daily"
       >
@@ -155,9 +164,15 @@ export function DailyExecutionsChart({
         </div>
       </div>
 
-      {ready && total > 0 && (
-        <table className="sr-only">
-          <caption>
+      {/* The numbers of each day, for the keyboard and screen readers too
+          (a chart is an image): a disclosure with the table. */}
+      {ready && (total > 0 || undated > 0) && (
+        <details className="home-daily__data" data-testid="home-daily-data">
+          <summary className="home-link">
+            {t("dashboard.daily.showData")}
+          </summary>
+        <table className="home-daily__table">
+          <caption className="sr-only">
             {t("dashboard.daily.tableCaption", { period: periodText })}
           </caption>
           <thead>
@@ -185,6 +200,12 @@ export function DailyExecutionsChart({
               ))}
           </tbody>
         </table>
+          {undated > 0 && (
+            <p className="home-note">
+              {t("dashboard.daily.undatedNote", { count: undated })}
+            </p>
+          )}
+        </details>
       )}
 
       <MetricsNotice state={state} onRetry={onRetry} />

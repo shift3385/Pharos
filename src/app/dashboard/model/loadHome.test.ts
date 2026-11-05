@@ -24,24 +24,10 @@ vi.mock("@modules/projects", () => ({
     ]),
   },
 }));
-vi.mock("@modules/test-cases", () => ({
-  projectLiveCases: vi.fn(async (projectId: string) =>
-    projectId === "new"
-      ? [
-          {
-            id: "c1",
-            scenarioId: "PCL-0001",
-            title: "Login",
-            status: "approved",
-            priority: "critical",
-            gherkinLevel: "basic",
-            updatedAt: "",
-            revision: 1,
-          },
-        ]
-      : [],
-  ),
-}));
+// Cases and defects are counted by the metrics read (RED-W6): the Home must
+// not read them per project (spies that must stay uncalled).
+const perProject = vi.hoisted(() => ({ cases: vi.fn(), defects: vi.fn() }));
+vi.mock("@modules/test-cases", () => ({ projectLiveCases: perProject.cases }));
 vi.mock("@modules/test-plan", () => ({
   projectPlanClosure: vi.fn(async (projectId: string) =>
     projectId === "new"
@@ -52,20 +38,7 @@ vi.mock("@modules/test-plan", () => ({
       : null,
   ),
 }));
-vi.mock("@modules/defects", () => ({
-  isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
-  projectDefects: vi.fn(async (projectId: string) =>
-    projectId === "new"
-      ? [
-          // Critical is the severity (DEF-01); a deferred defect is open.
-          { id: "d1", status: "new", severity: "critical", priority: "low" },
-          { id: "d2", status: "deferred", severity: "major", priority: "critical" },
-          { id: "d3", status: "closed", severity: "critical", priority: "critical" },
-          { id: "d4", status: "rejected", severity: "minor", priority: "high" },
-        ]
-      : [],
-  ),
-}));
+vi.mock("@modules/defects", () => ({ projectDefects: perProject.defects }));
 
 describe("loadHome (RED-V1)", () => {
   it("builds one Home project per project, most recently updated first", async () => {
@@ -73,21 +46,13 @@ describe("loadHome (RED-V1)", () => {
     expect([portal.id, erp.id]).toEqual(["new", "old"]);
     expect(portal.key).toBe("PCL");
     expect(erp.key).toBe("ERP");
-    expect(portal.cases).toEqual([
-      {
-        id: "c1",
-        scenarioId: "PCL-0001",
-        title: "Login",
-        priority: "critical",
-      },
-    ]);
+    expect(Object.keys(portal).sort()).toEqual(["closeDate", "criteria", "hasPlan", "id", "key", "name"]);
   });
 
-  it("counts the open defects (not done) and the critical ones among them", async () => {
-    const [portal, erp] = await loadHome("u1");
-    expect(portal.openDefects).toBe(2);
-    expect(portal.criticalDefects).toBe(1);
-    expect(erp.openDefects).toBe(0);
+  it("reads one thing per project, its plan: no cases, no defects (the metrics count them)", async () => {
+    await loadHome("u1");
+    expect(perProject.cases).not.toHaveBeenCalled();
+    expect(perProject.defects).not.toHaveBeenCalled();
   });
 
   it("takes the closing date and criteria from the plan, and marks a project without one", async () => {

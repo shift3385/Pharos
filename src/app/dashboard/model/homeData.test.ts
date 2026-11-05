@@ -15,12 +15,9 @@ const project = (over: Partial<HomeProject>): HomeProject => ({
   id: "p",
   name: "P",
   key: "P",
-  cases: [],
   closeDate: null,
   hasPlan: false,
   criteria: [],
-  openDefects: 0,
-  criticalDefects: 0,
   ...over,
 });
 
@@ -30,12 +27,6 @@ const portal = project({
   key: "PCL",
   closeDate: "2026-11-07",
   hasPlan: true,
-  cases: [
-    { id: "1", scenarioId: "PCL-0002", title: "Pago", priority: "medium" },
-    { id: "2", scenarioId: "PCL-0001", title: "Login", priority: "critical" },
-  ],
-  openDefects: 3,
-  criticalDefects: 1,
 });
 const banca = project({
   id: "amb",
@@ -43,10 +34,6 @@ const banca = project({
   key: "AMB",
   closeDate: "2026-10-31",
   hasPlan: true,
-  cases: [
-    { id: "3", scenarioId: "AMB-0001", title: "Saldo", priority: "critical" },
-  ],
-  openDefects: 1,
 });
 const erp = project({ id: "erp", name: "Migración ERP", key: "ERP" });
 

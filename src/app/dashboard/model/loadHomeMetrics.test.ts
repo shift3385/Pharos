@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { homeMetrics } from "./metricsFixture";
+import type { HomeMetrics } from "./metrics";
 
 const platform = vi.hoisted(() => ({ tauri: false, invoke: vi.fn() }));
 vi.mock("@shared/platform", () => ({
@@ -17,7 +18,25 @@ import {
   useHomeMetrics,
 } from "./loadHomeMetrics";
 
-const now = new Date(2026, 9, 29, 10);
+/** The `now` and the last day start of the n-th web request. */
+const sent = (n: number) => {
+  const q = new URLSearchParams(String(get.mock.calls[n][0]).split("?")[1]);
+  return { now: Number(q.get("now")), lastDay: Number(q.get("dayStarts")!.split(",").at(-1)) };
+};
+const synced = () =>
+  act(() => {
+    window.dispatchEvent(new Event("pharos:synced"));
+  });
+/** A promise the test settles by hand. */
+function deferred() {
+  let resolve!: (v: HomeMetrics) => void;
+  let reject!: (e: unknown) => void;
+  const promise = new Promise<HomeMetrics>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 describe("home metrics loading (RED-W6)", () => {
   beforeEach(() => {
@@ -25,6 +44,10 @@ describe("home metrics loading (RED-W6)", () => {
     platform.invoke.mockReset();
     get.mockReset();
     clearHomeMetricsCache();
+    vi.useFakeTimers({ now: new Date(2026, 9, 29, 10, 0), toFake: ["Date"] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("calls the desktop command or the web route with the same request", async () => {
@@ -37,9 +60,7 @@ describe("home metrics loading (RED-W6)", () => {
     platform.tauri = false;
     get.mockResolvedValue(homeMetrics({}, 2));
     await fetchHomeMetrics("u1", request);
-    expect(get).toHaveBeenCalledWith(
-      "/api/home/metrics?dayStarts=1%2C2&now=3&windows=today%3A1",
-    );
+    expect(get).toHaveBeenCalledWith("/api/home/metrics?dayStarts=1%2C2&now=3&windows=today%3A1");
   });
 
   it("refuses a payload that is not contract v1", async () => {
@@ -52,45 +73,116 @@ describe("home metrics loading (RED-W6)", () => {
     await expect(fetchHomeMetrics("u1", request)).resolves.toBeTruthy();
   });
 
-  it("loads, refreshes on sync and paints the cached payload when coming back", async () => {
-    const first = homeMetrics({ undated: 1 });
-    const second = homeMetrics({ undated: 2 });
-    get.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
-    const { result, unmount } = renderHook(() => useHomeMetrics("u1", now));
-    expect(result.current.state.status).toBe("loading");
-    await waitFor(() => expect(result.current.state.data).toBe(first));
+  it("builds each request when it is sent: a sync later asks up to its own now", async () => {
+    get.mockResolvedValue(homeMetrics());
+    const { result } = renderHook(() => useHomeMetrics("u1"));
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    const first = sent(0).now;
 
-    act(() => {
-      window.dispatchEvent(new Event("pharos:synced"));
+    vi.setSystemTime(new Date(2026, 9, 29, 15, 30));
+    await synced();
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    expect(sent(1).now).toBe(new Date(2026, 9, 29, 15, 30).getTime());
+    expect(sent(1).now).toBeGreaterThan(first);
+    expect(sent(1).lastDay).toBe(sent(0).lastDay); // same local day
+  });
+
+  it("moves to the new local day when a reload finds one, with its own days and key", async () => {
+    get.mockResolvedValue(homeMetrics());
+    const { result } = renderHook(() => useHomeMetrics("u1"));
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    expect(result.current.today.getDate()).toBe(29);
+
+    vi.setSystemTime(new Date(2026, 9, 30, 0, 5));
+    await synced();
+    await waitFor(() => expect(result.current.today.getDate()).toBe(30));
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    expect(sent(1).lastDay).toBe(new Date(2026, 9, 30).getTime());
+    // The 29th's payload is not shown as the 30th's: a new key starts empty.
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+  });
+
+  it("moves at midnight on its own (a timer), without waiting for a sync", async () => {
+    vi.useRealTimers();
+    vi.useFakeTimers({ now: new Date(2026, 9, 29, 23, 59, 30) });
+    get.mockResolvedValue(homeMetrics());
+    const { result } = renderHook(() => useHomeMetrics("u1"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
     });
-    await waitFor(() => expect(result.current.state.data).toBe(second));
+    expect(result.current.state.status).toBe("ready");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(31_000);
+    });
+    expect(result.current.today.getDate()).toBe(30);
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(sent(1).lastDay).toBe(new Date(2026, 9, 30).getTime());
+  });
+
+  it("ignores a response that arrives after a newer one", async () => {
+    const slow = deferred();
+    const fast = deferred();
+    get.mockReturnValueOnce(slow.promise).mockReturnValueOnce(fast.promise);
+    const { result } = renderHook(() => useHomeMetrics("u1"));
+    await synced(); // a second request before the first answers
+    const newer = homeMetrics({ undated: 2 });
+    const older = homeMetrics({ undated: 1 });
+    await act(async () => {
+      fast.resolve(newer);
+      await fast.promise;
+    });
+    await act(async () => {
+      slow.resolve(older);
+      await slow.promise;
+    });
+    expect(result.current.state.data).toBe(newer);
+  });
+
+  it("paints the cached payload when coming back, flagged as refreshing", async () => {
+    const first = homeMetrics({ undated: 1 });
+    get.mockResolvedValueOnce(first);
+    const { result, unmount } = renderHook(() => useHomeMetrics("u1"));
+    await waitFor(() => expect(result.current.state.data).toBe(first));
     unmount();
 
-    // Back to Inicio: the last payload at once, refreshed behind it.
     get.mockReturnValueOnce(new Promise(() => {}));
-    const again = renderHook(() => useHomeMetrics("u1", now));
-    expect(again.result.current.state).toEqual({
+    const again = renderHook(() => useHomeMetrics("u1"));
+    expect(again.result.current.state).toMatchObject({ status: "ready", data: first, refreshing: true, stale: false });
+  });
+
+  it("keeps the last payload after a failed refresh, with its time", async () => {
+    const ok = homeMetrics();
+    get.mockResolvedValueOnce(ok);
+    const { result } = renderHook(() => useHomeMetrics("u1"));
+    await waitFor(() => expect(result.current.state.data).toBe(ok));
+
+    vi.setSystemTime(new Date(2026, 9, 29, 12, 0));
+    get.mockRejectedValueOnce(new Error("offline"));
+    await synced();
+    await waitFor(() => expect(result.current.state).toMatchObject({ stale: true, refreshing: false }));
+    expect(result.current.state).toMatchObject({
       status: "ready",
-      data: second,
-      refreshing: true,
+      data: ok,
+      at: new Date(2026, 9, 29, 10, 0).getTime(),
     });
   });
 
-  it("reports an error, retries, and keeps a cached payload when a refresh fails", async () => {
-    get.mockRejectedValueOnce(new Error("offline"));
-    const { result } = renderHook(() => useHomeMetrics("u1", now));
-    await waitFor(() => expect(result.current.state.status).toBe("error"));
+  it("starts over for another user: never the previous user's numbers", async () => {
+    const mine = homeMetrics({ undated: 7 });
+    get.mockResolvedValueOnce(mine).mockReturnValueOnce(new Promise(() => {}));
+    const { result, rerender } = renderHook(({ id }) => useHomeMetrics(id), { initialProps: { id: "u1" } });
+    await waitFor(() => expect(result.current.state.data).toBe(mine));
+    rerender({ id: "u2" });
+    expect(result.current.state).toEqual({ status: "loading", data: null });
+  });
 
+  it("reports an error and retries", async () => {
+    get.mockRejectedValueOnce(new Error("offline"));
+    const { result } = renderHook(() => useHomeMetrics("u1"));
+    await waitFor(() => expect(result.current.state.status).toBe("error"));
     const ok = homeMetrics();
     get.mockResolvedValueOnce(ok);
     act(() => result.current.retry());
     await waitFor(() => expect(result.current.state.data).toBe(ok));
-
-    get.mockRejectedValueOnce(new Error("offline"));
-    act(() => {
-      window.dispatchEvent(new Event("pharos:synced"));
-    });
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(3));
-    expect(result.current.state).toMatchObject({ status: "ready", data: ok });
   });
 });

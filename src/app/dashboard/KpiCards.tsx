@@ -34,6 +34,12 @@ export function KpiCards({
   // With a single project the cards go straight into it.
   const only = projects.length === 1 ? projects[0] : null;
   const ready = status === "ready";
+  // Unknown until the metrics load: «…» while loading, «—» after an error.
+  const unknown = status === "loading" ? "…" : "—";
+  const unknownNote =
+    status === "loading"
+      ? t("dashboard.metrics.loading")
+      : t("dashboard.kpi.rateError");
   const periodText = t(`dashboard.period.lower.${period}`);
   const rate = ready ? exec.rate : null;
   const hasRate = rate?.passRate != null;
@@ -66,8 +72,8 @@ export function KpiCards({
         icon={ListTodo}
         label={t("dashboard.kpi.pending")}
         title={t("dashboard.kpi.pendingTitle")}
-        value={ready ? exec.pending : status === "loading" ? "…" : "—"}
-        unit={t("dashboard.kpi.pendingOf", { total: exec.total })}
+        value={ready ? exec.pending : unknown}
+        unit={ready ? t("dashboard.kpi.pendingOf", { total: exec.total }) : undefined}
         note={
           !ready
             ? status === "loading"
@@ -106,13 +112,15 @@ export function KpiCards({
         icon={Bug}
         label={t("dashboard.kpi.defects")}
         title={t("dashboard.kpi.defectsTitle")}
-        value={exec.openDefects}
+        value={ready ? exec.openDefects : unknown}
         note={
-          exec.criticalDefects
-            ? t("dashboard.kpi.critical", { count: exec.criticalDefects })
-            : t("dashboard.kpi.noCritical")
+          !ready
+            ? unknownNote
+            : exec.criticalDefects
+              ? t("dashboard.kpi.critical", { count: exec.criticalDefects })
+              : t("dashboard.kpi.noCritical")
         }
-        noteTone={exec.criticalDefects ? "error" : undefined}
+        noteTone={ready && exec.criticalDefects ? "error" : undefined}
         testId="kpi-defects"
       />
     </div>

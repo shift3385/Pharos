@@ -1,28 +1,17 @@
 // Home data (SPEC §8 «Inicio», RED-V1): what does not come from executions —
-// projects, their live cases, the plan's schedule and closure criteria and the
-// project's defects (DEF-01) — plus the period. Execution numbers are in
-// `metrics.ts` (RED-W6), from the shared derivation.
-
-/** A live case of a project (what «Próximas pruebas» shows of it). */
-export interface HomeCase {
-  id: string;
-  scenarioId: string;
-  title: string;
-  priority: string;
-}
+// the projects and their plan's schedule and closure criteria — plus the
+// period. Cases, results and defects are counted by the metrics (`metrics.ts`,
+// RED-W6), from the shared derivation.
 
 export interface HomeProject {
   id: string;
   name: string;
   /** Short key from the case-id prefix («PCL-» → «PCL»). */
   key: string;
-  cases: HomeCase[];
   /** Plan schedule end (YYYY-MM-DD) or null; `hasPlan` false without a plan. */
   closeDate: string | null;
   hasPlan: boolean;
   criteria: { criterion: string; metric: string }[];
-  openDefects: number;
-  criticalDefects: number;
 }
 
 /** The KPIs that do not come from executions (those are `executionKpis`). */

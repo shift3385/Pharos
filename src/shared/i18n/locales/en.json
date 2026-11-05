@@ -1440,7 +1440,8 @@
       "noRuns": "No runs recorded in your projects yet.",
       "noCases": "No cases yet",
       "empty": "No open projects.",
-      "other": "Other"
+      "other": "Other",
+      "rowUnknown": "{{name}}: run data not available yet"
     },
     "exit": {
       "title": "Exit criteria",
@@ -1492,7 +1493,8 @@
         "risk": "No project is at risk.",
         "met": "No project meets its criteria yet."
       },
-      "defaults": "The default criteria apply."
+      "defaults": "The default criteria apply.",
+      "ringLoading": "Share run: loading"
     },
     "daily": {
       "title": "Daily runs",
@@ -1513,7 +1515,12 @@
       "tableCaption": "Runs per day, {{period}}",
       "colDay": "Day",
       "colManual": "Manual",
-      "colImported": "Imported"
+      "colImported": "Imported",
+      "loading": "Runs per day, {{period}}: loading",
+      "unavailable": "Runs per day, {{period}}: not available",
+      "showData": "Show the data",
+      "undatedNote_one": "{{count}} result without a valid date is not in the table.",
+      "undatedNote_other": "{{count}} results without a valid date are not in the table."
     },
     "upcoming": {
       "title": "Upcoming tests",
@@ -1548,7 +1555,9 @@
     "metrics": {
       "loading": "Loading runs…",
       "error": "Runs could not be loaded.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "refreshing": "Updating…",
+      "staleAt": "Data as of {{time}}: could not refresh"
     }
   },
   "section": {

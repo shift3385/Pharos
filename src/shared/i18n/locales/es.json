@@ -1440,7 +1440,8 @@
       "noRuns": "Aún no hay ejecuciones registradas en tus proyectos.",
       "noCases": "Sin casos todavía",
       "empty": "Sin proyectos abiertos.",
-      "other": "Otro"
+      "other": "Otro",
+      "rowUnknown": "{{name}}: ejecución sin datos todavía"
     },
     "exit": {
       "title": "Criterios de salida",
@@ -1492,7 +1493,8 @@
         "risk": "Ningún proyecto está en riesgo.",
         "met": "Ningún proyecto cumple todavía sus criterios."
       },
-      "defaults": "Se usan los criterios por defecto."
+      "defaults": "Se usan los criterios por defecto.",
+      "ringLoading": "Porcentaje ejecutado: cargando"
     },
     "daily": {
       "title": "Ejecuciones diarias",
@@ -1513,7 +1515,12 @@
       "tableCaption": "Ejecuciones por día, {{period}}",
       "colDay": "Día",
       "colManual": "Manuales",
-      "colImported": "Importadas"
+      "colImported": "Importadas",
+      "loading": "Ejecuciones por día, {{period}}: cargando",
+      "unavailable": "Ejecuciones por día, {{period}}: no disponibles",
+      "showData": "Ver los datos",
+      "undatedNote_one": "{{count}} resultado sin fecha válida no está en la tabla.",
+      "undatedNote_other": "{{count}} resultados sin fecha válida no están en la tabla."
     },
     "upcoming": {
       "title": "Próximas pruebas",
@@ -1548,7 +1555,9 @@
     "metrics": {
       "loading": "Cargando las ejecuciones…",
       "error": "No se pudieron cargar las ejecuciones.",
-      "retry": "Reintentar"
+      "retry": "Reintentar",
+      "refreshing": "Actualizando…",
+      "staleAt": "Datos de las {{time}}: no se pudieron actualizar"
     }
   },
   "section": {
