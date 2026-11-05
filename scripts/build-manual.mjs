@@ -89,7 +89,11 @@ function importImages(steps) {
     const target = join(imgDir, s.image);
     if (existsSync(target)) {
       const old = decodePng(readFileSync(target));
-      if (changedShare(old, fresh) <= THRESHOLD) {
+      // An outline around a small control is below the threshold: the committed
+      // image must already have it where this run draws it.
+      const ring = s.focus ? (Math.round(s.focus.y) - 5) * old.width + Math.round(s.focus.x + s.focus.w / 2) : -1;
+      const hasOutline = !s.focus || FOCUS_COLOR.every((v, c) => old.data[ring * 4 + c] === v);
+      if (hasOutline && changedShare(old, fresh) <= THRESHOLD) {
         kept++;
         continue;
       }

@@ -15,31 +15,31 @@ matriz de trazabilidad.
 
 ### 7.1. Ciclos de prueba
 
-Pulsa «Ciclos de prueba» en el menú lateral. Arriba, «Nuevo ciclo» y los filtros por estado; sin ciclos, la lista lo indica.
+Un ciclo agrupa lo que se va a probar en una ronda concreta (una regresión, una versión candidata), dónde y contra qué build. Pulsa «Ciclos de prueba» en el menú lateral. Arriba, «Nuevo ciclo» y los filtros por estado; sin ciclos, la lista lo indica.
 
 ![Ciclos de prueba](img/ciclos/01-vacio.png)
 
 ### 7.2. Nuevo ciclo
 
-«Nuevo ciclo» pide título, build, entorno, hito y sprint del plan, fechas y las configuraciones en las que se ejecutará.
+«Nuevo ciclo» pide título, build, entorno, hito y sprint del plan, fechas y las configuraciones en las que se ejecutará (las del capítulo 2).
 
 ![Nuevo ciclo](img/ciclos/02-nuevo-ciclo.png)
 
 ### 7.3. El ciclo, recién creado
 
-«Crear ciclo» lo crea con su clave (CY-1) y abre su detalle: resumen de resultados y las pestañas «Elementos» y «Runs».
+«Crear ciclo» lo crea con su clave (en este ejemplo, CY-1) y abre su detalle: el resumen de resultados y las pestañas «Elementos», lo que hay que probar, y «Runs», las ejecuciones que se han lanzado.
 
 ![El ciclo, recién creado](img/ciclos/03-detalle.png)
 
 ### 7.4. Añadir casos al ciclo
 
-«Añadir casos» lista los casos del proyecto con buscador; marca los que quieras, asígnalos a alguien si quieres y confirma. Pharos avisa si alguno no está aprobado.
+«Añadir casos» lista los casos del proyecto con buscador: marca los que entran en esta ronda, asígnalos a alguien si quieres y confirma. Pharos avisa si alguno no está aprobado, para que no pruebes un caso aún en borrador sin saberlo.
 
 ![Añadir casos al ciclo](img/ciclos/04-anadir-casos.png)
 
 ### 7.5. Añadir por filtro
 
-«Añadir por filtro» elige los casos por etiquetas, prioridad, estado, requisitos o riesgo; el recuento se actualiza mientras marcas.
+Para no marcar caso por caso, «Añadir por filtro» los elige por etiquetas, prioridad, estado, requisitos o riesgo, por ejemplo, todos los de prioridad alta. El recuento se actualiza mientras marcas.
 
 ![Añadir por filtro](img/ciclos/05-por-filtro.png)
 
@@ -51,7 +51,7 @@ Cada elemento muestra el caso, a quién está asignado (se edita en la propia fi
 
 ### 7.7. Ejecutar el ciclo
 
-«Ejecutar» crea un run por configuración con todos los elementos. Elige configuraciones, build y entorno y pulsa «Crear N runs».
+«Ejecutar» crea un run por configuración con todos los elementos: así cada entorno lleva su propio registro de resultados. Elige configuraciones, build y entorno y pulsa «Crear N runs».
 
 ![Ejecutar el ciclo](img/ciclos/07-ejecutar.png)
 
@@ -69,19 +69,19 @@ Los runs creados aparecen en la pestaña «Runs» y en «Ejecuciones» (capítul
 
 ### 7.10. Clonar y eliminar un ciclo
 
-El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.
+El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión; también lo elimina, tras confirmar.
 
 ![Clonar y eliminar un ciclo](img/ciclos/10-clonar.png)
 
 ### 7.11. Confirmar la eliminación
 
-Eliminar un ciclo pide confirmación; sus runs se conservan en «Ejecuciones».
+Eliminar un ciclo pide confirmación. Los resultados no se pierden: sus runs se conservan en «Ejecuciones».
 
 ![Confirmar la eliminación](img/ciclos/11-eliminar.png)
 
 ### 7.12. La lista de ciclos
 
-La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs; filtra por Planificados, Activos o Cerrados.
+La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs. Filtra por «Planificados», «Activos» o «Cerrados» para ver de un vistazo lo que está en curso.
 
 ![La lista de ciclos](img/ciclos/12-lista.png)
 

@@ -13,85 +13,97 @@ y las **plantillas** (recursos), la apariencia y el almacenamiento
 
 ### 10.1. Inicio, con datos
 
-Con proyectos en marcha, «Inicio» cuenta proyectos, pruebas pendientes, tasa de éxito y defectos abiertos (cada tarjeta lleva a su lista). «Criterios de salida» muestra los criterios de cierre del plan del proyecto que elijas.
+Con proyectos en marcha, «Inicio» cuenta las pruebas pendientes (sin ejecutar o bloqueadas), la tasa de éxito del periodo y los defectos abiertos; cada tarjeta lleva a su lista. «Ejecución por proyecto» muestra, de cada proyecto, cuántos casos tienen ya resultado y cuál es el último; «Ejecuciones diarias», lo registrado cada día, manual o importado. «Criterios de salida» evalúa los del plan del proyecto que elijas (Cumple, No cumple o Sin datos), aunque todavía no haya ejecuciones.
 
 ![Inicio, con datos](img/administracion/01-inicio-con-datos.png)
 
-### 10.2. Administración · Motor de IA
+### 10.2. Criterios de salida: en riesgo o cumplen
 
-«Administración» agrupa los recursos (Motor de IA, Plantillas), la aplicación (General), la cuenta (Sincronización, Seguridad) y el soporte (Diagnóstico). El motor de IA elige modo (automático, solo online, solo local), proveedor, clave y modelo; la IA es opcional y nada se aplica sin que lo aceptes.
+El selector de «Criterios de salida» busca por nombre o clave y filtra los proyectos: Todos, En riesgo (algún criterio no se cumple) o Cumplen (todos los que se pueden evaluar se cumplen). Están ordenados por fecha de cierre.
 
-![Administración · Motor de IA](img/administracion/02-motor-ia.png)
+![Criterios de salida: en riesgo o cumplen](img/administracion/02-inicio-criterios-filtros.png)
 
-### 10.3. Cambiar de proveedor con una clave sin guardar
+### 10.3. Próximas pruebas
 
-Si escribes una clave y cambias de proveedor sin pulsar «Guardar clave», Pharos avisa de que se descartará. La clave real se guarda en el almacén de credenciales de Windows, nunca en un archivo.
+«Próximas pruebas» separa los casos sin ejecutar, los bloqueados y los que esperan re-test (fallaron y su defecto ya está corregido), por prioridad. Cada fila abre el caso.
 
-### 10.4. Plantillas
+![Próximas pruebas](img/administracion/03-inicio-proximas.png)
 
-«Plantillas» guarda las de plan y de caso: las incluidas con Pharos y las tuyas. Cada tarjeta se descarga en .xlsx para rellenarla en Excel e importarla después en un plan o en un caso.
+### 10.4. Administración · Motor de IA
 
-![Plantillas](img/administracion/04-plantillas.png)
+«Administración» (en el menú de tu avatar o en el menú lateral) reúne la configuración de la aplicación en pestañas agrupadas: «Recursos» (Motor de IA, Plantillas), «Aplicación» (General), «Cuenta y datos» (Sincronización, Seguridad, Evidencias) y «Soporte» (Diagnóstico). En «Motor de IA» eliges cómo usar la IA (automático, solo online o solo local), el proveedor online, su clave y el modelo, o un modelo local con Ollama para trabajar sin internet. La IA es opcional: sin ella, los botones de asistencia se desactivan con un aviso y nada de lo que propone se aplica sin que lo aceptes.
 
-### 10.5. Importar una plantilla
+![Administración · Motor de IA](img/administracion/04-motor-ia.png)
 
-«Importar plantilla» lee un .xlsx y pide nombre, tipo, idioma, versión, descripción y un «prompt de uso» que la IA usa al rellenarla.
+### 10.5. Cambiar de proveedor con una clave sin guardar
 
-![Importar una plantilla](img/administracion/05-importar-plantilla.png)
+Si escribes una clave y cambias de proveedor sin pulsar «Guardar clave», Pharos avisa de que se descartará, para que no la pierdas sin darte cuenta. Al guardarla, la clave queda cifrada en el almacén de credenciales de Windows, nunca en un archivo, y no se incluye en exportaciones ni diagnósticos.
 
-### 10.6. Eliminar una plantilla propia
+### 10.6. Plantillas
 
-Las plantillas propias se editan o eliminan desde su menú (las incluidas no); eliminar pide confirmación.
+«Plantillas» guarda las plantillas de plan y de caso: las incluidas con Pharos y las tuyas. Sirven para trabajar fuera de la aplicación: descarga una en .xlsx, rellénala en Excel (o pásala a quien no usa Pharos) e impórtala después en un plan (capítulo 3) o en un caso (capítulo 4).
 
-![Eliminar una plantilla propia](img/administracion/06-eliminar-plantilla.png)
+![Plantillas](img/administracion/06-plantillas.png)
 
-### 10.7. General
+### 10.7. Importar una plantilla
 
-Tema (claro, oscuro o según el sistema) e idioma se aplican al momento. También un fondo personalizado con su opacidad, la retención de elementos borrados y la carpeta donde se guardan las exportaciones.
+«Importar plantilla» añade una plantilla tuya desde un .xlsx: pide su nombre, el tipo (plan o caso), el idioma, la versión, una descripción y un «prompt de uso», las instrucciones que la IA sigue cuando rellena un documento con esa plantilla.
 
-![General](img/administracion/07-general.png)
+![Importar una plantilla](img/administracion/07-importar-plantilla.png)
 
-### 10.8. Cambiar de pestaña con cambios sin guardar
+### 10.8. Eliminar una plantilla propia
 
-Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios. Aquí se descartan: el fondo vuelve a ser el de siempre.
+Tus plantillas se editan o eliminan desde su menú; las incluidas con Pharos no se pueden borrar. Eliminar pide confirmación con «Sí, eliminar».
 
-### 10.9. Sincronización
+![Eliminar una plantilla propia](img/administracion/08-eliminar-plantilla.png)
 
-Pharos trabaja sin conexión y sincroniza con el servidor al iniciar sesión o con «Sincronizar ahora» (también al pie del menú lateral). Aquí ves el estado, la cuenta y los conflictos pendientes.
+### 10.9. General
 
-![Sincronización](img/administracion/09-sincronizacion.png)
+«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema) y el idioma se aplican al momento. También puedes poner un fondo personalizado con su opacidad, elegir la retención de los elementos borrados y la carpeta donde se guardan las exportaciones.
 
-### 10.10. Un cambio en dos equipos
+![General](img/administracion/09-general.png)
 
-Si el mismo dato se cambia en dos equipos antes de sincronizar (aquí, el título de REQ-002), el segundo en sincronizar recibe un conflicto: Pharos no pisa ninguno de los dos cambios y avisa.
+### 10.10. Cambiar de pestaña con cambios sin guardar
 
-### 10.11. Revisar conflictos
+Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios (en este ejemplo se descartan y el fondo vuelve a ser el de siempre).
 
-«Sincronización → Revisar conflictos» (o el aviso del menú lateral) muestra cada conflicto campo a campo: tu versión y la del servidor. Elige «Conservar la mía» o «Usar la del servidor».
+### 10.11. Sincronización
 
-![Revisar conflictos](img/administracion/11-conflictos.png)
+Pharos trabaja sin conexión: guarda todo en este equipo y lo sincroniza con el servidor al iniciar sesión o cuando pulsas «Sincronizar ahora» (también al pie del menú lateral). Esta pestaña muestra el estado, la cuenta, los cambios pendientes de enviar y si hay conflictos que revisar.
 
-### 10.12. Conflicto resuelto
+![Sincronización](img/administracion/11-sincronizacion.png)
 
-Al elegir una versión, el conflicto desaparece de la lista («Conflicto resuelto») y la elegida se sincroniza.
+### 10.12. Un cambio en dos equipos
 
-### 10.13. Seguridad · clave de recuperación
+Si el mismo dato se cambia en dos equipos antes de sincronizar (en este ejemplo, el título del requisito REQ-002), el segundo que sincroniza recibe un conflicto: Pharos no pisa ninguno de los dos cambios, avisa y te deja decidir.
 
-La base de datos local está cifrada y su clave vive en el almacén de credenciales del equipo. «Mostrar clave de recuperación» pide confirmación: con esa clave y una copia de tus datos se recuperan en otro equipo.
+### 10.13. Revisar conflictos
 
-![Seguridad · clave de recuperación](img/administracion/13-seguridad.png)
+«Sincronización → Revisar conflictos» (o el aviso del menú lateral) muestra cada conflicto campo a campo: tu versión y la del servidor, una junto a otra. Elige «Conservar la mía» o «Usar la del servidor»; la otra versión se descarta.
 
-### 10.14. Guarda la clave
+![Revisar conflictos](img/administracion/13-conflictos.png)
 
-La clave aparece en grupos (en este manual, difuminada). Cópiala a un gestor de contraseñas o escríbela en papel, marca «Ya la he guardado» y cierra.
+### 10.14. Conflicto resuelto
 
-![Guarda la clave](img/administracion/14-clave-mostrada.png)
+Al elegir una versión, el conflicto desaparece de la lista («Conflicto resuelto») y la versión elegida se sincroniza con el resto de tus equipos.
 
-### 10.15. Diagnóstico
+### 10.15. Seguridad · clave de recuperación
 
-«Exportar diagnóstico» guarda un ZIP con la versión, el sistema y el registro de la aplicación para informar de un fallo. Nunca incluye tus datos.
+La base de datos de este equipo está cifrada y su clave vive en el almacén de credenciales de Windows. «Mostrar clave de recuperación» la enseña tras pedir confirmación: con esa clave y una copia de tus datos puedes recuperarlos en otro equipo si este falla. Guárdala ahora, no cuando la necesites.
 
-![Diagnóstico](img/administracion/15-diagnostico.png)
+![Seguridad · clave de recuperación](img/administracion/15-seguridad.png)
+
+### 10.16. Guarda la clave
+
+La clave aparece en grupos de caracteres (en este manual, difuminada). Cópiala a un gestor de contraseñas o escríbela en papel y guárdala en un lugar seguro; marca «Ya la he guardado» y cierra. Quien tenga la clave y una copia de tus datos puede leerlos: no la compartas.
+
+![Guarda la clave](img/administracion/16-clave-mostrada.png)
+
+### 10.17. Diagnóstico
+
+Si algo falla, «Exportar diagnóstico» guarda un ZIP con la versión, el sistema y el registro de la aplicación, para adjuntarlo al informar del problema. Nunca incluye tus datos ni tus claves.
+
+![Diagnóstico](img/administracion/17-diagnostico.png)
 
 ## Consejos
 

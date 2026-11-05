@@ -13,13 +13,13 @@ convierten en tarjetas y los menús y filtros se abren como hojas desde abajo.
 
 ### 12.1. Pantallas medianas: menú de iconos
 
-Por debajo de 1280 px, el menú lateral se reduce a una tira de iconos con su nombre corto; el contenido gana espacio.
+Pharos se adapta al ancho de la ventana. Por debajo de 1280 px, el menú lateral se reduce a una tira de iconos con su nombre corto y el contenido gana espacio.
 
 ![Pantallas medianas: menú de iconos](img/movil/01-tableta.png)
 
 ### 12.2. En el móvil: barra inferior
 
-A 390 px, Pharos usa una barra superior compacta y una barra inferior con Inicio, Proyectos, Administración y Perfil.
+A 390 px, el ancho de un móvil, Pharos usa una barra superior compacta y una barra inferior con Inicio, Proyectos, Administración y Perfil, al alcance del pulgar.
 
 <img src="img/movil/02-movil-inicio.png" alt="En el móvil: barra inferior" width="280">
 
@@ -37,7 +37,7 @@ Dentro de un proyecto, las secciones (Plan, Casos, Ciclos…) se recorren con la
 
 ### 12.5. Filtros en una hoja inferior
 
-En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtros que en el escritorio.
+En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtros que en el escritorio, para que la lista conserve la pantalla.
 
 <img src="img/movil/05-movil-filtros.png" alt="Filtros en una hoja inferior" width="280">
 
