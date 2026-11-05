@@ -3,13 +3,12 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {
-      "0033": "E5 DAT-03b (verify evidence), only if a local table turns out to be needed"
-    },
+    "reserved": {},
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
-      "0030": "E4 step 8 (DEF-01) spare, never used: step 8 shipped as the single 0029 with its Rust step"
+      "0030": "E4 step 8 (DEF-01) spare, never used: step 8 shipped as the single 0029 with its Rust step",
+      "0033": "E5 DAT-03b spare, never used: verifying evidence needs no schema change (local_state has no CHECK)"
     }
   },
   "server": {

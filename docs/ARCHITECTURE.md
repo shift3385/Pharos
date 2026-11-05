@@ -1234,7 +1234,8 @@ and its `VACUUM` can briefly double that image.)
   never touches `evidence/`.
 - **Tables (0022).**
   - `blobs` (local, never synced): one row per content by plaintext `sha256`,
-    with `local_state` `present | remote_only | missing | deleting`.
+    with `local_state` `present | remote_only | missing | damaged | deleting`
+    (`missing` and `damaged` are set only by «Verificar evidencias», below).
   - `attachments`: one use of a content (`owner_entity`/`owner_id`, `kind`,
     name, mime, size, `blob_purged_at`). Shaped as an LWW entity, but not
     registered for sync yet (step 7 or SYNC-04b).
@@ -1267,6 +1268,40 @@ and its `VACUUM` can briefly double that image.)
     meanwhile goes back to `present`.
   - `.pev` files no row knows are only **counted** (diagnostic bundle), never
     swept: they may belong to a database the user moved aside.
+- **«Verificar evidencias» (DAT-03b, `evidence/check.rs`).** A manual check in
+  Administración → Evidencias, desktop only.
+  - Three phases, so it never races a save or `collect`:
+    1. a snapshot of `blobs` under the database lock;
+    2. the scan of `evidence/<2 hex>/` (never `tmp/`, where open uploads
+       write) and the streamed decryption of every content, **without** the
+       lock;
+    3. a reconciliation under the lock that checks each finding again. A file
+       an attach committed meanwhile has its row by then (the store commit and
+       the row share one lock); a content collected meanwhile has no row; a
+       damaged candidate is decrypted again.
+  - It reports orphans (files no row knows), `missing` and `damaged`
+    contents with their live uses (owner kind, label, project), and files of a
+    newer format or unreadable now (locked), which are not marked. Marks go
+    `present → missing | damaged` and back to `present`, in one transaction;
+    `deleting` and `remote_only` are never touched.
+  - **Repair is by hand.** Orphans are deleted only when the user picks and
+    confirms them (`evidence_orphans_delete`), under the lock, each still
+    without a row, older than 24 hours and not open by another process
+    (Windows: an open without sharing fails). Missing and damaged contents are
+    repaired by attaching the same file again: `commit` never deduplicates
+    against a content marked `damaged` (its cheap length-and-header check
+    cannot see a copy damaged inside its blocks; the marks are loaded into
+    `EvidenceStore` at open), and `record_blob` clears the mark.
+  - One check or repair at a time (managed `EvidenceCheck`); uploads and
+    `MAX_OPEN_UPLOADS` are untouched. Its progress is polled
+    (`evidence_check_progress`); the last report stays in memory for the
+    session, and `evidence_usage` gives the size, contents by state,
+    attachments by owner and the raw report retention.
+  - Audit: each deleted orphan (`evidence_file`, `delete`) and each check
+    that changed a mark (`evidence_check`, `update`, with the counts) leave
+    an event through `journal::record_event_in` as `system:evidence` on
+    behalf of the user and with no project: in the device's local hash chain,
+    with no oplog row (nothing of the store syncs).
 - **UI path.** Uploads go in raw 4 MiB chunks (`evidence_upload_begin`,
   `_chunk`, `_cancel`, held in the managed `Uploads`); `planner_attachment_add`
   then attaches the upload. At most 8 are open; one idle for 10 minutes (a
