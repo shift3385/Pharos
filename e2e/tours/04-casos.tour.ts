@@ -8,6 +8,7 @@ import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import {
   PROJECT_A,
+  atLeast,
   chooseFile,
   clearInput,
   clickButton,
@@ -201,8 +202,10 @@ chapter("casos", () => {
       await newCase("advanced");
       await $("#tc-title").setValue("Inicio de sesión con huella");
       await fillSteps(`${C.flow.steps} · ${C.flow.mainName}`, ["Abrir la app con la huella registrada", "Apoyar el dedo en el lector"]);
+      const flowName = `input[aria-label="${C.flow.namePlaceholder}"]`;
+      const flowsBefore = (await $$(flowName)).length;
       await $("button.tc-flow__add").click();
-      const names = Array.from(await $$(`input[aria-label="${C.flow.namePlaceholder}"]`));
+      const names = await atLeast(flowName, flowsBefore + 1);
       await names[names.length - 1].setValue("Huella no reconocida");
       await fillSteps(`${C.flow.steps} · Huella no reconocida`, ["Apoyar un dedo no registrado", "Pulsar «Usar contraseña»"]);
       await saveCase();
@@ -273,7 +276,7 @@ chapter("casos", () => {
       await $("#tc-title").addValue(" (SEPA)");
       await saveCase();
       const before = await $(".tc-nav__pos").getText();
-      const steps = Array.from(await $$(".tc-nav__step"));
+      const steps = await atLeast(".tc-nav__step", 1);
       const enabled = [];
       for (const s of steps) if (await s.isEnabled()) enabled.push(s);
       await enabled[0].click();

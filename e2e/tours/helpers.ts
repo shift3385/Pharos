@@ -67,12 +67,25 @@ export async function openAdminTab(tab: string) {
   await expect(byTestId(`admin-tab-${tab}`)).toHaveAttribute("aria-selected", "true");
 }
 
-/** Waits for a toast (or any text) to appear on the page. */
+/** Waits for a toast (or any text) to appear on the page. A success toast
+ *  lives 3 s and the tours hide all but the newest one, so a toast that came
+ *  and went between two polls (on a slow CI runner) is also found in the log
+ *  `stabilise()` keeps (tour.ts): each logged toast satisfies one wait, and
+ *  only within 15 s of appearing, so an old one never answers a new wait. */
 export async function waitForText(text: string, timeout = 15_000) {
-  await browser.waitUntil(async () => (await $("body").getText()).includes(text), {
-    timeout,
-    timeoutMsg: `text never appeared: ${text}`,
-  });
+  await browser.waitUntil(
+    () =>
+      browser.execute((t: string) => {
+        type Entry = { text: string; at: number; used: boolean };
+        const log = ((window as unknown as { __tourToasts?: Entry[] }).__tourToasts ??= []);
+        const fresh = (e: Entry) => !e.used && Date.now() - e.at < 15_000 && e.text.includes(t);
+        const visible = document.body.innerText.includes(t);
+        const logged = [...log].reverse().find(fresh);
+        if (logged) logged.used = true;
+        return visible || Boolean(logged);
+      }, text),
+    { timeout, interval: 200, timeoutMsg: `text never appeared: ${text}` },
+  );
 }
 
 /** Sets a hidden <input type="file"> (WebDriver uploads the local file). */
@@ -96,6 +109,18 @@ export async function chooseFile(selector: string, file: string) {
   );
 }
 
+/** The elements matching `selector` once there are at least `n` of them (a
+ *  list or a step that just rendered): never a one-shot count that a slow
+ *  runner can take too early. */
+export async function atLeast(selector: string, n: number, timeout = 15_000) {
+  await browser.waitUntil(async () => (await $$(selector)).length >= n, {
+    timeout,
+    interval: 200,
+    timeoutMsg: `fewer than ${n} of ${selector}`,
+  });
+  return Array.from(await $$(selector));
+}
+
 /** The open dialog (the topmost [role=dialog] / [role=alertdialog]). */
 export const dialog = () => $('[role="dialog"][aria-modal="true"], [role="alertdialog"]');
 
@@ -105,7 +130,26 @@ export const dialog = () => $('[role="dialog"][aria-modal="true"], [role="alertd
  * nested in the label, else `aria-label`.
  */
 export async function field(label: string, scope = "body") {
-  const id = await browser.execute(
+  // The control may not be rendered yet (an editor or a drawer that just
+  // opened, a slow CI runner): look again until it is there and displayed.
+  let id: string | null = null;
+  await browser
+    .waitUntil(
+      async () => {
+        id = await lookUpField(label, scope);
+        return id !== null && (await $(`[data-tour-field="${id}"]`).isDisplayed());
+      },
+      { timeout: 10_000, interval: 200 },
+    )
+    .catch(() => undefined);
+  // Found but never displayed (a visually hidden native control): as before.
+  if (!id) throw new Error(`no control labelled «${label}» in ${scope}`);
+  return $(`[data-tour-field="${id}"]`);
+}
+
+/** One look for the control labelled `label`; marks it and returns its tag. */
+async function lookUpField(label: string, scope: string): Promise<string | null> {
+  return browser.execute(
     (text: string, scopeSel: string) => {
       const root = document.querySelector(scopeSel) ?? document.body;
       const norm = (s: string | null) => (s ?? "").replace(/\s+/g, " ").replace(/\*$/, "").trim();
@@ -126,8 +170,6 @@ export async function field(label: string, scope = "body") {
     label,
     scope,
   );
-  if (!id) throw new Error(`no control labelled «${label}» in ${scope}`);
-  return $(`[data-tour-field="${id}"]`);
 }
 
 /** Selects an <option> by its visible text in the control labelled `label`. */

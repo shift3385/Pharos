@@ -8,6 +8,7 @@ import { chapter, step } from "./tour";
 import {
   PROJECT_A,
   acceptNativeDialog,
+  atLeast,
   button,
   byTestId,
   chooseFile,
@@ -181,7 +182,7 @@ chapter("plan", () => {
     covers: ["wizard:deliverables"],
     run: async () => {
       await next();
-      const checks = await $$(".tpw-check input[type=checkbox]");
+      const checks = await atLeast(".tpw-check input[type=checkbox]", 4);
       for (const c of checks.slice(0, 4)) await c.click();
       await (await field(P.deliverables.other)).setValue("Informe de accesibilidad");
       await browser.keys("Enter");
@@ -206,7 +207,7 @@ chapter("plan", () => {
     covers: ["wizard:tools"],
     run: async () => {
       await next();
-      const pills = await $$(".tpw-tools .tp-pill, .tp-pill");
+      const pills = await atLeast(".tpw-tools .tp-pill", 3);
       for (const p of pills.slice(0, 3)) await p.click();
       await (await field(P.automationStrategy)).setValue("Regresión automatizada con Playwright en cada build nocturna; humo en cada PR.");
     },
@@ -261,8 +262,7 @@ chapter("plan", () => {
       await day("25").click();
       await day("26").click();
       await browser.keys(["ArrowRight", "Enter"]);
-      const names = await $$('input.tps-name[aria-label^="' + P.milestoneName + '"]');
-      expect(names.length).toBeGreaterThanOrEqual(2);
+      const names = await atLeast(`input.tps-name[aria-label^="${P.milestoneName}"]`, 2);
       // Replace the default names («Hito 1»…): select all, then type.
       for (const [i, name] of ["Congelación de código", "Salida a producción"].entries()) {
         await names[i].click();
