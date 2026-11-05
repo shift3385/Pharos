@@ -265,8 +265,9 @@ en la misma matriz.
       «Pasa» con la clave del run importado y la fecha; la clave abre el run.
       Volver a ejecutarlo a mano: ahora manda el run manual (gana el último
       resultado final).
-- [ ] Editar el caso después: el resultado no cambia y aparece
-      «Desactualizado» (se ejecutó una revisión anterior).
+- [ ] Editar después los pasos del caso: el resultado no cambia y aparece
+      «Desactualizado» (se ejecutó una revisión anterior). Cambiar solo el
+      estado, la prioridad o el título no lo marca.
 - [ ] Un test que falló y pasó al reintentar aparece como «Flaky»; un caso
       fallido con su defecto en «Corregido» aparece como «Re-test».
 - [ ] Filtrar la matriz por ciclo, configuración, build o entorno: los
