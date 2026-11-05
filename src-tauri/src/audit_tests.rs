@@ -1228,6 +1228,7 @@ const EXEMPT: &[(&str, &str)] = &[
     ("session_load", "read"),
     ("cycles::cycle_filter_preview", "read"),
     ("cycles::cycle_runs", "read"),
+    ("execution::execution_summary", "read: the execution derivation (step 10)"),
     (
         "session_clear",
         "the session token lives in the keychain, not in the data",

@@ -14,6 +14,7 @@ mod defects;
 mod diag;
 mod downloads;
 mod evidence;
+mod execution;
 mod hlc;
 mod instance;
 mod journal;
@@ -197,6 +198,7 @@ pub fn run() {
             cycles::cycle_execute,
             cycles::cycle_runs,
             cycles::cycle_progress_get,
+            execution::execution_summary,
             defects::defect_list,
             defects::defect_get,
             defects::defect_create,
