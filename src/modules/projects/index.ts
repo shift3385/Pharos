@@ -13,4 +13,5 @@ export {
 } from "./model/sections";
 export type { ProjectSection } from "./model/sections";
 export { projectApi } from "./api/projectApi";
+export { PROJECT_SAVED_EVENT } from "./model/events";
 export type { ProjectSummary } from "./model/types";
