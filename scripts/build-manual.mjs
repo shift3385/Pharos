@@ -130,6 +130,8 @@ function loadSteps() {
     return s.status === "skipped" && old?.status === "passed" ? { ...old, n: s.n, keptFromBefore: true } : s;
   });
   importImages(steps);
+  const unfocused = steps.filter((s) => s.focusMissing).map((s) => `${s.chapter}/${s.id}`);
+  if (unfocused.length > 0) console.warn(`! Focus not displayed at capture time (fix the selector): ${unfocused.join(", ")}`);
   const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
   const clean = steps
     .filter((s) => s.status !== "failed")

@@ -84,6 +84,8 @@ export interface StepRecord {
   status: "passed" | "failed" | "skipped";
   reason?: string;
   focus?: FocusBox;
+  /** The step declared a focus that was not displayed at capture time. */
+  focusMissing?: boolean;
   group?: string;
 }
 
@@ -238,6 +240,7 @@ export function step(id: string, spec: StepSpec) {
       const shot = spec.shot ?? "page";
       let image: string | null = null;
       let focus: FocusBox | null = null;
+      let focusMissing = false;
       if (shot !== false) {
         await settle();
         image = `${ch.id}/${String(ch.n).padStart(2, "0")}-${id}.png`;
@@ -250,7 +253,12 @@ export function step(id: string, spec: StepSpec) {
           if (spec.focus) {
             const selectors = Array.isArray(spec.focus) ? spec.focus : [spec.focus];
             focus = await focusBox(selectors, shot === "page" ? null : shot.element);
-            if (!focus) throw new Error(`focus not displayed: ${selectors.join(", ")}`);
+            // Not fatal: the step still proves its action. The manual build
+            // lists these steps so the selector gets fixed.
+            if (!focus) {
+              focusMissing = true;
+              console.warn(`! ${ch.id}/${id}: focus not displayed (${selectors.join(", ")})`);
+            }
           }
           if (shot === "page") await browser.saveScreenshot(file);
           else await $(shot.element).saveScreenshot(file);
@@ -260,7 +268,7 @@ export function step(id: string, spec: StepSpec) {
       }
       const size = await viewport();
       if (spec.after) await spec.after();
-      record({ ...base, image, viewport: size, status: "passed", ...(focus ? { focus } : {}) });
+      record({ ...base, image, viewport: size, status: "passed", ...(focus ? { focus } : {}), ...(focusMissing ? { focusMissing } : {}) });
     } catch (err) {
       ch.failed = id;
       const file = join(resultsDir, "failures", `${ch.id}-${id}.png`);

@@ -88,7 +88,8 @@ async function backToList() {
 chapter("casos", () => {
   step("lista-vacia", {
     title: "La lista de casos, vacía",
-    caption: "Pulsa «Casos de prueba» en el menú lateral. Arriba quedan «Importar / Exportar», «Sugerir casos con IA» y «Nuevo caso»; mientras no haya casos, la lista lo dice.",
+    caption:
+      "Los casos de prueba describen qué se comprueba y cómo, paso a paso. Pulsa «Casos de prueba» en el menú lateral. Arriba están «Importar / Exportar», «Sugerir casos con IA» (con un motor de IA configurado, capítulo 11) y «Nuevo caso»; mientras el proyecto no tenga casos, la lista lo indica.",
     covers: ["section:cases", "state:cases-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -99,8 +100,10 @@ chapter("casos", () => {
 
   step("tipo-escenario", {
     title: "Elegir el tipo de escenario",
-    caption: "«Nuevo caso» pregunta el tipo: «Básico» (Given/When/Then), «Básico avanzado» (Scenario Outline con tabla de ejemplos) o «Avanzado» (Background y varios flujos). Se puede subir de nivel después.",
+    caption:
+      "«Nuevo caso» pregunta primero qué tipo de escenario quieres escribir: «Básico», un escenario Given/When/Then; «Básico avanzado», un Scenario Outline que se repite con una tabla de ejemplos; o «Avanzado», con precondiciones comunes (Background) y varios flujos. Empieza por el más simple que te sirva: un caso se puede subir de nivel después.",
     covers: ["screen:level-picker"],
+    focus: "[role=\"dialog\"]",
     run: async () => {
       await clickButton(C.new);
       await expect($$("button.tc-level-card")).toBeElementsArrayOfSize(3);
@@ -109,7 +112,8 @@ chapter("casos", () => {
 
   step("titulo-obligatorio", {
     title: "El título es obligatorio",
-    caption: "Si guardas un caso sin título, Pharos lo marca y no lo guarda.",
+    caption:
+      "El título es lo único obligatorio. Si guardas un caso sin título, Pharos marca el campo con el error y no lo guarda hasta que lo escribas.",
     covers: ["state:case-title-required"],
     run: async () => {
       await $(`.//button[contains(@class,"tc-level-card")][.//*[normalize-space(.)=${xpathString(C.level.basic.name)}]]`).click();
@@ -121,7 +125,8 @@ chapter("casos", () => {
 
   step("caso-basico", {
     title: "Un caso básico",
-    caption: "Título, precondiciones, pasos (cada uno con «+ Añadir paso»), resultado esperado y, arriba, nivel, tipo, prioridad, estado y automatización. «Guardar» le da su ID (BM-001).",
+    caption:
+      "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Arriba se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
     covers: ["action:case-create-basic", "action:case-meta"],
     run: async () => {
       await $("#tc-title").setValue("Transferencia a un tercero con saldo suficiente");
@@ -138,8 +143,10 @@ chapter("casos", () => {
 
   step("campos-personalizados", {
     title: "Campos personalizados en el caso",
-    caption: "Los campos del proyecto aparecen en «Campos personalizados», al final del editor: aquí, «Navegador» (selección) y «Regresión crítica» (sí/no).",
+    caption:
+      "Los campos personalizados del proyecto (capítulo 2) aparecen al final del editor, en «Campos personalizados». Sirven para clasificar los casos con lo que tu equipo necesite y luego filtrar por ello (en este ejemplo, «Navegador», una selección, y «Regresión crítica», un sí/no).",
     covers: ["action:case-custom-fields"],
+    focus: "section.cf-section",
     run: async () => {
       const section = $("section.cf-section");
       await section.scrollIntoView();
@@ -152,8 +159,10 @@ chapter("casos", () => {
 
   step("gherkin", {
     title: "La vista Gherkin",
-    caption: "«Gherkin» muestra el mismo caso como un escenario .feature, sincronizado con el editor: lo que cambias en uno se ve en el otro. La barra inserta palabras clave en el cursor.",
+    caption:
+      "El selector de vista, a la derecha del título, cambia entre «Editor», «Gherkin» y «Vista dividida». «Gherkin» muestra el mismo caso escrito como un escenario .feature. No son dos copias: es el mismo caso visto de dos formas, así que lo que escribes en el formulario aparece en el Gherkin y lo que editas en el Gherkin vuelve al formulario. La barra de palabras clave (Given, When, Then…) las inserta donde está el cursor.",
     covers: ["action:case-gherkin", "views:src/modules/test-cases/ui/TestCaseEditor.tsx"],
+    focus: "[role=\"radiogroup\"]",
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="gherkin"]').click();
       await expect($(".tc-gherkin__ta")).toBeDisplayed();
@@ -162,8 +171,10 @@ chapter("casos", () => {
 
   step("vista-dividida", {
     title: "Vista dividida y copiar el Gherkin",
-    caption: "«Vista dividida» pone editor y Gherkin uno junto a otro. El botón de copiar lleva el Gherkin al portapapeles («Gherkin copiado»).",
+    caption:
+      "«Vista dividida» pone el formulario y el Gherkin uno junto a otro, y es la forma más cómoda de ver cómo cada campo se traduce en el escenario mientras escribes; «Sincronizado», sobre el Gherkin, confirma que ambos coinciden. El botón de copiar, arriba a la derecha del Gherkin, lo lleva al portapapeles («Gherkin copiado») para pegarlo en tu proyecto de automatización.",
     covers: ["action:case-gherkin-copy"],
+    focus: "button[aria-label=\"Copiar el Gherkin\"]",
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="split"]').click();
       await $(`button[aria-label="${C.gherkin.copy}"]`).click();
@@ -173,7 +184,8 @@ chapter("casos", () => {
 
   step("outline", {
     title: "Un caso «Básico avanzado» (Outline)",
-    caption: "Los pasos usan marcadores entre ángulos (<importe>) y la tabla «Examples» da un valor por fila: un mismo escenario se ejecuta con varios datos. «+ Columna» y «+ Fila» la amplían.",
+    caption:
+      "Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, <importe>), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.",
     covers: ["action:case-outline"],
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="editor"]').click();
@@ -195,7 +207,8 @@ chapter("casos", () => {
 
   step("flujos", {
     title: "Un caso «Avanzado» con flujos alternos",
-    caption: "El nivel avanzado añade precondiciones compartidas (Background) y flujos alternos, cada uno con su nombre, pasos y resultado: en Gherkin, un Scenario por flujo.",
+    caption:
+      "El nivel «Avanzado» añade precondiciones compartidas (Background), que se cumplen antes de cada flujo, y flujos alternativos además del principal, cada uno con su nombre, sus pasos y su resultado (en este ejemplo, «Huella no reconocida»). En Gherkin, cada flujo es un Scenario. La papelera junto al nombre quita un flujo.",
     covers: ["action:case-flows"],
     run: async () => {
       await backToList();
@@ -214,7 +227,8 @@ chapter("casos", () => {
 
   step("checklist", {
     title: "Un caso de tipo checklist",
-    caption: "«Tipo de caso: Checklist» cambia los pasos por una lista de comprobaciones, sin Gherkin. Útil para revisiones rápidas, como una prueba de humo.",
+    caption:
+      "Con «Tipo de caso: Checklist», los pasos se convierten en una lista de comprobaciones sin Given/When/Then y sin Gherkin. Es útil para revisiones rápidas, como una prueba de humo o una revisión de accesibilidad, donde lo que importa es no olvidar nada.",
     covers: ["action:case-checklist"],
     run: async () => {
       await backToList();
@@ -228,7 +242,8 @@ chapter("casos", () => {
 
   step("reordenar-teclado", {
     title: "Reordenar con el teclado",
-    caption: "Cada paso tiene un asa: con el foco en ella, Espacio la coge, las flechas la mueven e Intro o Espacio la sueltan (también se puede arrastrar con el ratón).",
+    caption:
+      "Para cambiar el orden de los pasos, arrastra el asa que tiene cada uno. Con el teclado: lleva el foco al asa, pulsa Espacio para cogerlo, muévelo con las flechas y suéltalo con Intro o Espacio.",
     covers: ["keyboard:steps-reorder"],
     shot: false,
     run: async () => {
@@ -243,7 +258,8 @@ chapter("casos", () => {
 
   step("lista", {
     title: "La lista de casos",
-    caption: "Con casos, la tabla muestra ID, título, requisito, prioridad, estado y edición. Busca por ID, título o requisito y filtra por estado (con su recuento), prioridad, nivel, tipo, automatización o un campo sí/no.",
+    caption:
+      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado y fecha de la última edición. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, nivel, tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta.",
     covers: ["action:cases-search", "action:cases-filter", "action:cases-sort"],
     run: async () => {
       await backToList();
@@ -257,8 +273,10 @@ chapter("casos", () => {
 
   step("sin-coincidencias", {
     title: "Ningún caso coincide",
-    caption: "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros».",
+    caption:
+      "Si la búsqueda o los filtros no dejan ningún caso, la lista lo dice y ofrece «Quitar filtros» para volver a verlos todos.",
     covers: ["state:cases-no-match"],
+    focus: "button=Quitar filtros",
     run: async () => {
       await $(`input[placeholder="${C.list.search}"]`).setValue("no-existe-xyz");
       await expect($(`button=${C.list.clearFilters}`)).toBeDisplayed();
@@ -267,8 +285,10 @@ chapter("casos", () => {
 
   step("recorrer", {
     title: "Editar y recorrer los casos",
-    caption: "Al abrir un caso, la barra superior permite pasar al anterior o al siguiente de la lista (respetando el filtro) y muestra si hay cambios sin guardar.",
+    caption:
+      "Con un caso abierto, la barra superior indica su posición en la lista (por ejemplo, «2 de 3») y sus flechas pasan al anterior o al siguiente respetando el filtro activo, para revisar varios casos seguidos sin volver a la lista. A la derecha, el estado de guardado avisa si hay cambios sin guardar.",
     covers: ["action:case-walk", "action:case-edit"],
+    focus: ".tc-nav",
     run: async () => {
       await clickButton(C.list.clearFilters);
       await $("a.cl-title*=Transferencia").click();
@@ -288,7 +308,8 @@ chapter("casos", () => {
 
   step("ir-a-caso", {
     title: "Ir a un caso (Ctrl+P)",
-    caption: "«Ir a un caso…» o Ctrl+P abre un buscador: escribe parte del ID o del título, elige con las flechas y pulsa Intro.",
+    caption:
+      "«Ir a un caso…» (o Ctrl+P desde el editor) abre un buscador: escribe parte del ID o del título, elige con las flechas y pulsa Intro para abrirlo sin pasar por la lista.",
     covers: ["keyboard:ctrl-p", "dialogs:src/modules/test-cases/ui/GoToCaseDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -300,8 +321,10 @@ chapter("casos", () => {
 
   step("mas-acciones", {
     title: "Revisiones y exportación de un caso",
-    caption: "El menú «⋯» del caso muestra sus revisiones (cada guardado) y lo exporta a .xlsx, .pdf o .feature; el aviso dice dónde se guardó.",
+    caption:
+      "El menú «⋯» del caso reúne sus revisiones (una por cada guardado, para ver o recuperar versiones anteriores) y la exportación a .xlsx, .pdf o .feature. El aviso indica dónde se guardó el archivo.",
     covers: ["action:case-revisions", "action:case-export"],
+    focus: "[role=\"menu\"]",
     run: async () => {
       await $('[role="option"]').waitForDisplayed();
       await browser.keys("Enter");
@@ -317,7 +340,8 @@ chapter("casos", () => {
 
   step("importar", {
     title: "Importar un caso desde .xlsx",
-    caption: "En la lista, «Importar / Exportar → Importar .xlsx» lee un caso de una plantilla o de un .xlsx exportado; el informe enseña qué se reconoció y «Aplicar» abre el editor con los datos.",
+    caption:
+      "Para traer un caso escrito en Excel, «Importar / Exportar → Importar .xlsx» lee una plantilla rellenada o un caso exportado antes. El informe enseña qué campos se reconocieron y «Aplicar» abre el editor con esos datos, todavía sin guardar.",
     covers: ["upload:src/modules/test-cases/ui/TestCasesPage.tsx", "dialogs:src/modules/test-cases/ui/TestCasesPage.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -331,7 +355,8 @@ chapter("casos", () => {
 
   step("importado", {
     title: "Caso importado",
-    caption: "Revisa el caso importado y guárdalo: entra en la lista con el siguiente ID.",
+    caption:
+      "Revisa el caso importado y guárdalo: entra en la lista con el siguiente ID libre del proyecto.",
     shot: false,
     run: async () => {
       const apply = $(`button=${es.importReport.apply}`);
@@ -345,7 +370,8 @@ chapter("casos", () => {
 
   step("exportar-feature", {
     title: "Exportar todos los .feature",
-    caption: "«Importar / Exportar → Exportar .feature» genera un archivo .feature por caso (las checklists no tienen Gherkin), listo para playwright-bdd o Cucumber.",
+    caption:
+      "«Importar / Exportar → Exportar .feature» genera un archivo .feature por caso, listo para un proyecto de automatización con playwright-bdd o Cucumber. Las checklists se omiten porque no tienen Gherkin.",
     covers: ["action:cases-export-features"],
     shot: false,
     run: async () => {
@@ -357,8 +383,10 @@ chapter("casos", () => {
 
   step("seleccion", {
     title: "Acciones con varios casos",
-    caption: "Marca varios casos con su casilla: aparece una barra para exportarlos a .feature o eliminarlos.",
+    caption:
+      "Marca uno o varios casos con su casilla (en este ejemplo, uno): aparece una barra con el número de casos seleccionados y lo que puedes hacer con todos a la vez, exportarlos a .feature o eliminarlos.",
     covers: ["action:cases-bulk"],
+    focus: ".cl-bulk",
     run: async () => {
       // The row label is «<ID> <título>»: match the title only.
       const prefix = tf("table.selectRow", { name: "" });
@@ -369,7 +397,8 @@ chapter("casos", () => {
 
   step("eliminar", {
     title: "Eliminar casos",
-    caption: "«Eliminar» pide confirmación («¿Eliminar 1 caso?») antes de quitarlos del proyecto.",
+    caption:
+      "«Eliminar» pide confirmación antes de quitar los casos del proyecto («¿Eliminar 1 caso?»); «Cancelar» los deja como estaban.",
     covers: ["dialogs:src/modules/test-cases/ui/TestCaseList.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -380,7 +409,8 @@ chapter("casos", () => {
 
   step("eliminado", {
     title: "Casos eliminados",
-    caption: "Al confirmar, un aviso dice cuántos se eliminaron.",
+    caption:
+      "Al confirmar, un aviso dice cuántos casos se eliminaron y la lista deja de mostrarlos.",
     shot: false,
     run: async () => {
       await clickButton(C.list.deleteConfirm, '[role="alertdialog"]');
