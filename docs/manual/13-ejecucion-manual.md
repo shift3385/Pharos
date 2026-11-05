@@ -83,6 +83,18 @@ En un intento fallido, «Crear defecto» abre el editor de defectos relleno con 
 
 Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.
 
+### 13.13. Borrar un run
+
+«Borrar run» lo quita de la lista, del progreso, de la matriz y del informe, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede borrar.
+
+![Borrar un run](img/ejecucion-manual/13-borrar-run.png)
+
+### 13.14. Run borrado
+
+Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda el borrado con lo que ocultó.
+
+![Run borrado](img/ejecucion-manual/14-run-borrado.png)
+
 ## Consejos
 
 - Trabaja con el teclado: P / F / B / S marcan, J / K mueven, N escribe lo
@@ -93,6 +105,12 @@ Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar
   equipo al adjuntarlas.
 - Si el caso cambió después de añadirlo al run, se ejecuta la revisión que el
   run congeló: el resultado siempre apunta a lo que se probó.
+- «Borrar run» quita un run que sobra (uno de prueba, uno duplicado) de las
+  listas, del progreso, de la matriz y del informe, también en los equipos
+  que sincronicen. Sus resultados no se borran a mano: quedan ocultos y la
+  purga se los lleva con el run pasada la retención de «Administración →
+  General». Un run de un ciclo cerrado no se borra: reabre antes el ciclo.
+  Si solo quieres dejar de ejecutarlo, ciérralo como «Cancelado».
 
 ## Véase también
 

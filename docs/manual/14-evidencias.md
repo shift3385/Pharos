@@ -18,19 +18,25 @@ En «Administración», pulsa la pestaña «Evidencias». «Almacén de evidenci
 
 ![El almacén de evidencias](img/evidencias/01-almacen.png)
 
-### 14.2. Verificar las evidencias
+### 14.2. Retención por proyecto
+
+«Retención por proyecto» fija, para cada tipo de evidencia de un proyecto, cuánto se conserva antes de que caduque su archivo: el valor por defecto (30 días las trazas y los vídeos, 90 los reportes y los registros), «Siempre» o un número de días. Nunca caduca la evidencia de la ejecución manual, la de un resultado final fallido o bloqueado ni la de un resultado vinculado a un defecto abierto. Es un ajuste solo de este equipo: no se sincroniza.
+
+![Retención por proyecto](img/evidencias/02-retencion.png)
+
+### 14.3. Verificar las evidencias
 
 «Verificar evidencias» comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce (huérfanos). No borra nada por sí sola; puedes seguir trabajando mientras tanto.
 
-![Verificar las evidencias](img/evidencias/02-verificar.png)
+![Verificar las evidencias](img/evidencias/03-verificar.png)
 
-### 14.3. Borrar los huérfanos
+### 14.4. Borrar los huérfanos
 
 Los huérfanos aparecen en su bloque con su tamaño; «Borrar seleccionados» pide confirmación antes de eliminarlos. Los que faltan o están dañados se listan con el elemento que los usa.
 
-![Borrar los huérfanos](img/evidencias/03-reparar.png)
+![Borrar los huérfanos](img/evidencias/04-reparar.png)
 
-### 14.4. Huérfanos borrados
+### 14.5. Huérfanos borrados
 
 Al confirmar se borran y el informe se actualiza; cada borrado queda en el registro de auditoría.
 
@@ -41,6 +47,12 @@ Al confirmar se borran y el informe se actualiza; cada borrado queda en el regis
 - Los huérfanos (archivos que ya nadie usa) solo se borran cuando tú lo
   confirmas, y nunca los de las últimas 24 horas.
 - Las evidencias no se sincronizan todavía: inclúyelas en tus copias.
+- «Retención por proyecto» decide cuánto se guarda cada tipo de evidencia de
+  un proyecto (trazas, vídeos, reportes, registros, capturas, otras). Al
+  caducar se borra el archivo, nunca el resultado. Nunca caduca la evidencia
+  de la ejecución manual, la de un resultado final fallido o bloqueado ni la
+  de un resultado vinculado a un defecto abierto. Es un ajuste de este
+  equipo: en otro equipo, configúralo allí.
 
 ## Véase también
 
