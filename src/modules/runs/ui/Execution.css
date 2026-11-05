@@ -118,10 +118,15 @@
 .ex-start {
   align-self: flex-start;
 }
+/* Beside the executor the list is narrow: its filters wrap, never cut. */
+.ex-run[data-split="true"] .ex-items .chips {
+  flex-wrap: wrap;
+}
 .ex-item-link {
   all: unset;
   cursor: pointer;
-  color: var(--color-accent);
+  color: var(--color-text-primary);
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 .ex-item-link:hover {
@@ -358,6 +363,7 @@
 }
 .ex-step__notes textarea,
 .ex-result textarea {
+  font: inherit;
   width: 100%;
   box-sizing: border-box;
   resize: vertical;

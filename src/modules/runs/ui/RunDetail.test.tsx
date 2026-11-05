@@ -48,7 +48,7 @@ const defects = vi.hoisted(() => ({
 vi.mock("@modules/defects", () => ({
   createDefectFromResult: defects.createDefectFromResult,
   DefectEditor: ({ fromLabel }: { fromLabel?: string }) => (
-    <div role="dialog" aria-label="defect editor">
+    <div aria-label="defect editor" role="region">
       {fromLabel}
     </div>
   ),
@@ -297,7 +297,7 @@ describe("run screen", () => {
     const { container } = renderRun();
     await user.click(await screen.findByTestId("exec-create-defect"));
     expect(defects.createDefectFromResult).toHaveBeenCalledWith("res1", "test-user", "S2");
-    expect(await screen.findByRole("dialog", { name: "defect editor" })).toHaveTextContent(
+    expect(await screen.findByRole("region", { name: "defect editor" })).toHaveTextContent(
       "RUN-007 · TC-001",
     );
     await expectNoAxeViolations(container);

@@ -114,3 +114,7 @@
   min-height: 40px;
   padding: 0 var(--space-2);
 }
+.rn-case .rn-key {
+  flex: none;
+  white-space: nowrap;
+}

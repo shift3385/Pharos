@@ -448,6 +448,21 @@ export function ExecutionPanel({
     }
   }
 
+  // The defect editor is a full view (as in «Defectos»): it takes the
+  // panel's place, and closing it returns to the executor as it was.
+  if (defect)
+    return (
+      <section className="ex" aria-label={t("execution.createDefect")}>
+        <DefectEditor
+          projectId={projectId}
+          userId={userId}
+          defect={null}
+          draft={defect.draft}
+          fromLabel={defect.label}
+          onClose={() => setDefect(null)}
+        />
+      </section>
+    );
   if (failed)
     return (
       <section className="ex" aria-label={t("execution.title")}>
@@ -769,7 +784,7 @@ export function ExecutionPanel({
                     </div>
                   </div>
                   {notesOpen && (
-                    <div className="ex-step__notes">
+                    <div className="tp-field ex-step__notes">
                       <label htmlFor={`${uid}-actual-${i}`} className="tp-field__label">
                         {t("execution.actualLabel")}
                       </label>
@@ -967,16 +982,6 @@ export function ExecutionPanel({
             </button>
           </div>
         </Dialog>
-      )}
-      {defect && (
-        <DefectEditor
-          projectId={projectId}
-          userId={userId}
-          defect={null}
-          draft={defect.draft}
-          fromLabel={defect.label}
-          onClose={() => setDefect(null)}
-        />
       )}
     </section>
   );
