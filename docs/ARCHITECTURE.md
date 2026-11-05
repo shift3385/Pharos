@@ -345,9 +345,16 @@ Home metrics (RED-W6). Rules R1–R12 in ADR-0013 «Implementación (paso 10)».
   and items, the plan's `closureCriteria`). Command `execution_summary`
   (read); `home_metrics(conn, user, request)` is what RED-W6's command calls.
 - **Server:** `server/src/modules/domain/execution-summary.ts` (the pure twin)
-  and `execution.ts` (loader from the user's documents,
-  `GET /api/execution/summary`, `createExecutionService(...).homeMetrics` for
-  `GET /api/home/metrics`).
+  and `execution.ts` (`loadProjects`: one lock-free read per entity kind for
+  every project asked for, through `DomainStore.read` — repeatable read, read
+  only, no user write lock, no `FOR UPDATE` — grouped in memory, then the
+  derivation after the read; `GET /api/execution/summary`,
+  `createExecutionService(...).homeMetrics` for `GET /api/home/metrics`).
+- **Outdated:** a fingerprint of the case's executable content (steps,
+  preconditions, background, flows, examples…, without ids), computed by each
+  loader; a status, priority, title or key edit never marks a result outdated.
+- **Golden:** `src-tauri/tests/fixtures/execution-vectors.golden.json` holds
+  each vector's whole output; both twins compare to it.
 - **Shared vectors:** `src-tauri/tests/fixtures/execution-vectors.json`, read by
   `execution::tests::the_shared_vectors_hold` and `server/tests/execution.test.ts`
   (also: the read order never changes the result).

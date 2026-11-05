@@ -8,6 +8,7 @@
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
+import { AppError } from "../auth/errors";
 import { makeRequireAuth } from "../auth/middleware";
 import type { TokenService } from "../auth/tokens";
 import type { RemoteDoc } from "../sync/sync.repository";
@@ -285,6 +286,17 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
   };
 }
 
+/** `dayStarts` (the desktop's `check_day_starts`): 1 to 400 strictly
+ *  ascending integers. */
+export const MAX_DAY_STARTS = 400;
+export function validDayStarts(ds: number[]): boolean {
+  return (
+    ds.length > 0 &&
+    ds.length <= MAX_DAY_STARTS &&
+    ds.every((n, i) => Number.isInteger(n) && (i === 0 || n > ds[i - 1]))
+  );
+}
+
 export function createExecutionService(store: DomainStore) {
   return {
     /** The summary of one project (`execution_summary` on the desktop); null
@@ -296,6 +308,9 @@ export function createExecutionService(store: DomainStore) {
     },
     /** The Home metrics (RED-W6's `GET /api/home/metrics` calls this). */
     homeMetrics: async (userId: string, request: HomeRequest): Promise<HomeMetrics> => {
+      if (!validDayStarts(request.dayStarts)) {
+        throw new AppError(400, "invalid_day_starts", "dayStarts: 1 to 400 strictly ascending integers.");
+      }
       const projects = await store.read(userId, (r) => loadProjects(r, request.projectIds ?? null));
       return home(projects, request);
     },
@@ -328,8 +343,8 @@ export const summaryQuerySchema = z.object({
     .transform((v, ctx) => {
       if (!v) return null;
       const out = v.split(",").map(Number);
-      if (out.some((n) => !Number.isInteger(n)) || out.length > 400) {
-        ctx.addIssue({ code: "custom", message: "dayStarts: comma-separated integers, at most 400" });
+      if (!validDayStarts(out)) {
+        ctx.addIssue({ code: "custom", message: "dayStarts: 1 to 400 strictly ascending integers" });
         return z.NEVER;
       }
       return out;

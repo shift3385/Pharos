@@ -19,13 +19,12 @@ const ofProject = (projectId: string) => `projectId=${encodeURIComponent(project
 /** The desktop keeps the risk in its own command (`requirement_risk_set`,
  *  RUN-00): set it after a create or update when the input carries it. */
 async function withRisk(saved: Requirement | null, input: RequirementInput): Promise<Requirement | null> {
-  if (!saved || (input.riskLikelihood === undefined && input.riskImpact === undefined)) return saved;
-  return invoke("requirement_risk_set", {
-    id: saved.id,
-    likelihood: input.riskLikelihood === undefined ? (saved.riskLikelihood ?? null) : input.riskLikelihood,
-    impact: input.riskImpact === undefined ? (saved.riskImpact ?? null) : input.riskImpact,
-    userId: input.userId,
-  });
+  if (!saved) return saved;
+  const likelihood = input.riskLikelihood === undefined ? (saved.riskLikelihood ?? null) : input.riskLikelihood;
+  const impact = input.riskImpact === undefined ? (saved.riskImpact ?? null) : input.riskImpact;
+  // Only when it changed: no second write (and event) for an unchanged risk.
+  if (likelihood === (saved.riskLikelihood ?? null) && impact === (saved.riskImpact ?? null)) return saved;
+  return invoke("requirement_risk_set", { id: saved.id, likelihood, impact, userId: input.userId });
 }
 
 export const requirementApi = {

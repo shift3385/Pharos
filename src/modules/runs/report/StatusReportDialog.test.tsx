@@ -64,7 +64,10 @@ describe("Informe de estado (EJE-03)", () => {
       ),
     );
     await userEvent.type(screen.getByTestId("report-recommendations"), "Repetir TC-002");
-    expect(JSON.parse(window.localStorage.getItem("pharos:status-report:p1:cycle:y1")!)).toMatchObject({
+    // One draft per user, project and scope.
+    const key = Object.keys(window.localStorage).find((k) => /^pharos:status-report:[^:]+:p1:cycle:y1$/.test(k))!;
+    expect(key).toBeTruthy();
+    expect(JSON.parse(window.localStorage.getItem(key)!)).toMatchObject({
       recommendations: "Repetir TC-002",
     });
     await userEvent.click(screen.getByTestId("report-export-xlsx"));

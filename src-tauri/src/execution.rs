@@ -145,7 +145,7 @@ pub(crate) fn load_project(
             })
         },
     )?;
-    let mut attempts = load_attempts(conn, project_id)?;
+    let (mut attempts, resolver) = load_attempts(conn, project_id)?;
     // The executed revisions' executable content, read once.
     let revision_ids: Vec<&str> = {
         let mut v: Vec<&str> = attempts
@@ -213,7 +213,12 @@ pub(crate) fn load_project(
             })
         },
     )?;
-    let defects = crate::defects::list_defects(conn, project_id, user)?
+    // The defects' links reuse the project's resolver (never a second one).
+    let mut resolvers = std::collections::HashMap::new();
+    if let Some(r) = resolver {
+        resolvers.insert(project_id.to_string(), r);
+    }
+    let defects = crate::defects::list_defects_using(conn, project_id, user, &mut resolvers)?
         .into_iter()
         .map(|d| DefectData {
             requirement_ids: d
@@ -296,7 +301,12 @@ pub(crate) fn load_project(
 
 /// The project's results as the derivation reads them, linked. Superseded
 /// shards are left out (`link::CURRENT_SHARD`).
-fn load_attempts(conn: &Connection, project_id: &str) -> Result<Vec<AttemptData>, String> {
+/// The project's results as the derivation reads them, linked, and the
+/// resolver built for them (if any result was imported).
+fn load_attempts<'c>(
+    conn: &'c Connection,
+    project_id: &str,
+) -> Result<(Vec<AttemptData>, Option<Resolver<'c>>), String> {
     struct Raw {
         a: AttemptData,
         run_configuration: Option<String>,
@@ -384,7 +394,22 @@ fn load_attempts(conn: &Connection, project_id: &str) -> Result<Vec<AttemptData>
         }
         out.push(x.a);
     }
-    Ok(out)
+    Ok((out, resolver))
+}
+
+/// Most local days a request may carry (a year and a month).
+pub(crate) const MAX_DAY_STARTS: usize = 400;
+
+/// `dayStarts` must be local midnights the client computed: non-empty,
+/// strictly ascending, at most `MAX_DAY_STARTS`.
+pub(crate) fn check_day_starts(ds: &[i64]) -> Result<(), String> {
+    if ds.is_empty() || ds.len() > MAX_DAY_STARTS {
+        return Err(format!("dayStarts: between 1 and {MAX_DAY_STARTS} days"));
+    }
+    if ds.windows(2).any(|w| w[0] >= w[1]) {
+        return Err("dayStarts: strictly ascending".into());
+    }
+    Ok(())
 }
 
 /// The summary of one project; None if it is not the user's.
@@ -393,6 +418,9 @@ pub(crate) fn execution_summary_of(
     filter: &ExecutionFilter,
     user: &str,
 ) -> Result<Option<ExecutionSummary>, String> {
+    if let Some(ds) = &filter.day_starts {
+        check_day_starts(ds)?;
+    }
     Ok(load_project(conn, &filter.project_id, user)?.map(|d| derive::summarize(&d, filter)))
 }
 
@@ -406,6 +434,7 @@ pub(crate) fn home_metrics(
     user: &str,
     request: &HomeRequest,
 ) -> Result<HomeMetrics, String> {
+    check_day_starts(&request.day_starts)?;
     let ids: Vec<String> = match &request.project_ids {
         Some(ids) => ids.clone(),
         None => {
@@ -424,7 +453,8 @@ pub(crate) fn home_metrics(
         }
     };
     let mut projects = Vec::new();
-    for id in ids {
+    let mut seen = std::collections::HashSet::new();
+    for id in ids.into_iter().filter(|id| seen.insert(id.clone())) {
         if let Some(d) = load_project(conn, &id, user)? {
             projects.push(d);
         }

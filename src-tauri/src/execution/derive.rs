@@ -338,6 +338,8 @@ pub struct RequirementExecution {
     /// high | medium | low | unassessed
     pub risk_band: String,
     pub covered: bool,
+    /// Linked live cases that are not obsolete (what covers it; the cases
+    /// `executed_cases` counts).
     pub case_ids: Vec<String>,
     pub executed_cases: i64,
     pub status: String,
@@ -1363,7 +1365,12 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
             risk_level: level,
             risk_band: band.to_string(),
             covered,
-            case_ids: linked_sorted.iter().map(|c| c.id.clone()).collect(),
+            // The same cases `executed_cases` counts (live, not obsolete).
+            case_ids: linked_sorted
+                .iter()
+                .filter(|c| c.status != "obsolete")
+                .map(|c| c.id.clone())
+                .collect(),
             executed_cases,
             status,
             defect_ids,

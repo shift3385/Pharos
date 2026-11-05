@@ -671,8 +671,13 @@ Reglas (R1–R12 del contrato):
 - **R5 Caso** (diseño §4, «Matriz»): el run del final más reciente del caso y,
   dentro, el peor entre flujos, filas y configuraciones; el resultado decisivo
   es el más reciente con ese estado. Sin finales, `not_run`.
-  **Desactualizado** (`stale`) cuando la revisión ejecutada no es la vigente
-  (por número de revisión).
+  **Desactualizado** (`stale`) cuando cambió lo que se ejecuta: la huella
+  (sha256 del JSON canónico, sin ids) de `gherkinLevel`, `preconditions`,
+  `background`, `steps`, `expectedResult`, `examples`, `flows`,
+  `featureSource` y `testData` de la revisión ejecutada difiere de la del caso
+  ahora. Cambiar el estado, la prioridad, el título o la clave (un cambio de
+  prefijo) no desactualiza nada. Cada lado calcula su huella; nunca se
+  comparan entre lados.
 - **R6 Progreso.** Con ciclo, las celdas del ciclo (elemento × configuración,
   `progressUnit: "cell"`), como la pantalla del ciclo; si no, los casos del
   alcance: el proyecto (los vivos no obsoletos) o el plan (elementos de sus
@@ -700,6 +705,19 @@ Reglas (R1–R12 del contrato):
   operador opcional + número + `%` opcional. Lo que no se reconoce queda «sin
   datos» (`met: null`). La cobertura del criterio es la de la matriz:
   requisitos con al menos un caso vivo no obsoleto.
+- **Contrato.** `RequirementExecution.caseIds` son los casos vivos no
+  obsoletos (los mismos que cuenta `executedCases`). `dayStarts` debe venir
+  con 1 a 400 enteros estrictamente crecientes (escritorio y servidor). Un
+  proyecto pedido dos veces cuenta una. Un run borrado (EJE-07) esconde sus
+  resultados también en el rollup del Inicio.
+- **Lecturas en la web.** Sin bloqueos (`DomainStore.read`: repeatable read,
+  solo lectura, sin el cerrojo de escritura ni `FOR UPDATE`), una consulta
+  por tipo de entidad para todos los proyectos pedidos, y la derivación
+  después de cerrar la lectura. El número de consultas no crece con los
+  proyectos (lo comprueba un test).
+- **Vectores.** Además del `expected` legible, la salida completa de cada
+  vector está en `execution-vectors.golden.json`, generado por el test de
+  Rust (`PHAROS_UPDATE_GOLDEN=1`) y comparado entero por los dos lados.
 - **R12 Empates** siempre por id: el mismo resultado en el escritorio y en el
   servidor, se lean las filas en el orden que se lean.
 

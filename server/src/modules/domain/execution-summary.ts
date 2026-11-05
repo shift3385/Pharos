@@ -826,7 +826,8 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
       riskLevel: level,
       riskBand,
       covered,
-      caseIds: [...linked].sort(byScenario).map((c) => c.id),
+      // The same cases `executedCases` counts (live, not obsolete).
+      caseIds: [...live].sort(byScenario).map((c) => c.id),
       executedCases,
       status,
       defectIds,

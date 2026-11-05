@@ -97,6 +97,12 @@ describe("status report model (EJE-03)", () => {
       t,
     );
     expect(own[0]).toMatchObject({ label: "Ejecución completa", state: "noData" });
+    // A known kind whose metric cannot be read is checked by hand, not «no data».
+    const unreadable = evaluateExitCriteria(
+      { exitCriteria: [{ ...SUMMARY.exitCriteria[0], index: 0, metric: "todos", op: null, target: null, met: null }] },
+      t,
+    );
+    expect(unreadable[0].state).toBe("manual");
     expect(criterionValue(SUMMARY.exitCriteria[0])).toBe("75 %");
     expect(criterionValue(SUMMARY.exitCriteria[1])).toBe("1");
   });

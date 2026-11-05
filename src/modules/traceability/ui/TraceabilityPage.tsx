@@ -99,7 +99,10 @@ export function TraceabilityPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [params, setParams] = useSearchParams();
   const filters = filtersOf(params);
-  const filterKey = [filters.cycleId, filters.configurationId, filters.build, filters.environment].join("");
+  const filterKey = JSON.stringify([filters.cycleId, filters.configurationId, filters.build, filters.environment]);
+  // Only the newest summary request may set the state (a slow answer for old
+  // filters never overwrites the current one).
+  const executionRequest = useRef(0);
   const [execution, setExecution] = useState<ExecutionSummary | null>(null);
   const [cycles, setCycles] = useState<FilterOption[]>([]);
   const [configurations, setConfigurations] = useState<FilterOption[]>([]);
@@ -107,9 +110,9 @@ export function TraceabilityPage({
   // The latest final result of each case under the filters (EJE-04). The
   // matrix still shows its requirements and cases if this read fails.
   async function refreshExecution() {
+    const request = ++executionRequest.current;
     try {
-      setExecution(
-        await executionApi.summary(
+      const summary = await executionApi.summary(
           {
             projectId,
             cycleId: filters.cycleId || undefined,
@@ -118,9 +121,10 @@ export function TraceabilityPage({
             environment: filters.environment || undefined,
           },
           userId,
-        ),
-      );
+        );
+      if (request === executionRequest.current) setExecution(summary);
     } catch {
+      if (request !== executionRequest.current) return;
       setExecution(null);
       toast(t("traceability.filters.loadError"));
     }

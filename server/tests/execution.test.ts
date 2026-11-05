@@ -293,6 +293,9 @@ describe("GET /api/execution/summary", () => {
     expect(ok.body.daily.map((d: { dayStart: number }) => d.dayStart)).toEqual([1792792800000, 1792879200000]);
     expect(ok.body.filter).toMatchObject({ from: 1, to: 2 });
     expect((await call("GET", `/api/execution/summary?projectId=${projectId}&dayStarts=a,b`)).status).toBe(400);
+    // Strictly ascending, as the desktop asks.
+    expect((await call("GET", `/api/execution/summary?projectId=${projectId}&dayStarts=2,1`)).status).toBe(400);
+    expect((await call("GET", `/api/execution/summary?projectId=${projectId}&dayStarts=1,1`)).status).toBe(400);
     const other = await register("other@pharos.dev");
     expect((await other.call("GET", `/api/execution/summary?projectId=${projectId}`)).body).toBeNull();
   });

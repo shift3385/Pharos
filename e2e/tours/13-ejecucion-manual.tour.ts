@@ -2,12 +2,28 @@
 // the keyboard-first executor (marks per step, notes, evidence), saving the
 // attempt, a defect from a failed attempt, and closing / reopening the run.
 // Selectors: the data-testids of src/modules/runs/README.md.
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, tf, waitForText } from "./helpers";
 
 const E = es.execution;
+const downloadsDir = process.env.PHAROS_TOURS_DOWNLOADS ?? "";
+
+/** Waits until a non-empty status report `ext` exported after `since` is in
+ *  the tour's download folder. */
+async function waitForExport(ext: string, since: number) {
+  if (!downloadsDir || !existsSync(downloadsDir)) throw new Error("PHAROS_TOURS_DOWNLOADS is not set");
+  await browser.waitUntil(
+    async () =>
+      readdirSync(downloadsDir).some((f) => {
+        const st = statSync(join(downloadsDir, f));
+        return f.startsWith("Informe_de_estado") && f.endsWith(ext) && st.size > 0 && st.mtimeMs >= since - 1000;
+      }),
+    { timeout: 15_000, timeoutMsg: `no status report ${ext} in ${downloadsDir}` },
+  );
+}
 const D = '[role="dialog"]';
 
 /** Ticks a case in the open case picker (by its key, e.g. BM-001). */
@@ -219,6 +235,12 @@ chapter("ejecucion-manual", () => {
       await build.scrollIntoView();
       await build.selectByAttribute("value", "2.0.0-rc1");
       await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
+      // Under the build filter the matrix keeps its rows, and the manual run
+      // (on that build) is still the last result of its case.
+      await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
+      await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
+        timeoutMsg: "the filtered matrix shows no run",
+      });
     },
   });
 
@@ -255,8 +277,10 @@ chapter("ejecucion-manual", () => {
     covers: ["action:report-export-xlsx"],
     shot: false,
     run: async () => {
+      const since = Date.now();
       await byTestId("report-export-xlsx").click();
       await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 30_000);
+      await waitForExport(".xlsx", since);
     },
   });
 
@@ -266,8 +290,10 @@ chapter("ejecucion-manual", () => {
     covers: ["action:report-export-pdf"],
     shot: false,
     run: async () => {
+      const since = Date.now();
       await byTestId("report-export-pdf").click();
       await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 60_000);
+      await waitForExport(".pdf", since);
       await browser.keys("Escape");
     },
   });

@@ -394,6 +394,24 @@ fn a_superseded_shard_and_other_users_projects_are_left_out() {
 }
 
 #[test]
+fn day_starts_must_be_ascending_and_bounded() {
+    assert!(check_day_starts(&[1, 2, 3]).is_ok());
+    assert!(check_day_starts(&[]).is_err());
+    assert!(check_day_starts(&[2, 1]).is_err());
+    assert!(check_day_starts(&[1, 1]).is_err());
+    let many: Vec<i64> = (0..=MAX_DAY_STARTS as i64).collect();
+    assert!(check_day_starts(&many).is_err());
+    let c = device();
+    let p = new_project(&c);
+    let bad = ExecutionFilter {
+        project_id: p,
+        day_starts: Some(vec![5, 4]),
+        ..Default::default()
+    };
+    assert!(execution_summary_of(&c, &bad, U).is_err());
+}
+
+#[test]
 fn home_metrics_read_every_project_of_the_user() {
     let c = device();
     let p = new_project(&c);

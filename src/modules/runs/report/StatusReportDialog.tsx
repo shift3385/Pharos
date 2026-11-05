@@ -32,8 +32,8 @@ interface Draft {
 
 /** The texts the user writes stay on this device (approved: no entity, no
  *  sync): one draft per project and scope. Storage may be unavailable. */
-const draftKey = (projectId: string, scope: string) =>
-  `pharos:status-report:${projectId}:${scope}`;
+const draftKey = (userId: string, projectId: string, scope: string) =>
+  `pharos:status-report:${userId}:${projectId}:${scope}`;
 function readDraft(key: string): Draft | null {
   try {
     const raw = window.localStorage.getItem(key);
@@ -54,6 +54,7 @@ const EXIT_TONE: Record<string, PillTone> = {
   met: "success",
   notMet: "error",
   noData: "neutral",
+  manual: "neutral",
 };
 
 /**
@@ -91,8 +92,9 @@ export function StatusReportDialog({
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const scopeId = scope === "cycle" ? `cycle:${cycleId}` : scope;
-  const key = draftKey(projectId, scopeId);
+  const scopeId =
+    scope === "cycle" ? `cycle:${cycleId}` : scope === "plan" ? `plan:${plan?.id ?? ""}` : "project";
+  const key = draftKey(userId, projectId, scopeId);
   const [draft, setDraft] = useState<Draft>({ summary: "", recommendations: "" });
   const [touched, setTouched] = useState(false);
 

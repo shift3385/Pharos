@@ -3267,9 +3267,7 @@
         "title": "Payment"
       },
       {
-        "caseIds": [
-          "C3"
-        ],
+        "caseIds": [],
         "covered": false,
         "defectIds": [],
         "executedCases": 0,

@@ -5,7 +5,9 @@ import type { ExitCriterion } from "@shared/contracts/contract";
 // only reads them for the screens: a default criterion (no plan, or a plan
 // without criteria: `index` null) is shown in the user's language.
 
-export type ExitState = "met" | "notMet" | "noData";
+/** `manual`: not machine-readable (an unknown criterion, or a known one whose
+ *  metric cannot be read); `noData`: readable, but nothing to measure yet. */
+export type ExitState = "met" | "notMet" | "noData" | "manual";
 
 export interface ShownCriterion extends ExitCriterion {
   /** The text to show: the plan's own, or the localized default. */
@@ -29,7 +31,14 @@ export function evaluateExitCriteria(
       c.index === null && c.kind && DEFAULT_KEY[c.kind]
         ? t(DEFAULT_KEY[c.kind])
         : c.criterion,
-    state: c.met === null ? "noData" : c.met ? "met" : "notMet",
+    state:
+      c.kind === null || c.op === null
+        ? "manual"
+        : c.met === null
+          ? "noData"
+          : c.met
+            ? "met"
+            : "notMet",
   }));
 }
 

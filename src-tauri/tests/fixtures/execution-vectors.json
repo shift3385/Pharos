@@ -169,9 +169,7 @@
             "covered": false,
             "executedCases": 0,
             "status": "not_run",
-            "caseIds": [
-              "C3"
-            ],
+            "caseIds": [],
             "inScope": false
           }
         ],

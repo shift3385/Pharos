@@ -49,6 +49,23 @@ export interface MatrixRequirement {
   requirementKey: string;
   title: string;
   priority: RequirementPriority;
+  /** Risk factors 1..5 (the record's own): the order does not wait for the
+   *  execution summary. */
+  riskLikelihood?: number | null;
+  riskImpact?: number | null;
+}
+
+/** Level and band with the default bands (≤4 low, ≤12 medium, >12 high), as
+ *  `runs::derive::risk_band`. */
+export function riskOfRecord(r: Pick<MatrixRequirement, "riskLikelihood" | "riskImpact">): {
+  riskLevel: number | null;
+  riskBand: RiskBand;
+} {
+  const level = r.riskLikelihood != null && r.riskImpact != null ? r.riskLikelihood * r.riskImpact : null;
+  return {
+    riskLevel: level,
+    riskBand: level === null ? "unassessed" : level <= 4 ? "low" : level <= 12 ? "medium" : "high",
+  };
 }
 
 export interface MatrixCase {
@@ -154,10 +171,17 @@ export function buildMatrix(
   const risks = new Map(
     execution?.requirements.map((r) => [r.requirementKey, r]) ?? [],
   );
-  const riskOf = (key: string) => ({
-    riskLevel: risks.get(key)?.riskLevel ?? null,
-    riskBand: (risks.get(key)?.riskBand ?? "unassessed") as RiskBand,
-  });
+  const records = new Map(requirements.map((r) => [r.requirementKey, r]));
+  // The record's risk when it has one (stable while the summary loads), else
+  // the summary's.
+  const riskOf = (key: string) => {
+    const record = records.get(key);
+    if (record && (record.riskLikelihood !== undefined || record.riskImpact !== undefined)) return riskOfRecord(record);
+    return {
+      riskLevel: risks.get(key)?.riskLevel ?? null,
+      riskBand: (risks.get(key)?.riskBand ?? "unassessed") as RiskBand,
+    };
+  };
   const ordered = [...requirements].sort((a, b) => {
     if (sort === "risk") {
       const [x, y] = [riskOf(a.requirementKey), riskOf(b.requirementKey)];

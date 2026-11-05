@@ -176,3 +176,22 @@ describe("buildMatrix with execution (EJE-04)", () => {
     ]);
   });
 });
+
+describe("risk order from the requirement records", () => {
+  it("orders by the records' own risk before any execution summary arrives", () => {
+    const m = buildMatrix(
+      [
+        { requirementKey: "REQ-001", title: "Low", priority: "low", riskLikelihood: 1, riskImpact: 2 },
+        { requirementKey: "REQ-002", title: "High", priority: "low", riskLikelihood: 5, riskImpact: 5 },
+        { requirementKey: "REQ-003", title: "None", priority: "low", riskLikelihood: null, riskImpact: null },
+      ],
+      [],
+      [],
+    );
+    expect(m.rows.map((r) => [r.requirementKey, r.riskBand, r.riskLevel])).toEqual([
+      ["REQ-002", "high", 25],
+      ["REQ-001", "low", 2],
+      ["REQ-003", "unassessed", null],
+    ]);
+  });
+});

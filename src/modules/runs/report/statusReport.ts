@@ -41,7 +41,7 @@ export interface StatusReport {
   risky: ReportTable;
   exit: ReportTable;
   /** Met / not met / no data per exit criterion, in `exit.rows` order. */
-  exitStates: ("met" | "notMet" | "noData")[];
+  exitStates: ("met" | "notMet" | "noData" | "manual")[];
   issues: ReportTable;
   /** Per case: the latest final result (the .xlsx «Resultados» sheet). */
   cases: ReportTable;
@@ -232,9 +232,7 @@ export function buildStatusReport(
         c.label,
         c.metric || "—",
         criterionValue(c),
-        c.kind === null
-          ? t("statusReport.exit.manual")
-          : t(`statusReport.exit.${c.state}`),
+        t(`statusReport.exit.${c.state}`),
       ]),
     },
     exitStates: exit.map((c) => c.state),

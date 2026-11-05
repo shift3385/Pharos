@@ -55,5 +55,9 @@ describe("requirementApi", () => {
     invoke.mockClear();
     await requirementApi.create(input);
     expect(invoke).not.toHaveBeenCalledWith("requirement_risk_set", expect.anything());
+    // The same risk again: one write, not two.
+    invoke.mockClear();
+    await requirementApi.update("r1", { ...input, riskLikelihood: 2, riskImpact: null });
+    expect(invoke).toHaveBeenCalledTimes(1);
   });
 });
