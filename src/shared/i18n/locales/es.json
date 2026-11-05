@@ -810,6 +810,11 @@
     "sprintWeeks": "Duración de sprint (semanas)",
     "ceremonies": "Reuniones del equipo",
     "phases": "Fases",
+    "methodologyGap": {
+      "sprintWeeks": "Elige la duración del sprint para completar este paso.",
+      "ceremonies": "Elige al menos una reunión del equipo para completar este paso.",
+      "phases": "Añade al menos una fase para completar este paso."
+    },
     "environmentConfig": "Configuración del entorno",
     "environmentRequirements": "Requisitos de hardware y software",
     "tools": "Herramientas",
@@ -1138,8 +1143,9 @@
     "keywords": "Palabras clave de Gherkin",
     "insertKeyword": "Insertar en el cursor",
     "scenarioId": "ID de escenario",
-    "scenarioIdAuto": "Auto (ATS_001)",
-    "scenarioIdFixed": "El ID no cambia una vez asignado: viaja como tag @ATS_001 en la automatización.",
+    "scenarioIdAuto": "Auto ({{prefix}}…)",
+    "scenarioIdFixed": "El ID no cambia una vez asignado: viaja como tag @{{id}} en la automatización.",
+    "scenarioIdProvisional": "Clave provisional: recibirá la definitiva al sincronizar.",
     "priority": "Prioridad",
     "status": "Estado",
     "version": "Versión",

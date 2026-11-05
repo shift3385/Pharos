@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMatch } from "react-router";
 import { useAuth } from "@modules/auth";
-import { isProjectSection, projectApi, type ProjectSection, type ProjectSummary } from "@modules/projects";
+import {
+  PROJECT_SAVED_EVENT,
+  isProjectSection,
+  projectApi,
+  type ProjectSection,
+  type ProjectSummary,
+} from "@modules/projects";
 
 export const SIDEBAR_COLLAPSED_KEY = "pharos.sidebar.collapsed";
 
@@ -111,11 +117,14 @@ export function useActiveProject(): ActiveProject | null {
         .then((list) => live && setProjects(list ?? []))
         .catch(() => live && setProjects([]));
     void load();
-    // A rename or a sync elsewhere updates the names shown in the shell.
+    // A rename or a new case-ID prefix saved here (FIX-11), or a sync from
+    // elsewhere, updates the names and prefixes shown in the shell.
     window.addEventListener("pharos:synced", load);
+    window.addEventListener(PROJECT_SAVED_EVENT, load);
     return () => {
       live = false;
       window.removeEventListener("pharos:synced", load);
+      window.removeEventListener(PROJECT_SAVED_EVENT, load);
     };
   }, [inProject, projectId, ownerId]);
 
