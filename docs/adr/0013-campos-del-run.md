@@ -633,6 +633,19 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
 - **Sin etiqueta de configuración** en los intentos manuales: los identifica
   el `configuration_id` del run, cuyo nombre se puede editar.
 
+## Nota (CYC-02, E6p, 2026-11-05): importar en un ciclo
+
+- «Importar informe» → «Run nuevo» tiene el selector «Ciclo» (los ciclos del
+  proyecto que no están cerrados; «Sin ciclo» por defecto). `ImportNewRun`
+  lleva `cycleId` y el run nuevo solo guarda `runs.cycle_id`; la
+  configuración y el elemento del ciclo de cada resultado se derivan al leer
+  (`runs/link.rs::Resolver`, «Vínculo derivado»), así que sus resultados
+  cuentan en el progreso del ciclo sin editar el run después.
+- `insert_run` lo comprueba con `cycles::check_run_links` (`cycle-closed`,
+  `cycle-not-found`), y la vista previa hace la misma comprobación antes de
+  subir nada. Importar en un run abierto no cambia su ciclo (el diálogo lo
+  nombra). Sin migración: la columna existe desde E3.
+
 ## Implementación (E6p, EJE-07: borrar un run, 2026-11-05)
 
 `src-tauri/src/runs/delete.rs` y `DeleteRunDialog` en la pantalla del run.

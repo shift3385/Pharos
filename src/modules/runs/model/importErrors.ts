@@ -21,6 +21,8 @@ export function importErrorKey(e: unknown): { key: string; detail?: string } {
     "invalid-sha256",
     "invalid-shard",
     "invalid-target",
+    "cycle-closed",
+    "cycle-not-found",
   ];
   if (m && known.includes(m[1]))
     return { key: `runs.import.error.${m[1]}`, detail: m[2] };

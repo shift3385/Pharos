@@ -11,6 +11,33 @@ let failTitle: string | null = null;
 vi.mock("@modules/custom-fields/api/customFieldApi", () => ({
   customFieldApi: { list: async () => [] },
 }));
+// One cycle (EXP-03): c1 is in it, by its whole case; its progress comes
+// from the list's summary, as the «Ciclos» screen shows it.
+vi.mock("@modules/cycles/api/cycleApi", () => ({
+  cycleApi: {
+    list: async () => [
+      {
+        id: "cy1",
+        projectId: "p1",
+        cycleKey: "CYC-001",
+        title: "Regresión 1.4",
+        status: "active",
+        startsOn: "2026-11-02",
+        endsOn: "2026-11-06",
+        milestone: "Beta",
+        sprint: "S2",
+        build: "1.4.0",
+        environment: "staging",
+        configurationIds: [],
+        items: 1,
+        runs: 1,
+        progress: { total: 2, executed: 1, passed: 1, failed: 0, blocked: 0, skipped: 0, other: 0, notRun: 1 },
+      },
+    ],
+    items: async () => [{ id: "i1", cycleId: "cy1", testCaseId: "c1", flowId: null, exampleRowId: null, assignee: "Ada" }],
+  },
+  configurationApi: { list: async () => [] },
+}));
 vi.mock("@shared/export/pdfDoc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@shared/export/pdfDoc")>()),
   pdfBytes: async (dd: unknown) => {
@@ -69,6 +96,11 @@ describe("case files for the project ZIP (EXP-02, spec §5.4)", () => {
     );
     expect(pdfDocs).toHaveLength(3);
     expect(pdfDocs[0]).toContain("Case c1");
+    // EXP-03: the cycles of each case, as the last section.
+    expect(pdfDocs[0]).toContain("cycles.export.sheet");
+    expect(pdfDocs[0]).toContain("CYC-001");
+    expect(pdfDocs[0]).toContain("cycles.export.wholeCase");
+    expect(pdfDocs[1]).not.toContain("CYC-001");
   });
 });
 

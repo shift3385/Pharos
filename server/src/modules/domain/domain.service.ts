@@ -262,11 +262,12 @@ export function createDomainService(store: DomainStore) {
     remove: remove("test_plan", "Test plan"),
   };
 
-  /** The rules of a project's test case fields, for a case save. */
-  async function caseRules(tx: DomainTx, projectId: string): Promise<FieldRule[]> {
+  /** The rules of a project's fields of `entity`, for a case save (or a
+   *  defect save, FLD-03). */
+  async function fieldRules(tx: DomainTx, projectId: string, entity = "test_case"): Promise<FieldRule[]> {
     return (await tx.list("custom_field", projectId))
       .map((d) => d.payload)
-      .filter((p) => p.entity === "test_case")
+      .filter((p) => p.entity === entity)
       .map((p) => ({
         fieldKey: str(p, "fieldKey"),
         fieldType: str(p, "fieldType"),
@@ -274,6 +275,14 @@ export function createDomainService(store: DomainStore) {
         appliesToCaseTypes: Array.isArray(p.appliesToCaseTypes) ? (p.appliesToCaseTypes as string[]) : null,
         archived: typeof p.archivedAt === "string",
       }));
+  }
+
+  /** A defect's `data` with its custom values checked against the project's
+   *  defect fields, like a case's (FLD-03, `custom_fields.rs::check_defect_values`). */
+  async function defectData(tx: DomainTx, projectId: string, data: unknown, previous: unknown): Promise<unknown> {
+    const checked = validateValues(await fieldRules(tx, projectId, "defect"), "standard", data, previous);
+    if ("error" in checked) throw new AppError(400, "invalid_custom_value", checked.error);
+    return checked.data;
   }
 
   /** A case as the desktop's `update_case` stores it (FLD-01): the case fields
@@ -289,7 +298,7 @@ export function createDomainService(store: DomainStore) {
     delete data[CASE_FIELDS_STASH_KEY];
     const prevData = (prev.data ?? {}) as Payload;
     if (!("custom" in data) && prevData.custom !== undefined) data.custom = prevData.custom;
-    const checked = validateValues(await caseRules(tx, str(prev, "projectId")), caseType ?? "standard", data, prevData);
+    const checked = validateValues(await fieldRules(tx, str(prev, "projectId")), caseType ?? "standard", data, prevData);
     if ("error" in checked) throw new AppError(400, "invalid_custom_value", checked.error);
     return {
       ...prev,
@@ -594,7 +603,7 @@ export function createDomainService(store: DomainStore) {
 
   /** A definition's editable part checked and completed, as
    *  `custom_fields.rs::check_definition`: options get missing ids. */
-  function checkDefinition(fieldType: string, input: CustomFieldInput): CustomFieldInput {
+  function checkDefinition(fieldType: string, entity: string, input: CustomFieldInput): CustomFieldInput {
     const bad = (code: string) => new AppError(400, "invalid_custom_field", `custom_field.${code}`);
     const label = input.label.trim();
     if (!label || label.length > 100) throw bad("label");
@@ -618,6 +627,8 @@ export function createDomainService(store: DomainStore) {
     const applies = input.appliesToCaseTypes ?? null;
     if (applies && (applies.length === 0 || applies.some((t) => !(CASE_TYPES as readonly string[]).includes(t))))
       throw bad("applies_to");
+    // Only a test case has a case type (FLD-03, `custom_fields.rs::check_entity_scope`).
+    if (applies && entity !== "test_case") throw bad("applies_to");
     const defaultValue = input.defaultValue ?? null;
     if (defaultValue !== null) {
       const code = validateValue(
@@ -649,7 +660,7 @@ export function createDomainService(store: DomainStore) {
     if (!validKey(fieldKey)) throw new AppError(400, "invalid_custom_field", "custom_field.key");
     if (!(FIELD_TYPES as readonly string[]).includes(input.fieldType))
       throw new AppError(400, "invalid_custom_field", "custom_field.field_type");
-    const checked = checkDefinition(input.fieldType, { ...input, fieldKey });
+    const checked = checkDefinition(input.fieldType, input.entity, { ...input, fieldKey });
     const id = fieldId(input.projectId, input.entity, fieldKey);
     // The deterministic id is the uniqueness: any document with it means the
     // key is taken (`custom_fields.rs`).
@@ -695,7 +706,7 @@ export function createDomainService(store: DomainStore) {
           ...input.options,
           ...old.filter((o) => !input.options.some((n) => n.id === o.id)).map((o) => ({ ...o, archived: true })),
         ];
-        const checked = checkDefinition(str(p, "fieldType"), { ...input, options });
+        const checked = checkDefinition(str(p, "fieldType"), str(p, "entity"), { ...input, options });
         return (await tx.put("custom_field", id, fieldPayload(p, checked), doc)).payload;
       }),
     archive: (userId: string, id: string, archived: boolean) =>
@@ -787,6 +798,7 @@ export function createDomainService(store: DomainStore) {
           projectId: input.projectId,
           defectKey: await nextKey(tx, input.projectId, "defect", DEFECT_PREFIX, DEFECT_DIGITS),
           ...editable(input),
+          data: await defectData(tx, input.projectId, input.data, undefined),
           status,
           resolution,
           reporter: userId,
@@ -806,6 +818,7 @@ export function createDomainService(store: DomainStore) {
         const payload = {
           ...doc.payload,
           ...editable(input),
+          data: await defectData(tx, str(doc.payload, "projectId"), input.data, doc.payload.data),
           status,
           resolution: checkStatus(from, status, input.resolution),
           updatedAt: now(),

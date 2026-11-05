@@ -4,6 +4,33 @@ import { projectPlanFiles, projectPlanStatus } from "./batch";
 // See test-cases/export/batch.test.ts: the .xlsx builder and pdfmake are
 // stubbed; the PDF stub records the real document definition.
 const pdfDocs: string[] = [];
+// One cycle (EXP-03): c1 is in it, by its whole case; its progress comes
+// from the list's summary, as the «Ciclos» screen shows it.
+vi.mock("@modules/cycles/api/cycleApi", () => ({
+  cycleApi: {
+    list: async () => [
+      {
+        id: "cy1",
+        projectId: "p1",
+        cycleKey: "CYC-001",
+        title: "Regresión 1.4",
+        status: "active",
+        startsOn: "2026-11-02",
+        endsOn: "2026-11-06",
+        milestone: "Beta",
+        sprint: "S2",
+        build: "1.4.0",
+        environment: "staging",
+        configurationIds: [],
+        items: 1,
+        runs: 1,
+        progress: { total: 2, executed: 1, passed: 1, failed: 0, blocked: 0, skipped: 0, other: 0, notRun: 1 },
+      },
+    ],
+    items: async () => [{ id: "i1", cycleId: "cy1", testCaseId: "c1", flowId: null, exampleRowId: null, assignee: "Ada" }],
+  },
+  configurationApi: { list: async () => [] },
+}));
 vi.mock("@shared/export/pdfDoc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@shared/export/pdfDoc")>()),
   pdfBytes: async (dd: unknown) => {
@@ -27,7 +54,7 @@ vi.mock("../api/testPlanApi", () => ({
             version: "1.0",
             author: "Ada",
             status: "reviewed",
-            data: {},
+            data: { milestones: [{ name: "Entrega beta", date: "2026-11-20" }] },
           },
   },
 }));
@@ -46,6 +73,12 @@ describe("plan files for the project ZIP (EXP-02, spec §5.4)", () => {
       /^%PDF-/,
     );
     expect(pdfDocs[0]).toContain("Checkout");
+    // EXP-03: milestones and cycles after the template's sections; the
+    // progress is the cycle list's, in the screen's words.
+    expect(pdfDocs[0]).toContain("Entrega beta");
+    expect(pdfDocs[0]).toContain("CYC-001");
+    expect(pdfDocs[0]).toContain("1/2 · 50 %");
+    expect(pdfDocs[0]).toContain("Beta · S2");
     expect(await projectPlanFiles("none", "u1", t, "es")).toEqual([]);
   });
 

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import i18n from "@shared/i18n";
 import { buildPlanXlsx } from "./planXlsx";
 import { parsePlanXlsx } from "../import/planImport";

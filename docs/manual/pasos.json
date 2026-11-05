@@ -409,14 +409,13 @@
     {
       "chapter": "proyectos",
       "n": 13,
-      "id": "configuracion-nueva",
-      "title": "Nueva configuración",
-      "caption": "En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
+      "id": "campo-defecto",
+      "title": "Campos de los defectos",
+      "caption": "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
       "covers": [
-        "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx",
-        "keyboard:config-labels"
+        "action:custom-field-defect"
       ],
-      "image": "proyectos/13-configuracion-nueva.png",
+      "image": "proyectos/13-campo-defecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -426,14 +425,14 @@
     {
       "chapter": "proyectos",
       "n": 14,
-      "id": "configuracion-creada",
-      "title": "Configuraciones del proyecto",
-      "caption": "«Guardar» la añade a la lista. Aquí hay dos (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas».",
+      "id": "configuracion-nueva",
+      "title": "Nueva configuración",
+      "caption": "En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
       "covers": [
-        "action:configuration-create",
-        "action:configuration-archive"
+        "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx",
+        "keyboard:config-labels"
       ],
-      "image": "proyectos/14-configuracion-creada.png",
+      "image": "proyectos/14-configuracion-nueva.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -443,14 +442,14 @@
     {
       "chapter": "proyectos",
       "n": 15,
-      "id": "segundo-proyecto",
-      "title": "Crear con Intro y copiar campos",
-      "caption": "Un segundo proyecto («Portal Clientes», creado pulsando Intro tras el nombre) puede copiar los campos personalizados de otro con «Copiar de otro proyecto».",
+      "id": "configuracion-creada",
+      "title": "Configuraciones del proyecto",
+      "caption": "«Guardar» la añade a la lista. Aquí hay dos (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas».",
       "covers": [
-        "keyboard:project-create-enter",
-        "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx"
+        "action:configuration-create",
+        "action:configuration-archive"
       ],
-      "image": "proyectos/15-segundo-proyecto.png",
+      "image": "proyectos/15-configuracion-creada.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -460,14 +459,14 @@
     {
       "chapter": "proyectos",
       "n": 16,
-      "id": "lista-proyectos",
-      "title": "Todos los proyectos",
-      "caption": "Con proyectos, la lista muestra los recientes arriba y la tabla de todos: plan, casos, ejecución, cobertura y último acceso. Busca por nombre o prefijo y ordena con «Ordenar por».",
+      "id": "segundo-proyecto",
+      "title": "Crear con Intro y copiar campos",
+      "caption": "Un segundo proyecto («Portal Clientes», creado pulsando Intro tras el nombre) puede copiar los campos personalizados de otro con «Copiar de otro proyecto».",
       "covers": [
-        "action:projects-search",
-        "action:projects-sort"
+        "keyboard:project-create-enter",
+        "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx"
       ],
-      "image": "proyectos/16-lista-proyectos.png",
+      "image": "proyectos/16-segundo-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -477,13 +476,14 @@
     {
       "chapter": "proyectos",
       "n": 17,
-      "id": "menu-fila",
-      "title": "Acciones de un proyecto",
-      "caption": "El menú «⋯» de cada fila abre el proyecto, sus ajustes o lo exporta en un ZIP (plan, casos y documentos).",
+      "id": "lista-proyectos",
+      "title": "Todos los proyectos",
+      "caption": "Con proyectos, la lista muestra los recientes arriba y la tabla de todos: plan, casos, ejecución, cobertura y último acceso. Busca por nombre o prefijo y ordena con «Ordenar por».",
       "covers": [
-        "action:projects-row-menu"
+        "action:projects-search",
+        "action:projects-sort"
       ],
-      "image": "proyectos/17-menu-fila.png",
+      "image": "proyectos/17-lista-proyectos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -493,6 +493,22 @@
     {
       "chapter": "proyectos",
       "n": 18,
+      "id": "menu-fila",
+      "title": "Acciones de un proyecto",
+      "caption": "El menú «⋯» de cada fila abre el proyecto, sus ajustes o lo exporta en un ZIP (plan, casos y documentos).",
+      "covers": [
+        "action:projects-row-menu"
+      ],
+      "image": "proyectos/18-menu-fila.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 19,
       "id": "exportar-zip",
       "title": "Exportar un proyecto",
       "caption": "«Exportar proyecto (ZIP)» genera los documentos con una barra de progreso y guarda el ZIP en tu carpeta de descarga; «Exportar todo» hace lo mismo con todos los proyectos.",
@@ -508,30 +524,14 @@
     },
     {
       "chapter": "proyectos",
-      "n": 19,
+      "n": 20,
       "id": "cambiar-proyecto",
       "title": "Cambiar de proyecto",
       "caption": "Dentro de un proyecto, el selector de la parte superior del menú lateral salta a otro proyecto sin volver a la lista.",
       "covers": [
         "action:project-switcher"
       ],
-      "image": "proyectos/19-cambiar-proyecto.png",
-      "viewport": {
-        "height": 900,
-        "width": 1440
-      },
-      "status": "passed"
-    },
-    {
-      "chapter": "proyectos",
-      "n": 20,
-      "id": "eliminar-proyecto",
-      "title": "Eliminar un proyecto",
-      "caption": "«Eliminar proyecto», al pie de los ajustes, cuenta lo que se perderá y pide escribir el prefijo (o el nombre) para confirmar. «Sí, eliminar todo» lo borra y vuelve a la lista.",
-      "covers": [
-        "dialogs:src/modules/projects/ui/ProjectSettings.tsx"
-      ],
-      "image": "proyectos/20-eliminar-proyecto.png",
+      "image": "proyectos/20-cambiar-proyecto.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -541,6 +541,22 @@
     {
       "chapter": "proyectos",
       "n": 21,
+      "id": "eliminar-proyecto",
+      "title": "Eliminar un proyecto",
+      "caption": "«Eliminar proyecto», al pie de los ajustes, cuenta lo que se perderá y pide escribir el prefijo (o el nombre) para confirmar. «Sí, eliminar todo» lo borra y vuelve a la lista.",
+      "covers": [
+        "dialogs:src/modules/projects/ui/ProjectSettings.tsx"
+      ],
+      "image": "proyectos/21-eliminar-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "proyectos",
+      "n": 22,
       "id": "eliminado",
       "title": "Proyecto eliminado",
       "caption": "Tras confirmar, un aviso lo confirma y la lista ya no lo muestra.",
@@ -1886,9 +1902,10 @@
       "n": 5,
       "id": "con-adjuntos",
       "title": "Un informe con adjuntos",
-      "caption": "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo.",
+      "caption": "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo. «Ciclo» hace que el run nuevo sea de un ciclo (de los que no están cerrados): sus resultados cuentan en el progreso del ciclo sin editar nada después.",
       "covers": [
-        "action:import-attachments-folder"
+        "action:import-attachments-folder",
+        "action:import-into-cycle"
       ],
       "image": "ejecuciones/05-con-adjuntos.png",
       "viewport": {
@@ -2013,10 +2030,11 @@
       "n": 3,
       "id": "nuevo",
       "title": "Rellenar el defecto",
-      "caption": "Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos y seguimiento externo.",
+      "caption": "Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos, seguimiento externo y los campos personalizados de defectos que definiste en Ajustes (aquí, «Cliente afectado»).",
       "covers": [
         "action:defect-create",
-        "action:defect-links"
+        "action:defect-links",
+        "action:defect-custom-fields"
       ],
       "image": "defectos/03-nuevo.png",
       "viewport": {

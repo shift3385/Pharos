@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { FILES_PER_PLAN, projectHasPlan, projectPlanFiles } from "@modules/test-plan";
 import { FILES_PER_CASE, projectCaseCount, projectCaseFiles } from "@modules/test-cases";
+import { loadCycleExport } from "@modules/cycles";
 import { saveFile } from "@shared/export/saveFile";
 import { projectApi } from "../api/projectApi";
 import type { ProjectSummary } from "../model/types";
@@ -58,11 +59,17 @@ async function addProject(
     counter.done += 1;
     onProgress?.({ phase: "building", done: counter.done, total: counter.total, label });
   };
+  // The project's cycles (EXP-03), read once for its plan and every case;
+  // not at all when it has neither, and their items only when it has cases.
+  const hasPlan = await projectHasPlan(project.id, ownerId);
+  const hasCases = (await projectCaseCount(project.id, ownerId)) > 0;
+  const cycles =
+    hasPlan || hasCases ? await loadCycleExport(project.id, ownerId, hasCases) : undefined;
   // The callbacks fire as each file is built (drives the progress bar); buffers
   // are added to the zip afterwards (an instant, non-async step).
   const files = [
-    ...(await projectPlanFiles(project.id, ownerId, t, lang, advance, skip)),
-    ...(await projectCaseFiles(project.id, ownerId, t, lang, advance, skip)),
+    ...(await projectPlanFiles(project.id, ownerId, t, lang, advance, skip, cycles)),
+    ...(await projectCaseFiles(project.id, ownerId, t, lang, advance, skip, cycles)),
   ];
   for (const f of files) zip.file(`${folder}/${sanitize(f.name)}`, f.buffer);
   return files.length;

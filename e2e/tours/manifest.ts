@@ -148,6 +148,7 @@ export const INVENTORY: Item[] = [
   I("proyectos", "action", "action:custom-field-create", "Crear un campo personalizado"),
   I("proyectos", "dialog", "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx", "Diálogo de campo personalizado"),
   I("proyectos", "action", "action:custom-field-archive", "Archivar y restaurar un campo personalizado"),
+  I("proyectos", "action", "action:custom-field-defect", "Campos personalizados de defectos (selector Casos / Defectos)"),
   I("proyectos", "dialog", "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx", "Copiar campos de otro proyecto"),
   I("proyectos", "action", "action:configuration-create", "Crear una configuración"),
   I("proyectos", "dialog", "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx", "Diálogo de configuración (etiquetas de importación)"),
@@ -263,6 +264,7 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "action", "action:tray-unlink", "Desvincular un test"),
   I("ejecuciones", "action", "action:tray-filter", "Filtrar la bandeja"),
   I("ejecuciones", "action", "action:import-attachments-folder", "Carpeta de adjuntos del informe"),
+  I("ejecuciones", "action", "action:import-into-cycle", "Importar un informe en un ciclo"),
 
   // ---- 9 · Defectos ----------------------------------------------------------------------
   I("defectos", "section", "section:defects", "Defectos (lista)"),
@@ -271,6 +273,7 @@ export const INVENTORY: Item[] = [
   I("defectos", "state", "state:defect-title-required", "Título obligatorio en un defecto"),
   I("defectos", "upload", "upload:src/modules/defects/ui/DefectEditor.tsx", "Adjuntar evidencias a un defecto"),
   I("defectos", "action", "action:defect-links", "Vincular un defecto a casos y requisitos"),
+  I("defectos", "action", "action:defect-custom-fields", "Rellenar campos personalizados en un defecto"),
   I("defectos", "dialog", "dialogs:src/modules/defects/ui/ResultPickerDialog.tsx", "Crear un defecto desde un resultado fallido"),
   I("defectos", "screen", "screen:defect-board", "Tablero de defectos"),
   I("defectos", "tab", "views:src/modules/defects/ui/DefectsPage.tsx", "Vista de defectos (Lista / Tablero)"),
