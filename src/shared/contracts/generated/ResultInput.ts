@@ -4,4 +4,10 @@ import type { StepResultInput } from "./StepResultInput";
 /**
  * One manual attempt of a run item (EJE-02 writes it from the local draft).
  */
-export type ResultInput = { runItemId: string, status: string, rawStatus?: string, configurationLabel?: string, durationMs?: number, startedAt?: string, finishedAt?: string, errorMessage?: string, errorTrace?: string, attributes: Record<string, unknown>, steps?: Array<StepResultInput>, userId: string, };
+export type ResultInput = { runItemId: string, 
+/**
+ * Narrows a broader item to one of its targets (EJE-02): a flow of a
+ * flow-less item, an Outline row of an item without a row. Each must be
+ * inside the item and the frozen revision.
+ */
+flowId?: string, exampleRowId?: string, status: string, rawStatus?: string, configurationLabel?: string, durationMs?: number, startedAt?: string, finishedAt?: string, errorMessage?: string, errorTrace?: string, attributes: Record<string, unknown>, steps?: Array<StepResultInput>, userId: string, };

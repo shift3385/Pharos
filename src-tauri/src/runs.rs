@@ -1,10 +1,11 @@
 //! Execution model (EJE-01, RUN-00; ADR-0012, ADR-0013; design 0.2.0 §5 step
 //! 4): runs, run items, shards, results with their step results, and
-//! unlinked mappings. Schema in migration 0024; no UI yet (EJE-02 is step 7).
+//! unlinked mappings. Schema in migration 0024; the manual execution (EJE-02,
+//! step 7) lives in `manual.rs`.
 //!
 //! - A **run** is one execution against a context (environment, build,
 //!   commit, dataset…) with a visible key `RUN-001`. Its header is `lww` and
-//!   is only edited while `in_progress`.
+//!   is only edited while `in_progress`; a closed run can be reopened.
 //! - A **run item** is what the run means to execute: a case with its
 //!   revision frozen when the item is added, plus flow and Outline row.
 //! - A **result** is one attempt, immutable (`append_only`), written with its
@@ -26,6 +27,7 @@ pub mod derive;
 pub mod ids;
 pub mod import;
 pub(crate) mod link;
+pub mod manual;
 #[cfg(test)]
 mod tests;
 
@@ -202,6 +204,11 @@ pub struct StepResultInput {
 #[serde(rename_all = "camelCase")]
 pub struct ResultInput {
     pub(crate) run_item_id: String,
+    /// Narrows a broader item to one of its targets (EJE-02): a flow of a
+    /// flow-less item, an Outline row of an item without a row. Each must be
+    /// inside the item and the frozen revision.
+    pub(crate) flow_id: Option<String>,
+    pub(crate) example_row_id: Option<String>,
     pub(crate) status: String,
     pub(crate) raw_status: Option<String>,
     pub(crate) configuration_label: Option<String>,
@@ -579,6 +586,9 @@ pub(crate) fn insert_run(conn: &Connection, input: &RunInput) -> Result<String, 
 pub(crate) fn update_run(conn: &Connection, id: &str, input: &RunInput) -> Result<(), String> {
     let user = &input.user_id;
     let (project_id, status) = owned_run(conn, id, user)?;
+    if status != "in_progress" && text(&input.status).as_deref() == Some("in_progress") {
+        return reopen_run(conn, id, user);
+    }
     require_open(&status)?;
     // Only a link that changes is checked: a run keeps the id of a cycle that
     // was deleted and purged since (CYC-01).
@@ -655,6 +665,39 @@ pub(crate) fn update_run(conn: &Connection, id: &str, input: &RunInput) -> Resul
             user,
             revision + 1,
         ],
+    )
+    .map_err(err)?;
+    journal::record(
+        conn,
+        Change::new(
+            RUN,
+            id,
+            Action::Update,
+            Actor::user(user),
+            "upsert",
+            revision + 1,
+            user,
+        )
+        .before(before),
+    )
+}
+
+/// Reopens a closed run (EJE-02): only the status changes, `finished_at` is
+/// cleared, and one `update` event says so. Its results are untouched.
+fn reopen_run(conn: &Connection, id: &str, user: &str) -> Result<(), String> {
+    let revision: i64 = conn
+        .query_row(
+            "SELECT revision FROM runs WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
+        .map_err(err)?;
+    let before = journal::snapshot(conn, RUN, id)?;
+    conn.execute(
+        "UPDATE runs SET status = 'in_progress', finished_at = NULL, updated_by = ?2,
+                updated_at = datetime('now'), revision = ?3
+          WHERE id = ?1",
+        params![id, user, revision + 1],
     )
     .map_err(err)?;
     journal::record(
@@ -833,6 +876,50 @@ struct ItemContext {
     example_row_id: Option<String>,
     example_row: Option<i64>,
     configuration_id: Option<String>,
+    /// The Outline row's values, when the attempt narrows to a row.
+    example_values: Option<Value>,
+}
+
+/// Narrows an item to the target an attempt executes (EJE-02): the given
+/// flow and row must be the item's own or fall inside it. The row's index
+/// and values come from the frozen revision.
+fn narrow(
+    conn: &Connection,
+    item: &mut ItemContext,
+    flow_id: &Option<String>,
+    row_id: &Option<String>,
+) -> Result<(), String> {
+    let flow = text(flow_id);
+    let row = text(row_id);
+    if let (Some(own), Some(given)) = (&item.flow_id, &flow) {
+        if own != given {
+            return Err("target-outside-item: another flow".into());
+        }
+    }
+    if let (Some(own), Some(given)) = (&item.example_row_id, &row) {
+        if own != given {
+            return Err("target-outside-item: another row".into());
+        }
+    }
+    if item.flow_id.is_none() && flow.is_some() {
+        if item.example_row_id.is_some() {
+            return Err("target-outside-item: the item is one row".into());
+        }
+        item.flow_id = flow;
+    }
+    if item.example_row_id.is_none() {
+        if let Some(row) = row {
+            let data = manual::revision_data(conn, &item.revision_id)?;
+            let (index, values) =
+                manual::row_of(&data, item.flow_id.as_deref(), &row).ok_or_else(|| {
+                    format!("example row not in that flow of the case revision: {row}")
+                })?;
+            item.example_row_id = Some(row);
+            item.example_row = Some(index);
+            item.example_values = Some(values);
+        }
+    }
+    Ok(())
 }
 
 fn item_context(conn: &Connection, run_item_id: &str) -> Result<Option<ItemContext>, String> {
@@ -851,6 +938,7 @@ fn item_context(conn: &Connection, run_item_id: &str) -> Result<Option<ItemConte
                 example_row_id: r.get(5)?,
                 example_row: r.get(6)?,
                 configuration_id: r.get(7)?,
+                example_values: None,
             })
         },
     )
@@ -873,8 +961,17 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
     if steps.len() > MAX_STEPS {
         return Err(format!("steps-too-many: at most {MAX_STEPS} steps"));
     }
+    let mut item = item;
+    narrow(conn, &mut item, &input.flow_id, &input.example_row_id)?;
     let shape = RevisionShape::load(conn, &item.revision_id)?;
     let flow = shape.flow(item.flow_id.as_deref())?;
+    if let Some(row) = &item.example_row_id {
+        if !flow.rows.contains(row) {
+            return Err(format!(
+                "example row not in that flow of the case revision: {row}"
+            ));
+        }
+    }
     for s in &steps {
         if !RESULT_STATUSES.contains(&s.status.as_str()) {
             return Err(format!("unknown step status: {}", s.status));
@@ -922,7 +1019,7 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
                 example_row, example_values, configuration_id, configuration_label, attempt, status,
                 raw_status, duration_ms, started_at, finished_at, error_message, error_trace,
                 executed_by, external_id, attributes, created_by, created_at, hlc)
-         VALUES (?1, ?2, ?3, ?4, NULL, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, NULL, ?14, ?15, ?16,
+         VALUES (?1, ?2, ?3, ?4, NULL, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?28, ?14, ?15, ?16,
                 ?17, ?18, ?19, ?20, coalesce(?21, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), ?22, ?23,
                 ?24, NULL, ?25, ?26, datetime('now'), ?27)",
         params![
@@ -953,6 +1050,7 @@ pub(crate) fn record_result(conn: &Connection, input: &ResultInput) -> Result<St
             attributes.to_string(),
             user,
             hlc,
+            item.example_values.as_ref().map(Value::to_string),
         ],
     )
     .map_err(err)?;
