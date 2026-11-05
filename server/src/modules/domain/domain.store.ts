@@ -52,9 +52,18 @@ export interface DomainTx {
   /** An audit event with no write of its own: the summary of a bulk
    *  operation (an import, with its counts), as on the desktop
    *  (`journal::record_event`). */
-  audit(action: AuditAction, entity: string, id: string, summary: Record<string, unknown>): Promise<void>;
+  audit(
+    action: AuditAction,
+    entity: string,
+    id: string,
+    summary: Record<string, unknown>,
+    changes?: Record<string, unknown>,
+  ): Promise<void>;
   /** Stores an append-only document (a case revision, DAT-02) if absent. */
   append(entity: string, id: string, payload: Record<string, unknown>): Promise<void>;
+  /** A new HLC from the server's clock, for a document that carries its own
+   *  (a result, EJE-06), as the desktop's `oplog::next_hlc`. */
+  stamp(): string;
 }
 
 /** The state an event diffs: the payload plus whether it is deleted, as the
@@ -154,7 +163,10 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
             "This revision already exists with other content.",
           );
       },
-      async audit(action, entity, id, summary) {
+      stamp() {
+        return clock.stamp();
+      },
+      async audit(action, entity, id, summary, changes = {}) {
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3`,
           [userId, entity, id],
@@ -166,7 +178,7 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
           entity,
           entityId: id,
           ...location(entity, id, snap, null),
-          changes: {},
+          changes,
           summary,
         });
       },
