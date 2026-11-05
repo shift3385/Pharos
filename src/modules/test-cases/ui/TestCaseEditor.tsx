@@ -55,6 +55,7 @@ import {
   detectLevel,
   flowsToGherkin,
   fromGherkin,
+  isProvisionalKey,
   levelRank,
   newFlow,
   parseFeatureFlows,
@@ -795,7 +796,14 @@ export function TestCaseEditor({
           // the project counter when the case is saved.
           placeholder={t("testCase.scenarioIdAuto", { prefix: caseIdPrefix })}
           readOnly={testCase != null}
-          title={testCase ? t("testCase.scenarioIdFixed", { id: testCase.scenarioId }) : undefined}
+          title={
+            !testCase
+              ? undefined
+              : isProvisionalKey(testCase.scenarioId)
+                ? // DAT-01: an offline key is replaced on the next sync.
+                  t("testCase.scenarioIdProvisional")
+                : t("testCase.scenarioIdFixed", { id: testCase.scenarioId })
+          }
           onChange={(e) => update({ scenarioId: e.target.value })}
         />
       </label>

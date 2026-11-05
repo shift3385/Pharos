@@ -149,7 +149,7 @@ chapter("casos", () => {
       await saveCase();
       await expect($(".tc-nav__state")).toHaveAttribute("data-state", "saved");
       // FIX-13: the header counts the new case without leaving the section.
-      await expect($(".pj-header__meta")).toHaveText(expect.stringContaining(es.projects.header.cases_one));
+      await expect($(".pj-header__meta")).toHaveText(new RegExp(String.raw`(^|\D)${es.projects.header.cases_one}(\s|$)`));
     },
   });
 

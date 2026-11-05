@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { generateMessages } from "@cucumber/gherkin";
 import { IdGenerator, SourceMediaType } from "@cucumber/messages";
 import { createProposedCases, proposalCaseData, proposalGherkin, type ScenarioProposal } from "./proposedCases";
+import { CASES_CHANGED_EVENT } from "../model/events";
 import { testCaseApi } from "./testCaseApi";
 import type { TestCase, TestCaseInput } from "../model/types";
 
@@ -115,5 +116,36 @@ describe("proposed cases (IA-05)", () => {
     });
     expect(summary).toEqual({ created: 1, failed: 2, failedIndexes: [0, 1] });
     expect(spy).toHaveBeenCalledTimes(3);
+    spy.mockRestore();
+  });
+
+  it("announces the batch once, after the last case, however slow each one is (FIX-13)", async () => {
+    vi.useFakeTimers();
+    const heard = vi.fn();
+    window.addEventListener(CASES_CHANGED_EVENT, heard);
+    // Each create takes 1 s: a debounce would have fired between them.
+    const create = vi.spyOn(testCaseApi, "create").mockImplementation(
+      (input) => new Promise((resolve) => setTimeout(() => resolve(stored(input)), 1000)),
+    );
+    try {
+      const done = createProposedCases({
+        projectId: "p1",
+        userId: "u1",
+        author: "QA",
+        requirementKey: "REQ-001",
+        provenance,
+        proposals: [proposal, proposal, proposal],
+      });
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(heard).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1000);
+      await done;
+      expect(heard).toHaveBeenCalledTimes(1);
+      expect(create.mock.calls.every(([, options]) => options?.quiet === true)).toBe(true);
+    } finally {
+      window.removeEventListener(CASES_CHANGED_EVENT, heard);
+      create.mockRestore();
+      vi.useRealTimers();
+    }
   });
 });

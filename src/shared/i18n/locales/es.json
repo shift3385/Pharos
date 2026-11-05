@@ -1122,6 +1122,7 @@
     "scenarioId": "ID de escenario",
     "scenarioIdAuto": "Auto ({{prefix}}…)",
     "scenarioIdFixed": "El ID no cambia una vez asignado: viaja como tag @{{id}} en la automatización.",
+    "scenarioIdProvisional": "Clave provisional: recibirá la definitiva al sincronizar.",
     "priority": "Prioridad",
     "status": "Estado",
     "version": "Versión",

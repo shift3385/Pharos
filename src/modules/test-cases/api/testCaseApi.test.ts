@@ -57,6 +57,10 @@ describe("testCaseApi", () => {
       await testCaseApi.update("c1", input);
       await testCaseApi.remove("c1", "u1");
       expect(heard).toHaveBeenCalledTimes(2);
+      // A call of a batch stays quiet: the batch announces once at the end.
+      await testCaseApi.create(input, { quiet: true });
+      await testCaseApi.remove("c1", "u1", { quiet: true });
+      expect(heard).toHaveBeenCalledTimes(2);
     } finally {
       window.removeEventListener(CASES_CHANGED_EVENT, heard);
     }

@@ -1122,6 +1122,7 @@
     "scenarioId": "Scenario id",
     "scenarioIdAuto": "Auto ({{prefix}}…)",
     "scenarioIdFixed": "The ID never changes once assigned: it travels as the @{{id}} tag in automation.",
+    "scenarioIdProvisional": "Provisional key: it gets the definitive one on the next sync.",
     "priority": "Priority",
     "status": "Status",
     "version": "Version",

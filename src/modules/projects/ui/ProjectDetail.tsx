@@ -182,14 +182,11 @@ interface HeaderFacts {
   requirements: RequirementOption[];
 }
 
-/** Cases created or deleted in a row (an import, a bulk delete) reload the
- *  header once, this long after the last one. */
-const CASES_SETTLE_MS = 150;
-
 /** What the header says about the project (plan status, counts). Reloaded
  *  when the section changes (a requirement may have been added), after a
- *  sync, after the plan is saved and when a case is created or deleted
- *  (FIX-13; a burst, like an import, reloads once). Only the newest answer
+ *  sync, after the plan is saved and when cases are created or deleted
+ *  (FIX-13; a batch, like the AI suggestions or a bulk delete, announces
+ *  once when it ends). Only the newest answer
  *  is kept; a failed load keeps the last facts (the header stays as it was). */
 function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection) {
   const [facts, setFacts] = useState<HeaderFacts | null>(null);
@@ -216,21 +213,15 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
         // Offline or a failed query: keep what the header shows.
       }
     };
-    let burst: number | undefined;
-    const casesChanged = () => {
-      window.clearTimeout(burst);
-      burst = window.setTimeout(() => void load(), CASES_SETTLE_MS);
-    };
     void load();
     window.addEventListener("pharos:synced", load);
     window.addEventListener(PLAN_SAVED_EVENT, load);
-    window.addEventListener(CASES_CHANGED_EVENT, casesChanged);
+    window.addEventListener(CASES_CHANGED_EVENT, load);
     return () => {
       live = false;
-      window.clearTimeout(burst);
       window.removeEventListener("pharos:synced", load);
       window.removeEventListener(PLAN_SAVED_EVENT, load);
-      window.removeEventListener(CASES_CHANGED_EVENT, casesChanged);
+      window.removeEventListener(CASES_CHANGED_EVENT, load);
     };
   }, [projectId, ownerId, tab]);
   return facts;

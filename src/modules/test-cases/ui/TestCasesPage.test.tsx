@@ -177,8 +177,27 @@ describe("Casos · lista (RED-V3)", () => {
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole("button", { name: "Sí, eliminar" }));
     await waitFor(() => expect(remove).toHaveBeenCalledTimes(2));
-    expect(remove).toHaveBeenCalledWith("c1", expect.any(String));
-    expect(remove).toHaveBeenCalledWith("c3", expect.any(String));
+    expect(remove).toHaveBeenCalledWith("c1", expect.any(String), { quiet: true });
+    expect(remove).toHaveBeenCalledWith("c3", expect.any(String), { quiet: true });
+  });
+
+  it("a bulk delete announces the change once, for the project header (FIX-13)", async () => {
+    setViewportWidth(1440);
+    remove.mockClear();
+    const heard = vi.fn();
+    window.addEventListener("pharos:cases-changed", heard);
+    try {
+      renderPage();
+      await screen.findByRole("table");
+      await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar PCL-1 Descarga de factura" }));
+      await userEvent.click(screen.getByRole("checkbox", { name: "Seleccionar PCL-3 Reembolso parcial" }));
+      await userEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+      await userEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Sí, eliminar" }));
+      await waitFor(() => expect(remove).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(heard).toHaveBeenCalledTimes(1));
+    } finally {
+      window.removeEventListener("pharos:cases-changed", heard);
+    }
   });
 
   it("shows cards and one filters sheet on mobile", async () => {
@@ -295,6 +314,16 @@ describe("Casos · ID de escenario (FIX-12)", () => {
     const id = await screen.findByRole("textbox", { name: "ID de escenario" });
     expect(id).toHaveAttribute("readonly");
     expect(id.getAttribute("title")).toContain("@PCL-1 ");
+  });
+
+  it("a provisional key (DAT-01) is not called fixed: it says the sync replaces it", async () => {
+    setViewportWidth(1440);
+    get.mockImplementation((caseId: string) =>
+      Promise.resolve({ ...full(SUMMARIES.find((s) => s.id === caseId)!), scenarioId: "PCL-?3F2A" }),
+    );
+    renderPage("/projects/p1/cases?case=c1");
+    const id = await screen.findByRole("textbox", { name: "ID de escenario" });
+    expect(id).toHaveAttribute("title", "Clave provisional: recibirá la definitiva al sincronizar.");
   });
 });
 

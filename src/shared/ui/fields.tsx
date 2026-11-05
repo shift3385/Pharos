@@ -301,7 +301,7 @@ export function CheckboxGroup({
   }
 
   return (
-    <div className="tp-checks" role="group" aria-label={label}>
+    <div className="tp-checks" role="group" aria-label={label} aria-describedby={describedBy}>
       {options.map((opt) => (
         <label className="tp-checks__item" key={opt}>
           <input
