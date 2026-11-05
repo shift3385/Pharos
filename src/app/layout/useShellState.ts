@@ -86,11 +86,16 @@ export interface ActiveProject {
   projects: ProjectSummary[];
 }
 
-/** The project open in the URL (`/projects/:projectId/:section`, ADR-0029),
+/** The project open in the URL (`/projects/:projectId/:section`, ADR-0029,
+ *  or a run of «Ejecuciones», `/projects/:projectId/runs/:runId`),
  *  or null outside a project. The shell uses it for the «Proyecto activo»
  *  group, the breadcrumbs and the mobile header. */
 export function useActiveProject(): ActiveProject | null {
-  const match = useMatch("/projects/:projectId/:section");
+  const sectionMatch = useMatch("/projects/:projectId/:section");
+  const runMatch = useMatch("/projects/:projectId/runs/:runId");
+  const match =
+    sectionMatch ??
+    (runMatch && { params: { projectId: runMatch.params.projectId, section: "runs" } });
   const { user } = useAuth();
   const ownerId = user?.id ?? "";
   const projectId = match?.params.projectId;
