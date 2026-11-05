@@ -3,10 +3,10 @@
 Runs de un proyecto: importación de informes (ING-02..05), la bandeja «Sin
 vincular» (ING-05), la **ejecución manual paso a paso** (EJE-02), la
 **derivación de ejecución** (paso 10, contrato v1) y el **informe de estado**
-(EJE-03). Los runs y la ejecución son de escritorio: el servidor guarda los
-documentos, pero no tiene API de runs hasta EJE-06 / INT-02, así que la web no
-lista nada y la pantalla del run lo avisa. La derivación y el informe sí
-funcionan en la web (`GET /api/execution/summary`).
+(EJE-03). La ejecución funciona también en la web (EJE-06) con la API de runs
+del servidor (`server/src/modules/domain/runs.ts`), y la derivación y el
+informe con `GET /api/execution/summary`; la importación, la bandeja «Sin
+vincular» y los adjuntos siguen solo en el escritorio (SYNC-04b).
 
 No hay diseño en `docs/rediseno/` para estas pantallas: usan las piezas de
 `src/shared/ui` (DataTable con tarjetas en móvil, FilterChips, StatusPill,
@@ -92,6 +92,28 @@ pastillas compartidos.
   obtenido, T cronómetro, Ctrl+Enter guarda, Ctrl+Shift+N siguiente elemento,
   ? la lista. Las letras no actúan dentro de un campo.
 
+## En la web (EJE-06)
+
+- **API:** `runsApi` llama a `/api/runs`, `/api/run-items/:id`,
+  `/api/results` y `/api/configurations`; `cycleApi.execute` a
+  `/api/cycles/:id/execute`; `createDefectFromResult` a
+  `/api/results/:id/defect-draft` (sin evidencias).
+- **Borrador del navegador** (`model/webDrafts.ts`): una entrada de
+  `localStorage` por cuenta y elemento, sin adjuntos, con las reglas del
+  escritorio (`draft-stale`, `attemptId` por objetivo, 1 MB). La pestaña
+  que registra deja una lista de intentos registrados para las demás, y el
+  ejecutor recarga el elemento cuando otra pestaña lo cambia (evento
+  `storage`). Cerrar sesión los borra todos; un run leído como cancelado o
+  inexistente se lleva los suyos. Si el navegador no guarda nada, se registra
+  igual y se avisa.
+- **Sin archivos:** no hay botones de adjuntar ni «Pegar captura», Ctrl+V
+  avisa y no figura en los atajos; la interfaz dice «Los adjuntos solo están disponibles en el
+  escritorio».
+- **Cobertura:** los recorridos de MAN-01 usan la app de escritorio; lo propio
+  de la web lo cubren `RunDetail.test.tsx` («run screen on the web»),
+  `api/runsApi.web.test.ts` y los tests del servidor
+  (`server/tests/runs.test.ts`, con los vectores compartidos).
+
 ## `data-testid` estables (recorridos de MAN-01)
 
 | testid | Dónde |
@@ -114,6 +136,8 @@ pastillas compartidos.
 | `exec-save`, `exec-discard` | Guardar resultado, descartar borrador |
 | `exec-create-defect` | «Crear defecto» de un intento fallido |
 | `exec-next-item` | Siguiente elemento |
+| `exec-attach-desktop-only` | Web: «Los adjuntos solo están disponibles en el escritorio» en lugar de adjuntar |
+| `runs-unlinked-desktop-only` | Web: nota de la pestaña «Sin vincular» |
 | `runs-report`, `cycle-report` | «Informe de estado» en Ejecuciones / en un ciclo |
 | `status-report` | El diálogo del informe |
 | `report-scope`, `report-cycle`, `report-from`, `report-to` | Alcance, ciclo y periodo del informe |

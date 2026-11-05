@@ -19,6 +19,9 @@ y la matriz de trazabilidad.
   equipo al adjuntarlas.
 - Si el caso cambió después de añadirlo al run, se ejecuta la revisión que el
   run congeló: el resultado siempre apunta a lo que se probó.
+- En la versión web se ejecuta igual, pero sin archivos: «Los adjuntos solo están disponibles en el
+  escritorio». El borrador se queda en ese navegador; el intento guardado se ve
+  en todos tus equipos.
 - «Eliminar run» quita un run que sobra (uno de prueba, uno duplicado) de
   las listas y del progreso, también en los equipos que sincronicen. Sus resultados no se borran a mano: quedan ocultos y la
   purga se los lleva con el run pasada la retención de «Administración →

@@ -13,7 +13,8 @@ web: `server/src/modules/domain/cycles.ts`.
   status, dates and progress, and one cycle's detail at `?cycle=<id>` —
   header, items with one result column per configuration, «Añadir casos»,
   «Añadir por filtro», assignee in place, clone, delete (its runs stay) and
-  «Ejecutar» (one run per configuration; desktop only, `cycleApi.canExecute`).
+  «Ejecutar» (one run per configuration; on the web too since EJE-06,
+  `/api/cycles/:id/execute`).
 - **Progress** comes computed from the core (`cycle_progress_get`, or
   `/api/cycles/:id/progress` on the web): this module only shows it.
 - **Exports (EXP-03):** `loadCycleExport`, `cyclesTable` and `caseCyclesTable`
