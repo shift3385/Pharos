@@ -116,13 +116,27 @@ function chunk(type, body) {
  * axis (ties broken by box order, so the result is deterministic), each box's
  * colour the pixel-weighted mean of its real colours. Returns the palette
  * (RGB triples) and one index per pixel.
+ *
+ * `reserve` lists exact RGB colours kept as they are (the manual's focus
+ * outline, MAN-02): their pixels skip the histogram and get palette entries
+ * of their own after the median-cut ones, so a thin outline never blends into
+ * a neighbouring box.
  */
-export function quantize({ width, height, data }) {
+export function quantize({ width, height, data }, reserve = []) {
   const bins = 32768;
   const count = new Uint32Array(bins);
   const sum = new Float64Array(bins * 3);
   const binOf = new Uint16Array(width * height);
+  // Pixel → reserved colour (+1), 0 when it is not one.
+  const exact = new Uint8Array(width * height);
+  const present = new Set();
   for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    const k = reserve.findIndex(([r, g, b]) => data[i] === r && data[i + 1] === g && data[i + 2] === b);
+    if (k >= 0) {
+      exact[p] = k + 1;
+      present.add(k);
+      continue;
+    }
     const b = ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
     binOf[p] = b;
     count[b]++;
@@ -135,7 +149,9 @@ export function quantize({ width, height, data }) {
   const comp = (b, c) => (c === 0 ? b >> 10 : c === 1 ? (b >> 5) & 31 : b & 31);
   const boxOf = new Int16Array(bins).fill(-1);
   let boxes = [used];
-  while (boxes.length < 256) {
+  const kept = [...present].sort((a, b) => a - b);
+  if (used.length === 0) boxes = [];
+  while (boxes.length > 0 && boxes.length < 256 - kept.length) {
     // The box with the most pixels that can still be split.
     let pick = -1;
     let best = 0;
@@ -181,7 +197,7 @@ export function quantize({ width, height, data }) {
     }
     boxes.splice(pick, 1, sorted.slice(0, cut), sorted.slice(cut));
   }
-  const palette = Buffer.alloc(boxes.length * 3);
+  const palette = Buffer.alloc((boxes.length + kept.length) * 3);
   boxes.forEach((box, i) => {
     let n = 0;
     let r = 0;
@@ -198,14 +214,20 @@ export function quantize({ width, height, data }) {
     palette[i * 3 + 1] = Math.round(g / n);
     palette[i * 3 + 2] = Math.round(bl / n);
   });
+  const slot = new Map();
+  kept.forEach((k, j) => {
+    const i = boxes.length + j;
+    slot.set(k, i);
+    palette.set(reserve[k], i * 3);
+  });
   const indices = Buffer.alloc(width * height);
-  for (let p = 0; p < indices.length; p++) indices[p] = boxOf[binOf[p]];
+  for (let p = 0; p < indices.length; p++) indices[p] = exact[p] ? slot.get(exact[p] - 1) : boxOf[binOf[p]];
   return { palette, indices };
 }
 
 /** Encodes RGBA pixels as a deterministic, compact PNG: an 8-bit palette
  *  when the image is opaque (screenshots), RGBA otherwise. */
-export function encodePng({ width, height, data }) {
+export function encodePng({ width, height, data }, { reserve = [] } = {}) {
   let opaque = true;
   for (let i = 3; i < data.length; i += 4) {
     if (data[i] !== 255) {
@@ -214,7 +236,7 @@ export function encodePng({ width, height, data }) {
     }
   }
   if (opaque) {
-    const { palette, indices } = quantize({ width, height, data });
+    const { palette, indices } = quantize({ width, height, data }, reserve);
     // Indexed rows: filter 0 (none), the usual choice for palette images.
     const raw = Buffer.alloc((width + 1) * height);
     for (let y = 0; y < height; y++) indices.copy(raw, y * (width + 1) + 1, y * width, (y + 1) * width);
@@ -304,4 +326,46 @@ export function changedShare(a, b, tolerance = 8) {
     }
   }
   return changed / (a.width * a.height);
+}
+
+/**
+ * Draws the manual's focus outline (MAN-02) into an RGBA image, in place: a
+ * rounded rectangle `pad` px outside `rect` ({x, y, w, h} in image pixels),
+ * `stroke` px wide, in one exact colour (pass it to encodePng's `reserve`).
+ * Pure integer geometry, so the same rect always gives the same pixels.
+ */
+export function drawFocus(img, rect, { color = [242, 163, 60], stroke = 4, pad = 6, radius = 10 } = {}) {
+  const { width, height, data } = img;
+  const x0 = Math.round(rect.x) - pad;
+  const y0 = Math.round(rect.y) - pad;
+  const x1 = Math.round(rect.x + rect.w) + pad;
+  const y1 = Math.round(rect.y + rect.h) + pad;
+  const r = Math.min(radius, Math.floor((x1 - x0) / 2), Math.floor((y1 - y0) / 2));
+  // Squared distance of (px, py) to the rounded rectangle's outline, as
+  // "inside the outer shape and outside the inner one".
+  const inside = (px, py, inset) => {
+    const ax = x0 + inset;
+    const ay = y0 + inset;
+    const bx = x1 - inset;
+    const by = y1 - inset;
+    if (px < ax || px >= bx || py < ay || py >= by) return false;
+    const rr = Math.max(0, r - inset);
+    const cx = px < ax + rr ? ax + rr : px >= bx - rr ? bx - rr - 1 : px;
+    const cy = py < ay + rr ? ay + rr : py >= by - rr ? by - rr - 1 : py;
+    const dx = px - cx;
+    const dy = py - cy;
+    return dx * dx + dy * dy <= rr * rr;
+  };
+  for (let py = Math.max(0, y0); py < Math.min(height, y1); py++) {
+    for (let px = Math.max(0, x0); px < Math.min(width, x1); px++) {
+      if (inside(px, py, 0) && !inside(px, py, stroke)) {
+        const i = (py * width + px) * 4;
+        data[i] = color[0];
+        data[i + 1] = color[1];
+        data[i + 2] = color[2];
+        data[i + 3] = 255;
+      }
+    }
+  }
+  return img;
 }

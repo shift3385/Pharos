@@ -19,7 +19,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { $, browser } from "@wdio/globals";
+import { $, $$, browser } from "@wdio/globals";
 import { CHAPTERS, type ChapterId } from "./manifest";
 import { setAppWindow } from "../support";
 
@@ -49,6 +49,24 @@ export interface StepSpec {
   /** Keep the newest toast in the capture (it is what the step shows). By
    *  default toasts are hidden: they carry stale messages and local paths. */
   toast?: boolean;
+  /** The control the step is about (MAN-02): CSS/WDIO selector(s), their
+   *  union box. The manual outlines it in the capture and, in the PDF, adds a
+   *  magnified inset when it is small in a big screen. */
+  focus?: string | string[];
+  /** Consecutive steps with the same key print side by side in the PDF (a
+   *  before/after pair). */
+  group?: string;
+  /** Runs after the capture, as part of the step (its failures count): for a
+   *  step that shows the state *before* an action and still asserts it. */
+  after?: () => Promise<void>;
+}
+
+/** A box in capture pixels. */
+export interface FocusBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 /** Always blurred: things that show this machine's paths. */
@@ -65,6 +83,41 @@ export interface StepRecord {
   viewport: { width: number; height: number };
   status: "passed" | "failed" | "skipped";
   reason?: string;
+  focus?: FocusBox;
+  group?: string;
+}
+
+/** The union box of `selectors` in the capture's pixels: relative to the
+ *  viewport (page shots) or to `origin` (element shots), times the device
+ *  pixel ratio. Null when none is displayed. */
+async function focusBox(selectors: string[], origin: string | null): Promise<FocusBox | null> {
+  const boxes: FocusBox[] = [];
+  for (const sel of selectors) {
+    for (const el of await $$(sel)) {
+      if (!(await el.isDisplayed())) continue;
+      boxes.push(
+        await browser.execute((node: HTMLElement) => {
+          const r = node.getBoundingClientRect();
+          return { x: r.left, y: r.top, w: r.width, h: r.height };
+        }, el as unknown as HTMLElement),
+      );
+    }
+  }
+  if (boxes.length === 0) return null;
+  const { dpr, ox, oy } = await browser.execute((o: string | null) => {
+    const r = o ? document.querySelector(o)?.getBoundingClientRect() : null;
+    return { dpr: window.devicePixelRatio || 1, ox: r?.left ?? 0, oy: r?.top ?? 0 };
+  }, origin);
+  const x0 = Math.min(...boxes.map((b) => b.x));
+  const y0 = Math.min(...boxes.map((b) => b.y));
+  const x1 = Math.max(...boxes.map((b) => b.x + b.w));
+  const y1 = Math.max(...boxes.map((b) => b.y + b.h));
+  return {
+    x: Math.round((x0 - ox) * dpr),
+    y: Math.round((y0 - oy) * dpr),
+    w: Math.round((x1 - x0) * dpr),
+    h: Math.round((y1 - y0) * dpr),
+  };
 }
 
 let current: { id: ChapterId; n: number; failed: string | null } | null = null;
@@ -155,6 +208,7 @@ export function step(id: string, spec: StepSpec) {
       image: null,
       viewport: { width: 0, height: 0 },
       status: "skipped",
+      ...(spec.group ? { group: spec.group } : {}),
     };
     if (spec.skip || ch.failed) {
       record({ ...base, reason: spec.skip ?? `después del fallo de «${ch.failed}»` });
@@ -165,6 +219,7 @@ export function step(id: string, spec: StepSpec) {
       await spec.run();
       const shot = spec.shot ?? "page";
       let image: string | null = null;
+      let focus: FocusBox | null = null;
       if (shot !== false) {
         await settle();
         image = `${ch.id}/${String(ch.n).padStart(2, "0")}-${id}.png`;
@@ -174,13 +229,20 @@ export function step(id: string, spec: StepSpec) {
         try {
           // Two frames for the mask styles to apply.
           await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+          if (spec.focus) {
+            const selectors = Array.isArray(spec.focus) ? spec.focus : [spec.focus];
+            focus = await focusBox(selectors, shot === "page" ? null : shot.element);
+            if (!focus) throw new Error(`focus not displayed: ${selectors.join(", ")}`);
+          }
           if (shot === "page") await browser.saveScreenshot(file);
           else await $(shot.element).saveScreenshot(file);
         } finally {
           await setMask([]);
         }
       }
-      record({ ...base, image, viewport: await viewport(), status: "passed" });
+      const size = await viewport();
+      if (spec.after) await spec.after();
+      record({ ...base, image, viewport: size, status: "passed", ...(focus ? { focus } : {}) });
     } catch (err) {
       ch.failed = id;
       const file = join(resultsDir, "failures", `${ch.id}-${id}.png`);

@@ -11,9 +11,10 @@ import { fileURLToPath } from "node:url";
 import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, markdownToHtml } from "./manual/markdown.mjs";
-import { changedShare, decodePng, encodePng, quantize } from "./manual/png.mjs";
+import { focusLayout, FOCUS_COLOR, insetStyle } from "./manual/focus.mjs";
+import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
-import { parseSource, pdfPageCount } from "./manual/sources.mjs";
+import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 
 const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -75,6 +76,53 @@ test("parseSource splits a chapter source into its parts", () => {
 test("pdfPageCount reads the page tree", () => {
   assert.equal(pdfPageCount(Buffer.from("<< /Type /Pages /Kids [3 0 R] /Count 12 >>")), 12);
   assert.equal(pdfPageCount(Buffer.from("<< /Type /Page >> << /Type /Page >>")), 2);
+});
+
+test("pdfNamedDests maps each anchor to its page through a nested page tree (MAN-02)", () => {
+  const pdf = [
+    "1 0 obj\n<</Type /Catalog\n/Pages 2 0 R\n/Dests 9 0 R>>\nendobj",
+    "2 0 obj\n<</Type /Pages\n/Count 3\n/Kids [3 0 R 4 0 R]>>\nendobj",
+    "3 0 obj\n<</Type /Page\n/Annots [8 0 R]>>\nendobj",
+    "4 0 obj\n<</Type /Pages\n/Count 2\n/Kids [5 0 R 6 0 R]>>\nendobj",
+    "5 0 obj\n<</Type /Page>>\nendobj",
+    "6 0 obj\n<</Type /Page>>\nendobj",
+    "8 0 obj\n<</Type /Annot\n/Subtype /Link\n/Dest /cap-acceso>>\nendobj",
+    "9 0 obj\n<</cap-acceso [5 0 R /XYZ 6 776 0]\n/paso-acceso-entrar [6 0 R /XYZ 6 400 0]\n/caf#C3#A9 [3 0 R /XYZ 0 0 0]>>\nendobj",
+    "trailer\n<</Root 1 0 R>>",
+  ].join("\n");
+  const dests = pdfNamedDests(Buffer.from(pdf, "latin1"));
+  assert.equal(dests.get("cap-acceso"), 1);
+  assert.equal(dests.get("paso-acceso-entrar"), 2);
+  assert.equal(dests.get("cafÃ©"), 0, "#xx escapes decoded byte by byte");
+  assert.equal(pdfNamedDests(Buffer.from("no pdf")).size, 0);
+});
+
+test("drawFocus outlines a box in one exact colour that the palette keeps (MAN-02)", () => {
+  const img = image(120, 80, (x, y) => [(x * 2) & 255, (y * 3) & 255, (x + y) & 255, 255]);
+  drawFocus(img, { x: 40, y: 30, w: 30, h: 20 }, { color: FOCUS_COLOR, stroke: 3, pad: 4, radius: 6 });
+  const at = (x, y) => [...img.data.subarray((y * 120 + x) * 4, (y * 120 + x) * 4 + 3)];
+  assert.deepEqual(at(50, 26), FOCUS_COLOR, "top edge, pad px above the box");
+  assert.deepEqual(at(36, 40), FOCUS_COLOR, "left edge");
+  assert.notDeepEqual(at(55, 40), FOCUS_COLOR, "the control itself is untouched");
+  assert.notDeepEqual(at(36, 26), FOCUS_COLOR, "rounded corner left out");
+  // A gradient of 9 600 colours: without `reserve` the amber would blend.
+  const back = decodePng(encodePng(img, { reserve: [FOCUS_COLOR] }));
+  assert.deepEqual([...back.data.subarray((26 * 120 + 50) * 4, (26 * 120 + 50) * 4 + 3)], FOCUS_COLOR);
+  const again = drawFocus(image(120, 80, () => [0, 0, 0, 255]), { x: 40, y: 30, w: 30, h: 20 });
+  assert.ok(encodePng(again).equals(encodePng(drawFocus(image(120, 80, () => [0, 0, 0, 255]), { x: 40, y: 30, w: 30, h: 20 }))));
+});
+
+test("focusLayout: an inset beside small controls, below wide strips, none for big areas (MAN-02)", () => {
+  const beside = focusLayout(1440, 900, { x: 480, y: 820, w: 100, h: 30 });
+  assert.equal(beside.mode, "beside");
+  assert.ok(beside.crop.y + beside.crop.h <= 900, "the crop stays inside the capture");
+  assert.ok(beside.mag >= 1.4);
+  assert.equal(focusLayout(1440, 900, { x: 300, y: 10, w: 640, h: 40 }).mode, "below");
+  assert.equal(focusLayout(1440, 900, { x: 100, y: 100, w: 900, h: 600 }), null, "a whole panel needs no inset");
+  assert.equal(focusLayout(1440, 900, null), null);
+  const style = insetStyle(1440, 900, beside);
+  assert.match(style, /background-size:\d+\.\d{3}% auto/);
+  assert.match(style, /^width:\d+mm;height:[\d.]+mm;/);
 });
 
 test("routePaths refuses a <Route> it cannot read", () => {
