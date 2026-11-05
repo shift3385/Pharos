@@ -283,3 +283,28 @@ sobre lo decidido, sin cambiar la decisión:
   purgar un run se borran también estas filas y el informe en bruto, y la
   recogida libera sus archivos. Pharos
   nunca lee una ruta del informe por su cuenta.
+
+## Implementación (E5, paso 7: ejecución manual, 2026-11-04)
+
+- **Evidencias de un borrador:** un archivo, una imagen pegada (Ctrl+V o
+  «Pegar captura») o una captura se cifra en `evidence/` en cuanto se adjunta,
+  por el canal por trozos de siempre, como una fila de `attachments` con
+  `owner_entity = execution_draft` y `owner_id` = el elemento del run. La fila
+  mantiene vivo el contenido. Al guardar el intento pasa a `result` o
+  `step_result` (mismo id, un evento `link`); al descartar el borrador se
+  borra lógicamente y el contenido se libera si nadie más lo usa. Un adjunto
+  guardado ya no se puede borrar.
+- **Tipos:** las imágenes y lo pegado son `screenshot`; el resto,
+  `evidence`. Las dos se conservan siempre.
+- **Capturas de pantalla:** con la herramienta del sistema (Win+Mayús+S, ⌘⇧4)
+  y pegar. Sin un crate de captura en 0.2.0: añadiría una dependencia y un
+  permiso en macOS.
+- **Miniaturas:** `execution_attachment_preview` devuelve una URL `data:` de
+  las imágenes de hasta 5 MB (sin SVG); el resto muestra un icono.
+- **Retención:** hasta que lleguen los ajustes por proyecto en Admin y las
+  excepciones de resultados (DAT-03c, 0.3.0), **todo adjunto de `result`,
+  `step_result` y `execution_draft` está exento** (`evidence::exempt`): más
+  estricto que el ADR (que solo exime lo manual, lo final fallido o bloqueado
+  y lo vinculado a un defecto abierto), nunca se pierde nada.
+- **Sync:** los adjuntos siguen sin sincronizarse (SYNC-04b); la pantalla del
+  run y la guía lo dicen.

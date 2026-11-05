@@ -217,7 +217,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   0.4.0/0.5.0. Cycles, configurations and custom fields may slip to 0.3.0.
   The run tables, the results and the Pharos Run JSON 1.0.0 schema are
   **built in E3 (step 4, EJE-01)**, see "Runs and results" below; the manual
-  execution UI is step 7.
+  execution is **built in E5 (step 7, EJE-02)**, see "Manual execution" below.
 - Results are append-only and point to an immutable, synced
   `test_case_revision` and to stable step ids — the revisions and the ids are
   **built in E2 (DAT-02)**, see "Case revisions and stable steps" below.
@@ -231,7 +231,7 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   first entity); from 0.3.0 the server is keyed by workspace (ADR-0019).
 
 **Runs and results (EJE-01, RUN-00, KND-01; ADR-0012, ADR-0013).** Migration
-0024 and `src-tauri/src/runs.rs`, no UI yet:
+0024 and `src-tauri/src/runs.rs` (the UI is "Manual execution" below):
 
 - **Tables.** `runs` (header with its context: trigger, tool, environment,
   build, commit, branch, CI URL, dataset, `context` JSON; status
@@ -288,6 +288,39 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   `docs/formats/pharos-run-1.schema.json`. `results[]` is a superset of CTRF
   `results.tests[]`; `findings[]`, `metrics[]` and `exploratorySession` are
   validated only. The importers of step 9 produce it.
+
+**Manual execution (EJE-02; ADR-0013, ADR-0014).** `src-tauri/src/runs/manual.rs`
+and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
+
+- **Run screen** `/projects/:id/runs/:runId` (a route of «Ejecuciones»;
+  `useActiveProject` maps it to the `runs` section): header, progress over
+  every target, items with status filters, close (`completed`/`aborted`)
+  and reopen, edit, add cases; `?item=` opens the executor (beside the list
+  from 1280 px, in its place below). «Nuevo run manual» creates a run over
+  chosen cases. A cycle's runs link here. Read only on the web (EJE-06).
+- **Targets.** An item expands to `(flow, Outline row)` targets
+  (`manual::targets_of`); an attempt narrows the item to one
+  (`ResultInput.flowId`/`exampleRowId`), so its `test_key`, flow and row
+  are the target's and cycle progress counts it exactly.
+- **Executor.** The frozen revision step by step (Background, preconditions,
+  steps; `<param>` filled from the row); pass / fail / blocked / skipped,
+  «obtenido / notas», timer, files and pasted captures per step and per
+  result; earlier attempts with «Crear defecto» (`createDefectFromResult`,
+  the defect editor takes the panel's place). Keyboard first (P/F/B/S, J/K,
+  N, T, Ctrl+Enter, Ctrl+Shift+N, ?), a live region for marks; stable
+  `data-testid`s for the MAN-01 tours (`src/modules/runs/README.md`).
+- **Draft** (`execution_drafts`, local, no oplog, no audit): the UI's state
+  per target plus the draft's files, which are `attachments` rows owned by
+  `execution_draft` (the bytes go to `evidence/` at once).
+  `execution_record` records the attempt, moves those files to the result or
+  step result (one `link` event each) and drops the target's draft, in one
+  transaction.
+- **Commands.** `run_overview`, `run_item_detail`, `execution_draft_save`,
+  `execution_draft_discard`, `execution_record`, `execution_attach`,
+  `execution_attachment_delete` (draft files only), `execution_attachment_save`,
+  `execution_attachment_preview`; `run_update` reopens a closed run.
+- **Exit criterion of 0.2.0** (editing an executed case changes none of its
+  results): `runs::manual::tests::editing_an_executed_case_does_not_change_its_results`.
 
 **Defects (DEF-01, ADR-0016).** Migration 0029, `src-tauri/src/defects.rs`
 (+ `defects/{ids,lifecycle,convert}.rs`) and `src/modules/defects/`:
