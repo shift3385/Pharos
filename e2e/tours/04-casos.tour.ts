@@ -20,6 +20,7 @@ import {
   pickFromMenu,
   selectOption,
   tf,
+  waitForSettled,
   waitForText,
   xpathString,
 } from "./helpers";
@@ -77,6 +78,9 @@ async function rows(ok: (n: number) => boolean, what: string) {
 async function saveCase() {
   await clickButton(C.save, ".tc-nav");
   await waitForText(C.savedToast);
+  // The saved case reloads into the editor: wait for it, not just the toast.
+  await waitForSettled();
+  await expect($(".tc-nav")).toBeDisplayed();
 }
 
 async function backToList() {

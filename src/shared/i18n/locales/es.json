@@ -29,7 +29,16 @@
     "noData": "Sin datos",
     "edit": "Editar",
     "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "remove": "Quitar",
+    "moreInfo": "Más información: {{label}}",
+    "moreInfoPlain": "Más información",
+    "status": {
+      "success": "Hecho",
+      "error": "Error",
+      "warning": "Aviso",
+      "info": "Información"
+    }
   },
   "templates": {
     "kind": {
@@ -2110,7 +2119,8 @@
       "editTitle": "Editar campo",
       "label": "Nombre",
       "key": "Clave",
-      "keyHint": "Minúsculas, números y guion bajo. No se puede cambiar después.",
+      "keyHint": "Minúsculas, números y guion bajo.",
+      "keyFixed": "No se puede cambiar después.",
       "keyLocked": "La clave no se puede cambiar: los valores de los casos la usan.",
       "type": "Tipo",
       "typeLocked": "El tipo no se puede cambiar una vez creado.",

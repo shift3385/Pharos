@@ -17,6 +17,7 @@ import {
   openSection,
   selectOption,
   tf,
+  waitForSettled,
   waitForText,
 } from "./helpers";
 
@@ -26,6 +27,7 @@ const D = '[role="dialog"]';
 async function save() {
   await $(".tp-editor__save").click();
   await waitForText(F.savedToast);
+  await waitForSettled();
 }
 
 async function back() {
@@ -118,7 +120,8 @@ chapter("defectos", () => {
       await expect($(".df-banner")).toBeDisplayed();
       await (await field(F.field.title)).setValue("Login rechazado: el ejemplo 2 devuelve «fallo»");
       await selectOption(F.field.severity, F.severity.critical);
-      await save();
+      // Saved at the start of the next step: saving closes the editor, and this
+      // capture is the pre-filled editor with its banner.
     },
   });
 
@@ -127,6 +130,7 @@ chapter("defectos", () => {
     caption: "La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Filtra por abiertos, todos o cerrados, por severidad o busca por texto.",
     covers: ["action:defects-filter"],
     run: async () => {
+      await save();
       await back();
       await browser.waitUntil(async () => (await $$("button.df-open")).length === 2, { timeoutMsg: "the list does not show the 2 defects" });
       await $(`input[placeholder="${F.filter.search}"]`).setValue("saldo");

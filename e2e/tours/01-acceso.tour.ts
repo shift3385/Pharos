@@ -138,6 +138,7 @@ chapter("acceso", () => {
     caption: "Edita el alias o el nombre y pulsa «Guardar»: aparece «Guardado» y sube la revisión del perfil.",
     covers: ["action:profile-save"],
     run: async () => {
+      await expect($("#displayName")).toBeEnabled(); // once the profile has loaded
       await $("#displayName").setValue("Smoke QA");
       await button(es.profile.save).click();
       await waitForText(es.profile.saved);

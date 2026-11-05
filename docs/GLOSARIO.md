@@ -302,6 +302,9 @@ están en el código. Cuando se implementen, cada fila puede pasar a la tabla de
 | Fila repetida              | `duplicateRows` / `duplicateRow`         | misma fila que una anterior (sin espacios ni mayúsculas); es un aviso; no en pasos      |
 | Enlace para saltar         | `skip-link` → `#main-content`            | primera parada del tabulador; lleva al `<main>`                                           |
 | Auditoría de accesibilidad | `a11y.test.tsx` / `a11y.e2e.ts`          | axe-core en componentes (por módulo) y en el binario real; informe en `docs/accesibilidad/` |
+| Ayuda contextual           | `InfoTip` / `FormField` `info`            | botón [?] junto a la etiqueta; hover, foco y toque; texto enlazado al control (UX-10)     |
+| Aviso en línea             | `Alert` / `StatusIcon` / `StatusKind`     | `success` / `error` / `warning` / `info`: color e icono del estado, como los toasts (UX-10) |
+| Fila de campos             | `.tp-field-row`                          | campos lado a lado alineados arriba; una columna < 600 px (UX-10)                         |
 
 ## Release and distribution (VERSIONING, BASE-09, UX-06)
 

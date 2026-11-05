@@ -29,7 +29,16 @@
     "noData": "No data",
     "edit": "Edit",
     "discardConfirm": "You have unsaved changes. Discard them?",
-    "close": "Close"
+    "close": "Close",
+    "remove": "Remove",
+    "moreInfo": "More information: {{label}}",
+    "moreInfoPlain": "More information",
+    "status": {
+      "success": "Done",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Information"
+    }
   },
   "templates": {
     "kind": {
@@ -2110,7 +2119,8 @@
       "editTitle": "Edit field",
       "label": "Name",
       "key": "Key",
-      "keyHint": "Lowercase letters, digits and underscores. It cannot change later.",
+      "keyHint": "Lowercase letters, digits and underscores.",
+      "keyFixed": "It cannot change later.",
       "keyLocked": "The key cannot change: the cases' values use it.",
       "type": "Type",
       "typeLocked": "The type cannot change once created.",

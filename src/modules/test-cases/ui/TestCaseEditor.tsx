@@ -90,6 +90,7 @@ import {
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
 import { stampLabel, statusTone } from "./caseTones";
+import { Alert } from "@shared/ui/Alert";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
@@ -1223,10 +1224,9 @@ export function TestCaseEditor({
       )}
 
       {notice && (
-        <p className="tc-notice" role="status">
-          <span aria-hidden="true">✓ </span>
+        <Alert kind="success" className="tc-notice">
           {notice}
-        </p>
+        </Alert>
       )}
 
       {form.aiProvenance.case && (

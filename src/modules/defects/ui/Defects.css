@@ -314,16 +314,7 @@
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 }
 
-.df-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  padding: 10px 12px;
-  color: var(--color-info-text);
-  background: color-mix(in oklab, var(--color-info) 12%, transparent);
-  border-radius: var(--radius-md);
-}
+/* .df-banner is a shared <Alert kind="info"> (UX-10). */
 
 .df-chips {
   display: flex;

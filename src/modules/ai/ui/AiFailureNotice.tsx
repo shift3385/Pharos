@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { AiFailure } from "../api/structured";
+import { Alert } from "@shared/ui/Alert";
 import "./Assist.css";
 
 /** Why an AI answer was not used, and that nothing was applied (ADR-0023). The
@@ -8,8 +9,8 @@ import "./Assist.css";
 export function AiFailureNotice({ failure }: { failure: AiFailure }) {
   const { t } = useTranslation();
   return (
-    <div className="assist__message assist__failure" role="alert">
-      <p>⚠ {t(`ai.structured.error.${failure.kind}`)}</p>
+    <Alert kind="warning" className="assist__failure">
+      <p>{t(`ai.structured.error.${failure.kind}`)}</p>
       {failure.details.length > 0 && (
         <ul className="assist__details">
           {failure.details.map((d, i) => (
@@ -18,6 +19,6 @@ export function AiFailureNotice({ failure }: { failure: AiFailure }) {
         </ul>
       )}
       <p className="assist__nothing">{t("ai.structured.nothingApplied")}</p>
-    </div>
+    </Alert>
   );
 }

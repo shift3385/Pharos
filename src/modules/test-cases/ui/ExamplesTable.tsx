@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 import { FieldMessage } from "@shared/ui/FormField";
 import { duplicateRow, duplicateRows } from "@shared/validation";
 import type { ExampleTable } from "../model/types";
@@ -107,11 +108,11 @@ export function ExamplesTable({
                   <button
                     type="button"
                     className="tc-examples__delcol"
-                    title={t("testCase.examples.removeColumn")}
-                    aria-label={`${t("testCase.examples.removeColumn")}: ${columnName(i)}`}
+                    title={`${t("common.remove")}: ${columnName(i)}`}
+                    aria-label={`${t("common.remove")}: ${columnName(i)}`}
                     onClick={() => removeColumn(i)}
                   >
-                    ×
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </div>
               </th>
@@ -138,11 +139,11 @@ export function ExamplesTable({
                 <button
                   type="button"
                   className="tc-examples__delrow"
-                  title={t("testCase.examples.removeRow")}
-                  aria-label={`${t("testCase.examples.removeRow")}: ${rowName(ri)}`}
+                  title={`${t("common.remove")}: ${rowName(ri)}`}
+                  aria-label={`${t("common.remove")}: ${rowName(ri)}`}
                   onClick={() => removeRow(ri)}
                 >
-                  ×
+                  <Trash2 size={14} aria-hidden="true" />
                 </button>
               </td>
             </tr>

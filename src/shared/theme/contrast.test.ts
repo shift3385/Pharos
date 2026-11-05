@@ -62,6 +62,26 @@ const EXTRA: [string, string, number][] = [
   ["color-warning", "color-surface-1", 3],
 ];
 
+/** `color-mix(in srgb, <a> p, <b>)`: per-channel mix of the sRGB values. */
+function mix(a: string, b: string, p: number): string {
+  const ch = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+  return (
+    "#" +
+    [1, 3, 5]
+      .map((i) => Math.round(ch(a, i) * p + ch(b, i) * (1 - p)))
+      .map((v) => v.toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+/** Toasts (12 %) and inline alerts (10 %) tint the surface with the status
+ *  colour (UX-10, Toast.css / alert.css): their text and icon must stay AA. */
+const STATUS = ["success", "error", "warning", "info"] as const;
+const TINTS = [
+  ["toast", 0.12],
+  ["alert", 0.1],
+] as const;
+
 describe.each(Object.entries(themes))("Faro Nocturno %s contrast", (_name, t) => {
   it.each(TEXT.flatMap((fg) => SURFACES.map((bg) => [fg, bg] as const)))(
     "%s on %s reaches 4.5:1",
@@ -77,4 +97,14 @@ describe.each(Object.entries(themes))("Faro Nocturno %s contrast", (_name, t) =>
   it.each(EXTRA)("%s on %s reaches %d:1", (fg, bg, min) => {
     expect(contrast(t[fg], t[bg])).toBeGreaterThanOrEqual(min);
   });
+
+  it.each(TINTS.flatMap(([where, p]) => STATUS.map((kind) => [where, kind, p] as const)))(
+    "%s %s: text reaches 4.5:1 and icon 3:1 on the tinted surface",
+    (_where, kind, p) => {
+      const bg = mix(t[`color-${kind}`], t["color-surface-1"], p);
+      expect(contrast(t["color-text-primary"], bg)).toBeGreaterThanOrEqual(4.5);
+      // The icon is drawn in the -text token; it is a graphic, so 3:1 (1.4.11).
+      expect(contrast(t[`color-${kind}-text`], bg)).toBeGreaterThanOrEqual(3);
+    },
+  );
 });

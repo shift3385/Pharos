@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { controlProps, issueKey } from "@shared/ui/fieldProps";
 import type { Issue } from "@shared/validation";
 
@@ -64,7 +64,7 @@ export function DateField({
 export function DeleteButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button type="button" className="tps-del" aria-label={label} title={label} onClick={onClick}>
-      <X size={16} aria-hidden="true" />
+      <Trash2 size={16} aria-hidden="true" />
     </button>
   );
 }

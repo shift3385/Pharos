@@ -125,7 +125,7 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     expect(within(acceptance).getByText("Informe para auditoría")).toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: "Otro entregable" }), "Acta de cierre{Enter}");
     expect(within(acceptance).getByText("Acta de cierre")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Quitar Informe para auditoría" }));
+    await userEvent.click(screen.getByRole("button", { name: "Quitar: Informe para auditoría" }));
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(testPlanApi.update).toHaveBeenCalledWith(
       "plan1",

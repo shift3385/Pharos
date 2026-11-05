@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { ProfilePage } from "./ui/ProfilePage";
@@ -53,6 +53,35 @@ describe("profile page", () => {
     });
     expect(await screen.findByText("Guardado")).toBeInTheDocument();
     expect(screen.getByTestId("profile-revision")).toHaveTextContent("2");
+  });
+
+  it("keeps the form disabled until the profile has loaded", async () => {
+    let finish: (value: typeof savedProfile) => void = () => {};
+    vi.mocked(profileApi.get).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    renderWithProviders(<ProfilePage />);
+
+    expect(screen.getByLabelText(/Nombre/, { selector: "#firstName" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Cargando");
+
+    await act(async () => finish({ ...savedProfile, firstName: "Stored" }));
+
+    const first = screen.getByDisplayValue("Stored");
+    expect(first).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
+    expect(screen.queryByText("Cargando…")).toBeNull();
+  });
+
+  it("if the profile cannot be read, falls back to the signed-in user and enables the form", async () => {
+    vi.mocked(profileApi.get).mockRejectedValue(new Error("db"));
+    renderWithProviders(<ProfilePage />);
+
+    expect(await screen.findByDisplayValue("Quality")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
   });
 
   it("shows who is signed in and keeps «Cerrar sesión» for mobile only", async () => {
