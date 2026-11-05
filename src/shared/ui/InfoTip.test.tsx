@@ -59,6 +59,48 @@ describe("InfoTip (UX-10)", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
+  it("a click or tap inside the bubble keeps it open (M2)", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Field />);
+    await user.click(screen.getByRole("button", { name: /Key/ }));
+    const tip = screen.getByRole("tooltip");
+    expect(tip).toHaveAttribute("tabindex", "-1");
+    // The default of pointerdown/mousedown (moving focus off the trigger) is prevented.
+    expect(fireEvent.pointerDown(tip)).toBe(false);
+    expect(fireEvent.mouseDown(tip)).toBe(false);
+    await user.click(tip);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("follows its trigger on scroll and resize; closes once the trigger is off screen (L3)", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Field />);
+    const button = screen.getByRole("button", { name: /Key/ });
+    await user.click(button);
+    fireEvent.scroll(window);
+    fireEvent(window, new Event("resize"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    const rect = { top: -80, bottom: -60, left: 10, right: 30, width: 20, height: 20, x: 10, y: -80, toJSON: () => ({}) };
+    button.getBoundingClientRect = () => rect as DOMRect;
+    fireEvent.scroll(window);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("after a click closes it, hover does not reopen it until the pointer leaves (L4)", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Field />);
+    const button = screen.getByRole("button", { name: /Key/ });
+    await user.click(button); // open + pinned
+    await user.click(button); // close
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.pointerEnter(button, { pointerType: "mouse" });
+    await new Promise((r) => setTimeout(r, 150));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    fireEvent.pointerLeave(button, { pointerType: "mouse" });
+    fireEvent.pointerEnter(button, { pointerType: "mouse" });
+    await screen.findByRole("tooltip");
+  });
+
   it("Escape closes the tip, not the dialog around it", async () => {
     const user = userEvent.setup();
     let closed = 0;

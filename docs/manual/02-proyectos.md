@@ -63,7 +63,7 @@ En «Ajustes del proyecto» cambias el nombre, el prefijo y los dígitos de los 
 
 ### 2.9. Nuevo campo personalizado
 
-En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. Aquí, una selección «Navegador» con tres opciones.
+En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. Aquí, una selección «Navegador» con tres opciones.
 
 ![Nuevo campo personalizado](img/proyectos/09-campo-nuevo.png)
 

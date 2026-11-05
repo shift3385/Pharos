@@ -137,7 +137,7 @@ chapter("proyectos", () => {
 
   step("campo-nuevo", {
     title: "Nuevo campo personalizado",
-    caption: "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. Aquí, una selección «Navegador» con tres opciones.",
+    caption: "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. Aquí, una selección «Navegador» con tres opciones.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {

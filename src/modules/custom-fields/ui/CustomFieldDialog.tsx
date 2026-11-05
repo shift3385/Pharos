@@ -246,7 +246,7 @@ export function CustomFieldDialog({
             id={ids.key}
             label={t("customFields.dialog.key")}
             info={isNew ? t("customFields.dialog.keyHint") : undefined}
-            hint={isNew ? undefined : t("customFields.dialog.keyLocked")}
+            hint={isNew ? t("customFields.dialog.keyFixed") : t("customFields.dialog.keyLocked")}
             issue={key ? keyIssue : null}
             required={isNew}
           >

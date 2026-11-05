@@ -444,7 +444,7 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                   />
                 </div>
                 <DeleteButton
-                  label={`${t("testPlan.schedule.removeSprint")}: ${row}`}
+                  label={`${t("common.remove")}: ${row}`}
                   onClick={() => {
                     updSprints((all) => all.filter((z) => z.id !== s.id));
                     removeKeys(s.id);
@@ -517,7 +517,7 @@ export function ScheduleStep({ form, setForm }: StepProps) {
                   }
                 />
                 <DeleteButton
-                  label={`${t("testPlan.schedule.removeMilestone")}: ${row}`}
+                  label={`${t("common.remove")}: ${row}`}
                   onClick={() => {
                     updMilestones((all) => all.filter((z) => z.id !== m.id));
                     removeKeys(m.id);

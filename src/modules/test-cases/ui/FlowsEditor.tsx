@@ -57,8 +57,8 @@ export function FlowsEditor({
               <button
                 type="button"
                 className="tc-flow__del"
-                title={t("testCase.flow.remove")}
-                aria-label={`${t("testCase.flow.remove")}: ${flow.name}`}
+                title={`${t("common.remove")}: ${flow.name}`}
+                aria-label={`${t("common.remove")}: ${flow.name}`}
                 onClick={() => removeFlow(i)}
               >
                 <Trash2 size={16} aria-hidden="true" />

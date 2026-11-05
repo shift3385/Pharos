@@ -17,6 +17,7 @@ import {
   openSection,
   selectOption,
   tf,
+  waitForSettled,
   waitForText,
 } from "./helpers";
 
@@ -26,6 +27,7 @@ const D = '[role="dialog"]';
 async function save() {
   await $(".tp-editor__save").click();
   await waitForText(F.savedToast);
+  await waitForSettled();
 }
 
 async function back() {

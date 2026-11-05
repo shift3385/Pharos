@@ -3,20 +3,35 @@ import { screen } from "@testing-library/react";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { Alert } from "./Alert";
+import type { StatusKind } from "./StatusIcon";
+
+/** Kind → live-region role and the Lucide icon class drawn for it. */
+const KINDS: [StatusKind, "alert" | "status", string][] = [
+  ["error", "alert", "lucide-circle-x"],
+  ["warning", "alert", "lucide-triangle-alert"],
+  ["success", "status", "lucide-circle-check"],
+  ["info", "status", "lucide-info"],
+];
 
 describe("Alert (UX-10)", () => {
-  it("errors and warnings are alerts; success and info are polite status", async () => {
-    renderWithProviders(
-      <>
-        <Alert kind="error">Bad</Alert>
-        <Alert kind="info">Note</Alert>
-      </>,
-    );
-    expect(screen.getByRole("alert")).toHaveTextContent(`${i18n.t("common.status.error")}: Bad`);
-    const status = screen.getByRole("status");
-    expect(status).toHaveTextContent(`${i18n.t("common.status.info")}: Note`);
-    expect(status).toHaveClass("ui-alert--info");
-    expect(status.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  it.each(KINDS)("%s: role %s, its icon, its class and its kind spoken", async (kind, role, icon) => {
+    renderWithProviders(<Alert kind={kind}>Message</Alert>);
+    const el = screen.getByRole(role);
+    expect(el).toHaveClass("ui-alert", `ui-alert--${kind}`);
+    expect(el).toHaveTextContent(`${i18n.t(`common.status.${kind}`)}: Message`);
+    const svg = el.querySelector("svg")!;
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg.getAttribute("class")).toContain(icon);
     await expectNoAxeViolations();
+  });
+
+  it("a role override replaces the default live region", () => {
+    renderWithProviders(
+      <Alert kind="warning" role="note">
+        Static note
+      </Alert>,
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("note")).toHaveTextContent("Static note");
   });
 });

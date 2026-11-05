@@ -53,8 +53,8 @@ export function DeliverablesStep({
                   <button
                     type="button"
                     className="tpw-icon-btn"
-                    aria-label={t("testPlan.deliverables.remove", { name: v })}
-                    title={t("testPlan.deliverables.remove", { name: v })}
+                    aria-label={`${t("common.remove")}: ${v}`}
+                    title={`${t("common.remove")}: ${v}`}
                     onClick={() => onChange(value.filter((x) => x !== v))}
                   >
                     <Trash2 size={14} aria-hidden="true" />
