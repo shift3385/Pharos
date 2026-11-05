@@ -26,8 +26,14 @@ export interface DomainTx {
   /** The stored version of an entity (live or tombstone), locked. */
   get(entity: string, id: string): Promise<RemoteDoc | null>;
   /** Live documents of an entity, optionally of one project; with
-   *  `withDeleted`, its tombstones too. */
-  list(entity: string, projectId?: string, opts?: { withDeleted?: boolean }): Promise<RemoteDoc[]>;
+   *  `withDeleted`, its tombstones too; with `where`, only those whose
+   *  payload text fields equal the given values (one run's items or
+   *  results, EJE-06). */
+  list(
+    entity: string,
+    projectId?: string,
+    opts?: { withDeleted?: boolean; where?: Record<string, string> },
+  ): Promise<RemoteDoc[]>;
   /** Whether a key of the project is used by another document of the entity:
    *  "live", "deleted" (a key is never reused, ADR-0010) or null. */
   keyUse(entity: string, projectId: string, key: string, exceptId?: string): Promise<"live" | "deleted" | null>;
@@ -79,21 +85,28 @@ export function staleWrite(current: RemoteDoc): AppError {
 }
 
 export function createDomainStore(pool: Pool, clock: ServerClock) {
-  function txOf(client: PoolClient, userId: string): DomainTx {
+  function txOf(client: PoolClient, userId: string, readOnly = false): DomainTx {
+    // A read-only transaction takes no row locks.
+    const lock = readOnly ? "" : " FOR UPDATE";
     return {
       async get(entity, id) {
         const { rows } = await client.query(
-          `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3 FOR UPDATE`,
+          `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3${lock}`,
           [userId, entity, id],
         );
         return rows[0] ? toDoc(rows[0]) : null;
       },
       async list(entity, projectId, opts) {
+        const where = Object.entries(opts?.where ?? {});
+        // Field names are the caller's own constants; only the values are
+        // parameters.
+        for (const [k] of where) if (!/^[A-Za-z]+$/.test(k)) throw new Error(`bad field: ${k}`);
+        const extra = where.map(([k], i) => ` AND payload->>'${k}' = $${5 + i}`).join("");
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents
             WHERE user_id = $1 AND entity = $2 AND ($4 OR NOT deleted)
-              AND ($3::text IS NULL OR payload->>'projectId' = $3)`,
-          [userId, entity, projectId ?? null, opts?.withDeleted === true],
+              AND ($3::text IS NULL OR payload->>'projectId' = $3)${extra}`,
+          [userId, entity, projectId ?? null, opts?.withDeleted === true, ...where.map(([, v]) => v)],
         );
         return rows.map(toDoc);
       },
@@ -186,6 +199,22 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
   }
 
   return {
+    /** Runs `fn` in one read-only transaction, without the user's write
+     *  lock: a read never waits for (or holds up) a push or a web write. */
+    async read<T>(userId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN READ ONLY");
+        const result = await fn(txOf(client, userId, true));
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
     /** Runs `fn` in one transaction under the user's write lock. */
     async tx<T>(userId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
       const client = await pool.connect();

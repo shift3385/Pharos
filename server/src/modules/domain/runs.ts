@@ -11,6 +11,7 @@ import { finalAttempts, NOT_RUN, type ProgressAttempt } from "./cycle-progress";
 import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
 import { sortable, timestamp } from "./domain.service";
 import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink";
+import { isLiveRun } from "./run-live";
 import {
   flowShape,
   manualTestKey,
@@ -42,7 +43,22 @@ const MAX_TEST_KEY = 2000;
 const MAX_STEPS = 5000;
 const RESULT_STATUSES = ["passed", "failed", "blocked", "skipped", "other"];
 const RUN_STATUSES = ["in_progress", "completed", "aborted"];
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** An attempt id in the desktop's one form (`manual::normalize_attempt`,
+ *  Rust's `Uuid::parse_str`): hyphenated, braced, `urn:uuid:` or 32 hex
+ *  digits, any case, become lower-case hyphenated; anything else is null. */
+export function normalizeAttempt(raw: string): string | null {
+  let v = raw.trim();
+  if (/^urn:uuid:/i.test(v)) v = v.slice(9);
+  else if (v.startsWith("{") && v.endsWith("}")) v = v.slice(1, -1);
+  const hex = /^[0-9a-f]{32}$/i.test(v)
+    ? v
+    : /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+      ? v.replace(/-/g, "")
+      : null;
+  if (!hex) return null;
+  const h = hex.toLowerCase();
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
 
 const str = (p: Payload, k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");
 const strOrNull = (p: Payload, k: string) => (typeof p[k] === "string" && p[k] !== "" ? (p[k] as string) : null);
@@ -65,12 +81,7 @@ function within(field: string, value: string, max: number) {
   if (value.length > max) throw bad(`${field}-too-long: at most ${max} characters`);
 }
 
-/** The one predicate of a run that can still be read and written: not a
- *  tombstone (EJE-07: a deleted run is a tombstone; its results and shards
- *  count only while their run is live, as in `cycles.ts`). */
-export function isLiveRun(doc: RemoteDoc | null): doc is RemoteDoc {
-  return !!doc && !doc.deleted;
-}
+export { isLiveRun };
 
 /** Every write to a deleted run is refused with `run-deleted` (EJE-07),
  *  as on the desktop. */
@@ -94,6 +105,9 @@ function requireOpen(run: RemoteDoc) {
 // ---- inputs ----------------------------------------------------------------------
 
 const t = (max: number) => z.string().max(max).nullish();
+/** An instant in RFC 3339 with its zone (`2026-11-05T10:00:00.000Z`); the
+ *  derivation orders attempts by it (`instant_ms`). */
+const instantText = z.iso.datetime({ offset: true }).nullish();
 
 export const runInputSchema = z.object({
   projectId: t(200),
@@ -113,8 +127,8 @@ export const runInputSchema = z.object({
   dataset: t(500),
   context: z.record(z.string(), z.unknown()).nullish(),
   status: t(50),
-  startedAt: t(100),
-  finishedAt: t(100),
+  startedAt: instantText,
+  finishedAt: instantText,
 });
 
 export const runItemInputSchema = z.object({
@@ -145,8 +159,8 @@ export const resultInputSchema = z.object({
   rawStatus: t(200),
   configurationLabel: t(200),
   durationMs: z.number().int().nonnegative().nullish(),
-  startedAt: t(100),
-  finishedAt: t(100),
+  startedAt: instantText,
+  finishedAt: instantText,
   errorMessage: z.string().max(100_000).nullish(),
   errorTrace: z.string().max(1_000_000).nullish(),
   attributes: z.record(z.string(), z.unknown()).nullish(),
@@ -280,14 +294,19 @@ interface RunData {
   link: (result: Payload) => ResultLink;
 }
 
-async function loadRunData(tx: DomainTx, projectId: string): Promise<RunData> {
+/** What the views read: one run's items, results and shards (`runId`), or,
+ *  without it, the whole project's (the counts of every run). */
+async function loadRunData(tx: DomainTx, projectId: string, runId?: string): Promise<RunData> {
   // One client per transaction: the reads go one after the other.
   // `tx.list` gives live documents: a deleted run (a tombstone) is not here.
-  const runs = (await tx.list("run", projectId)).filter(isLiveRun);
+  const scoped = runId ? { where: { runId } } : undefined;
+  const runs = runId
+    ? [await tx.get("run", runId)].filter(isLiveRun)
+    : (await tx.list("run", projectId)).filter(isLiveRun);
   const liveRuns = new Set(runs.map((d) => d.entityId));
-  const items = await tx.list("run_item", projectId);
-  const results = await tx.list("result", projectId);
-  const shardDocs = (await tx.list("run_shard", projectId)).filter((d) => liveRuns.has(str(d.payload, "runId")));
+  const items = await tx.list("run_item", projectId, scoped);
+  const results = await tx.list("result", projectId, scoped);
+  const shardDocs = (await tx.list("run_shard", projectId, scoped)).filter((d) => liveRuns.has(str(d.payload, "runId")));
   const superseded = supersededShards(shardDocs);
   let resolve: ((r: Payload) => ResultLink) | null = null;
   const imported = results.some((d) => isImported(d.payload));
@@ -430,6 +449,8 @@ function worst(statuses: string[]): string | null {
 
 export function createRunService(store: DomainStore) {
   const run = store.tx.bind(store);
+  /** Reads: a read-only transaction, without the user's write lock. */
+  const read = store.read.bind(store);
 
   async function liveProject(tx: DomainTx, projectId: string) {
     const doc = await tx.get("project", projectId);
@@ -491,8 +512,11 @@ export function createRunService(store: DomainStore) {
   async function addItems(tx: DomainTx, userId: string, runDoc: RemoteDoc, items: RunItemInput[]) {
     requireOpen(runDoc);
     const projectId = str(runDoc.payload, "projectId");
-    const live = (await tx.list("run_item", projectId)).filter((d) => str(d.payload, "runId") === runDoc.entityId);
-    let position = Math.max(-1, ...live.map((d) => num(d.payload, "position"))) + 1;
+    // Positions count every item ever added, deleted ones too (`max(position)`
+    // over `run_items`, as on the desktop); overlaps only the live ones.
+    const all = await tx.list("run_item", projectId, { withDeleted: true, where: { runId: runDoc.entityId } });
+    const live = all.filter((d) => !d.deleted);
+    let position = Math.max(-1, ...all.map((d) => num(d.payload, "position"))) + 1;
     // Targets of the run's items by case: refused overlaps (S5) also within
     // this call.
     const taken = new Map<string, ExecutionTarget[][]>();
@@ -614,8 +638,8 @@ export function createRunService(store: DomainStore) {
   async function record(tx: DomainTx, userId: string, input: ResultInput): Promise<string> {
     const raw = text(input.attemptId);
     if (!raw) throw bad("attempt-id-required");
-    const attempt = raw.toLowerCase().replace(/^\{|\}$/g, "");
-    if (!UUID.test(attempt)) throw bad(`attempt-id-invalid: ${raw}`);
+    const attempt = normalizeAttempt(raw);
+    if (!attempt) throw bad(`attempt-id-invalid: ${raw}`);
     const { item, run: runDoc } = await liveItem(tx, input.runItemId);
     const ip = item.payload;
     const itemFlow = strOrNull(ip, "flowId");
@@ -662,11 +686,8 @@ export function createRunService(store: DomainStore) {
     const projectId = str(ip, "projectId");
     const runId = runDoc.entityId;
     // attempt n: the next number of this test in this run (shown only).
-    const previous = (await tx.list("result", projectId)).filter(
-      (d) =>
-        str(d.payload, "runId") === runId &&
-        str(d.payload, "testKey") === testKey &&
-        (strOrNull(d.payload, "configurationLabel") ?? "") === (label ?? ""),
+    const previous = (await tx.list("result", projectId, { where: { runId, testKey } })).filter(
+      (d) => (strOrNull(d.payload, "configurationLabel") ?? "") === (label ?? ""),
     );
     const n = previous.length ? Math.max(...previous.map((d) => num(d.payload, "attempt"))) + 1 : 0;
     const payload: Payload = {
@@ -724,10 +745,19 @@ export function createRunService(store: DomainStore) {
     return attempt;
   }
 
-  /** The views of one run's screen, from data loaded once. */
-  async function viewsOf(tx: DomainTx, projectId: string) {
-    const data = await loadRunData(tx, projectId);
-    const cases = new Map((await tx.list("test_case", projectId, { withDeleted: true })).map((d) => [d.entityId, d] as const));
+  /** The views of one run's screen (or, without `runId`, of every run of
+   *  the project), from data loaded once: only the cases they name are read,
+   *  tombstones included. */
+  async function viewsOf(tx: DomainTx, projectId: string, runId?: string) {
+    const data = await loadRunData(tx, projectId, runId);
+    const ids = new Set<string>();
+    for (const d of data.items) ids.add(str(d.payload, "testCaseId"));
+    for (const d of data.results) if (!isImported(d.payload) && str(d.payload, "testCaseId")) ids.add(str(d.payload, "testCaseId"));
+    const cases = new Map<string, RemoteDoc>();
+    for (const id of ids) {
+      const c = await tx.get("test_case", id);
+      if (c) cases.set(id, c);
+    }
     return { data, cases };
   }
 
@@ -746,7 +776,7 @@ export function createRunService(store: DomainStore) {
     const projectId = str(doc.payload, "projectId");
     const project = await tx.get("project", projectId);
     if (!project || project.deleted) return null;
-    const { data, cases } = await viewsOf(tx, projectId);
+    const { data, cases } = await viewsOf(tx, projectId, runId);
     const p = doc.payload;
     const cycle = strOrNull(p, "cycleId") ? await tx.get("test_cycle", str(p, "cycleId")) : null;
     const configuration = strOrNull(p, "configurationId") ? await tx.get("configuration", str(p, "configurationId")) : null;
@@ -816,7 +846,7 @@ export function createRunService(store: DomainStore) {
     const project = await tx.get("project", projectId);
     if (!project || project.deleted) return null;
     const item = itemView(d);
-    const { data, cases } = await viewsOf(tx, projectId);
+    const { data, cases } = await viewsOf(tx, projectId, item.runId);
     const frozen = await revisionDoc(tx, item.testCaseRevisionId);
     const revision = obj(frozen?.data);
     const facts = caseFacts(cases, item.testCaseId, frozen);
@@ -939,7 +969,8 @@ export function createRunService(store: DomainStore) {
       linkedRevision = link.revisionId;
       flowId = link.flowId;
     }
-    const runDoc = await tx.get("run", str(p, "runId"));
+    // A result of a deleted run drafts nothing (EJE-07).
+    const runDoc = await liveRun(tx, str(p, "runId"));
     const rev = linkedRevision ? await revisionDoc(tx, linkedRevision) : null;
     const data = obj(rev?.data);
     const list = (v: unknown) =>
@@ -982,7 +1013,7 @@ export function createRunService(store: DomainStore) {
 
   return {
     list: (userId: string, projectId: string) =>
-      run(userId, async (tx) => {
+      read(userId, async (tx) => {
         const project = await tx.get("project", projectId);
         if (!project || project.deleted) return [];
         return (await tx.list("run", projectId)).filter(isLiveRun).sort(byCreatedDesc).map(runView);
@@ -990,7 +1021,7 @@ export function createRunService(store: DomainStore) {
     /** `run_counts_list`: finals of every live run by status, and how many
      *  of them have no case. */
     counts: (userId: string, projectId: string) =>
-      run(userId, async (tx) => {
+      read(userId, async (tx) => {
         const project = await tx.get("project", projectId);
         if (!project || project.deleted) return [];
         const { data, cases } = await viewsOf(tx, projectId);
@@ -1010,19 +1041,19 @@ export function createRunService(store: DomainStore) {
         return out;
       }),
     get: (userId: string, id: string) =>
-      run(userId, async (tx) => {
+      read(userId, async (tx) => {
         const doc = await tx.get("run", id);
         return isLiveRun(doc) ? runView(doc) : null;
       }),
     results: (userId: string, runId: string): Promise<ResultView[]> =>
-      run(userId, async (tx) => {
+      read(userId, async (tx) => {
         const doc = await tx.get("run", runId);
         if (!isLiveRun(doc)) return [];
-        const { data, cases } = await viewsOf(tx, str(doc.payload, "projectId"));
+        const { data, cases } = await viewsOf(tx, str(doc.payload, "projectId"), runId);
         return resultViews(data, runId, cases);
       }),
-    overview: (userId: string, runId: string) => run(userId, (tx) => overview(tx, runId)),
-    itemDetail: (userId: string, runItemId: string) => run(userId, (tx) => itemDetail(tx, userId, runItemId)),
+    overview: (userId: string, runId: string) => read(userId, (tx) => overview(tx, runId)),
+    itemDetail: (userId: string, runItemId: string) => read(userId, (tx) => itemDetail(tx, userId, runItemId)),
     /** «Nuevo run manual» (`run_create_manual`): the run and its items in
      *  one transaction, so a refused case leaves no empty run. */
     createManual: (userId: string, input: RunInput, items: RunItemInput[]) =>
@@ -1043,7 +1074,7 @@ export function createRunService(store: DomainStore) {
     record: (userId: string, input: ResultInput) => run(userId, (tx) => record(tx, userId, input)),
     execute: (userId: string, cycleId: string, input: ExecuteInput) => run(userId, (tx) => execute(tx, userId, cycleId, input)),
     defectDraft: (userId: string, resultId: string, stepId: string | null) =>
-      run(userId, (tx) => defectDraft(tx, userId, resultId, stepId)),
+      read(userId, (tx) => defectDraft(tx, userId, resultId, stepId)),
   };
 }
 

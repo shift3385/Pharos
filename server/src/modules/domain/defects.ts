@@ -11,6 +11,7 @@ import { linkId, needsResolution, transitionAllowed } from "../sync/defects";
 import type { DomainTx } from "./domain.store";
 import { isImported, projectLinks, type ResultLink } from "./resultLink";
 import type { DefectInput, DefectTransition, LinkTargetInput } from "./domain.schemas";
+import { isLiveRun, liveRunIds } from "./run-live";
 
 type Payload = Record<string, unknown>;
 
@@ -109,16 +110,21 @@ export interface LinkContext {
  *  read only when a link reaches an imported result, and reuses these lists
  *  (cases with their tombstones, as the resolver needs). */
 export async function linkContext(tx: DomainTx, projectId: string): Promise<LinkContext> {
-  const [links, allCases, requirements, results, runs] = await Promise.all([
+  const [links, allCases, requirements, results, allRuns] = await Promise.all([
     tx.list("defect_link", projectId),
     tx.list("test_case", projectId, { withDeleted: true }),
     tx.list("requirement", projectId),
     tx.list("result", projectId),
-    tx.list("run", projectId),
+    tx.list("run", projectId, { withDeleted: true }),
   ]);
+  const runs = allRuns.filter(isLiveRun);
   const cases = allCases.filter((d) => !d.deleted);
+  // A result of a deleted run (a tombstone) no longer counts (EJE-07).
+  const live = liveRunIds(allRuns);
+  const deleted = new Set(allRuns.filter((d) => !live.has(d.entityId)).map((d) => d.entityId));
+  const liveResults = results.filter((d) => !deleted.has(str(d.payload, "runId")));
   const byId = new Map<string, RemoteDoc>();
-  for (const d of [...cases, ...requirements, ...results, ...runs]) byId.set(`${d.entity}:${d.entityId}`, d);
+  for (const d of [...cases, ...requirements, ...liveResults, ...runs]) byId.set(`${d.entity}:${d.entityId}`, d);
   const needed = links.some((l) => {
     const found = str(l.payload, "targetKind") === "result" && byId.get(`result:${str(l.payload, "targetId")}`);
     return !!found && isImported(found.payload);

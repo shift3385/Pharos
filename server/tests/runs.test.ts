@@ -10,6 +10,10 @@ import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
 import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 import { narrow, overlaps, targetsOf } from "../src/modules/domain/runs-targets";
+import { createDomainStore, type DomainStore, type DomainTx } from "../src/modules/domain/domain.store";
+import { createRunService } from "../src/modules/domain/runs";
+import { createServerClock } from "../src/modules/sync/sync.hlc";
+import { LOCK_USER_SQL } from "../src/modules/sync/sync.repository";
 
 type Payload = Record<string, unknown>;
 
@@ -352,6 +356,62 @@ describe("runs on the web", () => {
     expect((await call("GET", `/api/runs/${run.id}/results`)).body).toEqual([]);
     expect((await call("GET", `/api/run-items/${item}`)).body).toBeNull();
     expect((await docs("result")).map((d) => d.entity_id)).toEqual([uuid(2)]);
+    // A defect is not drafted from a result of a deleted run.
+    expect(await call("GET", `/api/results/${uuid(2)}/defect-draft`)).toMatchObject(refused);
+  });
+
+  it("reads a run without waiting for the user's write lock", async () => {
+    const token = await tokenFor();
+    const call = api(token);
+    const s = await seed(call);
+    const run = (await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "M" }, items: [{ testCaseId: s.simple.id }] })).body;
+    const [item] = (await docs("run_item")).map((d) => d.entity_id);
+    const userId = (await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1")).rows[0].id;
+    // A push (or a web write) holds the lock.
+    const holder = await pool.connect();
+    await holder.query("BEGIN");
+    await holder.query(LOCK_USER_SQL, [userId]);
+    try {
+      const within = <T>(p: Promise<T>) =>
+        Promise.race([p, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("waited for the lock")), 3000))]);
+      expect((await within(call("GET", `/api/runs/${run.id}/overview`))).status).toBe(200);
+      expect((await within(call("GET", `/api/run-items/${item}`))).status).toBe(200);
+      expect((await within(call("GET", `/api/runs?projectId=${s.projectId}`))).status).toBe(200);
+    } finally {
+      await holder.query("ROLLBACK");
+      holder.release();
+    }
+  });
+
+  it("takes an attempt id in every form the desktop takes, and refuses an instant without its zone", async () => {
+    const call = api(await tokenFor());
+    const s = await seed(call);
+    await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "M" }, items: [{ testCaseId: s.simple.id }] });
+    const [item] = (await docs("run_item")).map((d) => d.entity_id);
+    const id = uuid(42);
+    const plain = id.replace(/-/g, "").toUpperCase();
+    expect((await call("POST", "/api/results", { input: { runItemId: item, attemptId: `urn:uuid:${id}`, status: "passed" } })).body).toEqual({ id });
+    expect((await call("POST", "/api/results", { input: { runItemId: item, attemptId: plain, status: "passed" } })).body).toEqual({ id });
+    expect((await docs("result")).map((d) => d.entity_id)).toEqual([id]);
+    const late = await call("POST", "/api/results", {
+      input: { runItemId: item, attemptId: uuid(43), status: "passed", startedAt: "yesterday" },
+    });
+    expect(late.status).toBe(400);
+    const local = await call("POST", "/api/results", {
+      input: { runItemId: item, attemptId: uuid(43), status: "passed", finishedAt: "2026-11-05 10:00:00" },
+    });
+    expect(local.status).toBe(400);
+  });
+
+  it("numbers new items after every item ever added, deleted ones too", async () => {
+    const call = api(await tokenFor());
+    const s = await seed(call);
+    const run = (await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "M" }, items: [{ testCaseId: s.simple.id }, { testCaseId: s.outline.id }] })).body;
+    // The last item is deleted (by a device, as its tombstone).
+    const last = (await docs("run_item")).find((d) => d.payload.position === 1)!;
+    await pool.query("UPDATE documents SET deleted = true WHERE entity = 'run_item' AND entity_id = $1", [last.entity_id]);
+    const added = (await call("POST", `/api/runs/${run.id}/items`, { items: [{ testCaseId: s.outline.id }] })).body;
+    expect(added.map((i: Payload) => i.position)).toEqual([2]);
   });
 
   it("results of a deleted run do not count in another run's views", async () => {
@@ -408,6 +468,39 @@ describe("runs on the web", () => {
     const c = (await call("GET", `/api/cycles/${cycle.id}`)).body;
     await call("PUT", `/api/cycles/${cycle.id}`, { input: { status: "closed" }, revision: c.revision });
     expect((await call("POST", `/api/cycles/${cycle.id}/execute`, {})).body.message).toBe("cycle-closed");
+  });
+
+  it("«Ejecutar» is all or nothing: a failure on the second run leaves no run and the cycle planned", async () => {
+    const call = api(await tokenFor());
+    const s = await seed(call);
+    const chrome = (await call("POST", "/api/configurations", { projectId: s.projectId, name: "Chrome" })).body;
+    const firefox = (await call("POST", "/api/configurations", { projectId: s.projectId, name: "Firefox" })).body;
+    const cycle = (await call("POST", "/api/cycles", { projectId: s.projectId, title: "Sprint", configurationIds: [chrome.id, firefox.id] })).body;
+    await call("POST", `/api/cycles/${cycle.id}/items`, { items: [{ testCaseId: s.simple.id }] });
+    const userId = (await pool.query<{ id: string }>("SELECT id FROM users LIMIT 1")).rows[0].id;
+    // The same store, failing when the second run is written.
+    const real = createDomainStore(pool, createServerClock());
+    const failing: DomainStore = {
+      ...real,
+      tx: (user, fn) =>
+        real.tx(user, (tx) => {
+          let runs = 0;
+          const wrapped: DomainTx = {
+            ...tx,
+            put: (entity, id, payload, current, deleted, opts) => {
+              if (entity === "run" && !current && ++runs === 2) throw new Error("disk full");
+              return tx.put(entity, id, payload, current, deleted, opts);
+            },
+          };
+          return fn(wrapped);
+        }),
+    };
+    await expect(createRunService(failing).execute(userId, cycle.id, {})).rejects.toThrow("disk full");
+    expect(await docs("run")).toEqual([]);
+    expect(await docs("run_item")).toEqual([]);
+    expect((await call("GET", `/api/cycles/${cycle.id}`)).body.status).toBe("planned");
+    // Nothing half-made: the real one then creates both.
+    expect((await call("POST", `/api/cycles/${cycle.id}/execute`, {})).body.runs).toHaveLength(2);
   });
 
   it("a cycle without configurations gets one run; archived ones are skipped", async () => {
@@ -485,7 +578,8 @@ interface Interop {
   items: Payload[];
   attempts: { item: number; input: Payload }[];
   documents?: { entity: string; entityId: string; payload: Payload }[];
-  views?: { overview: unknown; items: unknown[] };
+  pulledOnly: { entity: string; entityId: string; payload: Payload }[];
+  views?: { overview: unknown; items: unknown[]; importedResults: unknown[] };
 }
 
 const interop = JSON.parse(
@@ -566,8 +660,8 @@ describe("interop with the desktop (web-run-interop.json)", () => {
   it("what the desktop wrote reads on the web as on the desktop", async () => {
     const token = await tokenFor();
     await pushStart(token);
-    const deltas = (interop.documents ?? []).map((d, n) =>
-      d.entity === "result" || d.entity === "test_case_revision"
+    const deltas = [...(interop.documents ?? []), ...interop.pulledOnly].map((d, n) =>
+      d.entity === "result" || d.entity === "test_case_revision" || d.entity === "run_shard"
         ? { entity: d.entity, entityId: d.entityId, op: "append", revision: 1, author: "u", hlc: d.payload.hlc as string, payload: d.payload }
         : lwwDoc(d.entity, d.payload, `000000000000${String(200 + n)}-00000-desk`),
     );
@@ -577,7 +671,12 @@ describe("interop with the desktop (web-run-interop.json)", () => {
     const overview = (await call("GET", "/api/runs/run/overview")).body;
     const details = [];
     for (const n of interop.items.keys()) details.push((await call("GET", `/api/run-items/item-${n}`)).body);
-    const got = normalized({ overview: { ...overview, run: { ...overview.run, startedAt: "*" } }, items: details }, new Map());
+    // An imported run, written only by the desktop, reads the same too.
+    const importedResults = (await call("GET", "/api/runs/run-imp/results")).body;
+    const got = normalized(
+      { overview: { ...overview, run: { ...overview.run, startedAt: "*" } }, items: details, importedResults },
+      new Map(),
+    );
     if (process.env.DUMP_INTEROP) {
       const { writeFileSync } = await import("node:fs");
       writeFileSync(`${process.env.DUMP_INTEROP}.views.json`, JSON.stringify(got, null, 2));

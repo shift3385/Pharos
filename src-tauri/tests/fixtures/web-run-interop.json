@@ -1,5 +1,5 @@
 {
-  "$comment": "A run executed on the web reads the same on the desktop, and the other way round (EJE-06). Both sides start from `project` and `cases` (pulled documents, revision 1), create `run` with `items` and record `attempts`; what each side then stores, normalized (`normalize`), must equal `documents`. Then each side applies `documents` as pulled documents and its run screen must equal `views` (normalized the same way). Read by src-tauri/src/runs/web_vectors_tests.rs and server/tests/runs.test.ts. `normalize`: ids made by each side are replaced by the names here, in creation order (the run by `run`, items by position, step results by `<result id>:<position>`); the listed bookkeeping keys (clock, author, local workspace and times written at save) become \"*\".",
+  "$comment": "A run executed on the web reads the same on the desktop, and the other way round (EJE-06). Both sides start from `project` and `cases` (pulled documents, revision 1), create `run` with `items` and record `attempts`; what each side then stores, normalized (`normalize`), must equal `documents`. Then each side applies `documents` as pulled documents and its run screen must equal `views` (normalized the same way). Read by src-tauri/src/runs/web_vectors_tests.rs and server/tests/runs.test.ts. `normalize`: ids made by each side are replaced by the names here, in creation order (the run by `run`, items by position, step results by `<result id>:<position>`); the listed bookkeeping keys (clock, author, local workspace and times written at save) become \"*\". The third case is a legacy one (plain-text steps, written by an older client) with a custom field: both sides derive the same step ids for it. `pulledOnly` is an imported run (shard and result, linked by its tag) that only the desktop writes: both sides read it the same in `views.importedResults`.",
   "normalize": {
     "keys": [
       "workspaceId",
@@ -106,6 +106,30 @@
       },
       "createdAt": "2026-11-05 09:00:00",
       "updatedAt": "2026-11-05 09:00:00"
+    },
+    {
+      "id": "c-legacy",
+      "workspaceId": "local",
+      "projectId": "p-interop",
+      "scenarioId": "TC-003",
+      "title": "Devolver",
+      "version": "1.0",
+      "status": "approved",
+      "priority": "low",
+      "caseType": null,
+      "automationStatus": null,
+      "author": "Ada",
+      "data": {
+        "steps": [
+          "open the order",
+          "ask for a refund"
+        ],
+        "custom": {
+          "cf-area": "pagos"
+        }
+      },
+      "createdAt": "2026-11-05 09:00:00",
+      "updatedAt": "2026-11-05 09:00:00"
     }
   ],
   "run": {
@@ -120,6 +144,9 @@
     },
     {
       "testCaseId": "c-simple"
+    },
+    {
+      "testCaseId": "c-legacy"
     }
   ],
   "attempts": [
@@ -219,6 +246,129 @@
             "status": "passed"
           }
         ]
+      }
+    },
+    {
+      "item": 2,
+      "input": {
+        "attemptId": "a0000000-0000-4000-8000-000000000005",
+        "status": "failed",
+        "startedAt": "2026-11-05T10:08:00.000Z",
+        "finishedAt": "2026-11-05T10:08:20.000Z",
+        "errorMessage": "no refund",
+        "attributes": {},
+        "steps": [
+          {
+            "text": "open the order",
+            "status": "passed"
+          },
+          {
+            "text": "ask for a refund",
+            "status": "failed",
+            "actual": "no refund"
+          }
+        ]
+      }
+    }
+  ],
+  "pulledOnly": [
+    {
+      "entity": "run",
+      "entityId": "run-imp",
+      "payload": {
+        "id": "run-imp",
+        "workspaceId": "local",
+        "projectId": "p-interop",
+        "runKey": "RUN-090",
+        "title": "CI nightly",
+        "trigger": "import",
+        "sourceTool": "playwright",
+        "sourceToolVersion": "1.48.0",
+        "testPlanId": null,
+        "cycleId": null,
+        "configurationId": null,
+        "environment": "ci",
+        "build": "1.0",
+        "commitSha": null,
+        "branch": null,
+        "repositoryUrl": null,
+        "ciUrl": null,
+        "dataset": null,
+        "context": {},
+        "status": "completed",
+        "startedAt": "2026-11-05T08:00:00.000Z",
+        "finishedAt": "2026-11-05T08:05:00.000Z",
+        "summary": {},
+        "data": {},
+        "createdAt": "2026-11-05 08:00:00",
+        "updatedAt": "2026-11-05 08:05:00",
+        "revision": 1
+      }
+    },
+    {
+      "entity": "run_shard",
+      "entityId": "shard-imp",
+      "payload": {
+        "id": "shard-imp",
+        "workspaceId": "local",
+        "projectId": "p-interop",
+        "runId": "run-imp",
+        "shardIndex": 0,
+        "shardTotal": 1,
+        "sourceFormat": "ctrf",
+        "sourceFileSha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceAttachmentId": null,
+        "formatVersion": "1.0.0",
+        "normalizerVersion": 1,
+        "importedBy": "user-a",
+        "importedAt": "2026-11-05 08:05:00",
+        "hlc": "000000000000280-00000-desk"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "res-imp",
+      "payload": {
+        "id": "res-imp",
+        "workspaceId": "local",
+        "projectId": "p-interop",
+        "runId": "run-imp",
+        "shardId": "shard-imp",
+        "runItemId": null,
+        "testKey": "checkout.spec.ts > opens",
+        "testCaseId": null,
+        "testCaseRevisionId": null,
+        "caseRevision": null,
+        "caseKey": null,
+        "flowId": null,
+        "exampleRowId": null,
+        "exampleRow": null,
+        "exampleValues": null,
+        "configurationId": null,
+        "configurationLabel": null,
+        "attempt": 0,
+        "status": "failed",
+        "rawStatus": "failed",
+        "durationMs": 1200,
+        "startedAt": "2026-11-05T08:01:00.000Z",
+        "finishedAt": "2026-11-05T08:01:01.200Z",
+        "errorMessage": "timeout",
+        "errorTrace": null,
+        "executedBy": "tool:playwright",
+        "externalId": null,
+        "attributes": {
+          "tags": [
+            "@TC-002"
+          ],
+          "name": "opens",
+          "suite": [
+            "checkout.spec.ts"
+          ]
+        },
+        "createdBy": "user-a",
+        "createdAt": "2026-11-05 08:05:00",
+        "hlc": "000000000000281-00000-desk",
+        "steps": []
       }
     }
   ],
@@ -326,6 +476,43 @@
       }
     },
     {
+      "entity": "test_case_revision",
+      "entityId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+      "payload": {
+        "id": "713ccbcc-acef-59a0-9582-aaad890884aa",
+        "hlc": "000000000000303-00000-web",
+        "data": {
+          "steps": [
+            {
+              "id": "818C91YA",
+              "text": "open the order"
+            },
+            {
+              "id": "K3H6NRQ6",
+              "text": "ask for a refund"
+            }
+          ],
+          "custom": {
+            "cf-area": "pagos"
+          }
+        },
+        "title": "Devolver",
+        "status": "approved",
+        "version": "1.0",
+        "caseType": null,
+        "priority": "low",
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:03",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "scenarioId": "TC-003",
+        "testCaseId": "c-legacy",
+        "workspaceId": "local",
+        "contentSha256": "6f8a600cc2a7587dc940a8fc47309ddcbea165d97cd87e13db215c3118389820",
+        "automationStatus": null
+      }
+    },
+    {
       "entity": "run",
       "entityId": "run",
       "payload": {
@@ -344,10 +531,10 @@
         "trigger": "manual",
         "revision": 1,
         "commitSha": null,
-        "createdAt": "2026-11-05 10:00:03",
+        "createdAt": "2026-11-05 10:00:04",
         "projectId": "p-interop",
         "startedAt": "2026-11-05T09:59:00.000Z",
-        "updatedAt": "2026-11-05 10:00:03",
+        "updatedAt": "2026-11-05 10:00:04",
         "finishedAt": null,
         "sourceTool": null,
         "testPlanId": null,
@@ -368,9 +555,9 @@
         "assignee": null,
         "position": 0,
         "revision": 1,
-        "createdAt": "2026-11-05 10:00:04",
+        "createdAt": "2026-11-05 10:00:05",
         "projectId": "p-interop",
-        "updatedAt": "2026-11-05 10:00:04",
+        "updatedAt": "2026-11-05 10:00:05",
         "exampleRow": null,
         "testCaseId": "c-outline",
         "workspaceId": "local",
@@ -389,9 +576,9 @@
         "assignee": null,
         "position": 1,
         "revision": 1,
-        "createdAt": "2026-11-05 10:00:05",
+        "createdAt": "2026-11-05 10:00:06",
         "projectId": "p-interop",
-        "updatedAt": "2026-11-05 10:00:05",
+        "updatedAt": "2026-11-05 10:00:06",
         "exampleRow": null,
         "testCaseId": "c-simple",
         "workspaceId": "local",
@@ -401,11 +588,32 @@
       }
     },
     {
+      "entity": "run_item",
+      "entityId": "item-2",
+      "payload": {
+        "id": "item-2",
+        "runId": "run",
+        "flowId": null,
+        "assignee": null,
+        "position": 2,
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:07",
+        "projectId": "p-interop",
+        "updatedAt": "2026-11-05 10:00:07",
+        "exampleRow": null,
+        "testCaseId": "c-legacy",
+        "workspaceId": "local",
+        "exampleRowId": null,
+        "configurationId": null,
+        "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa"
+      }
+    },
+    {
       "entity": "result",
       "entityId": "a0000000-0000-4000-8000-000000000001",
       "payload": {
         "id": "a0000000-0000-4000-8000-000000000001",
-        "hlc": "000000000000306-00000-web",
+        "hlc": "000000000000308-00000-web",
         "runId": "run",
         "steps": [
           {
@@ -437,7 +645,7 @@
         "caseKey": "TC-001",
         "shardId": null,
         "testKey": "manual:c-outline/-/r1",
-        "createdAt": "2026-11-05 10:00:06",
+        "createdAt": "2026-11-05 10:00:08",
         "createdBy": "user-a",
         "projectId": "p-interop",
         "rawStatus": null,
@@ -470,7 +678,7 @@
       "entityId": "a0000000-0000-4000-8000-000000000002",
       "payload": {
         "id": "a0000000-0000-4000-8000-000000000002",
-        "hlc": "000000000000307-00000-web",
+        "hlc": "000000000000309-00000-web",
         "runId": "run",
         "steps": [
           {
@@ -502,7 +710,7 @@
         "caseKey": "TC-001",
         "shardId": null,
         "testKey": "manual:c-outline/-/r1",
-        "createdAt": "2026-11-05 10:00:07",
+        "createdAt": "2026-11-05 10:00:09",
         "createdBy": "user-a",
         "projectId": "p-interop",
         "rawStatus": null,
@@ -533,7 +741,7 @@
       "entityId": "a0000000-0000-4000-8000-000000000003",
       "payload": {
         "id": "a0000000-0000-4000-8000-000000000003",
-        "hlc": "000000000000308-00000-web",
+        "hlc": "000000000000310-00000-web",
         "runId": "run",
         "steps": [
           {
@@ -565,7 +773,7 @@
         "caseKey": "TC-001",
         "shardId": null,
         "testKey": "manual:c-outline/f1/-",
-        "createdAt": "2026-11-05 10:00:08",
+        "createdAt": "2026-11-05 10:00:10",
         "createdBy": "user-a",
         "projectId": "p-interop",
         "rawStatus": null,
@@ -594,7 +802,7 @@
       "entityId": "a0000000-0000-4000-8000-000000000004",
       "payload": {
         "id": "a0000000-0000-4000-8000-000000000004",
-        "hlc": "000000000000309-00000-web",
+        "hlc": "000000000000311-00000-web",
         "runId": "run",
         "steps": [
           {
@@ -626,7 +834,7 @@
         "caseKey": "TC-002",
         "shardId": null,
         "testKey": "manual:c-simple/-/-",
-        "createdAt": "2026-11-05 10:00:09",
+        "createdAt": "2026-11-05 10:00:11",
         "createdBy": "user-a",
         "projectId": "p-interop",
         "rawStatus": null,
@@ -648,6 +856,67 @@
         "configurationId": null,
         "configurationLabel": null,
         "testCaseRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "a0000000-0000-4000-8000-000000000005",
+      "payload": {
+        "id": "a0000000-0000-4000-8000-000000000005",
+        "hlc": "000000000000312-00000-web",
+        "runId": "run",
+        "steps": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000005:0",
+            "text": "open the order",
+            "actual": null,
+            "status": "passed",
+            "stepId": null,
+            "keyword": null,
+            "position": 0,
+            "durationMs": null,
+            "gherkinLine": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000005:1",
+            "text": "ask for a refund",
+            "actual": "no refund",
+            "status": "failed",
+            "stepId": null,
+            "keyword": null,
+            "position": 1,
+            "durationMs": null,
+            "gherkinLine": null
+          }
+        ],
+        "flowId": null,
+        "status": "failed",
+        "attempt": 0,
+        "caseKey": "TC-003",
+        "shardId": null,
+        "testKey": "manual:c-legacy/-/-",
+        "createdAt": "2026-11-05 10:00:12",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "rawStatus": null,
+        "runItemId": "item-2",
+        "startedAt": "2026-11-05T10:08:00.000Z",
+        "attributes": {},
+        "durationMs": null,
+        "errorTrace": null,
+        "exampleRow": null,
+        "executedBy": "user:user-a",
+        "externalId": null,
+        "finishedAt": "2026-11-05T10:08:20.000Z",
+        "testCaseId": "c-legacy",
+        "workspaceId": "local",
+        "caseRevision": 1,
+        "errorMessage": "no refund",
+        "exampleRowId": null,
+        "exampleValues": null,
+        "configurationId": null,
+        "configurationLabel": null,
+        "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa"
       }
     }
   ],
@@ -735,16 +1004,41 @@
           "status": "passed",
           "attempts": 1,
           "hasDraft": false
+        },
+        {
+          "item": {
+            "id": "item-2",
+            "runId": "run",
+            "testCaseId": "c-legacy",
+            "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationId": null,
+            "assignee": null,
+            "position": 2,
+            "revision": 1
+          },
+          "caseKey": "TC-003",
+          "caseTitle": "Devolver",
+          "caseDeleted": false,
+          "flowName": null,
+          "rowIndex": null,
+          "targets": 1,
+          "done": 1,
+          "status": "failed",
+          "attempts": 1,
+          "hasDraft": false
         }
       ],
       "counts": {
         "passed": 2,
-        "failed": 0,
+        "failed": 1,
         "blocked": 1,
         "skipped": 0,
         "other": 0,
         "notRun": 1,
-        "total": 4
+        "total": 5
       }
     },
     "items": [
@@ -1159,6 +1453,170 @@
         ],
         "attachments": [],
         "draft": null
+      },
+      {
+        "item": {
+          "id": "item-2",
+          "runId": "run",
+          "testCaseId": "c-legacy",
+          "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+          "flowId": null,
+          "exampleRowId": null,
+          "exampleRow": null,
+          "configurationId": null,
+          "assignee": null,
+          "position": 2,
+          "revision": 1
+        },
+        "runStatus": "in_progress",
+        "caseKey": "TC-003",
+        "caseTitle": "Devolver",
+        "caseDeleted": false,
+        "frozenRevision": 1,
+        "currentRevision": 1,
+        "caseChanged": false,
+        "revision": {
+          "steps": [
+            {
+              "id": "818C91YA",
+              "text": "open the order"
+            },
+            {
+              "id": "K3H6NRQ6",
+              "text": "ask for a refund"
+            }
+          ],
+          "custom": {
+            "cf-area": "pagos"
+          }
+        },
+        "targets": [
+          {
+            "key": "-/-",
+            "flowId": null,
+            "flowName": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "values": null,
+            "testKey": "manual:c-legacy/-/-"
+          }
+        ],
+        "results": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000005",
+            "runId": "run",
+            "shardId": null,
+            "runItemId": "item-2",
+            "testKey": "manual:c-legacy/-/-",
+            "testCaseId": "c-legacy",
+            "effectiveTestCaseId": "c-legacy",
+            "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+            "caseRevision": 1,
+            "caseKey": "TC-003",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationLabel": null,
+            "attempt": 0,
+            "status": "failed",
+            "rawStatus": null,
+            "durationMs": null,
+            "startedAt": "2026-11-05T10:08:00.000Z",
+            "finishedAt": "2026-11-05T10:08:20.000Z",
+            "errorMessage": "no refund",
+            "executedBy": "*",
+            "attributes": {},
+            "createdAt": "*",
+            "isFinal": true,
+            "flaky": false,
+            "steps": [
+              {
+                "id": "a0000000-0000-4000-8000-000000000005:0",
+                "position": 0,
+                "stepId": null,
+                "keyword": null,
+                "text": "open the order",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              },
+              {
+                "id": "a0000000-0000-4000-8000-000000000005:1",
+                "position": 1,
+                "stepId": null,
+                "keyword": null,
+                "text": "ask for a refund",
+                "status": "failed",
+                "actual": "no refund",
+                "durationMs": null,
+                "gherkinLine": null
+              }
+            ],
+            "effectiveRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+            "effectiveCaseRevision": 1,
+            "effectiveFlowId": null,
+            "effectiveExampleRowId": null,
+            "effectiveRunItemId": "item-2",
+            "effectiveStepIds": [
+              null,
+              null
+            ],
+            "linkReason": null,
+            "caseDeleted": false,
+            "effectiveConfigurationId": null
+          }
+        ],
+        "attachments": [],
+        "draft": null
+      }
+    ],
+    "importedResults": [
+      {
+        "id": "res-imp",
+        "runId": "run-imp",
+        "shardId": "shard-imp",
+        "runItemId": null,
+        "testKey": "checkout.spec.ts > opens",
+        "testCaseId": null,
+        "effectiveTestCaseId": "c-simple",
+        "testCaseRevisionId": null,
+        "caseRevision": null,
+        "caseKey": null,
+        "flowId": null,
+        "exampleRowId": null,
+        "exampleRow": null,
+        "configurationLabel": null,
+        "attempt": 0,
+        "status": "failed",
+        "rawStatus": "failed",
+        "durationMs": 1200,
+        "startedAt": "2026-11-05T08:01:00.000Z",
+        "finishedAt": "2026-11-05T08:01:01.200Z",
+        "errorMessage": "timeout",
+        "executedBy": "*",
+        "attributes": {
+          "name": "opens",
+          "tags": [
+            "@TC-002"
+          ],
+          "suite": [
+            "checkout.spec.ts"
+          ]
+        },
+        "createdAt": "*",
+        "isFinal": true,
+        "flaky": false,
+        "steps": [],
+        "effectiveRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+        "effectiveCaseRevision": 1,
+        "effectiveFlowId": null,
+        "effectiveExampleRowId": null,
+        "effectiveRunItemId": null,
+        "effectiveStepIds": [],
+        "linkReason": null,
+        "caseDeleted": false,
+        "effectiveConfigurationId": null
       }
     ]
   }

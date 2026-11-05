@@ -9,6 +9,7 @@ import { requireSupportedVersion } from "../sync/sync.version";
 import { cells, count, emptySummary, type ProgressAttempt, type ProgressSummary } from "./cycle-progress";
 import { isImported, projectLinks, supersededShards, type ResultLink } from "./resultLink";
 import { staleWrite, type DomainStore, type DomainTx } from "./domain.store";
+import { isLiveRun } from "./run-live";
 import { sortable, timestamp } from "./domain.service";
 
 // Test cycles and configurations on the web (CYC-01, ADR-0017): the rules of
@@ -286,7 +287,7 @@ async function loadExecution(tx: DomainTx, projectId: string): Promise<Execution
   for (const list of items.values()) list.sort(byPosition);
   const runCycle = new Map<string, { cycle: string; payload: Payload }>();
   const runs = new Map<string, number>();
-  const runDocs = await tx.list("run", projectId);
+  const runDocs = (await tx.list("run", projectId)).filter(isLiveRun);
   for (const d of runDocs) {
     const cycle = str(d.payload, "cycleId");
     if (!cycle) continue;
@@ -777,7 +778,7 @@ export function createCycleService(store: DomainStore) {
         const doc = await tx.get("test_cycle", id);
         if (!doc || doc.deleted) return [];
         return (await tx.list("run", str(doc.payload, "projectId")))
-          .filter((d) => str(d.payload, "cycleId") === id)
+          .filter((d) => isLiveRun(d) && str(d.payload, "cycleId") === id)
           .sort((a, b) => {
             const [x, y] = [sortable(str(a.payload, "createdAt")), sortable(str(b.payload, "createdAt"))];
             return x < y ? 1 : x > y ? -1 : byId(b, a);
