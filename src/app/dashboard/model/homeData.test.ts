@@ -5,7 +5,6 @@ import {
   homeKpis,
   periodDays,
   projectKey,
-  upcomingTests,
   visibleDayLabels,
   type HomeProject,
 } from "./homeData";
@@ -16,12 +15,9 @@ const project = (over: Partial<HomeProject>): HomeProject => ({
   id: "p",
   name: "P",
   key: "P",
-  cases: [],
   closeDate: null,
   hasPlan: false,
   criteria: [],
-  openDefects: 0,
-  criticalDefects: 0,
   ...over,
 });
 
@@ -31,12 +27,6 @@ const portal = project({
   key: "PCL",
   closeDate: "2026-11-07",
   hasPlan: true,
-  cases: [
-    { id: "1", scenarioId: "PCL-0002", title: "Pago", priority: "medium" },
-    { id: "2", scenarioId: "PCL-0001", title: "Login", priority: "critical" },
-  ],
-  openDefects: 3,
-  criticalDefects: 1,
 });
 const banca = project({
   id: "amb",
@@ -44,10 +34,6 @@ const banca = project({
   key: "AMB",
   closeDate: "2026-10-31",
   hasPlan: true,
-  cases: [
-    { id: "3", scenarioId: "AMB-0001", title: "Saldo", priority: "critical" },
-  ],
-  openDefects: 1,
 });
 const erp = project({ id: "erp", name: "Migración ERP", key: "ERP" });
 
@@ -58,22 +44,11 @@ describe("home data (RED-V1)", () => {
     expect(projectKey("")).toBe("");
   });
 
-  it("sums the KPIs over the open projects", () => {
+  it("counts the open projects and those closing this month", () => {
     expect(homeKpis([portal, banca, erp], today)).toEqual({
       projects: 3,
       closingThisMonth: 1, // banca closes on 31 Oct; portal in November
-      pending: 3,
-      total: 3,
-      openDefects: 4,
-      criticalDefects: 1,
     });
-  });
-
-  it("orders the upcoming tests by priority, then project recency, then id", () => {
-    expect(
-      upcomingTests([portal, banca, erp]).map((r) => r.scenarioId),
-    ).toEqual(["PCL-0001", "AMB-0001", "PCL-0002"]);
-    expect(upcomingTests([portal, banca], 1)).toHaveLength(1);
   });
 
   it("lists the exit-criteria projects by closing date and filters by name or key", () => {

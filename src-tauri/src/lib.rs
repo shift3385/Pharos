@@ -16,6 +16,7 @@ mod downloads;
 mod evidence;
 mod execution;
 mod hlc;
+mod home_metrics;
 mod instance;
 mod journal;
 mod key_sync;
@@ -199,6 +200,7 @@ pub fn run() {
             cycles::cycle_runs,
             cycles::cycle_progress_get,
             execution::execution_summary,
+            home_metrics::home_metrics,
             defects::defect_list,
             defects::defect_get,
             defects::defect_create,

@@ -10,21 +10,47 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { projectPath } from "@modules/projects";
-import type { HomeKpis, HomeProject } from "./model/homeData";
+import type { HomeKpis, HomeProject, Period } from "./model/homeData";
+import type { ExecutionKpis } from "./model/metrics";
+import type { MetricsState } from "./model/loadHomeMetrics";
 
-/** The four indicators of the Home (SPEC §8 «Inicio · indicadores»). They are
- *  links; «Tasa de éxito» has nowhere to go until runs exist (RED-W6), so it
- *  is a plain card whose visible note says why. */
+/** The four indicators of the Home (SPEC §8 «Inicio · indicadores»), all
+ *  links. Pending tests and open/critical defects are the state of play;
+ *  «Tasa de éxito» is of the chosen period (RED-W6, GLOSARIO). */
 export function KpiCards({
   kpis,
+  exec,
+  status,
+  period,
   projects,
 }: {
   kpis: HomeKpis;
+  exec: ExecutionKpis;
+  status: MetricsState["status"];
+  period: Period;
   projects: HomeProject[];
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // With a single project the cards go straight into it.
   const only = projects.length === 1 ? projects[0] : null;
+  const ready = status === "ready";
+  // Unknown until the metrics load: «…» while loading, «—» after an error.
+  const unknown = status === "loading" ? "…" : "—";
+  const unknownNote =
+    status === "loading"
+      ? t("dashboard.metrics.loading")
+      : t("dashboard.kpi.rateError");
+  const periodText = t(`dashboard.period.lower.${period}`);
+  const rate = ready ? exec.rate : null;
+  const hasRate = rate?.passRate != null;
+  const rateValue = hasRate
+    ? new Intl.NumberFormat(i18n.resolvedLanguage, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }).format(rate.passRate! * 100)
+    : status === "loading"
+      ? "…"
+      : "—";
 
   return (
     <div className="home-kpis">
@@ -46,17 +72,39 @@ export function KpiCards({
         icon={ListTodo}
         label={t("dashboard.kpi.pending")}
         title={t("dashboard.kpi.pendingTitle")}
-        value={kpis.pending}
-        unit={t("dashboard.kpi.pendingOf", { total: kpis.total })}
-        note={t("dashboard.kpi.noRuns")}
+        value={ready ? exec.pending : unknown}
+        unit={ready ? t("dashboard.kpi.pendingOf", { total: exec.total }) : undefined}
+        note={
+          !ready
+            ? status === "loading"
+              ? t("dashboard.metrics.loading")
+              : t("dashboard.kpi.rateError")
+            : exec.blocked
+              ? t("dashboard.kpi.blocked", { count: exec.blocked })
+              : t("dashboard.kpi.noneBlocked")
+        }
+        noteTone={ready && exec.blocked ? "warning" : undefined}
         testId="kpi-pending"
       />
       <Kpi
+        to={only ? projectPath(only.id, "runs") : "/projects"}
         icon={CircleCheck}
         label={t("dashboard.kpi.rate")}
-        title={t("dashboard.kpi.rateTitle")}
-        value="—"
-        note={t("dashboard.kpi.rateEmpty")}
+        title={t("dashboard.kpi.rateTitle", { period: periodText })}
+        value={rateValue}
+        unit={hasRate ? "%" : undefined}
+        note={
+          status === "error"
+            ? t("dashboard.kpi.rateError")
+            : status === "loading"
+              ? t("dashboard.metrics.loading")
+              : rate?.executed
+                ? t("dashboard.kpi.rateOf", {
+                    count: rate.executed,
+                    period: periodText,
+                  })
+                : t("dashboard.kpi.rateEmpty", { period: periodText })
+        }
         testId="kpi-rate"
       />
       <Kpi
@@ -64,13 +112,15 @@ export function KpiCards({
         icon={Bug}
         label={t("dashboard.kpi.defects")}
         title={t("dashboard.kpi.defectsTitle")}
-        value={kpis.openDefects}
+        value={ready ? exec.openDefects : unknown}
         note={
-          kpis.criticalDefects
-            ? t("dashboard.kpi.critical", { count: kpis.criticalDefects })
-            : t("dashboard.kpi.noCritical")
+          !ready
+            ? unknownNote
+            : exec.criticalDefects
+              ? t("dashboard.kpi.critical", { count: exec.criticalDefects })
+              : t("dashboard.kpi.noCritical")
         }
-        noteTone={kpis.criticalDefects ? "error" : undefined}
+        noteTone={ready && exec.criticalDefects ? "error" : undefined}
         testId="kpi-defects"
       />
     </div>
@@ -88,27 +138,24 @@ function Kpi({
   noteTone,
   testId,
 }: {
-  /** Without a destination the card is not a link (its note says why). */
-  to?: string;
+  to: string;
   icon: LucideIcon;
   label: string;
   title: string;
   value: ReactNode;
   unit?: string;
   note: string;
-  noteTone?: "error";
+  noteTone?: "error" | "warning";
   testId: string;
 }) {
-  const body = (
-    <>
+  return (
+    <Link to={to} className="home-kpi" title={title} data-testid={testId}>
       <span className="home-kpi__head">
         <span className="home-kpi__icon" aria-hidden="true">
           <Icon size={13} />
         </span>
         <span className="home-kpi__label">{label}</span>
-        {to && (
-          <ArrowUpRight size={14} className="home-kpi__go" aria-hidden="true" />
-        )}
+        <ArrowUpRight size={14} className="home-kpi__go" aria-hidden="true" />
       </span>
       <span className="home-kpi__value">
         <span className="home-kpi__num">{value}</span>
@@ -117,19 +164,6 @@ function Kpi({
       <span className="home-kpi__note" data-tone={noteTone}>
         {note}
       </span>
-    </>
-  );
-  return to ? (
-    <Link to={to} className="home-kpi" title={title} data-testid={testId}>
-      {body}
     </Link>
-  ) : (
-    <div
-      className="home-kpi home-kpi--static"
-      title={title}
-      data-testid={testId}
-    >
-      {body}
-    </div>
   );
 }

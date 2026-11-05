@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 import { projectPath } from "@modules/projects";
 import { caseLink } from "@modules/test-cases";
 import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
+import { Tabs } from "@shared/ui/Tabs";
 import { tabPanelProps } from "@shared/ui/tabPanel";
-import { upcomingTests, type HomeProject } from "./model/homeData";
+import type { HomeProject } from "./model/homeData";
+import { queueCounts, queueRows, type QueueTab } from "./model/metrics";
+import type { MetricsState } from "./model/loadHomeMetrics";
+import { MetricsNotice } from "./MetricsNotice";
 
 const PRIORITY_TONE: Record<string, FlagTone> = {
   critical: "error",
@@ -14,19 +19,26 @@ const PRIORITY_TONE: Record<string, FlagTone> = {
   low: "muted",
 };
 
-/** «Próximas pruebas» (SPEC §8): the pending cases by priority (real: no case
- *  has been run yet); a row opens the case in its project's Casos.
- *  «Bloqueadas» and «Re-test» need run results (RED-W6). */
+const TABS: QueueTab[] = ["notRun", "blocked", "retest"];
+
+/** «Próximas pruebas» (SPEC §8, RED-W6): No ejecutadas (no final result
+ *  yet), Bloqueadas (latest final blocked) and Re-test (latest final failed
+ *  with a linked defect fixed or in re-test), as the shared derivation
+ *  classifies them; each tab by priority, then project recency, then case
+ *  id. A row opens the case in its project's Casos. */
 export function UpcomingTests({
   projects,
-  filters,
+  state,
+  onRetry,
 }: {
   projects: HomeProject[];
-  /** The «No ejecutadas · Bloqueadas · Re-test» strip (shared `Tabs`). */
-  filters?: React.ReactNode;
+  state: MetricsState;
+  onRetry: () => void;
 }) {
   const { t } = useTranslation();
-  const rows = upcomingTests(projects);
+  const [tab, setTab] = useState<QueueTab>("notRun");
+  const counts = queueCounts(state.data);
+  const rows = state.data ? queueRows(projects, state.data, tab) : [];
   const only = projects.length === 1 ? projects[0] : null;
 
   return (
@@ -49,24 +61,50 @@ export function UpcomingTests({
           <ArrowRight size={14} aria-hidden="true" />
         </Link>
       </div>
-      {filters}
-      {/* The panel of the «No ejecutadas» tab of `filters`. */}
+      <Tabs
+        label={t("dashboard.upcoming.filters")}
+        variant="underline"
+        idPrefix="home-up-"
+        value={tab}
+        onChange={(id: string) => setTab(id as QueueTab)}
+        className="home-upcoming__filters"
+        items={TABS.map((id) => ({
+          id,
+          label: t(`dashboard.upcoming.${id}`),
+          badge: counts
+            ? {
+                count: counts[id],
+                tone: id === "notRun" ? "muted" : "danger",
+              }
+            : undefined,
+        }))}
+      />
       <div
-        {...tabPanelProps("notRun", "home-up-")}
+        {...tabPanelProps(tab, "home-up-")}
         className="home-upcoming__panel"
       >
-        {rows.length === 0 ? (
+        {state.status !== "ready" ? (
+          <MetricsNotice
+            state={state}
+            onRetry={onRetry}
+            className="home-card__pad"
+          />
+        ) : rows.length === 0 ? (
           <p className="home-empty home-card__pad">
-            {t("dashboard.upcoming.empty")}
+            {t(`dashboard.upcoming.empty.${tab}`)}
           </p>
         ) : (
-          <ul className="home-queue" data-testid="home-upcoming">
+          <ul
+            className="home-queue"
+            data-testid="home-upcoming"
+            data-tab={tab}
+          >
             {rows.map((r) => {
               const tone = PRIORITY_TONE[r.priority];
               return (
-                <li key={r.id}>
+                <li key={`${r.projectId}/${r.caseId}`}>
                   <Link
-                    to={caseLink(r.projectId, r.id)}
+                    to={caseLink(r.projectId, r.caseId)}
                     className="home-queue__row"
                   >
                     {tone ? (

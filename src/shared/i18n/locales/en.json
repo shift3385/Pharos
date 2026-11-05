@@ -1418,6 +1418,7 @@
     "title": "Home",
     "greeting": "Hello, {{name}}",
     "summary": "You have <b>{{pending}}</b> across {{projects}}.",
+    "summaryProjects": "You have <b>{{projects}}</b>.",
     "pendingTests_one": "{{count}} pending test",
     "pendingTests_other": "{{count}} pending tests",
     "openProjects_one": "{{count}} open project",
@@ -1434,16 +1435,21 @@
       "noneClosing": "None closes this month",
       "pending": "Pending tests",
       "pendingOf": "of {{total}}",
-      "pendingTitle": "Cases not yet run across all open projects",
-      "noRuns": "No runs recorded",
+      "pendingTitle": "Cases not yet run or blocked across all open projects",
       "rate": "Pass rate",
-      "rateTitle": "Calculated once you record runs (version 0.2.0)",
-      "rateEmpty": "No runs yet",
+      "rateTitle": "Passing cases over the cases run in the period ({{period}}), across all open projects",
       "defects": "Open defects",
       "defectsTitle": "Defects not closed in the Planner of your projects",
       "critical_one": "{{count}} critical",
       "critical_other": "{{count}} critical",
-      "noCritical": "None critical"
+      "noCritical": "None critical",
+      "blocked_one": "{{count}} blocked",
+      "blocked_other": "{{count}} blocked",
+      "noneBlocked": "None blocked",
+      "rateOf_one": "of {{count}} run · {{period}}",
+      "rateOf_other": "of {{count}} run · {{period}}",
+      "rateEmpty": "No runs: {{period}}",
+      "rateError": "Not available"
     },
     "period": {
       "label": "Period",
@@ -1460,7 +1466,7 @@
       "custom": "Custom range…",
       "soonTitle": "Coming soon: will use the plan’s cycles and ranges",
       "compare": "Compare with the previous period",
-      "compareTitle": "Available once there are runs to compare (version 0.2.0)",
+      "compareTitle": "Coming soon: compares with the previous period",
       "lower": {
         "today": "today",
         "7d": "last 7 days",
@@ -1471,15 +1477,17 @@
     },
     "exec": {
       "title": "Execution by project",
-      "subtitle": "Status of the test cases in each open project",
+      "subtitle": "Latest result of each case in each open project",
       "pass": "Pass",
       "fail": "Fail",
       "blocked": "Blocked",
       "notRun": "Not run",
-      "rowLabel": "{{name}}: {{executed}} of {{total}} cases run",
-      "noRuns": "Runs arrive with version 0.2.0: no case has a result yet.",
+      "rowLabel": "{{name}}: {{executed}} of {{total}} cases run; {{passed}} pass, {{failed}} fail, {{blocked}} blocked",
+      "noRuns": "No runs recorded in your projects yet.",
       "noCases": "No cases yet",
-      "empty": "No open projects."
+      "empty": "No open projects.",
+      "other": "Other",
+      "rowUnknown": "{{name}}: run data not available yet"
     },
     "exit": {
       "title": "Exit criteria",
@@ -1493,7 +1501,6 @@
       "all": "All",
       "risk": "At risk",
       "ok": "Met",
-      "filterSoon": "Needs run results (version 0.2.0)",
       "byClose": "By closing date",
       "closes": "Closes {{date}}",
       "noDate": "No closing date",
@@ -1509,7 +1516,31 @@
       "noCriteria": "This project’s plan defines no exit criteria.",
       "noPlan": "This project has no test plan yet.",
       "openPlan": "Open the plan",
-      "empty": "Create a project to see its exit criteria."
+      "empty": "Create a project to see its exit criteria.",
+      "ringValue": "Share run: {{percent}}",
+      "riskHeadline": "Some criteria are not met",
+      "riskSub_one": "{{met}} of {{count}} measurable criterion is met.",
+      "riskSub_other": "{{met}} of {{count}} measurable criteria are met.",
+      "metHeadline": "Ready to close",
+      "metSub": "Every measurable criterion is met.",
+      "executedHeadline": "{{percent}} run",
+      "unknownSub": "The plan's criteria cannot be evaluated automatically.",
+      "met": "Met",
+      "notMet": "Not met",
+      "notEvaluable": "This criterion cannot be evaluated automatically",
+      "filterWaiting": "Available once the runs load",
+      "filterTitle": {
+        "all": "All projects",
+        "risk": "Projects with an exit criterion that is not met",
+        "met": "Projects that meet every measurable criterion"
+      },
+      "noneIn": {
+        "all": "No projects.",
+        "risk": "No project is at risk.",
+        "met": "No project meets its criteria yet."
+      },
+      "defaults": "The default criteria apply.",
+      "ringLoading": "Share run: loading"
     },
     "daily": {
       "title": "Daily runs",
@@ -1518,24 +1549,43 @@
       "pass": "Pass",
       "fail": "Fail",
       "none": "No runs",
-      "dayTitle": "{{date}}: no runs",
-      "chartLabel": "Runs per day, {{period}}: no runs recorded"
+      "other": "Other",
+      "dayTitle_one": "{{date}}: {{count}} run · {{passed}} pass, {{failed}} fail, {{other}} other · {{manual}} manual, {{imported}} imported",
+      "dayTitle_other": "{{date}}: {{count}} runs · {{passed}} pass, {{failed}} fail, {{other}} other · {{manual}} manual, {{imported}} imported",
+      "dayEmpty": "{{date}}: no runs",
+      "chartLabel_one": "Runs per day, {{period}}: {{count}} in total",
+      "chartLabel_other": "Runs per day, {{period}}: {{count}} in total",
+      "chartEmpty": "Runs per day, {{period}}: no runs recorded",
+      "undated_one": "Runs in the period. {{count}} result without a valid date is not in the chart",
+      "undated_other": "Runs in the period. {{count}} results without a valid date are not in the chart",
+      "tableCaption": "Runs per day, {{period}}",
+      "colDay": "Day",
+      "colManual": "Manual",
+      "colImported": "Imported",
+      "loading": "Runs per day, {{period}}: loading",
+      "unavailable": "Runs per day, {{period}}: not available",
+      "showData": "Show the data",
+      "undatedNote_one": "{{count}} result without a valid date is not in the table.",
+      "undatedNote_other": "{{count}} results without a valid date are not in the table."
     },
     "upcoming": {
       "title": "Upcoming tests",
-      "subtitle": "Waiting to be run, by priority",
+      "subtitle": "By their latest result, by priority",
       "viewAll": "See all",
       "filters": "Test status",
       "notRun": "Not run",
       "blocked": "Blocked",
       "retest": "Re-test",
-      "soonTitle": "Needs run results (version 0.2.0)",
-      "empty": "No pending cases. Create cases in a project to see them here.",
       "priority": {
         "critical": "Critical priority",
         "high": "High priority",
         "medium": "Medium priority",
         "low": "Low priority"
+      },
+      "empty": {
+        "notRun": "No cases left to run.",
+        "blocked": "No blocked cases.",
+        "retest": "No cases waiting for a re-test."
       }
     },
     "tabs": {
@@ -1544,7 +1594,16 @@
       "execution": "Execution",
       "tests": "Tests",
       "pendingBubble_one": "{{count}} pending test",
-      "pendingBubble_other": "{{count}} pending tests"
+      "pendingBubble_other": "{{count}} pending tests",
+      "problemsBubble_one": "{{count}} problem",
+      "problemsBubble_other": "{{count}} problems"
+    },
+    "metrics": {
+      "loading": "Loading runs…",
+      "error": "Runs could not be loaded.",
+      "retry": "Retry",
+      "refreshing": "Updating…",
+      "staleAt": "Data as of {{time}}: could not refresh"
     }
   },
   "section": {

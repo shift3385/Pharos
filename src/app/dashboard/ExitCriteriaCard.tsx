@@ -12,24 +12,93 @@ import {
   shortDate,
   type HomeProject,
 } from "./model/homeData";
+import {
+  byProject,
+  execRow,
+  exitStatus,
+  type ExitCriterion as CriterionEvaluation,
+  type ExitStatus,
+  type ProjectMetrics,
+} from "./model/metrics";
+import type { MetricsState } from "./model/loadHomeMetrics";
+import { MetricsNotice } from "./MetricsNotice";
 
-/** «Criterios de salida» (SPEC §8): the closing date and the criteria of the
- *  chosen project's plan, real today; whether each one is met needs runs
- *  (RED-W6), so the ring and every criterion say «Sin datos». The picker
- *  searches, filters and sorts by closing date (SPEC §6 long lists). */
+const RING_R = 42;
+const RING_C = 2 * Math.PI * RING_R;
+
+/** «Criterios de salida» (SPEC §8, RED-W6): the chosen project's plan
+ *  criteria as the shared derivation evaluates them (Cumple / No cumple, or
+ *  «Sin datos» when a criterion is not machine-readable), the ring with the
+ *  share of cases executed, and the closing date. The picker searches,
+ *  filters by Todos / En riesgo / Cumplen and sorts by closing date (SPEC §6
+ *  long lists). */
 export function ExitCriteriaCard({
   projects,
   selected,
   onSelect,
   today,
+  state,
+  onRetry,
 }: {
   projects: HomeProject[];
   selected: HomeProject | null;
   onSelect: (id: string) => void;
   today: Date;
+  state: MetricsState;
+  onRetry: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage;
+  const pm = byProject(state.data);
+  const ready = state.status === "ready";
+  const percent = new Intl.NumberFormat(lang, { style: "percent" });
+
+  const m = selected ? pm.get(selected.id) : undefined;
+  const row = execRow(m);
+  const share = ready ? row.executedShare : null;
+  const executed = ready ? (row.counts?.executed ?? 0) : 0;
+  const status = exitStatus(m);
+  const evaluable = (m?.exitCriteria ?? []).filter((c) => c.met !== null);
+  const metCount = evaluable.filter((c) => c.met).length;
+  // With metrics, the derivation's criteria (its text, its raw plan index, or
+  // the A3 defaults when the plan has none); before, the plan's text alone.
+  const rows: {
+    criterion: string;
+    metric: string;
+    evaluation?: CriterionEvaluation;
+  }[] =
+    ready && m
+      ? m.exitCriteria.map((e) => ({ ...e, evaluation: e }))
+      : (selected?.criteria ?? []);
+  const defaults =
+    ready && !!m && rows.length > 0 && m.exitCriteria.every((e) => e.index === null);
+
+  let headline = t("dashboard.exit.headline");
+  let sub = t("dashboard.exit.sub");
+  if (ready && executed > 0) {
+    if (status === "risk") {
+      headline = t("dashboard.exit.riskHeadline");
+      sub = t("dashboard.exit.riskSub", {
+        met: metCount,
+        count: evaluable.length,
+      });
+    } else if (status === "met") {
+      headline = t("dashboard.exit.metHeadline");
+      sub = t("dashboard.exit.metSub");
+    } else {
+      headline = t("dashboard.exit.executedHeadline", {
+        percent: percent.format(share ?? 0),
+      });
+      sub = t("dashboard.exit.unknownSub");
+    }
+  } else if (ready && evaluable.length) {
+    // Nothing run yet, but the criteria are already evaluated (0 % executed
+    // fails «≥ 95 %», 0 critical defects meets «0»): say how many hold.
+    sub = t("dashboard.exit.riskSub", {
+      met: metCount,
+      count: evaluable.length,
+    });
+  }
 
   return (
     <section className="home-card home-exit" aria-labelledby="home-exit-title">
@@ -46,6 +115,7 @@ export function ExitCriteriaCard({
             selected={selected}
             onSelect={onSelect}
             today={today}
+            metrics={ready ? pm : null}
           />
         )}
       </div>
@@ -58,23 +128,51 @@ export function ExitCriteriaCard({
             <div
               className="home-ring"
               role="img"
-              aria-label={t("dashboard.exit.ringLabel")}
+              aria-label={
+                share !== null
+                  ? t("dashboard.exit.ringValue", {
+                      percent: percent.format(share),
+                    })
+                  : state.status === "loading"
+                    ? t("dashboard.exit.ringLoading")
+                    : t("dashboard.exit.ringLabel")
+              }
+              data-status={ready && executed > 0 ? status : undefined}
+              data-testid="exit-ring"
             >
               <svg viewBox="0 0 100 100" aria-hidden="true">
-                <circle cx="50" cy="50" r="42" />
+                <circle cx="50" cy="50" r={RING_R} />
+                {share !== null && share > 0 && (
+                  <circle
+                    className="home-ring__arc"
+                    cx="50"
+                    cy="50"
+                    r={RING_R}
+                    strokeDasharray={`${share * RING_C} ${RING_C}`}
+                  />
+                )}
               </svg>
               <span className="home-ring__text" aria-hidden="true">
-                <span className="home-ring__value">—</span>
+                <span
+                  className="home-ring__value"
+                  data-filled={share !== null || undefined}
+                >
+                  {share !== null ? percent.format(share) : "—"}
+                </span>
                 <span className="home-ring__label">
                   {t("dashboard.exit.executed")}
                 </span>
               </span>
             </div>
             <div className="home-exit__text">
-              <span className="home-exit__headline">
-                {t("dashboard.exit.headline")}
-              </span>
-              <span>{t("dashboard.exit.sub")}</span>
+              {ready ? (
+                <>
+                  <span className="home-exit__headline">{headline}</span>
+                  <span>{sub}</span>
+                </>
+              ) : (
+                <MetricsNotice state={state} onRetry={onRetry} />
+              )}
               <span className="home-exit__date">
                 <CalendarClock size={14} aria-hidden="true" />
                 {selected.closeDate
@@ -86,26 +184,27 @@ export function ExitCriteriaCard({
             </div>
           </div>
 
-          {!selected.hasPlan || selected.criteria.length === 0 ? (
+          {(rows.length === 0 || defaults) && (
             <p className="home-empty home-empty--left">
               {selected.hasPlan
                 ? t("dashboard.exit.noCriteria")
                 : t("dashboard.exit.noPlan")}{" "}
+              {defaults && t("dashboard.exit.defaults")}{" "}
               <Link to={projectPath(selected.id, "plan")} className="home-link">
                 {t("dashboard.exit.openPlan")}
               </Link>
             </p>
-          ) : (
+          )}
+          {rows.length > 0 && (
             <ul className="home-exit__criteria" data-testid="home-criteria">
-              {selected.criteria.map((c, i) => (
+              {rows.map((c, i) => (
                 <li key={i}>
                   <span className="home-exit__criterion">{c.criterion}</span>
                   {c.metric && (
                     <span className="home-exit__metric t-id">{c.metric}</span>
                   )}
-                  <StatusPill tone="neutral">
-                    {t("dashboard.exit.noData")}
-                  </StatusPill>
+                  {/* No verdict until the metrics load (not even «Sin datos»). */}
+                  {ready && <CriterionResult evaluation={c.evaluation} />}
                 </li>
               ))}
             </ul>
@@ -116,23 +215,73 @@ export function ExitCriteriaCard({
   );
 }
 
+/** A criterion's value and pill; «Sin datos» says why in its title. */
+function CriterionResult({
+  evaluation: e,
+}: {
+  evaluation: CriterionEvaluation | undefined;
+}) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage;
+  const value =
+    e?.value == null
+      ? null
+      : e.kind === "criticalDefects"
+        ? new Intl.NumberFormat(lang).format(e.value)
+        : new Intl.NumberFormat(lang, {
+            style: "percent",
+            maximumFractionDigits: 1,
+          }).format(e.value / 100);
+  return (
+    <>
+      {value !== null && <span className="home-exit__value">{value}</span>}
+      {e?.met === true ? (
+        <StatusPill tone="success">{t("dashboard.exit.met")}</StatusPill>
+      ) : e?.met === false ? (
+        <StatusPill tone="error">{t("dashboard.exit.notMet")}</StatusPill>
+      ) : (
+        <span
+          className="home-exit__pill"
+          title={e ? t("dashboard.exit.notEvaluable") : undefined}
+        >
+          <StatusPill tone="neutral">{t("dashboard.exit.noData")}</StatusPill>
+        </span>
+      )}
+    </>
+  );
+}
+
+type ExitFilter = "all" | Exclude<ExitStatus, "unknown">;
+const FILTERS: ExitFilter[] = ["all", "risk", "met"];
+
 function ExitProjectPicker({
   projects,
   selected,
   onSelect,
   today,
+  metrics,
 }: {
   projects: HomeProject[];
   selected: HomeProject;
   onSelect: (id: string) => void;
   today: Date;
+  /** Null until the metrics load: «En riesgo» and «Cumplen» wait for them. */
+  metrics: Map<string, ProjectMetrics> | null;
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
   const [query, setQuery] = useState("");
-  const choices = exitCriteriaChoices(projects, query, today);
-  const soon = t("dashboard.exit.filterSoon");
+  const [filter, setFilter] = useState<ExitFilter>("all");
+  const active = metrics ? filter : "all";
+  const statusOf = (p: HomeProject) => exitStatus(metrics?.get(p.id));
+  const count = (f: ExitFilter) =>
+    f === "all"
+      ? projects.length
+      : projects.filter((p) => statusOf(p) === f).length;
+  const choices = exitCriteriaChoices(projects, query, today).filter(
+    (p) => active === "all" || statusOf(p) === active,
+  );
   const close = () => {
     menu.close();
     setQuery("");
@@ -183,29 +332,40 @@ function ExitProjectPicker({
                 data-testid="exit-search"
               />
             </label>
-            {/* «En riesgo» and «Cumplen» need run results (RED-W6). */}
             <div
               className="home-chips"
               role="group"
               aria-label={t("dashboard.exit.filters")}
             >
-              {/* Today every project is listed: «Todos» is the count, not a toggle. */}
-              <span className="home-chip home-chip--current">
-                {t("dashboard.exit.all")}
-                <span className="home-chip__count">{projects.length}</span>
-              </span>
-              <button type="button" className="home-chip" disabled title={soon}>
-                {t("dashboard.exit.risk")}
-              </button>
-              <button type="button" className="home-chip" disabled title={soon}>
-                {t("dashboard.exit.ok")}
-              </button>
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className={`home-chip${active === f ? " home-chip--current" : ""}`}
+                  aria-pressed={active === f}
+                  disabled={f !== "all" && !metrics}
+                  title={
+                    f !== "all" && !metrics
+                      ? t("dashboard.exit.filterWaiting")
+                      : t(`dashboard.exit.filterTitle.${f}`)
+                  }
+                  onClick={() => setFilter(f)}
+                  data-testid={`exit-filter-${f}`}
+                >
+                  {t(`dashboard.exit.${f === "met" ? "ok" : f}`)}
+                  {(f === "all" || metrics) && (
+                    <span className="home-chip__count">{count(f)}</span>
+                  )}
+                </button>
+              ))}
             </div>
             {/* In the header: a menu may only hold menu items. */}
-            <p className="home-picker__none" role="status">
-              {choices.length === 0
-                ? t("dashboard.exit.noMatch", { query: query.trim() })
-                : ""}
+            <p className="home-picker__none" role="status" data-testid="exit-picker-status">
+              {choices.length > 0
+                ? ""
+                : query.trim()
+                  ? t("dashboard.exit.noMatch", { query: query.trim() })
+                  : t(`dashboard.exit.noneIn.${active}`)}
             </p>
           </div>
         }

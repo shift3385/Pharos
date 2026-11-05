@@ -1351,6 +1351,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     ("runs::manual::execution_attachment_preview", "read"),
     (
+        "home_metrics::home_metrics",
+        "read (Inicio metrics, RED-W6)",
+    ),
+    (
         "evidence::retention::evidence_retention_preview",
         "read (counts what a shorter setting would expire)",
     ),
