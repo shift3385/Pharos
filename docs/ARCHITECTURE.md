@@ -964,7 +964,7 @@ store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
   them to its plan and its cases: not at all for a project with neither, and
   the items only when it has cases. Items are read only for the cycles that
   have any, in parallel; a single case export reads them too (there is no
-  query by case). A failure to read them stops the export with one toast
+  query by case: a known cost in projects with many cycles, EXP-04). A failure to read them stops the export with one toast
   (`ReportedError`, so the caller adds none) and nothing is saved.
 
 ## Testing

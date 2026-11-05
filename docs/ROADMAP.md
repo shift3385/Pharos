@@ -268,6 +268,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | PLN-01 | Frecuencia configurable de las ceremonias del plan (spec §5.1 paso 8)                               | P2  | 0.1.0 · Hecho (U1) |
 | EXP-02 | ZIP de proyecto y global también con PDF (spec §5.4)                                                | P2  | 0.1.0 · Hecho (U1) |
 | EXP-03 | Ciclos e hitos en los exports `.xlsx` y PDF (seguimiento de E4)                                      | P2  | 0.2.0 · Hecho (E6p): hojas «Hitos» y «Ciclos» en el plan, «Ciclos» en cada caso; secciones al final del PDF; también en los ZIP |
+| EXP-04 | Elementos de ciclo de un caso en una sola consulta (comando por caso), para que exportar un caso no lea los elementos de todos los ciclos con elementos (coste conocido de EXP-03 en proyectos con muchos ciclos) | P3  | —       |
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | Absorbido por el rediseño (RED-*) |
