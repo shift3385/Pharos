@@ -939,6 +939,13 @@ function queueRefs(cases: CaseExecution[], status: string, limit: number): [Queu
   ];
 }
 
+/** The attempts of the project's live runs: a deleted run (EJE-07) keeps its
+ *  results live, and every reader hides them through the run. */
+function liveAttempts(data: ProjectData): AttemptData[] {
+  const runs = new Set((data.runs ?? []).map((r) => r.id));
+  return (data.attempts ?? []).filter((a) => runs.has(a.runId));
+}
+
 /** The Home metrics of `projects` (contract v1 §2.4, R8–R9). */
 export function home(projects: ProjectData[], request: HomeRequest): HomeMetrics {
   const limit = request.queueLimit ?? 5;
@@ -948,7 +955,7 @@ export function home(projects: ProjectData[], request: HomeRequest): HomeMetrics
   const out: HomeProject[] = [];
   for (const data of projects) {
     const s = summarize(data, { projectId: data.projectId });
-    for (const a of data.attempts ?? []) {
+    for (const a of liveAttempts(data)) {
       const t = timeOf(a);
       if (!t) undated++;
       else if (t[0] <= request.now) {
@@ -975,7 +982,7 @@ export function home(projects: ProjectData[], request: HomeRequest): HomeMetrics
     if (start === undefined) continue;
     const counts: WindowCounts = { ...emptyCounts(), executed: 0, passRate: null };
     for (const data of projects) {
-      const inWindow = (data.attempts ?? []).filter((a) => {
+      const inWindow = liveAttempts(data).filter((a) => {
         const t = timeOf(a);
         return !!t && t[0] >= start && t[0] <= request.now;
       });

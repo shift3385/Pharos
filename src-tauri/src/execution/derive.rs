@@ -1491,6 +1491,15 @@ fn queue_refs(cases: &[CaseExecution], status: &str, limit: usize) -> (Vec<Queue
     (refs, count)
 }
 
+/// The attempts of the project's live runs: a deleted run (EJE-07) keeps
+/// its results live, and every reader hides them through the run.
+fn live_attempts(data: &ProjectData) -> impl Iterator<Item = &AttemptData> {
+    let runs: HashSet<&str> = data.runs.iter().map(|r| r.id.as_str()).collect();
+    data.attempts
+        .iter()
+        .filter(move |a| runs.contains(a.run_id.as_str()))
+}
+
 /// The Home metrics of `projects` (contract v1 §2.4, R8–R9).
 pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
     let limit = request.queue_limit.unwrap_or(5);
@@ -1506,7 +1515,7 @@ pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
                 ..Default::default()
             },
         );
-        for a in &data.attempts {
+        for a in live_attempts(data) {
             match time_of(a) {
                 None => undated += 1,
                 Some((t, _)) if t <= request.now => {
@@ -1550,9 +1559,7 @@ pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
         };
         let mut counts = WindowCounts::default();
         for data in projects {
-            let in_window: Vec<&AttemptData> = data
-                .attempts
-                .iter()
+            let in_window: Vec<&AttemptData> = live_attempts(data)
                 .filter(|a| time_of(a).is_some_and(|(t, _)| t >= start && t <= request.now))
                 .collect();
             let (finals, _) = finals(&in_window);
