@@ -7,53 +7,228 @@
       "project": {
         "projectId": "P",
         "runs": [
-          { "id": "R1", "runKey": "RUN-001", "title": "Manual", "trigger": "manual", "status": "completed", "startedAt": "2026-11-01T09:00:00Z", "createdAt": "2026-11-01 09:00:00" },
-          { "id": "R2", "runKey": "RUN-002", "title": "CI", "trigger": "import", "sourceTool": "playwright", "status": "completed", "startedAt": "2026-11-02T09:00:00Z", "createdAt": "2026-11-02 09:00:00" }
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "Manual",
+            "trigger": "manual",
+            "status": "completed",
+            "startedAt": "2026-11-01T09:00:00Z",
+            "createdAt": "2026-11-01 09:00:00"
+          },
+          {
+            "id": "R2",
+            "runKey": "RUN-002",
+            "title": "CI",
+            "trigger": "import",
+            "sourceTool": "playwright",
+            "status": "completed",
+            "startedAt": "2026-11-02T09:00:00Z",
+            "createdAt": "2026-11-02 09:00:00"
+          }
         ],
         "attempts": [
-          { "id": "a1", "runId": "R1", "testKey": "manual:C1//", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C1", "revisionId": "rev1", "caseRevision": 1 },
-          { "id": "a2", "runId": "R2", "testKey": "tests/pay.spec.ts > pay", "configurationLabel": "chromium", "status": "passed", "finishedAt": "2026-11-02T10:00:00Z", "shardImportedAt": "2026-11-02 11:00:00", "imported": true, "caseId": "C1", "revisionId": "rev2", "caseRevision": 2 }
+          {
+            "id": "a1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C1",
+            "revisionId": "rev1",
+            "execFingerprint": "f1"
+          },
+          {
+            "id": "a2",
+            "runId": "R2",
+            "testKey": "tests/pay.spec.ts > pay",
+            "configurationLabel": "chromium",
+            "status": "passed",
+            "finishedAt": "2026-11-02T10:00:00Z",
+            "shardImportedAt": "2026-11-02 11:00:00",
+            "imported": true,
+            "caseId": "C1",
+            "revisionId": "rev2",
+            "execFingerprint": "f2"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_001", "title": "Pay", "status": "approved", "priority": "high", "requirementKeys": ["REQ-001"], "revision": 2 },
-          { "id": "C2", "scenarioId": "ATS_002", "title": "Refund", "status": "draft", "priority": "medium", "requirementKeys": [], "revision": 1 },
-          { "id": "C3", "scenarioId": "ATS_010", "title": "Old", "status": "obsolete", "priority": "low", "requirementKeys": ["REQ-002"], "revision": 1 }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_001",
+            "title": "Pay",
+            "status": "approved",
+            "priority": "high",
+            "requirementKeys": [
+              "REQ-001"
+            ],
+            "execFingerprint": "f2"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_002",
+            "title": "Refund",
+            "status": "draft",
+            "priority": "medium",
+            "requirementKeys": [],
+            "execFingerprint": "f1"
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_010",
+            "title": "Old",
+            "status": "obsolete",
+            "priority": "low",
+            "requirementKeys": [
+              "REQ-002"
+            ],
+            "execFingerprint": "f1"
+          }
         ],
         "requirements": [
-          { "id": "Q2", "requirementKey": "REQ-002", "title": "Export", "priority": "low" },
-          { "id": "Q1", "requirementKey": "REQ-001", "title": "Payment", "priority": "high", "riskLikelihood": 4, "riskImpact": 4 }
+          {
+            "id": "Q2",
+            "requirementKey": "REQ-002",
+            "title": "Export",
+            "priority": "low"
+          },
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-001",
+            "title": "Payment",
+            "priority": "high",
+            "riskLikelihood": 4,
+            "riskImpact": 4
+          }
         ],
         "planCriteria": null
       },
-      "filter": { "projectId": "P" },
+      "filter": {
+        "projectId": "P"
+      },
       "expected": {
         "contractVersion": 1,
         "progressUnit": "case",
-        "progress": { "total": 2, "executed": 1, "passed": 1, "failed": 0, "notRun": 1, "retest": 0 },
-        "passRate": 1.0,
+        "progress": {
+          "total": 2,
+          "executed": 1,
+          "passed": 1,
+          "failed": 0,
+          "notRun": 1,
+          "retest": 0
+        },
+        "passRate": 1,
         "lastExecutedAt": "2026-11-02T10:00:00Z",
         "undated": 0,
         "cases": [
-          { "caseId": "C1", "status": "passed", "last": { "resultId": "a2", "runKey": "RUN-002", "origin": "imported", "sourceTool": "playwright", "configurationLabel": "chromium", "flaky": false, "stale": false, "at": "2026-11-02T10:00:00Z" } },
-          { "caseId": "C2", "status": "not_run", "last": null }
+          {
+            "caseId": "C1",
+            "status": "passed",
+            "last": {
+              "resultId": "a2",
+              "runKey": "RUN-002",
+              "origin": "imported",
+              "sourceTool": "playwright",
+              "configurationLabel": "chromium",
+              "flaky": false,
+              "stale": false,
+              "at": "2026-11-02T10:00:00Z"
+            }
+          },
+          {
+            "caseId": "C2",
+            "status": "not_run",
+            "last": null
+          }
         ],
-        "targets": [{ "caseId": "C1", "flowId": null, "rowId": null, "status": "passed" }],
+        "targets": [
+          {
+            "caseId": "C1",
+            "flowId": null,
+            "rowId": null,
+            "status": "passed"
+          }
+        ],
         "requirements": [
-          { "requirementKey": "REQ-001", "riskLevel": 16, "riskBand": "high", "covered": true, "executedCases": 1, "status": "passed", "caseIds": ["C1"], "inScope": true },
-          { "requirementKey": "REQ-002", "riskLevel": null, "riskBand": "unassessed", "covered": false, "executedCases": 0, "status": "not_run", "caseIds": ["C3"], "inScope": false }
+          {
+            "requirementKey": "REQ-001",
+            "riskLevel": 16,
+            "riskBand": "high",
+            "covered": true,
+            "executedCases": 1,
+            "status": "passed",
+            "caseIds": [
+              "C1"
+            ],
+            "inScope": true
+          },
+          {
+            "requirementKey": "REQ-002",
+            "riskLevel": null,
+            "riskBand": "unassessed",
+            "covered": false,
+            "executedCases": 0,
+            "status": "not_run",
+            "caseIds": [],
+            "inScope": false
+          }
         ],
         "coverage": {
-          "requirements": 2, "covered": 1, "coverageRatio": 0.5, "executed": 1, "passed": 1,
+          "requirements": 2,
+          "covered": 1,
+          "coverageRatio": 0.5,
+          "executed": 1,
+          "passed": 1,
           "byRisk": {
-            "high": { "requirements": 1, "covered": 1, "executed": 1, "passed": 1, "failed": 0 },
-            "unassessed": { "requirements": 1, "covered": 0, "executed": 0, "passed": 0, "failed": 0 }
+            "high": {
+              "requirements": 1,
+              "covered": 1,
+              "executed": 1,
+              "passed": 1,
+              "failed": 0
+            },
+            "unassessed": {
+              "requirements": 1,
+              "covered": 0,
+              "executed": 0,
+              "passed": 0,
+              "failed": 0
+            }
           }
         },
-        "runs": [{ "id": "R2" }, { "id": "R1" }],
+        "runs": [
+          {
+            "id": "R2"
+          },
+          {
+            "id": "R1"
+          }
+        ],
         "exitCriteria": [
-          { "index": null, "kind": "executed", "op": ">=", "target": 95.0, "value": 50.0, "met": false },
-          { "index": null, "kind": "criticalDefects", "op": "=", "target": 0.0, "value": 0.0, "met": true },
-          { "index": null, "kind": "coverage", "op": ">=", "target": 90.0, "value": 50.0, "met": false }
+          {
+            "index": null,
+            "kind": "executed",
+            "op": ">=",
+            "target": 95,
+            "value": 50,
+            "met": false
+          },
+          {
+            "index": null,
+            "kind": "criticalDefects",
+            "op": "=",
+            "target": 0,
+            "value": 0,
+            "met": true
+          },
+          {
+            "index": null,
+            "kind": "coverage",
+            "op": ">=",
+            "target": 90,
+            "value": 50,
+            "met": false
+          }
         ]
       }
     },
@@ -63,20 +238,93 @@
       "project": {
         "projectId": "P",
         "runs": [
-          { "id": "R2", "runKey": "RUN-002", "title": "CI", "trigger": "import", "sourceTool": "playwright", "status": "completed", "startedAt": "2026-11-02T09:00:00Z", "createdAt": "2026-11-02 09:00:00" },
-          { "id": "R3", "runKey": "RUN-003", "title": "Retest", "trigger": "manual", "status": "in_progress", "startedAt": "2026-11-03T08:00:00Z", "createdAt": "2026-11-03 08:00:00" }
+          {
+            "id": "R2",
+            "runKey": "RUN-002",
+            "title": "CI",
+            "trigger": "import",
+            "sourceTool": "playwright",
+            "status": "completed",
+            "startedAt": "2026-11-02T09:00:00Z",
+            "createdAt": "2026-11-02 09:00:00"
+          },
+          {
+            "id": "R3",
+            "runKey": "RUN-003",
+            "title": "Retest",
+            "trigger": "manual",
+            "status": "in_progress",
+            "startedAt": "2026-11-03T08:00:00Z",
+            "createdAt": "2026-11-03 08:00:00"
+          }
         ],
         "attempts": [
-          { "id": "a2", "runId": "R2", "testKey": "tests/pay.spec.ts > pay", "status": "passed", "finishedAt": "2026-11-02T10:00:00Z", "imported": true, "caseId": "C1", "caseRevision": 2 },
-          { "id": "a3", "runId": "R3", "testKey": "manual:C1//", "status": "blocked", "finishedAt": "2026-11-03T09:00:00+01:00", "caseId": "C1", "revisionId": "rev1", "caseRevision": 1 }
+          {
+            "id": "a2",
+            "runId": "R2",
+            "testKey": "tests/pay.spec.ts > pay",
+            "status": "passed",
+            "finishedAt": "2026-11-02T10:00:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "execFingerprint": "f2"
+          },
+          {
+            "id": "a3",
+            "runId": "R3",
+            "testKey": "manual:C1//",
+            "status": "blocked",
+            "finishedAt": "2026-11-03T09:00:00+01:00",
+            "caseId": "C1",
+            "revisionId": "rev1",
+            "execFingerprint": "f1"
+          }
         ],
-        "cases": [{ "id": "C1", "scenarioId": "ATS_001", "title": "Pay", "status": "approved", "priority": "high", "requirementKeys": ["REQ-001"], "revision": 2 }],
-        "requirements": [{ "id": "Q1", "requirementKey": "REQ-001", "title": "Payment", "priority": "high" }]
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_001",
+            "title": "Pay",
+            "status": "approved",
+            "priority": "high",
+            "requirementKeys": [
+              "REQ-001"
+            ],
+            "execFingerprint": "f2"
+          }
+        ],
+        "requirements": [
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-001",
+            "title": "Payment",
+            "priority": "high"
+          }
+        ]
       },
-      "filter": { "projectId": "P" },
+      "filter": {
+        "projectId": "P"
+      },
       "expected": {
-        "cases": [{ "caseId": "C1", "status": "blocked", "last": { "resultId": "a3", "runKey": "RUN-003", "origin": "manual", "revisionId": "rev1", "stale": true } }],
-        "requirements": [{ "requirementKey": "REQ-001", "status": "blocked" }],
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "blocked",
+            "last": {
+              "resultId": "a3",
+              "runKey": "RUN-003",
+              "origin": "manual",
+              "revisionId": "rev1",
+              "stale": true
+            }
+          }
+        ],
+        "requirements": [
+          {
+            "requirementKey": "REQ-001",
+            "status": "blocked"
+          }
+        ],
         "lastExecutedAt": "2026-11-03T09:00:00+01:00"
       }
     },
@@ -85,28 +333,119 @@
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "CI", "trigger": "import", "status": "completed", "createdAt": "2026-11-01 09:00:00" }],
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "CI",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
         "attempts": [
-          { "id": "x1", "runId": "R1", "testKey": "k1", "configurationLabel": "chromium", "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C1" },
-          { "id": "x2", "runId": "R1", "testKey": "k1", "configurationLabel": "firefox", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C1" },
-          { "id": "x3", "runId": "R1", "testKey": "k1", "configurationLabel": "webkit", "status": "passed", "finishedAt": "2026-11-01T11:00:00Z", "imported": true, "caseId": "C1" },
-          { "id": "y-b", "runId": "R1", "testKey": "k2", "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C2" },
-          { "id": "y-a", "runId": "R1", "testKey": "k2", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C2" }
+          {
+            "id": "x1",
+            "runId": "R1",
+            "testKey": "k1",
+            "configurationLabel": "chromium",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          },
+          {
+            "id": "x2",
+            "runId": "R1",
+            "testKey": "k1",
+            "configurationLabel": "firefox",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          },
+          {
+            "id": "x3",
+            "runId": "R1",
+            "testKey": "k1",
+            "configurationLabel": "webkit",
+            "status": "passed",
+            "finishedAt": "2026-11-01T11:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          },
+          {
+            "id": "y-b",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C2"
+          },
+          {
+            "id": "y-a",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C2"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          }
         ]
       },
-      "filter": { "projectId": "P" },
+      "filter": {
+        "projectId": "P"
+      },
       "expected": {
         "cases": [
-          { "caseId": "C1", "status": "failed", "last": { "resultId": "x2", "configurationLabel": "firefox" } },
-          { "caseId": "C2", "status": "passed", "last": { "resultId": "y-b" } }
+          {
+            "caseId": "C1",
+            "status": "failed",
+            "last": {
+              "resultId": "x2",
+              "configurationLabel": "firefox"
+            }
+          },
+          {
+            "caseId": "C2",
+            "status": "passed",
+            "last": {
+              "resultId": "y-b"
+            }
+          }
         ],
         "targets": [
-          { "caseId": "C1", "status": "failed", "last": { "resultId": "x2" } },
-          { "caseId": "C2", "status": "passed", "last": { "resultId": "y-b" } }
+          {
+            "caseId": "C1",
+            "status": "failed",
+            "last": {
+              "resultId": "x2"
+            }
+          },
+          {
+            "caseId": "C2",
+            "status": "passed",
+            "last": {
+              "resultId": "y-b"
+            }
+          }
         ]
       }
     },
@@ -115,25 +454,111 @@
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "CI", "trigger": "import", "status": "completed", "createdAt": "2026-11-01 09:00:00" }],
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "CI",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
         "attempts": [
-          { "id": "f0", "runId": "R1", "testKey": "k1", "attempt": 0, "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C1" },
-          { "id": "f1", "runId": "R1", "testKey": "k1", "attempt": 1, "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C1" },
-          { "id": "g1", "runId": "R1", "testKey": "k2", "attempt": 2, "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "declaredFlaky": true, "caseId": "C2" },
-          { "id": "h1", "runId": "R1", "testKey": "k3", "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "imported": true, "caseId": "C3" }
+          {
+            "id": "f0",
+            "runId": "R1",
+            "testKey": "k1",
+            "attempt": 0,
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          },
+          {
+            "id": "f1",
+            "runId": "R1",
+            "testKey": "k1",
+            "attempt": 1,
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          },
+          {
+            "id": "g1",
+            "runId": "R1",
+            "testKey": "k2",
+            "attempt": 2,
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "declaredFlaky": true,
+            "caseId": "C2"
+          },
+          {
+            "id": "h1",
+            "runId": "R1",
+            "testKey": "k3",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C3"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" },
-          { "id": "C3", "scenarioId": "ATS_3", "title": "Three", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "Three",
+            "status": "approved",
+            "priority": "high"
+          }
         ]
       },
-      "filter": { "projectId": "P" },
+      "filter": {
+        "projectId": "P"
+      },
       "expected": {
         "cases": [
-          { "caseId": "C1", "status": "passed", "last": { "resultId": "f1", "flaky": true } },
-          { "caseId": "C2", "status": "passed", "last": { "resultId": "g1", "flaky": true } },
-          { "caseId": "C3", "status": "passed", "last": { "resultId": "h1", "flaky": false } }
+          {
+            "caseId": "C1",
+            "status": "passed",
+            "last": {
+              "resultId": "f1",
+              "flaky": true
+            }
+          },
+          {
+            "caseId": "C2",
+            "status": "passed",
+            "last": {
+              "resultId": "g1",
+              "flaky": true
+            }
+          },
+          {
+            "caseId": "C3",
+            "status": "passed",
+            "last": {
+              "resultId": "h1",
+              "flaky": false
+            }
+          }
         ]
       }
     },
@@ -142,42 +567,193 @@
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "Manual", "trigger": "manual", "status": "completed", "createdAt": "2026-11-01 09:00:00" }],
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "Manual",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
         "attempts": [
-          { "id": "r1", "runId": "R1", "testKey": "manual:C1//", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C1" },
-          { "id": "r2", "runId": "R1", "testKey": "manual:C2//", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C2" }
+          {
+            "id": "r1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C1"
+          },
+          {
+            "id": "r2",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C2"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high", "requirementKeys": ["REQ-001"] },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high",
+            "requirementKeys": [
+              "REQ-001"
+            ]
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          }
         ],
-        "requirements": [{ "id": "Q1", "requirementKey": "REQ-001", "title": "Payment", "priority": "high" }],
+        "requirements": [
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-001",
+            "title": "Payment",
+            "priority": "high"
+          }
+        ],
         "defects": [
-          { "id": "D1", "defectKey": "DEF-001", "severity": "critical", "status": "fixed", "caseIds": ["C1"] },
-          { "id": "D3", "defectKey": "DEF-003", "severity": "critical", "status": "open", "caseIds": ["C2"] },
-          { "id": "D2", "defectKey": "DEF-002", "severity": "major", "status": "retest", "caseIds": ["C2"] },
-          { "id": "D4", "defectKey": "DEF-004", "severity": "minor", "status": "closed", "caseIds": [], "requirementIds": ["Q1"] }
+          {
+            "id": "D1",
+            "defectKey": "DEF-001",
+            "severity": "critical",
+            "status": "fixed",
+            "caseIds": [
+              "C1"
+            ]
+          },
+          {
+            "id": "D3",
+            "defectKey": "DEF-003",
+            "severity": "critical",
+            "status": "open",
+            "caseIds": [
+              "C2"
+            ]
+          },
+          {
+            "id": "D2",
+            "defectKey": "DEF-002",
+            "severity": "major",
+            "status": "retest",
+            "caseIds": [
+              "C2"
+            ]
+          },
+          {
+            "id": "D4",
+            "defectKey": "DEF-004",
+            "severity": "minor",
+            "status": "closed",
+            "caseIds": [],
+            "requirementIds": [
+              "Q1"
+            ]
+          }
         ]
       },
-      "filter": { "projectId": "P" },
+      "filter": {
+        "projectId": "P"
+      },
       "expected": {
-        "progress": { "total": 2, "executed": 2, "passed": 0, "failed": 1, "retest": 1 },
-        "passRate": 0.0,
+        "progress": {
+          "total": 2,
+          "executed": 2,
+          "passed": 0,
+          "failed": 1,
+          "retest": 1
+        },
+        "passRate": 0,
         "cases": [
-          { "caseId": "C1", "status": "retest", "last": { "status": "failed" }, "defectIds": ["D1"] },
-          { "caseId": "C2", "status": "failed", "defectIds": ["D2", "D3"] }
+          {
+            "caseId": "C1",
+            "status": "retest",
+            "last": {
+              "status": "failed"
+            },
+            "defectIds": [
+              "D1"
+            ]
+          },
+          {
+            "caseId": "C2",
+            "status": "failed",
+            "defectIds": [
+              "D2",
+              "D3"
+            ]
+          }
         ],
-        "requirements": [{ "requirementKey": "REQ-001", "status": "failed", "defectIds": ["D1", "D4"] }],
+        "requirements": [
+          {
+            "requirementKey": "REQ-001",
+            "status": "failed",
+            "defectIds": [
+              "D1",
+              "D4"
+            ]
+          }
+        ],
         "defects": {
-          "total": 4, "open": 3,
-          "bySeverity": { "critical": { "total": 2, "open": 2 }, "major": { "total": 1, "open": 1 }, "minor": { "total": 1, "open": 0 }, "trivial": { "total": 0, "open": 0 } },
-          "openBySeverity": { "critical": 2, "major": 1, "minor": 0, "trivial": 0 },
-          "byStatus": { "closed": 1, "fixed": 1, "open": 1, "retest": 1 }
+          "total": 4,
+          "open": 3,
+          "bySeverity": {
+            "critical": {
+              "total": 2,
+              "open": 2
+            },
+            "major": {
+              "total": 1,
+              "open": 1
+            },
+            "minor": {
+              "total": 1,
+              "open": 0
+            },
+            "trivial": {
+              "total": 0,
+              "open": 0
+            }
+          },
+          "openBySeverity": {
+            "critical": 2,
+            "major": 1,
+            "minor": 0,
+            "trivial": 0
+          },
+          "byStatus": {
+            "closed": 1,
+            "fixed": 1,
+            "open": 1,
+            "retest": 1
+          }
         },
         "exitCriteria": [
-          { "kind": "executed", "value": 100.0, "met": true },
-          { "kind": "criticalDefects", "value": 2.0, "met": false },
-          { "kind": "coverage", "value": 100.0, "met": true }
+          {
+            "kind": "executed",
+            "value": 100,
+            "met": true
+          },
+          {
+            "kind": "criticalDefects",
+            "value": 2,
+            "met": false
+          },
+          {
+            "kind": "coverage",
+            "value": 100,
+            "met": true
+          }
         ]
       }
     },
@@ -187,31 +763,118 @@
       "project": {
         "projectId": "P",
         "runs": [
-          { "id": "R1", "runKey": "RUN-001", "title": "Cycle", "trigger": "manual", "status": "completed", "cycleId": "Y1", "configurationId": "K1", "createdAt": "2026-11-01 09:00:00" },
-          { "id": "R2", "runKey": "RUN-002", "title": "Other", "trigger": "manual", "status": "completed", "createdAt": "2026-11-01 09:00:00" }
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "Cycle",
+            "trigger": "manual",
+            "status": "completed",
+            "cycleId": "Y1",
+            "configurationId": "K1",
+            "createdAt": "2026-11-01 09:00:00"
+          },
+          {
+            "id": "R2",
+            "runKey": "RUN-002",
+            "title": "Other",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
         ],
         "attempts": [
-          { "id": "c1", "runId": "R1", "testKey": "manual:C1//", "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C1", "configurationId": "K1" },
-          { "id": "c2", "runId": "R2", "testKey": "manual:C2//", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C2" }
+          {
+            "id": "c1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C1",
+            "configurationId": "K1"
+          },
+          {
+            "id": "c2",
+            "runId": "R2",
+            "testKey": "manual:C2//",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C2"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" },
-          { "id": "C3", "scenarioId": "ATS_3", "title": "Three", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "Three",
+            "status": "approved",
+            "priority": "high"
+          }
         ],
-        "cycles": [{ "id": "Y1", "configurationIds": ["K1", "K2"] }],
+        "cycles": [
+          {
+            "id": "Y1",
+            "configurationIds": [
+              "K1",
+              "K2"
+            ]
+          }
+        ],
         "cycleItems": [
-          { "id": "I1", "cycleId": "Y1", "caseId": "C1" },
-          { "id": "I2", "cycleId": "Y1", "caseId": "C2" }
+          {
+            "id": "I1",
+            "cycleId": "Y1",
+            "caseId": "C1"
+          },
+          {
+            "id": "I2",
+            "cycleId": "Y1",
+            "caseId": "C2"
+          }
         ]
       },
-      "filter": { "projectId": "P", "cycleId": "Y1" },
+      "filter": {
+        "projectId": "P",
+        "cycleId": "Y1"
+      },
       "expected": {
         "progressUnit": "cell",
-        "progress": { "total": 4, "executed": 1, "passed": 1, "failed": 0, "notRun": 3 },
-        "passRate": 1.0,
-        "cases": [{ "caseId": "C1", "status": "passed" }, { "caseId": "C2", "status": "not_run" }],
-        "runs": [{ "id": "R1" }]
+        "progress": {
+          "total": 4,
+          "executed": 1,
+          "passed": 1,
+          "failed": 0,
+          "notRun": 3
+        },
+        "passRate": 1,
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "passed"
+          },
+          {
+            "caseId": "C2",
+            "status": "not_run"
+          }
+        ],
+        "runs": [
+          {
+            "id": "R1"
+          }
+        ]
       }
     },
     {
@@ -220,36 +883,158 @@
       "project": {
         "projectId": "P",
         "runs": [
-          { "id": "R1", "runKey": "RUN-001", "title": "Plan", "trigger": "manual", "status": "completed", "testPlanId": "PL1", "createdAt": "2026-11-01 09:00:00" },
-          { "id": "R2", "runKey": "RUN-002", "title": "Other", "trigger": "manual", "status": "completed", "createdAt": "2026-11-01 09:00:00" }
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "Plan",
+            "trigger": "manual",
+            "status": "completed",
+            "testPlanId": "PL1",
+            "createdAt": "2026-11-01 09:00:00"
+          },
+          {
+            "id": "R2",
+            "runKey": "RUN-002",
+            "title": "Other",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
         ],
         "attempts": [
-          { "id": "p2", "runId": "R1", "testKey": "manual:C2//", "status": "passed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C2" },
-          { "id": "p3", "runId": "R2", "testKey": "manual:C3//", "status": "failed", "finishedAt": "2026-11-01T10:00:00Z", "caseId": "C3" }
+          {
+            "id": "p2",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C2"
+          },
+          {
+            "id": "p3",
+            "runId": "R2",
+            "testKey": "manual:C3//",
+            "status": "failed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C3"
+          }
         ],
         "cases": [
-          { "id": "C3", "scenarioId": "ATS_3", "title": "Three", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" },
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" }
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "Three",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          }
         ],
-        "cycles": [{ "id": "Y1", "testPlanId": "PL1" }],
-        "cycleItems": [{ "id": "I1", "cycleId": "Y1", "caseId": "C1" }],
+        "cycles": [
+          {
+            "id": "Y1",
+            "testPlanId": "PL1"
+          }
+        ],
+        "cycleItems": [
+          {
+            "id": "I1",
+            "cycleId": "Y1",
+            "caseId": "C1"
+          }
+        ],
         "planCriteria": [
-          { "criterion": "% de casos ejecutados", "metric": "≥ 50%" },
-          { "criterion": "  ", "metric": "" },
-          { "criterion": "Firma del responsable", "metric": "sí" },
-          { "criterion": "Tasa de éxito", "metric": ">= 90 %" }
+          {
+            "criterion": "% de casos ejecutados",
+            "metric": "≥ 50%"
+          },
+          {
+            "criterion": "  ",
+            "metric": ""
+          },
+          {
+            "criterion": "Firma del responsable",
+            "metric": "sí"
+          },
+          {
+            "criterion": "Tasa de éxito",
+            "metric": ">= 90 %"
+          },
+          {
+            "criterion": "Casos críticos ejecutados",
+            "metric": "100 %"
+          }
         ]
       },
-      "filter": { "projectId": "P", "testPlanId": "PL1" },
+      "filter": {
+        "projectId": "P",
+        "testPlanId": "PL1"
+      },
       "expected": {
-        "progress": { "total": 2, "executed": 1, "passed": 1 },
-        "cases": [{ "caseId": "C1", "status": "not_run" }, { "caseId": "C2", "status": "passed" }],
-        "runs": [{ "id": "R1" }],
+        "progress": {
+          "total": 2,
+          "executed": 1,
+          "passed": 1
+        },
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "not_run"
+          },
+          {
+            "caseId": "C2",
+            "status": "passed"
+          }
+        ],
+        "runs": [
+          {
+            "id": "R1"
+          }
+        ],
         "exitCriteria": [
-          { "index": 0, "criterion": "% de casos ejecutados", "kind": "executed", "op": ">=", "target": 50.0, "value": 50.0, "met": true },
-          { "index": 2, "kind": null, "op": null, "target": null, "value": null, "met": null },
-          { "index": 3, "kind": "passRate", "op": ">=", "target": 90.0, "value": 100.0, "met": true }
+          {
+            "index": 0,
+            "criterion": "% de casos ejecutados",
+            "kind": "executed",
+            "op": ">=",
+            "target": 50,
+            "value": 50,
+            "met": true
+          },
+          {
+            "index": 2,
+            "kind": null,
+            "op": null,
+            "target": null,
+            "value": null,
+            "met": null
+          },
+          {
+            "index": 3,
+            "kind": "passRate",
+            "op": ">=",
+            "target": 90,
+            "value": 100,
+            "met": true
+          },
+          {
+            "index": 4,
+            "kind": null,
+            "value": null,
+            "met": null
+          }
         ]
       }
     },
@@ -259,25 +1044,106 @@
       "project": {
         "projectId": "P",
         "runs": [
-          { "id": "R1", "runKey": "RUN-001", "title": "A", "trigger": "manual", "status": "completed", "build": "1.0", "environment": "qa", "createdAt": "2026-11-01 09:00:00" },
-          { "id": "R2", "runKey": "RUN-002", "title": "B", "trigger": "manual", "status": "completed", "build": " 1.1 ", "environment": "staging", "createdAt": "2026-11-03 09:00:00" }
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "A",
+            "trigger": "manual",
+            "status": "completed",
+            "build": "1.0",
+            "environment": "qa",
+            "createdAt": "2026-11-01 09:00:00"
+          },
+          {
+            "id": "R2",
+            "runKey": "RUN-002",
+            "title": "B",
+            "trigger": "manual",
+            "status": "completed",
+            "build": " 1.1 ",
+            "environment": "staging",
+            "createdAt": "2026-11-03 09:00:00"
+          }
         ],
         "attempts": [
-          { "id": "b1", "runId": "R1", "testKey": "manual:C1//", "status": "passed", "finishedAt": "2026-11-01T00:00:00Z", "caseId": "C1", "configurationId": "K1" },
-          { "id": "b2", "runId": "R1", "testKey": "manual:C2//", "status": "failed", "finishedAt": "2026-11-02T00:00:00Z", "caseId": "C2", "configurationId": "K2" },
-          { "id": "b3", "runId": "R2", "testKey": "manual:C1//", "status": "failed", "finishedAt": "2026-11-03T00:00:00Z", "caseId": "C1" }
+          {
+            "id": "b1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T00:00:00Z",
+            "caseId": "C1",
+            "configurationId": "K1"
+          },
+          {
+            "id": "b2",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "failed",
+            "finishedAt": "2026-11-02T00:00:00Z",
+            "caseId": "C2",
+            "configurationId": "K2"
+          },
+          {
+            "id": "b3",
+            "runId": "R2",
+            "testKey": "manual:C1//",
+            "status": "failed",
+            "finishedAt": "2026-11-03T00:00:00Z",
+            "caseId": "C1"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          }
         ]
       },
-      "filter": { "projectId": "P", "build": "1.1" },
+      "filter": {
+        "projectId": "P",
+        "build": "1.1"
+      },
       "expected": {
-        "filter": { "build": "1.1", "environment": null },
-        "cases": [{ "caseId": "C1", "status": "failed" }, { "caseId": "C2", "status": "not_run" }],
-        "runs": [{ "id": "R2" }],
-        "options": { "builds": ["1.0", "1.1"], "environments": ["qa", "staging"] }
+        "filter": {
+          "build": "1.1",
+          "environment": null
+        },
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "failed"
+          },
+          {
+            "caseId": "C2",
+            "status": "not_run"
+          }
+        ],
+        "runs": [
+          {
+            "id": "R2"
+          }
+        ],
+        "options": {
+          "builds": [
+            "1.0",
+            "1.1"
+          ],
+          "environments": [
+            "qa",
+            "staging"
+          ]
+        }
       }
     },
     {
@@ -285,40 +1151,156 @@
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "A", "trigger": "manual", "status": "completed", "createdAt": "2026-11-01 09:00:00" }],
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "A",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
         "attempts": [
-          { "id": "b1", "runId": "R1", "testKey": "manual:C1//", "status": "passed", "finishedAt": "2026-11-01T00:00:00Z", "caseId": "C1", "configurationId": "K1" },
-          { "id": "b2", "runId": "R1", "testKey": "manual:C2//", "status": "failed", "finishedAt": "2026-11-02T00:00:00Z", "caseId": "C2", "configurationId": "K2" }
+          {
+            "id": "b1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T00:00:00Z",
+            "caseId": "C1",
+            "configurationId": "K1"
+          },
+          {
+            "id": "b2",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "failed",
+            "finishedAt": "2026-11-02T00:00:00Z",
+            "caseId": "C2",
+            "configurationId": "K2"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          }
         ]
       },
-      "filter": { "projectId": "P", "configurationId": "K1" },
-      "expected": { "cases": [{ "caseId": "C1", "status": "passed" }, { "caseId": "C2", "status": "not_run" }] }
+      "filter": {
+        "projectId": "P",
+        "configurationId": "K1"
+      },
+      "expected": {
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "passed"
+          },
+          {
+            "caseId": "C2",
+            "status": "not_run"
+          }
+        ]
+      }
     },
     {
       "name": "the period includes its start and excludes its end; an undated attempt is counted apart",
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "A", "trigger": "manual", "status": "completed", "createdAt": "2026-11-01 09:00:00" }],
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "A",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
         "attempts": [
-          { "id": "b1", "runId": "R1", "testKey": "manual:C1//", "status": "passed", "finishedAt": "2026-11-01T00:00:00Z", "caseId": "C1" },
-          { "id": "b2", "runId": "R1", "testKey": "manual:C2//", "status": "failed", "finishedAt": "2026-11-02T00:00:00Z", "caseId": "C2" },
-          { "id": "u1", "runId": "R1", "testKey": "manual:C3//", "status": "passed", "finishedAt": "yesterday", "caseId": "C3" }
+          {
+            "id": "b1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T00:00:00Z",
+            "caseId": "C1"
+          },
+          {
+            "id": "b2",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "failed",
+            "finishedAt": "2026-11-02T00:00:00Z",
+            "caseId": "C2"
+          },
+          {
+            "id": "u1",
+            "runId": "R1",
+            "testKey": "manual:C3//",
+            "status": "passed",
+            "finishedAt": "yesterday",
+            "caseId": "C3"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" },
-          { "id": "C3", "scenarioId": "ATS_3", "title": "Three", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "Three",
+            "status": "approved",
+            "priority": "high"
+          }
         ]
       },
-      "filter": { "projectId": "P", "from": 1793491200000, "to": 1793577600000 },
+      "filter": {
+        "projectId": "P",
+        "from": 1793491200000,
+        "to": 1793577600000
+      },
       "expected": {
         "undated": 1,
-        "cases": [{ "caseId": "C1", "status": "passed" }, { "caseId": "C2", "status": "not_run" }, { "caseId": "C3", "status": "not_run" }]
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "passed"
+          },
+          {
+            "caseId": "C2",
+            "status": "not_run"
+          },
+          {
+            "caseId": "C3",
+            "status": "not_run"
+          }
+        ]
       }
     },
     {
@@ -326,15 +1308,51 @@
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "A", "trigger": "manual", "status": "completed", "createdAt": "2026-11-01 09:00:00" }],
-        "attempts": [{ "id": "u1", "runId": "R1", "testKey": "manual:C1//", "status": "passed", "caseId": "C1" }],
-        "cases": [{ "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" }]
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "A",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "u1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "caseId": "C1"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          }
+        ]
       },
-      "filter": { "projectId": "P" },
+      "filter": {
+        "projectId": "P"
+      },
       "expected": {
         "undated": 1,
         "lastExecutedAt": null,
-        "cases": [{ "caseId": "C1", "status": "passed", "last": { "resultId": "u1", "at": null } }]
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "passed",
+            "last": {
+              "resultId": "u1",
+              "at": null
+            }
+          }
+        ]
       }
     },
     {
@@ -342,96 +1360,869 @@
       "kind": "summary",
       "project": {
         "projectId": "P",
-        "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "A", "trigger": "import", "status": "completed", "createdAt": "2026-10-24 09:00:00" }],
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "A",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-10-24 09:00:00"
+          }
+        ],
         "attempts": [
-          { "id": "d1", "runId": "R1", "testKey": "manual:C1//", "status": "passed", "finishedAt": "2026-10-24T22:00:00Z", "caseId": "C1" },
-          { "id": "d2", "runId": "R1", "testKey": "k2", "status": "failed", "finishedAt": "2026-10-25T22:30:00Z", "imported": true, "caseId": "C1" },
-          { "id": "d3", "runId": "R1", "testKey": "manual:C2//", "status": "blocked", "finishedAt": "2026-10-25T23:00:00Z", "caseId": "C2" },
-          { "id": "d4", "runId": "R1", "testKey": "k4", "status": "passed", "finishedAt": "2026-10-23T21:59:59Z", "imported": true, "caseId": "C2" },
-          { "id": "e1", "runId": "R1", "testKey": "k5", "attempt": 0, "status": "failed", "finishedAt": "2026-10-26T08:00:00Z", "imported": true, "caseId": "C2" },
-          { "id": "e2", "runId": "R1", "testKey": "k5", "attempt": 1, "status": "passed", "finishedAt": "2026-10-26T09:00:00Z", "imported": true, "caseId": "C2" }
+          {
+            "id": "d1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-10-24T22:00:00Z",
+            "caseId": "C1"
+          },
+          {
+            "id": "d2",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "failed",
+            "finishedAt": "2026-10-25T22:30:00Z",
+            "imported": true,
+            "caseId": "C1"
+          },
+          {
+            "id": "d3",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "blocked",
+            "finishedAt": "2026-10-25T23:00:00Z",
+            "caseId": "C2"
+          },
+          {
+            "id": "d4",
+            "runId": "R1",
+            "testKey": "k4",
+            "status": "passed",
+            "finishedAt": "2026-10-23T21:59:59Z",
+            "imported": true,
+            "caseId": "C2"
+          },
+          {
+            "id": "e1",
+            "runId": "R1",
+            "testKey": "k5",
+            "attempt": 0,
+            "status": "failed",
+            "finishedAt": "2026-10-26T08:00:00Z",
+            "imported": true,
+            "caseId": "C2"
+          },
+          {
+            "id": "e2",
+            "runId": "R1",
+            "testKey": "k5",
+            "attempt": 1,
+            "status": "passed",
+            "finishedAt": "2026-10-26T09:00:00Z",
+            "imported": true,
+            "caseId": "C2"
+          }
         ],
         "cases": [
-          { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-          { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "high" }
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "Two",
+            "status": "approved",
+            "priority": "high"
+          }
         ]
       },
-      "filter": { "projectId": "P", "dayStarts": [1792792800000, 1792879200000, 1792969200000, 1793055600000] },
+      "filter": {
+        "projectId": "P",
+        "dayStarts": [
+          1792792800000,
+          1792879200000,
+          1792969200000,
+          1793055600000
+        ]
+      },
       "expected": {
         "daily": [
-          { "dayStart": 1792792800000, "passed": 0, "failed": 0, "blocked": 0, "skipped": 0, "other": 0, "total": 0, "manual": 0, "imported": 0 },
-          { "dayStart": 1792879200000, "passed": 1, "failed": 1, "blocked": 0, "skipped": 0, "other": 0, "total": 2, "manual": 1, "imported": 1 },
-          { "dayStart": 1792969200000, "passed": 1, "failed": 1, "blocked": 1, "skipped": 0, "other": 0, "total": 3, "manual": 1, "imported": 2 },
-          { "dayStart": 1793055600000, "passed": 0, "failed": 0, "blocked": 0, "skipped": 0, "other": 0, "total": 0, "manual": 0, "imported": 0 }
+          {
+            "dayStart": 1792792800000,
+            "passed": 0,
+            "failed": 0,
+            "blocked": 0,
+            "skipped": 0,
+            "other": 0,
+            "total": 0,
+            "manual": 0,
+            "imported": 0
+          },
+          {
+            "dayStart": 1792879200000,
+            "passed": 1,
+            "failed": 1,
+            "blocked": 0,
+            "skipped": 0,
+            "other": 0,
+            "total": 2,
+            "manual": 1,
+            "imported": 1
+          },
+          {
+            "dayStart": 1792969200000,
+            "passed": 1,
+            "failed": 1,
+            "blocked": 1,
+            "skipped": 0,
+            "other": 0,
+            "total": 3,
+            "manual": 1,
+            "imported": 2
+          },
+          {
+            "dayStart": 1793055600000,
+            "passed": 0,
+            "failed": 0,
+            "blocked": 0,
+            "skipped": 0,
+            "other": 0,
+            "total": 0,
+            "manual": 0,
+            "imported": 0
+          }
         ]
       }
     },
     {
-      "name": "home: windows, queues, a project with zero cases and an undated attempt",
+      "name": "a deleted run is hidden through the run: its failed result does not count (EJE-07)",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "Manual",
+            "trigger": "manual",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "k1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C1"
+          },
+          {
+            "id": "k2",
+            "runId": "RDELETED",
+            "testKey": "manual:C1//",
+            "status": "failed",
+            "finishedAt": "2026-11-02T10:00:00Z",
+            "caseId": "C1"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "One",
+            "status": "approved",
+            "priority": "high"
+          }
+        ]
+      },
+      "filter": {
+        "projectId": "P",
+        "dayStarts": [
+          1793491200000,
+          1793577600000
+        ]
+      },
+      "expected": {
+        "runs": [
+          {
+            "id": "R1"
+          }
+        ],
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "passed",
+            "last": {
+              "resultId": "k1"
+            }
+          }
+        ],
+        "progress": {
+          "executed": 1,
+          "passed": 1,
+          "failed": 0
+        },
+        "daily": [
+          {
+            "passed": 1,
+            "failed": 0,
+            "total": 1
+          },
+          {
+            "passed": 0,
+            "failed": 0,
+            "total": 0
+          }
+        ],
+        "lastExecutedAt": "2026-11-01T10:00:00Z"
+      }
+    },
+    {
+      "name": "medium and low risk bands, skipped and other results, targets per flow and row, defects by severity and status",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "RUN-001",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "t1",
+            "runId": "R1",
+            "testKey": "k1",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F1"
+          },
+          {
+            "id": "t2",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:01:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F2"
+          },
+          {
+            "id": "t3",
+            "runId": "R1",
+            "testKey": "k3",
+            "status": "other",
+            "finishedAt": "2026-11-01T10:02:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W1"
+          },
+          {
+            "id": "t4",
+            "runId": "R1",
+            "testKey": "k4",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:03:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W2"
+          },
+          {
+            "id": "t5",
+            "runId": "R1",
+            "testKey": "k5",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:04:00Z",
+            "imported": true,
+            "caseId": "C3"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "ATS_1",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-1"
+            ]
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "ATS_2",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-2"
+            ]
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "ATS_3",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-3"
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-1",
+            "title": "Medium",
+            "priority": "medium",
+            "riskLikelihood": 3,
+            "riskImpact": 3
+          },
+          {
+            "id": "Q2",
+            "requirementKey": "REQ-2",
+            "title": "Low",
+            "priority": "low",
+            "riskLikelihood": 2,
+            "riskImpact": 2
+          },
+          {
+            "id": "Q3",
+            "requirementKey": "REQ-3",
+            "title": "Medium edge",
+            "priority": "low",
+            "riskLikelihood": 3,
+            "riskImpact": 4
+          }
+        ],
+        "defects": [
+          {
+            "id": "D1",
+            "defectKey": "DEF-001",
+            "severity": "major",
+            "status": "deferred",
+            "caseIds": [
+              "C1"
+            ]
+          },
+          {
+            "id": "D2",
+            "defectKey": "DEF-002",
+            "severity": "trivial",
+            "status": "rejected",
+            "caseIds": [
+              "C2"
+            ]
+          },
+          {
+            "id": "D3",
+            "defectKey": "DEF-003",
+            "severity": "minor",
+            "status": "open",
+            "caseIds": [],
+            "requirementIds": [
+              "Q3"
+            ]
+          }
+        ]
+      },
+      "filter": {
+        "projectId": "P",
+        "dayStarts": [
+          1793491200000
+        ]
+      },
+      "expected": {
+        "cases": [
+          {
+            "caseId": "C1",
+            "status": "skipped"
+          },
+          {
+            "caseId": "C2",
+            "status": "other"
+          },
+          {
+            "caseId": "C3",
+            "status": "skipped"
+          }
+        ],
+        "targets": [
+          {
+            "caseId": "C1",
+            "flowId": "F1",
+            "status": "passed"
+          },
+          {
+            "caseId": "C1",
+            "flowId": "F2",
+            "status": "skipped"
+          },
+          {
+            "caseId": "C2",
+            "rowId": "W1",
+            "status": "other"
+          },
+          {
+            "caseId": "C2",
+            "rowId": "W2",
+            "status": "passed"
+          },
+          {
+            "caseId": "C3",
+            "status": "skipped"
+          }
+        ],
+        "progress": {
+          "total": 3,
+          "executed": 3,
+          "passed": 0,
+          "skipped": 2,
+          "other": 1
+        },
+        "coverage": {
+          "byRisk": {
+            "high": {
+              "requirements": 0
+            },
+            "medium": {
+              "requirements": 2,
+              "covered": 2,
+              "executed": 2
+            },
+            "low": {
+              "requirements": 1,
+              "covered": 1,
+              "executed": 1
+            }
+          }
+        },
+        "defects": {
+          "total": 3,
+          "open": 2,
+          "openBySeverity": {
+            "major": 1,
+            "minor": 1,
+            "trivial": 0
+          },
+          "byStatus": {
+            "deferred": 1,
+            "open": 1,
+            "rejected": 1
+          }
+        },
+        "daily": [
+          {
+            "passed": 2,
+            "skipped": 2,
+            "other": 1,
+            "total": 5,
+            "imported": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "a known criterion with an unparseable metric has a value but no verdict; a cycle without configurations has one column",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "RUN-001",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00",
+            "cycleId": "Y1"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "u1",
+            "runId": "R1",
+            "testKey": "k1",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "ATS_1",
+            "status": "approved",
+            "priority": "medium"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "ATS_2",
+            "status": "approved",
+            "priority": "medium"
+          }
+        ],
+        "cycles": [
+          {
+            "id": "Y1",
+            "configurationIds": []
+          }
+        ],
+        "cycleItems": [
+          {
+            "id": "I1",
+            "cycleId": "Y1",
+            "caseId": "C1"
+          },
+          {
+            "id": "I2",
+            "cycleId": "Y1",
+            "caseId": "C2"
+          }
+        ],
+        "planCriteria": [
+          {
+            "criterion": "% de casos ejecutados",
+            "metric": "todos"
+          },
+          {
+            "criterion": "Cobertura de requisitos ejecutados",
+            "metric": "≥ 80%"
+          },
+          {
+            "criterion": "Defectos críticos o mayores abiertos",
+            "metric": "0"
+          },
+          {
+            "criterion": "Defectos críticos abiertos",
+            "metric": "< 1"
+          }
+        ]
+      },
+      "filter": {
+        "projectId": "P",
+        "cycleId": "Y1"
+      },
+      "expected": {
+        "progressUnit": "cell",
+        "progress": {
+          "total": 2,
+          "executed": 1,
+          "passed": 1,
+          "notRun": 1
+        },
+        "exitCriteria": [
+          {
+            "index": 0,
+            "kind": "executed",
+            "op": null,
+            "target": null,
+            "value": 50,
+            "met": null
+          },
+          {
+            "index": 1,
+            "kind": "coverage",
+            "op": ">=",
+            "target": 80,
+            "value": null,
+            "met": null
+          },
+          {
+            "index": 2,
+            "kind": null,
+            "met": null
+          },
+          {
+            "index": 3,
+            "kind": "criticalDefects",
+            "op": "<",
+            "target": 1,
+            "value": 0,
+            "met": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "home: windows, queues, a project with zero cases and an undated attempt; a deleted run's attempts count nowhere",
       "kind": "home",
       "projects": [
         {
           "projectId": "P1",
-          "runs": [{ "id": "R1", "runKey": "RUN-001", "title": "A", "trigger": "import", "status": "completed", "createdAt": "2026-11-05 09:00:00" }],
+          "runs": [
+            {
+              "id": "R1",
+              "runKey": "RUN-001",
+              "title": "A",
+              "trigger": "import",
+              "status": "completed",
+              "createdAt": "2026-11-05 09:00:00"
+            }
+          ],
           "attempts": [
-            { "id": "h1", "runId": "R1", "testKey": "k1", "attempt": 0, "status": "failed", "finishedAt": "2026-11-05T00:00:00Z", "imported": true, "caseId": "C1" },
-            { "id": "h2", "runId": "R1", "testKey": "k1", "attempt": 1, "status": "passed", "finishedAt": "2026-11-06T01:00:00Z", "imported": true, "caseId": "C1" },
-            { "id": "h4", "runId": "R1", "testKey": "k4", "status": "blocked", "finishedAt": "2026-11-06T00:00:00Z", "imported": true, "caseId": "C4" },
-            { "id": "h9", "runId": "R1", "testKey": "k9", "status": "failed", "finishedAt": "2026-11-07T00:00:00Z", "imported": true, "caseId": "C3" },
-            { "id": "hu", "runId": "R1", "testKey": "unlinked", "status": "passed", "imported": true }
+            {
+              "id": "h1",
+              "runId": "R1",
+              "testKey": "k1",
+              "attempt": 0,
+              "status": "failed",
+              "finishedAt": "2026-11-05T00:00:00Z",
+              "imported": true,
+              "caseId": "C1"
+            },
+            {
+              "id": "h2",
+              "runId": "R1",
+              "testKey": "k1",
+              "attempt": 1,
+              "status": "passed",
+              "finishedAt": "2026-11-06T01:00:00Z",
+              "imported": true,
+              "caseId": "C1"
+            },
+            {
+              "id": "h4",
+              "runId": "R1",
+              "testKey": "k4",
+              "status": "blocked",
+              "finishedAt": "2026-11-06T00:00:00Z",
+              "imported": true,
+              "caseId": "C4"
+            },
+            {
+              "id": "h9",
+              "runId": "R1",
+              "testKey": "k9",
+              "status": "failed",
+              "finishedAt": "2026-11-07T00:00:00Z",
+              "imported": true,
+              "caseId": "C3"
+            },
+            {
+              "id": "hu",
+              "runId": "R1",
+              "testKey": "unlinked",
+              "status": "passed",
+              "imported": true
+            },
+            {
+              "id": "hd",
+              "runId": "RDELETED",
+              "testKey": "k4",
+              "status": "failed",
+              "finishedAt": "2026-11-06T02:00:00Z",
+              "imported": true,
+              "caseId": "C4"
+            },
+            {
+              "id": "hdu",
+              "runId": "RDELETED",
+              "testKey": "undated",
+              "status": "failed",
+              "imported": true
+            }
           ],
           "cases": [
-            { "id": "C1", "scenarioId": "ATS_1", "title": "One", "status": "approved", "priority": "high" },
-            { "id": "C2", "scenarioId": "ATS_2", "title": "Two", "status": "approved", "priority": "critical" },
-            { "id": "C3", "scenarioId": "ATS_3", "title": "Three", "status": "approved", "priority": "low" },
-            { "id": "C4", "scenarioId": "ATS_4", "title": "Four", "status": "approved", "priority": "medium" },
-            { "id": "C5", "scenarioId": "ATS_5", "title": "Five", "status": "approved", "priority": "low" }
+            {
+              "id": "C1",
+              "scenarioId": "ATS_1",
+              "title": "One",
+              "status": "approved",
+              "priority": "high"
+            },
+            {
+              "id": "C2",
+              "scenarioId": "ATS_2",
+              "title": "Two",
+              "status": "approved",
+              "priority": "critical"
+            },
+            {
+              "id": "C3",
+              "scenarioId": "ATS_3",
+              "title": "Three",
+              "status": "approved",
+              "priority": "low"
+            },
+            {
+              "id": "C4",
+              "scenarioId": "ATS_4",
+              "title": "Four",
+              "status": "approved",
+              "priority": "medium"
+            },
+            {
+              "id": "C5",
+              "scenarioId": "ATS_5",
+              "title": "Five",
+              "status": "approved",
+              "priority": "low"
+            }
           ]
         },
-        { "projectId": "P2" }
+        {
+          "projectId": "P2"
+        }
       ],
       "request": {
-        "dayStarts": [1793833200000, 1793919600000],
+        "dayStarts": [
+          1793833200000,
+          1793919600000
+        ],
         "now": 1793966400000,
-        "windows": [{ "id": "today", "fromIndex": 1 }, { "id": "7d", "fromIndex": 0 }],
+        "windows": [
+          {
+            "id": "today",
+            "fromIndex": 1
+          },
+          {
+            "id": "7d",
+            "fromIndex": 0
+          }
+        ],
         "queueLimit": 1
       },
       "expected": {
         "contractVersion": 1,
         "undated": 1,
         "daily": [
-          { "dayStart": 1793833200000, "passed": 0, "failed": 1, "blocked": 0, "total": 1, "manual": 0, "imported": 1 },
-          { "dayStart": 1793919600000, "passed": 1, "failed": 0, "blocked": 1, "total": 2, "manual": 0, "imported": 2 }
+          {
+            "dayStart": 1793833200000,
+            "passed": 0,
+            "failed": 1,
+            "blocked": 0,
+            "total": 1,
+            "manual": 0,
+            "imported": 1
+          },
+          {
+            "dayStart": 1793919600000,
+            "passed": 1,
+            "failed": 0,
+            "blocked": 1,
+            "total": 2,
+            "manual": 0,
+            "imported": 2
+          }
         ],
         "windows": {
-          "today": { "passed": 1, "failed": 0, "blocked": 1, "notRun": 0, "retest": 0, "executed": 2, "passRate": 0.5 },
-          "7d": { "passed": 1, "failed": 0, "blocked": 1, "executed": 2, "passRate": 0.5 }
+          "today": {
+            "passed": 1,
+            "failed": 0,
+            "blocked": 1,
+            "notRun": 0,
+            "retest": 0,
+            "executed": 2,
+            "passRate": 0.5
+          },
+          "7d": {
+            "passed": 1,
+            "failed": 0,
+            "blocked": 1,
+            "executed": 2,
+            "passRate": 0.5
+          }
         },
         "projects": [
           {
             "projectId": "P1",
-            "counts": { "total": 5, "executed": 3, "passed": 1, "failed": 1, "blocked": 1, "notRun": 2 },
+            "counts": {
+              "total": 5,
+              "executed": 3,
+              "passed": 1,
+              "failed": 1,
+              "blocked": 1,
+              "notRun": 2
+            },
             "lastExecutedAt": "2026-11-07T00:00:00Z",
             "coverage": null,
             "queue": {
-              "counts": { "notRun": 2, "blocked": 1, "retest": 0 },
-              "notRun": [{ "caseId": "C2", "scenarioId": "ATS_2", "priority": "critical", "lastAt": null }],
-              "blocked": [{ "caseId": "C4", "lastAt": "2026-11-06T00:00:00Z" }],
+              "counts": {
+                "notRun": 2,
+                "blocked": 1,
+                "retest": 0
+              },
+              "notRun": [
+                {
+                  "caseId": "C2",
+                  "scenarioId": "ATS_2",
+                  "priority": "critical",
+                  "lastAt": null
+                }
+              ],
+              "blocked": [
+                {
+                  "caseId": "C4",
+                  "lastAt": "2026-11-06T00:00:00Z"
+                }
+              ],
               "retest": []
             }
           },
           {
             "projectId": "P2",
-            "counts": { "total": 0, "executed": 0 },
+            "counts": {
+              "total": 0,
+              "executed": 0
+            },
             "lastExecutedAt": null,
             "coverage": null,
-            "defects": { "open": 0, "openBySeverity": { "critical": 0, "major": 0, "minor": 0, "trivial": 0 } },
+            "defects": {
+              "open": 0,
+              "openBySeverity": {
+                "critical": 0,
+                "major": 0,
+                "minor": 0,
+                "trivial": 0
+              }
+            },
             "exitCriteria": [
-              { "index": null, "kind": "executed", "value": null, "met": null },
-              { "index": null, "kind": "criticalDefects", "value": 0.0, "met": true },
-              { "index": null, "kind": "coverage", "value": null, "met": null }
+              {
+                "index": null,
+                "kind": "executed",
+                "value": null,
+                "met": null
+              },
+              {
+                "index": null,
+                "kind": "criticalDefects",
+                "value": 0,
+                "met": true
+              },
+              {
+                "index": null,
+                "kind": "coverage",
+                "value": null,
+                "met": null
+              }
             ],
-            "queue": { "counts": { "notRun": 0, "blocked": 0, "retest": 0 }, "notRun": [] }
+            "queue": {
+              "counts": {
+                "notRun": 0,
+                "blocked": 0,
+                "retest": 0
+              },
+              "notRun": []
+            }
           }
         ]
       }

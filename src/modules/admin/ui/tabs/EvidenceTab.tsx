@@ -17,6 +17,7 @@ import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
 import { EVIDENCE_CHECK_BUSY, EVIDENCE_DB_CHANGED, evidenceApi } from "../../api/evidenceApi";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
+import { EvidenceRetentionSection } from "./EvidenceRetentionSection";
 
 /** Owner kinds with their own label; any other shows as «Otros (kind)». */
 const OWNERS = ["planner_card", "defect", "test_case", "run_shard", "result", "step_result", "execution_draft", "session_note"];
@@ -172,6 +173,7 @@ function EvidenceStore() {
   return (
     <div className="adm-stack">
       <UsageSection usage={usage} error={usageError} size={size} />
+      <EvidenceRetentionSection onChanged={() => void loadUsage()} />
       <SettingsSection
         title={t("admin.evidence.check.title")}
         desc={t("admin.evidence.check.desc")}

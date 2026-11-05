@@ -7,7 +7,7 @@ use rusqlite::Connection;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-use super::derive::{self, ExecutionFilter, HomeRequest, ProjectData};
+use super::derive::{self, ExecutionFilter, HomeRequest, LastResult, ProjectData};
 use super::*;
 use crate::db::{in_tx, run_migrations};
 use crate::evidence::Stored;
@@ -43,28 +43,71 @@ fn assert_subset(expected: &Value, actual: &Value, path: &str) {
     }
 }
 
-#[test]
-fn the_shared_vectors_hold() {
+/// The output of every vector, by name.
+fn vector_outputs() -> Vec<(String, Value, Value)> {
     let raw = include_str!("../../tests/fixtures/execution-vectors.json");
     let file: Value = serde_json::from_str(raw).unwrap();
-    for case in file["cases"].as_array().unwrap() {
-        let name = case["name"].as_str().unwrap();
-        let got = match case["kind"].as_str().unwrap() {
-            "summary" => {
-                let data: ProjectData = serde_json::from_value(case["project"].clone()).unwrap();
-                let filter: ExecutionFilter =
-                    serde_json::from_value(case["filter"].clone()).unwrap();
-                serde_json::to_value(derive::summarize(&data, &filter)).unwrap()
-            }
-            "home" => {
-                let projects: Vec<ProjectData> =
-                    serde_json::from_value(case["projects"].clone()).unwrap();
-                let request: HomeRequest = serde_json::from_value(case["request"].clone()).unwrap();
-                serde_json::to_value(derive::home(&projects, &request)).unwrap()
-            }
-            other => panic!("unknown kind {other}"),
-        };
-        assert_subset(&case["expected"], &got, name);
+    file["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|case| {
+            let name = case["name"].as_str().unwrap().to_string();
+            let got = match case["kind"].as_str().unwrap() {
+                "summary" => {
+                    let data: ProjectData =
+                        serde_json::from_value(case["project"].clone()).unwrap();
+                    let filter: ExecutionFilter =
+                        serde_json::from_value(case["filter"].clone()).unwrap();
+                    serde_json::to_value(derive::summarize(&data, &filter)).unwrap()
+                }
+                "home" => {
+                    let projects: Vec<ProjectData> =
+                        serde_json::from_value(case["projects"].clone()).unwrap();
+                    let request: HomeRequest =
+                        serde_json::from_value(case["request"].clone()).unwrap();
+                    serde_json::to_value(derive::home(&projects, &request)).unwrap()
+                }
+                other => panic!("unknown kind {other}"),
+            };
+            (name, case["expected"].clone(), got)
+        })
+        .collect()
+}
+
+const GOLDEN: &str = "tests/fixtures/execution-vectors.golden.json";
+
+/// Each vector's readable `expected` holds, and its whole output equals the
+/// generated golden (`PHAROS_UPDATE_GOLDEN=1 cargo test the_shared_vectors`
+/// rewrites it; the server's twin compares its output to the same file).
+#[test]
+fn the_shared_vectors_hold() {
+    let outputs = vector_outputs();
+    for (name, expected, got) in &outputs {
+        assert_subset(expected, got, name);
+    }
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(GOLDEN);
+    if std::env::var("PHAROS_UPDATE_GOLDEN").is_ok() {
+        let map: serde_json::Map<String, Value> =
+            outputs.into_iter().map(|(n, _, g)| (n, g)).collect();
+        let text = serde_json::to_string_pretty(&Value::Object(map)).unwrap()
+            + "
+";
+        std::fs::write(&path, text).unwrap();
+        return;
+    }
+    let golden: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    assert_eq!(
+        golden.as_object().unwrap().len(),
+        outputs.len(),
+        "the golden has another number of vectors: regenerate it"
+    );
+    for (name, _, got) in &outputs {
+        assert_eq!(
+            &golden[name.as_str()],
+            got,
+            "{name}: output differs from the golden"
+        );
     }
 }
 
@@ -257,8 +300,29 @@ fn a_manual_and_a_playwright_run_share_the_matrix() {
     assert_eq!(case_row(&ci, &tc1).status, "passed");
     assert_eq!(ci.runs.len(), 1);
 
-    // 4. Editing the case changes none of the results; they become stale.
+    // 4. A status, priority, title and key edit changes nothing executable:
+    //    nothing is outdated.
+    let ci_filter = ExecutionFilter {
+        project_id: p.clone(),
+        build: Some("1.4.2".into()),
+        ..Default::default()
+    };
+    let ci_before = execution_summary_of(&c, &ci_filter, U).unwrap().unwrap();
     let before = summary(&c, &p);
+    let metadata_only: test_case::TestCaseInput = serde_json::from_value(json!({
+        "projectId": p, "scenarioId": "TC-001", "title": "Login (renombrado)", "author": "Ada",
+        "status": "draft", "priority": "low", "data": tc1_data(), "userId": U
+    }))
+    .unwrap();
+    test_case::update_case(&c, &tc1, &metadata_only).unwrap();
+    let mid = summary(&c, &p);
+    assert!(
+        !case_row(&mid, &tc1).last.as_ref().unwrap().stale,
+        "a status-only edit is not outdated"
+    );
+    assert_eq!(mid.targets, before.targets);
+
+    // 5. Editing the steps changes none of the results; they become outdated.
     let mut edited = tc1_data();
     edited["steps"][1] = json!("inicia sesion con otra contrasena");
     edited["flows"] = json!([{"name": "Logout", "steps": [{"text": "cierra sesion"}]}]);
@@ -268,15 +332,37 @@ fn a_manual_and_a_playwright_run_share_the_matrix() {
     assert_eq!(a.status, b.status);
     let (lb, la) = (b.last.as_ref().unwrap(), a.last.as_ref().unwrap());
     assert_eq!(
-        (&la.result_id, &la.run_id, &la.revision_id, &la.status),
-        (&lb.result_id, &lb.run_id, &lb.revision_id, &lb.status)
+        &LastResult {
+            stale: false,
+            ..la.clone()
+        },
+        lb
     );
     assert!(
         la.stale,
         "the executed revision is no longer the current one"
     );
-    assert_eq!(after.targets.len(), before.targets.len());
     assert_eq!(after.progress, before.progress);
+    let unstale = |ts: &[derive::TargetExecution]| -> Vec<derive::TargetExecution> {
+        ts.iter()
+            .map(|t| {
+                let mut t = t.clone();
+                t.last.stale = false;
+                t
+            })
+            .collect()
+    };
+    assert_eq!(unstale(&after.targets), unstale(&before.targets));
+    // The Playwright result, alone under the CI build: the same, flow and all.
+    let ci_after = execution_summary_of(&c, &ci_filter, U).unwrap().unwrap();
+    let (pb, pa) = (case_row(&ci_before, &tc1), case_row(&ci_after, &tc1));
+    assert_eq!((&pa.flow_id, &pa.status), (&pb.flow_id, &pb.status));
+    let (xb, xa) = (pb.last.as_ref().unwrap(), pa.last.as_ref().unwrap());
+    assert_eq!(
+        (&xa.result_id, &xa.revision_id, &xa.status, &xa.origin),
+        (&xb.result_id, &xb.revision_id, &xb.status, &xb.origin)
+    );
+    assert_eq!(unstale(&ci_after.targets), unstale(&ci_before.targets));
 }
 
 #[test]
@@ -305,6 +391,71 @@ fn a_superseded_shard_and_other_users_projects_are_left_out() {
     )
     .unwrap()
     .is_none());
+}
+
+/// EJE-07: with the real delete, a deleted run counts nowhere, and a defect
+/// linked to one of its results still reaches the case (the defects rule).
+#[test]
+fn a_deleted_run_counts_nowhere() {
+    let c = device();
+    let p = new_project(&c);
+    let tc1 = test_case::insert_case(&c, &case_input(&p, "TC-001", "Login", tc1_data())).unwrap();
+    let (kept, kept_id) = manual(&c, &p, &tc1, "passed", "2026-11-01T10:00:00Z");
+    let (gone, gone_id) = manual(&c, &p, &tc1, "failed", "2026-11-02T10:00:00Z");
+    let defect: crate::defects::DefectInput = serde_json::from_value(json!({
+        "projectId": p, "title": "Bug", "severity": "major", "userId": U,
+        "links": [{"targetKind": "result", "targetId": gone_id}]
+    }))
+    .unwrap();
+    crate::defects::insert_defect(&c, &defect).unwrap();
+    assert_eq!(case_row(&summary(&c, &p), &tc1).status, "failed");
+
+    in_tx(&c, |tx| crate::runs::delete::delete_run(tx, &gone, U)).unwrap();
+
+    let s = summary(&c, &p);
+    let row = case_row(&s, &tc1);
+    assert_eq!(row.status, "passed");
+    assert_eq!(row.last.as_ref().unwrap().result_id, kept_id);
+    let run_ids: Vec<&str> = s.runs.iter().map(|r| r.id.as_str()).collect();
+    assert_eq!(run_ids, vec![kept.as_str()]);
+    assert_eq!(s.progress.counts.failed, 0);
+    assert_eq!(s.defects.total, 1, "the defect stays");
+    assert_eq!(row.defect_ids.len(), 1, "and still reaches its case");
+    // The Home rollup: neither the daily counts nor the windows see it.
+    let request: HomeRequest = serde_json::from_value(json!({
+        "dayStarts": [derive_ms("2026-11-01T00:00:00Z"), derive_ms("2026-11-02T00:00:00Z")],
+        "now": derive_ms("2026-11-03T00:00:00Z"),
+        "windows": [{"id": "all", "fromIndex": 0}]
+    }))
+    .unwrap();
+    let m = home_metrics(&c, U, &request).unwrap();
+    assert_eq!((m.daily[0].passed, m.daily[1].total), (1, 0));
+    assert_eq!(
+        (m.windows["all"].counts.failed, m.windows["all"].executed),
+        (0, 1)
+    );
+}
+
+fn derive_ms(s: &str) -> i64 {
+    crate::runs::derive::instant_ms(s).unwrap()
+}
+
+#[test]
+fn day_starts_must_be_ascending_and_bounded() {
+    assert!(check_day_starts(&[1, 2, 3]).is_ok());
+    assert!(check_day_starts(&[]).is_err());
+    assert!(check_day_starts(&[2, 1]).is_err());
+    assert!(check_day_starts(&[1, 1]).is_err());
+    let many: Vec<i64> = (0..=MAX_DAY_STARTS as i64).collect();
+    assert!(check_day_starts(&many).is_err());
+    let c = device();
+    let p = new_project(&c);
+    let bad = ExecutionFilter {
+        project_id: p,
+        day_starts: Some(vec![5, 4]),
+        ..Default::default()
+    };
+    assert!(execution_summary_of(&c, &bad, U).is_err());
 }
 
 #[test]

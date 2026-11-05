@@ -19,6 +19,7 @@ import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { ImportReportDialog } from "./ImportReportDialog";
 import { NewRunDialog } from "./NewRunDialog";
 import { RunDetail } from "./RunDetail";
+import { StatusReportButton } from "../report/StatusReportButton";
 import { UnlinkedTray } from "./UnlinkedTray";
 import "@shared/ui/buttons.css";
 import "./Runs.css";
@@ -33,25 +34,30 @@ type Origin = "all" | "import";
  *  tabs, table, chips and pill primitives. */
 export function RunsPage({
   projectId,
+  projectName = "",
   runId,
   cases,
 }: {
   projectId: string;
+  /** For the status report's identification and file names (EJE-03). */
+  projectName?: string;
   runId?: string;
   cases: LinkableCase[];
 }) {
   return runId ? (
     <RunDetail key={runId} projectId={projectId} runId={runId} cases={cases} />
   ) : (
-    <RunsList projectId={projectId} cases={cases} />
+    <RunsList projectId={projectId} projectName={projectName} cases={cases} />
   );
 }
 
 function RunsList({
   projectId,
+  projectName,
   cases,
 }: {
   projectId: string;
+  projectName: string;
   cases: LinkableCase[];
 }) {
   const { t, i18n } = useTranslation();
@@ -96,6 +102,7 @@ function RunsList({
   const inHeader = useContext(HeaderActionsContext) !== null;
   const actions = (
     <>
+      <StatusReportButton projectId={projectId} projectName={projectName} />
       <button
         type="button"
         className="ui-btn"

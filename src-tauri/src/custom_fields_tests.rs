@@ -629,3 +629,175 @@ fn migration_0027_restores_the_stash_and_is_idempotent() {
     custom_fields::migrate_restore(&c).unwrap();
     assert_eq!(revision_rows(&c, "s1"), rows, "idempotent");
 }
+
+// ------------------------------------------------------------ defect fields
+
+#[test]
+fn defect_fields_are_their_own_set_copy_by_entity_and_sync() {
+    // FLD-03: the fields of `defect` are defined beside the case fields, with
+    // their own ids and order, and travel like them.
+    let a = device();
+    let p = new_project(&a, "Checkout");
+    let case_field =
+        custom_fields::create_field(&a, field_input(&p, "customer", "text", json!({}))).unwrap();
+    let defect_field = custom_fields::create_field(
+        &a,
+        field_input(&p, "customer", "text", json!({"entity": "defect"})),
+    )
+    .unwrap();
+    assert_eq!(defect_field.entity, "defect");
+    assert_eq!(
+        defect_field.id,
+        custom_fields::field_id(&p, "defect", "customer")
+    );
+    assert_ne!(
+        defect_field.id, case_field.id,
+        "the same key on each entity"
+    );
+    // A case type means nothing on a defect field.
+    assert_eq!(
+        custom_fields::create_field(
+            &a,
+            field_input(
+                &p,
+                "x",
+                "text",
+                json!({"entity": "defect", "appliesToCaseTypes": ["standard"]})
+            ),
+        )
+        .unwrap_err(),
+        "custom_field.applies_to"
+    );
+    let keys = |c: &Connection, project: &str, entity: &str| -> Vec<String> {
+        custom_fields::list_fields(c, project, entity, U)
+            .unwrap()
+            .into_iter()
+            .map(|f| f.field_key)
+            .collect()
+    };
+    custom_fields::create_field(
+        &a,
+        field_input(&p, "fixed_in", "text", json!({"entity": "defect"})),
+    )
+    .unwrap();
+    let fixed = custom_fields::field_id(&p, "defect", "fixed_in");
+    custom_fields::reorder(&a, &p, "defect", &[fixed], U).unwrap();
+    assert_eq!(keys(&a, &p, "defect"), ["fixed_in", "customer"]);
+    assert_eq!(
+        keys(&a, &p, "test_case"),
+        ["customer"],
+        "case order untouched"
+    );
+
+    // Copy by entity: only the defect fields reach the other project.
+    let q = new_project(&a, "Other");
+    let summary = custom_fields::copy_fields(&a, &p, &q, "defect", U).unwrap();
+    assert_eq!(
+        serde_json::to_value(&summary).unwrap(),
+        json!({"copied": 2, "skipped": []})
+    );
+    assert_eq!(keys(&a, &q, "defect"), ["fixed_in", "customer"]);
+    assert!(keys(&a, &q, "test_case").is_empty());
+
+    // Another device pulls them as defect fields.
+    let docs = push(&a);
+    let b = device();
+    pull(&b, &docs);
+    assert_eq!(keys(&b, &p, "defect"), ["fixed_in", "customer"]);
+    assert_eq!(keys(&b, &q, "defect"), ["fixed_in", "customer"]);
+    assert_eq!(keys(&b, &p, "test_case"), ["customer"]);
+}
+
+#[test]
+fn a_case_type_on_a_defect_field_is_refused_on_create_and_update() {
+    let c = device();
+    let p = new_project(&c, "Checkout");
+    let f = custom_fields::create_field(
+        &c,
+        field_input(&p, "customer", "text", json!({"entity": "defect"})),
+    )
+    .unwrap();
+    assert_eq!(f.applies_to_case_types, None);
+    let edit = field_input(
+        &p,
+        "customer",
+        "text",
+        json!({"entity": "defect", "appliesToCaseTypes": ["checklist"]}),
+    );
+    assert_eq!(
+        custom_fields::update_field(&c, &f.id, edit).unwrap_err(),
+        "custom_field.applies_to"
+    );
+}
+
+#[test]
+fn a_defect_save_checks_its_custom_values_like_a_case() {
+    use crate::defects::{self, DefectInput};
+    let c = device();
+    let p = new_project(&c, "Checkout");
+    custom_fields::create_field(
+        &c,
+        field_input(&p, "points", "integer", json!({"entity": "defect"})),
+    )
+    .unwrap();
+    let browser = custom_fields::create_field(
+        &c,
+        field_input(
+            &p,
+            "browser",
+            "select",
+            json!({"entity": "defect", "options": [{"id": "OPT00001", "label": "IE 11"}, {"id": "OPT00002", "label": "Edge"}]}),
+        ),
+    )
+    .unwrap();
+    // A case field of the same key is not a rule of a defect.
+    custom_fields::create_field(&c, field_input(&p, "case_only", "integer", json!({}))).unwrap();
+    let input = |custom: Value| -> DefectInput {
+        serde_json::from_value(json!({
+            "projectId": p, "title": "Login fails", "userId": U, "data": {"custom": custom}
+        }))
+        .unwrap()
+    };
+    assert_eq!(
+        defects::insert_defect(&c, &input(json!({"points": "many"}))).unwrap_err(),
+        "custom_field.type:points"
+    );
+    assert_eq!(
+        defects::insert_defect(&c, &input(json!({"browser": "OPT09999"}))).unwrap_err(),
+        "custom_field.option:browser"
+    );
+    let id = defects::insert_defect(
+        &c,
+        &input(json!({"points": 3, "browser": "OPT00001", "case_only": "x", "gone": true})),
+    )
+    .unwrap();
+    let data = |c: &Connection| -> Value {
+        let s: String = c
+            .query_row("SELECT data FROM defects WHERE id = ?1", [&id], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        serde_json::from_str(&s).unwrap()
+    };
+    assert_eq!(
+        data(&c)["custom"],
+        json!({"points": 3, "browser": "OPT00001", "case_only": "x", "gone": true}),
+        "unknown keys and other entities' keys are kept"
+    );
+    // The option is archived: the defect that holds it still saves, another
+    // value of the field is checked against the live options.
+    let edit = field_input(
+        &p,
+        "browser",
+        "select",
+        json!({"entity": "defect", "options": [{"id": "OPT00002", "label": "Edge"}]}),
+    );
+    custom_fields::update_field(&c, &browser.id, edit).unwrap();
+    defects::update_defect(&c, &id, &input(json!({"points": 4, "browser": "OPT00001"}))).unwrap();
+    assert_eq!(data(&c)["custom"]["points"], 4);
+    let other = defects::insert_defect(&c, &input(json!({}))).unwrap();
+    assert_eq!(
+        defects::update_defect(&c, &other, &input(json!({"browser": "OPT00001"}))).unwrap_err(),
+        "custom_field.option:browser"
+    );
+}

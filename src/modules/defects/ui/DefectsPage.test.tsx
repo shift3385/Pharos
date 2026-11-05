@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
@@ -29,9 +30,10 @@ vi.mock("../api/defectsApi", () => ({
     attachmentList: () => Promise.resolve([]),
   },
 }));
+const fieldList = vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []);
 vi.mock("@modules/custom-fields", async (orig) => ({
   ...(await orig<typeof import("@modules/custom-fields")>()),
-  customFieldApi: { list: () => Promise.resolve([]) },
+  customFieldApi: { list: (...a: unknown[]) => fieldList(...a) },
 }));
 // The desktop: results and evidence are there.
 vi.mock("@shared/platform", async (orig) => {
@@ -123,7 +125,7 @@ describe("Defectos (DEF-01)", () => {
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar defectos" }), "recibo");
     expect(within(table).getAllByRole("row")).toHaveLength(2);
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("shows a board by status where a drop follows the lifecycle", async () => {
     setViewportWidth(1440);
@@ -143,7 +145,7 @@ describe("Defectos (DEF-01)", () => {
     const other = within(board).getByRole("region", { name: "Otros" });
     expect(within(other).getByRole("article")).toHaveTextContent("Aplazado");
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("creates a defect from a failed result, prefilled", async () => {
     setViewportWidth(1440);
@@ -175,7 +177,7 @@ describe("Defectos (DEF-01)", () => {
       foundInRunId: "run1",
       fromResult: { resultId: "r1", stepId: "s2" },
     });
-  }, 20_000);
+  });
 });
 
 describe("DefectEditor", () => {
@@ -202,12 +204,84 @@ describe("DefectEditor", () => {
     expect(update.mock.calls[0][1]).toMatchObject({ status: "closed", resolution: "fixed" });
     expect(link).toHaveBeenCalledWith("def-002", "u1", { targetKind: "test_case", targetId: "c1" }, true);
     await expectNoAxeViolations();
-  }, 20_000);
+  });
 
   it("needs a title", async () => {
     renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(screen.getByText("El título es obligatorio.")).toBeInTheDocument();
     expect(create).not.toHaveBeenCalled();
+  });
+
+  // FLD-03: the fields defined for defects in Ajustes.
+  it("shows the project's defect fields; a required one blocks the save", async () => {
+    fieldList.mockResolvedValueOnce([
+      {
+        id: "f1",
+        projectId: "p1",
+        entity: "defect",
+        fieldKey: "customer",
+        label: "Cliente afectado",
+        description: "",
+        fieldType: "text",
+        options: [],
+        required: true,
+        defaultValue: null,
+        appliesToCaseTypes: null,
+        position: 0,
+        archivedAt: null,
+        createdAt: "",
+        updatedAt: "",
+        revision: 1,
+      },
+    ]);
+    create.mockResolvedValue(defect("def-009", {}));
+    renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
+    expect(fieldList).toHaveBeenCalledWith("p1", "u1", "defect");
+    const customer = await screen.findByRole("textbox", { name: /Cliente afectado/ });
+    await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), "Cobro doble");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).not.toHaveBeenCalled();
+    await userEvent.type(customer, "ACME");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ custom: { customer: "ACME" } }) }),
+    );
+  });
+
+  it("a value that does not fit its defect field blocks the save", async () => {
+    fieldList.mockResolvedValueOnce([
+      {
+        id: "f2",
+        projectId: "p1",
+        entity: "defect",
+        fieldKey: "ticket",
+        label: "Ticket de soporte",
+        description: "",
+        fieldType: "url",
+        options: [],
+        required: false,
+        defaultValue: null,
+        appliesToCaseTypes: null,
+        position: 0,
+        archivedAt: null,
+        createdAt: "",
+        updatedAt: "",
+        revision: 1,
+      },
+    ]);
+    create.mockResolvedValue(defect("def-010", {}));
+    renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
+    const ticket = await screen.findByRole("textbox", { name: /Ticket de soporte/ });
+    await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), "Cobro doble");
+    await userEvent.type(ticket, "no es una url");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).not.toHaveBeenCalled();
+    await userEvent.clear(ticket);
+    await userEvent.type(ticket, "https://soporte.example/123");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ custom: { ticket: "https://soporte.example/123" } }) }),
+    );
   });
 });

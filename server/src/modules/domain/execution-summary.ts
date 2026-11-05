@@ -45,7 +45,8 @@ export interface AttemptData {
   flowId?: string | null;
   rowId?: string | null;
   revisionId?: string | null;
-  caseRevision?: number | null;
+  /** Fingerprint of the executed revision's executable content (loader). */
+  execFingerprint?: string | null;
 }
 
 export interface CaseData {
@@ -55,7 +56,8 @@ export interface CaseData {
   status: string;
   priority: string;
   requirementKeys?: string[];
-  revision?: number | null;
+  /** Fingerprint of the case's executable content now (loader). */
+  execFingerprint?: string | null;
 }
 
 export interface RequirementData {
@@ -454,10 +456,15 @@ const fold = (s: string) => [...s.toLowerCase()].map((c) => FOLD[c] ?? c).join("
 
 export function criterionKind(text: string): string | null {
   const t = fold(text);
-  if (t.includes("defect") && t.includes("critic")) return "criticalDefects";
+  const otherSeverity = ["mayor", "major", "menor", "minor", "trivial", "alta", "high"].some((w) => t.includes(w));
+  // «Defectos críticos o mayores»: more than the critical ones.
+  if (t.includes("defect") && t.includes("critic")) return otherSeverity ? null : "criticalDefects";
+  // «Casos críticos ejecutados»: a subset the derivation does not measure.
+  if (t.includes("critic")) return null;
+  // Before «executed»: «Cobertura de requisitos ejecutados» is coverage.
+  if (t.includes("cobertura") || t.includes("coverage")) return "coverage";
   if (t.includes("exito") || t.includes("pass rate") || t.includes("aprobad") || t.includes("passed")) return "passRate";
   if (t.includes("ejecutad") || t.includes("executed") || t.includes("execution")) return "executed";
-  if (t.includes("cobertura") || t.includes("coverage")) return "coverage";
   return null;
 }
 
@@ -595,8 +602,8 @@ function lastResult(
   flaky: Set<string>,
 ): LastResult {
   const run = runs.get(a.runId);
-  const current = a.caseId ? cases.get(a.caseId)?.revision ?? null : null;
-  const executed = a.caseRevision ?? null;
+  const current = a.caseId ? cases.get(a.caseId)?.execFingerprint ?? null : null;
+  const executed = a.execFingerprint ?? null;
   return {
     resultId: a.id,
     runId: a.runId,
@@ -687,7 +694,17 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     });
     return ids.filter((id, i) => ids[i - 1] !== id);
   };
-  const defectsOfCase = (c: string) => orderDefects(defectsList.filter((d) => (d.caseIds ?? []).includes(c)).map((d) => d.id));
+  // The joins, built once (never a scan per row).
+  const push = <T>(m: Map<string, T[]>, k: string, v: T) => m.set(k, [...(m.get(k) ?? []), v]);
+  const defectsByCase = new Map<string, DefectData[]>();
+  const defectsByRequirement = new Map<string, DefectData[]>();
+  for (const d of defectsList) {
+    for (const c of d.caseIds ?? []) push(defectsByCase, c, d);
+    for (const r of d.requirementIds ?? []) push(defectsByRequirement, r, d);
+  }
+  const casesByKey = new Map<string, CaseData[]>();
+  for (const c of casesList) for (const k of c.requirementKeys ?? []) push(casesByKey, k, c);
+  const defectsOfCase = (c: string) => orderDefects((defectsByCase.get(c) ?? []).map((d) => d.id));
   const statusOf = (c: string) => derived.caseResults.get(c)?.status ?? NOT_RUN;
 
   const caseRows: CaseExecution[] = scope.map((c) => {
@@ -773,7 +790,7 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
   };
   const reqRows: RequirementExecution[] = [];
   for (const r of reqs) {
-    const linked = casesList.filter((c) => (c.requirementKeys ?? []).includes(r.requirementKey));
+    const linked = (casesByKey.get(r.requirementKey) ?? []).filter((c, i, all) => all[i - 1]?.id !== c.id);
     const live = linked.filter((c) => c.status !== "obsolete");
     const covered = live.length > 0;
     const statuses = live.map((c) => statusOf(c.id));
@@ -787,11 +804,7 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
       r.riskLikelihood != null && r.riskImpact != null ? r.riskLikelihood * r.riskImpact : null;
     const riskBand = level === null ? "unassessed" : level <= 4 ? "low" : level <= 12 ? "medium" : "high";
     const defectIds = orderDefects(
-      defectsList
-        .filter(
-          (d) => (d.requirementIds ?? []).includes(r.id) || (d.caseIds ?? []).some((c) => linked.some((l) => l.id === c)),
-        )
-        .map((d) => d.id),
+      [...(defectsByRequirement.get(r.id) ?? []), ...linked.flatMap((c) => defectsByCase.get(c.id) ?? [])].map((d) => d.id),
     );
     const allExecuted = covered && executedCases === live.length;
     coverage.covered += Number(covered);
@@ -813,7 +826,8 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
       riskLevel: level,
       riskBand,
       covered,
-      caseIds: [...linked].sort(byScenario).map((c) => c.id),
+      // The same cases `executedCases` counts (live, not obsolete).
+      caseIds: [...live].sort(byScenario).map((c) => c.id),
       executedCases,
       status,
       defectIds,
@@ -937,8 +951,17 @@ function queueRefs(cases: CaseExecution[], status: string, limit: number): [Queu
   ];
 }
 
+/** The attempts of the project's live runs: a deleted run (EJE-07) keeps its
+ *  results live, and every reader hides them through the run. */
+function liveAttempts(data: ProjectData): AttemptData[] {
+  const runs = new Set((data.runs ?? []).map((r) => r.id));
+  return (data.attempts ?? []).filter((a) => runs.has(a.runId));
+}
+
 /** The Home metrics of `projects` (contract v1 §2.4, R8–R9). */
-export function home(projects: ProjectData[], request: HomeRequest): HomeMetrics {
+export function home(allProjects: ProjectData[], request: HomeRequest): HomeMetrics {
+  // A project asked for twice counts once.
+  const projects = allProjects.filter((p, i, all) => all.findIndex((q) => q.projectId === p.projectId) === i);
   const limit = request.queueLimit ?? 5;
   const ds = request.dayStarts;
   const daily = emptyDaily(ds);
@@ -946,7 +969,7 @@ export function home(projects: ProjectData[], request: HomeRequest): HomeMetrics
   const out: HomeProject[] = [];
   for (const data of projects) {
     const s = summarize(data, { projectId: data.projectId });
-    for (const a of data.attempts ?? []) {
+    for (const a of liveAttempts(data)) {
       const t = timeOf(a);
       if (!t) undated++;
       else if (t[0] <= request.now) {
@@ -973,7 +996,7 @@ export function home(projects: ProjectData[], request: HomeRequest): HomeMetrics
     if (start === undefined) continue;
     const counts: WindowCounts = { ...emptyCounts(), executed: 0, passRate: null };
     for (const data of projects) {
-      const inWindow = (data.attempts ?? []).filter((a) => {
+      const inWindow = liveAttempts(data).filter((a) => {
         const t = timeOf(a);
         return !!t && t[0] >= start && t[0] <= request.now;
       });

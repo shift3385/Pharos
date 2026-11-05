@@ -53,7 +53,6 @@ use tauri::ipc::{InvokeBody, Request};
 use tauri::State;
 
 use crate::db::Db;
-use crate::journal::{self, Action, Actor};
 
 /// Largest evidence file accepted (ADR-0014, user decision 1). The Admin
 /// setting that changes it arrives with step 7 of the 0.2.0 design.
@@ -920,7 +919,11 @@ pub fn evidence_upload_cancel(uploads: State<Uploads>, upload_id: String) -> Res
 
 /// Days a content of `kind` is kept in `project` (None = always): the
 /// project's own setting, else the default; unknown kinds are kept.
-fn retention_days(conn: &Connection, project_id: &str, kind: &str) -> Result<Option<i64>, String> {
+pub(crate) fn retention_days(
+    conn: &Connection,
+    project_id: &str,
+    kind: &str,
+) -> Result<Option<i64>, String> {
     let custom: Option<Option<i64>> = conn
         .query_row(
             "SELECT days FROM evidence_retention WHERE project_id = ?1 AND kind = ?2",
@@ -937,86 +940,11 @@ fn retention_days(conn: &Connection, project_id: &str, kind: &str) -> Result<Opt
     }))
 }
 
-/// Whether the attachments of an owner never expire. Only evidence of imported
-/// runs can expire: a planner card's files are the user's, and results keep
-/// theirs until DAT-03c brings the ADR's exceptions (final failed or blocked
-/// result, open defect, manual execution), which need the result tables.
-fn exempt(owner_entity: &str) -> bool {
-    owner_entity != "run_shard"
-}
-
-/// Expires the contents whose retention passed (local task, not sync): the
-/// `attachments` row stays with `blob_purged_at` and its sha256, a `redact`
-/// event is written, and the content is released. Returns how many expired.
+/// Expires the contents whose retention passed (local task, not sync). The
+/// pass lives in `retention::expire` (DAT-03c): the exceptions of results,
+/// the grace after the upgrade, the clock guard and the per-pass cap.
 pub(crate) fn expire(conn: &Connection) -> Result<usize, String> {
-    type Row = (String, String, String, String, String, String);
-    let mut stmt = conn
-        .prepare(
-            "SELECT a.id, a.project_id, a.kind, a.owner_entity, a.sha256, a.created_at \
-             FROM attachments a WHERE a.deleted_at IS NULL AND a.blob_purged_at IS NULL",
-        )
-        .map_err(|e| e.to_string())?;
-    let rows: Vec<Row> = stmt
-        .query_map([], |r| {
-            Ok((
-                r.get(0)?,
-                r.get(1)?,
-                r.get(2)?,
-                r.get(3)?,
-                r.get(4)?,
-                r.get(5)?,
-            ))
-        })
-        .map_err(|e| e.to_string())?
-        .collect::<rusqlite::Result<_>>()
-        .map_err(|e| e.to_string())?;
-    let mut expired = 0;
-    for (id, project_id, kind, owner_entity, sha256, created_at) in rows {
-        if exempt(&owner_entity) {
-            continue;
-        }
-        let Some(days) = retention_days(conn, &project_id, &kind)? else {
-            continue;
-        };
-        let due: bool = conn
-            .query_row(
-                "SELECT julianday(?1) <= julianday('now') - ?2",
-                params![created_at, days],
-                |r| r.get(0),
-            )
-            .map_err(|e| e.to_string())?;
-        if !due {
-            continue;
-        }
-        conn.execute(
-            "UPDATE attachments SET blob_purged_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
-             WHERE id = ?1",
-            params![id],
-        )
-        .map_err(|e| e.to_string())?;
-        let owner = crate::oplog::owner_of(conn, "project", &project_id)?;
-        let mut changes = serde_json::Map::new();
-        changes.insert("blob".into(), json!([sha256, null]));
-        journal::record_event_in(
-            conn,
-            Actor::System {
-                component: "evidence",
-                on_behalf_of: owner,
-            },
-            Action::Redact,
-            "attachment",
-            &id,
-            Some(&project_id),
-            changes,
-            Some(json!({"reason": "retention", "kind": kind, "days": days})),
-        )?;
-        release(conn, &sha256)?;
-        expired += 1;
-    }
-    if expired > 0 {
-        tracing::info!(expired, "evidence expired by retention");
-    }
-    Ok(expired)
+    retention::expire(conn)
 }
 
 // ---- migration of planner_attachments (0022 → 0023) -----------------------
@@ -1161,6 +1089,7 @@ fn fault_point(_moved: usize) -> Result<(), String> {
 }
 
 pub(crate) mod check;
+pub mod retention;
 
 #[cfg(test)]
 pub(crate) mod tests;

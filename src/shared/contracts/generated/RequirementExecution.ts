@@ -4,4 +4,9 @@ export type RequirementExecution = { requirementId: string, requirementKey: stri
 /**
  * high | medium | low | unassessed
  */
-riskBand: string, covered: boolean, caseIds: Array<string>, executedCases: number, status: string, defectIds: Array<string>, inScope: boolean, };
+riskBand: string, covered: boolean, 
+/**
+ * Linked live cases that are not obsolete (what covers it; the cases
+ * `executed_cases` counts).
+ */
+caseIds: Array<string>, executedCases: number, status: string, defectIds: Array<string>, inScope: boolean, };

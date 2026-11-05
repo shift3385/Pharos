@@ -306,7 +306,7 @@ sobre lo decidido, sin cambiar la decisión:
   «Completado», solo si el usuario marca «Descartar los borradores». Si no,
   se conservan para reabrirlo.
 - **Retención:** hasta que lleguen los ajustes por proyecto en Admin y las
-  excepciones de resultados (DAT-03c, 0.3.0), **todo adjunto de `result`,
+  excepciones de resultados (DAT-03c, hecho en E6p: ver abajo), **todo adjunto de `result`,
   `step_result` y `execution_draft` está exento** (`evidence::exempt`): más
   estricto que el ADR (que solo exime lo manual, lo final fallido o bloqueado
   y lo vinculado a un defecto abierto), nunca se pierde nada.
@@ -392,3 +392,70 @@ quedó retirada) y sin nada nuevo que sincronizar (`APPLIED_SET_VERSION` igual).
   evento, pero **sin fila en el oplog**: son locales porque nada del almacén se
   sincroniza (decisión del coordinador, 2026-11-04). Los logs solo llevan
   recuentos.
+
+## Implementación (E6p, DAT-03c: retención por proyecto, 2026-11-05)
+
+`src-tauri/src/evidence/retention.rs` y «Retención por proyecto» en
+Administración → Evidencias. Sin migración: `evidence_retention` (0022) ya
+tenía la forma (sin fila = el valor por defecto, `days NULL` = siempre). La
+reserva 0035 se retiró sin usar.
+
+- **Ajustes.** Por proyecto y por tipo (`trace`, `video`, `raw_report`,
+  `log`, `screenshot`, `evidence`): por defecto, siempre o de 1 a 3650 días
+  (`evidence_retention_get` / `_set`, solo proyectos del usuario). Cada cambio
+  deja un evento `update` sobre `evidence_retention` (id = el proyecto) con
+  `{tipo: [antes, después]}` (`"default"`, `"always"` o los días); sin
+  evento si no cambia nada.
+- **No se sincroniza** (decisión del plan, aprobada por el coordinador): la
+  caducidad es una tarea local y los adjuntos no se sincronizan hasta
+  SYNC-04b, así que cada equipo caduca sus propias copias con su propio
+  ajuste. El evento entra en la cadena del equipo sin fila en el oplog.
+  `APPLIED_SET_VERSION` sigue en 7. La pantalla lo dice.
+- **Excepciones** (`retention::exempt`, sustituye al «todo adjunto de
+  resultado está exento» de EJE-02). Solo puede caducar lo importado: el
+  informe en bruto (`run_shard`) y la evidencia de un resultado o de un
+  resultado de paso importados. Nunca caduca:
+  - la de un resultado **manual** (`shard_id IS NULL`; los importados siempre
+    tienen shard);
+  - la del **intento final** de su test cuando **falló o se bloqueó**
+    (`derive::final_attempts` sobre los resultados del run con
+    `CURRENT_SHARD`: un shard reemplazado por un normalizador más nuevo nunca
+    da el final);
+  - la de un resultado al que apunta un vínculo vivo de un **defecto vivo y
+    abierto** (`lifecycle::is_open`: ni `closed` ni `rejected`);
+  - la de un resultado que no se encuentra (fila suelta: no se pierde nada).
+
+  La evidencia de un paso sigue a su resultado. Los adjuntos del
+  planificador, de los defectos y de los borradores nunca caducan. Las
+  excepciones se evalúan en cada pasada: si un reintento pasa o el defecto se
+  cierra, la evidencia caduca en cuanto su edad (desde `attachments.created_at`)
+  supera la retención.
+- **Cuándo.** Como antes, dentro de `purge_deleted` (al arrancar y tras cada
+  sincronización, también sin conexión). Un cambio de ajuste se aplica en la
+  siguiente pasada.
+- **Nunca toca resultados:** caducar marca `blob_purged_at`, escribe el
+  `redact` y libera el contenido por la recogida de siempre.
+- **Runs borrados (EJE-07):** sus evidencias siguen las mismas reglas hasta
+  que la purga se las lleva con el run.
+
+### Tras la revisión independiente (E6p, DAT-03c, 2026-11-05)
+
+- **Gracia al actualizar** (decisión del coordinador). La primera pasada
+  anota `dat03c_enabled_at` en `sync_state`. La evidencia de resultados y de
+  pasos cuenta su edad desde `max(created_at, dat03c_enabled_at)`: nada de
+  lo que ya existía caduca antes de un plazo completo tras la actualización.
+  Los informes en bruto ya caducaban antes y no cambian.
+- **Reloj.** El «ahora» de una pasada es la hora del equipo, pero como mucho
+  7 días después del mayor entre la última pasada (`evidence_last_expire_at`)
+  y la hora de pared del último HLC (`hlc_last`, que sigue también los
+  relojes de los equipos con los que sincronizó). Un reloj adelantado años no
+  caduca todo de golpe; uno atrasado caduca menos.
+- **Límite por pasada:** como mucho 500 contenidos, los más antiguos primero;
+  la siguiente pasada sigue. La pasada va dentro de la transacción de la
+  purga y no retiene el bloqueo mucho tiempo.
+- **Un vínculo que llega antes que su defecto** (sin clave foránea) cuenta
+  como defecto abierto: la evidencia se conserva hasta que llegue.
+- **Acortar un plazo pide confirmación** con el recuento de
+  `evidence_retention_preview` (lectura; la misma regla que la pasada, con el
+  nuevo plazo). La pantalla guarda solo con «Guardar» y vuelve a lo guardado
+  si falla.

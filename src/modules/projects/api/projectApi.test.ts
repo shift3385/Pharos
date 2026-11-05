@@ -3,6 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeServer } from "@test/server";
+import { PROJECT_SAVED_EVENT } from "../model/events";
 import { projectApi } from "./projectApi";
 
 const invoke = vi.fn();
@@ -42,5 +43,21 @@ describe("projectApi", () => {
     await projectApi.list("u1");
     expect(invoke).toHaveBeenCalledWith("project_list", { ownerId: "u1" });
     expect(server.calls()).toEqual([]);
+  });
+
+  it("announces a saved project, and only once it is saved (FIX-11)", async () => {
+    onDesktop();
+    const heard = vi.fn();
+    window.addEventListener(PROJECT_SAVED_EVENT, heard);
+    try {
+      invoke.mockRejectedValueOnce(new Error("prefix in use"));
+      await expect(projectApi.update("p1", { name: "P", caseIdPrefix: "BM-" })).rejects.toThrow();
+      expect(heard).not.toHaveBeenCalled();
+      invoke.mockResolvedValueOnce({ id: "p1" });
+      await projectApi.update("p1", { name: "P", caseIdPrefix: "BM-" });
+      expect(heard).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener(PROJECT_SAVED_EVENT, heard);
+    }
   });
 });

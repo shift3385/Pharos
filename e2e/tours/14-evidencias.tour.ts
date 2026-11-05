@@ -1,6 +1,7 @@
 // Chapter 14 — Evidencias (DAT-03b, wave E5): Administración › Evidencias
 // shows the encrypted evidence store, verifies every file and deletes the
-// orphans after confirmation. Selectors: the evidence-* test ids.
+// orphans after confirmation; «Retención por proyecto» (DAT-03c) sets how
+// long each kind of evidence is kept. Selectors: the evidence-* test ids.
 //
 // To show the repair, the tour leaves one orphan in the isolated profile's
 // evidence folder: a file with the store's name pattern (<2 hex>/<64 hex>.pev)
@@ -41,6 +42,58 @@ chapter("evidencias", () => {
       await openAdminTab("evidence");
       await expect(byTestId("evidence-usage")).toBeDisplayed();
       await expect(byTestId("evidence-usage-total")).toBeDisplayed();
+    },
+  });
+
+  step("retencion", {
+    title: "Retención por proyecto",
+    caption: "«Retención por proyecto» fija, para cada tipo de evidencia de un proyecto, cuánto se conserva antes de que caduque su archivo: el valor por defecto (30 días las trazas y los vídeos, 90 los reportes y los registros), «Siempre» o un número de días. Nunca caduca la evidencia de la ejecución manual, la de un resultado final fallido o bloqueado ni la de un resultado vinculado a un defecto abierto. Nada se guarda hasta pulsar «Guardar». Es un ajuste solo de este equipo: no se sincroniza.",
+    covers: ["action:evidence-retention"],
+    shot: { element: '[data-testid="evidence-retention"]' },
+    run: async () => {
+      const card = byTestId("evidence-retention");
+      await card.scrollIntoView();
+      const trace = byTestId("evidence-retention-trace");
+      await trace.waitForDisplayed();
+      await trace.selectByAttribute("value", "days");
+      const days = byTestId("evidence-retention-trace-days");
+      await days.waitForDisplayed();
+      await days.setValue("45");
+      await byTestId("evidence-retention-video").click();
+      await byTestId("evidence-retention-video").selectByAttribute("value", "always");
+      await expect(byTestId("evidence-retention-device")).toBeDisplayed();
+      // Longer than before: «Guardar» applies it without asking.
+      await byTestId("evidence-retention-save").click();
+      // Saved when the row shows the new value (the button is also disabled
+      // while it saves, so it is not a signal).
+      await browser.waitUntil(async () => (await byTestId("evidence-retention").getText()).includes("Ahora: 45 días"), {
+        timeoutMsg: "the retention was not saved",
+      });
+    },
+  });
+
+  step("retencion-acortar", {
+    title: "Acortar la retención",
+    caption: "Un plazo más corto que el actual pide confirmación y dice cuántos archivos caducarían en la próxima pasada (al arrancar o tras sincronizar). Los resultados se conservan; los archivos caducados no se recuperan.",
+    covers: ["dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await byTestId("evidence-retention-log").selectByAttribute("value", "days");
+      const days = byTestId("evidence-retention-log-days");
+      await days.waitForDisplayed();
+      await days.setValue("7");
+      await byTestId("evidence-retention-save").click();
+      await expect(byTestId("evidence-retention-shorter")).toBeDisplayed();
+    },
+  });
+
+  step("retencion-acortada", {
+    title: "Retención acortada",
+    caption: "Al confirmar, el nuevo plazo se guarda en este equipo.",
+    shot: false,
+    run: async () => {
+      await byTestId("evidence-retention-confirm").click();
+      await $('[role="alertdialog"]').waitForExist({ reverse: true });
     },
   });
 

@@ -581,7 +581,8 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   cerrado solo cambia el estado (el resto de campos se ignora), borra
   `finished_at` y deja un evento `update`.
 - **Sin borrado de runs en 0.2.0** (decisión del coordinador, 2026-11-04): se
-  cierra como `aborted`. Queda EJE-07 en el ROADMAP.
+  cierra como `aborted`. Queda EJE-07 en el ROADMAP (hecho después, en la
+  ola E6p: ver «Implementación (E6p, EJE-07)»).
 - **Purga:** un elemento purgado se lleva su borrador y los adjuntos del
   borrador; la recogida libera sus archivos.
 - **Web:** la pantalla del run es de solo lectura (aviso) hasta EJE-06.
@@ -631,3 +632,212 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   del run y sus adjuntos; como `completed`, si el usuario lo pide.
 - **Sin etiqueta de configuración** en los intentos manuales: los identifica
   el `configuration_id` del run, cuyo nombre se puede editar.
+
+## Nota (CYC-02, E6p, 2026-11-05): importar en un ciclo
+
+- «Importar informe» → «Run nuevo» tiene el selector «Ciclo» (los ciclos del
+  proyecto que no están cerrados; «Sin ciclo» por defecto). `ImportNewRun`
+  lleva `cycleId` y el run nuevo solo guarda `runs.cycle_id`; la
+  configuración y el elemento del ciclo de cada resultado se derivan al leer
+  (`runs/link.rs::Resolver`, «Vínculo derivado»), así que sus resultados
+  cuentan en el progreso del ciclo sin editar el run después.
+- `insert_run` lo comprueba con `cycles::check_run_links` (`cycle-closed`,
+  `cycle-not-found`), y la vista previa hace la misma comprobación antes de
+  subir nada. Importar en un run abierto no cambia su ciclo (el diálogo lo
+  nombra). Sin migración: la columna existe desde E3.
+
+## Implementación (E6p, EJE-07: borrar un run, 2026-11-05)
+
+`src-tauri/src/runs/delete.rs` y `DeleteRunDialog` en la pantalla del run.
+Sin migraciones (la 0035 local y la 0014 del servidor se retiraron sin usar),
+sin cambios en el servidor y sin cambiar el conjunto que se sincroniza
+(`APPLIED_SET_VERSION` sigue en 7).
+
+- **Qué hace `run_delete`**, en una transacción: descarta los borradores del
+  run y sus adjuntos (como «Cancelado»), pone lápida a sus elementos vivos
+  (una fila `delete` del oplog por elemento, sin evento propio) y al run, con
+  **un** evento `delete` que lleva `cascade` (elementos), `hidden`
+  (resultados, shards y evidencias que quedan ocultos) y los borradores
+  descartados. **Nunca** toca `run_shards`, `results` ni `step_results`: el
+  test que busca sentencias `DELETE` sobre esas tablas sigue en pie.
+- **El predicado.** Un run cuenta si y solo si `runs.deleted_at IS NULL` (y su
+  proyecto está vivo); un resultado, un resultado de paso o un shard, solo a
+  través de su run: `JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL`.
+  Un resultado cuyo run aún no llegó tampoco cuenta. En el servidor,
+  `tx.list("run")` sin `withDeleted`, saltando cualquier resultado o shard
+  cuyo `runId` no esté en ese mapa (lo que ya hacía el progreso de ciclos).
+  Se aplica en las listas, el progreso del run y del ciclo, los recuentos de
+  «Ejecuciones», la bandeja «Sin vincular» y los candidatos de «Vincular
+  resultado» de un defecto; la derivación del paso 10 (matriz, informe,
+  «Inicio») y la API web de runs (EJE-06) lo aplican también (se les comunicó
+  por el coordinador).
+- **Sync.** Viajan las lápidas lww del run y de sus elementos. Los shards y los
+  resultados no envían nada: son `append_only` y siguen vivos en el servidor,
+  ocultos detrás de un run con lápida. Otro equipo recibe la lápida, sus
+  elementos se llevan sus borradores (EJE-02) y sus resultados dejan de verse
+  por el predicado; un shard o resultado que llega **después** (de un equipo que
+  aún no había visto el borrado) también queda oculto. Editar la cabecera en
+  otro equipo tras el borrado es un conflicto normal (conservar el borrado o
+  recuperar el run).
+- **Escribir en un run borrado se rechaza** con `run-deleted` (antes, «run not
+  found»): registrar un intento, guardar un borrador, reabrirlo, editarlo,
+  añadir elementos e importar en él. Reimportar el mismo archivo en el run
+  borrado se rechaza; como run nuevo se importa sin aviso de duplicado (el
+  duplicado solo mira runs vivos).
+- **Runs de un ciclo.** Se borran mientras el ciclo está abierto (o borrado);
+  si está cerrado, `cycle-closed`, como al reabrir: un ciclo cerrado es un
+  registro congelado. El diálogo nombra el ciclo cuyo progreso deja de contar
+  el run.
+- **Defectos.** Un vínculo de un defecto a un resultado de un run borrado se
+  conserva (nota en ADR-0016); el resultado ya no aparece en los selectores.
+- **Purga.** Sin cambios: pasada la retención de Administración, `CHILDREN["run"]`
+  se lleva las evidencias de sus resultados, pasos y shards, los resultados,
+  los pasos, los shards y el run, con sus filas del oplog, y anota
+  `purged_run:` para que un nuevo pull no los traiga; espera mientras alguno
+  no haya llegado al servidor. Los elementos se van con `CHILDREN["run_item"]`.
+  En el servidor, los documentos de shards y resultados quedan hasta que haya
+  una purga del servidor (como las revisiones, SYNC-11).
+- **Sin «recuperar» en 0.2.0:** no hay papelera para runs; un conflicto
+  «conservar el mío» desde otro equipo puede devolverlo.
+
+### Tras la revisión independiente (E6p, EJE-07, 2026-11-05)
+
+- **Recuperar un run recupera sus elementos.** Si el borrado pierde un
+  conflicto (`sync::resolve_conflict`, se conserve la edición local o la del
+  servidor) y el run queda vivo, `runs::delete::revive_items` devuelve los
+  elementos **que tumbó ese borrado**, cada uno con un cambio lww nuevo (fila
+  `upsert` del oplog, sin evento propio), así que el servidor y los demás
+  equipos los reciben. Un elemento quitado antes por su cuenta (o por otro
+  equipo) sigue quitado (revisión del coordinador, ronda 2).
+  - **Cómo se reconoce la cascada, en los dos equipos:** el borrado escribe
+    las lápidas de los elementos y la del run en una transacción, en un
+    equipo, así que sus HLC tienen el mismo `device_id` y horas de pared a
+    milisegundos. Un elemento vuelve solo si el HLC de su lápida (su último
+    `delete` propio en el oplog, en el equipo que borró, o su `sync_base`, en
+    el que la descargó) es del mismo equipo que el HLC del borrado del run (el
+    lado borrado del conflicto) y está a 10 s o menos.
+  - **Caso límite (aceptado):** un elemento quitado por su cuenta en el mismo
+    equipo menos de 10 s antes de eliminar el run no se distingue de la
+    cascada y **vuelve** si el run se recupera. Es el fallo conservador (se
+    puede volver a quitar; nada se pierde), y en 0.2.0 no existe «quitar un
+    elemento».
+  - `deleted_at` no sirve: una lápida descargada guarda la hora del pull, no
+    la del borrado.
+  - Un run de un proyecto borrado no se recupera aquí; lo hace
+    `restore_project_children`, que tampoco trae un run borrado antes que el
+    proyecto.
+  - Probado en los dos equipos y en los dos sentidos, también con un
+    elemento quitado una hora antes (sigue quitado; el otro vuelve).
+- **Solo en el escritorio:** que no se pueda eliminar un run de un ciclo
+  cerrado lo comprueba el escritorio, como la reapertura (ADR-0017). El
+  servidor no lo comprueba: rechazar ahí una lápida empujada bloquearía el
+  push genérico del sync; la web aún no elimina runs (EJE-06).
+- **`run-deleted` también** al crear un defecto o su borrador desde un
+  resultado de un run eliminado, y en la pantalla del run (`run_overview`),
+  que avisa en lugar de «no existe».
+- **Web:** las etiquetas de los vínculos de defectos leen también los runs
+  eliminados (`linkContext` con `withDeleted`), como el escritorio.
+- **Textos:** «Eliminar run»; el diálogo dice que el run sale de las listas y
+  del progreso (la matriz y el informe del paso 10 aplican el mismo
+  predicado).
+
+## Implementación (E6, paso 10: matriz extendida e informe de estado, 2026-11-05)
+
+EJE-04 y EJE-03 sobre una **derivación de ejecución** única (contrato v1), que
+también leen las métricas del Inicio (RED-W6). Sin migraciones (0034 y la 0013
+del servidor, reservadas, se retiran) y sin cambios en lo que se sincroniza
+(`APPLIED_SET_VERSION` sigue en 7). Dónde vive:
+
+- **Núcleo puro** en `src-tauri/src/execution/derive.rs` (`summarize`, `home`),
+  sin SQL, sin reloj y sin zona horaria. Reutiliza `runs::derive`
+  (`cmp_attempts`, `worst_status`, `risk_level`, `risk_band`) y
+  `cycles::progress::cells`.
+- **Cargador** en `src-tauri/src/execution.rs`: una lectura del proyecto (runs
+  vivos, resultados sin shard superado, enlace de cada uno —el guardado si es
+  manual, el de `runs::link::Resolver` si es importado—, casos con su revisión
+  vigente, requisitos con riesgo, defectos con los casos que alcanzan, ciclos y
+  elementos, criterios del plan). Comando `execution_summary` (lectura) y
+  `home_metrics(conn, user, request)` para RED-W6.
+- **Gemelo del servidor** en `server/src/modules/domain/execution-summary.ts` y
+  `execution.ts`, con `GET /api/execution/summary`. Los dos lados se comprueban
+  con `src-tauri/tests/fixtures/execution-vectors.json`.
+
+Reglas (R1–R12 del contrato):
+
+- **R1 Alcance.** Intentos de runs vivos del proyecto, sin shard superado, que
+  cumplen los filtros del run (ciclo; plan: el `testPlanId` del run o el de su
+  ciclo; build y entorno, recortados) y la configuración del intento (la del
+  run, si no la del resultado o la que resuelve su etiqueta). El periodo
+  `[from, to)` en ms se aplica a la hora del intento (la regla de
+  `runs::derive`: la primera que se lee de `finished_at`, `started_at` y la
+  importación del shard); con periodo, un intento sin hora queda fuera y se
+  cuenta en `undated`.
+- **R2 Finales y flaky.** El final de cada test `(run, test_key, etiqueta)`
+  por hora, `attempt`, HLC y, al final, el id; flaky si el final pasó y antes
+  falló, o si la herramienta lo declaró.
+- **R4 Objetivo** `(caso, flujo, fila)`: el run de su final más reciente y,
+  dentro de ese run, el peor final entre configuraciones.
+- **R5 Caso** (diseño §4, «Matriz»): el run del final más reciente del caso y,
+  dentro, el peor entre flujos, filas y configuraciones; el resultado decisivo
+  es el más reciente con ese estado. Sin finales, `not_run`.
+  **Desactualizado** (`stale`) cuando cambió lo que se ejecuta: la huella
+  (sha256 del JSON canónico, sin ids) de `gherkinLevel`, `preconditions`,
+  `background`, `steps`, `expectedResult`, `examples`, `flows`,
+  `featureSource` y `testData` de la revisión ejecutada difiere de la del caso
+  ahora. Cambiar el estado, la prioridad, el título o la clave (un cambio de
+  prefijo) no desactualiza nada. Cada lado calcula su huella; nunca se
+  comparan entre lados.
+- **R6 Progreso.** Con ciclo, las celdas del ciclo (elemento × configuración,
+  `progressUnit: "cell"`), como la pantalla del ciclo; si no, los casos del
+  alcance: el proyecto (los vivos no obsoletos) o el plan (elementos de sus
+  ciclos y casos con resultados en sus runs). `executed` = distinto de
+  `not_run`; `passRate` = pasados / ejecutados.
+- **R7 Re-test.** Un caso cuyo estado es `failed` y al que llega un defecto
+  `fixed` o `retest` (y ninguno `new`, `open` o `in_progress`) pasa a
+  `retest`: cuenta como ejecutado, no como pasado.
+- **R8 Ventanas** (Inicio): por ventana `[dayStarts[i], now]`, finales y peor
+  por objetivo entre los intentos de todos los proyectos; un intento sin caso
+  es su propio objetivo.
+- **R9 Diario.** Cada intento (no solo los finales), por estado y por origen
+  (manual / importado), en el día de `dayStarts` (medianoches locales que da el
+  cliente) que lo contiene; antes del primer día no cuenta. Así un día de
+  cambio de hora tiene 23 o 25 horas sin lógica de zona en el núcleo.
+- **R10 Defectos.** Foto de hoy, sin filtrar por periodo; con ciclo o plan,
+  los que alcanzan casos del alcance o sus requisitos.
+- **R11 Criterios de salida.** Los del plan del proyecto (`closureCriteria`
+  con texto), con su índice; sin plan o sin criterios, los tres por defecto
+  (A3: ≥ 95 % ejecutado, 0 defectos críticos abiertos, ≥ 90 % de cobertura de
+  requisitos). El tipo se reconoce por el texto (ejecutad/executed, éxito/pass
+  rate, defecto + crític, cobertura/coverage; «crític» sin «defecto», como
+  «Casos críticos ejecutados», no se reconoce: es un subconjunto que la
+  derivación no mide) y la métrica se lee como
+  operador opcional + número + `%` opcional. Lo que no se reconoce queda «sin
+  datos» (`met: null`). La cobertura del criterio es la de la matriz:
+  requisitos con al menos un caso vivo no obsoleto.
+- **Contrato.** `RequirementExecution.caseIds` son los casos vivos no
+  obsoletos (los mismos que cuenta `executedCases`). `dayStarts` debe venir
+  con 1 a 400 enteros estrictamente crecientes (escritorio y servidor). Un
+  proyecto pedido dos veces cuenta una. Un run borrado (EJE-07) esconde sus
+  resultados también en el rollup del Inicio.
+- **Lecturas en la web.** Sin bloqueos (`DomainStore.read`: repeatable read,
+  solo lectura, sin el cerrojo de escritura ni `FOR UPDATE`), una consulta
+  por tipo de entidad para todos los proyectos pedidos, y la derivación
+  después de cerrar la lectura. El número de consultas no crece con los
+  proyectos (lo comprueba un test).
+- **Vectores.** Además del `expected` legible, la salida completa de cada
+  vector está en `execution-vectors.golden.json`, generado por el test de
+  Rust (`PHAROS_UPDATE_GOLDEN=1`) y comparado entero por los dos lados.
+- **R12 Empates** siempre por id: el mismo resultado en el escritorio y en el
+  servidor, se lean las filas en el orden que se lean.
+
+Bandas de riesgo: las de por defecto (hasta 4 bajo, hasta 12 medio, más alto);
+las bandas por proyecto siguen en TRZ-04. El riesgo se edita en el formulario
+del requisito: escritorio con `requirement_risk_set`, web con claves opcionales
+(`riskLikelihood`, `riskImpact`: falta = se conserva, `null` = se borra).
+
+**Criterio de salida de 0.2.0:** `a_manual_and_a_playwright_run_share_the_matrix`
+(Rust) y su gemelo en `server/tests/execution.test.ts`: un intento manual
+falla, un informe de Playwright posterior lo pasa (los dos runs en el resumen,
+gana el último final), otro intento manual posterior gana de nuevo, y editar el
+caso no cambia el resultado, su run ni su revisión (solo lo marca como
+desactualizado).

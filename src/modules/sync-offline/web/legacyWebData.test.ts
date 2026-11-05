@@ -111,7 +111,16 @@ describe("drainLegacyWebData", () => {
   it("a network failure keeps everything for the next sync", async () => {
     set("pharos.sync.outbox:u1", [delta("a")]);
     fetchMock.mockRejectedValue(new TypeError("offline"));
-    await expect(drainLegacyWebData()).rejects.toThrow();
+    // The push retries with real waits (500 + 1000 + 2000 ms): fake timers
+    // run them at once, so the test never races Vitest's timeout (BASE-21).
+    vi.useFakeTimers();
+    try {
+      const drained = expect(drainLegacyWebData()).rejects.toThrow();
+      await vi.runAllTimersAsync();
+      await drained;
+    } finally {
+      vi.useRealTimers();
+    }
     expect(localStorage.getItem("pharos.sync.outbox:u1")).not.toBeNull();
     expect(localStorage.getItem(unsentKey("u1"))).toBeNull();
   });

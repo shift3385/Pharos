@@ -237,6 +237,8 @@ keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`
 acyclic. The link itself lives in the case (`data.requirementKeys`) so it is
 revisioned and synced with the case, and travels as Gherkin tags (`@REQ-xxx` on
 the Feature, `@<case id>` on each Scenario — never the scenario name).
+Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
+(the filter options); neither imports traceability.
 
 **Execution model (decided for 0.2.0; the tables are built, the UI is not).** Gate C closed on
 2026-10-28 with ADR-0011…0019; the design is in
@@ -297,6 +299,22 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   event in one transaction; a `step_id`, flow or row that is not in the frozen
   revision is refused), `results_list` and `unlinked_mapping_set`;
   `requirement_risk_set` for the risk.
+- **Deleting a run (EJE-07, `runs/delete.rs`).** `run_delete` discards the
+  run's drafts and their files, tombstones its live items (one oplog `delete`
+  each, folded into the run's event) and the run, with one `delete` audit
+  event (`cascade`, `hidden` results/shards/attachments, discarded drafts).
+  Its shards, results and step results are never touched: they stay
+  append-only here and on the server, and every reader hides them through
+  their run — **a run counts iff `runs.deleted_at IS NULL`, and a result or
+  shard only through `JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL`**
+  (the server: `tx.list("run")` without `withDeleted`, skipping any result
+  whose `runId` is not in it). Writing into a deleted run (record, draft,
+  reopen, edit, items, import) is `run-deleted`; a run of a closed cycle
+  cannot be deleted (`cycle-closed`, desktop only, like reopening). A run
+  that comes back through a conflict resolution gets its items back
+  (`revive_items`, lww upserts). The purge takes it with its results
+  past the retention (`CHILDREN["run"]`, `purged_run:`). No server change.
+  `run_delete_preview` gives the dialog its counts.
 - **Derived, never stored** (`runs/derive.rs`): the final attempt of each
   `(run, test_key, configuration_label)` by
   `coalesce(finished_at, started_at, shard.imported_at)`, then `attempt`, then
@@ -361,6 +379,53 @@ and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
   `execution_attachment_preview`; `run_update` reopens a closed run.
 - **Exit criterion of 0.2.0** (editing an executed case changes none of its
   results): `runs::manual::tests::editing_an_executed_case_does_not_change_its_results`.
+
+**Execution derivation (step 10, EJE-04 / EJE-03, contract v1).** One
+derivation of what the runs say, read by the matrix, the status report and the
+Home metrics (RED-W6). Rules R1–R12 in ADR-0013 «Implementación (paso 10)».
+
+- **Rust:** `src-tauri/src/execution/derive.rs` is pure (`summarize` per
+  project and filter, `home` over projects with day starts and windows; no
+  SQL, clock or time zone). `src-tauri/src/execution.rs` loads a project in
+  one pass (live runs, results outside superseded shards with
+  `runs::link::CURRENT_SHARD`, the link of each result — stored if manual,
+  `runs::link::Resolver` if imported —, cases with their current revision,
+  requirements with risk, `defects::list_defects` with `case_ids`, cycles
+  and items, the plan's `closureCriteria`). Command `execution_summary`
+  (read); `home_metrics(conn, user, request)` is what RED-W6's command calls.
+- **Server:** `server/src/modules/domain/execution-summary.ts` (the pure twin)
+  and `execution.ts` (`loadProjects`: one lock-free read per entity kind for
+  every project asked for, through `DomainStore.read` — repeatable read, read
+  only, no user write lock, no `FOR UPDATE` — grouped in memory, then the
+  derivation after the read; `GET /api/execution/summary`,
+  `createExecutionService(...).homeMetrics` for `GET /api/home/metrics`).
+- **Outdated:** a fingerprint of the case's executable content (steps,
+  preconditions, background, flows, examples…, without ids), computed by each
+  loader; a status, priority, title or key edit never marks a result outdated.
+- **Golden:** `src-tauri/tests/fixtures/execution-vectors.golden.json` holds
+  each vector's whole output; both twins compare to it.
+- **Shared vectors:** `src-tauri/tests/fixtures/execution-vectors.json`, read by
+  `execution::tests::the_shared_vectors_hold` and `server/tests/execution.test.ts`
+  (also: the read order never changes the result).
+- **Client:** `@modules/runs` exports `executionApi.summary(filter, userId)`
+  (invoke on the desktop, the server on the web), `periodOf` / `localDayStart`
+  (local days → instants), the generated types and `evaluateExitCriteria`
+  (only reads the already evaluated criteria, localizing the defaults).
+- **Matrix (EJE-04):** `buildMatrix(…, execution, sort)` takes the summary's
+  cases and requirements: status, last result (run, date, flaky, stale),
+  re-test, risk order (default bands). Filters (cycle, configuration, build,
+  environment) and order live in the URL (`?cycle=&build=&sort=key`). The
+  `.xlsx` maps the extra statuses to the template's four words and adds the
+  «Resultados» sheet.
+- **Status report (EJE-03):** `src/modules/runs/report/` — `statusReport.ts`
+  (pure model of the nine 29119-3 sections), `reportXlsx.ts` (ExcelJS, no
+  template), `reportPdf.ts` (`pdfDoc` helpers), `StatusReportDialog` and
+  `StatusReportButton` (in «Ejecuciones» and, through `CyclesPage.cycleActions`
+  from the project page, in a cycle). The summary and recommendations are a
+  local draft (`localStorage`, per project and scope), never synced.
+- **Exit criterion of 0.2.0** (a manual run and a Playwright run in one
+  matrix): `execution::tests::a_manual_and_a_playwright_run_share_the_matrix`
+  and its server twin.
 
 **Defects (DEF-01, ADR-0016).** Migration 0029, `src-tauri/src/defects.rs`
 (+ `defects/{ids,lifecycle,convert}.rs`) and `src/modules/defects/`:
@@ -444,7 +509,8 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
 - **One persister in Rust** (`src-tauri/src/runs/import.rs`, a child of
   `runs`): `run_import_preview` (read-only, rolled back), `run_import`
   (raw report upload + one transaction: the run if new, the shard, results
-  with steps, one `import` audit event; a new run closes unless kept open),
+  with steps, one `import` audit event; a new run closes unless kept open,
+  and may belong to a cycle that is not closed: CYC-02, `newRun.cycleId`),
   `run_import_attach` (one report attachment to its result or step result,
   idempotent by owner and content), `unlinked_tests_list` (the tray: the keys
   whose latest imported result has no case) and `run_counts_list` (final
@@ -816,7 +882,8 @@ through `src-tauri/src/journal.rs`:
 - **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
   defects once for both views (Requisitos, Matriz) and owns their dialogs; the
   views only render (`buildMatrix` stays the single source, also for
-  `projectCoverage`).
+  `projectCoverage`). Since EJE-04 it also loads the execution summary under
+  the URL's filters and the cycle and configuration options.
 - **Switches, segmented controls and tabs** (`src/shared/ui`, SPEC §4/§5/§9/§10,
   RED-V1; also used by Casos, RED-V3, and Administración, RED-V4):
   - `Switch`: a `role="switch"` button named by its visible `label` (or
@@ -983,6 +1050,21 @@ store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
   the plan and every case as `.xlsx` **and** `.pdf`. `projects` builds them
   from `projectPlanFiles` (`test-plan`) and `projectCaseFiles` (`test-cases`);
   a PDF that cannot be rendered is left out and reported (`skipped`).
+- **Milestones and cycles (EXP-03):** after the template's content, the plan
+  adds the sheets «Hitos» (step 14) and «Ciclos» (the project's cycles with
+  the cycle list's own progress summary, the same numbers and percents as the
+  «Ciclos» screen), and each case a «Ciclos» sheet with the cycles it is in;
+  the PDFs end with the same tables. They are `ExportTable`s
+  (`@shared/export/extraTables`: `addTableSheets`, `tableSections`) built by
+  `@modules/cycles` (`loadCycleExport`, `cyclesTable`, `caseCyclesTable`)
+  and `test-plan/export/planExtras.ts`. A table without rows adds nothing, the
+  template's sheets do not change and the importers ignore the new ones. A
+  ZIP reads a project's cycles once (`exportAll.ts::addProject`) and hands
+  them to its plan and its cases: not at all for a project with neither, and
+  the items only when it has cases. Items are read only for the cycles that
+  have any, in parallel; a single case export reads them too (there is no
+  query by case: a known cost in projects with many cycles, EXP-04). A failure to read them stops the export with one toast
+  (`ReportedError`, so the caller adds none) and nothing is saved.
 
 ## Testing
 
@@ -992,6 +1074,10 @@ The QA tool tests itself at four levels:
   typecheck, lint with 0 warnings and the license check). Includes the
   no-hardcoded-color guard and a test that filters an exported `.feature` with
   the real Cucumber tag-expression engine.
+  Timeouts (BASE-21): Vitest's 5 s default stays; a file whose tests are slow
+  by nature (whole pages with axe, real `.xlsx` round trips) imports
+  `@test/slow` (20 s for that file only), and a test that waits on purpose
+  (retries, backoff) uses fake timers instead of a longer timeout.
 - **Rust core:** `cargo test` in `src-tauri/` (repositories, encryption,
   atomic persistence, HLC, sync merge). It runs again since the switch to MSVC.
 - **Contracts (BASE-05, [ADR-0026](adr/0026-contratos-generados.md)):** the
@@ -1350,7 +1436,10 @@ and its `VACUUM` can briefly double that image.)
   - `attachments`: one use of a content (`owner_entity`/`owner_id`, `kind`,
     name, mime, size, `blob_purged_at`). Shaped as an LWW entity, but not
     registered for sync yet (step 7 or SYNC-04b).
-  - `evidence_retention`: per-project overrides of the retention by kind.
+  - `evidence_retention`: per-project overrides of the retention by kind
+    (no row = default, `days NULL` = always). **Local to the device, never
+    synced** (DAT-03c): `evidence_retention_get` / `_set` (1..3650 days), one
+    `update` audit event on `evidence_retention` per change, with no oplog row.
 - **Files.** `evidence/<2 hex>/<hmac>.pev`, with
   `hmac = HMAC-SHA256(name key, sha256)`.
   - Keys come from `db_key` by HKDF-SHA256 (`"pharos-evidence-v1"`, then the
@@ -1445,9 +1534,21 @@ and its `VACUUM` can briefly double that image.)
   never cross the webview as base64. Limit: 200 MB per file (`MAX_FILE_BYTES`).
 - **Retention and purge.** `purge_deleted` also:
   - purges soft-deleted planner attachments past the retention;
-  - runs `evidence::expire`: per-kind days (defaults in `DEFAULT_RETENTION`;
-    only `run_shard` evidence can expire until step 7 brings the ADR's result
-    exceptions). Expiry sets `blob_purged_at` and writes a `redact` audit event;
+  - runs `evidence::expire`: per-kind days (defaults in `DEFAULT_RETENTION`,
+    per project in `evidence_retention`, set in Administración → Evidencias,
+    DAT-03c). Only imported evidence can expire: a raw report (`run_shard`)
+    and the evidence of an imported result or step result, except
+    (`evidence/retention.rs`, `exempt`) a manual result (`shard_id IS NULL`),
+    the final attempt of its test when it failed or was blocked (`final_attempts`
+    over the run's `CURRENT_SHARD` results) and a result a live, open defect
+    links to. Planner, defect and draft attachments never expire. The
+    exceptions are evaluated at each pass (a retry that passes or a closed
+    defect ends them; a link whose defect has not arrived counts as open).
+    Result and step evidence ages from `max(created_at, dat03c_enabled_at)`
+    (grace after the upgrade); a pass's clock moves at most 7 days past the
+    last pass and the last HLC; at most 500 per pass. Expiry sets
+    `blob_purged_at` and writes a `redact` audit event; it never touches a
+    result;
   - releases every content no live attachment needs.
 
   Deleting an attachment is a soft delete plus an immediate release. Deleting

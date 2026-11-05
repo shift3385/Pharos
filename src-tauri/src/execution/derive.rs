@@ -16,6 +16,9 @@
 //! - `retest`: the case failed and a defect reaching it is `fixed`/`retest`;
 //! - every tie is broken by id, so every side derives the same thing whatever
 //!   order it read the rows in.
+// The Home rollup (`home` and its types) has its production caller in
+// RED-W6's `home_metrics` command; until it lands only the tests call it.
+#![cfg_attr(not(test), allow(dead_code))]
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -76,8 +79,10 @@ pub struct AttemptData {
     pub flow_id: Option<String>,
     pub row_id: Option<String>,
     pub revision_id: Option<String>,
-    /// Number of the executed revision, when known.
-    pub case_revision: Option<i64>,
+    /// Fingerprint of the executable content of the executed revision (steps,
+    /// preconditions, background, flows, examples…; the loader's
+    /// `exec_fingerprint`), when that revision is known on this side.
+    pub exec_fingerprint: Option<String>,
 }
 
 /// A live case of the project (obsolete ones included).
@@ -90,8 +95,10 @@ pub struct CaseData {
     pub status: String,
     pub priority: String,
     pub requirement_keys: Vec<String>,
-    /// The current revision number.
-    pub revision: Option<i64>,
+    /// Fingerprint of the executable content of the case now. A result is
+    /// outdated when its own differs: a status, priority, title or key change
+    /// never makes it so.
+    pub exec_fingerprint: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug, Default)]
@@ -331,6 +338,8 @@ pub struct RequirementExecution {
     /// high | medium | low | unassessed
     pub risk_band: String,
     pub covered: bool,
+    /// Linked live cases that are not obsolete (what covers it; the cases
+    /// `executed_cases` counts).
     pub case_ids: Vec<String>,
     pub executed_cases: i64,
     pub status: String,
@@ -687,6 +696,10 @@ fn cmp(a: &AttemptData, b: &AttemptData) -> Ordering {
 }
 
 type TestKey<'a> = (&'a str, &'a str, &'a str);
+/** A target `(case, flow, row)`. */
+type TargetKey<'a> = (&'a str, Option<&'a str>, Option<&'a str>);
+/** A window's target: a case's, or an unlinked test's. */
+type WindowTarget<'a> = (String, Option<&'a str>, Option<&'a str>);
 
 fn test_of(a: &AttemptData) -> TestKey<'_> {
     (
@@ -786,8 +799,21 @@ fn fold(s: &str) -> String {
 /// The kind of a criterion by its text; None when it is not recognized.
 pub fn criterion_kind(text: &str) -> Option<&'static str> {
     let t = fold(text);
+    let other_severity = [
+        "mayor", "major", "menor", "minor", "trivial", "alta", "high",
+    ]
+    .iter()
+    .any(|w| t.contains(w));
     if t.contains("defect") && t.contains("critic") {
-        Some("criticalDefects")
+        // «Defectos críticos o mayores»: more than the critical ones.
+        (!other_severity).then_some("criticalDefects")
+    } else if t.contains("critic") {
+        // «Casos críticos ejecutados»: a subset the derivation does not
+        // measure; never the whole project's figure.
+        None
+    } else if t.contains("cobertura") || t.contains("coverage") {
+        // Before «executed»: «Cobertura de requisitos ejecutados» is coverage.
+        Some("coverage")
     } else if t.contains("exito")
         || t.contains("pass rate")
         || t.contains("aprobad")
@@ -796,8 +822,6 @@ pub fn criterion_kind(text: &str) -> Option<&'static str> {
         Some("passRate")
     } else if t.contains("ejecutad") || t.contains("executed") || t.contains("execution") {
         Some("executed")
-    } else if t.contains("cobertura") || t.contains("coverage") {
-        Some("coverage")
     } else {
         None
     }
@@ -927,7 +951,7 @@ fn empty_daily(day_starts: &[i64]) -> Vec<DailyCount> {
 struct Derived<'a> {
     /// The case's status, its decisive final and its run.
     case_results: HashMap<&'a str, (String, Option<&'a AttemptData>)>,
-    targets: Vec<(&'a str, Option<&'a str>, Option<&'a str>, &'a AttemptData)>,
+    targets: Vec<(TargetKey<'a>, &'a AttemptData)>,
     flaky: HashSet<TestKey<'a>>,
 }
 
@@ -935,8 +959,7 @@ struct Derived<'a> {
 fn derive_results<'a>(data: &'a ProjectData, in_scope: &[&'a AttemptData]) -> Derived<'a> {
     let (finals, flaky) = finals(in_scope);
     let mut by_case: HashMap<&str, Vec<&AttemptData>> = HashMap::new();
-    let mut by_target: BTreeMap<(&str, Option<&str>, Option<&str>), Vec<&AttemptData>> =
-        BTreeMap::new();
+    let mut by_target: BTreeMap<TargetKey, Vec<&AttemptData>> = BTreeMap::new();
     for f in &finals {
         if let Some(case) = f.case_id.as_deref() {
             by_case.entry(case).or_default().push(f);
@@ -949,7 +972,7 @@ fn derive_results<'a>(data: &'a ProjectData, in_scope: &[&'a AttemptData]) -> De
     let mut targets = Vec::new();
     for ((case, flow, row), group) in &by_target {
         if let Some((_, decisive)) = decide(group) {
-            targets.push((*case, *flow, *row, decisive));
+            targets.push(((*case, *flow, *row), decisive));
         }
     }
     // Defects reaching each case, for R7.
@@ -992,7 +1015,7 @@ fn last_result<'a>(
         .case_id
         .as_deref()
         .and_then(|c| cases.get(c))
-        .and_then(|c| c.revision);
+        .and_then(|c| c.exec_fingerprint.as_deref());
     LastResult {
         result_id: a.id.clone(),
         run_id: a.run_id.clone(),
@@ -1006,7 +1029,7 @@ fn last_result<'a>(
         configuration_label: a.configuration_label.clone(),
         flaky: flaky.contains(&test_of(a)),
         revision_id: a.revision_id.clone(),
-        stale: matches!((a.case_revision, current), (Some(x), Some(y)) if x != y),
+        stale: matches!((a.exec_fingerprint.as_deref(), current), (Some(x), Some(y)) if x != y),
     }
 }
 
@@ -1127,11 +1150,31 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         });
         ids.dedup();
     };
+    // The joins, built once (never a scan per row).
+    let mut defects_by_case: HashMap<&str, Vec<&DefectData>> = HashMap::new();
+    let mut defects_by_requirement: HashMap<&str, Vec<&DefectData>> = HashMap::new();
+    for d in &data.defects {
+        for c in &d.case_ids {
+            defects_by_case.entry(c.as_str()).or_default().push(d);
+        }
+        for r in &d.requirement_ids {
+            defects_by_requirement
+                .entry(r.as_str())
+                .or_default()
+                .push(d);
+        }
+    }
+    let mut cases_by_key: HashMap<&str, Vec<&CaseData>> = HashMap::new();
+    for c in &data.cases {
+        for k in &c.requirement_keys {
+            cases_by_key.entry(k.as_str()).or_default().push(c);
+        }
+    }
     let defects_of_case = |case: &str| -> Vec<String> {
-        let mut ids: Vec<String> = data
-            .defects
-            .iter()
-            .filter(|d| d.case_ids.iter().any(|c| c == case))
+        let mut ids: Vec<String> = defects_by_case
+            .get(case)
+            .into_iter()
+            .flatten()
             .map(|d| d.id.clone())
             .collect();
         order_defects(&mut ids);
@@ -1228,7 +1271,7 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
     let mut targets: Vec<TargetExecution> = derived
         .targets
         .iter()
-        .map(|(case, flow, row, a)| TargetExecution {
+        .map(|((case, flow, row), a)| TargetExecution {
             case_id: case.to_string(),
             flow_id: flow.map(String::from),
             row_id: row.map(String::from),
@@ -1260,11 +1303,11 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
     };
     let mut req_rows = Vec::new();
     for r in requirements {
-        let linked: Vec<&CaseData> = data
-            .cases
-            .iter()
-            .filter(|c| c.requirement_keys.iter().any(|k| *k == r.requirement_key))
-            .collect();
+        let mut linked: Vec<&CaseData> = cases_by_key
+            .get(r.requirement_key.as_str())
+            .cloned()
+            .unwrap_or_default();
+        linked.dedup_by(|a, b| a.id == b.id);
         let mut linked_sorted = linked.clone();
         linked_sorted.sort_by(|a, b| {
             natural_cmp(&a.scenario_id, &b.scenario_id).then_with(|| a.id.cmp(&b.id))
@@ -1288,15 +1331,19 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         let band = level
             .map(|l| derive::risk_band(l, derive::DEFAULT_RISK_BANDS))
             .unwrap_or("unassessed");
-        let mut defect_ids: Vec<String> = data
-            .defects
-            .iter()
-            .filter(|d| {
-                d.requirement_ids.iter().any(|x| *x == r.id)
-                    || d.case_ids.iter().any(|c| linked.iter().any(|l| l.id == *c))
-            })
+        let mut defect_ids: Vec<String> = defects_by_requirement
+            .get(r.id.as_str())
+            .into_iter()
+            .flatten()
+            .chain(
+                linked
+                    .iter()
+                    .flat_map(|c| defects_by_case.get(c.id.as_str()).into_iter().flatten()),
+            )
             .map(|d| d.id.clone())
             .collect();
+        defect_ids.sort_unstable();
+        defect_ids.dedup();
         order_defects(&mut defect_ids);
         let all_executed = covered && executed_cases == live.len() as i64;
         coverage.covered += covered as i64;
@@ -1318,7 +1365,12 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
             risk_level: level,
             risk_band: band.to_string(),
             covered,
-            case_ids: linked_sorted.iter().map(|c| c.id.clone()).collect(),
+            // The same cases `executed_cases` counts (live, not obsolete).
+            case_ids: linked_sorted
+                .iter()
+                .filter(|c| c.status != "obsolete")
+                .map(|c| c.id.clone())
+                .collect(),
             executed_cases,
             status,
             defect_ids,
@@ -1481,14 +1533,29 @@ fn queue_refs(cases: &[CaseExecution], status: &str, limit: usize) -> (Vec<Queue
     (refs, count)
 }
 
+/// The attempts of the project's live runs: a deleted run (EJE-07) keeps
+/// its results live, and every reader hides them through the run.
+fn live_attempts(data: &ProjectData) -> impl Iterator<Item = &AttemptData> {
+    let runs: HashSet<&str> = data.runs.iter().map(|r| r.id.as_str()).collect();
+    data.attempts
+        .iter()
+        .filter(move |a| runs.contains(a.run_id.as_str()))
+}
+
 /// The Home metrics of `projects` (contract v1 §2.4, R8–R9).
-pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
+pub fn home(all_projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
+    // A project asked for twice counts once.
+    let mut seen_projects = HashSet::new();
+    let projects: Vec<&ProjectData> = all_projects
+        .iter()
+        .filter(|p| seen_projects.insert(p.project_id.as_str()))
+        .collect();
     let limit = request.queue_limit.unwrap_or(5);
     let ds = &request.day_starts;
     let mut daily = empty_daily(ds);
     let mut undated = 0;
     let mut out = Vec::new();
-    for data in projects {
+    for &data in &projects {
         let summary = summarize(
             data,
             &ExecutionFilter {
@@ -1496,7 +1563,7 @@ pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
                 ..Default::default()
             },
         );
-        for a in &data.attempts {
+        for a in live_attempts(data) {
             match time_of(a) {
                 None => undated += 1,
                 Some((t, _)) if t <= request.now => {
@@ -1539,15 +1606,12 @@ pub fn home(projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
             continue;
         };
         let mut counts = WindowCounts::default();
-        for data in projects {
-            let in_window: Vec<&AttemptData> = data
-                .attempts
-                .iter()
+        for &data in &projects {
+            let in_window: Vec<&AttemptData> = live_attempts(data)
                 .filter(|a| time_of(a).is_some_and(|(t, _)| t >= start && t <= request.now))
                 .collect();
             let (finals, _) = finals(&in_window);
-            let mut groups: BTreeMap<(String, Option<&str>, Option<&str>), Vec<&AttemptData>> =
-                BTreeMap::new();
+            let mut groups: BTreeMap<WindowTarget, Vec<&AttemptData>> = BTreeMap::new();
             for f in finals {
                 let key = match f.case_id.as_deref() {
                     Some(case) => (
@@ -1607,6 +1671,15 @@ mod tests {
             Some("criticalDefects")
         );
         assert_eq!(criterion_kind("Sign-off by the PO"), None);
+        assert_eq!(criterion_kind("Casos críticos ejecutados"), None);
+        assert_eq!(criterion_kind("Critical cases executed"), None);
+        assert_eq!(
+            criterion_kind("Cobertura de requisitos ejecutados"),
+            Some("coverage")
+        );
+        assert_eq!(criterion_kind("Defectos críticos o mayores abiertos"), None);
+        assert_eq!(criterion_kind("% of cases executed"), Some("executed"));
+        assert_eq!(criterion_kind("Requirements coverage"), Some("coverage"));
         assert_eq!(parse_metric("≥ 95%", "executed"), Some((">=", 95.0)));
         assert_eq!(parse_metric(">= 90 %", "coverage"), Some((">=", 90.0)));
         assert_eq!(parse_metric("0", "criticalDefects"), Some(("=", 0.0)));

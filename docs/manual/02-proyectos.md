@@ -83,53 +83,59 @@ Un campo no se borra: se archiva desde su menú («Archivar») y sus valores se 
 
 Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos.
 
-### 2.13. Nueva configuración
+### 2.13. Campos de los defectos
+
+El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.
+
+![Campos de los defectos](img/proyectos/13-campo-defecto.png)
+
+### 2.14. Nueva configuración
 
 En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.
 
-![Nueva configuración](img/proyectos/13-configuracion-nueva.png)
+![Nueva configuración](img/proyectos/14-configuracion-nueva.png)
 
-### 2.14. Configuraciones del proyecto
+### 2.15. Configuraciones del proyecto
 
 «Guardar» la añade a la lista. Aquí hay dos (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas».
 
-![Configuraciones del proyecto](img/proyectos/14-configuracion-creada.png)
+![Configuraciones del proyecto](img/proyectos/15-configuracion-creada.png)
 
-### 2.15. Crear con Intro y copiar campos
+### 2.16. Crear con Intro y copiar campos
 
 Un segundo proyecto («Portal Clientes», creado pulsando Intro tras el nombre) puede copiar los campos personalizados de otro con «Copiar de otro proyecto».
 
-![Crear con Intro y copiar campos](img/proyectos/15-segundo-proyecto.png)
+![Crear con Intro y copiar campos](img/proyectos/16-segundo-proyecto.png)
 
-### 2.16. Todos los proyectos
+### 2.17. Todos los proyectos
 
 Con proyectos, la lista muestra los recientes arriba y la tabla de todos: plan, casos, ejecución, cobertura y último acceso. Busca por nombre o prefijo y ordena con «Ordenar por».
 
-![Todos los proyectos](img/proyectos/16-lista-proyectos.png)
+![Todos los proyectos](img/proyectos/17-lista-proyectos.png)
 
-### 2.17. Acciones de un proyecto
+### 2.18. Acciones de un proyecto
 
 El menú «⋯» de cada fila abre el proyecto, sus ajustes o lo exporta en un ZIP (plan, casos y documentos).
 
-![Acciones de un proyecto](img/proyectos/17-menu-fila.png)
+![Acciones de un proyecto](img/proyectos/18-menu-fila.png)
 
-### 2.18. Exportar un proyecto
+### 2.19. Exportar un proyecto
 
 «Exportar proyecto (ZIP)» genera los documentos con una barra de progreso y guarda el ZIP en tu carpeta de descarga; «Exportar todo» hace lo mismo con todos los proyectos.
 
-### 2.19. Cambiar de proyecto
+### 2.20. Cambiar de proyecto
 
 Dentro de un proyecto, el selector de la parte superior del menú lateral salta a otro proyecto sin volver a la lista.
 
-![Cambiar de proyecto](img/proyectos/19-cambiar-proyecto.png)
+![Cambiar de proyecto](img/proyectos/20-cambiar-proyecto.png)
 
-### 2.20. Eliminar un proyecto
+### 2.21. Eliminar un proyecto
 
 «Eliminar proyecto», al pie de los ajustes, cuenta lo que se perderá y pide escribir el prefijo (o el nombre) para confirmar. «Sí, eliminar todo» lo borra y vuelve a la lista.
 
-![Eliminar un proyecto](img/proyectos/20-eliminar-proyecto.png)
+![Eliminar un proyecto](img/proyectos/21-eliminar-proyecto.png)
 
-### 2.21. Proyecto eliminado
+### 2.22. Proyecto eliminado
 
 Tras confirmar, un aviso lo confirma y la lista ya no lo muestra.
 

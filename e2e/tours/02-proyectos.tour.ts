@@ -137,6 +137,8 @@ chapter("proyectos", () => {
     run: async () => {
       await setPrefix(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
+      // FIX-11: the sidebar switcher shows the new prefix at once, without navigating.
+      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
     },
   });
 
@@ -210,6 +212,24 @@ chapter("proyectos", () => {
       await clickButton(es.common.cancel, '[role="dialog"]');
       await acceptNativeDialog();
       await expect($('[role="dialog"]')).not.toBeExisting();
+    },
+  });
+
+  step("campo-defecto", {
+    title: "Campos de los defectos",
+    caption: "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
+    covers: ["action:custom-field-defect"],
+    run: async () => {
+      const card = $('[data-testid="custom-fields-card"]');
+      await card.scrollIntoView();
+      await card.$('[data-testid="custom-fields-entity"] [data-value="defect"]').click();
+      await waitForText(es.customFields.emptyDefect.slice(0, 30));
+      await card.$(`button=${es.customFields.new}`).click();
+      await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Cliente afectado");
+      await dialog().$(`button=${es.customFields.dialog.create}`).click();
+      await waitForText(tf("customFields.savedToast", { label: "Cliente afectado" }));
+      await expect(card.$(hasText("Cliente afectado"))).toBeDisplayed();
+      await card.scrollIntoView();
     },
   });
 

@@ -39,7 +39,7 @@ Al terminar, el resumen dice qué run se creó y cuántos resultados quedan sin 
 
 ### 8.5. Un informe con adjuntos
 
-Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo.
+Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo. «Ciclo» hace que el run nuevo sea de un ciclo (de los que no están cerrados): sus resultados cuentan en el progreso del ciclo sin editar nada después.
 
 ![Un informe con adjuntos](img/ejecuciones/05-con-adjuntos.png)
 

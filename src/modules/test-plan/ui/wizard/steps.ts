@@ -29,14 +29,28 @@ export type StepId = (typeof STEP_IDS)[number];
 const text = (s: string) => s.trim().length > 0;
 const some = (list: string[]) => list.some(text);
 
+/** What step 6 still needs, in the order the step shows it (FIX-14): the
+ *  sprint length and at least one ceremony when agile (each ceremony always has
+ *  a frequency, defaulted), at least one phase when traditional. The step's ✓
+ *  and its inline hint both come from here, so they cannot disagree. */
+export type MethodologyGap = "sprintWeeks" | "ceremonies" | "phases";
+export function methodologyGaps(
+  f: Pick<FormState, "methodologyType" | "sprintWeeks" | "ceremonies" | "phases">,
+): MethodologyGap[] {
+  if (f.methodologyType !== "agile") return some(f.phases) ? [] : ["phases"];
+  const gaps: MethodologyGap[] = [];
+  if (!(f.sprintWeeks > 0)) gaps.push("sprintWeeks");
+  if (f.ceremonies.length === 0) gaps.push("ceremonies");
+  return gaps;
+}
+
 const COMPLETE: Record<StepId, (f: FormState) => boolean> = {
   title: (f) => text(f.title),
   meta: (f) => text(f.version) && text(f.planDate),
   summary: (f) => text(f.summary),
   scope: (f) => some(f.scopeIn),
   types: (f) => f.testTypes.length > 0,
-  methodology: (f) =>
-    f.methodologyType === "agile" ? f.sprintWeeks > 0 && f.ceremonies.length > 0 : some(f.phases),
+  methodology: (f) => methodologyGaps(f).length === 0,
   levels: (f) => f.testLevels.length > 0,
   deliverables: (f) => some(f.deliverables),
   environment: (f) => text(f.environmentConfig) || text(f.environmentRequirements),

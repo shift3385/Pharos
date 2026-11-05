@@ -453,6 +453,37 @@
         "markedDamaged_one": "{{count}} damaged",
         "markedDamaged_other": "{{count}} damaged"
       },
+      "retention": {
+        "title": "Retention per project",
+        "desc": "How long each kind of evidence of a project is kept before its file expires. Expiring removes the file, never the result: the record that it existed stays.",
+        "deviceOnly": "This setting is for this device only: it does not sync. Each device expires its own copies, at startup and after each sync.",
+        "project": "Project",
+        "noProjects": "You have no projects yet.",
+        "current": "Now: {{days}}",
+        "default": "Default ({{days}})",
+        "days": "Days…",
+        "daysLabel": "Retention days of {{kind}}",
+        "exceptions": "Never expires",
+        "exceptionsText": "The evidence of manual execution, of a final failed or blocked result, and of a result linked to an open defect. Planner, defect and draft attachments never expire either.",
+        "saved": "Retention saved on this device.",
+        "failed": "The retention could not be read or saved.",
+        "kinds": {
+          "trace": "Traces",
+          "video": "Videos",
+          "raw_report": "Raw reports",
+          "log": "Logs",
+          "screenshot": "Screenshots",
+          "evidence": "Other evidence"
+        },
+        "saveLabel": "Apply the changes",
+        "save": "Save",
+        "confirmTitle": "Shorten the retention?",
+        "confirmMessage": "With the new period, the next pass (at startup or after a sync) removes these files from this device. The results stay; the files cannot be recovered.",
+        "confirm": "Yes, shorten",
+        "confirmLine_one": "{{kind}}: from {{from}} to {{to}} — {{count}} file would expire",
+        "confirmLine_other": "{{kind}}: from {{from}} to {{to}} — {{count}} files would expire",
+        "daysInvalid": "Enter a number of days from 1 to {{max}}."
+      },
       "owners": {
         "planner_card": "Planner",
         "defect": "Defects",
@@ -787,6 +818,11 @@
     "sprintWeeks": "Sprint length (weeks)",
     "ceremonies": "Agile events",
     "phases": "Phases",
+    "methodologyGap": {
+      "sprintWeeks": "Choose the sprint length to complete this step.",
+      "ceremonies": "Pick at least one agile event to complete this step.",
+      "phases": "Add at least one phase to complete this step."
+    },
     "environmentConfig": "Environment configuration",
     "environmentRequirements": "Hardware and software requirements",
     "tools": "Tools",
@@ -1115,8 +1151,9 @@
     "keywords": "Gherkin keywords",
     "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
-    "scenarioIdAuto": "Auto (ATS_001)",
-    "scenarioIdFixed": "The ID never changes once assigned: it travels as the @ATS_001 tag in automation.",
+    "scenarioIdAuto": "Auto ({{prefix}}…)",
+    "scenarioIdFixed": "The ID never changes once assigned: it travels as the @{{id}} tag in automation.",
+    "scenarioIdProvisional": "Provisional key: it gets the definitive one on the next sync.",
     "priority": "Priority",
     "status": "Status",
     "version": "Version",
@@ -1786,7 +1823,10 @@
       "passed": "Pass",
       "failed": "Fail",
       "blocked": "Blocked",
-      "not_run": "Not run"
+      "not_run": "Not run",
+      "skipped": "Skipped",
+      "other": "Other",
+      "retest": "Re-test"
     },
     "coverage": {
       "covered": "Covered",
@@ -1794,7 +1834,10 @@
     },
     "note": {
       "obsoleteCase": "Obsolete case (does not cover)",
-      "openDefect": "Open defect"
+      "openDefect": "Open defect",
+      "retest": "Waiting for a re-test (defect fixed)",
+      "flaky": "Flaky: passed after failing",
+      "stale": "An earlier revision of the case was executed"
     },
     "gaps": {
       "title": "Traceability gaps",
@@ -1825,6 +1868,71 @@
       "importHint": "Creates or updates requirements by ID",
       "exportXlsx": "Export matrix (.xlsx)",
       "exportHint": "Requirements, cases, states and defects"
+    },
+    "risk": {
+      "label": "Risk",
+      "badge": "Risk {{level}} · {{band}}",
+      "band": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "unassessed": "Not assessed"
+      },
+      "likelihood": "Likelihood",
+      "impact": "Impact",
+      "notAssessed": "Not assessed",
+      "hint": "Likelihood × impact, 1 to 5 each. Orders the matrix by risk (bands: up to 4 low, up to 12 medium, above high).",
+      "level": "{{value}} of 5"
+    },
+    "result": {
+      "runAt": "{{run}} · {{date}}",
+      "flaky": "Flaky",
+      "stale": "Outdated",
+      "staleTitle": "An earlier revision was executed: the case changed afterwards",
+      "openRun": "Open {{run}}",
+      "origin": {
+        "manual": "Manual",
+        "imported": "Imported"
+      }
+    },
+    "filters": {
+      "label": "Result filters",
+      "cycle": "Cycle",
+      "configuration": "Configuration",
+      "build": "Build",
+      "environment": "Environment",
+      "any": "All",
+      "clear": "Clear filters",
+      "sort": "Order",
+      "sortRisk": "Risk",
+      "sortKey": "Requirement ID",
+      "hint": "The test status is the latest final result of the runs that match the filters.",
+      "loadError": "The results could not be read: the matrix shows the cases as not run."
+    },
+    "resultsSheet": {
+      "name": "Results",
+      "title": "Latest result of each case",
+      "filters": "Filters: {{filters}}",
+      "none": "none",
+      "generated": "Generated: {{date}}",
+      "yes": "Yes",
+      "no": "No",
+      "col": {
+        "requirement": "Requirement ID",
+        "risk": "Risk",
+        "band": "Risk band",
+        "case": "Case ID",
+        "caseTitle": "Test case",
+        "status": "Status",
+        "run": "Run",
+        "runTitle": "Run title",
+        "date": "Date",
+        "configuration": "Configuration",
+        "origin": "Origin",
+        "flaky": "Flaky",
+        "stale": "Outdated",
+        "defects": "Defects"
+      }
     }
   },
   "downloads": {
@@ -1960,6 +2068,13 @@
     "title": "Custom fields",
     "desc": "The project's own fields for its test cases. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
     "empty": "No custom fields yet. Create one to record, for example, the browser or the sprint of each case.",
+    "descDefect": "The project's own fields for its defects. The key and the type never change once created; a field is archived, never deleted, and its values are kept.",
+    "emptyDefect": "No defect fields yet. Create one to record, for example, the affected customer or the fixed version.",
+    "entity": {
+      "label": "Fields of",
+      "test_case": "Cases",
+      "defect": "Defects"
+    },
     "new": "New field",
     "copy": "Copy from another project",
     "showArchived": "Show archived",
@@ -2019,6 +2134,7 @@
       "title": "Copy fields from another project",
       "source": "Source project",
       "hint": "Copies the fields that are not archived and that this project does not have yet, with their options.",
+      "hintDefect": "Copies the defect fields that are not archived and that this project does not have yet, with their options.",
       "none": "You have no other projects.",
       "confirm": "Copy fields",
       "copying": "Copying…",
@@ -2114,6 +2230,36 @@
     "clashLoses": "Repeated label: imports with {{labels}} use “{{other}}”. Remove it from one of them."
   },
   "cycles": {
+    "export": {
+      "sheet": "Cycles",
+      "key": "Key",
+      "title": "Cycle",
+      "status": "Status",
+      "startsOn": "Starts",
+      "endsOn": "Ends",
+      "dates": "Dates",
+      "milestone": "Plan milestone",
+      "sprint": "Sprint",
+      "planned": "Milestone · Sprint",
+      "build": "Build",
+      "environment": "Environment",
+      "configurations": "Configurations",
+      "items": "Items",
+      "runs": "Runs",
+      "total": "Cells",
+      "executed": "Executed",
+      "passed": "Passed",
+      "failed": "Failed",
+      "blocked": "Blocked",
+      "notRun": "Not run",
+      "executedPct": "% executed",
+      "passedPct": "% passed",
+      "progress": "Progress",
+      "scope": "Scope",
+      "wholeCase": "Whole case",
+      "loadFailed": "The project's cycles could not be read: nothing was exported.",
+      "assignee": "Assignee"
+    },
     "title": "Test cycles",
     "subtitle": "What runs, where, against which build and when. Running a cycle creates one run per configuration.",
     "new": "New cycle",
@@ -2547,6 +2693,10 @@
       "noOpenRuns": "No runs in progress in this project",
       "run": "Run",
       "keepOpen": "Keep the run open to import more shards",
+      "cycle": "Cycle",
+      "noCycle": "No cycle",
+      "cycleHint": "Its results count in the cycle's progress. Closed cycles are not listed.",
+      "runCycle": "This run belongs to cycle {{cycle}}.",
       "preview": "Preview",
       "previewSummary": "{{tests}} tests, {{results}} attempts: {{linked}} link to a case and {{unlinked}} stay unlinked.",
       "attachments_one": "{{count}} attachment",
@@ -2605,7 +2755,9 @@
         "test-key-required": "A result has no test identity ({{detail}}).",
         "invalid-sha256": "The file's fingerprint is not valid. Pick it again.",
         "invalid-shard": "The report has an inconsistent shard: the index must be between 1 and the total.",
-        "invalid-target": "Pick a new run or an open one."
+        "invalid-target": "Pick a new run or an open one.",
+        "cycle-closed": "The cycle is closed: reopen it or pick another one.",
+        "cycle-not-found": "The cycle no longer exists in this project."
       },
       "shard": "Shard {{index}} of {{total}} (from the report)."
     },
@@ -2737,7 +2889,8 @@
       "target": "That flow, row or step is not in the executed revision.",
       "generic": "The action could not be completed. Try again.",
       "cycleClosed": "This run's cycle is closed. Reopen the cycle before the run.",
-      "overlap": "That case is already in the run with some of those flows or rows."
+      "overlap": "That case is already in the run with some of those flows or rows.",
+      "runDeleted": "This run was deleted (perhaps on another device). It takes no more changes."
     },
     "webReadOnly": "Runs are executed in the desktop app. The web cannot show or record them yet (EJE-06).",
     "evidenceLocal": "Evidence is stored encrypted on this device and does not sync yet (SYNC-04b).",
@@ -2780,7 +2933,27 @@
       "closeAs": "Close as",
       "save": "Save",
       "closeDiscard": "Discard the drafts and their attachments",
-      "closeDiscardAborted": "Drafts and their attachments are discarded when the run is cancelled"
+      "closeDiscardAborted": "Drafts and their attachments are discarded when the run is cancelled",
+      "delete": "Delete run",
+      "deleteTitle": "Delete the run",
+      "deleteMessage": "{{key}} “{{title}}” will disappear from the lists and the progress, on this device and on those that sync. Hidden:",
+      "deleteItems_one": "{{count}} run item",
+      "deleteItems_other": "{{count}} run items",
+      "deleteResults_one": "{{count}} recorded result (never deleted by hand)",
+      "deleteResults_other": "{{count}} recorded results (never deleted by hand)",
+      "deleteImports_one": "from {{count}} import",
+      "deleteImports_other": "from {{count}} imports",
+      "deleteAttachments_one": "{{count}} evidence file of those results",
+      "deleteAttachments_other": "{{count}} evidence files of those results",
+      "deleteDrafts_one": "{{count}} unsaved draft is discarded, with its attachments",
+      "deleteDrafts_other": "{{count}} unsaved drafts are discarded, with their attachments",
+      "deleteCycle": "The progress of cycle {{key}} “{{title}}” will stop counting this run",
+      "deleteDefects_one": "{{count}} result is linked to a defect: the defect keeps the link until the purge",
+      "deleteDefects_other": "{{count}} results are linked to defects: the defects keep the link until the purge",
+      "deletePurge": "The results stay hidden and the purge takes them with the run after {{days}} days (Administration → General).",
+      "deleteCycleClosed": "Cycle {{key}} is closed: a run of a closed cycle cannot be deleted. Reopen the cycle first.",
+      "deleted": "Run {{key}} deleted.",
+      "deletedNotice": "This run was deleted (perhaps on another device)."
     },
     "picker": {
       "search": "Search by ID or title",
@@ -2799,5 +2972,114 @@
     },
     "staleDraft": "This attempt was already saved or changed in another window. What is stored has been reloaded.",
     "staleDraftEdits": "This attempt was already saved or changed in another window. What you marked here and had not saved was discarded; what is stored is shown."
+  },
+  "statusReport": {
+    "open": "Status report",
+    "title": "Test status report",
+    "subtitle": "ISO/IEC/IEEE 29119-3, generated from the runs",
+    "scope": "Scope",
+    "scopeProject": "Project",
+    "scopeCycle": "Cycle",
+    "scopePlan": "Plan",
+    "cycle": "Cycle",
+    "noCycles": "The project has no cycles.",
+    "from": "From",
+    "to": "To",
+    "periodAll": "Whole period",
+    "loading": "Calculating…",
+    "loadError": "The report could not be generated.",
+    "exportXlsx": "Export .xlsx",
+    "exportPdf": "Export PDF",
+    "exportedToast": "Report exported: {{name}}",
+    "exportFailed": "The report could not be exported.",
+    "localNote": "The summary and recommendations are kept on this device only and go into the exports.",
+    "asOfToday": "as of today",
+    "noPlan": "The project has no plan: the default exit criteria are used.",
+    "section": {
+      "identification": "1. Identification",
+      "progress": "2. Progress",
+      "results": "3. Results by status",
+      "defects": "4. Defects by severity and status",
+      "coverage": "5. Coverage and risks",
+      "exit": "6. Exit criteria",
+      "issues": "7. Blockers and issues",
+      "summary": "8. Summary",
+      "recommendations": "9. Recommendations"
+    },
+    "field": {
+      "project": "Project",
+      "scope": "Scope",
+      "period": "Period",
+      "generated": "Generated",
+      "author": "Author",
+      "plan": "Test plan",
+      "runs": "Runs included",
+      "unit": "Unit"
+    },
+    "unit": {
+      "case": "cases",
+      "cell": "cycle cells (case × configuration)"
+    },
+    "progress": {
+      "executed": "Executed",
+      "total": "Total",
+      "executedPct": "% executed",
+      "passRate": "Pass rate",
+      "lastExecution": "Last execution"
+    },
+    "col": {
+      "status": "Status",
+      "count": "Count",
+      "severity": "Severity",
+      "open": "Open",
+      "total": "Total",
+      "band": "Risk band",
+      "requirements": "Requirements",
+      "covered": "Covered",
+      "executed": "Executed",
+      "passed": "Passed",
+      "failed": "Failed",
+      "criterion": "Criterion",
+      "target": "Target",
+      "actual": "Value",
+      "result": "Result",
+      "case": "Case",
+      "title": "Title",
+      "run": "Run",
+      "date": "Date",
+      "issue": "Issue",
+      "requirement": "Requirement",
+      "risk": "Risk",
+      "defects": "Defects"
+    },
+    "exit": {
+      "met": "Met",
+      "notMet": "Not met",
+      "noData": "No data",
+      "manual": "Check by hand"
+    },
+    "coverageLine": "Requirement coverage: {{covered}} of {{total}} ({{pct}}).",
+    "risky": "High-risk requirements not passing",
+    "noRisky": "No high-risk requirement is failing or not run.",
+    "issue": {
+      "blocked": "Blocked",
+      "retest": "Waiting for re-test",
+      "flaky": "Flaky",
+      "stale": "Earlier revision"
+    },
+    "noIssues": "No blockers or issues.",
+    "summaryLabel": "Summary",
+    "summaryHint": "Filled in from the numbers; you can change it.",
+    "recommendationsLabel": "Recommendations",
+    "recommendationsPlaceholder": "What you propose: continue, close the cycle, repeat tests…",
+    "autoSummary": "{{executed}} of {{total}} {{unit}} have been executed ({{pct}}), with a pass rate of {{rate}}. There are {{open}} open defects, {{critical}} critical. Exit criteria: {{met}} of {{all}} met.",
+    "sheet": {
+      "summary": "Summary",
+      "results": "Results",
+      "defects": "Defects",
+      "coverage": "Coverage"
+    },
+    "yes": "Yes",
+    "no": "No"
   }
 }
