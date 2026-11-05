@@ -9,5 +9,5 @@
     "resolveJsonModule": true,
     "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework"]
   },
-  "include": ["wdio.conf.ts", "support.ts", "specs/**/*.ts"]
+  "include": ["wdio.conf.ts", "wdio.tours.conf.ts", "support.ts", "specs/**/*.ts", "tours/**/*.ts"]
 }
