@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { FormField } from "@shared/ui/FormField";
@@ -13,7 +14,7 @@ import {
 } from "../../model/catalogs";
 import { frequencyOf } from "../../model/methodology";
 import { planBrief } from "./formState";
-import type { StepId } from "./steps";
+import { methodologyGaps, type StepId } from "./steps";
 import { AreaField, FieldLabel, TextField, type StepProps } from "./stepProps";
 import { DeliverablesStep } from "./DeliverablesStep";
 import { ToolsStep } from "./ToolsStep";
@@ -24,6 +25,7 @@ import { FinishStep } from "./FinishStep";
 export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
   const { t, i18n } = useTranslation();
   const { form, set, setForm, aiReady, aiProps, review, attempted } = props;
+  const gapId = useId();
 
   switch (id) {
     case "title":
@@ -134,6 +136,7 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
                 onChange={(v) => set("ceremonies", v)}
                 labelFor={(k) => t(`testPlan.ceremonyLabel.${k}`)}
                 variant="pills"
+                describedBy={gapId}
               />
               {form.ceremonies.length > 0 && (
                 <div className="tp-freq" data-testid="ceremony-frequencies">
@@ -166,6 +169,13 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
               <ListField label={t("testPlan.phases")} items={form.phases} onChange={(v) => set("phases", v)} />
             </>
           )}
+          {/* What is still missing for the ✓ (FIX-14). Always rendered, so the
+              live region exists before its text changes and is announced. */}
+          <p id={gapId} className="tpw-hint tpw-gap" role="status" data-testid="methodology-gaps">
+            {methodologyGaps(form)
+              .map((g) => t(`testPlan.methodologyGap.${g}`))
+              .join(" ")}
+          </p>
         </>
       );
     case "levels":

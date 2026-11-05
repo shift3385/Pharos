@@ -3,6 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeServer } from "@test/server";
+import { CASES_CHANGED_EVENT } from "../model/events";
 import { testCaseApi } from "./testCaseApi";
 
 const invoke = vi.fn();
@@ -42,5 +43,22 @@ describe("testCaseApi", () => {
     onDesktop();
     await testCaseApi.list("p1", "u1");
     expect(invoke).toHaveBeenCalledWith("test_case_list", { projectId: "p1", userId: "u1" });
+  });
+
+  it("announces a created or deleted case, not an edit or a failure (FIX-13)", async () => {
+    onDesktop();
+    const heard = vi.fn();
+    window.addEventListener(CASES_CHANGED_EVENT, heard);
+    try {
+      invoke.mockRejectedValueOnce(new Error("offline"));
+      await expect(testCaseApi.create(input)).rejects.toThrow();
+      expect(heard).not.toHaveBeenCalled();
+      await testCaseApi.create(input);
+      await testCaseApi.update("c1", input);
+      await testCaseApi.remove("c1", "u1");
+      expect(heard).toHaveBeenCalledTimes(2);
+    } finally {
+      window.removeEventListener(CASES_CHANGED_EVENT, heard);
+    }
   });
 });

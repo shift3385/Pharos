@@ -787,6 +787,11 @@
     "sprintWeeks": "Sprint length (weeks)",
     "ceremonies": "Agile events",
     "phases": "Phases",
+    "methodologyGap": {
+      "sprintWeeks": "Choose the sprint length to complete this step.",
+      "ceremonies": "Pick at least one agile event to complete this step.",
+      "phases": "Add at least one phase to complete this step."
+    },
     "environmentConfig": "Environment configuration",
     "environmentRequirements": "Hardware and software requirements",
     "tools": "Tools",
@@ -1115,8 +1120,8 @@
     "keywords": "Gherkin keywords",
     "insertKeyword": "Insert at cursor",
     "scenarioId": "Scenario id",
-    "scenarioIdAuto": "Auto (ATS_001)",
-    "scenarioIdFixed": "The ID never changes once assigned: it travels as the @ATS_001 tag in automation.",
+    "scenarioIdAuto": "Auto ({{prefix}}…)",
+    "scenarioIdFixed": "The ID never changes once assigned: it travels as the @{{id}} tag in automation.",
     "priority": "Priority",
     "status": "Status",
     "version": "Version",

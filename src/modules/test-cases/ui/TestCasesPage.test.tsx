@@ -279,6 +279,25 @@ describe("Casos · editor navigation (RED-V3)", () => {
   }, 15_000);
 });
 
+describe("Casos · ID de escenario (FIX-12)", () => {
+  it("a new case shows the project's own prefix, not ATS_", async () => {
+    setViewportWidth(1440);
+    renderPage("/projects/p1/cases?case=new");
+    await userEvent.click(await screen.findByRole("button", { name: /^Básico Feature/ }));
+    const id = await screen.findByRole("textbox", { name: "ID de escenario" });
+    expect(id).toHaveAttribute("placeholder", "Auto (PCL-…)");
+    expect(id).not.toHaveAttribute("placeholder", expect.stringContaining("ATS_"));
+  });
+
+  it("a saved case names its own tag in the «ID fijo» hint", async () => {
+    setViewportWidth(1440);
+    renderPage("/projects/p1/cases?case=c1");
+    const id = await screen.findByRole("textbox", { name: "ID de escenario" });
+    expect(id).toHaveAttribute("readonly");
+    expect(id.getAttribute("title")).toContain("@PCL-1 ");
+  });
+});
+
 describe("Casos · review fixes (RED-V3)", () => {
   it("an unknown or deleted ?case= shows «Caso no encontrado», not an empty editor that would create a case", async () => {
     setViewportWidth(1440);

@@ -217,6 +217,7 @@ export function CheckboxGroup({
   variant = "checkbox",
   groups,
   label,
+  describedBy,
 }: {
   options: string[];
   selected: string[];
@@ -227,6 +228,8 @@ export function CheckboxGroup({
   groups?: { title: string; options: string[] }[];
   /** Names the group for assistive tech. */
   label: string;
+  /** Id of a hint that describes the group (e.g. what is still missing). */
+  describedBy?: string;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
@@ -280,7 +283,7 @@ export function CheckboxGroup({
       </button>
     );
     return (
-      <div className="tp-pills-groups" role="group" aria-label={label}>
+      <div className="tp-pills-groups" role="group" aria-label={label} aria-describedby={describedBy}>
         {groupList.map((g, gi) => (
           <div className="tp-pills-group" key={gi}>
             {g.title && <p className="tp-pills-group__title">{g.title}</p>}

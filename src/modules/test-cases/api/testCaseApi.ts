@@ -6,6 +6,15 @@ import type {
   TestCaseInput,
   TestCaseSummary,
 } from "../model/types";
+import { CASES_CHANGED_EVENT } from "../model/events";
+
+/** Announces a created or deleted case once the store has it (FIX-13). */
+function announced<T>(change: Promise<T>): Promise<T> {
+  return change.then((result) => {
+    window.dispatchEvent(new Event(CASES_CHANGED_EVENT));
+    return result;
+  });
+}
 
 const path = (id: string) => `/api/test-cases/${encodeURIComponent(id)}`;
 
@@ -23,11 +32,15 @@ export const testCaseApi = {
   get: (id: string, userId: string): Promise<TestCase | null> =>
     isTauri() ? invoke("test_case_get", { id, userId }) : serverApi.get(path(id)),
   create: (input: TestCaseInput): Promise<TestCase | null> =>
-    isTauri() ? invoke("test_case_create", { input }) : serverApi.post("/api/test-cases", input),
+    announced(
+      isTauri() ? invoke("test_case_create", { input }) : serverApi.post("/api/test-cases", input),
+    ),
   update: (id: string, input: TestCaseInput): Promise<TestCase | null> =>
     isTauri() ? invoke("test_case_update", { id, input }) : serverApi.put(path(id), id, input),
   remove: (id: string, userId: string): Promise<void> =>
-    isTauri() ? invoke("test_case_delete", { id, userId }) : serverApi.remove(path(id), id),
+    announced(
+      isTauri() ? invoke("test_case_delete", { id, userId }) : serverApi.remove(path(id), id),
+    ),
   revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>
     isTauri() ? invoke("test_case_revisions", { id, userId }) : Promise.resolve([]),
 };

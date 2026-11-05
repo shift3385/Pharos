@@ -438,6 +438,11 @@
   text-wrap: pretty;
 }
 
+/* What a step still needs for its ✓ (FIX-14). */
+.tpw-gap {
+  color: var(--color-warning-text);
+}
+
 .tpw-group-title {
   margin: 0 0 6px;
   font-size: 11px;

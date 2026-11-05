@@ -123,6 +123,8 @@ chapter("casos", () => {
     caption: "Título, precondiciones, pasos (cada uno con «+ Añadir paso»), resultado esperado y, arriba, nivel, tipo, prioridad, estado y automatización. «Guardar» le da su ID (BM-001).",
     covers: ["action:case-create-basic", "action:case-meta"],
     run: async () => {
+      // FIX-12: the ID placeholder carries the project's own prefix.
+      await expect($(`input[placeholder="${tf("testCase.scenarioIdAuto", { prefix: "BM-" })}"]`)).toBeDisplayed();
       await $("#tc-title").setValue("Transferencia a un tercero con saldo suficiente");
       await fillSteps(C.steps, [
         "Iniciar sesión con un cliente con saldo de 1.000 €",
@@ -146,6 +148,8 @@ chapter("casos", () => {
       await selectOption("Regresión crítica", es.customFields.section.yes, "section.cf-section");
       await saveCase();
       await expect($(".tc-nav__state")).toHaveAttribute("data-state", "saved");
+      // FIX-13: the header counts the new case without leaving the section.
+      await expect($(".pj-header__meta")).toHaveText(expect.stringContaining(es.projects.header.cases_one));
     },
   });
 

@@ -189,6 +189,19 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(screen.getByRole("menuitemradio", { name: /App Móvil Banca/ })).toBeInTheDocument();
     });
 
+    it("the switcher shows a new case-ID prefix as soon as the project is saved (FIX-11)", async () => {
+      const { projectApi } = await import("@modules/projects/api/projectApi");
+      const { PROJECT_SAVED_EVENT } = await import("@modules/projects");
+      renderShell("/projects/p1/settings");
+      const badge = () => document.querySelector(".sidebar__project-badge");
+      await waitFor(() => expect(badge()).toHaveTextContent("PCL"));
+      vi.mocked(projectApi.list).mockResolvedValueOnce([
+        { id: "p1", name: "Portal Clientes v3", caseIdPrefix: "BM-", caseIdDigits: 4, updatedAt: "", revision: 2 },
+      ] as never);
+      window.dispatchEvent(new Event(PROJECT_SAVED_EVENT));
+      await waitFor(() => expect(badge()).toHaveTextContent("BM-"));
+    });
+
     it("has no axe violations", async () => {
       renderShell("/projects/p1/plan");
       await screen.findByRole("link", { name: "Portal Clientes v3" });
