@@ -196,6 +196,51 @@ conserva las etiquetas.
       asigna a un caso (sus resultados no cambian) y «Desvincular» lo retira.
 - [ ] Un Cucumber JSON se rechaza con un mensaje que indica usar Messages.
 
+### 4.4d Ejecución manual paso a paso (EJE-02)
+
+En un proyecto, **Ejecuciones** tiene «Nuevo run manual» (elige casos, entorno,
+build y, si las hay, configuración) y cada run abre su pantalla. Un run de un
+ciclo («Ejecutar» en Ciclos) se abre desde la pestaña Runs del ciclo. Solo en
+la app de escritorio: en la web la pantalla avisa y no muestra nada.
+
+**Atajos** (con un paso enfocado y sin escribir en un campo): **P** pasa,
+**F** falla, **B** bloqueado, **S** omitido, **J/K** o las flechas para moverse,
+**N** para escribir lo obtenido, **T** cronómetro, **Ctrl+Enter** guarda el
+resultado, **Ctrl+Shift+N** siguiente elemento, **?** la lista.
+
+**Las evidencias se quedan en este equipo:** se guardan cifradas y aún no se
+sincronizan (llega con SYNC-04b). Otro equipo ve el resultado, pero no sus
+adjuntos.
+
+- [ ] Crear un run manual con dos casos, uno de ellos con Outline o con
+      flujos: el caso con filas o flujos muestra un selector y cada fila o
+      flujo se ejecuta por separado.
+- [ ] Marcar los pasos con el teclado, escribir lo obtenido en un paso
+      fallido, cerrar la app y volver a abrirla: el borrador sigue ahí (el
+      cronómetro, en pausa).
+- [ ] Hacer una captura (Win+Mayús+S), enfocar un paso y pulsar Ctrl+V: la
+      captura aparece en ese paso con su miniatura. Adjuntar también un
+      archivo al resultado.
+- [ ] «Guardar resultado»: el intento aparece en **Intentos** con sus
+      adjuntos. «Volver a ejecutar» es simplemente marcar de nuevo y guardar:
+      es otro intento, y el último es el final.
+- [ ] En un intento fallido, «Crear defecto»: el defecto sale relleno con el
+      caso, el paso, lo obtenido, el build y el entorno, y comparte las
+      evidencias.
+- [ ] Editar después el caso (cambiar el texto de un paso): el run sigue
+      mostrando la revisión ejecutada, avisa de que el caso cambió, y el
+      resultado guardado no cambia.
+- [ ] «Cerrar run» (Completado o Cancelado) y «Reabrir». Con el run de un
+      ciclo, el progreso del ciclo refleja cada intento guardado.
+- [ ] Ojo con un caso con flujos o filas añadido entero a un ciclo: la celda
+      del ciclo muestra el **peor** resultado de lo ya ejecutado (por ejemplo,
+      «Falla» aunque falten flujos), mientras que la pantalla del run cuenta
+      cada flujo y fila por separado («2/3» hechos). Las dos dicen la verdad;
+      miran cosas distintas.
+- [ ] Pulsar Ctrl+Enter dos veces seguidas: se guarda un solo intento.
+      Cancelar un run con borradores los descarta; al completarlo se puede
+      elegir.
+
 ### 4.5 Sincronización
 
 - [ ] Dos cuentas en el mismo equipo: cada una solo ve y envía lo suyo

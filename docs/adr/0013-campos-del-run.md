@@ -537,3 +537,97 @@ de clave conocido solo allí). Por eso no forma parte de su contenido:
 - **Rendimiento:** 20 000 resultados se resuelven en consultas de conjunto
   (test con un proyecto de 200 casos). De paso, `flaky_tests` pasa a ser
   lineal y `results_list` lee los pasos de un run en una consulta.
+
+## Implementación (E5, paso 7: ejecución manual, 2026-11-04)
+
+EJE-02: `src-tauri/src/runs/manual.rs` y la pantalla del run en
+`src/modules/runs/` (`/projects/:id/runs/:runId`). Sin migraciones: todo
+cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
+(`APPLIED_SET_VERSION` sigue en 7). Precisiones:
+
+- **Objetivos de un elemento.** Un elemento del run se expande en lo que
+  recibe un intento cada uno: `(flujo, fila de Outline)`. Con flujo y fila,
+  uno; con flujo sin fila, una por fila del flujo (o uno si no tiene filas);
+  el caso entero, el flujo principal (si tiene pasos o no hay flujos) y cada
+  flujo, expandidos igual (`manual::targets_of`).
+- **El intento estrecha el elemento.** `ResultInput` admite `flowId` y
+  `exampleRowId` opcionales que deben estar dentro del elemento y de la
+  revisión congelada; el `test_key`, el flujo, la fila, su índice (0 en
+  adelante) y `example_values` (por cabecera) son los del objetivo. Así el
+  progreso del ciclo y la matriz (paso 10) cuentan cada intento contra su
+  flujo y su fila exactos; un elemento del ciclo sin flujo sigue siendo el peor
+  de sus objetivos. Se descartó desdoblar los elementos al ejecutar: habría
+  cambiado los elementos y el progreso del paso 6.
+- **Borrador** (`execution_drafts`, local, sin oplog ni auditoría): una fila
+  por elemento, `{"targets": {<clave>: <estado de la interfaz>},
+  "attachments": {<id>: {"target", "stepId"}}}`. La interfaz es dueña de lo
+  que hay dentro de un objetivo (marcas, «obtenido / notas», notas, cronómetro);
+  Rust solo de `attachments`. Límite de 1 MB de texto por elemento. Un
+  cronómetro en marcha al cerrar la app vuelve en pausa.
+- **Guardar resultado** (`execution_record`) escribe, en una transacción, el
+  intento (`result_record`, con su evento `execute`), mueve los adjuntos del
+  borrador de ese objetivo al resultado o al resultado de su paso (un evento
+  `link` por adjunto) y quita ese objetivo del borrador. Si el run está
+  cerrado no se escribe nada y los adjuntos siguen en el borrador.
+- **Qué guarda un intento manual:** estado por paso; «obtenido / notas» de
+  cada paso en `step_results.actual`; las notas del intento en
+  `attributes.notes`; `error_message` = lo obtenido en el primer paso
+  fallido (o las notas), hasta 500 caracteres; `duration_ms` = el
+  cronómetro; `started_at` = cuando se abrió el borrador. Un paso sin marcar
+  se guarda como `skipped`. El estado del intento se deriva de los pasos
+  (falla > bloqueado > pasa > omitido) y se puede elegir a mano. No hay
+  duración por paso.
+- **Reabrir un run:** `run_update` con `status: in_progress` sobre un run
+  cerrado solo cambia el estado (el resto de campos se ignora), borra
+  `finished_at` y deja un evento `update`.
+- **Sin borrado de runs en 0.2.0** (decisión del coordinador, 2026-11-04): se
+  cierra como `aborted`. Queda EJE-07 en el ROADMAP.
+- **Purga:** un elemento purgado se lleva su borrador y los adjuntos del
+  borrador; la recogida libera sus archivos.
+- **Web:** la pantalla del run es de solo lectura (aviso) hasta EJE-06.
+- **Criterio de salida de 0.2.0:** `editing_an_executed_case_does_not_change_its_results`
+  ejecuta un caso con notas y una captura en un paso, edita el caso (cambia y
+  borra pasos, añade un flujo, cambia el título) y comprueba que los
+  resultados, sus adjuntos, la revisión mostrada, los objetivos, el progreso
+  del ciclo y el documento que se sincroniza no cambian.
+
+**Tras la revisión independiente (E5, paso 7, 2026-11-04):**
+
+- **Un intento se registra una sola vez.** El borrador de cada objetivo lleva
+  un `attemptId` (UUID) que elige la interfaz; es el id del resultado.
+  `execution_record` devuelve el resultado si ese id ya existe (doble
+  Ctrl+Enter, reintento tras un fallo al guardar el archivo) y rechaza
+  (`draft-stale`) un id cuyo borrador ya no está. `result_record` acepta el
+  mismo `attemptId` opcional; el id de un resultado de otro elemento da
+  `attempt-id-taken`.
+- **Un borrador caducado no vuelve.** `execution_draft_save` rechaza
+  (`draft-stale`) otro `attemptId` para el mismo objetivo o uno ya
+  registrado; la interfaz recarga lo guardado y avisa si descartó marcas sin
+  guardar. El mismo intento (mismo `attemptId`) editado en dos ventanas es
+  «el último que guarda gana»: el borrador es local y no se fusiona. Si guardar
+  el archivo falla tras registrar, el reintento de esa ventana no es un
+  borrador caducado: vuelve a registrar y recibe el mismo resultado.
+- **El id se normaliza** (minúsculas, con guiones; se aceptan mayúsculas y
+  llaves) y debe ser el del borrador de **ese** objetivo: un reintento solo
+  devuelve el resultado si coincide el elemento, el flujo y la fila; si no,
+  `attempt-id-taken`. Un id que no es un UUID es `attempt-id-invalid`. Un
+  borrador anterior a los ids no tiene `attemptId`: el siguiente guardado le
+  pone uno.
+- **Cancelar descarta los borradores**, también por `run_update` y también los
+  de elementos borrados desde entonces; la lápida de un elemento que llega por
+  sync se lleva su borrador y sus adjuntos.
+- **Un intento es uno de los objetivos del elemento** (`target-not-in-item`):
+  en un elemento con flujos o filas, un intento sin flujo ni fila se rechaza,
+  para que la pantalla del run y el progreso del ciclo cuenten lo mismo.
+- **Sin elementos solapados:** `run_items_add` rechaza (`item-overlap`) un
+  caso cuyos objetivos ya cubre otro elemento del run; compartirían
+  `test_key`, finales y números de intento. Los elementos de un ciclo ya no
+  se solapan (paso 6), así que «Ejecutar» no los crea.
+- **Un run de un ciclo cerrado no se reabre** (`cycle-closed`); primero se
+  reabre el ciclo (nota en ADR-0017).
+- **«Nuevo run manual»** es un solo comando, `run_create_manual`: el run y sus
+  elementos en una transacción.
+- **Cerrar** es `run_close`: como `aborted` descarta siempre los borradores
+  del run y sus adjuntos; como `completed`, si el usuario lo pide.
+- **Sin etiqueta de configuración** en los intentos manuales: los identifica
+  el `configuration_id` del run, cuyo nombre se puede editar.

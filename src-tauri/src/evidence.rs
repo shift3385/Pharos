@@ -939,7 +939,7 @@ fn retention_days(conn: &Connection, project_id: &str, kind: &str) -> Result<Opt
 
 /// Whether the attachments of an owner never expire. Only evidence of imported
 /// runs can expire: a planner card's files are the user's, and results keep
-/// theirs until step 7 brings the ADR's exceptions (final failed or blocked
+/// theirs until DAT-03c brings the ADR's exceptions (final failed or blocked
 /// result, open defect, manual execution), which need the result tables.
 fn exempt(owner_entity: &str) -> bool {
     owner_entity != "run_shard"

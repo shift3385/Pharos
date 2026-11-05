@@ -19,7 +19,7 @@ import { EVIDENCE_CHECK_BUSY, EVIDENCE_DB_CHANGED, evidenceApi } from "../../api
 import { SettingsRow, SettingsSection } from "../SettingsSection";
 
 /** Owner kinds with their own label; any other shows as «Otros (kind)». */
-const OWNERS = ["planner_card", "defect", "test_case", "run_shard", "result", "step_result", "session_note"];
+const OWNERS = ["planner_card", "defect", "test_case", "run_shard", "result", "step_result", "execution_draft", "session_note"];
 /** The project section where an owner kind lives (ADR-0029). */
 const SECTION: Record<string, string> = {
   planner_card: "planner",
@@ -28,6 +28,7 @@ const SECTION: Record<string, string> = {
   run_shard: "runs",
   result: "runs",
   step_result: "runs",
+  execution_draft: "runs",
 };
 
 /** The first characters of a file's HMAC name: enough to tell files apart. */

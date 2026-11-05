@@ -1202,6 +1202,9 @@ const AUDITED: &[&str] = &[
     "defects::defect_attachment_delete",
     "runs::import::run_import",
     "runs::import::run_import_attach",
+    "runs::manual::execution_record",
+    "runs::manual::run_create_manual",
+    "runs::manual::run_close",
     "planner::planner_create",
     "planner::planner_update",
     "planner::planner_delete",
@@ -1317,6 +1320,29 @@ const EXEMPT: &[(&str, &str)] = &[
         "runs::import::run_import_preview",
         "read: what an import would do, rolled back",
     ),
+    ("runs::manual::run_overview", "read"),
+    ("runs::manual::run_item_detail", "read"),
+    (
+        "runs::manual::execution_draft_save",
+        "a local draft, not a fact (ADR-0013); recording it is audited (execution_record)",
+    ),
+    (
+        "runs::manual::execution_draft_discard",
+        "a local draft, not a fact (ADR-0013); recording it is audited (execution_record)",
+    ),
+    (
+        "runs::manual::execution_attach",
+        "a draft's file; recording the attempt links it with an event (execution_record)",
+    ),
+    (
+        "runs::manual::execution_attachment_delete",
+        "a draft's file, never recorded; a recorded one cannot be deleted",
+    ),
+    (
+        "runs::manual::execution_attachment_save",
+        "read (writes a file the user exports)",
+    ),
+    ("runs::manual::execution_attachment_preview", "read"),
 ];
 
 fn registered_commands() -> Vec<String> {
@@ -1484,6 +1510,37 @@ fn every_audited_command_leaves_an_event() {
             .unwrap();
     step("runs::result_record", &mut |tx| {
         crate::runs::record_result(tx, &result).map(drop)
+    });
+    let attempt = "6d1f3c2a-8b7e-4f10-9a3b-2c4d5e6f7a8b";
+    in_tx(&c, |tx| {
+        crate::runs::manual::save_draft(
+            tx,
+            &item_ids[0],
+            "-/-",
+            Some(&json!({"attemptId": attempt})),
+            U,
+        )
+    })
+    .unwrap();
+    let manual: crate::runs::ResultInput = serde_json::from_value(
+        json!({"runItemId": item_ids[0], "status": "failed", "attemptId": attempt, "userId": U}),
+    )
+    .unwrap();
+    step("runs::manual::execution_record", &mut |tx| {
+        crate::runs::manual::record_from_draft(tx, &manual).map(drop)
+    });
+    let mut manual_run = String::new();
+    step("runs::manual::run_create_manual", &mut |tx| {
+        let input: crate::runs::RunInput =
+            serde_json::from_value(json!({"projectId": p, "title": "Manual", "userId": U}))
+                .unwrap();
+        let items: Vec<crate::runs::RunItemInput> =
+            serde_json::from_value(json!([{"testCaseId": case}])).unwrap();
+        manual_run = crate::runs::manual::create_manual(tx, input, &items)?;
+        Ok(())
+    });
+    step("runs::manual::run_close", &mut |tx| {
+        crate::runs::manual::close_run(tx, &manual_run, "aborted", false, U)
     });
     step("runs::unlinked_mapping_set", &mut |tx| {
         crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)

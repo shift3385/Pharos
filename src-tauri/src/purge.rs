@@ -199,7 +199,12 @@ const CHILDREN: [Child; 13] = [
         entity: "run_item",
         table: "run_items",
         key: None,
-        dependents: &["DELETE FROM execution_drafts WHERE run_item_id = ?1"],
+        // Its draft and the draft's files (EJE-02); their content goes with
+        // the next evidence collection.
+        dependents: &[
+            "DELETE FROM execution_drafts WHERE run_item_id = ?1",
+            "DELETE FROM attachments WHERE owner_entity = 'execution_draft' AND owner_id = ?1",
+        ],
     },
     Child {
         entity: "unlinked_mapping",

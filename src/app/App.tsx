@@ -29,6 +29,8 @@ export function App() {
           <Route path="/projects" element={<ProjectsPage />} />
           {/* A project and its section live in the URL (ADR-0029). */}
           <Route path="/projects/:projectId/:section?" element={<ProjectDetailPage />} />
+          {/* A run of «Ejecuciones» (EJE-02). */}
+          <Route path="/projects/:projectId/runs/:runId" element={<ProjectDetailPage />} />
           {/* Plantillas and Motor de IA are Administration tabs (ADR-0031). */}
           <Route path="/templates" element={<Navigate to={adminPath("templates")} replace />} />
           <Route path="/ai" element={<Navigate to={adminPath("ai")} replace />} />

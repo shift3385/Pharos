@@ -37,16 +37,26 @@ import "./Projects.css";
  *  the sidebar switcher while in Ajustes) mounts a fresh workspace, so no
  *  form or option of the previous project is shown, or saved, for the new one. */
 export function ProjectDetailPage() {
-  const { projectId, section } = useParams();
+  const { projectId, section: inUrl, runId } = useParams();
+  // `/projects/:id/runs/:runId` is the run screen inside «Ejecuciones».
+  const section = runId ? "runs" : inUrl;
   if (!projectId) return <Navigate to="/projects" replace />;
   if (!isProjectSection(section)) return <Navigate to={projectPath(projectId)} replace />;
-  return <ProjectDetail key={projectId} projectId={projectId} tab={section} />;
+  return <ProjectDetail key={projectId} projectId={projectId} tab={section} runId={runId} />;
 }
 
 /** A project's workspace: its test plan, its test cases and its settings, all
  *  scoped to this project (spec §5.1 — the project is the container). The open
  *  section comes from the URL. */
-export function ProjectDetail({ projectId, tab }: { projectId: string; tab: ProjectSection }) {
+export function ProjectDetail({
+  projectId,
+  tab,
+  runId,
+}: {
+  projectId: string;
+  tab: ProjectSection;
+  runId?: string;
+}) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const ownerId = user?.id ?? "";
@@ -149,6 +159,7 @@ export function ProjectDetail({ projectId, tab }: { projectId: string; tab: Proj
         {tab === "runs" && (
           <RunsPage
             projectId={projectId}
+            runId={runId}
             cases={linkableCases.map((c) => ({ id: c.id, scenarioId: c.key, title: c.title }))}
           />
         )}

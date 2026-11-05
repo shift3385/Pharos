@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { AlertTriangle, ArrowLeft, Filter, ListPlus, MoreHorizontal, Pencil, Play } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
@@ -341,7 +342,12 @@ export function CycleDetail({
   ];
 
   const runColumns: DataColumn<CycleRun>[] = [
-    { id: "key", header: t("cycles.runs.key"), width: "96px", cell: (r) => <code className="cy-key">{r.runKey}</code> },
+    { id: "key", header: t("cycles.runs.key"), width: "96px", cell: (r) => (
+        // The run screen of «Ejecuciones» (EJE-02): execute it there.
+        <Link to={`/projects/${projectId}/runs/${r.id}`} data-testid={`cycle-run-${r.runKey}`}>
+          <code className="cy-key">{r.runKey}</code>
+        </Link>
+      ) },
     { id: "title", header: t("cycles.runs.title"), width: "minmax(0,2fr)", cell: (r) => r.title },
     {
       id: "configuration",

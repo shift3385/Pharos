@@ -1,14 +1,23 @@
 import { desktopOnly } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
+  Configuration,
+  ExecutionAttachment,
   ReportImportOutcome,
   ReportImportPreview,
   ReportImportRequest,
+  ResultInput,
   ResultView,
   Run,
   RunCounts,
+  RunInput,
+  RunItem,
+  RunItemDetail,
+  RunItemInput,
+  RunOverview,
   UnlinkedTest,
 } from "@shared/contracts/contract";
+import type { SaveResult } from "@shared/export/saveFile";
 
 // Runs and imports live on the desktop (EJE-01, ING-02..05): the server keeps
 // their documents but has no API for them until INT-02 (0.5.0), so the web
@@ -103,4 +112,102 @@ export const runsApi = {
       userId,
     });
   },
+
+  // ---- manual execution (EJE-02, desktop only; the web reads nothing) ----
+
+  /** The run screen in one call: header, items with progress, counts. */
+  overview: (runId: string, userId: string): Promise<RunOverview | null> =>
+    isTauri() ? invoke("run_overview", { runId, userId }) : Promise.resolve(null),
+  /** One item for the executor: frozen revision, targets, attempts, draft. */
+  itemDetail: (runItemId: string, userId: string): Promise<RunItemDetail | null> =>
+    isTauri()
+      ? invoke("run_item_detail", { runItemId, userId })
+      : Promise.resolve(null),
+  /** A manual run over the chosen cases (design §4, step 1): the run and
+   *  its items in one transaction, so a refused case leaves no empty run. */
+  createManual: (input: RunInput, items: RunItemInput[]): Promise<Run | null> =>
+    isTauri()
+      ? invoke("run_create_manual", { input, items })
+      : desktopOnly("results"),
+  /** The project's live configurations, to give a manual run its context. */
+  configurations: (projectId: string, userId: string): Promise<Configuration[]> =>
+    isTauri()
+      ? invoke("configuration_list", { projectId, userId, includeArchived: false })
+      : Promise.resolve([]),
+  addItems: (runId: string, userId: string, items: RunItemInput[]): Promise<RunItem[]> =>
+    isTauri()
+      ? invoke("run_items_add", { runId, userId, items })
+      : desktopOnly("results"),
+  /** Edits the header, closes (`completed`/`aborted`) or reopens
+   *  (`in_progress`) a run. `context` is left out so it keeps its value. */
+  update: (
+    id: string,
+    input: Omit<RunInput, "context">,
+  ): Promise<Run | null> =>
+    isTauri()
+      ? invoke("run_update", { id, input })
+      : desktopOnly("results"),
+  /** Closes a run; `aborted` (or `discardDrafts`) also discards its drafts
+   *  and their files. */
+  close: (
+    runId: string,
+    status: "completed" | "aborted",
+    discardDrafts: boolean,
+    userId: string,
+  ): Promise<Run | null> =>
+    isTauri()
+      ? invoke("run_close", { runId, status, discardDrafts, userId })
+      : desktopOnly("results"),
+  draftSave: (
+    runItemId: string,
+    targetKey: string,
+    state: unknown,
+    userId: string,
+  ): Promise<void> =>
+    isTauri()
+      ? invoke("execution_draft_save", { runItemId, targetKey, state, userId })
+      : Promise.resolve(),
+  draftDiscard: (runItemId: string, targetKey: string, userId: string): Promise<void> =>
+    isTauri()
+      ? invoke("execution_draft_discard", { runItemId, targetKey, userId })
+      : Promise.resolve(),
+  /** Records the attempt from its draft; returns the result id. */
+  record: (input: ResultInput): Promise<string> =>
+    isTauri() ? invoke("execution_record", { input }) : desktopOnly("results"),
+  /** A file (or pasted capture) for a draft's target, or one of its steps. */
+  attachToDraft: async (
+    runItemId: string,
+    targetKey: string,
+    stepId: string | null,
+    file: Blob,
+    name: string,
+    kind: "evidence" | "screenshot",
+    userId: string,
+  ): Promise<ExecutionAttachment> => {
+    if (!isTauri()) return desktopOnly("attachments");
+    const uploadId = await upload(file);
+    return invoke("execution_attach", {
+      runItemId,
+      targetKey,
+      stepId,
+      uploadId,
+      name,
+      mime: file.type || null,
+      kind,
+      userId,
+    });
+  },
+  deleteDraftAttachment: (id: string, userId: string): Promise<void> =>
+    isTauri()
+      ? invoke("execution_attachment_delete", { id, userId })
+      : desktopOnly("attachments"),
+  saveAttachment: (id: string, userId: string): Promise<SaveResult> =>
+    isTauri()
+      ? invoke("execution_attachment_save", { id, userId })
+      : desktopOnly("attachments"),
+  /** A `data:` URL for an image's thumbnail, or null. */
+  previewAttachment: (id: string, userId: string): Promise<string | null> =>
+    isTauri()
+      ? invoke("execution_attachment_preview", { id, userId })
+      : Promise.resolve(null),
 };

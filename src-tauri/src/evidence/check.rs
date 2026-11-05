@@ -588,6 +588,12 @@ fn owner_label(conn: &Connection, entity: &str, id: &str) -> Option<String> {
             "SELECT r.run_key || ' · ' || x.test_key FROM step_results s \
              JOIN results x ON x.id = s.result_id JOIN runs r ON r.id = x.run_id WHERE s.id = ?1"
         }
+        // A manual attempt in progress (EJE-02): its run and case.
+        "execution_draft" => {
+            "SELECT r.run_key || ' · ' || coalesce(c.scenario_id, i.test_case_id) \
+             FROM run_items i JOIN runs r ON r.id = i.run_id \
+             LEFT JOIN test_cases c ON c.id = i.test_case_id WHERE i.id = ?1"
+        }
         _ => return None,
     };
     conn.query_row(sql, params![id], |r| r.get::<_, String>(0))

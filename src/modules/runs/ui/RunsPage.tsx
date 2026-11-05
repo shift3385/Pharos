@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Upload } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { Plus, Upload } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import type { Run, RunCounts, UnlinkedTest } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
@@ -16,6 +17,8 @@ import { useToast } from "@shared/ui/Toast";
 import { runsApi } from "../api/runsApi";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { ImportReportDialog } from "./ImportReportDialog";
+import { NewRunDialog } from "./NewRunDialog";
+import { RunDetail } from "./RunDetail";
 import { UnlinkedTray } from "./UnlinkedTray";
 import "@shared/ui/buttons.css";
 import "./Runs.css";
@@ -24,11 +27,27 @@ type Tab = "runs" | "unlinked";
 type Origin = "all" | "import";
 
 /** «Ejecuciones» (`/projects/:id/runs`): the project's runs and the tray of
- *  unlinked imported tests (ING-05), with «Importar informe» in the header.
- *  The run screen arrives with manual execution (EJE-02, step 7) in this same
- *  section. No design in docs/rediseno: built with the tabs, table, chips and
- *  pill primitives. */
+ *  unlinked imported tests (ING-05), with «Nuevo run manual» and «Importar
+ *  informe» in the header; `/projects/:id/runs/:runId` is the run screen with
+ *  the manual execution (EJE-02). No design in docs/rediseno: built with the
+ *  tabs, table, chips and pill primitives. */
 export function RunsPage({
+  projectId,
+  runId,
+  cases,
+}: {
+  projectId: string;
+  runId?: string;
+  cases: LinkableCase[];
+}) {
+  return runId ? (
+    <RunDetail key={runId} projectId={projectId} runId={runId} cases={cases} />
+  ) : (
+    <RunsList projectId={projectId} cases={cases} />
+  );
+}
+
+function RunsList({
   projectId,
   cases,
 }: {
@@ -45,6 +64,8 @@ export function RunsPage({
   const [counts, setCounts] = useState<Record<string, RunCounts>>({});
   const [unlinked, setUnlinked] = useState<UnlinkedTest[]>([]);
   const [importing, setImporting] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
   const [failed, setFailed] = useState(false);
   const latest = useRef(0);
 
@@ -74,16 +95,29 @@ export function RunsPage({
 
   const inHeader = useContext(HeaderActionsContext) !== null;
   const actions = (
-    <button
-      type="button"
-      className="ui-btn ui-btn--primary"
-      onClick={() => setImporting(true)}
-      disabled={!isTauri()}
-      title={isTauri() ? undefined : t("sync.web.desktopOnly")}
-    >
-      <Upload size={16} aria-hidden="true" />
-      <span className="ui-btn__text">{t("runs.import.open")}</span>
-    </button>
+    <>
+      <button
+        type="button"
+        className="ui-btn"
+        onClick={() => setImporting(true)}
+        disabled={!isTauri()}
+        title={isTauri() ? undefined : t("sync.web.desktopOnly")}
+      >
+        <Upload size={16} aria-hidden="true" />
+        <span className="ui-btn__text">{t("runs.import.open")}</span>
+      </button>
+      <button
+        type="button"
+        className="ui-btn ui-btn--primary"
+        onClick={() => setCreating(true)}
+        disabled={!isTauri()}
+        title={isTauri() ? undefined : t("sync.web.desktopOnly")}
+        data-testid="run-new"
+      >
+        <Plus size={16} aria-hidden="true" />
+        <span className="ui-btn__text">{t("execution.newRun.open")}</span>
+      </button>
+    </>
   );
   useHeaderActions(actions);
 
@@ -99,7 +133,15 @@ export function RunsPage({
     {
       id: "key",
       header: t("runs.list.key"),
-      cell: (r) => <span className="rn-mono">{r.runKey}</span>,
+      cell: (r) => (
+        <Link
+          to={`/projects/${projectId}/runs/${r.id}`}
+          className="rn-mono"
+          data-testid={`run-row-${r.runKey}`}
+        >
+          {r.runKey}
+        </Link>
+      ),
       width: "96px",
     },
     {
@@ -231,7 +273,7 @@ export function RunsPage({
               mobileCard={(r) => (
                 <div className="rn-card">
                   <div className="rn-card__row">
-                    <span className="rn-mono">{r.runKey}</span>
+                    {columns[0].cell(r)}
                     {columns[2].cell(r)}
                   </div>
                   {columns[1].cell(r)}
@@ -265,6 +307,19 @@ export function RunsPage({
           runs={runs ?? []}
           onClose={() => setImporting(false)}
           onImported={() => void refresh()}
+        />
+      )}
+      {creating && (
+        <NewRunDialog
+          projectId={projectId}
+          userId={userId}
+          cases={cases}
+          onCancel={() => setCreating(false)}
+          onCreated={(run) => {
+            setCreating(false);
+            toast(t("execution.newRun.created", { key: run.runKey }));
+            navigate(`/projects/${projectId}/runs/${run.id}`);
+          }}
         />
       )}
     </div>

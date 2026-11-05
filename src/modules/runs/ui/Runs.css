@@ -8,6 +8,8 @@
 }
 .rn-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   justify-content: flex-end;
 }
 .rn-mono {
@@ -111,4 +113,8 @@
   gap: var(--space-2);
   min-height: 40px;
   padding: 0 var(--space-2);
+}
+.rn-case .rn-key {
+  flex: none;
+  white-space: nowrap;
 }
