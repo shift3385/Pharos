@@ -3,7 +3,8 @@
 //   npm run manual                  isolated DB + API + tour build + tours + manual
 //   E2E_SKIP_BUILD=1 npm run manual reuse the last tour build
 //   npm run manual -- --spec 04     the preparation tour + the tours whose file name
-//                                   matches (a regular expression); no manual
+//                                   matches (a regular expression) + the chapters
+//                                   they read data from; no manual
 //   npm run manual -- --no-manual   all the tours, no manual (CI on pull requests)
 //
 // Isolation (e2e/README.md → Tours). Everything runs apart from the user's own
@@ -36,6 +37,7 @@ import { findAiKey, readDotenv } from "../../scripts/manual/ai-key.mjs";
 import { acquireLock, lockMessage, releaseLock } from "../../scripts/manual/run-lock.mjs";
 import { scanForSecret } from "../../scripts/manual/secret-scan.mjs";
 import { driverVersion, major, webview2Version } from "../scripts/edge-driver.mjs";
+import { selectTours } from "./manifest.ts";
 
 const toursDir = fileURLToPath(new URL(".", import.meta.url));
 const repoDir = join(toursDir, "..", "..");
@@ -102,6 +104,18 @@ if (!lock.ok) {
   process.exit(1);
 }
 process.on("exit", () => releaseLock());
+
+// A partial run adds the chapters its tours read data from; a bad filter stops
+// here, before the database and the long build.
+if (specFilter) {
+  try {
+    const { files, added } = selectTours(specFilter);
+    console.log(`› --spec "${specFilter}": ${files.length - 1} tour(s) after the preparation`);
+    if (added.length > 0) console.log(`› Added because the others read their data: ${added.join(", ")}`);
+  } catch (err) {
+    fail(err.message);
+  }
+}
 
 if (!isWindows) fail("the tours run on Windows (WebView2 + msedgedriver).");
 if (!Number.isInteger(port) || port <= 0) fail("PHAROS_TOURS_PORT is not a port number.");

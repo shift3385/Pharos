@@ -21,7 +21,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser } from "@wdio/globals";
 import { CHAPTERS, type ChapterId } from "./manifest";
-import { setAppWindow } from "../support";
+import { es, setAppWindow } from "../support";
 
 const resultsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "results", "tours");
 export const stepsFile = join(resultsDir, "steps.jsonl");
@@ -198,6 +198,57 @@ async function viewport() {
   return size;
 }
 
+const OVERLAY = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role="menu"]';
+
+/**
+ * Leaves nothing open for the next chapter: a dialog or menu left by a chapter
+ * (a failed step above all) would block the first click of the next one, and
+ * that chapter would fail for no reason of its own. Native dialogs are
+ * dismissed, an «unsaved changes» prompt is answered «Descartar cambios», the
+ * rest get Escape. After a failed step it also leaves the screen, whose
+ * unsaved editor would stop the next navigation. A clean chapter should have
+ * nothing to close, so it is reported. Never throws: the session may be gone.
+ */
+async function closeLeftovers(id: ChapterId, failed: string | null) {
+  try {
+    const discard = () => $(`[role="alertdialog"] button=${es.dialog.unsaved.discard}`);
+    const closeOverlays = async () => {
+      let closed = 0;
+      for (let i = 0; i < 6; i++) {
+        const hasNative = await browser.getAlertText().then(
+          () => true,
+          () => false,
+        );
+        if (hasNative) {
+          await browser.dismissAlert();
+          closed++;
+          continue;
+        }
+        const open = [];
+        for (const el of await $$(OVERLAY)) if (await el.isDisplayed()) open.push(el);
+        if (open.length === 0) return closed;
+        closed++;
+        if (await discard().isExisting()) await discard().click();
+        else await browser.keys("Escape");
+        await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+      }
+      console.warn(`! ${id}: an overlay is still open after the chapter`);
+      return closed;
+    };
+    const closed = await closeOverlays();
+    if (closed > 0 && !failed) console.warn(`! ${id}: the chapter left ${closed} dialog(s) or menu(s) open; close them in its last step`);
+    if (failed) {
+      const home = $('[data-testid="nav-dashboard"]');
+      if (await home.isDisplayed().catch(() => false)) {
+        await home.click();
+        await closeOverlays();
+      }
+    }
+  } catch (err) {
+    console.warn(`! ${id}: could not clean up after the chapter (${(err as Error).message.split("\n")[0]})`);
+  }
+}
+
 /** A chapter of the manual: a mocha `describe` whose steps stop after the
  *  first failure (the next steps would only fail for the same reason). */
 export function chapter(id: ChapterId, body: () => void) {
@@ -210,6 +261,9 @@ export function chapter(id: ChapterId, body: () => void) {
       await setViewport(DESKTOP);
     });
     body();
+    after(async () => {
+      await closeLeftovers(id, current?.failed ?? null);
+    });
   });
 }
 

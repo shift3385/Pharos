@@ -50,9 +50,15 @@ smoke".
 
 `npm run manual -- --spec 04` runs the preparation tour plus the tours whose
 file name matches the regular expression (`"0[2-4]"`), and skips the manual.
-Each chapter creates the project it needs if it is missing, but some read
-data the earlier ones make (custom fields, configurations, an imported
-report): run them together when in doubt.
+Some chapters read data the earlier ones make (custom fields, configurations,
+cases, an imported report): each declares them in `needs` (`manifest.ts`), and
+the runner **adds those chapters** and says which. An invalid expression, or
+one matching no tour, stops the run before the database and the build.
+
+At the end of each chapter, `closeLeftovers` (`tour.ts`) closes any dialog or
+menu still open, so a failed step cannot block the next chapter, and leaves the
+screen after a failure, whose unsaved editor would stop the next navigation.
+A clean chapter should have nothing to close: it is reported as a warning.
 
 ### Writing a tour step
 

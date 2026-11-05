@@ -238,3 +238,20 @@ test("printWithEdge: a fresh profile per attempt, one retry on EPERM, none other
     assert.equal(other, 1, "no retry for other errors");
     assert.throws(() => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => {} }), /did not print/, "a stale PDF never passes");
   }));
+
+test("selectTours adds what a partial run needs, in run order, and refuses a bad filter (MAN-02)", async () => {
+  const { CHAPTERS, selectTours } = await import("../e2e/tours/manifest.ts");
+  const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
+  for (const c of CHAPTERS) {
+    for (const id of c.needs ?? []) assert.ok(order.get(id) < order.get(c.id), `${c.id} needs ${id}, which must run first`);
+  }
+  assert.equal(selectTours(null).files.length, CHAPTERS.filter((c) => c.file).length);
+  assert.deepEqual(selectTours(null).added, []);
+  const defects = selectTours("^09");
+  assert.deepEqual(defects.files, ["00-preparacion.tour.ts", "02-proyectos.tour.ts", "04-casos.tour.ts", "08-ejecuciones.tour.ts", "09-defectos.tour.ts"]);
+  assert.deepEqual(defects.added, ["02-proyectos.tour.ts", "04-casos.tour.ts", "08-ejecuciones.tour.ts"]);
+  assert.deepEqual(selectTours("^14").added, [], "a chapter that reads nothing adds nothing");
+  assert.throws(() => selectTours("["), /not a valid regular expression/);
+  assert.throws(() => selectTours("^99"), /matches no tour file/);
+  assert.throws(() => selectTours("^00"), /matches no tour file/, "the preparation alone is not a run");
+});

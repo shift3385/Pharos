@@ -8,7 +8,7 @@ import { cpSync, existsSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { TOUR_FILES } from "./tours/manifest";
+import { selectTours } from "./tours/manifest";
 import { config as base } from "./wdio.conf";
 
 // The AI tours hand a real key to the app over WebDriver: msedgedriver's
@@ -18,9 +18,9 @@ delete process.env.PHAROS_E2E_DRIVER_LOG;
 const e2eDir = fileURLToPath(new URL(".", import.meta.url));
 
 // `npm run manual -- --spec 04` → PHAROS_TOURS_ONLY=04: the preparation tour
-// (sign-in, theme) plus the tours whose file name matches it (a regular expression: "0[2-4]").
-const only = process.env.PHAROS_TOURS_ONLY;
-const files = TOUR_FILES.filter((file, i) => !only || i === 0 || new RegExp(only).test(file));
+// (sign-in, theme), the tours whose file name matches it (a regular expression:
+// "0[2-4]") and the chapters they read data from (`needs` in the manifest).
+const { files } = selectTours(process.env.PHAROS_TOURS_ONLY);
 
 export const config: WebdriverIO.Config = {
   ...base,
