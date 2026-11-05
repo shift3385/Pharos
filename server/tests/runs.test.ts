@@ -564,6 +564,30 @@ describe("runs on the web", () => {
     expect((await call("GET", `/api/results/${uuid(7)}/defect-draft`)).status).toBe(404);
   });
 
+  it("the execution derivation reads what the web recorded, and stops at a deleted run", async () => {
+    const call = api(await tokenFor());
+    const s = await seed(call);
+    const run = (await call("POST", "/api/runs", { input: { projectId: s.projectId, title: "Web", build: "9.9" }, items: [{ testCaseId: s.simple.id }] })).body;
+    const [item] = (await docs("run_item")).map((d) => d.entity_id);
+    const summary = async (q = "") => (await call("GET", `/api/execution/summary?projectId=${s.projectId}${q}`)).body;
+    const caseOf = (x: { cases: Payload[] }) => x.cases.find((c) => c.caseId === s.simple.id);
+    await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(61), status: "failed", finishedAt: "2026-11-05T10:00:00.000Z" } });
+    expect(caseOf(await summary())).toMatchObject({ status: "failed", last: { resultId: uuid(61), runKey: run.runKey, origin: "manual", stale: false } });
+    // A later attempt wins; the case's filter sees the run's build.
+    await call("POST", "/api/results", { input: { runItemId: item, attemptId: uuid(62), status: "passed", finishedAt: "2026-11-05T11:00:00.000Z" } });
+    expect(caseOf(await summary("&build=9.9"))).toMatchObject({ status: "passed", last: { resultId: uuid(62) } });
+    // Editing the steps makes the frozen revision's result stale.
+    const kase = (await call("GET", `/api/test-cases/${s.simple.id}`)).body;
+    await call("PUT", `/api/test-cases/${s.simple.id}`, {
+      input: { ...kase, data: { ...kase.data, steps: [...kase.data.steps, { text: "another step" }] } },
+      revision: kase.revision,
+    });
+    expect(caseOf(await summary())).toMatchObject({ status: "passed", last: { resultId: uuid(62), stale: true } });
+    // A deleted run's results no longer count.
+    await pool.query("UPDATE documents SET deleted = true WHERE entity = 'run' AND entity_id = $1", [run.id]);
+    expect(caseOf(await summary())?.last ?? null).toBeNull();
+  });
+
   it("writes one event for the run, folds its items into one summary", async () => {
     const call = api(await tokenFor());
     const s = await seed(call);

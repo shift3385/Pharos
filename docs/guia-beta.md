@@ -176,6 +176,9 @@ seguir.
       cobertura y se exporta a `.xlsx`.
 - [ ] El `.feature` lleva `@REQ-xxx` y el ID de cada caso, y se puede filtrar
       por `@ATS_xxx` con playwright-bdd o Cucumber.
+- [ ] En el formulario de un requisito, poner Probabilidad e Impacto (1–5): en
+      la matriz el requisito lleva «Riesgo N · Alto/Medio/Bajo» y los de más
+      riesgo salen primero («Orden: ID de requisito» vuelve al orden por clave).
 
 ### 4.4b Defectos (próxima 0.2.0)
 
@@ -290,6 +293,40 @@ adjuntos.
       está en la app de escritorio.
 - [ ] Cancelar en la web un run que tenía un borrador en el escritorio: al
       sincronizar, el escritorio descarta ese borrador y sus adjuntos.
+
+### 4.4e Resultados en la matriz e informe de estado (EJE-04, EJE-03)
+
+Es el criterio de salida de 0.2.0: un run manual y uno de Playwright aparecen
+en la misma matriz.
+
+- [ ] Con un caso vinculado a un requisito: ejecutarlo a mano (falla) e
+      importar después un informe de Playwright con su etiqueta (`@<ID del
+      caso>`) que lo pasa. En **Trazabilidad → Matriz**, el caso muestra
+      «Pasa» con la clave del run importado y la fecha; la clave abre el run.
+      Volver a ejecutarlo a mano: ahora manda el run manual (gana el último
+      resultado final).
+- [ ] Editar después los pasos del caso: el resultado no cambia y aparece
+      «Desactualizado» (se ejecutó una revisión anterior). Cambiar solo el
+      estado, la prioridad o el título no lo marca.
+- [ ] Un test que falló y pasó al reintentar aparece como «Flaky»; un caso
+      fallido con su defecto en «Corregido» aparece como «Re-test».
+- [ ] Filtrar la matriz por ciclo, configuración, build o entorno: los
+      estados cambian a lo de esas ejecuciones y la dirección de la página
+      guarda los filtros; «Quitar filtros» vuelve a todo.
+- [ ] «Exportar matriz (.xlsx)»: la hoja «Matriz» es la de la plantilla; la
+      hoja «Resultados» trae el run, la fecha, la configuración y los defectos
+      con su severidad.
+- [ ] En **Ejecuciones** (o en un ciclo), «Informe de estado»: elegir
+      Proyecto, Ciclo o Plan y un periodo. Revisar que los criterios de salida
+      del plan dicen «Cumple» / «No cumple» (sin plan, se usan los tres por
+      defecto: ≥ 95 % ejecutado, 0 defectos críticos abiertos, ≥ 90 % de
+      cobertura) y que los defectos dicen «a fecha de hoy».
+- [ ] Cambiar el resumen y escribir recomendaciones, cerrar y volver a abrir el
+      informe: el texto sigue ahí. **Se guarda solo en este equipo** y va en las
+      exportaciones. «Exportar .xlsx» y «Exportar PDF» dejan los archivos en la
+      carpeta de descargas.
+- [ ] En la web: la matriz con resultados, los filtros y el informe funcionan
+      igual (el servidor calcula lo mismo que el escritorio).
 
 ### 4.5 Sincronización
 

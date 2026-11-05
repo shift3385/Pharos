@@ -17,6 +17,7 @@ import { createDomainService } from "./modules/domain/domain.service";
 import { domainRoutes } from "./modules/domain/domain.routes";
 import { createCycleService, cycleRoutes } from "./modules/domain/cycles";
 import { createRunService, runRoutes } from "./modules/domain/runs";
+import { createExecutionService, executionRoutes } from "./modules/domain/execution";
 import { AppError } from "./modules/auth/errors";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
@@ -87,6 +88,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   const domain = createDomainService(domainStore);
   const cycles = createCycleService(domainStore);
   const runs = createRunService(domainStore);
+  const execution = createExecutionService(domainStore);
 
   app.get("/health", async () => ({ status: "ok" }));
   void app.register(async (instance) => {
@@ -103,6 +105,7 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   void app.register(async (instance) => {
     runRoutes(instance, { runs, tokens });
+    executionRoutes(instance, { execution, tokens });
   });
 
   app.setErrorHandler((error, req, reply) => {

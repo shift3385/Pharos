@@ -16,6 +16,9 @@ matriz de trazabilidad.
   prioridad, estado, requisitos o riesgo.
 - «Clonar» prepara la siguiente ronda con los mismos elementos y sin
   resultados.
+- «Informe de estado» en la cabecera del ciclo resume esa ronda (progreso por
+  caso y configuración, defectos, cobertura y criterios de salida) para
+  enviarla en Excel o PDF.
 
 ## Véase también
 

@@ -83,17 +83,41 @@ En un intento fallido, «Crear defecto» abre el editor de defectos relleno con 
 
 Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.
 
-### 13.13. Eliminar un run
+### 13.13. Informe de estado
+
+En «Ejecuciones», «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, en el periodo que elijas: progreso, resultados por estado, defectos (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple) y los bloqueos. El resumen se rellena con las cifras y, con las recomendaciones, se guarda solo en este equipo.
+
+![Informe de estado](img/ejecucion-manual/13-informe-estado.png)
+
+### 13.14. Exportar el informe a Excel
+
+«Exportar .xlsx» guarda el informe en la carpeta de descargas: una hoja «Resumen» con las nueve secciones y hojas con los resultados por caso, los defectos y la cobertura por requisito.
+
+### 13.15. Exportar el informe a PDF
+
+«Exportar PDF» guarda el mismo informe como documento, listo para enviar.
+
+### 13.16. Los resultados en la matriz
+
+En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.
+
+![Los resultados en la matriz](img/ejecucion-manual/16-matriz-resultados.png)
+
+### 13.17. Del resultado a su run
+
+La clave del run (RUN-…) abre la pantalla de ese run. «Quitar filtros» devuelve todos los resultados.
+
+### 13.18. Eliminar un run
 
 «Eliminar run» lo quita de las listas y del progreso, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede eliminar.
 
-![Eliminar un run](img/ejecucion-manual/13-borrar-run.png)
+![Eliminar un run](img/ejecucion-manual/18-borrar-run.png)
 
-### 13.14. Run eliminado
+### 13.19. Run eliminado
 
 Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda la eliminación con lo que ocultó.
 
-![Run eliminado](img/ejecucion-manual/14-run-borrado.png)
+![Run eliminado](img/ejecucion-manual/19-run-borrado.png)
 
 ## Consejos
 
@@ -113,11 +137,18 @@ Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de aud
   purga se los lleva con el run pasada la retención de «Administración →
   General». Un run de un ciclo cerrado no se elimina: reabre antes el ciclo.
   Si solo quieres dejar de ejecutarlo, ciérralo como «Cancelado».
+- En la matriz de trazabilidad gana siempre el último resultado final, sea de
+  un run manual o de un informe importado: repetir la prueba a mano después de
+  un informe de Playwright cambia lo que muestra la matriz.
+- El **informe de estado** (ISO/IEC/IEEE 29119-3) sale de las ejecuciones: el
+  resumen se rellena con las cifras y las recomendaciones las escribes tú. Los
+  dos textos se guardan solo en este equipo y van en el Excel y el PDF; los
+  defectos se cuentan «a fecha de hoy», no por el periodo elegido.
 
 ## Véase también
 
 - Capítulo 7, «Ciclos y configuraciones» (los runs de un ciclo) y capítulo 9, «Defectos».
-- [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: run, elemento, objetivo, intento.
+- [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: run, elemento, objetivo, intento, último resultado, informe de estado, criterio de salida evaluado.
 
 ---
 

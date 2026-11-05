@@ -24,6 +24,8 @@ web: `server/src/modules/domain/cycles.ts`.
 
 Boundaries: it depends on no other domain module (`test-plan` and
 `test-cases` depend on it for their exports, never the other way round). The project page passes it
-the cases (`loadCases`, from `@modules/test-cases`) and the requirement keys.
+the cases (`loadCases`, from `@modules/test-cases`), the requirement keys and
+`cycleActions(cycleId)`: extra buttons for an open cycle's header (the status
+report of `@modules/runs`, EJE-03, scoped to that cycle).
 No design in `docs/rediseno/` covers these screens: they use the shared
 primitives (`DataTable`, `StatusPill`, `SegmentedControl`, `Tabs`, `Dialog`).

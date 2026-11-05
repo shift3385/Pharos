@@ -450,7 +450,7 @@ function worst(statuses: string[]): string | null {
 export function createRunService(store: DomainStore) {
   const run = store.tx.bind(store);
   /** Reads: a read-only transaction, without the user's write lock. */
-  const read = store.read.bind(store);
+  const read = store.readTx.bind(store);
 
   async function liveProject(tx: DomainTx, projectId: string) {
     const doc = await tx.get("project", projectId);
