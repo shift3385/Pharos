@@ -951,6 +951,17 @@ store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
   the plan and every case as `.xlsx` **and** `.pdf`. `projects` builds them
   from `projectPlanFiles` (`test-plan`) and `projectCaseFiles` (`test-cases`);
   a PDF that cannot be rendered is left out and reported (`skipped`).
+- **Milestones and cycles (EXP-03):** after the template's content, the plan
+  adds the sheets «Hitos» (step 14) and «Ciclos» (the project's cycles with
+  the cycle list's own progress summary, the same numbers and percents as the
+  «Ciclos» screen), and each case a «Ciclos» sheet with the cycles it is in;
+  the PDFs end with the same tables. They are `ExportTable`s
+  (`@shared/export/extraTables`: `addTableSheets`, `tableSections`) built by
+  `@modules/cycles` (`loadCycleExport`, `cyclesTable`, `caseCyclesTable`)
+  and `test-plan/export/planExtras.ts`. A table without rows adds nothing, the
+  template's sheets do not change and the importers ignore the new ones. The
+  ZIPs read the cycles and their items once per project; a failure to read
+  them stops the export with a toast (`ReportedError`).
 
 ## Testing
 

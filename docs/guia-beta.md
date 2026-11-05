@@ -160,6 +160,10 @@ seguir.
 - [ ] Crear casos: el editor y la vista Gherkin se actualizan entre sí; el
       `.feature` exportado es válido (Fase 4).
 - [ ] Exportar el plan y un caso a `.pdf` y `.xlsx` (Fase 6).
+- [ ] Con hitos en el Cronograma y un ciclo con ese caso: el `.xlsx` del plan
+      trae las hojas «Hitos» y «Ciclos» (con el mismo progreso que la pantalla
+      de Ciclos) y el del caso, la hoja «Ciclos»; los PDF terminan con esas
+      tablas. Importar ese `.xlsx` da el mismo plan o caso (EXP-03).
 - [ ] Importar un plan y casos desde `.xlsx` y usar una plantilla (Fase 6).
 - [ ] Elegir una carpeta de descarga en Administración → General y exportar el
       ZIP del proyecto: lleva el plan y cada caso en `.xlsx` y `.pdf`

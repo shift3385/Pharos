@@ -10,6 +10,7 @@ import {
   type TextTable,
 } from "../model/steps";
 import { traceabilityText } from "../model/trace";
+import { addTableSheets, type ExportTable } from "@shared/export/extraTables";
 import type { CustomSheetRow } from "./customSheet";
 
 export interface ExportableCase {
@@ -33,6 +34,9 @@ export interface ExportableCase {
   customRows?: CustomSheetRow[];
   /** Its name and column headers (Campo, Clave, Valor), localized. */
   customSheet?: { name: string; headers: [string, string, string] };
+  /** The cycles the case belongs to (EXP-03): a sheet of its own after the
+   *  others, and a section at the end of the PDF. */
+  extraTables?: ExportTable[];
 }
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -152,6 +156,7 @@ export async function buildCaseXlsx(
       row.getCell(3).alignment = { wrapText: true, vertical: "top" };
     }
   }
+  addTableSheets(wb, c.extraTables);
 
   const filename = `${c.scenarioId || "case"}.xlsx`;
   const out = await wb.xlsx.writeBuffer();

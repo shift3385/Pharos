@@ -3,6 +3,7 @@ import {
   effectiveCaseType,
   type CustomField,
 } from "@modules/custom-fields";
+import { caseCyclesTable, loadCycleExport } from "@modules/cycles";
 import type { TestCase, TestCaseSummary } from "../model/types";
 import { flowsToGherkin, isProvisionalKey, parseFeatureFlows, toGherkin } from "../ui/gherkin";
 import { testCaseApi } from "../api/testCaseApi";
@@ -138,11 +139,16 @@ export async function projectCaseFiles(
   // A failure fails the export: without the definitions the sheet would
   // show option ids instead of their labels.
   const fields = await customFieldApi.list(projectId, userId);
+  // The cycles and their items, read once for every case (EXP-03).
+  const cycles = await loadCycleExport(projectId, userId, true);
   const out: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [];
   for (const s of summaries) {
     const full = await testCaseApi.get(s.id, userId);
     if (!full) continue;
-    const exportable = caseToExportable(full, t, fields);
+    const exportable = {
+      ...caseToExportable(full, t, fields),
+      extraTables: [caseCyclesTable(full.id, cycles, t, lang)],
+    };
     const { filename, buffer } = await buildCaseXlsx(exportable, lang);
     out.push({ name: filename, buffer });
     onEach?.(filename);

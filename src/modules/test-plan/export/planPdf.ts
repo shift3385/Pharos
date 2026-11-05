@@ -8,6 +8,7 @@ import {
   itemList,
   sectionHeader,
 } from "@shared/export/pdfDoc";
+import { tableSections } from "@shared/export/extraTables";
 import type { ExportablePlan } from "./planXlsx";
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
@@ -87,6 +88,8 @@ export function planDocDefinition(p: ExportablePlan, t: Translate): TDocumentDef
     ),
     sectionHeader(t("testPlan.conclusion")),
     field(p.conclusion),
+    // Milestones and cycles (EXP-03), after the template's sections.
+    ...tableSections(p.extraTables, none),
   ];
   return baseDoc(t("testPlan.pdfKind"), content);
 }

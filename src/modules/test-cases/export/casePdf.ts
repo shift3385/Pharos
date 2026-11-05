@@ -8,6 +8,7 @@ import {
   itemList,
   sectionHeader,
 } from "@shared/export/pdfDoc";
+import { tableSections } from "@shared/export/extraTables";
 import type { ExampleTable, Flow } from "../model/types";
 import {
   tableText,
@@ -173,6 +174,9 @@ export function caseDocDefinition(c: ExportableCase, t: Translate): TDocumentDef
       preserveLeadingSpaces: true,
     });
   }
+
+  // The cycles the case belongs to (EXP-03), last.
+  content.push(...tableSections(c.extraTables, none));
 
   return baseDoc(t("testCase.pdfKind"), content);
 }
