@@ -601,9 +601,11 @@ through `src-tauri/src/journal.rs`:
     pass a predicate, evaluated per path or query change, never for hash-only
     changes; keep it stable, module level or `useCallback`); by default they
     ask. Router state reaches React in a transition, so a render can still read
-    `blocked` after the router released that navigation; every release (the
-    dialog's and the automatic one when the form turns clean) first checks that
-    the router still holds that blocker, because acting on a released one throws.
+    `blocked` after the router released that navigation, and acting on a
+    released blocker throws. So each hold is answered once (by the dialog or
+    automatically when the form turns clean), through the router only if it still
+    holds it. A hold dropped because another navigation finished still goes to
+    its location on «proceed», as a new history entry, so the click is not lost.
   - `bypass(go)` lets the next location change through, sync or after an
     `await` (`navigate(-1)` included), for a navigation the screen starts on
     purpose while still dirty (e.g. right after saving). If `go` throws or

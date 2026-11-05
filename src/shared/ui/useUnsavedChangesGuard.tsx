@@ -3,6 +3,7 @@ import {
   UNSAFE_DataRouterContext,
   useBlocker,
   useLocation,
+  type Blocker,
   type BlockerFunction,
   type Location,
 } from "react-router";
@@ -110,13 +111,17 @@ export function useUnsavedChangesGuard(
   // The router publishes its state to React in a transition, so `blocker` can
   // still read "blocked" after the router let go of that navigation (the user
   // already answered, or another navigation finished). Acting on it then makes
-  // the router throw, which takes the whole screen down, so every release asks
-  // the router whether it still holds this very blocker.
+  // the router throw, which takes the whole window down. So each hold is
+  // answered once, and only through the router if it still holds it. Any
+  // navigation that finishes clears every hold: if that dropped this one before
+  // it was answered, «proceed» goes there itself so the user's click is not lost.
+  const answered = useRef<Blocker | null>(null);
   const release = useCallback(
     (action: "proceed" | "reset") => {
-      if (blocker.state !== "blocked") return;
-      if (![...(router?.state.blockers.values() ?? [])].includes(blocker)) return;
-      blocker[action]();
+      if (blocker.state !== "blocked" || answered.current === blocker) return;
+      answered.current = blocker;
+      if ([...(router?.state.blockers.values() ?? [])].includes(blocker)) blocker[action]();
+      else if (action === "proceed") void router?.navigate(blocker.location, { state: blocker.location.state });
     },
     [blocker, router],
   );
