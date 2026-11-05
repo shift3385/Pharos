@@ -65,8 +65,8 @@ chapter("defectos", () => {
 
   step("nuevo", {
     title: "Rellenar el defecto",
-    caption: "Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos y seguimiento externo.",
-    covers: ["action:defect-create", "action:defect-links"],
+    caption: "Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos, seguimiento externo y los campos personalizados de defectos que definiste en Ajustes (aquí, «Cliente afectado»).",
+    covers: ["action:defect-create", "action:defect-links", "action:defect-custom-fields"],
     run: async () => {
       await (await field(F.field.title)).setValue("El saldo no se actualiza tras una transferencia");
       await selectOption(F.field.severity, F.severity.major);
@@ -77,6 +77,10 @@ chapter("defectos", () => {
       await (await field(F.field.foundInBuild)).setValue("2.0.0-rc1");
       const caseLink = $(`label*=Transferencia a un tercero`);
       if (await caseLink.isExisting()) await caseLink.click();
+      // The defect field created in chapter 2 (FLD-03).
+      const customer = await field("Cliente afectado");
+      await customer.scrollIntoView();
+      await customer.setValue("Banca Norte");
     },
   });
 

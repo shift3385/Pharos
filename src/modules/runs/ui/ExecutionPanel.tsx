@@ -34,6 +34,7 @@ import type {
   ResultView,
   RunItemDetail,
 } from "@shared/contracts/contract";
+import { isTauri } from "@shared/platform";
 import { Dialog } from "@shared/ui/Dialog";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
@@ -60,6 +61,7 @@ import {
   type TargetDraft,
 } from "../model/execution";
 import { instantOf, statusTone } from "../model/types";
+import { webDrafts } from "../model/webDrafts";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
@@ -78,7 +80,9 @@ const TEST_ID: Record<StepStatus, string> = {
  *  one target (flow / Outline row) at a time, with a local draft that is
  *  saved as you go and recorded as one immutable attempt. Keyboard first:
  *  P/F/B/S mark the step and move on, J/K move, N notes, T timer,
- *  Ctrl+Enter records, Ctrl+Shift+N next item, ? the list. */
+ *  Ctrl+Enter records, Ctrl+Shift+N next item, ? the list. On the web
+ *  (EJE-06) the draft is the browser's and there are no files: attaching
+ *  and pasting captures stay on the desktop (SYNC-04b). */
 export function ExecutionPanel({
   runItemId,
   runKey,
@@ -126,6 +130,8 @@ export function ExecutionPanel({
   // Attempts this window already sent to be recorded: a retry of one (its
   // save failed after the commit) is ours, not another window's.
   const sent = useRef(new Set<string>());
+  // Files live in the desktop's evidence store only (SYNC-04b).
+  const desktop = isTauri();
 
   const load = useCallback(async () => {
     try {
@@ -162,6 +168,18 @@ export function ExecutionPanel({
     setFocus(0);
     void load();
   }, [load]);
+
+  // Web: another tab of this browser changed this item's draft or recorded
+  // an attempt: reload what is stored (marks typed here and not saved stay;
+  // their next save meets the desktop's stale rules).
+  useEffect(() => {
+    if (desktop) return;
+    const onStorage = (e: StorageEvent) => {
+      if (webDrafts.concerns(e.key, userId, runItemId)) void load();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [desktop, userId, runItemId, load]);
 
   // Pending autosaves are written when the panel closes or changes item.
   useEffect(() => {
@@ -233,7 +251,10 @@ export function ExecutionPanel({
   }
 
   function saveFailed(key: string, e: unknown) {
-    if (String(e instanceof Error ? e.message : e).startsWith("draft-stale")) void onStale(key);
+    const raw = String(e instanceof Error ? e.message : e);
+    if (raw.startsWith("draft-stale")) void onStale(key);
+    else if (raw.startsWith("draft-unavailable")) toast(t("execution.web.draftUnavailable"), "warning");
+    else if (raw.startsWith("run-deleted")) toast(t("execution.error.runDeleted"), "error");
     else toast(t("execution.draftError"), "error");
   }
 
@@ -301,7 +322,9 @@ export function ExecutionPanel({
           await onStale(target.key);
           return null;
         }
-        if (!stale) throw e;
+        // A browser that keeps no drafts (web) still records the attempt.
+        const unavailable = String(e instanceof Error ? e.message : e).startsWith("draft-unavailable");
+        if (!stale && !unavailable) throw e;
       }
       const input = toResultInput(runItemId, target, steps, d, userId, new Date());
       sent.current.add(d.attemptId);
@@ -399,6 +422,10 @@ export function ExecutionPanel({
     );
     if (files.length === 0 || !editable) return;
     e.preventDefault();
+    if (!desktop) {
+      toast(t("execution.web.attachmentsDesktopOnly"), "warning");
+      return;
+    }
     const step = steps[focus];
     const inStep = stepRefs.current[focus]?.contains(document.activeElement);
     void attach(files, inStep && step && !step.id.startsWith("#") ? step.id : null, true);
@@ -793,7 +820,7 @@ export function ExecutionPanel({
                       >
                         {t("execution.actual")}
                       </button>
-                      {editable && !s.id.startsWith("#") && (
+                      {editable && desktop && !s.id.startsWith("#") && (
                         <button
                           type="button"
                           className="ui-btn ui-btn--ghost ui-btn--small"
@@ -916,6 +943,7 @@ export function ExecutionPanel({
                   data-testid="exec-notes"
                 />
               </label>
+              {desktop ? (
               <div className="ex-result__files">
                 <button
                   type="button"
@@ -947,6 +975,11 @@ export function ExecutionPanel({
                 </button>
                 <span className="tp-field__hint">{t("execution.captureHint")}</span>
               </div>
+              ) : (
+                <p className="tp-field__hint ex-result__files" data-testid="exec-attach-desktop-only">
+                  <Paperclip size={14} aria-hidden="true" /> {t("execution.web.attachmentsDesktopOnly")}
+                </p>
+              )}
               {draftFiles.some((a) => !a.stepId) && (
                 <ul className="ex-files" aria-label={t("execution.resultFiles")}>
                   {draftFiles.filter((a) => !a.stepId).map((a) => fileChip(a, true))}
@@ -981,7 +1014,7 @@ export function ExecutionPanel({
               </div>
               {draft && (
                 <p className="tp-field__hint" aria-live="polite">
-                  {t("execution.draftKept")}
+                  {desktop ? t("execution.draftKept") : t("execution.web.draftKept")}
                 </p>
               )}
             </div>
@@ -1015,7 +1048,7 @@ export function ExecutionPanel({
         {announce}
       </p>
 
-      {help && <ShortcutsDialog onClose={() => setHelp(false)} />}
+      {help && <ShortcutsDialog paste={desktop} onClose={() => setHelp(false)} />}
       {discarding && (
         <Dialog className="cd" label={t("execution.discardTitle")} onClose={() => setDiscarding(false)}>
           <h3 className="cd__title">{t("execution.discardTitle")}</h3>
@@ -1132,9 +1165,9 @@ function Attempts({
   );
 }
 
-function ShortcutsDialog({ onClose }: { onClose: () => void }) {
+function ShortcutsDialog({ paste, onClose }: { paste: boolean; onClose: () => void }) {
   const { t } = useTranslation();
-  const rows: [string, string][] = [
+  const all: [string, string][] = [
     ["P", t("execution.keys.pass")],
     ["F", t("execution.keys.fail")],
     ["B", t("execution.keys.blocked")],
@@ -1148,6 +1181,8 @@ function ShortcutsDialog({ onClose }: { onClose: () => void }) {
     ["Ctrl+Shift+N", t("execution.keys.nextItem")],
     ["?", t("execution.keys.help")],
   ];
+  // Pasting a capture attaches a file: desktop only (SYNC-04b).
+  const rows = paste ? all : all.filter(([k]) => k !== "Ctrl+V");
   return (
     <Dialog className="cd" label={t("execution.shortcuts")} onClose={onClose}>
       <h3 className="cd__title">{t("execution.shortcuts")}</h3>
@@ -1183,8 +1218,11 @@ function extOf(mime: string): string {
 function errorText(e: unknown, t: (k: string, o?: Record<string, unknown>) => string): string {
   const raw = e instanceof Error ? e.message : String(e);
   if (raw.startsWith("run-closed")) return t("execution.error.closed");
+  if (raw.startsWith("run-deleted")) return t("execution.error.runDeleted");
   if (raw.startsWith("evidence-too-large")) return t("execution.error.tooLarge");
   if (raw.startsWith("draft-too-large")) return t("execution.error.draftTooLarge");
+  if (raw.startsWith("draft-unavailable")) return t("execution.web.draftUnavailable");
+  if (raw.startsWith("item-overlap")) return t("execution.error.overlap");
   if (raw.startsWith("target-") || raw.includes("not in that flow"))
     return t("execution.error.target");
   return t("execution.error.generic");

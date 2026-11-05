@@ -208,6 +208,24 @@ chapter("proyectos", () => {
     },
   });
 
+  step("campo-defecto", {
+    title: "Campos de los defectos",
+    caption: "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
+    covers: ["action:custom-field-defect"],
+    run: async () => {
+      const card = $('[data-testid="custom-fields-card"]');
+      await card.scrollIntoView();
+      await card.$('[data-testid="custom-fields-entity"] [data-value="defect"]').click();
+      await waitForText(es.customFields.emptyDefect.slice(0, 30));
+      await card.$(`button=${es.customFields.new}`).click();
+      await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Cliente afectado");
+      await dialog().$(`button=${es.customFields.dialog.create}`).click();
+      await waitForText(tf("customFields.savedToast", { label: "Cliente afectado" }));
+      await expect(card.$(hasText("Cliente afectado"))).toBeDisplayed();
+      await card.scrollIntoView();
+    },
+  });
+
   step("configuracion-nueva", {
     title: "Nueva configuración",
     caption: "En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",

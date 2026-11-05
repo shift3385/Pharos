@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { act, screen, within } from "@testing-library/react";
 import { Link, useLocation } from "react-router";
 import userEvent from "@testing-library/user-event";

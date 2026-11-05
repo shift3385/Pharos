@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import "@test/slow";
 import ExcelJS from "exceljs";
 import i18n from "i18next";
 import "@shared/i18n";

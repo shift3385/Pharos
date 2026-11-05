@@ -12,6 +12,7 @@ import {
   type CaseType,
   type CustomField,
   type CustomFieldInput,
+  type FieldEntity,
   type FieldOption,
   type FieldType,
 } from "../model/types";
@@ -42,6 +43,7 @@ const withOptions = (t: FieldType) => t === "select" || t === "multi_select";
  *  it is saved, since cases may hold it. */
 export function CustomFieldDialog({
   field,
+  entity = "test_case",
   takenKeys,
   projectId,
   userId,
@@ -49,6 +51,8 @@ export function CustomFieldDialog({
   onCancel,
 }: {
   field: CustomField | null;
+  /** The entity of a new field (FLD-03); an edited field keeps its own. */
+  entity?: FieldEntity;
   /** Keys the project already has (archived ones too). */
   takenKeys: string[];
   projectId: string;
@@ -59,6 +63,9 @@ export function CustomFieldDialog({
   const { t } = useTranslation();
   const id = useId();
   const isNew = field === null;
+  const fieldEntity = field?.entity ?? entity;
+  // Only a test case has a case type (FLD-01); other entities apply to all.
+  const forCases = fieldEntity === "test_case";
   const [start] = useState<Draft>(() => ({
     label: field?.label ?? "",
     fieldKey: field?.fieldKey ?? "",
@@ -130,7 +137,7 @@ export function CustomFieldDialog({
     try {
       await onSave({
         projectId,
-        entity: "test_case",
+        entity: fieldEntity,
         fieldKey: key,
         label: draft.label.trim(),
         description: draft.description.trim(),
@@ -140,7 +147,8 @@ export function CustomFieldDialog({
           : [],
         required: draft.required,
         defaultValue: draft.defaultValue ?? null,
-        appliesToCaseTypes: draft.applies === "all" ? null : [draft.applies],
+        appliesToCaseTypes:
+          !forCases || draft.applies === "all" ? null : [draft.applies],
         userId,
       });
     } finally {
@@ -183,7 +191,7 @@ export function CustomFieldDialog({
     ...(field ?? {
       id: "",
       projectId,
-      entity: "test_case",
+      entity: fieldEntity,
       position: 0,
       archivedAt: null,
       createdAt: "",
@@ -445,22 +453,27 @@ export function CustomFieldDialog({
           </FormField>
         )}
 
-        <div className="tp-field">
-          <span className="tp-field__label" aria-hidden="true">
-            {t("customFields.appliesTo")}
-          </span>
-          <SegmentedControl<Applies>
-            label={t("customFields.appliesTo")}
-            size="sm"
-            value={draft.applies}
-            onChange={(applies) => set({ applies })}
-            options={[
-              { value: "all", label: t("customFields.appliesAll") },
-              { value: "standard", label: t("customFields.appliesStandard") },
-              { value: "checklist", label: t("customFields.appliesChecklist") },
-            ]}
-          />
-        </div>
+        {forCases && (
+          <div className="tp-field">
+            <span className="tp-field__label" aria-hidden="true">
+              {t("customFields.appliesTo")}
+            </span>
+            <SegmentedControl<Applies>
+              label={t("customFields.appliesTo")}
+              size="sm"
+              value={draft.applies}
+              onChange={(applies) => set({ applies })}
+              options={[
+                { value: "all", label: t("customFields.appliesAll") },
+                { value: "standard", label: t("customFields.appliesStandard") },
+                {
+                  value: "checklist",
+                  label: t("customFields.appliesChecklist"),
+                },
+              ]}
+            />
+          </div>
+        )}
 
         <div className="cf-dialog__switch">
           <Switch

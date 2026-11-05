@@ -20,7 +20,8 @@ const enc = encodeURIComponent;
 
 // The desktop reads and writes its encrypted local store (`cycles.rs`); the
 // web is a client of the server, which applies the same rules (BASE-10).
-// «Ejecutar» creates runs, which only the desktop has (`canExecute`).
+// «Ejecutar» creates the runs on either side (`cycle_execute`, or
+// `/api/cycles/:id/execute` on the web since EJE-06).
 // `userId` is the signed-in user: only cycles of projects that user owns are
 // returned or changed (on the web the server takes it from the session).
 export const configurationApi = {
@@ -45,8 +46,6 @@ export const configurationApi = {
 };
 
 export const cycleApi = {
-  /** Runs are created on the desktop only (EJE-02 brings them to the web). */
-  canExecute: () => isTauri(),
   list: (projectId: string, userId: string): Promise<CycleSummary[]> =>
     isTauri() ? invoke("cycle_list", { projectId, userId }) : serverApi.get(`/api/cycles?projectId=${enc(projectId)}`),
   get: (id: string, userId: string): Promise<TestCycle | null> =>
@@ -90,7 +89,9 @@ export const cycleApi = {
       ? invoke("cycle_items_reorder", { cycleId, ids, userId })
       : serverApi.post(`/api/cycles/${enc(cycleId)}/items/reorder`, { ids }),
   execute: (cycleId: string, input: ExecuteInput): Promise<ExecuteResult> =>
-    invoke("cycle_execute", { cycleId, input }),
+    isTauri()
+      ? invoke("cycle_execute", { cycleId, input })
+      : serverApi.post(`/api/cycles/${enc(cycleId)}/execute`, input),
   runs: (cycleId: string, userId: string): Promise<CycleRun[]> =>
     isTauri() ? invoke("cycle_runs", { cycleId, userId }) : serverApi.get(`/api/cycles/${enc(cycleId)}/runs`),
   progress: (cycleId: string, userId: string): Promise<CycleProgress | null> =>

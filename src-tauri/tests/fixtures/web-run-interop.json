@@ -1,0 +1,1623 @@
+{
+  "$comment": "A run executed on the web reads the same on the desktop, and the other way round (EJE-06). Both sides start from `project` and `cases` (pulled documents, revision 1), create `run` with `items` and record `attempts`; what each side then stores, normalized (`normalize`), must equal `documents`. Then each side applies `documents` as pulled documents and its run screen must equal `views` (normalized the same way). Read by src-tauri/src/runs/web_vectors_tests.rs and server/tests/runs.test.ts. `normalize`: ids made by each side are replaced by the names here, in creation order (the run by `run`, items by position, step results by `<result id>:<position>`); the listed bookkeeping keys (clock, author, local workspace and times written at save) become \"*\". The third case is a legacy one (plain-text steps, written by an older client) with a custom field: both sides derive the same step ids for it. `pulledOnly` is an imported run (shard and result, linked by its tag) that only the desktop writes: both sides read it the same in `views.importedResults`.",
+  "normalize": {
+    "keys": [
+      "workspaceId",
+      "createdAt",
+      "updatedAt",
+      "createdBy",
+      "executedBy",
+      "hlc",
+      "runKey"
+    ],
+    "runStartedAt": true
+  },
+  "project": {
+    "id": "p-interop",
+    "name": "Checkout",
+    "caseIdPrefix": "TC-",
+    "caseIdDigits": 3
+  },
+  "cases": [
+    {
+      "id": "c-outline",
+      "workspaceId": "local",
+      "projectId": "p-interop",
+      "scenarioId": "TC-001",
+      "title": "Pagar",
+      "version": "1.0",
+      "status": "approved",
+      "priority": "high",
+      "caseType": null,
+      "automationStatus": null,
+      "author": "Ada",
+      "data": {
+        "gherkinLevel": "advanced",
+        "background": [
+          {
+            "id": "bg1",
+            "text": "logged in"
+          }
+        ],
+        "steps": [
+          {
+            "id": "b1",
+            "text": "pay as <user>"
+          }
+        ],
+        "examples": {
+          "headers": [
+            "user"
+          ],
+          "rows": [
+            {
+              "id": "r1",
+              "values": [
+                "ana"
+              ]
+            },
+            {
+              "id": "r2",
+              "values": [
+                "bo"
+              ]
+            }
+          ]
+        },
+        "flows": [
+          {
+            "id": "f1",
+            "name": "Refund",
+            "steps": [
+              {
+                "id": "fs1",
+                "text": "refund"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-11-05 09:00:00",
+      "updatedAt": "2026-11-05 09:00:00"
+    },
+    {
+      "id": "c-simple",
+      "workspaceId": "local",
+      "projectId": "p-interop",
+      "scenarioId": "TC-002",
+      "title": "Abrir",
+      "version": "1.0",
+      "status": "approved",
+      "priority": "medium",
+      "caseType": null,
+      "automationStatus": null,
+      "author": "Ada",
+      "data": {
+        "steps": [
+          {
+            "id": "s1",
+            "text": "open"
+          },
+          {
+            "id": "s2",
+            "text": "check"
+          }
+        ]
+      },
+      "createdAt": "2026-11-05 09:00:00",
+      "updatedAt": "2026-11-05 09:00:00"
+    },
+    {
+      "id": "c-legacy",
+      "workspaceId": "local",
+      "projectId": "p-interop",
+      "scenarioId": "TC-003",
+      "title": "Devolver",
+      "version": "1.0",
+      "status": "approved",
+      "priority": "low",
+      "caseType": null,
+      "automationStatus": null,
+      "author": "Ada",
+      "data": {
+        "steps": [
+          "open the order",
+          "ask for a refund"
+        ],
+        "custom": {
+          "cf-area": "pagos"
+        }
+      },
+      "createdAt": "2026-11-05 09:00:00",
+      "updatedAt": "2026-11-05 09:00:00"
+    }
+  ],
+  "run": {
+    "projectId": "p-interop",
+    "title": "Interop",
+    "environment": "qa",
+    "build": "1.0"
+  },
+  "items": [
+    {
+      "testCaseId": "c-outline"
+    },
+    {
+      "testCaseId": "c-simple"
+    },
+    {
+      "testCaseId": "c-legacy"
+    }
+  ],
+  "attempts": [
+    {
+      "item": 0,
+      "input": {
+        "attemptId": "a0000000-0000-4000-8000-000000000001",
+        "exampleRowId": "r1",
+        "status": "failed",
+        "durationMs": 1500,
+        "startedAt": "2026-11-05T10:00:00.000Z",
+        "finishedAt": "2026-11-05T10:00:01.500Z",
+        "errorMessage": "declined",
+        "attributes": {
+          "notes": "tarjeta rechazada"
+        },
+        "steps": [
+          {
+            "stepId": "bg1",
+            "text": "logged in",
+            "status": "passed"
+          },
+          {
+            "stepId": "b1",
+            "text": "pay as ana",
+            "status": "failed",
+            "actual": "declined"
+          }
+        ]
+      }
+    },
+    {
+      "item": 0,
+      "input": {
+        "attemptId": "a0000000-0000-4000-8000-000000000002",
+        "exampleRowId": "r1",
+        "status": "passed",
+        "durationMs": 900,
+        "startedAt": "2026-11-05T10:05:00.000Z",
+        "finishedAt": "2026-11-05T10:05:00.900Z",
+        "attributes": {},
+        "steps": [
+          {
+            "stepId": "bg1",
+            "text": "logged in",
+            "status": "passed"
+          },
+          {
+            "stepId": "b1",
+            "text": "pay as ana",
+            "status": "passed"
+          }
+        ]
+      }
+    },
+    {
+      "item": 0,
+      "input": {
+        "attemptId": "a0000000-0000-4000-8000-000000000003",
+        "flowId": "f1",
+        "status": "blocked",
+        "startedAt": "2026-11-05T10:06:00.000Z",
+        "finishedAt": "2026-11-05T10:06:30.000Z",
+        "attributes": {},
+        "steps": [
+          {
+            "stepId": "bg1",
+            "text": "logged in",
+            "status": "passed"
+          },
+          {
+            "stepId": "fs1",
+            "text": "refund",
+            "status": "blocked",
+            "actual": "no refund button"
+          }
+        ]
+      }
+    },
+    {
+      "item": 1,
+      "input": {
+        "attemptId": "a0000000-0000-4000-8000-000000000004",
+        "status": "passed",
+        "startedAt": "2026-11-05T10:07:00.000Z",
+        "finishedAt": "2026-11-05T10:07:10.000Z",
+        "attributes": {},
+        "steps": [
+          {
+            "stepId": "s1",
+            "text": "open",
+            "status": "passed"
+          },
+          {
+            "stepId": "s2",
+            "text": "check",
+            "status": "passed"
+          }
+        ]
+      }
+    },
+    {
+      "item": 2,
+      "input": {
+        "attemptId": "a0000000-0000-4000-8000-000000000005",
+        "status": "failed",
+        "startedAt": "2026-11-05T10:08:00.000Z",
+        "finishedAt": "2026-11-05T10:08:20.000Z",
+        "errorMessage": "no refund",
+        "attributes": {},
+        "steps": [
+          {
+            "text": "open the order",
+            "status": "passed"
+          },
+          {
+            "text": "ask for a refund",
+            "status": "failed",
+            "actual": "no refund"
+          }
+        ]
+      }
+    }
+  ],
+  "pulledOnly": [
+    {
+      "entity": "run",
+      "entityId": "run-imp",
+      "payload": {
+        "id": "run-imp",
+        "workspaceId": "local",
+        "projectId": "p-interop",
+        "runKey": "RUN-090",
+        "title": "CI nightly",
+        "trigger": "import",
+        "sourceTool": "playwright",
+        "sourceToolVersion": "1.48.0",
+        "testPlanId": null,
+        "cycleId": null,
+        "configurationId": null,
+        "environment": "ci",
+        "build": "1.0",
+        "commitSha": null,
+        "branch": null,
+        "repositoryUrl": null,
+        "ciUrl": null,
+        "dataset": null,
+        "context": {},
+        "status": "completed",
+        "startedAt": "2026-11-05T08:00:00.000Z",
+        "finishedAt": "2026-11-05T08:05:00.000Z",
+        "summary": {},
+        "data": {},
+        "createdAt": "2026-11-05 08:00:00",
+        "updatedAt": "2026-11-05 08:05:00",
+        "revision": 1
+      }
+    },
+    {
+      "entity": "run_shard",
+      "entityId": "shard-imp",
+      "payload": {
+        "id": "shard-imp",
+        "workspaceId": "local",
+        "projectId": "p-interop",
+        "runId": "run-imp",
+        "shardIndex": 0,
+        "shardTotal": 1,
+        "sourceFormat": "ctrf",
+        "sourceFileSha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "sourceAttachmentId": null,
+        "formatVersion": "1.0.0",
+        "normalizerVersion": 1,
+        "importedBy": "user-a",
+        "importedAt": "2026-11-05 08:05:00",
+        "hlc": "000000000000280-00000-desk"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "res-imp",
+      "payload": {
+        "id": "res-imp",
+        "workspaceId": "local",
+        "projectId": "p-interop",
+        "runId": "run-imp",
+        "shardId": "shard-imp",
+        "runItemId": null,
+        "testKey": "checkout.spec.ts > opens",
+        "testCaseId": null,
+        "testCaseRevisionId": null,
+        "caseRevision": null,
+        "caseKey": null,
+        "flowId": null,
+        "exampleRowId": null,
+        "exampleRow": null,
+        "exampleValues": null,
+        "configurationId": null,
+        "configurationLabel": null,
+        "attempt": 0,
+        "status": "failed",
+        "rawStatus": "failed",
+        "durationMs": 1200,
+        "startedAt": "2026-11-05T08:01:00.000Z",
+        "finishedAt": "2026-11-05T08:01:01.200Z",
+        "errorMessage": "timeout",
+        "errorTrace": null,
+        "executedBy": "tool:playwright",
+        "externalId": null,
+        "attributes": {
+          "tags": [
+            "@TC-002"
+          ],
+          "name": "opens",
+          "suite": [
+            "checkout.spec.ts"
+          ]
+        },
+        "createdBy": "user-a",
+        "createdAt": "2026-11-05 08:05:00",
+        "hlc": "000000000000281-00000-desk",
+        "steps": []
+      }
+    }
+  ],
+  "documents": [
+    {
+      "entity": "test_case_revision",
+      "entityId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+      "payload": {
+        "id": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+        "hlc": "000000000000301-00000-web",
+        "data": {
+          "flows": [
+            {
+              "id": "f1",
+              "name": "Refund",
+              "steps": [
+                {
+                  "id": "fs1",
+                  "text": "refund"
+                }
+              ]
+            }
+          ],
+          "steps": [
+            {
+              "id": "b1",
+              "text": "pay as <user>"
+            }
+          ],
+          "examples": {
+            "rows": [
+              {
+                "id": "r1",
+                "values": [
+                  "ana"
+                ]
+              },
+              {
+                "id": "r2",
+                "values": [
+                  "bo"
+                ]
+              }
+            ],
+            "headers": [
+              "user"
+            ]
+          },
+          "background": [
+            {
+              "id": "bg1",
+              "text": "logged in"
+            }
+          ],
+          "gherkinLevel": "advanced"
+        },
+        "title": "Pagar",
+        "status": "approved",
+        "version": "1.0",
+        "caseType": null,
+        "priority": "high",
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:01",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "scenarioId": "TC-001",
+        "testCaseId": "c-outline",
+        "workspaceId": "local",
+        "contentSha256": "601e449fc510dc99b5b9dfdf42efa80d9c499b11ad25fb1619d27be392c673fc",
+        "automationStatus": null
+      }
+    },
+    {
+      "entity": "test_case_revision",
+      "entityId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+      "payload": {
+        "id": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+        "hlc": "000000000000302-00000-web",
+        "data": {
+          "steps": [
+            {
+              "id": "s1",
+              "text": "open"
+            },
+            {
+              "id": "s2",
+              "text": "check"
+            }
+          ]
+        },
+        "title": "Abrir",
+        "status": "approved",
+        "version": "1.0",
+        "caseType": null,
+        "priority": "medium",
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:02",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "scenarioId": "TC-002",
+        "testCaseId": "c-simple",
+        "workspaceId": "local",
+        "contentSha256": "450ea55bcc110af52e75dbe6457f0f781582acfe855cd46f4e1d3d1e40a2eb50",
+        "automationStatus": null
+      }
+    },
+    {
+      "entity": "test_case_revision",
+      "entityId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+      "payload": {
+        "id": "713ccbcc-acef-59a0-9582-aaad890884aa",
+        "hlc": "000000000000303-00000-web",
+        "data": {
+          "steps": [
+            {
+              "id": "818C91YA",
+              "text": "open the order"
+            },
+            {
+              "id": "K3H6NRQ6",
+              "text": "ask for a refund"
+            }
+          ],
+          "custom": {
+            "cf-area": "pagos"
+          }
+        },
+        "title": "Devolver",
+        "status": "approved",
+        "version": "1.0",
+        "caseType": null,
+        "priority": "low",
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:03",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "scenarioId": "TC-003",
+        "testCaseId": "c-legacy",
+        "workspaceId": "local",
+        "contentSha256": "6f8a600cc2a7587dc940a8fc47309ddcbea165d97cd87e13db215c3118389820",
+        "automationStatus": null
+      }
+    },
+    {
+      "entity": "run",
+      "entityId": "run",
+      "payload": {
+        "id": "run",
+        "data": {},
+        "build": "1.0",
+        "ciUrl": null,
+        "title": "Interop",
+        "branch": null,
+        "runKey": "RUN-001",
+        "status": "in_progress",
+        "context": {},
+        "cycleId": null,
+        "dataset": null,
+        "summary": {},
+        "trigger": "manual",
+        "revision": 1,
+        "commitSha": null,
+        "createdAt": "2026-11-05 10:00:04",
+        "projectId": "p-interop",
+        "startedAt": "2026-11-05T09:59:00.000Z",
+        "updatedAt": "2026-11-05 10:00:04",
+        "finishedAt": null,
+        "sourceTool": null,
+        "testPlanId": null,
+        "environment": "qa",
+        "workspaceId": "local",
+        "repositoryUrl": null,
+        "configurationId": null,
+        "sourceToolVersion": null
+      }
+    },
+    {
+      "entity": "run_item",
+      "entityId": "item-0",
+      "payload": {
+        "id": "item-0",
+        "runId": "run",
+        "flowId": null,
+        "assignee": null,
+        "position": 0,
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:05",
+        "projectId": "p-interop",
+        "updatedAt": "2026-11-05 10:00:05",
+        "exampleRow": null,
+        "testCaseId": "c-outline",
+        "workspaceId": "local",
+        "exampleRowId": null,
+        "configurationId": null,
+        "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9"
+      }
+    },
+    {
+      "entity": "run_item",
+      "entityId": "item-1",
+      "payload": {
+        "id": "item-1",
+        "runId": "run",
+        "flowId": null,
+        "assignee": null,
+        "position": 1,
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:06",
+        "projectId": "p-interop",
+        "updatedAt": "2026-11-05 10:00:06",
+        "exampleRow": null,
+        "testCaseId": "c-simple",
+        "workspaceId": "local",
+        "exampleRowId": null,
+        "configurationId": null,
+        "testCaseRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9"
+      }
+    },
+    {
+      "entity": "run_item",
+      "entityId": "item-2",
+      "payload": {
+        "id": "item-2",
+        "runId": "run",
+        "flowId": null,
+        "assignee": null,
+        "position": 2,
+        "revision": 1,
+        "createdAt": "2026-11-05 10:00:07",
+        "projectId": "p-interop",
+        "updatedAt": "2026-11-05 10:00:07",
+        "exampleRow": null,
+        "testCaseId": "c-legacy",
+        "workspaceId": "local",
+        "exampleRowId": null,
+        "configurationId": null,
+        "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "a0000000-0000-4000-8000-000000000001",
+      "payload": {
+        "id": "a0000000-0000-4000-8000-000000000001",
+        "hlc": "000000000000308-00000-web",
+        "runId": "run",
+        "steps": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000001:0",
+            "text": "logged in",
+            "actual": null,
+            "status": "passed",
+            "stepId": "bg1",
+            "keyword": null,
+            "position": 0,
+            "durationMs": null,
+            "gherkinLine": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000001:1",
+            "text": "pay as ana",
+            "actual": "declined",
+            "status": "failed",
+            "stepId": "b1",
+            "keyword": null,
+            "position": 1,
+            "durationMs": null,
+            "gherkinLine": null
+          }
+        ],
+        "flowId": null,
+        "status": "failed",
+        "attempt": 0,
+        "caseKey": "TC-001",
+        "shardId": null,
+        "testKey": "manual:c-outline/-/r1",
+        "createdAt": "2026-11-05 10:00:08",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "rawStatus": null,
+        "runItemId": "item-0",
+        "startedAt": "2026-11-05T10:00:00.000Z",
+        "attributes": {
+          "notes": "tarjeta rechazada"
+        },
+        "durationMs": 1500,
+        "errorTrace": null,
+        "exampleRow": 0,
+        "executedBy": "user:user-a",
+        "externalId": null,
+        "finishedAt": "2026-11-05T10:00:01.500Z",
+        "testCaseId": "c-outline",
+        "workspaceId": "local",
+        "caseRevision": 1,
+        "errorMessage": "declined",
+        "exampleRowId": "r1",
+        "exampleValues": {
+          "user": "ana"
+        },
+        "configurationId": null,
+        "configurationLabel": null,
+        "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "a0000000-0000-4000-8000-000000000002",
+      "payload": {
+        "id": "a0000000-0000-4000-8000-000000000002",
+        "hlc": "000000000000309-00000-web",
+        "runId": "run",
+        "steps": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000002:0",
+            "text": "logged in",
+            "actual": null,
+            "status": "passed",
+            "stepId": "bg1",
+            "keyword": null,
+            "position": 0,
+            "durationMs": null,
+            "gherkinLine": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000002:1",
+            "text": "pay as ana",
+            "actual": null,
+            "status": "passed",
+            "stepId": "b1",
+            "keyword": null,
+            "position": 1,
+            "durationMs": null,
+            "gherkinLine": null
+          }
+        ],
+        "flowId": null,
+        "status": "passed",
+        "attempt": 1,
+        "caseKey": "TC-001",
+        "shardId": null,
+        "testKey": "manual:c-outline/-/r1",
+        "createdAt": "2026-11-05 10:00:09",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "rawStatus": null,
+        "runItemId": "item-0",
+        "startedAt": "2026-11-05T10:05:00.000Z",
+        "attributes": {},
+        "durationMs": 900,
+        "errorTrace": null,
+        "exampleRow": 0,
+        "executedBy": "user:user-a",
+        "externalId": null,
+        "finishedAt": "2026-11-05T10:05:00.900Z",
+        "testCaseId": "c-outline",
+        "workspaceId": "local",
+        "caseRevision": 1,
+        "errorMessage": null,
+        "exampleRowId": "r1",
+        "exampleValues": {
+          "user": "ana"
+        },
+        "configurationId": null,
+        "configurationLabel": null,
+        "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "a0000000-0000-4000-8000-000000000003",
+      "payload": {
+        "id": "a0000000-0000-4000-8000-000000000003",
+        "hlc": "000000000000310-00000-web",
+        "runId": "run",
+        "steps": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000003:0",
+            "text": "logged in",
+            "actual": null,
+            "status": "passed",
+            "stepId": "bg1",
+            "keyword": null,
+            "position": 0,
+            "durationMs": null,
+            "gherkinLine": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000003:1",
+            "text": "refund",
+            "actual": "no refund button",
+            "status": "blocked",
+            "stepId": "fs1",
+            "keyword": null,
+            "position": 1,
+            "durationMs": null,
+            "gherkinLine": null
+          }
+        ],
+        "flowId": "f1",
+        "status": "blocked",
+        "attempt": 0,
+        "caseKey": "TC-001",
+        "shardId": null,
+        "testKey": "manual:c-outline/f1/-",
+        "createdAt": "2026-11-05 10:00:10",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "rawStatus": null,
+        "runItemId": "item-0",
+        "startedAt": "2026-11-05T10:06:00.000Z",
+        "attributes": {},
+        "durationMs": null,
+        "errorTrace": null,
+        "exampleRow": null,
+        "executedBy": "user:user-a",
+        "externalId": null,
+        "finishedAt": "2026-11-05T10:06:30.000Z",
+        "testCaseId": "c-outline",
+        "workspaceId": "local",
+        "caseRevision": 1,
+        "errorMessage": null,
+        "exampleRowId": null,
+        "exampleValues": null,
+        "configurationId": null,
+        "configurationLabel": null,
+        "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "a0000000-0000-4000-8000-000000000004",
+      "payload": {
+        "id": "a0000000-0000-4000-8000-000000000004",
+        "hlc": "000000000000311-00000-web",
+        "runId": "run",
+        "steps": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000004:0",
+            "text": "open",
+            "actual": null,
+            "status": "passed",
+            "stepId": "s1",
+            "keyword": null,
+            "position": 0,
+            "durationMs": null,
+            "gherkinLine": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000004:1",
+            "text": "check",
+            "actual": null,
+            "status": "passed",
+            "stepId": "s2",
+            "keyword": null,
+            "position": 1,
+            "durationMs": null,
+            "gherkinLine": null
+          }
+        ],
+        "flowId": null,
+        "status": "passed",
+        "attempt": 0,
+        "caseKey": "TC-002",
+        "shardId": null,
+        "testKey": "manual:c-simple/-/-",
+        "createdAt": "2026-11-05 10:00:11",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "rawStatus": null,
+        "runItemId": "item-1",
+        "startedAt": "2026-11-05T10:07:00.000Z",
+        "attributes": {},
+        "durationMs": null,
+        "errorTrace": null,
+        "exampleRow": null,
+        "executedBy": "user:user-a",
+        "externalId": null,
+        "finishedAt": "2026-11-05T10:07:10.000Z",
+        "testCaseId": "c-simple",
+        "workspaceId": "local",
+        "caseRevision": 1,
+        "errorMessage": null,
+        "exampleRowId": null,
+        "exampleValues": null,
+        "configurationId": null,
+        "configurationLabel": null,
+        "testCaseRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9"
+      }
+    },
+    {
+      "entity": "result",
+      "entityId": "a0000000-0000-4000-8000-000000000005",
+      "payload": {
+        "id": "a0000000-0000-4000-8000-000000000005",
+        "hlc": "000000000000312-00000-web",
+        "runId": "run",
+        "steps": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000005:0",
+            "text": "open the order",
+            "actual": null,
+            "status": "passed",
+            "stepId": null,
+            "keyword": null,
+            "position": 0,
+            "durationMs": null,
+            "gherkinLine": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000005:1",
+            "text": "ask for a refund",
+            "actual": "no refund",
+            "status": "failed",
+            "stepId": null,
+            "keyword": null,
+            "position": 1,
+            "durationMs": null,
+            "gherkinLine": null
+          }
+        ],
+        "flowId": null,
+        "status": "failed",
+        "attempt": 0,
+        "caseKey": "TC-003",
+        "shardId": null,
+        "testKey": "manual:c-legacy/-/-",
+        "createdAt": "2026-11-05 10:00:12",
+        "createdBy": "user-a",
+        "projectId": "p-interop",
+        "rawStatus": null,
+        "runItemId": "item-2",
+        "startedAt": "2026-11-05T10:08:00.000Z",
+        "attributes": {},
+        "durationMs": null,
+        "errorTrace": null,
+        "exampleRow": null,
+        "executedBy": "user:user-a",
+        "externalId": null,
+        "finishedAt": "2026-11-05T10:08:20.000Z",
+        "testCaseId": "c-legacy",
+        "workspaceId": "local",
+        "caseRevision": 1,
+        "errorMessage": "no refund",
+        "exampleRowId": null,
+        "exampleValues": null,
+        "configurationId": null,
+        "configurationLabel": null,
+        "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa"
+      }
+    }
+  ],
+  "views": {
+    "overview": {
+      "run": {
+        "id": "run",
+        "projectId": "p-interop",
+        "runKey": "*",
+        "title": "Interop",
+        "trigger": "manual",
+        "sourceTool": null,
+        "sourceToolVersion": null,
+        "testPlanId": null,
+        "cycleId": null,
+        "configurationId": null,
+        "environment": "qa",
+        "build": "1.0",
+        "commitSha": null,
+        "branch": null,
+        "repositoryUrl": null,
+        "ciUrl": null,
+        "dataset": null,
+        "context": {},
+        "status": "in_progress",
+        "startedAt": "*",
+        "finishedAt": null,
+        "summary": {},
+        "data": {},
+        "createdBy": "*",
+        "createdAt": "*",
+        "updatedAt": "*",
+        "revision": 1
+      },
+      "cycleKey": null,
+      "cycleTitle": null,
+      "configurationName": null,
+      "items": [
+        {
+          "item": {
+            "id": "item-0",
+            "runId": "run",
+            "testCaseId": "c-outline",
+            "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationId": null,
+            "assignee": null,
+            "position": 0,
+            "revision": 1
+          },
+          "caseKey": "TC-001",
+          "caseTitle": "Pagar",
+          "caseDeleted": false,
+          "flowName": null,
+          "rowIndex": null,
+          "targets": 3,
+          "done": 2,
+          "status": "blocked",
+          "attempts": 3,
+          "hasDraft": false
+        },
+        {
+          "item": {
+            "id": "item-1",
+            "runId": "run",
+            "testCaseId": "c-simple",
+            "testCaseRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationId": null,
+            "assignee": null,
+            "position": 1,
+            "revision": 1
+          },
+          "caseKey": "TC-002",
+          "caseTitle": "Abrir",
+          "caseDeleted": false,
+          "flowName": null,
+          "rowIndex": null,
+          "targets": 1,
+          "done": 1,
+          "status": "passed",
+          "attempts": 1,
+          "hasDraft": false
+        },
+        {
+          "item": {
+            "id": "item-2",
+            "runId": "run",
+            "testCaseId": "c-legacy",
+            "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationId": null,
+            "assignee": null,
+            "position": 2,
+            "revision": 1
+          },
+          "caseKey": "TC-003",
+          "caseTitle": "Devolver",
+          "caseDeleted": false,
+          "flowName": null,
+          "rowIndex": null,
+          "targets": 1,
+          "done": 1,
+          "status": "failed",
+          "attempts": 1,
+          "hasDraft": false
+        }
+      ],
+      "counts": {
+        "passed": 2,
+        "failed": 1,
+        "blocked": 1,
+        "skipped": 0,
+        "other": 0,
+        "notRun": 1,
+        "total": 5
+      }
+    },
+    "items": [
+      {
+        "item": {
+          "id": "item-0",
+          "runId": "run",
+          "testCaseId": "c-outline",
+          "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+          "flowId": null,
+          "exampleRowId": null,
+          "exampleRow": null,
+          "configurationId": null,
+          "assignee": null,
+          "position": 0,
+          "revision": 1
+        },
+        "runStatus": "in_progress",
+        "caseKey": "TC-001",
+        "caseTitle": "Pagar",
+        "caseDeleted": false,
+        "frozenRevision": 1,
+        "currentRevision": 1,
+        "caseChanged": false,
+        "revision": {
+          "flows": [
+            {
+              "id": "f1",
+              "name": "Refund",
+              "steps": [
+                {
+                  "id": "fs1",
+                  "text": "refund"
+                }
+              ]
+            }
+          ],
+          "steps": [
+            {
+              "id": "b1",
+              "text": "pay as <user>"
+            }
+          ],
+          "examples": {
+            "rows": [
+              {
+                "id": "r1",
+                "values": [
+                  "ana"
+                ]
+              },
+              {
+                "id": "r2",
+                "values": [
+                  "bo"
+                ]
+              }
+            ],
+            "headers": [
+              "user"
+            ]
+          },
+          "background": [
+            {
+              "id": "bg1",
+              "text": "logged in"
+            }
+          ],
+          "gherkinLevel": "advanced"
+        },
+        "targets": [
+          {
+            "key": "-/r1",
+            "flowId": null,
+            "flowName": null,
+            "exampleRowId": "r1",
+            "exampleRow": 0,
+            "values": {
+              "user": "ana"
+            },
+            "testKey": "manual:c-outline/-/r1"
+          },
+          {
+            "key": "-/r2",
+            "flowId": null,
+            "flowName": null,
+            "exampleRowId": "r2",
+            "exampleRow": 1,
+            "values": {
+              "user": "bo"
+            },
+            "testKey": "manual:c-outline/-/r2"
+          },
+          {
+            "key": "f1/-",
+            "flowId": "f1",
+            "flowName": "Refund",
+            "exampleRowId": null,
+            "exampleRow": null,
+            "values": null,
+            "testKey": "manual:c-outline/f1/-"
+          }
+        ],
+        "results": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000001",
+            "runId": "run",
+            "shardId": null,
+            "runItemId": "item-0",
+            "testKey": "manual:c-outline/-/r1",
+            "testCaseId": "c-outline",
+            "effectiveTestCaseId": "c-outline",
+            "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "caseRevision": 1,
+            "caseKey": "TC-001",
+            "flowId": null,
+            "exampleRowId": "r1",
+            "exampleRow": 0,
+            "configurationLabel": null,
+            "attempt": 0,
+            "status": "failed",
+            "rawStatus": null,
+            "durationMs": 1500,
+            "startedAt": "2026-11-05T10:00:00.000Z",
+            "finishedAt": "2026-11-05T10:00:01.500Z",
+            "errorMessage": "declined",
+            "executedBy": "*",
+            "attributes": {
+              "notes": "tarjeta rechazada"
+            },
+            "createdAt": "*",
+            "isFinal": false,
+            "flaky": true,
+            "steps": [
+              {
+                "id": "a0000000-0000-4000-8000-000000000001:0",
+                "position": 0,
+                "stepId": "bg1",
+                "keyword": null,
+                "text": "logged in",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              },
+              {
+                "id": "a0000000-0000-4000-8000-000000000001:1",
+                "position": 1,
+                "stepId": "b1",
+                "keyword": null,
+                "text": "pay as ana",
+                "status": "failed",
+                "actual": "declined",
+                "durationMs": null,
+                "gherkinLine": null
+              }
+            ],
+            "effectiveRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "effectiveCaseRevision": 1,
+            "effectiveFlowId": null,
+            "effectiveExampleRowId": "r1",
+            "effectiveRunItemId": "item-0",
+            "effectiveStepIds": [
+              "bg1",
+              "b1"
+            ],
+            "linkReason": null,
+            "caseDeleted": false,
+            "effectiveConfigurationId": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000002",
+            "runId": "run",
+            "shardId": null,
+            "runItemId": "item-0",
+            "testKey": "manual:c-outline/-/r1",
+            "testCaseId": "c-outline",
+            "effectiveTestCaseId": "c-outline",
+            "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "caseRevision": 1,
+            "caseKey": "TC-001",
+            "flowId": null,
+            "exampleRowId": "r1",
+            "exampleRow": 0,
+            "configurationLabel": null,
+            "attempt": 1,
+            "status": "passed",
+            "rawStatus": null,
+            "durationMs": 900,
+            "startedAt": "2026-11-05T10:05:00.000Z",
+            "finishedAt": "2026-11-05T10:05:00.900Z",
+            "errorMessage": null,
+            "executedBy": "*",
+            "attributes": {},
+            "createdAt": "*",
+            "isFinal": true,
+            "flaky": true,
+            "steps": [
+              {
+                "id": "a0000000-0000-4000-8000-000000000002:0",
+                "position": 0,
+                "stepId": "bg1",
+                "keyword": null,
+                "text": "logged in",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              },
+              {
+                "id": "a0000000-0000-4000-8000-000000000002:1",
+                "position": 1,
+                "stepId": "b1",
+                "keyword": null,
+                "text": "pay as ana",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              }
+            ],
+            "effectiveRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "effectiveCaseRevision": 1,
+            "effectiveFlowId": null,
+            "effectiveExampleRowId": "r1",
+            "effectiveRunItemId": "item-0",
+            "effectiveStepIds": [
+              "bg1",
+              "b1"
+            ],
+            "linkReason": null,
+            "caseDeleted": false,
+            "effectiveConfigurationId": null
+          },
+          {
+            "id": "a0000000-0000-4000-8000-000000000003",
+            "runId": "run",
+            "shardId": null,
+            "runItemId": "item-0",
+            "testKey": "manual:c-outline/f1/-",
+            "testCaseId": "c-outline",
+            "effectiveTestCaseId": "c-outline",
+            "testCaseRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "caseRevision": 1,
+            "caseKey": "TC-001",
+            "flowId": "f1",
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationLabel": null,
+            "attempt": 0,
+            "status": "blocked",
+            "rawStatus": null,
+            "durationMs": null,
+            "startedAt": "2026-11-05T10:06:00.000Z",
+            "finishedAt": "2026-11-05T10:06:30.000Z",
+            "errorMessage": null,
+            "executedBy": "*",
+            "attributes": {},
+            "createdAt": "*",
+            "isFinal": true,
+            "flaky": false,
+            "steps": [
+              {
+                "id": "a0000000-0000-4000-8000-000000000003:0",
+                "position": 0,
+                "stepId": "bg1",
+                "keyword": null,
+                "text": "logged in",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              },
+              {
+                "id": "a0000000-0000-4000-8000-000000000003:1",
+                "position": 1,
+                "stepId": "fs1",
+                "keyword": null,
+                "text": "refund",
+                "status": "blocked",
+                "actual": "no refund button",
+                "durationMs": null,
+                "gherkinLine": null
+              }
+            ],
+            "effectiveRevisionId": "619eee33-6886-5a85-8edf-adcf7cda1ff9",
+            "effectiveCaseRevision": 1,
+            "effectiveFlowId": "f1",
+            "effectiveExampleRowId": null,
+            "effectiveRunItemId": "item-0",
+            "effectiveStepIds": [
+              "bg1",
+              "fs1"
+            ],
+            "linkReason": null,
+            "caseDeleted": false,
+            "effectiveConfigurationId": null
+          }
+        ],
+        "attachments": [],
+        "draft": null
+      },
+      {
+        "item": {
+          "id": "item-1",
+          "runId": "run",
+          "testCaseId": "c-simple",
+          "testCaseRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+          "flowId": null,
+          "exampleRowId": null,
+          "exampleRow": null,
+          "configurationId": null,
+          "assignee": null,
+          "position": 1,
+          "revision": 1
+        },
+        "runStatus": "in_progress",
+        "caseKey": "TC-002",
+        "caseTitle": "Abrir",
+        "caseDeleted": false,
+        "frozenRevision": 1,
+        "currentRevision": 1,
+        "caseChanged": false,
+        "revision": {
+          "steps": [
+            {
+              "id": "s1",
+              "text": "open"
+            },
+            {
+              "id": "s2",
+              "text": "check"
+            }
+          ]
+        },
+        "targets": [
+          {
+            "key": "-/-",
+            "flowId": null,
+            "flowName": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "values": null,
+            "testKey": "manual:c-simple/-/-"
+          }
+        ],
+        "results": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000004",
+            "runId": "run",
+            "shardId": null,
+            "runItemId": "item-1",
+            "testKey": "manual:c-simple/-/-",
+            "testCaseId": "c-simple",
+            "effectiveTestCaseId": "c-simple",
+            "testCaseRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+            "caseRevision": 1,
+            "caseKey": "TC-002",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationLabel": null,
+            "attempt": 0,
+            "status": "passed",
+            "rawStatus": null,
+            "durationMs": null,
+            "startedAt": "2026-11-05T10:07:00.000Z",
+            "finishedAt": "2026-11-05T10:07:10.000Z",
+            "errorMessage": null,
+            "executedBy": "*",
+            "attributes": {},
+            "createdAt": "*",
+            "isFinal": true,
+            "flaky": false,
+            "steps": [
+              {
+                "id": "a0000000-0000-4000-8000-000000000004:0",
+                "position": 0,
+                "stepId": "s1",
+                "keyword": null,
+                "text": "open",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              },
+              {
+                "id": "a0000000-0000-4000-8000-000000000004:1",
+                "position": 1,
+                "stepId": "s2",
+                "keyword": null,
+                "text": "check",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              }
+            ],
+            "effectiveRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+            "effectiveCaseRevision": 1,
+            "effectiveFlowId": null,
+            "effectiveExampleRowId": null,
+            "effectiveRunItemId": "item-1",
+            "effectiveStepIds": [
+              "s1",
+              "s2"
+            ],
+            "linkReason": null,
+            "caseDeleted": false,
+            "effectiveConfigurationId": null
+          }
+        ],
+        "attachments": [],
+        "draft": null
+      },
+      {
+        "item": {
+          "id": "item-2",
+          "runId": "run",
+          "testCaseId": "c-legacy",
+          "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+          "flowId": null,
+          "exampleRowId": null,
+          "exampleRow": null,
+          "configurationId": null,
+          "assignee": null,
+          "position": 2,
+          "revision": 1
+        },
+        "runStatus": "in_progress",
+        "caseKey": "TC-003",
+        "caseTitle": "Devolver",
+        "caseDeleted": false,
+        "frozenRevision": 1,
+        "currentRevision": 1,
+        "caseChanged": false,
+        "revision": {
+          "steps": [
+            {
+              "id": "818C91YA",
+              "text": "open the order"
+            },
+            {
+              "id": "K3H6NRQ6",
+              "text": "ask for a refund"
+            }
+          ],
+          "custom": {
+            "cf-area": "pagos"
+          }
+        },
+        "targets": [
+          {
+            "key": "-/-",
+            "flowId": null,
+            "flowName": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "values": null,
+            "testKey": "manual:c-legacy/-/-"
+          }
+        ],
+        "results": [
+          {
+            "id": "a0000000-0000-4000-8000-000000000005",
+            "runId": "run",
+            "shardId": null,
+            "runItemId": "item-2",
+            "testKey": "manual:c-legacy/-/-",
+            "testCaseId": "c-legacy",
+            "effectiveTestCaseId": "c-legacy",
+            "testCaseRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+            "caseRevision": 1,
+            "caseKey": "TC-003",
+            "flowId": null,
+            "exampleRowId": null,
+            "exampleRow": null,
+            "configurationLabel": null,
+            "attempt": 0,
+            "status": "failed",
+            "rawStatus": null,
+            "durationMs": null,
+            "startedAt": "2026-11-05T10:08:00.000Z",
+            "finishedAt": "2026-11-05T10:08:20.000Z",
+            "errorMessage": "no refund",
+            "executedBy": "*",
+            "attributes": {},
+            "createdAt": "*",
+            "isFinal": true,
+            "flaky": false,
+            "steps": [
+              {
+                "id": "a0000000-0000-4000-8000-000000000005:0",
+                "position": 0,
+                "stepId": null,
+                "keyword": null,
+                "text": "open the order",
+                "status": "passed",
+                "actual": null,
+                "durationMs": null,
+                "gherkinLine": null
+              },
+              {
+                "id": "a0000000-0000-4000-8000-000000000005:1",
+                "position": 1,
+                "stepId": null,
+                "keyword": null,
+                "text": "ask for a refund",
+                "status": "failed",
+                "actual": "no refund",
+                "durationMs": null,
+                "gherkinLine": null
+              }
+            ],
+            "effectiveRevisionId": "713ccbcc-acef-59a0-9582-aaad890884aa",
+            "effectiveCaseRevision": 1,
+            "effectiveFlowId": null,
+            "effectiveExampleRowId": null,
+            "effectiveRunItemId": "item-2",
+            "effectiveStepIds": [
+              null,
+              null
+            ],
+            "linkReason": null,
+            "caseDeleted": false,
+            "effectiveConfigurationId": null
+          }
+        ],
+        "attachments": [],
+        "draft": null
+      }
+    ],
+    "importedResults": [
+      {
+        "id": "res-imp",
+        "runId": "run-imp",
+        "shardId": "shard-imp",
+        "runItemId": null,
+        "testKey": "checkout.spec.ts > opens",
+        "testCaseId": null,
+        "effectiveTestCaseId": "c-simple",
+        "testCaseRevisionId": null,
+        "caseRevision": null,
+        "caseKey": null,
+        "flowId": null,
+        "exampleRowId": null,
+        "exampleRow": null,
+        "configurationLabel": null,
+        "attempt": 0,
+        "status": "failed",
+        "rawStatus": "failed",
+        "durationMs": 1200,
+        "startedAt": "2026-11-05T08:01:00.000Z",
+        "finishedAt": "2026-11-05T08:01:01.200Z",
+        "errorMessage": "timeout",
+        "executedBy": "*",
+        "attributes": {
+          "name": "opens",
+          "tags": [
+            "@TC-002"
+          ],
+          "suite": [
+            "checkout.spec.ts"
+          ]
+        },
+        "createdAt": "*",
+        "isFinal": true,
+        "flaky": false,
+        "steps": [],
+        "effectiveRevisionId": "10e0b607-d22a-5bc1-9602-14403c7617a9",
+        "effectiveCaseRevision": 1,
+        "effectiveFlowId": null,
+        "effectiveExampleRowId": null,
+        "effectiveRunItemId": null,
+        "effectiveStepIds": [],
+        "linkReason": null,
+        "caseDeleted": false,
+        "effectiveConfigurationId": null
+      }
+    ]
+  }
+}

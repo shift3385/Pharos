@@ -14,6 +14,7 @@ mod defects;
 mod diag;
 mod downloads;
 mod evidence;
+mod execution;
 mod hlc;
 mod instance;
 mod journal;
@@ -197,6 +198,7 @@ pub fn run() {
             cycles::cycle_execute,
             cycles::cycle_runs,
             cycles::cycle_progress_get,
+            execution::execution_summary,
             defects::defect_list,
             defects::defect_get,
             defects::defect_create,
@@ -218,6 +220,8 @@ pub fn run() {
             runs::manual::run_overview,
             runs::manual::run_create_manual,
             runs::manual::run_close,
+            runs::delete::run_delete_preview,
+            runs::delete::run_delete,
             runs::manual::run_item_detail,
             runs::manual::execution_draft_save,
             runs::manual::execution_draft_discard,
@@ -239,6 +243,9 @@ pub fn run() {
             evidence::check::evidence_check,
             evidence::check::evidence_check_cancel,
             evidence::check::evidence_orphans_delete,
+            evidence::retention::evidence_retention_get,
+            evidence::retention::evidence_retention_set,
+            evidence::retention::evidence_retention_preview,
             planner::planner_attachment_add,
             planner::planner_attachment_list,
             planner::planner_attachment_save,

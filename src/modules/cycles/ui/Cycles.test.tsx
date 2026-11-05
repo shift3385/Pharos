@@ -3,6 +3,7 @@
 // adding cases (not approved: warned, not blocked), «Ejecutar» on the desktop
 // only, and axe on each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
@@ -24,7 +25,6 @@ vi.mock("../api/cycleApi", () => ({
     reorder: vi.fn(async () => []),
   },
   cycleApi: {
-    canExecute: vi.fn(() => true),
     list: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),
@@ -108,7 +108,6 @@ beforeEach(async () => {
   await i18n.changeLanguage("es");
   vi.mocked(configurationApi.list).mockReset().mockResolvedValue([CHROME, FIREFOX, OLD]);
   vi.mocked(configurationApi.create).mockReset();
-  vi.mocked(cycleApi.canExecute).mockReturnValue(true);
   vi.mocked(cycleApi.list).mockReset().mockResolvedValue([LISTED]);
   vi.mocked(cycleApi.get).mockReset().mockResolvedValue(CYCLE);
   vi.mocked(cycleApi.items).mockReset().mockResolvedValue(ITEMS);
@@ -161,7 +160,7 @@ describe("Ajustes · Configuraciones", () => {
     await userEvent.click(screen.getByRole("switch", { name: /Mostrar archivadas/ }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("creates one with label chips and shows a refused label in the dialog", async () => {
     vi.mocked(configurationApi.create).mockRejectedValueOnce(new Error("match-label-taken: chromium (Chrome)"));
@@ -178,7 +177,7 @@ describe("Ajustes · Configuraciones", () => {
     );
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("La etiqueta ya la usa otra configuración: chromium (Chrome).");
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 });
 
 describe("Ciclos", () => {
@@ -202,7 +201,7 @@ describe("Ciclos", () => {
     expect(cycleApi.create).toHaveBeenCalledWith(
       expect.objectContaining({ projectId: "p1", title: "Humo", configurationIds: ["chrome"], userId: expect.any(String) }),
     );
-  }, 15_000);
+  });
 
   it("shows a cycle's items with one result column per configuration and warns about cases not approved", async () => {
     page("/projects/p1/cycles?cycle=cy1");
@@ -216,7 +215,7 @@ describe("Ciclos", () => {
     expect(rows[1]).toHaveTextContent("No aprobado");
     expect(screen.getByText(/Build 1\.4\.2 · Entorno staging/)).toBeInTheDocument();
     await expectNoAxeViolations();
-  }, 15_000);
+  });
 
   it("adds cases: those already in the cycle cannot be picked, a draft is warned", async () => {
     vi.mocked(cycleApi.addItems).mockResolvedValue({ added: ["i3"], skipped: 0, overlapping: [], notApproved: ["ATS_003"] });
@@ -231,7 +230,7 @@ describe("Ciclos", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Añadir 1 caso" }));
     expect(cycleApi.addItems).toHaveBeenCalledWith("cy1", [{ testCaseId: "c3", assignee: undefined }], expect.any(String));
     expect(await screen.findByText(/1 caso añadido\. Sin aprobar: ATS_003\./)).toBeInTheDocument();
-  }, 15_000);
+  });
 
   it("executes one run per chosen configuration on the desktop", async () => {
     vi.mocked(cycleApi.execute).mockResolvedValue({
@@ -253,7 +252,23 @@ describe("Ciclos", () => {
     expect(
       (await screen.findAllByText(/Run creado: RUN-001 1 configuración aún no ha llegado a este equipo y se saltó\./)).length,
     ).toBeGreaterThan(0);
-  }, 15_000);
+  });
+
+  it("a double click on the confirm executes once", async () => {
+    let finish: () => void = () => undefined;
+    vi.mocked(cycleApi.execute).mockReset().mockImplementation(
+      () => new Promise((resolve) => (finish = () => resolve({ runs: [], missingConfigurations: [] }))),
+    );
+    page("/projects/p1/cycles?cycle=cy1");
+    await userEvent.click(await screen.findByRole("button", { name: "Ejecutar" }));
+    const dialog = screen.getByRole("dialog", { name: "Ejecutar CYC-001" });
+    const confirm = within(dialog).getByRole("button", { name: "Crear 2 runs" });
+    // Both clicks land before React re-renders the disabled button.
+    confirm.click();
+    confirm.click();
+    expect(cycleApi.execute).toHaveBeenCalledTimes(1);
+    finish();
+  });
 
   it("«Ejecutar» waits, and names them, while an item's case was deleted", async () => {
     vi.mocked(cycleApi.items).mockResolvedValue([
@@ -277,11 +292,10 @@ describe("Ciclos", () => {
     );
   });
 
-  it("on the web «Ejecutar» is disabled and says why", async () => {
-    vi.mocked(cycleApi.canExecute).mockReturnValue(false);
+  it("«Ejecutar» is offered on the web too (EJE-06), with no desktop-only note", async () => {
     page("/projects/p1/cycles?cycle=cy1");
     const run = await screen.findByRole("button", { name: "Ejecutar" });
-    expect(run).toBeDisabled();
-    expect(screen.getByText("Los runs se crean desde la app de escritorio.")).toBeInTheDocument();
+    expect(run).toBeEnabled();
+    expect(screen.queryByText(/app de escritorio/)).not.toBeInTheDocument();
   });
 });

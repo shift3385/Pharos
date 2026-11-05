@@ -160,6 +160,10 @@ seguir.
 - [ ] Crear casos: el editor y la vista Gherkin se actualizan entre sí; el
       `.feature` exportado es válido (Fase 4).
 - [ ] Exportar el plan y un caso a `.pdf` y `.xlsx` (Fase 6).
+- [ ] Con hitos en el Cronograma y un ciclo con ese caso: el `.xlsx` del plan
+      trae las hojas «Hitos» y «Ciclos» (con el mismo progreso que la pantalla
+      de Ciclos) y el del caso, la hoja «Ciclos»; los PDF terminan con esas
+      tablas. Importar ese `.xlsx` da el mismo plan o caso (EXP-03).
 - [ ] Importar un plan y casos desde `.xlsx` y usar una plantilla (Fase 6).
 - [ ] Elegir una carpeta de descarga en Administración → General y exportar el
       ZIP del proyecto: lleva el plan y cada caso en `.xlsx` y `.pdf`
@@ -172,6 +176,9 @@ seguir.
       cobertura y se exporta a `.xlsx`.
 - [ ] El `.feature` lleva `@REQ-xxx` y el ID de cada caso, y se puede filtrar
       por `@ATS_xxx` con playwright-bdd o Cucumber.
+- [ ] En el formulario de un requisito, poner Probabilidad e Impacto (1–5): en
+      la matriz el requisito lleva «Riesgo N · Alto/Medio/Bajo» y los de más
+      riesgo salen primero («Orden: ID de requisito» vuelve al orden por clave).
 
 ### 4.4b Defectos (próxima 0.2.0)
 
@@ -183,6 +190,10 @@ seguir.
       deja de marcarlo como abierto.
 - [ ] En el tablero, arrastrar un defecto «Nuevo» a «Corregido»: no se deja y
       lo explica.
+- [ ] En Ajustes del proyecto → «Campos personalizados», elegir «Defectos» y
+      crear un campo: aparece en el editor de defectos, se guarda con el
+      defecto y llega al otro equipo tras sincronizar; los campos de casos
+      no cambian (FLD-03).
 
 ### 4.4c Importar resultados de pruebas automáticas (ING-02..05)
 
@@ -205,13 +216,17 @@ conserva las etiquetas.
 - [ ] **Sin vincular** lista los tests sin caso y el motivo; «Vincular…» los
       asigna a un caso (sus resultados no cambian) y «Desvincular» lo retira.
 - [ ] Un Cucumber JSON se rechaza con un mensaje que indica usar Messages.
+- [ ] Con un ciclo activo, importar un informe como run nuevo eligiendo ese
+      «Ciclo»: el progreso del ciclo suma sus resultados sin tocar el run.
+      Un ciclo cerrado no aparece en el selector (CYC-02).
 
 ### 4.4d Ejecución manual paso a paso (EJE-02)
 
 En un proyecto, **Ejecuciones** tiene «Nuevo run manual» (elige casos, entorno,
 build y, si las hay, configuración) y cada run abre su pantalla. Un run de un
-ciclo («Ejecutar» en Ciclos) se abre desde la pestaña Runs del ciclo. Solo en
-la app de escritorio: en la web la pantalla avisa y no muestra nada.
+ciclo («Ejecutar» en Ciclos) se abre desde la pestaña Runs del ciclo. También
+en la web (EJE-06), sin archivos: allí el borrador se guarda en el navegador y
+no se ve en otro equipo ni en otro navegador.
 
 **Atajos** (con un paso enfocado y sin escribir en un campo): **P** pasa,
 **F** falla, **B** bloqueado, **S** omitido, **J/K** o las flechas para moverse,
@@ -250,6 +265,68 @@ adjuntos.
 - [ ] Pulsar Ctrl+Enter dos veces seguidas: se guarda un solo intento.
       Cancelar un run con borradores los descarta; al completarlo se puede
       elegir.
+- [ ] **Eliminar run** (EJE-07): el diálogo dice cuántos elementos,
+      resultados, importaciones y evidencias se ocultan, los borradores que
+      se descartan, el ciclo cuyo progreso deja de contarlo y los defectos
+      vinculados. Al confirmar, el run desaparece de la lista, del progreso
+      del ciclo; en otro equipo, tras sincronizar, también.
+      Con el ciclo cerrado no deja eliminarlo. Reimportar el mismo informe en
+      un run nuevo funciona sin aviso de duplicado.
+
+**En la web** (EJE-06; navegador con la sesión iniciada):
+
+- [ ] «Nuevo run manual» y «Ejecutar» en un ciclo funcionan; la pantalla del
+      run dice «Los adjuntos solo están disponibles en el escritorio. Los borradores de ejecución se
+      guardan en este navegador».
+- [ ] Ejecutar un caso con el teclado y guardar: el intento aparece también en
+      el escritorio tras sincronizar, con sus pasos y lo obtenido. Y al revés:
+      un intento guardado en el escritorio se ve en la web.
+- [ ] Marcar pasos, cerrar la pestaña y volver: el borrador sigue. En otro
+      navegador o equipo no está (es de ese navegador). Al cerrar sesión se
+      borra.
+- [ ] Con el mismo elemento abierto en dos pestañas, guardar en una: la otra,
+      al marcar, avisa de que ese intento ya se guardó y recarga.
+- [ ] Pegar una captura (Ctrl+V) avisa «Los adjuntos solo están disponibles en el escritorio»; no
+      hay botones de adjuntar. «Crear defecto» desde un intento fallido abre el
+      defecto relleno, sin evidencias.
+- [ ] «Importar informe» está desactivado y la pestaña «Sin vincular» dice que
+      está en la app de escritorio.
+- [ ] Cancelar en la web un run que tenía un borrador en el escritorio: al
+      sincronizar, el escritorio descarta ese borrador y sus adjuntos.
+
+### 4.4e Resultados en la matriz e informe de estado (EJE-04, EJE-03)
+
+Es el criterio de salida de 0.2.0: un run manual y uno de Playwright aparecen
+en la misma matriz.
+
+- [ ] Con un caso vinculado a un requisito: ejecutarlo a mano (falla) e
+      importar después un informe de Playwright con su etiqueta (`@<ID del
+      caso>`) que lo pasa. En **Trazabilidad → Matriz**, el caso muestra
+      «Pasa» con la clave del run importado y la fecha; la clave abre el run.
+      Volver a ejecutarlo a mano: ahora manda el run manual (gana el último
+      resultado final).
+- [ ] Editar después los pasos del caso: el resultado no cambia y aparece
+      «Desactualizado» (se ejecutó una revisión anterior). Cambiar solo el
+      estado, la prioridad o el título no lo marca.
+- [ ] Un test que falló y pasó al reintentar aparece como «Flaky»; un caso
+      fallido con su defecto en «Corregido» aparece como «Re-test».
+- [ ] Filtrar la matriz por ciclo, configuración, build o entorno: los
+      estados cambian a lo de esas ejecuciones y la dirección de la página
+      guarda los filtros; «Quitar filtros» vuelve a todo.
+- [ ] «Exportar matriz (.xlsx)»: la hoja «Matriz» es la de la plantilla; la
+      hoja «Resultados» trae el run, la fecha, la configuración y los defectos
+      con su severidad.
+- [ ] En **Ejecuciones** (o en un ciclo), «Informe de estado»: elegir
+      Proyecto, Ciclo o Plan y un periodo. Revisar que los criterios de salida
+      del plan dicen «Cumple» / «No cumple» (sin plan, se usan los tres por
+      defecto: ≥ 95 % ejecutado, 0 defectos críticos abiertos, ≥ 90 % de
+      cobertura) y que los defectos dicen «a fecha de hoy».
+- [ ] Cambiar el resumen y escribir recomendaciones, cerrar y volver a abrir el
+      informe: el texto sigue ahí. **Se guarda solo en este equipo** y va en las
+      exportaciones. «Exportar .xlsx» y «Exportar PDF» dejan los archivos en la
+      carpeta de descargas.
+- [ ] En la web: la matriz con resultados, los filtros y el informe funcionan
+      igual (el servidor calcula lo mismo que el escritorio).
 
 ### 4.5 Sincronización
 
@@ -270,6 +347,14 @@ adjuntos.
 
 - [ ] Administración → **Evidencias** muestra cuánto ocupan los adjuntos, por
       tipo, y la retención de los informes en bruto (90 días por defecto).
+- [ ] **Retención por proyecto** (DAT-03c): elige un proyecto, pon las
+      trazas a 1 día y pulsa «Guardar»: pide confirmación con los archivos que
+      caducarían. Tras actualizar, la evidencia que ya había no caduca hasta
+      pasado un plazo completo. Importa un informe con una traza de un test que pasa y
+      otra de uno que falla; pasado un día, reinicia: la del que pasó caduca
+      («Caducados por retención» sube) y su resultado sigue ahí; la del que
+      falló no. Las evidencias de la ejecución manual nunca caducan. El
+      ajuste no aparece en otro equipo: es de este equipo.
 - [ ] **Verificar evidencias** con algunos adjuntos: «Todo en orden».
 - [ ] Con Pharos cerrado, mueve fuera de `evidence` un archivo de una de sus
       subcarpetas (guárdalo) y copia otro `.pev` en esa subcarpeta con un

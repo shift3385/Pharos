@@ -196,7 +196,7 @@ export function needsNormalizing(caseId: string, data: unknown): boolean {
 export const STASH_KEY = "__stableSteps";
 
 /** The text a step element stands for (`steps.rs::step_text`). */
-const stepText = (el: Json): string =>
+export const stepText = (el: Json): string =>
   typeof el === "string" ? el : isObject(el) && typeof el.text === "string" ? el.text : jcs(el);
 
 /** The values a row element stands for (`steps.rs::row_values`). */

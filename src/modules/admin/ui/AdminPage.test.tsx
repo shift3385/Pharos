@@ -2,6 +2,7 @@
 // Motor de IA is the default, the old routes redirect, the keyboard moves
 // through every tab, and each tab passes axe at phone and desktop widths.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router";

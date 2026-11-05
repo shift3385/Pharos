@@ -363,7 +363,8 @@ fn owned_item(
     run_item_id: &str,
     user: &str,
 ) -> Result<(String, String, String), String> {
-    find_item(conn, run_item_id, user)?.ok_or_else(|| "run item not found".to_string())
+    find_item(conn, run_item_id, user)?
+        .ok_or_else(|| super::delete::missing_item_error(conn, run_item_id, user))
 }
 
 struct CaseFacts {
@@ -596,7 +597,11 @@ pub(crate) fn overview(
     user: &str,
 ) -> Result<Option<RunOverview>, String> {
     let Some(run) = get_run(conn, run_id, user)? else {
-        return Ok(None);
+        // A deleted run says so (EJE-07): the screen tells it from a missing one.
+        return match super::delete::deleted_error(conn, run_id, user) {
+            Some(e) => Err(e),
+            None => Ok(None),
+        };
     };
     let cycle: Option<(String, String)> = match &run.cycle_id {
         Some(id) => conn
@@ -1340,6 +1345,32 @@ pub(crate) fn discard_run_drafts(
         drop_item_drafts(conn, item, user)?;
     }
     Ok(items.len())
+}
+
+/// Drops every draft of a run (its items, deleted or not) and their files,
+/// for a pulled run that was cancelled elsewhere (EJE-06): the pull already
+/// checked whose it is, so no ownership check here.
+pub(crate) fn drop_run_drafts(conn: &Connection, run_id: &str, user: &str) -> Result<(), String> {
+    let items: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT i.id FROM run_items i
+                  WHERE i.run_id = ?1
+                    AND (EXISTS (SELECT 1 FROM execution_drafts d WHERE d.run_item_id = i.id)
+                         OR EXISTS (SELECT 1 FROM attachments a
+                                     WHERE a.owner_entity = ?2 AND a.owner_id = i.id
+                                       AND a.deleted_at IS NULL))",
+            )
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![run_id, DRAFT_OWNER], |r| r.get::<_, String>(0))
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    for item in &items {
+        drop_item_drafts(conn, item, user)?;
+    }
+    Ok(())
 }
 
 /// Closes a run as `completed` or `aborted`. Closing as `aborted` always

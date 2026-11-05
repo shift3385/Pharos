@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { addTableSheets, type ExportTable } from "@shared/export/extraTables";
 import { saveFile } from "@shared/export/saveFile";
 import templateEs from "../assets/plan-template-es.xlsx?url";
 import templateEn from "../assets/plan-template-en.xlsx?url";
@@ -29,6 +30,9 @@ export interface ExportablePlan {
   sprints: { name: string; range: string }[];
   risks: { risk: string; mitigation: string }[];
   closureCriteria: { criterion: string; metric: string }[];
+  /** Milestones and the project's cycles (EXP-03): sheets of their own after
+   *  the template's, and sections at the end of the PDF. */
+  extraTables?: ExportTable[];
 }
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -186,6 +190,9 @@ export async function buildPlanXlsx(
     },
     p.roles,
   );
+
+  // After the template's sheet, which stays as it is (EXP-03).
+  addTableSheets(wb, p.extraTables);
 
   const filename = `${p.filenameBase || "plan"}.xlsx`;
   const out = await wb.xlsx.writeBuffer();

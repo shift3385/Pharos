@@ -1,0 +1,192 @@
+{
+  "$comment": "What a run item executes and what an attempt may point at (EJE-02, EJE-06). Read by src-tauri/src/runs/web_vectors_tests.rs (manual::targets_of, runs::narrow, runs::check_no_overlap) and server/tests/runs.test.ts (domain/runs-targets.ts). `targets` lists every target of the item in order; `narrow` gives the item (flowId, exampleRowId, exampleRow), the attempt's flowId and rowId, and what it narrows to or the refusal; `overlap` says whether two items of the case share a target.",
+  "cases": [
+    {
+      "name": "simple case: one target",
+      "caseId": "case-a",
+      "data": { "steps": [{ "id": "a1", "text": "open" }, { "id": "a2", "text": "pay" }] },
+      "items": [
+        {
+          "flowId": null,
+          "rowId": null,
+          "targets": [
+            { "key": "-/-", "flowId": null, "flowName": null, "exampleRowId": null, "exampleRow": null, "values": null, "testKey": "manual:case-a/-/-" }
+          ]
+        }
+      ],
+      "narrow": [
+        {
+          "item": { "flowId": null, "exampleRowId": null, "exampleRow": null },
+          "flowId": null,
+          "rowId": null,
+          "expect": { "flowId": null, "exampleRowId": null, "exampleRow": null, "exampleValues": null }
+        },
+        {
+          "item": { "flowId": null, "exampleRowId": null, "exampleRow": null },
+          "flowId": null,
+          "rowId": "nope",
+          "expect": { "error": "example row not in that flow of the case revision: nope" }
+        }
+      ],
+      "overlap": []
+    },
+    {
+      "name": "Outline main flow with background and a flow with its own rows",
+      "caseId": "case-b",
+      "data": {
+        "background": [{ "id": "bg1", "text": "logged in" }],
+        "steps": [{ "id": "b1", "text": "pay as <user>" }],
+        "examples": { "headers": ["user"], "rows": [{ "id": "r1", "values": ["ana"] }, { "id": "r2", "values": ["bo"] }] },
+        "flows": [
+          {
+            "id": "f1",
+            "name": "Refund",
+            "steps": [{ "id": "fs1", "text": "refund with <card>" }],
+            "examples": { "headers": ["card"], "rows": [{ "id": "fr1", "values": ["visa"] }] }
+          }
+        ]
+      },
+      "items": [
+        {
+          "flowId": null,
+          "rowId": null,
+          "targets": [
+            { "key": "-/r1", "flowId": null, "flowName": null, "exampleRowId": "r1", "exampleRow": 0, "values": { "user": "ana" }, "testKey": "manual:case-b/-/r1" },
+            { "key": "-/r2", "flowId": null, "flowName": null, "exampleRowId": "r2", "exampleRow": 1, "values": { "user": "bo" }, "testKey": "manual:case-b/-/r2" },
+            { "key": "f1/fr1", "flowId": "f1", "flowName": "Refund", "exampleRowId": "fr1", "exampleRow": 0, "values": { "card": "visa" }, "testKey": "manual:case-b/f1/fr1" }
+          ]
+        },
+        {
+          "flowId": "f1",
+          "rowId": null,
+          "targets": [
+            { "key": "f1/fr1", "flowId": "f1", "flowName": "Refund", "exampleRowId": "fr1", "exampleRow": 0, "values": { "card": "visa" }, "testKey": "manual:case-b/f1/fr1" }
+          ]
+        },
+        {
+          "flowId": null,
+          "rowId": "r2",
+          "targets": [
+            { "key": "-/r2", "flowId": null, "flowName": null, "exampleRowId": "r2", "exampleRow": 1, "values": { "user": "bo" }, "testKey": "manual:case-b/-/r2" }
+          ]
+        },
+        {
+          "flowId": "f1",
+          "rowId": "fr1",
+          "targets": [
+            { "key": "f1/fr1", "flowId": "f1", "flowName": "Refund", "exampleRowId": "fr1", "exampleRow": 0, "values": { "card": "visa" }, "testKey": "manual:case-b/f1/fr1" }
+          ]
+        },
+        { "flowId": "gone", "rowId": null, "targets": [] }
+      ],
+      "narrow": [
+        {
+          "item": { "flowId": null, "exampleRowId": null, "exampleRow": null },
+          "flowId": null,
+          "rowId": "r1",
+          "expect": { "flowId": null, "exampleRowId": "r1", "exampleRow": 0, "exampleValues": { "user": "ana" } }
+        },
+        {
+          "item": { "flowId": null, "exampleRowId": null, "exampleRow": null },
+          "flowId": "f1",
+          "rowId": "fr1",
+          "expect": { "flowId": "f1", "exampleRowId": "fr1", "exampleRow": 0, "exampleValues": { "card": "visa" } }
+        },
+        {
+          "item": { "flowId": "f1", "exampleRowId": null, "exampleRow": null },
+          "flowId": null,
+          "rowId": "fr1",
+          "expect": { "flowId": "f1", "exampleRowId": "fr1", "exampleRow": 0, "exampleValues": { "card": "visa" } }
+        },
+        {
+          "item": { "flowId": null, "exampleRowId": "r2", "exampleRow": 1 },
+          "flowId": null,
+          "rowId": null,
+          "expect": { "flowId": null, "exampleRowId": "r2", "exampleRow": 1, "exampleValues": null }
+        },
+        {
+          "item": { "flowId": "f1", "exampleRowId": null, "exampleRow": null },
+          "flowId": "f2",
+          "rowId": null,
+          "expect": { "error": "target-outside-item: another flow" }
+        },
+        {
+          "item": { "flowId": null, "exampleRowId": "r1", "exampleRow": 0 },
+          "flowId": null,
+          "rowId": "r2",
+          "expect": { "error": "target-outside-item: another row" }
+        },
+        {
+          "item": { "flowId": null, "exampleRowId": "r1", "exampleRow": 0 },
+          "flowId": "f1",
+          "rowId": null,
+          "expect": { "error": "target-outside-item: the item is one row" }
+        },
+        {
+          "item": { "flowId": null, "exampleRowId": null, "exampleRow": null },
+          "flowId": "f1",
+          "rowId": "r1",
+          "expect": { "error": "example row not in that flow of the case revision: r1" }
+        }
+      ],
+      "overlap": [
+        { "a": { "flowId": null, "rowId": null }, "b": { "flowId": "f1", "rowId": null }, "expect": true },
+        { "a": { "flowId": "f1", "rowId": null }, "b": { "flowId": null, "rowId": "r1" }, "expect": false },
+        { "a": { "flowId": null, "rowId": "r1" }, "b": { "flowId": null, "rowId": null }, "expect": true },
+        { "a": { "flowId": "f1", "rowId": null }, "b": { "flowId": "f1", "rowId": "fr1" }, "expect": true },
+        { "a": { "flowId": null, "rowId": "r1" }, "b": { "flowId": null, "rowId": "r2" }, "expect": false }
+      ]
+    },
+    {
+      "name": "flows carry every step: no main target",
+      "caseId": "case-c",
+      "data": {
+        "flows": [
+          { "id": "f1", "name": "Card", "steps": [{ "id": "c1", "text": "card" }] },
+          { "id": "f2", "name": "Cash", "steps": [{ "id": "c2", "text": "cash" }] }
+        ]
+      },
+      "items": [
+        {
+          "flowId": null,
+          "rowId": null,
+          "targets": [
+            { "key": "f1/-", "flowId": "f1", "flowName": "Card", "exampleRowId": null, "exampleRow": null, "values": null, "testKey": "manual:case-c/f1/-" },
+            { "key": "f2/-", "flowId": "f2", "flowName": "Cash", "exampleRowId": null, "exampleRow": null, "values": null, "testKey": "manual:case-c/f2/-" }
+          ]
+        }
+      ],
+      "narrow": [
+        {
+          "item": { "flowId": null, "exampleRowId": null, "exampleRow": null },
+          "flowId": "f2",
+          "rowId": null,
+          "expect": { "flowId": "f2", "exampleRowId": null, "exampleRow": null, "exampleValues": null }
+        }
+      ],
+      "overlap": [
+        { "a": { "flowId": "f1", "rowId": null }, "b": { "flowId": "f2", "rowId": null }, "expect": false },
+        { "a": { "flowId": null, "rowId": null }, "b": { "flowId": "f2", "rowId": null }, "expect": true }
+      ]
+    },
+    {
+      "name": "headers that do not match the values: the plain list",
+      "caseId": "case-d",
+      "data": {
+        "steps": [{ "id": "d1", "text": "x" }],
+        "examples": { "headers": ["a", "b"], "rows": [{ "id": "dr1", "values": ["only"] }] }
+      },
+      "items": [
+        {
+          "flowId": null,
+          "rowId": null,
+          "targets": [
+            { "key": "-/dr1", "flowId": null, "flowName": null, "exampleRowId": "dr1", "exampleRow": 0, "values": ["only"], "testKey": "manual:case-d/-/dr1" }
+          ]
+        }
+      ],
+      "narrow": [],
+      "overlap": []
+    }
+  ]
+}

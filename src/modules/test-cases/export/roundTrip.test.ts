@@ -4,6 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import type { TestCase, TestCaseData } from "../model/types";
 import { reconcileFlows, reconcileTable, stepsOf, texts } from "../model/steps";
 import { parseCaseXlsx } from "../import/caseImport";

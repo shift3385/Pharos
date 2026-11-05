@@ -148,6 +148,7 @@ export const INVENTORY: Item[] = [
   I("proyectos", "action", "action:custom-field-create", "Crear un campo personalizado"),
   I("proyectos", "dialog", "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx", "Diálogo de campo personalizado"),
   I("proyectos", "action", "action:custom-field-archive", "Archivar y restaurar un campo personalizado"),
+  I("proyectos", "action", "action:custom-field-defect", "Campos personalizados de defectos (selector Casos / Defectos)"),
   I("proyectos", "dialog", "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx", "Copiar campos de otro proyecto"),
   I("proyectos", "action", "action:configuration-create", "Crear una configuración"),
   I("proyectos", "dialog", "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx", "Diálogo de configuración (etiquetas de importación)"),
@@ -229,6 +230,10 @@ export const INVENTORY: Item[] = [
   I("trazabilidad", "action", "action:matrix-gaps", "Mostrar solo huecos"),
   I("trazabilidad", "action", "action:matrix-export", "Exportar la matriz (.xlsx)"),
   I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx", "Migrar referencias escritas a mano a vínculos"),
+  I("trazabilidad", "action", "action:requirement-risk", "Riesgo del requisito (probabilidad × impacto)"),
+  I("trazabilidad", "action", "action:matrix-sort", "Ordenar la matriz por riesgo o por ID"),
+  I("trazabilidad", "action", "action:matrix-filters", "Filtrar los resultados de la matriz (ciclo, configuración, build, entorno)"),
+  I("trazabilidad", "action", "action:matrix-run-link", "Último resultado en la matriz: abrir su run"),
 
   // ---- 6 · Planificador ----------------------------------------------------------------
   I("planificador", "section", "section:planner", "Planificador (tablero)"),
@@ -250,6 +255,7 @@ export const INVENTORY: Item[] = [
   I("ciclos", "dialog", "dialogs:src/modules/cycles/ui/CycleDetail.tsx", "Clonar y eliminar un ciclo (confirmación)"),
   I("ciclos", "action", "action:cycles-filter", "Filtrar ciclos por estado"),
   I("ciclos", "tab", "tabs:src/modules/cycles/ui/CycleDetail.tsx", "Pestañas del ciclo (Elementos / Runs)"),
+  I("ciclos", "action", "action:cycle-report", "Informe de estado de un ciclo"),
 
   // ---- 8 · Ejecuciones ------------------------------------------------------------------
   I("ejecuciones", "section", "section:runs", "Ejecuciones (lista de runs)"),
@@ -263,6 +269,10 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "action", "action:tray-unlink", "Desvincular un test"),
   I("ejecuciones", "action", "action:tray-filter", "Filtrar la bandeja"),
   I("ejecuciones", "action", "action:import-attachments-folder", "Carpeta de adjuntos del informe"),
+  I("ejecuciones", "action", "action:import-into-cycle", "Importar un informe en un ciclo"),
+  I("ejecuciones", "dialog", "dialogs:src/modules/runs/report/StatusReportDialog.tsx", "Informe de estado (ISO 29119-3): alcance, periodo, resumen y recomendaciones"),
+  I("ejecuciones", "action", "action:report-export-xlsx", "Exportar el informe de estado (.xlsx)"),
+  I("ejecuciones", "action", "action:report-export-pdf", "Exportar el informe de estado (PDF)"),
 
   // ---- 9 · Defectos ----------------------------------------------------------------------
   I("defectos", "section", "section:defects", "Defectos (lista)"),
@@ -271,6 +281,7 @@ export const INVENTORY: Item[] = [
   I("defectos", "state", "state:defect-title-required", "Título obligatorio en un defecto"),
   I("defectos", "upload", "upload:src/modules/defects/ui/DefectEditor.tsx", "Adjuntar evidencias a un defecto"),
   I("defectos", "action", "action:defect-links", "Vincular un defecto a casos y requisitos"),
+  I("defectos", "action", "action:defect-custom-fields", "Rellenar campos personalizados en un defecto"),
   I("defectos", "dialog", "dialogs:src/modules/defects/ui/ResultPickerDialog.tsx", "Crear un defecto desde un resultado fallido"),
   I("defectos", "screen", "screen:defect-board", "Tablero de defectos"),
   I("defectos", "tab", "views:src/modules/defects/ui/DefectsPage.tsx", "Vista de defectos (Lista / Tablero)"),
@@ -341,11 +352,14 @@ export const INVENTORY: Item[] = [
   I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/ExecutionPanel.tsx", "Descartar un borrador (confirmación)"),
   I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/RunDetail.tsx", "Cerrar y reabrir el run"),
   I("ejecucion-manual", "action", "action:exec-paste", "Pegar una captura (Ctrl+V)"),
+  I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/DeleteRunDialog.tsx", "Eliminar un run (confirmación, EJE-07)"),
 
   // ---- 14 · Evidencias (E5, DAT-03b) ---------------------------------------------------------------
   I("evidencias", "tab", "admin:evidence", "Administración › Evidencias"),
   I("evidencias", "screen", "screen:evidence-admin", "Almacén, verificación e informe"),
   I("evidencias", "dialog", "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx", "Borrar huérfanos (confirmación)"),
+  I("evidencias", "action", "action:evidence-retention", "Retención por proyecto (DAT-03c)"),
+  I("evidencias", "dialog", "dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx", "Acortar la retención (confirmación)"),
 
   // ---- 15 · Si algo sale mal ----------------------------------------------------------------------
   I("errores", "state", "state:db-error", "Pantalla de error de la base de datos local"),

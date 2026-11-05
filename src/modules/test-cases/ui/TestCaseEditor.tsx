@@ -649,17 +649,33 @@ export function TestCaseEditor({
     };
   }
 
+  // The case as exported, with the cycles it belongs to (EXP-03); a case
+  // not saved yet is in none.
+  async function exportableWithCycles(): Promise<ExportableCase> {
+    const base = buildExportableCase();
+    if (!caseId) return base;
+    const { caseCyclesTable, loadCycleExport } =
+      await import("@modules/cycles");
+    const data = await loadCycleExport(projectId, userId, true);
+    const lang = i18n.resolvedLanguage ?? "es";
+    return { ...base, extraTables: [caseCyclesTable(caseId, data, t, lang)] };
+  }
+
   async function exportXlsx() {
     const { exportCaseXlsx } = await import("../export/caseXlsx");
     const name = await unlessReported(
-      exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es"),
+      exportableWithCycles().then((c) =>
+        exportCaseXlsx(c, i18n.resolvedLanguage ?? "es"),
+      ),
     );
     if (name) showExportDone(name);
   }
 
   async function exportPdf() {
     const { exportCasePdf } = await import("../export/casePdf");
-    const name = await unlessReported(exportCasePdf(buildExportableCase(), t));
+    const name = await unlessReported(
+      exportableWithCycles().then((c) => exportCasePdf(c, t)),
+    );
     if (name) showExportDone(name);
   }
 

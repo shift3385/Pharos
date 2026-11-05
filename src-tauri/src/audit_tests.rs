@@ -1155,6 +1155,8 @@ const AUDITED: &[&str] = &[
     // Local events (DAT-03b): marks set by a check, orphans deleted by hand.
     "evidence::check::evidence_check",
     "evidence::check::evidence_orphans_delete",
+    // DAT-03c: a local setting, one event per change.
+    "evidence::retention::evidence_retention_set",
     "project::project_create",
     "project::project_update",
     "project::project_delete",
@@ -1205,6 +1207,7 @@ const AUDITED: &[&str] = &[
     "runs::manual::execution_record",
     "runs::manual::run_create_manual",
     "runs::manual::run_close",
+    "runs::delete::run_delete",
     "planner::planner_create",
     "planner::planner_update",
     "planner::planner_delete",
@@ -1228,6 +1231,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ("session_load", "read"),
     ("cycles::cycle_filter_preview", "read"),
     ("cycles::cycle_runs", "read"),
+    (
+        "execution::execution_summary",
+        "read: the execution derivation (step 10)",
+    ),
     (
         "session_clear",
         "the session token lives in the keychain, not in the data",
@@ -1343,6 +1350,14 @@ const EXEMPT: &[(&str, &str)] = &[
         "read (writes a file the user exports)",
     ),
     ("runs::manual::execution_attachment_preview", "read"),
+    (
+        "evidence::retention::evidence_retention_preview",
+        "read (counts what a shorter setting would expire)",
+    ),
+    (
+        "runs::delete::run_delete_preview",
+        "read (counts for the delete dialog)",
+    ),
 ];
 
 fn registered_commands() -> Vec<String> {
@@ -1541,6 +1556,19 @@ fn every_audited_command_leaves_an_event() {
     });
     step("runs::manual::run_close", &mut |tx| {
         crate::runs::manual::close_run(tx, &manual_run, "aborted", false, U)
+    });
+    step("runs::delete::run_delete", &mut |tx| {
+        crate::runs::delete::delete_run(tx, &manual_run, U)
+    });
+    step("evidence::retention::evidence_retention_set", &mut |tx| {
+        crate::evidence::retention::set(
+            tx,
+            &p,
+            "trace",
+            &crate::evidence::retention::RetentionPolicy::Days { days: 10 },
+            U,
+        )
+        .map(drop)
     });
     step("runs::unlinked_mapping_set", &mut |tx| {
         crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)

@@ -5,6 +5,12 @@
  */
 export type ImportNewRun = { title?: string, environment?: string, build?: string, commitSha?: string, branch?: string, 
 /**
+ * The cycle the new run belongs to (CYC-02): a live, not closed cycle of
+ * the project. Only the id is stored; the configuration and the cycle
+ * items of its results are derived when read (`link.rs`, ADR-0013).
+ */
+cycleId?: string, 
+/**
  * Leave the run `in_progress` so more shards can be imported into it.
  */
 keepOpen?: boolean, };
