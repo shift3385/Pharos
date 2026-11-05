@@ -42,7 +42,7 @@ function newestDownload(ext: string): string {
 chapter("administracion", () => {
   step("inicio-con-datos", {
     title: "Inicio, con datos",
-    caption: "Con ejecuciones registradas, «Inicio» cuenta pruebas pendientes (sin ejecutar o bloqueadas), la tasa de éxito del periodo y los defectos abiertos; cada tarjeta lleva a su lista. «Ejecución por proyecto» muestra el último resultado de cada caso y «Ejecuciones diarias» todo lo registrado cada día, manual o importado. «Criterios de salida» evalúa los del plan del proyecto que elijas (Cumple, No cumple o Sin datos).",
+    caption: "Con proyectos en marcha, «Inicio» cuenta las pruebas pendientes (sin ejecutar o bloqueadas), la tasa de éxito del periodo y los defectos abiertos; cada tarjeta lleva a su lista. «Ejecución por proyecto» muestra, de cada proyecto, cuántos casos tienen ya resultado y cuál es el último; «Ejecuciones diarias», lo registrado cada día, manual o importado. «Criterios de salida» evalúa los del plan del proyecto que elijas (Cumple, No cumple o Sin datos), aunque todavía no haya ejecuciones.",
     covers: ["action:home-kpi", "action:home-exit-criteria", "state:home-metrics"],
     run: async () => {
       await goHome();
@@ -50,6 +50,8 @@ chapter("administracion", () => {
       // The metrics have loaded: the rate card shows a number or «—», not «…».
       await browser.waitUntil(async () => !(await byTestId("kpi-rate").getText()).includes("…"));
       await expect(byTestId("home-daily")).toBeDisplayed();
+      // Loaded, not failed: no «No se pudieron cargar las ejecuciones».
+      await expect($$(".home [role=alert]")).toBeElementsArrayOfSize(0);
     },
   });
 

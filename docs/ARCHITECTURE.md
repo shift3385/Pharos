@@ -161,12 +161,12 @@ write a plan back without its ids; on pull they store `data` as received
 gate is needed (VERSIONING §6.5).
 
 **Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
-the redesign. `model/loadHome.ts` reads only public read APIs, one project
-list and three reads per project, most recently updated first:
-`projectApi.list` (case-id prefix → key), `projectLiveCases` (`test-cases`),
+the redesign. `model/loadHome.ts` reads only public read APIs, most recently
+updated first: `projectApi.list` (case-id prefix → key) and, per project,
 `projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
-closure criteria) and `projectDefects` (`defects`: open = not closed nor
-rejected; critical = severity).
+closure criteria). Cases, results and defects are not read per project: the
+metrics read below carries their counts, totals and queues, so the web makes
+one call per project plus one metrics call.
 `model/homeData.ts` aggregates it as pure functions (projects closing this
 month, the exit-criteria choices and default, the period days and which day
 labels show).
@@ -174,24 +174,35 @@ labels show).
 **Home execution metrics (RED-W6).** Every execution number of Inicio comes
 from **one read**: the desktop command `home_metrics` (`home_metrics.rs`) or
 `GET /api/home/metrics` (`server/src/modules/domain/home-metrics.ts`). Both
-are thin entry points: they validate the request and call the shared
-execution derivation of step 10 (`execution::home_metrics` in Rust,
-`execution-load.ts::homeMetrics` on the server; contract v1, shared vectors),
-which holds every rule (latest final per case/target, windows, daily buckets,
-exit criteria, re-test, queues). The dashboard derives nothing. The **client**
-builds the request (`model/metrics.ts::metricsRequest`): the local midnights
-of the longest period (30 days, or the month on the 31st) as epoch ms, `now`,
-and one window per period, so neither Rust nor the server handle time zones
-or DST and switching period never refetches. `model/loadHomeMetrics.ts` keeps
-the last payload per (user, local day) in memory (stale-while-revalidate),
-refetches on `pharos:synced`, and on failure shows «Reintentar» in each
-execution widget without hiding projects and plans (a failed refresh keeps
-the cached payload). The rest of `model/metrics.ts` maps the payload to what
-each widget draws (series of the period, stacked bars, KPI sums, the picker's
-En riesgo / Cumplen, the merged queue). Period-scoped: «Ejecuciones diarias»
-and «Tasa de éxito»; everything else is the state of play. Until step 10
-lands, both entry points call a stub that returns the contract's empty shape
-(TODO in each file).
+are thin entry points: they validate the request (day starts ascending,
+windows `id:fromIndex` inside them, at most 200 non-blank project ids, queue
+limit 1–50) and call the shared execution derivation of step 10 —
+`execution::home_metrics` in Rust, `createExecutionService(store).homeMetrics`
+(`server/src/modules/domain/execution.ts`) on the server, which `app.ts`
+passes to the route as its `core`; contract v1, shared vectors. The
+derivation holds every rule (latest final per case/target, windows, daily
+buckets, exit criteria, re-test, queues, owner scope, deleted runs); the
+dashboard derives nothing and uses the ts-rs types of
+`@shared/contracts/contract`. The **client** builds the request
+(`model/metrics.ts::metricsRequest`) at the moment of each read: the local
+midnights of the longest period (30 days, or the month on the 31st) as epoch
+ms, `now`, and one window per period, so neither Rust nor the server handle
+time zones or DST and switching period never refetches.
+`model/loadHomeMetrics.ts::useHomeMetrics` owns the local day (`today`): a
+timer at the next local midnight, or any reload that finds a new day, moves
+it, which changes the cache key and the days. It keeps the last payload per
+(user, local day) in memory (stale-while-revalidate), refetches on
+`pharos:synced`, ignores responses older than the newest request (a sequence
+counter), starts from the new key's own entry when the user or the day
+changes, and on failure shows «Reintentar» in each execution widget without
+hiding projects and plans. A failed refresh keeps the last payload and the
+header says «Datos de las hh:mm»; a refresh in flight says «Actualizando…».
+Until the metrics are ready, every execution number and label says «…» /
+«—» / «cargando» — never zero — and the mobile bubbles stay off. The rest of
+`model/metrics.ts` maps the payload to what each widget draws (series of the
+period, stacked bars, KPI sums, the picker's En riesgo / Cumplen, the merged
+queue). Period-scoped: «Ejecuciones diarias» and «Tasa de éxito»; everything
+else is the state of play.
 The widgets — `KpiCards`, `PeriodSelector`, `ExecutionByProject`,
 `ExitCriteriaCard`, `DailyExecutionsChart`, `UpcomingTests` — never invent run
 data: with no runs they show explicit empty states
