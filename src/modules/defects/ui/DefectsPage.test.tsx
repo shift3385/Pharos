@@ -247,5 +247,41 @@ describe("DefectEditor", () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ custom: { customer: "ACME" } }) }),
     );
-  }, 15_000);
+  });
+
+  it("a value that does not fit its defect field blocks the save", async () => {
+    fieldList.mockResolvedValueOnce([
+      {
+        id: "f2",
+        projectId: "p1",
+        entity: "defect",
+        fieldKey: "ticket",
+        label: "Ticket de soporte",
+        description: "",
+        fieldType: "url",
+        options: [],
+        required: false,
+        defaultValue: null,
+        appliesToCaseTypes: null,
+        position: 0,
+        archivedAt: null,
+        createdAt: "",
+        updatedAt: "",
+        revision: 1,
+      },
+    ]);
+    create.mockResolvedValue(defect("def-010", {}));
+    renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
+    const ticket = await screen.findByRole("textbox", { name: /Ticket de soporte/ });
+    await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), "Cobro doble");
+    await userEvent.type(ticket, "no es una url");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).not.toHaveBeenCalled();
+    await userEvent.clear(ticket);
+    await userEvent.type(ticket, "https://soporte.example/123");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ custom: { ticket: "https://soporte.example/123" } }) }),
+    );
+  });
 });

@@ -455,6 +455,15 @@ fn owned_field(conn: &Connection, id: &str, user_id: &str) -> Result<CustomField
 
 /// Checks and completes what the user can edit (label, description, options,
 /// required, default, types it applies to). Options get missing ids.
+/// Only a test case has a case type (FLD-03): a field of any other entity
+/// that names case types is refused, never stored half-meaningful.
+fn check_entity_scope(entity: &str, input: &CustomFieldInput) -> Result<(), String> {
+    if entity != "test_case" && input.applies_to_case_types.is_some() {
+        return Err("custom_field.applies_to".to_string());
+    }
+    Ok(())
+}
+
 fn check_definition(field_type: &str, input: &mut CustomFieldInput) -> Result<(), String> {
     let label = input.label.trim();
     if label.is_empty() || js_len(label) > MAX_LABEL {
@@ -535,6 +544,7 @@ pub(crate) fn create_field(
     if !FIELD_TYPES.contains(&field_type.as_str()) {
         return Err("custom_field.field_type".to_string());
     }
+    check_entity_scope(&entity, &input)?;
     check_definition(&field_type, &mut input)?;
     let id = field_id(&input.project_id, &entity, &input.field_key);
     // The deterministic id is the uniqueness: a row with it (live, archived
@@ -653,6 +663,7 @@ pub(crate) fn update_field(
             });
         }
     }
+    check_entity_scope(&current.entity, &input)?;
     check_definition(&current.field_type, &mut input)?;
     let unchanged = input.label == current.label
         && input.description.as_deref().unwrap_or_default() == current.description
@@ -788,10 +799,33 @@ pub(crate) fn copy_fields(
 
 /// The rules of the project's test case fields, for a case save.
 pub(crate) fn case_rules(conn: &Connection, project_id: &str) -> Result<Vec<FieldRule>, String> {
-    Ok(project_fields(conn, project_id, "test_case")?
+    entity_rules(conn, project_id, "test_case")
+}
+
+/// The rules of a project's fields of `entity` (FLD-03: `defect`).
+pub(crate) fn entity_rules(
+    conn: &Connection,
+    project_id: &str,
+    entity: &str,
+) -> Result<Vec<FieldRule>, String> {
+    Ok(project_fields(conn, project_id, entity)?
         .iter()
         .map(FieldRule::from)
         .collect())
+}
+
+/// Checks the custom values of a defect save (FLD-03) like a case's: each
+/// value against its live field, a value the defect already holds still
+/// accepted (an archived option), unknown keys kept. A defect has no case
+/// type, so every field applies; `required` is the editor's, as for cases.
+pub(crate) fn check_defect_values(
+    conn: &Connection,
+    project_id: &str,
+    data: &mut Value,
+    previous: Option<&Value>,
+) -> Result<(), String> {
+    let rules = entity_rules(conn, project_id, "defect")?;
+    validate_values(&rules, "standard", data, previous)
 }
 
 // ---------------------------------------------------------------------- sync

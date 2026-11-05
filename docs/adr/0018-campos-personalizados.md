@@ -247,11 +247,18 @@ plan (contrastadas con Jira, Xray, Zephyr, TestRail y Azure Test Plans):
   la web (`/api/custom-fields?entity=`) y el documento `custom_field` ya
   llevaban la entidad desde FLD-01; FLD-03 solo añade la UI y pruebas
   (crear, ordenar y copiar por entidad; viajar entre equipos; las rutas web).
-- **«Se aplica a»** (tipos de caso) solo se ofrece para casos: un campo de
-  defecto se guarda con `appliesToCaseTypes: null`.
-- **Valores.** Los defectos guardan sus valores en `data.custom`, como los
-  casos. El editor de defectos bloquea el guardado si falta un campo
-  obligatorio y lo nombra en la sección, como el de casos; igual que con los
-  casos, ni la importación ni la sync lo comprueban. El repositorio aún no
-  valida el tipo de los valores de un defecto al guardar (sí los de un caso).
+- **«Se aplica a»** (tipos de caso) solo existe para casos: la UI no lo ofrece
+  para un campo de defecto, y el escritorio y la web rechazan
+  (`custom_field.applies_to`) un campo de otra entidad que nombre tipos de
+  caso, al crearlo y al editarlo.
+- **Valores.** Los defectos guardan sus valores en `data.custom` y se
+  comprueban como los de un caso: el escritorio
+  (`custom_fields::check_defect_values`, en `insert_defect` y
+  `update_defect`) y la web (`defectData` en el servicio de dominio) validan
+  cada valor contra su campo vivo de la entidad `defect`
+  (`custom_field.<código>:<clave>`); un valor que el defecto ya tenía (una
+  opción archivada) se acepta, y las claves desconocidas se conservan. El
+  editor de defectos bloquea además el guardado con un valor que no encaja o
+  un obligatorio vacío, y lo nombra en la sección. Como con los casos,
+  `required` es solo del editor, y la sync no revalida.
   Requisito, run y ciclo siguen sin pantalla de definición.

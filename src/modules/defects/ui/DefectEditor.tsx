@@ -4,7 +4,7 @@ import { Info, Link2, Paperclip, X } from "lucide-react";
 import {
   CustomFieldsSection,
   customFieldApi,
-  missingRequired,
+  customFieldIssues,
   type CustomField,
   type CustomValues,
 } from "@modules/custom-fields";
@@ -181,10 +181,17 @@ export function DefectEditor({
 
   async function save() {
     setAttempted(true);
-    // A required defect field (FLD-03) blocks the save like a case field;
-    // the section names it once `attempted` is set.
-    const missing = missingRequired(fields, "standard", form.custom);
-    if (!form.title.trim() || (needs && !form.resolution) || missing.length) return;
+    // A defect field (FLD-03) blocks the save like a case field: a required
+    // one without a value, or a value that does not fit its field (a value
+    // the defect already holds, such as an archived option, still does).
+    // The section names it once `attempted` is set.
+    const customIssues = customFieldIssues(
+      fields,
+      "standard",
+      form.custom,
+      (current?.data.custom as CustomValues | undefined) ?? {},
+    );
+    if (!form.title.trim() || (needs && !form.resolution) || customIssues.length) return;
     setSaving(true);
     try {
       const wanted: LinkTarget[] = [

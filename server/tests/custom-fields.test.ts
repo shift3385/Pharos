@@ -339,4 +339,71 @@ describe("custom fields through the web's domain API", () => {
     expect(await keys(other, "defect")).toEqual(["fixed_in", "customer"]);
     expect(await keys(other, "test_case")).toEqual([]);
   });
+
+  it("a defect field takes no case type, on create or edit", async () => {
+    const call = api(await tokenFor());
+    const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id;
+    const refused = await call("POST", "/api/custom-fields", {
+      projectId,
+      entity: "defect",
+      fieldKey: "customer",
+      label: "Customer",
+      fieldType: "text",
+      appliesToCaseTypes: ["standard"],
+    });
+    expect(refused.status).toBe(400);
+    expect(refused.body.message).toBe("custom_field.applies_to");
+    const created = await call("POST", "/api/custom-fields", {
+      projectId,
+      entity: "defect",
+      fieldKey: "customer",
+      label: "Customer",
+      fieldType: "text",
+    });
+    const edit = await call("PUT", `/api/custom-fields/${created.body.id}`, {
+      input: { projectId, entity: "defect", fieldKey: "customer", label: "Customer", fieldType: "text", appliesToCaseTypes: ["checklist"] },
+    });
+    expect(edit.status).toBe(400);
+    expect(edit.body.message).toBe("custom_field.applies_to");
+  });
+
+  it("a defect save checks its custom values like a case (FLD-03)", async () => {
+    const call = api(await tokenFor());
+    const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id;
+    await call("POST", "/api/custom-fields", { projectId, entity: "defect", fieldKey: "points", label: "Points", fieldType: "integer" });
+    const browser = (
+      await call("POST", "/api/custom-fields", {
+        projectId,
+        entity: "defect",
+        fieldKey: "browser",
+        label: "Browser",
+        fieldType: "select",
+        options: [{ label: "IE 11" }, { label: "Edge" }],
+      })
+    ).body;
+    const [ie, edge] = browser.options.map((o: { id: string }) => o.id);
+    // A case field is not a rule of a defect.
+    await call("POST", "/api/custom-fields", { projectId, fieldKey: "case_only", label: "Case only", fieldType: "integer" });
+    const save = (custom: object, method: "POST" | "PUT" = "POST", id = "") => {
+      const input = { projectId, title: "Login fails", data: { custom } };
+      return call(method, id ? `/api/defects/${id}` : "/api/defects", id ? { input } : input);
+    };
+
+    const bad = await save({ points: "many" });
+    expect(bad.status).toBe(400);
+    expect(bad.body.message).toBe("custom_field.type:points");
+    expect((await save({ browser: "OPT09999" })).body.message).toBe("custom_field.option:browser");
+
+    const ok = await save({ points: 3, browser: ie, case_only: "x", gone: true });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data.custom).toEqual({ points: 3, browser: ie, case_only: "x", gone: true });
+
+    // IE 11 archived: the defect that holds it still saves; another does not take it.
+    await call("PUT", `/api/custom-fields/${browser.id}`, {
+      input: { projectId, entity: "defect", fieldKey: "browser", label: "Browser", fieldType: "select", options: [{ id: edge, label: "Edge" }] },
+    });
+    expect((await save({ points: 4, browser: ie }, "PUT", ok.body.id)).status).toBe(200);
+    const other = (await save({})).body;
+    expect((await save({ browser: ie }, "PUT", other.id)).body.message).toBe("custom_field.option:browser");
+  });
 });
