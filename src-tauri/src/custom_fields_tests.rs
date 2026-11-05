@@ -646,13 +646,24 @@ fn defect_fields_are_their_own_set_copy_by_entity_and_sync() {
     )
     .unwrap();
     assert_eq!(defect_field.entity, "defect");
-    assert_eq!(defect_field.id, custom_fields::field_id(&p, "defect", "customer"));
-    assert_ne!(defect_field.id, case_field.id, "the same key on each entity");
+    assert_eq!(
+        defect_field.id,
+        custom_fields::field_id(&p, "defect", "customer")
+    );
+    assert_ne!(
+        defect_field.id, case_field.id,
+        "the same key on each entity"
+    );
     // A case type means nothing on a defect field.
     assert_eq!(
         custom_fields::create_field(
             &a,
-            field_input(&p, "x", "text", json!({"entity": "defect", "appliesToCaseTypes": []})),
+            field_input(
+                &p,
+                "x",
+                "text",
+                json!({"entity": "defect", "appliesToCaseTypes": []})
+            ),
         )
         .unwrap_err(),
         "custom_field.applies_to"
@@ -672,7 +683,11 @@ fn defect_fields_are_their_own_set_copy_by_entity_and_sync() {
     let fixed = custom_fields::field_id(&p, "defect", "fixed_in");
     custom_fields::reorder(&a, &p, "defect", &[fixed], U).unwrap();
     assert_eq!(keys(&a, &p, "defect"), ["fixed_in", "customer"]);
-    assert_eq!(keys(&a, &p, "test_case"), ["customer"], "case order untouched");
+    assert_eq!(
+        keys(&a, &p, "test_case"),
+        ["customer"],
+        "case order untouched"
+    );
 
     // Copy by entity: only the defect fields reach the other project.
     let q = new_project(&a, "Other");
