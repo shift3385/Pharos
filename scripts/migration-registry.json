@@ -3,7 +3,9 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0034": "E6 step 10 (EJE-04/EJE-03) spare; expected unused: the matrix and the status report are derived on read"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
@@ -14,7 +16,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0013": "E6 step 10 (EJE-04/EJE-03) spare; expected unused: the execution summary is derived on read"
+    },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
       "0012": "E5 step 7 (EJE-02) spare, never used: no server change"
