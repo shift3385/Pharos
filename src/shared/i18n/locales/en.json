@@ -372,6 +372,7 @@
       "general": "General",
       "sync": "Sync",
       "security": "Security",
+      "evidence": "Evidence",
       "diagnostics": "Diagnostics"
     },
     "groups": {
@@ -417,7 +418,122 @@
       "syncing": "Syncing…"
     },
     "unsaved": "Unsaved changes",
-    "nothingToSave": "There are no changes to save."
+    "nothingToSave": "There are no changes to save.",
+    "evidence": {
+      "desktopOnly": "Evidence is stored encrypted on this device: its usage and verification are only in the desktop app.",
+      "usage": {
+        "title": "Evidence store",
+        "desc": "Attachments are stored encrypted in the evidence folder, next to the database, and do not sync yet.",
+        "total": "Size",
+        "totalValue_one": "{{size}} · {{count}} file",
+        "totalValue_other": "{{size}} · {{count}} files",
+        "byOwner": "Attachments by type",
+        "byOwnerHint": "Only current attachments: deleted and expired ones are not counted.",
+        "none": "No attachments yet.",
+        "colKind": "Type",
+        "colCount": "Attachments",
+        "colSize": "Size",
+        "expired": "Expired by retention",
+        "expiredHint": "Their content was deleted when it expired; the record that they existed is kept.",
+        "rawReports": "Raw report retention",
+        "rawReportsHint": "Imported reports (JUnit, Allure…) are deleted when they expire; the results read from them stay.",
+        "rawDays_one": "{{count}} day",
+        "rawDays_other": "{{count}} days",
+        "rawAlways": "Always",
+        "rawDefault": "Default: {{days}}",
+        "rawCounts": "{{kept}} kept · {{expired}} expired",
+        "rawOverride": "{{project}}: {{days}}",
+        "totalHint": "Only the files on this device: missing ones are not counted.",
+        "failed": "The evidence store could not be read: {{reason}}",
+        "marked": "Marked by the last verification",
+        "markedHint": "Kept across restarts. Press «Verify evidence» to see where they are used.",
+        "markedNone": "None",
+        "markedMissing_one": "{{count}} missing",
+        "markedMissing_other": "{{count}} missing",
+        "markedDamaged_one": "{{count}} damaged",
+        "markedDamaged_other": "{{count}} damaged"
+      },
+      "owners": {
+        "planner_card": "Planner",
+        "defect": "Defects",
+        "test_case": "Test cases",
+        "run_shard": "Run reports",
+        "result": "Results",
+        "step_result": "Step results",
+        "session_note": "Session notes",
+        "other": "Other ({{kind}})"
+      },
+      "check": {
+        "title": "Verify evidence",
+        "desc": "Checks that every file is there and decrypts, and looks for files no row knows. It never deletes anything by itself.",
+        "action": "Verification",
+        "actionHint": "It reads and decrypts every file, so it may take a while with a lot of evidence. You can keep working meanwhile.",
+        "run": "Verify evidence",
+        "running": "Verifying…",
+        "progress": "{{done}} of {{total}} files · {{bytesDone}} of {{bytesTotal}}",
+        "progressLabel": "Verification progress",
+        "busy": "A verification or a repair is already running.",
+        "failed": "The evidence could not be verified: {{reason}}",
+        "summary_one": "Verified on {{date}}: {{count}} file, {{size}}.",
+        "summary_other": "Verified on {{date}}: {{count}} files, {{size}}.",
+        "allGood": "All good",
+        "marked": "Marked now: {{marked}} · Recovered: {{restored}}",
+        "cancel": "Cancel",
+        "cancelling": "Cancelling…",
+        "started": "Evidence verification in progress.",
+        "finished": "Evidence verification finished.",
+        "cancelledShort": "Evidence verification cancelled.",
+        "cancelled": "Verification cancelled: {{done}} of {{total}} files were checked. What was checked is marked; verify again for the rest."
+      },
+      "orphans": {
+        "title": "Files without a record ({{count}})",
+        "desc": "No row of this database knows them. They may belong to a database moved aside or restored, or to another instance: delete them only if you know they are not needed.",
+        "recent": "Recent",
+        "recentHint": "Created or modified in the last 24 hours (a copy or a restore counts as new): it cannot be deleted.",
+        "select": "Select {{file}}",
+        "selectAll": "Select all",
+        "repair": "Delete selected",
+        "confirmTitle_one": "Delete {{count}} file without a record?",
+        "confirmTitle_other": "Delete {{count}} files without a record?",
+        "confirmMessage": "They are deleted from disk and cannot be recovered. If they belong to a database moved aside, that database loses those attachments. Files created or modified in the last 24 hours and, on Windows only, files another program has open are skipped. If another Pharos window uses this same data folder, close it first.",
+        "confirm": "Yes, delete",
+        "deleted_one": "{{count}} file deleted ({{size}}).",
+        "deleted_other": "{{count}} files deleted ({{size}}).",
+        "skipped_one": "{{count}} skipped: {{reasons}}.",
+        "skipped_other": "{{count}} skipped: {{reasons}}.",
+        "reasons": {
+          "recent": "recent",
+          "in_use": "open in another program (detected on Windows only)",
+          "known": "has a record now",
+          "gone": "no longer there",
+          "invalid": "invalid name",
+          "error": "could not be deleted"
+        },
+        "failed": "The files could not be deleted: {{reason}}",
+        "notSaved": "The files were deleted, but the audit record could not be saved yet: it is saved with the next change.",
+        "dbChanged": "Nothing was deleted: the database changed on disk, maybe because another Pharos window uses this folder. Close it, reopen Pharos and verify again."
+      },
+      "missing": {
+        "title": "Missing ({{count}})",
+        "desc": "The file is not on this device. They are marked as missing; attach the same file again to repair it."
+      },
+      "damaged": {
+        "title": "Damaged ({{count}})",
+        "desc": "The file does not decrypt or its content does not match. They are marked as damaged; attach the same file again to rewrite it."
+      },
+      "newer": {
+        "title": "From a newer version ({{count}})",
+        "desc": "A newer version of Pharos wrote them: update the app to read them. They are not marked."
+      },
+      "unreadable": {
+        "title": "Could not be checked ({{count}})",
+        "desc": "Another program had them locked, a permission is missing, or they changed while being checked (for example, attached again). Verify again. They are not marked."
+      },
+      "file": "File {{id}}",
+      "noUses": "No current attachments.",
+      "useIn": "In {{project}}",
+      "open": "Open {{section}}"
+    }
   },
   "importReport": {
     "detecting": "Detecting… ({{done}}/{{total}})",

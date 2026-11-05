@@ -372,6 +372,7 @@
       "general": "General",
       "sync": "Sincronización",
       "security": "Seguridad",
+      "evidence": "Evidencias",
       "diagnostics": "Diagnóstico"
     },
     "groups": {
@@ -417,7 +418,122 @@
       "syncing": "Sincronizando…"
     },
     "unsaved": "Cambios sin guardar",
-    "nothingToSave": "No hay cambios que guardar."
+    "nothingToSave": "No hay cambios que guardar.",
+    "evidence": {
+      "desktopOnly": "Las evidencias se guardan cifradas en este equipo: su uso y su verificación solo están en la app de escritorio.",
+      "usage": {
+        "title": "Almacén de evidencias",
+        "desc": "Los adjuntos se guardan cifrados en la carpeta evidence, junto a la base de datos, y no se sincronizan todavía.",
+        "total": "Ocupa",
+        "totalValue_one": "{{size}} · {{count}} archivo",
+        "totalValue_other": "{{size}} · {{count}} archivos",
+        "byOwner": "Adjuntos por tipo",
+        "byOwnerHint": "Solo los adjuntos vigentes: no cuenta los borrados ni los caducados.",
+        "none": "Todavía no hay adjuntos.",
+        "colKind": "Tipo",
+        "colCount": "Adjuntos",
+        "colSize": "Tamaño",
+        "expired": "Caducados por retención",
+        "expiredHint": "Su contenido se borró al vencer su plazo; el registro de que existieron se conserva.",
+        "rawReports": "Retención de reportes crudos",
+        "rawReportsHint": "Los reportes importados (JUnit, Allure…) se borran al cumplir su plazo; los resultados que se leyeron de ellos se quedan.",
+        "rawDays_one": "{{count}} día",
+        "rawDays_other": "{{count}} días",
+        "rawAlways": "Siempre",
+        "rawDefault": "Por defecto: {{days}}",
+        "rawCounts": "{{kept}} guardados · {{expired}} caducados",
+        "rawOverride": "{{project}}: {{days}}",
+        "totalHint": "Solo los archivos que están en este equipo: no cuenta los que faltan.",
+        "failed": "No se pudo leer el almacén de evidencias: {{reason}}",
+        "marked": "Marcados por la última verificación",
+        "markedHint": "Se conservan al reiniciar. Pulsa «Verificar evidencias» para ver dónde se usan.",
+        "markedNone": "Ninguno",
+        "markedMissing_one": "{{count}} falta",
+        "markedMissing_other": "{{count}} faltan",
+        "markedDamaged_one": "{{count}} dañado",
+        "markedDamaged_other": "{{count}} dañados"
+      },
+      "owners": {
+        "planner_card": "Planificador",
+        "defect": "Defectos",
+        "test_case": "Casos de prueba",
+        "run_shard": "Reportes de ejecución",
+        "result": "Resultados",
+        "step_result": "Resultados de paso",
+        "session_note": "Notas de sesión",
+        "other": "Otros ({{kind}})"
+      },
+      "check": {
+        "title": "Verificar evidencias",
+        "desc": "Comprueba que cada archivo está y se descifra, y busca archivos que ninguna fila conoce. No borra nada por sí sola.",
+        "action": "Verificación",
+        "actionHint": "Lee y descifra cada archivo, así que puede tardar con muchas evidencias. Puedes seguir trabajando mientras tanto.",
+        "run": "Verificar evidencias",
+        "running": "Verificando…",
+        "progress": "{{done}} de {{total}} archivos · {{bytesDone}} de {{bytesTotal}}",
+        "progressLabel": "Progreso de la verificación",
+        "busy": "Ya hay una verificación o una reparación en curso.",
+        "failed": "No se pudo verificar las evidencias: {{reason}}",
+        "summary_one": "Verificado el {{date}}: {{count}} archivo, {{size}}.",
+        "summary_other": "Verificado el {{date}}: {{count}} archivos, {{size}}.",
+        "allGood": "Todo en orden",
+        "marked": "Marcados ahora: {{marked}} · Recuperados: {{restored}}",
+        "cancel": "Cancelar",
+        "cancelling": "Cancelando…",
+        "started": "Verificación de evidencias en curso.",
+        "finished": "Verificación de evidencias terminada.",
+        "cancelledShort": "Verificación de evidencias cancelada.",
+        "cancelled": "Verificación cancelada: se comprobaron {{done}} de {{total}} archivos. Lo comprobado se ha marcado; vuelve a verificar para el resto."
+      },
+      "orphans": {
+        "title": "Archivos sin registro ({{count}})",
+        "desc": "Ninguna fila de esta base de datos los conoce. Pueden ser de una base de datos apartada o restaurada, o de otra instancia: bórralos solo si sabes que sobran.",
+        "recent": "Reciente",
+        "recentHint": "Creado o modificado en las últimas 24 horas (una copia o una restauración cuenta como nueva): no se puede borrar.",
+        "select": "Seleccionar {{file}}",
+        "selectAll": "Seleccionar todos",
+        "repair": "Borrar seleccionados",
+        "confirmTitle_one": "¿Borrar {{count}} archivo sin registro?",
+        "confirmTitle_other": "¿Borrar {{count}} archivos sin registro?",
+        "confirmMessage": "Se borran del disco y no se pueden recuperar. Si son de una base de datos apartada, esa base de datos perderá esos adjuntos. Se omiten los creados o modificados en las últimas 24 horas y, solo en Windows, los que otro programa tenga abiertos. Si hay otra ventana de Pharos abierta con esta misma carpeta de datos, ciérrala antes.",
+        "confirm": "Sí, borrar",
+        "deleted_one": "Se borró {{count}} archivo ({{size}}).",
+        "deleted_other": "Se borraron {{count}} archivos ({{size}}).",
+        "skipped_one": "{{count}} se omitió: {{reasons}}.",
+        "skipped_other": "{{count}} se omitieron: {{reasons}}.",
+        "reasons": {
+          "recent": "reciente",
+          "in_use": "abierto por otro programa (solo se detecta en Windows)",
+          "known": "ya tiene registro",
+          "gone": "ya no está",
+          "invalid": "nombre no válido",
+          "error": "no se pudo borrar"
+        },
+        "failed": "No se pudieron borrar los archivos: {{reason}}",
+        "notSaved": "Los archivos se borraron, pero el registro de auditoría aún no se pudo guardar: se guardará con el próximo cambio.",
+        "dbChanged": "No se borró nada: la base de datos cambió en disco, quizá porque otra ventana de Pharos usa esta carpeta. Ciérrala, vuelve a abrir Pharos y verifica de nuevo."
+      },
+      "missing": {
+        "title": "Faltan ({{count}})",
+        "desc": "El archivo no está en este equipo. Quedan marcados como «falta»; vuelve a adjuntar el mismo archivo para repararlo."
+      },
+      "damaged": {
+        "title": "Dañados ({{count}})",
+        "desc": "El archivo no se descifra o su contenido no coincide. Quedan marcados como «dañado»; vuelve a adjuntar el mismo archivo para reescribirlo."
+      },
+      "newer": {
+        "title": "De una versión más nueva ({{count}})",
+        "desc": "Los escribió una versión más nueva de Pharos: actualiza la app para leerlos. No se marcan."
+      },
+      "unreadable": {
+        "title": "No se pudieron comprobar ({{count}})",
+        "desc": "Otro programa los tenía bloqueados, falta un permiso o cambiaron mientras se comprobaban (por ejemplo, al volver a adjuntarlos). Vuelve a verificar. No se marcan."
+      },
+      "file": "Archivo {{id}}",
+      "noUses": "Sin adjuntos vigentes.",
+      "useIn": "En {{project}}",
+      "open": "Abrir {{section}}"
+    }
   },
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",

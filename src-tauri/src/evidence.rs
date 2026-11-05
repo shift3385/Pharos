@@ -99,6 +99,9 @@ pub struct EvidenceStore {
     dir: PathBuf,
     name_key: [u8; 32],
     file_key: [u8; 32],
+    /// Contents a check marked `damaged` (DAT-03b, `check.rs`): never trusted
+    /// for dedupe, so attaching one again rewrites its file.
+    damaged: Mutex<std::collections::HashSet<String>>,
 }
 
 impl EvidenceStore {
@@ -116,6 +119,7 @@ impl EvidenceStore {
             dir: data_dir.join(DIR),
             name_key,
             file_key,
+            damaged: Mutex::default(),
         }
     }
 
@@ -451,14 +455,17 @@ impl BlobWriter {
     /// Moves the sealed file to its name. If an intact copy of that content
     /// is already stored (right length and header), the new one is discarded;
     /// a damaged copy (truncated, overwritten) is replaced, so attaching the
-    /// same file again repairs it. Call it with the database lock held, so a
+    /// same file again repairs it. That check is cheap and cannot see a copy
+    /// damaged inside its blocks (same length, same header): one that
+    /// «Verificar evidencias» marked `damaged` is therefore always replaced
+    /// (DAT-03b), and `record_blob` clears the mark in the database. Call it with the database lock held, so a
     /// concurrent `collect` cannot remove the file between this and the row
     /// that references it.
     pub(crate) fn commit(mut self, store: &EvidenceStore) -> Result<Committed, String> {
         self.seal()?;
         let stored = self.sealed.clone().expect("sealed above");
         let dest = store.path_for(&stored.sha256)?;
-        if is_intact(&dest, stored.size) {
+        if is_intact(&dest, stored.size) && !store.is_damaged(&stored.sha256) {
             // Drop removes the temp copy.
             return Ok(Committed {
                 stored,
@@ -470,15 +477,20 @@ impl BlobWriter {
         }
         // `rename` replaces a damaged copy (MOVEFILE_REPLACE_EXISTING on Windows).
         match fs::rename(&self.tmp, &dest) {
-            Ok(()) => Ok(Committed {
-                stored,
-                wrote: true,
-            }),
+            Ok(()) => {
+                store.forget_damaged(&stored.sha256);
+                Ok(Committed {
+                    stored,
+                    wrote: true,
+                })
+            }
             // Another writer of the same content won the race.
-            Err(_) if is_intact(&dest, stored.size) => Ok(Committed {
-                stored,
-                wrote: false,
-            }),
+            Err(_) if is_intact(&dest, stored.size) && !store.is_damaged(&stored.sha256) => {
+                Ok(Committed {
+                    stored,
+                    wrote: false,
+                })
+            }
             Err(e) => Err(format!("failed to store evidence: {e}")),
         }
     }
@@ -647,7 +659,8 @@ pub(crate) fn release_unreferenced(conn: &Connection) -> Result<(), String> {
 /// after `Db::persist_and_collect`, with the database lock held; the rows'
 /// removal is saved by the next persist (if that never happens, the next run
 /// finds the rows again and the files already gone). A content referenced
-/// again in the meantime goes back to `present`. Returns the files removed.
+/// again in the meantime goes back to `present`, or to `damaged` if a check marked it so
+/// (DAT-03b: the mark survives the release). Returns the files removed.
 pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize, String> {
     let mut stmt = conn
         .prepare("SELECT sha256 FROM blobs WHERE local_state = 'deleting'")
@@ -660,9 +673,14 @@ pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize,
     let mut removed = 0;
     for sha in shas {
         if live_refs(conn, &sha)? > 0 {
+            let state = if store.is_damaged(&sha) {
+                "damaged"
+            } else {
+                "present"
+            };
             conn.execute(
-                "UPDATE blobs SET local_state = 'present' WHERE sha256 = ?1",
-                params![sha],
+                "UPDATE blobs SET local_state = ?2 WHERE sha256 = ?1",
+                params![sha, state],
             )
             .map_err(|e| e.to_string())?;
             continue;
@@ -670,6 +688,7 @@ pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize,
         store.remove(&sha)?;
         conn.execute("DELETE FROM blobs WHERE sha256 = ?1", params![sha])
             .map_err(|e| e.to_string())?;
+        store.forget_damaged(&sha);
         removed += 1;
     }
     if removed > 0 {
@@ -1140,6 +1159,8 @@ fn fault_point(moved: usize) -> Result<(), String> {
 fn fault_point(_moved: usize) -> Result<(), String> {
     Ok(())
 }
+
+pub(crate) mod check;
 
 #[cfg(test)]
 pub(crate) mod tests;

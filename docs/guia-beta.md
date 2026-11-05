@@ -50,7 +50,7 @@ marcando) y cómo informar de un problema. Los detalles técnicos están en el
   Editor / Gherkin / Dividida y «Ir a un caso…» (Ctrl P).
 - **Administración** en una sola pantalla con pestañas: Motor de IA,
   Plantillas, General (tema «Según el sistema»), Sincronización, Seguridad
-  (aquí está ahora la clave de recuperación) y Diagnóstico.
+  (aquí está ahora la clave de recuperación), Evidencias y Diagnóstico.
 - Al salir de una pantalla con cambios sin guardar, Pharos pregunta antes.
 
 **Todavía no incluye:** ejecución de pruebas (llega más adelante en 0.2.0;
@@ -210,6 +210,26 @@ conserva las etiquetas.
       elementos borrados en el mínimo (1 día) y guarda. Borra un caso ya
       sincronizado y, pasado un día, sincroniza: el caso se purga y no vuelve.
       Después restablece la retención (30 por defecto).
+
+### 4.5b Verificar evidencias (DAT-03b)
+
+- [ ] Administración → **Evidencias** muestra cuánto ocupan los adjuntos, por
+      tipo, y la retención de los informes en bruto (90 días por defecto).
+- [ ] **Verificar evidencias** con algunos adjuntos: «Todo en orden».
+- [ ] Con Pharos cerrado, mueve fuera de `evidence` un archivo de una de sus
+      subcarpetas (guárdalo) y copia otro `.pev` en esa subcarpeta con un
+      nombre nuevo de 64 letras `0-9a-f` que empiece por las mismas dos.
+      Abre y verifica: el primero sale en «Faltan», con el adjunto y su
+      proyecto; el segundo, en «Archivos sin registro», como «Reciente»: una
+      copia cuenta como nueva aunque conserve la fecha del original, y no se
+      puede borrar durante 24 horas. «Marcados por la última verificación»
+      muestra «1 falta», también tras reiniciar.
+- [ ] Pulsa **Cancelar** durante una verificación larga: el informe dice
+      cuántos archivos se comprobaron.
+- [ ] Vuelve a adjuntar el archivo que falta en el mismo sitio y verifica: ya
+      no sale.
+- [ ] En la web, la pestaña Evidencias solo dice que está en la app de
+      escritorio.
 
 ### 4.6 Clave de recuperación (SEC-03)
 

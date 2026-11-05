@@ -283,3 +283,80 @@ sobre lo decidido, sin cambiar la decisión:
   purgar un run se borran también estas filas y el informe en bruto, y la
   recogida libera sus archivos. Pharos
   nunca lee una ruta del informe por su cuenta.
+
+## Implementación (E5, DAT-03b: «Verificar evidencias», 2026-11-04)
+
+En `src-tauri/src/evidence/check.rs`, sin migración (la 0033 que se reservó
+quedó retirada) y sin nada nuevo que sincronizar (`APPLIED_SET_VERSION` igual).
+
+- **Dónde.** Administración → Evidencias, solo en escritorio (la web muestra
+  una nota). Muestra cuánto ocupa lo que hay en este equipo (`present` y
+  `damaged`), cuántos contenidos marcó la última verificación como «falta» o
+  «dañado» (son filas: se ven también tras reiniciar), los adjuntos vigentes por
+  tipo de propietario, los caducados y la retención de los informes en bruto
+  (90 días por defecto y las excepciones por proyecto de `evidence_retention`).
+- **Qué comprueba.** Lee y descifra por bloques cada contenido (`present`,
+  `missing` o `damaged`) y busca `.pev` con nombre del almacén
+  (`<2 hex>/<64 hex>.pev`) que ninguna fila de `blobs` conoce. Informa de:
+  - **sin registro**: archivos huérfanos;
+  - **falta** (`missing`): la fila existe y el archivo no;
+  - **dañado** (`damaged`, estado nuevo; `local_state` no tiene CHECK): no
+    descifra, está truncado o su contenido no coincide con su sha256;
+  - de una **versión más nueva**, o que **no se pudo comprobar** (bloqueado,
+    sin permiso o cambiado mientras se leía): se informan y no se marcan.
+
+  Los que faltan y los dañados salen con sus usos vigentes (tipo, etiqueta y
+  proyecto del propietario, con enlace a su sección). La interfaz nunca
+  muestra el sha256: solo el principio del nombre HMAC del archivo.
+- **Sin carreras con guardar ni con la recogida, y sin descifrar con el
+  bloqueo.** Tres fases: foto de `blobs` con el bloqueo de la BD; recorrido y
+  descifrado **sin** el bloqueo, en un hilo aparte (`spawn_blocking`),
+  anotando la huella de cada archivo (longitud, fechas de modificación y de
+  creación) antes y después de leerlo; y reconciliación con el bloqueo, que
+  **solo compara**: un hallazgo vale si la fila sigue en el estado de la foto y
+  el archivo con la misma huella; si no, sale como «no se pudo comprobar».
+  Un archivo que un adjunto escribió entre medias ya tiene su fila (el `commit`
+  del almacén y la fila comparten bloqueo); uno que la recogida borró ya no
+  tiene fila. Las subidas abiertas escriben en `tmp/`, que no se recorre, y
+  `Uploads` no se toca. Una sola verificación o reparación a la vez.
+- **Cancelar.** Se puede cancelar entre archivos: lo leído se juzga y se marca,
+  y el informe dice cuántos de cuántos se comprobaron. Si la pestaña se abre
+  con una verificación en marcha, sigue su progreso.
+- **Marcas.** `present → missing | damaged` y de vuelta a `present` cuando el
+  archivo vuelve y descifra, en una transacción; `deleting` y `remote_only`
+  no se tocan. Un contenido dañado que se libera y se vuelve a referenciar
+  antes de la recogida vuelve a `damaged`, no a `present`. El último informe
+  vive en memoria durante la sesión.
+- **Reparar es manual.**
+  - **Huérfanos:** se borran solo los que el usuario marca y confirma, con el
+    bloqueo de la BD, y solo si siguen sin fila, se crearon o modificaron hace
+    más de 24 horas (cuenta la más reciente de las dos fechas: una copia o una
+    restauración desde una copia de seguridad conserva la fecha de
+    modificación pero estrena la de creación) y ningún otro proceso los tiene
+    abiertos (esto solo se detecta en Windows, donde una apertura sin compartir
+    falla). Los demás se omiten con su motivo.
+  - **Otra instancia.** No se borra nada si `pharos.db.enc` cambió en disco
+    desde la última vez que este proceso lo leyó o lo guardó: otro Pharos sobre
+    la misma carpeta de datos podría tener esos archivos vinculados en una BD
+    que este no ve. El diálogo pide cerrar otras ventanas sobre la misma
+    carpeta y no promete más que esto.
+  - **Orden.** Para cada archivo se escribe su evento en un savepoint, después
+    se borra el archivo, y si el borrado falla se deshace el savepoint: ningún
+    evento nombra un archivo que sigue ahí. El resultado siempre es parcial
+    (borrados y omitidos con su motivo); si guardar falla después de borrar,
+    se informa igualmente de lo borrado (`saved: false`) y los eventos se
+    guardan con el siguiente cambio.
+  - **Faltan y dañados:** se reparan volviendo a adjuntar el mismo archivo. La
+    comprobación barata de la deduplicación (longitud y cabecera) no ve un
+    archivo dañado por dentro que conserva su longitud; por eso `commit`
+    nunca deduplica contra un contenido marcado `damaged` (las marcas se
+    cargan en `EvidenceStore` al abrir), lo reescribe, y `record_blob`
+    quita la marca.
+- **Auditoría.** Cada huérfano borrado (`evidence_file`, `delete`, con su
+  nombre y tamaño) y cada verificación que cambia marcas (`evidence_check`,
+  `update`, con los recuentos) dejan un evento por `journal::record_event_in`,
+  con actor `system:evidence` en nombre del usuario y sin proyecto. Entran en
+  la cadena con hash del dispositivo, con hora y actor como cualquier otro
+  evento, pero **sin fila en el oplog**: son locales porque nada del almacén se
+  sincroniza (decisión del coordinador, 2026-11-04). Los logs solo llevan
+  recuentos.

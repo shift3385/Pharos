@@ -76,7 +76,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
       expect(await violations()).toEqual([]);
       // Administración opens on Motor de IA; every tab is checked (ADR-0031).
       await go("admin", es.admin.title);
-      for (const tab of ["ai", "templates", "general", "sync", "security", "diagnostics"] as const) {
+      for (const tab of ["ai", "templates", "general", "sync", "security", "evidence", "diagnostics"] as const) {
         await $(`[data-testid="admin-tab-${tab}"]`).click();
         await expect($(`[role="tabpanel"][aria-label="${es.admin.tabs[tab]}"]`)).toBeDisplayed();
         expect(await violations()).toEqual([]);

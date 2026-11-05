@@ -85,6 +85,7 @@ pub fn run() {
             let log_dir = app.path().app_log_dir().ok().map(instance::scoped_dir);
             app.manage(diag::init(log_dir));
             app.manage(evidence::Uploads::default());
+            app.manage(evidence::check::EvidenceCheck::default());
             // Download folder for exports (UX-02), remembered per instance.
             let prefs_file = app
                 .path()
@@ -222,6 +223,11 @@ pub fn run() {
             evidence::evidence_upload_begin,
             evidence::evidence_upload_chunk,
             evidence::evidence_upload_cancel,
+            evidence::check::evidence_usage,
+            evidence::check::evidence_check_progress,
+            evidence::check::evidence_check,
+            evidence::check::evidence_check_cancel,
+            evidence::check::evidence_orphans_delete,
             planner::planner_attachment_add,
             planner::planner_attachment_list,
             planner::planner_attachment_save,
