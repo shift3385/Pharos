@@ -5,7 +5,6 @@ import {
   homeKpis,
   periodDays,
   projectKey,
-  upcomingTests,
   visibleDayLabels,
   type HomeProject,
 } from "./homeData";
@@ -58,22 +57,11 @@ describe("home data (RED-V1)", () => {
     expect(projectKey("")).toBe("");
   });
 
-  it("sums the KPIs over the open projects", () => {
+  it("counts the open projects and those closing this month", () => {
     expect(homeKpis([portal, banca, erp], today)).toEqual({
       projects: 3,
       closingThisMonth: 1, // banca closes on 31 Oct; portal in November
-      pending: 3,
-      total: 3,
-      openDefects: 4,
-      criticalDefects: 1,
     });
-  });
-
-  it("orders the upcoming tests by priority, then project recency, then id", () => {
-    expect(
-      upcomingTests([portal, banca, erp]).map((r) => r.scenarioId),
-    ).toEqual(["PCL-0001", "AMB-0001", "PCL-0002"]);
-    expect(upcomingTests([portal, banca], 1)).toHaveLength(1);
   });
 
   it("lists the exit-criteria projects by closing date and filters by name or key", () => {

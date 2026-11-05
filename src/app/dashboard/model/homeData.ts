@@ -1,9 +1,9 @@
-// Home data (SPEC §8 «Inicio», RED-V1). Pure aggregation over what exists
-// today: projects, their live cases, the plan's schedule and closure criteria,
-// and the project's defects (DEF-01). Execution results arrive with 0.2.0 (RED-W6):
-// until then nothing here invents pass/fail numbers.
+// Home data (SPEC §8 «Inicio», RED-V1): what does not come from executions —
+// projects, their live cases, the plan's schedule and closure criteria and the
+// project's defects (DEF-01) — plus the period. Execution numbers are in
+// `metrics.ts` (RED-W6), from the shared derivation.
 
-/** A case waiting to be run (no case has been executed yet: no run model). */
+/** A live case of a project (what «Próximas pruebas» shows of it). */
 export interface HomeCase {
   id: string;
   scenarioId: string;
@@ -25,13 +25,10 @@ export interface HomeProject {
   criticalDefects: number;
 }
 
+/** The KPIs that do not come from executions (those are `executionKpis`). */
 export interface HomeKpis {
   projects: number;
   closingThisMonth: number;
-  pending: number;
-  total: number;
-  openDefects: number;
-  criticalDefects: number;
 }
 
 /** «PCL-», «ATS_», «TC » → «PCL», «ATS», «TC». */
@@ -56,48 +53,12 @@ export function shortDate(iso: string, lang: string | undefined): string {
 
 export function homeKpis(projects: HomeProject[], today: Date): HomeKpis {
   const month = isoDay(today).slice(0, 7);
-  const sum = (f: (p: HomeProject) => number) =>
-    projects.reduce((n, p) => n + f(p), 0);
-  const total = sum((p) => p.cases.length);
   return {
     projects: projects.length,
     closingThisMonth: projects.filter(
       (p) => p.closeDate?.slice(0, 7) === month && p.closeDate >= isoDay(today),
     ).length,
-    // No case has a result yet, so every live case is still pending.
-    pending: total,
-    total,
-    openDefects: sum((p) => p.openDefects),
-    criticalDefects: sum((p) => p.criticalDefects),
   };
-}
-
-const PRIORITY_RANK: Record<string, number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
-const rank = (priority: string) => PRIORITY_RANK[priority] ?? 4;
-
-export interface QueueRow extends HomeCase {
-  projectId: string;
-  projectName: string;
-}
-
-/** «Próximas pruebas»: pending cases by priority, then by the project's
- *  recency, then by case id. */
-export function upcomingTests(projects: HomeProject[], limit = 5): QueueRow[] {
-  const rows = projects.flatMap((p, order) =>
-    p.cases.map((c) => ({ ...c, projectId: p.id, projectName: p.name, order })),
-  );
-  rows.sort(
-    (a, b) =>
-      rank(a.priority) - rank(b.priority) ||
-      a.order - b.order ||
-      a.scenarioId.localeCompare(b.scenarioId),
-  );
-  return rows.slice(0, limit).map(({ order: _order, ...row }) => row);
 }
 
 /** Projects for the exit-criteria picker by closing date (upcoming soonest
