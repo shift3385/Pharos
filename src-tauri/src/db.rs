@@ -201,6 +201,19 @@ pub struct Db {
     key: [u8; 32],
     /// `evidence/` next to the database, keyed from `key` (ADR-0014).
     evidence: EvidenceStore,
+    /// `pharos.db.enc` as this process last read or wrote it (length and
+    /// modification time), so a change by another process can be told
+    /// (DAT-03b: deleting orphan evidence refuses then).
+    disk: Mutex<Option<DiskStamp>>,
+}
+
+/// Length and modification time of a file; None when it is not there.
+type DiskStamp = (u64, Option<std::time::SystemTime>);
+
+fn disk_stamp(path: &Path) -> Option<DiskStamp> {
+    fs::metadata(path)
+        .ok()
+        .map(|m| (m.len(), m.modified().ok()))
 }
 
 /// Where the database key is kept: the OS keychain in the app, memory in tests.
@@ -343,11 +356,12 @@ impl Db {
         recovery::encode(&self.key)
     }
 
-    fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
+    pub(crate) fn open_with_key(app_data_dir: &Path, key: [u8; 32]) -> Result<Self, String> {
         fs::create_dir_all(app_data_dir).map_err(|e| e.to_string())?;
         let enc_path = app_data_dir.join("pharos.db.enc");
         // Read the latest save without changing any file yet: a database from a
         // newer version must be refused before anything on disk is touched.
+        let disk = disk_stamp(&enc_path);
         let saved = latest_save(&enc_path, &key)?;
         let mut conn = Connection::open_in_memory().map_err(|e| e.to_string())?;
         if let Some((_, plain)) = &saved {
@@ -373,11 +387,13 @@ impl Db {
             write_backup(&enc_path, blob, last.as_deref())?;
         }
         run_migrations_with(&conn, Some(&store))?;
+        evidence::check::load_damaged(&conn, &store)?;
         let db = Db {
             conn: Mutex::new(conn),
             enc_path,
             key,
             evidence: store,
+            disk: Mutex::new(disk),
         };
         // Save the migrated image right away, so the backup and the file on
         // disk are always exactly one upgrade apart; then finish the evidence
@@ -430,7 +446,10 @@ impl Db {
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
         self.save(&conn)?;
-        if evidence::collect(&conn, &self.evidence)? > 0 {
+        // Any `deleting` row changes in `collect`: its removal, or its return to
+        // `present` / `damaged` when it was referenced again. Either is saved.
+        if evidence::has_pending_deletions(&conn)? {
+            evidence::collect(&conn, &self.evidence)?;
             self.save(&conn)?;
         }
         Ok(())
@@ -450,7 +469,18 @@ impl Db {
             .serialize(DatabaseName::Main)
             .map_err(|e| e.to_string())?;
         let blob = encrypt(&self.key, &image)?;
-        write_atomic(&self.enc_path, &blob)
+        write_atomic(&self.enc_path, &blob)?;
+        if let Ok(mut disk) = self.disk.lock() {
+            *disk = disk_stamp(&self.enc_path);
+        }
+        Ok(())
+    }
+
+    /// True if `pharos.db.enc` is not what this process last read or wrote:
+    /// another process (a second Pharos on the same data folder) saved it.
+    pub(crate) fn changed_on_disk(&self) -> bool {
+        let now = disk_stamp(&self.enc_path);
+        self.disk.lock().map(|d| *d != now).unwrap_or(true)
     }
 }
 

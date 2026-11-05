@@ -1,7 +1,7 @@
 // Administration tabs (SPEC §8, ADR-0031). One screen at `/admin?tab=<id>`;
 // the old `/templates` and `/ai` routes redirect here.
 
-export type AdminTab = "ai" | "templates" | "general" | "sync" | "security" | "diagnostics";
+export type AdminTab = "ai" | "templates" | "general" | "sync" | "security" | "evidence" | "diagnostics";
 
 export type AdminTabGroup = "resources" | "application" | "account" | "support";
 
@@ -9,7 +9,7 @@ export type AdminTabGroup = "resources" | "application" | "account" | "support";
 export const ADMIN_TAB_GROUPS: { group: AdminTabGroup; tabs: AdminTab[] }[] = [
   { group: "resources", tabs: ["ai", "templates"] },
   { group: "application", tabs: ["general"] },
-  { group: "account", tabs: ["sync", "security"] },
+  { group: "account", tabs: ["sync", "security", "evidence"] },
   { group: "support", tabs: ["diagnostics"] },
 ];
 

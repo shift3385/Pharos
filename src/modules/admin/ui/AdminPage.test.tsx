@@ -49,6 +49,7 @@ describe("Administración", () => {
       "General",
       "Sincronización",
       "Seguridad",
+      "Evidencias",
       "Diagnóstico",
     ]);
     expect(screen.getByRole("tab", { name: "Motor de IA" })).toHaveAttribute("aria-selected", "true");
