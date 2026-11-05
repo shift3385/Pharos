@@ -2,6 +2,7 @@
 // keyboard and form behaviour axe cannot see is asserted directly. Report:
 // docs/accesibilidad/auditoria-wcag-0.1.0.md.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";

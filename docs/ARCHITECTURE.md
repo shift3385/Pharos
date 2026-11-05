@@ -476,7 +476,8 @@ ADR-0013; built in E4, step 9).** The section «Ejecuciones»
 - **One persister in Rust** (`src-tauri/src/runs/import.rs`, a child of
   `runs`): `run_import_preview` (read-only, rolled back), `run_import`
   (raw report upload + one transaction: the run if new, the shard, results
-  with steps, one `import` audit event; a new run closes unless kept open),
+  with steps, one `import` audit event; a new run closes unless kept open,
+  and may belong to a cycle that is not closed: CYC-02, `newRun.cycleId`),
   `run_import_attach` (one report attachment to its result or step result,
   idempotent by owner and content), `unlinked_tests_list` (the tray: the keys
   whose latest imported result has no case) and `run_counts_list` (final
@@ -1016,6 +1017,21 @@ store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
   the plan and every case as `.xlsx` **and** `.pdf`. `projects` builds them
   from `projectPlanFiles` (`test-plan`) and `projectCaseFiles` (`test-cases`);
   a PDF that cannot be rendered is left out and reported (`skipped`).
+- **Milestones and cycles (EXP-03):** after the template's content, the plan
+  adds the sheets «Hitos» (step 14) and «Ciclos» (the project's cycles with
+  the cycle list's own progress summary, the same numbers and percents as the
+  «Ciclos» screen), and each case a «Ciclos» sheet with the cycles it is in;
+  the PDFs end with the same tables. They are `ExportTable`s
+  (`@shared/export/extraTables`: `addTableSheets`, `tableSections`) built by
+  `@modules/cycles` (`loadCycleExport`, `cyclesTable`, `caseCyclesTable`)
+  and `test-plan/export/planExtras.ts`. A table without rows adds nothing, the
+  template's sheets do not change and the importers ignore the new ones. A
+  ZIP reads a project's cycles once (`exportAll.ts::addProject`) and hands
+  them to its plan and its cases: not at all for a project with neither, and
+  the items only when it has cases. Items are read only for the cycles that
+  have any, in parallel; a single case export reads them too (there is no
+  query by case: a known cost in projects with many cycles, EXP-04). A failure to read them stops the export with one toast
+  (`ReportedError`, so the caller adds none) and nothing is saved.
 
 ## Testing
 
@@ -1025,6 +1041,10 @@ The QA tool tests itself at four levels:
   typecheck, lint with 0 warnings and the license check). Includes the
   no-hardcoded-color guard and a test that filters an exported `.feature` with
   the real Cucumber tag-expression engine.
+  Timeouts (BASE-21): Vitest's 5 s default stays; a file whose tests are slow
+  by nature (whole pages with axe, real `.xlsx` round trips) imports
+  `@test/slow` (20 s for that file only), and a test that waits on purpose
+  (retries, backoff) uses fake timers instead of a longer timeout.
 - **Rust core:** `cargo test` in `src-tauri/` (repositories, encryption,
   atomic persistence, HLC, sync merge). It runs again since the switch to MSVC.
 - **Contracts (BASE-05, [ADR-0026](adr/0026-contratos-generados.md)):** the

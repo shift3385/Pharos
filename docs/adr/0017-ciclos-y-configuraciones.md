@@ -270,6 +270,12 @@ reabre (`cycle-closed`): primero se reabre el ciclo. La celda de un elemento
 del ciclo que cubre el caso entero es el peor de sus flujos y filas; la
 pantalla del run cuenta además cada flujo y fila por separado.
 
+**Nota (CYC-02, E6p, 2026-11-05).** Un run importado puede nacer en un ciclo
+(«Importar informe» → «Ciclo»; ver la nota de CYC-02 en ADR-0013). Un ciclo
+`closed` no se ofrece y el escritorio lo rechaza (`cycle-closed`) en la vista
+previa y al importar. El progreso del ciclo (la lista y la pestaña) cuenta sus
+resultados como los de un run de «Ejecutar».
+
 ## Nota (E6p, EJE-07: eliminar un run, 2026-11-05)
 
 Un run de un ciclo **cerrado** no se puede eliminar (`cycle-closed`), igual

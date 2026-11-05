@@ -5,6 +5,8 @@ import { methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
 import { buildPlanPdf, planPdfName } from "./planPdf";
+import type { CycleExportData } from "@modules/cycles";
+import { planExtraTables } from "./planExtras";
 
 type Translate = (key: string) => string;
 
@@ -120,10 +122,21 @@ export async function projectPlanFiles(
   lang: string,
   onEach?: (name: string) => void,
   onSkip?: (name: string) => void,
+  cycles?: CycleExportData,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return [];
-  const exportable = planToExportable(plan, t);
+  const exportable = {
+    ...planToExportable(plan, t),
+    extraTables: await planExtraTables(
+      projectId,
+      userId,
+      plan.data.milestones,
+      t,
+      lang,
+      cycles,
+    ),
+  };
   const { filename, buffer } = await buildPlanXlsx(exportable, lang);
   onEach?.(filename);
   const files: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [
