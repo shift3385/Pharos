@@ -9,6 +9,7 @@ import {
   projectPlanStatus,
 } from "@modules/test-plan";
 import {
+  CASES_CHANGED_EVENT,
   TestCasesPage,
   projectCaseCount,
   projectCaseOptions,
@@ -182,9 +183,11 @@ interface HeaderFacts {
 }
 
 /** What the header says about the project (plan status, counts). Reloaded
- *  when the section changes (a case or requirement may have been added),
- *  after a sync and after the plan is saved. Only the newest answer is kept;
- *  a failed load keeps the last facts (the header stays as it was). */
+ *  when the section changes (a requirement may have been added), after a
+ *  sync, after the plan is saved and when cases are created or deleted
+ *  (FIX-13; a batch, like the AI suggestions or a bulk delete, announces
+ *  once when it ends). Only the newest answer
+ *  is kept; a failed load keeps the last facts (the header stays as it was). */
 function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection) {
   const [facts, setFacts] = useState<HeaderFacts | null>(null);
   const latest = useRef(0);
@@ -213,10 +216,12 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     void load();
     window.addEventListener("pharos:synced", load);
     window.addEventListener(PLAN_SAVED_EVENT, load);
+    window.addEventListener(CASES_CHANGED_EVENT, load);
     return () => {
       live = false;
       window.removeEventListener("pharos:synced", load);
       window.removeEventListener(PLAN_SAVED_EVENT, load);
+      window.removeEventListener(CASES_CHANGED_EVENT, load);
     };
   }, [projectId, ownerId, tab]);
   return facts;

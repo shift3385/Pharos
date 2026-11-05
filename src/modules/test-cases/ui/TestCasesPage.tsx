@@ -9,6 +9,7 @@ import { unlessReported } from "@shared/ui/notify";
 import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai";
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
+import { announceCasesChanged } from "../model/events";
 import { projectTraceableCases } from "../api/traceLinks";
 import { CASE_PARAM } from "../model/caseLink";
 import {
@@ -128,17 +129,25 @@ export function TestCasesPage({
 
   async function createSuggested(items: TestSuggestion[], provenance: AiProvenance) {
     const author = user ? `${user.firstName} ${user.lastName}` : "";
-    for (const s of items) {
-      await testCaseApi.create({
-        projectId,
-        title: s.title,
-        author,
-        caseIdPrefix,
-        caseIdDigits,
-        userId,
-        // The whole case (title + description) came from the AI (IA-01).
-        data: { description: s.description, gherkinLevel: "basic", aiProvenance: { case: provenance } },
-      });
+    try {
+      for (const s of items) {
+        await testCaseApi.create(
+          {
+            projectId,
+            title: s.title,
+            author,
+            caseIdPrefix,
+            caseIdDigits,
+            userId,
+            // The whole case (title + description) came from the AI (IA-01).
+            data: { description: s.description, gherkinLevel: "basic", aiProvenance: { case: provenance } },
+          },
+          { quiet: true },
+        );
+      }
+    } finally {
+      // One announcement for the batch, also after a failure midway (FIX-13).
+      announceCasesChanged();
     }
     void refresh();
   }
@@ -212,12 +221,13 @@ export function TestCasesPage({
     let failed = 0;
     for (const id of ids) {
       try {
-        await testCaseApi.remove(id, userId);
+        await testCaseApi.remove(id, userId, { quiet: true });
       } catch {
         failed++;
       }
     }
     const done = ids.size - failed;
+    if (done > 0) announceCasesChanged();
     // One toast that says both, so the failure is never hidden behind the success.
     const parts = [
       done ? t("testCase.list.deletedToast", { count: done }) : "",
