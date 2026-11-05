@@ -47,6 +47,7 @@ export function RunDetail({
   const itemId = params.get("item");
   const [data, setData] = useState<RunOverview | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [dialog, setDialog] = useState<"close" | "edit" | "add" | "delete" | null>(null);
   const navigate = useNavigate();
@@ -59,8 +60,10 @@ export function RunDetail({
       if (request !== latest.current) return;
       setData(o);
       setFailed(false);
-    } catch {
-      if (request === latest.current) setFailed(true);
+    } catch (e) {
+      if (request !== latest.current) return;
+      if (String(e instanceof Error ? e.message : e).startsWith("run-deleted")) setDeleted(true);
+      else setFailed(true);
     }
   }, [runId, userId]);
   useEffect(() => {
@@ -115,8 +118,9 @@ export function RunDetail({
       toast(t("execution.run.closed", { key: run?.runKey ?? "" }));
       setDialog(null);
       await refresh();
-    } catch {
-      toast(t("execution.error.generic"), "error");
+    } catch (e) {
+      const raw = String(e instanceof Error ? e.message : e);
+      toast(raw.startsWith("run-deleted") ? t("execution.error.runDeleted") : t("execution.error.generic"), "error");
     }
   }
 
@@ -195,6 +199,15 @@ export function RunDetail({
         <p className="ex-banner ex-banner--info" role="note">
           <Info size={16} aria-hidden="true" />
           {t("execution.webReadOnly")}
+        </p>
+      </div>
+    );
+  if (deleted)
+    return (
+      <div className="rn">
+        {back}
+        <p className="tp-field__hint" role="status" data-testid="run-deleted-notice">
+          {t("execution.run.deletedNotice")}
         </p>
       </div>
     );

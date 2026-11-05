@@ -36,6 +36,9 @@ export const evidenceApi = {
   /** The retention of each kind of evidence in a project (DAT-03c). */
   retention: (projectId: string, userId: string): Promise<EvidenceRetention> =>
     invoke("evidence_retention_get", { projectId, userId }),
+  /** How many files a new setting would expire at the next pass. */
+  previewRetention: (projectId: string, kind: string, policy: RetentionPolicy, userId: string): Promise<number> =>
+    invoke("evidence_retention_preview", { projectId, kind, policy, userId }),
   /** Sets the retention of one kind in a project; a setting of this device. */
   setRetention: (
     projectId: string,

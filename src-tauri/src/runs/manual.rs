@@ -597,7 +597,11 @@ pub(crate) fn overview(
     user: &str,
 ) -> Result<Option<RunOverview>, String> {
     let Some(run) = get_run(conn, run_id, user)? else {
-        return Ok(None);
+        // A deleted run says so (EJE-07): the screen tells it from a missing one.
+        return match super::delete::deleted_error(conn, run_id, user) {
+            Some(e) => Err(e),
+            None => Ok(None),
+        };
     };
     let cycle: Option<(String, String)> = match &run.cycle_id {
         Some(id) => conn

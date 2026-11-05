@@ -474,7 +474,15 @@
           "log": "Logs",
           "screenshot": "Screenshots",
           "evidence": "Other evidence"
-        }
+        },
+        "saveLabel": "Apply the changes",
+        "save": "Save",
+        "confirmTitle": "Shorten the retention?",
+        "confirmMessage": "With the new period, the next pass (at startup or after a sync) removes these files from this device. The results stay; the files cannot be recovered.",
+        "confirm": "Yes, shorten",
+        "confirmLine_one": "{{kind}}: from {{from}} to {{to}} — {{count}} file would expire",
+        "confirmLine_other": "{{kind}}: from {{from}} to {{to}} — {{count}} files would expire",
+        "daysInvalid": "Enter a number of days from 1 to {{max}}."
       },
       "owners": {
         "planner_card": "Planner",
@@ -2754,7 +2762,7 @@
       "closeDiscardAborted": "Drafts and their attachments are discarded when the run is cancelled",
       "delete": "Delete run",
       "deleteTitle": "Delete the run",
-      "deleteMessage": "{{key}} “{{title}}” will disappear from the run list, the progress, the matrix and the report, on this device and on those that sync. Hidden:",
+      "deleteMessage": "{{key}} “{{title}}” will disappear from the lists and the progress, on this device and on those that sync. Hidden:",
       "deleteItems_one": "{{count}} run item",
       "deleteItems_other": "{{count}} run items",
       "deleteResults_one": "{{count}} recorded result (never deleted by hand)",
@@ -2768,9 +2776,10 @@
       "deleteCycle": "The progress of cycle {{key}} “{{title}}” will stop counting this run",
       "deleteDefects_one": "{{count}} result is linked to a defect: the defect keeps the link until the purge",
       "deleteDefects_other": "{{count}} results are linked to defects: the defects keep the link until the purge",
-      "deletePurge": "The results stay hidden and the purge takes them with the run after {{days}} days (Administration → General). This cannot be undone here.",
+      "deletePurge": "The results stay hidden and the purge takes them with the run after {{days}} days (Administration → General).",
       "deleteCycleClosed": "Cycle {{key}} is closed: a run of a closed cycle cannot be deleted. Reopen the cycle first.",
-      "deleted": "Run {{key}} deleted."
+      "deleted": "Run {{key}} deleted.",
+      "deletedNotice": "This run was deleted (perhaps on another device)."
     },
     "picker": {
       "search": "Search by ID or title",

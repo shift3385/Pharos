@@ -437,3 +437,25 @@ reserva 0035 se retiró sin usar.
   `redact` y libera el contenido por la recogida de siempre.
 - **Runs borrados (EJE-07):** sus evidencias siguen las mismas reglas hasta
   que la purga se las lleva con el run.
+
+### Tras la revisión independiente (E6p, DAT-03c, 2026-11-05)
+
+- **Gracia al actualizar** (decisión del coordinador). La primera pasada
+  anota `dat03c_enabled_at` en `sync_state`. La evidencia de resultados y de
+  pasos cuenta su edad desde `max(created_at, dat03c_enabled_at)`: nada de
+  lo que ya existía caduca antes de un plazo completo tras la actualización.
+  Los informes en bruto ya caducaban antes y no cambian.
+- **Reloj.** El «ahora» de una pasada es la hora del equipo, pero como mucho
+  7 días después del mayor entre la última pasada (`evidence_last_expire_at`)
+  y la hora de pared del último HLC (`hlc_last`, que sigue también los
+  relojes de los equipos con los que sincronizó). Un reloj adelantado años no
+  caduca todo de golpe; uno atrasado caduca menos.
+- **Límite por pasada:** como mucho 500 contenidos, los más antiguos primero;
+  la siguiente pasada sigue. La pasada va dentro de la transacción de la
+  purga y no retiene el bloqueo mucho tiempo.
+- **Un vínculo que llega antes que su defecto** (sin clave foránea) cuenta
+  como defecto abierto: la evidencia se conserva hasta que llegue.
+- **Acortar un plazo pide confirmación** con el recuento de
+  `evidence_retention_preview` (lectura; la misma regla que la pasada, con el
+  nuevo plazo). La pantalla guarda solo con «Guardar» y vuelve a lo guardado
+  si falla.

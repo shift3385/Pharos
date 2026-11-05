@@ -269,3 +269,10 @@ Tras la revisión independiente (2026-10-31):
 reabre (`cycle-closed`): primero se reabre el ciclo. La celda de un elemento
 del ciclo que cubre el caso entero es el peor de sus flujos y filas; la
 pantalla del run cuenta además cada flujo y fila por separado.
+
+## Nota (E6p, EJE-07: eliminar un run, 2026-11-05)
+
+Un run de un ciclo **cerrado** no se puede eliminar (`cycle-closed`), igual
+que no se reabre: primero se reabre el ciclo. Como la reapertura, lo
+comprueba solo el escritorio; el servidor no valida esa regla en el sync. Un
+run de un ciclo abierto se puede eliminar y deja de contar en su progreso.

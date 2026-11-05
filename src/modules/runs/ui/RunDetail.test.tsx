@@ -361,7 +361,7 @@ describe("run screen", () => {
     api.delete.mockResolvedValue(undefined);
     renderRun("/projects/p/runs/r1");
     await user.click(await screen.findByTestId("run-delete"));
-    const dialog = await screen.findByRole("dialog", { name: "Borrar el run" });
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
     const hidden = await within(dialog).findByTestId("run-delete-hidden");
     expect(hidden).toHaveTextContent("2 elementos del run");
     expect(hidden).toHaveTextContent("3 resultados registrados (no se borran a mano) de 1 importación");
@@ -373,7 +373,14 @@ describe("run screen", () => {
     await expectNoAxeViolations(dialog);
     await user.click(within(dialog).getByTestId("run-delete-confirm"));
     await waitFor(() => expect(api.delete).toHaveBeenCalledWith("r1", "test-user"));
-    expect(await screen.findByText("Run RUN-007 borrado.", { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText("Run RUN-007 eliminado.", { exact: false })).toBeInTheDocument();
+  });
+
+  it("says when the run was deleted, here or on another device", async () => {
+    api.overview.mockRejectedValue(new Error("run-deleted"));
+    renderRun("/projects/p/runs/r1");
+    expect(await screen.findByTestId("run-deleted-notice")).toHaveTextContent("Este run se eliminó");
+    expect(screen.queryByTestId("run-delete")).not.toBeInTheDocument();
   });
 
   it("does not delete a run of a closed cycle", async () => {
@@ -391,7 +398,7 @@ describe("run screen", () => {
     });
     renderRun("/projects/p/runs/r1");
     await user.click(await screen.findByTestId("run-delete"));
-    const dialog = await screen.findByRole("dialog", { name: "Borrar el run" });
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
     expect(await within(dialog).findByTestId("run-delete-cycle-closed")).toHaveTextContent(
       "El ciclo CYC-002 está cerrado",
     );

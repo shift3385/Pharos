@@ -233,7 +233,9 @@ export function ExecutionPanel({
   }
 
   function saveFailed(key: string, e: unknown) {
-    if (String(e instanceof Error ? e.message : e).startsWith("draft-stale")) void onStale(key);
+    const raw = String(e instanceof Error ? e.message : e);
+    if (raw.startsWith("draft-stale")) void onStale(key);
+    else if (raw.startsWith("run-deleted")) toast(t("execution.error.runDeleted"), "error");
     else toast(t("execution.draftError"), "error");
   }
 

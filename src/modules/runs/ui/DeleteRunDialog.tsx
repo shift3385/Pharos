@@ -33,7 +33,11 @@ export function DeleteRunDialog({
     runsApi
       .deletePreview(runId, userId)
       .then((p) => live && setPreview(p))
-      .catch(() => live && setError(t("execution.error.generic")));
+      .catch((e) => {
+        if (!live) return;
+        const raw = String(e instanceof Error ? e.message : e);
+        setError(raw.startsWith("run-deleted") ? t("execution.error.runDeleted") : t("execution.error.generic"));
+      });
     return () => {
       live = false;
     };
@@ -52,7 +56,9 @@ export function DeleteRunDialog({
       setError(
         raw.startsWith("cycle-closed")
           ? t("execution.error.cycleClosed")
-          : t("execution.error.generic"),
+          : raw.startsWith("run-deleted")
+            ? t("execution.error.runDeleted")
+            : t("execution.error.generic"),
       );
       setBusy(false);
     }
@@ -63,7 +69,9 @@ export function DeleteRunDialog({
       <h3 id={`${id}-t`} className="cd__title">
         {t("execution.run.deleteTitle")}
       </h3>
-      {preview === null && !error && <p className="tp-field__hint">{t("common.loading")}</p>}
+      <p className="tp-field__hint" role="status" aria-live="polite">
+        {preview === null && !error ? t("common.loading") : ""}
+      </p>
       {preview && (
         <>
           <p className="cd__msg">

@@ -341,13 +341,14 @@ export const INVENTORY: Item[] = [
   I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/ExecutionPanel.tsx", "Descartar un borrador (confirmación)"),
   I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/RunDetail.tsx", "Cerrar y reabrir el run"),
   I("ejecucion-manual", "action", "action:exec-paste", "Pegar una captura (Ctrl+V)"),
-  I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/DeleteRunDialog.tsx", "Borrar un run (confirmación, EJE-07)"),
+  I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/DeleteRunDialog.tsx", "Eliminar un run (confirmación, EJE-07)"),
 
   // ---- 14 · Evidencias (E5, DAT-03b) ---------------------------------------------------------------
   I("evidencias", "tab", "admin:evidence", "Administración › Evidencias"),
   I("evidencias", "screen", "screen:evidence-admin", "Almacén, verificación e informe"),
   I("evidencias", "dialog", "dialogs:src/modules/admin/ui/tabs/EvidenceTab.tsx", "Borrar huérfanos (confirmación)"),
   I("evidencias", "action", "action:evidence-retention", "Retención por proyecto (DAT-03c)"),
+  I("evidencias", "dialog", "dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx", "Acortar la retención (confirmación)"),
 
   // ---- 15 · Si algo sale mal ----------------------------------------------------------------------
   I("errores", "state", "state:db-error", "Pantalla de error de la base de datos local"),

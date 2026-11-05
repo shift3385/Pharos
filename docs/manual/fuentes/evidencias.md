@@ -19,8 +19,9 @@ comprueba que todos siguen ahí y se pueden leer.
   un proyecto (trazas, vídeos, reportes, registros, capturas, otras). Al
   caducar se borra el archivo, nunca el resultado. Nunca caduca la evidencia
   de la ejecución manual, la de un resultado final fallido o bloqueado ni la
-  de un resultado vinculado a un defecto abierto. Es un ajuste de este
-  equipo: en otro equipo, configúralo allí.
+  de un resultado vinculado a un defecto abierto. Nada se guarda hasta pulsar
+  «Guardar», y acortar un plazo pide confirmación con los archivos que
+  caducarían. Es un ajuste de este equipo: en otro equipo, configúralo allí.
 
 ## Véase también
 

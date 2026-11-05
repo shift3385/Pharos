@@ -275,7 +275,9 @@ the Feature, `@<case id>` on each Scenario — never the scenario name).
   (the server: `tx.list("run")` without `withDeleted`, skipping any result
   whose `runId` is not in it). Writing into a deleted run (record, draft,
   reopen, edit, items, import) is `run-deleted`; a run of a closed cycle
-  cannot be deleted (`cycle-closed`). The purge takes it with its results
+  cannot be deleted (`cycle-closed`, desktop only, like reopening). A run
+  that comes back through a conflict resolution gets its items back
+  (`revive_items`, lww upserts). The purge takes it with its results
   past the retention (`CHILDREN["run"]`, `purged_run:`). No server change.
   `run_delete_preview` gives the dialog its counts.
 - **Derived, never stored** (`runs/derive.rs`): the final attempt of each
@@ -1438,8 +1440,12 @@ and its `VACUUM` can briefly double that image.)
     over the run's `CURRENT_SHARD` results) and a result a live, open defect
     links to. Planner, defect and draft attachments never expire. The
     exceptions are evaluated at each pass (a retry that passes or a closed
-    defect ends them). Expiry sets `blob_purged_at` and writes a `redact`
-    audit event; it never touches a result;
+    defect ends them; a link whose defect has not arrived counts as open).
+    Result and step evidence ages from `max(created_at, dat03c_enabled_at)`
+    (grace after the upgrade); a pass's clock moves at most 7 days past the
+    last pass and the last HLC; at most 500 per pass. Expiry sets
+    `blob_purged_at` and writes a `redact` audit event; it never touches a
+    result;
   - releases every content no live attachment needs.
 
   Deleting an attachment is a soft delete plus an immediate release. Deleting

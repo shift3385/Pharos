@@ -686,3 +686,28 @@ sin cambios en el servidor y sin cambiar el conjunto que se sincroniza
   una purga del servidor (como las revisiones, SYNC-11).
 - **Sin «recuperar» en 0.2.0:** no hay papelera para runs; un conflicto
   «conservar el mío» desde otro equipo puede devolverlo.
+
+### Tras la revisión independiente (E6p, EJE-07, 2026-11-05)
+
+- **Recuperar un run recupera sus elementos.** Si el borrado pierde un
+  conflicto (`sync::resolve_conflict`, se conserve la edición local o la del
+  servidor) y el run queda vivo, `runs::delete::revive_items` devuelve todos
+  sus elementos con lápida, cada uno con un cambio lww nuevo (fila `upsert`
+  del oplog, sin evento propio), así que el servidor y los demás equipos los
+  reciben. Sin ventana de tiempo: una lápida descargada guarda la hora del
+  pull, no la del borrado, y en 0.2.0 un elemento solo se borra con su run o
+  con su proyecto (un run de un proyecto borrado no se recupera aquí; lo hace
+  `restore_project_children`, que tampoco trae un run borrado antes que el
+  proyecto). Probado en los dos equipos y en los dos sentidos.
+- **Solo en el escritorio:** que no se pueda eliminar un run de un ciclo
+  cerrado lo comprueba el escritorio, como la reapertura (ADR-0017). El
+  servidor no lo comprueba: rechazar ahí una lápida empujada bloquearía el
+  push genérico del sync; la web aún no elimina runs (EJE-06).
+- **`run-deleted` también** al crear un defecto o su borrador desde un
+  resultado de un run eliminado, y en la pantalla del run (`run_overview`),
+  que avisa en lugar de «no existe».
+- **Web:** las etiquetas de los vínculos de defectos leen también los runs
+  eliminados (`linkContext` con `withDeleted`), como el escritorio.
+- **Textos:** «Eliminar run»; el diálogo dice que el run sale de las listas y
+  del progreso (la matriz y el informe del paso 10 aplican el mismo
+  predicado).

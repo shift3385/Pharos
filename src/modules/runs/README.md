@@ -14,7 +14,7 @@ Tabs, Dialog, FormField).
 | Ruta | Componente | Qué hace |
 | --- | --- | --- |
 | `/projects/:id/runs` | `RunsPage` → `RunsList` | Runs (todos / importados), «Nuevo run manual», «Importar informe», bandeja «Sin vincular» |
-| `/projects/:id/runs/:runId` | `RunDetail` | Cabecera (clave, título, entorno, build, configuración, ciclo, estado), progreso por objetivo, elementos, cerrar / reabrir, editar, añadir casos, borrar (`DeleteRunDialog`, EJE-07) |
+| `/projects/:id/runs/:runId` | `RunDetail` | Cabecera (clave, título, entorno, build, configuración, ciclo, estado), progreso por objetivo, elementos, cerrar / reabrir, editar, añadir casos, eliminar (`DeleteRunDialog`, EJE-07) |
 | `…/runs/:runId?item=<runItemId>` | `ExecutionPanel` | El ejecutor de un elemento: al lado de la lista desde 1280 px, en su lugar por debajo |
 
 `ProjectDetail` pasa `runId` y la lista de casos (`cases`); el módulo solo
@@ -22,9 +22,9 @@ depende de `@modules/auth`, `@modules/sync-offline`, `@modules/defects`
 (`DefectEditor`, `createDefectFromResult`) y `@modules/admin` (`loadSettings`,
 para los días de la purga en el diálogo de borrar), por su API pública.
 
-## Borrar un run (EJE-07)
+## Eliminar un run (EJE-07)
 
-«Borrar run» (`run_delete_preview` → `DeleteRunDialog` → `run_delete`) pone
+«Eliminar run» (`run_delete_preview` → `DeleteRunDialog` → `run_delete`) pone
 lápida al run y a sus elementos y descarta sus borradores; sus resultados no
 se tocan: se ocultan porque su run está borrado, y la purga se los lleva con
 el run. Un run de un ciclo cerrado no se borra (`cycle-closed`); escribir en
@@ -66,7 +66,8 @@ un run borrado da `run-deleted`. Quien lea runs o resultados aplica
 | `run-execute-next` | «Ejecutar el siguiente» |
 | `run-add-cases`, `run-edit` | Acciones del run abierto |
 | `run-close`, `run-close-discard`, `run-close-confirm`, `run-reopen` | Cerrar (con «Descartar borradores») / reabrir el run |
-| `run-delete`, `run-delete-hidden`, `run-delete-confirm`, `run-delete-cycle-closed` | Borrar el run: botón, lo que se oculta, confirmar, aviso de ciclo cerrado |
+| `run-delete`, `run-delete-hidden`, `run-delete-confirm`, `run-delete-cycle-closed` | Eliminar el run: botón, lo que se oculta, confirmar, aviso de ciclo cerrado |
+| `run-deleted-notice` | La pantalla de un run eliminado (aquí o en otro equipo) |
 | `exec-panel` | El ejecutor |
 | `exec-step-<n>-pass`, `-fail`, `-blocked`, `-skip` | Marcar el paso n (desde 1) |
 | `exec-step-<n>-notes`, `exec-step-<n>-attach`, `exec-step-<n>-defect` | Lo obtenido, adjuntar y «Guardar y crear defecto» del paso n |

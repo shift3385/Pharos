@@ -206,8 +206,8 @@ chapter("ejecucion-manual", () => {
   });
 
   step("borrar-run", {
-    title: "Borrar un run",
-    caption: "«Borrar run» lo quita de la lista, del progreso, de la matriz y del informe, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede borrar.",
+    title: "Eliminar un run",
+    caption: "«Eliminar run» lo quita de las listas y del progreso, en este equipo y en los que sincronicen. Antes dice qué se oculta: elementos, resultados, evidencias, borradores que se descartan, el ciclo cuyo progreso deja de contarlo y los defectos vinculados. Los resultados nunca se borran a mano: la purga se los lleva con el run pasada la retención. Un run de un ciclo cerrado no se puede eliminar.",
     covers: ["dialogs:src/modules/runs/ui/DeleteRunDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -218,8 +218,8 @@ chapter("ejecucion-manual", () => {
   });
 
   step("run-borrado", {
-    title: "Run borrado",
-    caption: "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda el borrado con lo que ocultó.",
+    title: "Run eliminado",
+    caption: "Al confirmar vuelves a la lista de runs, donde ya no aparece; el registro de auditoría guarda la eliminación con lo que ocultó.",
     run: async () => {
       await byTestId("run-delete-confirm").click();
       await $(D).waitForExist({ reverse: true });

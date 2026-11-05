@@ -250,12 +250,12 @@ adjuntos.
 - [ ] Pulsar Ctrl+Enter dos veces seguidas: se guarda un solo intento.
       Cancelar un run con borradores los descarta; al completarlo se puede
       elegir.
-- [ ] **Borrar run** (EJE-07): el diálogo dice cuántos elementos,
+- [ ] **Eliminar run** (EJE-07): el diálogo dice cuántos elementos,
       resultados, importaciones y evidencias se ocultan, los borradores que
       se descartan, el ciclo cuyo progreso deja de contarlo y los defectos
       vinculados. Al confirmar, el run desaparece de la lista, del progreso
-      del ciclo y de la matriz; en otro equipo, tras sincronizar, también.
-      Con el ciclo cerrado no deja borrarlo. Reimportar el mismo informe en
+      del ciclo; en otro equipo, tras sincronizar, también.
+      Con el ciclo cerrado no deja eliminarlo. Reimportar el mismo informe en
       un run nuevo funciona sin aviso de duplicado.
 
 ### 4.5 Sincronización
@@ -277,8 +277,10 @@ adjuntos.
 
 - [ ] Administración → **Evidencias** muestra cuánto ocupan los adjuntos, por
       tipo, y la retención de los informes en bruto (90 días por defecto).
-- [ ] **Retención por proyecto** (DAT-03c): elige un proyecto y pon las
-      trazas a 1 día. Importa un informe con una traza de un test que pasa y
+- [ ] **Retención por proyecto** (DAT-03c): elige un proyecto, pon las
+      trazas a 1 día y pulsa «Guardar»: pide confirmación con los archivos que
+      caducarían. Tras actualizar, la evidencia que ya había no caduca hasta
+      pasado un plazo completo. Importa un informe con una traza de un test que pasa y
       otra de uno que falla; pasado un día, reinicia: la del que pasó caduca
       («Caducados por retención» sube) y su resultado sigue ahí; la del que
       falló no. Las evidencias de la ejecución manual nunca caducan. El
