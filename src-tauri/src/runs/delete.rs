@@ -258,14 +258,25 @@ pub(crate) fn delete_run(conn: &Connection, run_id: &str, user: &str) -> Result<
 /// a new lww change (oplog `upsert`, folded into the resolution's event), so
 /// the server and the other devices get them back.
 ///
-/// Which items: every tombstoned item of the run. In 0.2.0 an item is only
-/// ever deleted with its run or with its project (there is no «remove an
-/// item»), and a run of a deleted project is not revived here (the project's
-/// own restore brings its children, `restore_project_children`). A pulled
-/// tombstone stores the time it was pulled, not the time of the delete, so a
-/// time window (`deleted_at >= run.deleted_at`) would miss items pulled a
-/// moment before their run. Returns how many came back.
-pub(crate) fn revive_items(conn: &Connection, run_id: &str, user: &str) -> Result<usize, String> {
+/// Which items: the tombstones the run's delete made, and no other. The run
+/// delete writes its items' tombstones and the run's in one transaction, on
+/// one device, so their HLCs carry the same device id and wall times a few
+/// milliseconds apart; an item removed on its own before (or by another
+/// device) does not. An item's tombstone HLC is its latest own `delete` in
+/// the oplog (the device that deleted it) or, if none, its sync base (a
+/// pulled tombstone). `deleted_at` cannot tell them apart: a pulled
+/// tombstone stores the time it was pulled, not the time of the delete.
+/// `delete_hlc` is the HLC of the run's delete (the conflict's deleted
+/// side); without one (unparseable) every tombstoned item comes back. A run
+/// of a deleted project is not revived here (`restore_project_children`).
+/// Returns how many came back.
+pub(crate) fn revive_items(
+    conn: &Connection,
+    run_id: &str,
+    delete_hlc: &str,
+    user: &str,
+) -> Result<usize, String> {
+    let delete = crate::hlc::Hlc::parse(delete_hlc);
     let live: bool = conn
         .query_row(
             "SELECT EXISTS (SELECT 1 FROM runs r JOIN projects p ON p.id = r.project_id
@@ -286,7 +297,31 @@ pub(crate) fn revive_items(conn: &Connection, run_id: &str, user: &str) -> Resul
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
+    let mut revived = 0;
     for item in &items {
+        if let Some(delete) = &delete {
+            let own: Option<String> = conn
+                .query_row(
+                    "SELECT coalesce(
+                        (SELECT hlc FROM oplog WHERE entity = ?1 AND entity_id = ?2 AND op = 'delete'
+                          ORDER BY rowid DESC LIMIT 1),
+                        (SELECT hlc FROM sync_base WHERE entity = ?1 AND entity_id = ?2 AND user_id = ?3))",
+                    params![RUN_ITEM, item, user],
+                    |r| r.get(0),
+                )
+                .map_err(err)?;
+            let with_the_run = own
+                .as_deref()
+                .and_then(crate::hlc::Hlc::parse)
+                .is_some_and(|h| {
+                    h.device_id == delete.device_id
+                        && h.wall_ms.abs_diff(delete.wall_ms) <= CASCADE_WINDOW_MS
+                });
+            if !with_the_run {
+                continue;
+            }
+        }
+        revived += 1;
         let revision: i64 = conn
             .query_row(
                 "UPDATE run_items SET deleted_at = NULL, revision = revision + 1,
@@ -308,8 +343,12 @@ pub(crate) fn revive_items(conn: &Connection, run_id: &str, user: &str) -> Resul
         change.audit = Audit::Folded;
         journal::record(conn, change)?;
     }
-    Ok(items.len())
+    Ok(revived)
 }
+
+/// How far apart (ms) an item's tombstone and its run's delete may be to
+/// count as one delete: they are one transaction, a few ms apart.
+const CASCADE_WINDOW_MS: u64 = 10_000;
 
 // ---- commands -------------------------------------------------------------
 

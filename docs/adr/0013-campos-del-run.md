@@ -691,14 +691,25 @@ sin cambios en el servidor y sin cambiar el conjunto que se sincroniza
 
 - **Recuperar un run recupera sus elementos.** Si el borrado pierde un
   conflicto (`sync::resolve_conflict`, se conserve la edición local o la del
-  servidor) y el run queda vivo, `runs::delete::revive_items` devuelve todos
-  sus elementos con lápida, cada uno con un cambio lww nuevo (fila `upsert`
-  del oplog, sin evento propio), así que el servidor y los demás equipos los
-  reciben. Sin ventana de tiempo: una lápida descargada guarda la hora del
-  pull, no la del borrado, y en 0.2.0 un elemento solo se borra con su run o
-  con su proyecto (un run de un proyecto borrado no se recupera aquí; lo hace
-  `restore_project_children`, que tampoco trae un run borrado antes que el
-  proyecto). Probado en los dos equipos y en los dos sentidos.
+  servidor) y el run queda vivo, `runs::delete::revive_items` devuelve los
+  elementos **que tumbó ese borrado**, cada uno con un cambio lww nuevo (fila
+  `upsert` del oplog, sin evento propio), así que el servidor y los demás
+  equipos los reciben. Un elemento quitado antes por su cuenta (o por otro
+  equipo) sigue quitado (revisión del coordinador, ronda 2).
+  - **Cómo se reconoce la cascada, en los dos equipos:** el borrado escribe
+    las lápidas de los elementos y la del run en una transacción, en un
+    equipo, así que sus HLC tienen el mismo `device_id` y horas de pared a
+    milisegundos. Un elemento vuelve solo si el HLC de su lápida (su último
+    `delete` propio en el oplog, en el equipo que borró, o su `sync_base`, en
+    el que la descargó) es del mismo equipo que el HLC del borrado del run (el
+    lado borrado del conflicto) y está a 10 s o menos.
+  - `deleted_at` no sirve: una lápida descargada guarda la hora del pull, no
+    la del borrado.
+  - Un run de un proyecto borrado no se recupera aquí; lo hace
+    `restore_project_children`, que tampoco trae un run borrado antes que el
+    proyecto.
+  - Probado en los dos equipos y en los dos sentidos, también con un
+    elemento quitado una hora antes (sigue quitado; el otro vuelve).
 - **Solo en el escritorio:** que no se pueda eliminar un run de un ciclo
   cerrado lo comprueba el escritorio, como la reapertura (ADR-0017). El
   servidor no lo comprueba: rechazar ahí una lápida empujada bloquearía el

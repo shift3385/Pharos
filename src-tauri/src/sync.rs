@@ -1417,6 +1417,14 @@ pub(crate) fn resolve_conflict(
         .map_err(|e| e.to_string())?
         .ok_or("conflict not found")?;
     let table = table_for(&c.entity).ok_or("unknown entity")?;
+    // The HLC of the side that deleted, if any (EJE-07: `revive_items`).
+    let delete_hlc = if c.local.deleted {
+        Some(c.local.hlc.clone())
+    } else if c.remote.deleted {
+        Some(c.remote.hlc.clone())
+    } else {
+        None
+    };
 
     match resolution {
         "local" => {
@@ -1502,7 +1510,9 @@ pub(crate) fn resolve_conflict(
     // A run that comes back (EJE-07: its delete lost the conflict) brings
     // back the items its delete took.
     if c.entity == crate::runs::RUN {
-        crate::runs::delete::revive_items(conn, &c.entity_id, user)?;
+        if let Some(hlc) = &delete_hlc {
+            crate::runs::delete::revive_items(conn, &c.entity_id, hlc, user)?;
+        }
     }
 
     conn.execute(

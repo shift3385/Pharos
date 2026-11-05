@@ -1,7 +1,7 @@
 //! Deleting a run (EJE-07): what it hides, what it never touches, what it
 //! refuses afterwards, how it syncs and how the purge takes it.
 
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use serde_json::{json, Value};
 
 use super::*;
@@ -642,4 +642,108 @@ fn a_defect_cannot_be_made_from_a_result_of_a_deleted_run() {
         crate::defects::draft_from_result(&c, &result, None, U).unwrap_err(),
         RUN_DELETED
     );
+}
+
+// ---- review round 2: only the run's own cascade comes back -------------------
+
+/// A run with two items (cases TC-001 and TC-002), pushed from `a` and
+/// pulled by `b`.
+fn two_item_run(a: &Connection, b: &Connection) -> (String, String, String, String) {
+    let p = new_project(a);
+    let one = new_case(a, &p, "TC-001");
+    let two = new_case(a, &p, "TC-002");
+    let run = insert_run(a, &run_input(&p, json!({}))).unwrap();
+    let items = add_items(a, &run, U, &[whole(&one), whole(&two)]).unwrap();
+    pull(b, &push(a));
+    (p, run, items[0].clone(), items[1].clone())
+}
+
+/// Removes one item on its own, an hour ago (what a future «remove an item»
+/// would write: a tombstone with its own oplog `delete` and HLC).
+fn remove_item_an_hour_ago(c: &Connection, item: &str) {
+    let revision: i64 = c
+        .query_row(
+            "UPDATE run_items SET deleted_at = datetime('now', '-1 hour'), revision = revision + 1
+              WHERE id = ?1 RETURNING revision",
+            [item],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let mut change = Change::new(
+        RUN_ITEM,
+        item,
+        Action::Delete,
+        Actor::user(U),
+        "delete",
+        revision,
+        U,
+    );
+    change.audit = Audit::Folded;
+    journal::record(c, change).unwrap();
+    let hlc: String = c
+        .query_row(
+            "SELECT hlc FROM oplog WHERE entity = 'run_item' AND entity_id = ?1 ORDER BY rowid DESC LIMIT 1",
+            [item],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let mut old = crate::hlc::Hlc::parse(&hlc).unwrap();
+    old.wall_ms -= 3_600_000;
+    c.execute(
+        "UPDATE oplog SET hlc = ?2 WHERE entity = 'run_item' AND entity_id = ?1 AND hlc = ?3",
+        params![item, old.encode(), hlc],
+    )
+    .unwrap();
+}
+
+fn item_live(c: &Connection, item: &str) -> bool {
+    c.query_row(
+        "SELECT deleted_at IS NULL FROM run_items WHERE id = ?1",
+        [item],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+#[test]
+fn an_item_removed_before_the_run_stays_removed_when_the_run_comes_back_keeping_the_edit() {
+    let (a, b) = (device(), device());
+    let (p, run, gone, kept) = two_item_run(&a, &b);
+    remove_item_an_hour_ago(&a, &gone);
+    pull(&b, &push(&a));
+    assert!(!item_live(&b, &gone));
+    // B edits the header while A deletes the run; B keeps its edit.
+    update_run(&b, &run, &run_input(&p, json!({"build": "2.0"}))).unwrap();
+    delete_run(&a, &run, U).unwrap();
+    pull(&b, &push(&a));
+    let conflict = conflict_of(&b, "run");
+    let ws = ensure_workspace(&b).unwrap();
+    sync::resolve_conflict(&b, &ws, U, &conflict, "local").unwrap();
+    assert!(item_live(&b, &kept), "the run's cascade comes back on B");
+    assert!(!item_live(&b, &gone), "the earlier removal stays on B");
+    pull(&a, &push(&b));
+    assert!(item_live(&a, &kept), "and on A");
+    assert!(!item_live(&a, &gone), "and on A");
+}
+
+#[test]
+fn an_item_removed_before_the_run_stays_removed_when_the_run_comes_back_taking_the_server_version()
+{
+    let (a, b) = (device(), device());
+    let (p, run, gone, kept) = two_item_run(&a, &b);
+    remove_item_an_hour_ago(&a, &gone);
+    pull(&b, &push(&a));
+    // B's edit reaches the server first; A deleted the run meanwhile.
+    update_run(&b, &run, &run_input(&p, json!({"build": "3.0"}))).unwrap();
+    let from_b = push(&b);
+    delete_run(&a, &run, U).unwrap();
+    pull(&a, &from_b);
+    let conflict = conflict_of(&a, "run");
+    let ws = ensure_workspace(&a).unwrap();
+    sync::resolve_conflict(&a, &ws, U, &conflict, "remote").unwrap();
+    assert!(item_live(&a, &kept), "the run's cascade comes back on A");
+    assert!(!item_live(&a, &gone), "the earlier removal stays on A");
+    pull(&b, &push(&a));
+    assert!(item_live(&b, &kept), "and on B");
+    assert!(!item_live(&b, &gone), "and on B");
 }
