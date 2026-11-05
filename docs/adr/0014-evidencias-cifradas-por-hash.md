@@ -312,6 +312,9 @@ sobre lo decidido, sin cambiar la decisión:
   y lo vinculado a un defecto abierto), nunca se pierde nada.
 - **Sync:** los adjuntos siguen sin sincronizarse (SYNC-04b); la pantalla del
   run y la guía lo dicen.
+- **Administración → Evidencias** (DAT-03b) cuenta los archivos de los
+  borradores como «Borradores de ejecución», con la clave del run y del caso,
+  y enlaza a «Ejecuciones».
 
 ## Implementación (E5, DAT-03b: «Verificar evidencias», 2026-11-04)
 

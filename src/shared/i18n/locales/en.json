@@ -461,7 +461,8 @@
         "result": "Results",
         "step_result": "Step results",
         "session_note": "Session notes",
-        "other": "Other ({{kind}})"
+        "other": "Other ({{kind}})",
+        "execution_draft": "Execution drafts"
       },
       "check": {
         "title": "Verify evidence",

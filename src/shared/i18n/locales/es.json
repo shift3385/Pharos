@@ -461,7 +461,8 @@
         "result": "Resultados",
         "step_result": "Resultados de paso",
         "session_note": "Notas de sesión",
-        "other": "Otros ({{kind}})"
+        "other": "Otros ({{kind}})",
+        "execution_draft": "Borradores de ejecución"
       },
       "check": {
         "title": "Verificar evidencias",
