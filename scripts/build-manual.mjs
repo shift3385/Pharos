@@ -29,7 +29,7 @@ import { changedShare, decodePng, drawFocus, encodePng } from "./manual/png.mjs"
 import { markdownToHtml, escapeHtml } from "./manual/markdown.mjs";
 import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
-import { focusLayout, FOCUS_COLOR, insetStyle } from "./manual/focus.mjs";
+import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const manualDir = join(repoDir, "docs", "manual");
@@ -298,9 +298,9 @@ p, li { orphans: 3; widows: 3; }
 .step h3 { font-size: 11.5pt; margin: 0 0 1.5mm; color: var(--color-navy-900); }
 .step h3 .n { display: inline-block; min-width: 10mm; color: var(--color-navy-500); }
 .step p { margin: 0 0 2mm; }
-/* Desktop captures at 84 % of the text width: two ordinary steps fit on an A4
+/* Desktop captures at 76 % of the text width: two ordinary steps fit on an A4
    page (MAN-02). Element captures keep their proportion; nothing outgrows a page. */
-.shot { display: block; width: auto; height: auto; max-width: 84%; max-height: 100mm; margin: 0 auto;
+.shot { display: block; width: auto; height: auto; max-width: 76%; max-height: 100mm; margin: 0 auto;
   border: 0.3mm solid var(--color-border); border-radius: 2mm; box-shadow: 0 1mm 2mm rgba(16,24,40,.08); }
 .shot.mobile { max-width: 62mm; }
 .focus { display: flex; gap: 3mm; align-items: flex-start; justify-content: center; }
@@ -313,6 +313,9 @@ p, li { orphans: 3; widows: 3; }
 .group { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; break-inside: avoid; margin: 0 0 7mm; }
 .group .step { margin: 0; }
 .group .shot { max-width: 100%; }
+.group .focus.below { gap: 1.5mm; }
+.group .focus .shot { width: 100% !important; box-sizing: border-box; }
+.group .inset-wrap { width: 100%; }
 .endblock { break-inside: avoid; }
 .note { background: var(--color-navy-100); border-left: 1.2mm solid var(--color-navy-500); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
 .pending { background: #fdf3e2; border-left: 1.2mm solid var(--color-accent); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
@@ -342,6 +345,10 @@ function pngSize(file) {
 
 const stepAnchor = (c, s) => `paso-${c.id}-${s.id}`;
 
+/** One column of a `.group`: the text width minus the 5 mm gap, halved, minus
+ *  the inset's own border. */
+const GROUP_COLUMN_MM = 85;
+
 function stepHtml(c, s, src, { grouped = false } = {}) {
   const parts = [`<div class="step" id="${stepAnchor(c, s)}"><h3><span class="n">${c.number}.${s.n}</span>${escapeHtml(s.title)}</h3>${markdownToHtml(s.caption)}`];
   if (s.status === "skipped") parts.push(`<div class="pending"><strong>Pendiente:</strong> ${escapeHtml(s.reason ?? "sin captura")}.</div>`);
@@ -352,7 +359,8 @@ function stepHtml(c, s, src, { grouped = false } = {}) {
     const alt = escapeHtml(s.title);
     // A step about one control of a big screen: the capture (its outline is
     // drawn into the PNG) plus a magnified inset cropped from the same file.
-    const layout = !mobile && !grouped && w >= 1440 && s.focus ? focusLayout(w, h, s.focus) : null;
+    const layout =
+      !mobile && w >= 1440 && s.focus ? (grouped ? groupInset(w, h, s.focus, GROUP_COLUMN_MM) : focusLayout(w, h, s.focus)) : null;
     if (layout) {
       const url = fileUrl(file);
       const inset = `<div class="inset-wrap"><span class="inset-label">Detalle</span><div class="inset" role="img" aria-label="Detalle: ${alt}" style="background-image:url(&quot;${url}&quot;);${insetStyle(w, h, layout)}"></div></div>`;
@@ -360,7 +368,7 @@ function stepHtml(c, s, src, { grouped = false } = {}) {
     } else {
       // An element capture (a dialog) keeps its proportion to the 1440 px
       // window instead of being blown up to the text width.
-      const style = !mobile && !grouped && w < 1440 ? ` style="max-width:${Math.min(84, Math.max(40, Math.round((w / 1440) * 100 * 1.25)))}%"` : "";
+      const style = !mobile && !grouped && w < 1440 ? ` style="max-width:${Math.min(76, Math.max(40, Math.round((w / 1440) * 100 * 1.25)))}%"` : "";
       parts.push(`<img class="shot${mobile ? " mobile" : ""}"${style} src="${fileUrl(file)}" alt="${alt}">`);
     }
   }
@@ -385,8 +393,10 @@ function chapterHtml(c, steps) {
       parts.push(`<div class="group">${members.map((m) => stepHtml(c, m, src, { grouped: true })).join("")}</div>`);
     } else parts.push(stepHtml(c, s, src));
   }
-  if (src.tips) parts.push(`<div class="endblock"><h2>Consejos</h2><div class="tips">${markdownToHtml(src.tips)}</div></div>`);
-  if (src.seeAlso) parts.push(`<div class="endblock"><h2>Véase también</h2>${markdownToHtml(src.seeAlso)}</div>`);
+  // One block: «Véase también» never ends up alone on a page of its own.
+  const tips = src.tips ? `<h2>Consejos</h2><div class="tips">${markdownToHtml(src.tips)}</div>` : "";
+  const seeAlso = src.seeAlso ? `<h2>Véase también</h2>${markdownToHtml(src.seeAlso)}` : "";
+  if (tips || seeAlso) parts.push(`<div class="endblock">${tips}${seeAlso}</div>`);
   parts.push("</section>");
   return absoluteLinks(parts.join("\n"));
 }

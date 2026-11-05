@@ -126,7 +126,7 @@ chapter("casos", () => {
   step("caso-basico", {
     title: "Un caso básico",
     caption:
-      "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Arriba se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
+      "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Arriba se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
     covers: ["action:case-create-basic", "action:case-meta"],
     run: async () => {
       await $("#tc-title").setValue("Transferencia a un tercero con saldo suficiente");

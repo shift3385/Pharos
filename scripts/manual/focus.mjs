@@ -40,7 +40,8 @@ export function focusLayout(imageW, imageH, focus) {
   if (crop.w > imageW * 0.5 || crop.h > imageH * 0.55) return null;
   const wide = crop.w / crop.h > 2.6;
   if (wide) {
-    const imageMm = Math.round(CONTENT_MM * 0.84);
+    // The same width as a capture without an inset (.shot in build-manual.mjs).
+    const imageMm = Math.round(CONTENT_MM * 0.76);
     const insetMm = Math.min(CONTENT_MM, Math.round((imageMm * crop.w * 2.2) / imageW));
     const insetHmm = round1((insetMm * crop.h) / crop.w);
     const mag = (insetMm / crop.w) / (imageMm / imageW);
@@ -60,6 +61,19 @@ export function focusLayout(imageW, imageH, focus) {
 }
 
 const round1 = (v) => Math.round(v * 10) / 10;
+
+/** The inset of a step in a side-by-side `group`: under its capture, as wide as
+ *  the column. A half-width capture is too small to read a control, so the
+ *  inset is kept even for a control that would need none at full width. */
+export function groupInset(imageW, imageH, focus, columnMm) {
+  if (!focus || !(focus.w > 0) || !(focus.h > 0)) return null;
+  const w = Math.min(imageW, Math.max(MIN_W, focus.w + 2 * PAD));
+  const h = Math.min(imageH, Math.max(MIN_H, focus.h + 2 * PAD));
+  const x = Math.round(Math.min(Math.max(0, focus.x + focus.w / 2 - w / 2), imageW - w));
+  const y = Math.round(Math.min(Math.max(0, focus.y + focus.h / 2 - h / 2), imageH - h));
+  const crop = { x, y, w: Math.round(w), h: Math.round(h) };
+  return { mode: "below", crop, imageMm: columnMm, insetMm: columnMm, insetHmm: round1((columnMm * crop.h) / crop.w), mag: round1(imageW / crop.w) };
+}
 
 /** The CSS of an inset: the capture as a background, scaled and shifted so
  *  only `crop` shows in a box of `insetMm` × `insetHmm`. */

@@ -84,7 +84,8 @@ step("nuevo", {
   below it for a wide strip, and none when the control is already big. Use it
   when a step is about one control in a big screen. A focus not displayed at
   capture time is a warning (`focusMissing`), listed by the manual build.
-- **`group`**: a before/after pair (e.g. the password hidden, then shown).
+- **`group`**: a before/after pair (e.g. the password hidden, then shown). With
+  a `focus`, each column gets its own «Detalle» under the capture.
 - **`after`**: capture the state *before* an action and still assert the
   action (e.g. «Iniciar sesión» shows the filled form, then signs in).
 
@@ -174,7 +175,7 @@ PDF layout (MAN-02): the contents link every chapter and step to its page,
 with its number (a draft print with placeholders, then the real numbers read
 from the PDF's named destinations; the build fails if they move). A step's
 heading, text and capture never split; «Consejos» and «Véase también» stay
-whole; captures take 84 % of the text width so two ordinary steps share a
+whole; captures take 76 % of the text width so two ordinary steps share a
 page. Each print uses its own Edge profile under
 `docs/manual/.build/edge-profiles`, retried once on EPERM; a profile Edge
 still holds never fails the build.

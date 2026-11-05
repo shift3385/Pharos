@@ -12,7 +12,7 @@ import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths,
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, markdownToHtml } from "./manual/markdown.mjs";
 import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
-import { focusLayout, FOCUS_COLOR, insetStyle } from "./manual/focus.mjs";
+import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
@@ -254,4 +254,14 @@ test("selectTours adds what a partial run needs, in run order, and refuses a bad
   assert.throws(() => selectTours("["), /not a valid regular expression/);
   assert.throws(() => selectTours("^99"), /matches no tour file/);
   assert.throws(() => selectTours("^00"), /matches no tour file/, "the preparation alone is not a run");
+});
+
+test("groupInset: a wide control keeps a column-wide inset under its half-width capture (MAN-02)", () => {
+  // At full width this strip needs no inset of its own; in a column it does.
+  const inset = groupInset(1440, 900, { x: 56, y: 411, w: 460, h: 52 }, 85);
+  assert.equal(inset.mode, "below");
+  assert.equal(inset.insetMm, 85);
+  assert.ok(inset.mag >= 2.5, "readable: at least 2.5× the capture");
+  assert.ok(inset.crop.x >= 0 && inset.crop.x + inset.crop.w <= 1440);
+  assert.equal(groupInset(1440, 900, null, 85), null);
 });
