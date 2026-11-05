@@ -959,9 +959,13 @@ store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
   (`@shared/export/extraTables`: `addTableSheets`, `tableSections`) built by
   `@modules/cycles` (`loadCycleExport`, `cyclesTable`, `caseCyclesTable`)
   and `test-plan/export/planExtras.ts`. A table without rows adds nothing, the
-  template's sheets do not change and the importers ignore the new ones. The
-  ZIPs read the cycles and their items once per project; a failure to read
-  them stops the export with a toast (`ReportedError`).
+  template's sheets do not change and the importers ignore the new ones. A
+  ZIP reads a project's cycles once (`exportAll.ts::addProject`) and hands
+  them to its plan and its cases: not at all for a project with neither, and
+  the items only when it has cases. Items are read only for the cycles that
+  have any, in parallel; a single case export reads them too (there is no
+  query by case). A failure to read them stops the export with one toast
+  (`ReportedError`, so the caller adds none) and nothing is saved.
 
 ## Testing
 

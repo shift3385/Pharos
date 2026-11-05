@@ -51,9 +51,15 @@ async function readCycles(
   const configurations = cycles.some((c) => c.configurationIds.length)
     ? await configurationApi.list(projectId, userId, true)
     : [];
+  // Items only for the case exports, only of the cycles that have any, read
+  // in parallel (there is no query by case: a cycle lists its items).
   const items = new Map<string, CycleItem[]>();
   if (withItems) {
-    for (const c of cycles) items.set(c.id, await cycleApi.items(c.id, userId));
+    const withAny = cycles.filter((c) => c.items > 0);
+    const lists = await Promise.all(
+      withAny.map((c) => cycleApi.items(c.id, userId)),
+    );
+    withAny.forEach((c, i) => items.set(c.id, lists[i]));
   }
   return { cycles, configurations, items };
 }
@@ -176,11 +182,14 @@ export function caseCyclesTable(
   for (const c of data.cycles) {
     for (const it of data.items.get(c.id) ?? []) {
       if (it.testCaseId !== caseId) continue;
-      const scope = it.flowId
-        ? t("cycles.items.flow", { id: it.flowId })
-        : it.exampleRowId
-          ? t("cycles.items.row", { id: it.exampleRowId })
-          : t("cycles.export.wholeCase");
+      // As the cycle's item list shows it: flow and row together.
+      const scope =
+        [
+          it.flowId && t("cycles.items.flow", { id: it.flowId }),
+          it.exampleRowId && t("cycles.items.row", { id: it.exampleRowId }),
+        ]
+          .filter(Boolean)
+          .join(" · ") || t("cycles.export.wholeCase");
       rows.push([
         c.cycleKey,
         c.title,

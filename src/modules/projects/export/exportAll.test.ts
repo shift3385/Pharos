@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ReportedError } from "@shared/ui/notify";
 import JSZip from "jszip";
 import {
   exportAllProjects,
@@ -47,6 +48,13 @@ vi.mock("@modules/test-cases", () => ({
     return files;
   },
 }));
+// EXP-03: the cycles are read once per project and handed to both builders.
+const loadCycleExport = vi.hoisted(() => vi.fn());
+const cycleData = { cycles: [], configurations: [], items: new Map() };
+vi.mock("@modules/cycles", () => ({ loadCycleExport }));
+beforeEach(() => {
+  loadCycleExport.mockReset().mockResolvedValue(cycleData);
+});
 vi.mock("../api/projectApi", () => ({
   projectApi: {
     list: async () => [
@@ -103,6 +111,19 @@ describe("project ZIPs (EXP-02, UX-02)", () => {
     ]);
     const building = events.filter((e) => e.phase === "building");
     expect(building.at(-1)).toMatchObject({ done: 4, total: 4 });
+    // Once for the project, with the items its cases need.
+    expect(loadCycleExport).toHaveBeenCalledTimes(1);
+    expect(loadCycleExport).toHaveBeenCalledWith("a", "u1", true);
+  });
+
+  // EXP-03 (review L4): a failure to read the cycles stops the ZIP before
+  // anything is saved. Its toast is shown once, by the loader
+  // (cycleTables.test.ts); the caller only sees a ReportedError.
+  it("a failure to read the cycles saves no ZIP", async () => {
+    saved.length = 0;
+    loadCycleExport.mockRejectedValue(new ReportedError("cycles"));
+    await expect(exportAllProjects("u1", t, "es")).rejects.toBeInstanceOf(ReportedError);
+    expect(saved).toEqual([]);
   });
 
   it("the global ZIP has one folder per project, PDFs included", async () => {

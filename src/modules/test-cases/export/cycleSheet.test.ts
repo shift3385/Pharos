@@ -148,6 +148,19 @@ describe("case export: «Ciclos» (EXP-03)", () => {
       expect.arrayContaining(["CYC-001", "Activo", "Caso entero", "Ada"]),
     );
     expect(caseCyclesTable("nowhere", data, t).rows).toEqual([]);
+    // An item of one flow and one row names both, as the cycle's list does.
+    const byFlowRow: CycleExportData = {
+      ...data,
+      items: new Map([
+        [
+          "cy1",
+          [{ ...data.items.get("cy1")![0], flowId: "F1", exampleRowId: "R2" }],
+        ],
+      ]),
+    };
+    expect(caseCyclesTable("c", byFlowRow, t).rows[0]).toContain(
+      "Flujo F1 · Fila R2",
+    );
 
     const before = await sheets((await buildCaseXlsx(plain, "es")).buffer);
     const { buffer } = await buildCaseXlsx(

@@ -1,4 +1,8 @@
-import { cyclesTable, loadCycleExport } from "@modules/cycles";
+import {
+  cyclesTable,
+  loadCycleExport,
+  type CycleExportData,
+} from "@modules/cycles";
 import type { ExportTable } from "@shared/export/extraTables";
 import type { StoredMilestone } from "../model/types";
 
@@ -30,10 +34,13 @@ export async function planExtraTables(
   milestones: readonly StoredMilestone[] | undefined,
   t: Translate,
   lang: string,
+  /** Already read for the whole project (the ZIPs read it once). */
+  cycles?: CycleExportData,
 ): Promise<ExportTable[]> {
   const tables = [milestonesTable(milestones, t)];
-  if (projectId) {
-    tables.push(cyclesTable(await loadCycleExport(projectId, userId), t, lang));
-  }
+  const data =
+    cycles ??
+    (projectId ? await loadCycleExport(projectId, userId) : undefined);
+  if (data) tables.push(cyclesTable(data, t, lang));
   return tables;
 }
