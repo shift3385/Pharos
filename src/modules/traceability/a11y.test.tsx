@@ -1,6 +1,7 @@
 // WCAG 2.1 AA audit of the traceability dialogs (UX-05, ADR-0027). axe checks the markup;
 // keyboard and form behaviour axe cannot see is asserted directly. Report:
 // docs/accesibilidad/auditoria-wcag-0.1.0.md.
+import "@test/slow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

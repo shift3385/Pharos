@@ -204,6 +204,8 @@ keys) and the requirement ↔ test case ↔ defect matrix. It reads `test-cases`
 acyclic. The link itself lives in the case (`data.requirementKeys`) so it is
 revisioned and synced with the case, and travels as Gherkin tags (`@REQ-xxx` on
 the Feature, `@<case id>` on each Scenario — never the scenario name).
+Since EJE-04 (step 10) it also reads `runs` (`executionApi`) and `cycles`
+(the filter options); neither imports traceability.
 
 **Execution model (decided for 0.2.0; the tables are built, the UI is not).** Gate C closed on
 2026-10-28 with ADR-0011…0019; the design is in
@@ -344,6 +346,53 @@ and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
   `execution_attachment_preview`; `run_update` reopens a closed run.
 - **Exit criterion of 0.2.0** (editing an executed case changes none of its
   results): `runs::manual::tests::editing_an_executed_case_does_not_change_its_results`.
+
+**Execution derivation (step 10, EJE-04 / EJE-03, contract v1).** One
+derivation of what the runs say, read by the matrix, the status report and the
+Home metrics (RED-W6). Rules R1–R12 in ADR-0013 «Implementación (paso 10)».
+
+- **Rust:** `src-tauri/src/execution/derive.rs` is pure (`summarize` per
+  project and filter, `home` over projects with day starts and windows; no
+  SQL, clock or time zone). `src-tauri/src/execution.rs` loads a project in
+  one pass (live runs, results outside superseded shards with
+  `runs::link::CURRENT_SHARD`, the link of each result — stored if manual,
+  `runs::link::Resolver` if imported —, cases with their current revision,
+  requirements with risk, `defects::list_defects` with `case_ids`, cycles
+  and items, the plan's `closureCriteria`). Command `execution_summary`
+  (read); `home_metrics(conn, user, request)` is what RED-W6's command calls.
+- **Server:** `server/src/modules/domain/execution-summary.ts` (the pure twin)
+  and `execution.ts` (`loadProjects`: one lock-free read per entity kind for
+  every project asked for, through `DomainStore.read` — repeatable read, read
+  only, no user write lock, no `FOR UPDATE` — grouped in memory, then the
+  derivation after the read; `GET /api/execution/summary`,
+  `createExecutionService(...).homeMetrics` for `GET /api/home/metrics`).
+- **Outdated:** a fingerprint of the case's executable content (steps,
+  preconditions, background, flows, examples…, without ids), computed by each
+  loader; a status, priority, title or key edit never marks a result outdated.
+- **Golden:** `src-tauri/tests/fixtures/execution-vectors.golden.json` holds
+  each vector's whole output; both twins compare to it.
+- **Shared vectors:** `src-tauri/tests/fixtures/execution-vectors.json`, read by
+  `execution::tests::the_shared_vectors_hold` and `server/tests/execution.test.ts`
+  (also: the read order never changes the result).
+- **Client:** `@modules/runs` exports `executionApi.summary(filter, userId)`
+  (invoke on the desktop, the server on the web), `periodOf` / `localDayStart`
+  (local days → instants), the generated types and `evaluateExitCriteria`
+  (only reads the already evaluated criteria, localizing the defaults).
+- **Matrix (EJE-04):** `buildMatrix(…, execution, sort)` takes the summary's
+  cases and requirements: status, last result (run, date, flaky, stale),
+  re-test, risk order (default bands). Filters (cycle, configuration, build,
+  environment) and order live in the URL (`?cycle=&build=&sort=key`). The
+  `.xlsx` maps the extra statuses to the template's four words and adds the
+  «Resultados» sheet.
+- **Status report (EJE-03):** `src/modules/runs/report/` — `statusReport.ts`
+  (pure model of the nine 29119-3 sections), `reportXlsx.ts` (ExcelJS, no
+  template), `reportPdf.ts` (`pdfDoc` helpers), `StatusReportDialog` and
+  `StatusReportButton` (in «Ejecuciones» and, through `CyclesPage.cycleActions`
+  from the project page, in a cycle). The summary and recommendations are a
+  local draft (`localStorage`, per project and scope), never synced.
+- **Exit criterion of 0.2.0** (a manual run and a Playwright run in one
+  matrix): `execution::tests::a_manual_and_a_playwright_run_share_the_matrix`
+  and its server twin.
 
 **Defects (DEF-01, ADR-0016).** Migration 0029, `src-tauri/src/defects.rs`
 (+ `defects/{ids,lifecycle,convert}.rs`) and `src/modules/defects/`:
@@ -805,7 +854,8 @@ through `src-tauri/src/journal.rs`:
 - **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
   defects once for both views (Requisitos, Matriz) and owns their dialogs; the
   views only render (`buildMatrix` stays the single source, also for
-  `projectCoverage`).
+  `projectCoverage`). Since EJE-04 it also loads the execution summary under
+  the URL's filters and the cycle and configuration options.
 - **Switches, segmented controls and tabs** (`src/shared/ui`, SPEC §4/§5/§9/§10,
   RED-V1; also used by Casos, RED-V3, and Administración, RED-V4):
   - `Switch`: a `role="switch"` button named by its visible `label` (or

@@ -57,6 +57,17 @@ export interface DomainTx {
   append(entity: string, id: string, payload: Record<string, unknown>): Promise<void>;
 }
 
+/** Reads without locks (the execution derivation, step 10): one consistent
+ *  snapshot, no user write lock, no `FOR UPDATE`, so a long read never
+ *  blocks a device push or a web write. */
+export interface DomainReader {
+  /** Live documents of an entity (with `withDeleted`, tombstones too) of the
+   *  given projects; `project` documents are matched by their own id. */
+  list(entity: string, projectIds: string[], opts?: { withDeleted?: boolean }): Promise<RemoteDoc[]>;
+  /** The user's live projects, or those of `ids` that are theirs. */
+  projects(ids?: string[] | null): Promise<RemoteDoc[]>;
+}
+
 /** The state an event diffs: the payload plus whether it is deleted, as the
  *  desktop's `journal::snapshot`. */
 const snapshot = (payload: Record<string, unknown>, deleted: boolean) => ({ ...payload, deleted });
@@ -174,6 +185,41 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
   }
 
   return {
+    /** Runs `fn` in a read-only, repeatable-read transaction with no lock. */
+    async read<T>(userId: string, fn: (r: DomainReader) => Promise<T>): Promise<T> {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+        const reader: DomainReader = {
+          async list(entity, projectIds, opts) {
+            const { rows } = await client.query(
+              `SELECT ${COLS} FROM documents
+                WHERE user_id = $1 AND entity = $2 AND ($4 OR NOT deleted)
+                  AND payload->>'projectId' = ANY($3::text[])`,
+              [userId, entity, projectIds, opts?.withDeleted === true],
+            );
+            return rows.map(toDoc);
+          },
+          async projects(ids) {
+            const { rows } = await client.query(
+              `SELECT ${COLS} FROM documents
+                WHERE user_id = $1 AND entity = 'project' AND NOT deleted
+                  AND ($2::text[] IS NULL OR entity_id = ANY($2::text[]))`,
+              [userId, ids ?? null],
+            );
+            return rows.map(toDoc);
+          },
+        };
+        const result = await fn(reader);
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
     /** Runs `fn` in one transaction under the user's write lock. */
     async tx<T>(userId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
       const client = await pool.connect();

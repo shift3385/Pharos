@@ -24,8 +24,15 @@ y la matriz de trazabilidad.
   purga se los lleva con el run pasada la retención de «Administración →
   General». Un run de un ciclo cerrado no se elimina: reabre antes el ciclo.
   Si solo quieres dejar de ejecutarlo, ciérralo como «Cancelado».
+- En la matriz de trazabilidad gana siempre el último resultado final, sea de
+  un run manual o de un informe importado: repetir la prueba a mano después de
+  un informe de Playwright cambia lo que muestra la matriz.
+- El **informe de estado** (ISO/IEC/IEEE 29119-3) sale de las ejecuciones: el
+  resumen se rellena con las cifras y las recomendaciones las escribes tú. Los
+  dos textos se guardan solo en este equipo y van en el Excel y el PDF; los
+  defectos se cuentan «a fecha de hoy», no por el periodo elegido.
 
 ## Véase también
 
 - Capítulo 7, «Ciclos y configuraciones» (los runs de un ciclo) y capítulo 9, «Defectos».
-- [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: run, elemento, objetivo, intento.
+- [Glosario](../GLOSARIO.md), sección «Execution model identifiers»: run, elemento, objetivo, intento, último resultado, informe de estado, criterio de salida evaluado.

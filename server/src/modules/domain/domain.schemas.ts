@@ -93,6 +93,10 @@ export const requirementInputSchema = z.object({
   title: text(500).trim().min(1),
   description: text(20_000).optional(),
   priority: text(50).optional(),
+  // Risk (RUN-00, TRZ-04): 1..5 each, null clears; a missing key keeps the
+  // stored value (the form of the web sends both).
+  riskLikelihood: z.number().int().min(1).max(5).nullable().optional(),
+  riskImpact: z.number().int().min(1).max(5).nullable().optional(),
 });
 
 export const requirementImportSchema = z.object({
