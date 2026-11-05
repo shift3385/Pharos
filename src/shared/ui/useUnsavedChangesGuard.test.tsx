@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Link, RouterProvider, createMemoryRouter, useLocation, useNavigate, useSearchParams } from "react-router";
 import { i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { RethrowRouteError } from "./RethrowRouteError";
 import { useUnsavedChangesGuard, type UnsavedChangesOptions } from "./useUnsavedChangesGuard";
 
 function Editor({ options }: { options?: UnsavedChangesOptions }) {
@@ -29,6 +31,9 @@ function Editor({ options }: { options?: UnsavedChangesOptions }) {
       </button>
       <button type="button" onClick={() => void bypass(() => navigate("/otra"))}>
         Guardar y salir
+      </button>
+      <button type="button" onClick={() => void bypass(() => navigate("/editor?case=1"))}>
+        Guardar y abrir por id
       </button>
       <button
         type="button"
@@ -84,6 +89,23 @@ function setup(options?: UnsavedChangesOptions) {
   );
   const view = render(<RouterProvider router={router} />);
   return { router, view };
+}
+
+/** The same screens wired like `main.tsx`: a crash reaches the app's boundary. */
+function setupLikeTheApp() {
+  const router = createMemoryRouter(
+    [
+      { path: "/editor", element: <Editor />, ErrorBoundary: RethrowRouteError },
+      { path: "/otra", element: <p>Otra sección abierta</p>, ErrorBoundary: RethrowRouteError },
+    ],
+    { initialEntries: ["/editor"] },
+  );
+  render(
+    <ErrorBoundary variant="app">
+      <RouterProvider router={router} />
+    </ErrorBoundary>,
+  );
+  return router;
 }
 const type = (text: string) => userEvent.type(screen.getByRole("textbox", { name: "Nota" }), text);
 
@@ -185,6 +207,136 @@ describe("useUnsavedChangesGuard (RED-V3k)", () => {
       screen.getByRole("button", { name: "Guardar", hidden: true }).click();
     });
     expect(router.state.location.pathname).toBe("/otra");
+  });
+
+  // The router publishes its state to React in a transition, so a render can
+  // still read `blocked` after the router has already released the navigation.
+  describe("when React has not caught up with the router", () => {
+    const click = (name: string) => screen.getByRole("button", { name, hidden: true }).click();
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+
+    // Pages can look right even after the throw (the router's error boundary
+    // recovers on the next location), so the throw itself is what is checked.
+    const invalidTransitions: string[] = [];
+    const collect = (text: unknown) => {
+      if (String(text).includes("Invalid blocker state transition")) invalidTransitions.push(String(text));
+    };
+    const onWindowError = (e: ErrorEvent) => {
+      collect(e.error);
+      e.preventDefault();
+    };
+    beforeEach(() => {
+      invalidTransitions.length = 0;
+      vi.spyOn(console, "error").mockImplementation((...args) => args.forEach(collect));
+      window.addEventListener("error", onWindowError);
+    });
+    afterEach(() => {
+      window.removeEventListener("error", onWindowError);
+      vi.restoreAllMocks();
+      cleanup(); // A failed check below must not leave this screen for the next test.
+      expect(invalidTransitions).toEqual([]);
+    });
+
+    async function held() {
+      const { router } = setup();
+      await type("x");
+      await userEvent.click(screen.getByRole("link", { name: "Otra sección" }));
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+      return router;
+    }
+
+    it("a save that turns clean after «Descartar» does not release the navigation again", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Descartar cambios");
+        await Promise.resolve();
+        await Promise.resolve();
+        click("Guardar");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+      expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
+    });
+
+    it("a save that navigates by itself while a navigation is held does not release it", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Guardar");
+        click("Guardar y salir");
+        await settle();
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+      expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
+      // Already where the held click wanted to go: no second history entry.
+      await act(() => router.navigate(-1));
+      expect(router.state.location.pathname).toBe("/editor");
+    });
+
+    it("«Descartar cambios» on a hold a save just dropped goes there without asking again", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Guardar y abrir por id");
+        await Promise.resolve();
+        await Promise.resolve();
+        click("Descartar cambios");
+        await settle();
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+
+    it("the click that was held still opens its section when a save navigates elsewhere meanwhile", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Guardar");
+        click("Guardar y abrir por id");
+        await settle();
+      });
+      await act(settle);
+      expect(router.state.location.pathname + router.state.location.search).toBe("/otra");
+      expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      await act(() => router.navigate(-1));
+      expect(router.state.location.pathname + router.state.location.search).toBe("/editor?case=1");
+    });
+
+    it("wired like the app, the screen survives (the error does not reach the app's boundary)", async () => {
+      const router = setupLikeTheApp();
+      await type("x");
+      await userEvent.click(screen.getByRole("link", { name: "Otra sección" }));
+      await act(async () => {
+        click("Seguir editando");
+        click("Guardar");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/editor");
+      expect(screen.getByRole("textbox", { name: "Nota" })).toHaveValue("");
+    });
+
+    it("«Seguir editando» followed by a save keeps the user on the screen", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Seguir editando");
+        click("Guardar");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/editor");
+      expect(screen.getByRole("textbox", { name: "Nota" })).toHaveValue("");
+    });
+
+    it("a double click on «Descartar cambios» only releases once", async () => {
+      const router = await held();
+      await act(async () => {
+        click("Descartar cambios");
+        await Promise.resolve();
+        await Promise.resolve();
+        click("Descartar cambios");
+      });
+      await act(settle);
+      expect(router.state.location.pathname).toBe("/otra");
+    });
   });
 
   it("asks the browser before a reload only while dirty, and stops after unmount", async () => {

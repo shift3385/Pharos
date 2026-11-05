@@ -55,6 +55,7 @@ import {
   detectLevel,
   flowsToGherkin,
   fromGherkin,
+  isProvisionalKey,
   levelRank,
   newFlow,
   parseFeatureFlows,
@@ -89,6 +90,7 @@ import {
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
 import { stampLabel, statusTone } from "./caseTones";
+import { Alert } from "@shared/ui/Alert";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
@@ -647,17 +649,33 @@ export function TestCaseEditor({
     };
   }
 
+  // The case as exported, with the cycles it belongs to (EXP-03); a case
+  // not saved yet is in none.
+  async function exportableWithCycles(): Promise<ExportableCase> {
+    const base = buildExportableCase();
+    if (!caseId) return base;
+    const { caseCyclesTable, loadCycleExport } =
+      await import("@modules/cycles");
+    const data = await loadCycleExport(projectId, userId, true);
+    const lang = i18n.resolvedLanguage ?? "es";
+    return { ...base, extraTables: [caseCyclesTable(caseId, data, t, lang)] };
+  }
+
   async function exportXlsx() {
     const { exportCaseXlsx } = await import("../export/caseXlsx");
     const name = await unlessReported(
-      exportCaseXlsx(buildExportableCase(), i18n.resolvedLanguage ?? "es"),
+      exportableWithCycles().then((c) =>
+        exportCaseXlsx(c, i18n.resolvedLanguage ?? "es"),
+      ),
     );
     if (name) showExportDone(name);
   }
 
   async function exportPdf() {
     const { exportCasePdf } = await import("../export/casePdf");
-    const name = await unlessReported(exportCasePdf(buildExportableCase(), t));
+    const name = await unlessReported(
+      exportableWithCycles().then((c) => exportCasePdf(c, t)),
+    );
     if (name) showExportDone(name);
   }
 
@@ -791,9 +809,18 @@ export function TestCaseEditor({
         <input
           className="tc-meta__input tc-meta__input--mono"
           value={form.scenarioId}
-          placeholder={t("testCase.scenarioIdAuto")}
+          // The real prefix of this project (FIX-12); the number comes from
+          // the project counter when the case is saved.
+          placeholder={t("testCase.scenarioIdAuto", { prefix: caseIdPrefix })}
           readOnly={testCase != null}
-          title={testCase ? t("testCase.scenarioIdFixed") : undefined}
+          title={
+            !testCase
+              ? undefined
+              : isProvisionalKey(testCase.scenarioId)
+                ? // DAT-01: an offline key is replaced on the next sync.
+                  t("testCase.scenarioIdProvisional")
+                : t("testCase.scenarioIdFixed", { id: testCase.scenarioId })
+          }
           onChange={(e) => update({ scenarioId: e.target.value })}
         />
       </label>
@@ -1197,10 +1224,9 @@ export function TestCaseEditor({
       )}
 
       {notice && (
-        <p className="tc-notice" role="status">
-          <span aria-hidden="true">✓ </span>
+        <Alert kind="success" className="tc-notice">
           {notice}
-        </p>
+        </Alert>
       )}
 
       {form.aiProvenance.case && (

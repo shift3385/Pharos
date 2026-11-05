@@ -18,7 +18,12 @@ export interface RequirementDraft {
   title: string;
   description: string;
   priority: RequirementPriority;
+  /** Risk factors 1..5, null = not assessed (RUN-00, TRZ-04). */
+  riskLikelihood: number | null;
+  riskImpact: number | null;
 }
+
+const RISK_VALUES = [1, 2, 3, 4, 5];
 
 /** Create/edit a requirement. The key can only be set on create (empty →
  *  auto-numbered); afterwards it is read-only because it is a stable ID. */
@@ -40,6 +45,8 @@ export function RequirementFormModal({
     title: requirement?.title ?? "",
     description: requirement?.description ?? "",
     priority: requirement?.priority ?? "medium",
+    riskLikelihood: requirement?.riskLikelihood ?? null,
+    riskImpact: requirement?.riskImpact ?? null,
   }));
   const [draft, setDraft] = useState<RequirementDraft>(start);
   // Typed data is never thrown away without asking (draft rule, ADR-0027).
@@ -151,6 +158,39 @@ export function RequirementFormModal({
           </select>
         )}
       </FormField>
+
+      <fieldset className="tr-risk">
+        <legend className="tp-field__label">{t("traceability.risk.label")}</legend>
+        <p className="tp-field__hint" id={`${id}-risk-hint`}>
+          {t("traceability.risk.hint")}
+        </p>
+        <div className="tr-risk__grid">
+          {(["riskLikelihood", "riskImpact"] as const).map((k) => (
+            <FormField
+              key={k}
+              id={`${id}-${k}`}
+              label={t(`traceability.risk.${k === "riskLikelihood" ? "likelihood" : "impact"}`)}
+            >
+              {(p) => (
+                <select
+                  {...p}
+                  aria-describedby={`${id}-risk-hint`}
+                  data-testid={k === "riskLikelihood" ? "requirement-risk-likelihood" : "requirement-risk-impact"}
+                  value={draft[k] ?? ""}
+                  onChange={(e) => setDraft({ ...draft, [k]: e.target.value ? Number(e.target.value) : null })}
+                >
+                  <option value="">{t("traceability.risk.notAssessed")}</option>
+                  {RISK_VALUES.map((v) => (
+                    <option key={v} value={v}>
+                      {t("traceability.risk.level", { value: v })}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </FormField>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="cd__actions">
         <button type="button" className="cd__cancel" onClick={() => confirmDiscard() && onCancel()}>

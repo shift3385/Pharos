@@ -1,6 +1,6 @@
 // Chapter 2 — Inicio, proyectos y ajustes: the home panel, the project list,
 // creating projects, their settings, custom fields and configurations.
-import { $, browser, expect } from "@wdio/globals";
+import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
 import {
   PROJECT_A,
@@ -20,6 +20,7 @@ import {
   openSection,
   selectOption,
   tf,
+  waitForText,
   waitForToast,
 } from "./helpers";
 
@@ -46,7 +47,7 @@ async function setPrefix(prefix: string) {
 chapter("proyectos", () => {
   step("inicio", {
     title: "Inicio",
-    caption: "«Inicio» resume tus proyectos: proyectos abiertos, pruebas pendientes, tasa de éxito y defectos abiertos, con la ejecución por proyecto y las próximas pruebas. Con una cuenta nueva aparece vacío.",
+    caption: "«Inicio» resume tus proyectos: proyectos abiertos, pruebas pendientes, tasa de éxito y defectos abiertos, la ejecución por proyecto, los criterios de salida, las ejecuciones diarias y las próximas pruebas. Con una cuenta nueva aparece vacío.",
     covers: ["route:/"],
     run: async () => {
       await goHome();
@@ -56,9 +57,16 @@ chapter("proyectos", () => {
 
   step("periodo", {
     title: "El periodo de los datos",
-    caption: "El selector de periodo («Últimos 14 días») cambia el intervalo de las cifras: hoy, 7, 14 o 30 días o el mes en curso.",
+    caption: "El selector de periodo («Últimos 14 días») elige los días de «Ejecuciones diarias» y de la tasa de éxito: hoy, 7, 14 o 30 días o el mes en curso. El resto del Inicio es el estado actual de cada proyecto. Se recuerda en este equipo.",
     covers: ["action:home-period"],
     run: async () => {
+      // The period really filters: 7 days → 7 columns in «Ejecuciones diarias».
+      await byTestId("home-period").click();
+      await byTestId("period-7d").click();
+      await expect(byTestId("home-period")).toHaveText(expect.stringContaining(es.dashboard.period["7d"]));
+      await browser.waitUntil(async () => (await $$('[data-testid="home-daily"] .home-chart__col')).length === 7);
+      // Ends with the menu open (the capture shows it; the next step picks
+      // «Últimos 30 días» from it).
       await byTestId("home-period").click();
       await expect(byTestId("period-30d")).toBeDisplayed();
     },
@@ -140,12 +148,14 @@ chapter("proyectos", () => {
     run: async () => {
       await setPrefix(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
+      // FIX-11: the sidebar switcher shows the new prefix at once, without navigating.
+      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
     },
   });
 
   step("campo-nuevo", {
     title: "Nuevo campo personalizado",
-    caption: "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. Aquí, una selección «Navegador» con tres opciones.",
+    caption: "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. Aquí, una selección «Navegador» con tres opciones.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -213,6 +223,24 @@ chapter("proyectos", () => {
       await clickButton(es.common.cancel, '[role="dialog"]');
       await acceptNativeDialog();
       await expect($('[role="dialog"]')).not.toBeExisting();
+    },
+  });
+
+  step("campo-defecto", {
+    title: "Campos de los defectos",
+    caption: "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
+    covers: ["action:custom-field-defect"],
+    run: async () => {
+      const card = $('[data-testid="custom-fields-card"]');
+      await card.scrollIntoView();
+      await card.$('[data-testid="custom-fields-entity"] [data-value="defect"]').click();
+      await waitForText(es.customFields.emptyDefect.slice(0, 30));
+      await card.$(`button=${es.customFields.new}`).click();
+      await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Cliente afectado");
+      await dialog().$(`button=${es.customFields.dialog.create}`).click();
+      await waitForToast(tf("customFields.savedToast", { label: "Cliente afectado" }));
+      await expect(card.$(hasText("Cliente afectado"))).toBeDisplayed();
+      await card.scrollIntoView();
     },
   });
 

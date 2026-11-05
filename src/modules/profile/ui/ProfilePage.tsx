@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, LogOut, Moon, Sun } from "lucide-react";
@@ -49,26 +49,30 @@ export function ProfilePage() {
     "idle",
   );
 
-  // Load the stored profile, seeding the form from the signed-in user if none.
+  // The form stays disabled until the first load ends: typing earlier would be
+  // overwritten, and an empty required field would silently block the submit.
+  const [loaded, setLoaded] = useState(false);
+  // The user object is replaced when the session refreshes, which runs the load
+  // again: from the first keystroke on, a load no longer touches the form.
+  const edited = useRef(false);
+
+  // Load the stored profile, seeding the form from the signed-in user if none
+  // (or if it cannot be read: the form must not stay disabled).
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const stored = await profileApi.get();
+      const stored = await profileApi.get().catch(() => null);
       if (cancelled) return;
-      if (stored) {
-        setProfile(stored);
+      if (stored) setProfile(stored);
+      const source = stored ?? user;
+      if (source && !edited.current) {
         setForm({
-          displayName: stored.displayName,
-          firstName: stored.firstName,
-          lastName: stored.lastName,
-        });
-      } else if (user) {
-        setForm({
-          displayName: user.displayName,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          displayName: source.displayName,
+          firstName: source.firstName,
+          lastName: source.lastName,
         });
       }
+      setLoaded(true);
     })();
     return () => {
       cancelled = true;
@@ -76,8 +80,10 @@ export function ProfilePage() {
   }, [user]);
 
   const update =
-    (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) =>
+    (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      edited.current = true;
       setForm((f) => ({ ...f, [key]: event.target.value }));
+    };
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -109,7 +115,11 @@ export function ProfilePage() {
       </header>
 
       <div className="profile__body">
-        <form className="profile-card profile__form" onSubmit={onSubmit}>
+        <form
+          className="profile-card profile__form"
+          onSubmit={onSubmit}
+          aria-busy={!loaded}
+        >
           <div className="profile__who">
             <span className="profile__avatar" aria-hidden="true">
               {initials(user?.displayName || shownName || "?")}
@@ -139,6 +149,7 @@ export function ProfilePage() {
               label={t("profile.displayName")}
               value={form.displayName}
               onChange={update("displayName")}
+              disabled={!loaded}
               required
             />
           </div>
@@ -148,6 +159,7 @@ export function ProfilePage() {
               label={t("profile.firstName")}
               value={form.firstName}
               onChange={update("firstName")}
+              disabled={!loaded}
               required
             />
             <Field
@@ -155,11 +167,17 @@ export function ProfilePage() {
               label={t("profile.lastName")}
               value={form.lastName}
               onChange={update("lastName")}
+              disabled={!loaded}
               required
             />
           </div>
 
           <div className="profile__actions">
+            {!loaded && (
+              <span className="profile__status" role="status">
+                {t("common.loading")}
+              </span>
+            )}
             {status === "saved" && (
               <span className="profile__status" role="status">
                 {t("profile.saved")}
@@ -176,7 +194,7 @@ export function ProfilePage() {
             <button
               className="profile__save"
               type="submit"
-              disabled={status === "saving"}
+              disabled={!loaded || status === "saving"}
             >
               <Check size={16} aria-hidden="true" />
               {status === "saving" ? t("profile.saving") : t("profile.save")}

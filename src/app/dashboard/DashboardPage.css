@@ -33,6 +33,13 @@
   margin: 0;
 }
 
+.home-header__fresh {
+  margin: 2px 0 0;
+  min-height: 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
 .home-header__summary {
   margin: 0;
   font-size: 14px;
@@ -200,10 +207,6 @@ a.home-kpi:hover {
   box-shadow: var(--shadow-2);
 }
 
-.home-kpi--static .home-kpi__value {
-  color: var(--color-text-muted);
-}
-
 .home-kpi__head {
   display: flex;
   align-items: flex-start;
@@ -265,6 +268,10 @@ a.home-kpi:hover {
 
 .home-kpi__note[data-tone="error"] {
   color: var(--color-error-text);
+}
+
+.home-kpi__note[data-tone="warning"] {
+  color: var(--color-warning-text);
 }
 
 /* ---- Rows of cards ---- */
@@ -386,6 +393,26 @@ a.home-kpi:hover {
   font-size: 13px;
 }
 
+/* ---- Metrics loading / error (RED-W6) ---- */
+.home-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-error-text);
+}
+
+.home-error__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 /* ---- Legend (ACTUALIZACION §2–3) ---- */
 .home-legend {
   margin: 0;
@@ -433,6 +460,10 @@ a.home-kpi:hover {
 
 .home-legend__swatch[data-tone="blocked"] {
   background: var(--color-warning);
+}
+
+.home-legend__swatch[data-tone="other"] {
+  background: var(--color-text-muted);
 }
 
 .home-legend__swatch[data-tone="none"] {
@@ -489,21 +520,45 @@ a.home-kpi:hover {
   color: var(--color-text-secondary);
 }
 
+/* Fits «100 %» on one line (RED-W6). */
 .home-exec__pct {
   flex: none;
-  width: 40px;
+  min-width: 44px;
+  white-space: nowrap;
   text-align: right;
   font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;
 }
 
-/* Nothing run yet: the whole bar is «No ejecutado». */
+/* The track is «No ejecutado»; the segments sit on it from the left. */
 .home-exec__bar {
-  display: block;
+  display: flex;
   height: 10px;
+  overflow: hidden;
   border-radius: var(--radius-pill);
-  background: var(--color-border-input);
-  opacity: 0.6;
+  background: color-mix(in oklab, var(--color-border-input) 60%, transparent);
+}
+
+.home-exec__bar > span {
+  flex: none;
+  height: 100%;
+}
+
+.home-exec__bar > [data-tone="pass"] {
+  background: var(--color-success);
+}
+
+.home-exec__bar > [data-tone="fail"],
+.home-exec__bar > [data-tone="retest"] {
+  background: var(--color-error);
+}
+
+.home-exec__bar > [data-tone="blocked"] {
+  background: var(--color-warning);
+}
+
+.home-exec__bar > [data-tone="other"] {
+  background: var(--color-text-muted);
 }
 
 /* ---- Criterios de salida ---- */
@@ -716,6 +771,22 @@ a.home-kpi:hover {
   stroke-width: 9;
 }
 
+/* Share executed, clockwise from 12 o'clock. */
+.home-ring .home-ring__arc {
+  stroke: var(--color-navy-500);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.home-ring[data-status="risk"] .home-ring__arc {
+  stroke: var(--color-error);
+}
+
+.home-ring[data-status="met"] .home-ring__arc {
+  stroke: var(--color-success);
+}
+
 .home-ring__text {
   position: absolute;
   inset: 0;
@@ -729,6 +800,11 @@ a.home-kpi:hover {
   font-size: 22px;
   font-weight: var(--fw-semibold);
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-ring__value[data-filled] {
+  color: var(--color-text-primary);
 }
 
 .home-ring__label {
@@ -784,6 +860,16 @@ a.home-kpi:hover {
   min-width: 0;
 }
 
+.home-exit__value {
+  flex: none;
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-exit__pill {
+  display: inline-flex;
+}
+
 .home-exit__metric {
   flex: none;
   max-width: 40%;
@@ -827,10 +913,10 @@ a.home-kpi:hover {
 
 .home-chart__axis {
   flex: none;
-  width: 20px;
+  min-width: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding-bottom: 20px;
   font-size: 11px;
   text-align: right;
@@ -872,6 +958,41 @@ a.home-kpi:hover {
   width: 100%;
   max-width: 28px;
   height: 100%;
+}
+
+/* A single «0» sits on the base line. */
+.home-chart__axis > :only-child {
+  margin-top: auto;
+}
+
+/* A day's attempts: Pasa at the base, then Falla, then Otras on top. */
+.home-chart__stack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 2px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 3px 3px 0 0;
+}
+
+.home-chart__stack > span {
+  flex-basis: 0;
+  min-height: 0;
+}
+
+.home-chart__stack > [data-tone="pass"] {
+  background: var(--color-navy-500);
+}
+
+.home-chart__stack > [data-tone="fail"] {
+  background: var(--color-error);
+}
+
+.home-chart__stack > [data-tone="other"] {
+  background: var(--color-text-muted);
 }
 
 /* A day without runs: 2 px grey mark on the base line. */
@@ -1018,4 +1139,33 @@ a.home-kpi:hover {
   .home-queue__row {
     transition: none;
   }
+}
+
+/* «Ver los datos» of «Ejecuciones diarias» (RED-W6 review): the per-day
+   numbers as a table, reachable from the keyboard. */
+.home-daily__data summary {
+  cursor: pointer;
+  font-size: 12px;
+  width: fit-content;
+}
+
+.home-daily__table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-daily__table th,
+.home-daily__table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+}
+
+.home-daily__table th[scope="row"],
+.home-daily__table thead th:first-child {
+  text-align: left;
+  font-weight: var(--fw-medium);
 }

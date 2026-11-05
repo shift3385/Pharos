@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
-import { useBlocker, useLocation, type BlockerFunction, type Location } from "react-router";
+import { useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
+import {
+  UNSAFE_DataRouterContext,
+  createPath,
+  useBlocker,
+  useLocation,
+  type Blocker,
+  type BlockerFunction,
+  type Location,
+} from "react-router";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "./ConfirmDialog";
 
@@ -54,6 +62,8 @@ export function useUnsavedChangesGuard(
   const { ignore, message } = options;
   const skip = useRef(false);
   const location = useLocation();
+  // UNSAFE_: no public API reads the router's current state, only React's copy.
+  const router = useContext(UNSAFE_DataRouterContext)?.router;
 
   const blocker = useBlocker(
     useCallback<BlockerFunction>(
@@ -100,10 +110,35 @@ export function useUnsavedChangesGuard(
     wasDirty.current = dirty;
   }, [dirty]);
 
+  // The router publishes its state to React in a transition, so `blocker` can
+  // still read "blocked" after the router let go of that navigation (the user
+  // already answered, or another navigation finished). Acting on it then makes
+  // the router throw, which takes the whole window down. So each hold is
+  // answered once, and only through the router if it still holds it. Any
+  // navigation that finishes clears every hold: if that dropped this one and
+  // React still shows it, «proceed» goes there itself so the click is not lost.
+  // (Once React catches up with no answer given, the hold is simply gone.)
+  const answered = useRef<Blocker | null>(null);
+  const release = useCallback(
+    (action: "proceed" | "reset") => {
+      if (blocker.state !== "blocked" || answered.current === blocker) return;
+      answered.current = blocker;
+      if ([...(router?.state.blockers.values() ?? [])].includes(blocker)) {
+        blocker[action]();
+        return;
+      }
+      if (action !== "proceed" || !router) return;
+      if (createPath(blocker.location) === createPath(router.state.location)) return;
+      skip.current = true; // Already answered: it must not ask again.
+      void router.navigate(blocker.location, { state: blocker.location.state });
+    },
+    [blocker, router],
+  );
+
   // Nothing left to protect (saved meanwhile): let a held navigation go.
   useEffect(() => {
-    if (blocker.state === "blocked" && !dirty) blocker.proceed();
-  }, [blocker, dirty]);
+    if (!dirty) release("proceed");
+  }, [release, dirty]);
 
   const bypass = useCallback((go: () => void | Promise<void>) => {
     skip.current = true;
@@ -129,8 +164,8 @@ export function useUnsavedChangesGuard(
         message={message ?? t("dialog.unsaved.message")}
         confirmLabel={t("dialog.unsaved.discard")}
         cancelLabel={t("dialog.unsaved.keep")}
-        onConfirm={() => blocker.proceed()}
-        onCancel={() => blocker.reset()}
+        onConfirm={() => release("proceed")}
+        onCancel={() => release("reset")}
       />
     ) : null;
 

@@ -38,6 +38,22 @@ async function upload(file: Blob): Promise<string> {
   return uploadId;
 }
 
+/** On the web a defect made from a result links that result, as
+ *  `defect_create` does with `fromResult` on the desktop (its case is
+ *  derived through it); its evidence stays on the desktop (SYNC-04b). */
+function webCreate(input: DefectInput): DefectInput {
+  const from = input.fromResult;
+  if (!from) return input;
+  // The result first, as the desktop links it.
+  const links = [
+    { targetKind: "result" as const, targetId: from.resultId },
+    ...(input.links ?? []).filter((l) => !(l.targetKind === "result" && l.targetId === from.resultId)),
+  ];
+  const out: DefectInput = { ...input, links };
+  delete out.fromResult;
+  return out;
+}
+
 export const defectsApi = {
   list: (projectId: string, userId: string): Promise<Defect[]> =>
     isTauri()
@@ -46,7 +62,7 @@ export const defectsApi = {
   get: (id: string, userId: string): Promise<Defect | null> =>
     isTauri() ? invoke("defect_get", { id, userId }) : serverApi.get(path(id)),
   create: (input: DefectInput): Promise<Defect | null> =>
-    isTauri() ? invoke("defect_create", { input }) : serverApi.post("/api/defects", input),
+    isTauri() ? invoke("defect_create", { input }) : serverApi.post("/api/defects", webCreate(input)),
   update: (id: string, input: DefectInput): Promise<Defect | null> =>
     isTauri() ? invoke("defect_update", { id, input }) : serverApi.put(path(id), id, input),
   transition: (
@@ -69,7 +85,10 @@ export const defectsApi = {
   draftFromResult: async (resultId: string, userId: string, stepId?: string): Promise<DefectInput> =>
     isTauri()
       ? invoke("defect_draft_from_result", { resultId, stepId: stepId ?? null, userId })
-      : desktopOnly("results"),
+      : // The web's draft has no evidence to copy (SYNC-04b, EJE-06).
+        serverApi.get(
+          `/api/results/${encodeURIComponent(resultId)}/defect-draft${stepId ? `?stepId=${encodeURIComponent(stepId)}` : ""}`,
+        ),
   /** The project's failed attempts, newest first (desktop: results live there
    *  until the API queries them, INT-02). */
   results: (projectId: string, userId: string): Promise<ResultCandidate[]> =>

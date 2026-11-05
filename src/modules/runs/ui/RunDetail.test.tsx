@@ -1,9 +1,12 @@
 // The run screen and the manual executor (EJE-02) with the desktop commands
 // mocked: header and items, keyboard marking with an autosaved draft,
 // recording an attempt, «Crear defecto», closing and reopening, the frozen
-// revision after the case changed, the new-run dialog and the web notice.
+// revision after the case changed, the new-run dialog, deleting a run
+// (EJE-07), and the web (EJE-06): the same executor without files, its draft
+// in this browser.
 // axe checks the markup of each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
@@ -36,6 +39,8 @@ const api = vi.hoisted(() => ({
   deleteDraftAttachment: vi.fn(),
   saveAttachment: vi.fn(),
   previewAttachment: vi.fn(),
+  deletePreview: vi.fn(),
+  delete: vi.fn(),
 }));
 vi.mock("../api/runsApi", () => ({ runsApi: api }));
 const platform = vi.hoisted(() => ({ desktop: true }));
@@ -342,6 +347,67 @@ describe("run screen", () => {
     );
   });
 
+  it("deletes a run after naming what it hides", async () => {
+    const user = userEvent.setup();
+    api.deletePreview.mockResolvedValue({
+      runKey: "RUN-007",
+      title: "Regresión manual",
+      items: 2,
+      results: 3,
+      imports: 1,
+      attachments: 4,
+      drafts: 1,
+      cycle: { cycleKey: "CYC-002", title: "Sprint 12", closed: false },
+      linkedDefects: 1,
+    });
+    api.delete.mockResolvedValue(undefined);
+    renderRun("/projects/p/runs/r1");
+    await user.click(await screen.findByTestId("run-delete"));
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
+    const hidden = await within(dialog).findByTestId("run-delete-hidden");
+    expect(hidden).toHaveTextContent("2 elementos del run");
+    expect(hidden).toHaveTextContent("3 resultados registrados (no se borran a mano) de 1 importación");
+    expect(hidden).toHaveTextContent("4 evidencias de esos resultados");
+    expect(hidden).toHaveTextContent("1 borrador sin guardar se descarta");
+    expect(hidden).toHaveTextContent("ciclo CYC-002 «Sprint 12» dejará de contar este run");
+    expect(hidden).toHaveTextContent("el defecto conserva el vínculo hasta la purga");
+    expect(dialog).toHaveTextContent("la purga se los lleva con el run pasados");
+    await expectNoAxeViolations(dialog);
+    await user.click(within(dialog).getByTestId("run-delete-confirm"));
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith("r1", "test-user"));
+    expect(await screen.findByText("Run RUN-007 eliminado.", { exact: false })).toBeInTheDocument();
+  });
+
+  it("says when the run was deleted, here or on another device", async () => {
+    api.overview.mockRejectedValue(new Error("run-deleted"));
+    renderRun("/projects/p/runs/r1");
+    expect(await screen.findByTestId("run-deleted-notice")).toHaveTextContent("Este run se eliminó");
+    expect(screen.queryByTestId("run-delete")).not.toBeInTheDocument();
+  });
+
+  it("does not delete a run of a closed cycle", async () => {
+    const user = userEvent.setup();
+    api.deletePreview.mockResolvedValue({
+      runKey: "RUN-007",
+      title: "Regresión manual",
+      items: 1,
+      results: 0,
+      imports: 0,
+      attachments: 0,
+      drafts: 0,
+      cycle: { cycleKey: "CYC-002", title: "Sprint 12", closed: true },
+      linkedDefects: 0,
+    });
+    renderRun("/projects/p/runs/r1");
+    await user.click(await screen.findByTestId("run-delete"));
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar el run" });
+    expect(await within(dialog).findByTestId("run-delete-cycle-closed")).toHaveTextContent(
+      "El ciclo CYC-002 está cerrado",
+    );
+    expect(within(dialog).getByTestId("run-delete-confirm")).toBeDisabled();
+    expect(api.delete).not.toHaveBeenCalled();
+  });
+
   it("records once when Ctrl+Enter is pressed again while it saves", async () => {
     const user = userEvent.setup();
     let finish: (id: string) => void = () => undefined;
@@ -407,11 +473,89 @@ describe("run screen", () => {
     expect(screen.queryByText(/otra ventana/)).not.toBeInTheDocument();
   });
 
-  it("is read only on the web", async () => {
+});
+
+describe("run screen on the web (EJE-06)", () => {
+  beforeEach(() => {
     platform.desktop = false;
+  });
+
+  it("loads the run and executes it, without file controls, and says so", async () => {
+    const user = userEvent.setup();
+    // The run's header says where files and drafts are.
+    const first = renderRun("/projects/p/runs/r1");
+    expect(
+      await screen.findByText(/Los adjuntos solo están disponibles en el escritorio\. Los borradores de ejecución se guardan en este navegador/),
+    ).toBeInTheDocument();
+    expect(api.overview).toHaveBeenCalledWith("r1", "test-user");
+    first.unmount();
+    const { container } = renderRun();
+    const panel = await screen.findByTestId("exec-panel");
+    expect(within(panel).getByTestId("exec-attach-desktop-only")).toHaveTextContent("Los adjuntos solo están disponibles en el escritorio.");
+    for (const id of ["exec-step-1-attach", "exec-result-attach", "exec-paste"])
+      expect(within(panel).queryByTestId(id)).not.toBeInTheDocument();
+    // Run actions are offered too, except deleting it (desktop only, EJE-07).
+    expect((await screen.findAllByTestId("run-close")).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("run-delete")).not.toBeInTheDocument();
+    await expectNoAxeViolations(container);
+
+    within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0].focus();
+    await user.keyboard("p");
+    expect(await within(panel).findByText(/Borrador guardado en este navegador/)).toBeInTheDocument();
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    await waitFor(() => expect(api.record).toHaveBeenCalledTimes(1));
+    expect(api.record.mock.calls[0][0]).toMatchObject({ runItemId: "i1", status: "passed" });
+  });
+
+  it("refuses a pasted capture and leaves Ctrl+V out of the shortcuts", async () => {
+    const user = userEvent.setup();
     renderRun();
-    expect(await screen.findByText(/se ejecutan en la app de escritorio/)).toBeInTheDocument();
-    expect(api.overview).not.toHaveBeenCalled();
+    const panel = await screen.findByTestId("exec-panel");
+    const step = within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0];
+    step.focus();
+    await user.paste({
+      files: [new File(["x"], "shot.png", { type: "image/png" })],
+      getData: () => "",
+      types: ["Files"],
+    } as unknown as DataTransfer);
+    expect(api.attachToDraft).not.toHaveBeenCalled();
+    // The hint in the result block, and the toast that answers the paste.
+    await waitFor(() => expect(screen.getAllByText(/Los adjuntos solo están disponibles en el escritorio\.$/)).toHaveLength(2));
+    await user.click(within(panel).getByRole("button", { name: "Atajos" }));
+    const dialog = await screen.findByRole("dialog", { name: "Atajos" });
+    expect(within(dialog).queryByText("Ctrl+V")).not.toBeInTheDocument();
+    expect(within(dialog).getByText("Ctrl+Enter")).toBeInTheDocument();
+  });
+
+  it("reloads the item when another tab changes its draft or records an attempt", async () => {
+    renderRun();
+    await screen.findByTestId("exec-panel");
+    const loads = api.itemDetail.mock.calls.length;
+    // Another account's draft or an unrelated key: nothing to do.
+    window.dispatchEvent(new StorageEvent("storage", { key: "pharos:exec-draft:someone:i1" }));
+    window.dispatchEvent(new StorageEvent("storage", { key: "unrelated" }));
+    expect(api.itemDetail.mock.calls.length).toBe(loads);
+    window.dispatchEvent(new StorageEvent("storage", { key: "pharos:exec-draft:test-user:i1" }));
+    await waitFor(() => expect(api.itemDetail.mock.calls.length).toBe(loads + 1));
+    window.dispatchEvent(new StorageEvent("storage", { key: "pharos:exec-recorded:test-user" }));
+    await waitFor(() => expect(api.itemDetail.mock.calls.length).toBe(loads + 2));
+  });
+
+  it("offers «Nuevo run manual» and notes the desktop-only import", async () => {
+    const user = userEvent.setup();
+    api.list.mockResolvedValue([run()]);
+    api.counts.mockResolvedValue([]);
+    api.unlinked.mockResolvedValue([]);
+    renderWithProviders(
+      <ToastProvider>
+        <RunsPage projectId="p" cases={[]} />
+      </ToastProvider>,
+      { route: "/projects/p/runs" },
+    );
+    expect(await screen.findByTestId("run-new")).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Importar informe/ })).toBeDisabled();
+    await user.click(screen.getByRole("tab", { name: /Sin vincular/ }));
+    expect(await screen.findByTestId("runs-unlinked-desktop-only")).toBeInTheDocument();
   });
 });
 

@@ -43,15 +43,41 @@ function newestDownload(ext: string): string {
 chapter("administracion", () => {
   step("inicio-con-datos", {
     title: "Inicio, con datos",
-    caption: "Con proyectos en marcha, «Inicio» cuenta proyectos, pruebas pendientes, tasa de éxito y defectos abiertos (cada tarjeta lleva a su lista). «Criterios de salida» muestra los criterios de cierre del plan del proyecto que elijas.",
-    covers: ["action:home-kpi", "action:home-exit-criteria"],
+    caption: "Con proyectos en marcha, «Inicio» cuenta las pruebas pendientes (sin ejecutar o bloqueadas), la tasa de éxito del periodo y los defectos abiertos; cada tarjeta lleva a su lista. «Ejecución por proyecto» muestra, de cada proyecto, cuántos casos tienen ya resultado y cuál es el último; «Ejecuciones diarias», lo registrado cada día, manual o importado. «Criterios de salida» evalúa los del plan del proyecto que elijas (Cumple, No cumple o Sin datos), aunque todavía no haya ejecuciones.",
+    covers: ["action:home-kpi", "action:home-exit-criteria", "state:home-metrics"],
     run: async () => {
       await goHome();
       await expect(byTestId("kpi-projects")).toBeDisplayed();
-      if (await byTestId("exit-picker").isExisting()) {
-        await byTestId("exit-picker").click();
-        await browser.keys("Escape");
-      }
+      // The metrics have loaded: the rate card shows a number or «—», not «…».
+      await browser.waitUntil(async () => !(await byTestId("kpi-rate").getText()).includes("…"));
+      await expect(byTestId("home-daily")).toBeDisplayed();
+      // Loaded, not failed: no «No se pudieron cargar las ejecuciones».
+      await expect($$(".home [role=alert]")).toBeElementsArrayOfSize(0);
+    },
+  });
+
+  step("inicio-criterios-filtros", {
+    title: "Criterios de salida: en riesgo o cumplen",
+    caption: "El selector de «Criterios de salida» busca por nombre o clave y filtra los proyectos: Todos, En riesgo (algún criterio no se cumple) o Cumplen (todos los que se pueden evaluar se cumplen). Están ordenados por fecha de cierre.",
+    covers: ["action:home-exit-filter"],
+    run: async () => {
+      await byTestId("exit-picker").click();
+      await byTestId("exit-filter-risk").click();
+      await expect(byTestId("exit-filter-risk")).toHaveAttribute("aria-pressed", "true");
+      await byTestId("exit-filter-all").click();
+      await browser.keys("Escape");
+    },
+  });
+
+  step("inicio-proximas", {
+    title: "Próximas pruebas",
+    caption: "«Próximas pruebas» separa los casos sin ejecutar, los bloqueados y los que esperan re-test (fallaron y su defecto ya está corregido), por prioridad. Cada fila abre el caso.",
+    covers: ["tabs:src/app/dashboard/UpcomingTests.tsx"],
+    run: async () => {
+      await byTestId("tab-home-up-blocked").click();
+      await expect(byTestId("tab-home-up-blocked")).toHaveAttribute("aria-selected", "true");
+      await byTestId("tab-home-up-retest").click();
+      await byTestId("tab-home-up-notRun").click();
     },
   });
 

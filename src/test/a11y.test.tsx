@@ -2,6 +2,7 @@
 // keyboard and form behaviour axe cannot see is asserted directly. Report:
 // docs/accesibilidad/auditoria-wcag-0.1.0.md.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
@@ -161,7 +162,7 @@ describe("shared form parts", () => {
       screen.getByRole("textbox", { name: "Responsibility · Row 1" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Delete: Scope · Row 2" }),
+      screen.getByRole("button", { name: "Remove: Scope · Row 2" }),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
   });

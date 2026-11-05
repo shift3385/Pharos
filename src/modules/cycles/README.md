@@ -13,11 +13,19 @@ web: `server/src/modules/domain/cycles.ts`.
   status, dates and progress, and one cycle's detail at `?cycle=<id>` —
   header, items with one result column per configuration, «Añadir casos»,
   «Añadir por filtro», assignee in place, clone, delete (its runs stay) and
-  «Ejecutar» (one run per configuration; desktop only, `cycleApi.canExecute`).
+  «Ejecutar» (one run per configuration; on the web too since EJE-06,
+  `/api/cycles/:id/execute`).
 - **Progress** comes computed from the core (`cycle_progress_get`, or
   `/api/cycles/:id/progress` on the web): this module only shows it.
+- **Exports (EXP-03):** `loadCycleExport`, `cyclesTable` and `caseCyclesTable`
+  build the «Ciclos» tables that the plan and case exports (`test-plan`,
+  `test-cases`) add as a sheet and a PDF section, from the list's own
+  progress summary.
 
-Boundaries: it depends on no other domain module. The project page passes it
-the cases (`loadCases`, from `@modules/test-cases`) and the requirement keys.
+Boundaries: it depends on no other domain module (`test-plan` and
+`test-cases` depend on it for their exports, never the other way round). The project page passes it
+the cases (`loadCases`, from `@modules/test-cases`), the requirement keys and
+`cycleActions(cycleId)`: extra buttons for an open cycle's header (the status
+report of `@modules/runs`, EJE-03, scoped to that cycle).
 No design in `docs/rediseno/` covers these screens: they use the shared
 primitives (`DataTable`, `StatusPill`, `SegmentedControl`, `Tabs`, `Dialog`).

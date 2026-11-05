@@ -9,6 +9,7 @@ import {
   projectPlanStatus,
 } from "@modules/test-plan";
 import {
+  CASES_CHANGED_EVENT,
   TestCasesPage,
   projectCaseCount,
   projectCaseOptions,
@@ -19,7 +20,7 @@ import { PlannerBoard } from "@modules/planner";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { TraceabilityPage, requirementApi } from "@modules/traceability";
-import { RunsPage } from "@modules/runs";
+import { RunsPage, StatusReportButton } from "@modules/runs";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import { recordProjectAccess } from "../model/lastAccess";
@@ -138,6 +139,7 @@ export function ProjectDetail({
             projectId={projectId}
             loadCases={() => projectCaseOptions(projectId, ownerId)}
             requirementKeys={(facts?.requirements ?? []).map((r) => r.requirementKey)}
+            cycleActions={(cycleId) => <StatusReportButton projectId={projectId} projectName={project.name} cycleId={cycleId} />}
           />
         )}
         {tab === "traceability" && (
@@ -159,6 +161,7 @@ export function ProjectDetail({
         {tab === "runs" && (
           <RunsPage
             projectId={projectId}
+            projectName={project.name}
             runId={runId}
             cases={linkableCases.map((c) => ({ id: c.id, scenarioId: c.key, title: c.title }))}
           />
@@ -182,9 +185,11 @@ interface HeaderFacts {
 }
 
 /** What the header says about the project (plan status, counts). Reloaded
- *  when the section changes (a case or requirement may have been added),
- *  after a sync and after the plan is saved. Only the newest answer is kept;
- *  a failed load keeps the last facts (the header stays as it was). */
+ *  when the section changes (a requirement may have been added), after a
+ *  sync, after the plan is saved and when cases are created or deleted
+ *  (FIX-13; a batch, like the AI suggestions or a bulk delete, announces
+ *  once when it ends). Only the newest answer
+ *  is kept; a failed load keeps the last facts (the header stays as it was). */
 function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection) {
   const [facts, setFacts] = useState<HeaderFacts | null>(null);
   const latest = useRef(0);
@@ -213,10 +218,12 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     void load();
     window.addEventListener("pharos:synced", load);
     window.addEventListener(PLAN_SAVED_EVENT, load);
+    window.addEventListener(CASES_CHANGED_EVENT, load);
     return () => {
       live = false;
       window.removeEventListener("pharos:synced", load);
       window.removeEventListener(PLAN_SAVED_EVENT, load);
+      window.removeEventListener(CASES_CHANGED_EVENT, load);
     };
   }, [projectId, ownerId, tab]);
   return facts;

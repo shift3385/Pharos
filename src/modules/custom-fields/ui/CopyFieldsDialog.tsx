@@ -4,6 +4,7 @@ import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
 import { useToast } from "@shared/ui/Toast";
 import { customFieldApi } from "../api/customFieldApi";
+import type { FieldEntity } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
 import "./CustomFields.css";
 
@@ -17,12 +18,15 @@ export interface ProjectOption {
  *  named in the result. */
 export function CopyFieldsDialog({
   projectId,
+  entity = "test_case",
   userId,
   loadProjects,
   onDone,
   onCancel,
 }: {
   projectId: string;
+  /** The entity whose fields are copied (FLD-03). */
+  entity?: FieldEntity;
   userId: string;
   loadProjects: () => Promise<ProjectOption[]>;
   onDone: () => void;
@@ -48,7 +52,12 @@ export function CopyFieldsDialog({
   async function copy() {
     setBusy(true);
     try {
-      const summary = await customFieldApi.copy(source, projectId, userId);
+      const summary = await customFieldApi.copy(
+        source,
+        projectId,
+        userId,
+        entity,
+      );
       toast(
         [
           t("customFields.copyDialog.copiedToast", { count: summary.copied }),
@@ -78,7 +87,13 @@ export function CopyFieldsDialog({
       <h3 id={`${id}-title`} className="cd__title">
         {t("customFields.copyDialog.title")}
       </h3>
-      <p className="cd__msg">{t("customFields.copyDialog.hint")}</p>
+      <p className="cd__msg">
+        {t(
+          entity === "defect"
+            ? "customFields.copyDialog.hintDefect"
+            : "customFields.copyDialog.hint",
+        )}
+      </p>
       {projects === null ? (
         <p className="tp__muted">{t("common.loading")}</p>
       ) : projects.length === 0 ? (

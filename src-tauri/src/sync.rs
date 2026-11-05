@@ -913,10 +913,7 @@ pub(crate) fn apply_doc(
         return upsert_conflict(conn, user, doc, base);
     }
     write_doc(conn, workspace_id, user, doc)?;
-    // A run item deleted elsewhere takes its local draft and files (EJE-02).
-    if doc.deleted && doc.entity == crate::runs::RUN_ITEM {
-        crate::runs::manual::drop_item_drafts(conn, &doc.entity_id, user)?;
-    }
+    drop_drafts_of_remote(conn, user, doc)?;
     set_base(
         conn,
         user,
@@ -935,6 +932,24 @@ pub(crate) fn apply_doc(
             doc.revision,
             &doc.hlc,
         )?;
+    }
+    Ok(())
+}
+
+/// The local drafts a remote document written here takes, with their files
+/// (released; `persist_and_collect` removes them): a run item deleted
+/// elsewhere (EJE-02), and a run cancelled elsewhere, the web or another
+/// device (EJE-06), as cancelling it here does. Pulled documents and a
+/// conflict resolved to the remote version both pass here.
+fn drop_drafts_of_remote(conn: &Connection, user: &str, doc: &RemoteDoc) -> Result<(), String> {
+    if doc.deleted && doc.entity == crate::runs::RUN_ITEM {
+        crate::runs::manual::drop_item_drafts(conn, &doc.entity_id, user)?;
+    }
+    if !doc.deleted
+        && doc.entity == crate::runs::RUN
+        && doc.payload.get("status").and_then(Value::as_str) == Some("aborted")
+    {
+        crate::runs::manual::drop_run_drafts(conn, &doc.entity_id, user)?;
     }
     Ok(())
 }
@@ -1304,18 +1319,25 @@ pub fn sync_cursor_set(db: State<Db>, user_id: String, value: String) -> Result<
 #[tauri::command]
 pub fn apply_remote(db: State<Db>, user_id: String, docs: Vec<RemoteDoc>) -> Result<(), String> {
     require_user(&user_id)?;
+    apply_page(&db, &user_id, &docs)
+}
+
+/// One page of remote documents in one transaction, then saved; files of
+/// drafts the page released are removed after that save
+/// (`persist_and_collect`, ADR-0014).
+pub(crate) fn apply_page(db: &Db, user_id: &str, docs: &[RemoteDoc]) -> Result<(), String> {
     if docs.is_empty() {
         return Ok(());
     }
     db.with_conn(|conn| {
         let workspace_id = ensure_workspace(conn)?;
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
-        for doc in &docs {
-            apply_doc(&tx, &workspace_id, &user_id, doc)?;
+        for doc in docs {
+            apply_doc(&tx, &workspace_id, user_id, doc)?;
         }
         tx.commit().map_err(|e| e.to_string())
     })?;
-    db.persist()
+    db.persist_and_collect()
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -1417,6 +1439,14 @@ pub(crate) fn resolve_conflict(
         .map_err(|e| e.to_string())?
         .ok_or("conflict not found")?;
     let table = table_for(&c.entity).ok_or("unknown entity")?;
+    // The HLC of the side that deleted, if any (EJE-07: `revive_items`).
+    let delete_hlc = if c.local.deleted {
+        Some(c.local.hlc.clone())
+    } else if c.remote.deleted {
+        Some(c.remote.hlc.clone())
+    } else {
+        None
+    };
 
     match resolution {
         "local" => {
@@ -1475,6 +1505,7 @@ pub(crate) fn resolve_conflict(
                 hlc: c.remote.hlc,
             };
             write_doc(conn, workspace_id, user, &doc)?;
+            drop_drafts_of_remote(conn, user, &doc)?;
             mark_entity_synced(conn, user, &c.entity, &c.entity_id)?;
             // The local change is dropped for the server version: no oplog row
             // (nothing to push), but the decision is audited (ADR-0015).
@@ -1498,6 +1529,13 @@ pub(crate) fn resolve_conflict(
             )?;
         }
         other => return Err(format!("unknown resolution: {other}")),
+    }
+    // A run that comes back (EJE-07: its delete lost the conflict) brings
+    // back the items its delete took.
+    if c.entity == crate::runs::RUN {
+        if let Some(hlc) = &delete_hlc {
+            crate::runs::delete::revive_items(conn, &c.entity_id, hlc, user)?;
+        }
     }
 
     conn.execute(
@@ -1565,13 +1603,24 @@ pub fn sync_conflict_resolve(
     resolution: String,
 ) -> Result<(), String> {
     require_user(&user_id)?;
+    resolve_and_persist(&db, &user_id, &id, &resolution)
+}
+
+/// Resolves a conflict in one transaction, then saves; taking the remote
+/// version may release draft files, removed after that save.
+pub(crate) fn resolve_and_persist(
+    db: &Db,
+    user_id: &str,
+    id: &str,
+    resolution: &str,
+) -> Result<(), String> {
     db.with_conn(|conn| {
         let workspace_id = ensure_workspace(conn)?;
         let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
-        resolve_conflict(&tx, &workspace_id, &user_id, &id, &resolution)?;
+        resolve_conflict(&tx, &workspace_id, user_id, id, resolution)?;
         tx.commit().map_err(|e| e.to_string())
     })?;
-    db.persist()
+    db.persist_and_collect()
 }
 
 #[cfg(test)]

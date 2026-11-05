@@ -167,8 +167,17 @@ chapter("plan", () => {
     run: async () => {
       await next();
       await selectOption(P.methodology, P.agile);
-      const ceremonies = await $(`[role="group"][aria-label="${P.ceremonies}"]`).$$(".tp-pill");
-      for (const pill of ceremonies.slice(0, 3)) await pill.click();
+      // Daily, review and retrospective on. A new plan already has them, so a
+      // blind click would turn them off (what MAN-01 first captured).
+      const group = $(`[role="group"][aria-label="${P.ceremonies}"]`);
+      for (const name of [P.ceremonyLabel.daily, P.ceremonyLabel.review, P.ceremonyLabel.retrospective]) {
+        const pill = group.$(`button.tp-pill=${name}`);
+        if ((await pill.getAttribute("aria-pressed")) !== "true") await pill.click();
+      }
+      await expect(byTestId("ceremony-frequencies")).toBeDisplayed();
+      // FIX-14: nothing left to ask, and the step is marked done.
+      await expect(byTestId("methodology-gaps")).toHaveText("");
+      await expect($("nav.tpw-rail").$(`button*=${P.step.methodology}`)).toHaveAttribute("data-done", "true");
     },
   });
 

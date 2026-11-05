@@ -182,11 +182,7 @@ chapter("acceso", () => {
     covers: ["action:profile-save"],
     focus: [".profile__audit", `button=${es.profile.save}`],
     run: async () => {
-      // The form shows before the profile loads: its required fields are still
-      // empty (the browser blocks the submit) and the load overwrites what was typed.
-      await browser.waitUntil(async () => (await $("#firstName").getValue()) !== "", {
-        timeoutMsg: "the profile form never loaded",
-      });
+      await expect($("#displayName")).toBeEnabled(); // once the profile has loaded
       await clearInput("#displayName");
       await $("#displayName").setValue("Smoke QA");
       await button(es.profile.save).click();

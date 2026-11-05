@@ -3,7 +3,7 @@
 // already shown, so callers can stop quietly instead of showing it twice or
 // leaving an unhandled rejection.
 
-export type ToastKind = "success" | "warning" | "error";
+export type ToastKind = "success" | "warning" | "error" | "info";
 
 export const TOAST_EVENT = "pharos:toast";
 

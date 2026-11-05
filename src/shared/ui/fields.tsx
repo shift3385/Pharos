@@ -1,11 +1,13 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 import { duplicateRow, duplicateRows } from "@shared/validation";
 import { FieldMessage } from "./FormField";
 import { controlProps } from "./fieldProps";
 import "./fields.css";
 
-/** Delete control that asks for confirmation when the target has content. */
+/** Remove-row control (UX-10): a trash icon named «Quitar: <fila>», which asks
+ *  for confirmation when the row has content. «✕» is kept for close/dismiss. */
 export function DeleteButton({
   onDelete,
   needsConfirm,
@@ -13,14 +15,14 @@ export function DeleteButton({
 }: {
   onDelete: () => void;
   needsConfirm: boolean;
-  /** What is deleted (e.g. "Scope · row 2"), so each ✕ has a unique name. */
+  /** What is removed (e.g. "Scope · row 2"), so each button has a unique name. */
   itemLabel?: string;
 }) {
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   const name = itemLabel
-    ? `${t("common.delete")}: ${itemLabel}`
-    : t("common.delete");
+    ? `${t("common.remove")}: ${itemLabel}`
+    : t("common.remove");
 
   if (!needsConfirm) {
     return (
@@ -28,9 +30,10 @@ export function DeleteButton({
         type="button"
         className="tp-list-field__del"
         aria-label={name}
+        title={name}
         onClick={onDelete}
       >
-        ✕
+        <Trash2 size={16} aria-hidden="true" />
       </button>
     );
   }
@@ -64,9 +67,10 @@ export function DeleteButton({
       type="button"
       className="tp-list-field__del"
       aria-label={name}
+      title={name}
       onClick={() => setConfirming(true)}
     >
-      ✕
+      <Trash2 size={16} aria-hidden="true" />
     </button>
   );
 }
@@ -217,6 +221,7 @@ export function CheckboxGroup({
   variant = "checkbox",
   groups,
   label,
+  describedBy,
 }: {
   options: string[];
   selected: string[];
@@ -227,6 +232,8 @@ export function CheckboxGroup({
   groups?: { title: string; options: string[] }[];
   /** Names the group for assistive tech. */
   label: string;
+  /** Id of a hint that describes the group (e.g. what is still missing). */
+  describedBy?: string;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState("");
@@ -280,7 +287,7 @@ export function CheckboxGroup({
       </button>
     );
     return (
-      <div className="tp-pills-groups" role="group" aria-label={label}>
+      <div className="tp-pills-groups" role="group" aria-label={label} aria-describedby={describedBy}>
         {groupList.map((g, gi) => (
           <div className="tp-pills-group" key={gi}>
             {g.title && <p className="tp-pills-group__title">{g.title}</p>}
@@ -298,7 +305,7 @@ export function CheckboxGroup({
   }
 
   return (
-    <div className="tp-checks" role="group" aria-label={label}>
+    <div className="tp-checks" role="group" aria-label={label} aria-describedby={describedBy}>
       {options.map((opt) => (
         <label className="tp-checks__item" key={opt}>
           <input

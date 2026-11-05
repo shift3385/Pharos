@@ -319,6 +319,16 @@ pub(crate) fn result_links(
     conn: &Connection,
     result_ids: &[String],
 ) -> Result<HashMap<String, ResultLink>, String> {
+    result_links_using(conn, result_ids, &mut HashMap::new())
+}
+
+/// `result_links` with the caller's resolvers by project, so one already
+/// built for the project (the execution loader's) is reused, not rebuilt.
+pub(crate) fn result_links_using<'c>(
+    conn: &'c Connection,
+    result_ids: &[String],
+    resolvers: &mut HashMap<String, crate::runs::link::Resolver<'c>>,
+) -> Result<HashMap<String, ResultLink>, String> {
     if result_ids.is_empty() {
         return Ok(HashMap::new());
     }
@@ -370,7 +380,6 @@ pub(crate) fn result_links(
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
     // One resolver per project (the results of a defect's links are of one).
-    let mut resolvers: HashMap<String, crate::runs::link::Resolver> = HashMap::new();
     let mut out = HashMap::new();
     for x in raw {
         let link = if x.imported {
@@ -413,11 +422,12 @@ pub(crate) fn result_link(
 /// Attaches their links to defects and derives the cases each reaches:
 /// direct case links, and the case of each linked result (`result_links`),
 /// in link order, once each. Two queries for any number of defects.
-fn attach_links(
-    conn: &Connection,
+fn attach_links<'c>(
+    conn: &'c Connection,
     project_id: &str,
     one: Option<&str>,
     defects: &mut [Defect],
+    resolvers: &mut HashMap<String, crate::runs::link::Resolver<'c>>,
 ) -> Result<(), String> {
     let mut links = links_by_defect(conn, project_id, one)?;
     let result_ids: Vec<String> = links
@@ -426,7 +436,7 @@ fn attach_links(
         .filter(|l| l.target_kind == "result")
         .map(|l| l.target_id.clone())
         .collect();
-    let resolved = result_links(conn, &result_ids)?;
+    let resolved = result_links_using(conn, &result_ids, resolvers)?;
     for d in defects.iter_mut() {
         d.links = links.remove(&d.id).unwrap_or_default();
         let mut cases: Vec<String> = Vec::new();
@@ -466,7 +476,7 @@ pub(crate) fn get_defect(
     };
     let project = d.project_id.clone();
     let mut one = [d];
-    attach_links(conn, &project, Some(id), &mut one)?;
+    attach_links(conn, &project, Some(id), &mut one, &mut HashMap::new())?;
     let [d] = one;
     Ok(Some(d))
 }
@@ -475,6 +485,16 @@ pub(crate) fn list_defects(
     conn: &Connection,
     project_id: &str,
     user: &str,
+) -> Result<Vec<Defect>, String> {
+    list_defects_using(conn, project_id, user, &mut HashMap::new())
+}
+
+/// `list_defects` reusing the caller's resolvers by project.
+pub(crate) fn list_defects_using<'c>(
+    conn: &'c Connection,
+    project_id: &str,
+    user: &str,
+    resolvers: &mut HashMap<String, crate::runs::link::Resolver<'c>>,
 ) -> Result<Vec<Defect>, String> {
     let mut defects: Vec<Defect> = {
         let mut stmt = conn
@@ -489,7 +509,7 @@ pub(crate) fn list_defects(
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
-    attach_links(conn, project_id, None, &mut defects)?;
+    attach_links(conn, project_id, None, &mut defects, resolvers)?;
     Ok(defects)
 }
 
@@ -754,7 +774,8 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
     if !project::owns(conn, &input.project_id, user)? {
         return Err("project not found".into());
     }
-    let f = check_fields(input)?;
+    let mut f = check_fields(input)?;
+    crate::custom_fields::check_defect_values(conn, &input.project_id, &mut f.data, None)?;
     let status = pick(input.status.as_deref(), &STATUSES, "new", "status")?;
     let resolution = lifecycle::check(status, status, input.resolution.as_deref())?;
     let mut links: Vec<LinkTarget> = input.links.clone().unwrap_or_default();
@@ -770,6 +791,10 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
             .is_some();
         if !in_project {
             return Err("result not found".into());
+        }
+        // A result of a deleted run is hidden (EJE-07): no new defect from it.
+        if result_run_deleted(conn, &from.result_id)? {
+            return Err(crate::runs::delete::RUN_DELETED.into());
         }
         // Only the result is linked: its case is derived through it
         // (`result_link`), so a later relink of the result never leaves a
@@ -858,8 +883,16 @@ pub(crate) fn update_defect(
     input: &DefectInput,
 ) -> Result<(), String> {
     let user = &input.user_id;
-    let (_, status, revision) = owned(conn, id, user)?;
-    let f = check_fields(input)?;
+    let (project_id, status, revision) = owned(conn, id, user)?;
+    let mut f = check_fields(input)?;
+    let previous: Option<Value> = conn
+        .query_row("SELECT data FROM defects WHERE id = ?1", params![id], |r| {
+            r.get::<_, String>(0)
+        })
+        .optional()
+        .map_err(err)?
+        .and_then(|s| serde_json::from_str(&s).ok());
+    crate::custom_fields::check_defect_values(conn, &project_id, &mut f.data, previous.as_ref())?;
     let to = input
         .status
         .clone()
@@ -1058,6 +1091,18 @@ pub(crate) fn set_link(
 /// What `defect_create` would get from a failed result (ADR-0016): the steps
 /// of the executed revision, what was obtained, the run's build and
 /// environment and the links. Nothing is written; the editor shows it.
+/// True if the result's run is deleted (EJE-07). A result whose run has not
+/// arrived yet is not refused.
+fn result_run_deleted(conn: &Connection, result_id: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT EXISTS (SELECT 1 FROM results x JOIN runs r ON r.id = x.run_id
+                         WHERE x.id = ?1 AND r.deleted_at IS NOT NULL)",
+        params![result_id],
+        |r| r.get(0),
+    )
+    .map_err(err)
+}
+
 pub(crate) fn draft_from_result(
     conn: &Connection,
     result_id: &str,
@@ -1099,6 +1144,9 @@ pub(crate) fn draft_from_result(
     let Some((project_id, run_id, _, _, case_key, _, message, test_key)) = row else {
         return Err("result not found".into());
     };
+    if result_run_deleted(conn, result_id)? {
+        return Err(crate::runs::delete::RUN_DELETED.into());
+    }
     let link = result_link(conn, result_id)?;
     let revision_id = link.as_ref().and_then(|l| l.revision_id.clone());
     let flow_id = link.as_ref().and_then(|l| l.flow_id.clone());

@@ -5,6 +5,8 @@ import { methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
 import { buildPlanPdf, planPdfName } from "./planPdf";
+import type { CycleExportData } from "@modules/cycles";
+import { planExtraTables } from "./planExtras";
 
 type Translate = (key: string) => string;
 
@@ -88,6 +90,16 @@ export async function projectPlanClosure(
   return { closeDate, criteria };
 }
 
+/** Id, title and version of a project’s plan (null when it has none): the
+ *  status report (EJE-03) scopes by it and names it. */
+export async function projectPlanRef(
+  projectId: string,
+  userId: string,
+): Promise<{ id: string; title: string; version: string } | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
+  return plan ? { id: plan.id, title: plan.title, version: plan.version } : null;
+}
+
 /** Version of a project’s plan (null when it has none), e.g. for the version
  *  of documents derived from the plan such as the traceability matrix. */
 export async function projectPlanVersion(
@@ -110,10 +122,21 @@ export async function projectPlanFiles(
   lang: string,
   onEach?: (name: string) => void,
   onSkip?: (name: string) => void,
+  cycles?: CycleExportData,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return [];
-  const exportable = planToExportable(plan, t);
+  const exportable = {
+    ...planToExportable(plan, t),
+    extraTables: await planExtraTables(
+      projectId,
+      userId,
+      plan.data.milestones,
+      t,
+      lang,
+      cycles,
+    ),
+  };
   const { filename, buffer } = await buildPlanXlsx(exportable, lang);
   onEach?.(filename);
   const files: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [

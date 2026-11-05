@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router";
-import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import type { RunItemRow, RunOverview } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
@@ -16,6 +16,7 @@ import { useToast } from "@shared/ui/Toast";
 import { runsApi } from "../api/runsApi";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { CasePickerDialog } from "./CasePickerDialog";
+import { DeleteRunDialog } from "./DeleteRunDialog";
 import { ExecutionPanel } from "./ExecutionPanel";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
@@ -25,9 +26,10 @@ import "./Runs.css";
 type Filter = "all" | "not_run" | "failed" | "blocked" | "passed";
 
 /** The run screen (EJE-02, `/projects/:id/runs/:runId`): its header,
- *  progress, items, and the executor of the item in `?item=`. Desktop only:
- *  on the web it says so (EJE-06 brings a runs API). No design in
- *  docs/rediseno: built with the table, chips, pill and dialog primitives. */
+ *  progress, items, and the executor of the item in `?item=`. On the web
+ *  too (EJE-06): there the drafts are the browser's and files stay on the
+ *  desktop. No design in docs/rediseno: built with the table, chips, pill
+ *  and dialog primitives. */
 export function RunDetail({
   projectId,
   runId,
@@ -46,8 +48,10 @@ export function RunDetail({
   const itemId = params.get("item");
   const [data, setData] = useState<RunOverview | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
-  const [dialog, setDialog] = useState<"close" | "edit" | "add" | null>(null);
+  const [dialog, setDialog] = useState<"close" | "edit" | "add" | "delete" | null>(null);
+  const navigate = useNavigate();
   const latest = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -57,13 +61,14 @@ export function RunDetail({
       if (request !== latest.current) return;
       setData(o);
       setFailed(false);
-    } catch {
-      if (request === latest.current) setFailed(true);
+    } catch (e) {
+      if (request !== latest.current) return;
+      if (String(e instanceof Error ? e.message : e).startsWith("run-deleted")) setDeleted(true);
+      else setFailed(true);
     }
   }, [runId, userId]);
   useEffect(() => {
-    // The web has no runs API until EJE-06: nothing to load.
-    if (isTauri()) void refresh();
+    void refresh();
   }, [refresh]);
   const inHeader = useContext(HeaderActionsContext) !== null;
 
@@ -99,7 +104,9 @@ export function RunDetail({
       toast(
         raw.startsWith("cycle-closed")
           ? t("execution.error.cycleClosed")
-          : t("execution.error.generic"),
+          : raw.startsWith("run-deleted")
+            ? t("execution.error.runDeleted")
+            : t("execution.error.generic"),
         "error",
       );
     }
@@ -111,12 +118,13 @@ export function RunDetail({
       toast(t("execution.run.closed", { key: run?.runKey ?? "" }));
       setDialog(null);
       await refresh();
-    } catch {
-      toast(t("execution.error.generic"), "error");
+    } catch (e) {
+      const raw = String(e instanceof Error ? e.message : e);
+      toast(raw.startsWith("run-deleted") ? t("execution.error.runDeleted") : t("execution.error.generic"), "error");
     }
   }
 
-  const actions = run && isTauri() && (
+  const actions = run && (
     <div className="ex-run-actions">
       {open ? (
         <>
@@ -164,6 +172,18 @@ export function RunDetail({
           <span className="ui-btn__text">{t("execution.run.reopen")}</span>
         </button>
       )}
+      {/* Deleting a run is desktop only (EJE-07). */}
+      {isTauri() && (
+        <button
+          type="button"
+          className="ui-btn ui-btn--danger"
+          onClick={() => setDialog("delete")}
+          data-testid="run-delete"
+        >
+          <Trash2 size={16} aria-hidden="true" />
+          <span className="ui-btn__text">{t("execution.run.delete")}</span>
+        </button>
+      )}
     </div>
   );
   useHeaderActions(actions);
@@ -175,13 +195,12 @@ export function RunDetail({
     </Link>
   );
 
-  if (!isTauri())
+  if (deleted)
     return (
       <div className="rn">
         {back}
-        <p className="ex-banner ex-banner--info" role="note">
-          <Info size={16} aria-hidden="true" />
-          {t("execution.webReadOnly")}
+        <p className="tp-field__hint" role="status" data-testid="run-deleted-notice">
+          {t("execution.run.deletedNotice")}
         </p>
       </div>
     );
@@ -366,7 +385,8 @@ export function RunDetail({
             </span>
           </div>
           <p className="tp-field__hint ex-evidence-note">
-            <Info size={14} aria-hidden="true" /> {t("execution.evidenceLocal")}
+            <Info size={14} aria-hidden="true" />{" "}
+            {isTauri() ? t("execution.evidenceLocal") : t("execution.web.note")}
           </p>
         </header>
       )}
@@ -428,6 +448,18 @@ export function RunDetail({
           drafts={items.filter((i) => i.hasDraft).length}
           onCancel={() => setDialog(null)}
           onClose={(status, discardDrafts) => void close(status, discardDrafts)}
+        />
+      )}
+      {dialog === "delete" && (
+        <DeleteRunDialog
+          runId={runId}
+          userId={userId}
+          onCancel={() => setDialog(null)}
+          onDeleted={(key) => {
+            toast(t("execution.run.deleted", { key }));
+            setDialog(null);
+            void navigate(`/projects/${projectId}/runs`);
+          }}
         />
       )}
       {dialog === "edit" && (

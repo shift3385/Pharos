@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { act, screen, within } from "@testing-library/react";
 import { Link, useLocation } from "react-router";
 import userEvent from "@testing-library/user-event";
@@ -124,7 +125,7 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     expect(within(acceptance).getByText("Informe para auditoría")).toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: "Otro entregable" }), "Acta de cierre{Enter}");
     expect(within(acceptance).getByText("Acta de cierre")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Quitar Informe para auditoría" }));
+    await userEvent.click(screen.getByRole("button", { name: "Quitar: Informe para auditoría" }));
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(testPlanApi.update).toHaveBeenCalledWith(
       "plan1",
@@ -136,6 +137,29 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     );
     // Saving keeps the step and the new revision.
     expect(await screen.findByText("Paso 8 de 19")).toBeInTheDocument();
+  });
+
+  it("step 6 says what it still needs, and the ✓ follows the same rule (FIX-14)", async () => {
+    setViewportWidth(1440);
+    renderWizard();
+    await screen.findByText("Paso 1 de 19");
+    await goToStep(6);
+    const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
+    const step6 = () => within(nav).getAllByRole("button")[5];
+    // The saved plan has no ceremonies: the step is incomplete and says why.
+    expect(screen.getByTestId("methodology-gaps")).toHaveTextContent(
+      "Elige al menos una reunión del equipo para completar este paso.",
+    );
+    const group = screen.getByRole("group", { name: "Reuniones del equipo" });
+    expect(group).toHaveAccessibleDescription(/Elige al menos una reunión del equipo/);
+    expect(step6()).not.toHaveTextContent("completado");
+    await userEvent.click(within(group).getByRole("button", { name: "Diaria" }));
+    expect(screen.getByTestId("methodology-gaps")).toHaveTextContent(/^$/);
+    expect(step6()).toHaveTextContent("completado");
+    // Traditional asks for a phase instead.
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Metodología" }), "traditional");
+    expect(screen.getByTestId("methodology-gaps")).toHaveTextContent("Añade al menos una fase para completar este paso.");
+    expect(step6()).not.toHaveTextContent("completado");
   });
 
   it("step 10: ten tools, «Más herramientas (65)» with search, and a free field", async () => {

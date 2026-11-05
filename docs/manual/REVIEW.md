@@ -97,11 +97,19 @@ se publica:
       carpeta real, que los tours nunca tocan. Lo cubren además los tests de
       Rust de `downloads.rs`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
-      antiguos sin enviar («Descargar» / «Descartar») y los avisos «solo en
-      la app de escritorio» de importar informe, ejecutar ciclo, adjuntos,
+      antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
+      («Los adjuntos solo están disponibles en el escritorio», borrador en el navegador) y los
+      avisos «solo en la app de escritorio» de importar informe, adjuntos,
       plantillas propias, clave de recuperación y carpeta de descarga. *Por
       qué no:* los tours recorren la app de escritorio. Lo cubren además las
       pruebas unitarias (Vitest) con `isTauri() = false`.
+- [ ] **Inicio sin ejecuciones cargadas** (RED-W6): con el servidor parado
+      en la versión web (o la lectura de métricas fallando), las tarjetas de
+      ejecución dicen «No se pudieron cargar las ejecuciones» con
+      «Reintentar», y proyectos, planes y criterios siguen visibles; al
+      volver el servidor, «Reintentar» las carga. *Por qué no en el tour:*
+      habría que hacer fallar solo esa lectura con el resto en pie. Lo cubren
+      `DashboardPage.test.tsx` y `loadHomeMetrics.test.ts`.
 
 ## Pendientes
 

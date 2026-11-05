@@ -29,7 +29,16 @@
     "noData": "Sin datos",
     "edit": "Editar",
     "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "remove": "Quitar",
+    "moreInfo": "Más información: {{label}}",
+    "moreInfoPlain": "Más información",
+    "status": {
+      "success": "Hecho",
+      "error": "Error",
+      "warning": "Aviso",
+      "info": "Información"
+    }
   },
   "templates": {
     "kind": {
@@ -453,6 +462,37 @@
         "markedDamaged_one": "{{count}} dañado",
         "markedDamaged_other": "{{count}} dañados"
       },
+      "retention": {
+        "title": "Retención por proyecto",
+        "desc": "Cuánto tiempo se conserva cada tipo de evidencia de un proyecto antes de que caduque su archivo. Caducar borra el archivo, nunca el resultado: el registro de que existió se conserva.",
+        "deviceOnly": "Este ajuste es solo de este equipo: no se sincroniza. Cada equipo caduca sus propias copias, al arrancar y tras cada sincronización.",
+        "project": "Proyecto",
+        "noProjects": "Todavía no tienes proyectos.",
+        "current": "Ahora: {{days}}",
+        "default": "Por defecto ({{days}})",
+        "days": "Días…",
+        "daysLabel": "Días de retención de {{kind}}",
+        "exceptions": "Nunca caduca",
+        "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del planificador, de los defectos ni de los borradores.",
+        "saved": "Retención guardada en este equipo.",
+        "failed": "No se pudo leer o guardar la retención.",
+        "kinds": {
+          "trace": "Trazas",
+          "video": "Vídeos",
+          "raw_report": "Reportes crudos",
+          "log": "Registros (logs)",
+          "screenshot": "Capturas",
+          "evidence": "Otras evidencias"
+        },
+        "saveLabel": "Aplicar los cambios",
+        "save": "Guardar",
+        "confirmTitle": "¿Acortar la retención?",
+        "confirmMessage": "Con el nuevo plazo, la próxima pasada (al arrancar o tras sincronizar) borrará estos archivos de este equipo. Los resultados se conservan; los archivos no se pueden recuperar.",
+        "confirm": "Sí, acortar",
+        "confirmLine_one": "{{kind}}: de {{from}} a {{to}} — {{count}} archivo caducaría",
+        "confirmLine_other": "{{kind}}: de {{from}} a {{to}} — {{count}} archivos caducarían",
+        "daysInvalid": "Escribe un número de días entre 1 y {{max}}."
+      },
       "owners": {
         "planner_card": "Planificador",
         "defect": "Defectos",
@@ -787,6 +827,11 @@
     "sprintWeeks": "Duración de sprint (semanas)",
     "ceremonies": "Reuniones del equipo",
     "phases": "Fases",
+    "methodologyGap": {
+      "sprintWeeks": "Elige la duración del sprint para completar este paso.",
+      "ceremonies": "Elige al menos una reunión del equipo para completar este paso.",
+      "phases": "Añade al menos una fase para completar este paso."
+    },
     "environmentConfig": "Configuración del entorno",
     "environmentRequirements": "Requisitos de hardware y software",
     "tools": "Herramientas",
@@ -1115,8 +1160,9 @@
     "keywords": "Palabras clave de Gherkin",
     "insertKeyword": "Insertar en el cursor",
     "scenarioId": "ID de escenario",
-    "scenarioIdAuto": "Auto (ATS_001)",
-    "scenarioIdFixed": "El ID no cambia una vez asignado: viaja como tag @ATS_001 en la automatización.",
+    "scenarioIdAuto": "Auto ({{prefix}}…)",
+    "scenarioIdFixed": "El ID no cambia una vez asignado: viaja como tag @{{id}} en la automatización.",
+    "scenarioIdProvisional": "Clave provisional: recibirá la definitiva al sincronizar.",
     "priority": "Prioridad",
     "status": "Estado",
     "version": "Versión",
@@ -1372,6 +1418,7 @@
     "title": "Inicio",
     "greeting": "Hola, {{name}}",
     "summary": "Tienes <b>{{pending}}</b> en {{projects}}.",
+    "summaryProjects": "Tienes <b>{{projects}}</b>.",
     "pendingTests_one": "{{count}} prueba pendiente",
     "pendingTests_other": "{{count}} pruebas pendientes",
     "openProjects_one": "{{count}} proyecto abierto",
@@ -1388,16 +1435,21 @@
       "noneClosing": "Ninguno cierra este mes",
       "pending": "Pruebas pendientes",
       "pendingOf": "de {{total}}",
-      "pendingTitle": "Casos sin ejecutar en todos los proyectos abiertos",
-      "noRuns": "Sin ejecuciones registradas",
+      "pendingTitle": "Casos sin ejecutar o bloqueados en todos los proyectos abiertos",
       "rate": "Tasa de éxito",
-      "rateTitle": "Se calculará cuando registres ejecuciones (versión 0.2.0)",
-      "rateEmpty": "Sin ejecuciones todavía",
+      "rateTitle": "Casos que pasan sobre los ejecutados en el periodo ({{period}}), en todos los proyectos abiertos",
       "defects": "Defectos abiertos",
       "defectsTitle": "Defectos sin cerrar en el Planificador de tus proyectos",
       "critical_one": "{{count}} crítico",
       "critical_other": "{{count}} críticos",
-      "noCritical": "Ninguno crítico"
+      "noCritical": "Ninguno crítico",
+      "blocked_one": "{{count}} bloqueada",
+      "blocked_other": "{{count}} bloqueadas",
+      "noneBlocked": "Ninguna bloqueada",
+      "rateOf_one": "de {{count}} ejecutado · {{period}}",
+      "rateOf_other": "de {{count}} ejecutados · {{period}}",
+      "rateEmpty": "Sin ejecuciones: {{period}}",
+      "rateError": "No disponible"
     },
     "period": {
       "label": "Periodo",
@@ -1414,7 +1466,7 @@
       "custom": "Rango personalizado…",
       "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
       "compare": "Comparar con el periodo anterior",
-      "compareTitle": "Disponible cuando haya ejecuciones que comparar (versión 0.2.0)",
+      "compareTitle": "Próximamente: comparará con el periodo anterior",
       "lower": {
         "today": "hoy",
         "7d": "últimos 7 días",
@@ -1425,15 +1477,17 @@
     },
     "exec": {
       "title": "Ejecución por proyecto",
-      "subtitle": "Estado de los casos de prueba en cada proyecto abierto",
+      "subtitle": "Último resultado de cada caso en cada proyecto abierto",
       "pass": "Pasa",
       "fail": "Falla",
       "blocked": "Bloqueado",
       "notRun": "No ejecutado",
-      "rowLabel": "{{name}}: {{executed}} de {{total}} casos ejecutados",
-      "noRuns": "Las ejecuciones llegan con la versión 0.2.0: por ahora ningún caso tiene resultado.",
+      "rowLabel": "{{name}}: {{executed}} de {{total}} casos ejecutados; {{passed}} pasan, {{failed}} fallan, {{blocked}} bloqueados",
+      "noRuns": "Aún no hay ejecuciones registradas en tus proyectos.",
       "noCases": "Sin casos todavía",
-      "empty": "Sin proyectos abiertos."
+      "empty": "Sin proyectos abiertos.",
+      "other": "Otro",
+      "rowUnknown": "{{name}}: ejecución sin datos todavía"
     },
     "exit": {
       "title": "Criterios de salida",
@@ -1447,7 +1501,6 @@
       "all": "Todos",
       "risk": "En riesgo",
       "ok": "Cumplen",
-      "filterSoon": "Necesita resultados de ejecución (versión 0.2.0)",
       "byClose": "Por fecha de cierre",
       "closes": "Cierra {{date}}",
       "noDate": "Sin fecha de cierre",
@@ -1463,7 +1516,31 @@
       "noCriteria": "El plan de este proyecto no define criterios de salida.",
       "noPlan": "Este proyecto aún no tiene plan de pruebas.",
       "openPlan": "Abrir el plan",
-      "empty": "Crea un proyecto para ver sus criterios de salida."
+      "empty": "Crea un proyecto para ver sus criterios de salida.",
+      "ringValue": "Porcentaje ejecutado: {{percent}}",
+      "riskHeadline": "Hay criterios que no se cumplen",
+      "riskSub_one": "{{met}} de {{count}} criterio evaluable se cumple.",
+      "riskSub_other": "{{met}} de {{count}} criterios evaluables se cumplen.",
+      "metHeadline": "Listo para cerrar",
+      "metSub": "Todos los criterios evaluables se cumplen.",
+      "executedHeadline": "{{percent}} ejecutado",
+      "unknownSub": "Los criterios del plan no se pueden evaluar automáticamente.",
+      "met": "Cumple",
+      "notMet": "No cumple",
+      "notEvaluable": "Este criterio no se puede evaluar automáticamente",
+      "filterWaiting": "Disponible cuando carguen las ejecuciones",
+      "filterTitle": {
+        "all": "Todos los proyectos",
+        "risk": "Proyectos con algún criterio de salida que no se cumple",
+        "met": "Proyectos que cumplen todos sus criterios evaluables"
+      },
+      "noneIn": {
+        "all": "No hay proyectos.",
+        "risk": "Ningún proyecto está en riesgo.",
+        "met": "Ningún proyecto cumple todavía sus criterios."
+      },
+      "defaults": "Se usan los criterios por defecto.",
+      "ringLoading": "Porcentaje ejecutado: cargando"
     },
     "daily": {
       "title": "Ejecuciones diarias",
@@ -1472,24 +1549,43 @@
       "pass": "Pasa",
       "fail": "Falla",
       "none": "Sin ejecuciones",
-      "dayTitle": "{{date}}: sin ejecuciones",
-      "chartLabel": "Ejecuciones por día, {{period}}: sin ejecuciones registradas"
+      "other": "Otras",
+      "dayTitle_one": "{{date}}: {{count}} ejecución · {{passed}} pasa, {{failed}} fallan, {{other}} otras · {{manual}} manuales, {{imported}} importadas",
+      "dayTitle_other": "{{date}}: {{count}} ejecuciones · {{passed}} pasan, {{failed}} fallan, {{other}} otras · {{manual}} manuales, {{imported}} importadas",
+      "dayEmpty": "{{date}}: sin ejecuciones",
+      "chartLabel_one": "Ejecuciones por día, {{period}}: {{count}} en total",
+      "chartLabel_other": "Ejecuciones por día, {{period}}: {{count}} en total",
+      "chartEmpty": "Ejecuciones por día, {{period}}: sin ejecuciones registradas",
+      "undated_one": "Ejecuciones en el periodo. {{count}} resultado sin fecha válida no aparece en la gráfica",
+      "undated_other": "Ejecuciones en el periodo. {{count}} resultados sin fecha válida no aparecen en la gráfica",
+      "tableCaption": "Ejecuciones por día, {{period}}",
+      "colDay": "Día",
+      "colManual": "Manuales",
+      "colImported": "Importadas",
+      "loading": "Ejecuciones por día, {{period}}: cargando",
+      "unavailable": "Ejecuciones por día, {{period}}: no disponibles",
+      "showData": "Ver los datos",
+      "undatedNote_one": "{{count}} resultado sin fecha válida no está en la tabla.",
+      "undatedNote_other": "{{count}} resultados sin fecha válida no están en la tabla."
     },
     "upcoming": {
       "title": "Próximas pruebas",
-      "subtitle": "Pendientes de ejecutar, por prioridad",
+      "subtitle": "Según su último resultado, por prioridad",
       "viewAll": "Ver todas",
       "filters": "Estado de las pruebas",
       "notRun": "No ejecutadas",
       "blocked": "Bloqueadas",
       "retest": "Re-test",
-      "soonTitle": "Necesita resultados de ejecución (versión 0.2.0)",
-      "empty": "No hay casos pendientes. Crea casos en un proyecto para verlos aquí.",
       "priority": {
         "critical": "Prioridad crítica",
         "high": "Prioridad alta",
         "medium": "Prioridad media",
         "low": "Prioridad baja"
+      },
+      "empty": {
+        "notRun": "No hay casos sin ejecutar.",
+        "blocked": "No hay casos bloqueados.",
+        "retest": "No hay casos esperando re-test."
       }
     },
     "tabs": {
@@ -1498,7 +1594,16 @@
       "execution": "Ejecución",
       "tests": "Pruebas",
       "pendingBubble_one": "{{count}} prueba pendiente",
-      "pendingBubble_other": "{{count}} pruebas pendientes"
+      "pendingBubble_other": "{{count}} pruebas pendientes",
+      "problemsBubble_one": "{{count}} problema",
+      "problemsBubble_other": "{{count}} problemas"
+    },
+    "metrics": {
+      "loading": "Cargando las ejecuciones…",
+      "error": "No se pudieron cargar las ejecuciones.",
+      "retry": "Reintentar",
+      "refreshing": "Actualizando…",
+      "staleAt": "Datos de las {{time}}: no se pudieron actualizar"
     }
   },
   "section": {
@@ -1727,7 +1832,10 @@
       "passed": "Pasa",
       "failed": "Falla",
       "blocked": "Bloqueado",
-      "not_run": "No ejecutado"
+      "not_run": "No ejecutado",
+      "skipped": "Omitido",
+      "other": "Otro",
+      "retest": "Re-test"
     },
     "coverage": {
       "covered": "Cubierto",
@@ -1735,7 +1843,10 @@
     },
     "note": {
       "obsoleteCase": "Caso obsoleto (no cubre)",
-      "openDefect": "Defecto abierto"
+      "openDefect": "Defecto abierto",
+      "retest": "Pendiente de re-test (defecto corregido)",
+      "flaky": "Flaky: pasó tras fallar",
+      "stale": "Se ejecutó una revisión anterior del caso"
     },
     "gaps": {
       "title": "Huecos de trazabilidad",
@@ -1766,6 +1877,71 @@
       "importHint": "Crea o actualiza requisitos por ID",
       "exportXlsx": "Exportar matriz (.xlsx)",
       "exportHint": "Requisitos, casos, estados y defectos"
+    },
+    "risk": {
+      "label": "Riesgo",
+      "badge": "Riesgo {{level}} · {{band}}",
+      "band": {
+        "high": "Alto",
+        "medium": "Medio",
+        "low": "Bajo",
+        "unassessed": "Sin evaluar"
+      },
+      "likelihood": "Probabilidad",
+      "impact": "Impacto",
+      "notAssessed": "Sin evaluar",
+      "hint": "Probabilidad × impacto, de 1 a 5 cada uno. Ordena la matriz por riesgo (bandas: hasta 4 bajo, hasta 12 medio, más alto).",
+      "level": "{{value}} de 5"
+    },
+    "result": {
+      "runAt": "{{run}} · {{date}}",
+      "flaky": "Flaky",
+      "stale": "Desactualizado",
+      "staleTitle": "Se ejecutó una revisión anterior: el caso cambió después",
+      "openRun": "Abrir {{run}}",
+      "origin": {
+        "manual": "Manual",
+        "imported": "Importado"
+      }
+    },
+    "filters": {
+      "label": "Filtros de resultados",
+      "cycle": "Ciclo",
+      "configuration": "Configuración",
+      "build": "Build",
+      "environment": "Entorno",
+      "any": "Todos",
+      "clear": "Quitar filtros",
+      "sort": "Orden",
+      "sortRisk": "Riesgo",
+      "sortKey": "ID de requisito",
+      "hint": "El estado de prueba es el último resultado final de las ejecuciones que cumplen los filtros.",
+      "loadError": "No se pudieron leer los resultados: la matriz muestra los casos como no ejecutados."
+    },
+    "resultsSheet": {
+      "name": "Resultados",
+      "title": "Último resultado de cada caso",
+      "filters": "Filtros: {{filters}}",
+      "none": "ninguno",
+      "generated": "Generado: {{date}}",
+      "yes": "Sí",
+      "no": "No",
+      "col": {
+        "requirement": "ID requisito",
+        "risk": "Riesgo",
+        "band": "Banda de riesgo",
+        "case": "ID caso",
+        "caseTitle": "Caso de prueba",
+        "status": "Estado",
+        "run": "Run",
+        "runTitle": "Título del run",
+        "date": "Fecha",
+        "configuration": "Configuración",
+        "origin": "Origen",
+        "flaky": "Flaky",
+        "stale": "Desactualizado",
+        "defects": "Defectos"
+      }
     }
   },
   "downloads": {
@@ -1901,6 +2077,13 @@
     "title": "Campos personalizados",
     "desc": "Campos propios del proyecto para sus casos de prueba. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
     "empty": "Aún no hay campos personalizados. Crea uno para registrar, por ejemplo, el navegador o el sprint de cada caso.",
+    "descDefect": "Campos propios del proyecto para sus defectos. La clave y el tipo no cambian una vez creados; un campo se archiva, nunca se borra, y sus valores se conservan.",
+    "emptyDefect": "Aún no hay campos de defectos. Crea uno para registrar, por ejemplo, el cliente afectado o la versión corregida.",
+    "entity": {
+      "label": "Campos de",
+      "test_case": "Casos",
+      "defect": "Defectos"
+    },
     "new": "Nuevo campo",
     "copy": "Copiar de otro proyecto",
     "showArchived": "Mostrar archivados",
@@ -1936,7 +2119,8 @@
       "editTitle": "Editar campo",
       "label": "Nombre",
       "key": "Clave",
-      "keyHint": "Minúsculas, números y guion bajo. No se puede cambiar después.",
+      "keyHint": "Minúsculas, números y guion bajo.",
+      "keyFixed": "No se puede cambiar después.",
       "keyLocked": "La clave no se puede cambiar: los valores de los casos la usan.",
       "type": "Tipo",
       "typeLocked": "El tipo no se puede cambiar una vez creado.",
@@ -1960,6 +2144,7 @@
       "title": "Copiar campos de otro proyecto",
       "source": "Proyecto de origen",
       "hint": "Se copian los campos no archivados que este proyecto aún no tiene, con sus opciones.",
+      "hintDefect": "Se copian los campos de defectos no archivados que este proyecto aún no tiene, con sus opciones.",
       "none": "No tienes otros proyectos.",
       "confirm": "Copiar campos",
       "copying": "Copiando…",
@@ -2055,6 +2240,36 @@
     "clashLoses": "Etiqueta repetida: las importaciones con {{labels}} usan «{{other}}». Quítala de una de las dos."
   },
   "cycles": {
+    "export": {
+      "sheet": "Ciclos",
+      "key": "Clave",
+      "title": "Ciclo",
+      "status": "Estado",
+      "startsOn": "Empieza",
+      "endsOn": "Termina",
+      "dates": "Fechas",
+      "milestone": "Hito del plan",
+      "sprint": "Sprint",
+      "planned": "Hito · Sprint",
+      "build": "Build",
+      "environment": "Entorno",
+      "configurations": "Configuraciones",
+      "items": "Elementos",
+      "runs": "Runs",
+      "total": "Celdas",
+      "executed": "Ejecutadas",
+      "passed": "Pasan",
+      "failed": "Fallan",
+      "blocked": "Bloqueadas",
+      "notRun": "Sin ejecutar",
+      "executedPct": "% ejecutado",
+      "passedPct": "% pasa",
+      "progress": "Progreso",
+      "scope": "Alcance",
+      "wholeCase": "Caso entero",
+      "loadFailed": "No se pudieron leer los ciclos del proyecto: no se ha exportado nada.",
+      "assignee": "Asignado"
+    },
     "title": "Ciclos de prueba",
     "subtitle": "Qué se ejecuta, dónde, contra qué build y cuándo. Ejecutar un ciclo crea un run por configuración.",
     "new": "Nuevo ciclo",
@@ -2224,7 +2439,6 @@
       "running": "Creando…",
       "doneToast_one": "Run creado: {{keys}}",
       "doneToast_other": "{{count}} runs creados: {{keys}}",
-      "desktopOnly": "Los runs se crean desde la app de escritorio.",
       "goneHint": "No se puede ejecutar: quita del ciclo los casos eliminados ({{keys}}).",
       "missingToast_one": "{{count}} configuración aún no ha llegado a este equipo y se saltó.",
       "missingToast_other": "{{count}} configuraciones aún no han llegado a este equipo y se saltaron."
@@ -2398,13 +2612,14 @@
       "close": "Cerrar"
     },
     "fromResultBanner": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso, y sus evidencias se añaden sin copiar los archivos.",
+    "fromResultBannerWeb": "Prerrellenado desde {{label}}. Al guardar, el defecto queda vinculado al resultado y a su caso. Los adjuntos solo están disponibles en el escritorio.",
     "attachAfterSave": "Guarda el defecto para poder añadir evidencias.",
     "deleteTitle": "¿Eliminar el defecto?",
     "deleteMessage": "Se elimina «{{defect}}» con sus vínculos. Su clave no se vuelve a usar.",
     "deleteConfirm": "Sí, eliminar",
     "deleteFailed": "No se pudo eliminar el defecto. Inténtalo de nuevo.",
     "delete": "Eliminar defecto",
-    "webOnlyDesktop": "Las evidencias y los resultados están en la app de escritorio.",
+    "webOnlyDesktop": "Los adjuntos solo están disponibles en el escritorio.",
     "casesTitle_one": "{{count}} caso de prueba vinculado",
     "casesTitle_other": "{{count}} casos de prueba vinculados",
     "resultStatus": {
@@ -2488,6 +2703,10 @@
       "noOpenRuns": "No hay runs en curso en este proyecto",
       "run": "Run",
       "keepOpen": "Dejar el run abierto para importar más shards",
+      "cycle": "Ciclo",
+      "noCycle": "Sin ciclo",
+      "cycleHint": "Sus resultados cuentan en el progreso del ciclo. Los ciclos cerrados no aparecen.",
+      "runCycle": "Este run es del ciclo {{cycle}}.",
       "preview": "Vista previa",
       "previewSummary": "{{tests}} tests, {{results}} intentos: {{linked}} se vinculan a un caso y {{unlinked}} quedan sin vincular.",
       "attachments_one": "{{count}} adjunto",
@@ -2546,7 +2765,9 @@
         "test-key-required": "Un resultado no tiene identidad de test ({{detail}}).",
         "invalid-sha256": "La huella del archivo no es válida. Vuelve a elegirlo.",
         "invalid-shard": "El informe trae un shard incoherente: el índice debe estar entre 1 y el total.",
-        "invalid-target": "Elige un run nuevo o uno abierto."
+        "invalid-target": "Elige un run nuevo o uno abierto.",
+        "cycle-closed": "El ciclo está cerrado: reábrelo o elige otro.",
+        "cycle-not-found": "El ciclo ya no existe en este proyecto."
       },
       "shard": "Shard {{index}} de {{total}} (lo dice el informe)."
     },
@@ -2678,9 +2899,16 @@
       "target": "Ese flujo, fila o paso no está en la revisión ejecutada.",
       "generic": "No se pudo completar la acción. Inténtalo de nuevo.",
       "cycleClosed": "El ciclo de este run está cerrado. Reabre el ciclo antes que el run.",
-      "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas."
+      "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas.",
+      "runDeleted": "Este run se eliminó (quizá en otro equipo). Ya no admite cambios."
     },
-    "webReadOnly": "Los runs se ejecutan en la app de escritorio. En la web aún no se pueden ver ni registrar (llega con EJE-06).",
+    "web": {
+      "note": "Los adjuntos solo están disponibles en el escritorio. Los borradores de ejecución se guardan en este navegador.",
+      "attachmentsDesktopOnly": "Los adjuntos solo están disponibles en el escritorio.",
+      "draftKept": "Borrador guardado en este navegador: sigue aquí si cierras la pestaña, pero no se ve en otro equipo ni en otro navegador.",
+      "draftUnavailable": "Este navegador no deja guardar borradores. Lo marcado se guarda al registrar el resultado.",
+      "importDesktopOnly": "Importar informes y la bandeja «Sin vincular» solo en la app de escritorio."
+    },
     "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan (llegará con SYNC-04b).",
     "run": {
       "addCases": "Añadir casos",
@@ -2721,7 +2949,27 @@
       "closeAs": "Cerrar como",
       "save": "Guardar",
       "closeDiscard": "Descartar los borradores y sus adjuntos",
-      "closeDiscardAborted": "Los borradores y sus adjuntos se descartan al cancelar el run"
+      "closeDiscardAborted": "Los borradores y sus adjuntos se descartan al cancelar el run",
+      "delete": "Eliminar run",
+      "deleteTitle": "Eliminar el run",
+      "deleteMessage": "{{key}} «{{title}}» desaparecerá de las listas y del progreso, en este equipo y en los que sincronicen. Se ocultan:",
+      "deleteItems_one": "{{count}} elemento del run",
+      "deleteItems_other": "{{count}} elementos del run",
+      "deleteResults_one": "{{count}} resultado registrado (no se borra a mano)",
+      "deleteResults_other": "{{count}} resultados registrados (no se borran a mano)",
+      "deleteImports_one": "de {{count}} importación",
+      "deleteImports_other": "de {{count}} importaciones",
+      "deleteAttachments_one": "{{count}} evidencia de esos resultados",
+      "deleteAttachments_other": "{{count}} evidencias de esos resultados",
+      "deleteDrafts_one": "{{count}} borrador sin guardar se descarta, con sus adjuntos",
+      "deleteDrafts_other": "{{count}} borradores sin guardar se descartan, con sus adjuntos",
+      "deleteCycle": "El progreso del ciclo {{key}} «{{title}}» dejará de contar este run",
+      "deleteDefects_one": "{{count}} resultado está vinculado a un defecto: el defecto conserva el vínculo hasta la purga",
+      "deleteDefects_other": "{{count}} resultados están vinculados a defectos: los defectos conservan el vínculo hasta la purga",
+      "deletePurge": "Los resultados se conservan ocultos y la purga se los lleva con el run pasados {{days}} días (Administración → General).",
+      "deleteCycleClosed": "El ciclo {{key}} está cerrado: un run de un ciclo cerrado no se puede eliminar. Reabre el ciclo primero.",
+      "deleted": "Run {{key}} eliminado.",
+      "deletedNotice": "Este run se eliminó (quizá en otro equipo)."
     },
     "picker": {
       "search": "Buscar por ID o título",
@@ -2740,5 +2988,114 @@
     },
     "staleDraft": "Este intento ya se guardó o lo cambió otra ventana. Se ha recargado lo guardado.",
     "staleDraftEdits": "Este intento ya se guardó o lo cambió otra ventana. Lo que marcaste aquí sin guardar se ha descartado; se muestra lo guardado."
+  },
+  "statusReport": {
+    "open": "Informe de estado",
+    "title": "Informe de estado de pruebas",
+    "subtitle": "ISO/IEC/IEEE 29119-3, generado desde las ejecuciones",
+    "scope": "Alcance",
+    "scopeProject": "Proyecto",
+    "scopeCycle": "Ciclo",
+    "scopePlan": "Plan",
+    "cycle": "Ciclo",
+    "noCycles": "El proyecto no tiene ciclos.",
+    "from": "Desde",
+    "to": "Hasta",
+    "periodAll": "Todo el periodo",
+    "loading": "Calculando…",
+    "loadError": "No se pudo generar el informe.",
+    "exportXlsx": "Exportar .xlsx",
+    "exportPdf": "Exportar PDF",
+    "exportedToast": "Informe exportado: {{name}}",
+    "exportFailed": "No se pudo exportar el informe.",
+    "localNote": "El resumen y las recomendaciones se guardan solo en este equipo y van en las exportaciones.",
+    "asOfToday": "a fecha de hoy",
+    "noPlan": "El proyecto no tiene plan: se usan los criterios de salida por defecto.",
+    "section": {
+      "identification": "1. Identificación",
+      "progress": "2. Progreso",
+      "results": "3. Resultados por estado",
+      "defects": "4. Defectos por severidad y estado",
+      "coverage": "5. Cobertura y riesgos",
+      "exit": "6. Criterios de salida",
+      "issues": "7. Bloqueos e incidencias",
+      "summary": "8. Resumen",
+      "recommendations": "9. Recomendaciones"
+    },
+    "field": {
+      "project": "Proyecto",
+      "scope": "Alcance",
+      "period": "Periodo",
+      "generated": "Generado",
+      "author": "Autor",
+      "plan": "Plan de pruebas",
+      "runs": "Ejecuciones incluidas",
+      "unit": "Unidad"
+    },
+    "unit": {
+      "case": "casos",
+      "cell": "celdas del ciclo (caso × configuración)"
+    },
+    "progress": {
+      "executed": "Ejecutados",
+      "total": "Total",
+      "executedPct": "% ejecutado",
+      "passRate": "Tasa de éxito",
+      "lastExecution": "Última ejecución"
+    },
+    "col": {
+      "status": "Estado",
+      "count": "Cantidad",
+      "severity": "Severidad",
+      "open": "Abiertos",
+      "total": "Total",
+      "band": "Banda de riesgo",
+      "requirements": "Requisitos",
+      "covered": "Cubiertos",
+      "executed": "Ejecutados",
+      "passed": "Pasan",
+      "failed": "Fallan",
+      "criterion": "Criterio",
+      "target": "Objetivo",
+      "actual": "Valor",
+      "result": "Resultado",
+      "case": "Caso",
+      "title": "Título",
+      "run": "Run",
+      "date": "Fecha",
+      "issue": "Incidencia",
+      "requirement": "Requisito",
+      "risk": "Riesgo",
+      "defects": "Defectos"
+    },
+    "exit": {
+      "met": "Cumple",
+      "notMet": "No cumple",
+      "noData": "Sin datos",
+      "manual": "Comprobar a mano"
+    },
+    "coverageLine": "Cobertura de requisitos: {{covered}} de {{total}} ({{pct}}).",
+    "risky": "Requisitos de riesgo alto sin pasar",
+    "noRisky": "Ningún requisito de riesgo alto está fallando o sin ejecutar.",
+    "issue": {
+      "blocked": "Bloqueado",
+      "retest": "Pendiente de re-test",
+      "flaky": "Flaky",
+      "stale": "Revisión anterior"
+    },
+    "noIssues": "Sin bloqueos ni incidencias.",
+    "summaryLabel": "Resumen",
+    "summaryHint": "Se rellena con las cifras; puedes cambiarlo.",
+    "recommendationsLabel": "Recomendaciones",
+    "recommendationsPlaceholder": "Qué propones: seguir, cerrar el ciclo, repetir pruebas…",
+    "autoSummary": "Se han ejecutado {{executed}} de {{total}} {{unit}} ({{pct}}), con una tasa de éxito de {{rate}}. Hay {{open}} defectos abiertos, {{critical}} críticos. Criterios de salida: {{met}} de {{all}} cumplidos.",
+    "sheet": {
+      "summary": "Resumen",
+      "results": "Resultados",
+      "defects": "Defectos",
+      "coverage": "Cobertura"
+    },
+    "yes": "Sí",
+    "no": "No"
   }
 }

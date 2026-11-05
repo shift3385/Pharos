@@ -8,6 +8,7 @@ export {
   projectPlanStatus,
   projectPlanClosure,
   projectPlanVersion,
+  projectPlanRef,
 } from "./export/batch";
 export { exportPlanPdf } from "./export/planPdf";
 export { planContextForProject } from "./ai/context";

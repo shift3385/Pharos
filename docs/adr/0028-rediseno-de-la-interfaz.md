@@ -189,3 +189,44 @@
   Seguridad (RED-V4). Sigue en Perfil hasta que V4 la monte allí, para no
   depender del orden de las fusiones; `RecoveryKeySection` se exporta desde
   `@modules/profile` y el PR de V4 la quita de Perfil.
+
+## Enmienda 2026-11-05 · Avisos, ayuda contextual, campos y quitar filas (UX-10)
+
+Cuatro reglas que salen de la revisión del manual de usuario. Valen para toda
+la app y viven en primitivas compartidas (`src/shared/ui`):
+
+- **Avisos por estado, nunca con el ámbar de marca.** Toasts, avisos en línea y
+  banners usan el color del estado (SPEC §4): éxito `--color-success` (verde),
+  error `--color-error` (rojo), aviso `--color-warning` (ámbar de estado,
+  distinto del ámbar de marca) e información `--color-info` (azul). Cada tipo
+  lleva siempre el mismo icono de Lucide (`StatusIcon`: `CircleCheck`,
+  `CircleX`, `TriangleAlert`, `Info`) y su nombre para el lector de pantalla,
+  así que nunca depende solo del color (WCAG 1.4.1). Superficie teñida al
+  10–12 % + barra de 4 px + icono en la variante `-text` + texto principal.
+  El texto llega a ≥ 4,5:1 y el icono a ≥ 3:1 sobre la superficie teñida, en
+  claro y oscuro (`contrast.test.ts`). La barra es redundante con el icono y
+  el texto, así que no se le exige 3:1: en claro, la de aviso y la de éxito
+  quedan en 2,86:1 y 2,96:1 sobre su superficie teñida. `--color-accent` queda para la acción
+  principal y el logo, como ya decía §4. Primitivas: `Toast` (con el tipo
+  nuevo `info`) y `Alert`.
+- **Ayuda contextual `InfoTip`.** La ayuda larga y secundaria de un campo va
+  detrás de un botón [?] junto a la etiqueta (`FormField` `info`), no encima
+  del campo. Se abre al pasar el ratón, con el foco del teclado y al pulsar o
+  tocar (no depende del hover); se cierra con Esc, tocando fuera o al salir, y
+  la burbuja se puede recorrer con el puntero y tocar sin que se cierre (WCAG
+  1.4.13). Al desplazar o redimensionar sigue a su botón, y solo se cierra
+  cuando el botón sale de la ventana. Su texto está
+  siempre enlazado al control con `aria-describedby`. Las pistas cortas y
+  esenciales siguen en línea (`hint`).
+- **Orden de un campo: etiqueta → control → pista → mensaje.** Así los controles
+  de una fila quedan alineados aunque solo uno tenga pista, también en las
+  filas que ya existían. Para filas nuevas está disponible `.tp-field-row`
+  (rejilla, una columna por debajo de 600 px). Inputs y selects comparten caja
+  (40 px, mismo `line-height` y `box-sizing`).
+- **Quitar una fila es una papelera; la X es cerrar o quitar una etiqueta.** Las filas que se quitan
+  (listas «+ Añadir», pares, sprints e hitos, flujos, filas y columnas de
+  ejemplos, adjuntos, entregables propios) usan `Trash2` con el nombre
+  «Quitar: <fila>», y siguen pidiendo confirmación si la fila tiene texto. El
+  icono X (Lucide `X`) queda para cerrar o descartar (diálogos, hojas,
+  búsqueda, paneles) y para quitar una **etiqueta/chip**, que es la forma
+  estándar de quitar una etiqueta.

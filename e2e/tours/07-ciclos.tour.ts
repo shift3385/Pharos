@@ -125,7 +125,10 @@ chapter("ciclos", () => {
     covers: ["dialogs:src/modules/cycles/ui/ExecuteDialog.tsx"],
     shot: { element: D },
     run: async () => {
+      // The row menu is gone before the click: a late Escape must not reach
+      // the dialog that opens next.
       await browser.keys("Escape");
+      await menuItem(Y.items.remove).waitForDisplayed({ reverse: true });
       await clickButton(Y.execute.action);
       await expect(dialog()).toBeDisplayed();
     },
@@ -143,11 +146,27 @@ chapter("ciclos", () => {
     },
   });
 
+  step("informe-ciclo", {
+    title: "Informe de estado de un ciclo",
+    caption: "«Informe de estado» en la cabecera del ciclo abre el informe con el alcance ya puesto en ese ciclo: el progreso cuenta cada caso en cada configuración, como la pestaña «Elementos». El informe completo se explica en el capítulo 13.",
+    covers: ["action:cycle-report"],
+    shot: { element: D },
+    run: async () => {
+      await $('[data-testid="cycle-report"]').click();
+      await expect($('[data-testid="status-report"]')).toBeDisplayed();
+      await waitForText(es.statusReport.section.identification);
+    },
+  });
+
   step("clonar", {
     title: "Clonar y eliminar un ciclo",
     caption: "El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
+      if (await $('[data-testid="status-report"]').isExisting()) {
+        await browser.keys("Escape");
+        await $(".cd-overlay").waitForExist({ reverse: true });
+      }
       await $(`button[aria-label="${Y.moreActions}"]`).click();
       await expect(menuItem(Y.clone)).toBeDisplayed();
     },

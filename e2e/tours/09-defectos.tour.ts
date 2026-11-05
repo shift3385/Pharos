@@ -18,6 +18,7 @@ import {
   openSection,
   selectOption,
   tf,
+  waitForSettled,
   waitForText,
   waitForToast,
 } from "./helpers";
@@ -28,6 +29,7 @@ const D = '[role="dialog"]';
 async function save() {
   await $(".tp-editor__save").click();
   await waitForToast(F.savedToast);
+  await waitForSettled();
 }
 
 async function back() {
@@ -69,7 +71,7 @@ chapter("defectos", () => {
     title: "Rellenar el defecto",
     caption:
       "Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena los detalles (severidad, prioridad, estado y etiquetas), la reproducción (pasos, resultado esperado y resultado obtenido), dónde se encontró (build y entorno), los vínculos con casos y requisitos y, si se sigue también fuera de Pharos, la referencia externa (en este ejemplo, «El saldo no se actualiza tras una transferencia», de severidad mayor, encontrado en la build 2.0.0-rc1).",
-    covers: ["action:defect-create", "action:defect-links"],
+    covers: ["action:defect-create", "action:defect-links", "action:defect-custom-fields"],
     run: async () => {
       await (await field(F.field.title)).setValue("El saldo no se actualiza tras una transferencia");
       await selectOption(F.field.severity, F.severity.major);
@@ -80,6 +82,10 @@ chapter("defectos", () => {
       await (await field(F.field.foundInBuild)).setValue("2.0.0-rc1");
       const caseLink = $(`label*=Transferencia a un tercero`);
       if (await caseLink.isExisting()) await caseLink.click();
+      // The defect field created in chapter 2 (FLD-03).
+      const customer = await field("Cliente afectado");
+      await customer.scrollIntoView();
+      await customer.setValue("Banca Norte");
     },
   });
 
@@ -123,10 +129,8 @@ chapter("defectos", () => {
       await expect($(".df-banner")).toBeDisplayed();
       await (await field(F.field.title)).setValue("Login rechazado: el ejemplo 2 devuelve «fallo»");
       await selectOption(F.field.severity, F.severity.critical);
-    },
-    // The capture shows the notice, which saving closes with the editor.
-    after: async () => {
-      await save();
+      // Saved at the start of the next step: saving closes the editor, and this
+      // capture is the pre-filled editor with its banner.
     },
   });
 
@@ -136,6 +140,7 @@ chapter("defectos", () => {
       "La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Cambia entre abiertos, todos o cerrados, filtra por severidad o busca por texto (en este ejemplo, «saldo»).",
     covers: ["action:defects-filter"],
     run: async () => {
+      await save();
       await back();
       await browser.waitUntil(async () => (await $$("button.df-open")).length === 2, { timeoutMsg: "the list does not show the 2 defects" });
       await $(`input[placeholder="${F.filter.search}"]`).setValue("saldo");

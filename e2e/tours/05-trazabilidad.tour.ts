@@ -112,6 +112,19 @@ chapter("trazabilidad", () => {
     },
   });
 
+  step("riesgo-requisito", {
+    title: "El riesgo de un requisito",
+    caption: "En el mismo diálogo, «Riesgo» pide la probabilidad y el impacto, de 1 a 5 cada uno. Su producto es el nivel de riesgo, que ordena la matriz: hasta 4 es bajo, hasta 12 medio y por encima alto.",
+    covers: ["action:requirement-risk"],
+    shot: { element: '[role="dialog"]' },
+    run: async () => {
+      const likelihood = $('[data-testid="requirement-risk-likelihood"]');
+      await likelihood.scrollIntoView();
+      await likelihood.selectByAttribute("value", "4");
+      await $('[data-testid="requirement-risk-impact"]').selectByAttribute("value", "5");
+    },
+  });
+
   step("requisito-descartar", {
     title: "Cerrar un requisito sin guardar",
     caption: "Cerrar el diálogo con cambios sin guardar pide confirmación; «Aceptar» los descarta.",
@@ -152,6 +165,19 @@ chapter("trazabilidad", () => {
       await openSection("traceability");
       await $(`button.chips__chip*=${T.view.matrix}`).click();
       await waitForText(T.matrix.title);
+    },
+  });
+
+  step("orden-filtros", {
+    title: "Orden por riesgo y filtros de resultados",
+    caption: "Sobre la matriz, los filtros de resultados (ciclo, configuración, build y entorno) y el orden. Por defecto, los requisitos de más riesgo van primero; «ID de requisito» vuelve al orden por clave. El estado de prueba es el último resultado final de las ejecuciones que cumplen los filtros (capítulo 13).",
+    covers: ["action:matrix-sort"],
+    run: async () => {
+      const sort = $('[data-testid="trace-sort"]');
+      await sort.scrollIntoView();
+      await sort.selectByAttribute("value", "key");
+      await sort.selectByAttribute("value", "risk");
+      await expect($('[data-testid^="trace-result-"]')).toBeExisting();
     },
   });
 

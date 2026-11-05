@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
@@ -324,7 +325,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
   it("a removed row disappears from the calendar", async () => {
     renderStep();
     await openStep14();
-    await userEvent.click(within(milestoneRows()[0]).getByRole("button", { name: /^Quitar hito/ }));
+    await userEvent.click(within(milestoneRows()[0]).getByRole("button", { name: /^Quitar: / }));
     expect(milestoneRows()).toHaveLength(1);
     expect(day("2026-11-12")).not.toHaveAccessibleName(/Hito:/);
   });

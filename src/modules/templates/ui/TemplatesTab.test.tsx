@@ -2,6 +2,7 @@
 // search, and edit/delete only for the account's own templates, behind the
 // card's «Más acciones» menu; deleting asks with the destructive dialog.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";

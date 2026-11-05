@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { CalendarRange, Plus } from "lucide-react";
@@ -35,11 +35,15 @@ export function CyclesPage({
   projectId,
   loadCases,
   requirementKeys,
+  cycleActions,
 }: {
   projectId: string;
   /** The project's cases, for «Añadir casos» (loaded by the composing page). */
   loadCases: () => Promise<CaseOption[]>;
   requirementKeys: string[];
+  /** More actions of an open cycle, from the composing page (the status
+   *  report, EJE-03): cycles depends on no other domain module. */
+  cycleActions?: (cycleId: string) => ReactNode;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -110,6 +114,7 @@ export function CyclesPage({
         configurations={configurations}
         loadCases={loadCases}
         requirementKeys={requirementKeys}
+        extraActions={cycleActions?.(openId)}
         onBack={() => {
           open(null);
           void reload();

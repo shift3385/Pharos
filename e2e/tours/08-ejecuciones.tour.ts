@@ -79,8 +79,8 @@ chapter("ejecuciones", () => {
 
   step("con-adjuntos", {
     title: "Un informe con adjuntos",
-    caption: "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo.",
-    covers: ["action:import-attachments-folder"],
+    caption: "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo. «Ciclo» hace que el run nuevo sea de un ciclo (de los que no están cerrados): sus resultados cuentan en el progreso del ciclo sin editar nada después.",
+    covers: ["action:import-attachments-folder", "action:import-into-cycle"],
     shot: { element: D },
     run: async () => {
       await clickButton(R.import.open);
@@ -90,6 +90,10 @@ chapter("ejecuciones", () => {
       // msedgedriver uploads a whole folder into a webkitdirectory input.
       await $(D).$('input[type="file"][webkitdirectory]').setValue(join(fixturesDir, "informe-adjuntos", "capturas"));
       await (await field(R.field.title, D)).setValue("Regresión automática · con capturas");
+      // The cycle of chapter 7 (CYC-02): the first option after «Sin ciclo».
+      const cycle = $(D).$('[data-testid="import-cycle"]');
+      await cycle.scrollIntoView();
+      await cycle.selectByIndex(1);
       await waitForText(tf("runs.import.attachments_one", { count: 1 }));
     },
   });

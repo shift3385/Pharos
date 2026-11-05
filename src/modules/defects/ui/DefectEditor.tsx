@@ -1,7 +1,14 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Info, Link2, Paperclip, X } from "lucide-react";
-import { CustomFieldsSection, customFieldApi, type CustomField, type CustomValues } from "@modules/custom-fields";
+import { Link2, Paperclip, Trash2, X } from "lucide-react";
+import { Alert } from "@shared/ui/Alert";
+import {
+  CustomFieldsSection,
+  customFieldApi,
+  customFieldIssues,
+  type CustomField,
+  type CustomValues,
+} from "@modules/custom-fields";
 import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
 import { ListField } from "@shared/ui/fields";
@@ -175,7 +182,17 @@ export function DefectEditor({
 
   async function save() {
     setAttempted(true);
-    if (!form.title.trim() || (needs && !form.resolution)) return;
+    // A defect field (FLD-03) blocks the save like a case field: a required
+    // one without a value, or a value that does not fit its field (a value
+    // the defect already holds, such as an archived option, still does).
+    // The section names it once `attempted` is set.
+    const customIssues = customFieldIssues(
+      fields,
+      "standard",
+      form.custom,
+      (current?.data.custom as CustomValues | undefined) ?? {},
+    );
+    if (!form.title.trim() || (needs && !form.resolution) || customIssues.length) return;
     setSaving(true);
     try {
       const wanted: LinkTarget[] = [
@@ -281,10 +298,9 @@ export function DefectEditor({
       </header>
 
       {fromLabel && (
-        <p className="df-banner" role="status">
-          <Info size={16} aria-hidden="true" />
-          {t("defects.fromResultBanner", { label: fromLabel })}
-        </p>
+        <Alert kind="info" className="df-banner">
+          {t(desktop ? "defects.fromResultBanner" : "defects.fromResultBannerWeb", { label: fromLabel })}
+        </Alert>
       )}
 
       <div className="tc-form df-form">
@@ -527,9 +543,10 @@ export function DefectEditor({
                       type="button"
                       className="pl-attach__del"
                       onClick={() => removeAttachment(a.id)}
-                      aria-label={`${t("common.delete")}: ${a.name}`}
+                      aria-label={`${t("common.remove")}: ${a.name}`}
+                      title={`${t("common.remove")}: ${a.name}`}
                     >
-                      <X size={14} aria-hidden="true" />
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </li>
                 ))}

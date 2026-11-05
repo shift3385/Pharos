@@ -4,20 +4,68 @@
 //  - one row per requirement ↔ case link; a requirement with no case gets one
 //    row with the case columns empty;
 //  - a requirement is covered when at least one linked case is not obsolete;
-//  - execution status is `not_run` until execution exists (v0.0.3, EJE-04);
 //  - defects reach a row through the case they are linked to.
+// Extended by EJE-04 (step 10): with the execution derivation (contract v1),
+// each case row carries its latest final result (status, run, date, flaky,
+// stale) and rows are ordered by requirement risk; without it every case is
+// `not_run`, as before.
 
 import { isOpenDefect } from "@modules/defects";
+import type {
+  CaseExecution,
+  LastResult,
+  RequirementExecution,
+} from "@shared/contracts/contract";
 import type { RequirementPriority } from "./types";
 
 export type Coverage = "covered" | "not_covered";
-export type ExecutionStatus = "passed" | "failed" | "blocked" | "not_run";
-export type MatrixNote = "obsoleteCase" | "openDefect";
+export type ExecutionStatus =
+  | "passed"
+  | "failed"
+  | "blocked"
+  | "skipped"
+  | "other"
+  | "retest"
+  | "not_run";
+export const EXECUTION_STATUSES: ExecutionStatus[] = [
+  "passed",
+  "failed",
+  "retest",
+  "blocked",
+  "skipped",
+  "other",
+  "not_run",
+];
+export type MatrixNote =
+  | "obsoleteCase"
+  | "openDefect"
+  | "retest"
+  | "flaky"
+  | "stale";
+export type RiskBand = "high" | "medium" | "low" | "unassessed";
+export type MatrixSort = "risk" | "key";
 
 export interface MatrixRequirement {
   requirementKey: string;
   title: string;
   priority: RequirementPriority;
+  /** Risk factors 1..5 (the record's own): the order does not wait for the
+   *  execution summary. */
+  riskLikelihood?: number | null;
+  riskImpact?: number | null;
+}
+
+/** Level and band with the default bands (≤4 low, ≤12 medium, >12 high), as
+ *  `runs::derive::risk_band`. */
+export function riskOfRecord(r: Pick<MatrixRequirement, "riskLikelihood" | "riskImpact">): {
+  riskLevel: number | null;
+  riskBand: RiskBand;
+} {
+  const level = r.riskLikelihood != null && r.riskImpact != null ? r.riskLikelihood * r.riskImpact : null;
+  return {
+    riskLevel: level,
+    riskBand: level === null ? "unassessed" : level <= 4 ? "low" : level <= 12 ? "medium" : "high",
+  };
 }
 
 export interface MatrixCase {
@@ -34,6 +82,8 @@ export interface MatrixDefect {
   title: string;
   /** Lifecycle status (ADR-0016): open unless closed or rejected. */
   status: string;
+  /** critical | major | minor | trivial (absent in old callers). */
+  severity?: string;
   /** Cases it reaches, directly or through a linked result. */
   testCaseIds: string[];
 }
@@ -50,7 +100,13 @@ export interface MatrixRow {
   scenarioId?: string;
   caseTitle?: string;
   executionStatus?: ExecutionStatus;
+  /** The case's latest final result (EJE-04); null when not run. */
+  last?: LastResult | null;
+  riskLevel: number | null;
+  riskBand: RiskBand;
   defectKeys: string[];
+  /** The same defects with what the pills need, in the same order. */
+  defects: { label: string; severity: string | null; open: boolean }[];
   coverage: Coverage;
   notes: MatrixNote[];
 }
@@ -88,44 +144,113 @@ const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeri
 /** Visible id of a defect: its DEF key, or its title when it has none yet. */
 export const defectLabel = (d: MatrixDefect) => d.defectKey || d.title;
 
+/** What the matrix reads of the execution derivation (`ExecutionSummary`). */
+export interface MatrixExecution {
+  cases: Pick<CaseExecution, "caseId" | "status" | "last">[];
+  requirements: Pick<
+    RequirementExecution,
+    "requirementKey" | "riskLevel" | "riskBand"
+  >[];
+}
+
+const RISK_RANK: Record<RiskBand, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+  unassessed: 3,
+};
+
 export function buildMatrix(
   requirements: MatrixRequirement[],
   cases: MatrixCase[],
   defects: MatrixDefect[],
+  execution?: MatrixExecution | null,
+  sort: MatrixSort = "risk",
 ): TraceabilityMatrix {
+  const results = new Map(execution?.cases.map((c) => [c.caseId, c]) ?? []);
+  const risks = new Map(
+    execution?.requirements.map((r) => [r.requirementKey, r]) ?? [],
+  );
+  const records = new Map(requirements.map((r) => [r.requirementKey, r]));
+  // The record's risk when it has one (stable while the summary loads), else
+  // the summary's.
+  const riskOf = (key: string) => {
+    const record = records.get(key);
+    if (record && (record.riskLikelihood !== undefined || record.riskImpact !== undefined)) return riskOfRecord(record);
+    return {
+      riskLevel: risks.get(key)?.riskLevel ?? null,
+      riskBand: (risks.get(key)?.riskBand ?? "unassessed") as RiskBand,
+    };
+  };
+  const ordered = [...requirements].sort((a, b) => {
+    if (sort === "risk") {
+      const [x, y] = [riskOf(a.requirementKey), riskOf(b.requirementKey)];
+      const band = RISK_RANK[x.riskBand] - RISK_RANK[y.riskBand];
+      if (band) return band;
+      const level = (y.riskLevel ?? 0) - (x.riskLevel ?? 0);
+      if (level) return level;
+    }
+    return natural(a.requirementKey, b.requirementKey);
+  });
   const known = new Set(requirements.map((r) => r.requirementKey));
   const caseIds = new Set(cases.map((c) => c.id));
   const sortedCases = [...cases].sort((a, b) => natural(a.scenarioId, b.scenarioId));
   const defectsOf = (caseId: string) =>
-    defects.filter((d) => d.testCaseIds.includes(caseId)).sort((a, b) => natural(defectLabel(a), defectLabel(b)));
+    defects
+      .filter((d) => d.testCaseIds.includes(caseId))
+      .sort(
+        (a, b) =>
+          Number(isOpen(b)) - Number(isOpen(a)) ||
+          natural(defectLabel(a), defectLabel(b)),
+      );
 
   const rows: MatrixRow[] = [];
   const uncoveredRequirements: string[] = [];
-  const execution: Record<ExecutionStatus, number> = { passed: 0, failed: 0, blocked: 0, not_run: 0 };
+  const executionCounts = Object.fromEntries(
+    EXECUTION_STATUSES.map((s) => [s, 0]),
+  ) as Record<ExecutionStatus, number>;
 
-  for (const req of [...requirements].sort((a, b) => natural(a.requirementKey, b.requirementKey))) {
+  for (const req of ordered) {
     const linked = sortedCases.filter((c) => c.requirementKeys.includes(req.requirementKey));
     const coverage: Coverage = linked.some((c) => c.status !== "obsolete") ? "covered" : "not_covered";
     if (coverage === "not_covered") uncoveredRequirements.push(req.requirementKey);
-    const base = { requirementKey: req.requirementKey, requirementTitle: req.title, priority: req.priority, coverage };
+    const base = {
+      requirementKey: req.requirementKey,
+      requirementTitle: req.title,
+      priority: req.priority,
+      coverage,
+      ...riskOf(req.requirementKey),
+    };
 
     if (linked.length === 0) {
-      rows.push({ ...base, defectKeys: [], notes: [] });
+      rows.push({ ...base, defectKeys: [], defects: [], notes: [] });
       continue;
     }
     for (const c of linked) {
       const caseDefects = defectsOf(c.id);
       const notes: MatrixNote[] = [];
+      const result = results.get(c.id);
+      const status = (result?.status ?? "not_run") as ExecutionStatus;
+      const last = result?.last ?? null;
       if (c.status === "obsolete") notes.push("obsoleteCase");
       if (caseDefects.some(isOpen)) notes.push("openDefect");
-      execution.not_run++;
+      if (status === "retest") notes.push("retest");
+      if (last?.flaky) notes.push("flaky");
+      if (last?.stale) notes.push("stale");
+      executionCounts[status in executionCounts ? status : "other"]++;
       rows.push({
         ...base,
         caseId: c.id,
         scenarioId: c.scenarioId,
         caseTitle: c.title,
-        executionStatus: "not_run",
+        executionStatus: status,
+        last,
         defectKeys: caseDefects.map(defectLabel),
+        defects: caseDefects.map((d) => ({
+          label: defectLabel(d),
+          severity: d.severity ?? null,
+          open: isOpen(d),
+        })),
         notes,
       });
     }
@@ -153,7 +278,7 @@ export function buildMatrix(
       covered,
       uncovered: uncoveredRequirements.length,
       coverageRatio: total ? covered / total : 0,
-      execution,
+      execution: executionCounts,
     },
   };
 }

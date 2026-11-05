@@ -2,6 +2,8 @@ import { forwardRef, useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Issue } from "@shared/validation";
 import { controlProps, issueKey, type ControlProps } from "./fieldProps";
+import { InfoTip } from "./InfoTip";
+import { StatusIcon } from "./StatusIcon";
 import "./fields.css";
 
 /** The message under a field. The severity is spelled out for screen readers
@@ -10,22 +12,27 @@ export function FieldMessage({ id, issue }: { id: string; issue: Issue }) {
   const { t } = useTranslation();
   return (
     <span id={id} className={`field-msg field-msg--${issue.severity}`}>
-      <span aria-hidden="true">{issue.severity === "error" ? "✕ " : "⚠ "}</span>
+      <StatusIcon kind={issue.severity} size={13} className="field-msg__icon" />
       <span className="sr-only">{t(`validation.severity.${issue.severity}`)}: </span>
       {t(issueKey(issue), issue.params)}
     </span>
   );
 }
 
-/** A labelled field with an optional hint and validation message. The control
- *  is a render prop so any input, select or textarea can be used:
+/** A labelled field with an optional hint, info tip and validation message.
+ *  The control is a render prop so any input, select or textarea can be used:
  *
  *    <FormField label={t("x")} issue={issue}>{(p) => <input {...p} />}</FormField>
- */
+ *
+ *  Order (UX-10): label (+ [?]) → control → hint → message, so controls in a
+ *  `.tp-field-row` line up whether or not a neighbour has a hint. `hint` is for
+ *  short, essential text; long, secondary help goes in `info` (an InfoTip).
+ *  Both are linked to the control with `aria-describedby`. */
 export function FormField({
   id: fixedId,
   label,
   hint,
+  info,
   issue,
   required,
   className = "tp-field",
@@ -35,6 +42,8 @@ export function FormField({
   id?: string;
   label: ReactNode;
   hint?: ReactNode;
+  /** Long, secondary help behind a [?] next to the label. */
+  info?: ReactNode;
   issue?: Issue | null;
   required?: boolean;
   className?: string;
@@ -43,23 +52,31 @@ export function FormField({
   const autoId = useId();
   const id = fixedId ?? autoId;
   const hintId = hint ? `${id}-hint` : undefined;
-  const control = controlProps(id, issue, hintId);
+  const infoId = info ? `${id}-info` : undefined;
+  const control = controlProps(id, issue, [hintId, infoId].filter(Boolean).join(" ") || undefined);
   return (
     <div className={className} data-severity={issue?.severity}>
-      <label htmlFor={id} className="tp-field__label">
-        {label}
-        {required && (
-          <span className="tp-field__req" aria-hidden="true">
-            {" *"}
-          </span>
+      <span className="tp-field__head">
+        <label htmlFor={id} className="tp-field__label">
+          {label}
+          {required && (
+            <span className="tp-field__req" aria-hidden="true">
+              {" *"}
+            </span>
+          )}
+        </label>
+        {info && infoId && (
+          <InfoTip id={infoId} label={typeof label === "string" ? label : ""}>
+            {info}
+          </InfoTip>
         )}
-      </label>
+      </span>
+      {children(required ? { ...control, "aria-required": true } : control)}
       {hint && (
         <span id={hintId} className="tp-field__hint">
           {hint}
         </span>
       )}
-      {children(required ? { ...control, "aria-required": true } : control)}
       {issue && <FieldMessage id={`${id}-msg`} issue={issue} />}
     </div>
   );
@@ -81,7 +98,10 @@ export const ErrorSummary = forwardRef<HTMLDivElement, { items: SummaryItem[] }>
     const { t } = useTranslation();
     return (
       <div ref={ref} className="field-summary" role="alert" tabIndex={-1}>
-        <p className="field-summary__title">{t("validation.summary", { count: items.length })}</p>
+        <p className="field-summary__title">
+          <StatusIcon kind="error" size={16} className="field-msg__icon" />
+          {t("validation.summary", { count: items.length })}
+        </p>
         <ul>
           {items.map((item, i) => (
             <li key={i}>

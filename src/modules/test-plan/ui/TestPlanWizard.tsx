@@ -202,11 +202,30 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
     guard(() => void save());
   };
 
+  // The form as exported, with its milestones and the project's cycles
+  // (EXP-03) after the template's content.
+  async function exportable(f: FormState) {
+    const { planExtraTables } = await import("../export/planExtras");
+    const lang = i18n.resolvedLanguage ?? "es";
+    return {
+      ...toExportable(f, author, t),
+      extraTables: await planExtraTables(
+        projectId ?? plan?.projectId,
+        userId,
+        f.milestones,
+        t,
+        lang,
+      ),
+    };
+  }
+
   async function exportXlsx() {
     if (!form) return;
     const { exportPlanXlsx } = await import("../export/planXlsx");
     const name = await unlessReported(
-      exportPlanXlsx(toExportable(form, author, t), i18n.resolvedLanguage ?? "es"),
+      exportable(form).then((p) =>
+        exportPlanXlsx(p, i18n.resolvedLanguage ?? "es"),
+      ),
     );
     if (name) toast(t("testPlan.exportedToast", { name }));
   }
@@ -214,7 +233,9 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
   async function exportPdf() {
     if (!form) return;
     const { exportPlanPdf } = await import("../export/planPdf");
-    const name = await unlessReported(exportPlanPdf(toExportable(form, author, t), t));
+    const name = await unlessReported(
+      exportable(form).then((p) => exportPlanPdf(p, t)),
+    );
     if (name) toast(t("testPlan.exportedToast", { name }));
   }
 
