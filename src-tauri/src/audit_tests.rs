@@ -1347,6 +1347,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ),
     ("runs::manual::execution_attachment_preview", "read"),
     (
+        "evidence::retention::evidence_retention_preview",
+        "read (counts what a shorter setting would expire)",
+    ),
+    (
         "runs::delete::run_delete_preview",
         "read (counts for the delete dialog)",
     ),

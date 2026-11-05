@@ -469,3 +469,177 @@ fn the_purge_takes_a_deleted_run_with_its_results_and_a_re_pull_does_not_bring_t
     pull(&b, &current);
     assert_eq!(count(&b, "SELECT count(*) FROM results"), 0);
 }
+
+// ---- review round (M3 and sync paths) ----------------------------------------
+
+/// A manual run of one case, pushed from `a` and pulled by `b`.
+fn shared_manual_run(a: &Connection, b: &Connection) -> (String, String, String) {
+    let (p, _, run, item) = manual_run(a);
+    pull(b, &push(a));
+    (p, run, item)
+}
+
+fn conflict_of(c: &Connection, entity: &str) -> String {
+    c.query_row(
+        "SELECT id FROM sync_conflicts WHERE entity = ?1 AND resolved_at IS NULL",
+        [entity],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+fn live_items(c: &Connection, run: &str) -> i64 {
+    c.query_row(
+        "SELECT count(*) FROM run_items WHERE run_id = ?1 AND deleted_at IS NULL",
+        [run],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_tombstone_pulled_on_another_device_drops_its_drafts_and_their_files() {
+    let (a, b) = (device(), device());
+    let (_, run, item) = shared_manual_run(&a, &b);
+    crate::runs::manual::save_draft(&b, &item, "-/-", Some(&json!({})), U).unwrap();
+    crate::runs::manual::add_draft_attachment(
+        &b,
+        "f",
+        &item,
+        "-/-",
+        None,
+        "a.png",
+        None,
+        "screenshot",
+        &Stored {
+            sha256: "bb".repeat(32),
+            size: 10,
+        },
+        U,
+    )
+    .unwrap();
+    delete_run(&a, &run, U).unwrap();
+    pull(&b, &push(&a));
+    assert!(list_runs(&b, &get_project(&b, &run), U).unwrap().is_empty());
+    assert_eq!(count(&b, "SELECT count(*) FROM execution_drafts"), 0);
+    let state: String = b
+        .query_row(
+            "SELECT local_state FROM blobs WHERE sha256 = ?1",
+            ["bb".repeat(32)],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(state, "deleting");
+}
+
+fn get_project(c: &Connection, run: &str) -> String {
+    c.query_row("SELECT project_id FROM runs WHERE id = ?1", [run], |r| {
+        r.get(0)
+    })
+    .unwrap()
+}
+
+#[test]
+fn keeping_an_edit_over_a_delete_brings_the_run_back_with_its_items_on_both_devices() {
+    let (a, b) = (device(), device());
+    let (p, run, _) = shared_manual_run(&a, &b);
+    // B edits the header while A deletes the run.
+    update_run(&b, &run, &run_input(&p, json!({"build": "2.0"}))).unwrap();
+    delete_run(&a, &run, U).unwrap();
+    pull(&b, &push(&a));
+    // B: a conflict on the run (its edit is pending); the items followed the
+    // delete (B had no change of its own on them).
+    let conflict = conflict_of(&b, "run");
+    assert_eq!(live_items(&b, &run), 0);
+    let ws = ensure_workspace(&b).unwrap();
+    sync::resolve_conflict(&b, &ws, U, &conflict, "local").unwrap();
+    assert_eq!(
+        get_run(&b, &run, U).unwrap().unwrap().build.as_deref(),
+        Some("2.0")
+    );
+    assert_eq!(live_items(&b, &run), 1);
+    // A gets the run and its item back from B.
+    pull(&a, &push(&b));
+    assert_eq!(
+        get_run(&a, &run, U).unwrap().unwrap().build.as_deref(),
+        Some("2.0")
+    );
+    assert_eq!(live_items(&a, &run), 1);
+    assert_eq!(crate::runs::list_items(&a, &run, U).unwrap().len(), 1);
+}
+
+#[test]
+fn taking_the_server_version_over_a_pending_delete_brings_the_items_back_on_both_devices() {
+    let (a, b) = (device(), device());
+    let (p, run, _) = shared_manual_run(&a, &b);
+    // B's edit reaches the server first; A deleted the run meanwhile.
+    update_run(&b, &run, &run_input(&p, json!({"build": "3.0"}))).unwrap();
+    let from_b = push(&b);
+    delete_run(&a, &run, U).unwrap();
+    pull(&a, &from_b);
+    let conflict = conflict_of(&a, "run");
+    let ws = ensure_workspace(&a).unwrap();
+    sync::resolve_conflict(&a, &ws, U, &conflict, "remote").unwrap();
+    assert_eq!(
+        get_run(&a, &run, U).unwrap().unwrap().build.as_deref(),
+        Some("3.0")
+    );
+    assert_eq!(live_items(&a, &run), 1);
+    // What A pushes now keeps the item alive on B too.
+    pull(&b, &push(&a));
+    assert_eq!(live_items(&b, &run), 1);
+    assert!(get_run(&b, &run, U).unwrap().is_some());
+}
+
+#[test]
+fn restoring_a_project_does_not_bring_back_a_run_deleted_before_it() {
+    let (a, b) = (device(), device());
+    let (p, _, gone, _) = manual_run(&a);
+    let case = new_case(&a, &p, "TC-002");
+    let kept = insert_run(&a, &run_input(&p, json!({"title": "Kept"}))).unwrap();
+    add_items(&a, &kept, U, &[whole(&case)]).unwrap();
+    delete_run(&a, &gone, U).unwrap();
+    // The run was deleted well before the project.
+    for t in ["runs", "run_items"] {
+        a.execute(
+            &format!(
+                "UPDATE {t} SET deleted_at = '2026-01-01 00:00:00' WHERE deleted_at IS NOT NULL"
+            ),
+            [],
+        )
+        .unwrap();
+    }
+    pull(&b, &push(&a));
+    // B renames the project and pushes; A deletes it meanwhile.
+    let rename: project::ProjectInput =
+        serde_json::from_value(json!({"name": "Auth 2", "ownerId": U})).unwrap();
+    project::update_project(&b, &p, &rename).unwrap();
+    let from_b = push(&b);
+    project::delete_project(&a, &p, U).unwrap();
+    pull(&a, &from_b);
+    let conflict = conflict_of(&a, "project");
+    let ws = ensure_workspace(&a).unwrap();
+    sync::resolve_conflict(&a, &ws, U, &conflict, "remote").unwrap();
+    // The project's cascade comes back; the run deleted on its own does not.
+    assert!(get_run(&a, &kept, U).unwrap().is_some());
+    assert_eq!(live_items(&a, &kept), 1);
+    assert!(get_run(&a, &gone, U).unwrap().is_none());
+    assert_eq!(live_items(&a, &gone), 0);
+}
+
+#[test]
+fn a_defect_cannot_be_made_from_a_result_of_a_deleted_run() {
+    let c = device();
+    let (_, _, run, _) = manual_run(&c);
+    let result: String = c
+        .query_row("SELECT id FROM results WHERE run_id = ?1", [&run], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    assert!(crate::defects::draft_from_result(&c, &result, None, U).is_ok());
+    delete_run(&c, &run, U).unwrap();
+    assert_eq!(
+        crate::defects::draft_from_result(&c, &result, None, U).unwrap_err(),
+        RUN_DELETED
+    );
+}

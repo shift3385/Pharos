@@ -298,23 +298,265 @@ fn result_exempt(
             return Ok(true);
         }
     }
-    // A live, open defect links to it.
-    let statuses: Vec<String> = {
+    // A live, open defect links to it. A link pulled before its defect (no
+    // foreign key, 0029) counts as open: the defect may be open, and keeping
+    // the evidence one pass longer loses nothing.
+    let statuses: Vec<Option<String>> = {
         let mut stmt = conn
             .prepare(
-                "SELECT d.status FROM defect_links l JOIN defects d ON d.id = l.defect_id
+                "SELECT CASE WHEN d.id IS NULL THEN NULL ELSE d.status END
+                   FROM defect_links l LEFT JOIN defects d ON d.id = l.defect_id
                   WHERE l.target_kind = 'result' AND l.target_id = ?1
-                    AND l.deleted_at IS NULL AND d.deleted_at IS NULL",
+                    AND l.deleted_at IS NULL AND (d.id IS NULL OR d.deleted_at IS NULL)",
             )
             .map_err(err)?;
         let rows = stmt
-            .query_map(params![result_id], |r| r.get::<_, String>(0))
+            .query_map(params![result_id], |r| r.get::<_, Option<String>>(0))
             .map_err(err)?;
         rows.collect::<rusqlite::Result<_>>().map_err(err)?
     };
-    Ok(statuses
-        .iter()
-        .any(|s| crate::defects::lifecycle::is_open(s)))
+    Ok(statuses.iter().any(|s| {
+        s.as_deref()
+            .map_or(true, crate::defects::lifecycle::is_open)
+    }))
+}
+
+// ---- the expiry pass --------------------------------------------------------
+
+/// Most contents one pass expires: the pass runs inside the purge's
+/// transaction, under the database lock (the next pass goes on).
+pub(crate) const MAX_PER_PASS: usize = 500;
+/// Most days one pass moves the expiry clock past the last pass or the last
+/// HLC: a clock set years ahead does not expire everything at once.
+pub(crate) const MAX_CLOCK_STEP_DAYS: i64 = 7;
+/// `sync_state` key: when this device first ran a pass with the result
+/// exceptions (DAT-03c). The evidence of results ages from here at the
+/// earliest, so an upgrade expires nothing before one full window.
+pub(crate) const ENABLED_KEY: &str = "dat03c_enabled_at";
+/// `sync_state` key: the expiry clock of the last pass (ms).
+pub(crate) const LAST_PASS_KEY: &str = "evidence_last_expire_at";
+const DAY_MS: i64 = 86_400_000;
+
+fn state_ms(conn: &Connection, key: &str) -> Result<Option<i64>, String> {
+    let v: Option<String> = conn
+        .query_row(
+            "SELECT value FROM sync_state WHERE key = ?1",
+            params![key],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(err)?;
+    Ok(v.and_then(|s| s.parse().ok()))
+}
+
+fn set_state_ms(conn: &Connection, key: &str, ms: i64) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO sync_state (key, value) VALUES (?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        params![key, ms.to_string()],
+    )
+    .map(drop)
+    .map_err(err)
+}
+
+fn wall_ms() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+/// The "now" of a pass (ms): the wall clock, but at most
+/// `MAX_CLOCK_STEP_DAYS` past the later of the last pass and the last HLC of
+/// this device (`hlc_last`, which also follows the clocks of the devices it
+/// synced with). A clock that went back is taken as it is (expires less).
+fn pass_clock(conn: &Connection, wall: i64) -> Result<i64, String> {
+    let hlc: Option<i64> = conn
+        .query_row(
+            "SELECT value FROM sync_state WHERE key = 'hlc_last'",
+            [],
+            |r| r.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(err)?
+        .and_then(|s| crate::hlc::Hlc::parse(&s))
+        .map(|h| h.wall_ms as i64);
+    let reference = [state_ms(conn, LAST_PASS_KEY)?, hlc]
+        .into_iter()
+        .flatten()
+        .max();
+    Ok(match reference {
+        Some(r) if wall > r + MAX_CLOCK_STEP_DAYS * DAY_MS => {
+            tracing::warn!(
+                "the clock is ahead of the last expiry and the last HLC: \
+                 evidence expiry advances at most {MAX_CLOCK_STEP_DAYS} days in this pass"
+            );
+            r + MAX_CLOCK_STEP_DAYS * DAY_MS
+        }
+        _ => wall,
+    })
+}
+
+/// When the result exceptions started on this device (ms), recorded on the
+/// first pass.
+fn enabled_at(conn: &Connection, now: i64) -> Result<i64, String> {
+    match state_ms(conn, ENABLED_KEY)? {
+        Some(ms) => Ok(ms),
+        None => {
+            set_state_ms(conn, ENABLED_KEY, now)?;
+            Ok(now)
+        }
+    }
+}
+
+/// Julian day of an instant in ms (as SQLite's `julianday`).
+fn jd(ms: i64) -> f64 {
+    ms as f64 / DAY_MS as f64 + 2_440_587.5
+}
+
+/// One attachment that the pass looks at.
+pub(crate) struct Candidate {
+    pub(crate) id: String,
+    pub(crate) project_id: String,
+    pub(crate) kind: String,
+    pub(crate) sha256: String,
+    pub(crate) days: i64,
+}
+
+/// The attachments whose retention passed at `now` and that no exception
+/// keeps, oldest first; `only` narrows them to one project and kind with a
+/// given retention (the confirmation of a shorter setting). At most `limit`.
+fn due(
+    conn: &Connection,
+    now: i64,
+    enabled: i64,
+    only: Option<(&str, &str, Option<i64>)>,
+    limit: usize,
+) -> Result<Vec<Candidate>, String> {
+    type Row = (String, String, String, String, String, String, f64);
+    let mut stmt = conn
+        .prepare(
+            "SELECT a.id, a.project_id, a.kind, a.owner_entity, a.owner_id, a.sha256,
+                    coalesce(julianday(a.created_at), 0)
+               FROM attachments a
+              WHERE a.deleted_at IS NULL AND a.blob_purged_at IS NULL
+                AND a.owner_entity IN ('run_shard', 'result', 'step_result')
+                AND (?1 IS NULL OR (a.project_id = ?1 AND a.kind = ?2))
+              ORDER BY a.created_at, a.rowid",
+        )
+        .map_err(err)?;
+    let rows: Vec<Row> = stmt
+        .query_map(params![only.map(|o| o.0), only.map(|o| o.1)], |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+                r.get(4)?,
+                r.get(5)?,
+                r.get(6)?,
+            ))
+        })
+        .map_err(err)?
+        .collect::<rusqlite::Result<_>>()
+        .map_err(err)?;
+    let (now_jd, enabled_jd) = (jd(now), jd(enabled));
+    let mut cache = ExemptCache::default();
+    let mut out = Vec::new();
+    for (id, project_id, kind, owner_entity, owner_id, sha256, created_jd) in rows {
+        if out.len() >= limit {
+            break;
+        }
+        let days = match only {
+            Some((_, _, days)) => days,
+            None => super::retention_days(conn, &project_id, &kind)?,
+        };
+        let Some(days) = days else { continue };
+        // The evidence of results ages from the upgrade at the earliest.
+        let born = if owner_entity == "run_shard" {
+            created_jd
+        } else {
+            created_jd.max(enabled_jd)
+        };
+        if born > now_jd - days as f64 || exempt(conn, &mut cache, &owner_entity, &owner_id)? {
+            continue;
+        }
+        out.push(Candidate {
+            id,
+            project_id,
+            kind,
+            sha256,
+            days,
+        });
+    }
+    Ok(out)
+}
+
+/// Expires up to `MAX_PER_PASS` contents whose retention passed (local task,
+/// not sync): the `attachments` row stays with `blob_purged_at` and its
+/// sha256, a `redact` event is written and the content is released. Results
+/// are never touched. Returns how many expired.
+pub(crate) fn expire(conn: &Connection) -> Result<usize, String> {
+    let now = pass_clock(conn, wall_ms())?;
+    let enabled = enabled_at(conn, now)?;
+    let due = due(conn, now, enabled, None, MAX_PER_PASS)?;
+    for c in &due {
+        conn.execute(
+            "UPDATE attachments SET blob_purged_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+              WHERE id = ?1",
+            params![c.id],
+        )
+        .map_err(err)?;
+        let owner = crate::oplog::owner_of(conn, "project", &c.project_id)?;
+        let mut changes = Map::new();
+        changes.insert("blob".into(), json!([c.sha256, null]));
+        journal::record_event_in(
+            conn,
+            Actor::System {
+                component: "evidence",
+                on_behalf_of: owner,
+            },
+            Action::Redact,
+            "attachment",
+            &c.id,
+            Some(&c.project_id),
+            changes,
+            Some(json!({"reason": "retention", "kind": c.kind, "days": c.days})),
+        )?;
+        super::release(conn, &c.sha256)?;
+    }
+    let last = state_ms(conn, LAST_PASS_KEY)?.unwrap_or(i64::MIN);
+    set_state_ms(conn, LAST_PASS_KEY, last.max(now))?;
+    if !due.is_empty() {
+        tracing::info!(expired = due.len(), "evidence expired by retention");
+    }
+    Ok(due.len())
+}
+
+/// How many files of `kind` in a project would expire at the next pass with
+/// retention `days` (None = always): what the confirmation of a shorter
+/// setting names. Writes nothing.
+pub(crate) fn would_expire(
+    conn: &Connection,
+    project_id: &str,
+    kind: &str,
+    days: Option<i64>,
+    user: &str,
+) -> Result<usize, String> {
+    owns(conn, project_id, user)?;
+    if days.is_none() {
+        return Ok(0);
+    }
+    let now = pass_clock(conn, wall_ms())?;
+    let enabled = state_ms(conn, ENABLED_KEY)?.unwrap_or(now);
+    Ok(due(
+        conn,
+        now,
+        enabled,
+        Some((project_id, kind, days)),
+        usize::MAX,
+    )?
+    .len())
 }
 
 /// Whether the attachments of an owner never expire. Only the evidence of
@@ -358,6 +600,25 @@ pub fn evidence_retention_get(
     user_id: String,
 ) -> Result<EvidenceRetention, String> {
     db.with_conn(|conn| get(conn, &project_id, &user_id))
+}
+
+/// How many files of a kind would expire with a new setting (read).
+#[tauri::command]
+pub fn evidence_retention_preview(
+    db: State<Db>,
+    project_id: String,
+    kind: String,
+    policy: RetentionPolicy,
+    user_id: String,
+) -> Result<usize, String> {
+    let days = match policy {
+        RetentionPolicy::Default => {
+            default_of(&kind).ok_or_else(|| format!("unknown evidence kind: {kind}"))?
+        }
+        RetentionPolicy::Always => None,
+        RetentionPolicy::Days { days } => Some(days),
+    };
+    db.with_conn(|conn| would_expire(conn, &project_id, &kind, days, &user_id))
 }
 
 /// Sets the retention of one kind in a project; saves when it changed.

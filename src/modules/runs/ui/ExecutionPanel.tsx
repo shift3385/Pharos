@@ -1183,6 +1183,7 @@ function extOf(mime: string): string {
 function errorText(e: unknown, t: (k: string, o?: Record<string, unknown>) => string): string {
   const raw = e instanceof Error ? e.message : String(e);
   if (raw.startsWith("run-closed")) return t("execution.error.closed");
+  if (raw.startsWith("run-deleted")) return t("execution.error.runDeleted");
   if (raw.startsWith("evidence-too-large")) return t("execution.error.tooLarge");
   if (raw.startsWith("draft-too-large")) return t("execution.error.draftTooLarge");
   if (raw.startsWith("target-") || raw.includes("not in that flow"))

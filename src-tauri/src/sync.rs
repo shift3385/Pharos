@@ -1499,6 +1499,11 @@ pub(crate) fn resolve_conflict(
         }
         other => return Err(format!("unknown resolution: {other}")),
     }
+    // A run that comes back (EJE-07: its delete lost the conflict) brings
+    // back the items its delete took.
+    if c.entity == crate::runs::RUN {
+        crate::runs::delete::revive_items(conn, &c.entity_id, user)?;
+    }
 
     conn.execute(
         "UPDATE sync_conflicts SET resolved_at = datetime('now'), resolution = ?2 WHERE id = ?1",

@@ -34,7 +34,14 @@ fn conn() -> Connection {
         params![OWNER, "ee".repeat(32)],
     )
     .unwrap();
+    // The upgrade happened long ago: no grace in these tests unless one sets it.
+    since_upgrade(&c, 3650);
     c
+}
+
+/// Sets when DAT-03c started on this device, `days` ago.
+fn since_upgrade(c: &Connection, days: i64) {
+    set_state_ms(c, ENABLED_KEY, wall_ms() - days * DAY_MS).unwrap();
 }
 
 /// A result of `run1`: imported (`shard`) or manual (`None`), at `minute`.
@@ -60,8 +67,22 @@ fn result(
 
 /// An attachment of `owner`, `age` days old; its content is present.
 fn attach(c: &Connection, id: &str, owner_entity: &str, owner: &str, kind: &str, age: i64) {
+    let sha = format!("{:x}", Sha256::digest(id.as_bytes()));
+    attach_sha(c, id, &sha, owner_entity, owner, kind, age);
+}
+
+/// `attach` with a given content (two uses of one file).
+fn attach_sha(
+    c: &Connection,
+    id: &str,
+    sha256: &str,
+    owner_entity: &str,
+    owner: &str,
+    kind: &str,
+    age: i64,
+) {
     let stored = Stored {
-        sha256: format!("{:x}", Sha256::digest(id.as_bytes())),
+        sha256: sha256.to_string(),
         size: 1,
     };
     record_blob(c, &stored, None).unwrap();
@@ -310,4 +331,155 @@ fn settings_are_checked() {
     }
     let policy: RetentionPolicy = serde_json::from_str(r#"{"mode":"days","days":45}"#).unwrap();
     assert_eq!(policy, RetentionPolicy::Days { days: 45 });
+}
+
+fn blob_state(c: &Connection, sha256: &str) -> String {
+    c.query_row(
+        "SELECT local_state FROM blobs WHERE sha256 = ?1",
+        [sha256],
+        |r| r.get(0),
+    )
+    .unwrap()
+}
+
+// ---- review round (H1, M1, L2, L3) --------------------------------------------
+
+#[test]
+fn an_upgrade_expires_no_result_evidence_before_one_full_window() {
+    let c = conn();
+    result(&c, "pass", "t", 0, "passed", Some("s1"), 1);
+    attach(&c, "old-trace", "result", "pass", "trace", 400);
+    attach(&c, "old-report", "run_shard", "s1", "raw_report", 400);
+    c.execute("DELETE FROM sync_state WHERE key = ?1", [ENABLED_KEY])
+        .unwrap();
+    // The first pass after the upgrade records it and keeps the old trace;
+    // the raw report already expired before DAT-03c and still does.
+    assert_eq!(expired(&c), ["old-report"]);
+    assert!(state_ms(&c, ENABLED_KEY).unwrap().is_some());
+    // 29 days later: still kept. 31 days later: the window passed.
+    since_upgrade(&c, 29);
+    assert_eq!(expired(&c), ["old-report"]);
+    since_upgrade(&c, 31);
+    assert_eq!(expired(&c), ["old-report", "old-trace"]);
+}
+
+#[test]
+fn a_clock_far_ahead_advances_the_expiry_at_most_a_week_per_pass() {
+    let c = conn();
+    result(&c, "pass", "t", 0, "passed", Some("s1"), 1);
+    attach(&c, "a40", "result", "pass", "trace", 40);
+    attach(&c, "a400", "result", "pass", "trace", 400);
+    // The last pass was a year ago: this pass counts as a week after it.
+    set_state_ms(&c, LAST_PASS_KEY, wall_ms() - 365 * DAY_MS).unwrap();
+    c.execute("DELETE FROM sync_state WHERE key = 'hlc_last'", [])
+        .unwrap();
+    assert_eq!(expired(&c), ["a400"]);
+    let last = state_ms(&c, LAST_PASS_KEY).unwrap().unwrap();
+    let expected = wall_ms() - (365 - MAX_CLOCK_STEP_DAYS) * DAY_MS;
+    assert!((last - expected).abs() < 60_000, "{last} vs {expected}");
+    // A recent HLC (this device or one it synced with) is a reference too.
+    let hlc = crate::hlc::Hlc {
+        wall_ms: wall_ms() as u64,
+        counter: 0,
+        device_id: "d".into(),
+    };
+    c.execute(
+        "INSERT OR REPLACE INTO sync_state (key, value) VALUES ('hlc_last', ?1)",
+        [hlc.encode()],
+    )
+    .unwrap();
+    assert_eq!(expired(&c), ["a40", "a400"]);
+}
+
+#[test]
+fn one_pass_expires_at_most_its_cap_and_the_next_goes_on() {
+    let c = conn();
+    result(&c, "pass", "t", 0, "passed", Some("s1"), 1);
+    for n in 0..=MAX_PER_PASS {
+        attach(&c, &format!("a{n:04}"), "result", "pass", "trace", 60);
+    }
+    assert_eq!(expire(&c).unwrap(), MAX_PER_PASS);
+    assert_eq!(expire(&c).unwrap(), 1);
+    assert_eq!(expire(&c).unwrap(), 0);
+}
+
+#[test]
+fn a_link_that_arrives_before_its_defect_keeps_the_evidence() {
+    let c = conn();
+    result(&c, "x", "k", 0, "passed", Some("s1"), 1);
+    attach(&c, "a-x", "result", "x", "trace", 60);
+    c.execute(
+        "INSERT INTO defect_links (id, workspace_id, project_id, defect_id, target_kind, target_id,
+                created_by, updated_by, created_at, updated_at)
+         SELECT 'l1', id, 'p1', 'late', 'result', 'x', ?1, ?1, datetime('now'),
+                datetime('now') FROM workspaces",
+        [OWNER],
+    )
+    .unwrap();
+    assert!(expired(&c).is_empty());
+    // The defect arrives, closed: the exception ends.
+    defect(&c, "late", "closed", "other");
+    assert_eq!(expired(&c), ["a-x"]);
+}
+
+#[test]
+fn a_content_shared_with_a_use_that_never_expires_stays_on_disk() {
+    let c = conn();
+    result(&c, "pass", "t-pass", 0, "passed", Some("s1"), 1);
+    result(&c, "fail", "t-fail", 0, "failed", Some("s1"), 1);
+    let sha = "ab".repeat(32);
+    attach_sha(&c, "a-pass", &sha, "result", "pass", "trace", 60);
+    attach_sha(&c, "a-fail", &sha, "result", "fail", "trace", 60);
+    assert_eq!(expired(&c), ["a-pass"]);
+    // The failed result's use keeps the file.
+    assert_eq!(blob_state(&c, &sha), "present");
+}
+
+#[test]
+fn a_defect_copy_of_a_result_file_keeps_it_when_the_result_use_expires() {
+    let c = conn();
+    result(&c, "pass", "t", 0, "passed", Some("s1"), 1);
+    let sha = "cd".repeat(32);
+    attach_sha(&c, "a-result", &sha, "result", "pass", "trace", 60);
+    // «Crear defecto» copies the result's evidence as a row of the defect.
+    attach_sha(&c, "a-defect", &sha, "defect", "d1", "trace", 60);
+    assert_eq!(expired(&c), ["a-result"]);
+    assert_eq!(blob_state(&c, &sha), "present");
+    // The defect's own row never expires.
+    assert_eq!(expired(&c), ["a-result"]);
+}
+
+#[test]
+fn a_final_attempt_that_changes_after_a_sync_ends_the_exception() {
+    let c = conn();
+    result(&c, "r0", "k", 0, "failed", Some("s1"), 1);
+    attach(&c, "a-r0", "result", "r0", "trace", 60);
+    assert!(expired(&c).is_empty());
+    // Another device's retry, later, arrives by sync (an append-only insert).
+    c.execute(
+        "INSERT INTO run_shards (id, workspace_id, project_id, run_id, source_format,
+                source_file_sha256, imported_by, imported_at, hlc)
+         SELECT 's9', id, 'p1', 'run1', 'ctrf', ?2, ?1, '2026-01-02T00:00:00Z', 'h9' FROM workspaces",
+        params![OWNER, "99".repeat(32)],
+    )
+    .unwrap();
+    result(&c, "r1", "k", 1, "passed", Some("s9"), 5);
+    assert_eq!(expired(&c), ["a-r0"]);
+}
+
+#[test]
+fn the_preview_counts_what_a_shorter_setting_would_expire() {
+    let c = conn();
+    result(&c, "pass", "t", 0, "passed", Some("s1"), 1);
+    result(&c, "fail", "u", 0, "failed", Some("s1"), 1);
+    attach(&c, "a5", "result", "pass", "trace", 5);
+    attach(&c, "a15", "result", "pass", "trace", 15);
+    attach(&c, "f15", "result", "fail", "trace", 15);
+    assert_eq!(would_expire(&c, "p1", "trace", Some(10), OWNER).unwrap(), 1);
+    assert_eq!(would_expire(&c, "p1", "trace", Some(1), OWNER).unwrap(), 2);
+    assert_eq!(would_expire(&c, "p1", "trace", None, OWNER).unwrap(), 0);
+    assert_eq!(would_expire(&c, "p1", "video", Some(1), OWNER).unwrap(), 0);
+    assert!(would_expire(&c, "p1", "trace", Some(1), "someone-else").is_err());
+    // It writes nothing.
+    assert!(expired(&c).is_empty());
 }

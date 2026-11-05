@@ -252,6 +252,65 @@ pub(crate) fn delete_run(conn: &Connection, run_id: &str, user: &str) -> Result<
     )
 }
 
+/// Brings back the items of a run that is live again: its delete lost a sync
+/// conflict (`sync::resolve_conflict`, either way), so the items its delete
+/// tombstoned (here or on the device that deleted it) come back too. Each is
+/// a new lww change (oplog `upsert`, folded into the resolution's event), so
+/// the server and the other devices get them back.
+///
+/// Which items: every tombstoned item of the run. In 0.2.0 an item is only
+/// ever deleted with its run or with its project (there is no «remove an
+/// item»), and a run of a deleted project is not revived here (the project's
+/// own restore brings its children, `restore_project_children`). A pulled
+/// tombstone stores the time it was pulled, not the time of the delete, so a
+/// time window (`deleted_at >= run.deleted_at`) would miss items pulled a
+/// moment before their run. Returns how many came back.
+pub(crate) fn revive_items(conn: &Connection, run_id: &str, user: &str) -> Result<usize, String> {
+    let live: bool = conn
+        .query_row(
+            "SELECT EXISTS (SELECT 1 FROM runs r JOIN projects p ON p.id = r.project_id
+                             WHERE r.id = ?1 AND r.deleted_at IS NULL AND p.deleted_at IS NULL)",
+            params![run_id],
+            |r| r.get(0),
+        )
+        .map_err(err)?;
+    if !live {
+        return Ok(0);
+    }
+    let items: Vec<String> = {
+        let mut stmt = conn
+            .prepare("SELECT id FROM run_items WHERE run_id = ?1 AND deleted_at IS NOT NULL")
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![run_id], |r| r.get::<_, String>(0))
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    for item in &items {
+        let revision: i64 = conn
+            .query_row(
+                "UPDATE run_items SET deleted_at = NULL, revision = revision + 1,
+                        updated_by = ?2, updated_at = datetime('now')
+                  WHERE id = ?1 RETURNING revision",
+                params![item, user],
+                |r| r.get(0),
+            )
+            .map_err(err)?;
+        let mut change = Change::new(
+            RUN_ITEM,
+            item,
+            Action::Update,
+            Actor::user(user),
+            "upsert",
+            revision,
+            user,
+        );
+        change.audit = Audit::Folded;
+        journal::record(conn, change)?;
+    }
+    Ok(items.len())
+}
+
 // ---- commands -------------------------------------------------------------
 
 /// What deleting a run hides (read; no event).
