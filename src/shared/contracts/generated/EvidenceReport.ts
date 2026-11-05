@@ -4,15 +4,20 @@ import type { EvidenceProblem } from "./EvidenceProblem";
 
 export type EvidenceReport = { checkedAt: string, 
 /**
- * Contents read back and bytes decrypted.
+ * Contents read back and bytes decrypted, of `total` to check.
  */
-checked: number, bytes: number, orphans: Array<EvidenceOrphan>, missing: Array<EvidenceProblem>, damaged: Array<EvidenceProblem>, 
+checked: number, total: number, bytes: number, 
+/**
+ * Stopped by the user: only the contents read so far were judged.
+ */
+cancelled: boolean, orphans: Array<EvidenceOrphan>, missing: Array<EvidenceProblem>, damaged: Array<EvidenceProblem>, 
 /**
  * Written by a newer Pharos.
  */
 newer: Array<EvidenceProblem>, 
 /**
- * Could not be read this time (locked, no permission).
+ * Could not be read this time (locked, no permission), or changed while
+ * it was checked.
  */
 unreadable: Array<EvidenceProblem>, 
 /**

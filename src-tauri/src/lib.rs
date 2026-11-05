@@ -226,6 +226,7 @@ pub fn run() {
             evidence::check::evidence_usage,
             evidence::check::evidence_check_progress,
             evidence::check::evidence_check,
+            evidence::check::evidence_check_cancel,
             evidence::check::evidence_orphans_delete,
             planner::planner_attachment_add,
             planner::planner_attachment_list,

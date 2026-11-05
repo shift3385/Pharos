@@ -6,7 +6,9 @@ import type { EvidenceStateCount } from "./EvidenceStateCount";
 
 export type EvidenceUsage = { 
 /**
- * Contents and bytes on this device (rows not `deleting`).
+ * Contents and bytes whose file is on this device (`present`, `damaged`).
+ * `by_state` keeps the `missing`/`damaged` counts the last check marked,
+ * so they show after a restart too.
  */
 blobs: number, bytes: number, byState: Array<EvidenceStateCount>, 
 /**

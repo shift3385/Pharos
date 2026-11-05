@@ -5,24 +5,28 @@
 //!   whose file is gone (`missing`) and files that do not decrypt or whose
 //!   plaintext does not hash to their content (`damaged`). A file written by a
 //!   newer Pharos is reported apart and never marked.
-//! - **Never racing a save or the GC.** A check runs in three phases: a
-//!   snapshot of `blobs` under the database lock; the scan and the decryption
-//!   of every file *without* the lock (saving, attaching and `collect` go on);
-//!   and a reconciliation under the lock that checks every finding again
-//!   before keeping it. A file an attach committed meanwhile has its row by
-//!   then (the store commit and the row share one lock), a content `collect`
-//!   removed meanwhile has no row, and a damaged candidate is decrypted again,
-//!   so a repair halfway through the scan is no false positive. Uploads still
-//!   open write in `tmp/`, which the check never reads.
+//! - **Never racing a save or the GC, never decrypting under the lock.** A
+//!   check runs in three phases: a snapshot of `blobs` under the database
+//!   lock; the scan and the decryption of every file *without* the lock
+//!   (saving, attaching and `collect` go on), noting each file's fingerprint;
+//!   and a reconciliation under the lock that only compares: a finding stands
+//!   if its row is in the snapshot's state and its file has the same
+//!   fingerprint, else it is reported as «could not be checked». A file an
+//!   attach committed meanwhile has its row by then (the store commit and the
+//!   row share one lock), and a content `collect` removed meanwhile has no row.
+//!   Uploads still open write in `tmp/`, which the check never reads. A check
+//!   can be cancelled between files; what it read is still judged.
 //! - **Marks.** `present → missing | damaged`, and back to `present` once the
 //!   file is there and decrypts; `deleting` and `remote_only` are never
 //!   touched. A content marked `damaged` is never deduplicated against
 //!   (`EvidenceStore::is_damaged`, used by `BlobWriter::commit`), so attaching
 //!   the same file again rewrites it and `record_blob` clears the mark.
 //! - **Orphans are deleted by hand only**, the files the user confirmed, under
-//!   the database lock, and never a file modified in the last 24 hours or open
-//!   by another process: it may belong to an upload of another instance or to
-//!   a database the user moved aside.
+//!   the database lock, and never a file created or modified in the last 24
+//!   hours or open by another process (detected on Windows only): it may belong
+//!   to an upload of another instance or to a database the user moved aside.
+//!   Nothing is deleted if `pharos.db.enc` changed on disk since this process
+//!   last read or wrote it (another Pharos on the same folder).
 //! - **Audit.** Each deleted orphan and each check that changed a mark leaves
 //!   an event through `journal::record_event_in`, as `system:evidence` on
 //!   behalf of the user and with no project: in the device's local chain
@@ -35,13 +39,14 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard, TryLockError};
 use std::time::{Duration, SystemTime};
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use serde_json::{json, Map};
-use tauri::State;
+use tauri::{Manager, State};
 #[cfg(test)]
 use ts_rs::TS;
 
@@ -261,15 +266,19 @@ pub struct EvidenceProblem {
 #[serde(rename_all = "camelCase")]
 pub struct EvidenceReport {
     pub checked_at: String,
-    /// Contents read back and bytes decrypted.
+    /// Contents read back and bytes decrypted, of `total` to check.
     pub checked: usize,
+    pub total: usize,
     pub bytes: u64,
+    /// Stopped by the user: only the contents read so far were judged.
+    pub cancelled: bool,
     pub orphans: Vec<EvidenceOrphan>,
     pub missing: Vec<EvidenceProblem>,
     pub damaged: Vec<EvidenceProblem>,
     /// Written by a newer Pharos.
     pub newer: Vec<EvidenceProblem>,
-    /// Could not be read this time (locked, no permission).
+    /// Could not be read this time (locked, no permission), or changed while
+    /// it was checked.
     pub unreadable: Vec<EvidenceProblem>,
     /// Marks this check set (`missing`/`damaged`) and cleared (`present`).
     pub marked: usize,
@@ -288,15 +297,26 @@ pub struct EvidenceProgress {
     pub bytes_total: u64,
 }
 
-/// One check or repair at a time, its progress and its last report.
+/// One check or repair at a time, its progress, its cancel flag and its last
+/// report (kept in memory for the session; the marks themselves are rows).
 #[derive(Default)]
 pub struct EvidenceCheck {
     busy: Mutex<()>,
     progress: Mutex<EvidenceProgress>,
     last: Mutex<Option<EvidenceReport>>,
+    cancel: AtomicBool,
 }
 
 impl EvidenceCheck {
+    /// Asks the check in course to stop before its next file.
+    pub(crate) fn request_cancel(&self) {
+        self.cancel.store(true, Ordering::SeqCst);
+    }
+
+    fn cancelled(&self) -> bool {
+        self.cancel.load(Ordering::SeqCst)
+    }
+
     pub(crate) fn guard(&self) -> Result<MutexGuard<'_, ()>, String> {
         match self.busy.try_lock() {
             Ok(g) => Ok(g),
@@ -357,34 +377,85 @@ pub(crate) fn snapshot(conn: &Connection, store: &EvidenceStore) -> Result<Snaps
     })
 }
 
+/// What phase 2 read of one content.
+pub(crate) struct Checked {
+    sha: String,
+    size: u64,
+    /// `local_state` in the snapshot.
+    state: String,
+    outcome: Outcome,
+    /// The file as it was when it was read; phase 3 keeps the outcome only if
+    /// the file is still exactly this.
+    file: Option<Fingerprint>,
+}
+
 /// Phase 2 (no lock): what the disk says.
 pub(crate) struct Scan {
     orphans: Vec<PathBuf>,
-    outcomes: Vec<(String, u64, String, Outcome)>,
+    checked: Vec<Checked>,
+    /// Contents the snapshot listed (all of them unless cancelled).
+    total: usize,
     bytes: u64,
+    cancelled: bool,
+}
+
+/// Reads one content back without any lock. If the file changed while it was
+/// read (a repair renamed a new copy in), it is read once more; if it changes
+/// again, it is reported as unreadable this time.
+fn read_back(
+    store: &EvidenceStore,
+    sha: &str,
+    size: u64,
+    progress: &mut dyn FnMut(u64),
+) -> (Outcome, Option<Fingerprint>) {
+    let Ok(path) = store.path_for(sha) else {
+        return (Outcome::Unreadable, None);
+    };
+    for _ in 0..2 {
+        let before = fingerprint(&path);
+        let outcome = verify_content(store, sha, size, progress);
+        let after = fingerprint(&path);
+        if before == after {
+            return (outcome, after);
+        }
+    }
+    (Outcome::Unreadable, fingerprint(&path))
 }
 
 pub(crate) fn scan(store: &EvidenceStore, snap: Snapshot, check: Option<&EvidenceCheck>) -> Scan {
+    let total = snap.blobs.len();
     if let Some(c) = check {
         let bytes_total = snap.blobs.iter().map(|b| b.1).sum();
         c.update(|p| {
             *p = EvidenceProgress {
                 running: true,
-                files_total: snap.blobs.len(),
+                files_total: total,
                 bytes_total,
                 ..EvidenceProgress::default()
             }
         });
     }
+    // Only names the store itself writes (`<2 hex>/<64 hex>.pev`): anything
+    // else in the folder is not ours to report or delete.
     let orphans = store
         .pev_files()
         .into_iter()
         .filter(|p| !snap.known.contains(p))
+        .filter(|p| {
+            store
+                .relative(p)
+                .is_some_and(|r| store.orphan_path(&r).is_some())
+        })
         .collect();
     let mut bytes = 0;
-    let mut outcomes = Vec::with_capacity(snap.blobs.len());
+    let mut checked = Vec::with_capacity(total);
+    let mut cancelled = false;
     for (sha, size, state) in snap.blobs {
-        let outcome = verify_content(store, &sha, size, &mut |n| {
+        if check.is_some_and(EvidenceCheck::cancelled) {
+            cancelled = true;
+            break;
+        }
+        let (outcome, file) = read_back(store, &sha, size, &mut |n| {
             bytes += n;
             if let Some(c) = check {
                 c.update(|p| p.bytes_done += n);
@@ -393,12 +464,20 @@ pub(crate) fn scan(store: &EvidenceStore, snap: Snapshot, check: Option<&Evidenc
         if let Some(c) = check {
             c.update(|p| p.files_done += 1);
         }
-        outcomes.push((sha, size, state, outcome));
+        checked.push(Checked {
+            sha,
+            size,
+            state,
+            outcome,
+            file,
+        });
     }
     Scan {
         orphans,
-        outcomes,
+        checked,
+        total,
         bytes,
+        cancelled,
     }
 }
 
@@ -412,15 +491,45 @@ fn rfc3339(conn: &Connection, t: SystemTime) -> Option<String> {
     .ok()
 }
 
-/// True unless the file was modified at least `min` ago (an unknown or future
-/// time counts as recent).
+/// When a file last appeared or changed here: the later of its modification
+/// and creation times. A copy or a restore from a backup keeps the source's
+/// modification time but gets a new creation time (Windows, macOS), so it
+/// counts as new; where the system keeps no creation time, only the
+/// modification time is known.
+fn changed_at(meta: &fs::Metadata) -> Option<SystemTime> {
+    match (meta.modified().ok(), meta.created().ok()) {
+        (Some(m), Some(c)) => Some(m.max(c)),
+        (m, c) => m.or(c),
+    }
+}
+
+/// True unless the file appeared or changed at least `min` ago (an unknown or
+/// future time counts as recent).
 fn is_recent(path: &Path, now: SystemTime, min: Duration) -> bool {
     !matches!(age(path, now), Some(a) if a >= min)
 }
 
 fn age(path: &Path, now: SystemTime) -> Option<Duration> {
-    let modified = fs::metadata(path).and_then(|m| m.modified()).ok()?;
-    now.duration_since(modified).ok()
+    let at = changed_at(&fs::metadata(path).ok()?)?;
+    now.duration_since(at).ok()
+}
+
+/// What tells a file apart from a rewrite of it: its length and its times.
+/// None when it is not there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Fingerprint {
+    len: u64,
+    modified: Option<SystemTime>,
+    created: Option<SystemTime>,
+}
+
+fn fingerprint(path: &Path) -> Option<Fingerprint> {
+    let meta = fs::metadata(path).ok()?;
+    Some(Fingerprint {
+        len: meta.len(),
+        modified: meta.modified().ok(),
+        created: meta.created().ok(),
+    })
 }
 
 /// The live uses of a content, with what they belong to.
@@ -508,7 +617,8 @@ fn system(user: Option<&str>) -> Actor {
     }
 }
 
-/// Phase 3 (lock held): every finding checked again, the marks written in one
+/// Phase 3 (lock held, no decryption): every finding kept only if its row and
+/// its file are still what phase 2 read; the marks written in one
 /// transaction, and the report.
 pub(crate) fn reconcile(
     conn: &Connection,
@@ -520,7 +630,9 @@ pub(crate) fn reconcile(
     let known = known_paths(conn, store)?;
     let mut report = EvidenceReport {
         checked_at: rfc3339(conn, now).unwrap_or_default(),
-        checked: scan.outcomes.len(),
+        checked: scan.checked.len(),
+        total: scan.total,
+        cancelled: scan.cancelled,
         bytes: scan.bytes,
         ..EvidenceReport::default()
     };
@@ -528,16 +640,26 @@ pub(crate) fn reconcile(
         if known.contains(&path) || !path.is_file() {
             continue;
         }
-        let modified = fs::metadata(&path).and_then(|m| m.modified()).ok();
+        let meta = fs::metadata(&path).ok();
         report.orphans.push(EvidenceOrphan {
             file: store.relative(&path).unwrap_or_default(),
-            size: fs::metadata(&path).map(|m| m.len()).unwrap_or(0),
-            modified: modified.and_then(|m| rfc3339(conn, m)),
+            size: meta.as_ref().map(|m| m.len()).unwrap_or(0),
+            modified: meta
+                .as_ref()
+                .and_then(changed_at)
+                .and_then(|m| rfc3339(conn, m)),
             recent: is_recent(&path, now, ORPHAN_MIN_AGE),
         });
     }
     let mut marks: Vec<(String, &'static str)> = Vec::new();
-    for (sha, size, _, outcome) in scan.outcomes {
+    for Checked {
+        sha,
+        size,
+        state: read_state,
+        outcome,
+        file,
+    } in scan.checked
+    {
         let state: Option<String> = conn
             .query_row(
                 "SELECT local_state FROM blobs WHERE sha256 = ?1",
@@ -551,11 +673,14 @@ pub(crate) fn reconcile(
         else {
             continue;
         };
-        // A finding is only kept if it still holds now, with the lock held.
-        let outcome = if outcome == Outcome::Intact {
-            outcome
+        // A finding stands only if the row and the file are still what was
+        // read; otherwise (an attach or a repair meanwhile) it is reported as
+        // unreadable this time, to verify again.
+        let path = store.path_for(&sha)?;
+        let outcome = if state != read_state || fingerprint(&path) != file {
+            Outcome::Unreadable
         } else {
-            verify_content(store, &sha, size, &mut |_| {})
+            outcome
         };
         // Not judged (newer format, unreadable now): the mark stays as it is.
         let Some(target) = (match outcome {
@@ -635,6 +760,7 @@ pub(crate) fn run(
     user: Option<&str>,
 ) -> Result<EvidenceReport, String> {
     let _guard = check.guard()?;
+    check.cancel.store(false, Ordering::SeqCst);
     let outcome = (|| {
         let snap = db.with_conn(|c| snapshot(c, db.evidence()))?;
         let scan = scan(db.evidence(), snap, Some(check));
@@ -671,6 +797,9 @@ pub struct EvidenceDeleted {
     pub deleted: usize,
     pub bytes: u64,
     pub skipped: Vec<EvidenceSkipped>,
+    /// False if the files were deleted but saving their audit events failed:
+    /// the events stay in memory and go with the next save.
+    pub saved: bool,
 }
 
 /// True if another process has the file open (Windows: an open without
@@ -691,9 +820,22 @@ fn in_use(_path: &Path) -> bool {
     false
 }
 
+/// Removes one orphan file (tests can make it fail).
+fn remove_orphan(path: &Path) -> io::Result<()> {
+    #[cfg(test)]
+    if tests::FAIL_REMOVE.with(std::cell::Cell::get) {
+        return Err(io::Error::other("removal failed (test)"));
+    }
+    fs::remove_file(path)
+}
+
 /// Deletes the orphans the user confirmed, with the lock held: each must still
-/// be an orphan, older than `min_age` and not open. One local audit event per
-/// deleted file.
+/// be an orphan, older than `min_age` and not open (open is only detected on
+/// Windows). For each file its local audit event is written in a savepoint
+/// first and the file removed after; if the removal fails the savepoint is
+/// rolled back, so no event names a file that is still there. A file that
+/// cannot be handled is skipped with its reason: the result is always the
+/// partial outcome, never an error halfway.
 pub(crate) fn delete_orphans(
     conn: &Connection,
     store: &EvidenceStore,
@@ -703,7 +845,10 @@ pub(crate) fn delete_orphans(
     min_age: Duration,
 ) -> Result<EvidenceDeleted, String> {
     let known = known_paths(conn, store)?;
-    let mut out = EvidenceDeleted::default();
+    let mut out = EvidenceDeleted {
+        saved: true,
+        ..EvidenceDeleted::default()
+    };
     let mut seen = HashSet::new();
     for file in files {
         if !seen.insert(file.as_str()) {
@@ -734,16 +879,13 @@ pub(crate) fn delete_orphans(
             continue;
         }
         let size = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
-        if fs::remove_file(&path).is_err() {
+        if conn.execute_batch("SAVEPOINT evidence_orphan").is_err() {
             out.skipped.push(skip("error"));
             continue;
         }
-        if let Some(parent) = path.parent() {
-            let _ = fs::remove_dir(parent);
-        }
         let mut changes = Map::new();
         changes.insert("file".into(), json!([file, null]));
-        journal::record_event_in(
+        let recorded = journal::record_event_in(
             conn,
             system(user),
             Action::Delete,
@@ -752,7 +894,18 @@ pub(crate) fn delete_orphans(
             None,
             changes,
             Some(json!({"reason": "orphan", "size": size})),
-        )?;
+        );
+        if recorded.is_err() || remove_orphan(&path).is_err() {
+            let _ = conn.execute_batch("ROLLBACK TO evidence_orphan; RELEASE evidence_orphan");
+            out.skipped.push(skip("error"));
+            continue;
+        }
+        if conn.execute_batch("RELEASE evidence_orphan").is_err() {
+            tracing::warn!("an orphan was deleted but its audit savepoint did not release");
+        }
+        if let Some(parent) = path.parent() {
+            let _ = fs::remove_dir(parent);
+        }
         out.deleted += 1;
         out.bytes += size;
     }
@@ -797,7 +950,9 @@ pub struct EvidenceRetentionOverride {
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EvidenceUsage {
-    /// Contents and bytes on this device (rows not `deleting`).
+    /// Contents and bytes whose file is on this device (`present`, `damaged`).
+    /// `by_state` keeps the `missing`/`damaged` counts the last check marked,
+    /// so they show after a restart too.
     pub blobs: i64,
     pub bytes: i64,
     pub by_state: Vec<EvidenceStateCount>,
@@ -878,7 +1033,8 @@ pub(crate) fn usage(conn: &Connection) -> Result<EvidenceUsage, String> {
         rows.collect::<rusqlite::Result<Vec<_>>>()
             .map_err(|e| e.to_string())?
     };
-    let live = |s: &&EvidenceStateCount| s.state != "deleting";
+    // What is on this disk: not `missing`, `remote_only` or `deleting`.
+    let live = |s: &&EvidenceStateCount| matches!(s.state.as_str(), "present" | "damaged");
     Ok(EvidenceUsage {
         blobs: by_state.iter().filter(live).map(|s| s.blobs).sum(),
         bytes: by_state.iter().filter(live).map(|s| s.bytes).sum(),
@@ -924,38 +1080,61 @@ pub fn evidence_check_progress(check: State<EvidenceCheck>) -> EvidenceProgress 
 }
 
 /// «Verificar evidencias»: reads every content back and marks what is missing
-/// or damaged. Long: it runs off the main thread and without the database lock
-/// while it decrypts.
-#[tauri::command(async)]
-pub fn evidence_check(
-    db: State<'_, Db>,
-    check: State<'_, EvidenceCheck>,
+/// or damaged. Long: it runs on a blocking thread (`spawn_blocking`) and
+/// without the database lock while it decrypts.
+#[tauri::command]
+pub async fn evidence_check(
+    app: tauri::AppHandle,
     user_id: Option<String>,
 ) -> Result<EvidenceReport, String> {
-    run(&db, &check, user_id.as_deref())
+    tauri::async_runtime::spawn_blocking(move || {
+        let db = app.state::<Db>();
+        let check = app.state::<EvidenceCheck>();
+        run(&db, &check, user_id.as_deref())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
-/// Deletes the orphans the user confirmed (see `delete_orphans`).
-#[tauri::command(async)]
-pub fn evidence_orphans_delete(
-    db: State<'_, Db>,
-    check: State<'_, EvidenceCheck>,
-    files: Vec<String>,
-    user_id: Option<String>,
+/// Stops the check in course before its next file; what it read so far is
+/// still judged and reported (`cancelled: true`).
+#[tauri::command]
+pub fn evidence_check_cancel(check: State<EvidenceCheck>) {
+    check.request_cancel();
+}
+
+/// Error prefix when `pharos.db.enc` changed on disk since this process last
+/// read or wrote it: another Pharos may be using the same data folder.
+pub const DB_CHANGED: &str = "evidence-db-changed";
+
+/// Deletes the orphans the user confirmed (see `delete_orphans`), unless the
+/// database file changed on disk since this process last read or wrote it:
+/// then another instance on the same folder may have linked those files in a
+/// database this one does not see. If saving afterwards fails, the files are
+/// still reported as deleted (`saved: false`).
+pub(crate) fn delete_confirmed(
+    db: &Db,
+    check: &EvidenceCheck,
+    files: &[String],
+    user: Option<&str>,
+    now: SystemTime,
+    min_age: Duration,
 ) -> Result<EvidenceDeleted, String> {
     let _guard = check.guard()?;
-    let out = db.with_conn(|c| {
-        delete_orphans(
-            c,
-            db.evidence(),
-            &files,
-            user_id.as_deref(),
-            SystemTime::now(),
-            ORPHAN_MIN_AGE,
-        )
+    let mut out = db.with_conn(|c| {
+        if db.changed_on_disk() {
+            return Err(format!(
+                "{DB_CHANGED}: the database file changed on disk; another Pharos may be \
+                 using this data folder"
+            ));
+        }
+        delete_orphans(c, db.evidence(), files, user, now, min_age)
     })?;
     if out.deleted > 0 {
-        db.persist()?;
+        if let Err(e) = db.persist() {
+            tracing::warn!(error = %e, "orphans deleted; saving their audit events failed");
+            out.saved = false;
+        }
         // The orphans just deleted leave the last report.
         if let Some(mut last) = check.last() {
             let gone: HashSet<&str> = files.iter().map(String::as_str).collect();
@@ -967,6 +1146,23 @@ pub fn evidence_orphans_delete(
         }
     }
     Ok(out)
+}
+
+#[tauri::command(async)]
+pub fn evidence_orphans_delete(
+    db: State<'_, Db>,
+    check: State<'_, EvidenceCheck>,
+    files: Vec<String>,
+    user_id: Option<String>,
+) -> Result<EvidenceDeleted, String> {
+    delete_confirmed(
+        &db,
+        &check,
+        &files,
+        user_id.as_deref(),
+        SystemTime::now(),
+        ORPHAN_MIN_AGE,
+    )
 }
 
 #[cfg(test)]

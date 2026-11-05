@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { HardDrive, ScanSearch, Trash2 } from "lucide-react";
+import { HardDrive, ScanSearch, Trash2, X } from "lucide-react";
 import {
   formatBytes,
   type EvidenceOrphan,
@@ -15,7 +15,7 @@ import { capabilities } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
-import { EVIDENCE_CHECK_BUSY, evidenceApi } from "../../api/evidenceApi";
+import { EVIDENCE_CHECK_BUSY, EVIDENCE_DB_CHANGED, evidenceApi } from "../../api/evidenceApi";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
 
 /** Owner kinds with their own label; any other shows as «Otros (kind)». */
@@ -43,9 +43,12 @@ function errorText(e: unknown): string {
  * Administración → Evidencias (DAT-03b, ADR-0014): what the encrypted evidence
  * store holds, and «Verificar evidencias», a manual check that lists files no
  * row knows, contents whose file is missing and files that do not decrypt.
- * Nothing is repaired by itself: missing and damaged contents are marked and
- * shown where they are used; files without a record are deleted only after
- * the user picks them and confirms. Desktop only (the web shows a note).
+ * Nothing is repaired by itself: missing and damaged contents are marked (the
+ * marks are rows, so their counts show here after a restart too) and the
+ * report shows where they are used; files without a record are deleted only
+ * after the user picks them and confirms. The last report lives in memory for
+ * the session only. A check can be cancelled, and one still running when the
+ * tab opens is followed again. Desktop only (the web shows a note).
  * No design exists for this tab: it uses the Administración primitives.
  */
 export function EvidenceTab() {
@@ -69,50 +72,105 @@ function EvidenceStore() {
   const lang = i18n.language;
   const size = useCallback((b: number) => formatBytes(b, lang), [lang]);
   const [usage, setUsage] = useState<EvidenceUsage | null>(null);
+  const [usageError, setUsageError] = useState<string | null>(null);
   const [report, setReport] = useState<EvidenceReport | null>(null);
   const [checking, setChecking] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [progress, setProgress] = useState<EvidenceProgress | null>(null);
+  // What the live region says: only when a check starts and when it ends.
+  const [announce, setAnnounce] = useState("");
+  // The check started in this mount (its promise ends it); else one resumed.
+  const own = useRef(false);
 
-  const loadUsage = useCallback(async () => {
+  const loadUsage = useCallback(async (takeLast = false) => {
     try {
       const u = await evidenceApi.usage();
       setUsage(u);
-      setReport((r) => r ?? u.last);
-    } catch {
+      setUsageError(null);
+      setReport((r) => (takeLast ? u.last : (r ?? u.last)));
+      return u;
+    } catch (e) {
       setUsage(null);
+      setUsageError(errorText(e));
+      return null;
     }
   }, []);
 
+  // A check still running (started before the tab was opened) is followed.
   useEffect(() => {
     void loadUsage();
+    evidenceApi.progress().then(
+      (p) => {
+        if (p.running) {
+          setProgress(p);
+          setChecking(true);
+          setAnnounce(t("admin.evidence.check.started"));
+        }
+      },
+      () => {},
+    );
+    // Only when the tab opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadUsage]);
 
-  // While a check runs, its progress is read twice a second.
+  // While a check runs, its progress is read twice a second (not announced).
+  // A resumed check ends when the progress says so.
   useEffect(() => {
     if (!checking) return;
     const timer = window.setInterval(() => {
-      evidenceApi.progress().then(setProgress, () => {});
+      evidenceApi.progress().then(
+        (p) => {
+          setProgress(p);
+          if (!p.running && !own.current) {
+            setChecking(false);
+            setCancelling(false);
+            void loadUsage(true).then((u) => setAnnounce(u?.last ? t("admin.evidence.check.finished") : ""));
+          }
+        },
+        () => {},
+      );
     }, 500);
     return () => window.clearInterval(timer);
-  }, [checking]);
+  }, [checking, loadUsage, t]);
 
   async function verify() {
+    own.current = true;
     setChecking(true);
     setProgress(null);
+    setAnnounce(t("admin.evidence.check.started"));
     try {
-      setReport(await evidenceApi.check(user?.id));
+      const r = await evidenceApi.check(user?.id);
+      setReport(r);
+      setAnnounce(r.cancelled ? t("admin.evidence.check.cancelledShort") : t("admin.evidence.check.finished"));
       void loadUsage();
     } catch (e) {
-      const busy = errorText(e).startsWith(EVIDENCE_CHECK_BUSY);
-      toast(t(busy ? "admin.evidence.check.busy" : "admin.evidence.check.failed"), "error");
+      const reason = errorText(e);
+      setAnnounce("");
+      toast(
+        reason.startsWith(EVIDENCE_CHECK_BUSY)
+          ? t("admin.evidence.check.busy")
+          : t("admin.evidence.check.failed", { reason }),
+        "error",
+      );
     } finally {
+      own.current = false;
       setChecking(false);
+      setCancelling(false);
+    }
+  }
+
+  async function cancel() {
+    setCancelling(true);
+    try {
+      await evidenceApi.cancel();
+    } catch {
+      setCancelling(false);
     }
   }
 
   return (
     <div className="adm-stack">
-      <UsageSection usage={usage} size={size} />
+      <UsageSection usage={usage} error={usageError} size={size} />
       <SettingsSection
         title={t("admin.evidence.check.title")}
         desc={t("admin.evidence.check.desc")}
@@ -123,36 +181,51 @@ function EvidenceStore() {
           hint={t("admin.evidence.check.actionHint")}
           hintId="adm-evidence-check-hint"
         >
-          <button
-            type="button"
-            className="adm-btn adm-btn--primary"
-            data-testid="evidence-verify"
-            aria-describedby="adm-evidence-check-hint"
-            disabled={checking}
-            onClick={() => void verify()}
-          >
-            <ScanSearch size={16} aria-hidden="true" />
-            {checking ? t("admin.evidence.check.running") : t("admin.evidence.check.run")}
-          </button>
-          <div role="status" className="adm-evidence-progress">
-            {checking && progress && progress.filesTotal > 0 && (
-              <>
-                <progress
-                  aria-label={t("admin.evidence.check.progressLabel")}
-                  max={Math.max(progress.bytesTotal, 1)}
-                  value={progress.bytesDone}
-                />
-                <span className="adm-hint">
-                  {t("admin.evidence.check.progress", {
-                    done: progress.filesDone,
-                    total: progress.filesTotal,
-                    bytesDone: size(progress.bytesDone),
-                    bytesTotal: size(progress.bytesTotal),
-                  })}
-                </span>
-              </>
+          <div className="adm-inline">
+            <button
+              type="button"
+              className="adm-btn adm-btn--primary"
+              data-testid="evidence-verify"
+              aria-describedby="adm-evidence-check-hint"
+              disabled={checking}
+              onClick={() => void verify()}
+            >
+              <ScanSearch size={16} aria-hidden="true" />
+              {checking ? t("admin.evidence.check.running") : t("admin.evidence.check.run")}
+            </button>
+            {checking && (
+              <button
+                type="button"
+                className="adm-btn adm-btn--secondary"
+                data-testid="evidence-cancel"
+                disabled={cancelling}
+                onClick={() => void cancel()}
+              >
+                <X size={16} aria-hidden="true" />
+                {cancelling ? t("admin.evidence.check.cancelling") : t("admin.evidence.check.cancel")}
+              </button>
             )}
           </div>
+          {checking && progress && progress.filesTotal > 0 && (
+            <div className="adm-evidence-progress">
+              <progress
+                aria-label={t("admin.evidence.check.progressLabel")}
+                max={Math.max(progress.bytesTotal, 1)}
+                value={progress.bytesDone}
+              />
+              <span className="adm-hint">
+                {t("admin.evidence.check.progress", {
+                  done: progress.filesDone,
+                  total: progress.filesTotal,
+                  bytesDone: size(progress.bytesDone),
+                  bytesTotal: size(progress.bytesTotal),
+                })}
+              </span>
+            </div>
+          )}
+          <span role="status" className="sr-only" data-testid="evidence-announce">
+            {announce}
+          </span>
         </SettingsRow>
         {report && (
           <ReportView
@@ -170,25 +243,63 @@ function EvidenceStore() {
   );
 }
 
-function UsageSection({ usage, size }: { usage: EvidenceUsage | null; size: (b: number) => string }) {
+function UsageSection({
+  usage,
+  error,
+  size,
+}: {
+  usage: EvidenceUsage | null;
+  error: string | null;
+  size: (b: number) => string;
+}) {
   const { t } = useTranslation();
   const tableLabel = useId();
   const days = (d: number | null) =>
     d === null ? t("admin.evidence.usage.rawAlways") : t("admin.evidence.usage.rawDays", { count: d });
   const owner = (kind: string) =>
     OWNERS.includes(kind) ? t(`admin.evidence.owners.${kind}`) : t("admin.evidence.owners.other", { kind });
+  const count = (state: string) => usage?.byState.find((s) => s.state === state)?.blobs ?? 0;
+  const missing = count("missing");
+  const damaged = count("damaged");
   return (
     <SettingsSection
       title={t("admin.evidence.usage.title")}
       desc={t("admin.evidence.usage.desc")}
       testId="evidence-usage"
     >
-      <SettingsRow label={t("admin.evidence.usage.total")}>
+      {error && (
+        <p className="adm-warn" role="alert" data-testid="evidence-usage-error">
+          {t("admin.evidence.usage.failed", { reason: error })}
+        </p>
+      )}
+      <SettingsRow label={t("admin.evidence.usage.total")} hint={t("admin.evidence.usage.totalHint")}>
         <span className="adm-inline">
           <HardDrive size={16} aria-hidden="true" />
           <span data-testid="evidence-usage-total">
             {usage ? t("admin.evidence.usage.totalValue", { size: size(usage.bytes), count: usage.blobs }) : "—"}
           </span>
+        </span>
+      </SettingsRow>
+      <SettingsRow label={t("admin.evidence.usage.marked")} hint={t("admin.evidence.usage.markedHint")}>
+        <span className="adm-inline" data-testid="evidence-marked">
+          {!usage ? (
+            "—"
+          ) : missing + damaged === 0 ? (
+            t("admin.evidence.usage.markedNone")
+          ) : (
+            <>
+              {missing > 0 && (
+                <StatusPill tone="warning" dot>
+                  {t("admin.evidence.usage.markedMissing", { count: missing })}
+                </StatusPill>
+              )}
+              {damaged > 0 && (
+                <StatusPill tone="error" dot>
+                  {t("admin.evidence.usage.markedDamaged", { count: damaged })}
+                </StatusPill>
+              )}
+            </>
+          )}
         </span>
       </SettingsRow>
       <SettingsRow label={t("admin.evidence.usage.byOwner")} hint={t("admin.evidence.usage.byOwnerHint")} labelId={tableLabel}>
@@ -265,8 +376,13 @@ function ReportView({
       : new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "short" }).format(d);
   }, [report.checkedAt, i18n.language]);
   const clean =
-    report.orphans.length + report.missing.length + report.damaged.length + report.newer.length + report.unreadable.length ===
-    0;
+    !report.cancelled &&
+    report.orphans.length +
+      report.missing.length +
+      report.damaged.length +
+      report.newer.length +
+      report.unreadable.length ===
+      0;
   return (
     <div className="adm-evidence-report" data-testid="evidence-report">
       <div className="adm-inline">
@@ -279,6 +395,11 @@ function ReportView({
           </StatusPill>
         )}
       </div>
+      {report.cancelled && (
+        <span className="adm-warn" data-testid="evidence-cancelled">
+          {t("admin.evidence.check.cancelled", { done: report.checked, total: report.total })}
+        </span>
+      )}
       {report.marked + report.restored > 0 && (
         <span className="adm-hint">
           {t("admin.evidence.check.marked", { marked: report.marked, restored: report.restored })}
@@ -324,6 +445,9 @@ function Orphans({
       const skipped = new Set(out.skipped.map((s) => s.file));
       const gone = chosen.filter((f) => !skipped.has(f));
       if (out.deleted > 0) toast(t("admin.evidence.orphans.deleted", { count: out.deleted, size: size(out.bytes) }));
+      // Deleted, but their audit events wait for the next save: say so, and
+      // never «could not be deleted».
+      if (out.deleted > 0 && !out.saved) toast(t("admin.evidence.orphans.notSaved"), "warning");
       if (out.skipped.length > 0) {
         const reasons = [...new Set(out.skipped.map((s) => t(`admin.evidence.orphans.reasons.${s.reason}`)))].join(", ");
         toast(t("admin.evidence.orphans.skipped", { count: out.skipped.length, reasons }), "warning");
@@ -331,8 +455,15 @@ function Orphans({
       setPicked([]);
       onDeleted(gone);
     } catch (e) {
-      const busy = errorText(e).startsWith(EVIDENCE_CHECK_BUSY);
-      toast(t(busy ? "admin.evidence.check.busy" : "admin.evidence.orphans.failed"), "error");
+      const reason = errorText(e);
+      toast(
+        reason.startsWith(EVIDENCE_CHECK_BUSY)
+          ? t("admin.evidence.check.busy")
+          : reason.startsWith(EVIDENCE_DB_CHANGED)
+            ? t("admin.evidence.orphans.dbChanged")
+            : t("admin.evidence.orphans.failed", { reason }),
+        "error",
+      );
     } finally {
       setDeleting(false);
     }

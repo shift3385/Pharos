@@ -21,9 +21,14 @@ const api = vi.hoisted(() => ({
   usage: vi.fn(),
   progress: vi.fn(),
   check: vi.fn(),
+  cancel: vi.fn(),
   deleteOrphans: vi.fn(),
 }));
-vi.mock("../../api/evidenceApi", () => ({ EVIDENCE_CHECK_BUSY: "evidence-check-busy", evidenceApi: api }));
+vi.mock("../../api/evidenceApi", () => ({
+  EVIDENCE_CHECK_BUSY: "evidence-check-busy",
+  EVIDENCE_DB_CHANGED: "evidence-db-changed",
+  evidenceApi: api,
+}));
 
 const MB = 1024 * 1024;
 const ORPHAN = `ab/ab${"1".repeat(62)}.pev`;
@@ -63,7 +68,9 @@ function report(over: Partial<EvidenceReport> = {}): EvidenceReport {
   return {
     checkedAt: "2026-11-04T10:00:00Z",
     checked: 3,
+    total: 3,
     bytes: 12 * MB,
+    cancelled: false,
     orphans: [
       { file: ORPHAN, size: 2048, modified: "2026-10-01T10:00:00Z", recent: false },
       { file: RECENT, size: 100, modified: "2026-11-04T09:00:00Z", recent: true },
@@ -91,9 +98,11 @@ beforeEach(async () => {
   desktop.on = true;
   vi.clearAllMocks();
   api.usage.mockResolvedValue(usage());
-  api.progress.mockResolvedValue({ running: true, filesDone: 1, filesTotal: 3, bytesDone: MB, bytesTotal: 12 * MB });
+  // No check running when the tab opens.
+  api.progress.mockResolvedValue({ running: false, filesDone: 0, filesTotal: 0, bytesDone: 0, bytesTotal: 0 });
   api.check.mockResolvedValue(report());
-  api.deleteOrphans.mockResolvedValue({ deleted: 1, bytes: 2048, skipped: [] });
+  api.cancel.mockResolvedValue(undefined);
+  api.deleteOrphans.mockResolvedValue({ deleted: 1, bytes: 2048, skipped: [], saved: true });
 });
 
 describe("Administración → Evidencias", () => {
@@ -163,7 +172,12 @@ describe("Administración → Evidencias", () => {
   });
 
   it("says why an orphan was skipped", async () => {
-    api.deleteOrphans.mockResolvedValue({ deleted: 0, bytes: 0, skipped: [{ file: ORPHAN, reason: "in_use" }] });
+    api.deleteOrphans.mockResolvedValue({
+      deleted: 0,
+      bytes: 0,
+      skipped: [{ file: ORPHAN, reason: "in_use" }],
+      saved: true,
+    });
     const user = userEvent.setup();
     renderTab();
     await user.click(await screen.findByTestId("evidence-verify"));
@@ -171,7 +185,9 @@ describe("Administración → Evidencias", () => {
     await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
     await user.click(screen.getByTestId("evidence-repair"));
     await user.click(screen.getByTestId("evidence-confirm"));
-    expect(await screen.findByText("1 se omitió: abierto por otro programa.", { exact: false })).toBeInTheDocument();
+    expect(
+      await screen.findByText("1 se omitió: abierto por otro programa (solo se detecta en Windows).", { exact: false }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("evidence-orphans")).toHaveTextContent("Archivos sin registro (2)");
   });
 
@@ -189,6 +205,123 @@ describe("Administración → Evidencias", () => {
     );
     renderTab();
     expect(await screen.findByTestId("evidence-report")).toHaveTextContent("Todo en orden");
+  });
+
+  it("shows the counts the last check marked, also after a restart", async () => {
+    api.usage.mockResolvedValue(
+      usage({
+        byState: [
+          { state: "present", blobs: 3, bytes: 12 * MB },
+          { state: "missing", blobs: 2, bytes: 10 },
+          { state: "damaged", blobs: 1, bytes: 20 },
+        ],
+      }),
+    );
+    renderTab();
+    const marked = await screen.findByTestId("evidence-marked");
+    await waitFor(() => expect(marked).toHaveTextContent("2 faltan"));
+    expect(marked).toHaveTextContent("1 dañado");
+  });
+
+  it("says why the usage could not be read", async () => {
+    api.usage.mockRejectedValue("evidence store locked");
+    renderTab();
+    expect(await screen.findByTestId("evidence-usage-error")).toHaveTextContent(
+      "No se pudo leer el almacén de evidencias: evidence store locked",
+    );
+  });
+
+  it("says why a check failed", async () => {
+    api.check.mockRejectedValue("disk error");
+    const user = userEvent.setup();
+    renderTab();
+    await user.click(await screen.findByTestId("evidence-verify"));
+    expect(
+      await screen.findByText("No se pudo verificar las evidencias: disk error", { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  it("announces only the start and the end of a check", async () => {
+    let finish: (r: EvidenceReport) => void = () => {};
+    api.check.mockReturnValue(new Promise((r) => (finish = r)));
+    const user = userEvent.setup();
+    renderTab();
+    await user.click(await screen.findByTestId("evidence-verify"));
+    const live = screen.getByTestId("evidence-announce");
+    expect(live).toHaveAttribute("role", "status");
+    expect(live).toHaveTextContent("Verificación de evidencias en curso.");
+    // The progress line is outside the live region.
+    expect(live).not.toHaveTextContent("archivos");
+    finish(report());
+    await waitFor(() => expect(live).toHaveTextContent("Verificación de evidencias terminada."));
+  });
+
+  it("cancels a check and says how far it got", async () => {
+    let finish: (r: EvidenceReport) => void = () => {};
+    api.check.mockReturnValue(new Promise((r) => (finish = r)));
+    const user = userEvent.setup();
+    renderTab();
+    await user.click(await screen.findByTestId("evidence-verify"));
+    await user.click(screen.getByTestId("evidence-cancel"));
+    expect(api.cancel).toHaveBeenCalled();
+    expect(screen.getByTestId("evidence-cancel")).toBeDisabled();
+    finish(report({ cancelled: true, checked: 1, total: 3 }));
+    expect(await screen.findByTestId("evidence-cancelled")).toHaveTextContent(
+      "se comprobaron 1 de 3 archivos",
+    );
+    expect(screen.queryByTestId("evidence-cancel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("evidence-report")).not.toHaveTextContent("Todo en orden");
+  });
+
+  it("follows a check that was already running when the tab opened", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      api.progress
+        .mockResolvedValueOnce({ running: true, filesDone: 1, filesTotal: 4, bytesDone: MB, bytesTotal: 4 * MB })
+        .mockResolvedValueOnce({ running: true, filesDone: 2, filesTotal: 4, bytesDone: 2 * MB, bytesTotal: 4 * MB })
+        .mockResolvedValue({ running: false, filesDone: 4, filesTotal: 4, bytesDone: 4 * MB, bytesTotal: 4 * MB });
+      renderTab();
+      expect(await screen.findByTestId("evidence-cancel")).toBeInTheDocument();
+      expect(screen.getByTestId("evidence-verify")).toBeDisabled();
+      // When it ends, its report comes with the usage.
+      api.usage.mockResolvedValue(usage({ last: report() }));
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(await screen.findByTestId("evidence-report")).toBeInTheDocument();
+      expect(screen.queryByTestId("evidence-cancel")).not.toBeInTheDocument();
+      expect(api.check).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("says when deleted files could not be saved in the audit yet", async () => {
+    api.deleteOrphans.mockResolvedValue({ deleted: 1, bytes: 2048, skipped: [], saved: false });
+    const user = userEvent.setup();
+    renderTab();
+    await user.click(await screen.findByTestId("evidence-verify"));
+    const orphans = await screen.findByTestId("evidence-orphans");
+    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
+    await user.click(screen.getByTestId("evidence-repair"));
+    await user.click(screen.getByTestId("evidence-confirm"));
+    expect(await screen.findByText("Se borró 1 archivo (2 KB).", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("Los archivos se borraron, pero", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText("No se pudieron borrar", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("deletes nothing when another Pharos changed the database", async () => {
+    api.deleteOrphans.mockRejectedValue("evidence-db-changed: the database file changed on disk");
+    const user = userEvent.setup();
+    renderTab();
+    await user.click(await screen.findByTestId("evidence-verify"));
+    const orphans = await screen.findByTestId("evidence-orphans");
+    await user.click(within(orphans).getByRole("checkbox", { name: "Seleccionar Archivo ab1111111111" }));
+    await user.click(screen.getByTestId("evidence-repair"));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("solo en Windows");
+    await user.click(screen.getByTestId("evidence-confirm"));
+    expect(
+      await screen.findByText("No se borró nada: la base de datos cambió en disco", { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("evidence-orphans")).toHaveTextContent("Archivos sin registro (2)");
   });
 
   it("formats sizes in the UI language", () => {

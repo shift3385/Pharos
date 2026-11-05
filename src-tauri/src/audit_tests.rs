@@ -1298,6 +1298,10 @@ const EXEMPT: &[(&str, &str)] = &[
     ("evidence::check::evidence_usage", "read"),
     ("evidence::check::evidence_check_progress", "read"),
     (
+        "evidence::check::evidence_check_cancel",
+        "stops a check; what it read so far is judged and audited by evidence_check",
+    ),
+    (
         "planner::planner_attachment_save",
         "read (writes a file the user exports)",
     ),

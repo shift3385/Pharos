@@ -659,7 +659,8 @@ pub(crate) fn release_unreferenced(conn: &Connection) -> Result<(), String> {
 /// after `Db::persist_and_collect`, with the database lock held; the rows'
 /// removal is saved by the next persist (if that never happens, the next run
 /// finds the rows again and the files already gone). A content referenced
-/// again in the meantime goes back to `present`. Returns the files removed.
+/// again in the meantime goes back to `present`, or to `damaged` if a check marked it so
+/// (DAT-03b: the mark survives the release). Returns the files removed.
 pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize, String> {
     let mut stmt = conn
         .prepare("SELECT sha256 FROM blobs WHERE local_state = 'deleting'")
@@ -672,9 +673,14 @@ pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize,
     let mut removed = 0;
     for sha in shas {
         if live_refs(conn, &sha)? > 0 {
+            let state = if store.is_damaged(&sha) {
+                "damaged"
+            } else {
+                "present"
+            };
             conn.execute(
-                "UPDATE blobs SET local_state = 'present' WHERE sha256 = ?1",
-                params![sha],
+                "UPDATE blobs SET local_state = ?2 WHERE sha256 = ?1",
+                params![sha, state],
             )
             .map_err(|e| e.to_string())?;
             continue;
@@ -682,6 +688,7 @@ pub(crate) fn collect(conn: &Connection, store: &EvidenceStore) -> Result<usize,
         store.remove(&sha)?;
         conn.execute("DELETE FROM blobs WHERE sha256 = ?1", params![sha])
             .map_err(|e| e.to_string())?;
+        store.forget_damaged(&sha);
         removed += 1;
     }
     if removed > 0 {

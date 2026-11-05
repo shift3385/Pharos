@@ -12,6 +12,9 @@ import { invoke } from "@shared/platform";
 
 /** Error prefix while another check or repair runs (evidence/check.rs). */
 export const EVIDENCE_CHECK_BUSY = "evidence-check-busy";
+/** Error prefix when the database file changed on disk (another Pharos on
+ *  the same data folder): orphans are not deleted then. */
+export const EVIDENCE_DB_CHANGED = "evidence-db-changed";
 
 export const evidenceApi = {
   usage: (): Promise<EvidenceUsage> => invoke("evidence_usage"),
@@ -19,6 +22,8 @@ export const evidenceApi = {
   /** Reads every content back; marks what is missing or damaged. */
   check: (userId?: string): Promise<EvidenceReport> =>
     invoke("evidence_check", { userId: userId ?? null }),
+  /** Stops the check in course before its next file. */
+  cancel: (): Promise<void> => invoke("evidence_check_cancel"),
   /** Deletes the orphans the user confirmed; recent or open ones are skipped. */
   deleteOrphans: (files: string[], userId?: string): Promise<EvidenceDeleted> =>
     invoke("evidence_orphans_delete", { files, userId: userId ?? null }),
