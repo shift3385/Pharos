@@ -971,6 +971,10 @@ The QA tool tests itself at four levels:
   typecheck, lint with 0 warnings and the license check). Includes the
   no-hardcoded-color guard and a test that filters an exported `.feature` with
   the real Cucumber tag-expression engine.
+  Timeouts (BASE-21): Vitest's 5 s default stays; a file whose tests are slow
+  by nature (whole pages with axe, real `.xlsx` round trips) imports
+  `@test/slow` (20 s for that file only), and a test that waits on purpose
+  (retries, backoff) uses fake timers instead of a longer timeout.
 - **Rust core:** `cargo test` in `src-tauri/` (repositories, encryption,
   atomic persistence, HLC, sync merge). It runs again since the switch to MSVC.
 - **Contracts (BASE-05, [ADR-0026](adr/0026-contratos-generados.md)):** the

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import ExcelJS from "exceljs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import i18n from "@shared/i18n";
 import { caseCyclesTable, type CycleExportData } from "@modules/cycles";
 import type { TestCase } from "../model/types";

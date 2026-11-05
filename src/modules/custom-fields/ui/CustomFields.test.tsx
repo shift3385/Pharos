@@ -3,6 +3,7 @@
 // required named in the error summary, archive and reorder, values the
 // editor does not know kept, and axe on each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import "@test/slow";
 import { useState } from "react";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";

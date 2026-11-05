@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import "@test/slow";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
