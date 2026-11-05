@@ -3,6 +3,8 @@
 // execution derivation (step 10, contract v1) the matrix, the status report
 // and the Home metrics read.
 export { RunsPage } from "./ui/RunsPage";
+// Registers the web drafts' sign-out cleanup with the module (EJE-06).
+import "./model/webDrafts";
 export type { LinkableCase as RunLinkableCase } from "./model/types";
 export {
   executionApi,

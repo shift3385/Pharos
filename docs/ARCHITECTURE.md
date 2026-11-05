@@ -315,7 +315,8 @@ and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
   every target, items with status filters, close (`completed`/`aborted`)
   and reopen, edit, add cases; `?item=` opens the executor (beside the list
   from 1280 px, in its place below). «Nuevo run manual» creates a run over
-  chosen cases. A cycle's runs link here. Read only on the web (EJE-06).
+  chosen cases. A cycle's runs link here. The web runs it too (EJE-06,
+  below), without files.
 - **Targets.** An item expands to `(flow, Outline row)` targets
   (`manual::targets_of`); an attempt narrows the item to one
   (`ResultInput.flowId`/`exampleRowId`), so its `test_key`, flow and row
@@ -346,6 +347,48 @@ and `src/modules/runs/` (`RunDetail`, `ExecutionPanel`), no migration:
   `execution_attachment_preview`; `run_update` reopens a closed run.
 - **Exit criterion of 0.2.0** (editing an executed case changes none of its
   results): `runs::manual::tests::editing_an_executed_case_does_not_change_its_results`.
+
+**Runs on the web (EJE-06; ADR-0013 «Implementación (EJE-06)»).**
+`server/src/modules/domain/runs.ts` applies the rules of `runs.rs`,
+`runs/manual.rs` and `cycles::execute` to the document store and writes the
+documents the desktop syncs (`run`, `run_item` lww; `result` append-only with
+its steps; the frozen `test_case_revision`, same id as
+`revisions::ensure_current`). No migration, the synced set is unchanged.
+
+- **Twins and vectors.** `domain/runs-targets.ts` mirrors `targets_of`,
+  `narrow` and the overlap check (`execution-target-vectors.json`, read by
+  both sides). `web-run-interop.json` proves both directions: each side's
+  normalized documents equal the fixture's, and each side's run screen reads
+  the fixture's documents the same (`runs/web_vectors_tests.rs`,
+  `server/tests/runs.test.ts`).
+- **Attempts** need an `attemptId` on the web (the only idempotency without a
+  server draft); a stored result with that id is returned for the same item
+  and target, else `attempt-id-taken`. One `execute` audit event each
+  (`DomainTx.audit` takes `changes`; `DomainTx.stamp()` gives the result's
+  HLC).
+- **Deleted runs** (EJE-07): a deleted run is a tombstone. Every write to it
+  is refused with `run-deleted` (`liveRun` / `isLiveRun`, the one
+  predicate); reads leave it out, and its results and shards count only while
+  their run is live, as in `cycles.ts`. Deleting a run stays desktop only.
+  The run screen answers `run-deleted` too. The predicate lives in
+  `domain/run-live.ts`; cycle progress reads runs through it too. A defect's
+  link to such a result is kept, with its label and case (ADR-0016).
+- **Reads** run outside the user's write lock (`DomainStore.readTx`: a
+  read-only, repeatable-read transaction, no `FOR UPDATE`) and are scoped to one run
+  (`tx.list(entity, project, { where: { runId } })`); only the per-run counts
+  read the whole project.
+- **Client:** `runsApi` branches to the server on the web; the draft is the
+  browser's (`src/modules/runs/model/webDrafts.ts`: `localStorage` per account
+  and item, the desktop's stale rules, a shared list of recorded attempts for
+  other tabs; cleared on sign-out; dropped when the run reads as cancelled or
+  gone; the executor reloads on another tab's `storage` event). Files,
+  imports and the «Sin vincular» tray stay on the desktop
+  (SYNC-04b); the UI says «Los adjuntos solo están disponibles en el escritorio».
+- **Desktop pull:** a `run` pulled as `aborted` drops its local drafts and
+  their files, as a local cancel does, and so does a run conflict resolved to
+  the remote `aborted` (`sync::drop_drafts_of_remote`); `apply_remote` and
+  `sync_conflict_resolve` save with `persist_and_collect`, so the files leave
+  the disk.
 
 **Execution derivation (step 10, EJE-04 / EJE-03, contract v1).** One
 derivation of what the runs say, read by the matrix, the status report and the
@@ -1214,8 +1257,10 @@ core Postgres lacks). Modules:
   `/api/planner-cards` (+ `/reorder`; a `defect` card is refused with
   `defect_moved`), `/api/custom-fields` (+ `/reorder`, `/copy`,
   `/:id/archive`; FLD-01), `/api/configurations` and `/api/cycles` (items,
-  filter, clone, progress, runs; CYC-01, `domain/cycles.ts`; runs are not
-  created on the web), and `/api/defects` (+ `/:id/transition`,
+  filter, clone, progress, runs; CYC-01, `domain/cycles.ts`), the runs API
+  (`/api/runs` + `/counts`, `/:id/items`, `/:id/close`, `/:id/overview`,
+  `/:id/results`; `/api/run-items/:id`, `/api/results` (+ `/:id/defect-draft`)
+  and `/api/cycles/:id/execute`; EJE-06, `domain/runs.ts`), and `/api/defects` (+ `/:id/transition`,
   `/:id/links`; DEF-01, `domain/defects.ts`). `domain.service.ts` applies the
   desktop core's rules (defaults, immutable keys, keys never reused,
   positions per column, upsert-by-key import) to the same document store, in
@@ -1391,7 +1436,7 @@ blocks, wait for a server that lists `cycles` (diagnostics: `heldBackCycles`).
 The client module is `src/modules/cycles` (API, «Ciclos» section of a
 project, «Configuraciones» card of the settings); `projects` composes it and
 passes it the cases and requirement keys, so it depends on no other domain
-module. «Ejecutar» is desktop-only until runs have a web API.
+module. «Ejecutar» works on the web too (EJE-06, `/api/cycles/:id/execute`).
 
 **Evidence store (DAT-03, [ADR-0014](adr/0014-evidencias-cifradas-por-hash.md)).**
 Attachment contents live outside the database, in `<data dir>/evidence/`

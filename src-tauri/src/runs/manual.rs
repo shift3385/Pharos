@@ -1347,6 +1347,32 @@ pub(crate) fn discard_run_drafts(
     Ok(items.len())
 }
 
+/// Drops every draft of a run (its items, deleted or not) and their files,
+/// for a pulled run that was cancelled elsewhere (EJE-06): the pull already
+/// checked whose it is, so no ownership check here.
+pub(crate) fn drop_run_drafts(conn: &Connection, run_id: &str, user: &str) -> Result<(), String> {
+    let items: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT DISTINCT i.id FROM run_items i
+                  WHERE i.run_id = ?1
+                    AND (EXISTS (SELECT 1 FROM execution_drafts d WHERE d.run_item_id = i.id)
+                         OR EXISTS (SELECT 1 FROM attachments a
+                                     WHERE a.owner_entity = ?2 AND a.owner_id = i.id
+                                       AND a.deleted_at IS NULL))",
+            )
+            .map_err(err)?;
+        let rows = stmt
+            .query_map(params![run_id, DRAFT_OWNER], |r| r.get::<_, String>(0))
+            .map_err(err)?;
+        rows.collect::<rusqlite::Result<_>>().map_err(err)?
+    };
+    for item in &items {
+        drop_item_drafts(conn, item, user)?;
+    }
+    Ok(())
+}
+
 /// Closes a run as `completed` or `aborted`. Closing as `aborted` always
 /// discards its drafts and their files; `completed` does when asked.
 pub(crate) fn close_run(

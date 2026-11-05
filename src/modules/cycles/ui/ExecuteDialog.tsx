@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
@@ -32,10 +32,14 @@ export function ExecuteDialog({
   const [build, setBuild] = useState(cycle.build ?? "");
   const [environment, setEnvironment] = useState(cycle.environment ?? "");
   const [busy, setBusy] = useState(false);
+  // Set at once (state lags a render): a double click executes once.
+  const inFlight = useRef(false);
   const withoutConfigurations = cycle.configurationIds.length === 0;
   const runs = withoutConfigurations ? 1 : chosen.length;
 
   async function execute() {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     try {
       await onExecute({
@@ -44,6 +48,7 @@ export function ExecuteDialog({
         environment: environment.trim() || undefined,
       });
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }

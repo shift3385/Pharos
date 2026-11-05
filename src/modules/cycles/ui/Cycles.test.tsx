@@ -25,7 +25,6 @@ vi.mock("../api/cycleApi", () => ({
     reorder: vi.fn(async () => []),
   },
   cycleApi: {
-    canExecute: vi.fn(() => true),
     list: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),
@@ -109,7 +108,6 @@ beforeEach(async () => {
   await i18n.changeLanguage("es");
   vi.mocked(configurationApi.list).mockReset().mockResolvedValue([CHROME, FIREFOX, OLD]);
   vi.mocked(configurationApi.create).mockReset();
-  vi.mocked(cycleApi.canExecute).mockReturnValue(true);
   vi.mocked(cycleApi.list).mockReset().mockResolvedValue([LISTED]);
   vi.mocked(cycleApi.get).mockReset().mockResolvedValue(CYCLE);
   vi.mocked(cycleApi.items).mockReset().mockResolvedValue(ITEMS);
@@ -256,6 +254,22 @@ describe("Ciclos", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("a double click on the confirm executes once", async () => {
+    let finish: () => void = () => undefined;
+    vi.mocked(cycleApi.execute).mockReset().mockImplementation(
+      () => new Promise((resolve) => (finish = () => resolve({ runs: [], missingConfigurations: [] }))),
+    );
+    page("/projects/p1/cycles?cycle=cy1");
+    await userEvent.click(await screen.findByRole("button", { name: "Ejecutar" }));
+    const dialog = screen.getByRole("dialog", { name: "Ejecutar CYC-001" });
+    const confirm = within(dialog).getByRole("button", { name: "Crear 2 runs" });
+    // Both clicks land before React re-renders the disabled button.
+    confirm.click();
+    confirm.click();
+    expect(cycleApi.execute).toHaveBeenCalledTimes(1);
+    finish();
+  });
+
   it("«Ejecutar» waits, and names them, while an item's case was deleted", async () => {
     vi.mocked(cycleApi.items).mockResolvedValue([
       ITEMS[0],
@@ -278,11 +292,10 @@ describe("Ciclos", () => {
     );
   });
 
-  it("on the web «Ejecutar» is disabled and says why", async () => {
-    vi.mocked(cycleApi.canExecute).mockReturnValue(false);
+  it("«Ejecutar» is offered on the web too (EJE-06), with no desktop-only note", async () => {
     page("/projects/p1/cycles?cycle=cy1");
     const run = await screen.findByRole("button", { name: "Ejecutar" });
-    expect(run).toBeDisabled();
-    expect(screen.getByText("Los runs se crean desde la app de escritorio.")).toBeInTheDocument();
+    expect(run).toBeEnabled();
+    expect(screen.queryByText(/app de escritorio/)).not.toBeInTheDocument();
   });
 });

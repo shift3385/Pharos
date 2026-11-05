@@ -293,6 +293,13 @@ recomendadas del plan) y precisiones sobre el boceto:
   y `external_synced_at` existen y se editan a mano (clave y enlace); la
   correspondencia de estados con Jira la define INT-05.
 
+**Nota (EJE-06, 2026-11-05).** «Crear defecto» desde un intento también en la
+web: `GET /api/results/:id/defect-draft` da el mismo borrador que
+`defect_draft_from_result` (pasos de la revisión ejecutada y de su flujo, lo
+obtenido, build y entorno del run, vínculos), **sin adjuntos**: las evidencias
+no llegan al servidor hasta SYNC-04b, así que la web dice «Los adjuntos solo están disponibles en el
+escritorio». Los adjuntos de defectos en la web quedan en EJE-06b (ROADMAP).
+
 ## Nota (E6p, EJE-07: runs borrados, 2026-11-05)
 
 - **Un vínculo a un resultado de un run borrado se conserva:** el defecto no

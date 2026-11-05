@@ -26,8 +26,14 @@ export interface DomainTx {
   /** The stored version of an entity (live or tombstone), locked. */
   get(entity: string, id: string): Promise<RemoteDoc | null>;
   /** Live documents of an entity, optionally of one project; with
-   *  `withDeleted`, its tombstones too. */
-  list(entity: string, projectId?: string, opts?: { withDeleted?: boolean }): Promise<RemoteDoc[]>;
+   *  `withDeleted`, its tombstones too; with `where`, only those whose
+   *  payload text fields equal the given values (one run's items or
+   *  results, EJE-06). */
+  list(
+    entity: string,
+    projectId?: string,
+    opts?: { withDeleted?: boolean; where?: Record<string, string> },
+  ): Promise<RemoteDoc[]>;
   /** Whether a key of the project is used by another document of the entity:
    *  "live", "deleted" (a key is never reused, ADR-0010) or null. */
   keyUse(entity: string, projectId: string, key: string, exceptId?: string): Promise<"live" | "deleted" | null>;
@@ -52,9 +58,18 @@ export interface DomainTx {
   /** An audit event with no write of its own: the summary of a bulk
    *  operation (an import, with its counts), as on the desktop
    *  (`journal::record_event`). */
-  audit(action: AuditAction, entity: string, id: string, summary: Record<string, unknown>): Promise<void>;
+  audit(
+    action: AuditAction,
+    entity: string,
+    id: string,
+    summary: Record<string, unknown>,
+    changes?: Record<string, unknown>,
+  ): Promise<void>;
   /** Stores an append-only document (a case revision, DAT-02) if absent. */
   append(entity: string, id: string, payload: Record<string, unknown>): Promise<void>;
+  /** A new HLC from the server's clock, for a document that carries its own
+   *  (a result, EJE-06), as the desktop's `oplog::next_hlc`. */
+  stamp(): string;
 }
 
 /** Reads without locks (the execution derivation, step 10): one consistent
@@ -81,21 +96,28 @@ export function staleWrite(current: RemoteDoc): AppError {
 }
 
 export function createDomainStore(pool: Pool, clock: ServerClock) {
-  function txOf(client: PoolClient, userId: string): DomainTx {
+  function txOf(client: PoolClient, userId: string, readOnly = false): DomainTx {
+    // A read-only transaction takes no row locks.
+    const lock = readOnly ? "" : " FOR UPDATE";
     return {
       async get(entity, id) {
         const { rows } = await client.query(
-          `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3 FOR UPDATE`,
+          `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3${lock}`,
           [userId, entity, id],
         );
         return rows[0] ? toDoc(rows[0]) : null;
       },
       async list(entity, projectId, opts) {
+        const where = Object.entries(opts?.where ?? {});
+        // Field names are the caller's own constants; only the values are
+        // parameters.
+        for (const [k] of where) if (!/^[A-Za-z]+$/.test(k)) throw new Error(`bad field: ${k}`);
+        const extra = where.map(([k], i) => ` AND payload->>'${k}' = $${5 + i}`).join("");
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents
             WHERE user_id = $1 AND entity = $2 AND ($4 OR NOT deleted)
-              AND ($3::text IS NULL OR payload->>'projectId' = $3)`,
-          [userId, entity, projectId ?? null, opts?.withDeleted === true],
+              AND ($3::text IS NULL OR payload->>'projectId' = $3)${extra}`,
+          [userId, entity, projectId ?? null, opts?.withDeleted === true, ...where.map(([, v]) => v)],
         );
         return rows.map(toDoc);
       },
@@ -165,7 +187,10 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
             "This revision already exists with other content.",
           );
       },
-      async audit(action, entity, id, summary) {
+      stamp() {
+        return clock.stamp();
+      },
+      async audit(action, entity, id, summary, changes = {}) {
         const { rows } = await client.query(
           `SELECT ${COLS} FROM documents WHERE user_id = $1 AND entity = $2 AND entity_id = $3`,
           [userId, entity, id],
@@ -177,7 +202,7 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
           entity,
           entityId: id,
           ...location(entity, id, snap, null),
-          changes: {},
+          changes,
           summary,
         });
       },
@@ -185,6 +210,24 @@ export function createDomainStore(pool: Pool, clock: ServerClock) {
   }
 
   return {
+    /** Runs `fn` with a whole `DomainTx` in a read-only, repeatable-read
+     *  transaction, without the user's write lock: a read never waits for (or
+     *  holds up) a push or a web write (the runs API, EJE-06). A write in it
+     *  fails. `read` is the multi-project reader of the derivation. */
+    async readTx<T>(userId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+        const result = await fn(txOf(client, userId, true));
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
     /** Runs `fn` in a read-only, repeatable-read transaction with no lock. */
     async read<T>(userId: string, fn: (r: DomainReader) => Promise<T>): Promise<T> {
       const client = await pool.connect();
