@@ -6,6 +6,16 @@ import type {
   TestCaseInput,
   TestCaseSummary,
 } from "../model/types";
+import { announceCasesChanged, type BatchOptions } from "../model/events";
+
+/** Announces a created or deleted case once the store has it (FIX-13),
+ *  unless it is one call of a batch that announces once at the end. */
+function announced<T>(change: Promise<T>, options?: BatchOptions): Promise<T> {
+  return change.then((result) => {
+    if (!options?.quiet) announceCasesChanged();
+    return result;
+  });
+}
 
 const path = (id: string) => `/api/test-cases/${encodeURIComponent(id)}`;
 
@@ -22,12 +32,18 @@ export const testCaseApi = {
       : serverApi.get(`/api/test-cases?projectId=${encodeURIComponent(projectId)}`),
   get: (id: string, userId: string): Promise<TestCase | null> =>
     isTauri() ? invoke("test_case_get", { id, userId }) : serverApi.get(path(id)),
-  create: (input: TestCaseInput): Promise<TestCase | null> =>
-    isTauri() ? invoke("test_case_create", { input }) : serverApi.post("/api/test-cases", input),
+  create: (input: TestCaseInput, options?: BatchOptions): Promise<TestCase | null> =>
+    announced(
+      isTauri() ? invoke("test_case_create", { input }) : serverApi.post("/api/test-cases", input),
+      options,
+    ),
   update: (id: string, input: TestCaseInput): Promise<TestCase | null> =>
     isTauri() ? invoke("test_case_update", { id, input }) : serverApi.put(path(id), id, input),
-  remove: (id: string, userId: string): Promise<void> =>
-    isTauri() ? invoke("test_case_delete", { id, userId }) : serverApi.remove(path(id), id),
+  remove: (id: string, userId: string, options?: BatchOptions): Promise<void> =>
+    announced(
+      isTauri() ? invoke("test_case_delete", { id, userId }) : serverApi.remove(path(id), id),
+      options,
+    ),
   revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>
     isTauri() ? invoke("test_case_revisions", { id, userId }) : Promise.resolve([]),
 };

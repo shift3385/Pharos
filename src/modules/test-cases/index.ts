@@ -1,6 +1,7 @@
 // Public API of the test-cases module (spec §5.3).
 export { TestCasesPage } from "./ui/TestCasesPage";
 export { caseLink } from "./model/caseLink";
+export { CASES_CHANGED_EVENT } from "./model/events";
 export {
   FILES_PER_CASE,
   projectCaseFiles,

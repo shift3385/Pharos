@@ -130,6 +130,8 @@ chapter("proyectos", () => {
     run: async () => {
       await setPrefix(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
+      // FIX-11: the sidebar switcher shows the new prefix at once, without navigating.
+      await expect($(".sidebar__project-badge")).toHaveText(`${PROJECT_A.prefix}-`);
     },
   });
 

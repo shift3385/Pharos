@@ -2,6 +2,7 @@ import type { AiProvenance } from "@modules/ai";
 import type { TestCaseData } from "../model/types";
 import { stepsOf } from "../model/steps";
 import { toGherkin } from "../ui/gherkin";
+import { announceCasesChanged } from "../model/events";
 import { testCaseApi } from "./testCaseApi";
 
 /** A scenario proposed for a requirement (IA-05), already validated by the ai
@@ -71,22 +72,27 @@ export async function createProposedCases(input: CreateProposedCasesInput): Prom
   for (const [i, p] of input.proposals.entries()) {
     try {
       // null: the store refused it (e.g. the project is not the user's).
-      const saved = await testCaseApi.create({
-        projectId: input.projectId,
-        title: p.title,
-        status: "draft",
-        priority: p.priority,
-        author: input.author,
-        userId: input.userId,
-        caseIdPrefix: input.caseIdPrefix,
-        caseIdDigits: input.caseIdDigits,
-        data: proposalCaseData(p, input.requirementKey, input.provenance),
-      });
+      const saved = await testCaseApi.create(
+        {
+          projectId: input.projectId,
+          title: p.title,
+          status: "draft",
+          priority: p.priority,
+          author: input.author,
+          userId: input.userId,
+          caseIdPrefix: input.caseIdPrefix,
+          caseIdDigits: input.caseIdDigits,
+          data: proposalCaseData(p, input.requirementKey, input.provenance),
+        },
+        { quiet: true },
+      );
       if (saved) created++;
       else failedIndexes.push(i);
     } catch {
       failedIndexes.push(i);
     }
   }
+  // One announcement for the whole batch (FIX-13).
+  if (created > 0) announceCasesChanged();
   return { created, failed: failedIndexes.length, failedIndexes };
 }
