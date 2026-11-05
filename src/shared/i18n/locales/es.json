@@ -453,6 +453,29 @@
         "markedDamaged_one": "{{count}} dañado",
         "markedDamaged_other": "{{count}} dañados"
       },
+      "retention": {
+        "title": "Retención por proyecto",
+        "desc": "Cuánto tiempo se conserva cada tipo de evidencia de un proyecto antes de que caduque su archivo. Caducar borra el archivo, nunca el resultado: el registro de que existió se conserva.",
+        "deviceOnly": "Este ajuste es solo de este equipo: no se sincroniza. Cada equipo caduca sus propias copias, al arrancar y tras cada sincronización.",
+        "project": "Proyecto",
+        "noProjects": "Todavía no tienes proyectos.",
+        "current": "Ahora: {{days}}",
+        "default": "Por defecto ({{days}})",
+        "days": "Días…",
+        "daysLabel": "Días de retención de {{kind}}",
+        "exceptions": "Nunca caduca",
+        "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del planificador, de los defectos ni de los borradores.",
+        "saved": "Retención guardada en este equipo.",
+        "failed": "No se pudo leer o guardar la retención.",
+        "kinds": {
+          "trace": "Trazas",
+          "video": "Vídeos",
+          "raw_report": "Reportes crudos",
+          "log": "Registros (logs)",
+          "screenshot": "Capturas",
+          "evidence": "Otras evidencias"
+        }
+      },
       "owners": {
         "planner_card": "Planificador",
         "defect": "Defectos",
@@ -2678,7 +2701,8 @@
       "target": "Ese flujo, fila o paso no está en la revisión ejecutada.",
       "generic": "No se pudo completar la acción. Inténtalo de nuevo.",
       "cycleClosed": "El ciclo de este run está cerrado. Reabre el ciclo antes que el run.",
-      "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas."
+      "overlap": "Ese caso ya está en el run con alguno de esos flujos o filas.",
+      "runDeleted": "Este run se borró (quizá en otro equipo). Ya no admite cambios."
     },
     "webReadOnly": "Los runs se ejecutan en la app de escritorio. En la web aún no se pueden ver ni registrar (llega con EJE-06).",
     "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan (llegará con SYNC-04b).",
@@ -2721,7 +2745,26 @@
       "closeAs": "Cerrar como",
       "save": "Guardar",
       "closeDiscard": "Descartar los borradores y sus adjuntos",
-      "closeDiscardAborted": "Los borradores y sus adjuntos se descartan al cancelar el run"
+      "closeDiscardAborted": "Los borradores y sus adjuntos se descartan al cancelar el run",
+      "delete": "Borrar run",
+      "deleteTitle": "Borrar el run",
+      "deleteMessage": "{{key}} «{{title}}» desaparecerá de la lista de runs, del progreso, de la matriz y del informe, en este equipo y en los que sincronicen. Se ocultan:",
+      "deleteItems_one": "{{count}} elemento del run",
+      "deleteItems_other": "{{count}} elementos del run",
+      "deleteResults_one": "{{count}} resultado registrado (no se borra a mano)",
+      "deleteResults_other": "{{count}} resultados registrados (no se borran a mano)",
+      "deleteImports_one": "de {{count}} importación",
+      "deleteImports_other": "de {{count}} importaciones",
+      "deleteAttachments_one": "{{count}} evidencia de esos resultados",
+      "deleteAttachments_other": "{{count}} evidencias de esos resultados",
+      "deleteDrafts_one": "{{count}} borrador sin guardar se descarta, con sus adjuntos",
+      "deleteDrafts_other": "{{count}} borradores sin guardar se descartan, con sus adjuntos",
+      "deleteCycle": "El progreso del ciclo {{key}} «{{title}}» dejará de contar este run",
+      "deleteDefects_one": "{{count}} resultado está vinculado a un defecto: el defecto conserva el vínculo hasta la purga",
+      "deleteDefects_other": "{{count}} resultados están vinculados a defectos: los defectos conservan el vínculo hasta la purga",
+      "deletePurge": "Los resultados se conservan ocultos y la purga se los lleva con el run pasados {{days}} días (Administración → General). No se puede deshacer desde aquí.",
+      "deleteCycleClosed": "El ciclo {{key}} está cerrado: un run de un ciclo cerrado no se puede borrar. Reabre el ciclo primero.",
+      "deleted": "Run {{key}} borrado."
     },
     "picker": {
       "search": "Buscar por ID o título",

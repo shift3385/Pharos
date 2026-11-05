@@ -23,7 +23,11 @@ const api = vi.hoisted(() => ({
   check: vi.fn(),
   cancel: vi.fn(),
   deleteOrphans: vi.fn(),
+  retention: vi.fn(),
+  setRetention: vi.fn(),
 }));
+const projects = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock("@modules/projects", () => ({ projectApi: projects }));
 vi.mock("../../api/evidenceApi", () => ({
   EVIDENCE_CHECK_BUSY: "evidence-check-busy",
   EVIDENCE_DB_CHANGED: "evidence-db-changed",
@@ -103,7 +107,45 @@ beforeEach(async () => {
   api.check.mockResolvedValue(report());
   api.cancel.mockResolvedValue(undefined);
   api.deleteOrphans.mockResolvedValue({ deleted: 1, bytes: 2048, skipped: [], saved: true });
+  projects.list.mockResolvedValue([
+    { id: "p1", name: "Tienda", caseIdPrefix: "TC-", caseIdDigits: 3, updatedAt: "", revision: 1 },
+    { id: "p2", name: "Pagos", caseIdPrefix: "TC-", caseIdDigits: 3, updatedAt: "", revision: 1 },
+  ]);
+  api.retention.mockImplementation((projectId: string) => Promise.resolve(retention(projectId)));
+  api.setRetention.mockImplementation((projectId: string, kind: string, policy: { mode: string; days?: number }) =>
+    Promise.resolve(
+      retention(projectId, {
+        [kind]: policy.mode === "default" ? undefined : policy.mode === "always" ? null : (policy.days ?? null),
+      }),
+    ),
+  );
 });
+
+const DEFAULTS: [string, number | null][] = [
+  ["trace", 30],
+  ["video", 30],
+  ["raw_report", 90],
+  ["log", 90],
+  ["screenshot", null],
+  ["evidence", null],
+];
+
+/** The retention of a project; `custom` maps a kind to its own days
+ *  (null = always). */
+function retention(projectId: string, custom: Record<string, number | null | undefined> = {}) {
+  return {
+    projectId,
+    kinds: DEFAULTS.map(([kind, defaultDays]) => {
+      const own = custom[kind];
+      return {
+        kind,
+        defaultDays,
+        days: own === undefined ? defaultDays : own,
+        custom: own !== undefined,
+      };
+    }),
+  };
+}
 
 describe("Administración → Evidencias", () => {
   it("on the web only says it is a desktop feature", () => {
@@ -346,5 +388,49 @@ describe("Administración → Evidencias", () => {
     renderTab();
     expect(await screen.findByTestId("evidence-usage-total")).toHaveTextContent("12 MB · 3 files");
     expect(screen.getByTestId("evidence-verify")).toHaveTextContent("Verify evidence");
+  });
+
+  it("sets the retention of each kind per project, on this device only", async () => {
+    const user = userEvent.setup();
+    renderTab();
+    const card = await screen.findByTestId("evidence-retention");
+    expect(within(card).getByTestId("evidence-retention-device")).toHaveTextContent("solo de este equipo");
+    expect(within(card).getByTestId("evidence-retention-exceptions")).toHaveTextContent(
+      "resultado final fallido o bloqueado",
+    );
+    const trace = await within(card).findByTestId("evidence-retention-trace");
+    expect(trace).toHaveValue("default");
+    expect(within(trace).getByRole("option", { name: "Por defecto (30 días)" })).toBeInTheDocument();
+    await waitFor(() => expect(api.retention).toHaveBeenCalledWith("p1", expect.any(String)));
+
+    await user.selectOptions(within(card).getByTestId("evidence-retention-video"), "always");
+    expect(api.setRetention).toHaveBeenCalledWith("p1", "video", { mode: "always" }, expect.any(String));
+    expect(await screen.findByText("Retención guardada en este equipo.", { exact: false })).toBeInTheDocument();
+
+    await user.selectOptions(trace, "days");
+    const days = within(card).getByTestId("evidence-retention-trace-days");
+    await user.clear(days);
+    await user.type(days, "10");
+    await user.tab();
+    expect(api.setRetention).toHaveBeenLastCalledWith("p1", "trace", { mode: "days", days: 10 }, expect.any(String));
+
+    // Another project shows its own settings.
+    await user.selectOptions(within(card).getByTestId("evidence-retention-project"), "p2");
+    await waitFor(() => expect(api.retention).toHaveBeenCalledWith("p2", expect.any(String)));
+  });
+
+  it("does not save an out-of-range number of days", async () => {
+    const user = userEvent.setup();
+    renderTab();
+    const card = await screen.findByTestId("evidence-retention");
+    await user.selectOptions(await within(card).findByTestId("evidence-retention-log"), "days");
+    api.setRetention.mockClear();
+    const days = within(card).getByTestId("evidence-retention-log-days");
+    await user.clear(days);
+    await user.type(days, "0");
+    await user.tab();
+    expect(days).toHaveAttribute("aria-invalid", "true");
+    expect(api.setRetention).not.toHaveBeenCalled();
+    await expectNoAxeViolations(card);
   });
 });

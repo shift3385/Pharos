@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router";
-import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { ArrowLeft, Info, ListPlus, Lock, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import type { RunItemRow, RunOverview } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
@@ -16,6 +16,7 @@ import { useToast } from "@shared/ui/Toast";
 import { runsApi } from "../api/runsApi";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { CasePickerDialog } from "./CasePickerDialog";
+import { DeleteRunDialog } from "./DeleteRunDialog";
 import { ExecutionPanel } from "./ExecutionPanel";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
@@ -47,7 +48,8 @@ export function RunDetail({
   const [data, setData] = useState<RunOverview | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
-  const [dialog, setDialog] = useState<"close" | "edit" | "add" | null>(null);
+  const [dialog, setDialog] = useState<"close" | "edit" | "add" | "delete" | null>(null);
+  const navigate = useNavigate();
   const latest = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -99,7 +101,9 @@ export function RunDetail({
       toast(
         raw.startsWith("cycle-closed")
           ? t("execution.error.cycleClosed")
-          : t("execution.error.generic"),
+          : raw.startsWith("run-deleted")
+            ? t("execution.error.runDeleted")
+            : t("execution.error.generic"),
         "error",
       );
     }
@@ -164,6 +168,15 @@ export function RunDetail({
           <span className="ui-btn__text">{t("execution.run.reopen")}</span>
         </button>
       )}
+      <button
+        type="button"
+        className="ui-btn ui-btn--danger"
+        onClick={() => setDialog("delete")}
+        data-testid="run-delete"
+      >
+        <Trash2 size={16} aria-hidden="true" />
+        <span className="ui-btn__text">{t("execution.run.delete")}</span>
+      </button>
     </div>
   );
   useHeaderActions(actions);
@@ -428,6 +441,18 @@ export function RunDetail({
           drafts={items.filter((i) => i.hasDraft).length}
           onCancel={() => setDialog(null)}
           onClose={(status, discardDrafts) => void close(status, discardDrafts)}
+        />
+      )}
+      {dialog === "delete" && (
+        <DeleteRunDialog
+          runId={runId}
+          userId={userId}
+          onCancel={() => setDialog(null)}
+          onDeleted={(key) => {
+            toast(t("execution.run.deleted", { key }));
+            setDialog(null);
+            void navigate(`/projects/${projectId}/runs`);
+          }}
         />
       )}
       {dialog === "edit" && (
