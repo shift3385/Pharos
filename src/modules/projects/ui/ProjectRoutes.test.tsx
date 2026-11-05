@@ -8,6 +8,8 @@ import { ProjectsPage } from "./ProjectsPage";
 import { projectApi } from "../api/projectApi";
 import { lastAccessMap } from "../model/lastAccess";
 
+const caseCount = vi.hoisted(() => ({ value: 240 }));
+
 // The sections are other modules' screens: only which one is shown matters here.
 vi.mock("@modules/test-plan", () => ({
   TestPlanPage: () => <p>sección plan</p>,
@@ -19,7 +21,8 @@ vi.mock("@modules/test-plan", () => ({
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
   projectTraceableCases: async () => [],
-  projectCaseCount: async () => 240,
+  projectCaseCount: async () => caseCount.value,
+  CASES_CHANGED_EVENT: "pharos:cases-changed",
 }));
 vi.mock("@modules/defects", () => ({
   isOpenDefect: (s: string) => s !== "closed" && s !== "rejected",
@@ -77,6 +80,7 @@ describe("project routes (ADR-0029)", () => {
     );
     vi.mocked(projectApi.list).mockClear();
     vi.mocked(projectApi.update).mockClear();
+    caseCount.value = 240;
   });
 
   it("a project without a section opens its plan", async () => {
@@ -93,6 +97,14 @@ describe("project routes (ADR-0029)", () => {
     expect(screen.getByText("0 requisitos")).toBeInTheDocument();
     expect(screen.getByText("Cierre del ciclo: 7 nov")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Proyectos/ })).not.toBeInTheDocument();
+  });
+
+  it("the case count follows a case created or deleted in the section (FIX-13)", async () => {
+    renderAt("/projects/a/cases");
+    expect(await screen.findByText("240 casos")).toBeInTheDocument();
+    caseCount.value = 241;
+    window.dispatchEvent(new Event("pharos:cases-changed"));
+    expect(await screen.findByText("241 casos")).toBeInTheDocument();
   });
 
   it("an unknown section opens the plan", async () => {
