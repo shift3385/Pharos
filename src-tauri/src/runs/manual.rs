@@ -363,7 +363,8 @@ fn owned_item(
     run_item_id: &str,
     user: &str,
 ) -> Result<(String, String, String), String> {
-    find_item(conn, run_item_id, user)?.ok_or_else(|| "run item not found".to_string())
+    find_item(conn, run_item_id, user)?
+        .ok_or_else(|| super::delete::missing_item_error(conn, run_item_id, user))
 }
 
 struct CaseFacts {

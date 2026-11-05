@@ -937,22 +937,17 @@ fn retention_days(conn: &Connection, project_id: &str, kind: &str) -> Result<Opt
     }))
 }
 
-/// Whether the attachments of an owner never expire. Only evidence of imported
-/// runs can expire: a planner card's files are the user's, and results keep
-/// theirs until DAT-03c brings the ADR's exceptions (final failed or blocked
-/// result, open defect, manual execution), which need the result tables.
-fn exempt(owner_entity: &str) -> bool {
-    owner_entity != "run_shard"
-}
-
 /// Expires the contents whose retention passed (local task, not sync): the
 /// `attachments` row stays with `blob_purged_at` and its sha256, a `redact`
-/// event is written, and the content is released. Returns how many expired.
+/// event is written, and the content is released. The owners that never
+/// expire and the exceptions of results (manual, final failed or blocked,
+/// open defect) are in `retention::exempt` (DAT-03c). Returns how many expired.
 pub(crate) fn expire(conn: &Connection) -> Result<usize, String> {
-    type Row = (String, String, String, String, String, String);
+    type Row = (String, String, String, String, String, String, String);
     let mut stmt = conn
         .prepare(
-            "SELECT a.id, a.project_id, a.kind, a.owner_entity, a.sha256, a.created_at \
+            "SELECT a.id, a.project_id, a.kind, a.owner_entity, a.owner_id, a.sha256, \
+                    a.created_at \
              FROM attachments a WHERE a.deleted_at IS NULL AND a.blob_purged_at IS NULL",
         )
         .map_err(|e| e.to_string())?;
@@ -965,14 +960,20 @@ pub(crate) fn expire(conn: &Connection) -> Result<usize, String> {
                 r.get(3)?,
                 r.get(4)?,
                 r.get(5)?,
+                r.get(6)?,
             ))
         })
         .map_err(|e| e.to_string())?
         .collect::<rusqlite::Result<_>>()
         .map_err(|e| e.to_string())?;
     let mut expired = 0;
-    for (id, project_id, kind, owner_entity, sha256, created_at) in rows {
-        if exempt(&owner_entity) {
+    let mut cache = retention::ExemptCache::default();
+    for (id, project_id, kind, owner_entity, owner_id, sha256, created_at) in rows {
+        // Cheap owner test first: a card's or a defect's files never expire.
+        if !matches!(
+            owner_entity.as_str(),
+            "run_shard" | "result" | "step_result"
+        ) {
             continue;
         }
         let Some(days) = retention_days(conn, &project_id, &kind)? else {
@@ -985,7 +986,7 @@ pub(crate) fn expire(conn: &Connection) -> Result<usize, String> {
                 |r| r.get(0),
             )
             .map_err(|e| e.to_string())?;
-        if !due {
+        if !due || retention::exempt(conn, &mut cache, &owner_entity, &owner_id)? {
             continue;
         }
         conn.execute(
@@ -1161,6 +1162,7 @@ fn fault_point(_moved: usize) -> Result<(), String> {
 }
 
 pub(crate) mod check;
+pub mod retention;
 
 #[cfg(test)]
 pub(crate) mod tests;
