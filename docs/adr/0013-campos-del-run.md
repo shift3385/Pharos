@@ -581,7 +581,8 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   cerrado solo cambia el estado (el resto de campos se ignora), borra
   `finished_at` y deja un evento `update`.
 - **Sin borrado de runs en 0.2.0** (decisión del coordinador, 2026-11-04): se
-  cierra como `aborted`. Queda EJE-07 en el ROADMAP.
+  cierra como `aborted`. Queda EJE-07 en el ROADMAP (hecho después, en la
+  ola E6p: ver «Implementación (E6p, EJE-07)»).
 - **Purga:** un elemento purgado se lleva su borrador y los adjuntos del
   borrador; la recogida libera sus archivos.
 - **Web:** la pantalla del run es de solo lectura (aviso) hasta EJE-06.
@@ -631,3 +632,98 @@ cabe en el esquema de 0024, y el conjunto que se sincroniza no cambia
   del run y sus adjuntos; como `completed`, si el usuario lo pide.
 - **Sin etiqueta de configuración** en los intentos manuales: los identifica
   el `configuration_id` del run, cuyo nombre se puede editar.
+
+## Implementación (E6p, EJE-07: borrar un run, 2026-11-05)
+
+`src-tauri/src/runs/delete.rs` y `DeleteRunDialog` en la pantalla del run.
+Sin migraciones (la 0035 local y la 0014 del servidor se retiraron sin usar),
+sin cambios en el servidor y sin cambiar el conjunto que se sincroniza
+(`APPLIED_SET_VERSION` sigue en 7).
+
+- **Qué hace `run_delete`**, en una transacción: descarta los borradores del
+  run y sus adjuntos (como «Cancelado»), pone lápida a sus elementos vivos
+  (una fila `delete` del oplog por elemento, sin evento propio) y al run, con
+  **un** evento `delete` que lleva `cascade` (elementos), `hidden`
+  (resultados, shards y evidencias que quedan ocultos) y los borradores
+  descartados. **Nunca** toca `run_shards`, `results` ni `step_results`: el
+  test que busca sentencias `DELETE` sobre esas tablas sigue en pie.
+- **El predicado.** Un run cuenta si y solo si `runs.deleted_at IS NULL` (y su
+  proyecto está vivo); un resultado, un resultado de paso o un shard, solo a
+  través de su run: `JOIN runs r ON r.id = x.run_id AND r.deleted_at IS NULL`.
+  Un resultado cuyo run aún no llegó tampoco cuenta. En el servidor,
+  `tx.list("run")` sin `withDeleted`, saltando cualquier resultado o shard
+  cuyo `runId` no esté en ese mapa (lo que ya hacía el progreso de ciclos).
+  Se aplica en las listas, el progreso del run y del ciclo, los recuentos de
+  «Ejecuciones», la bandeja «Sin vincular» y los candidatos de «Vincular
+  resultado» de un defecto; la derivación del paso 10 (matriz, informe,
+  «Inicio») y la API web de runs (EJE-06) lo aplican también (se les comunicó
+  por el coordinador).
+- **Sync.** Viajan las lápidas lww del run y de sus elementos. Los shards y los
+  resultados no envían nada: son `append_only` y siguen vivos en el servidor,
+  ocultos detrás de un run con lápida. Otro equipo recibe la lápida, sus
+  elementos se llevan sus borradores (EJE-02) y sus resultados dejan de verse
+  por el predicado; un shard o resultado que llega **después** (de un equipo que
+  aún no había visto el borrado) también queda oculto. Editar la cabecera en
+  otro equipo tras el borrado es un conflicto normal (conservar el borrado o
+  recuperar el run).
+- **Escribir en un run borrado se rechaza** con `run-deleted` (antes, «run not
+  found»): registrar un intento, guardar un borrador, reabrirlo, editarlo,
+  añadir elementos e importar en él. Reimportar el mismo archivo en el run
+  borrado se rechaza; como run nuevo se importa sin aviso de duplicado (el
+  duplicado solo mira runs vivos).
+- **Runs de un ciclo.** Se borran mientras el ciclo está abierto (o borrado);
+  si está cerrado, `cycle-closed`, como al reabrir: un ciclo cerrado es un
+  registro congelado. El diálogo nombra el ciclo cuyo progreso deja de contar
+  el run.
+- **Defectos.** Un vínculo de un defecto a un resultado de un run borrado se
+  conserva (nota en ADR-0016); el resultado ya no aparece en los selectores.
+- **Purga.** Sin cambios: pasada la retención de Administración, `CHILDREN["run"]`
+  se lleva las evidencias de sus resultados, pasos y shards, los resultados,
+  los pasos, los shards y el run, con sus filas del oplog, y anota
+  `purged_run:` para que un nuevo pull no los traiga; espera mientras alguno
+  no haya llegado al servidor. Los elementos se van con `CHILDREN["run_item"]`.
+  En el servidor, los documentos de shards y resultados quedan hasta que haya
+  una purga del servidor (como las revisiones, SYNC-11).
+- **Sin «recuperar» en 0.2.0:** no hay papelera para runs; un conflicto
+  «conservar el mío» desde otro equipo puede devolverlo.
+
+### Tras la revisión independiente (E6p, EJE-07, 2026-11-05)
+
+- **Recuperar un run recupera sus elementos.** Si el borrado pierde un
+  conflicto (`sync::resolve_conflict`, se conserve la edición local o la del
+  servidor) y el run queda vivo, `runs::delete::revive_items` devuelve los
+  elementos **que tumbó ese borrado**, cada uno con un cambio lww nuevo (fila
+  `upsert` del oplog, sin evento propio), así que el servidor y los demás
+  equipos los reciben. Un elemento quitado antes por su cuenta (o por otro
+  equipo) sigue quitado (revisión del coordinador, ronda 2).
+  - **Cómo se reconoce la cascada, en los dos equipos:** el borrado escribe
+    las lápidas de los elementos y la del run en una transacción, en un
+    equipo, así que sus HLC tienen el mismo `device_id` y horas de pared a
+    milisegundos. Un elemento vuelve solo si el HLC de su lápida (su último
+    `delete` propio en el oplog, en el equipo que borró, o su `sync_base`, en
+    el que la descargó) es del mismo equipo que el HLC del borrado del run (el
+    lado borrado del conflicto) y está a 10 s o menos.
+  - **Caso límite (aceptado):** un elemento quitado por su cuenta en el mismo
+    equipo menos de 10 s antes de eliminar el run no se distingue de la
+    cascada y **vuelve** si el run se recupera. Es el fallo conservador (se
+    puede volver a quitar; nada se pierde), y en 0.2.0 no existe «quitar un
+    elemento».
+  - `deleted_at` no sirve: una lápida descargada guarda la hora del pull, no
+    la del borrado.
+  - Un run de un proyecto borrado no se recupera aquí; lo hace
+    `restore_project_children`, que tampoco trae un run borrado antes que el
+    proyecto.
+  - Probado en los dos equipos y en los dos sentidos, también con un
+    elemento quitado una hora antes (sigue quitado; el otro vuelve).
+- **Solo en el escritorio:** que no se pueda eliminar un run de un ciclo
+  cerrado lo comprueba el escritorio, como la reapertura (ADR-0017). El
+  servidor no lo comprueba: rechazar ahí una lápida empujada bloquearía el
+  push genérico del sync; la web aún no elimina runs (EJE-06).
+- **`run-deleted` también** al crear un defecto o su borrador desde un
+  resultado de un run eliminado, y en la pantalla del run (`run_overview`),
+  que avisa en lugar de «no existe».
+- **Web:** las etiquetas de los vínculos de defectos leen también los runs
+  eliminados (`linkContext` con `withDeleted`), como el escritorio.
+- **Textos:** «Eliminar run»; el diálogo dice que el run sale de las listas y
+  del progreso (la matriz y el informe del paso 10 aplican el mismo
+  predicado).

@@ -10,6 +10,7 @@ import type {
   ResultView,
   Run,
   RunCounts,
+  RunDeletePreview,
   RunInput,
   RunItem,
   RunItemDetail,
@@ -158,6 +159,15 @@ export const runsApi = {
     isTauri()
       ? invoke("run_close", { runId, status, discardDrafts, userId })
       : desktopOnly("results"),
+  /** What deleting a run hides (EJE-07), for the confirmation dialog. */
+  deletePreview: (runId: string, userId: string): Promise<RunDeletePreview> =>
+    isTauri()
+      ? invoke("run_delete_preview", { runId, userId })
+      : desktopOnly("results"),
+  /** Deletes a run (logically): it and its items become tombstones; its
+   *  results stay until the purge takes them with the run. */
+  delete: (runId: string, userId: string): Promise<void> =>
+    isTauri() ? invoke("run_delete", { runId, userId }) : desktopOnly("results"),
   draftSave: (
     runItemId: string,
     targetKey: string,
