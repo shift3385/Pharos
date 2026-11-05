@@ -183,13 +183,6 @@ export async function check({ fromRun = false, env = process.env } = {}) {
       covered.delete(item.id);
       continue;
     }
-    // The other side: with a key the AI buttons are active, so the step that
-    // shows them disabled only runs without one (its capture is kept).
-    if (!aiPending && item.id === "ai:disabled-without-key") {
-      pending.push({ ...item, pending: "solo se recorre sin clave de IA (con clave los botones están activos); se conserva la captura de una ejecución sin clave" });
-      covered.delete(item.id);
-      continue;
-    }
     if (covered.has(item.id)) {
       const need = required.dialogCounts.get(item.id) ?? 1;
       if (covered.get(item.id) < need && !item.skip) {

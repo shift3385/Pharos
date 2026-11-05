@@ -300,11 +300,11 @@ h3 { break-after: avoid; }
 p, li { orphans: 3; widows: 3; }
 .step { break-inside: avoid; margin: 0 0 7mm; }
 .step h3 { font-size: 11.5pt; margin: 0 0 1.5mm; color: var(--color-navy-900); }
-.step h3 .n { display: inline-block; min-width: 10mm; color: var(--color-navy-500); }
+.step h3 .n { display: inline-block; min-width: 10mm; margin-right: 1.5mm; color: var(--color-navy-500); }
 .step p { margin: 0 0 2mm; }
 /* Desktop captures at 76 % of the text width: two ordinary steps fit on an A4
    page (MAN-02). Element captures keep their proportion; nothing outgrows a page. */
-.shot { display: block; width: auto; height: auto; max-width: 76%; max-height: 100mm; margin: 0 auto;
+.shot { display: block; width: auto; height: auto; max-width: 76%; max-height: 92mm; margin: 0 auto;
   border: 0.3mm solid var(--color-border); border-radius: 2mm; box-shadow: 0 1mm 2mm rgba(16,24,40,.08); }
 .shot.mobile { max-width: 62mm; }
 .focus { display: flex; gap: 3mm; align-items: flex-start; justify-content: center; }

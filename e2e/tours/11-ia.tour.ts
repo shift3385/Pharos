@@ -42,7 +42,6 @@ chapter("ia", () => {
     caption:
       "La IA es opcional. Mientras no configures un proveedor (o Ollama), los botones de IA aparecen deshabilitados y explican por qué; el resto de Pharos funciona igual.",
     covers: ["ai:disabled-without-key"],
-    skip: AI.key ? "con una clave configurada los botones ya están activos" : undefined,
     run: async () => {
       await openProject(PROJECT_A.name);
       await openSection("cases");

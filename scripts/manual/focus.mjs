@@ -42,7 +42,8 @@ export function focusLayout(imageW, imageH, focus) {
   if (wide) {
     // The same width as a capture without an inset (.shot in build-manual.mjs).
     const imageMm = Math.round(CONTENT_MM * 0.76);
-    const insetMm = Math.min(CONTENT_MM, Math.round((imageMm * crop.w * 2.2) / imageW));
+    // At most 30 mm tall: a tall inset would push the step onto a page of its own.
+    const insetMm = Math.min(CONTENT_MM, Math.round((imageMm * crop.w * 2.2) / imageW), Math.round((30 * crop.w) / crop.h));
     const insetHmm = round1((insetMm * crop.h) / crop.w);
     const mag = (insetMm / crop.w) / (imageMm / imageW);
     return mag < 1.4 ? null : { mode: "below", crop, imageMm, insetMm, insetHmm, mag: round1(mag) };
