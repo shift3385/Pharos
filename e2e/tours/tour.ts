@@ -1,0 +1,232 @@
+// Tour harness (MAN-01). A tour is a chapter of the user manual and a
+// functional test at once: every step runs an action, asserts its outcome,
+// takes a screenshot and carries a short Spanish caption. The steps are written
+// to e2e/results/tours/steps.json, which scripts/build-manual.mjs turns into
+// docs/manual/ (Markdown + PDF).
+//
+//   chapter("casos", () => {
+//     step("nuevo", {
+//       title: "Crear un caso",
+//       caption: "Pulsa «Nuevo caso», escribe el título y guarda.",
+//       covers: ["cases.create"],
+//       run: async () => { …action…; await expect(…).toBeDisplayed(); },
+//     });
+//   });
+//
+// `covers` names the inventory items of e2e/tours/manifest.ts the step
+// exercises; `npm run check:manual` reads them statically, so they must be
+// string literals.
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { $, browser } from "@wdio/globals";
+import { CHAPTERS, type ChapterId } from "./manifest";
+import { setAppWindow } from "../support";
+
+const resultsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "results", "tours");
+export const stepsFile = join(resultsDir, "steps.jsonl");
+
+/** Desktop shots at 1440×900 (the manual's size); mobile notes at 390×844. */
+export const DESKTOP = { width: 1440, height: 900, view: "desktop" as const };
+export const MOBILE = { width: 390, height: 844, view: "mobile" as const };
+
+export type Shot =
+  | "page"
+  /** Only one element (a dialog, a card): a CSS/WDIO selector. */
+  | { element: string }
+  | false;
+
+export interface StepSpec {
+  title: string;
+  caption: string;
+  covers?: string[];
+  run: () => Promise<void>;
+  shot?: Shot;
+  /** Why the step is skipped (written to the manual as pending). */
+  skip?: string;
+  /** Selectors blurred in the capture (a recovery key, an API key field…). */
+  mask?: string[];
+  /** Keep the newest toast in the capture (it is what the step shows). By
+   *  default toasts are hidden: they carry stale messages and local paths. */
+  toast?: boolean;
+}
+
+/** Always blurred: things that show this machine's paths. */
+const ALWAYS_MASKED = ['[data-testid="download-dir"]'];
+
+export interface StepRecord {
+  chapter: ChapterId;
+  n: number;
+  id: string;
+  title: string;
+  caption: string;
+  covers: string[];
+  image: string | null;
+  viewport: { width: number; height: number };
+  status: "passed" | "failed" | "skipped";
+  reason?: string;
+}
+
+let current: { id: ChapterId; n: number; failed: string | null } | null = null;
+/** The window size the next captures must have (setViewport changes it). */
+let target: typeof DESKTOP | typeof MOBILE = DESKTOP;
+
+function record(rec: StepRecord) {
+  mkdirSync(resultsDir, { recursive: true });
+  appendFileSync(stepsFile, `${JSON.stringify(rec)}\n`);
+}
+
+/** Calm, deterministic captures: no animations, transitions or caret. */
+export async function stabilise() {
+  await browser.execute(() => {
+    if (document.getElementById("tour-stable")) return;
+    const style = document.createElement("style");
+    style.id = "tour-stable";
+    style.textContent =
+      "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important;scroll-behavior:auto!important}" +
+      // At most the newest toast: older ones would pile up over the content.
+      ".toast-stack .toast:not(:last-child){display:none!important}";
+    document.head.appendChild(style);
+  });
+}
+
+/** Blurs `selectors` and, unless `keepToast`, hides the toasts (no
+ *  selectors and keepToast: back to normal). */
+async function setMask(selectors: string[], keepToast = true) {
+  await browser.execute((css: string) => {
+    let style = document.getElementById("tour-mask");
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "tour-mask";
+      document.head.appendChild(style);
+    }
+    style.textContent = css;
+  }, (selectors.length ? `${selectors.join(",")}{filter:blur(7px)!important;user-select:none!important}` : "") + (keepToast ? "" : ".toast-stack{display:none!important}"));
+}
+
+async function settle() {
+  // The app may resize its window (e.g. after signing in): put it back.
+  const { width } = await browser.execute(() => ({ width: window.innerWidth }));
+  if (width !== target.width) await setAppWindow(target.width, target.height, target.view);
+  await browser.execute(() => {
+    (document.activeElement as HTMLElement | null)?.blur?.();
+  });
+  await browser.execute(
+    () =>
+      new Promise<void>((done) => {
+        void document.fonts.ready.then(() => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+      }),
+  );
+}
+
+/** The current window size (for the step record). */
+async function viewport() {
+  const size = await browser.execute(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  return size;
+}
+
+/** A chapter of the manual: a mocha `describe` whose steps stop after the
+ *  first failure (the next steps would only fail for the same reason). */
+export function chapter(id: ChapterId, body: () => void) {
+  const meta = CHAPTERS.find((c) => c.id === id);
+  if (!meta) throw new Error(`chapter ${id} is not in e2e/tours/manifest.ts`);
+  describe(`Tour ${meta.number} · ${meta.title}`, () => {
+    before(async () => {
+      current = { id, n: 0, failed: null };
+      await stabilise();
+      await setViewport(DESKTOP);
+    });
+    body();
+  });
+}
+
+export function step(id: string, spec: StepSpec) {
+  it(`${id} — ${spec.title}`, async function () {
+    if (!current) throw new Error("step() outside chapter()");
+    const ch = current;
+    ch.n += 1;
+    const base: StepRecord = {
+      chapter: ch.id,
+      n: ch.n,
+      id,
+      title: spec.title,
+      caption: spec.caption,
+      covers: spec.covers ?? [],
+      image: null,
+      viewport: { width: 0, height: 0 },
+      status: "skipped",
+    };
+    if (spec.skip || ch.failed) {
+      record({ ...base, reason: spec.skip ?? `después del fallo de «${ch.failed}»` });
+      this.skip();
+    }
+    try {
+      await stabilise();
+      await spec.run();
+      const shot = spec.shot ?? "page";
+      let image: string | null = null;
+      if (shot !== false) {
+        await settle();
+        image = `${ch.id}/${String(ch.n).padStart(2, "0")}-${id}.png`;
+        const file = join(resultsDir, "img", image);
+        mkdirSync(dirname(file), { recursive: true });
+        await setMask([...ALWAYS_MASKED, ...(spec.mask ?? [])], spec.toast === true);
+        try {
+          // Two frames for the mask styles to apply.
+          await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+          if (shot === "page") await browser.saveScreenshot(file);
+          else await $(shot.element).saveScreenshot(file);
+        } finally {
+          await setMask([]);
+        }
+      }
+      record({ ...base, image, viewport: await viewport(), status: "passed" });
+    } catch (err) {
+      ch.failed = id;
+      const file = join(resultsDir, "failures", `${ch.id}-${id}.png`);
+      mkdirSync(dirname(file), { recursive: true });
+      await browser.saveScreenshot(file).catch(() => undefined);
+      record({ ...base, status: "failed", reason: (err as Error).message.split("\n")[0] });
+      throw err;
+    }
+  });
+}
+
+/** Switches the window for the next steps (and waits for the layout). */
+export async function setViewport(v: typeof DESKTOP | typeof MOBILE) {
+  target = v;
+  await setAppWindow(v.width, v.height, v.view);
+}
+
+// ---- AI ------------------------------------------------------------------------
+
+/** The AI tours run only with a real key the user set in their environment. */
+export const AI = {
+  key: process.env.PHAROS_TOURS_AI_KEY || "",
+  provider: process.env.PHAROS_TOURS_AI_PROVIDER || "gemini",
+  model: process.env.PHAROS_TOURS_AI_MODEL || "",
+  /** Base URL of an OpenAI-compatible endpoint (provider "custom"). */
+  baseUrl: process.env.PHAROS_TOURS_AI_BASE_URL || "",
+  maxCalls: Number(process.env.PHAROS_TOURS_AI_MAX_CALLS || 8),
+};
+export const AI_SKIP = AI.key
+  ? undefined
+  : "requiere una clave real: define PHAROS_TOURS_AI_KEY (e2e/README.md → Tours → IA)";
+
+/** Cheapest suitable model per provider when PHAROS_TOURS_AI_MODEL is unset. */
+export const CHEAP_MODELS: Record<string, string> = {
+  gemini: "gemini-2.0-flash-lite",
+  openai: "gpt-4o-mini",
+  anthropic: "claude-haiku-5-5",
+  openrouter: "",
+};
+
+let aiCalls = 0;
+/** Counts a request to the AI provider; past the cap the step fails instead of
+ *  spending more. */
+export function aiCall() {
+  aiCalls += 1;
+  if (aiCalls > AI.maxCalls) {
+    throw new Error(`AI call cap reached (${AI.maxCalls}); raise PHAROS_TOURS_AI_MAX_CALLS if intended`);
+  }
+}

@@ -26,6 +26,11 @@ coverage/
 e2e/.bin/
 e2e/results/
 
+# User manual (MAN-01): the PDF and its print sources are build output; the
+# Markdown, images and pasos.json are committed.
+docs/manual/.build/
+docs/manual/*.pdf
+
 # Logs
 *.log
 npm-debug.log*

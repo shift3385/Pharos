@@ -1,5 +1,6 @@
 # Windows installer as a CI artifact (BASE-09). NSIS for pre-releases, NSIS +
-# MSI for stable versions (scripts/build-installer.mjs, VERSIONING §5).
+# MSI for stable versions (scripts/build-installer.mjs, VERSIONING §5), with
+# the user manual PDF (MAN-01) in the same artifact.
 # No caches here: a release artifact must not be built from a cache that
 # another run could have written (cache poisoning).
 name: Installer
@@ -35,6 +36,11 @@ jobs:
         run: rustup toolchain install
       - run: npm ci
       - run: npm run build:installer -- --ci
+      # The user manual (MAN-01) travels with each installer: its PDF is
+      # printed by headless Edge from the committed docs/manual/ (pasos.json
+      # and images), no app run needed.
+      - name: Build the user manual PDF
+        run: npm run manual:build
       - name: Artifact name
         id: meta
         shell: bash
@@ -45,5 +51,6 @@ jobs:
           path: |
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
+            docs/manual/Pharos-manual-de-usuario.pdf
           if-no-files-found: error
           retention-days: 30

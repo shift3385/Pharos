@@ -10,6 +10,16 @@ marcando) y cómo informar de un problema. Los detalles técnicos están en el
 > Una beta puede tener fallos. Antes de usarla con datos que te importen, guarda
 > la clave de recuperación (paso 4.6) y una copia de `pharos.db.enc`.
 
+**¿Cómo se usa cada pantalla?** El [manual de usuario](manual/README.md)
+(`docs/manual/`) lo explica paso a paso, con capturas de la aplicación real:
+quince capítulos, de la entrada a la ejecución manual, las evidencias y qué hacer si algo sale mal. Su PDF
+(`Pharos-manual-de-usuario.pdf`, con índice y números de página) viaja
+junto al instalador (en el mismo artefacto del CI), se descarga como artefacto
+`manual` del CI en `main` o se genera en local con `npm run manual:build`
+(en `docs/manual/`). El manual se regenera solo cuando la
+aplicación cambia: cada paso es también una prueba automática
+([`e2e/README.md`](../e2e/README.md) → Tours).
+
 ## 1. Qué trae la 0.1.0
 
 - **Proyectos** con su plan de pruebas (asistente de 21 campos, ISO/IEC/IEEE
@@ -76,7 +86,7 @@ La app instalada inicia sesión y sincroniza contra la API de Pharos en
 
 - [ ] Windows 11 con WebView2 (viene instalado).
 - [ ] PostgreSQL en marcha (servicio nativo en el puerto 5432, o Docker).
-- [ ] Git y Node.js ≥ 22.12 con npm, para ejecutar la API.
+- [ ] Git y Node.js ≥ 22.18 con npm, para ejecutar la API.
 - [ ] La API de Pharos en la misma versión que la app: clona el repositorio
       (`git clone https://github.com/shift3385/Pharos.git`) y, dentro,
       `git checkout v0.2.0-alpha.1`. Después, `npm install` en la raíz y en

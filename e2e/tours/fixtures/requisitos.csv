@@ -1,0 +1,5 @@
+ID;Título;Descripción;Prioridad
+REQ-002;Pago con código QR;El cliente paga en un comercio escaneando su código QR;Alta
+REQ-003;Notificación push de cada movimiento;Cada cargo o abono genera una notificación en menos de 30 s;Media
+REQ-004;Inicio de sesión con huella;El cliente entra con la huella registrada en el dispositivo;Alta
+REQ-005;Extracto mensual en PDF;El cliente descarga el extracto del mes en PDF;Baja
