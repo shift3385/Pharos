@@ -123,7 +123,7 @@ chapter("administracion", () => {
       await browser.waitUntil(async () => (await $$('[data-testid="template-card"]')).length > 0, { timeoutMsg: "no template cards" });
       await $('[data-testid="template-card"]').$(`button[aria-label^="${tf("templates.moreActions", { name: "" })}"]`).click();
       await menuItem(es.templates.download).click();
-      await waitForToast(".xlsx", 30_000);
+      await waitForToast(es.downloads.saved.split("{{")[0], 30_000);
     },
   });
 

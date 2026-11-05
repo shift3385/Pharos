@@ -81,6 +81,7 @@ interface RecordedToast {
   text: string;
   at: number;
   used: boolean;
+  error: boolean;
 }
 type ToastLog = { __tourToasts?: RecordedToast[] };
 
@@ -98,7 +99,12 @@ export async function recordToasts() {
     if (w.__tourToasts) return;
     const log: RecordedToast[] = (w.__tourToasts = []);
     const add = (el: Element) =>
-      log.push({ text: (el.textContent ?? "").replace(/\s+/g, " ").trim(), at: Date.now(), used: false });
+      log.push({
+        text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+        at: Date.now(),
+        used: false,
+        error: el.classList.contains("toast--error"),
+      });
     document.querySelectorAll(".toast").forEach(add);
     new MutationObserver((changes) => {
       for (const change of changes) {
@@ -114,21 +120,24 @@ export async function recordToasts() {
 
 /** Waits for a toast containing `text`, even one already gone or hidden. Each
  *  toast answers one wait only, so the toast of an earlier save (still on screen
- *  for 3 s) cannot pass for the one this step's save has yet to raise. */
-export async function waitForToast(text: string, timeout = 15_000) {
+ *  for 3 s) cannot pass for the one this step's save has yet to raise. An error
+ *  toast counts only with `{ error: true }`: a failure whose message happens to
+ *  contain the text must not pass for success. */
+export async function waitForToast(text: string, timeout = 15_000, { error = false } = {}) {
   await recordToasts();
   try {
     await browser.waitUntil(
       () =>
         browser.execute(
-          (wanted: string, maxAge: number) => {
+          (wanted: string, maxAge: number, wantError: boolean) => {
             const log = (window as unknown as ToastLog).__tourToasts ?? [];
-            const hit = log.find((t) => !t.used && t.text.includes(wanted) && Date.now() - t.at < maxAge);
+            const hit = log.find((t) => !t.used && t.error === wantError && t.text.includes(wanted) && Date.now() - t.at < maxAge);
             if (hit) hit.used = true;
             return Boolean(hit);
           },
           text,
           TOAST_MAX_AGE_MS,
+          error,
         ),
       { timeout },
     );
@@ -150,6 +159,46 @@ export async function waitForSettled(timeout = 15_000) {
     },
     { timeout, timeoutMsg: "the page never settled after saving (still saving or loading)" },
   );
+}
+
+/** What dnd-kit's live regions say now (one per board or step list). */
+const dragAnnouncement = () =>
+  browser.execute(() =>
+    Array.from(document.querySelectorAll('[id^="DndLiveRegion"]'))
+      .map((el) => el.textContent ?? "")
+      .join(" "),
+  );
+
+/**
+ * A keyboard drag: focus the handle, Space, `key` until the live region says
+ * `until` (once if omitted), Space. dnd-kit attaches its key listener in a
+ * timeout after Space and measures the columns asynchronously, so keys sent
+ * straight away are lost on a slow machine, and the second Space drops the
+ * item where it started. Each key therefore waits for the announcement it
+ * causes, and is sent again if none comes.
+ */
+export async function keyboardDrag(handle: ReturnType<typeof $>, { key = "ArrowRight", until, moves = 8 }: { key?: string; until?: string; moves?: number } = {}) {
+  await handle.click();
+  const idle = await dragAnnouncement();
+  await browser.keys(" ");
+  await browser.waitUntil(async () => (await dragAnnouncement()) !== idle, {
+    interval: 100,
+    timeoutMsg: "the keyboard drag did not start",
+  });
+  let last = await dragAnnouncement();
+  let announced = false;
+  for (let i = 0; i < moves && !announced; i++) {
+    await browser.keys(key);
+    const changed = await browser
+      .waitUntil(async () => (await dragAnnouncement()) !== last, { timeout: 2_000, interval: 100 })
+      .catch(() => false);
+    if (!changed) continue;
+    last = await dragAnnouncement();
+    announced = until ? last.includes(until) : true;
+  }
+  if (!announced) throw new Error(`the keyboard drag never reached ${until ?? "a new place"} (last: ${last})`);
+  await browser.keys(" ");
+  await browser.waitUntil(async () => (await dragAnnouncement()) !== last, { interval: 100, timeoutMsg: "the keyboard drag did not drop" });
 }
 
 /** Sets a hidden <input type="file"> (WebDriver uploads the local file). */

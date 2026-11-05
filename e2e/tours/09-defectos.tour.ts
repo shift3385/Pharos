@@ -14,6 +14,7 @@ import {
   field,
   fixturesDir,
   hasText,
+  keyboardDrag,
   openProject,
   openSection,
   selectOption,
@@ -24,6 +25,7 @@ import {
 } from "./helpers";
 
 const F = es.defects;
+const DRAGGED = "El saldo no se actualiza tras una transferencia";
 const D = '[role="dialog"]';
 
 async function save() {
@@ -92,7 +94,7 @@ chapter("defectos", () => {
   step("evidencias", {
     title: "Evidencias",
     caption:
-      "Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: <archivo>») lo quita.",
+      "Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: nombre del archivo») lo quita.",
     covers: ["upload:src/modules/defects/ui/DefectEditor.tsx"],
     run: async () => {
       await save();
@@ -159,10 +161,7 @@ chapter("defectos", () => {
       await view("board");
       await expect($(".df-board")).toBeDisplayed();
       const handle = $(`[aria-label="${tf("defects.board.drag.handle", { defect: "El saldo no se actualiza tras una transferencia" })}"]`);
-      await handle.click();
-      await browser.keys(" ");
-      await browser.keys("ArrowRight");
-      await browser.keys(" ");
+      await keyboardDrag(handle, { until: tf("defects.board.drag.over", { defect: DRAGGED, column: F.status.open }) });
       await expect($('section.df-col[data-column="open"]').$("article.df-card*=El saldo no se actualiza")).toBeExisting();
     },
   });
@@ -176,10 +175,7 @@ chapter("defectos", () => {
     run: async () => {
       // Open → Rechazado, through «Otros»: the move that asks for a resolution.
       const handle = $(`[aria-label="${tf("defects.board.drag.handle", { defect: "El saldo no se actualiza tras una transferencia" })}"]`);
-      await handle.click();
-      await browser.keys(" ");
-      for (let i = 0; i < 6; i++) await browser.keys("ArrowRight");
-      await browser.keys(" ");
+      await keyboardDrag(handle, { until: tf("defects.board.drag.over", { defect: DRAGGED, column: F.status.other }) });
       await expect(dialog()).toBeDisplayed();
       await $(D).$("select").selectByIndex(1);
     },

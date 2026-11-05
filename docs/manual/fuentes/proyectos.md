@@ -12,7 +12,7 @@ ejecutan.
 ## Consejos
 
 - Elige el **prefijo** de los casos al principio (por ejemplo `BM-`): el ID de
-  un caso no cambia una vez asignado, porque viaja como tag (`@BM-001`) en la
+  un caso no cambia una vez asignado, porque viaja como tag (por ejemplo, `@BM-001`) en la
   automatización.
 - Los **campos personalizados** nunca se borran, se archivan: así los valores
   que ya tienen los casos no se pierden.

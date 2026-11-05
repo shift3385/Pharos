@@ -195,7 +195,7 @@ const OVERLAY = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role
  */
 async function closeLeftovers(id: ChapterId, failed: string | null) {
   try {
-    const discard = () => $(`[role="alertdialog"] button=${es.dialog.unsaved.discard}`);
+    const discard = () => $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.discard}`);
     const closeOverlays = async () => {
       let closed = 0;
       for (let i = 0; i < 6; i++) {

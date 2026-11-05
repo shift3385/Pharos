@@ -409,7 +409,7 @@ function coverHtml(data) {
   const logo = join(repoDir, "src-tauri", "icons", "128x128@2x.png");
   return `<section class="cover"><div class="beam"></div><img src="${fileUrl(logo)}" alt="">
 <p class="brand">Pharos</p><p class="kind">Manual de usuario</p>
-<p class="meta">Versión ${escapeHtml(data.version)}<br>Generado el ${longDate(data.date)} a partir de las pruebas guiadas de la aplicación</p></section>`;
+<p class="meta">Versión ${escapeHtml(data.version)}<br>${longDate(data.date)}</p></section>`;
 }
 
 /** The contents: every chapter and step is a link to its page, with the page

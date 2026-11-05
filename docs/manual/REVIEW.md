@@ -73,7 +73,8 @@ tener una explicación.
       paso van juntos; «Consejos» y «Véase también» no empiezan al pie de una
       página para seguir en la siguiente; ningún pie ni conclusión queda
       cortado.
-- [ ] **Ninguna página casi vacía**: una página no lleva solo una imagen y una
+- [ ] **Ninguna página casi vacía**, salvo el bloque de «Consejos» y «Véase
+      también» al final de un capítulo: una página no lleva solo una imagen y una
       frase. Si pasa, se agrupan pasos cortos o se amplía la explicación.
       Recorre todas las páginas, no una muestra.
 - [ ] El índice no explica cómo se genera el manual (eso va en

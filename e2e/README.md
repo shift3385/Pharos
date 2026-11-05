@@ -34,6 +34,8 @@ smoke".
    and seeds the test account.
 3. **API.** Starts `tsx src/server.ts` with `PORT=3100` and that database
    (not `npm start`, whose `prestart` stops Pharos APIs on its port).
+   `JWT_ACCESS_SECRET` comes from the environment, else `.env`, else a random
+   one for the run: its tokens only serve this throwaway database.
 4. **Binary.** `tauri build --debug --no-bundle` with
    `VITE_API_URL=http://localhost:3100` and a `--config` override of the CSP
    (generated from `tauri.conf.json` with 3000 → 3100), into
@@ -55,10 +57,13 @@ cases, an imported report): each declares them in `needs` (`manifest.ts`), and
 the runner **adds those chapters** and says which. An invalid expression, or
 one matching no tour, stops the run before the database and the build.
 
-At the end of each chapter, `closeLeftovers` (`tour.ts`) closes any dialog or
-menu still open, so a failed step cannot block the next chapter, and leaves the
-screen after a failure, whose unsaved editor would stop the next navigation.
-A clean chapter should have nothing to close: it is reported as a warning.
+At the end of each chapter, `closeLeftovers` (`tour.ts`) closes what is still
+open, so one failed step cannot block the next chapter: native dialogs are
+dismissed, an «unsaved changes» prompt is answered «Descartar cambios», and
+anything else (dialog, menu) gets Escape, up to six rounds. After a failed step
+it also goes to «Inicio», since an unsaved editor would stop the next
+navigation. A chapter that passed but left something open gets a warning. It
+never fails the run: a cleanup error is only logged.
 
 ### Writing a tour step
 
@@ -91,11 +96,14 @@ step("nuevo", {
 
 **Waits, never sleeps.** `field()` looks again until the control is rendered;
 `atLeast(selector, n)` replaces one-shot `$$()` counts right after an action.
+`keyboardDrag` waits for dnd-kit's live announcement after each key: keys sent
+straight after Space are lost on a slow machine.
 Wait for a toast with `waitForToast`, and for text that stays on the page (a
 heading, an inline status) with `waitForText`. Toasts are recorded in the page
 as they appear, so one that has left or that a newer toast hid (the captures
 show only the newest) still counts; each one answers a single wait, so the
-toast of the previous save cannot pass for this one. Don't wait for a word the
+toast of the previous save cannot pass for this one. An error toast counts only
+with `{ error: true }`. Don't wait for a word the
 page also shows elsewhere: «Sincronizado» is the sidebar's status too. A form
 filled by an async load is not ready when it first shows: wait for its values
 before typing. And `[role="alert"]` also matches the toast stack's empty

@@ -11,6 +11,7 @@ import {
   es,
   field,
   fixturesDir,
+  keyboardDrag,
   openProject,
   openSection,
   selectOption,
@@ -66,7 +67,7 @@ chapter("planificador", () => {
   step("adjunto", {
     title: "Adjuntar archivos a una tarjeta",
     caption:
-      "Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: <archivo>») lo quita.",
+      "Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: nombre del archivo») lo quita.",
     covers: ["upload:src/modules/planner/ui/CardEditor.tsx"],
     focus: ".pl-attach__open",
     run: async () => {
@@ -125,10 +126,7 @@ chapter("planificador", () => {
     focus: "section.pl-col[data-status=\"in_progress\"] article.pl-card",
     run: async () => {
       const handle = $(`[aria-label="${tf("planner.drag.handle", { card: "Revisar casos de pagos con QR" })}"]`);
-      await handle.click();
-      await browser.keys(" ");
-      await browser.keys("ArrowRight");
-      await browser.keys(" ");
+      await keyboardDrag(handle, { until: tf("planner.drag.over", { card: "Revisar casos de pagos con QR", column: L.column.in_progress }) });
       await expect(
         $('section.pl-col[data-status="in_progress"]').$("article.pl-card*=Revisar casos de pagos con QR"),
       ).toBeExisting();

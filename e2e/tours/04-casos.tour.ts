@@ -15,6 +15,7 @@ import {
   dialog,
   es,
   field,
+  keyboardDrag,
   menuItem,
   openProject,
   openSection,
@@ -130,7 +131,7 @@ chapter("casos", () => {
   step("caso-basico", {
     title: "Un caso básico",
     caption:
-      "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Arriba se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
+      "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Encima de ellos se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
     covers: ["action:case-create-basic", "action:case-meta"],
     run: async () => {
       // FIX-12: the ID placeholder carries the project's own prefix.
@@ -144,6 +145,8 @@ chapter("casos", () => {
       await (await field(C.expectedResult)).setValue("La transferencia queda «Enviada» y el saldo baja a 850 €.");
       await setMeta(C.priority, C.priorityLabel.high);
       await setMeta(C.status, C.statusLabel.approved);
+      // The capture shows the steps and the result the caption explains.
+      await $(`[role="group"][aria-label="${C.steps}"]`).scrollIntoView({ block: "center" });
     },
   });
 
@@ -195,7 +198,7 @@ chapter("casos", () => {
   step("outline", {
     title: "Un caso «Básico avanzado» (Outline)",
     caption:
-      "Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, <importe>), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.",
+      "Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, `<importe>`), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.",
     covers: ["action:case-outline"],
     run: async () => {
       await $('[role="radiogroup"]').$('button[data-value="editor"]').click();
@@ -258,10 +261,7 @@ chapter("casos", () => {
     shot: false,
     run: async () => {
       const handle = $(`[aria-label^="${C.dragStep}"]`);
-      await handle.click();
-      await browser.keys(" ");
-      await browser.keys("ArrowDown");
-      await browser.keys(" ");
+      await keyboardDrag(handle, { key: "ArrowDown" });
       await saveCase();
     },
   });
@@ -387,7 +387,7 @@ chapter("casos", () => {
     run: async () => {
       await backToList();
       await pickFromMenu(C.list.io, C.exportFeature);
-      await waitForToast(".feature", 30_000);
+      await waitForToast(C.exportFeaturesToast.split("{{count}}")[1].split("{{path}}")[0].trim(), 30_000);
     },
   });
 
