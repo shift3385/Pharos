@@ -47,7 +47,8 @@ async function saveCase() {
 chapter("trazabilidad", () => {
   step("vacio", {
     title: "Trazabilidad, sin requisitos",
-    caption: "Pulsa «Trazabilidad» en el menú lateral y elige la vista «Requisitos». Arriba, «Importar / Exportar» y «Nuevo requisito»; sin requisitos, la lista lo indica.",
+    caption:
+      "La trazabilidad responde a una pregunta: ¿qué requisitos están probados y cuáles no? Pulsa «Trazabilidad» en el menú lateral y elige la vista «Requisitos». Arriba, «Importar / Exportar» y «Nuevo requisito»; sin requisitos, la lista lo indica.",
     covers: ["section:traceability", "state:requirements-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -59,7 +60,8 @@ chapter("trazabilidad", () => {
 
   step("nuevo-requisito", {
     title: "Nuevo requisito",
-    caption: "«Nuevo requisito» pide título, descripción y prioridad. Si dejas vacío el ID, Pharos lo numera solo (REQ-001…); una vez creado, no cambia.",
+    caption:
+      "«Nuevo requisito» pide título, descripción y prioridad. Si dejas vacío el ID, Pharos lo numera solo (REQ-001…); una vez creado, no cambia, para que los vínculos con casos y defectos sigan siendo válidos.",
     covers: ["dialogs:src/modules/traceability/ui/RequirementFormModal.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -75,7 +77,8 @@ chapter("trazabilidad", () => {
 
   step("importar-csv", {
     title: "Importar requisitos desde CSV",
-    caption: "«Importar / Exportar → Importar requisitos (.csv)» acepta un CSV con coma o punto y coma (como lo guarda Excel en español). La vista previa muestra las columnas detectadas y qué se creará o actualizará.",
+    caption:
+      "Si tus requisitos ya están en una hoja de cálculo, «Importar / Exportar → Importar requisitos (.csv)» acepta un CSV con coma o punto y coma (como lo guarda Excel en español). La vista previa muestra las columnas detectadas y qué se creará o actualizará antes de tocar nada.",
     covers: ["upload:src/modules/traceability/ui/TraceabilityPage.tsx", "dialogs:src/modules/traceability/ui/RequirementImportModal.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -92,7 +95,8 @@ chapter("trazabilidad", () => {
 
   step("requisitos", {
     title: "La lista de requisitos",
-    caption: "«Importar 4» los añade: cada requisito con su ID, prioridad y cuántos casos lo cubren. Desde cada fila, editarlo, generar casos con IA o eliminarlo.",
+    caption:
+      "«Importar 4» los añade (en este ejemplo, cuatro requisitos): cada uno con su ID, su prioridad y cuántos casos lo cubren. Desde cada fila puedes editarlo, generar casos con IA (capítulo 11) o eliminarlo.",
     toast: true,
     run: async () => {
       await clickButton(tf("traceability.import.confirm", { count: 4 }), '[role="dialog"]');
@@ -102,7 +106,8 @@ chapter("trazabilidad", () => {
 
   step("editar-requisito", {
     title: "Editar un requisito",
-    caption: "Haz clic en el título para editarlo; el ID queda fijo. «Guardar» confirma con «Requisito guardado».",
+    caption:
+      "Haz clic en el título de un requisito para editarlo; el ID queda fijo. «Guardar» lo confirma con el aviso «Requisito guardado».",
     covers: ["action:requirement-edit"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -127,7 +132,8 @@ chapter("trazabilidad", () => {
 
   step("requisito-descartar", {
     title: "Cerrar un requisito sin guardar",
-    caption: "Cerrar el diálogo con cambios sin guardar pide confirmación; «Aceptar» los descarta.",
+    caption:
+      "Cerrar el diálogo con cambios sin guardar pide confirmación, para que no los pierdas por un clic; «Aceptar» los descarta.",
     covers: ["dialogs:src/modules/traceability/ui/RequirementFormModal.tsx"],
     shot: false,
     run: async () => {
@@ -143,7 +149,8 @@ chapter("trazabilidad", () => {
 
   step("vincular", {
     title: "Vincular casos a requisitos",
-    caption: "En el editor del caso, «Vincular un requisito…» añade el requisito; el caso lleva su tag (@REQ-001) en el Gherkin y la matriz lo cuenta como cubierto.",
+    caption:
+      "El vínculo entre caso y requisito es lo que hace funcionar la matriz. En el editor del caso, «Vincular un requisito…» lo añade (en este ejemplo, REQ-001): el caso lleva su etiqueta (@REQ-001) en el Gherkin y la matriz lo cuenta como cubierto.",
     covers: ["action:case-requirement-link"],
     run: async () => {
       await openCase("Pago con QR de");
@@ -159,7 +166,8 @@ chapter("trazabilidad", () => {
 
   step("matriz", {
     title: "La matriz de trazabilidad",
-    caption: "«Matriz» muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, con la cobertura arriba (requisitos cubiertos y sin cubrir).",
+    caption:
+      "«Matriz» muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, y arriba la cobertura: cuántos requisitos están cubiertos y cuántos no. Es la vista que enseñar cuando alguien pregunta qué se ha probado.",
     covers: ["screen:matrix"],
     run: async () => {
       await openSection("traceability");
@@ -183,7 +191,8 @@ chapter("trazabilidad", () => {
 
   step("huecos", {
     title: "Solo los huecos",
-    caption: "«Mostrar solo huecos» deja los requisitos sin ningún caso. Debajo, «Huecos de trazabilidad» lista casos sin requisito, vínculos a requisitos inexistentes y defectos sin caso.",
+    caption:
+      "«Mostrar solo huecos» deja los requisitos sin ningún caso, lo primero que conviene resolver. Debajo, «Huecos de trazabilidad» lista también casos sin requisito, vínculos a requisitos inexistentes y defectos sin caso.",
     covers: ["action:matrix-gaps"],
     run: async () => {
       await $(`label*=${T.matrix.onlyGaps}`).click();
@@ -193,7 +202,8 @@ chapter("trazabilidad", () => {
 
   step("migrar", {
     title: "Migrar referencias escritas a mano",
-    caption: "Si un caso menciona un ID de requisito en su texto libre («Relacionado con REQ-003»), «Migrar trazabilidad» propone convertirlo en un vínculo real. Marca los que quieras y pulsa «Aplicar».",
+    caption:
+      "Si un caso menciona un ID de requisito en su texto libre (en este ejemplo, «Relacionado con REQ-003»), la matriz no lo cuenta. «Migrar trazabilidad» propone convertirlo en un vínculo real: marca los que quieras y pulsa «Aplicar».",
     covers: ["dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -208,7 +218,8 @@ chapter("trazabilidad", () => {
 
   step("exportar-matriz", {
     title: "Exportar la matriz",
-    caption: "«Importar / Exportar → Exportar matriz (.xlsx)» guarda requisitos, casos, estados y defectos en un libro de Excel.",
+    caption:
+      "«Importar / Exportar → Exportar matriz (.xlsx)» guarda requisitos, casos, estados y defectos en un libro de Excel, para compartirlos con quien no usa Pharos o adjuntarlos a una auditoría.",
     covers: ["action:matrix-export"],
     shot: false,
     run: async () => {
@@ -222,7 +233,8 @@ chapter("trazabilidad", () => {
 
   step("eliminar-requisito", {
     title: "Eliminar un requisito",
-    caption: "La papelera de la fila pide confirmación. El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como vínculo a un requisito inexistente.",
+    caption:
+      "La papelera de la fila pide confirmación. El ID eliminado no se reutiliza: los casos que lo enlazaban lo muestran como vínculo a un requisito inexistente, y así aparecen en los huecos de trazabilidad.",
     covers: ["dialogs:src/modules/traceability/ui/TraceabilityPage.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -234,7 +246,8 @@ chapter("trazabilidad", () => {
 
   step("eliminado", {
     title: "Requisito eliminado",
-    caption: "Al confirmar aparece «REQ-005 eliminado».",
+    caption:
+      "Al confirmar aparece el aviso con el requisito eliminado (en este ejemplo, «REQ-005 eliminado») y la lista deja de mostrarlo.",
     shot: false,
     run: async () => {
       await clickButton(T.requirement.deleteConfirm, '[role="alertdialog"]');

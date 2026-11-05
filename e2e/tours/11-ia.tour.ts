@@ -39,7 +39,8 @@ async function goToPlanStep(id: keyof typeof es.testPlan.step) {
 chapter("ia", () => {
   step("sin-configurar", {
     title: "Sin IA configurada",
-    caption: "Mientras no configures un proveedor (o Ollama), los botones de IA aparecen deshabilitados y explican por qué; el resto de Pharos funciona igual.",
+    caption:
+      "La IA es opcional. Mientras no configures un proveedor (o Ollama), los botones de IA aparecen deshabilitados y explican por qué; el resto de Pharos funciona igual.",
     covers: ["ai:disabled-without-key"],
     skip: AI.key ? "con una clave configurada los botones ya están activos" : undefined,
     run: async () => {
@@ -53,7 +54,8 @@ chapter("ia", () => {
 
   step("configurar", {
     title: "Configurar el proveedor",
-    caption: "En «Administración → Motor de IA», elige el proveedor, pega tu clave y pulsa «Guardar clave»: queda en el almacén de credenciales de Windows y el campo muestra «Configurada» (en el manual, difuminado). Después elige un modelo («Listar modelos») y guarda.",
+    caption:
+      "En «Administración → Motor de IA», elige el proveedor, pega tu clave y pulsa «Guardar clave»: queda en el almacén de credenciales de Windows y el campo muestra «Configurada» (en este manual, difuminado). Después elige un modelo («Listar modelos») y guarda.",
     covers: ["ai:configure"],
     skip: AI_SKIP,
     mask: ["#ai-key"],
@@ -100,7 +102,8 @@ chapter("ia", () => {
 
   step("probar-conexion", {
     title: "Probar la conexión",
-    caption: "«Probar conexión» envía una pregunta mínima y muestra el tiempo de respuesta. Si falla, dice por qué (clave, modelo o red).",
+    caption:
+      "Antes de confiar en la configuración, «Probar conexión» envía una pregunta mínima y muestra el tiempo de respuesta. Si falla, dice por qué (clave, modelo o red).",
     covers: ["ai:test-connection"],
     skip: AI_SKIP,
     mask: ["#ai-key"],
@@ -130,7 +133,8 @@ chapter("ia", () => {
 
   step("riesgos", {
     title: "Sugerir riesgos",
-    caption: "En «Riesgos y mitigación», «✨ Sugerir riesgos con IA» propone riesgos con su mitigación; marca los que te sirvan y pulsa «Añadir».",
+    caption:
+      "En «Riesgos y mitigación», «✨ Sugerir riesgos con IA» propone riesgos con su mitigación, un buen punto de partida que conviene revisar: marca los que te sirvan y pulsa «Añadir».",
     covers: ["ai:suggest-risks"],
     skip: AI_SKIP,
     run: async () => {
@@ -162,7 +166,8 @@ chapter("ia", () => {
 
   step("sugerir-casos", {
     title: "Sugerir casos a partir del plan",
-    caption: "En «Casos de prueba», «Sugerir casos con IA» propone casos según los tipos y niveles del plan; elige los que quieras crear.",
+    caption:
+      "En «Casos de prueba», «Sugerir casos con IA» propone casos según los tipos y niveles del plan (capítulo 3); elige los que quieras crear y revísalos como cualquier otro caso.",
     covers: ["dialogs:src/modules/test-cases/ui/SuggestTestsModal.tsx"],
     skip: AI_SKIP,
     shot: { element: D },
@@ -184,7 +189,8 @@ chapter("ia", () => {
 
   step("precondiciones", {
     title: "Sugerir precondiciones",
-    caption: "En el editor de un caso, «✨ Sugerir precondiciones» propone las condiciones previas a partir del título y los pasos.",
+    caption:
+      "En el editor de un caso, «✨ Sugerir precondiciones» propone las condiciones previas a partir del título y los pasos, las que más se suelen olvidar al escribir un caso.",
     covers: ["ai:suggest-preconditions"],
     skip: AI_SKIP,
     run: async () => {
@@ -198,7 +204,8 @@ chapter("ia", () => {
 
   step("borrar-clave", {
     title: "Borrar la clave",
-    caption: "«Borrar clave» la quita del almacén de credenciales; la IA vuelve a quedar sin configurar.",
+    caption:
+      "«Borrar clave» la quita del almacén de credenciales, por ejemplo, si cambias de cuenta o vas a dejar el equipo; la IA vuelve a quedar sin configurar.",
     skip: AI_SKIP,
     shot: false,
     run: async () => {

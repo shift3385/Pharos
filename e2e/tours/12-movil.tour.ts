@@ -8,7 +8,8 @@ import { PROJECT_A, byTestId, clickButton, es } from "./helpers";
 chapter("movil", () => {
   step("tableta", {
     title: "Pantallas medianas: menú de iconos",
-    caption: "Por debajo de 1280 px, el menú lateral se reduce a una tira de iconos con su nombre corto; el contenido gana espacio.",
+    caption:
+      "Pharos se adapta al ancho de la ventana. Por debajo de 1280 px, el menú lateral se reduce a una tira de iconos con su nombre corto y el contenido gana espacio.",
     covers: ["platform:tablet-icon-strip"],
     run: async () => {
       await setAppWindow(1024, 768, "tablet");
@@ -18,7 +19,8 @@ chapter("movil", () => {
 
   step("movil-inicio", {
     title: "En el móvil: barra inferior",
-    caption: "A 390 px, Pharos usa una barra superior compacta y una barra inferior con Inicio, Proyectos, Administración y Perfil.",
+    caption:
+      "A 390 px, el ancho de un móvil, Pharos usa una barra superior compacta y una barra inferior con Inicio, Proyectos, Administración y Perfil, al alcance del pulgar.",
     covers: ["platform:mobile-bottom-nav", "tabs:src/app/dashboard/DashboardPage.tsx"],
     run: async () => {
       await setViewport(MOBILE);
@@ -54,7 +56,8 @@ chapter("movil", () => {
 
   step("movil-filtros", {
     title: "Filtros en una hoja inferior",
-    caption: "En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtros que en el escritorio.",
+    caption:
+      "En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtros que en el escritorio, para que la lista conserve la pantalla.",
     covers: ["platform:mobile-filters", "dialogs:src/modules/test-cases/ui/TestCaseList.tsx"],
     run: async () => {
       await $("nav.project-pills").$('[data-testid="nav-project-cases"]').click();

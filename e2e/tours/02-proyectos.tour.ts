@@ -155,7 +155,8 @@ chapter("proyectos", () => {
 
   step("campo-nuevo", {
     title: "Nuevo campo personalizado",
-    caption: "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. Aquí, una selección «Navegador» con tres opciones.",
+    caption:
+      "Los campos personalizados añaden a los casos lo que tu equipo necesite clasificar y que Pharos no trae de serie. En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. En este ejemplo, una selección «Navegador» con tres opciones.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -176,7 +177,8 @@ chapter("proyectos", () => {
 
   step("campo-creado", {
     title: "El campo, en la lista",
-    caption: "«Crear campo» lo guarda y aparece en la lista; los casos del proyecto ya pueden usarlo. Se reordena arrastrando o con el menú de cada campo.",
+    caption:
+      "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 4). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
     toast: true,
     covers: ["action:custom-field-create"],
     run: async () => {
@@ -194,7 +196,8 @@ chapter("proyectos", () => {
 
   step("campo-archivar", {
     title: "Archivar un campo",
-    caption: "Un campo no se borra: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+    caption:
+      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
     covers: ["action:custom-field-archive"],
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
@@ -213,7 +216,8 @@ chapter("proyectos", () => {
 
   step("campo-descartar", {
     title: "Cerrar sin guardar",
-    caption: "Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos.",
+    caption:
+      "Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos, para que no los pierdas por un clic.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: false,
     run: async () => {
@@ -228,7 +232,8 @@ chapter("proyectos", () => {
 
   step("campo-defecto", {
     title: "Campos de los defectos",
-    caption: "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
+    caption:
+      "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto (en este ejemplo, «Cliente afectado»). Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
     covers: ["action:custom-field-defect"],
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
@@ -246,7 +251,8 @@ chapter("proyectos", () => {
 
   step("configuracion-nueva", {
     title: "Nueva configuración",
-    caption: "En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
+    caption:
+      "Una configuración describe dónde se ejecuta una prueba, para saber en qué entorno pasó o falló. En «Configuraciones», «Nueva configuración» pide navegador, sistema, dispositivo e idioma (en este ejemplo, «Chrome · Windows 11»). Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
     covers: ["dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx", "keyboard:config-labels"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -270,7 +276,8 @@ chapter("proyectos", () => {
 
   step("configuracion-creada", {
     title: "Configuraciones del proyecto",
-    caption: "«Guardar» la añade a la lista. Aquí hay dos (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas».",
+    caption:
+      "«Guardar» la añade a la lista. En este ejemplo hay dos activas (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas»: así deja de ofrecerse en ciclos nuevos sin perder su historia.",
     covers: ["action:configuration-create", "action:configuration-archive"],
     run: async () => {
       await dialog().$(`button=${es.configurations.save}`).click();
@@ -298,7 +305,8 @@ chapter("proyectos", () => {
 
   step("segundo-proyecto", {
     title: "Crear con Intro y copiar campos",
-    caption: `Un segundo proyecto («${PROJECT_B.name}», creado pulsando Intro tras el nombre) puede copiar los campos personalizados de otro con «Copiar de otro proyecto».`,
+    caption:
+      "Un segundo proyecto (en este ejemplo, «Portal Clientes», creado pulsando Intro tras el nombre) no tiene que definir sus campos desde cero: «Copiar de otro proyecto» trae los campos personalizados de otro.",
     covers: ["keyboard:project-create-enter", "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {

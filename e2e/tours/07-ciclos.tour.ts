@@ -35,7 +35,8 @@ async function setDate(el: WebdriverIO.Element, iso: string) {
 chapter("ciclos", () => {
   step("vacio", {
     title: "Ciclos de prueba",
-    caption: "Pulsa «Ciclos de prueba» en el menú lateral. Arriba, «Nuevo ciclo» y los filtros por estado; sin ciclos, la lista lo indica.",
+    caption:
+      "Un ciclo agrupa lo que se va a probar en una ronda concreta (una regresión, una versión candidata), dónde y contra qué build. Pulsa «Ciclos de prueba» en el menú lateral. Arriba, «Nuevo ciclo» y los filtros por estado; sin ciclos, la lista lo indica.",
     covers: ["section:cycles", "state:cycles-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -46,7 +47,8 @@ chapter("ciclos", () => {
 
   step("nuevo-ciclo", {
     title: "Nuevo ciclo",
-    caption: "«Nuevo ciclo» pide título, build, entorno, hito y sprint del plan, fechas y las configuraciones en las que se ejecutará.",
+    caption:
+      "«Nuevo ciclo» pide título, build, entorno, hito y sprint del plan, fechas y las configuraciones en las que se ejecutará (las del capítulo 2).",
     covers: ["dialogs:src/modules/cycles/ui/CycleDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -66,7 +68,8 @@ chapter("ciclos", () => {
 
   step("detalle", {
     title: "El ciclo, recién creado",
-    caption: "«Crear ciclo» lo crea con su clave (CY-1) y abre su detalle: resumen de resultados y las pestañas «Elementos» y «Runs».",
+    caption:
+      "«Crear ciclo» lo crea con su clave (en este ejemplo, CY-1) y abre su detalle: el resumen de resultados y las pestañas «Elementos», lo que hay que probar, y «Runs», las ejecuciones que se han lanzado.",
     run: async () => {
       await clickButton(Y.create, D);
       await waitForToast(Y.createdToast.split("{{")[0]);
@@ -77,7 +80,8 @@ chapter("ciclos", () => {
 
   step("anadir-casos", {
     title: "Añadir casos al ciclo",
-    caption: "«Añadir casos» lista los casos del proyecto con buscador; marca los que quieras, asígnalos a alguien si quieres y confirma. Pharos avisa si alguno no está aprobado.",
+    caption:
+      "«Añadir casos» lista los casos del proyecto con buscador: marca los que entran en esta ronda, asígnalos a alguien si quieres y confirma. Pharos avisa si alguno no está aprobado, para que no pruebes un caso aún en borrador sin saberlo.",
     covers: ["dialogs:src/modules/cycles/ui/ItemDialogs.tsx"],
     shot: { element: D },
     run: async () => {
@@ -91,7 +95,8 @@ chapter("ciclos", () => {
 
   step("por-filtro", {
     title: "Añadir por filtro",
-    caption: "«Añadir por filtro» elige los casos por etiquetas, prioridad, estado, requisitos o riesgo; el recuento se actualiza mientras marcas.",
+    caption:
+      "Para no marcar caso por caso, «Añadir por filtro» los elige por etiquetas, prioridad, estado, requisitos o riesgo, por ejemplo, todos los de prioridad alta. El recuento se actualiza mientras marcas.",
     covers: ["dialogs:src/modules/cycles/ui/ItemDialogs.tsx"],
     run: async () => {
       await clickButton(tf("cycles.add.confirm_other", { count: 2 }), D);
@@ -121,7 +126,8 @@ chapter("ciclos", () => {
 
   step("ejecutar", {
     title: "Ejecutar el ciclo",
-    caption: "«Ejecutar» crea un run por configuración con todos los elementos. Elige configuraciones, build y entorno y pulsa «Crear N runs».",
+    caption:
+      "«Ejecutar» crea un run por configuración con todos los elementos: así cada entorno lleva su propio registro de resultados. Elige configuraciones, build y entorno y pulsa «Crear N runs».",
     covers: ["dialogs:src/modules/cycles/ui/ExecuteDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -160,7 +166,8 @@ chapter("ciclos", () => {
 
   step("clonar", {
     title: "Clonar y eliminar un ciclo",
-    caption: "El menú «⋯» del ciclo lo clona (con sus elementos, sin resultados: útil para la siguiente regresión) o lo elimina tras confirmar.",
+    caption:
+      "El menú «⋯» del ciclo lo clona, con sus elementos y sin resultados, útil para repetir una regresión en la siguiente versión; también lo elimina, tras confirmar.",
     covers: ["dialogs:src/modules/cycles/ui/CycleDetail.tsx"],
     run: async () => {
       if (await $('[data-testid="status-report"]').isExisting()) {
@@ -174,7 +181,8 @@ chapter("ciclos", () => {
 
   step("eliminar", {
     title: "Confirmar la eliminación",
-    caption: "Eliminar un ciclo pide confirmación; sus runs se conservan en «Ejecuciones».",
+    caption:
+      "Eliminar un ciclo pide confirmación. Los resultados no se pierden: sus runs se conservan en «Ejecuciones».",
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
       await menuItem(Y.clone).click();
@@ -187,7 +195,8 @@ chapter("ciclos", () => {
 
   step("lista", {
     title: "La lista de ciclos",
-    caption: "La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs; filtra por Planificados, Activos o Cerrados.",
+    caption:
+      "La lista muestra cada ciclo con su estado, fechas, configuraciones, progreso y runs. Filtra por «Planificados», «Activos» o «Cerrados» para ver de un vistazo lo que está en curso.",
     covers: ["action:cycles-filter"],
     run: async () => {
       await clickButton(Y.deleteConfirm, '[role="alertdialog"]');

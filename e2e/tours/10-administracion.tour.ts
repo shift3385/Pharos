@@ -161,7 +161,8 @@ chapter("administracion", () => {
 
   step("general", {
     title: "General",
-    caption: "Tema (claro, oscuro o según el sistema) e idioma se aplican al momento. También un fondo personalizado con su opacidad, la retención de elementos borrados y la carpeta donde se guardan las exportaciones.",
+    caption:
+      "«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema) y el idioma se aplican al momento. También puedes poner un fondo personalizado con su opacidad, elegir la retención de los elementos borrados y la carpeta donde se guardan las exportaciones.",
     covers: ["admin:general", "upload:src/modules/admin/ui/tabs/GeneralTab.tsx"],
     run: async () => {
       await clickButton(es.common.confirmDelete, '[role="alertdialog"]');
@@ -174,7 +175,8 @@ chapter("administracion", () => {
 
   step("cambios-sin-guardar", {
     title: "Cambiar de pestaña con cambios sin guardar",
-    caption: "Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios. Aquí se descartan: el fondo vuelve a ser el de siempre.",
+    caption:
+      "Si cambias de pestaña sin «Guardar ajustes», Pharos pregunta si descartas los cambios (en este ejemplo se descartan y el fondo vuelve a ser el de siempre).",
     covers: ["dialogs:src/modules/admin/ui/AdminPage.tsx"],
     shot: false,
     run: async () => {

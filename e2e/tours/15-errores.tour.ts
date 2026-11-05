@@ -56,7 +56,8 @@ chapter("errores", () => {
 
   step("restaurar", {
     title: "Restaurar la copia",
-    caption: "Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre.",
+    caption:
+      "Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre: por eso conviene guardar la clave de recuperación (capítulo 10).",
     shot: false,
     run: async () => {
       const db = profileDb();
@@ -89,7 +90,8 @@ chapter("errores", () => {
 
   step("reintentar", {
     title: "Reintentar",
-    caption: "«Reintentar» vuelve a mostrar la vista cuando el fallo ya no se repite.",
+    caption:
+      "«Reintentar» vuelve a mostrar la vista cuando el fallo ya no se repite. Si se repite, exporta el diagnóstico para informar de él.",
     shot: false,
     run: async () => {
       await browser.execute(() => {

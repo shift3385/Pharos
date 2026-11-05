@@ -28,7 +28,8 @@ const REPORT = join(repoDir, "src", "shared", "contracts", "pharos-run", "fixtur
 chapter("ejecuciones", () => {
   step("lista", {
     title: "Ejecuciones",
-    caption: "Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su estado y resultados; «Sin vincular», los tests importados que esperan un caso. Arriba, «Nuevo run manual» e «Importar informe».",
+    caption:
+      "Un run es una ejecución concreta de pruebas, manual o importada de tu automatización. Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su estado y resultados; «Sin vincular», los tests importados que esperan un caso. Arriba, «Nuevo run manual» (capítulo 13) e «Importar informe».",
     covers: ["section:runs", "state:runs-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);
@@ -39,7 +40,8 @@ chapter("ejecuciones", () => {
 
   step("importar", {
     title: "Importar un informe",
-    caption: "«Importar informe» acepta Cucumber Messages, CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON. Elige el archivo y, si el informe enlaza capturas o vídeos, su carpeta de adjuntos.",
+    caption:
+      "«Importar informe» trae a Pharos los resultados de tu automatización: acepta Cucumber Messages, CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON (en este ejemplo, un JUnit). Elige el archivo y, si el informe enlaza capturas o vídeos, su carpeta de adjuntos.",
     covers: ["dialogs:src/modules/runs/ui/ImportReportDialog.tsx", "upload:src/modules/runs/ui/ImportReportDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -55,7 +57,8 @@ chapter("ejecuciones", () => {
 
   step("vista-previa", {
     title: "Vista previa antes de importar",
-    caption: "La vista previa dice cuántos tests e intentos trae el informe, cuántos se vinculan a casos por su etiqueta (@BM-001) y cuántos quedarán «sin vincular». Nada se guarda hasta pulsar «Importar».",
+    caption:
+      "La vista previa dice cuántos tests e intentos trae el informe, cuántos se vinculan a casos por su etiqueta (en este ejemplo, @BM-001) y cuántos quedarán «sin vincular». Nada se guarda hasta pulsar «Importar», así que puedes comprobarlo sin riesgo.",
     shot: { element: D },
     run: async () => {
       await $(D).$(`[aria-label="${R.import.preview}"]`).scrollIntoView();
@@ -79,7 +82,8 @@ chapter("ejecuciones", () => {
 
   step("con-adjuntos", {
     title: "Un informe con adjuntos",
-    caption: "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo. «Ciclo» hace que el run nuevo sea de un ciclo (de los que no están cerrados): sus resultados cuentan en el progreso del ciclo sin editar nada después.",
+    caption:
+      "Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado (en este ejemplo, un JUnit de dos tests con la captura de un fallo). «Ciclo» hace que el run nuevo sea de un ciclo no cerrado: sus resultados cuentan en el progreso del ciclo sin editar nada después.",
     covers: ["action:import-attachments-folder", "action:import-into-cycle"],
     shot: { element: D },
     run: async () => {
@@ -112,7 +116,8 @@ chapter("ejecuciones", () => {
 
   step("sin-vincular", {
     title: "La bandeja «Sin vincular»",
-    caption: "Los tests del informe que no llevan la etiqueta de un caso del proyecto esperan en «Sin vincular», con el motivo (sin etiqueta, caso desconocido…), su último estado y cuántos resultados tienen.",
+    caption:
+      "Los tests del informe que no llevan la etiqueta de un caso del proyecto esperan en «Sin vincular», con el motivo (sin etiqueta, caso desconocido…), su último estado y cuántos resultados tienen. Hasta que los vincules no cuentan para ningún caso.",
     covers: ["screen:unlinked-tray", "tabs:src/modules/runs/ui/RunsPage.tsx"],
     run: async () => {
       await $('[data-testid="tab-unlinked"]').click();
@@ -138,7 +143,8 @@ chapter("ejecuciones", () => {
 
   step("vinculado", {
     title: "Vinculados a mano",
-    caption: "El filtro «Vinculados a mano» muestra los tests que vinculaste; «Desvincular» deshace el vínculo.",
+    caption:
+      "El filtro «Vinculados a mano» muestra los tests que vinculaste, para revisarlos; «Desvincular» deshace el vínculo si te equivocaste.",
     toast: true,
     covers: ["action:tray-filter", "action:tray-unlink"],
     run: async () => {

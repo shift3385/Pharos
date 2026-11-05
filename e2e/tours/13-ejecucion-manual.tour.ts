@@ -37,7 +37,8 @@ async function pickCase(key: string) {
 chapter("ejecucion-manual", () => {
   step("nuevo-run", {
     title: "Nuevo run manual",
-    caption: "En «Ejecuciones», «Nuevo run manual» crea un run para ejecutar a mano: título, entorno, build, configuración y los casos que entran (con su revisión vigente).",
+    caption:
+      "Para las pruebas que se hacen a mano, «Nuevo run manual», en «Ejecuciones», crea un run: título, entorno, build, configuración y los casos que entran, con su revisión vigente, de modo que el resultado queda ligado a la versión del caso que se ejecutó.",
     covers: ["dialogs:src/modules/runs/ui/CasePickerDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -147,7 +148,8 @@ chapter("ejecucion-manual", () => {
 
   step("guardar", {
     title: "Guardar el resultado",
-    caption: "«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (aquí, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento.",
+    caption:
+      "«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (en este ejemplo, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento, así que el historial de lo que pasó se conserva.",
     run: async () => {
       await byTestId("exec-save").click();
       await waitForToast(E.recorded.split("{{")[0]);
@@ -168,7 +170,8 @@ chapter("ejecucion-manual", () => {
 
   step("descartar", {
     title: "Descartar un borrador",
-    caption: "«Descartar» tira el borrador del elemento (y sus adjuntos) después de confirmarlo.",
+    caption:
+      "Si un borrador no te sirve, «Descartar» lo tira junto con sus adjuntos, después de confirmarlo.",
     covers: ["dialogs:src/modules/runs/ui/ExecutionPanel.tsx"],
     shot: { element: D },
     run: async () => {
@@ -183,7 +186,8 @@ chapter("ejecucion-manual", () => {
 
   step("editar-run", {
     title: "Editar los datos del run",
-    caption: "«Editar datos» cambia el título, el entorno, la build o la configuración del run.",
+    caption:
+      "«Editar datos» corrige el título, el entorno, la build o la configuración del run, si te equivocaste al crearlo.",
     covers: ["dialogs:src/modules/runs/ui/RunDetail.tsx"],
     shot: { element: D },
     run: async () => {
@@ -211,7 +215,8 @@ chapter("ejecucion-manual", () => {
 
   step("reabrir", {
     title: "Run cerrado y reabierto",
-    caption: "Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.",
+    caption:
+      "Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar, por ejemplo, si faltó un caso.",
     shot: false,
     run: async () => {
       await byTestId("run-close-confirm").click();
