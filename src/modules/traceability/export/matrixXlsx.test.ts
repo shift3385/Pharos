@@ -95,4 +95,46 @@ describe("buildMatrixXlsx", () => {
     expect((s.getCell("C7").value as { formula: string }).formula).toContain("Matrix!$I$6:$I$35");
     expect((s.getCell("C7").value as { result: number }).result).toBe(30);
   });
+
+  it("adds the «Resultados» sheet with each case's latest result (EJE-04)", async () => {
+    const withRuns = buildMatrix(
+      [{ requirementKey: "REQ-001", title: "Login", priority: "high" }],
+      [
+        { id: "a", scenarioId: "TC-001", title: "Login OK", status: "approved", requirementKeys: ["REQ-001"] },
+        { id: "b", scenarioId: "TC-002", title: "Login KO", status: "approved", requirementKeys: ["REQ-001"] },
+      ],
+      [{ id: "d", defectKey: "DEF-014", title: "Error 500", status: "open", severity: "critical", testCaseIds: ["b"] }],
+      {
+        cases: [
+          {
+            caseId: "a",
+            status: "skipped",
+            last: {
+              resultId: "r1", runId: "run2", runKey: "RUN-002", runTitle: "CI", trigger: "import",
+              sourceTool: "playwright", origin: "imported", at: "2026-11-02T09:00:01Z", status: "skipped",
+              configurationLabel: "chromium", flaky: false, revisionId: "rev", stale: true,
+            },
+          },
+        ],
+        requirements: [{ requirementKey: "REQ-001", riskLevel: 20, riskBand: "high" }],
+      },
+    );
+    const t = (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k);
+    const wb = await load(
+      await buildMatrixXlsx(withRuns, { ...meta, results: { t, filters: ["Ciclo: CYC-001"], date: "05/11/2026" } }, template("es")),
+    );
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Matriz", "Resumen Cobertura", "Guía", "traceability.resultsSheet.name"]);
+    // The template keeps its own words: skipped is «No ejecutado», the real status in Comments.
+    const ws = wb.worksheets[0];
+    expect(ws.getCell(`G${MATRIX_FIRST_ROW}`).value).toBe("No ejecutado");
+    expect(ws.getCell(`J${MATRIX_FIRST_ROW}`).value).toContain("traceability.execution.skipped");
+    const r = wb.worksheets[3];
+    expect(String(r.getCell("A2").value)).toContain("Ciclo: CYC-001");
+    expect(r.getRow(6).values).toEqual([
+      undefined, "REQ-001", 20, "traceability.risk.band.high", "TC-001", "Login OK", "traceability.execution.skipped",
+      "RUN-002", "CI", "2026-11-02T09:00:01Z", "chromium", "traceability.result.origin.imported",
+      "traceability.resultsSheet.no", "traceability.resultsSheet.yes",
+    ]);
+    expect(r.getRow(7).getCell(14).value).toBe("DEF-014 (defects.severity.critical)");
+  });
 });

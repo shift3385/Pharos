@@ -8,6 +8,12 @@
 //  - "Guía": untouched.
 // The priority / status / coverage words are read from the template's own
 // dropdown lists, so every exported value is one the dropdowns and formulas know.
+// EJE-04 (step 10): statuses the template has no word for go to the nearest
+// one (re-test → failed; skipped and other → not run; the Comments column
+// says which), and a new sheet «Resultados» / «Results» carries the latest
+// final result of each case: run, date, configuration, origin, flaky,
+// outdated and the defects with their severity (as ADR-0018 added a sheet
+// for custom fields).
 
 import ExcelJS from "exceljs";
 import { saveFile } from "@shared/export/saveFile";
@@ -30,11 +36,33 @@ export interface MatrixMeta {
   version: string;
   /** Localized text for the comments column. */
   noteLabel: (note: MatrixNote) => string;
+  /** The «Resultados» sheet; left out when absent (old callers, tests). */
+  results?: ResultsMeta;
 }
+
+export interface ResultsMeta {
+  t: (key: string, opts?: Record<string, unknown>) => string;
+  /** Active filters, already labelled («Ciclo: CYC-001 · Regresión»). */
+  filters: string[];
+  /** When it was generated, already formatted. */
+  date: string;
+}
+
+/** The template's four words; the matrix has more statuses (EJE-04). */
+type TemplateStatus = "passed" | "failed" | "blocked" | "not_run";
+const TEMPLATE_STATUS: Record<ExecutionStatus, TemplateStatus> = {
+  passed: "passed",
+  failed: "failed",
+  retest: "failed",
+  blocked: "blocked",
+  skipped: "not_run",
+  other: "not_run",
+  not_run: "not_run",
+};
 
 interface Vocabulary {
   priority: Record<RequirementPriority, string>;
-  execution: Record<ExecutionStatus, string>;
+  execution: Record<TemplateStatus, string>;
   coverage: { covered: string; not_covered: string };
 }
 
@@ -111,10 +139,15 @@ export async function buildMatrixXlsx(
           words.priority[data.priority],
           data.scenarioId ?? "",
           data.caseTitle ?? "",
-          data.executionStatus ? words.execution[data.executionStatus] : "",
+          data.executionStatus ? words.execution[TEMPLATE_STATUS[data.executionStatus] ?? "not_run"] : "",
           data.defectKeys.join(", "),
           words.coverage[data.coverage],
-          data.notes.map(meta.noteLabel).join(" · "),
+          [
+            ...(data.executionStatus === "skipped" || data.executionStatus === "other"
+              ? [meta.results?.t(`traceability.execution.${data.executionStatus}`) ?? data.executionStatus]
+              : []),
+            ...data.notes.map(meta.noteLabel),
+          ].join(" · "),
         ]
       : [];
     const row = ws.getRow(r);
@@ -142,7 +175,11 @@ export async function buildMatrixXlsx(
   summary.getCell("C6").value = { formula: distinctWith(words.coverage.covered), result: s.covered };
   summary.getCell("C7").value = { formula: distinctWith(words.coverage.not_covered), result: s.uncovered };
   summary.getCell("C8").value = { formula: "IFERROR(C6/C5,0)", result: s.coverageRatio };
-  const execution: [string, ExecutionStatus][] = [
+  const counted = (status: TemplateStatus) =>
+    (Object.keys(TEMPLATE_STATUS) as ExecutionStatus[])
+      .filter((k) => TEMPLATE_STATUS[k] === status)
+      .reduce((n, k) => n + (s.execution[k] ?? 0), 0);
+  const execution: [string, TemplateStatus][] = [
     ["C11", "passed"],
     ["C12", "failed"],
     ["C13", "blocked"],
@@ -151,12 +188,87 @@ export async function buildMatrixXlsx(
   for (const [address, status] of execution) {
     summary.getCell(address).value = {
       formula: `COUNTIF(${G},"${words.execution[status]}")`,
-      result: s.execution[status],
+      result: counted(status),
     };
   }
 
+  if (meta.results) addResultsSheet(wb, ws, matrix, meta.results);
+
   wb.calcProperties.fullCalcOnLoad = true;
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+/** «Resultados» (EJE-04): one row per requirement ↔ case link with its
+ *  latest final result. Styled like the template's header row. */
+function addResultsSheet(
+  wb: ExcelJS.Workbook,
+  matrixSheet: ExcelJS.Worksheet,
+  matrix: TraceabilityMatrix,
+  meta: ResultsMeta,
+) {
+  const { t } = meta;
+  const ws = wb.addWorksheet(t("traceability.resultsSheet.name"));
+  const yesNo = (v: boolean) => t(v ? "traceability.resultsSheet.yes" : "traceability.resultsSheet.no");
+  ws.getCell("A1").value = t("traceability.resultsSheet.title");
+  ws.getCell("A1").font = { bold: true, size: 13 };
+  ws.getCell("A2").value = t("traceability.resultsSheet.filters", {
+    filters: meta.filters.length ? meta.filters.join(" · ") : t("traceability.resultsSheet.none"),
+  });
+  ws.getCell("A3").value = t("traceability.resultsSheet.generated", { date: meta.date });
+  const cols = [
+    "requirement",
+    "risk",
+    "band",
+    "case",
+    "caseTitle",
+    "status",
+    "run",
+    "runTitle",
+    "date",
+    "configuration",
+    "origin",
+    "flaky",
+    "stale",
+    "defects",
+  ] as const;
+  const widths = [14, 8, 14, 12, 40, 14, 12, 28, 22, 16, 12, 8, 14, 30];
+  const header = ws.getRow(5);
+  const headerStyle = JSON.parse(JSON.stringify(matrixSheet.getRow(HEADER_ROW).getCell(FIRST_COL).style ?? {}));
+  cols.forEach((c, i) => {
+    const cell = header.getCell(i + 1);
+    cell.value = t(`traceability.resultsSheet.col.${c}`);
+    cell.style = JSON.parse(JSON.stringify(headerStyle));
+    ws.getColumn(i + 1).width = widths[i];
+  });
+  let r = 6;
+  for (const row of matrix.rows) {
+    if (!row.caseId) continue;
+    const last = row.last ?? null;
+    const values = [
+      row.requirementKey,
+      row.riskLevel ?? "",
+      t(`traceability.risk.band.${row.riskBand}`),
+      row.scenarioId ?? "",
+      row.caseTitle ?? "",
+      t(`traceability.execution.${row.executionStatus ?? "not_run"}`),
+      last?.runKey ?? "",
+      last?.runTitle ?? "",
+      last?.at ?? "",
+      last?.configurationLabel ?? "",
+      last ? t(`traceability.result.origin.${last.origin}`) : "",
+      last ? yesNo(last.flaky) : "",
+      last ? yesNo(last.stale) : "",
+      row.defects
+        .map((d) => (d.severity ? `${d.label} (${t(`defects.severity.${d.severity}`)})` : d.label))
+        .join(", "),
+    ];
+    values.forEach((v, i) => {
+      ws.getRow(r).getCell(i + 1).value = v === "" ? null : v;
+    });
+    r++;
+  }
+  ws.views = [{ state: "frozen", ySplit: 5 }];
+  ws.autoFilter = { from: { row: 5, column: 1 }, to: { row: Math.max(5, r - 1), column: cols.length } };
 }
 
 /** Template header row index, exposed for tests. */
@@ -173,7 +285,8 @@ export async function exportMatrixXlsx(
   userId: string,
   projectName: string,
   lang: string,
-  t: (key: string) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  results?: Omit<ResultsMeta, "t">,
 ): Promise<string> {
   const { projectPlanVersion } = await import("@modules/test-plan");
   const url = lang.startsWith("en") ? templateEn : templateEs;
@@ -185,6 +298,7 @@ export async function exportMatrixXlsx(
       projectName,
       version: (await projectPlanVersion(projectId, userId)) ?? "1.0",
       noteLabel: (note) => t(`traceability.note.${note}`),
+      results: results ? { ...results, t } : undefined,
     },
     template,
   );

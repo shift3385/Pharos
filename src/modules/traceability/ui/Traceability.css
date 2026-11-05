@@ -590,3 +590,107 @@
 .tz-matrix .dt__row[data-tone="gap"] > .dt__cell:nth-child(5) {
   grid-column: 4 / span 3;
 }
+
+/* ---- EJE-04: result filters, latest result, risk and defect pills.
+   No design in docs/rediseno for these: native selects and the shared
+   pills, with the matrix's tokens. ---- */
+.tz-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.tz-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: min(160px, 100%);
+  flex: 1 1 140px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.tz-filter select {
+  min-height: 36px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-regular);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+.tz-filter select:focus {
+  outline: none;
+  border-color: var(--color-navy-500);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+
+.tz-filters__clear {
+  align-self: flex-end;
+}
+
+.tz-filters__hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.tz-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.tz-result__meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.tz-result__meta a {
+  color: var(--color-navy-500);
+  text-decoration: none;
+}
+
+.tz-result__meta a:hover {
+  text-decoration: underline;
+}
+
+.tz-prio,
+.tz-defects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tz-risk {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tr-risk {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tr-risk__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: 12px;
+}

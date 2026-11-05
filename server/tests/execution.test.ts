@@ -182,6 +182,24 @@ describe("GET /api/execution/summary", () => {
     expect(after.last.revisionId).toBe(before.last.revisionId);
   });
 
+  it("the web sets a requirement's risk; a missing key keeps it, null clears it (TRZ-04)", async () => {
+    const { call } = await register("risk@pharos.dev");
+    const projectId = (await call("POST", "/api/projects", { name: "Risk" })).body.id as string;
+    const r = (await call("POST", "/api/requirements", { projectId, title: "Pay", riskLikelihood: 4, riskImpact: 5 })).body;
+    expect(r).toMatchObject({ riskLikelihood: 4, riskImpact: 5 });
+    const level = async () => (await call("GET", `/api/execution/summary?projectId=${projectId}`)).body.requirements[0];
+    expect(await level()).toMatchObject({ riskLevel: 20, riskBand: "high" });
+    const kept = await call("PUT", `/api/requirements/${r.id as string}`, { input: { projectId, title: "Pay v2" }, revision: r.revision });
+    expect(kept.body).toMatchObject({ title: "Pay v2", riskLikelihood: 4, riskImpact: 5 });
+    const cleared = await call("PUT", `/api/requirements/${r.id as string}`, {
+      input: { projectId, title: "Pay v2", riskLikelihood: null, riskImpact: 2 },
+      revision: kept.body.revision,
+    });
+    expect(cleared.body).toMatchObject({ riskLikelihood: null, riskImpact: 2 });
+    expect(await level()).toMatchObject({ riskLevel: null, riskBand: "unassessed" });
+    expect((await call("POST", "/api/requirements", { projectId, title: "Bad", riskLikelihood: 6 })).status).toBe(400);
+  });
+
   it("dayStarts, periods and other users", async () => {
     const { call } = await register("daily@pharos.dev");
     const projectId = (await call("POST", "/api/projects", { name: "Daily" })).body.id as string;

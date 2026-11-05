@@ -16,6 +16,18 @@ const ofProject = (projectId: string) => `projectId=${encodeURIComponent(project
 // import. `userId` is the signed-in user: only requirements of projects that
 // user owns are returned or changed (FIX-08; on the web the server takes it
 // from the session).
+/** The desktop keeps the risk in its own command (`requirement_risk_set`,
+ *  RUN-00): set it after a create or update when the input carries it. */
+async function withRisk(saved: Requirement | null, input: RequirementInput): Promise<Requirement | null> {
+  if (!saved || (input.riskLikelihood === undefined && input.riskImpact === undefined)) return saved;
+  return invoke("requirement_risk_set", {
+    id: saved.id,
+    likelihood: input.riskLikelihood === undefined ? (saved.riskLikelihood ?? null) : input.riskLikelihood,
+    impact: input.riskImpact === undefined ? (saved.riskImpact ?? null) : input.riskImpact,
+    userId: input.userId,
+  });
+}
+
 export const requirementApi = {
   list: (projectId: string, userId: string): Promise<Requirement[]> =>
     isTauri()
@@ -25,11 +37,11 @@ export const requirementApi = {
     isTauri() ? invoke("requirement_get", { id, userId }) : serverApi.get(path(id)),
   create: (input: RequirementInput): Promise<Requirement | null> =>
     isTauri()
-      ? invoke("requirement_create", { input })
+      ? invoke<Requirement | null>("requirement_create", { input }).then((r) => withRisk(r, input))
       : serverApi.post("/api/requirements", input),
   update: (id: string, input: RequirementInput): Promise<Requirement | null> =>
     isTauri()
-      ? invoke("requirement_update", { id, input })
+      ? invoke<Requirement | null>("requirement_update", { id, input }).then((r) => withRisk(r, input))
       : serverApi.put(path(id), id, input),
   remove: (id: string, userId: string): Promise<void> =>
     isTauri() ? invoke("requirement_delete", { id, userId }) : serverApi.remove(path(id), id),

@@ -30,6 +30,39 @@ vi.mock("@modules/defects", () => ({
     { id: "d1", defectKey: "DEF-018", title: "Doble cargo", status: "in_progress", caseIds: ["c1"] },
   ],
 }));
+// The execution derivation (EJE-04): one case passed in an imported
+// Playwright run, the other failed in a manual run.
+const summary = vi.fn();
+const lastOf = (over: Record<string, unknown>) => ({
+  resultId: "r",
+  runTitle: "",
+  trigger: "manual",
+  sourceTool: null,
+  origin: "manual",
+  status: "passed",
+  configurationLabel: null,
+  flaky: false,
+  revisionId: "rev",
+  stale: false,
+  ...over,
+});
+const baseSummary = (risk: number | null = null) => ({
+  cases: [
+    { caseId: "c1", status: "passed", last: lastOf({ runId: "run2", runKey: "RUN-002", origin: "imported", trigger: "import", sourceTool: "playwright", at: "2026-11-02T09:00:01Z", flaky: true }) },
+    { caseId: "c2", status: "failed", last: lastOf({ runId: "run1", runKey: "RUN-001", status: "failed", at: "2026-11-01T10:00:00Z" }) },
+  ],
+  requirements: [
+    { requirementKey: "REQ-051", riskLevel: risk, riskBand: risk ? "high" : "unassessed" },
+  ],
+  options: { builds: ["1.4.2"], environments: ["staging"] },
+});
+vi.mock("@modules/runs", () => ({
+  executionApi: { summary: (...a: unknown[]) => summary(...a) },
+}));
+vi.mock("@modules/cycles", () => ({
+  cycleApi: { list: async () => [{ id: "y1", cycleKey: "CYC-001", title: "Regresión" }] },
+  configurationApi: { list: async () => [{ id: "k1", name: "Chrome" }] },
+}));
 vi.mock("@modules/ai", async (orig) => ({
   ...(await orig<typeof import("@modules/ai")>()),
   aiAvailable: () => Promise.resolve(true),
@@ -55,6 +88,8 @@ beforeEach(async () => {
     req("REQ-051", "Notificación de pago", "high"),
   ]);
   remove.mockResolvedValue(undefined);
+  summary.mockReset();
+  summary.mockResolvedValue(baseSummary());
 });
 
 describe("Trazabilidad (RED-V3)", () => {
@@ -67,7 +102,7 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(5);
     expect(within(table).getByText("DEF-018")).toBeInTheDocument();
     expect(within(table).getByRole("link", { name: "PCL-0142" })).toHaveAttribute("href", "/projects/p1/cases?case=c1");
-    expect(within(table).getByText("Defecto abierto")).toBeInTheDocument();
+    expect(within(table).getByText(/Defecto abierto/)).toBeInTheDocument();
     expect(within(table).getAllByText("Sin cubrir")).toHaveLength(2);
     expect(within(table).getByRole("button", { name: "Generar casos con IA desde REQ-047" })).toBeInTheDocument();
     const kpis = document.querySelector(".tz-kpis")!;
@@ -122,4 +157,38 @@ describe("Trazabilidad (RED-V3)", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: "Eliminar" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith("REQ-047", expect.any(String)));
   }, 15_000);
+
+  it("shows each case's latest result from a manual and an imported run, filters them and orders by risk (EJE-04)", async () => {
+    setViewportWidth(1440);
+    summary.mockResolvedValue(baseSummary(20));
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
+    const table = await screen.findByRole("table", { name: "Matriz de trazabilidad" });
+    await waitFor(() => expect(within(table).getByRole("link", { name: "RUN-002" })).toBeInTheDocument());
+    expect(within(table).getByRole("link", { name: "RUN-002" })).toHaveAttribute("href", "/projects/p1/runs/run2");
+    expect(within(table).getByRole("link", { name: "RUN-001" })).toBeInTheDocument();
+    expect(within(table).getAllByText("Pasa").length).toBeGreaterThan(0);
+    expect(within(table).getAllByText("Falla").length).toBeGreaterThan(0);
+    expect(within(table).getByText("Flaky")).toBeInTheDocument();
+    // Risk first: REQ-051 (20, high) heads the matrix.
+    const rows = within(table).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("REQ-051");
+    expect(rows[1]).toHaveTextContent("Riesgo 20 · Alto");
+    await expectNoAxeViolations();
+    // A filter asks the derivation again, scoped.
+    await userEvent.selectOptions(screen.getByTestId("trace-filter-cycle"), "y1");
+    await waitFor(() =>
+      expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: "p1", cycleId: "y1" }), expect.any(String)),
+    );
+    await userEvent.selectOptions(screen.getByTestId("trace-filter-build"), "1.4.2");
+    await waitFor(() =>
+      expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ cycleId: "y1", build: "1.4.2" }), expect.any(String)),
+    );
+    await userEvent.click(screen.getByTestId("trace-filters-clear"));
+    await waitFor(() =>
+      expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ cycleId: undefined, build: undefined }), expect.any(String)),
+    );
+    // By ID: REQ-031 first again.
+    await userEvent.selectOptions(screen.getByTestId("trace-sort"), "key");
+    expect(within(screen.getByRole("table", { name: "Matriz de trazabilidad" })).getAllByRole("row")[1]).toHaveTextContent("REQ-031");
+  }, 20_000);
 });

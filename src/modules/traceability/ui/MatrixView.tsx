@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { caseLink } from "@modules/test-cases";
 import { Switch } from "@shared/ui/Switch";
+import { parseStamp } from "@shared/time/stamp";
 import { Trans, useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
@@ -9,7 +10,13 @@ import { Pagination } from "@shared/ui/Pagination";
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { PriorityFlag } from "@shared/ui/PriorityFlag";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
-import { defectLabel, type ExecutionStatus, type MatrixRow, type TraceabilityMatrix } from "../model/matrix";
+import {
+  defectLabel,
+  type ExecutionStatus,
+  type MatrixRow,
+  type RiskBand,
+  type TraceabilityMatrix,
+} from "../model/matrix";
 import type { Requirement } from "../model/types";
 import { priorityTone } from "./traceTones";
 import "@shared/ui/buttons.css";
@@ -18,8 +25,23 @@ import "./Traceability.css";
 const EXECUTION_TONE: Record<ExecutionStatus, PillTone> = {
   passed: "success",
   failed: "error",
+  retest: "error",
   blocked: "warning",
+  skipped: "neutral",
+  other: "info",
   not_run: "neutral",
+};
+const SEVERITY_TONE: Record<string, PillTone> = {
+  critical: "error",
+  major: "warning",
+  minor: "info",
+  trivial: "neutral",
+};
+const RISK_TONE: Record<RiskBand, PillTone> = {
+  high: "error",
+  medium: "warning",
+  low: "success",
+  unassessed: "neutral",
 };
 const PAGE_SIZES = [10, 25, 50];
 
@@ -61,9 +83,12 @@ export function MatrixView({
   proposals,
   onGenerate,
   onMigrate,
+  filters,
 }: {
   projectId: string;
   matrix: TraceabilityMatrix;
+  /** The result filters and order (EJE-04), above the matrix. */
+  filters?: ReactNode;
   requirements: Requirement[];
   aiReady: boolean;
   /** Free-text IDs that can become links (D2). */
@@ -71,7 +96,7 @@ export function MatrixView({
   onGenerate: (requirementKey: string) => void;
   onMigrate: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
   const [onlyGaps, setOnlyGaps] = useState(false);
   const [page, setPage] = useState(1);
@@ -99,9 +124,69 @@ export function MatrixView({
     </StatusPill>
   );
   const executionPill = (status: ExecutionStatus) => (
-    <StatusPill tone={EXECUTION_TONE[status]} dot>
+    <StatusPill tone={EXECUTION_TONE[status] ?? "info"} dot>
       {t(`traceability.execution.${status}`)}
     </StatusPill>
+  );
+  const day = (at: string | null | undefined) =>
+    at
+      ? parseStamp(at).toLocaleDateString(i18n.resolvedLanguage, {
+          day: "2-digit",
+          month: "short",
+        })
+      : null;
+  /** «Estado de prueba» (EJE-04): the latest final result, its run and date,
+   *  flaky and outdated. */
+  const result = (r: MatrixRow) => {
+    if (!r.executionStatus) return "—";
+    const last = r.last;
+    return (
+      <div className="tz-result" data-testid={`trace-result-${r.scenarioId ?? ""}`}>
+        {executionPill(r.executionStatus)}
+        {last && (
+          <span className="tz-result__meta">
+            <Link
+              className="tr-mono"
+              to={`/projects/${encodeURIComponent(projectId)}/runs/${encodeURIComponent(last.runId)}`}
+              title={t("traceability.result.openRun", { run: last.runKey })}
+              data-testid="trace-run-link"
+            >
+              {last.runKey}
+            </Link>
+            {day(last.at) && <span> · {day(last.at)}</span>}
+          </span>
+        )}
+        {last?.flaky && (
+          <StatusPill tone="warning" title={t("traceability.note.flaky")}>
+            {t("traceability.result.flaky")}
+          </StatusPill>
+        )}
+        {last?.stale && (
+          <StatusPill tone="neutral" title={t("traceability.result.staleTitle")}>
+            {t("traceability.result.stale")}
+          </StatusPill>
+        )}
+      </div>
+    );
+  };
+  const riskBadge = (r: MatrixRow) =>
+    r.riskLevel !== null ? (
+      <StatusPill tone={RISK_TONE[r.riskBand]} className="tz-risk">
+        {t("traceability.risk.badge", {
+          level: r.riskLevel,
+          band: t(`traceability.risk.band.${r.riskBand}`),
+        })}
+      </StatusPill>
+    ) : null;
+  const priorityCell = (r: MatrixRow) => (
+    <span className="tz-prio">
+      <PriorityFlag
+        tone={priorityTone(r.priority)}
+        label={t(`traceability.priorityLabel.${r.priority}`)}
+        showLabel
+      />
+      {riskBadge(r)}
+    </span>
   );
   const generateButton = (key: string, compact: boolean) => (
     <button
@@ -131,7 +216,24 @@ export function MatrixView({
     );
   const notes = (r: MatrixRow) =>
     r.notes.length ? r.notes.map((n) => t(`traceability.note.${n}`)).join(" · ") : "—";
-  const defects = (r: MatrixRow) => (r.defectKeys.length ? r.defectKeys.join(", ") : "—");
+  const defectPills = (r: MatrixRow) =>
+    r.defects.length ? (
+      <span className="tz-defects">
+        {r.defects.map((d) => (
+          <StatusPill
+            key={d.label}
+            tone={d.open ? (SEVERITY_TONE[d.severity ?? ""] ?? "neutral") : "neutral"}
+            strike={!d.open}
+            title={d.severity ? t(`defects.severity.${d.severity}`) : undefined}
+            className="tr-mono"
+          >
+            {d.label}
+          </StatusPill>
+        ))}
+      </span>
+    ) : (
+      "—"
+    );
 
   const columns: DataColumn<Line>[] = [
     {
@@ -154,15 +256,8 @@ export function MatrixView({
     {
       id: "priority",
       header: t("traceability.matrix.col.priority"),
-      width: "76px",
-      cell: (l) =>
-        l.first && (
-          <PriorityFlag
-            tone={priorityTone(l.row.priority)}
-            label={t(`traceability.priorityLabel.${l.row.priority}`)}
-            showLabel
-          />
-        ),
+      width: "112px",
+      cell: (l) => l.first && priorityCell(l.row),
     },
     {
       id: "case",
@@ -186,18 +281,14 @@ export function MatrixView({
     {
       id: "execution",
       header: t("traceability.matrix.col.execution"),
-      width: "116px",
-      cell: (l) => (l.row.executionStatus ? executionPill(l.row.executionStatus) : "—"),
+      width: "150px",
+      cell: (l) => result(l.row),
     },
     {
       id: "defects",
       header: t("traceability.matrix.col.defects"),
-      width: "60px",
-      cell: (l) => (
-        <span className="tr-mono tz-clip" title={l.row.defectKeys.join(", ")}>
-          {defects(l.row)}
-        </span>
-      ),
+      width: "96px",
+      cell: (l) => defectPills(l.row),
     },
     {
       id: "coverage",
@@ -229,13 +320,7 @@ export function MatrixView({
         <h4 className="tz-card__title">{head.requirementTitle}</h4>
         <dl className="tz-card__fields">
           <dt>{t("traceability.matrix.col.priority")}</dt>
-          <dd>
-            <PriorityFlag
-              tone={priorityTone(head.priority)}
-              label={t(`traceability.priorityLabel.${head.priority}`)}
-              showLabel
-            />
-          </dd>
+          <dd>{priorityCell(head)}</dd>
         </dl>
         {linked.length === 0 ? (
           <div className="tz-card__none">
@@ -253,9 +338,9 @@ export function MatrixView({
                   </p>
                   <dl className="tz-card__fields">
                     <dt>{t("traceability.matrix.col.execution")}</dt>
-                    <dd>{r.executionStatus ? executionPill(r.executionStatus) : "—"}</dd>
+                    <dd>{result(r)}</dd>
                     <dt>{t("traceability.matrix.col.defects")}</dt>
-                    <dd className="tr-mono">{defects(r)}</dd>
+                    <dd>{defectPills(r)}</dd>
                     {r.notes.length > 0 && (
                       <>
                         <dt>{t("traceability.matrix.col.notes")}</dt>
@@ -291,6 +376,7 @@ export function MatrixView({
           />
         </div>
       </div>
+      {filters}
 
       <dl className="tz-kpis">
         <div className="tz-kpi">
@@ -334,7 +420,7 @@ export function MatrixView({
             getRowId={(l) => l.key}
             label={t("traceability.matrix.title")}
             rowTone={(l) => (l.row.coverage === "not_covered" ? "gap" : undefined)}
-            minWidth={980}
+            minWidth={1120}
           />
         )}
         {groups.length > 0 && (

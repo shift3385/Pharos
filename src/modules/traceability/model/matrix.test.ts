@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildMatrix, type MatrixCase, type MatrixDefect, type MatrixRequirement } from "./matrix";
+import {
+  buildMatrix,
+  type MatrixCase,
+  type MatrixDefect,
+  type MatrixRequirement,
+  type MatrixRow,
+} from "./matrix";
 
 const req = (requirementKey: string, title = requirementKey): MatrixRequirement => ({
   requirementKey,
@@ -44,7 +50,10 @@ describe("buildMatrix", () => {
         requirementTitle: "REQ-001",
         priority: "medium",
         coverage: "not_covered",
+        riskLevel: null,
+        riskBand: "unassessed",
         defectKeys: [],
+        defects: [],
         notes: [],
       },
     ]);
@@ -96,5 +105,74 @@ describe("buildMatrix", () => {
     expect(m.gaps.unknownLinks).toEqual([{ caseId: "c", scenarioId: "TC-003", requirementKey: "REQ-404" }]);
     expect(m.gaps.defectsWithoutCase.map((d) => d.defectKey)).toEqual(["DEF-001", "DEF-002"]);
     expect(m.gaps.uncoveredRequirements).toEqual([]);
+  });
+});
+
+// EJE-04 (step 10): the matrix with the execution derivation.
+const last = (over: Partial<NonNullable<MatrixRow["last"]>> = {}): NonNullable<MatrixRow["last"]> => ({
+  resultId: "r1",
+  runId: "run1",
+  runKey: "RUN-001",
+  runTitle: "Manual",
+  trigger: "manual",
+  sourceTool: null,
+  origin: "manual",
+  at: "2026-11-01T10:00:00Z",
+  status: "passed",
+  configurationLabel: null,
+  flaky: false,
+  revisionId: "rev1",
+  stale: false,
+  ...over,
+});
+
+describe("buildMatrix with execution (EJE-04)", () => {
+  const reqs = [req("REQ-001"), req("REQ-002"), req("REQ-003")];
+  const cases = [
+    tc("a", "TC-001", ["REQ-001"]),
+    tc("b", "TC-002", ["REQ-002"]),
+    tc("c", "TC-003", ["REQ-003"]),
+  ];
+  const execution = {
+    cases: [
+      { caseId: "a", status: "passed", last: last({ origin: "imported", runKey: "RUN-002", flaky: true }) },
+      { caseId: "b", status: "retest", last: last({ status: "failed", stale: true }) },
+    ],
+    requirements: [
+      { requirementKey: "REQ-001", riskLevel: 4, riskBand: "low" },
+      { requirementKey: "REQ-002", riskLevel: 20, riskBand: "high" },
+      { requirementKey: "REQ-003", riskLevel: null, riskBand: "unassessed" },
+    ],
+  };
+
+  it("shows the latest final result of each case, with its notes", () => {
+    const m = buildMatrix(reqs, cases, [], execution, "key");
+    expect(m.rows.map((r) => [r.scenarioId, r.executionStatus, r.last?.runKey ?? null])).toEqual([
+      ["TC-001", "passed", "RUN-002"],
+      ["TC-002", "retest", "RUN-001"],
+      ["TC-003", "not_run", null],
+    ]);
+    expect(m.rows[0].notes).toEqual(["flaky"]);
+    expect(m.rows[1].notes).toEqual(["retest", "stale"]);
+    expect(m.summary.execution).toMatchObject({ passed: 1, retest: 1, not_run: 1, failed: 0 });
+  });
+
+  it("orders requirements by risk (band, then level), unassessed last", () => {
+    const m = buildMatrix(reqs, cases, [], execution);
+    expect(m.rows.map((r) => [r.requirementKey, r.riskBand, r.riskLevel])).toEqual([
+      ["REQ-002", "high", 20],
+      ["REQ-001", "low", 4],
+      ["REQ-003", "unassessed", null],
+    ]);
+  });
+
+  it("lists open defects first, with their severity", () => {
+    const d1 = { ...defect("d1", "DEF-001", ["a"], "closed"), severity: "minor" };
+    const d2 = { ...defect("d2", "DEF-002", ["a"], "open"), severity: "critical" };
+    const m = buildMatrix([req("REQ-001")], [cases[0]], [d1, d2], execution);
+    expect(m.rows[0].defects).toEqual([
+      { label: "DEF-002", severity: "critical", open: true },
+      { label: "DEF-001", severity: "minor", open: false },
+    ]);
   });
 });

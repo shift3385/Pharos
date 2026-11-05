@@ -1,9 +1,12 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { ArrowLeftRight, Download, Plus, Upload } from "lucide-react";
 import { aiAvailable } from "@modules/ai";
 import { useAuth } from "@modules/auth";
+import { configurationApi, cycleApi } from "@modules/cycles";
 import { projectDefects } from "@modules/defects";
+import { executionApi, type ExecutionSummary } from "@modules/runs";
 import { projectTraceableCases, setCaseRequirementKeys, type TraceableCase } from "@modules/test-cases";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
@@ -15,9 +18,11 @@ import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import { requirementApi } from "../api/requirementApi";
 import type { CsvImportResult } from "../import/requirementCsv";
-import { buildMatrix, type MatrixDefect } from "../model/matrix";
+import { buildMatrix, type MatrixDefect, type MatrixSort } from "../model/matrix";
 import { proposeMigration, type MigrationProposal } from "../model/migration";
 import type { Requirement } from "../model/types";
+import { NO_FILTERS, type MatrixFilters } from "../model/matrixFilters";
+import { ExecutionFilters, type FilterOption } from "./ExecutionFilters";
 import { GenerateCasesModal } from "./GenerateCasesModal";
 import { MatrixView } from "./MatrixView";
 import { MigrateTraceabilityModal } from "./MigrateTraceabilityModal";
@@ -33,6 +38,30 @@ interface Data {
   requirements: Requirement[];
   cases: TraceableCase[];
   defects: MatrixDefect[];
+}
+
+/** The matrix filters as URL search params (EJE-04): a filtered matrix can
+ *  be linked and survives a reload. */
+function filtersOf(params: URLSearchParams): MatrixFilters {
+  const sort = params.get("sort");
+  return {
+    cycleId: params.get("cycle") ?? "",
+    configurationId: params.get("configuration") ?? "",
+    build: params.get("build") ?? "",
+    environment: params.get("environment") ?? "",
+    sort: sort === "key" ? "key" : NO_FILTERS.sort,
+  };
+}
+
+function withFilters(params: URLSearchParams, f: MatrixFilters): URLSearchParams {
+  const next = new URLSearchParams(params);
+  const set = (k: string, v: string) => (v ? next.set(k, v) : next.delete(k));
+  set("cycle", f.cycleId);
+  set("configuration", f.configurationId);
+  set("build", f.build);
+  set("environment", f.environment);
+  set("sort", f.sort === NO_FILTERS.sort ? "" : f.sort);
+  return next;
 }
 
 const byKey = (a: Requirement, b: Requirement) =>
@@ -68,8 +97,52 @@ export function TraceabilityPage({
   const [generating, setGenerating] = useState<Requirement | null>(null);
   const [migrating, setMigrating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [params, setParams] = useSearchParams();
+  const filters = filtersOf(params);
+  const filterKey = [filters.cycleId, filters.configurationId, filters.build, filters.environment].join("");
+  const [execution, setExecution] = useState<ExecutionSummary | null>(null);
+  const [cycles, setCycles] = useState<FilterOption[]>([]);
+  const [configurations, setConfigurations] = useState<FilterOption[]>([]);
+
+  // The latest final result of each case under the filters (EJE-04). The
+  // matrix still shows its requirements and cases if this read fails.
+  async function refreshExecution() {
+    try {
+      setExecution(
+        await executionApi.summary(
+          {
+            projectId,
+            cycleId: filters.cycleId || undefined,
+            configurationId: filters.configurationId || undefined,
+            build: filters.build || undefined,
+            environment: filters.environment || undefined,
+          },
+          userId,
+        ),
+      );
+    } catch {
+      setExecution(null);
+      toast(t("traceability.filters.loadError"));
+    }
+  }
+  useEffect(() => {
+    if (userId) void refreshExecution();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, userId, filterKey]);
+  useEffect(() => {
+    if (!userId) return;
+    void cycleApi
+      .list(projectId, userId)
+      .then((list) => setCycles(list.map((c) => ({ value: c.id, label: `${c.cycleKey} · ${c.title}` }))))
+      .catch(() => setCycles([]));
+    void configurationApi
+      .list(projectId, userId, true)
+      .then((list) => setConfigurations(list.map((c) => ({ value: c.id, label: c.name }))))
+      .catch(() => setConfigurations([]));
+  }, [projectId, userId]);
 
   async function refresh() {
+    void refreshExecution();
     const [requirements, cases, defects] = await Promise.all([
       requirementApi.list(projectId, userId),
       projectTraceableCases(projectId, userId),
@@ -83,6 +156,7 @@ export function TraceabilityPage({
         defectKey: d.defectKey,
         title: d.title,
         status: d.status,
+        severity: d.severity,
         testCaseIds: d.caseIds,
       })),
     });
@@ -98,8 +172,9 @@ export function TraceabilityPage({
   }, []);
 
   const matrix = useMemo(
-    () => (data ? buildMatrix(data.requirements, data.cases, data.defects) : null),
-    [data],
+    () =>
+      data ? buildMatrix(data.requirements, data.cases, data.defects, execution, filters.sort as MatrixSort) : null,
+    [data, execution, filters.sort],
   );
   const proposals = useMemo(
     () => (data ? proposeMigration(data.cases, data.requirements.map((r) => r.requirementKey)) : []),
@@ -119,6 +194,8 @@ export function TraceabilityPage({
       title: draft.title,
       description: draft.description,
       priority: draft.priority,
+      riskLikelihood: draft.riskLikelihood,
+      riskImpact: draft.riskImpact,
     };
     try {
       if (editing && editing !== "new") await requirementApi.update(editing.id, input);
@@ -185,11 +262,26 @@ export function TraceabilityPage({
     await refresh();
   }
 
+  /** The active filters as «Ciclo: CYC-001 · …», for the export. */
+  function filterLabels(): string[] {
+    const label = (list: FilterOption[], v: string) => list.find((o) => o.value === v)?.label ?? v;
+    const out: string[] = [];
+    if (filters.cycleId) out.push(`${t("traceability.filters.cycle")}: ${label(cycles, filters.cycleId)}`);
+    if (filters.configurationId)
+      out.push(`${t("traceability.filters.configuration")}: ${label(configurations, filters.configurationId)}`);
+    if (filters.build) out.push(`${t("traceability.filters.build")}: ${filters.build}`);
+    if (filters.environment) out.push(`${t("traceability.filters.environment")}: ${filters.environment}`);
+    return out;
+  }
+
   async function exportXlsx() {
     if (!matrix) return;
     const { exportMatrixXlsx } = await import("../export/matrixXlsx");
     const name = await unlessReported(
-      exportMatrixXlsx(matrix, projectId, userId, projectName, i18n.resolvedLanguage ?? "es", t),
+      exportMatrixXlsx(matrix, projectId, userId, projectName, i18n.resolvedLanguage ?? "es", t, {
+        filters: filterLabels(),
+        date: new Date().toLocaleString(i18n.resolvedLanguage),
+      }),
     );
     if (name) toast(t("traceability.matrix.exportedToast", { name }));
   }
@@ -248,6 +340,16 @@ export function TraceabilityPage({
           proposals={proposals.length}
           onGenerate={generate}
           onMigrate={() => setMigrating(true)}
+          filters={
+            <ExecutionFilters
+              value={filters}
+              onChange={(f) => setParams(withFilters(params, f), { replace: true })}
+              cycles={cycles}
+              configurations={configurations}
+              builds={execution?.options.builds ?? []}
+              environments={execution?.options.environments ?? []}
+            />
+          }
         />
       )}
 

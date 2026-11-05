@@ -88,6 +88,16 @@ export async function projectPlanClosure(
   return { closeDate, criteria };
 }
 
+/** Id, title and version of a project’s plan (null when it has none): the
+ *  status report (EJE-03) scopes by it and names it. */
+export async function projectPlanRef(
+  projectId: string,
+  userId: string,
+): Promise<{ id: string; title: string; version: string } | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
+  return plan ? { id: plan.id, title: plan.title, version: plan.version } : null;
+}
+
 /** Version of a project’s plan (null when it has none), e.g. for the version
  *  of documents derived from the plan such as the traceability matrix. */
 export async function projectPlanVersion(

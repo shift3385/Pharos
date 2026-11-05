@@ -437,10 +437,10 @@ export function createDomainService(store: DomainStore) {
       title: input.title.trim(),
       description: input.description ?? "",
       priority: priorityOf(input.priority),
-      // Risk (RUN-00): not assessed until the desktop sets it; an update
-      // keeps it (`patchRequirement` spreads the stored payload).
-      riskLikelihood: null,
-      riskImpact: null,
+      // Risk (RUN-00, TRZ-04): not assessed unless the input carries it; an
+      // update without it keeps it (`patchRequirement` spreads the payload).
+      riskLikelihood: input.riskLikelihood ?? null,
+      riskImpact: input.riskImpact ?? null,
       createdAt: at,
       updatedAt: at,
     };
@@ -459,6 +459,8 @@ export function createDomainService(store: DomainStore) {
       title: input.title.trim(),
       description: input.description ?? "",
       priority: priorityOf(input.priority),
+      ...(input.riskLikelihood !== undefined && { riskLikelihood: input.riskLikelihood }),
+      ...(input.riskImpact !== undefined && { riskImpact: input.riskImpact }),
       updatedAt: now(),
     };
     return tx.put("requirement", doc.entityId, payload, doc, false, opts);

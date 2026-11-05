@@ -44,4 +44,16 @@ describe("requirementApi", () => {
     await requirementApi.importRows("p1", "u1", []);
     expect(invoke).toHaveBeenCalledWith("requirement_import", { projectId: "p1", userId: "u1", rows: [] });
   });
+
+  it("desktop: the risk goes through requirement_risk_set after the save (TRZ-04)", async () => {
+    onDesktop();
+    const saved = { id: "r1", riskLikelihood: 2, riskImpact: null };
+    invoke.mockImplementation(async (cmd: string) => (cmd === "requirement_risk_set" ? { ...saved, riskLikelihood: 4 } : saved));
+    const out = await requirementApi.update("r1", { ...input, riskLikelihood: 4 });
+    expect(invoke).toHaveBeenCalledWith("requirement_risk_set", { id: "r1", likelihood: 4, impact: null, userId: "u1" });
+    expect(out).toMatchObject({ riskLikelihood: 4 });
+    invoke.mockClear();
+    await requirementApi.create(input);
+    expect(invoke).not.toHaveBeenCalledWith("requirement_risk_set", expect.anything());
+  });
 });
