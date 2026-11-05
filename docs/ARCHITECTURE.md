@@ -352,14 +352,24 @@ its steps; the frozen `test_case_revision`, same id as
   is refused with `run-deleted` (`liveRun` / `isLiveRun`, the one
   predicate); reads leave it out, and its results and shards count only while
   their run is live, as in `cycles.ts`. Deleting a run stays desktop only.
+  The predicate lives in `domain/run-live.ts`; cycle progress and the result
+  links of defects read runs through it too.
+- **Reads** run outside the user's write lock (`DomainStore.read`: a
+  read-only transaction, no `FOR UPDATE`) and are scoped to one run
+  (`tx.list(entity, project, { where: { runId } })`); only the per-run counts
+  read the whole project.
 - **Client:** `runsApi` branches to the server on the web; the draft is the
   browser's (`src/modules/runs/model/webDrafts.ts`: `localStorage` per account
   and item, the desktop's stale rules, a shared list of recorded attempts for
-  other tabs). Files, imports and the «Sin vincular» tray stay on the desktop
-  (SYNC-04b); the UI says «Los adjuntos solo en escritorio».
+  other tabs; cleared on sign-out; dropped when the run reads as cancelled or
+  gone; the executor reloads on another tab's `storage` event). Files,
+  imports and the «Sin vincular» tray stay on the desktop
+  (SYNC-04b); the UI says «Los adjuntos solo están disponibles en el escritorio».
 - **Desktop pull:** a `run` pulled as `aborted` drops its local drafts and
-  their files (`sync::apply_doc` → `manual::drop_run_drafts`), as a local
-  cancel does.
+  their files, as a local cancel does, and so does a run conflict resolved to
+  the remote `aborted` (`sync::drop_drafts_of_remote`); `apply_remote` and
+  `sync_conflict_resolve` save with `persist_and_collect`, so the files leave
+  the disk.
 
 **Defects (DEF-01, ADR-0016).** Migration 0029, `src-tauri/src/defects.rs`
 (+ `defects/{ids,lifecycle,convert}.rs`) and `src/modules/defects/`:

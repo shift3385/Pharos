@@ -680,7 +680,7 @@ sincroniza (`APPLIED_SET_VERSION` sigue en 7). Precisiones:
   tiene un cambio local pendiente, el pull es un conflicto y los borradores
   esperan a que se resuelva.
 - **Sin archivos en la web** (SYNC-04b): el ejecutor no adjunta ni pega
-  capturas y lo dice («Los adjuntos solo en escritorio»); Ctrl+V no aparece en
+  capturas y lo dice («Los adjuntos solo están disponibles en el escritorio»); Ctrl+V no aparece en
   sus atajos. Importar informes y la bandeja «Sin vincular» siguen en el
   escritorio, con una nota en la web.
 - **Lecturas:** lista, cuentas por run, resultados, la pantalla del run y el
@@ -692,5 +692,42 @@ sincroniza (`APPLIED_SET_VERSION` sigue en 7). Precisiones:
   escritura sobre él (registrar un intento, añadir casos, cerrar, reabrir) se
   rechaza con `run-deleted`, como en el escritorio; las lecturas lo dejan
   fuera, y sus resultados y shards siguen guardados pero solo cuentan si su run
-  está vivo, como en `cycles.ts`. Lo decide un solo sitio, `isLiveRun` /
-  `liveRun`. Borrar un run sigue siendo solo del escritorio (EJE-07).
+  está vivo, como en `cycles.ts`. Lo decide un solo sitio, `isLiveRun`
+  (`domain/run-live.ts`), que usan también el progreso de los ciclos y los
+  vínculos de los defectos; borrador de defecto de un resultado de un run
+  borrado: `run-deleted`. Borrar un run sigue siendo solo del escritorio
+  (EJE-07).
+
+**Tras la revisión independiente (EJE-06, 2026-11-05):**
+
+- **Lecturas fuera del candado de escritura** (`store.read`, transacción de
+  solo lectura sin `LOCK_USER_SQL` ni `FOR UPDATE`) y **acotadas al run**:
+  `tx.list(…, { where: { runId } })` (y `testKey` al numerar un intento) en
+  lugar de leer todo el proyecto; las cuentas de todos los runs siguen leyendo
+  el proyecto, también fuera del candado. Sin índice nuevo (la `0015` del
+  servidor no se usa): si un proyecto grande lo pide, irá en su propia
+  migración.
+- **Números de intento:** `attempt` es «el siguiente de ese test en ese run»
+  donde se escribe; dos equipos (o la web y un equipo) sin sincronizar pueden
+  dar el mismo número a intentos distintos. Solo se muestra: el final se
+  decide por la hora, el número y el HLC (ADR-0013), nunca por `attempt` solo.
+- **`attemptId`** se normaliza como `Uuid::parse_str` del escritorio: con
+  guiones, entre llaves, `urn:uuid:` o 32 dígitos, en cualquier caja.
+  `startedAt` / `finishedAt` deben ser RFC 3339 con zona.
+- **Posición de un elemento:** la siguiente a todas las de ese run, también
+  las de elementos borrados, como `max(position)` en el escritorio.
+- **Borradores de la web:** se borran todos al cerrar sesión; un run leído
+  como cancelado o inexistente se lleva los suyos, y un elemento leído como
+  inexistente el suyo; nunca se guarda uno sin su run; el límite de 1 MB se
+  mide en bytes UTF-8; el ejecutor recarga el elemento cuando otra pestaña
+  cambia su borrador o registra un intento (evento `storage`).
+- **Escritorio:** lo que libera un pull (`apply_remote`) o resolver un
+  conflicto (`sync_conflict_resolve`) se guarda con `persist_and_collect`, así
+  que los archivos de los borradores descartados se borran del disco; y
+  resolver un conflicto de run tomando la versión remota `aborted` también
+  descarta sus borradores (`sync::drop_drafts_of_remote`, compartido con el
+  pull).
+- **Vectores:** `web-run-interop.json` incluye un caso antiguo con pasos de
+  texto y un campo personalizado (los dos lados derivan los mismos ids de
+  paso) y un run importado (shard y resultado vinculado por etiqueta) que los
+  dos lados leen igual.

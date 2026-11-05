@@ -255,16 +255,17 @@ adjuntos.
 **En la web** (EJE-06; navegador con la sesión iniciada):
 
 - [ ] «Nuevo run manual» y «Ejecutar» en un ciclo funcionan; la pantalla del
-      run dice «Los adjuntos solo en escritorio. Los borradores de ejecución se
+      run dice «Los adjuntos solo están disponibles en el escritorio. Los borradores de ejecución se
       guardan en este navegador».
 - [ ] Ejecutar un caso con el teclado y guardar: el intento aparece también en
       el escritorio tras sincronizar, con sus pasos y lo obtenido. Y al revés:
       un intento guardado en el escritorio se ve en la web.
 - [ ] Marcar pasos, cerrar la pestaña y volver: el borrador sigue. En otro
-      navegador o equipo no está (es de ese navegador).
+      navegador o equipo no está (es de ese navegador). Al cerrar sesión se
+      borra.
 - [ ] Con el mismo elemento abierto en dos pestañas, guardar en una: la otra,
       al marcar, avisa de que ese intento ya se guardó y recarga.
-- [ ] Pegar una captura (Ctrl+V) avisa «Los adjuntos solo en escritorio»; no
+- [ ] Pegar una captura (Ctrl+V) avisa «Los adjuntos solo están disponibles en el escritorio»; no
       hay botones de adjuntar. «Crear defecto» desde un intento fallido abre el
       defecto relleno, sin evidencias.
 - [ ] «Importar informe» está desactivado y la pestaña «Sin vincular» dice que
