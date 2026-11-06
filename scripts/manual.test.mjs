@@ -2,7 +2,7 @@
 // subset, the prose-source parser, the AI-key lookup, the secret scan and the
 // coverage check.
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,9 +11,12 @@ import { fileURLToPath } from "node:url";
 import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, markdownToHtml } from "./manual/markdown.mjs";
-import { changedShare, decodePng, encodePng, quantize } from "./manual/png.mjs";
+import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
+import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
+import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
+import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
-import { parseSource, pdfPageCount } from "./manual/sources.mjs";
+import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 
 const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -77,6 +80,53 @@ test("pdfPageCount reads the page tree", () => {
   assert.equal(pdfPageCount(Buffer.from("<< /Type /Page >> << /Type /Page >>")), 2);
 });
 
+test("pdfNamedDests maps each anchor to its page through a nested page tree (MAN-02)", () => {
+  const pdf = [
+    "1 0 obj\n<</Type /Catalog\n/Pages 2 0 R\n/Dests 9 0 R>>\nendobj",
+    "2 0 obj\n<</Type /Pages\n/Count 3\n/Kids [3 0 R 4 0 R]>>\nendobj",
+    "3 0 obj\n<</Type /Page\n/Annots [8 0 R]>>\nendobj",
+    "4 0 obj\n<</Type /Pages\n/Count 2\n/Kids [5 0 R 6 0 R]>>\nendobj",
+    "5 0 obj\n<</Type /Page>>\nendobj",
+    "6 0 obj\n<</Type /Page>>\nendobj",
+    "8 0 obj\n<</Type /Annot\n/Subtype /Link\n/Dest /cap-acceso>>\nendobj",
+    "9 0 obj\n<</cap-acceso [5 0 R /XYZ 6 776 0]\n/paso-acceso-entrar [6 0 R /XYZ 6 400 0]\n/caf#C3#A9 [3 0 R /XYZ 0 0 0]>>\nendobj",
+    "trailer\n<</Root 1 0 R>>",
+  ].join("\n");
+  const dests = pdfNamedDests(Buffer.from(pdf, "latin1"));
+  assert.equal(dests.get("cap-acceso"), 1);
+  assert.equal(dests.get("paso-acceso-entrar"), 2);
+  assert.equal(dests.get("cafÃ©"), 0, "#xx escapes decoded byte by byte");
+  assert.equal(pdfNamedDests(Buffer.from("no pdf")).size, 0);
+});
+
+test("drawFocus outlines a box in one exact colour that the palette keeps (MAN-02)", () => {
+  const img = image(120, 80, (x, y) => [(x * 2) & 255, (y * 3) & 255, (x + y) & 255, 255]);
+  drawFocus(img, { x: 40, y: 30, w: 30, h: 20 }, { color: FOCUS_COLOR, stroke: 3, pad: 4, radius: 6 });
+  const at = (x, y) => [...img.data.subarray((y * 120 + x) * 4, (y * 120 + x) * 4 + 3)];
+  assert.deepEqual(at(50, 26), FOCUS_COLOR, "top edge, pad px above the box");
+  assert.deepEqual(at(36, 40), FOCUS_COLOR, "left edge");
+  assert.notDeepEqual(at(55, 40), FOCUS_COLOR, "the control itself is untouched");
+  assert.notDeepEqual(at(36, 26), FOCUS_COLOR, "rounded corner left out");
+  // A gradient of 9 600 colours: without `reserve` the amber would blend.
+  const back = decodePng(encodePng(img, { reserve: [FOCUS_COLOR] }));
+  assert.deepEqual([...back.data.subarray((26 * 120 + 50) * 4, (26 * 120 + 50) * 4 + 3)], FOCUS_COLOR);
+  const again = drawFocus(image(120, 80, () => [0, 0, 0, 255]), { x: 40, y: 30, w: 30, h: 20 });
+  assert.ok(encodePng(again).equals(encodePng(drawFocus(image(120, 80, () => [0, 0, 0, 255]), { x: 40, y: 30, w: 30, h: 20 }))));
+});
+
+test("focusLayout: an inset beside small controls, below wide strips, none for big areas (MAN-02)", () => {
+  const beside = focusLayout(1440, 900, { x: 480, y: 820, w: 100, h: 30 });
+  assert.equal(beside.mode, "beside");
+  assert.ok(beside.crop.y + beside.crop.h <= 900, "the crop stays inside the capture");
+  assert.ok(beside.mag >= 1.4);
+  assert.equal(focusLayout(1440, 900, { x: 300, y: 10, w: 640, h: 40 }).mode, "below");
+  assert.equal(focusLayout(1440, 900, { x: 100, y: 100, w: 900, h: 600 }), null, "a whole panel needs no inset");
+  assert.equal(focusLayout(1440, 900, null), null);
+  const style = insetStyle(1440, 900, beside);
+  assert.match(style, /background-size:\d+\.\d{3}% auto/);
+  assert.match(style, /^width:\d+mm;height:[\d.]+mm;/);
+});
+
 test("routePaths refuses a <Route> it cannot read", () => {
   const app = '<Route path="/" element={<Home />} />\n<Route path="/old" element={<Navigate to="/" />} />\n<Route path="*" element={<X />} />';
   assert.deepEqual(routePaths(app), ["/"]);
@@ -138,4 +188,91 @@ test("scanForSecret finds the key as text, base64, UTF-16LE and inside a ZIP", a
     assert.deepEqual(hits.sort(), ["a/b64.log", "diag.zip!logs/app.log", "plain.json", "wide.txt"]);
     assert.deepEqual(await scanForSecret("", [dir], dir), []);
   });
+});
+
+test("the tour run lock: one live holder, stale locks replaced, release only by its owner (MAN-02)", () =>
+  tempDir((dir) => {
+    const file = join(dir, "tours.lock");
+    const alive = new Set([111]);
+    const isAlive = (pid) => alive.has(pid);
+    const startOf = () => null;
+    assert.deepEqual(acquireLock(file, { pid: 111, isAlive, startOf }), { ok: true });
+    const refused = acquireLock(file, { pid: 222, isAlive, startOf });
+    assert.equal(refused.ok, false);
+    assert.equal(refused.holder.pid, 111);
+    assert.match(lockMessage(refused.holder, file), /otra ejecución de recorridos en curso \(PID 111/);
+    assert.ok(lockMessage(refused.holder, file).includes(file), "says which file to delete");
+    releaseLock(file, 222);
+    assert.equal(acquireLock(file, { pid: 222, isAlive, startOf }).ok, false, "another run's lock is never released");
+    alive.delete(111);
+    assert.deepEqual(acquireLock(file, { pid: 222, isAlive, startOf }), { ok: true }, "a dead holder's lock is stale");
+    releaseLock(file, 222);
+    writeFileSync(file, "not json");
+    const refusedYoung = acquireLock(file, { pid: 333, isAlive, startOf });
+    assert.deepEqual(refusedYoung, { ok: false, holder: null }, "an unreadable young lock is a run still writing it");
+    const later = new Date(Date.now() + UNREADABLE_GRACE_MS + 1_000);
+    assert.deepEqual(acquireLock(file, { pid: 333, isAlive, startOf, now: later }), { ok: true }, "an unreadable old lock is replaced");
+    releaseLock(file, 333);
+    // A live PID that started after the lock was written is a reused PID.
+    alive.add(444);
+    writeFileSync(file, JSON.stringify({ pid: 444, startedAt: "2026-01-01T00:00:00.000Z" }));
+    assert.equal(acquireLock(file, { pid: 555, isAlive, startOf: () => Date.parse("2026-01-01T00:00:00.500Z") }).ok, false, "same process: held");
+    assert.deepEqual(acquireLock(file, { pid: 555, isAlive, startOf: () => Date.parse("2026-02-01T00:00:00.000Z") }), { ok: true }, "reused PID: stale");
+    assert.equal(pidAlive(process.pid), true);
+    assert.equal(pidAlive(0), false);
+  }));
+
+test("printWithEdge: a fresh profile per attempt, one retry on EPERM, none otherwise (MAN-02)", () =>
+  tempDir((dir) => {
+    const pdf = join(dir, "out.pdf");
+    const profilesDir = join(dir, "profiles");
+    // A profile left by an earlier build never blocks the next print.
+    mkdirSync(join(profilesDir, "edge-stale"), { recursive: true });
+    const seen = [];
+    let calls = 0;
+    const flaky = (args) => {
+      seen.push(args.find((a) => a.startsWith("--user-data-dir=")));
+      if (++calls === 1) throw Object.assign(new Error("EPERM: operation not permitted"), { code: "EPERM" });
+      writeFileSync(pdf, "%PDF-1.7");
+    };
+    const { attempt } = printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: flaky });
+    assert.equal(attempt, 2);
+    assert.notEqual(seen[0], seen[1], "each attempt gets its own profile");
+    assert.ok(seen.every((p) => !p.endsWith("edge-stale")));
+    assert.equal(readdirSync(profilesDir).filter((n) => n !== "edge-stale").length, 0, "profiles are removed");
+    assert.equal(sweepProfiles(profilesDir), 1);
+    let other = 0;
+    assert.throws(
+      () => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => { other++; throw new Error("timeout"); } }),
+      /timeout/,
+    );
+    assert.equal(other, 1, "no retry for other errors");
+    assert.throws(() => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => {} }), /did not print/, "a stale PDF never passes");
+  }));
+
+test("selectTours adds what a partial run needs, in run order, and refuses a bad filter (MAN-02)", async () => {
+  const { CHAPTERS, selectTours } = await import("../e2e/tours/manifest.ts");
+  const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
+  for (const c of CHAPTERS) {
+    for (const id of c.needs ?? []) assert.ok(order.get(id) < order.get(c.id), `${c.id} needs ${id}, which must run first`);
+  }
+  assert.equal(selectTours(null).files.length, CHAPTERS.filter((c) => c.file).length);
+  assert.deepEqual(selectTours(null).added, []);
+  const defects = selectTours("^09");
+  assert.deepEqual(defects.files, ["00-preparacion.tour.ts", "02-proyectos.tour.ts", "04-casos.tour.ts", "08-ejecuciones.tour.ts", "09-defectos.tour.ts"]);
+  assert.deepEqual(defects.added, ["02-proyectos.tour.ts", "04-casos.tour.ts", "08-ejecuciones.tour.ts"]);
+  assert.deepEqual(selectTours("^14").added, [], "a chapter that reads nothing adds nothing");
+  assert.throws(() => selectTours("["), /not a valid regular expression/);
+  assert.throws(() => selectTours("^99"), /matches no tour file/);
+  assert.throws(() => selectTours("^00"), /matches no tour file/, "the preparation alone is not a run");
+});
+
+test("groupInset: a wide control keeps a column-wide inset under its half-width capture (MAN-02)", () => {
+  // At full width this strip needs no inset of its own; in a column it does.
+  const inset = groupInset(1440, 900, { x: 56, y: 411, w: 460, h: 52 }, 85);
+  assert.equal(inset.mode, "below");
+  assert.equal(inset.insetMm, 85);
+  assert.ok(inset.mag >= 2.5, "readable: at least 2.5× the capture");
+  assert.ok(inset.crop.x >= 0 && inset.crop.x + inset.crop.w <= 1440);
+  assert.equal(groupInset(1440, 900, null, 85), null);
 });

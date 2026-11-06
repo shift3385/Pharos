@@ -21,6 +21,7 @@ import {
   selectOption,
   tf,
   waitForText,
+  waitForToast,
 } from "./helpers";
 
 const TEMP_PROJECT = "Proyecto de prueba";
@@ -40,7 +41,7 @@ async function setPrefix(prefix: string) {
   await $("#pj-prefix").setValue(prefix);
   await $("#pj-digits").selectByAttribute("value", "3");
   await button(es.projects.save).click();
-  await waitForText(es.projects.savedToast);
+  await waitForToast(es.projects.savedToast);
 }
 
 chapter("proyectos", () => {
@@ -73,8 +74,10 @@ chapter("proyectos", () => {
 
   step("busqueda", {
     title: "Buscar (Ctrl+K)",
-    caption: "La lupa de la barra superior, o Ctrl+K desde cualquier pantalla, abre la búsqueda. En esta versión avisa de que la búsqueda global llega más adelante; la campana hace lo mismo con las notificaciones.",
+    caption:
+      "La barra de búsqueda de arriba (o Ctrl+K desde cualquier pantalla) es el punto de entrada de la búsqueda global de casos, requisitos y proyectos. En esta versión todavía no busca: el panel avisa de que llega en una próxima versión. Mientras tanto, cada lista tiene su propio buscador y, dentro de los casos, Ctrl+P salta a uno (capítulo 4). La campana, a su lado, abre las notificaciones.",
     covers: ["keyboard:ctrl-k", "dialogs:src/app/layout/TopbarControls.tsx"],
+    focus: ".topbar__panel",
     run: async () => {
       await byTestId("period-30d").click();
       await browser.keys(["Control", "k"]);
@@ -84,8 +87,10 @@ chapter("proyectos", () => {
 
   step("menu-lateral", {
     title: "Contraer el menú lateral",
-    caption: "El botón junto al logotipo contrae el menú a una tira de iconos y lo vuelve a expandir; Pharos recuerda tu elección.",
+    caption:
+      "El botón junto al logotipo contrae el menú lateral a una tira de iconos, para dar más espacio a tablas y editores, y lo vuelve a expandir. Pharos recuerda tu elección en este equipo.",
     covers: ["action:sidebar-collapse", "dialogs:src/app/layout/TopbarControls.tsx"],
+    focus: "[data-testid=\"sidebar-collapse\"]",
     run: async () => {
       await browser.keys("Escape");
       await byTestId("notifications-trigger").click();
@@ -98,7 +103,8 @@ chapter("proyectos", () => {
 
   step("proyectos-vacio", {
     title: "La lista de proyectos, vacía",
-    caption: "«Proyectos» lista todos tus proyectos. Sin ninguno, invita a crear el primero.",
+    caption:
+      "Todo en Pharos vive dentro de un proyecto: el plan, los casos, los ciclos, los defectos. «Proyectos», en el menú lateral, lista los tuyos; sin ninguno, la lista invita a crear el primero.",
     covers: ["route:/projects", "state:projects-empty"],
     run: async () => {
       await byTestId("sidebar-collapse").click();
@@ -109,8 +115,10 @@ chapter("proyectos", () => {
 
   step("nombre-obligatorio", {
     title: "El nombre es obligatorio",
-    caption: "«Nuevo proyecto» abre una fila para escribir el nombre. Si pulsas «Crear» sin escribirlo, Pharos lo pide.",
+    caption:
+      "«Nuevo proyecto» abre una fila para escribir el nombre. Si pulsas «Crear» sin escribirlo, Pharos lo indica bajo el campo y no crea nada.",
     covers: ["state:project-create-required"],
+    focus: ".pj-create__msg",
     run: async () => {
       await button(es.projects.new).click();
       await button(es.projects.create).click();
@@ -120,7 +128,8 @@ chapter("proyectos", () => {
 
   step("crear-proyecto", {
     title: "Crear un proyecto",
-    caption: `Escribe el nombre («${PROJECT_A.name}») y pulsa «Crear». Pharos abre el proyecto en su plan de pruebas, todavía sin plan.`,
+    caption:
+      "Escribe el nombre de tu proyecto (en este ejemplo, «Banca Móvil») y pulsa «Crear». Pharos abre el proyecto directamente en su plan de pruebas, todavía vacío: es el primer paso natural (capítulo 3).",
     covers: ["action:project-create"],
     run: async () => {
       await $("#pj-new-name").setValue(PROJECT_A.name);
@@ -131,9 +140,11 @@ chapter("proyectos", () => {
 
   step("ajustes", {
     title: "Ajustes del proyecto: prefijo de los casos",
-    caption: "En «Ajustes del proyecto» cambias el nombre, el prefijo y los dígitos de los IDs de caso; la vista previa muestra cómo se numerarán. «Guardar» confirma con «Ajustes actualizados».",
+    caption:
+      "«Ajustes del proyecto», en el menú lateral, permite cambiar el nombre y cómo se numeran sus casos: el prefijo (en este ejemplo, «BM-») y el número de dígitos. La vista previa muestra cómo quedará el ID del siguiente caso (BM-001). Elige el prefijo pronto: es el que verás en informes, defectos y exportaciones. «Guardar» lo confirma con «Ajustes actualizados».",
     toast: true,
     covers: ["section:settings", "action:project-settings-save"],
+    focus: ".pj-settings__preview",
     run: async () => {
       await setPrefix(`${PROJECT_A.prefix}-`);
       await expect($(".pj-settings__preview")).toHaveText(expect.stringContaining(`${PROJECT_A.prefix}-`));
@@ -144,7 +155,8 @@ chapter("proyectos", () => {
 
   step("campo-nuevo", {
     title: "Nuevo campo personalizado",
-    caption: "En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. Aquí, una selección «Navegador» con tres opciones.",
+    caption:
+      "Los campos personalizados añaden a los casos lo que tu equipo necesite clasificar y que Pharos no trae de serie. En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. En este ejemplo, una selección «Navegador» con tres opciones.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -165,35 +177,37 @@ chapter("proyectos", () => {
 
   step("campo-creado", {
     title: "El campo, en la lista",
-    caption: "«Crear campo» lo guarda y aparece en la lista; los casos del proyecto ya pueden usarlo. Se reordena arrastrando o con el menú de cada campo.",
+    caption:
+      "«Crear campo» lo guarda y aparece en la lista; desde ese momento, los casos del proyecto pueden usarlo (capítulo 4). Se reordena arrastrando o con el menú de cada campo: ese es el orden en que se ve en el editor.",
     toast: true,
     covers: ["action:custom-field-create"],
     run: async () => {
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Navegador" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Navegador" }));
       // A second, yes/no field: the case list can filter by it.
       await $('[data-testid="custom-fields-card"]').$(`button=${es.customFields.new}`).click();
       await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Regresión crítica");
       await selectOption(es.customFields.dialog.type, es.customFields.type.boolean, '[role="dialog"]');
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Regresión crítica" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Regresión crítica" }));
       await $('[data-testid="custom-fields-card"]').scrollIntoView();
     },
   });
 
   step("campo-archivar", {
     title: "Archivar un campo",
-    caption: "Un campo no se borra: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
+    caption:
+      "Un campo no se borra, para no perder lo que ya se escribió en él: se archiva desde su menú («Archivar») y sus valores se conservan. «Mostrar archivados» lo enseña y «Desarchivar» lo recupera.",
     covers: ["action:custom-field-archive"],
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
       await card.$(`button=${es.customFields.new}`).click();
       await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Sprint antiguo");
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Sprint antiguo" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Sprint antiguo" }));
       await card.$(`button[aria-label="${tf("customFields.actions", { label: "Sprint antiguo" })}"]`).click();
       await menuItem(es.customFields.archive).click();
-      await waitForText(tf("customFields.archivedToast", { label: "Sprint antiguo" }));
+      await waitForToast(tf("customFields.archivedToast", { label: "Sprint antiguo" }));
       await card.$(`label*=${es.customFields.showArchived}`).click();
       await expect(card.$(hasText(es.customFields.archived))).toBeDisplayed();
       await card.scrollIntoView();
@@ -202,7 +216,8 @@ chapter("proyectos", () => {
 
   step("campo-descartar", {
     title: "Cerrar sin guardar",
-    caption: "Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos.",
+    caption:
+      "Si cierras el diálogo de un campo con cambios sin guardar, Pharos pregunta antes de descartarlos, para que no los pierdas por un clic.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: false,
     run: async () => {
@@ -217,7 +232,8 @@ chapter("proyectos", () => {
 
   step("campo-defecto", {
     title: "Campos de los defectos",
-    caption: "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto; aquí, «Cliente afectado». Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
+    caption:
+      "El selector «Casos / Defectos» de la tarjeta elige de qué entidad son los campos. Con «Defectos», «Nuevo campo» crea un campo que aparece en el editor de cada defecto (en este ejemplo, «Cliente afectado»). Los campos de casos y de defectos son independientes, y «Copiar de otro proyecto» copia los de la entidad elegida.",
     covers: ["action:custom-field-defect"],
     run: async () => {
       const card = $('[data-testid="custom-fields-card"]');
@@ -227,7 +243,7 @@ chapter("proyectos", () => {
       await card.$(`button=${es.customFields.new}`).click();
       await (await field(es.customFields.dialog.label, '[role="dialog"]')).setValue("Cliente afectado");
       await dialog().$(`button=${es.customFields.dialog.create}`).click();
-      await waitForText(tf("customFields.savedToast", { label: "Cliente afectado" }));
+      await waitForToast(tf("customFields.savedToast", { label: "Cliente afectado" }));
       await expect(card.$(hasText("Cliente afectado"))).toBeDisplayed();
       await card.scrollIntoView();
     },
@@ -235,7 +251,8 @@ chapter("proyectos", () => {
 
   step("configuracion-nueva", {
     title: "Nueva configuración",
-    caption: "En «Configuraciones», «Nueva configuración» define dónde se ejecuta un ciclo: navegador, sistema, dispositivo e idioma. Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
+    caption:
+      "Una configuración describe dónde se ejecuta una prueba, para saber en qué entorno pasó o falló. En «Configuraciones», «Nueva configuración» pide navegador, sistema, dispositivo e idioma (en este ejemplo, «Chrome · Windows 11»). Las etiquetas de importación (Intro o coma para añadir cada una) son los nombres con los que un informe importado reconoce la configuración.",
     covers: ["dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx", "keyboard:config-labels"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -259,11 +276,12 @@ chapter("proyectos", () => {
 
   step("configuracion-creada", {
     title: "Configuraciones del proyecto",
-    caption: "«Guardar» la añade a la lista. Aquí hay dos (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas».",
+    caption:
+      "«Guardar» la añade a la lista. En este ejemplo hay dos activas (Chrome y Edge); una tercera se archivó desde su menú y solo se ve con «Mostrar archivadas»: así deja de ofrecerse en ciclos nuevos sin perder su historia.",
     covers: ["action:configuration-create", "action:configuration-archive"],
     run: async () => {
       await dialog().$(`button=${es.configurations.save}`).click();
-      await waitForText(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
+      await waitForToast(tf("configurations.savedToast", { name: "Chrome · Windows 11" }));
       const card = $('[data-testid="configurations-card"]');
       for (const [name, browserName, label] of [
         ["Edge · Windows 11", "Edge", "msedge"],
@@ -276,18 +294,19 @@ chapter("proyectos", () => {
         await (await field(es.configurations.labels, d)).click();
         await browser.keys([...label, "Enter"]);
         await dialog().$(`button=${es.configurations.save}`).click();
-        await waitForText(tf("configurations.savedToast", { name }));
+        await waitForToast(tf("configurations.savedToast", { name }));
       }
       await card.$(`button[aria-label="${tf("configurations.actions", { name: "Safari · macOS" })}"]`).click();
       await menuItem(es.configurations.archive).click();
-      await waitForText(tf("configurations.archivedToast", { name: "Safari · macOS" }));
+      await waitForToast(tf("configurations.archivedToast", { name: "Safari · macOS" }));
       await card.scrollIntoView();
     },
   });
 
   step("segundo-proyecto", {
     title: "Crear con Intro y copiar campos",
-    caption: `Un segundo proyecto («${PROJECT_B.name}», creado pulsando Intro tras el nombre) puede copiar los campos personalizados de otro con «Copiar de otro proyecto».`,
+    caption:
+      "Un segundo proyecto (en este ejemplo, «Portal Clientes», creado pulsando Intro tras el nombre) no tiene que definir sus campos desde cero: «Copiar de otro proyecto» trae los campos personalizados de otro.",
     covers: ["keyboard:project-create-enter", "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
@@ -302,11 +321,12 @@ chapter("proyectos", () => {
 
   step("lista-proyectos", {
     title: "Todos los proyectos",
-    caption: "Con proyectos, la lista muestra los recientes arriba y la tabla de todos: plan, casos, ejecución, cobertura y último acceso. Busca por nombre o prefijo y ordena con «Ordenar por».",
+    caption:
+      "Con proyectos, la lista muestra arriba los recientes y debajo la tabla de todos, con el estado del plan, los casos, la ejecución, la cobertura y el último acceso. Busca por nombre o prefijo (en este ejemplo, «BM» deja solo «Banca Móvil») y ordena con «Ordenar por».",
     covers: ["action:projects-search", "action:projects-sort"],
     run: async () => {
       await dialog().$(`button=${es.customFields.copyDialog.confirm}`).click();
-      await waitForText(tf("customFields.copyDialog.copiedToast_other", { count: 2 }));
+      await waitForToast(tf("customFields.copyDialog.copiedToast_other", { count: 2 }));
       await byTestId("nav-projects").click();
       await $(`input[placeholder="${es.projects.list.search}"]`).setValue("BM");
       await expect($(`a.pj-row__link*=${PROJECT_A.name}`)).toBeDisplayed();
@@ -320,8 +340,10 @@ chapter("proyectos", () => {
 
   step("menu-fila", {
     title: "Acciones de un proyecto",
-    caption: "El menú «⋯» de cada fila abre el proyecto, sus ajustes o lo exporta en un ZIP (plan, casos y documentos).",
+    caption:
+      "El menú «⋯» de cada fila reúne las acciones del proyecto: abrirlo, ir a sus ajustes o exportarlo en un ZIP con su plan, sus casos y sus documentos, útil como copia o para entregarlo a alguien que no usa Pharos.",
     covers: ["action:projects-row-menu"],
+    focus: "[role=\"menu\"]",
     run: async () => {
       await $(`button[aria-label="${tf("projects.list.rowMenu", { name: PROJECT_A.name })}"]`).click();
       await expect(menuItem(es.projects.exportProject)).toBeDisplayed();
@@ -330,19 +352,22 @@ chapter("proyectos", () => {
 
   step("exportar-zip", {
     title: "Exportar un proyecto",
-    caption: "«Exportar proyecto (ZIP)» genera los documentos con una barra de progreso y guarda el ZIP en tu carpeta de descarga; «Exportar todo» hace lo mismo con todos los proyectos.",
+    caption:
+      "«Exportar proyecto (ZIP)» genera los documentos mostrando una barra de progreso y guarda el ZIP en tu carpeta de descarga (Administración › General); al terminar, un aviso indica cuántos archivos se exportaron y dónde. «Exportar todo» hace lo mismo con todos tus proyectos.",
     covers: ["dialogs:src/modules/projects/ui/ExportProgressModal.tsx"],
     shot: false,
     run: async () => {
       await menuItem(es.projects.exportProject).click();
-      await waitForText("archivos exportados en", 60_000);
+      await waitForToast("archivos exportados en", 60_000);
     },
   });
 
   step("cambiar-proyecto", {
     title: "Cambiar de proyecto",
-    caption: "Dentro de un proyecto, el selector de la parte superior del menú lateral salta a otro proyecto sin volver a la lista.",
+    caption:
+      "Dentro de un proyecto, el selector de la parte superior del menú lateral (con su prefijo y su nombre) salta a otro proyecto sin volver a la lista; con muchos proyectos, escribe para filtrarlos.",
     covers: ["action:project-switcher"],
+    focus: "[data-testid=\"project-switcher\"]",
     run: async () => {
       await openProject(PROJECT_A.name);
       await byTestId("project-switcher").click();
@@ -352,7 +377,8 @@ chapter("proyectos", () => {
 
   step("eliminar-proyecto", {
     title: "Eliminar un proyecto",
-    caption: "«Eliminar proyecto», al pie de los ajustes, cuenta lo que se perderá y pide escribir el prefijo (o el nombre) para confirmar. «Sí, eliminar todo» lo borra y vuelve a la lista.",
+    caption:
+      "«Eliminar proyecto», al pie de los ajustes, borra el proyecto con todo lo que contiene. Por eso el diálogo cuenta lo que se perderá y, para evitar un borrado por error, pide escribir el prefijo (o el nombre) antes de habilitar «Sí, eliminar todo». Si solo quieres conservar una copia, exporta antes el ZIP.",
     covers: ["dialogs:src/modules/projects/ui/ProjectSettings.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
@@ -370,7 +396,8 @@ chapter("proyectos", () => {
 
   step("eliminado", {
     title: "Proyecto eliminado",
-    caption: "Tras confirmar, un aviso lo confirma y la lista ya no lo muestra.",
+    caption:
+      "Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra.",
     shot: false,
     run: async () => {
       await button(es.projects.deleteConfirm).click();

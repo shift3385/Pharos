@@ -14,67 +14,67 @@ trazabilidad y «Inicio» los cuentan.
 
 ### 9.1. Defectos
 
-Pulsa «Defectos» en el menú lateral. Arriba, «Desde un resultado» y «Nuevo defecto»; debajo, los filtros (abiertos, todos, cerrados), la búsqueda, la severidad y el cambio entre lista y tablero.
+Un defecto registra algo que no funciona como se esperaba, para que se corrija y se pueda volver a probar. Pulsa «Defectos» en el menú lateral. Arriba están «Desde un resultado» y «Nuevo defecto»; debajo, los filtros por estado (abiertos, todos, cerrados), la búsqueda, la severidad y el cambio entre «Lista» y «Tablero».
 
 ![Defectos](img/defectos/01-vacio.png)
 
 ### 9.2. Nuevo defecto: el título es obligatorio
 
-«Nuevo defecto» abre el editor. Sin título no se guarda: Pharos lo indica en el campo.
+«Nuevo defecto» abre el editor. El título es obligatorio: sin él, Pharos lo indica en el campo y no guarda.
 
 ![Nuevo defecto: el título es obligatorio](img/defectos/02-titulo-obligatorio.png)
 
 ### 9.3. Rellenar el defecto
 
-Detalles (severidad, prioridad, estado, etiquetas), reproducción (pasos, resultado esperado y obtenido), dónde se encontró (build y entorno), vínculos con casos y requisitos, seguimiento externo y los campos personalizados de defectos que definiste en Ajustes (aquí, «Cliente afectado»).
+Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena los detalles (severidad, prioridad, estado y etiquetas), la reproducción (pasos, resultado esperado y resultado obtenido), dónde se encontró (build y entorno), los vínculos con casos y requisitos y, si se sigue también fuera de Pharos, la referencia externa (en este ejemplo, «El saldo no se actualiza tras una transferencia», de severidad mayor, encontrado en la build 2.0.0-rc1).
 
 ![Rellenar el defecto](img/defectos/03-nuevo.png)
 
 ### 9.4. Evidencias
 
-Tras guardar, «Evidencias» admite capturas, vídeos o registros; se guardan cifrados en este equipo.
+Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: nombre del archivo») lo quita.
 
 ![Evidencias](img/defectos/04-evidencias.png)
 
 ### 9.5. Un defecto desde un resultado fallido
 
-«Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (aquí, el del informe importado en el capítulo 8). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado.
+Cuando una prueba falla, lo más rápido es crear el defecto desde su resultado. «Desde un resultado» lista los intentos que no pasaron en los runs del proyecto (en este ejemplo, el del informe importado en el capítulo 8). Al elegir uno, el editor se rellena con el error y el defecto queda vinculado a ese resultado, así que la trazabilidad no depende de copiar y pegar.
 
 ![Un defecto desde un resultado fallido](img/defectos/05-desde-resultado.png)
 
 ### 9.6. Prerrellenado desde el resultado
 
-El aviso superior indica de qué resultado nace. Revisa el título y guarda.
+El aviso azul de arriba indica de qué resultado nace el defecto. Revisa el título y la severidad que propone (en este ejemplo, se marca como crítico) y guarda.
 
 ![Prerrellenado desde el resultado](img/defectos/06-prerrellenado.png)
 
 ### 9.7. La lista de defectos
 
-La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Filtra por abiertos, todos o cerrados, por severidad o busca por texto.
+La lista muestra ID, título, severidad, prioridad, estado, casos vinculados y fecha. Cambia entre abiertos, todos o cerrados, filtra por severidad o busca por texto (en este ejemplo, «saldo»).
 
 ![La lista de defectos](img/defectos/07-lista.png)
 
 ### 9.8. El tablero de defectos
 
-«Tablero» agrupa los defectos por estado. Arrastra una tarjeta (o usa el teclado sobre su asa) para cambiarlo; Pharos solo permite los pasos válidos del ciclo de vida.
+«Tablero» agrupa los defectos por estado, una columna por cada etapa de su ciclo de vida. Para avanzar un defecto, arrastra su tarjeta (o, con el teclado, lleva el foco a su asa y usa Espacio y las flechas). Pharos solo permite los cambios de estado válidos del ciclo de vida, así que una columna que no admite el defecto no lo acepta.
 
 ![El tablero de defectos](img/defectos/08-tablero.png)
 
 ### 9.9. Cerrar un defecto
 
-Al soltar un defecto en «Cerrado» (o en «Otros»: rechazado, aplazado), Pharos pide la resolución y, si quieres, la build en la que se corrigió.
+Al soltar un defecto en «Cerrado» (o en «Otros»: rechazado o aplazado), Pharos pide la resolución y, si quieres, la build en la que se corrigió. Así el cierre queda justificado y se sabe desde qué versión probar.
 
 ![Cerrar un defecto](img/defectos/09-cerrar.png)
 
 ### 9.10. Eliminar un defecto
 
-En la lista, la papelera de la fila pide confirmación. Su clave no se vuelve a usar.
+Normalmente un defecto se cierra, no se borra. Si se creó por error, la papelera de su fila («Eliminar») pide confirmación con «Sí, eliminar»; su clave no se vuelve a usar.
 
 ![Eliminar un defecto](img/defectos/10-eliminar.png)
 
 ### 9.11. Defecto eliminado
 
-Al confirmar desaparece de la lista.
+Al confirmar, el defecto desaparece de la lista.
 
 ## Consejos
 

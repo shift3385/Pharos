@@ -15,7 +15,7 @@ y la matriz de trazabilidad.
 
 ### 13.1. Nuevo run manual
 
-En «Ejecuciones», «Nuevo run manual» crea un run para ejecutar a mano: título, entorno, build, configuración y los casos que entran (con su revisión vigente).
+Para las pruebas que se hacen a mano, «Nuevo run manual», en «Ejecuciones», crea un run: título, entorno, build, configuración y los casos que entran, con su revisión vigente, de modo que el resultado queda ligado a la versión del caso que se ejecutó.
 
 ![Nuevo run manual](img/ejecucion-manual/01-nuevo-run.png)
 
@@ -51,7 +51,7 @@ Con el foco en un paso o en el resultado, Ctrl+V pega la imagen del portapapeles
 
 ### 13.7. Guardar el resultado
 
-«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (aquí, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento.
+«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (en este ejemplo, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento, así que el historial de lo que pasó se conserva.
 
 ![Guardar el resultado](img/ejecucion-manual/07-guardar.png)
 
@@ -63,13 +63,13 @@ En un intento fallido, «Crear defecto» abre el editor de defectos relleno con 
 
 ### 13.9. Descartar un borrador
 
-«Descartar» tira el borrador del elemento (y sus adjuntos) después de confirmarlo.
+Si un borrador no te sirve, «Descartar» lo tira junto con sus adjuntos, después de confirmarlo.
 
 ![Descartar un borrador](img/ejecucion-manual/09-descartar.png)
 
 ### 13.10. Editar los datos del run
 
-«Editar datos» cambia el título, el entorno, la build o la configuración del run.
+«Editar datos» corrige el título, el entorno, la build o la configuración del run, si te equivocaste al crearlo.
 
 ![Editar los datos del run](img/ejecucion-manual/10-editar-run.png)
 
@@ -81,7 +81,7 @@ En un intento fallido, «Crear defecto» abre el editor de defectos relleno con 
 
 ### 13.12. Run cerrado y reabierto
 
-Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.
+Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar, por ejemplo, si faltó un caso.
 
 ### 13.13. Informe de estado
 

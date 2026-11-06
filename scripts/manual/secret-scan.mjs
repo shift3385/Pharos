@@ -32,6 +32,11 @@ function* filesUnder(dir) {
   if (!existsSync(dir)) return;
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
+    // Edge's throwaway print profiles (docs/manual/.build): the manual never
+    // ships them, the key never reaches them (Edge only prints local HTML, which
+    // is scanned) and Edge may still hold their files open, so reading them could
+    // fail a good run.
+    if (name === "edge-profiles") continue;
     if (statSync(p).isDirectory()) yield* filesUnder(p);
     else yield p;
   }

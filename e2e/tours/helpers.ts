@@ -67,12 +67,84 @@ export async function openAdminTab(tab: string) {
   await expect(byTestId(`admin-tab-${tab}`)).toHaveAttribute("aria-selected", "true");
 }
 
-/** Waits for a toast (or any text) to appear on the page. */
+/** Waits for text that stays on the page (a heading, an inline status). A toast
+ *  needs waitForToast: visible text can miss it or match the wrong moment. */
 export async function waitForText(text: string, timeout = 15_000) {
   await browser.waitUntil(async () => (await $("body").getText()).includes(text), {
     timeout,
+    interval: 200,
     timeoutMsg: `text never appeared: ${text}`,
   });
+}
+
+interface RecordedToast {
+  text: string;
+  at: number;
+  used: boolean;
+  error: boolean;
+}
+type ToastLog = { __tourToasts?: RecordedToast[] };
+
+/** How long a toast nobody waited for can still answer a wait. Longer than a
+ *  toast lives (Toast.tsx: 3 s, 8 s for warnings and errors). */
+const TOAST_MAX_AGE_MS = 10_000;
+
+/** Records every toast the app raises, in the page. Polling visible text is not
+ *  reliable for them: a toast leaves after 3 s, and the captures' CSS
+ *  (`stabilise`) hides it as soon as a newer one appears. Idempotent; a new page
+ *  starts a new log. */
+export async function recordToasts() {
+  await browser.execute(() => {
+    const w = window as unknown as ToastLog;
+    if (w.__tourToasts) return;
+    const log: RecordedToast[] = (w.__tourToasts = []);
+    const add = (el: Element) =>
+      log.push({
+        text: (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+        at: Date.now(),
+        used: false,
+        error: el.classList.contains("toast--error"),
+      });
+    document.querySelectorAll(".toast").forEach(add);
+    new MutationObserver((changes) => {
+      for (const change of changes) {
+        change.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          if (node.matches(".toast")) add(node);
+          else node.querySelectorAll(".toast").forEach(add);
+        });
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+}
+
+/** Waits for a toast containing `text`, even one already gone or hidden. Each
+ *  toast answers one wait only, so the toast of an earlier save (still on screen
+ *  for 3 s) cannot pass for the one this step's save has yet to raise. An error
+ *  toast counts only with `{ error: true }`: a failure whose message happens to
+ *  contain the text must not pass for success. */
+export async function waitForToast(text: string, timeout = 15_000, { error = false } = {}) {
+  await recordToasts();
+  try {
+    await browser.waitUntil(
+      () =>
+        browser.execute(
+          (wanted: string, maxAge: number, wantError: boolean) => {
+            const log = (window as unknown as ToastLog).__tourToasts ?? [];
+            const hit = log.find((t) => !t.used && t.error === wantError && t.text.includes(wanted) && Date.now() - t.at < maxAge);
+            if (hit) hit.used = true;
+            return Boolean(hit);
+          },
+          text,
+          TOAST_MAX_AGE_MS,
+          error,
+        ),
+      { timeout },
+    );
+  } catch {
+    const seen = await browser.execute(() => ((window as unknown as ToastLog).__tourToasts ?? []).map((t) => t.text));
+    throw new Error(`toast never appeared: ${text} (toasts so far: ${JSON.stringify(seen.slice(-5))})`);
+  }
 }
 
 /** After a save: waits until nothing on the page says «Guardando…» or
@@ -87,6 +159,46 @@ export async function waitForSettled(timeout = 15_000) {
     },
     { timeout, timeoutMsg: "the page never settled after saving (still saving or loading)" },
   );
+}
+
+/** What dnd-kit's live regions say now (one per board or step list). */
+const dragAnnouncement = () =>
+  browser.execute(() =>
+    Array.from(document.querySelectorAll('[id^="DndLiveRegion"]'))
+      .map((el) => el.textContent ?? "")
+      .join(" "),
+  );
+
+/**
+ * A keyboard drag: focus the handle, Space, `key` until the live region says
+ * `until` (once if omitted), Space. dnd-kit attaches its key listener in a
+ * timeout after Space and measures the columns asynchronously, so keys sent
+ * straight away are lost on a slow machine, and the second Space drops the
+ * item where it started. Each key therefore waits for the announcement it
+ * causes, and is sent again if none comes.
+ */
+export async function keyboardDrag(handle: ReturnType<typeof $>, { key = "ArrowRight", until, moves = 8 }: { key?: string; until?: string; moves?: number } = {}) {
+  await handle.click();
+  const idle = await dragAnnouncement();
+  await browser.keys(" ");
+  await browser.waitUntil(async () => (await dragAnnouncement()) !== idle, {
+    interval: 100,
+    timeoutMsg: "the keyboard drag did not start",
+  });
+  let last = await dragAnnouncement();
+  let announced = false;
+  for (let i = 0; i < moves && !announced; i++) {
+    await browser.keys(key);
+    const changed = await browser
+      .waitUntil(async () => (await dragAnnouncement()) !== last, { timeout: 2_000, interval: 100 })
+      .catch(() => false);
+    if (!changed) continue;
+    last = await dragAnnouncement();
+    announced = until ? last.includes(until) : true;
+  }
+  if (!announced) throw new Error(`the keyboard drag never reached ${until ?? "a new place"} (last: ${last})`);
+  await browser.keys(" ");
+  await browser.waitUntil(async () => (await dragAnnouncement()) !== last, { interval: 100, timeoutMsg: "the keyboard drag did not drop" });
 }
 
 /** Sets a hidden <input type="file"> (WebDriver uploads the local file). */
@@ -110,6 +222,18 @@ export async function chooseFile(selector: string, file: string) {
   );
 }
 
+/** The elements matching `selector` once there are at least `n` of them (a
+ *  list or a step that just rendered): never a one-shot count that a slow
+ *  runner can take too early. */
+export async function atLeast(selector: string, n: number, timeout = 15_000) {
+  await browser.waitUntil(async () => (await $$(selector)).length >= n, {
+    timeout,
+    interval: 200,
+    timeoutMsg: `fewer than ${n} of ${selector}`,
+  });
+  return Array.from(await $$(selector));
+}
+
 /** The open dialog (the topmost [role=dialog] / [role=alertdialog]). */
 export const dialog = () => $('[role="dialog"][aria-modal="true"], [role="alertdialog"]');
 
@@ -119,7 +243,26 @@ export const dialog = () => $('[role="dialog"][aria-modal="true"], [role="alertd
  * nested in the label, else `aria-label`.
  */
 export async function field(label: string, scope = "body") {
-  const id = await browser.execute(
+  // The control may not be rendered yet (an editor or a drawer that just
+  // opened, a slow CI runner): look again until it is there and displayed.
+  let id: string | null = null;
+  await browser
+    .waitUntil(
+      async () => {
+        id = await lookUpField(label, scope);
+        return id !== null && (await $(`[data-tour-field="${id}"]`).isDisplayed());
+      },
+      { timeout: 10_000, interval: 200 },
+    )
+    .catch(() => undefined);
+  // Found but never displayed (a visually hidden native control): as before.
+  if (!id) throw new Error(`no control labelled «${label}» in ${scope}`);
+  return $(`[data-tour-field="${id}"]`);
+}
+
+/** One look for the control labelled `label`; marks it and returns its tag. */
+async function lookUpField(label: string, scope: string): Promise<string | null> {
+  return browser.execute(
     (text: string, scopeSel: string) => {
       const root = document.querySelector(scopeSel) ?? document.body;
       const norm = (s: string | null) => (s ?? "").replace(/\s+/g, " ").replace(/\*$/, "").trim();
@@ -140,8 +283,6 @@ export async function field(label: string, scope = "body") {
     label,
     scope,
   );
-  if (!id) throw new Error(`no control labelled «${label}» in ${scope}`);
-  return $(`[data-tour-field="${id}"]`);
 }
 
 /** Selects an <option> by its visible text in the control labelled `label`. */

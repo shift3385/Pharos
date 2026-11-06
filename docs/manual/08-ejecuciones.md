@@ -8,26 +8,26 @@
 que importas de tus pruebas automáticas. Pharos lee los informes de las
 herramientas habituales (Cucumber Messages, CTRF, JUnit XML, JSON de
 Playwright y su propio Pharos Run JSON), enlaza cada test con su caso por la
-etiqueta (`@BM-001`) y deja en la bandeja «Sin vincular» los que no la
+etiqueta (por ejemplo, `@BM-001`) y deja en la bandeja «Sin vincular» los que no la
 tienen, para que los vincules a mano una sola vez.
 
 ## Paso a paso
 
 ### 8.1. Ejecuciones
 
-Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su estado y resultados; «Sin vincular», los tests importados que esperan un caso. Arriba, «Nuevo run manual» e «Importar informe».
+Un run es una ejecución concreta de pruebas, manual o importada de tu automatización. Pulsa «Ejecuciones» en el menú lateral. La pestaña «Runs» lista los runs con su estado y resultados; «Sin vincular», los tests importados que esperan un caso. Arriba, «Nuevo run manual» (capítulo 13) e «Importar informe».
 
 ![Ejecuciones](img/ejecuciones/01-lista.png)
 
 ### 8.2. Importar un informe
 
-«Importar informe» acepta Cucumber Messages, CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON. Elige el archivo y, si el informe enlaza capturas o vídeos, su carpeta de adjuntos.
+«Importar informe» trae a Pharos los resultados de tu automatización: acepta Cucumber Messages, CTRF, JUnit XML, JSON de Playwright o Pharos Run JSON (en este ejemplo, un JUnit). Elige el archivo y, si el informe enlaza capturas o vídeos, su carpeta de adjuntos.
 
 ![Importar un informe](img/ejecuciones/02-importar.png)
 
 ### 8.3. Vista previa antes de importar
 
-La vista previa dice cuántos tests e intentos trae el informe, cuántos se vinculan a casos por su etiqueta (@BM-001) y cuántos quedarán «sin vincular». Nada se guarda hasta pulsar «Importar».
+La vista previa dice cuántos tests e intentos trae el informe, cuántos se vinculan a casos por su etiqueta (en este ejemplo, @BM-001) y cuántos quedarán «sin vincular». Nada se guarda hasta pulsar «Importar», así que puedes comprobarlo sin riesgo.
 
 ![Vista previa antes de importar](img/ejecuciones/03-vista-previa.png)
 
@@ -39,7 +39,7 @@ Al terminar, el resumen dice qué run se creó y cuántos resultados quedan sin 
 
 ### 8.5. Un informe con adjuntos
 
-Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado. Aquí, un JUnit de dos tests con la captura de un fallo. «Ciclo» hace que el run nuevo sea de un ciclo (de los que no están cerrados): sus resultados cuentan en el progreso del ciclo sin editar nada después.
+Si el informe enlaza capturas, vídeos o trazas, elige también su «Carpeta de adjuntos»: Pharos busca cada archivo por su nombre y lo guarda, cifrado, como evidencia del resultado (en este ejemplo, un JUnit de dos tests con la captura de un fallo). «Ciclo» hace que el run nuevo sea de un ciclo no cerrado: sus resultados cuentan en el progreso del ciclo sin editar nada después.
 
 ![Un informe con adjuntos](img/ejecuciones/05-con-adjuntos.png)
 
@@ -49,7 +49,7 @@ El resumen confirma cuántos resultados se importaron y cuántos adjuntos se gua
 
 ### 8.7. La bandeja «Sin vincular»
 
-Los tests del informe que no llevan la etiqueta de un caso del proyecto esperan en «Sin vincular», con el motivo (sin etiqueta, caso desconocido…), su último estado y cuántos resultados tienen.
+Los tests del informe que no llevan la etiqueta de un caso del proyecto esperan en «Sin vincular», con el motivo (sin etiqueta, caso desconocido…), su último estado y cuántos resultados tienen. Hasta que los vincules no cuentan para ningún caso.
 
 ![La bandeja «Sin vincular»](img/ejecuciones/07-sin-vincular.png)
 
@@ -61,7 +61,7 @@ Los tests del informe que no llevan la etiqueta de un caso del proyecto esperan 
 
 ### 8.9. Vinculados a mano
 
-El filtro «Vinculados a mano» muestra los tests que vinculaste; «Desvincular» deshace el vínculo.
+El filtro «Vinculados a mano» muestra los tests que vinculaste, para revisarlos; «Desvincular» deshace el vínculo si te equivocaste.
 
 ![Vinculados a mano](img/ejecuciones/09-vinculado.png)
 
@@ -71,7 +71,7 @@ El filtro «Vinculados a mano» muestra los tests que vinculaste; «Desvincular�
 
 ## Consejos
 
-- Etiqueta tus escenarios con el ID del caso (`@BM-001`): se vinculan solos
+- Etiqueta tus escenarios con el ID del caso (por ejemplo, `@BM-001`): se vinculan solos
   en cada importación.
 - Si un informe enlaza capturas, vídeos o trazas, elige también su carpeta de
   adjuntos: se guardan como evidencias del resultado.

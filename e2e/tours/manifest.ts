@@ -43,28 +43,33 @@ export interface Chapter {
   pending?: string;
   /** False for the preparation tour (seed data), which is not a chapter. */
   inManual?: boolean;
+  /** Chapters whose data this one reads (direct ones; they run first). A
+   *  partial run (`--spec`) adds them, see selectTours. Each must come earlier
+   *  in CHAPTERS. */
+  needs?: ChapterId[];
 }
 
 export const CHAPTERS: Chapter[] = [
   { id: "preparacion", number: 0, title: "Preparación de los datos", file: "00-preparacion.tour.ts", status: "active", inManual: false },
   { id: "acceso", number: 1, title: "Acceso y cuenta", file: "01-acceso.tour.ts", status: "active" },
   { id: "proyectos", number: 2, title: "Inicio, proyectos y ajustes", file: "02-proyectos.tour.ts", status: "active" },
-  { id: "plan", number: 3, title: "Plan de pruebas", file: "03-plan.tour.ts", status: "active" },
-  { id: "casos", number: 4, title: "Casos de prueba", file: "04-casos.tour.ts", status: "active" },
-  { id: "trazabilidad", number: 5, title: "Trazabilidad y requisitos", file: "05-trazabilidad.tour.ts", status: "active" },
-  { id: "planificador", number: 6, title: "Planificador", file: "06-planificador.tour.ts", status: "active" },
-  { id: "ciclos", number: 7, title: "Ciclos y configuraciones", file: "07-ciclos.tour.ts", status: "active" },
-  { id: "ejecuciones", number: 8, title: "Ejecuciones e importación de resultados", file: "08-ejecuciones.tour.ts", status: "active" },
-  { id: "defectos", number: 9, title: "Defectos", file: "09-defectos.tour.ts", status: "active" },
-  { id: "administracion", number: 10, title: "Administración", file: "10-administracion.tour.ts", status: "active" },
-  { id: "ia", number: 11, title: "Asistente de IA", file: "11-ia.tour.ts", status: "active" },
-  { id: "movil", number: 12, title: "Pantallas estrechas y móvil", file: "12-movil.tour.ts", status: "active" },
+  { id: "plan", number: 3, title: "Plan de pruebas", file: "03-plan.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "casos", number: 4, title: "Casos de prueba", file: "04-casos.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "trazabilidad", number: 5, title: "Trazabilidad y requisitos", file: "05-trazabilidad.tour.ts", status: "active", needs: ["casos"] },
+  { id: "planificador", number: 6, title: "Planificador", file: "06-planificador.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "ciclos", number: 7, title: "Ciclos y configuraciones", file: "07-ciclos.tour.ts", status: "active", needs: ["proyectos", "casos"] },
+  { id: "ejecuciones", number: 8, title: "Ejecuciones e importación de resultados", file: "08-ejecuciones.tour.ts", status: "active", needs: ["casos"] },
+  { id: "defectos", number: 9, title: "Defectos", file: "09-defectos.tour.ts", status: "active", needs: ["ejecuciones"] },
+  { id: "administracion", number: 10, title: "Administración", file: "10-administracion.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
+  { id: "ia", number: 11, title: "Asistente de IA", file: "11-ia.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
+  { id: "movil", number: 12, title: "Pantallas estrechas y móvil", file: "12-movil.tour.ts", status: "active", needs: ["plan", "casos"] },
   {
     id: "ejecucion-manual",
     number: 13,
     title: "Ejecución manual",
     file: "13-ejecucion-manual.tour.ts",
     status: "active",
+    needs: ["proyectos", "casos"],
   },
   {
     id: "evidencias",
@@ -78,6 +83,42 @@ export const CHAPTERS: Chapter[] = [
 
 /** Tour files in run order (one WebdriverIO group, one app session). */
 export const TOUR_FILES: string[] = CHAPTERS.filter((c) => c.file).map((c) => c.file as string);
+
+/**
+ * The tours of a partial run (`npm run manual -- --spec <regex on file names>`),
+ * in run order: the preparation tour, the matching ones and, transitively, the
+ * chapters they read data from (`needs`). `added` lists those prerequisites.
+ * No filter: every tour. Throws on an invalid expression or one matching nothing.
+ */
+export function selectTours(only?: string | null, chapters: Chapter[] = CHAPTERS): { files: string[]; added: string[] } {
+  const withFile = chapters.filter((c) => c.file);
+  if (!only) return { files: withFile.map((c) => c.file as string), added: [] };
+  let filter: RegExp;
+  try {
+    filter = new RegExp(only);
+  } catch {
+    throw new Error(`--spec «${only}» is not a valid regular expression`);
+  }
+  const first = withFile[0];
+  const asked = withFile.filter((c) => c !== first && filter.test(c.file as string));
+  if (asked.length === 0) throw new Error(`--spec «${only}» matches no tour file`);
+  const chosen = new Set<ChapterId>([first.id]);
+  const visit = (c: Chapter) => {
+    if (chosen.has(c.id)) return;
+    chosen.add(c.id);
+    for (const id of c.needs ?? []) {
+      const dep = withFile.find((d) => d.id === id);
+      if (!dep) throw new Error(`chapter ${c.id} needs ${id}, which has no tour`);
+      visit(dep);
+    }
+  };
+  asked.forEach(visit);
+  const files = withFile.filter((c) => chosen.has(c.id));
+  return {
+    files: files.map((c) => c.file as string),
+    added: files.filter((c) => c !== first && !asked.includes(c)).map((c) => c.file as string),
+  };
+}
 
 export type ItemKind = "route" | "section" | "tab" | "wizard-step" | "screen" | "dialog" | "upload" | "action" | "keyboard" | "state" | "platform";
 

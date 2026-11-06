@@ -3,7 +3,8 @@
 //   npm run manual                  isolated DB + API + tour build + tours + manual
 //   E2E_SKIP_BUILD=1 npm run manual reuse the last tour build
 //   npm run manual -- --spec 04     the preparation tour + the tours whose file name
-//                                   matches (a regular expression); no manual
+//                                   matches (a regular expression) + the chapters
+//                                   they read data from; no manual
 //   npm run manual -- --no-manual   all the tours, no manual (CI on pull requests)
 //
 // Isolation (e2e/README.md → Tours). Everything runs apart from the user's own
@@ -25,6 +26,7 @@
 // the build). After the tours, the secret scan runs FIRST; files that contain
 // the key are deleted and a marker tells CI not to upload any results.
 import { spawn, spawnSync, execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { createConnection } from "node:net";
@@ -33,8 +35,10 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { owners } from "../../scripts/api-port.mjs";
 import { findAiKey, readDotenv } from "../../scripts/manual/ai-key.mjs";
+import { acquireLock, lockMessage, releaseLock } from "../../scripts/manual/run-lock.mjs";
 import { scanForSecret } from "../../scripts/manual/secret-scan.mjs";
 import { driverVersion, major, webview2Version } from "../scripts/edge-driver.mjs";
+import { selectTours } from "./manifest.ts";
 
 const toursDir = fileURLToPath(new URL(".", import.meta.url));
 const repoDir = join(toursDir, "..", "..");
@@ -90,6 +94,29 @@ function listening(p) {
 }
 
 // ---- Guards -------------------------------------------------------------------
+
+// One run at a time (scripts/manual/run-lock.mjs), taken before anything
+// else: the port check below cannot see a run that is still building, and
+// that run's database would be dropped under it. Released on every exit
+// (fail(), the end of the run, Ctrl+C), never another run's lock.
+const lock = acquireLock();
+if (!lock.ok) {
+  console.error(`\n✖ Tours: ${lockMessage(lock.holder)}`);
+  process.exit(1);
+}
+process.on("exit", () => releaseLock());
+
+// A partial run adds the chapters its tours read data from; a bad filter stops
+// here, before the database and the long build.
+if (specFilter) {
+  try {
+    const { files, added } = selectTours(specFilter);
+    console.log(`› --spec "${specFilter}": ${files.length - 1} tour(s) after the preparation`);
+    if (added.length > 0) console.log(`› Added because the others read their data: ${added.join(", ")}`);
+  } catch (err) {
+    fail(err.message);
+  }
+}
 
 if (!isWindows) fail("the tours run on Windows (WebView2 + msedgedriver).");
 if (!Number.isInteger(port) || port <= 0) fail("PHAROS_TOURS_PORT is not a port number.");
@@ -178,6 +205,9 @@ function removeProfileCredentials() {
 process.on("SIGINT", () => {
   interrupted = true;
   stopApi();
+  // The lock goes with the run's `finally`/exit; a second Ctrl+C that kills
+  // the process outright leaves a lock whose PID is gone, which the next run
+  // treats as stale.
 });
 const checkInterrupted = () => {
   if (interrupted) throw new Error("interrupted (Ctrl+C)");
@@ -244,7 +274,16 @@ async function secretScan() {
 // ---- Run --------------------------------------------------------------------------
 
 /** Environment of the API, the migrations and the seed: no AI variables. */
-const childEnv = { ...process.env, PORT: String(port), HOST: "127.0.0.1", DATABASE_URL: dbUrl.toString(), NODE_ENV: "development" };
+// JWT_ACCESS_SECRET: a checkout may have no `.env`, and the tour API signs only
+// tokens for this run's throwaway database, so a random one is enough.
+const childEnv = {
+  ...process.env,
+  PORT: String(port),
+  HOST: "127.0.0.1",
+  DATABASE_URL: dbUrl.toString(),
+  NODE_ENV: "development",
+  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || readDotenv(join(repoDir, ".env")).JWT_ACCESS_SECRET || randomBytes(32).toString("hex"),
+};
 let exitCode = 1;
 
 try {
@@ -364,5 +403,6 @@ try {
     console.error(`Could not drop ${TOURS_DB}: ${err.message}`);
     exitCode = 1;
   }
+  releaseLock();
 }
 process.exit(interrupted ? 130 : exitCode);

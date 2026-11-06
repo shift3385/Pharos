@@ -7,7 +7,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, tf, waitForText } from "./helpers";
+import { PROJECT_A, byTestId, chooseFile, clickButton, es, field, fixturesDir, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
 
 const E = es.execution;
 const downloadsDir = process.env.PHAROS_TOURS_DOWNLOADS ?? "";
@@ -37,7 +37,8 @@ async function pickCase(key: string) {
 chapter("ejecucion-manual", () => {
   step("nuevo-run", {
     title: "Nuevo run manual",
-    caption: "En «Ejecuciones», «Nuevo run manual» crea un run para ejecutar a mano: título, entorno, build, configuración y los casos que entran (con su revisión vigente).",
+    caption:
+      "Para las pruebas que se hacen a mano, «Nuevo run manual», en «Ejecuciones», crea un run: título, entorno, build, configuración y los casos que entran, con su revisión vigente, de modo que el resultado queda ligado a la versión del caso que se ejecutó.",
     covers: ["dialogs:src/modules/runs/ui/CasePickerDialog.tsx"],
     shot: { element: D },
     run: async () => {
@@ -114,7 +115,7 @@ chapter("ejecucion-manual", () => {
       await browser.keys("Escape");
       await $(".cd-overlay").waitForExist({ reverse: true });
       await chooseFile('[data-testid="exec-panel"] input[type="file"]', join(fixturesDir, "captura-saldo.png"));
-      await waitForText(E.attached_one);
+      await waitForToast(E.attached_one);
     },
   });
 
@@ -147,10 +148,11 @@ chapter("ejecucion-manual", () => {
 
   step("guardar", {
     title: "Guardar el resultado",
-    caption: "«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (aquí, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento.",
+    caption:
+      "«Guardar resultado» (o Ctrl+Enter) registra el intento con el estado que resulta de los pasos (en este ejemplo, Falla). Un intento guardado no cambia: repetir la prueba crea otro intento, así que el historial de lo que pasó se conserva.",
     run: async () => {
       await byTestId("exec-save").click();
-      await waitForText(E.recorded.split("{{")[0]);
+      await waitForToast(E.recorded.split("{{")[0]);
       await expect(byTestId("exec-create-defect")).toBeDisplayed();
     },
   });
@@ -162,13 +164,14 @@ chapter("ejecucion-manual", () => {
       await byTestId("exec-create-defect").click();
       await expect($(".tp-editor__save")).toBeDisplayed();
       await $(".tp-editor__save").click();
-      await waitForText(es.defects.savedToast);
+      await waitForToast(es.defects.savedToast);
     },
   });
 
   step("descartar", {
     title: "Descartar un borrador",
-    caption: "«Descartar» tira el borrador del elemento (y sus adjuntos) después de confirmarlo.",
+    caption:
+      "Si un borrador no te sirve, «Descartar» lo tira junto con sus adjuntos, después de confirmarlo.",
     covers: ["dialogs:src/modules/runs/ui/ExecutionPanel.tsx"],
     shot: { element: D },
     run: async () => {
@@ -183,7 +186,8 @@ chapter("ejecucion-manual", () => {
 
   step("editar-run", {
     title: "Editar los datos del run",
-    caption: "«Editar datos» cambia el título, el entorno, la build o la configuración del run.",
+    caption:
+      "«Editar datos» corrige el título, el entorno, la build o la configuración del run, si te equivocaste al crearlo.",
     covers: ["dialogs:src/modules/runs/ui/RunDetail.tsx"],
     shot: { element: D },
     run: async () => {
@@ -203,7 +207,7 @@ chapter("ejecucion-manual", () => {
     shot: { element: D },
     run: async () => {
       await clickButton(E.run.save, D);
-      await waitForText(E.run.saved);
+      await waitForToast(E.run.saved);
       await byTestId("run-close").click();
       await expect(byTestId("run-close-confirm")).toBeDisplayed();
     },
@@ -211,7 +215,8 @@ chapter("ejecucion-manual", () => {
 
   step("reabrir", {
     title: "Run cerrado y reabierto",
-    caption: "Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar.",
+    caption:
+      "Tras cerrar, el run queda en solo lectura; «Reabrir» permite volver a ejecutar, por ejemplo, si faltó un caso.",
     shot: false,
     run: async () => {
       await byTestId("run-close-confirm").click();
@@ -243,7 +248,7 @@ chapter("ejecucion-manual", () => {
     run: async () => {
       const since = Date.now();
       await byTestId("report-export-xlsx").click();
-      await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 30_000);
+      await waitForToast(tf("statusReport.exportedToast", { name: "" }).trim(), 30_000);
       await waitForExport(".xlsx", since);
     },
   });
@@ -256,7 +261,7 @@ chapter("ejecucion-manual", () => {
     run: async () => {
       const since = Date.now();
       await byTestId("report-export-pdf").click();
-      await waitForText(tf("statusReport.exportedToast", { name: "" }).trim(), 60_000);
+      await waitForToast(tf("statusReport.exportedToast", { name: "" }).trim(), 60_000);
       await waitForExport(".pdf", since);
       await browser.keys("Escape");
     },

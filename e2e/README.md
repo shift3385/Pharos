@@ -20,7 +20,12 @@ smoke".
 
 `npm run manual` (`tours/run-tours.mjs`) does, in order:
 
-1. **Guards.** The tour API port is `PHAROS_TOURS_PORT` (default **3100**);
+1. **Guards.** First a **run lock** (MAN-02): every run shares the port and
+   the database, so only one runs at a time on the machine. The lock is
+   `pharos-tours.lock` in the OS temp dir (PID and start time); a second run
+   refuses with «otra ejecución de recorridos en curso (PID …)», a lock whose
+   PID is gone is stale and replaced, and it is released on every exit
+   (`scripts/manual/run-lock.mjs`). Then: the tour API port is `PHAROS_TOURS_PORT` (default **3100**);
    3000 — the user's own API — is refused, and so is a port already in use
    (the tours never stop other programs). The database name is fixed to
    `pharos_test_db_tours`.
@@ -29,6 +34,8 @@ smoke".
    and seeds the test account.
 3. **API.** Starts `tsx src/server.ts` with `PORT=3100` and that database
    (not `npm start`, whose `prestart` stops Pharos APIs on its port).
+   `JWT_ACCESS_SECRET` comes from the environment, else `.env`, else a random
+   one for the run: its tokens only serve this throwaway database.
 4. **Binary.** `tauri build --debug --no-bundle` with
    `VITE_API_URL=http://localhost:3100` and a `--config` override of the CSP
    (generated from `tauri.conf.json` with 3000 → 3100), into
@@ -45,9 +52,18 @@ smoke".
 
 `npm run manual -- --spec 04` runs the preparation tour plus the tours whose
 file name matches the regular expression (`"0[2-4]"`), and skips the manual.
-Each chapter creates the project it needs if it is missing, but some read
-data the earlier ones make (custom fields, configurations, an imported
-report): run them together when in doubt.
+Some chapters read data the earlier ones make (custom fields, configurations,
+cases, an imported report): each declares them in `needs` (`manifest.ts`), and
+the runner **adds those chapters** and says which. An invalid expression, or
+one matching no tour, stops the run before the database and the build.
+
+At the end of each chapter, `closeLeftovers` (`tour.ts`) closes what is still
+open, so one failed step cannot block the next chapter: native dialogs are
+dismissed, an «unsaved changes» prompt is answered «Descartar cambios», and
+anything else (dialog, menu) gets Escape, up to six rounds. After a failed step
+it also goes to «Inicio», since an unsaved editor would stop the next
+navigation. A chapter that passed but left something open gets a warning. It
+never fails the run: a cleanup error is only logged.
 
 ### Writing a tour step
 
@@ -59,9 +75,39 @@ step("nuevo", {
   shot: "page" | { element: '[role="dialog"]' } | false,
   mask: ["#ai-key"],                             // blurred in the capture
   skip: "motivo",                                // recorded as pending
+  focus: '[data-testid="login-language"]',       // the control the step is about (MAN-02)
+  group: "ojo",                                  // consecutive steps printed side by side
   run: async () => { /* action */ await expect(/* outcome */).toBeDisplayed(); },
+  after: async () => { /* runs after the capture, still part of the step */ },
 });
 ```
+
+- **`focus`** (one selector or several, their union box): the tour records
+  the box in capture pixels; the manual draws an amber outline (Faro
+  Nocturno's accent) into the PNG and, in the PDF only, adds a magnified
+  «Detalle» inset cropped by CSS from the same file, beside the capture or
+  below it for a wide strip, and none when the control is already big. Use it
+  when a step is about one control in a big screen. A focus not displayed at
+  capture time is a warning (`focusMissing`), listed by the manual build.
+- **`group`**: a before/after pair (e.g. the password hidden, then shown). With
+  a `focus`, each column gets its own «Detalle» under the capture.
+- **`after`**: capture the state *before* an action and still assert the
+  action (e.g. «Iniciar sesión» shows the filled form, then signs in).
+
+**Waits, never sleeps.** `field()` looks again until the control is rendered;
+`atLeast(selector, n)` replaces one-shot `$$()` counts right after an action.
+`keyboardDrag` waits for dnd-kit's live announcement after each key: keys sent
+straight after Space are lost on a slow machine.
+Wait for a toast with `waitForToast`, and for text that stays on the page (a
+heading, an inline status) with `waitForText`. Toasts are recorded in the page
+as they appear, so one that has left or that a newer toast hid (the captures
+show only the newest) still counts; each one answers a single wait, so the
+toast of the previous save cannot pass for this one. An error toast counts only
+with `{ error: true }`. Don't wait for a word the
+page also shows elsewhere: «Sincronizado» is the sidebar's status too. A form
+filled by an async load is not ready when it first shows: wait for its values
+before typing. And `[role="alert"]` also matches the toast stack's empty
+container: select the message itself.
 
 Every step must assert its outcome: the tours are a functional regression
 suite as well as the manual. After the first failure in a chapter, the rest
@@ -132,6 +178,15 @@ chapter without a key, keeps its committed capture),
 Microsoft Edge (`PHAROS_EDGE` to point at another `msedge.exe`). The PDF is
 gitignored: open it locally after `npm run manual`, or download the `manual`
 artifact of the CI on `main`.
+
+PDF layout (MAN-02): the contents link every chapter and step to its page,
+with its number (a draft print with placeholders, then the real numbers read
+from the PDF's named destinations; the build fails if they move). A step's
+heading, text and capture never split; «Consejos» and «Véase también» stay
+whole; captures take 76 % of the text width so two ordinary steps share a
+page. Each print uses its own Edge profile under
+`docs/manual/.build/edge-profiles`, retried once on EPERM; a profile Edge
+still holds never fails the build.
 
 ### AI tours (real key, set by you)
 

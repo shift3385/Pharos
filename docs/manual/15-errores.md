@@ -18,7 +18,7 @@ Si los datos locales no se pueden abrir (un archivo dañado, una versión más n
 
 ### 15.2. Restaurar la copia
 
-Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre.
+Con el archivo original de vuelta (o una copia de pharos.db.enc), Pharos abre como siempre: por eso conviene guardar la clave de recuperación (capítulo 10).
 
 ### 15.3. «Algo salió mal»
 
@@ -28,7 +28,7 @@ Si una vista falla, Pharos no se cierra: muestra «Algo salió mal» con «Reint
 
 ### 15.4. Reintentar
 
-«Reintentar» vuelve a mostrar la vista cuando el fallo ya no se repite.
+«Reintentar» vuelve a mostrar la vista cuando el fallo ya no se repite. Si se repite, exporta el diagnóstico para informar de él.
 
 ## Consejos
 

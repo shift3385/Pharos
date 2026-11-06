@@ -19,9 +19,10 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { $, browser } from "@wdio/globals";
+import { $, $$, browser } from "@wdio/globals";
+import { recordToasts } from "./helpers";
 import { CHAPTERS, type ChapterId } from "./manifest";
-import { setAppWindow } from "../support";
+import { es, setAppWindow } from "../support";
 
 const resultsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "results", "tours");
 export const stepsFile = join(resultsDir, "steps.jsonl");
@@ -49,6 +50,24 @@ export interface StepSpec {
   /** Keep the newest toast in the capture (it is what the step shows). By
    *  default toasts are hidden: they carry stale messages and local paths. */
   toast?: boolean;
+  /** The control the step is about (MAN-02): CSS/WDIO selector(s), their
+   *  union box. The manual outlines it in the capture and, in the PDF, adds a
+   *  magnified inset when it is small in a big screen. */
+  focus?: string | string[];
+  /** Consecutive steps with the same key print side by side in the PDF (a
+   *  before/after pair). */
+  group?: string;
+  /** Runs after the capture, as part of the step (its failures count): for a
+   *  step that shows the state *before* an action and still asserts it. */
+  after?: () => Promise<void>;
+}
+
+/** A box in capture pixels. */
+export interface FocusBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 /** Always blurred: things that show this machine's paths. */
@@ -65,6 +84,43 @@ export interface StepRecord {
   viewport: { width: number; height: number };
   status: "passed" | "failed" | "skipped";
   reason?: string;
+  focus?: FocusBox;
+  /** The step declared a focus that was not displayed at capture time. */
+  focusMissing?: boolean;
+  group?: string;
+}
+
+/** The union box of `selectors` in the capture's pixels: relative to the
+ *  viewport (page shots) or to `origin` (element shots), times the device
+ *  pixel ratio. Null when none is displayed. */
+async function focusBox(selectors: string[], origin: string | null): Promise<FocusBox | null> {
+  const boxes: FocusBox[] = [];
+  for (const sel of selectors) {
+    for (const el of await $$(sel)) {
+      if (!(await el.isDisplayed())) continue;
+      boxes.push(
+        await browser.execute((node: HTMLElement) => {
+          const r = node.getBoundingClientRect();
+          return { x: r.left, y: r.top, w: r.width, h: r.height };
+        }, el as unknown as HTMLElement),
+      );
+    }
+  }
+  if (boxes.length === 0) return null;
+  const { dpr, ox, oy } = await browser.execute((o: string | null) => {
+    const r = o ? document.querySelector(o)?.getBoundingClientRect() : null;
+    return { dpr: window.devicePixelRatio || 1, ox: r?.left ?? 0, oy: r?.top ?? 0 };
+  }, origin);
+  const x0 = Math.min(...boxes.map((b) => b.x));
+  const y0 = Math.min(...boxes.map((b) => b.y));
+  const x1 = Math.max(...boxes.map((b) => b.x + b.w));
+  const y1 = Math.max(...boxes.map((b) => b.y + b.h));
+  return {
+    x: Math.round((x0 - ox) * dpr),
+    y: Math.round((y0 - oy) * dpr),
+    w: Math.round((x1 - x0) * dpr),
+    h: Math.round((y1 - y0) * dpr),
+  };
 }
 
 let current: { id: ChapterId; n: number; failed: string | null } | null = null;
@@ -78,6 +134,7 @@ function record(rec: StepRecord) {
 
 /** Calm, deterministic captures: no animations, transitions or caret. */
 export async function stabilise() {
+  await recordToasts();
   await browser.execute(() => {
     if (document.getElementById("tour-stable")) return;
     const style = document.createElement("style");
@@ -125,6 +182,57 @@ async function viewport() {
   return size;
 }
 
+const OVERLAY = '[role="dialog"][aria-modal="true"], [role="alertdialog"], [role="menu"]';
+
+/**
+ * Leaves nothing open for the next chapter: a dialog or menu left by a chapter
+ * (a failed step above all) would block the first click of the next one, and
+ * that chapter would fail for no reason of its own. Native dialogs are
+ * dismissed, an «unsaved changes» prompt is answered «Descartar cambios», the
+ * rest get Escape. After a failed step it also leaves the screen, whose
+ * unsaved editor would stop the next navigation. A clean chapter should have
+ * nothing to close, so it is reported. Never throws: the session may be gone.
+ */
+async function closeLeftovers(id: ChapterId, failed: string | null) {
+  try {
+    const discard = () => $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.discard}`);
+    const closeOverlays = async () => {
+      let closed = 0;
+      for (let i = 0; i < 6; i++) {
+        const hasNative = await browser.getAlertText().then(
+          () => true,
+          () => false,
+        );
+        if (hasNative) {
+          await browser.dismissAlert();
+          closed++;
+          continue;
+        }
+        const open = [];
+        for (const el of await $$(OVERLAY)) if (await el.isDisplayed()) open.push(el);
+        if (open.length === 0) return closed;
+        closed++;
+        if (await discard().isExisting()) await discard().click();
+        else await browser.keys("Escape");
+        await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+      }
+      console.warn(`! ${id}: an overlay is still open after the chapter`);
+      return closed;
+    };
+    const closed = await closeOverlays();
+    if (closed > 0 && !failed) console.warn(`! ${id}: the chapter left ${closed} dialog(s) or menu(s) open; close them in its last step`);
+    if (failed) {
+      const home = $('[data-testid="nav-dashboard"]');
+      if (await home.isDisplayed().catch(() => false)) {
+        await home.click();
+        await closeOverlays();
+      }
+    }
+  } catch (err) {
+    console.warn(`! ${id}: could not clean up after the chapter (${(err as Error).message.split("\n")[0]})`);
+  }
+}
+
 /** A chapter of the manual: a mocha `describe` whose steps stop after the
  *  first failure (the next steps would only fail for the same reason). */
 export function chapter(id: ChapterId, body: () => void) {
@@ -137,6 +245,9 @@ export function chapter(id: ChapterId, body: () => void) {
       await setViewport(DESKTOP);
     });
     body();
+    after(async () => {
+      await closeLeftovers(id, current?.failed ?? null);
+    });
   });
 }
 
@@ -155,6 +266,7 @@ export function step(id: string, spec: StepSpec) {
       image: null,
       viewport: { width: 0, height: 0 },
       status: "skipped",
+      ...(spec.group ? { group: spec.group } : {}),
     };
     if (spec.skip || ch.failed) {
       record({ ...base, reason: spec.skip ?? `después del fallo de «${ch.failed}»` });
@@ -165,6 +277,8 @@ export function step(id: string, spec: StepSpec) {
       await spec.run();
       const shot = spec.shot ?? "page";
       let image: string | null = null;
+      let focus: FocusBox | null = null;
+      let focusMissing = false;
       if (shot !== false) {
         await settle();
         image = `${ch.id}/${String(ch.n).padStart(2, "0")}-${id}.png`;
@@ -174,13 +288,25 @@ export function step(id: string, spec: StepSpec) {
         try {
           // Two frames for the mask styles to apply.
           await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+          if (spec.focus) {
+            const selectors = Array.isArray(spec.focus) ? spec.focus : [spec.focus];
+            focus = await focusBox(selectors, shot === "page" ? null : shot.element);
+            // Not fatal: the step still proves its action. The manual build
+            // lists these steps so the selector gets fixed.
+            if (!focus) {
+              focusMissing = true;
+              console.warn(`! ${ch.id}/${id}: focus not displayed (${selectors.join(", ")})`);
+            }
+          }
           if (shot === "page") await browser.saveScreenshot(file);
           else await $(shot.element).saveScreenshot(file);
         } finally {
           await setMask([]);
         }
       }
-      record({ ...base, image, viewport: await viewport(), status: "passed" });
+      const size = await viewport();
+      if (spec.after) await spec.after();
+      record({ ...base, image, viewport: size, status: "passed", ...(focus ? { focus } : {}), ...(focusMissing ? { focusMissing } : {}) });
     } catch (err) {
       ch.failed = id;
       const file = join(resultsDir, "failures", `${ch.id}-${id}.png`);
