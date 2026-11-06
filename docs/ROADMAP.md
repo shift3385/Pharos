@@ -160,6 +160,8 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | SEC-05  | SQLite en disco con cifrado por página + WAL                                                                         | P1  | 0.3.0   | Pendiente         | SEC-04, CORE-01 | Guardar no es O(tamaño de la BD); otro proceso escribe con la app abierta                            |
 | CORE-01 | `pharos-core` sin dependencia de Tauri (db, migraciones, repos, oplog)                                               | P1  | 0.3.0   | Pendiente         | Compuerta A     | El CLI y el escritorio usan el mismo crate                                                           |
 | SEC-07  | TLS obligatorio en despliegue autoalojado ([ADR-0006](adr/0006-claves-ia-y-tls.md))                                  | P1  | 0.5.0   | Pendiente         | —               | El servidor rechaza http fuera de localhost en producción                                            |
+| SEC-08  | Cuenta: cambiar la contraseña en «Mi perfil» y códigos de recuperación generados al registrarse (hoy no hay forma de cambiarla ni de recuperarla; no confundir con SEC-03, que protege la BD local) | P1  | 0.3.0   | Pendiente         | —               | Con un código de un solo uso se fija una contraseña nueva y se cierran las demás sesiones; los códigos se guardan con hash en el servidor; los datos locales no se tocan |
+| SEC-09  | Restablecer la contraseña por correo (enlace de un solo uso) y por un administrador | P2  | 0.5.0   | Pendiente         | SEC-08, SYNC-07 | El enlace caduca y solo sirve una vez; un administrador del workspace restablece sin ver la contraseña; ambos quedan en auditoría |
 
 ### Sincronización
 
