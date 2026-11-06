@@ -8,7 +8,7 @@
 que importas de tus pruebas automáticas. Pharos lee los informes de las
 herramientas habituales (Cucumber Messages, CTRF, JUnit XML, JSON de
 Playwright y su propio Pharos Run JSON), enlaza cada test con su caso por la
-etiqueta (`@BM-001`) y deja en la bandeja «Sin vincular» los que no la
+etiqueta (por ejemplo, `@BM-001`) y deja en la bandeja «Sin vincular» los que no la
 tienen, para que los vincules a mano una sola vez.
 
 ## Paso a paso
@@ -71,7 +71,7 @@ El filtro «Vinculados a mano» muestra los tests que vinculaste, para revisarlo
 
 ## Consejos
 
-- Etiqueta tus escenarios con el ID del caso (`@BM-001`): se vinculan solos
+- Etiqueta tus escenarios con el ID del caso (por ejemplo, `@BM-001`): se vinculan solos
   en cada importación.
 - Si un informe enlaza capturas, vídeos o trazas, elige también su carpeta de
   adjuntos: se guardan como evidencias del resultado.

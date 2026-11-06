@@ -32,7 +32,7 @@ Un buen defecto permite reproducir el fallo sin preguntar a nadie. Rellena los d
 
 ### 9.4. Evidencias
 
-Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: <archivo>») lo quita.
+Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: nombre del archivo») lo quita.
 
 ![Evidencias](img/defectos/04-evidencias.png)
 

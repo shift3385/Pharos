@@ -25,7 +25,7 @@ El planificador organiza el trabajo del equipo de pruebas que no es un caso: tar
 
 ### 6.3. Adjuntar archivos a una tarjeta
 
-Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: <archivo>») lo quita.
+Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: nombre del archivo») lo quita.
 
 ![Adjuntar archivos a una tarjeta](img/planificador/03-adjunto.png)
 

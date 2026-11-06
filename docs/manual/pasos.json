@@ -1,6 +1,6 @@
 {
   "version": "0.2.0-alpha.1",
-  "date": "2026-11-05",
+  "date": "2026-11-06",
   "steps": [
     {
       "chapter": "preparacion",
@@ -101,13 +101,13 @@
       ],
       "image": "acceso/04-mostrar-contrasena.png",
       "viewport": {
-        "height": 900,
-        "width": 1440
+        "height": 1009,
+        "width": 1920
       },
       "status": "passed",
       "focus": {
         "x": 56,
-        "y": 411,
+        "y": 466,
         "w": 460,
         "h": 52
       },
@@ -886,7 +886,7 @@
       "n": 13,
       "id": "cronograma",
       "title": "Paso 14 · Cronograma: sprints",
-      "caption": "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin: el sprint aparece como una franja sobre las semanas que ocupa y, debajo, en la lista «Sprints», con su nombre y sus fechas, que puedes editar. «Siguiente sprint» añade el siguiente a continuación, con la duración que fijaste en la metodología (paso 6). La leyenda explica el calendario: las franjas de sprint alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es el día de hoy y el rojo claro señala los días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). Al seleccionar un sprint, se resalta su fila y puedes arrastrar sus extremos en el calendario. Las flechas de arriba cambian de mes.",
+      "caption": "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin: el sprint aparece como una franja sobre las semanas que ocupa y, debajo, en la lista «Sprints», con su nombre y sus fechas, que puedes editar. «Siguiente sprint» añade el siguiente a continuación, con la duración que fijaste en la metodología (paso 6). La leyenda explica el calendario: las franjas de sprint alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es el día de hoy y el rojo claro señala los días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro (en este ejemplo, el segundo) y se resalta su fila; puedes arrastrar sus extremos en el calendario. Las flechas de arriba cambian de mes.",
       "covers": [
         "wizard:schedule"
       ],
@@ -1152,7 +1152,7 @@
       "n": 4,
       "id": "caso-basico",
       "title": "Un caso básico",
-      "caption": "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Arriba se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
+      "caption": "Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Encima de ellos se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).",
       "covers": [
         "action:case-create-basic",
         "action:case-meta"
@@ -1236,7 +1236,7 @@
       "n": 8,
       "id": "outline",
       "title": "Un caso «Básico avanzado» (Outline)",
-      "caption": "Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, <importe>), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.",
+      "caption": "Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, `<importe>`), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.",
       "covers": [
         "action:case-outline"
       ],
@@ -1772,7 +1772,7 @@
       "n": 3,
       "id": "adjunto",
       "title": "Adjuntar archivos a una tarjeta",
-      "caption": "Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: <archivo>») lo quita.",
+      "caption": "Con la tarjeta guardada, «Adjuntos» acepta archivos hasta el límite indicado (en este ejemplo, un .csv con los datos de clientes). Se guardan cifrados en este equipo y se abren desde la propia tarjeta; la papelera junto a cada archivo («Quitar: nombre del archivo») lo quita.",
       "covers": [
         "upload:src/modules/planner/ui/CardEditor.tsx"
       ],
@@ -2292,7 +2292,7 @@
       "n": 4,
       "id": "evidencias",
       "title": "Evidencias",
-      "caption": "Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: <archivo>») lo quita.",
+      "caption": "Una vez guardado, «Evidencias» admite capturas, vídeos o registros que muestran el fallo (en este ejemplo, una captura del saldo). Se guardan cifrados en este equipo; la papelera de cada archivo («Quitar: nombre del archivo») lo quita.",
       "covers": [
         "upload:src/modules/defects/ui/DefectEditor.tsx"
       ],

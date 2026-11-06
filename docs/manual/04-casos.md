@@ -33,7 +33,7 @@ El título es lo único obligatorio. Si guardas un caso sin título, Pharos marc
 
 ### 4.4. Un caso básico
 
-Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Arriba se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).
+Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Encima de ellos se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).
 
 ![Un caso básico](img/casos/04-caso-basico.png)
 
@@ -57,7 +57,7 @@ El selector de vista, a la derecha del título, cambia entre «Editor», «Gherk
 
 ### 4.8. Un caso «Básico avanzado» (Outline)
 
-Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, <importe>), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.
+Un caso «Básico avanzado» (Scenario Outline) prueba el mismo escenario con varios datos. En los pasos, los valores que cambian se escriben como marcadores entre ángulos (en este ejemplo, `<importe>`), y la tabla «Examples» da un valor por fila: cada fila es una ejecución del escenario. «+ Columna» y «+ Fila» amplían la tabla; la papelera quita una fila o una columna.
 
 ![Un caso «Básico avanzado» (Outline)](img/casos/08-outline.png)
 
