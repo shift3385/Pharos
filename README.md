@@ -4,8 +4,8 @@ Desktop QA test-management suite (offline-first). Guides each testing project
 safely to port, following ISO/IEC/IEEE 29119, ISO/IEC 25010 and the ISTQB CTFL
 Syllabus v4.0.1.
 
-> **Version 0.2.0-alpha.1** (first alpha of 0.2.0: the full interface redesign
-> on top of the 0.1.0 beta) — test plans, test cases with Gherkin, templates,
+> **Version 0.2.0** (test execution: manual runs, imported reports, cycles, defects and the extended matrix, on the redesigned interface) —
+> test plans, test cases with Gherkin, templates,
 > local planner, AI assist with several providers, offline sync with conflict
 > panel, exports, requirements with a traceability matrix, a recovery key for
 > the local data, and keyboard and screen-reader access (WCAG 2.1 AA). No test
@@ -36,7 +36,7 @@ The **Installer** workflow builds the NSIS installer on every push to `main`
 (see "Continuous integration"). To install it:
 
 1. On GitHub: **Actions → Installer**, filter by the release tag (for the current
-   version, `v0.2.0-alpha.1`), open that green run and download the artifact
+   version, `v0.2.0`), open that green run and download the artifact
    `pharos-<version>-<commit>-windows` under **Artifacts** (you must be signed
    in to GitHub; artifacts expire after 30 days). Use the tag's run only:
    later pushes to `main` build artifacts with the same version number but
@@ -710,7 +710,7 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.2.0-alpha.1**, the first alpha of 0.2.0. It carries the
+Current version: **0.2.0**, the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
 complete interface redesign (wave 4, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md))
 on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
 (planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the
