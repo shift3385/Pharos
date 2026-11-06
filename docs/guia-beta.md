@@ -1,6 +1,6 @@
 # Guía de pruebas de Pharos
 
-Esta guía es para quien prueba **Pharos 0.2.0-alpha.1** en Windows 11: todo lo
+Esta guía es para quien prueba **Pharos 0.2.0** en Windows 11: todo lo
 de la beta `0.1.0-beta.1` con la interfaz rediseñada (apartado 1.1). Explica
 qué trae la versión, cómo instalarla, qué comprobar (con casillas para ir
 marcando) y cómo informar de un problema. Los detalles técnicos están en el
@@ -90,7 +90,7 @@ La app instalada inicia sesión y sincroniza contra la API de Pharos en
 - [ ] Git y Node.js ≥ 22.18 con npm, para ejecutar la API.
 - [ ] La API de Pharos en la misma versión que la app: clona el repositorio
       (`git clone https://github.com/shift3385/Pharos.git`) y, dentro,
-      `git checkout v0.2.0-alpha.1`. Después, `npm install` en la raíz y en
+      `git checkout v0.2.0`. Después, `npm install` en la raíz y en
       `server/`, un `.env` y las bases `pharos_db` / `pharos_test_db`
       (README → "First-time setup"). Cada vez que pruebes:
       `cd server && npm start`. **Al cambiar de versión, vuelve a ejecutar
@@ -107,12 +107,12 @@ compilarla.
 ## 3. Instalar
 
 1. En GitHub, **Actions → Installer**, filtra por la rama o etiqueta
-   **`v0.2.0-alpha.1`** y abre esa ejecución (en verde). En **Artifacts**,
-   descarga `pharos-0.2.0-alpha.1-<commit>-windows`. Usa solo la ejecución de
+   **`v0.2.0`** y abre esa ejecución (en verde). En **Artifacts**,
+   descarga `pharos-0.2.0-<commit>-windows`. Usa solo la ejecución de
    la etiqueta: los cambios posteriores en `main` generan artefactos con el
    mismo nombre de versión, pero con código aún no publicado. Hace falta haber
    iniciado sesión en GitHub y el artefacto caduca a los 30 días.
-2. Descomprime el `.zip`: contiene `Pharos_0.2.0-alpha.1_x64-setup.exe`.
+2. Descomprime el `.zip`: contiene `Pharos_0.2.0_x64-setup.exe`.
 3. Ejecútalo. **El instalador no está firmado**, así que Windows SmartScreen
    muestra "Windows protegió tu PC": pulsa **Más información → Ejecutar de
    todas formas**.
@@ -133,7 +133,7 @@ seguir.
 - [ ] El primer arranque abre la pantalla de inicio de sesión (WebView2
       funciona: no hay ventana en blanco).
 - [ ] Al pie del menú lateral y en Administración → Diagnóstico la versión
-      es `0.2.0-alpha.1`.
+      es `0.2.0`.
 - [ ] Tras iniciar sesión existe `%APPDATA%\com.pharos.desktop\pharos.db.enc`
       y no quedan archivos `.tmp` ni `.new` al guardar (SEC-01/02).
 - [ ] Hay un log del día en `%LOCALAPPDATA%\com.pharos.desktop\logs`.
@@ -145,7 +145,7 @@ seguir.
 
 ### 4.2 Actualizar desde una versión anterior (si la tenías)
 
-- [ ] Desde `0.1.0-beta.1`: instalar `0.2.0-alpha.1` encima y abrirla. Los
+- [ ] Desde `0.1.0-beta.1`: instalar `0.2.0` encima y abrirla. Los
       proyectos, planes, casos, requisitos y tarjetas siguen intactos y se ven
       con la interfaz nueva. Esta versión no cambia la base de datos, así que
       no se crea copia `.bak-…`.
@@ -408,7 +408,7 @@ Los puntos abiertos de la auditoría están en
 ### 4.9 Diagnóstico
 
 - [ ] Administración → Diagnóstico → **Exportar diagnóstico** guarda
-      `pharos-diagnostic-0.2.0-alpha.1-<fecha>.zip` en la carpeta de descarga.
+      `pharos-diagnostic-0.2.0-<fecha>.zip` en la carpeta de descarga.
 - [ ] Abrir el ZIP: no contiene proyectos, casos, tu perfil, la base de datos,
       claves ni tokens (BASE-08).
 
@@ -450,7 +450,7 @@ Los puntos abiertos de la auditoría están en
      existe). Los logs no llevan tus datos: correos, tokens y claves van
      enmascarados.
 3. Abre un issue en el repositorio de GitHub (`shift3385/Pharos`) con:
-   - la versión (`0.2.0-alpha.1`) y el apartado de esta guía;
+   - la versión (`0.2.0`) y el apartado de esta guía;
    - los pasos para reproducirlo, lo que esperabas y lo que pasó;
    - una captura, si ayuda;
    - el ZIP de diagnóstico (o, si la base no abrió, el log del paso 2).
