@@ -33,7 +33,7 @@ El título es lo único obligatorio. Si guardas un caso sin título, Pharos marc
 
 ### 4.4. Un caso básico
 
-Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado. Encima de ellos se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. A la derecha ves el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo detallan). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).
+Rellena el caso: el título (en este ejemplo, «Transferencia a un tercero con saldo suficiente»), las precondiciones, los pasos (cada uno con «+ Añadir paso»; la papelera de un paso lo quita) y el resultado esperado, los que muestra la captura. Más arriba, en el mismo formulario, se clasifica: prioridad, estado, tipo de caso, automatización, nivel y versión. Y a la derecha del título está el mismo caso escrito en Gherkin: lo que escribes en una vista se refleja en la otra (los pasos 4.6 y 4.7 lo muestran). Al guardarlo recibe su ID con el prefijo del proyecto (en este ejemplo, BM-001).
 
 ![Un caso básico](img/casos/04-caso-basico.png)
 
