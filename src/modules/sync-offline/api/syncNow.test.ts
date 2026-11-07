@@ -3,7 +3,11 @@ import type { PendingDelta } from "./syncApi";
 
 // Desktop sync cycle against a fake Rust core and a fake backend.
 const session = { accessToken: "tok-A", userId: "user-A" };
-vi.mock("@modules/auth", () => ({ getSession: vi.fn(async () => session) }));
+const renewSession = vi.fn();
+vi.mock("@modules/auth", () => ({
+  getSession: vi.fn(async () => session),
+  renewSession: (...a: unknown[]) => renewSession(...a),
+}));
 
 const invoke = vi.fn();
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
@@ -29,6 +33,7 @@ const json = (body: unknown, status = 200) =>
 beforeEach(() => {
   (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
   invoke.mockReset();
+  renewSession.mockReset();
 });
 
 function fakeCore(pending: PendingDelta[]) {
@@ -145,6 +150,123 @@ describe("syncNow", () => {
     }
     expect(calls.every((c) => c.args?.userId === "user-B")).toBe(true);
     expect(new Set(tokens)).toEqual(new Set(["Bearer tok-B"]));
+  });
+});
+
+describe("syncNow with an expired access token", () => {
+  const expired = () => json({ code: "unauthorized", message: "Token expired" }, 401);
+  const emptyPage = () => json({ docs: [], cursor: 7, hasMore: false });
+
+  /** A server that only takes `valid`, and records who asked for what. */
+  function server(valid: () => string) {
+    const asked: { path: string; token: string }[] = [];
+    const fetchMock = vi.fn((url: string, init: RequestInit) => {
+      const token = (init.headers as Record<string, string>).authorization.replace("Bearer ", "");
+      const path = new URL(url).pathname;
+      asked.push({ path, token });
+      if (token !== valid()) return expired();
+      return path === "/sync/push" ? json({ accepted: 1, conflicts: [] }) : emptyPage();
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return asked;
+  }
+  const marked = (calls: { cmd: string }[]) => calls.filter((c) => c.cmd === "oplog_mark_synced");
+
+  it("renews a token that expired before the sync, and repeats the request once", async () => {
+    const calls = fakeCore([delta(1)]);
+    const asked = server(() => "tok-A2");
+    renewSession.mockResolvedValue({ accessToken: "tok-A2", userId: "user-A" });
+
+    await expect(syncNow()).resolves.toMatchObject({ pushed: 1 });
+
+    expect(renewSession).toHaveBeenCalledTimes(1);
+    expect(renewSession).toHaveBeenCalledWith("tok-A");
+    expect(asked).toEqual([
+      { path: "/sync/push", token: "tok-A" },
+      { path: "/sync/push", token: "tok-A2" },
+      { path: "/sync/pull", token: "tok-A2" },
+    ]);
+    expect(marked(calls)).toHaveLength(1);
+  });
+
+  it("survives a token that expires halfway through the sync", async () => {
+    const calls = fakeCore([delta(1)]);
+    let valid = "tok-A";
+    const asked = server(() => valid);
+    invoke.mockImplementation(async (cmd: string, args: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "oplog_pending") return { deltas: [delta(1)] };
+      if (cmd === "sync_cursor_get") return "0";
+      if (cmd === "oplog_mark_synced") valid = "tok-A2"; // It expires after the push.
+      return undefined;
+    });
+    renewSession.mockResolvedValue({ accessToken: "tok-A2", userId: "user-A" });
+
+    await expect(syncNow()).resolves.toMatchObject({ pushed: 1 });
+
+    expect(asked.map((a) => `${a.path} ${a.token}`)).toEqual([
+      "/sync/push tok-A",
+      "/sync/pull tok-A",
+      "/sync/pull tok-A2",
+    ]);
+    expect(marked(calls)).toHaveLength(1);
+    expect(calls.filter((c) => c.cmd === "sync_cursor_set")).toHaveLength(1);
+  });
+
+  it("stops without repeating when the session is over", async () => {
+    const calls = fakeCore([delta(1)]);
+    const asked = server(() => "none");
+    renewSession.mockResolvedValue(null);
+
+    await expect(syncNow()).rejects.toMatchObject({ status: 401 });
+
+    expect(asked).toHaveLength(1);
+    expect(marked(calls)).toHaveLength(0);
+  });
+
+  it("never repeats under another account (FIX-07)", async () => {
+    const calls = fakeCore([delta(1)]);
+    const asked = server(() => "tok-B");
+    renewSession.mockResolvedValue({ accessToken: "tok-B", userId: "user-B" });
+
+    await expect(syncNow()).rejects.toMatchObject({ status: 401 });
+
+    expect(asked.map((a) => a.token)).toEqual(["tok-A"]);
+    expect(marked(calls)).toHaveLength(0);
+    expect(calls.every((c) => c.args?.userId === "user-A")).toBe(true);
+  });
+
+  it("reports the failure when the server cannot be asked, changing nothing", async () => {
+    const calls = fakeCore([delta(1)]);
+    const asked = server(() => "none");
+    const unreachable = new Error("Network request failed");
+    renewSession.mockRejectedValue(unreachable);
+
+    await expect(syncNow()).rejects.toBe(unreachable);
+
+    expect(asked).toHaveLength(1);
+    expect(marked(calls)).toHaveLength(0);
+  });
+
+  it("stops if the renewed token is refused too, without renewing again", async () => {
+    const calls = fakeCore([delta(1)]);
+    const asked = server(() => "none");
+    renewSession.mockResolvedValue({ accessToken: "tok-A2", userId: "user-A" });
+
+    await expect(syncNow()).rejects.toMatchObject({ status: 401 });
+
+    expect(renewSession).toHaveBeenCalledTimes(1);
+    expect(asked.map((a) => a.token)).toEqual(["tok-A", "tok-A2"]);
+    expect(marked(calls)).toHaveLength(0);
+  });
+
+  it("does not renew on other refusals", async () => {
+    fakeCore([delta(1)]);
+    vi.stubGlobal("fetch", vi.fn(() => json({ code: "forbidden", message: "no" }, 403)));
+
+    await expect(syncNow()).rejects.toMatchObject({ status: 403 });
+
+    expect(renewSession).not.toHaveBeenCalled();
   });
 });
 

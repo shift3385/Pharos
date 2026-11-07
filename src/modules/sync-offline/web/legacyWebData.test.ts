@@ -72,6 +72,37 @@ describe("drainLegacyWebData", () => {
     expect(await drainLegacyWebData()).toEqual({ pushed: 0, leftovers: 5 });
   });
 
+  it("renews an expired token and completes the hand-over", async () => {
+    set("pharos.sync.outbox:u1", [delta("a")]);
+    const tokens: string[] = [];
+    fetchMock.mockImplementation(async (url: string, init: RequestInit) => {
+      if (url.endsWith("/auth/refresh"))
+        return new Response(JSON.stringify({ accessToken: "tok2", refreshToken: "r2", user: { id: "u1" } }), { status: 200 });
+      const token = (init.headers as Record<string, string>).authorization;
+      tokens.push(token);
+      return token === "Bearer tok2"
+        ? accepted()
+        : new Response(JSON.stringify({ code: "unauthorized", message: "expired" }), { status: 401 });
+    });
+
+    expect(await drainLegacyWebData()).toEqual({ pushed: 1, leftovers: 0 });
+
+    expect(tokens).toEqual(["Bearer tok", "Bearer tok2"]);
+    expect(localStorage.getItem("pharos.sync.outbox:u1")).toBeNull();
+  });
+
+  it("keeps the old store when the session cannot be renewed", async () => {
+    set("pharos.sync.outbox:u1", [delta("a")]);
+    fetchMock.mockImplementation(async () =>
+      new Response(JSON.stringify({ code: "unauthorized", message: "no" }), { status: 401 }),
+    );
+
+    await expect(drainLegacyWebData()).rejects.toMatchObject({ status: 401 });
+
+    expect(localStorage.getItem("pharos.sync.outbox:u1")).not.toBeNull();
+    expect(localStorage.getItem(unsentKey("u1"))).toBeNull();
+  });
+
   it("takes only this account's share of the browser-only data", async () => {
     localStorage.setItem("pharos.sync.cacheOwner", "u2");
     set("pharos.sync.outbox:u1", [delta("k1", { entity: "planner_card" })]);
