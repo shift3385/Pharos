@@ -74,6 +74,12 @@ memory) and no history, and a desktop-only action says so in a toast.
   delete. If the item changed elsewhere meanwhile, the server answers 409
   `stale_write` with its version; the user is told, the form keeps the edit,
   and saving again replaces the newer version knowingly.
+- **Expired access token.** A 401 makes `serverApi` renew the session
+  (`renewSession`, `@modules/auth`) and repeat the request once. Refresh tokens
+  are single-use, so parallel requests, the startup check and other tabs share
+  one renewal. If the server refuses the refresh token, the app goes back to
+  the sign-in screen, keeping the execution drafts; if it cannot be asked, the
+  session stays and the screen reports the failure.
 - **Keys.** On the web the server numbers cases, requirements and defects from
   the same key series as the devices' leased blocks (`key_blocks`), so a web
   key never collides with a device's. A typed key that is taken (`key_taken`),

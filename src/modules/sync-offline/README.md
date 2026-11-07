@@ -183,6 +183,11 @@ no pull: "Sync now" only reloads the open pages.
   If the item changed elsewhere, the server answers 409 `stale_write` with its
   version: a toast tells the user, the form keeps the edit, and saving again
   replaces that version (its revision is now the one remembered).
+- **Expired access token.** On a 401, `serverApi` renews the session with
+  `renewSession` (`@modules/auth`) and repeats the request once, never under
+  another account. If the session is over the 401 reaches the caller, while
+  the app goes back to the sign-in screen. The desktop sync does not do this
+  yet: a 401 stops the sync until the app is reopened.
 - **Refusals the user can act on** (`key_taken`, `key_retired`, `invalid_key`,
   desktop-only features) are shown once as a toast and thrown as
   `ReportedError`.

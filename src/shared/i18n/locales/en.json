@@ -585,6 +585,7 @@
     "apply": "Apply to form"
   },
   "auth": {
+    "sessionExpired": "Your session has expired. Please sign in again.",
     "loginTitle": "Sign in",
     "registerTitle": "Create account",
     "email": "Email",
@@ -709,6 +710,8 @@
       "closesOn": "Cycle closes: {{date}}"
     },
     "list": {
+      "loadFailed": "The project list could not be loaded.",
+      "retry": "Retry",
       "recentTitle": "Recent",
       "recentHint_one": "The last one you opened",
       "recentHint_other": "The last {{count}} you opened",

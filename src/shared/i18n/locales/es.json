@@ -585,6 +585,7 @@
     "apply": "Aplicar al formulario"
   },
   "auth": {
+    "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
     "loginTitle": "Iniciar sesión",
     "registerTitle": "Crear cuenta",
     "email": "Correo electrónico",
@@ -709,6 +710,8 @@
       "closesOn": "Cierre del ciclo: {{date}}"
     },
     "list": {
+      "loadFailed": "No se pudo cargar la lista de proyectos.",
+      "retry": "Reintentar",
       "recentTitle": "Recientes",
       "recentHint_one": "El último que abriste",
       "recentHint_other": "Los {{count}} últimos que abriste",
