@@ -4,7 +4,7 @@ section: Corregido
 
 - **Configurar un proveedor de IA con «Guardar clave».** La clave se guardaba, pero el proveedor elegido no, así que la IA seguía «sin configurar» y «Probar conexión» quedaba deshabilitado en ese proveedor. Ahora «Guardar clave» también lo deja activo y lo avisa.
 - **La marca «En uso»** va en la tarjeta del proveedor que la app usa de verdad, no en la que estás editando sin guardar, y sustituye a la línea «En uso: …».
-- **Sin «Se enviará a…».** Los botones de IA ya no muestran ese aviso; la marca en Motor de IA dice qué proveedor se usa y cada resultado sigue indicando quién lo escribió.
+- **Sin «Se enviará a…».** Los botones de IA ya no muestran ese aviso; la marca en Motor de IA dice qué proveedor se usa.
 - **Ayuda de cada proveedor** en un icono «?» de su tarjeta, y el campo de modelo muestra la lista completa con buscador.
 - **«Probar conexión»** muestra en pantalla por qué no se puede probar, no solo en un tooltip.
 - **Los errores de la prueba dicen la causa.** Si el proveedor rechaza la clave, lo dice con su mensaje («El proveedor rechazó la clave: …»); si no hay ninguna clave, dice que falta, en lugar de «No hay IA disponible».

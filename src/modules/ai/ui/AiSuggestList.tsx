@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import type { AiResult } from "../api/aiApi";
 import { describeAiFailure, type AiFailure } from "../api/structured";
-import type { AiDestination, AiProvenance } from "../model/types";
+import type { AiProvenance } from "../model/types";
 import { AiFailureNotice } from "./AiFailureNotice";
 import { ProvenanceBadge } from "./ProvenanceBadge";
 import "./Assist.css";
@@ -39,8 +39,6 @@ export function AiSuggestList<T>({
   const [result, setResult] = useState<AiResult<T[]> | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [failure, setFailure] = useState<AiFailure | null>(null);
-
-  const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
 
   // Each request has a number; Cancel moves it on, so a late answer is ignored
   // (the call itself keeps running until it ends or times out).
@@ -104,9 +102,7 @@ export function AiSuggestList<T>({
 
       {result && (
         <div className="assist__preview">
-          <span className="assist__preview-label">
-            {t("ai.structured.proposals")} · {label(result.provenance)}
-          </span>
+          <span className="assist__preview-label">{t("ai.structured.proposals")}</span>
           <ul className="assist__picklist">
             {result.value.map((item, i) => (
               <li key={i}>

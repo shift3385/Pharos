@@ -26,7 +26,8 @@ describe("AiSuggestList (IA-10)", () => {
   it("adds only the items the user keeps, with the provenance", async () => {
     const onAdd = renderList(async () => ({ value: ["The user is registered", "There is stock"], provenance }));
     await userEvent.click(screen.getByRole("button", { name: "Suggest" }));
-    expect(await screen.findByText("AI proposals · Ollama (local) · llama3.2:3b")).toBeInTheDocument();
+    expect(await screen.findByText("AI proposals")).toBeInTheDocument();
+    expect(screen.queryByText(/llama3\.2:3b/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("checkbox", { name: "There is stock" }));
     await userEvent.click(screen.getByRole("button", { name: "Add 1" }));
     expect(onAdd).toHaveBeenCalledWith(["The user is registered"], provenance);

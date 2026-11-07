@@ -2,15 +2,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { assistDraft } from "../api/aiApi";
-import type { AiDestination, AiProvenance } from "../model/types";
+import type { AiProvenance } from "../model/types";
 import { ProvenanceBadge } from "./ProvenanceBadge";
 import "./Assist.css";
 
 /** "Assist with AI" control: drafts text from the current notes + context and
  *  shows a preview the user can Use or Discard (nothing is applied until Use).
- *  Disabled with a tooltip when no AI provider is available. The preview says
- *  which provider wrote the draft, and once it is used the field shows
- *  "AI · pending review" until a person marks it reviewed (IA-01). */
+ *  Disabled with a tooltip when no AI provider is available. Once it is used
+ *  the field shows "AI · pending review" until a person marks it reviewed (IA-01). */
 export function AssistButton({
   available,
   instruction,
@@ -33,8 +32,6 @@ export function AssistButton({
   const [state, setState] = useState<"idle" | "loading">("idle");
   const [draft, setDraft] = useState<{ text: string; provenance: AiProvenance } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
 
   async function run() {
     setState("loading");
@@ -81,9 +78,7 @@ export function AssistButton({
 
       {draft && (
         <div className="assist__preview">
-          <span className="assist__preview-label">
-            {t("ai.assist.previewTitle")} · {label(draft.provenance)}
-          </span>
+          <span className="assist__preview-label">{t("ai.assist.previewTitle")}</span>
           <p className="assist__draft">{draft.text}</p>
           <div className="assist__actions">
             <button

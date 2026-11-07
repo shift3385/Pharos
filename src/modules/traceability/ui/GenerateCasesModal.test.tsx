@@ -89,7 +89,8 @@ describe("GenerateCasesModal (IA-05)", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Generate" }));
     expect(await screen.findByText("Successful login")).toBeInTheDocument();
-    expect(screen.getByText("AI · pending review · Claude · claude-opus-5-5")).toBeInTheDocument();
+    expect(screen.getByText("AI · pending review")).toBeInTheDocument();
+    expect(screen.queryByText(/claude-opus-5-5/)).not.toBeInTheDocument();
     await expectNoAxeViolations(); // the review list (UX-05)
     expect(ai.generate).toHaveBeenCalledWith(
       expect.objectContaining({ requirementKey: "REQ-007", title: "Login with email" }),

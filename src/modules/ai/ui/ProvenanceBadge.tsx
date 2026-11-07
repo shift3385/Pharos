@@ -3,9 +3,9 @@ import { isPendingReview } from "../model/provenance";
 import type { AiProvenance } from "../model/types";
 import "./Assist.css";
 
-/** Visible mark on AI-generated content (IA-01): "AI · pending review" plus the
- *  provider and model that produced it, until a person marks it reviewed. Renders
- *  nothing once reviewed (the record stays in the data for audit). */
+/** Visible mark on AI-generated content (IA-01): "AI · pending review" until a
+ *  person marks it reviewed, with the provider and model that produced it in its
+ *  tooltip. Renders nothing once reviewed (the record stays in the data for audit). */
 export function ProvenanceBadge({
   provenance,
   onReview,
@@ -29,8 +29,9 @@ export function ProvenanceBadge({
   }
   return (
     <div className="ai-prov" role="status">
-      <span className="ai-prov__label">{t("ai.provenance.pending")}</span>
-      <span className="ai-prov__source">{source}</span>
+      <span className="ai-prov__label" title={source}>
+        {t("ai.provenance.pending")}
+      </span>
       {onReview && (
         <button type="button" className="ai-prov__review" onClick={onReview}>
           {t("ai.provenance.markReviewed")}

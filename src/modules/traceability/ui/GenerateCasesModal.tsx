@@ -5,7 +5,6 @@ import {
   AiFailureNotice,
   describeAiFailure,
   generateCasesFromRequirement,
-  type AiDestination,
   type AiFailure,
   type AiResult,
   type GeneratedCase,
@@ -54,7 +53,6 @@ export function GenerateCasesModal({
     if (phase === "ready" || phase === "failed" || phase === "review") primaryRef.current?.focus();
   }, [phase]);
 
-  const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
   const key = requirement.requirementKey;
 
   async function generate() {
@@ -153,9 +151,7 @@ export function GenerateCasesModal({
 
       {result && (phase === "review" || phase === "creating") && (
         <>
-          <p className="tr-gen__hint">
-            {t("ai.provenance.pending")} · {label(result.provenance)}
-          </p>
+          <p className="tr-gen__hint">{t("ai.provenance.pending")}</p>
           <ul className="tr-gen__list">
             {result.value.map((c, i) => (
               <li key={i} className="tr-gen__row">

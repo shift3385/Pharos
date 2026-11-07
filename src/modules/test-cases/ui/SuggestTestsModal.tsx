@@ -99,13 +99,7 @@ export function SuggestTestsModal({
       </p>
       {phase === "loading" || phase === "empty" ? null : (
         <>
-          {provenance && (
-            <p className="tp-field__hint">
-              {t("ai.provenance.pending")} ·{" "}
-              {t(`ai.provenance.provider.${provenance.provider}`)} ·{" "}
-              {provenance.model}
-            </p>
-          )}
+          {provenance && <p className="tp-field__hint">{t("ai.provenance.pending")}</p>}
           <ul className="tc-suggest__list">
             {items.map((s, i) => (
               <li key={i} className="tc-suggest__row">

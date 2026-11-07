@@ -267,8 +267,8 @@ saved in the desktop app. With AI you can:
 Structured answers are JSON checked against a schema before use: an invalid
 answer or a refusal is reported and nothing is applied
 ([ADR-0023](docs/adr/0023-salida-estructurada-ia.md)). Nothing is added until
-you accept it, and AI content stays marked "AI · pending review" with its
-provider and model until someone reviews it.
+you accept it, and AI content stays marked "AI · pending review" until someone
+reviews it; the mark's tooltip names the provider and model.
 
 ### Accessibility
 

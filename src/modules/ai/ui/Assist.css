@@ -128,11 +128,6 @@
   font-weight: var(--fw-semibold);
   color: var(--color-warning-text);
 }
-.ai-prov__source {
-  font-family: var(--font-mono);
-  font-size: var(--fs-metadata);
-  color: var(--color-text-secondary);
-}
 .ai-prov__review {
   height: 26px;
   padding: 0 var(--space-2);

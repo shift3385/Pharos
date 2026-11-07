@@ -39,8 +39,9 @@
     acaba de responder en la prueba.
   - **Sin aviso de destino antes de enviar.** Se elimina «Se enviará a proveedor ·
     modelo» de los botones de IA, por decisión del usuario: la marca en Motor de IA
-    ya dice qué se usa. Cada resultado sigue indicando qué proveedor y modelo lo
-    escribieron (IA-01).
+    ya dice qué se usa. Tampoco se muestran en el texto de los resultados (UX-18):
+    proveedor y modelo quedan en los datos del contenido generado y en el tooltip de
+    la marca «IA · pendiente de revisión» (IA-01).
 - **Alternativas:**
   - Guardar la clave anterior para poder deshacer: se descartó porque añade otra
     copia de un secreto para resolver lo que la prueba previa ya evita.
