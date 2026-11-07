@@ -781,7 +781,13 @@
       "lossCards_other": "{{count}} cards",
       "deletedToast": "“{{name}}” deleted",
       "deleteCheckFailed": "Could not check what would be deleted. Try again.",
-      "deleteFailed": "Could not delete “{{name}}”. Try again."
+      "deleteFailed": "Could not delete “{{name}}”. Try again.",
+      "planHistory": "History in the exported plan",
+      "planHistoryDesc": "What the plan's .xlsx and .pdf show of its history, when exported from the wizard and in the project ZIP.",
+      "planHistoryDesc_current": "As before: the header with the current version, date, author and status.",
+      "planHistoryDesc_revisions": "Adds a table with one row per person and day: their last save, the status and the sections they changed.",
+      "planHistorySaved": "History setting saved.",
+      "planHistoryFailed": "The history setting could not be saved."
     }
   },
   "profile": {
@@ -1018,7 +1024,8 @@
       "exportPdf": "Export .pdf",
       "exportPdfDesc": "A document ready to sign",
       "exportXlsx": "Export .xlsx",
-      "exportXlsxDesc": "Editable in Excel"
+      "exportXlsxDesc": "Editable in Excel",
+      "historyMode": "History: {{mode}} (change it in Project settings)"
     },
     "panel": {
       "title": "Plan status",
@@ -1128,7 +1135,20 @@
       "exportHint": "Export the plan from “Import / Export”, top right.",
       "missingLabel": "Steps not completed"
     },
-    "leaveMessage": "The plan has unsaved changes. If you leave, they are lost; to keep them, press “Save” first."
+    "leaveMessage": "The plan has unsaved changes. If you leave, they are lost; to keep them, press “Save” first.",
+    "historyMode": {
+      "current": "Current version only",
+      "revisions": "Revision history"
+    },
+    "history": {
+      "title": "Revision history",
+      "reviewedBy": "Reviewed by",
+      "changes": "Changes",
+      "created": "Plan created",
+      "approved": "Approved",
+      "otherChanges": "Other changes",
+      "unknownAuthor": "Unknown author"
+    }
   },
   "testCase": {
     "loadFailed": "The test cases could not be loaded.",

@@ -33,6 +33,10 @@ export interface ExportablePlan {
   /** Milestones and the project's cycles (EXP-03): sheets of their own after
    *  the template's, and sections at the end of the PDF. */
   extraTables?: ExportTable[];
+  /** «Historial de revisiones» (PLN-02), only when the project asks for
+   *  it: the sheet right after the template's (which import reads, and which
+   *  stays as it is), and the section after the header of the PDF. */
+  history?: ExportTable;
 }
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -192,7 +196,7 @@ export async function buildPlanXlsx(
   );
 
   // After the template's sheet, which stays as it is (EXP-03).
-  addTableSheets(wb, p.extraTables);
+  addTableSheets(wb, [...(p.history ? [p.history] : []), ...(p.extraTables ?? [])]);
 
   const filename = `${p.filenameBase || "plan"}.xlsx`;
   const out = await wb.xlsx.writeBuffer();

@@ -173,6 +173,10 @@ pub(crate) const MIGRATIONS: &[(&str, &str)] = &[
         "0031_import_review.sql",
         include_str!("../migrations/0031_import_review.sql"),
     ),
+    (
+        "0037_plan_export_history.sql",
+        include_str!("../migrations/0037_plan_export_history.sql"),
+    ),
 ];
 
 /// Migration whose SQL runs only after Rust moved the planner attachment BLOBs

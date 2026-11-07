@@ -7,6 +7,15 @@ import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
 import { buildPlanPdf, planPdfName } from "./planPdf";
 import type { CycleExportData } from "@modules/cycles";
 import { planExtraTables } from "./planExtras";
+import { loadHistoryTable } from "./planHistory";
+
+/** The project asks for the revision history in its plan (PLN-02):
+ *  `names` maps account ids to official names (first and last name). */
+export interface PlanHistoryOption {
+  names: Record<string, string>;
+  /** Time zone of the days; the exporter's own when absent (tests). */
+  timeZone?: string;
+}
 
 type Translate = (key: string) => string;
 
@@ -114,7 +123,8 @@ export const FILES_PER_PLAN = 2;
 
 /** Builds the plan .xlsx and .pdf for a project (empty if it has no plan),
  *  spec §5.4. `onEach` fires with each file name as it is built (progress).
- *  A PDF that cannot be rendered is left out and passed to `onSkip`. */
+ *  A PDF that cannot be rendered is left out and passed to `onSkip`. With
+ *  `history`, both files carry the plan's «Historial de revisiones». */
 export async function projectPlanFiles(
   projectId: string,
   userId: string,
@@ -123,6 +133,7 @@ export async function projectPlanFiles(
   onEach?: (name: string) => void,
   onSkip?: (name: string) => void,
   cycles?: CycleExportData,
+  history?: PlanHistoryOption,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return [];
@@ -136,6 +147,9 @@ export async function projectPlanFiles(
       lang,
       cycles,
     ),
+    ...(history
+      ? { history: (await loadHistoryTable(plan, userId, history.names, t, history.timeZone)) ?? undefined }
+      : {}),
   };
   const { filename, buffer } = await buildPlanXlsx(exportable, lang);
   onEach?.(filename);

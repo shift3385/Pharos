@@ -126,10 +126,14 @@ export function PlanIoMenu({
   onImport,
   onExportPdf,
   onExportXlsx,
+  history = "current",
 }: {
   onImport: () => void;
   onExportPdf: () => void;
   onExportXlsx: () => void;
+  /** The project's «Historial en el plan exportado» (PLN-02), shown under
+   *  the exports: it is changed in Ajustes del proyecto. */
+  history?: "current" | "revisions";
 }) {
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
@@ -164,6 +168,11 @@ export function PlanIoMenu({
         <MenuItem icon={FileSpreadsheet} onSelect={onExportXlsx} description={t("testPlan.io.exportXlsxDesc")}>
           {t("testPlan.io.exportXlsx")}
         </MenuItem>
+        <MenuLabel>
+          <span className="tpw-io-menu__history" data-testid="plan-io-history">
+            {t("testPlan.io.historyMode", { mode: t(`testPlan.historyMode.${history}`) })}
+          </span>
+        </MenuLabel>
       </ResponsiveMenu>
     </>
   );

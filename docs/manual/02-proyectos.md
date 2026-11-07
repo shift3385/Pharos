@@ -150,6 +150,10 @@ Al confirmar, Pharos vuelve a la lista de proyectos, que ya no lo muestra.
   los nombres que usa tu herramienta (por ejemplo, el nombre del proyecto de
   Playwright, `chromium`). Así un informe importado sabe en qué configuración
   se ejecutó.
+- «Historial en el plan exportado» decide si el .pdf y el .xlsx del plan
+  llevan solo la versión vigente (como siempre) o también la tabla «Historial
+  de revisiones» (capítulo 3). Se guarda al elegirlo y vale para el asistente
+  y para el ZIP.
 - Eliminar un proyecto borra todo su contenido: exporta antes un ZIP si
   quieres conservarlo.
 

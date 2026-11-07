@@ -1,6 +1,7 @@
 import { serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
+  PlanHistorySource,
   RevisionDetail,
   RevisionSummary,
   TestPlan,
@@ -34,4 +35,8 @@ export const testPlanApi = {
     isTauri() ? invoke("test_plan_revisions", { id, userId }) : Promise.resolve([]),
   revisionDetail: (id: string, userId: string): Promise<RevisionDetail | null> =>
     isTauri() ? invoke("test_plan_revision_get", { id, userId }) : Promise.resolve(null),
+  /** What the exported plan's revision history is built from (PLN-02):
+   *  on the web, only the audit events (no revision copies). */
+  history: (id: string, userId: string): Promise<PlanHistorySource | null> =>
+    isTauri() ? invoke("test_plan_history", { id, userId }) : serverApi.get(`${path(id)}/history`),
 };

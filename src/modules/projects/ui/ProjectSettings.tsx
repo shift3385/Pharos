@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Archive, Check, Download, Hash, Trash2 } from "lucide-react";
@@ -16,12 +16,80 @@ import { CustomFieldsCard } from "@modules/custom-fields";
 import { ConfigurationsCard } from "@modules/cycles";
 import { projectApi } from "../api/projectApi";
 import { deleteConfirmWord } from "../model/projectTable";
-import type { Project } from "../model/types";
+import type { PlanExportHistory, Project } from "../model/types";
 import { useProjectExport } from "./useProjectExport";
 import "@shared/ui/headerActions.css";
 import "./Projects.css";
 
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+const HISTORY_MODES: PlanExportHistory[] = ["current", "revisions"];
+
+/** «Historial en el plan exportado» (PLN-02): what the plan's .xlsx and
+ *  .pdf show of its history, from the wizard and in the ZIP. Saved on change,
+ *  with the project's saved name and numbering (not the General card's
+ *  unsaved edits). */
+function PlanHistoryCard({ project, onSaved }: { project: Project; onSaved: () => void }) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const id = useId();
+  const [mode, setMode] = useState<PlanExportHistory>(project.planExportHistory ?? "current");
+  const [saving, setSaving] = useState(false);
+
+  async function choose(next: PlanExportHistory) {
+    const previous = mode;
+    setMode(next);
+    setSaving(true);
+    try {
+      await projectApi.update(project.id, {
+        ownerId: project.ownerId,
+        name: project.name,
+        caseIdPrefix: project.caseIdPrefix,
+        caseIdDigits: project.caseIdDigits,
+        planExportHistory: next,
+      });
+      toast(t("projects.settings.planHistorySaved"));
+      onSaved();
+    } catch {
+      setMode(previous);
+      toast(t("projects.settings.planHistoryFailed"), "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="pj-card-box" aria-labelledby={`${id}-title`}>
+      <div className="pj-card-box__head">
+        <h2 id={`${id}-title`} className="pj-section-title">
+          {t("projects.settings.planHistory")}
+        </h2>
+        <p className="pj-card-box__desc">{t("projects.settings.planHistoryDesc")}</p>
+      </div>
+      <fieldset className="pj-choice" disabled={saving}>
+        <legend className="sr-only">{t("projects.settings.planHistory")}</legend>
+        {HISTORY_MODES.map((m) => (
+          <label key={m} className="pj-choice__option">
+            <input
+              type="radio"
+              name={`${id}-mode`}
+              value={m}
+              checked={mode === m}
+              aria-describedby={`${id}-${m}`}
+              onChange={() => void choose(m)}
+            />
+            <span className="pj-choice__text">
+              <span className="pj-choice__label">{t(`testPlan.historyMode.${m}`)}</span>
+              <span id={`${id}-${m}`} className="pj-choice__desc">
+                {t(`projects.settings.planHistoryDesc_${m}`)}
+              </span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+    </section>
+  );
+}
 
 interface LossSummary {
   plans: number;
@@ -194,6 +262,8 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
       />
 
       <ConfigurationsCard projectId={project.id} userId={owner} />
+
+      <PlanHistoryCard project={project} onSaved={onSaved} />
 
       <section className="pj-card-box pj-card-box--row" aria-labelledby="pj-export-title">
         <span className="pj-card-box__icon" aria-hidden="true">

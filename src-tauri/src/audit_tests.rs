@@ -1362,6 +1362,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "runs::delete::run_delete_preview",
         "read (counts for the delete dialog)",
     ),
+    (
+        "test_plan::test_plan_history",
+        "read (the exported plan's revision history, PLN-02)",
+    ),
 ];
 
 fn registered_commands() -> Vec<String> {

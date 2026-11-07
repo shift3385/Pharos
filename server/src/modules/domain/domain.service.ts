@@ -70,6 +70,17 @@ const WORKSPACE = "local";
 
 const notFound = (what: string) => new AppError(404, "not_found", `${what} not found.`);
 const str = (p: Payload, key: string) => (typeof p[key] === "string" ? (p[key] as string) : "");
+
+/** An audit event's `changes` (stored as JSON text; null once redacted). */
+function parseChanges(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "string") return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
 const num = (p: Payload, key: string) => (typeof p[key] === "number" ? (p[key] as number) : 0);
 const byText = (key: string) => (a: Payload, b: Payload) => (str(a, key) < str(b, key) ? -1 : str(a, key) > str(b, key) ? 1 : 0);
 
@@ -157,6 +168,7 @@ export function createDomainService(store: DomainStore) {
             name: p.name,
             caseIdPrefix: p.caseIdPrefix,
             caseIdDigits: p.caseIdDigits,
+            planExportHistory: p.planExportHistory === "revisions" ? "revisions" : "current",
             updatedAt: p.updatedAt,
             revision: p.revision,
           })),
@@ -180,6 +192,7 @@ export function createDomainService(store: DomainStore) {
             name: input.name,
             caseIdPrefix: input.caseIdPrefix?.trim() || DEFAULT_PREFIX,
             caseIdDigits: input.caseIdDigits ?? DEFAULT_DIGITS,
+            planExportHistory: input.planExportHistory ?? "current",
             createdAt: at,
             updatedAt: at,
           },
@@ -198,6 +211,8 @@ export function createDomainService(store: DomainStore) {
             name: input.name,
             caseIdPrefix: input.caseIdPrefix?.trim() || DEFAULT_PREFIX,
             caseIdDigits: input.caseIdDigits ?? DEFAULT_DIGITS,
+            // A client that does not send it keeps the setting (PLN-02).
+            planExportHistory: input.planExportHistory ?? doc.payload.planExportHistory ?? "current",
             updatedAt: now(),
           },
           doc,
@@ -258,6 +273,28 @@ export function createDomainService(store: DomainStore) {
       run(userId, async (tx) => {
         const doc = current(await tx.get("test_plan", id), "Test plan", revision);
         return (await tx.put("test_plan", id, planPayload(doc.payload, input), doc)).payload;
+      }),
+    /** What the exported plan's «Historial de revisiones» is built from
+     *  (PLN-02), read-only: the create and update audit events of one live
+     *  plan of the user (the web's own and those the desktop pushed), oldest
+     *  first. The web keeps no revision copies (SYNC-04b), so `revisions` is
+     *  always empty and the history starts at the plan's first event. Null
+     *  for a plan the user cannot see. */
+    history: (userId: string, id: string) =>
+      run(userId, async (tx) => {
+        const plan = (await livePlans(tx)).find((p) => p.id === id);
+        if (!plan) return null;
+        const events = (await tx.list("audit_event", undefined, { where: { entity: "test_plan", entityId: id } }))
+          .map((d) => d.payload)
+          .filter((e) => e.action === "create" || e.action === "update")
+          .map((e) => ({
+            at: str(e, "at"),
+            actor: str(e, "actor"),
+            action: str(e, "action"),
+            changes: parseChanges(e.changes),
+          }))
+          .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+        return { createdAt: str(plan, "createdAt"), createdBy: userId, events, revisions: [] };
       }),
     remove: remove("test_plan", "Test plan"),
   };

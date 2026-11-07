@@ -26,6 +26,8 @@ export function planDocDefinition(p: ExportablePlan, t: Translate): TDocumentDef
       ],
     },
     { text: `${t("testPlan.author")}: ${p.author || "—"}`, style: "meta", margin: [0, 2, 0, 0] },
+    // The revision history right after the header (PLN-02), when asked.
+    ...tableSections(p.history ? [p.history] : [], none),
 
     sectionHeader(t("testPlan.summary")),
     field(p.summary),

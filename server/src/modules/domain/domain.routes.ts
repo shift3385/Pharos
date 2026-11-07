@@ -56,6 +56,8 @@ export function domainRoutes(app: FastifyInstance, deps: { domain: DomainService
       : domain.testPlans.list(user(req));
   });
   app.get("/api/test-plans/:id", { preHandler }, (req) => domain.testPlans.get(user(req), id(req)));
+  // Read-only source of the exported plan's revision history (PLN-02).
+  app.get("/api/test-plans/:id/history", { preHandler }, (req) => domain.testPlans.history(user(req), id(req)));
   app.post("/api/test-plans", { preHandler }, (req) => domain.testPlans.create(user(req), testPlanInputSchema.parse(req.body)));
   app.put("/api/test-plans/:id", { preHandler }, (req) => {
     const { input, revision } = updateOf(testPlanInputSchema).parse(req.body);

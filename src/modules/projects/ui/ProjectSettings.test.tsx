@@ -75,6 +75,28 @@ describe("Ajustes del proyecto (SPEC §6/§8)", () => {
     await expectNoAxeViolations();
   });
 
+  it("«Historial en el plan exportado» starts at the current version and saves the choice (PLN-02)", async () => {
+    setViewportWidth(1440);
+    renderSettings();
+    const group = screen.getByRole("group", { name: "Historial en el plan exportado" });
+    const current = within(group).getByRole("radio", { name: /Solo la versión vigente/ });
+    const revisions = within(group).getByRole("radio", { name: /Historial de revisiones/ });
+    expect(current).toBeChecked();
+    await userEvent.click(revisions);
+    expect(projectApi.update).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({ name: "Portal Clientes v3", caseIdDigits: 4, planExportHistory: "revisions" }),
+    );
+    expect(revisions).toBeChecked();
+    await expectNoAxeViolations();
+  });
+
+  it("shows the saved history setting of the project", () => {
+    setViewportWidth(1440);
+    renderSettings({ ...PROJECT, planExportHistory: "revisions" });
+    expect(screen.getByRole("radio", { name: /Historial de revisiones/ })).toBeChecked();
+  });
+
   it("a blank name blocks saving and is explained", async () => {
     setViewportWidth(1440);
     renderSettings();

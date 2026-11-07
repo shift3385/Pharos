@@ -8,7 +8,14 @@ import { TestPlanWizard } from "./TestPlanWizard";
 
 /** A project owns exactly one test plan (spec §5.1). This page loads that plan
  *  for the given project (or starts a new one) and hands off to the wizard. */
-export function TestPlanPage({ projectId }: { projectId: string }) {
+export function TestPlanPage({
+  projectId,
+  exportHistory,
+}: {
+  projectId: string;
+  /** The project's «Historial en el plan exportado» (PLN-02). */
+  exportHistory?: "current" | "revisions";
+}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const userId = user?.id ?? "";
@@ -45,6 +52,7 @@ export function TestPlanPage({ projectId }: { projectId: string }) {
     <TestPlanWizard
       planId={planId}
       projectId={projectId}
+      exportHistory={exportHistory}
       onSaved={(plan) => (plan ? setPlanId(plan.id) : void refresh())}
     />
   );
