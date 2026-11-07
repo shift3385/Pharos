@@ -5,6 +5,9 @@
   align-items: flex-start;
 }
 .assist__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: var(--space-1) var(--space-3);
   font-size: var(--fs-caption);
   font-weight: var(--fw-medium);
@@ -18,6 +21,42 @@
 }
 .assist__btn:disabled {
   opacity: 0.5;
+}
+
+/* Only the icon, until it is working: then it also says so (AssistButton). */
+.assist__btn--icon {
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-2);
+}
+
+[data-viewport="mobile"] .assist__btn--icon {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* The AI is working: stays readable, so it does not take the disabled look. */
+.assist__btn[aria-busy="true"]:disabled {
+  opacity: 1;
+}
+
+.assist__spark {
+  animation: assist-think 1.2s ease-in-out infinite;
+}
+
+@keyframes assist-think {
+  50% {
+    opacity: 0.45;
+    transform: scale(1.25) rotate(18deg);
+  }
+}
+
+/* Without motion the text still says the AI is working. */
+@media (prefers-reduced-motion: reduce) {
+  .assist__spark {
+    animation: none;
+  }
 }
 .assist__preview {
   width: 100%;
@@ -67,7 +106,6 @@
   align-items: center;
   gap: var(--space-2);
 }
-.assist__dest,
 .assist__message {
   font-size: var(--fs-metadata);
   color: var(--color-text-secondary);

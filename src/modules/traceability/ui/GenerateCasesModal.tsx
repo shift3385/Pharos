@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
 import {
   AiFailureNotice,
-  aiDestination,
   describeAiFailure,
   generateCasesFromRequirement,
   type AiDestination,
@@ -19,9 +18,8 @@ import "./Traceability.css";
 
 type Phase = "ready" | "loading" | "review" | "failed" | "creating";
 
-/** Gherkin scenarios and test cases from a requirement (IA-05). It says where
- *  the requirement goes before sending it, validates the whole answer (an
- *  invalid one is reported and nothing is created), and creates only the
+/** Gherkin scenarios and test cases from a requirement (IA-05). It validates the
+ *  whole answer (an invalid one is reported and nothing is created), and creates only the
  *  proposals the user accepts: draft cases linked to the requirement, marked
  *  "AI · pending review" with the provider and model that wrote them. If some
  *  cannot be saved, it stays open with only those selected, so "Create"
@@ -45,18 +43,11 @@ export function GenerateCasesModal({
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("ready");
-  const [destination, setDestination] = useState<AiDestination | null>(null);
   const [result, setResult] = useState<AiResult<GeneratedCase[]> | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [failure, setFailure] = useState<AiFailure | null>(null);
   const [saveFailed, setSaveFailed] = useState(0);
   const primaryRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    void aiDestination()
-      .then(setDestination)
-      .catch(() => setDestination(null));
-  }, []);
 
   // The primary action of each phase takes the focus (Generate, Retry, Create).
   useEffect(() => {
@@ -142,9 +133,6 @@ export function GenerateCasesModal({
       <p className="cd__msg">
         <span className="tr-key">{key}</span> {requirement.title}
       </p>
-      {destination && (
-        <p className="tr-gen__hint">{t("ai.provenance.destination", { source: label(destination) })}</p>
-      )}
 
       {phase === "ready" && <p className="tr-gen__hint">{t("traceability.generate.intro")}</p>}
       {/* Always present, so screen readers announce the change. */}

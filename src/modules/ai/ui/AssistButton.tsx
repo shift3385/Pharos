@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { aiDestination, assistDraft } from "../api/aiApi";
+import { Sparkles } from "lucide-react";
+import { assistDraft } from "../api/aiApi";
 import type { AiDestination, AiProvenance } from "../model/types";
 import { ProvenanceBadge } from "./ProvenanceBadge";
 import "./Assist.css";
 
 /** "Assist with AI" control: drafts text from the current notes + context and
  *  shows a preview the user can Use or Discard (nothing is applied until Use).
- *  Disabled with a tooltip when no AI provider is available. It says which
- *  provider the notes go to before sending, and once a draft is used the field
- *  shows "AI · pending review" until a person marks it reviewed (IA-01). */
+ *  Disabled with a tooltip when no AI provider is available. The preview says
+ *  which provider wrote the draft, and once it is used the field shows
+ *  "AI · pending review" until a person marks it reviewed (IA-01). */
 export function AssistButton({
   available,
   instruction,
@@ -32,11 +33,6 @@ export function AssistButton({
   const [state, setState] = useState<"idle" | "loading">("idle");
   const [draft, setDraft] = useState<{ text: string; provenance: AiProvenance } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [destination, setDestination] = useState<AiDestination | null>(null);
-
-  useEffect(() => {
-    if (available) void aiDestination().then(setDestination).catch(() => setDestination(null));
-  }, [available]);
 
   const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
 
@@ -66,16 +62,19 @@ export function AssistButton({
       <div className="assist__row">
         <button
           type="button"
-          className="assist__btn"
+          className="assist__btn assist__btn--icon"
           disabled={!available || state === "loading"}
-          title={available ? undefined : t("ai.assist.unavailable")}
+          aria-busy={state === "loading"}
+          title={available ? t("ai.assist.button") : t("ai.assist.unavailable")}
           onClick={() => void run()}
         >
-          {state === "loading" ? t("ai.assist.drafting") : t("ai.assist.button")}
+          <Sparkles size={16} className={state === "loading" ? "assist__spark" : undefined} aria-hidden="true" />
+          {state === "loading" ? (
+            <span>{t("ai.assist.drafting")}</span>
+          ) : (
+            <span className="sr-only">{t("ai.assist.button")}</span>
+          )}
         </button>
-        {available && destination && (
-          <span className="assist__dest">{t("ai.provenance.destination", { source: label(destination) })}</span>
-        )}
       </div>
 
       {message && <p className="assist__message">{message}</p>}

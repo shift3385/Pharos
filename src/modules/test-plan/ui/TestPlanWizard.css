@@ -79,11 +79,10 @@
   outline: none;
 }
 
-.tpw__desc {
-  margin: 0;
-  font-size: var(--fs-caption);
-  color: var(--color-text-secondary);
-  text-wrap: pretty;
+.tpw__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .tpw__fields {

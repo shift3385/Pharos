@@ -8,7 +8,6 @@ export {
   aiChat,
   aiStatus,
   aiAvailable,
-  aiDestination,
   assistDraft,
   suggestTests,
   loadConfig,
@@ -17,7 +16,13 @@ export {
 export type { AiResult, AssistRequest, TestSuggestion } from "./api/aiApi";
 export { AiOutputError, describeAiFailure } from "./api/structured";
 export type { AiFailure, AiOutputErrorKind } from "./api/structured";
-export { generateCasesFromRequirement, suggestPreconditions, suggestRisks } from "./api/generators";
+export {
+  generateCasesFromRequirement,
+  suggestClosureCriteria,
+  suggestPreconditions,
+  suggestResponsibilities,
+  suggestRisks,
+} from "./api/generators";
 export type { RequirementBrief } from "./api/generators";
 export type { GeneratedCase, RiskSuggestion } from "./model/schemas";
 export { hasPendingReview, isPendingReview, markReviewed, withProvenance } from "./model/provenance";

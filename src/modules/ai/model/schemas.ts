@@ -71,6 +71,22 @@ export const riskSuggestionsSchema = z.object({
   reason,
 });
 
+export const responsibilitySuggestionsSchema = z.object({
+  responsibilities: z
+    .array(z.object({ role: line(200), responsibility: line(500) }))
+    .max(30)
+    .default([]),
+  reason,
+});
+
+export const closureSuggestionsSchema = z.object({
+  criteria: z
+    .array(z.object({ criterion: line(300), metric: line(120) }))
+    .max(10)
+    .default([]),
+  reason,
+});
+
 export const preconditionSuggestionsSchema = z.object({
   // Rendered as Given steps, so the same keyword clean-up applies.
   preconditions: z.array(step).max(10).default([]),
@@ -79,3 +95,5 @@ export const preconditionSuggestionsSchema = z.object({
 
 export type GeneratedCase = z.infer<typeof generatedCaseSchema>;
 export type RiskSuggestion = z.infer<typeof riskSuggestionsSchema>["risks"][number];
+export type ResponsibilitySuggestion = z.infer<typeof responsibilitySuggestionsSchema>["responsibilities"][number];
+export type ClosureSuggestion = z.infer<typeof closureSuggestionsSchema>["criteria"][number];

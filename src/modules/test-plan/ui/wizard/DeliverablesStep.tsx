@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Plus, Trash2 } from "lucide-react";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { DELIVERABLE_GROUPS } from "../../model/catalogs";
 import { toKey } from "@shared/import/xlsx";
 import { DELIVERABLE_REV, isCatalogDeliverable } from "../../model/catalogLabels";
@@ -65,9 +66,14 @@ export function DeliverablesStep({
         ))}
       </div>
       <div className="tpw-other">
-        <label htmlFor={otherId} className="tpw-other__label">
-          {t("testPlan.deliverables.other")}
-        </label>
+        <div className="tpw__heading">
+          <label htmlFor={otherId} className="tpw-other__label">
+            {t("testPlan.deliverables.other")}
+          </label>
+          <InfoTip id={`${otherId}-hint`} label={t("testPlan.deliverables.other")}>
+            {t("testPlan.deliverables.otherHint")}
+          </InfoTip>
+        </div>
         <div className="tpw-other__row">
           <input
             id={otherId}
@@ -88,9 +94,6 @@ export function DeliverablesStep({
             {t("testPlan.deliverables.add")}
           </button>
         </div>
-        <p id={`${otherId}-hint`} className="tpw-hint">
-          {t("testPlan.deliverables.otherHint")}
-        </p>
       </div>
     </div>
   );

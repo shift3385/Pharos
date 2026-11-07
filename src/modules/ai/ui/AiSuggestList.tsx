@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { aiDestination, type AiResult } from "../api/aiApi";
+import { Sparkles } from "lucide-react";
+import type { AiResult } from "../api/aiApi";
 import { describeAiFailure, type AiFailure } from "../api/structured";
 import type { AiDestination, AiProvenance } from "../model/types";
 import { AiFailureNotice } from "./AiFailureNotice";
@@ -19,9 +20,12 @@ export function AiSuggestList<T>({
   provenance,
   onAdd,
   onReview,
+  blockedReason,
 }: {
   available: boolean;
   buttonLabel: string;
+  /** Why there is nothing to ask right now, although the AI is available. */
+  blockedReason?: string;
   /** Builds the request from the current form and calls the generator. */
   run: () => Promise<AiResult<T[]>>;
   renderItem: (item: T) => ReactNode;
@@ -35,11 +39,6 @@ export function AiSuggestList<T>({
   const [result, setResult] = useState<AiResult<T[]> | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [failure, setFailure] = useState<AiFailure | null>(null);
-  const [destination, setDestination] = useState<AiDestination | null>(null);
-
-  useEffect(() => {
-    if (available) void aiDestination().then(setDestination).catch(() => setDestination(null));
-  }, [available]);
 
   const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
 
@@ -86,19 +85,18 @@ export function AiSuggestList<T>({
         <button
           type="button"
           className="assist__btn"
-          disabled={!available || loading}
-          title={available ? undefined : t("ai.assist.unavailable")}
+          disabled={!available || loading || Boolean(blockedReason)}
+          aria-busy={loading}
+          title={available ? blockedReason : t("ai.assist.unavailable")}
           onClick={() => void suggest()}
         >
+          <Sparkles size={16} className={loading ? "assist__spark" : undefined} aria-hidden="true" />
           {loading ? t("ai.structured.thinking") : buttonLabel}
         </button>
         {loading && (
           <button type="button" className="assist__discard" onClick={cancel}>
             {t("common.cancel")}
           </button>
-        )}
-        {available && destination && (
-          <span className="assist__dest">{t("ai.provenance.destination", { source: label(destination) })}</span>
         )}
       </div>
 

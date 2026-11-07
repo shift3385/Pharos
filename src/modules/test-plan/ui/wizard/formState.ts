@@ -73,10 +73,30 @@ export type AssistedField =
   | "environmentConfig"
   | "environmentRequirements"
   | "automationStrategy"
+  | "testDataManagement"
+  | "defectManagement"
+  | "communicationPlan"
   | "purpose"
   | "conclusion";
-/** Assisted fields plus the list the AI can add rows to (IA-10). */
-export type ReviewableField = AssistedField | "risks";
+/** Assisted fields plus the lists the AI can fill (IA-10, IA-13, IA-14). */
+export type ReviewableField = AssistedField | "risks" | "roles" | "closureCriteria";
+
+/** The roles the AI can suggest a responsibility for: written, and still without one. */
+export function rolesWithoutResponsibility(roles: FormState["roles"]): string[] {
+  return roles.filter((r) => r.role.trim() && !r.responsibility.trim()).map((r) => r.role.trim());
+}
+
+/** Fills the responsibility of those roles and nothing else: a row written in the
+ *  meantime and the roles themselves stay as they are (pure — testable). */
+export function withResponsibilities(
+  roles: FormState["roles"],
+  items: { role: string; responsibility: string }[],
+): FormState["roles"] {
+  const found = new Map(items.map((i) => [i.role, i.responsibility]));
+  return roles.map((r) =>
+    r.responsibility.trim() ? r : { ...r, responsibility: found.get(r.role.trim()) ?? r.responsibility },
+  );
+}
 
 /** Days a sprint should last: the sprint weeks of step 6 × 7 in an agile
  *  plan, else none (a traditional plan has no sprint length). */
@@ -158,6 +178,20 @@ export function planBrief(form: FormState): string {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** The plan's brief plus its risks, which exit criteria should answer to (IA-14). */
+export function closureBrief(form: FormState): string {
+  const risks = form.risks.map((r) => r.risk.trim()).filter(Boolean);
+  return [planBrief(form), risks.length ? `Risks: ${risks.join("; ")}` : ""].filter(Boolean).join("\n");
+}
+
+/** All a conclusion is judged against: the plan, its risks and its exit criteria (IA-15). */
+export function conclusionBrief(form: FormState): string {
+  const criteria = form.closureCriteria
+    .filter((c) => c.criterion.trim())
+    .map((c) => (c.metric.trim() ? `${c.criterion.trim()} (${c.metric.trim()})` : c.criterion.trim()));
+  return [closureBrief(form), criteria.length ? `Exit criteria: ${criteria.join("; ")}` : ""].filter(Boolean).join("\n");
 }
 
 export function defaults(t: Translate): FormState {
