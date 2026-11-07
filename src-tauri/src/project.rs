@@ -20,6 +20,7 @@ pub struct ProjectSummary {
     name: String,
     case_id_prefix: String,
     case_id_digits: i64,
+    plan_export_history: String,
     updated_at: String,
     revision: i64,
 }
@@ -34,6 +35,9 @@ pub struct Project {
     name: String,
     case_id_prefix: String,
     case_id_digits: i64,
+    /// What the exported plan shows of its history: `current` (only the
+    /// version in force, the default) or `revisions` (PLN-02).
+    plan_export_history: String,
     created_at: String,
     updated_at: String,
     revision: i64,
@@ -46,6 +50,9 @@ pub struct ProjectInput {
     name: String,
     case_id_prefix: Option<String>,
     case_id_digits: Option<i64>,
+    /// `current` or `revisions` (PLN-02). None keeps what the project has
+    /// (`current` on a create); any other value is `current`.
+    plan_export_history: Option<String>,
     /// Authenticated user that owns the project (set on create; never changed
     /// by an update).
     owner_id: Option<String>,
@@ -53,6 +60,14 @@ pub struct ProjectInput {
 
 const DEFAULT_PREFIX: &str = "ATS_";
 const DEFAULT_DIGITS: i64 = 3;
+
+/// The two values of `plan_export_history`; anything else reads as the first.
+pub(crate) fn plan_export_history(value: Option<&str>) -> &'static str {
+    match value {
+        Some("revisions") => "revisions",
+        _ => "current",
+    }
+}
 
 fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
     Ok(Project {
@@ -62,6 +77,7 @@ fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
         name: row.get("name")?,
         case_id_prefix: row.get("case_id_prefix")?,
         case_id_digits: row.get("case_id_digits")?,
+        plan_export_history: row.get("plan_export_history")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         revision: row.get("revision")?,
@@ -72,7 +88,8 @@ fn map_project(row: &rusqlite::Row) -> rusqlite::Result<Project> {
 fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, name, case_id_prefix, case_id_digits, updated_at, revision \
+            "SELECT id, name, case_id_prefix, case_id_digits, plan_export_history, \
+             updated_at, revision \
              FROM projects WHERE owner_id = ?1 AND deleted_at IS NULL \
              ORDER BY name COLLATE NOCASE",
         )
@@ -84,6 +101,7 @@ fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary
                 name: r.get("name")?,
                 case_id_prefix: r.get("case_id_prefix")?,
                 case_id_digits: r.get("case_id_digits")?,
+                plan_export_history: r.get("plan_export_history")?,
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })
@@ -96,7 +114,7 @@ fn list_projects(conn: &Connection, owner_id: &str) -> Result<Vec<ProjectSummary
 fn get_project(conn: &Connection, id: &str, owner_id: &str) -> Result<Option<Project>, String> {
     conn.query_row(
         "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits, \
-         created_at, updated_at, revision FROM projects \
+         plan_export_history, created_at, updated_at, revision FROM projects \
          WHERE id = ?1 AND owner_id = ?2 AND deleted_at IS NULL",
         params![id, owner_id],
         map_project,
@@ -119,15 +137,17 @@ pub(crate) fn insert_project(conn: &Connection, input: &ProjectInput) -> Result<
         .unwrap_or(DEFAULT_DIGITS);
     conn.execute(
         "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, \
-         case_id_digits, created_by, updated_by, created_at, updated_at, revision) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?3, ?3, datetime('now'), datetime('now'), 1)",
+         case_id_digits, plan_export_history, created_by, updated_by, created_at, \
+         updated_at, revision) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?3, ?3, datetime('now'), datetime('now'), 1)",
         params![
             id,
             workspace_id,
             input.owner_id.clone().unwrap_or_default(),
             input.name,
             prefix,
-            digits
+            digits,
+            plan_export_history(input.plan_export_history.as_deref())
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -184,8 +204,14 @@ pub(crate) fn update_project(
         .case_id_digits
         .filter(|d| *d > 0)
         .unwrap_or(DEFAULT_DIGITS);
+    // None keeps the project's setting (a caller that does not send it).
+    let history = input
+        .plan_export_history
+        .as_deref()
+        .map(|v| plan_export_history(Some(v)));
     conn.execute(
         "UPDATE projects SET name = ?2, case_id_prefix = ?3, case_id_digits = ?4, \
+         plan_export_history = COALESCE(?7, plan_export_history), \
          updated_at = datetime('now'), updated_by = ?6, revision = ?5 WHERE id = ?1",
         params![
             id,
@@ -193,7 +219,8 @@ pub(crate) fn update_project(
             prefix,
             digits,
             revision + 1,
-            input.owner_id.clone().unwrap_or_default()
+            input.owner_id.clone().unwrap_or_default(),
+            history
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -333,8 +360,34 @@ mod tests {
             name: name.to_string(),
             case_id_prefix: prefix.map(String::from),
             case_id_digits: None,
+            plan_export_history: None,
             owner_id: Some(OWNER.to_string()),
         }
+    }
+
+    #[test]
+    fn plan_export_history_defaults_and_persists() {
+        let c = conn();
+        let id = insert_project(&c, &input("Hist", None)).unwrap();
+        let read = |c: &Connection| {
+            get_project(c, &id, OWNER)
+                .unwrap()
+                .unwrap()
+                .plan_export_history
+        };
+        assert_eq!(read(&c), "current");
+        let mut on = input("Hist", None);
+        on.plan_export_history = Some("revisions".into());
+        update_project(&c, &id, &on).unwrap();
+        assert_eq!(read(&c), "revisions");
+        // A caller that does not send it keeps the setting.
+        update_project(&c, &id, &input("Hist 2", None)).unwrap();
+        assert_eq!(read(&c), "revisions");
+        // An unknown value reads as the default.
+        let mut odd = input("Hist", None);
+        odd.plan_export_history = Some("all".into());
+        update_project(&c, &id, &odd).unwrap();
+        assert_eq!(read(&c), "current");
     }
 
     #[test]

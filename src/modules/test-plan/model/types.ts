@@ -117,6 +117,37 @@ export interface RevisionDetail extends RevisionSummary {
   data: TestPlanData;
 }
 
+/** One create or update audit event of a plan (ADR-0015), for its history
+ *  (PLN-02). `actor` is `user:<id>` or `system:<component>`. */
+export interface PlanHistoryEvent {
+  at: string;
+  actor: string;
+  action: string;
+  /** `{ field: [before, after] }` (`data.<key>` one level down); null once
+   *  redacted. */
+  changes: Record<string, [unknown, unknown]> | null;
+}
+
+/** A revision copy: the title and content a save overwrote, with who saved
+ *  and when (desktop only). */
+export interface PlanHistoryRevision {
+  revision: number;
+  title: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  createdBy: string;
+}
+
+/** What the exported plan's «Historial de revisiones» is built from: the
+ *  plan's creation, its audit events (oldest first) and its revision copies
+ *  (by revision; always empty on the web). */
+export interface PlanHistorySource {
+  createdAt: string;
+  createdBy: string;
+  events: PlanHistoryEvent[];
+  revisions: PlanHistoryRevision[];
+}
+
 // The Rust contract (BASE-05, ADR-0026): what Rust sends covers what this model
 // reads, and what this model sends covers what Rust reads. `tsc` fails if a
 // field is renamed, dropped or retyped on either side.
@@ -125,5 +156,6 @@ export type _RustContract = [
   Assert<Covers<Contract.TestPlan, TestPlan>>,
   Assert<Covers<Contract.TestPlanRevisionSummary, RevisionSummary>>,
   Assert<Covers<Contract.TestPlanRevisionDetail, RevisionDetail>>,
+  Assert<Covers<Contract.TestPlanHistorySource, PlanHistorySource>>,
   Assert<Covers<TestPlanInput, Contract.TestPlanInput>>,
 ];

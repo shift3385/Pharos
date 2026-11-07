@@ -50,12 +50,27 @@ vi.mock("../api/testPlanApi", () => ({
       projectId === "none"
         ? null
         : {
+            id: "tp1",
             title: "Checkout",
             version: "1.0",
             author: "Ada",
             status: "reviewed",
             data: { milestones: [{ name: "Entrega beta", date: "2026-11-20" }] },
           },
+    // PLN-02: one save of u1 that approved the plan.
+    history: async () => ({
+      createdAt: "2026-11-05T09:00:00.000Z",
+      createdBy: "u1",
+      revisions: [],
+      events: [
+        {
+          at: "2026-11-06T21:03:00.000Z",
+          actor: "user:u1",
+          action: "update",
+          changes: { version: ["1.0", "1.1"], status: ["draft", "approved"] },
+        },
+      ],
+    }),
   },
 }));
 
@@ -80,6 +95,20 @@ describe("plan files for the project ZIP (EXP-02, spec §5.4)", () => {
     expect(pdfDocs[0]).toContain("1/2 · 50 %");
     expect(pdfDocs[0]).toContain("Beta · S2");
     expect(await projectPlanFiles("none", "u1", t, "es")).toEqual([]);
+  });
+
+  it("carries the revision history only when the project asks for it (PLN-02)", async () => {
+    pdfDocs.length = 0;
+    await projectPlanFiles("p1", "u1", t, "es");
+    expect(pdfDocs[0]).not.toContain("testPlan.history.title");
+    await projectPlanFiles("p1", "u1", t, "es", undefined, undefined, undefined, {
+      names: { u1: "Test Smoke" },
+      timeZone: "UTC",
+    });
+    expect(pdfDocs[1]).toContain("testPlan.history.title");
+    expect(pdfDocs[1]).toContain("Test Smoke");
+    expect(pdfDocs[1]).toContain("2026-11-06 21:03");
+    expect(pdfDocs[1]).toContain("testPlan.history.approved");
   });
 
   it("reports the plan status for the Home (UX-08)", async () => {

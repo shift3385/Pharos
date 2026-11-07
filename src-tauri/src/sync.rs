@@ -143,7 +143,8 @@ pub(crate) fn read_payload(
     let (sql, build): (&str, fn(&rusqlite::Row) -> rusqlite::Result<PayloadRow>) = match entity {
         "project" => (
             "SELECT id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
-                    created_at, updated_at, revision, deleted_at FROM projects WHERE id = ?1",
+                    plan_export_history, created_at, updated_at, revision, deleted_at
+               FROM projects WHERE id = ?1",
             |r| {
                 Ok((
                     json!({
@@ -153,6 +154,7 @@ pub(crate) fn read_payload(
                         "name": r.get::<_, String>("name")?,
                         "caseIdPrefix": r.get::<_, String>("case_id_prefix")?,
                         "caseIdDigits": r.get::<_, i64>("case_id_digits")?,
+                        "planExportHistory": r.get::<_, String>("plan_export_history")?,
                         "createdAt": r.get::<_, String>("created_at")?,
                         "updatedAt": r.get::<_, String>("updated_at")?,
                         "revision": r.get::<_, i64>("revision")?,
@@ -1051,10 +1053,13 @@ fn write_doc(
         "project" => {
             conn.execute(
                 "INSERT INTO projects (id, workspace_id, owner_id, name, case_id_prefix, case_id_digits,
-                        created_by, updated_by, created_at, updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, datetime('now'), datetime('now'), ?8, NULL)
+                        plan_export_history, created_by, updated_by, created_at, updated_at, revision,
+                        deleted_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, COALESCE(?9, 'current'), ?7, ?7, datetime('now'),
+                        datetime('now'), ?8, NULL)
                  ON CONFLICT(id) DO UPDATE SET name=excluded.name, case_id_prefix=excluded.case_id_prefix,
                         case_id_digits=excluded.case_id_digits, owner_id=excluded.owner_id,
+                        plan_export_history=COALESCE(?9, plan_export_history),
                         updated_by=excluded.updated_by, updated_at=datetime('now'),
                         revision=excluded.revision, deleted_at=NULL",
                 params![
@@ -1066,6 +1071,10 @@ fn write_doc(
                     p.get("caseIdDigits").and_then(Value::as_i64).unwrap_or(3),
                     user,
                     doc.revision,
+                    // Absent (an older Pharos pushed it): keep the local value.
+                    p.get("planExportHistory")
+                        .and_then(Value::as_str)
+                        .map(|v| crate::project::plan_export_history(Some(v))),
                 ],
             )
             .map_err(|e| e.to_string())?;

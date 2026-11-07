@@ -9,6 +9,8 @@ import {
 
 // The plan and case builders are covered in their modules (export/batch.test.ts);
 // here they return named stubs so the test checks what lands in the ZIP.
+// The revision-history option each plan was built with (PLN-02), by project.
+const historyArgs = vi.hoisted(() => [] as [string, unknown][]);
 vi.mock("@modules/test-plan", () => ({
   FILES_PER_PLAN: 2,
   projectHasPlan: async (id: string) => id === "a",
@@ -18,7 +20,11 @@ vi.mock("@modules/test-plan", () => ({
     _t: unknown,
     _l: string,
     onEach?: (n: string) => void,
+    _s?: unknown,
+    _c?: unknown,
+    history?: unknown,
   ) => {
+    historyArgs.push([id, history]);
     if (id !== "a") return [];
     const files = [
       { name: "Plan.xlsx", buffer: new Uint8Array([1]) },
@@ -58,7 +64,7 @@ beforeEach(() => {
 vi.mock("../api/projectApi", () => ({
   projectApi: {
     list: async () => [
-      { id: "a", name: "Alpha" },
+      { id: "a", name: "Alpha", planExportHistory: "revisions" },
       { id: "b", name: "Beta" },
     ],
   },
@@ -84,6 +90,27 @@ async function unzip(blob: Blob) {
 const t = (k: string) => k;
 
 describe("project ZIPs (EXP-02, UX-02)", () => {
+  it("asks for the plan's revision history only for a project set to it (PLN-02)", async () => {
+    historyArgs.length = 0;
+    const names = { u1: "Test Smoke" };
+    await exportAllProjects("u1", (k: string) => k, "es", undefined, names);
+    expect(historyArgs).toEqual([
+      ["a", { names }],
+      ["b", undefined],
+    ]);
+    historyArgs.length = 0;
+    await exportProjectZip(
+      { id: "a", name: "Alpha", caseIdPrefix: "ATS_", caseIdDigits: 3, updatedAt: "", revision: 1 },
+      "u1",
+      (k: string) => k,
+      "es",
+      undefined,
+      names,
+    );
+    expect(historyArgs).toEqual([["a", undefined]]);
+  });
+
+
   it("the project ZIP holds the plan and case .xlsx and .pdf and is saved", async () => {
     saved.length = 0;
     const events: ExportProgress[] = [];

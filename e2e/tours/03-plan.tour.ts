@@ -404,7 +404,7 @@ chapter("plan", () => {
   step("exportar", {
     title: "Exportar el plan",
     caption:
-      "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel. El archivo se guarda en tu carpeta de descarga (Administración › General, capítulo 10) y un aviso indica su nombre.",
+      "«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel. Al pie, el menú indica qué historial lleva el documento: «Solo la versión vigente» o «Historial de revisiones», según Ajustes del proyecto (capítulo 2). El archivo se guarda en tu carpeta de descarga (Administración › General, capítulo 10) y un aviso indica su nombre.",
     covers: ["action:plan-export"],
     focus: "[role=\"menu\"]",
     run: async () => {

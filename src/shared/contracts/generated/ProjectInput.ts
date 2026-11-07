@@ -2,6 +2,11 @@
 
 export type ProjectInput = { name: string, caseIdPrefix?: string, caseIdDigits?: number, 
 /**
+ * `current` or `revisions` (PLN-02). None keeps what the project has
+ * (`current` on a create); any other value is `current`.
+ */
+planExportHistory?: string, 
+/**
  * Authenticated user that owns the project (set on create; never changed
  * by an update).
  */

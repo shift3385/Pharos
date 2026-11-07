@@ -26,6 +26,11 @@ export function useProjectExport() {
   const ownerId = user?.id ?? "";
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const lang = () => i18n.resolvedLanguage ?? "es";
+  // Who the plans' revision history names (PLN-02): the official name,
+  // never the alias. Only the owner edits a project today.
+  const names: Record<string, string> = user
+    ? { [user.id]: `${user.firstName} ${user.lastName}`.trim() }
+    : {};
 
   function onProgress(title: string) {
     return (p: ExportProgress) =>
@@ -57,7 +62,7 @@ export function useProjectExport() {
     try {
       const { exportAllProjects } = await import("../export/exportAll");
       const result = await unlessReported(
-        exportAllProjects(ownerId, t, lang(), onProgress(title)),
+        exportAllProjects(ownerId, t, lang(), onProgress(title), names),
       );
       if (result) {
         toast(t("projects.exportedAllToast", { count: result.files, path: result.path }));
@@ -74,7 +79,7 @@ export function useProjectExport() {
     try {
       const { exportProjectZip } = await import("../export/exportAll");
       const result = await unlessReported(
-        exportProjectZip(project, ownerId, t, lang(), onProgress(title)),
+        exportProjectZip(project, ownerId, t, lang(), onProgress(title), names),
       );
       if (result) {
         toast(
