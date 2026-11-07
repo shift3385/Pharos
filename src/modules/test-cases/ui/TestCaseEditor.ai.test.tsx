@@ -132,6 +132,19 @@ describe("TestCaseEditor AI (IA-16)", () => {
     }
   });
 
+  it("each list has «Add», the AI icon and the mark on one action line", async () => {
+    await openEditor();
+    const line = (name: string) => screen.getByRole("button", { name }).closest(".tp-list-field__actions");
+    expect(line("Review preconditions")).toHaveTextContent("Add");
+    expect(line("Review steps")).toHaveTextContent("Add step");
+    expect(line("Suggest postconditions")).toHaveTextContent("Add");
+    expect(line("Suggest criteria")).toHaveTextContent("Add");
+    // Only the icon: the name is for assistive technology and the tooltip.
+    const button = screen.getByRole("button", { name: "Review steps" });
+    expect(button).toHaveAttribute("title", "Review steps");
+    expect(button.querySelector(".sr-only")).toHaveTextContent("Review steps");
+  });
+
   it("applies only what the user ticks; removing and rewording start unticked", async () => {
     reviewCaseList.mockResolvedValue({
       value: [

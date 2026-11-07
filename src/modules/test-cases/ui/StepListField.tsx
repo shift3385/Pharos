@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ListField } from "@shared/ui/fields";
 import type { Step } from "../model/types";
 import { editStepTexts, texts } from "../model/steps";
@@ -10,16 +11,19 @@ export function StepListField({
   onChange,
   label,
   placeholder,
+  actions,
 }: {
   items: Step[];
   onChange: (next: Step[]) => void;
   label: string;
   placeholder?: string;
+  actions?: ReactNode;
 }) {
   return (
     <ListField
       label={label}
       placeholder={placeholder}
+      actions={actions}
       items={texts(items)}
       onChange={(next) => onChange(editStepTexts(items, next))}
     />

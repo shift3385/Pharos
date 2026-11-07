@@ -39,6 +39,7 @@ export function CaseListReview({
   return (
     <AiSuggestList
       available={available}
+      iconOnly
       buttonLabel={scope?.trim() ? `${name} · ${scope.trim()}` : name}
       run={() => reviewCaseList(field, context(), filled, i18n.resolvedLanguage ?? "es")}
       renderItem={(proposal) => <ListProposalView proposal={proposal} />}

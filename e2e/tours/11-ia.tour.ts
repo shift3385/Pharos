@@ -189,14 +189,14 @@ chapter("ia", () => {
   step("precondiciones", {
     title: "Sugerir y revisar el caso con IA",
     caption:
-      "En el editor de un caso, cada lista tiene su botón de IA: «Sugerir precondiciones» las propone a partir del resto del caso, y con la lista ya escrita pasa a «Revisar precondiciones». Igual en pasos, postcondiciones y criterios, en cada flujo de un caso avanzado y en las comprobaciones de una checklist. La revisión propone añadir, reformular o eliminar, y cada propuesta dice por qué. Reformular y eliminar empiezan sin marcar: solo se aplican si los marcas. Datos de prueba y Notas no llevan IA.",
+      "En el editor de un caso, cada lista tiene su botón de IA (✨) junto a «+ Añadir»; su nombre aparece al pasar el cursor. «Sugerir precondiciones» las propone a partir del resto del caso, y con la lista ya escrita pasa a «Revisar precondiciones». Igual en pasos, postcondiciones y criterios, en cada flujo de un caso avanzado y en las comprobaciones de una checklist. La revisión propone añadir, reformular o eliminar, y cada propuesta dice por qué. Reformular y eliminar empiezan sin marcar: solo se aplican si los marcas. Datos de prueba y Notas no llevan IA.",
     covers: ["ai:suggest-preconditions"],
     skip: AI_SKIP,
     run: async () => {
       await browser.keys("Escape");
       await $("a.cl-title*=Transferencia").click();
       aiCall();
-      await clickButton(es.testCase.aiReview.preconditions.suggest);
+      await $(`button[title="${es.testCase.aiReview.preconditions.suggest}"]`).click();
       await waitForText(X.structured.proposals, AI_TIMEOUT);
     },
   });

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { duplicateRow, duplicateRows } from "@shared/validation";
@@ -102,11 +102,14 @@ export function ListField({
   onChange,
   placeholder,
   label,
+  actions,
 }: {
   items: string[];
   onChange: (next: string[]) => void;
   placeholder?: string;
   label: string;
+  /** Goes on the line of «+ Añadir», after it (the AI button of a list). */
+  actions?: ReactNode;
 }) {
   const { t } = useTranslation();
   const baseId = useId();
@@ -142,13 +145,16 @@ export function ListField({
           </div>
         );
       })}
-      <button
-        type="button"
-        className="tp-list-field__add"
-        onClick={() => onChange([...items, ""])}
-      >
-        + {t("testPlan.addItem")}
-      </button>
+      <div className="tp-list-field__actions">
+        <button
+          type="button"
+          className="tp-list-field__add"
+          onClick={() => onChange([...items, ""])}
+        >
+          + {t("testPlan.addItem")}
+        </button>
+        {actions}
+      </div>
     </div>
   );
 }

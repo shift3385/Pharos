@@ -23,6 +23,7 @@ export function AiSuggestList<T>({
   blockedReason,
   startsSelected = () => true,
   applyLabel,
+  iconOnly = false,
 }: {
   available: boolean;
   buttonLabel: string;
@@ -40,6 +41,9 @@ export function AiSuggestList<T>({
   startsSelected?: (item: T) => boolean;
   /** The apply button, when it does more than add. */
   applyLabel?: (count: number) => string;
+  /** Only the icon, with `buttonLabel` for assistive technology and the tooltip,
+   *  as in `AssistButton`. While it works, it also says so. */
+  iconOnly?: boolean;
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -85,24 +89,30 @@ export function AiSuggestList<T>({
 
   return (
     <div className="assist">
-      <ProvenanceBadge provenance={provenance} onReview={onReview} />
       <div className="assist__row">
         <button
           type="button"
-          className="assist__btn"
+          className={iconOnly ? "assist__btn assist__btn--icon" : "assist__btn"}
           disabled={!available || loading || Boolean(blockedReason)}
           aria-busy={loading}
-          title={available ? blockedReason : t("ai.assist.unavailable")}
+          title={available ? (blockedReason ?? (iconOnly ? buttonLabel : undefined)) : t("ai.assist.unavailable")}
           onClick={() => void suggest()}
         >
           <Sparkles size={16} className={loading ? "assist__spark" : undefined} aria-hidden="true" />
-          {loading ? t("ai.structured.thinking") : buttonLabel}
+          {loading ? (
+            t("ai.structured.thinking")
+          ) : iconOnly ? (
+            <span className="sr-only">{buttonLabel}</span>
+          ) : (
+            buttonLabel
+          )}
         </button>
         {loading && (
           <button type="button" className="assist__discard" onClick={cancel}>
             {t("common.cancel")}
           </button>
         )}
+        <ProvenanceBadge provenance={provenance} onReview={onReview} />
       </div>
 
       {failure && <AiFailureNotice failure={failure} />}

@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteButton } from "@shared/ui/fields";
 import type { Step } from "../model/types";
@@ -82,10 +82,13 @@ export function SortableSteps({
   steps,
   onChange,
   label,
+  actions,
 }: {
   steps: Step[];
   onChange: (next: Step[]) => void;
   label: string;
+  /** Goes on the line of «+ Añadir paso», after it (the AI button). */
+  actions?: ReactNode;
 }) {
   const { t } = useTranslation();
   const baseId = useId();
@@ -148,15 +151,18 @@ export function SortableSteps({
           </div>
         </SortableContext>
       </DndContext>
-      <button
-        type="button"
-        className="tp-list-field__add"
-        onClick={() =>
-          onChange([...steps, { id: newStepId(new Set(ids)), text: "" }])
-        }
-      >
-        + {t("testCase.addStep")}
-      </button>
+      <div className="tp-list-field__actions">
+        <button
+          type="button"
+          className="tp-list-field__add"
+          onClick={() =>
+            onChange([...steps, { id: newStepId(new Set(ids)), text: "" }])
+          }
+        >
+          + {t("testCase.addStep")}
+        </button>
+        {actions}
+      </div>
     </div>
   );
 }

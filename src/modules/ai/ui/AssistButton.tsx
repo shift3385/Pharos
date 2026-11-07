@@ -63,7 +63,6 @@ export function AssistButton({
 
   return (
     <div className="assist">
-      <ProvenanceBadge provenance={provenance} onReview={onReview} />
       <div className="assist__row">
         <button
           type="button"
@@ -80,6 +79,7 @@ export function AssistButton({
             <span className="sr-only">{name}</span>
           )}
         </button>
+        <ProvenanceBadge provenance={provenance} onReview={onReview} />
       </div>
 
       {message && <p className="assist__message">{message}</p>}

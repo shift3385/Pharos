@@ -62,17 +62,19 @@ export function FlowsEditor({
         label={t("testCase.flow.background")}
         items={background}
         onChange={onBackgroundChange}
-      />
-      <CaseListReview
-        field="background"
-        available={ai.available}
-        existing={texts(background)}
-        context={() => ai.brief({ omit: "background" })}
-        provenance={ai.provenance[BACKGROUND_KEY]}
-        onApply={(accepted, p) =>
-          ai.apply({ background: applyProposals(background, accepted, stepOps) }, BACKGROUND_KEY, p)
+        actions={
+          <CaseListReview
+            field="background"
+            available={ai.available}
+            existing={texts(background)}
+            context={() => ai.brief({ omit: "background" })}
+            provenance={ai.provenance[BACKGROUND_KEY]}
+            onApply={(accepted, p) =>
+              ai.apply({ background: applyProposals(background, accepted, stepOps) }, BACKGROUND_KEY, p)
+            }
+            onReview={() => ai.review(BACKGROUND_KEY)}
+          />
         }
-        onReview={() => ai.review(BACKGROUND_KEY)}
       />
 
       {flows.map((flow, i) => (
@@ -108,22 +110,24 @@ export function FlowsEditor({
             label={`${t("testCase.flow.preconditions")} · ${flow.name}`}
             items={flow.preconditions ?? []}
             onChange={(v) => setFlow(i, { preconditions: v })}
-          />
-          <CaseListReview
-            field="flowPreconditions"
-            scope={flow.name}
-            available={ai.available}
-            existing={texts(flow.preconditions ?? [])}
-            context={() => ai.brief({ flowId: flow.id, omit: "preconditions" })}
-            provenance={ai.provenance[flowProvenanceKey(flow.id, "preconditions")]}
-            onApply={(accepted, p) =>
-              ai.apply(
-                { flows: withFlow(i, { preconditions: applyProposals(flow.preconditions ?? [], accepted, stepOps) }) },
-                flowProvenanceKey(flow.id, "preconditions"),
-                p,
-              )
+            actions={
+              <CaseListReview
+                field="flowPreconditions"
+                scope={flow.name}
+                available={ai.available}
+                existing={texts(flow.preconditions ?? [])}
+                context={() => ai.brief({ flowId: flow.id, omit: "preconditions" })}
+                provenance={ai.provenance[flowProvenanceKey(flow.id, "preconditions")]}
+                onApply={(accepted, p) =>
+                  ai.apply(
+                    { flows: withFlow(i, { preconditions: applyProposals(flow.preconditions ?? [], accepted, stepOps) }) },
+                    flowProvenanceKey(flow.id, "preconditions"),
+                    p,
+                  )
+                }
+                onReview={() => ai.review(flowProvenanceKey(flow.id, "preconditions"))}
+              />
             }
-            onReview={() => ai.review(flowProvenanceKey(flow.id, "preconditions"))}
           />
 
           <p className="tp-field__grouplabel">{t("testCase.flow.steps")}</p>
@@ -131,22 +135,24 @@ export function FlowsEditor({
             label={`${t("testCase.flow.steps")} · ${flow.name}`}
             steps={flow.steps}
             onChange={(v) => setFlow(i, { steps: v })}
-          />
-          <CaseListReview
-            field="steps"
-            scope={flow.name}
-            available={ai.available}
-            existing={texts(flow.steps)}
-            context={() => ai.brief({ flowId: flow.id, omit: "steps" })}
-            provenance={ai.provenance[flowProvenanceKey(flow.id, "steps")]}
-            onApply={(accepted, p) =>
-              ai.apply(
-                { flows: withFlow(i, { steps: applyProposals(flow.steps, accepted, stepOps) }) },
-                flowProvenanceKey(flow.id, "steps"),
-                p,
-              )
+            actions={
+              <CaseListReview
+                field="steps"
+                scope={flow.name}
+                available={ai.available}
+                existing={texts(flow.steps)}
+                context={() => ai.brief({ flowId: flow.id, omit: "steps" })}
+                provenance={ai.provenance[flowProvenanceKey(flow.id, "steps")]}
+                onApply={(accepted, p) =>
+                  ai.apply(
+                    { flows: withFlow(i, { steps: applyProposals(flow.steps, accepted, stepOps) }) },
+                    flowProvenanceKey(flow.id, "steps"),
+                    p,
+                  )
+                }
+                onReview={() => ai.review(flowProvenanceKey(flow.id, "steps"))}
+              />
             }
-            onReview={() => ai.review(flowProvenanceKey(flow.id, "steps"))}
           />
 
           <label className="tp-field">

@@ -955,20 +955,22 @@ export function TestCaseEditor({
             label={t("testCase.checklist.items")}
             steps={form.steps}
             onChange={(v) => update({ steps: v })}
-          />
-          <CaseListReview
-            field="checklist"
-            available={aiReady}
-            existing={texts(form.steps)}
-            context={() => checklistBrief(form, requirements)}
-            provenance={form.aiProvenance.steps}
-            onApply={(accepted, p) =>
-              update({
-                steps: applyProposals(form.steps, accepted, stepOps),
-                aiProvenance: withProvenance(form.aiProvenance, "steps", p),
-              })
+            actions={
+              <CaseListReview
+                field="checklist"
+                available={aiReady}
+                existing={texts(form.steps)}
+                context={() => checklistBrief(form, requirements)}
+                provenance={form.aiProvenance.steps}
+                onApply={(accepted, p) =>
+                  update({
+                    steps: applyProposals(form.steps, accepted, stepOps),
+                    aiProvenance: withProvenance(form.aiProvenance, "steps", p),
+                  })
+                }
+                onReview={() => review("steps")}
+              />
             }
-            onReview={() => review("steps")}
           />
           {hiddenByChecklist && (
             <p className="tp-field__hint" role="note">
@@ -1009,20 +1011,22 @@ export function TestCaseEditor({
             label={t("testCase.preconditions")}
             items={form.preconditions}
             onChange={(v) => update({ preconditions: v })}
-          />
-          <CaseListReview
-            field="preconditions"
-            available={aiReady}
-            existing={texts(form.preconditions)}
-            context={() => caseBrief(form, "preconditions", requirements)}
-            provenance={form.aiProvenance.preconditions}
-            onApply={(accepted, p) =>
-              update({
-                preconditions: applyProposals(form.preconditions, accepted, stepOps),
-                aiProvenance: withProvenance(form.aiProvenance, "preconditions", p),
-              })
+            actions={
+              <CaseListReview
+                field="preconditions"
+                available={aiReady}
+                existing={texts(form.preconditions)}
+                context={() => caseBrief(form, "preconditions", requirements)}
+                provenance={form.aiProvenance.preconditions}
+                onApply={(accepted, p) =>
+                  update({
+                    preconditions: applyProposals(form.preconditions, accepted, stepOps),
+                    aiProvenance: withProvenance(form.aiProvenance, "preconditions", p),
+                  })
+                }
+                onReview={() => review("preconditions")}
+              />
             }
-            onReview={() => review("preconditions")}
           />
 
           <p className="tp-field__grouplabel">{t("testCase.steps")}</p>
@@ -1030,20 +1034,22 @@ export function TestCaseEditor({
             label={t("testCase.steps")}
             steps={form.steps}
             onChange={(v) => update({ steps: v })}
-          />
-          <CaseListReview
-            field="steps"
-            available={aiReady}
-            existing={texts(form.steps)}
-            context={() => caseBrief(form, "steps", requirements)}
-            provenance={form.aiProvenance.steps}
-            onApply={(accepted, p) =>
-              update({
-                steps: applyProposals(form.steps, accepted, stepOps),
-                aiProvenance: withProvenance(form.aiProvenance, "steps", p),
-              })
+            actions={
+              <CaseListReview
+                field="steps"
+                available={aiReady}
+                existing={texts(form.steps)}
+                context={() => caseBrief(form, "steps", requirements)}
+                provenance={form.aiProvenance.steps}
+                onApply={(accepted, p) =>
+                  update({
+                    steps: applyProposals(form.steps, accepted, stepOps),
+                    aiProvenance: withProvenance(form.aiProvenance, "steps", p),
+                  })
+                }
+                onReview={() => review("steps")}
+              />
             }
-            onReview={() => review("steps")}
           />
 
           <label className="tp-field">
@@ -1100,40 +1106,44 @@ export function TestCaseEditor({
             label={t("testCase.postconditions")}
             items={form.postconditions}
             onChange={(v) => update({ postconditions: v })}
-          />
-          <CaseListReview
-            field="postconditions"
-            available={aiReady}
-            existing={form.postconditions}
-            context={() => caseBrief(form, "postconditions", requirements)}
-            provenance={form.aiProvenance.postconditions}
-            onApply={(accepted, p) =>
-              update({
-                postconditions: applyProposals(form.postconditions, accepted, textOps),
-                aiProvenance: withProvenance(form.aiProvenance, "postconditions", p),
-              })
+            actions={
+              <CaseListReview
+                field="postconditions"
+                available={aiReady}
+                existing={form.postconditions}
+                context={() => caseBrief(form, "postconditions", requirements)}
+                provenance={form.aiProvenance.postconditions}
+                onApply={(accepted, p) =>
+                  update({
+                    postconditions: applyProposals(form.postconditions, accepted, textOps),
+                    aiProvenance: withProvenance(form.aiProvenance, "postconditions", p),
+                  })
+                }
+                onReview={() => review("postconditions")}
+              />
             }
-            onReview={() => review("postconditions")}
           />
           <p className="tp-field__grouplabel">{t("testCase.acceptanceCriteria")}</p>
           <ListField
             label={t("testCase.acceptanceCriteria")}
             items={form.acceptanceCriteria}
             onChange={(v) => update({ acceptanceCriteria: v })}
-          />
-          <CaseListReview
-            field="acceptanceCriteria"
-            available={aiReady}
-            existing={form.acceptanceCriteria}
-            context={() => caseBrief(form, "acceptanceCriteria", requirements)}
-            provenance={form.aiProvenance.acceptanceCriteria}
-            onApply={(accepted, p) =>
-              update({
-                acceptanceCriteria: applyProposals(form.acceptanceCriteria, accepted, textOps),
-                aiProvenance: withProvenance(form.aiProvenance, "acceptanceCriteria", p),
-              })
+            actions={
+              <CaseListReview
+                field="acceptanceCriteria"
+                available={aiReady}
+                existing={form.acceptanceCriteria}
+                context={() => caseBrief(form, "acceptanceCriteria", requirements)}
+                provenance={form.aiProvenance.acceptanceCriteria}
+                onApply={(accepted, p) =>
+                  update({
+                    acceptanceCriteria: applyProposals(form.acceptanceCriteria, accepted, textOps),
+                    aiProvenance: withProvenance(form.aiProvenance, "acceptanceCriteria", p),
+                  })
+                }
+                onReview={() => review("acceptanceCriteria")}
+              />
             }
-            onReview={() => review("acceptanceCriteria")}
           />
           {docFields}
         </>

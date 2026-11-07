@@ -82,6 +82,44 @@ describe("AiSuggestList (IA-10)", () => {
     expect(onAdd).toHaveBeenCalledWith(["keep"], provenance);
   });
 
+  it("can be only the icon, named and explained, and says when it is working (IA-16)", async () => {
+    let answer: (v: { value: string[]; provenance: typeof provenance }) => void = () => {};
+    renderWithProviders(
+      <AiSuggestList<string>
+        available
+        iconOnly
+        buttonLabel="Review"
+        run={() => new Promise((resolve) => (answer = resolve))}
+        renderItem={(s) => s}
+        onAdd={vi.fn()}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Review" });
+    expect(button).toHaveAttribute("title", "Review");
+    expect(button.querySelector(".sr-only")).toHaveTextContent("Review");
+    await userEvent.click(button);
+    expect(button).toHaveTextContent(i18n.t("ai.structured.thinking"));
+    expect(button.querySelector(".assist__spark")).toBeInTheDocument();
+    answer({ value: ["Item"], provenance });
+    expect(await screen.findByRole("checkbox", { name: "Item" })).toBeInTheDocument();
+  });
+
+  it("puts the mark on the button's line, after it", () => {
+    renderWithProviders(
+      <AiSuggestList<string>
+        available
+        iconOnly
+        buttonLabel="Review"
+        run={vi.fn()}
+        renderItem={(s) => s}
+        provenance={provenance}
+        onAdd={vi.fn()}
+      />,
+    );
+    const row = screen.getByRole("button", { name: "Review" }).parentElement;
+    expect(row?.lastElementChild).toHaveTextContent(i18n.t("ai.provenance.pending"));
+  });
+
   it("is disabled with a notice when no AI is available", () => {
     const run = vi.fn();
     renderList(run, false);
