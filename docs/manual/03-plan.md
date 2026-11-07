@@ -27,7 +27,7 @@ El plan de pruebas se redacta con un asistente de 19 pasos que sigue la norma IS
 
 ### 3.3. Paso 3 · Resumen
 
-El resumen es lo primero que leerá quien reciba el plan: describe en pocas líneas qué se prueba y por qué (en este ejemplo, la versión 2.0 de una app de banca móvil). Si has configurado un motor de IA (capítulo 10), «✨ Asistir con IA» propone un borrador que puedes usar, editar o descartar; nada se aplica sin que lo aceptes (capítulo 11).
+El resumen es lo primero que leerá quien reciba el plan: describe en pocas líneas qué se prueba y por qué (en este ejemplo, la versión 2.0 de una app de banca móvil). Si has configurado un motor de IA (capítulo 10), el botón de IA (✨, «Asistir con IA») propone un borrador que puedes usar, editar o descartar; nada se aplica sin que lo aceptes (capítulo 11).
 
 ![Paso 3 · Resumen](img/plan/03-resumen.png)
 
@@ -69,7 +69,7 @@ Describe dónde se va a probar: la configuración del entorno (en este ejemplo, 
 
 ### 3.10. Paso 10 · Herramientas y automatización
 
-Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con buscador; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa «Añadir». Las elegidas quedan resaltadas (en este ejemplo, Playwright, Selenium y Cypress). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. «✨ Asistir con IA» propone un borrador de esa estrategia; se activa cuando configuras un motor de IA en Administración (capítulo 10), como en esta captura, donde aún aparece en gris.
+Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con buscador; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa «Añadir». Las elegidas quedan resaltadas (en este ejemplo, Playwright, Selenium y Cypress). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. el botón de IA (✨, «Asistir con IA») propone un borrador de esa estrategia; se activa cuando configuras un motor de IA en Administración (capítulo 10), como en esta captura, donde aún aparece en gris.
 
 ![Paso 10 · Herramientas y automatización](img/plan/10-herramientas.png)
 
@@ -81,7 +81,7 @@ Dos pasos de texto libre. En el 11, cómo se consiguen y se protegen los datos d
 
 ### 3.12. Paso 13 · Roles y responsabilidades
 
-Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Líder de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos). «+ Añadir» crea otra fila y la papelera de cada una la quita.
+Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Líder de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos). «+ Añadir» crea otra fila y la papelera de cada una la quita. Si has configurado un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que escribiste y aún no la tienen; eliges cuáles usar, y los roles y lo ya escrito no cambian.
 
 ![Paso 13 · Roles y responsabilidades](img/plan/12-roles.png)
 
@@ -102,13 +102,13 @@ Un hito es una fecha clave que no ocupa días, como una congelación de código 
 
 ### 3.15. Paso 15 · Riesgos y mitigación
 
-Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, es decir, lo que se hará para reducirlo (en este ejemplo, el retraso del proveedor de pagos QR se mitiga con un simulador propio). Cada campo crece con su texto, para que se lea entero. Si has configurado un motor de IA, «✨ Sugerir riesgos con IA» propone riesgos con su mitigación para que elijas cuáles añadir (capítulo 11).
+Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, es decir, lo que se hará para reducirlo (en este ejemplo, el retraso del proveedor de pagos QR se mitiga con un simulador propio). Cada campo crece con su texto, para que se lea entero. Si has configurado un motor de IA, «Sugerir riesgos con IA» propone riesgos con su mitigación para que elijas cuáles añadir (capítulo 11).
 
 ![Paso 15 · Riesgos y mitigación](img/plan/15-riesgos.png)
 
 ### 3.16. Pasos 16 a 18 · Comunicación, cierre y propósito
 
-Tres pasos de texto que completan el plan: el plan de comunicación (paso 16: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 17: cada criterio con su métrica objetivo, en este ejemplo «Casos críticos ejecutados» al «100 %»; «Inicio» los muestra como criterios de salida) y el propósito del documento (paso 18, el de la captura).
+Tres pasos de texto que completan el plan: el plan de comunicación (paso 16: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 17: cada criterio con su métrica objetivo, en este ejemplo «Casos críticos ejecutados» al «100 %»; «Inicio» los muestra como criterios de salida; con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan para que elijas cuáles añadir) y el propósito del documento (paso 18, el de la captura).
 
 ![Pasos 16 a 18 · Comunicación, cierre y propósito](img/plan/16-comunicacion.png)
 

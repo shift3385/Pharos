@@ -54,7 +54,7 @@ chapter("ia", () => {
   step("configurar", {
     title: "Configurar el proveedor",
     caption:
-      "En «Administración → Motor de IA», elige el proveedor, pega tu clave y pulsa «Guardar clave»: queda en el almacén de credenciales de Windows y el campo muestra «Configurada» (en este manual, difuminado). Después elige un modelo («Listar modelos») y guarda.",
+      "En «Administración → Motor de IA», elige el proveedor, pega tu clave y pulsa «Guardar clave»: queda en el almacén de credenciales de Windows, ese proveedor pasa a ser el activo y el campo muestra «Configurada» (en este manual, difuminado). Después elige un modelo («Listar modelos») y guarda.",
     covers: ["ai:configure"],
     skip: AI_SKIP,
     mask: ["#ai-key"],
@@ -89,8 +89,8 @@ chapter("ia", () => {
       await openAdminTab("templates");
       await openAdminTab("ai");
       await expect(byTestId(`ai-provider-${provider}`)).toBeDisplayed();
-      // «En uso: <proveedor> · <modelo>», and the keychain holds the key.
-      await waitForText(model);
+      // The card carries the «En uso» mark, and the keychain holds the key.
+      await expect(byTestId(`ai-provider-${provider}`).$('[data-testid="ai-in-use"]')).toBeDisplayed();
       const stored = await browser.execute(async (p: string) => {
         const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<boolean> } };
         return w.__TAURI_INTERNALS__.invoke("ai_key_status", { provider: p });
@@ -102,7 +102,7 @@ chapter("ia", () => {
   step("probar-conexion", {
     title: "Probar la conexión",
     caption:
-      "Antes de confiar en la configuración, «Probar conexión» envía una pregunta mínima y muestra el tiempo de respuesta. Si falla, dice por qué (clave, modelo o red).",
+      "Antes de confiar en la configuración, «Probar conexión» envía una pregunta mínima y muestra el tiempo de respuesta. Si falla, dice por qué (clave, modelo o red). Con una clave recién escrita, la prueba sin guardarla: si no funciona, la anterior sigue intacta.",
     covers: ["ai:test-connection"],
     skip: AI_SKIP,
     mask: ["#ai-key"],
@@ -119,7 +119,7 @@ chapter("ia", () => {
 
   step("asistir", {
     title: "«Asistir con IA» en un campo",
-    caption: "En los campos de texto del plan, «✨ Asistir con IA» propone un borrador a partir del resto del plan. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
+    caption: "En los campos de texto del plan, el botón de IA (✨, «Asistir con IA») propone un borrador breve a partir del resto del plan, con lo que pide el syllabus ISTQB para esa sección. En «Conclusión», valora el plan frente a sus objetivos y criterios de salida, y no inventa resultados. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
     covers: ["ai:assist-field"],
     skip: AI_SKIP,
     run: async () => {
@@ -133,7 +133,7 @@ chapter("ia", () => {
   step("riesgos", {
     title: "Sugerir riesgos",
     caption:
-      "En «Riesgos y mitigación», «✨ Sugerir riesgos con IA» propone riesgos con su mitigación, un buen punto de partida que conviene revisar: marca los que te sirvan y pulsa «Añadir».",
+      "En «Riesgos y mitigación», «Sugerir riesgos con IA» propone riesgos con su mitigación, un buen punto de partida que conviene revisar: marca los que te sirvan y pulsa «Añadir».",
     covers: ["ai:suggest-risks"],
     skip: AI_SKIP,
     run: async () => {
@@ -189,7 +189,7 @@ chapter("ia", () => {
   step("precondiciones", {
     title: "Sugerir precondiciones",
     caption:
-      "En el editor de un caso, «✨ Sugerir precondiciones» propone las condiciones previas a partir del título y los pasos, las que más se suelen olvidar al escribir un caso.",
+      "En el editor de un caso, «Sugerir precondiciones» propone las condiciones previas a partir del título y los pasos, las que más se suelen olvidar al escribir un caso.",
     covers: ["ai:suggest-preconditions"],
     skip: AI_SKIP,
     run: async () => {

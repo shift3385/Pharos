@@ -148,14 +148,14 @@ export async function waitForToast(text: string, timeout = 15_000, { error = fal
 }
 
 /** After a save: waits until nothing on the page says «Guardando…» or
- *  «Cargando…» any more (the save finished and the editor reloaded), so a
+ *  «Cargando…» and shows no skeleton any more (the save finished and the editor reloaded), so a
  *  capture never shows a half-done state (UX-10 review H1/M1). */
 export async function waitForSettled(timeout = 15_000) {
   const busy = [es.common.loading, es.testCase.saving, es.defects.saving].filter(Boolean);
   await browser.waitUntil(
     async () => {
       const text = await $("body").getText();
-      return busy.every((b) => !text.includes(b));
+      return busy.every((b) => !text.includes(b)) && (await $$(".sk").length) === 0;
     },
     { timeout, timeoutMsg: "the page never settled after saving (still saving or loading)" },
   );

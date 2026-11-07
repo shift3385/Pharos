@@ -20,8 +20,17 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   (Anthropic), OpenRouter or any OpenAI-compatible endpoint. Calls run in Rust
   (`src-tauri/src/ai.rs`) so each key stays in the OS keychain; three wire
   formats (Gemini, OpenAI chat completions, Anthropic Messages) cover them.
+  A key just typed can be tried once without storing it: `ai_key_test` on
+  desktop, and straight from the browser to the provider on the web, which
+  cannot store keys (`providers/onlineBrowser.ts`,
+  [ADR-0033](adr/0033-probar-clave-ia-antes-de-guardarla.md)). Using the desktop
+  key on the web is decided but not built (IA-12,
+  [ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)): until then the rest
+  of the online AI needs the desktop app.
   Offline: Ollama, called from the frontend. Structured answers (IA-05 cases
-  from a requirement, IA-10 risks and preconditions) reuse the same chat path
+  from a requirement, IA-10 risks and preconditions, IA-13 responsibilities of
+  the roles the user wrote, dropping any role it invents, IA-14 exit criteria of
+  the plan, dropping any it repeats) reuse the same chat path
   with a strict prompt and are validated with zod on the client before use
   ([ADR-0023](adr/0023-salida-estructurada-ia.md)); the traceability module
   creates the accepted cases through the test-cases public API.
@@ -840,6 +849,32 @@ through `src-tauri/src/journal.rs`:
   fade in after it opens (`data-phase` on the sidebar); immediate under
   reduced motion.
 - **Shared primitives** (`src/shared/ui`, SPEC §6/§10):
+  - `ProjectPicker` (UX-12): `ProjectMenu` (search by name or prefix, the current
+    one checked; the sidebar adds «Ver todos») and `ProjectSelect` (the same menu
+    as a form control). Every choice of a project goes through it, never a native
+    `<select>`.
+  - AI buttons (UX-13): `AssistButton` is the icon alone, with its name for
+    assistive technology and in the tooltip; it and `AiSuggestList` animate the
+    icon (`.assist__spark`, `aria-busy`) while the AI answers.
+  - Loading placeholders (UX-17): `Skeleton` (one decorative shape, tokens
+    `--color-skeleton` and `--color-skeleton-shine`), `SkeletonRegion` (shapes
+    plus one `LoadingStatus`), and the shapes `ListSkeleton`, `CardGridSkeleton`,
+    `FormSkeleton` and `TableSkeleton` (in `DataTable.tsx`, from the table's own
+    `columns`). A shape takes its space at once and appears after
+    `SKELETON_DELAY_MS` (200 ms, CSS only); `LoadingStatus` says «Cargando…» after
+    the same delay, outside the hidden shapes and any `aria-busy`. A region that
+    mounts within 300 ms of another continues its wait: no second delay and no
+    second announcement, for screens that load in steps. Inicio has one
+    `LoadingStatus` in its header, and its cards only draw shapes. Tour captures
+    wait for `.sk` to go (`waitForSettled`). Dialogs, `ExecutionPanel`, Profile
+    and `AppSplash` keep the text.
+  - `joinLabels`: "a, b y c" for save bars and notices. A save bar names what is
+    pending and the notice what was saved (Motor de IA, General, retention).
+  - Appearance (UX-11): `applyAppearance` (`admin/model/settings.ts`) sets the
+    background variables and `data-card-shadow` on the root, from what is saved or
+    from a draft to preview it. The default background is stored as a marker, not
+    its URL, which changes with each build; the cards with a shadow are listed in
+    `shared/theme/cardShadow.css`.
   - `Popover` + `usePopover` (`popoverPosition.ts`):
     - rendered in a portal with `position: fixed`;
     - trigger and panel carry `data-pop`;
@@ -888,7 +923,9 @@ through `src-tauri/src/journal.rs`:
     holds the link or button, so it does not fight the checkbox.
   - `Pagination`: «Mostrando 1–10 de 240», ‹ 1 2 3 … 24 › (`pageWindow`,
     `pageWindow.ts`), an optional «Por página» menu (`pageSizes`), and
-    ‹ Página N de M › on mobile.
+    ‹ Página N de M › on mobile. It renders nothing while everything fits in the
+    smallest page size; with more, it stays even if a larger size fits them all,
+    so that size can still be changed back.
   - `FilterChips`: one-of-N quick filters with counts (`aria-pressed`); an
     option can be disabled with a `title` that says why («Próximamente»).
   - `FilterMenuButton`: «Prioridad ▾» opening `MenuCheckItem`s (a sheet on
@@ -1322,7 +1359,8 @@ session at the server's field limits fits. The module serializes its calls
 behind one lock: writes and deletes from several threads of one process make
 Credential Manager lose deletes (a deleted entry comes back). Sync Tauri
 commands run on the main thread, but the async AI commands (`ai_chat_online`,
-`ai_list_models`) read keys from the runtime's threads. Only `db.rs` still
+`ai_list_models`) read keys from the runtime's threads; `ai_key_test` uses the
+key it is given and never touches the keychain. Only `db.rs` still
 calls `keyring` directly, once at startup to load the database key.
 
 Hardening (BASE-06): `config/env.ts` validates the environment at start-up.

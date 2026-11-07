@@ -59,7 +59,7 @@ Tus plantillas se editan o eliminan desde su menú; las incluidas con Pharos no 
 
 ### 10.9. General
 
-«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema) y el idioma se aplican al momento. También puedes poner un fondo personalizado con su opacidad, elegir la retención de los elementos borrados y la carpeta donde se guardan las exportaciones.
+«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema), el idioma y la carpeta de las exportaciones se guardan al momento. El fondo viene con una imagen predeterminada que puedes cambiar o quitar; al mover su opacidad ves el resultado antes de pulsar «Guardar ajustes». También eliges la retención de los elementos borrados.
 
 ![General](img/administracion/09-general.png)
 
@@ -104,6 +104,10 @@ La clave aparece en grupos de caracteres (en este manual, difuminada). Cópiala 
 Si algo falla, «Exportar diagnóstico» guarda un ZIP con la versión, el sistema y el registro de la aplicación, para adjuntarlo al informar del problema. Nunca incluye tus datos ni tus claves.
 
 ![Diagnóstico](img/administracion/17-diagnostico.png)
+
+### 10.18. Reemplazar una clave de IA guardada
+
+Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmación, porque la anterior no se puede recuperar. «Probar conexión» comprueba la nueva sin reemplazar nada; si responde, se guarda sin preguntar.
 
 ## Consejos
 

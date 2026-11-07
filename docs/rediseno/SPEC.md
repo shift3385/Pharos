@@ -129,6 +129,8 @@ Fuentes: **Inter** (UI) y **JetBrains Mono** (IDs, código, contadores). Número
 
 **Listas largas dentro de un menú** (p. ej. selector de proyecto con 20+ elementos): buscador fijo arriba, filtros rápidos con contador, lista con `max-height ≈ 260 px` y scroll interno, enlace «Ver todos» al pie.
 
+**Selector de proyecto** (enmienda 2026-11-06, UX-12): donde algo cambia según el proyecto se usa siempre `ProjectPicker` (buscador por nombre o prefijo, prefijo de cada proyecto y el actual marcado), nunca un `<select>` nativo: barra lateral, retención de Evidencias y «Copiar de otro proyecto». «Criterios de salida» añade sus filtros y su orden propios.
+
 ---
 
 ## 7. Navegación
@@ -151,14 +153,14 @@ Fuentes: **Inter** (UI) y **JetBrains Mono** (IDs, código, contadores). Número
 | Inicio · Ejecuciones diarias | Cabecera que salta de línea («+18 % vs. anterior»). Barras de máx. 28 px centradas; días sin datos con raya gris de 2 px. Etiquetas alineadas con su barra (`flex:1 1 0; min-width:0`, mismo `gap`); en tablet y móvil un día sí y otro no, contando desde hoy, y hoy en negrita. Leyenda Pasa · Falla · Sin ejecuciones + mes, con `flex-wrap` y elementos `nowrap`. |
 | Inicio · móvil | 3 pestañas (Resumen, Ejecución, Pruebas) con **burbujas**: rojo = problemas, navy = pendientes, sin burbuja = todo bien. |
 | Notificaciones | Panel 400 px (escritorio) / pantalla completa (móvil): agrupadas por día, no leídas con fondo y punto, acción directa, «Marcar todo como leído», Todas / Sin leer. |
-| Proyectos | Recientes (4) + tabla con búsqueda, filtros, **orden** (desplegable con dirección) y paginación. |
+| Proyectos | Recientes (4) + tabla con búsqueda, filtros, **orden** (desplegable con dirección) y paginación (5, 10 o 20 por página). **Enmienda 2026-11-06 (UX-14):** en todas las tablas, el pie de paginación no aparece mientras todo quepa en el tamaño de página más pequeño. |
 | Plan · navegación de pasos | ≥ 1360 px: lista vertical fija a la izquierda (`sticky`, `z-index:2`, scroll propio, nunca salta de línea). 600–1359 px: **stepper horizontal** encima del formulario (Paso N de 19, título, progreso y tira desplazable de círculos: hechos ✓, actual como píldora con nombre, pendientes con número; el actual se centra solo). < 600 px: barra compacta + «Ver pasos». El panel Estado/Revisiones baja debajo del formulario si no cabe. |
-| Plan | 19 pasos, «Paso N de 19 · Guardado · 1 min» arriba, pie fijo en una línea («Siguiente: …» recortable). Paso 8 entregables ISO 29119-3 + «Otro». Paso 10: 10 herramientas + «Más herramientas (65)» + campo libre. Paso 14: generar sprints desde un rango (**enmienda 2026-10-31:** lo cubre el Cronograma nuevo, `prototipos/Cronograma.dc.html` y `cambios/ACTUALIZACION-para-Claude-Code.md` §«Paso 14 · Cronograma»; RED-W5 en `docs/ROADMAP.md`). Menú **Importar / Exportar**. **Enmienda 2026-11-06 (UX-15):** en los pasos de pares (roles, riesgos, cierre), los campos crecen con su texto hasta 12 líneas y nunca se recortan; una cabecera nombra las columnas. La disposición depende del ancho del campo (`@container`), no de la ventana: por debajo de 480 px, cada par se apila con etiquetas visibles y controles de 44 px. Cierre usa columnas 2:1. **Enmienda 2026-11-06 (UX-16):** en el paso 14, sprints e hitos se desplazan en su propia lista y el calendario no se mueve: lado a lado desde 860 px de ancho del paso (lista tan alta como el calendario, dos meses desde 1100 px); debajo, con altura limitada, por debajo de eso. En móvil se desplaza la página. Días de 32 px de alto (40 px en móvil). |
+| Plan | 19 pasos, «Paso N de 19 · Guardado · 1 min» arriba, pie fijo en una línea («Siguiente: …» recortable). Paso 8 entregables ISO 29119-3 + «Otro». Paso 10: 10 herramientas + «Más herramientas (65)» + campo libre. Paso 14: generar sprints desde un rango (**enmienda 2026-10-31:** lo cubre el Cronograma nuevo, `prototipos/Cronograma.dc.html` y `cambios/ACTUALIZACION-para-Claude-Code.md` §«Paso 14 · Cronograma»; RED-W5 en `docs/ROADMAP.md`). Menú **Importar / Exportar**. **Enmienda 2026-11-06 (UX-13):** la descripción del paso va en un «?» junto al título; un paso con un solo texto no repite el título como etiqueta y su campo es más grande. **IA-13:** el paso 13 sugiere con IA la responsabilidad de los roles escritos sin ella; el rol lo escribe siempre el usuario. **Enmienda 2026-11-06 (UX-15):** en los pasos de pares (roles, riesgos, cierre), los campos crecen con su texto hasta 12 líneas y nunca se recortan; una cabecera nombra las columnas. La disposición depende del ancho del campo (`@container`), no de la ventana: por debajo de 480 px, cada par se apila con etiquetas visibles y controles de 44 px. Cierre usa columnas 2:1. **Enmienda 2026-11-06 (UX-16):** en el paso 14, sprints e hitos se desplazan en su propia lista y el calendario no se mueve: lado a lado desde 860 px de ancho del paso (lista tan alta como el calendario, dos meses desde 1100 px); debajo, con altura limitada, por debajo de eso. En móvil se desplaza la página. Días de 32 px de alto (40 px en móvil). **Enmienda 2026-11-06 (IA-14):** el paso 17 sugiere con IA criterios con su métrica, sin cambiar lo escrito ni repetir los ya listados. **Enmienda 2026-11-06 (IA-15):** todos los campos de texto del plan tienen asistencia de IA; los textos son directos y breves (hasta 3 frases cortas), con lo que pide ISTQB CTFL 4.0.1 para cada sección. |
 | Casos · lista | Tabla completa con selección múltiple, filtros y paginación. |
 | Casos · editor | Navegación «‹ anterior | 142 de 240 | siguiente ›» + «Ir a un caso… (Ctrl P)». Vistas Editor / Gherkin / Dividida (móvil: solo Editor o Gherkin). Edición Gherkin en móvil con barra de palabras clave sobre el teclado. Prioridad y Estado con explicación de cada opción. |
 | Trazabilidad | Matriz de 9 columnas; **Mostrar solo huecos** con contador; tarjetas etiquetadas en móvil; «Generar casos con IA» en requisitos sin cubrir. |
 | Ajustes del proyecto | Diálogo de eliminación: resumen de lo que se pierde y escribir el prefijo para activar «Sí, eliminar todo». |
-| Administración | Pestañas por grupos (Recursos · Aplicación · Cuenta y datos · Soporte), Motor de IA por defecto. Parámetros de IA según el modelo (bloqueados con candado si no se admiten; temperatura opcional en Compatible). Papelera con contador, desglose, restaurar y vaciar. |
+| Administración | Pestañas por grupos (Recursos · Aplicación · Cuenta y datos · Soporte), Motor de IA por defecto. Parámetros de IA según el modelo (bloqueados con candado si no se admiten; temperatura opcional en Compatible). Papelera con contador, desglose, restaurar y vaciar. **Enmienda 2026-11-06 (IA-11, UX-11):** la barra de guardar dice qué falta («Por guardar: …») o «Sin cambios», y el aviso nombra lo guardado. Motor de IA: ayuda de cada proveedor en un «?», marca en el proveedor en uso (sin la línea «En uso: …»), «Probar conexión» prueba la clave escrita sin guardarla y un proveedor sin clave no se puede activar ([ADR-0033](../adr/0033-probar-clave-ia-antes-de-guardarla.md)). General: fondo predeterminado al 40 %, vista previa al momento y sombra opcional en las tarjetas. |
 | Menú del usuario | Mi perfil, Administración, Idioma, Cerrar sesión. |
 | Tema | Botón luna/sol en la barra superior; en Administración → General también «Según el sistema». |
 | Login | Foto del faro de fondo con degradado; «Continuar con Google» deshabilitado (Próximamente). En móvil, sin scroll en ninguna altura. |
@@ -179,8 +181,11 @@ El rediseño es sobrio; las transiciones deben ser cortas y no bloquear:
 | Contraer/expandir menú lateral | ancho 248↔84 px, 200 ms `ease`; los textos desaparecen antes de cerrar |
 | Interruptores | desplazamiento del círculo, 150 ms |
 | Búsqueda en móvil | el campo crece desde la lupa, 180 ms |
+| Carga con skeleton (UX-17) | formas con la silueta del contenido final: invisibles 200 ms y opacidad 0→1 en 160 ms; brillo que cruza cada forma, 1,6 s `ease-in-out`, en bucle |
 
-Respetar `prefers-reduced-motion: reduce` → sin desplazamientos, solo cambios de opacidad ≤ 100 ms.
+Respetar `prefers-reduced-motion: reduce` → sin desplazamientos, solo cambios de opacidad ≤ 100 ms. El skeleton queda plano, sin brillo.
+
+**Skeleton.** Una carga de menos de 200 ms no muestra ni anuncia nada, y una pantalla que carga por pasos cuenta como una sola espera: no parpadea entre un paso y otro. Sustituye al texto «Cargando…» en pantallas y tarjetas. Los estados de error y vacío no cambian y nunca se muestran mientras se carga: Inicio no dice «sin proyectos» ni suma ceros hasta conocer los proyectos.
 
 ---
 
@@ -191,6 +196,7 @@ Respetar `prefers-reduced-motion: reduce` → sin desplazamientos, solo cambios 
 - Botones de solo icono con `title` y `aria-label`.
 - Diálogos con `role="dialog"`, `aria-modal`, título enlazado y Esc para cancelar (excepto confirmaciones destructivas, que requieren «Cancelar»).
 - Los menús deben poder recorrerse con flechas y cerrarse con Esc.
+- El skeleton es decorativo (`aria-hidden`, sin nada enfocable). La carga se anuncia una sola vez por pantalla, con una región `role="status"` fuera de las formas.
 
 ---
 
