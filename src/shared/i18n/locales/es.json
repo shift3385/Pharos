@@ -22,6 +22,7 @@
     }
   },
   "common": {
+    "retry": "Reintentar",
     "loading": "Cargando…",
     "delete": "Eliminar",
     "confirmDelete": "Sí, eliminar",
@@ -41,6 +42,7 @@
     }
   },
   "templates": {
+    "loadFailed": "No se pudieron cargar las plantillas.",
     "kind": {
       "plan": "Planes de prueba",
       "case": "Casos de prueba"
@@ -660,6 +662,9 @@
     "defects": "Defectos"
   },
   "projects": {
+    "loadFailed": "No se pudo cargar el proyecto.",
+    "createFailed": "No se pudo crear el proyecto.",
+    "exportFailed": "No se pudo exportar «{{name}}».",
     "title": "Proyectos",
     "subtitle": "Cada proyecto es una carpeta con su plan de pruebas y sus casos.",
     "new": "Nuevo proyecto",
@@ -711,7 +716,6 @@
     },
     "list": {
       "loadFailed": "No se pudo cargar la lista de proyectos.",
-      "retry": "Reintentar",
       "recentTitle": "Recientes",
       "recentHint_one": "El último que abriste",
       "recentHint_other": "Los {{count}} últimos que abriste",
@@ -802,6 +806,7 @@
     "themeDark": "Oscuro"
   },
   "testPlan": {
+    "loadFailed": "No se pudo cargar el plan de pruebas.",
     "defaultTitle": "Nuevo plan de pruebas",
     "revShort": "rev.",
     "fieldTitle": "Título",
@@ -1126,6 +1131,7 @@
     "leaveMessage": "El plan tiene cambios sin guardar. Si sales, se pierden; para conservarlos, pulsa «Guardar» antes."
   },
   "testCase": {
+    "loadFailed": "No se pudieron cargar los casos de prueba.",
     "title": "Casos de prueba",
     "subtitle": "Crea casos con vistas Editor y Gherkin sincronizadas.",
     "new": "Nuevo caso",
@@ -1418,6 +1424,7 @@
     "importSkippedFields": "No se importaron estos valores porque no encajan con su campo: {{keys}}"
   },
   "dashboard": {
+    "loadFailed": "No se pudieron cargar tus proyectos.",
     "title": "Inicio",
     "greeting": "Hola, {{name}}",
     "summary": "Tienes <b>{{pending}}</b> en {{projects}}.",
@@ -1712,6 +1719,7 @@
     "openDefects": "Ir a Defectos"
   },
   "traceability": {
+    "loadFailed": "No se pudo cargar la trazabilidad.",
     "title": "Trazabilidad",
     "priorityLabel": {
       "low": "Baja",
@@ -2471,6 +2479,7 @@
     }
   },
   "defects": {
+    "loadFailed": "No se pudieron cargar los defectos.",
     "title": "Defectos",
     "newDefect": "Nuevo defecto",
     "fromResult": "Desde un resultado",
@@ -2604,6 +2613,7 @@
       "afterSave": "Los resultados se vinculan una vez guardado el defecto."
     },
     "results": {
+      "loadFailed": "No se pudieron cargar los resultados.",
       "title": "Resultados que no pasaron",
       "pickToCreate": "Elige el intento fallido del que nace el defecto: se rellenan los pasos de la revisión ejecutada, lo obtenido, la build y el entorno, y se añaden sus evidencias.",
       "pickToLink": "Elige el intento que quieres vincular a este defecto.",

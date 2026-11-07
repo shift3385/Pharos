@@ -82,6 +82,11 @@ memory) and no history, and a desktop-only action says so in a toast.
   session stays and the screen reports the failure. The desktop sync and the
   hand-over of old browser data renew the same way (`sessionRequester`,
   `sync-offline/api/sessionRequest.ts`).
+- **Failed reads.** With the API down or a 5xx, a screen shows `LoadError`
+  (`@shared/ui`) with «Reintentar» instead of «Cargando…» or an empty list. A
+  screen that never loaded shows nothing that could pass for "no data"; a failed
+  reload keeps what is on screen and adds the error. A `ReportedError` already
+  told the user in a toast, so an action that gets one adds no second error.
 - **Keys.** On the web the server numbers cases, requirements and defects from
   the same key series as the devices' leased blocks (`key_blocks`), so a web
   key never collides with a device's. A typed key that is taken (`key_taken`),
@@ -873,6 +878,8 @@ through `src-tauri/src/journal.rs`:
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
     until that text is typed.
+  - `LoadError` (FIX-16): `role="alert"` with the message and a «Reintentar»
+    button, for a read or an action that failed.
   - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
     the sort keys as radio options (disabled ones keep a `title` with the
     reason) in a «Ordenar por» group, and the direction (Descendente ·
