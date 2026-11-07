@@ -2,16 +2,14 @@ import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { ProjectSelect, type ProjectChoice } from "@shared/ui/ProjectPicker";
 import { useToast } from "@shared/ui/Toast";
 import { customFieldApi } from "../api/customFieldApi";
 import type { FieldEntity } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
 import "./CustomFields.css";
 
-export interface ProjectOption {
-  id: string;
-  name: string;
-}
+export type ProjectOption = ProjectChoice;
 
 /** «Copiar de otro proyecto» (ADR-0018 decision 3): the fields of another
  *  project that this one does not have yet, keys already here are skipped and
@@ -101,17 +99,13 @@ export function CopyFieldsDialog({
       ) : (
         <FormField label={t("customFields.copyDialog.source")}>
           {(p) => (
-            <select
-              {...p}
+            <ProjectSelect
+              id={p.id}
+              label={t("customFields.copyDialog.source")}
+              projects={projects}
               value={source}
-              onChange={(e) => setSource(e.target.value)}
-            >
-              {projects.map((pr) => (
-                <option key={pr.id} value={pr.id}>
-                  {pr.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSource}
+            />
           )}
         </FormField>
       )}

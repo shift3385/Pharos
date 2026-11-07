@@ -10,7 +10,7 @@ import { SettingsRow } from "./SettingsSection";
  *  the native picker and is stored by the desktop app right away (it is not
  *  part of "Guardar ajustes"). The web preview has no folder: the browser
  *  decides where downloads go. */
-export function DownloadFolderField() {
+export function DownloadFolderField({ onSaved }: { onSaved?: () => void } = {}) {
   const { t } = useTranslation();
   const toast = useToast();
   const available = downloadDir.available();
@@ -34,7 +34,8 @@ export function DownloadFolderField() {
       const next = await action();
       if (next) {
         setInfo(next);
-        toast(t("admin.saved"));
+        toast(t("admin.settings.downloadSaved", { path: next.path }));
+        onSaved?.();
       }
     } catch (e) {
       fail(e);

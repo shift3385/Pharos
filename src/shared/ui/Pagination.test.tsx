@@ -51,18 +51,40 @@ describe("Pagination", () => {
     await expectNoAxeViolations();
   });
 
-  it("takes its own summary and hides the pages when one is enough", () => {
+  it("takes its own summary", () => {
     setViewportWidth(1440);
     render(
       <Pagination
         page={1}
         pageSize={10}
-        total={4}
+        total={14}
         onPageChange={() => {}}
         summary={({ from, to, total }) => `${from}-${to} / ${total} casos`}
       />,
     );
-    expect(screen.getByText("1-4 / 4 casos")).toBeInTheDocument();
+    expect(screen.getByText("1-10 / 14 casos")).toBeInTheDocument();
+  });
+
+  it("shows nothing while everything fits in the smallest page", () => {
+    setViewportWidth(1440);
+    const sizes = { pageSizes: [5, 10, 20], onPageSizeChange: () => {}, onPageChange: () => {} };
+    const { container, rerender } = render(<Pagination page={1} pageSize={5} total={5} {...sizes} />);
+    expect(container).toBeEmptyDOMElement();
+    rerender(<Pagination page={1} pageSize={5} total={0} {...sizes} />);
+    expect(container).toBeEmptyDOMElement();
+    rerender(<Pagination page={1} pageSize={10} total={4} onPageChange={() => {}} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("stays from one above the smallest page, even if a larger size fits them all", () => {
+    setViewportWidth(1440);
+    const sizes = { pageSizes: [5, 10, 20], onPageSizeChange: () => {}, onPageChange: () => {} };
+    const { rerender } = render(<Pagination page={1} pageSize={5} total={6} {...sizes} />);
+    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–5 de 6");
+    expect(screen.getByRole("navigation", { name: "Paginación" })).toBeInTheDocument();
+    // Otherwise choosing 20 would take away the way back to 5.
+    rerender(<Pagination page={1} pageSize={20} total={6} {...sizes} />);
+    expect(screen.getByRole("button", { name: "20 por página" })).toBeInTheDocument();
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
   });
 

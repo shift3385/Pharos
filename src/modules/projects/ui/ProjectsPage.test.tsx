@@ -58,9 +58,10 @@ describe("Proyectos (SPEC §8)", () => {
     const recent = await screen.findByRole("region", { name: "Recientes" });
     expect(within(recent).getAllByRole("link")).toHaveLength(4);
     const table = screen.getByRole("table", { name: "Todos los proyectos" });
-    // Header + 12 rows.
-    expect(within(table).getAllByRole("row")).toHaveLength(13);
-    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–12 de 14 proyectos");
+    // Header + 5 rows.
+    expect(within(table).getAllByRole("row")).toHaveLength(6);
+    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–5 de 14 proyectos");
+    expect(screen.getByRole("button", { name: "5 por página" })).toBeInTheDocument();
     expect(within(table).getAllByText("Aprobado").length).toBeGreaterThan(0);
     expect(within(table).getByText("92 %")).toBeInTheDocument();
     await expectNoAxeViolations();
@@ -90,7 +91,7 @@ describe("Proyectos (SPEC §8)", () => {
     const first = () => within(screen.getByRole("table")).getAllByRole("link")[0];
     expect(first()).toHaveTextContent("Portal Clientes v3");
     await userEvent.click(screen.getByRole("button", { name: /Página 2/ }));
-    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 13–14 de 14 proyectos");
+    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 6–10 de 14 proyectos");
   });
 
   it("the filters without data are offered disabled with a reason", async () => {
@@ -123,7 +124,7 @@ describe("Proyectos (SPEC §8)", () => {
     expect(within(list).getAllByRole("link")[0]).toHaveTextContent(/·/);
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Orden/ })).not.toBeInTheDocument();
-    expect(screen.getByText("Página 1 de 2")).toBeInTheDocument();
+    expect(screen.getByText("Página 1 de 3")).toBeInTheDocument();
     await expectNoAxeViolations();
   });
 });

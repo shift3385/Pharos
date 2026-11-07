@@ -3,13 +3,21 @@ import { useTranslation } from "react-i18next";
 import { ImagePlus, Save } from "lucide-react";
 import { useToast } from "@shared/ui/Toast";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
+import { Switch } from "@shared/ui/Switch";
 import { useTheme } from "@shared/theme/useTheme";
 import type { ThemePreference } from "@shared/theme/theme-context";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
 import { ErrorSummary, FieldMessage } from "@shared/ui/FormField";
 import { controlProps, useSaveGuard } from "@shared/ui/fieldProps";
 import { numberInRange } from "@shared/validation";
-import { applyBackground, loadSettings, saveSettings } from "../../model/settings";
+import { joinLabels } from "@shared/ui/joinLabels";
+import {
+  applyAppearance,
+  backgroundImageUrl,
+  DEFAULT_BACKGROUND,
+  loadSettings,
+  saveSettings,
+} from "../../model/settings";
 import { DownloadFolderField } from "../DownloadFolderField";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
 import { TrashSection } from "../TrashSection";
@@ -18,9 +26,10 @@ const THEMES: ThemePreference[] = ["light", "dark", "system"];
 
 /** Administración → General (SPEC §8): appearance (theme with «Según el
  *  sistema», language, custom background) and files and storage (download
- *  folder, retention, Papelera). Theme and language apply at once, like the
- *  topbar's; background, opacity and retention are a draft saved with
- *  «Guardar ajustes» in the save bar under both sections. */
+ *  folder, retention, Papelera). Theme, language and download folder are stored
+ *  at once; background, opacity and retention are a draft saved with «Guardar
+ *  ajustes» in the save bar under both sections, which says what is pending. The
+ *  background previews while it is a draft and goes back if it is not saved. */
 export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -30,6 +39,25 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
   const dirty = JSON.stringify(settings) !== JSON.stringify(saved);
   const fileRef = useRef<HTMLInputElement>(null);
   const language = (i18n.resolvedLanguage ?? "es") as Language;
+  const [folderSaved, setFolderSaved] = useState(false);
+  const pending = joinLabels(
+    [
+      settings.backgroundImage !== saved.backgroundImage && t("admin.general.pending.background"),
+      settings.backgroundOpacity !== saved.backgroundOpacity && t("admin.general.pending.opacity"),
+      settings.cardShadow !== saved.cardShadow && t("admin.general.pending.cardShadow"),
+      settings.retentionDays !== saved.retentionDays && t("admin.general.pending.retention"),
+    ].filter((label): label is string => Boolean(label)),
+    t("common.and"),
+  );
+
+  // The whole app shows the appearance being chosen; leaving without saving
+  // brings back what is saved.
+  const { backgroundImage, backgroundOpacity, cardShadow } = settings;
+  useEffect(
+    () => applyAppearance({ ...saved, backgroundImage, backgroundOpacity, cardShadow }),
+    [saved, backgroundImage, backgroundOpacity, cardShadow],
+  );
+  useEffect(() => () => applyAppearance(), []);
 
   // Retention outside 1–3650 days blocks saving the settings.
   const retentionIssue = numberInRange(settings.retentionDays, { min: 1, max: 3650, integer: true });
@@ -42,8 +70,7 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
     const fresh = loadSettings();
     setSaved(fresh);
     setSettings(fresh);
-    applyBackground(fresh);
-    toast(t("admin.saved"));
+    toast(t("admin.savedWhat", { changes: pending }));
   }
 
   async function pickBackground(e: React.ChangeEvent<HTMLInputElement>) {
@@ -88,7 +115,7 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
             {settings.backgroundImage && (
               <span
                 className="adm-bg-preview"
-                style={{ backgroundImage: `url("${settings.backgroundImage}")` }}
+                style={{ backgroundImage: `url("${backgroundImageUrl(settings.backgroundImage)}")` }}
                 aria-hidden="true"
               />
             )}
@@ -103,6 +130,15 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
                 onClick={() => setSettings((s) => ({ ...s, backgroundImage: "" }))}
               >
                 {t("admin.settings.bgClear")}
+              </button>
+            )}
+            {settings.backgroundImage !== DEFAULT_BACKGROUND && (
+              <button
+                type="button"
+                className="adm-btn adm-btn--ghost"
+                onClick={() => setSettings((s) => ({ ...s, backgroundImage: DEFAULT_BACKGROUND }))}
+              >
+                {t("admin.settings.bgDefault")}
               </button>
             )}
           </div>
@@ -132,10 +168,19 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
             </span>
           </div>
         </SettingsRow>
+
+        <SettingsRow label={t("admin.settings.cardShadow")} hint={t("admin.settings.cardShadowHint")} hintId="adm-card-shadow-hint">
+          <Switch
+            ariaLabel={t("admin.settings.cardShadow")}
+            describedBy="adm-card-shadow-hint"
+            checked={settings.cardShadow}
+            onChange={(on) => setSettings((s) => ({ ...s, cardShadow: on }))}
+          />
+        </SettingsRow>
       </SettingsSection>
 
       <SettingsSection title={t("admin.general.storage")} desc={t("admin.general.storageDesc")}>
-        <DownloadFolderField />
+        <DownloadFolderField onSaved={() => setFolderSaved(true)} />
 
         <SettingsRow
           label={t("admin.settings.retention")}
@@ -171,10 +216,14 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
           items={[{ label: t("admin.settings.retention"), issue: retentionIssue, fieldId: "adm-retention" }]}
         />
       )}
-      {/* Covers both sections; theme and language already applied. */}
+      {/* Covers both sections; theme, language and folder are already stored. */}
       <div className="adm-savebar" data-dirty={dirty || undefined}>
         <span className="adm-savebar__state" role="status">
-          {dirty ? t("admin.unsaved") : t("admin.general.appliedNow")}
+          {dirty
+            ? t("admin.general.pending.message", { changes: pending })
+            : folderSaved
+              ? t("admin.general.folderSaved")
+              : t("admin.general.appliedNow")}
         </span>
         <button
           type="button"

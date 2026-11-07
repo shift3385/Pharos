@@ -93,11 +93,7 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
     navigate("/projects", { replace: true });
   }
 
-  const loadProjects = useCallback(
-    async () =>
-      (await projectApi.list(owner)).map((p) => ({ id: p.id, name: p.name })),
-    [owner],
-  );
+  const loadProjects = useCallback(() => projectApi.list(owner), [owner]);
 
   const sample = (n: number) => `${prefix}${String(n).padStart(digits, "0")}`;
   const word = deleteConfirmWord(project);

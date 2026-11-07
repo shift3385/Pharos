@@ -84,7 +84,7 @@ const card = () =>
     <CustomFieldsCard
       projectId="p1"
       userId="u1"
-      loadProjects={async () => [{ id: "p2", name: "Otro" }]}
+      loadProjects={async () => [{ id: "p2", name: "Otro", caseIdPrefix: "OT_" }]}
     />,
   );
 
@@ -276,6 +276,9 @@ describe("Ajustes · Campos personalizados", () => {
       name: "Copiar campos de otro proyecto",
     });
     expect(copy).toHaveTextContent("campos de defectos");
+    // The shared project selector, with the prefix, never a native select.
+    expect(await within(copy).findByRole("button", { name: /Otro$/ })).toHaveTextContent("OT_Otro");
+    expect(within(copy).queryByRole("combobox")).not.toBeInTheDocument();
     await userEvent.click(
       await within(copy).findByRole("button", { name: "Copiar campos" }),
     );

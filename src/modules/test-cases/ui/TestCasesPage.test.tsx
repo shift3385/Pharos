@@ -143,7 +143,8 @@ describe("Casos · lista (RED-V3)", () => {
     expect(within(table).getAllByText("Sin requisito")).toHaveLength(2);
     expect(within(table).getAllByText("No ejecutado")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Todos 3" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–3 de 3 casos");
+    // Three cases fit in the smallest page: no pagination footer.
+    expect(screen.queryByText(/Mostrando/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ejecución" })).toHaveAttribute("aria-disabled", "true");
     await expectNoAxeViolations();
   });

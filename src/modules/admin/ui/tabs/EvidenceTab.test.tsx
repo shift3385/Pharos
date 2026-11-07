@@ -420,10 +420,13 @@ describe("Administración → Evidencias", () => {
     expect(api.setRetention).toHaveBeenCalledWith("p1", "video", { mode: "always" }, expect.any(String));
     expect(api.setRetention).toHaveBeenCalledWith("p1", "trace", { mode: "days", days: 45 }, expect.any(String));
     expect(api.previewRetention).not.toHaveBeenCalled();
-    expect(await screen.findByText("Retención guardada en este equipo.", { exact: false })).toBeInTheDocument();
+    // The notice names what was saved.
+    expect(await screen.findByText(/^Retención guardada en este equipo: .+ y .+\.$/)).toBeInTheDocument();
+    expect(screen.getByTestId("evidence-retention-state")).toHaveTextContent("Sin cambios");
 
     // Another project shows its own settings.
-    await user.selectOptions(within(card).getByTestId("evidence-retention-project"), "p2");
+    await user.click(within(card).getByTestId("evidence-retention-project"));
+    await user.click(screen.getByRole("menuitemradio", { name: /Pagos/ }));
     await waitFor(() => expect(api.retention).toHaveBeenCalledWith("p2", expect.any(String)));
   });
 

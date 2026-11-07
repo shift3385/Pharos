@@ -10,7 +10,8 @@ import "./dataTable.css";
 /**
  * Pagination under a table: «Mostrando 1–10 de 240», ‹ 1 2 3 … 24 › and,
  * with `pageSizes`, a «Por página» menu. On mobile (or `compact`) the pages
- * become ‹ Página 2 de 24 ›.
+ * become ‹ Página 2 de 24 ›. It shows nothing while everything fits in the
+ * smallest page size (UX-14).
  */
 export function Pagination({
   page,
@@ -50,7 +51,10 @@ export function Pagination({
     if (page !== current) onPageChange(current);
   }, [page, current, onPageChange]);
 
-  const go = (p: number) => {
+  // Everything fits in the smallest page: nothing to page through or to resize.
+  if (total <= Math.min(pageSize, ...(pageSizes ?? []))) return null;
+
+  const go =(p: number) => {
     if (p >= 1 && p <= pages && p !== current) onPageChange(p);
   };
   const arrow = (dir: "prev" | "next") => {

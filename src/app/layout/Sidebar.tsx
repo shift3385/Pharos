@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router";
-import { ArrowRight, ChevronsUpDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
+import { ArrowRight, ChevronsUpDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ADMIN, MAIN_NAV, PROJECT_NAV, PROJECTS, isCurrent, type NavItem } from "@app/navConfig";
 import { projectPath } from "@modules/projects";
 import { SyncIndicator } from "@modules/sync-offline";
 import { Logo } from "@shared/ui/Logo";
-import { Menu, MenuItem } from "@shared/ui/Menu";
+import { MenuItem } from "@shared/ui/Menu";
+import { ProjectMenu } from "@shared/ui/ProjectPicker";
 import { usePopover } from "@shared/ui/usePopover";
 import { APP_VERSION } from "@shared/version";
 import { UserMenu } from "./UserMenu";
@@ -48,17 +48,12 @@ function SideLink({
   );
 }
 
-/** Project switcher of the «Proyecto activo» group (SPEC §6): a search field
- *  fixed on top, a scrolling list (≈260 px) and «Ver todos» at the foot. */
+/** Project switcher of the «Proyecto activo» group (SPEC §6): the shared
+ *  `ProjectMenu`, with «Ver todos» at the foot. */
 function ProjectSwitcher({ active }: { active: ActiveProject }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const menu = usePopover("menu");
-  const [query, setQuery] = useState("");
-  const q = query.trim().toLocaleLowerCase();
-  const shown = active.projects.filter(
-    (p) => !q || p.name.toLocaleLowerCase().includes(q) || p.caseIdPrefix.toLocaleLowerCase().includes(q),
-  );
   const name = active.project?.name ?? "…";
   return (
     <>
@@ -74,46 +69,21 @@ function ProjectSwitcher({ active }: { active: ActiveProject }) {
         <span className="sidebar__project-name">{name}</span>
         <ChevronsUpDown size={14} aria-hidden="true" />
       </button>
-      <Menu
+      <ProjectMenu
         open={menu.open}
-        onClose={() => {
-          menu.close();
-          setQuery("");
-        }}
+        onClose={menu.close}
         anchorRef={menu.anchorRef}
         id={menu.id}
         label={t("shell.switchProjectMenu")}
-        className="project-menu"
-        focusHeader
-        header={
-          <label className="project-menu__search">
-            <Search size={15} aria-hidden="true" />
-            <input
-              type="search"
-              value={query}
-              placeholder={t("shell.searchProjects")}
-              aria-label={t("shell.searchProjects")}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
+        projects={active.projects}
+        selectedId={active.projectId}
+        onSelect={(id) => navigate(projectPath(id, active.section))}
+        footer={
+          <MenuItem icon={ArrowRight} onSelect={() => navigate("/projects")}>
+            {t("shell.seeAllProjects")}
+          </MenuItem>
         }
-      >
-        <div className="project-menu__list" role="group" aria-label={t("nav.projects")}>
-          {shown.length === 0 && <p className="project-menu__empty">{t("shell.noProjects")}</p>}
-          {shown.map((p) => (
-            <MenuItem
-              key={p.id}
-              selected={p.id === active.projectId}
-              onSelect={() => navigate(projectPath(p.id, active.section))}
-            >
-              <span className="project-menu__prefix t-id">{p.caseIdPrefix}</span> {p.name}
-            </MenuItem>
-          ))}
-        </div>
-        <MenuItem icon={ArrowRight} onSelect={() => navigate("/projects")}>
-          {t("shell.seeAllProjects")}
-        </MenuItem>
-      </Menu>
+      />
     </>
   );
 }

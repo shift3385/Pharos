@@ -109,7 +109,8 @@ describe("Trazabilidad (RED-V3)", () => {
     const kpis = document.querySelector(".tz-kpis")!;
     expect(kpis).toHaveTextContent("33 %");
     expect(kpis).toHaveTextContent("2 de prioridad alta");
-    expect(screen.getByText(/Mostrando/)).toHaveTextContent("Mostrando 1–3 de 3 requisitos");
+    // Three requirements fit in the smallest page: no pagination footer.
+    expect(screen.queryByText(/Mostrando/)).not.toBeInTheDocument();
     await expectNoAxeViolations();
   });
 

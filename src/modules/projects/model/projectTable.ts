@@ -35,7 +35,7 @@ export const PROJECT_SORTS = [
 export type ProjectSort = (typeof PROJECT_SORTS)[number];
 export const UNAVAILABLE_SORTS: ReadonlySet<ProjectSort> = new Set(["execution", "defects"]);
 
-export const PAGE_SIZES = [12, 24, 48];
+export const PAGE_SIZES = [5, 10, 20];
 export const RECENT_COUNT = 4;
 
 /** The prefix without its trailing separator («ATS_» → «ATS»), as the badge
