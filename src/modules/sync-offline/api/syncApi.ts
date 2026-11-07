@@ -8,6 +8,8 @@
 // they are kept as conflicts for the conflict panel (never silently overwritten).
 // Everything runs for the signed-in account only (FIX-07); pushes go in batches
 // with retries (FIX-03) and pulls page until the server has no more (FIX-02).
+// An access token that expires before or during a sync is renewed
+// (`sessionRequester`).
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 import { getSession } from "@modules/auth";
@@ -19,10 +21,11 @@ import {
   pullPages,
   sendIsolating,
   SyncHttpError,
-  syncRequest,
   withRetry,
   type RemoteDoc,
+  type SyncCaller,
 } from "./transport";
+import { sessionRequester } from "./sessionRequest";
 import { drainLegacyWebData } from "../web/legacyWebData";
 
 /** Outcome of one sync cycle. */
@@ -116,7 +119,7 @@ const MAX_LEASE_REQUESTS = 300;
  *  older than this app) is not an error: keys stay provisional until it has
  *  it. */
 export async function leaseKeyBlocks(
-  token: string,
+  request: SyncCaller,
   userId: string,
   invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>,
 ): Promise<void> {
@@ -126,7 +129,7 @@ export async function leaseKeyBlocks(
     for (let i = 0; i < requests.length; i += MAX_LEASE_REQUESTS) {
       const part = requests.slice(i, i + MAX_LEASE_REQUESTS);
       const body = await withRetry(() =>
-        syncRequest<{ blocks?: unknown[] }>("/sync/key-blocks", token, {
+        request<{ blocks?: unknown[] }>("/sync/key-blocks", {
           method: "POST",
           body: { requests: part },
         }),
@@ -153,7 +156,7 @@ interface AppendRejectedDoc {
  *  batches and marks the accepted ones synced. Returns how many were refused
  *  (by content, or `appendRejected`); they stay pending and are logged. */
 export async function pushAppendOnly(
-  token: string,
+  request: SyncCaller,
   userId: string,
   invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>,
 ): Promise<number> {
@@ -164,7 +167,7 @@ export async function pushAppendOnly(
   let refusedCount = 0;
   const send = (part: PendingDelta[]) =>
     withRetry(() =>
-      syncRequest<{ appendRejected?: AppendRejectedDoc[] }>("/sync/push", token, {
+      request<{ appendRejected?: AppendRejectedDoc[] }>("/sync/push", {
         method: "POST",
         body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
       }),
@@ -193,7 +196,7 @@ export async function pushAppendOnly(
  *  skipped and stay pending. Test cases wait while the server has not listed
  *  `stable-steps` (DAT-02): `oplog_pending` leaves them out. */
 async function pushLww(
-  token: string,
+  request: SyncCaller,
   userId: string,
   invoke: typeof platformInvoke,
 ) {
@@ -205,14 +208,10 @@ async function pushLww(
   let skipped = 0;
   const send = (part: PendingDelta[]) =>
     withRetry(() =>
-      syncRequest<{ conflicts?: RemoteDoc[]; keyConflicts?: KeyConflictDoc[] }>(
-        "/sync/push",
-        token,
-        {
-          method: "POST",
-          body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
-        },
-      ),
+      request<{ conflicts?: RemoteDoc[]; keyConflicts?: KeyConflictDoc[] }>("/sync/push", {
+        method: "POST",
+        body: { deltas: part.map(({ opIds: _opIds, ...d }) => d) },
+      }),
     );
   for (const batch of batchDeltas(deltas)) {
     // A delta the server refuses for its content (e.g. 413) is skipped and
@@ -255,21 +254,22 @@ export async function syncNow(): Promise<SyncResult> {
   // another account's token (FIX-07).
   const session = await getSession();
   if (!session) throw new Error("not-authenticated");
-  const { accessToken: token, userId } = session;
+  const { userId } = session;
+  const request = sessionRequester(session);
   const invoke = platformInvoke;
 
   // Key blocks first (DAT-01): provisional keys get their definitive one
   // before the push, so it carries them.
-  await leaseKeyBlocks(token, userId, invoke);
+  await leaseKeyBlocks(request, userId, invoke);
 
   // Push.
-  let { pushed, conflicts, skipped } = await pushLww(token, userId, invoke);
+  let { pushed, conflicts, skipped } = await pushLww(request, userId, invoke);
 
   // Pull. The cursor lives in the local DB (wiped with the data), one per
   // account, so an empty DB re-pulls everything.
   const cursor = await invoke<string>("sync_cursor_get", { userId });
   let serverFeatures: string[] = [];
-  const pulled = await pullPages(token, cursor, async (page) => {
+  const pulled = await pullPages(request, cursor, async (page) => {
     serverFeatures = page.features ?? serverFeatures;
     if (page.docs.length > 0) {
       await invoke("apply_remote", { userId, docs: page.docs });
@@ -286,7 +286,7 @@ export async function syncNow(): Promise<SyncResult> {
   // back until it listed `custom-fields` (FLD-01; such a server also lists
   // `stable-steps`); usually nothing is left to send.
   if (serverFeatures.includes("stable-steps")) {
-    const late = await pushLww(token, userId, invoke);
+    const late = await pushLww(request, userId, invoke);
     pushed += late.pushed;
     conflicts += late.conflicts;
     skipped += late.skipped;
@@ -299,7 +299,7 @@ export async function syncNow(): Promise<SyncResult> {
   // changes people make, and the sync of their data already succeeded.
   if (serverFeatures.includes("append-only")) {
     try {
-      await pushAppendOnly(token, userId, invoke);
+      await pushAppendOnly(request, userId, invoke);
     } catch (e) {
       logSyncFailure(e, "audit-push");
     }

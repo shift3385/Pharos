@@ -79,7 +79,9 @@ memory) and no history, and a desktop-only action says so in a toast.
   are single-use, so parallel requests, the startup check and other tabs share
   one renewal. If the server refuses the refresh token, the app goes back to
   the sign-in screen, keeping the execution drafts; if it cannot be asked, the
-  session stays and the screen reports the failure.
+  session stays and the screen reports the failure. The desktop sync and the
+  hand-over of old browser data renew the same way (`sessionRequester`,
+  `sync-offline/api/sessionRequest.ts`).
 - **Failed reads.** With the API down or a 5xx, a screen shows `LoadError`
   (`@shared/ui`) with «Reintentar» instead of «Cargando…» or an empty list. A
   screen that never loaded shows nothing that could pass for "no data"; a failed
