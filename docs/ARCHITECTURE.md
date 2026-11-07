@@ -77,7 +77,9 @@ preferences only (theme, language, Administration settings, AI non-secret
 config, last access, when the recovery key was shown) and, on the web, the
 session. Until SYNC-04b, attachments, the user's own templates and revision
 history are desktop-only: the web shows the built-in templates (held in
-memory) and no history, and a desktop-only action says so in a toast.
+memory) and no history, and a desktop-only action says so in a toast. (The
+exported plan's «Historial de revisiones», PLN-02, is built from the audit
+events, which the web has: there it starts at the plan's first event.)
 
 - **Edits never overwrite blindly (FIX-04).** `serverApi` remembers the
   revision of every item the page read and sends it with each update or
@@ -1184,6 +1186,34 @@ store into the same folder (`planner_attachment_save`, `Downloads::save_with`).
   have any, in parallel; a single case export reads them too (there is no
   query by case: a known cost in projects with many cycles, EXP-04). A failure to read them stops the export with one toast
   (`ReportedError`, so the caller adds none) and nothing is saved.
+- **Plan revision history (PLN-02):** a project setting,
+  `planExportHistory` (`current`, the default, or `revisions`; desktop column
+  `projects.plan_export_history`, migration 0037; part of the project's sync
+  payload and of the web's project document; an input or a pulled payload
+  without it keeps the stored value). With `revisions`, the plan's `.xlsx`
+  and `.pdf` (the wizard's exports and the ZIPs) carry a «Historial de
+  revisiones» `ExportTable`: in the `.xlsx` the sheet right after the
+  template's (which stays as it is; the importer reads only the first sheet),
+  in the PDF the section right after the header (`ExportablePlan.history`).
+  The source is `test_plan_history` on the desktop and the read-only
+  `GET /api/test-plans/:id/history` on the web (owner only, like the plan):
+  the plan's creation, its `create`/`update` audit events (ADR-0015, the
+  web's and the synced ones) and, on the desktop only, the revision copies
+  (`test_plan_revisions`), which cover the saves before 0.2.0: copy N and
+  the next copy (or the plan) are the before and after of one save, made at
+  copy N's `created_at` by its `created_by`. Copies from the first event's
+  second on are left out (that save wrote both). `test-plan/export/planHistory.ts`
+  turns this into saves (`planSaves`: changed fields mapped to wizard steps;
+  only `user:` actors; the version and status from the events, else the
+  event's «before» or the previous save) and groups them (`groupHistory`):
+  one row per person and local day of the exporter, the person's last save
+  of that day with every step they changed that day, rows by that save's
+  time, oldest first. A save that changed only the version (or bookkeeping,
+  or AI review marks) is not a revision. Names are the official name of a
+  known account (the signed-in user's, the only editor today), else the
+  plan's `author`, else «Autor desconocido». Unsaved wizard edits are not in
+  the history. On the web there are no copies, so its history starts at the
+  plan's first event (0.2.0).
 
 ## Testing
 

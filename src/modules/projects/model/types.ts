@@ -4,6 +4,9 @@
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 
+/** The project setting «Historial en el plan exportado» (PLN-02). */
+export type PlanExportHistory = "current" | "revisions";
+
 export interface Project {
   id: string;
   workspaceId: string;
@@ -11,6 +14,9 @@ export interface Project {
   name: string;
   caseIdPrefix: string;
   caseIdDigits: number;
+  /** What the exported test plan shows of its history (PLN-02):
+   *  `current` (only the version in force; also when absent) or `revisions`. */
+  planExportHistory?: PlanExportHistory;
   createdAt: string;
   updatedAt: string;
   revision: number;
@@ -21,6 +27,9 @@ export interface ProjectSummary {
   name: string;
   caseIdPrefix: string;
   caseIdDigits: number;
+  /** What the exported test plan shows of its history (PLN-02):
+   *  `current` (only the version in force; also when absent) or `revisions`. */
+  planExportHistory?: PlanExportHistory;
   updatedAt: string;
   revision: number;
 }
@@ -29,6 +38,9 @@ export interface ProjectInput {
   name: string;
   caseIdPrefix?: string;
   caseIdDigits?: number;
+  /** What the exported test plan shows of its history (PLN-02):
+   *  `current` (only the version in force; also when absent) or `revisions`. */
+  planExportHistory?: PlanExportHistory;
   /** Authenticated user that owns the project (set on create). */
   ownerId?: string;
 }

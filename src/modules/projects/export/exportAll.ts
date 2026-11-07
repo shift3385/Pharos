@@ -53,6 +53,7 @@ async function addProject(
   counter: Counter,
   skipped: string[],
   onProgress?: OnProgress,
+  names: Record<string, string> = {},
 ): Promise<number> {
   const skip = (name: string) => skipped.push(`${folder}/${name}`);
   const advance = (label: string) => {
@@ -68,7 +69,17 @@ async function addProject(
   // The callbacks fire as each file is built (drives the progress bar); buffers
   // are added to the zip afterwards (an instant, non-async step).
   const files = [
-    ...(await projectPlanFiles(project.id, ownerId, t, lang, advance, skip, cycles)),
+    // The plan's revision history only when the project asks for it (PLN-02).
+    ...(await projectPlanFiles(
+      project.id,
+      ownerId,
+      t,
+      lang,
+      advance,
+      skip,
+      cycles,
+      project.planExportHistory === "revisions" ? { names } : undefined,
+    )),
     ...(await projectCaseFiles(project.id, ownerId, t, lang, advance, skip, cycles)),
   ];
   for (const f of files) zip.file(`${folder}/${sanitize(f.name)}`, f.buffer);
@@ -94,6 +105,8 @@ export async function exportProjectZip(
   t: Translate,
   lang: string,
   onProgress?: OnProgress,
+  /** Account id → official name, for the plan's revision history. */
+  names: Record<string, string> = {},
 ): Promise<ZipExport> {
   const counter: Counter = { done: 0, total: await projectFileCount(project.id, ownerId) };
   const zip = new JSZip();
@@ -108,6 +121,7 @@ export async function exportProjectZip(
     counter,
     skipped,
     onProgress,
+    names,
   );
   const path = await finalizeZip(zip, `${sanitize(project.name)}.zip`, onProgress);
   return { files, path, skipped };
@@ -121,6 +135,8 @@ export async function exportAllProjects(
   t: Translate,
   lang: string,
   onProgress?: OnProgress,
+  /** Account id → official name, for the plans' revision history. */
+  names: Record<string, string> = {},
 ): Promise<ZipExport> {
   const projects = await projectApi.list(ownerId);
 
@@ -138,7 +154,7 @@ export async function exportAllProjects(
     let folder = sanitize(p.name);
     for (let n = 2; usedFolders.has(folder); n += 1) folder = `${sanitize(p.name)} (${n})`;
     usedFolders.add(folder);
-    files += await addProject(zip, p, ownerId, folder, t, lang, counter, skipped, onProgress);
+    files += await addProject(zip, p, ownerId, folder, t, lang, counter, skipped, onProgress, names);
   }
 
   const path = await finalizeZip(zip, "pharos-export.zip", onProgress);

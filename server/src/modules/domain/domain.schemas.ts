@@ -19,6 +19,9 @@ export const projectInputSchema = z.object({
   name: text(200).trim().min(1),
   caseIdPrefix: text(32).optional(),
   caseIdDigits: z.number().int().min(1).max(12).optional(),
+  /** What the exported plan shows of its history (PLN-02); absent keeps
+   *  the project's setting (`current` on a create). */
+  planExportHistory: z.enum(["current", "revisions"]).optional(),
 });
 
 export const testPlanInputSchema = z.object({

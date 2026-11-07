@@ -822,7 +822,13 @@
       "lossCards_other": "{{count}} tarjetas",
       "deletedToast": "«{{name}}» eliminado",
       "deleteCheckFailed": "No se pudo comprobar qué se eliminaría. Inténtalo de nuevo.",
-      "deleteFailed": "No se pudo eliminar «{{name}}». Inténtalo de nuevo."
+      "deleteFailed": "No se pudo eliminar «{{name}}». Inténtalo de nuevo.",
+      "planHistory": "Historial en el plan exportado",
+      "planHistoryDesc": "Qué muestran del historial el .xlsx y el .pdf del plan, al exportarlo desde el asistente y en el ZIP del proyecto.",
+      "planHistoryDesc_current": "Como hasta ahora: la cabecera con la versión, la fecha, el autor y el estado vigentes.",
+      "planHistoryDesc_revisions": "Añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió.",
+      "planHistorySaved": "Ajuste del historial guardado.",
+      "planHistoryFailed": "No se pudo guardar el ajuste del historial."
     }
   },
   "profile": {
@@ -1061,7 +1067,8 @@
       "exportPdf": "Exportar .pdf",
       "exportPdfDesc": "Documento listo para firmar",
       "exportXlsx": "Exportar .xlsx",
-      "exportXlsxDesc": "Editable en Excel"
+      "exportXlsxDesc": "Editable en Excel",
+      "historyMode": "Historial: {{mode}} (se cambia en Ajustes del proyecto)"
     },
     "panel": {
       "title": "Estado del plan",
@@ -1172,7 +1179,20 @@
       "exportHint": "Exporta el plan desde «Importar / Exportar», arriba a la derecha.",
       "missingLabel": "Pasos sin completar"
     },
-    "leaveMessage": "El plan tiene cambios sin guardar. Si sales, se pierden; para conservarlos, pulsa «Guardar» antes."
+    "leaveMessage": "El plan tiene cambios sin guardar. Si sales, se pierden; para conservarlos, pulsa «Guardar» antes.",
+    "historyMode": {
+      "current": "Solo la versión vigente",
+      "revisions": "Historial de revisiones"
+    },
+    "history": {
+      "title": "Historial de revisiones",
+      "reviewedBy": "Revisado por",
+      "changes": "Cambios",
+      "created": "Creación del plan",
+      "approved": "Aprobado",
+      "otherChanges": "Otros cambios",
+      "unknownAuthor": "Autor desconocido"
+    }
   },
   "testCase": {
     "loadFailed": "No se pudieron cargar los casos de prueba.",

@@ -17,8 +17,18 @@ vi.mock("../api/testPlanApi", () => ({
     update: vi.fn(),
     revisions: vi.fn(async () => []),
     revisionDetail: vi.fn(),
+    history: vi.fn(async () => ({
+      createdAt: "2026-10-01T00:00:00.000Z",
+      createdBy: "test-user",
+      events: [],
+      revisions: [],
+    })),
   },
 }));
+// PLN-02: what the PDF export receives; the cycles are left out here.
+const exportPlanPdf = vi.hoisted(() => vi.fn(async (_p: unknown, _t: unknown) => "plan.pdf"));
+vi.mock("../export/planPdf", () => ({ exportPlanPdf }));
+vi.mock("../export/planExtras", () => ({ planExtraTables: async () => [] }));
 
 const PLAN: TestPlan = {
   id: "plan1",
@@ -40,10 +50,10 @@ const PLAN: TestPlan = {
   },
 };
 
-function renderWizard(planId: string | null = "plan1") {
+function renderWizard(planId: string | null = "plan1", exportHistory?: "current" | "revisions") {
   return renderWithProviders(
     <WithHeader>
-      <TestPlanWizard planId={planId} projectId="p1" />
+      <TestPlanWizard planId={planId} projectId="p1" exportHistory={exportHistory} />
     </WithHeader>,
   );
 }
@@ -204,6 +214,38 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     const panel = screen.getByRole("complementary", { name: "Estado del plan" });
     expect(within(panel).getByText("Revisado")).toBeInTheDocument();
     expect(within(panel).getByText("v1.3")).toBeInTheDocument();
+  });
+});
+
+describe("plan wizard · revision history in the export (PLN-02)", () => {
+  it("the menu says the history is only the current version, and the PDF has none", async () => {
+    setViewportWidth(1440);
+    exportPlanPdf.mockClear();
+    vi.mocked(testPlanApi.history).mockClear();
+    renderWizard();
+    await screen.findByText("Paso 1 de 19");
+    await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Importar / Exportar" }));
+    expect(await screen.findByTestId("plan-io-history")).toHaveTextContent("Historial: Solo la versión vigente");
+    await userEvent.click(screen.getByRole("menuitem", { name: /Exportar .pdf/ }));
+    await vi.waitFor(() => expect(exportPlanPdf).toHaveBeenCalled());
+    expect(testPlanApi.history).not.toHaveBeenCalled();
+    expect(exportPlanPdf.mock.calls[0][0]).toMatchObject({ history: undefined });
+  });
+
+  it("with the project set to it, the menu says so and the PDF carries the history", async () => {
+    setViewportWidth(1440);
+    exportPlanPdf.mockClear();
+    renderWizard("plan1", "revisions");
+    await screen.findByText("Paso 1 de 19");
+    await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Importar / Exportar" }));
+    expect(await screen.findByTestId("plan-io-history")).toHaveTextContent("Historial: Historial de revisiones");
+    await userEvent.click(screen.getByRole("menuitem", { name: /Exportar .pdf/ }));
+    await vi.waitFor(() => expect(exportPlanPdf).toHaveBeenCalled());
+    expect(testPlanApi.history).toHaveBeenCalledWith("plan1", "test-user");
+    const sent = exportPlanPdf.mock.calls[0][0] as { history?: { name: string; rows: string[][] } };
+    expect(sent.history?.name).toBe("Historial de revisiones");
+    // The creation, by the signed-in user's official name.
+    expect(sent.history?.rows[0][4]).toBe("Creación del plan");
   });
 });
 

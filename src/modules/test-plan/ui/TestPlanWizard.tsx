@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
+import type { ExportTable } from "@shared/export/extraTables";
 import { LoadError } from "@shared/ui/LoadError";
 import { aiAvailable, markReviewed, withProvenance, type AiProvenance } from "@modules/ai";
 import { ErrorSummary } from "@shared/ui/FormField";
@@ -49,6 +50,9 @@ interface Props {
    *  page reloads it). A new plan gets its id here, so a later reload or a
    *  language change never mistakes it for a plan still to be created. */
   onSaved?: (plan: TestPlan | null) => void;
+  /** The project's «Historial en el plan exportado» (PLN-02): with
+   *  `revisions`, both exports carry the plan's revision history. */
+  exportHistory?: "current" | "revisions";
 }
 
 /**
@@ -58,7 +62,7 @@ interface Props {
  * plan» and the latest revisions beside the form, and «Revisiones»,
  * «Importar / Exportar» and «Guardar» in the project header.
  */
-export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
+export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "current" }: Props) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const userId = user?.id ?? "";
@@ -220,11 +224,22 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
 
   // The form as exported, with its milestones and the project's cycles
   // (EXP-03) after the template's content.
+  // With the project's history setting, the revision history of the saved
+  // plan (PLN-02): unsaved changes are not a revision yet.
   async function exportable(f: FormState) {
     const { planExtraTables } = await import("../export/planExtras");
     const lang = i18n.resolvedLanguage ?? "es";
+    let history: ExportTable | undefined;
+    if (exportHistory === "revisions" && plan) {
+      const { loadHistoryTable } = await import("../export/planHistory");
+      const names: Record<string, string> = user
+        ? { [user.id]: `${user.firstName} ${user.lastName}`.trim() }
+        : {};
+      history = (await loadHistoryTable(plan, userId, names, t)) ?? undefined;
+    }
     return {
       ...toExportable(f, author, t),
+      history,
       extraTables: await planExtraTables(
         projectId ?? plan?.projectId,
         userId,
@@ -290,6 +305,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
           onImport={() => fileInputRef.current?.click()}
           onExportPdf={() => void exportPdf()}
           onExportXlsx={() => void exportXlsx()}
+          history={exportHistory}
         />
         <button type="button" className="header-action" data-primary="" onClick={trySave} disabled={saving}>
           <Check size={16} aria-hidden="true" />

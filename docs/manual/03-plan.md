@@ -142,7 +142,7 @@ Al confirmar, el asistente carga el contenido de esa revisión, todavía sin gua
 
 ### 3.22. Exportar el plan
 
-«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel. El archivo se guarda en tu carpeta de descarga (Administración › General, capítulo 10) y un aviso indica su nombre.
+«Importar / Exportar», en la cabecera, ofrece el plan en .pdf, maquetado y listo para firmar, o en .xlsx, editable en Excel. Al pie, el menú indica qué historial lleva el documento: «Solo la versión vigente» o «Historial de revisiones», según Ajustes del proyecto (capítulo 2). El archivo se guarda en tu carpeta de descarga (Administración › General, capítulo 10) y un aviso indica su nombre.
 
 ![Exportar el plan](img/plan/22-exportar.png)
 
@@ -165,6 +165,17 @@ Para traer un plan escrito fuera de Pharos, «Importar / Exportar → Importar .
 - Para empezar un plan desde Excel, descarga una plantilla en
   «Administración → Plantillas», rellénala e impórtala con «Importar .xlsx».
 - «Restaurar» una revisión no guarda nada hasta que pulses «Guardar».
+- Si el documento debe llevar su historial, elige «Historial de revisiones» en
+  «Ajustes del proyecto → Historial en el plan exportado». El .pdf y el .xlsx
+  (también los del ZIP del proyecto) añaden entonces la tabla «Historial de
+  revisiones», tras la cabecera en el PDF y en una hoja propia en el .xlsx:
+  una fila por persona y día, que es su último guardado de ese día, de la más
+  antigua (arriba) a la más reciente (abajo), con la versión, la fecha y hora,
+  quién la hizo (nombre y apellidos del perfil), el estado y las secciones que
+  cambió. Los guardados sin cambios no cuentan, el día es el de tu zona
+  horaria, y lo que aún no has guardado no aparece. En la web, el historial
+  empieza en los cambios hechos desde la versión 0.2.0; si de un guardado
+  antiguo no se sabe la versión o el estado, la celda muestra «—».
 
 ## Véase también
 

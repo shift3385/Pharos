@@ -383,6 +383,120 @@ fn get_revision(
     .map_err(|e| e.to_string())
 }
 
+/// One create or update audit event of a plan (ADR-0015), for its history.
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestPlanHistoryEvent"))]
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryEvent {
+    at: String,
+    actor: String,
+    action: String,
+    /// `{ field: [before, after] }`; null once redacted.
+    #[cfg_attr(test, ts(type = "Record<string, [unknown, unknown]> | null"))]
+    changes: Value,
+}
+
+/// A revision copy (the state a save overwrote) with who saved and when.
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestPlanHistoryRevision"))]
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryRevision {
+    revision: i64,
+    title: String,
+    #[cfg_attr(test, ts(type = "Record<string, unknown>"))]
+    data: Value,
+    created_at: String,
+    created_by: String,
+}
+
+/// What the exported plan's «Historial de revisiones» is built from
+/// (PLN-02): the plan's creation, its audit events (oldest first) and its
+/// revision copies (by revision), which cover the saves made before 0.2.0.
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestPlanHistorySource"))]
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistorySource {
+    created_at: String,
+    created_by: String,
+    events: Vec<HistoryEvent>,
+    revisions: Vec<HistoryRevision>,
+}
+
+/// Read-only; None for a plan the user does not own.
+fn plan_history(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<HistorySource>, String> {
+    if !owns(conn, id, user_id)? {
+        return Ok(None);
+    }
+    let (created_at, created_by) = conn
+        .query_row(
+            "SELECT created_at, created_by FROM test_plans WHERE id = ?1",
+            params![id],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        )
+        .map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT at, actor, action, changes FROM audit_log \
+             WHERE entity = 'test_plan' AND entity_id = ?1 AND action IN ('create', 'update') \
+             ORDER BY at, hlc",
+        )
+        .map_err(|e| e.to_string())?;
+    let events = stmt
+        .query_map(params![id], |r| {
+            let changes: Option<String> = r.get(3)?;
+            Ok(HistoryEvent {
+                at: r.get(0)?,
+                actor: r.get(1)?,
+                action: r.get(2)?,
+                changes: changes
+                    .and_then(|c| serde_json::from_str(&c).ok())
+                    .unwrap_or(Value::Null),
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT revision, title, data, created_at, created_by FROM test_plan_revisions \
+             WHERE test_plan_id = ?1 ORDER BY revision",
+        )
+        .map_err(|e| e.to_string())?;
+    let revisions = stmt
+        .query_map(params![id], |r| {
+            let data: String = r.get(2)?;
+            Ok(HistoryRevision {
+                revision: r.get(0)?,
+                title: r.get(1)?,
+                data: serde_json::from_str(&data).unwrap_or_else(|_| empty_object()),
+                created_at: r.get(3)?,
+                created_by: r.get(4)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(|e| e.to_string())?;
+    Ok(Some(HistorySource {
+        created_at,
+        created_by,
+        events,
+        revisions,
+    }))
+}
+
+#[tauri::command]
+pub fn test_plan_history(
+    db: State<Db>,
+    id: String,
+    user_id: String,
+) -> Result<Option<HistorySource>, String> {
+    db.with_conn(|conn| plan_history(conn, &id, &user_id))
+}
+
 #[tauri::command]
 pub fn test_plan_list(db: State<Db>, user_id: String) -> Result<Vec<TestPlanSummary>, String> {
     db.with_conn(|conn| list_plans(conn, &user_id))
@@ -566,6 +680,35 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(payload["data"], with_ids);
+    }
+
+    /// PLN-02: the history source has the creation, the audit events with
+    /// their field diff and the revision copies with who saved; a plan of
+    /// another user has none.
+    #[test]
+    fn history_source_has_events_and_revisions() {
+        let c = conn();
+        let p = project(&c, USER);
+        let id = insert_plan(&c, &input(&p, "Plan A", serde_json::json!({}))).unwrap();
+        update_plan(
+            &c,
+            &id,
+            &input(&p, "Plan A", serde_json::json!({"summary": "hi"})),
+        )
+        .unwrap();
+        let h = plan_history(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(h.created_by, USER);
+        let actions: Vec<&str> = h.events.iter().map(|e| e.action.as_str()).collect();
+        assert_eq!(actions, ["create", "update"]);
+        assert_eq!(h.events[1].actor, format!("user:{USER}"));
+        assert_eq!(
+            h.events[1].changes["data.summary"],
+            serde_json::json!([null, "hi"])
+        );
+        assert_eq!(h.revisions.len(), 1);
+        assert_eq!(h.revisions[0].created_by, USER);
+        assert_eq!(h.revisions[0].title, "Plan A");
+        assert!(plan_history(&c, &id, OTHER).unwrap().is_none());
     }
 
     #[test]
