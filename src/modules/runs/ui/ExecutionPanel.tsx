@@ -121,6 +121,8 @@ export function ExecutionPanel({
   const [, tick] = useState(0);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pending = useRef<Record<string, TargetDraft>>({});
+  // Autosaves on their way to the store, per target.
+  const saving = useRef(new Map<string, number>());
   const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const attachFor = useRef<string | null>(null);
@@ -134,6 +136,11 @@ export function ExecutionPanel({
   const desktop = isTauri();
 
   const load = useCallback(async () => {
+    const unsaved = () => [...Object.keys(pending.current), ...saving.current.keys()];
+    // A save may end while this read is on its way, so its answer may not have
+    // it: what was unsaved at either end stays, or the next save would start
+    // another attempt that the store refuses as stale (FIX-19).
+    const unsavedBefore = unsaved();
     try {
       const d = await runsApi.itemDetail(runItemId, userId);
       setDetail(d);
@@ -142,10 +149,15 @@ export function ExecutionPanel({
         const now = new Date();
         const stored = (d.draft?.targets ?? {}) as Record<string, unknown>;
         const savedAt = d.draft?.updatedAt;
+        const keep = [...unsavedBefore, ...unsaved()];
         setDrafts((cur) => {
           const next: Record<string, TargetDraft> = {};
           for (const [k, v] of Object.entries(stored))
             next[k] = cur[k] ?? parseDraft(v, now, savedAt);
+          for (const k of keep) {
+            const local = cur[k];
+            if (local && !next[k]) next[k] = local;
+          }
           return next;
         });
         setTargetKey((k) => {
@@ -270,8 +282,16 @@ export function ExecutionPanel({
       delete timers.current[key];
       const d = pending.current[key];
       delete pending.current[key];
-      if (d)
-        void runsApi.draftSave(runItemId, key, d, userId).catch((e) => saveFailed(key, e));
+      if (!d) return;
+      saving.current.set(key, (saving.current.get(key) ?? 0) + 1);
+      void runsApi
+        .draftSave(runItemId, key, d, userId)
+        .catch((e) => saveFailed(key, e))
+        .finally(() => {
+          const left = (saving.current.get(key) ?? 1) - 1;
+          if (left > 0) saving.current.set(key, left);
+          else saving.current.delete(key);
+        });
     }, SAVE_DELAY);
   }
 
