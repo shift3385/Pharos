@@ -18,7 +18,10 @@ import {
   Settings,
 } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
 import { FieldMessage } from "@shared/ui/FormField";
+import { LoadError } from "@shared/ui/LoadError";
+import { ReportedError } from "@shared/ui/notify";
 import { controlProps } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
 import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
@@ -81,6 +84,9 @@ function ProjectList() {
   // Home links here with ?new=1 to start one.
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // The last create or row export that failed, to say so and repeat it.
+  const [actionFailed, setActionFailed] = useState<{ create: true } | { exporting: ProjectRow } | null>(null);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
   const { exportAll, exportProject, busy, progressModal } = useProjectExport();
   const [name, setName] = useState("");
@@ -99,12 +105,29 @@ function ProjectList() {
   }, []);
 
   async function exportRow(row: ProjectRow) {
-    const project = await projectApi.get(row.id, ownerId);
-    if (project) await exportProject(project);
+    setActionFailed(null);
+    try {
+      const project = await projectApi.get(row.id, ownerId);
+      if (project) await exportProject(project);
+    } catch (e) {
+      if (e instanceof ReportedError) return;
+      logClientError(e, "project export");
+      setActionFailed({ exporting: row });
+    }
   }
 
   async function refresh() {
-    setRows(await projectRows(ownerId));
+    try {
+      setRows(await projectRows(ownerId));
+      setLoadFailed(false);
+    } catch (e) {
+      logClientError(e, "projects list");
+      setLoadFailed(true);
+    }
+  }
+  function retryLoad() {
+    setLoadFailed(false);
+    void refresh();
   }
   useEffect(() => {
     void refresh();
@@ -124,7 +147,18 @@ function ProjectList() {
     setNameTried(true);
     if (!trimmed) return;
     setNameTried(false);
-    const project = await projectApi.create({ name: trimmed, ownerId });
+    setActionFailed(null);
+    let project;
+    try {
+      project = await projectApi.create({ name: trimmed, ownerId });
+    } catch (e) {
+      // The form stays open with the name; «Reintentar» sends what it says then.
+      // A refusal the user was already told about (a toast) is not repeated.
+      if (e instanceof ReportedError) return;
+      logClientError(e, "project create");
+      setActionFailed({ create: true });
+      return;
+    }
     setName("");
     setCreating(false);
     if (project) navigate(projectPath(project.id));
@@ -316,6 +350,7 @@ function ProjectList() {
               setCreating(false);
               setName("");
               setNameTried(false);
+              setActionFailed(null);
             }}
           >
             {t("common.cancel")}
@@ -328,25 +363,39 @@ function ProjectList() {
         </div>
       )}
 
+      {actionFailed && (
+        <LoadError
+          message={
+            "exporting" in actionFailed
+              ? t("projects.exportFailed", { name: actionFailed.exporting.name })
+              : t("projects.createFailed")
+          }
+          onRetry={() => void ("exporting" in actionFailed ? exportRow(actionFailed.exporting) : create())}
+        />
+      )}
+      {loadFailed && <LoadError message={t("projects.list.loadFailed")} onRetry={retryLoad} />}
+
       {rows === null ? (
-        <>
-          <LoadingStatus />
-          <section className="pj-recent">
-            <div className="pj-section-head">
-              <Skeleton width={180} height={24} />
-            </div>
-            <CardGridSkeleton className="pj-recent__grid" minHeight={156} announce={false} />
-          </section>
-          <section className="pj-all">
-            <div className="pj-all__toolbar">
-              <div className="pj-all__heading">
-                <Skeleton width={160} height={16} />
+        !loadFailed && (
+          <>
+            <LoadingStatus />
+            <section className="pj-recent">
+              <div className="pj-section-head">
+                <Skeleton width={180} height={24} />
               </div>
-              <Skeleton shape="block" width="min(320px, 50%)" height={38} />
-            </div>
-            <TableSkeleton columns={columns} minWidth={720} rows={5} rowHeight={32} className="pj-table" announce={false} />
-          </section>
-        </>
+              <CardGridSkeleton className="pj-recent__grid" minHeight={156} announce={false} />
+            </section>
+            <section className="pj-all">
+              <div className="pj-all__toolbar">
+                <div className="pj-all__heading">
+                  <Skeleton width={160} height={16} />
+                </div>
+                <Skeleton shape="block" width="min(320px, 50%)" height={38} />
+              </div>
+              <TableSkeleton columns={columns} minWidth={720} rows={5} rowHeight={32} className="pj-table" announce={false} />
+            </section>
+          </>
+        )
       ) : all.length === 0 ? (
         !creating && <p className="pj-empty">{t("projects.empty")}</p>
       ) : (

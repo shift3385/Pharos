@@ -3,6 +3,8 @@ import { Trans, useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Layers, Plus } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
+import { LoadError } from "@shared/ui/LoadError";
 import { LoadingStatus, Skeleton } from "@shared/ui/Skeleton";
 import { Tabs } from "@shared/ui/Tabs";
 import { tabPanelProps } from "@shared/ui/tabPanel";
@@ -52,6 +54,8 @@ export function DashboardPage() {
   const mobile = useBreakpoint() === "mobile";
   const ownerId = user?.id ?? "";
   const [projects, setProjects] = useState<HomeProject[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [period, setPeriod] = useState<Period>(storedPeriod);
   const [exitId, setExitId] = useState<string | null>(null);
   const [tab, setTab] = useState<MobileTab>("summary");
@@ -65,9 +69,17 @@ export function DashboardPage() {
   useEffect(() => {
     let alive = true;
     const load = () =>
-      void loadHome(ownerId).then((rows) => {
-        if (alive) setProjects(rows);
-      });
+      void loadHome(ownerId)
+        .then((rows) => {
+          if (!alive) return;
+          setProjects(rows);
+          setLoadFailed(false);
+        })
+        .catch((e: unknown) => {
+          if (!alive) return;
+          logClientError(e, "home projects");
+          setLoadFailed(true);
+        });
     load();
     // Reload when a sync pulls remote changes.
     window.addEventListener("pharos:synced", load);
@@ -75,7 +87,7 @@ export function DashboardPage() {
       alive = false;
       window.removeEventListener("pharos:synced", load);
     };
-  }, [ownerId]);
+  }, [ownerId, loadAttempt]);
 
   const choosePeriod = (p: Period) => {
     setPeriod(p);
@@ -123,7 +135,7 @@ export function DashboardPage() {
         </h1>
         <p className="home-header__summary">
           {projects === null ? (
-            <Skeleton width="min(340px, 80%)" className="home-header__summary-sk" />
+            !loadFailed && <Skeleton width="min(340px, 80%)" className="home-header__summary-sk" />
           ) : list.length === 0 ? (
             t("dashboard.summaryEmpty")
           ) : metrics.status !== "ready" ? (
@@ -179,6 +191,24 @@ export function DashboardPage() {
       </div>
     </div>
   );
+
+  const loadError = loadFailed && (
+    <LoadError
+      message={t("dashboard.loadFailed")}
+      onRetry={() => {
+        setLoadFailed(false);
+        setLoadAttempt((n) => n + 1);
+      }}
+    />
+  );
+  // Never loaded: the widgets would read as an account without projects.
+  if (projects === null && loadFailed)
+    return (
+      <section className="home screen-root">
+        {header}
+        {loadError}
+      </section>
+    );
 
   const indicators = (
     <>
@@ -293,6 +323,7 @@ export function DashboardPage() {
           {tab === "summary" && (
             <>
               {header}
+              {loadError}
               {indicators}
               {exit}
             </>
@@ -317,6 +348,7 @@ export function DashboardPage() {
   return (
     <section className="home screen-root">
       {header}
+      {loadError}
       {indicators}
       <div className="home-row">
         <div className="home-row__wide">{byProjectCard}</div>

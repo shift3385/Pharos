@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
+import { LoadError } from "@shared/ui/LoadError";
 import { aiAvailable, markReviewed, withProvenance, type AiProvenance } from "@modules/ai";
 import { ErrorSummary } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
@@ -68,6 +70,8 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [showRev, setShowRev] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   // Snapshot of the form as loaded or saved, to detect unsaved changes (C1).
   const initialRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +100,9 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
   const { guard, showSummary, attempted, summaryRef } = useSaveGuard(titleIssue !== null);
 
   useEffect(() => {
-    void aiAvailable().then(setAiReady);
+    void aiAvailable()
+      .then(setAiReady)
+      .catch(() => setAiReady(false));
   }, []);
   // «hace N min» stays current.
   useEffect(() => {
@@ -125,8 +131,16 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
     (async () => {
       if (planId) {
         if (planId === loadedId.current) return;
-        const p = await testPlanApi.get(planId, userId);
-        if (p && !cancelled) load(p);
+        try {
+          const p = await testPlanApi.get(planId, userId);
+          if (cancelled) return;
+          if (p) load(p);
+          else setLoadFailed(true);
+        } catch (e) {
+          if (cancelled) return;
+          logClientError(e, "test plan wizard");
+          setLoadFailed(true);
+        }
       } else if (!cancelled && loadedId.current === null) {
         const f = defaults(tRef.current);
         setForm(f);
@@ -137,7 +151,7 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planId, userId]);
+  }, [planId, userId, loadAttempt]);
 
   const dirty = form !== null && JSON.stringify(form) !== initialRef.current;
   // Leaving with unsaved changes asks first (sidebar, pills, «Atrás», closing
@@ -285,7 +299,18 @@ export function TestPlanWizard({ planId, projectId, onSaved }: Props) {
     ),
   );
 
-  if (!form) return <FormSkeleton />;
+  if (!form)
+    return loadFailed ? (
+      <LoadError
+        message={t("testPlan.loadFailed")}
+        onRetry={() => {
+          setLoadFailed(false);
+          setLoadAttempt((n) => n + 1);
+        }}
+      />
+    ) : (
+      <FormSkeleton />
+    );
 
   const completion = stepCompletion(form);
   const id = STEP_IDS[step];

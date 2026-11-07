@@ -39,13 +39,25 @@ resolution can be added without a schema change.
   unsupported version with 426 `unsupported_client_version` before writing
   (SYNC-08). Pushes go in batches of at most 200 deltas / ~512 KiB (FIX-03);
   the server must accept at least 1 MiB per push. Network errors, 5xx and 429
-  are retried with growing waits; 401/403/426 stop the sync. A batch refused
-  for its content (413, 400) is split to isolate the deltas at fault
+  are retried with growing waits; 403/426 stop the sync, and so does a 401 that
+  renewing the session does not solve (below). A batch refused for its content (413, 400) is split to isolate the deltas at fault
   (`sendIsolating`): they are skipped and stay pending, the user is told
   (`pharos:sync-skipped`), and the other batches and the pull still run.
   Pulls page until `hasMore` is false and the cursor is saved after every
   page (FIX-02). The server serializes each user's writes (advisory lock), so
   a cursor never skips a late commit.
+- **Expired access token (`api/sessionRequest.ts`).** Every request of a sync
+  goes through `sessionRequester`, which holds the token in use. On a 401 it
+  calls `renewSession` (`@modules/auth`), the only place that spends a refresh
+  token, and repeats the request once; later requests use the new token, so a
+  token that expires halfway through a sync does not stop it. It never repeats
+  under another account (FIX-07). If the session is over the 401 stops the sync
+  while the app goes back to the sign-in screen; pending changes stay in the
+  oplog. If the server cannot be asked right now, the sync fails with that
+  error, the session is kept and the next sync tries again. A 401 on the
+  repeated request also stops the sync. The automatic sync at startup can leave
+  with an expired token, because the app enters with the cached session before
+  validating it; it shares the startup's renewal, so one refresh token is spent.
 - **Project deletes (FIX-05).** The server tombstones a deleted project's plans,
   cases, requirements and cards, so every client receives them as normal
   deletes. A device with a pending edit of one of them gets a conflict. If the
@@ -183,6 +195,11 @@ no pull: "Sync now" only reloads the open pages.
   If the item changed elsewhere, the server answers 409 `stale_write` with its
   version: a toast tells the user, the form keeps the edit, and saving again
   replaces that version (its revision is now the one remembered).
+- **Expired access token.** On a 401, `serverApi` renews the session with
+  `renewSession` (`@modules/auth`) and repeats the request once, never under
+  another account. If the session is over the 401 reaches the caller, while
+  the app goes back to the sign-in screen. The desktop sync does the same
+  (`api/sessionRequest.ts`, above).
 - **Refusals the user can act on** (`key_taken`, `key_retired`, `invalid_key`,
   desktop-only features) are shown once as a toast and thrown as
   `ReportedError`.
@@ -201,7 +218,9 @@ no pull: "Sync now" only reloads the open pages.
   account takes the attachments of the cards in its own outbox, and the rest
   only if `pharos.sync.cacheOwner` is that account (or unset, data from
   before FIX-07); the shared keys go when nothing is left. A network failure
-  changes nothing. Other accounts' outboxes wait until those accounts sign in.
+  changes nothing, and an expired token is renewed as in the desktop sync
+  (`sessionRequester`). Other accounts' outboxes wait until those accounts sign
+  in.
 
 ## Failures in the local log (`api/syncFailure.ts`, BASE-08, ADR-0022)
 

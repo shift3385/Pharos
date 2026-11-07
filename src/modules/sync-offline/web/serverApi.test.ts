@@ -84,6 +84,71 @@ describe("serverApi", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  describe("when the access token expires while the page is open", () => {
+    const stored = () => JSON.parse(localStorage.getItem("pharos.session") ?? "null");
+    const fresh = (user = "u1") => ({ accessToken: "tok2", refreshToken: "r2", user: { id: user } });
+    /** The server: refuses the old token, and answers /auth/refresh as given. */
+    const server = (onRefresh: () => Promise<Response>) =>
+      fetchMock.mockImplementation((url: string, init: RequestInit) => {
+        if (url.endsWith("/auth/refresh")) return onRefresh();
+        const token = (init.headers as Record<string, string>).authorization;
+        return token === "Bearer tok2"
+          ? reply({ id: "p1", revision: 2 })
+          : reply({ code: "unauthorized", message: "Authentication is required." }, 401);
+      });
+    const calls = (end: string) =>
+      fetchMock.mock.calls.filter(([url]) => (url as string).endsWith(end));
+
+    it("renews and repeats the request, and the caller never notices", async () => {
+      server(() => reply(fresh()));
+      await expect(serverApi.post("/api/projects", { name: "N" })).resolves.toMatchObject({ id: "p1" });
+      const repeated = calls("/api/projects")[1][1] as RequestInit;
+      expect(repeated.method).toBe("POST");
+      expect(JSON.parse(repeated.body as string)).toEqual({ name: "N" });
+      expect(stored()).toMatchObject({ accessToken: "tok2", refreshToken: "r2" });
+    });
+
+    it("a screen's parallel requests spend the refresh token once", async () => {
+      server(() => reply(fresh()));
+      await Promise.all([serverApi.get("/api/a"), serverApi.get("/api/b"), serverApi.get("/api/c")]);
+      expect(calls("/auth/refresh")).toHaveLength(1);
+    });
+
+    it("a session that is over rejects with the 401 and is gone", async () => {
+      server(() => reply({ code: "invalid_refresh_token", message: "no" }, 401));
+      await expect(serverApi.get("/api/projects")).rejects.toMatchObject({ status: 401 });
+      expect(stored()).toBeNull();
+    });
+
+    it("rejects, keeping the session, if the server cannot renew it right now", async () => {
+      server(() => Promise.reject(new TypeError("Failed to fetch")));
+      await expect(serverApi.get("/api/projects")).rejects.toThrow("Network request failed");
+      expect(stored()).toMatchObject({ accessToken: "tok" });
+    });
+
+    it("never repeats a request under another account", async () => {
+      server(() => reply(fresh()));
+      localStorage.setItem("pharos.session", JSON.stringify({ accessToken: "tok", refreshToken: "r", user: { id: "u1" } }));
+      fetchMock.mockImplementationOnce(() => {
+        // Another account signed in while the request was on its way.
+        localStorage.setItem("pharos.session", JSON.stringify(fresh("u2")));
+        return reply({ code: "unauthorized", message: "no" }, 401);
+      });
+      await expect(serverApi.post("/api/projects", {})).rejects.toMatchObject({ status: 401 });
+      expect(calls("/api/projects")).toHaveLength(1);
+    });
+
+    it("repeats once: a second 401 is an answer, not a loop", async () => {
+      fetchMock.mockImplementation((url: string) =>
+        url.endsWith("/auth/refresh")
+          ? reply(fresh())
+          : reply({ code: "unauthorized", message: "no" }, 401),
+      );
+      await expect(serverApi.get("/api/projects")).rejects.toMatchObject({ status: 401 });
+      expect(calls("/api/projects")).toHaveLength(2);
+    });
+  });
+
   it("desktop-only features say so", () => {
     expect(() => desktopOnly("attachments")).toThrow(DesktopOnlyError);
     expect(toasts).toHaveLength(1);

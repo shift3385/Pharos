@@ -509,3 +509,24 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     expect(input.automationStatus).toBeUndefined();
   });
 });
+
+describe("Casos when the list fails to load", () => {
+  beforeEach(() => {
+    list.mockResolvedValue(SUMMARIES);
+    fieldList.mockResolvedValue([]);
+  });
+
+  it("shows the error, not an empty project, and «Reintentar» loads the cases", async () => {
+    setViewportWidth(1440);
+    list.mockRejectedValueOnce(new Error("down"));
+    renderPage();
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudieron cargar los casos de prueba.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("Pago con tarjeta")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});

@@ -105,3 +105,19 @@ describe("TemplatesTab", () => {
     await expectNoAxeViolations();
   });
 });
+
+describe("TemplatesTab when the list fails to load", () => {
+  it("shows the error, reports no count, and «Reintentar» loads them", async () => {
+    const onCount = vi.fn();
+    api.list.mockRejectedValueOnce(new Error("down"));
+    renderWithProviders(<TemplatesTab onCount={onCount} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudieron cargar las plantillas.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+    expect(onCount).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findAllByTestId("template-card")).toHaveLength(3);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await waitFor(() => expect(onCount).toHaveBeenCalledWith(4));
+  });
+});

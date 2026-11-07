@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Columns3, List, Plus, Search, ShieldAlert, Trash2, TriangleAlert } from "lucide-react";
 import { capabilities } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { logClientError } from "@shared/diagnostics";
 import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
+import { LoadError } from "@shared/ui/LoadError";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
@@ -58,7 +60,9 @@ export function DefectsPage({
   const toast = useToast();
   const view = useBreakpoint();
   const [defects, setDefects] = useState<Defect[]>([]);
+  // True until the list has loaded once, also after a failure.
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [mode, setMode] = useState<View>(readView);
   const [status, setStatus] = useState<StatusFilter>("open");
   const [severities, setSeverities] = useState<Set<string>>(new Set());
@@ -70,9 +74,16 @@ export function DefectsPage({
   async function refresh() {
     try {
       setDefects(await defectsApi.list(projectId, userId));
-    } finally {
       setLoading(false);
+      setLoadFailed(false);
+    } catch (e) {
+      logClientError(e, "defects");
+      setLoadFailed(true);
     }
+  }
+  function retryLoad() {
+    setLoadFailed(false);
+    void refresh();
   }
   useEffect(() => {
     void refresh();
@@ -290,8 +301,11 @@ export function DefectsPage({
         />
       </div>
 
+      {loadFailed && <LoadError message={t("defects.loadFailed")} onRetry={retryLoad} />}
       {loading ? (
-        <TableSkeleton columns={columns} minWidth={view === "desktop" ? 860 : 600} rowHeight={32} />
+        !loadFailed && (
+          <TableSkeleton columns={columns} minWidth={view === "desktop" ? 860 : 600} rowHeight={32} />
+        )
       ) : defects.length === 0 ? (
         <p className="df-empty">{t("defects.empty")}</p>
       ) : mode === "board" ? (

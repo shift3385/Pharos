@@ -12,7 +12,7 @@
 //   thrown as `ReportedError`, so callers do not report them twice.
 
 import i18n from "i18next";
-import { getSession } from "@modules/auth";
+import { getSession, renewSession } from "@modules/auth";
 import { DesktopOnlyError, type capabilities } from "@shared/platform";
 import { notify, ReportedError } from "@shared/ui/notify";
 import { SyncHttpError, syncRequest } from "../api/transport";
@@ -53,15 +53,31 @@ function reported(e: unknown): unknown {
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
-  const session = await getSession();
-  if (!session) throw new Error("not-authenticated");
+async function send<T>(method: Method, path: string, token: string, body?: unknown): Promise<T> {
   try {
-    const answer = await syncRequest<T>(path, session.accessToken, { method, body });
+    const answer = await syncRequest<T>(path, token, { method, body });
     remember(answer);
     return answer;
   } catch (e) {
     throw reported(e);
+  }
+}
+
+/** A token that expired while the page was open is renewed and the request
+ *  repeated once. A 401 comes before the server looks at the request, so even
+ *  a write is safe to repeat. If the session is over, the 401 reaches the
+ *  caller as any other failure while the app goes back to the sign-in screen. */
+async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+  const session = await getSession();
+  if (!session) throw new Error("not-authenticated");
+  try {
+    return await send<T>(method, path, session.accessToken, body);
+  } catch (e) {
+    if (!(e instanceof SyncHttpError) || e.status !== 401) throw e;
+    const renewed = await renewSession(session.accessToken);
+    // Never repeat a request under another account (FIX-07).
+    if (renewed?.userId !== session.userId) throw e;
+    return send<T>(method, path, renewed.accessToken, body);
   }
 }
 

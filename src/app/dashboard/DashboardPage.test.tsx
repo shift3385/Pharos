@@ -634,3 +634,44 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     }
   });
 });
+
+describe("Inicio when the projects fail to load", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("es");
+    load.mockClear();
+    fetchMetrics.mockClear();
+    clearHomeMetricsCache();
+    setViewportWidth(1440);
+  });
+
+  it("shows the error, not an account without projects, and «Reintentar» loads them", async () => {
+    load.mockRejectedValueOnce(new Error("down"));
+    renderHome();
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudieron cargar tus proyectos.");
+    expect(screen.queryByTestId("kpi-projects")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Hola, Quality" })).toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    await waitFor(() => expect(screen.getByTestId("kpi-projects")).toHaveTextContent("3"));
+    expect(screen.queryByText("No se pudieron cargar tus proyectos.")).not.toBeInTheDocument();
+  });
+
+  it("a failed reload keeps the widgets and adds the error", async () => {
+    renderHome();
+    await waitFor(() => expect(screen.getByTestId("kpi-projects")).toHaveTextContent("3"));
+    load.mockRejectedValueOnce(new Error("down"));
+    act(() => {
+      window.dispatchEvent(new CustomEvent("pharos:synced"));
+    });
+    expect(await screen.findByText("No se pudieron cargar tus proyectos.")).toBeInTheDocument();
+    expect(screen.getByTestId("kpi-projects")).toHaveTextContent("3");
+  });
+
+  it("on mobile the error is in «Resumen»", async () => {
+    setViewportWidth(390);
+    load.mockRejectedValueOnce(new Error("down"));
+    renderHome();
+    expect(await screen.findByText("No se pudieron cargar tus proyectos.")).toBeInTheDocument();
+  });
+});

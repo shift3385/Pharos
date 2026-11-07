@@ -4,6 +4,8 @@ import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
+import { LoadError } from "@shared/ui/LoadError";
 import {
   PLAN_SAVED_EVENT,
   TestPlanPage,
@@ -66,6 +68,7 @@ export function ProjectDetail({
   // undefined while loading; null when it does not exist (deleted, maybe on
   // another device and just synced): then the list is shown instead.
   const [project, setProject] = useState<Project | null | undefined>(undefined);
+  const [loadFailed, setLoadFailed] = useState(false);
   const latest = useRef(0);
   // Cross-module options, loaded by this composing module so test-cases and
   // defects never depend on traceability (or on each other).
@@ -76,8 +79,20 @@ export function ProjectDetail({
    *  dropped, so a slow response never overwrites newer data. */
   async function refresh() {
     const request = ++latest.current;
-    const found = await projectApi.get(projectId, ownerId);
-    if (request === latest.current) setProject(found);
+    try {
+      const found = await projectApi.get(projectId, ownerId);
+      if (request !== latest.current) return;
+      setProject(found);
+      setLoadFailed(false);
+    } catch (e) {
+      if (request !== latest.current) return;
+      logClientError(e, "project detail");
+      setLoadFailed(true);
+    }
+  }
+  function retryLoad() {
+    setLoadFailed(false);
+    void refresh();
   }
   // The last access is recorded only for a project that exists.
   const exists = Boolean(project);
@@ -92,12 +107,18 @@ export function ProjectDetail({
   useEffect(() => {
     let live = true;
     if (tab === "defects" || tab === "runs") {
-      void projectTraceableCases(projectId, ownerId).then((list) => {
-        if (live) setLinkableCases(list.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title })));
-      });
-      void requirementApi.list(projectId, ownerId).then((list) => {
-        if (live) setLinkableRequirements(list.map((r) => ({ id: r.id, key: r.requirementKey, title: r.title })));
-      });
+      // Only options for the section: without them its own load still reports.
+      void projectTraceableCases(projectId, ownerId)
+        .then((list) => {
+          if (live) setLinkableCases(list.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title })));
+        })
+        .catch((e: unknown) => logClientError(e, "project linkable cases"));
+      void requirementApi
+        .list(projectId, ownerId)
+        .then((list) => {
+          if (live) setLinkableRequirements(list.map((r) => ({ id: r.id, key: r.requirementKey, title: r.title })));
+        })
+        .catch((e: unknown) => logClientError(e, "project linkable requirements"));
     }
     return () => {
       live = false;
@@ -109,7 +130,9 @@ export function ProjectDetail({
 
   if (project === null) return <Navigate to="/projects" replace />;
   if (!project)
-    return (
+    return loadFailed ? (
+      <LoadError message={t("projects.loadFailed")} onRetry={retryLoad} />
+    ) : (
       <section className="pj-detail">
         {!mobile && (
           <div className="pj-header" aria-hidden="true">
@@ -144,6 +167,7 @@ export function ProjectDetail({
 
   return (
     <section className="pj-detail">
+      {loadFailed && <LoadError message={t("projects.loadFailed")} onRetry={retryLoad} />}
       <ProjectHeaderLayout info={header}>
         {tab === "plan" && <TestPlanPage projectId={projectId} />}
         {tab === "cases" && (
