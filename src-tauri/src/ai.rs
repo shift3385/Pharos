@@ -2,8 +2,11 @@
 //! provider's key lives only in the OS keychain (Windows Credential Manager) and
 //! is read here to make the HTTPS call from Rust, so it never crosses the
 //! frontend, never goes in a URL and never appears in an error message.
-//! `ai_key_status` never returns the value. The offline provider (Ollama) is
-//! handled client-side (local, no key).
+//! `ai_key_status` never returns the value. The one exception to "the key stays
+//! here" goes the other way: a key the user just typed comes from the frontend
+//! to be stored (`ai_key_set`) or tried once without storing it (`ai_key_test`,
+//! ADR-0033). The offline provider (Ollama) is handled client-side (local, no
+//! key).
 //!
 //! Three wire formats cover the supported providers: Gemini `generateContent`,
 //! OpenAI-style chat completions (OpenAI, OpenRouter and any compatible
@@ -449,9 +452,51 @@ pub async fn ai_chat_online(
     let model = model.trim();
     validate_model(provider, model)?;
     let (base, key) = credentials(provider, base_url.as_deref())?;
+    chat(
+        provider,
+        &base,
+        key.as_deref(),
+        model,
+        temperature,
+        &messages,
+    )
+    .await
+}
+
+/// Tries a key the user just typed with one call, without storing it: the key
+/// in the keychain stays as it was whatever the provider answers (ADR-0033).
+#[tauri::command]
+pub async fn ai_key_test(
+    provider: String,
+    key: String,
+    model: String,
+    temperature: Option<f32>,
+    messages: Vec<AiMessage>,
+    base_url: Option<String>,
+) -> Result<String, String> {
+    let provider = Provider::parse(&provider)?;
+    let model = model.trim();
+    validate_model(provider, model)?;
+    let base = provider.base_url(base_url.as_deref())?;
+    let key = Some(key.trim()).filter(|k| !k.is_empty());
+    if provider.key_required() && key.is_none() {
+        return Err("AI key not set".into());
+    }
+    chat(provider, &base, key, model, temperature, &messages).await
+}
+
+/// One chat completion against `provider`, with whichever key the caller holds.
+async fn chat(
+    provider: Provider,
+    base: &str,
+    key: Option<&str>,
+    model: &str,
+    temperature: Option<f32>,
+    messages: &[AiMessage],
+) -> Result<String, String> {
     let temp = temperature.filter(|_| provider != Provider::Anthropic);
 
-    let call = chat_call(provider, &base, key.as_deref(), model, temp, &messages);
+    let call = chat_call(provider, base, key, model, temp, messages);
     let (status, val) = send(&call).await?;
     // Some OpenAI-style models only accept the default temperature: retry once
     // without it instead of failing the user's request.
@@ -461,7 +506,7 @@ pub async fn ai_chat_online(
             .to_lowercase()
             .contains("temperature")
     {
-        let retry = chat_call(provider, &base, key.as_deref(), model, None, &messages);
+        let retry = chat_call(provider, base, key, model, None, messages);
         let (status, val) = send(&retry).await?;
         return parse_chat(provider, status, &val);
     }
@@ -793,6 +838,58 @@ mod tests {
         assert!(req.starts_with("POST /v1/chat/completions"));
         assert!(req.contains(r#""model":"local-model""#));
         assert!(req.contains(r#""temperature""#));
+    }
+
+    #[test]
+    fn testing_a_typed_key_sends_it_and_leaves_the_keychain_alone() {
+        let before = read_key("custom").unwrap();
+        let (base, requests) =
+            mock_server(vec![(200, r#"{"choices":[{"message":{"content":"OK"}}]}"#)]);
+        let reply = tauri::async_runtime::block_on(ai_key_test(
+            "custom".into(),
+            " typed-key ".into(),
+            "local-model".into(),
+            None,
+            user_msg(),
+            Some(base),
+        ))
+        .unwrap();
+        assert_eq!(reply, "OK");
+        let req = requests.recv().unwrap().to_lowercase();
+        assert!(req.contains("authorization: bearer typed-key\r\n"), "{req}");
+        assert_eq!(read_key("custom").unwrap(), before);
+    }
+
+    #[test]
+    fn a_key_that_fails_its_test_reports_the_provider_and_stores_nothing() {
+        let before = read_key("custom").unwrap();
+        let (base, _requests) =
+            mock_server(vec![(401, r#"{"error":{"message":"Incorrect API key"}}"#)]);
+        let err = tauri::async_runtime::block_on(ai_key_test(
+            "custom".into(),
+            "bad-key".into(),
+            "m".into(),
+            None,
+            user_msg(),
+            Some(base),
+        ))
+        .unwrap_err();
+        assert_eq!(err, "Incorrect API key");
+        assert_eq!(read_key("custom").unwrap(), before);
+    }
+
+    #[test]
+    fn testing_a_blank_key_needs_no_network_when_the_provider_requires_one() {
+        let err = tauri::async_runtime::block_on(ai_key_test(
+            "anthropic".into(),
+            "   ".into(),
+            "claude-opus-5-5".into(),
+            None,
+            user_msg(),
+            None,
+        ))
+        .unwrap_err();
+        assert_eq!(err, "AI key not set");
     }
 
     #[test]

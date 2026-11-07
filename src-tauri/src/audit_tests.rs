@@ -1258,6 +1258,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "ai::ai_chat_online",
         "no data change; what the AI drafts is saved by the person (IA-01)",
     ),
+    (
+        "ai::ai_key_test",
+        "no data change; the typed key is used for one call and never stored",
+    ),
     ("ai::ai_list_models", "read"),
     ("oplog::oplog_pending_count", "read"),
     (

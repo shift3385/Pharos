@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CircleCheck,
@@ -6,11 +6,15 @@ import {
   Eye,
   EyeOff,
   Info,
+  LoaderCircle,
   PlugZap,
   RefreshCw,
   Save,
   TriangleAlert,
 } from "lucide-react";
+import { isTauri } from "@shared/platform";
+import { InfoTip } from "@shared/ui/InfoTip";
+import { joinLabels } from "@shared/ui/joinLabels";
 import { useToast } from "@shared/ui/Toast";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
@@ -22,8 +26,11 @@ import {
   aiKeys,
   aiListModels,
   aiStatus,
+  aiTestKey,
   destinationFor,
+  isKeyRejection,
   loadConfig,
+  onlineConfigured,
   resolveProvider,
   saveConfig,
 } from "../api/aiApi";
@@ -38,12 +45,16 @@ import {
   ONLINE_PROVIDERS,
   providerInfo,
   type AiConfig,
+  type AiDestination,
+  type AiMessage,
   type AiMode,
   type AiStatus,
   type OnlineProviderId,
 } from "../model/types";
 import { ProviderLogo } from "./ProviderLogo";
+import { ModelCombobox } from "./ModelCombobox";
 import { ModelParams } from "./ModelParams";
+import { pendingChanges } from "./pendingChanges";
 import "./Ai.css";
 
 const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
@@ -51,7 +62,17 @@ const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
 /** The provider's own message (Rust returns a string; fetch errors an Error). */
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-type TestResult = { ok: true; ms: number } | { ok: false; message: string };
+/** The provider the app really uses (what is saved, not the card being edited). */
+function InUseMark({ label }: { label: string }) {
+  return (
+    <span className="ai-in-use" role="img" aria-label={label} title={label} data-testid="ai-in-use">
+      <CircleCheck size={16} aria-hidden="true" />
+    </span>
+  );
+}
+
+/** `typedKey`: the test used the key in the field, which is still not stored. */
+type TestResult = { ok: true; ms: number; typedKey: boolean } | { ok: false; message: string };
 
 /**
  * Administración → Motor de IA (SPEC §8, ScrAdministracion `tab="ai"`): the
@@ -59,8 +80,10 @@ type TestResult = { ok: true; ms: number } | { ok: false; message: string };
  * table, ADR-0031), the local Ollama model, and where AI is used. Provider,
  * model, parameters, Ollama settings and a typed key are a draft saved with
  * «Guardar» in the tab's save bar (the key goes to the keychain, never to the
- * config). «Guardar clave» stores only the key. Changing provider with a typed
- * key, or leaving the tab with any draft, asks first.
+ * config). «Guardar clave» stores the key and makes its provider the active one
+ * (ADR-0033). «Probar conexión» tries a typed key without storing it, and
+ * replacing a stored key with one that was not tested asks first. Changing
+ * provider with a typed key, or leaving the tab with any draft, asks first.
  */
 export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
   const { t } = useTranslation();
@@ -69,30 +92,81 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   const [saved, setSaved] = useState<AiConfig>(loadConfig);
   const [draft, setDraft] = useState<AiConfig>(saved);
   const [status, setStatus] = useState<AiStatus | null>(null);
+  // Whether the provider on screen has its key (`status` also waits for Ollama).
+  const [keyCheck, setKeyCheck] = useState<{ provider: OnlineProviderId; set: boolean } | null>(null);
+  const statusRun = useRef(0);
+  // What the app really uses: the saved config, never the draft on screen.
+  const [inUse, setInUse] = useState<AiDestination | null>(null);
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [pull, setPull] = useState<DownloadView | null>(getDownloadState().view);
   const [testing, setTesting] = useState(false);
   const [test, setTest] = useState<TestResult | null>(null);
+  // Bumped whenever what is under test changes, so a late answer is dropped.
+  const testRun = useRef(0);
   const [models, setModels] = useState<string[]>([]);
+  const [modelListOpen, setModelListOpen] = useState(false);
   const [listing, setListing] = useState(false);
 
   const configDirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const keyTyped = keyInput.trim() !== "";
+  // Keys live in the OS keychain: the web can only test them, never store them.
+  const canStoreKey = isTauri();
   // A key typed but not stored is unsaved work too.
-  const keyDirty = keyInput.trim() !== "";
+  const keyDirty = canStoreKey && keyTyped;
   const dirty = configDirty || keyDirty;
   const provider = draft.onlineProvider;
+  // The save bar says what is pending, so nobody has to guess what «Guardar» does.
+  const pendingLabels = pendingChanges(draft, saved, keyDirty).map((id) =>
+    id === "provider" ? t("ai.pending.provider", { provider: t(`ai.provenance.provider.${provider}`) }) : t(`ai.pending.${id}`),
+  );
+  const pendingText = joinLabels(pendingLabels, t("common.and"));
   const info = providerInfo(provider);
   const model = draft.onlineModels[provider];
   const caps = capabilitiesFor(provider, model);
   const providerLabel = (id: OnlineProviderId | "ollama") => t(`ai.provenance.provider.${id}`);
+
+  // A provider without its key cannot become the active one: the app would be
+  // left without AI (ADR-0033). While its key is being checked, saving waits too.
+  const needsKeyCheck = provider !== saved.onlineProvider && info.keyRequired && !keyDirty;
+  const keyMissing = needsKeyCheck && keyCheck?.provider === provider && !keyCheck.set;
+  const saveBlocked = needsKeyCheck && !(keyCheck?.provider === provider && keyCheck.set);
+  const keyMissingText = canStoreKey
+    ? t("ai.pending.needsKey", { provider: providerLabel(provider) })
+    : t("ai.keyWebHint");
 
   // «Compatible» cannot work without its URL: saving explains that instead.
   const baseUrlIssue = provider === "custom" ? required(draft.customBaseUrl) : null;
   const { guard, showSummary, summaryRef, attempted } = useSaveGuard(baseUrlIssue !== null);
 
   async function refreshStatus(cfg = draft) {
-    setStatus(await aiStatus(cfg));
+    const run = ++statusRun.current;
+    // The key first: the keychain answers at once, Ollama may take seconds.
+    const keySet = await onlineConfigured(cfg);
+    if (run !== statusRun.current) return; // Another provider was chosen meanwhile.
+    setKeyCheck({ provider: cfg.onlineProvider, set: keySet });
+    const next = await aiStatus(cfg);
+    if (run !== statusRun.current) return;
+    setStatus(next);
+    setKeyCheck({ provider: cfg.onlineProvider, set: next.onlineKeySet });
+    const live = loadConfig();
+    const liveStatus = JSON.stringify(cfg) === JSON.stringify(live) ? next : await aiStatus(live);
+    if (run !== statusRun.current) return;
+    setInUse(destinationFor(resolveProvider(live, liveStatus), live));
+  }
+
+  function resetTest() {
+    testRun.current += 1;
+    setTesting(false);
+    setTest(null);
+  }
+
+  /** Replacing a stored key cannot be undone: only a key that just answered
+   *  goes through without asking. */
+  async function confirmReplaceKey() {
+    if (test?.ok && test.typedKey) return true;
+    const stored = await aiKeys.status(provider).catch(() => false);
+    return !stored || window.confirm(t("ai.keyReplaceConfirm", { provider: providerLabel(provider) }));
   }
 
   useEffect(() => {
@@ -117,7 +191,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
 
   function update(patch: Partial<AiConfig>) {
     setDraft((d) => ({ ...d, ...patch }));
-    setTest(null);
+    resetTest();
   }
 
   async function selectProvider(id: OnlineProviderId) {
@@ -128,12 +202,14 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     setDraft(next);
     setKeyInput("");
     setModels([]);
-    setTest(null);
+    setModelListOpen(false);
+    resetTest();
     await refreshStatus(next);
   }
 
   async function save() {
     if (keyDirty) {
+      if (!(await confirmReplaceKey())) return;
       await aiKeys.set(provider, keyInput.trim());
       setKeyInput("");
       setShowKey(false);
@@ -142,21 +218,36 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     const fresh = loadConfig();
     setSaved(fresh);
     setDraft(fresh);
-    toast(keyDirty ? t("ai.savedWithKey") : t("ai.saved"));
+    resetTest();
+    toast(t("admin.savedWhat", { changes: pendingText }));
     await refreshStatus(fresh);
   }
 
+  /** Stores the key and makes its provider the active one: a key saved for a
+   *  provider that stays inactive leaves the app asking for one (ADR-0033).
+   *  The rest of the draft (model, parameters) still waits for «Guardar». */
   async function saveKey() {
-    if (!keyInput.trim()) return;
+    if (!keyDirty) return;
+    if (!(await confirmReplaceKey())) return;
     await aiKeys.set(provider, keyInput.trim());
+    const becameActive = saved.onlineProvider !== provider;
+    saveConfig({
+      ...saved,
+      onlineProvider: provider,
+      // «Compatible» cannot be the active provider without its URL.
+      customBaseUrl: provider === "custom" ? draft.customBaseUrl : saved.customBaseUrl,
+    });
+    setSaved(loadConfig());
     setKeyInput("");
     setShowKey(false);
-    toast(t("ai.keySaved"));
+    resetTest();
+    toast(becameActive ? t("ai.keySavedActive", { provider: providerLabel(provider) }) : t("ai.keySaved"));
     await refreshStatus();
   }
 
   async function clearKey() {
     await aiKeys.clear(provider);
+    resetTest();
     toast(t("ai.keyCleared"));
     await refreshStatus();
   }
@@ -166,6 +257,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     try {
       const found = await aiListModels(provider, draft.customBaseUrl);
       setModels(found);
+      setModelListOpen(found.length > 0);
       toast(found.length ? t("ai.modelsFound", { count: found.length }) : t("ai.modelsNone"));
     } catch (e) {
       toast(t("ai.modelsFailed", { error: errorText(e) }));
@@ -182,33 +274,50 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
     await refreshStatus();
   }
 
-  /** Tests the saved configuration (what the app uses) and times the reply. */
+  /** Times a reply. With a typed key, tries that key with the form on screen and
+   *  stores nothing; otherwise tests the saved configuration (what the app uses). */
   async function testConnection() {
+    resetTest();
+    const run = testRun.current;
+    const typedKey = keyInput.trim();
     setTesting(true);
-    setTest(null);
     const start = performance.now();
+    const messages: AiMessage[] = [{ role: "user", content: t("ai.testPrompt") }];
+    let result: TestResult;
     try {
-      const reply = await aiChat([{ role: "user", content: t("ai.testPrompt") }]);
-      setTest(
-        reply.trim()
-          ? { ok: true, ms: Math.round(performance.now() - start) }
-          : { ok: false, message: t("ai.testEmpty") },
-      );
+      const reply = typedKey ? await aiTestKey(draft, typedKey, messages) : await aiChat(messages);
+      result = reply.trim()
+        ? { ok: true, ms: Math.round(performance.now() - start), typedKey: typedKey !== "" }
+        : { ok: false, message: t("ai.testEmpty") };
     } catch (e) {
-      setTest({
+      const error = errorText(e);
+      result = {
         ok: false,
         message:
-          e instanceof Error && e.message === "no-provider"
-            ? t("ai.testNoProvider")
-            : t("ai.testFailedWith", { error: errorText(e) }),
-      });
-    } finally {
-      setTesting(false);
+          error === "no-provider"
+            ? draft.mode !== "offline" && status && !status.onlineKeySet
+              ? t("ai.testNoKey", { provider: providerLabel(provider) })
+              : t("ai.testNoProvider")
+            : t(isKeyRejection(error) ? "ai.testKeyRejected" : "ai.testFailedWith", { error }),
+      };
     }
+    if (run !== testRun.current) return; // The key or the form changed meanwhile.
+    setTest(result);
+    setTesting(false);
   }
 
-  const resolved = status ? resolveProvider(draft, status) : null;
-  const destination = destinationFor(resolved, draft);
+  // Why the test cannot run now, said on screen and not only in a tooltip.
+  const testBlock = keyTyped
+    ? baseUrlIssue
+      ? t("ai.testNeedsUrl")
+      : !model.trim()
+        ? t(canStoreKey ? "ai.testNeedsModel" : "ai.testNeedsModelWeb")
+        : null
+    : keyMissing
+      ? t("ai.testNoKey", { provider: providerLabel(provider) })
+      : configDirty
+        ? t("ai.testSaveFirst")
+        : null;
   const modes: AiMode[] = ["auto", "online", "offline"];
   const onlineState = !status
     ? null
@@ -238,12 +347,6 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
           onChange={(mode) => update({ mode })}
           options={modes.map((m) => ({ value: m, label: t(`ai.modeOption.${m}`) }))}
         />
-        <span className="ai-tab__using">
-          {t("ai.using")}:{" "}
-          <strong>
-            {destination ? `${providerLabel(destination.provider)} · ${destination.model}` : t("ai.provider.none")}
-          </strong>
-        </span>
       </div>
 
       <div className="ai-tab__grid">
@@ -253,7 +356,6 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               <h2 id={`${uid}-online`} className="t-card-title">
                 {t("ai.online.title")}
               </h2>
-              <p className="adm-hint">{t("ai.online.desc")}</p>
             </div>
             {onlineState && (
               <StatusPill
@@ -267,36 +369,40 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
 
           <div className="ai-providers" role="radiogroup" aria-label={t("ai.onlineProvider")}>
             {ONLINE_PROVIDERS.map((p) => (
-              <label key={p.id} className="ai-provider" data-testid={`ai-provider-${p.id}`}>
-                <input
-                  type="radio"
-                  name={`${uid}-provider`}
-                  value={p.id}
-                  checked={provider === p.id}
-                  onChange={() => void selectProvider(p.id)}
-                />
-                <span className="ai-provider__box">
-                  <span className="ai-provider__logo">
-                    <ProviderLogo provider={p.id} />
+              <div key={p.id} className="ai-provider-cell">
+                <label className="ai-provider" data-testid={`ai-provider-${p.id}`}>
+                  <input
+                    type="radio"
+                    name={`${uid}-provider`}
+                    value={p.id}
+                    checked={provider === p.id}
+                    aria-describedby={`${uid}-help-${p.id}`}
+                    onChange={() => void selectProvider(p.id)}
+                  />
+                  <span className="ai-provider__box">
+                    <span className="ai-provider__logo">
+                      <ProviderLogo provider={p.id} />
+                    </span>
+                    <span className="ai-provider__text">
+                      <span className="ai-provider__name">{p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}</span>
+                      <span className="ai-provider__sub">{t(`ai.providerSub.${p.id}`)}</span>
+                    </span>
+                    {inUse?.provider === p.id && <InUseMark label={t("ai.using")} />}
                   </span>
-                  <span className="ai-provider__text">
-                    <span className="ai-provider__name">{p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}</span>
-                    <span className="ai-provider__sub">{t(`ai.providerSub.${p.id}`)}</span>
-                  </span>
-                </span>
-              </label>
+                </label>
+                {/* Beside the label, not inside it: asking for help does not choose the provider. */}
+                <InfoTip id={`${uid}-help-${p.id}`} label={p.id === "custom" ? t("ai.providerCompat") : providerLabel(p.id)}>
+                  {t(`ai.providerHint.${p.id}`)}
+                  {p.keyUrl && (
+                    <>
+                      {" "}
+                      {t("ai.keyWhere")} <span className="t-id">{p.keyUrl}</span>
+                    </>
+                  )}
+                </InfoTip>
+              </div>
             ))}
           </div>
-          <p className="adm-hint">
-            {t(`ai.providerHint.${provider}`)}
-            {info.keyUrl && (
-              <>
-                {" "}
-                {t("ai.keyWhere")} <span className="t-id">{info.keyUrl}</span>
-              </>
-            )}
-          </p>
-
           {provider === "custom" && (
             <div className="adm-field">
               <label htmlFor="ai-base-url" className="adm-label">
@@ -345,7 +451,10 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                       : t("ai.keyPlaceholder", { provider: providerLabel(provider) })
                   }
                   value={keyInput}
-                  onChange={(e) => setKeyInput(e.target.value)}
+                  onChange={(e) => {
+                    setKeyInput(e.target.value);
+                    resetTest();
+                  }}
                 />
                 <button
                   type="button"
@@ -361,8 +470,9 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               <button
                 type="button"
                 className="adm-btn adm-btn--secondary"
-                onClick={() => void saveKey()}
-                disabled={!keyInput.trim()}
+                onClick={() => guard(() => void saveKey())}
+                disabled={!keyDirty}
+                title={canStoreKey ? undefined : t("ai.keyWebHint")}
               >
                 {t("ai.saveKey")}
               </button>
@@ -373,7 +483,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               )}
             </div>
             <span id="ai-key-hint" className="adm-hint">
-              {t("ai.keyHint")}
+              {canStoreKey ? t("ai.keyHint") : t("ai.keyWebHint")}
             </span>
           </div>
 
@@ -382,32 +492,25 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               {t("ai.model")}
             </label>
             <div className="adm-inline">
-              <input
+              <ModelCombobox
                 id="ai-online-model"
-                className="adm-input"
-                list="ai-online-models"
-                spellCheck={false}
                 placeholder={t("ai.modelPlaceholder")}
                 value={model}
-                onChange={(e) =>
-                  update({ onlineModels: { ...draft.onlineModels, [provider]: e.target.value } })
-                }
+                onChange={(value) => update({ onlineModels: { ...draft.onlineModels, [provider]: value } })}
+                options={models}
+                open={modelListOpen}
+                onOpenChange={setModelListOpen}
               />
               <button
                 type="button"
                 className="adm-btn adm-btn--secondary"
                 onClick={() => void listModels()}
                 disabled={listing || !status?.onlineKeySet}
-                title={!status?.onlineKeySet ? t("ai.listModelsNeedsKey") : undefined}
+                title={!status?.onlineKeySet ? t(canStoreKey ? "ai.listModelsNeedsKey" : "ai.listModelsDesktopOnly") : undefined}
               >
                 {listing ? t("ai.listingModels") : t("ai.listModels")}
               </button>
             </div>
-            <datalist id="ai-online-models">
-              {models.map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
           </div>
 
           <ModelParams
@@ -430,10 +533,15 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
               type="button"
               className="adm-btn adm-btn--secondary"
               onClick={() => void testConnection()}
-              disabled={testing || dirty}
-              title={dirty ? t("ai.testSaveFirst") : undefined}
+              disabled={testing || testBlock !== null}
+              title={testBlock ?? undefined}
+              aria-busy={testing}
             >
-              <PlugZap size={16} aria-hidden="true" />
+              {testing ? (
+                <LoaderCircle size={16} className="ai-spin" aria-hidden="true" />
+              ) : (
+                <PlugZap size={16} aria-hidden="true" />
+              )}
               {testing ? t("ai.testing") : t("ai.test")}
             </button>
             <span className="ai-test" role="status">
@@ -444,6 +552,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                 </span>
               )}
               {test && !test.ok && <span className="ai-test__err">{test.message}</span>}
+              {!test && !testing && testBlock && <span className="adm-hint">{testBlock}</span>}
             </span>
           </div>
         </section>
@@ -455,6 +564,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
                 <h2 id={`${uid}-ollama`} className="t-card-title ai-ollama__title">
                   <ProviderLogo provider="ollama" size={18} />
                   Ollama
+                  {inUse?.provider === "ollama" && <InUseMark label={t("ai.using")} />}
                 </h2>
                 <p className="adm-hint">{t("ai.ollama.desc")}</p>
               </div>
@@ -561,15 +671,19 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
       {/* One save for the whole tab, always in view (SPEC §8). */}
       <div className="adm-savebar" data-dirty={dirty || undefined}>
         <span className="adm-savebar__state" role="status">
-          {dirty ? t("admin.unsaved") : ""}
+          {keyMissing
+            ? keyMissingText
+            : dirty
+              ? t("ai.pending.message", { changes: pendingText })
+              : t("ai.pending.none")}
         </span>
         <button
           type="button"
           className="adm-btn adm-btn--primary"
           data-testid="ai-save"
           onClick={() => guard(() => void save())}
-          disabled={!dirty}
-          title={dirty ? undefined : t("admin.nothingToSave")}
+          disabled={!dirty || saveBlocked}
+          title={keyMissing ? keyMissingText : dirty ? undefined : t("admin.nothingToSave")}
         >
           <Save size={16} aria-hidden="true" />
           {t("ai.save")}
