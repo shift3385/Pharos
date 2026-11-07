@@ -55,7 +55,9 @@ resolution can be added without a schema change.
   while the app goes back to the sign-in screen; pending changes stay in the
   oplog. If the server cannot be asked right now, the sync fails with that
   error, the session is kept and the next sync tries again. A 401 on the
-  repeated request also stops the sync.
+  repeated request also stops the sync. The automatic sync at startup can leave
+  with an expired token, because the app enters with the cached session before
+  validating it; it shares the startup's renewal, so one refresh token is spent.
 - **Project deletes (FIX-05).** The server tombstones a deleted project's plans,
   cases, requirements and cards, so every client receives them as normal
   deletes. A device with a pending edit of one of them gets a conflict. If the
