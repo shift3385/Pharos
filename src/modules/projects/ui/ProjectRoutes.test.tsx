@@ -158,3 +158,24 @@ describe("project routes (ADR-0029)", () => {
     expect(screen.queryByDisplayValue("Proyecto A")).not.toBeInTheDocument();
   });
 });
+
+describe("project detail when the project fails to load", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("es");
+    vi.mocked(projectApi.get).mockImplementation(async (id: string) =>
+      id in PROJECTS ? ({ ...PROJECTS[id as "a" | "b"] } as never) : null,
+    );
+  });
+
+  it("shows the error instead of «Cargando…», stays on the URL, and «Reintentar» opens it", async () => {
+    vi.mocked(projectApi.get).mockRejectedValueOnce(new Error("down"));
+    renderAt("/projects/a/plan");
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar el proyecto.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+    expect(where()).toBe("/projects/a/plan");
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("sección plan")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});

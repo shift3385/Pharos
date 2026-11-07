@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router";
 import { ArrowLeftRight, Download, Plus, Upload } from "lucide-react";
 import { aiAvailable } from "@modules/ai";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
+import { LoadError } from "@shared/ui/LoadError";
 import { configurationApi, cycleApi } from "@modules/cycles";
 import { projectDefects } from "@modules/defects";
 import { executionApi, type ExecutionSummary } from "@modules/runs";
@@ -90,6 +92,7 @@ export function TraceabilityPage({
   const toast = useToast();
   const [view, setView] = useState<View>("matrix");
   const [data, setData] = useState<Data | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [aiReady, setAiReady] = useState(false);
   const [editing, setEditing] = useState<Requirement | "new" | null>(null);
   const [deleting, setDeleting] = useState<Requirement | null>(null);
@@ -147,23 +150,33 @@ export function TraceabilityPage({
 
   async function refresh() {
     void refreshExecution();
-    const [requirements, cases, defects] = await Promise.all([
-      requirementApi.list(projectId, userId),
-      projectTraceableCases(projectId, userId),
-      projectDefects(projectId, userId),
-    ]);
-    setData({
-      requirements: requirements.sort(byKey),
-      cases,
-      defects: defects.map((d) => ({
-        id: d.id,
-        defectKey: d.defectKey,
-        title: d.title,
-        status: d.status,
-        severity: d.severity,
-        testCaseIds: d.caseIds,
-      })),
-    });
+    try {
+      const [requirements, cases, defects] = await Promise.all([
+        requirementApi.list(projectId, userId),
+        projectTraceableCases(projectId, userId),
+        projectDefects(projectId, userId),
+      ]);
+      setData({
+        requirements: requirements.sort(byKey),
+        cases,
+        defects: defects.map((d) => ({
+          id: d.id,
+          defectKey: d.defectKey,
+          title: d.title,
+          status: d.status,
+          severity: d.severity,
+          testCaseIds: d.caseIds,
+        })),
+      });
+      setLoadFailed(false);
+    } catch (e) {
+      logClientError(e, "traceability");
+      setLoadFailed(true);
+    }
+  }
+  function retryLoad() {
+    setLoadFailed(false);
+    void refresh();
   }
   useEffect(() => {
     void refresh();
@@ -324,8 +337,9 @@ export function TraceabilityPage({
         className="tz-views"
       />
 
+      {loadFailed && <LoadError message={t("traceability.loadFailed")} onRetry={retryLoad} />}
       {!data || !matrix ? (
-        <p className="tr__muted">{t("common.loading")}</p>
+        !loadFailed && <p className="tr__muted">{t("common.loading")}</p>
       ) : view === "requirements" ? (
         <RequirementsPanel
           requirements={data.requirements}

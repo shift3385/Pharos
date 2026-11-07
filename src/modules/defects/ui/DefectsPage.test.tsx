@@ -285,3 +285,29 @@ describe("DefectEditor", () => {
     );
   });
 });
+
+describe("Defectos when the list fails to load", () => {
+  it("shows the error, not an empty list, and «Reintentar» loads them", async () => {
+    setViewportWidth(1440);
+    list.mockRejectedValueOnce(new Error("down"));
+    renderWithProviders(<DefectsPage projectId="p1" userId="u1" cases={cases} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudieron cargar los defectos.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t("defects.empty"))).not.toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("table", { name: "Defectos" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("a failed reload keeps the list on screen and adds the error", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<DefectsPage projectId="p1" userId="u1" cases={cases} />);
+    await screen.findByRole("table", { name: "Defectos" });
+    list.mockRejectedValueOnce(new Error("down"));
+    window.dispatchEvent(new CustomEvent("pharos:synced"));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Defectos" })).toBeInTheDocument();
+  });
+});
