@@ -31,6 +31,7 @@
     "discardConfirm": "You have unsaved changes. Discard them?",
     "close": "Close",
     "remove": "Remove",
+    "and": "and",
     "moreInfo": "More information: {{label}}",
     "moreInfoPlain": "More information",
     "status": {
@@ -89,9 +90,6 @@
       "offline": "Local only"
     },
     "using": "Using",
-    "provider": {
-      "none": "None"
-    },
     "onlineProvider": "Provider",
     "providerHint": {
       "gemini": "Google's Gemini models.",
@@ -131,7 +129,7 @@
     "testFailedWith": "AI connection failed: {{error}}",
     "neverBlocks": "Missing AI never blocks the app: assist buttons are disabled with a notice.",
     "assist": {
-      "button": "✨ Assist with AI",
+      "button": "Assist with AI",
       "drafting": "Drafting…",
       "previewTitle": "AI draft",
       "use": "Use",
@@ -159,7 +157,6 @@
       "pending": "AI · pending review",
       "short": "AI · not reviewed",
       "markReviewed": "Mark reviewed",
-      "destination": "Will be sent to {{source}}",
       "provider": {
         "gemini": "Gemini",
         "openai": "OpenAI",
@@ -170,11 +167,9 @@
       }
     },
     "save": "Save",
-    "saved": "AI settings saved",
     "retry": "Retry",
     "online": {
       "title": "Online provider",
-      "desc": "Used when there is a connection.",
       "state": {
         "connected": "Connected",
         "offline": "Offline",
@@ -240,7 +235,30 @@
     },
     "providerCompat": "Compatible",
     "keyDiscardConfirm": "You typed a key that is not saved. Switching provider discards it. Continue?",
-    "savedWithKey": "AI settings and key saved"
+    "keySavedActive": "Key saved to the keychain. {{provider}} is now the active provider",
+    "keyReplaceConfirm": "A key is already saved for {{provider}}. If you replace it, Pharos cannot recover it. “Test connection” checks the new one without replacing anything. Replace it?",
+    "pending": {
+      "none": "No changes",
+      "needsKey": "To use {{provider}}, paste its API key.",
+      "message": "To save: {{changes}}. Press “Save” to apply the changes.",
+      "mode": "usage mode",
+      "provider": "provider ({{provider}})",
+      "baseUrl": "base URL",
+      "key": "key",
+      "model": "model",
+      "temperature": "temperature",
+      "ollama": "Ollama settings"
+    },
+    "keyWebHint":"“Save key” is only available in the desktop app.",
+    "listModelsDesktopOnly": "“List models” is only available in the desktop app.",
+    "modelsShow": "Show the models",
+    "modelsHide": "Hide the models",
+    "modelsNoMatch": "No model matches. You can use what you typed.",
+    "testKeyRejected": "The provider rejected the key: {{error}}",
+    "testNoKey": "The {{provider}} key is missing: enter it above to test it.",
+    "testNeedsUrl": "Enter the base URL to test the key.",
+    "testNeedsModelWeb": "Enter a model to test the key.",
+    "testNeedsModel": "Enter a model to test the key. To list them, save the key first."
   },
   "sync": {
     "synced": "Synced",
@@ -351,8 +369,12 @@
       "background": "Custom background",
       "bgChoose": "Choose image…",
       "bgClear": "Remove",
+      "bgDefault": "Use the default",
+      "cardShadow": "Card shadow",
+      "cardShadowHint": "A light shadow that sets the cards apart from the background.",
+      "downloadSaved": "Download folder saved: {{path}}",
       "opacity": "Background opacity",
-      "opacityHint": "Lower = more transparent. Affects only the background, not the content.",
+      "opacityHint": "Lower = more transparent. Affects only the background, not the content. The change shows right away; it stays when you press “Save settings”.",
       "retention": "Retention of deleted items (days)",
       "retentionHint": "What you delete is removed for good from this device after this many days. A deletion not yet synced waits for the next sync. The server has its own period and keeps a marker of what was deleted.",
       "download": "Download folder",
@@ -403,7 +425,15 @@
       "language": "Language",
       "storage": "Files and storage",
       "storageDesc": "Where exports are saved and how long deleted items are kept.",
-      "appliedNow": "Theme and language apply right away."
+      "appliedNow": "No changes. Theme, language and download folder are saved right away.",
+      "folderSaved": "Download folder saved.",
+      "pending": {
+        "message": "To save: {{changes}}. Press “Save settings” to apply the changes.",
+        "background": "background",
+        "opacity": "opacity",
+        "cardShadow": "card shadow",
+        "retention": "retention"
+      }
     },
     "trash": {
       "title": "Trash",
@@ -426,8 +456,8 @@
       "now": "Sync now",
       "syncing": "Syncing…"
     },
-    "unsaved": "Unsaved changes",
     "nothingToSave": "There are no changes to save.",
+    "savedWhat": "Saved: {{changes}}",
     "evidence": {
       "desktopOnly": "Evidence is stored encrypted on this device: its usage and verification are only in the desktop app.",
       "usage": {
@@ -474,7 +504,9 @@
         "daysLabel": "Retention days of {{kind}}",
         "exceptions": "Never expires",
         "exceptionsText": "The evidence of manual execution, of a final failed or blocked result, and of a result linked to an open defect. Planner, defect and draft attachments never expire either.",
-        "saved": "Retention saved on this device.",
+        "savedWhat": "Retention saved on this device: {{changes}}.",
+        "pending": "To save: {{changes}}. Press “Save” to apply the changes.",
+        "noChanges": "No changes",
         "failed": "The retention could not be read or saved.",
         "kinds": {
           "trace": "Traces",
@@ -836,7 +868,10 @@
     "environmentRequirements": "Hardware and software requirements",
     "tools": "Tools",
     "automationStrategy": "Automation strategy",
-    "suggestRisks": "✨ Suggest risks with AI",
+    "suggestRisks": "Suggest risks with AI",
+    "suggestClosure": "Suggest criteria with AI",
+    "suggestResponsibilities": "Suggest responsibilities with AI",
+    "suggestResponsibilitiesNone": "Enter a role without a responsibility to ask for a suggestion.",
     "testDataManagement": "Test data management",
     "defectManagement": "Defect management",
     "roleCol": "Role",
@@ -850,7 +885,6 @@
     "communicationPlan": "Communication plan",
     "criterionCol": "Criterion",
     "metricCol": "Metric",
-    "purposeHint": "A future version will generate this automatically with AI.",
     "addItem": "Add",
     "removeItem": "Remove",
     "addRow": "Add row",
@@ -979,8 +1013,8 @@
       "risks": "Risks that can affect testing and how they are mitigated.",
       "communication": "How and when progress is reported.",
       "closure": "Conditions to meet before closing the cycle.",
-      "purpose": "The overall goal of the test plan.",
-      "conclusion": "Closing words before exporting or approving."
+      "purpose": "The test objectives the plan pursues and what it is for.",
+      "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision."
     },
     "nav": {
       "label": "Plan steps",
@@ -1147,7 +1181,7 @@
       "button": "Import .xlsx",
       "title": "Import case from .xlsx"
     },
-    "suggestPreconditions": "✨ Suggest preconditions",
+    "suggestPreconditions": "Suggest preconditions",
     "suggest": {
       "button": "✨ Suggest tests",
       "disabled": "You need AI configured and a plan in the project",

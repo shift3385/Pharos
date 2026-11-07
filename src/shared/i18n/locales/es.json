@@ -31,6 +31,7 @@
     "discardConfirm": "Tienes cambios sin guardar. ¿Descartarlos?",
     "close": "Cerrar",
     "remove": "Quitar",
+    "and": "y",
     "moreInfo": "Más información: {{label}}",
     "moreInfoPlain": "Más información",
     "status": {
@@ -89,9 +90,6 @@
       "offline": "Solo local"
     },
     "using": "En uso",
-    "provider": {
-      "none": "Ninguno"
-    },
     "onlineProvider": "Proveedor",
     "providerHint": {
       "gemini": "Modelos Gemini de Google.",
@@ -131,7 +129,7 @@
     "testFailedWith": "Falló la conexión con la IA: {{error}}",
     "neverBlocks": "La ausencia de IA nunca bloquea la app: los botones de asistencia se deshabilitan con aviso.",
     "assist": {
-      "button": "✨ Asistir con IA",
+      "button": "Asistir con IA",
       "drafting": "Redactando…",
       "previewTitle": "Borrador de la IA",
       "use": "Usar",
@@ -159,7 +157,6 @@
       "pending": "IA · pendiente de revisión",
       "short": "IA · sin revisar",
       "markReviewed": "Marcar revisado",
-      "destination": "Se enviará a {{source}}",
       "provider": {
         "gemini": "Gemini",
         "openai": "OpenAI",
@@ -170,11 +167,9 @@
       }
     },
     "save": "Guardar",
-    "saved": "Ajustes de IA guardados",
     "retry": "Reintentar",
     "online": {
       "title": "Proveedor online",
-      "desc": "Se usa cuando hay conexión.",
       "state": {
         "connected": "Conectado",
         "offline": "Sin conexión",
@@ -240,7 +235,30 @@
     },
     "providerCompat": "Compatible",
     "keyDiscardConfirm": "Tienes una clave escrita sin guardar. Si cambias de proveedor, se descarta. ¿Continuar?",
-    "savedWithKey": "Ajustes de IA y clave guardados"
+    "keySavedActive": "Clave guardada en el keychain. {{provider}} es ahora el proveedor activo",
+    "keyReplaceConfirm": "Ya hay una clave guardada para {{provider}}. Si la reemplazas, Pharos no podrá recuperarla. «Probar conexión» comprueba la nueva sin reemplazar nada. ¿Reemplazarla?",
+    "pending": {
+      "none": "Sin cambios",
+      "needsKey": "Para usar {{provider}}, pega su clave de API.",
+      "message": "Por guardar: {{changes}}. Pulsa «Guardar» para aplicar los cambios.",
+      "mode": "modo de uso",
+      "provider": "proveedor ({{provider}})",
+      "baseUrl": "URL base",
+      "key": "clave",
+      "model": "modelo",
+      "temperature": "temperatura",
+      "ollama": "ajustes de Ollama"
+    },
+    "keyWebHint":"«Guardar clave» solo está disponible en la app de escritorio.",
+    "listModelsDesktopOnly": "«Listar modelos» solo está disponible en la app de escritorio.",
+    "modelsShow": "Ver los modelos",
+    "modelsHide": "Ocultar los modelos",
+    "modelsNoMatch": "Ningún modelo coincide. Puedes usar lo que has escrito.",
+    "testKeyRejected": "El proveedor rechazó la clave: {{error}}",
+    "testNoKey": "Falta la clave de {{provider}}: escríbela arriba para probarla.",
+    "testNeedsUrl": "Escribe la URL base para probar la clave.",
+    "testNeedsModelWeb": "Escribe un modelo para probar la clave.",
+    "testNeedsModel": "Escribe un modelo para probar la clave. Para listarlos, guarda primero la clave."
   },
   "sync": {
     "synced": "Sincronizado",
@@ -351,8 +369,12 @@
       "background": "Fondo personalizado",
       "bgChoose": "Elegir imagen…",
       "bgClear": "Quitar",
+      "bgDefault": "Usar el predeterminado",
+      "downloadSaved": "Carpeta de descarga guardada: {{path}}",
       "opacity": "Opacidad del fondo",
-      "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido.",
+      "opacityHint": "Más bajo = más transparente. Solo afecta al fondo, no al contenido. El cambio se ve al momento; se conserva al pulsar «Guardar ajustes».",
+      "cardShadow": "Sombra en las tarjetas",
+      "cardShadowHint": "Una sombra ligera que separa las tarjetas del fondo.",
       "retention": "Retención de elementos borrados (días)",
       "retentionHint": "Lo que borras se elimina definitivamente de este equipo tras estos días. Un borrado aún sin sincronizar espera al siguiente sync. El servidor tiene su propio plazo y conserva una marca de lo borrado.",
       "download": "Carpeta de descarga",
@@ -403,7 +425,15 @@
       "language": "Idioma",
       "storage": "Archivos y almacenamiento",
       "storageDesc": "Dónde se guardan las exportaciones y cuánto se conserva lo borrado.",
-      "appliedNow": "El tema y el idioma se aplican al momento."
+      "appliedNow": "Sin cambios. El tema, el idioma y la carpeta de descarga se guardan al momento.",
+      "folderSaved": "Carpeta de descarga guardada.",
+      "pending": {
+        "message": "Por guardar: {{changes}}. Pulsa «Guardar ajustes» para aplicar los cambios.",
+        "background": "fondo",
+        "opacity": "opacidad",
+        "cardShadow": "sombra en las tarjetas",
+        "retention": "retención"
+      }
     },
     "trash": {
       "title": "Papelera",
@@ -426,8 +456,8 @@
       "now": "Sincronizar ahora",
       "syncing": "Sincronizando…"
     },
-    "unsaved": "Cambios sin guardar",
     "nothingToSave": "No hay cambios que guardar.",
+    "savedWhat": "Guardado: {{changes}}",
     "evidence": {
       "desktopOnly": "Las evidencias se guardan cifradas en este equipo: su uso y su verificación solo están en la app de escritorio.",
       "usage": {
@@ -474,7 +504,9 @@
         "daysLabel": "Días de retención de {{kind}}",
         "exceptions": "Nunca caduca",
         "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del planificador, de los defectos ni de los borradores.",
-        "saved": "Retención guardada en este equipo.",
+        "savedWhat": "Retención guardada en este equipo: {{changes}}.",
+        "pending": "Por guardar: {{changes}}. Pulsa «Guardar» para aplicar los cambios.",
+        "noChanges": "Sin cambios",
         "failed": "No se pudo leer o guardar la retención.",
         "kinds": {
           "trace": "Trazas",
@@ -836,7 +868,10 @@
     "environmentRequirements": "Requisitos de hardware y software",
     "tools": "Herramientas",
     "automationStrategy": "Estrategia de automatización",
-    "suggestRisks": "✨ Sugerir riesgos con IA",
+    "suggestRisks": "Sugerir riesgos con IA",
+    "suggestClosure": "Sugerir criterios con IA",
+    "suggestResponsibilities": "Sugerir responsabilidades con IA",
+    "suggestResponsibilitiesNone": "Escribe un rol sin responsabilidad para pedir una sugerencia.",
     "testDataManagement": "Gestión de datos de prueba",
     "defectManagement": "Gestión de defectos",
     "roleCol": "Rol",
@@ -850,7 +885,6 @@
     "communicationPlan": "Plan de comunicación",
     "criterionCol": "Criterio",
     "metricCol": "Métrica",
-    "purposeHint": "En una versión futura se generará automáticamente con IA.",
     "addItem": "Añadir",
     "removeItem": "Quitar",
     "addRow": "Añadir fila",
@@ -979,8 +1013,8 @@
       "risks": "Riesgos que pueden afectar a las pruebas y cómo se mitigan.",
       "communication": "Cómo y cuándo se informa del avance.",
       "closure": "Condiciones que deben cumplirse para cerrar el ciclo.",
-      "purpose": "Objetivo general del plan de pruebas.",
-      "conclusion": "Cierre del documento antes de exportar o aprobar."
+      "purpose": "Objetivos de prueba que persigue el plan y para qué sirve.",
+      "conclusion": "Valoración frente a objetivos y criterios de salida, riesgos abiertos y decisión."
     },
     "nav": {
       "label": "Pasos del plan",
@@ -1147,7 +1181,7 @@
       "button": "Importar .xlsx",
       "title": "Importar caso desde .xlsx"
     },
-    "suggestPreconditions": "✨ Sugerir precondiciones",
+    "suggestPreconditions": "Sugerir precondiciones",
     "suggest": {
       "button": "✨ Sugerir pruebas",
       "disabled": "Necesitas IA configurada y un plan en el proyecto",
