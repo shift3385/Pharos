@@ -39,6 +39,19 @@ describe("AssistButton", () => {
     expect(button).toHaveAttribute("title", i18n.t("ai.assist.unavailable"));
   });
 
+  it("can name its field and show what the draft replaces (IA-16)", async () => {
+    api.draft.mockResolvedValue({ value: "Texto nuevo", provenance });
+    const onUse = vi.fn();
+    renderWithProviders(
+      <AssistButton available label="Redactar" instruction="x" notes="Texto actual" showReplaced onUse={onUse} />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Redactar" }));
+    expect(await screen.findByText("Texto actual", { selector: "del" })).toBeInTheDocument();
+    expect(onUse).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Usar" }));
+    expect(onUse).toHaveBeenCalledWith("Texto nuevo", provenance);
+  });
+
   it("shows it is asking the AI until the answer arrives", async () => {
     let answer: (v: unknown) => void = () => {};
     api.draft.mockReturnValue(new Promise((resolve) => (answer = resolve)));

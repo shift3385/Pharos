@@ -20,7 +20,8 @@ const reason = z.string().trim().max(1000).optional();
 /** A leading Gherkin keyword the model added despite the prompt ("Given the
  *  user…", "Dado que…", "Y el usuario…"): the editor adds the keyword itself. */
 const LEADING_KEYWORD = /^(given|when|then|and|but|dad[oa]s?(?:\s+que)?|cuando|entonces|y|pero)\s+/i;
-const step = line(500).transform((s) => s.replace(LEADING_KEYWORD, "") || s);
+export const withoutKeyword = (s: string) => s.replace(LEADING_KEYWORD, "") || s;
+const step = line(500).transform(withoutKeyword);
 
 export const CASE_PRIORITIES = ["low", "medium", "high", "critical"] as const;
 
@@ -87,9 +88,28 @@ export const closureSuggestionsSchema = z.object({
   reason,
 });
 
-export const preconditionSuggestionsSchema = z.object({
-  // Rendered as Given steps, so the same keyword clean-up applies.
-  preconditions: z.array(step).max(10).default([]),
+/** The number of a listed item, as the prompt shows it (1 is the first). */
+const itemNumber = z.coerce.number().int().min(1);
+
+/** One change to a list of the case (IA-16). `item` points at the numbered list
+ *  sent to the model; whether it exists is checked in `usableProposals`. */
+export const listReviewSchema = z.object({
+  proposals: z
+    .array(
+      z.discriminatedUnion("action", [
+        z.object({
+          action: z.literal("add"),
+          text: line(500),
+          reason: line(200),
+          // Where a step goes: the number it follows, 0 to go first.
+          after: z.coerce.number().int().min(0).nullish(),
+        }),
+        z.object({ action: z.literal("rewrite"), item: itemNumber, text: line(500), reason: line(200) }),
+        z.object({ action: z.literal("remove"), item: itemNumber, reason: line(200) }),
+      ]),
+    )
+    .max(30)
+    .default([]),
   reason,
 });
 
@@ -97,3 +117,4 @@ export type GeneratedCase = z.infer<typeof generatedCaseSchema>;
 export type RiskSuggestion = z.infer<typeof riskSuggestionsSchema>["risks"][number];
 export type ResponsibilitySuggestion = z.infer<typeof responsibilitySuggestionsSchema>["responsibilities"][number];
 export type ClosureSuggestion = z.infer<typeof closureSuggestionsSchema>["criteria"][number];
+export type RawListProposal = z.infer<typeof listReviewSchema>["proposals"][number];

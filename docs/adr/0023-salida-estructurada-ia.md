@@ -54,6 +54,13 @@
     `then`, que se guardan como precondiciones, pasos y resultado esperado. El
     Gherkin lo genera `toGherkin`, el mismo que usa el editor. Así siempre es
     válido y la edición bidireccional sigue funcionando.
+  - **Enmienda 2026-11-07 (IA-16): revisar una lista.** Las propuestas señalan
+    los elementos por su número en la lista enviada. Pasada la validación, se
+    descarta sin rechazar la respuesta lo que apunta a un número inexistente o
+    repite un texto, como ya se hace con los roles inventados (IA-13). Una
+    propuesta sin motivo sí rechaza la respuesta entera. La palabra clave
+    Gherkin solo se quita en las listas que acaban en Gherkin (precondiciones y
+    pasos): en un criterio, «Cuando falla, se avisa» es texto normal.
   - **El usuario revisa antes de aplicar.** Solo se crea lo que el usuario
     acepta. Los casos generados son borradores enlazados al requisito
     (`requirementKeys`) y llevan procedencia IA (IA-01) con el proveedor y el

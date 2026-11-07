@@ -246,6 +246,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | IA-13 | Responsabilidades sugeridas para los roles que escribe el usuario (paso 13 del plan)                                  | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
 | IA-14 | Criterios de cierre sugeridos con su métrica, a partir del alcance y los riesgos del plan (paso 17)                  | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
 | IA-15 | Textos de IA directos y breves, según el syllabus ISTQB en cada paso; asistencia también en datos de prueba, defectos y comunicación | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
+| IA-16 | Revisión crítica de las listas del caso (añadir, reformular, eliminar, con motivo) y asistencia independiente en pasos, resultado esperado, postcondiciones y criterios; también en flujos del nivel avanzado y en checklists | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
 | IA-12 | Usar en la web la clave de escritorio: bóveda cifrada en el servidor e interruptor ([ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)) | P1  | Por decidir                                                | Pendiente                                                    | IA-11         |
 | IA-02 | Detección de duplicados con embeddings locales                                                                           | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-03 | _Lint_ de oráculo (resultados esperados débiles)                                                                         | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
@@ -357,6 +358,10 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
 - **IA-05 / IA-10:** con claves reales (y con Ollama), generar casos desde un requisito y
   aceptar algunos (quedan vinculados en la matriz); sugerir riesgos, estrategia de
   automatización y precondiciones. Anotar qué modelos devuelven JSON inválido a menudo.
+- **IA-16:** con claves reales (y con Ollama), revisar en un caso real precondiciones, pasos,
+  postcondiciones y criterios: que proponga eliminar lo redundante y reformular lo ambiguo,
+  que cada motivo nombre un defecto concreto y que no invente datos. Repetir en un caso
+  avanzado (que detecte una precondición de flujo ya compartida) y en una checklist.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario

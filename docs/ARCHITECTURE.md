@@ -30,7 +30,8 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   Offline: Ollama, called from the frontend. Structured answers (IA-05 cases
   from a requirement, IA-10 risks and preconditions, IA-13 responsibilities of
   the roles the user wrote, dropping any role it invents, IA-14 exit criteria of
-  the plan, dropping any it repeats) reuse the same chat path
+  the plan, dropping any it repeats, IA-16 critical review of a case's lists)
+  reuse the same chat path
   with a strict prompt and are validated with zod on the client before use
   ([ADR-0023](adr/0023-salida-estructurada-ia.md)); the traceability module
   creates the accepted cases through the test-cases public API.
@@ -856,6 +857,18 @@ through `src-tauri/src/journal.rs`:
   - AI buttons (UX-13): `AssistButton` is the icon alone, with its name for
     assistive technology and in the tooltip; it and `AiSuggestList` animate the
     icon (`.assist__spark`, `aria-busy`) while the AI answers.
+  - List review (IA-16): `reviewCaseList` asks for `add` / `rewrite` / `remove`
+    proposals, each with its reason, about a numbered list. `usableProposals`
+    (`ai/model/listReview.ts`) drops what points at no item or repeats a text;
+    `applyProposals` applies the accepted ones by row, so a reworded step keeps
+    its id (DAT-02) and a row the user edited meanwhile is left alone.
+    `ListProposalView` shows them inside `AiSuggestList`; `CaseListReview`
+    (test-cases) wires one list, with rewording and removing unticked at first.
+    An advanced case keeps its AI marks in `aiProvenance` under `background` and
+    `flow.<flowId>.<field>`. A pending mark keeps a case in `ai_pending`, so
+    `liveProvenance` drops on saving those whose flow is gone or whose level does
+    not store flows. `flowsBrief` and `checklistBrief` send the AI only what that
+    view shows.
   - Loading placeholders (UX-17): `Skeleton` (one decorative shape, tokens
     `--color-skeleton` and `--color-skeleton-shine`), `SkeletonRegion` (shapes
     plus one `LoadingStatus`), and the shapes `ListSkeleton`, `CardGridSkeleton`,

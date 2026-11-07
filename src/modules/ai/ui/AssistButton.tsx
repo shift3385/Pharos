@@ -18,11 +18,17 @@ export function AssistButton({
   provenance,
   onUse,
   onReview,
+  label: buttonLabel,
+  showReplaced,
 }: {
   available: boolean;
   instruction: string;
   notes: string;
   context?: string;
+  /** The button's name, when «Asistir con IA» does not say which field it is. */
+  label?: string;
+  /** "Use" overwrites the field: the preview also shows what it replaces (IA-16). */
+  showReplaced?: boolean;
   /** Provenance of the field's current content, if it came from the AI. */
   provenance?: AiProvenance;
   onUse: (text: string, provenance: AiProvenance) => void;
@@ -32,6 +38,8 @@ export function AssistButton({
   const [state, setState] = useState<"idle" | "loading">("idle");
   const [draft, setDraft] = useState<{ text: string; provenance: AiProvenance } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const name = buttonLabel ?? t("ai.assist.button");
 
   async function run() {
     setState("loading");
@@ -62,14 +70,14 @@ export function AssistButton({
           className="assist__btn assist__btn--icon"
           disabled={!available || state === "loading"}
           aria-busy={state === "loading"}
-          title={available ? t("ai.assist.button") : t("ai.assist.unavailable")}
+          title={available ? name : t("ai.assist.unavailable")}
           onClick={() => void run()}
         >
           <Sparkles size={16} className={state === "loading" ? "assist__spark" : undefined} aria-hidden="true" />
           {state === "loading" ? (
             <span>{t("ai.assist.drafting")}</span>
           ) : (
-            <span className="sr-only">{t("ai.assist.button")}</span>
+            <span className="sr-only">{name}</span>
           )}
         </button>
       </div>
@@ -79,6 +87,11 @@ export function AssistButton({
       {draft && (
         <div className="assist__preview">
           <span className="assist__preview-label">{t("ai.assist.previewTitle")}</span>
+          {showReplaced && notes.trim() && (
+            <p className="assist__replaced">
+              {t("ai.assist.replaces")} <del className="assist__old">{notes.trim()}</del>
+            </p>
+          )}
           <p className="assist__draft">{draft.text}</p>
           <div className="assist__actions">
             <button

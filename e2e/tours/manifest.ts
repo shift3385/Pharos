@@ -376,7 +376,7 @@ export const INVENTORY: Item[] = [
   I("ia", "action", "ai:suggest-risks", "Sugerir riesgos con IA"),
   I("ia", "dialog", "dialogs:src/modules/traceability/ui/GenerateCasesModal.tsx", "Generar casos desde un requisito con IA"),
   I("ia", "dialog", "dialogs:src/modules/test-cases/ui/SuggestTestsModal.tsx", "Sugerir casos con IA"),
-  I("ia", "action", "ai:suggest-preconditions", "Sugerir precondiciones con IA"),
+  I("ia", "action", "ai:suggest-preconditions", "Sugerir y revisar las listas del caso con IA"),
   I("ia", "state", "ai:disabled-without-key", "Botones de IA deshabilitados sin configurar"),
 
   // ---- 12 · Móvil -------------------------------------------------------------------------

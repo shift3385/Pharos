@@ -36,17 +36,26 @@ import { ExamplesTable } from "./ExamplesTable";
 import { FlowsEditor } from "./FlowsEditor";
 import { GherkinEditor } from "./GherkinEditor";
 import { LevelPicker } from "./LevelPicker";
+import { CaseListReview } from "./CaseListReview";
+import {
+  EXPECTED_RESULT_INSTRUCTION,
+  caseBrief,
+  checklistBrief,
+  flowsBrief,
+  liveProvenance,
+  stepOps,
+  textOps,
+} from "./caseAi";
 import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
 import { saveFile } from "@shared/export/saveFile";
 import { unlessReported } from "@shared/ui/notify";
 import {
-  AiSuggestList,
   AssistButton,
   ProvenanceBadge,
   aiAvailable,
+  applyProposals,
   markReviewed,
-  suggestPreconditions,
   withProvenance,
   type AiProvenance,
   type ProvenanceMap,
@@ -561,7 +570,7 @@ export function TestCaseEditor({
       traceability: form.traceability,
       dataRequirements: form.dataRequirements,
       environmentRequirements: form.environmentRequirements,
-      aiProvenance: form.aiProvenance,
+      aiProvenance: liveProvenance(form.aiProvenance, form.gherkinLevel, form.flows),
     };
     if (form.gherkinLevel === "outline") data.examples = cleanExamples(form.examples);
     if (form.gherkinLevel === "advanced") {
@@ -947,6 +956,20 @@ export function TestCaseEditor({
             steps={form.steps}
             onChange={(v) => update({ steps: v })}
           />
+          <CaseListReview
+            field="checklist"
+            available={aiReady}
+            existing={texts(form.steps)}
+            context={() => checklistBrief(form, requirements)}
+            provenance={form.aiProvenance.steps}
+            onApply={(accepted, p) =>
+              update({
+                steps: applyProposals(form.steps, accepted, stepOps),
+                aiProvenance: withProvenance(form.aiProvenance, "steps", p),
+              })
+            }
+            onReview={() => review("steps")}
+          />
           {hiddenByChecklist && (
             <p className="tp-field__hint" role="note">
               {t("testCase.checklist.kept")}
@@ -968,6 +991,14 @@ export function TestCaseEditor({
             flows={form.flows}
             onBackgroundChange={(v) => update({ background: v })}
             onFlowsChange={(v) => update({ flows: v })}
+            ai={{
+              available: aiReady,
+              provenance: form.aiProvenance,
+              brief: (scope) => flowsBrief(form, form.background, form.flows, scope, requirements),
+              apply: (patch, key, p) =>
+                update({ ...patch, aiProvenance: withProvenance(form.aiProvenance, key, p) }),
+              review,
+            }}
           />
           {docFields}
         </>
@@ -979,41 +1010,16 @@ export function TestCaseEditor({
             items={form.preconditions}
             onChange={(v) => update({ preconditions: v })}
           />
-          <AiSuggestList
+          <CaseListReview
+            field="preconditions"
             available={aiReady}
-            buttonLabel={t("testCase.suggestPreconditions")}
-            run={() =>
-              suggestPreconditions(
-                [
-                  `Test case title: ${form.title}`,
-                  form.description.trim() &&
-                    `Description: ${form.description.trim()}`,
-                  texts(form.steps).filter((s) => s.trim()).length &&
-                    `Steps:\n${texts(form.steps)
-                      .filter((s) => s.trim())
-                      .map((s, i) => `${i + 1}. ${s}`)
-                      .join("\n")}`,
-                ]
-                  .filter(Boolean)
-                  .join("\n"),
-                texts(form.preconditions).filter((p) => p.trim()),
-                i18n.resolvedLanguage ?? "es",
-              )
-            }
-            renderItem={(p) => p}
+            existing={texts(form.preconditions)}
+            context={() => caseBrief(form, "preconditions", requirements)}
             provenance={form.aiProvenance.preconditions}
-            onAdd={(items, p) =>
+            onApply={(accepted, p) =>
               update({
-                // Replace the empty starter row instead of keeping it.
-                preconditions: [
-                  ...form.preconditions.filter((x) => x.text.trim()),
-                  ...stepsOf(items),
-                ],
-                aiProvenance: withProvenance(
-                  form.aiProvenance,
-                  "preconditions",
-                  p,
-                ),
+                preconditions: applyProposals(form.preconditions, accepted, stepOps),
+                aiProvenance: withProvenance(form.aiProvenance, "preconditions", p),
               })
             }
             onReview={() => review("preconditions")}
@@ -1025,6 +1031,20 @@ export function TestCaseEditor({
             steps={form.steps}
             onChange={(v) => update({ steps: v })}
           />
+          <CaseListReview
+            field="steps"
+            available={aiReady}
+            existing={texts(form.steps)}
+            context={() => caseBrief(form, "steps", requirements)}
+            provenance={form.aiProvenance.steps}
+            onApply={(accepted, p) =>
+              update({
+                steps: applyProposals(form.steps, accepted, stepOps),
+                aiProvenance: withProvenance(form.aiProvenance, "steps", p),
+              })
+            }
+            onReview={() => review("steps")}
+          />
 
           <label className="tp-field">
             <span>{t("testCase.expectedResult")}</span>
@@ -1034,6 +1054,22 @@ export function TestCaseEditor({
               onChange={(e) => update({ expectedResult: e.target.value })}
             />
           </label>
+          <AssistButton
+            available={aiReady}
+            label={t("testCase.aiReview.expectedResult")}
+            instruction={EXPECTED_RESULT_INSTRUCTION}
+            notes={form.expectedResult}
+            context={caseBrief(form, "expectedResult", requirements)}
+            showReplaced
+            provenance={form.aiProvenance.expectedResult}
+            onUse={(v: string, p: AiProvenance) =>
+              update({
+                expectedResult: v,
+                aiProvenance: withProvenance(form.aiProvenance, "expectedResult", p),
+              })
+            }
+            onReview={() => review("expectedResult")}
+          />
 
           {level === "outline" && (
             <>
@@ -1065,11 +1101,39 @@ export function TestCaseEditor({
             items={form.postconditions}
             onChange={(v) => update({ postconditions: v })}
           />
+          <CaseListReview
+            field="postconditions"
+            available={aiReady}
+            existing={form.postconditions}
+            context={() => caseBrief(form, "postconditions", requirements)}
+            provenance={form.aiProvenance.postconditions}
+            onApply={(accepted, p) =>
+              update({
+                postconditions: applyProposals(form.postconditions, accepted, textOps),
+                aiProvenance: withProvenance(form.aiProvenance, "postconditions", p),
+              })
+            }
+            onReview={() => review("postconditions")}
+          />
           <p className="tp-field__grouplabel">{t("testCase.acceptanceCriteria")}</p>
           <ListField
             label={t("testCase.acceptanceCriteria")}
             items={form.acceptanceCriteria}
             onChange={(v) => update({ acceptanceCriteria: v })}
+          />
+          <CaseListReview
+            field="acceptanceCriteria"
+            available={aiReady}
+            existing={form.acceptanceCriteria}
+            context={() => caseBrief(form, "acceptanceCriteria", requirements)}
+            provenance={form.aiProvenance.acceptanceCriteria}
+            onApply={(accepted, p) =>
+              update({
+                acceptanceCriteria: applyProposals(form.acceptanceCriteria, accepted, textOps),
+                aiProvenance: withProvenance(form.aiProvenance, "acceptanceCriteria", p),
+              })
+            }
+            onReview={() => review("acceptanceCriteria")}
           />
           {docFields}
         </>

@@ -62,6 +62,26 @@ describe("AiSuggestList (IA-10)", () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
+  it("a proposal can start unticked, and the apply button can say what it does (IA-16)", async () => {
+    const onAdd = vi.fn();
+    renderWithProviders(
+      <AiSuggestList
+        available
+        buttonLabel="Suggest"
+        run={async () => ({ value: ["keep", "risky"], provenance })}
+        renderItem={(s) => s}
+        startsSelected={(s) => s !== "risky"}
+        applyLabel={(count) => `Apply ${count}`}
+        onAdd={onAdd}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Suggest" }));
+    expect(await screen.findByRole("checkbox", { name: "risky" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "keep" })).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Apply 1" }));
+    expect(onAdd).toHaveBeenCalledWith(["keep"], provenance);
+  });
+
   it("is disabled with a notice when no AI is available", () => {
     const run = vi.fn();
     renderList(run, false);

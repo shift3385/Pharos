@@ -136,7 +136,8 @@
       "discard": "Discard",
       "unavailable": "Configure AI (an online provider or Ollama) to use this",
       "empty": "The AI returned no text.",
-      "error": "Could not draft with AI"
+      "error": "Could not draft with AI",
+      "replaces": "Replaces:"
     },
     "structured": {
       "thinking": "Thinking…",
@@ -152,6 +153,14 @@
         "timeout": "The AI did not answer in time.",
         "provider": "The AI provider returned an error."
       }
+    },
+    "review": {
+      "add": "Add",
+      "rewrite": "Reword",
+      "remove": "Remove",
+      "apply": "Apply {{count}}",
+      "after": "After: {{target}}",
+      "atStart": "At the start"
     },
     "provenance": {
       "pending": "AI · pending review",
@@ -1181,7 +1190,37 @@
       "button": "Import .xlsx",
       "title": "Import case from .xlsx"
     },
-    "suggestPreconditions": "Suggest preconditions",
+    "aiReview": {
+      "preconditions": {
+        "suggest": "Suggest preconditions",
+        "review": "Review preconditions"
+      },
+      "flowPreconditions": {
+        "suggest": "Suggest preconditions",
+        "review": "Review preconditions"
+      },
+      "background": {
+        "suggest": "Suggest shared preconditions",
+        "review": "Review shared preconditions"
+      },
+      "checklist": {
+        "suggest": "Suggest checks",
+        "review": "Review checks"
+      },
+      "steps": {
+        "suggest": "Suggest steps",
+        "review": "Review steps"
+      },
+      "postconditions": {
+        "suggest": "Suggest postconditions",
+        "review": "Review postconditions"
+      },
+      "acceptanceCriteria": {
+        "suggest": "Suggest criteria",
+        "review": "Review criteria"
+      },
+      "expectedResult": "Write the expected result with AI"
+    },
     "suggest": {
       "button": "✨ Suggest tests",
       "disabled": "You need AI configured and a plan in the project",

@@ -388,7 +388,10 @@ en la misma matriz.
       que vayas a usar (IA-08).
 - [ ] Generar casos desde un requisito (✨ en Trazabilidad) y aceptar algunos:
       quedan vinculados en la matriz (IA-05).
-- [ ] Sugerir riesgos, estrategia de automatización y precondiciones (IA-10).
+- [ ] Sugerir riesgos y estrategia de automatización (IA-10).
+- [ ] En un caso, revisar con IA precondiciones, pasos, postcondiciones y criterios: propone
+      añadir, reformular y eliminar con su motivo, y solo se aplica lo que marcas (IA-16).
+      Repite en un caso avanzado (cada flujo) y en una checklist.
 - [ ] Sin internet, con Ollama (Fase 7). Anota qué modelos devuelven JSON
       inválido a menudo.
 
