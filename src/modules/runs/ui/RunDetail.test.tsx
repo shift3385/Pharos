@@ -473,6 +473,117 @@ describe("run screen", () => {
     expect(screen.queryByText(/otra ventana/)).not.toBeInTheDocument();
   });
 
+  // FIX-19: a reload that reads before the autosave has written must not drop
+  // the draft from memory, or «Guardar» starts another attempt that the backend
+  // refuses as stale. `stored` plays the backend, with the rule of `check_fresh`.
+  describe("when a reload overtakes the autosave", () => {
+    let stored: Record<string, { attemptId: string }>;
+    const file = new File(["x"], "captura.png", { type: "image/png" });
+    const draftNow = () =>
+      detail({
+        draft: {
+          targets: { ...stored },
+          attachments: [],
+          updatedAt: "2026-11-04T09:00:00.000Z",
+        } as unknown as RunItemDetail["draft"],
+      });
+    const write = (key: string, state: { attemptId: string }) => {
+      if (stored[key] && stored[key].attemptId !== state.attemptId) {
+        throw new Error("draft-stale: another attempt is in progress");
+      }
+      stored[key] = state;
+    };
+    const fileInput = (panel: HTMLElement) =>
+      panel.querySelector('input[type="file"]') as HTMLInputElement;
+    const autosaved = () => new Promise((r) => setTimeout(r, 800));
+
+    async function expectAttemptRecorded(user: ReturnType<typeof userEvent.setup>) {
+      expect(screen.getByTestId("exec-step-1-pass")).toHaveAttribute("aria-pressed", "true");
+      await user.click(screen.getByTestId("exec-save"));
+      await waitFor(() => expect(api.record).toHaveBeenCalledTimes(1));
+      expect(api.record.mock.calls[0][0].attemptId).toBe(stored["-/-"].attemptId);
+      expect(screen.queryByText(/otra ventana/)).not.toBeInTheDocument();
+    }
+
+    beforeEach(() => {
+      stored = {};
+      api.itemDetail.mockImplementation(async () => draftNow());
+      api.draftSave.mockImplementation(async (_i: string, key: string, state: { attemptId: string }) =>
+        write(key, state),
+      );
+      api.attachToDraft.mockResolvedValue({ id: "a1" });
+    });
+
+    it("keeps a draft whose save is still scheduled", async () => {
+      const user = userEvent.setup();
+      renderRun();
+      const panel = await screen.findByTestId("exec-panel");
+      await user.click(screen.getByTestId("exec-step-1-pass"));
+      await user.upload(fileInput(panel), file);
+      await screen.findByText(/Adjunto guardado/);
+      await autosaved();
+      await expectAttemptRecorded(user);
+    });
+
+    it("keeps a draft whose save is on its way", async () => {
+      const user = userEvent.setup();
+      let writeNow = () => {};
+      api.draftSave.mockImplementationOnce(
+        (_i: string, key: string, state: { attemptId: string }) =>
+          new Promise<void>((resolve) => {
+            writeNow = () => {
+              write(key, state);
+              resolve();
+            };
+          }),
+      );
+      renderRun();
+      const panel = await screen.findByTestId("exec-panel");
+      await user.click(screen.getByTestId("exec-step-1-pass"));
+      await waitFor(() => expect(api.draftSave).toHaveBeenCalledTimes(1), { timeout: 2000 });
+      await user.upload(fileInput(panel), file);
+      await screen.findByText(/Adjunto guardado/);
+      writeNow();
+      await expectAttemptRecorded(user);
+    });
+
+    it("keeps a draft saved while the reload was reading", async () => {
+      const user = userEvent.setup();
+      renderRun();
+      const panel = await screen.findByTestId("exec-panel");
+      let answer = () => {};
+      api.itemDetail.mockImplementationOnce(() => {
+        const snapshot = draftNow();
+        return new Promise((resolve) => {
+          answer = () => resolve(snapshot);
+        });
+      });
+      await user.click(screen.getByTestId("exec-step-1-pass"));
+      await user.upload(fileInput(panel), file);
+      await waitFor(() => expect(api.attachToDraft).toHaveBeenCalled());
+      await waitFor(() => expect(api.draftSave).toHaveBeenCalledTimes(1), { timeout: 2000 });
+      await waitFor(() => expect(stored["-/-"]).toBeDefined());
+      answer();
+      await screen.findByText(/Adjunto guardado/);
+      await autosaved();
+      await expectAttemptRecorded(user);
+    });
+
+    it("still drops a draft that another window discarded", async () => {
+      const user = userEvent.setup();
+      renderRun();
+      const panel = await screen.findByTestId("exec-panel");
+      await user.click(screen.getByTestId("exec-step-1-pass"));
+      await waitFor(() => expect(stored["-/-"]).toBeDefined(), { timeout: 2000 });
+      await autosaved();
+      stored = {};
+      await user.upload(fileInput(panel), file);
+      await screen.findByText(/Adjunto guardado/);
+      await waitFor(() =>
+        expect(screen.getByTestId("exec-step-1-pass")).toHaveAttribute("aria-pressed", "false"),
+      );
+    });
+  });
 });
 
 describe("run screen on the web (EJE-06)", () => {
