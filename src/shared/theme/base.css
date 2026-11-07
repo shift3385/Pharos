@@ -20,6 +20,13 @@ body,
   height: 100%;
 }
 
+/* No elastic bounce at the window's edges: a touchpad or touch swipe past the
+   end of any scroller must not drag the whole app off its layout. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 /* The app container: `ViewportProvider` measures it and writes the view in
    `data-viewport` (mobile < 600 px ≤ tablet < 1280 px ≤ desktop, SPEC §2
    amended); CSS keys on that attribute, never on window media queries. */
