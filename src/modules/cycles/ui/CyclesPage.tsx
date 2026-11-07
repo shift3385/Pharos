@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { CalendarRange, Plus } from "lucide-react";
 import { useAuth } from "@modules/auth";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
@@ -218,7 +218,7 @@ export function CyclesPage({
         ]}
       />
       {cycles === null ? (
-        <p className="tp__muted">{t("common.loading")}</p>
+        <TableSkeleton columns={columns} minWidth={640} rows={4} />
       ) : (
         <DataTable
           rows={shown}

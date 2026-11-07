@@ -22,6 +22,8 @@ import {
 } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
+import { Skeleton } from "@shared/ui/Skeleton";
+import { skeletonWidth } from "@shared/ui/skeletonWidth";
 
 const RING_R = 42;
 const RING_C = 2 * Math.PI * RING_R;
@@ -39,7 +41,10 @@ export function ExitCriteriaCard({
   today,
   state,
   onRetry,
+  loading = false,
 }: {
+  /** The projects are not known yet: placeholders, not «no projects». */
+  loading?: boolean;
   projects: HomeProject[];
   selected: HomeProject | null;
   onSelect: (id: string) => void;
@@ -120,7 +125,25 @@ export function ExitCriteriaCard({
         )}
       </div>
 
-      {!selected ? (
+      {loading ? (
+        <div aria-hidden="true">
+          <div className="home-exit__summary">
+            <Skeleton shape="circle" width={112} height={112} />
+            <div className="home-exit__text home-exit__text--sk">
+              <Skeleton width="80%" height={14} />
+              <Skeleton width="60%" />
+              <Skeleton width="50%" />
+            </div>
+          </div>
+          <ul className="home-exit__criteria">
+            {[0, 1, 2, 3].map((i) => (
+              <li key={i}>
+                <Skeleton width={skeletonWidth(i)} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : !selected ? (
         <p className="home-empty">{t("dashboard.exit.empty")}</p>
       ) : (
         <>
@@ -157,7 +180,13 @@ export function ExitCriteriaCard({
                   className="home-ring__value"
                   data-filled={share !== null || undefined}
                 >
-                  {share !== null ? percent.format(share) : "—"}
+                  {share !== null ? (
+                    percent.format(share)
+                  ) : state.status === "loading" ? (
+                    <Skeleton width={44} height={22} className="home-ring__sk" />
+                  ) : (
+                    "—"
+                  )}
                 </span>
                 <span className="home-ring__label">
                   {t("dashboard.exit.executed")}
@@ -169,6 +198,11 @@ export function ExitCriteriaCard({
                 <>
                   <span className="home-exit__headline">{headline}</span>
                   <span>{sub}</span>
+                </>
+              ) : state.status === "loading" ? (
+                <>
+                  <Skeleton width="80%" height={14} />
+                  <Skeleton width="60%" />
                 </>
               ) : (
                 <MetricsNotice state={state} onRetry={onRetry} />

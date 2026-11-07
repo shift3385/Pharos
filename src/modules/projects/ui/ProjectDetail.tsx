@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { FormSkeleton, Skeleton } from "@shared/ui/Skeleton";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useTranslation } from "react-i18next";
 import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
@@ -103,9 +105,27 @@ export function ProjectDetail({
   }, [tab, projectId, ownerId]);
 
   const facts = useHeaderFacts(projectId, ownerId, tab);
+  const mobile = useBreakpoint() === "mobile";
 
   if (project === null) return <Navigate to="/projects" replace />;
-  if (!project) return <p className="pj-muted">{t("common.loading")}</p>;
+  if (!project)
+    return (
+      <section className="pj-detail">
+        {!mobile && (
+          <div className="pj-header" aria-hidden="true">
+            <Skeleton shape="block" width={44} height={44} />
+            <div className="pj-header__titles">
+              <Skeleton width="min(320px, 70%)" height={20} />
+              <div className="pj-header__meta">
+                <Skeleton shape="block" width={96} height={20} />
+                <Skeleton width={140} />
+              </div>
+            </div>
+          </div>
+        )}
+        <FormSkeleton />
+      </section>
+    );
 
   const header: ProjectHeaderInfo = {
     name: project.name,

@@ -1,10 +1,14 @@
 import { useTranslation } from "react-i18next";
+import { Skeleton } from "@shared/ui/Skeleton";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { RunLegend } from "./ExecutionByProject";
 import { visibleDayLabels, type Period } from "./model/homeData";
 import { axisMax, dailySeries } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
+
+/** Bar heights of the loading chart: only a shape, it means nothing. */
+const SHAPE_HEIGHTS = [38, 62, 28, 74, 46, 84, 34, 56];
 
 /** «Ejecuciones diarias» (SPEC §8, ACTUALIZACION §2, RED-W6): every attempt
  *  recorded on each local day of the period (manual or imported, retries
@@ -94,7 +98,13 @@ export function DailyExecutionsChart({
             }
             data-testid="home-daily-total"
           >
-            {ready ? num.format(total) : "—"}
+            {ready ? (
+              num.format(total)
+            ) : state.status === "loading" ? (
+              <Skeleton width={44} height={24} />
+            ) : (
+              "—"
+            )}
           </span>
         </div>
       </div>
@@ -121,14 +131,20 @@ export function DailyExecutionsChart({
         </div>
         <div className="home-chart__plot">
           <div className="home-chart__bars">
-            {points.map((p) => (
+            {points.map((p, i) => (
               <span
                 key={p.day.toISOString()}
                 className="home-chart__col"
                 title={dayText(p)}
               >
                 <span className="home-chart__bar">
-                  {p.total ? (
+                  {state.status === "loading" ? (
+                    <Skeleton
+                      shape="block"
+                      className="home-chart__sk"
+                      height={`${SHAPE_HEIGHTS[i % SHAPE_HEIGHTS.length]}%`}
+                    />
+                  ) : p.total ? (
                     <span
                       className="home-chart__stack"
                       style={{ height: pct(p.total) }}

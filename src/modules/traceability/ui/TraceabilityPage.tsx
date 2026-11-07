@@ -16,6 +16,7 @@ import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
+import { ListSkeleton } from "@shared/ui/Skeleton";
 import { requirementApi } from "../api/requirementApi";
 import type { CsvImportResult } from "../import/requirementCsv";
 import { buildMatrix, type MatrixDefect, type MatrixSort } from "../model/matrix";
@@ -325,7 +326,7 @@ export function TraceabilityPage({
       />
 
       {!data || !matrix ? (
-        <p className="tr__muted">{t("common.loading")}</p>
+        <ListSkeleton rows={5} />
       ) : view === "requirements" ? (
         <RequirementsPanel
           requirements={data.requirements}

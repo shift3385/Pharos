@@ -91,6 +91,7 @@ import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { GherkinReadView } from "./GherkinEditor";
 import { stampLabel, statusTone } from "./caseTones";
 import { Alert } from "@shared/ui/Alert";
+import { FormSkeleton } from "@shared/ui/Skeleton";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
@@ -736,7 +737,7 @@ export function TestCaseEditor({
       </section>
     );
   }
-  if (found === undefined) return <p className="tp__muted">{t("common.loading")}</p>;
+  if (found === undefined) return <FormSkeleton />;
 
   if (picking) {
     return <LevelPicker onPick={pickLevel} onCancel={onClose} />;

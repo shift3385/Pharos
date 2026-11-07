@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Columns3, List, Plus, Search, ShieldAlert, Trash2, TriangleAlert } from "lucide-react";
 import { capabilities } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
@@ -291,7 +291,7 @@ export function DefectsPage({
       </div>
 
       {loading ? (
-        <p className="df-empty">{t("common.loading")}</p>
+        <TableSkeleton columns={columns} minWidth={view === "desktop" ? 860 : 600} rowHeight={32} />
       ) : defects.length === 0 ? (
         <p className="df-empty">{t("defects.empty")}</p>
       ) : mode === "board" ? (

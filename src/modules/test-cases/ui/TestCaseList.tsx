@@ -21,7 +21,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
 import { Pagination } from "@shared/ui/Pagination";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -519,7 +519,7 @@ export function TestCaseList({
         )}
 
         {loading ? (
-          <p className="cl-empty">{t("common.loading")}</p>
+          <TableSkeleton columns={columns} selectable minWidth={view === "desktop" ? 900 : 640} rows={8} rowHeight={22} />
         ) : cases.length === 0 ? (
           <p className="cl-empty">{t("testCase.empty")}</p>
         ) : (

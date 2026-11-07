@@ -6,6 +6,7 @@ import { StatusPill } from "@shared/ui/StatusPill";
 import { Switch } from "@shared/ui/Switch";
 import { usePopover } from "@shared/ui/usePopover";
 import { useToast } from "@shared/ui/Toast";
+import { ListSkeleton } from "@shared/ui/Skeleton";
 import { configurationApi } from "../api/cycleApi";
 import { configurationError } from "../model/messages";
 import { attributesLine, type Configuration, type ConfigurationInput } from "../model/types";
@@ -195,7 +196,7 @@ export function ConfigurationsCard({ projectId, userId }: { projectId: string; u
         </button>
       </div>
       {list === null ? (
-        <p className="tp__muted">{t("common.loading")}</p>
+        <ListSkeleton rows={2} />
       ) : list.length === 0 ? (
         <p className="cy-empty">
           <MonitorSmartphone size={18} aria-hidden="true" />

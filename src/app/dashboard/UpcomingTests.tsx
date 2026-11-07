@@ -5,6 +5,8 @@ import { ArrowRight } from "lucide-react";
 import { projectPath } from "@modules/projects";
 import { caseLink } from "@modules/test-cases";
 import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
+import { Skeleton } from "@shared/ui/Skeleton";
+import { skeletonWidth } from "@shared/ui/skeletonWidth";
 import { Tabs } from "@shared/ui/Tabs";
 import { tabPanelProps } from "@shared/ui/tabPanel";
 import type { HomeProject } from "./model/homeData";
@@ -83,7 +85,19 @@ export function UpcomingTests({
         {...tabPanelProps(tab, "home-up-")}
         className="home-upcoming__panel"
       >
-        {state.status !== "ready" ? (
+        {state.status === "loading" ? (
+          <div aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="home-queue__row">
+                <span className="home-queue__flag" />
+                <span className="home-queue__main">
+                  <Skeleton width={skeletonWidth(i)} />
+                  <Skeleton width={skeletonWidth(i + 3)} height={10} />
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : state.status !== "ready" ? (
           <MetricsNotice
             state={state}
             onRetry={onRetry}

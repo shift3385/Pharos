@@ -5,7 +5,8 @@ import { Plus, Upload } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import type { Run, RunCounts, UnlinkedTest } from "@shared/contracts/contract";
 import { isTauri } from "@shared/platform";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
+import { Skeleton } from "@shared/ui/Skeleton";
 import { FilterChips } from "@shared/ui/FilterChips";
 import {
   HeaderActionsContext,
@@ -253,7 +254,10 @@ function RunsList({
             </button>
           </div>
         ) : runs === null ? (
-          <p className="tp-field__hint">{t("common.loading")}</p>
+          <>
+            <Skeleton shape="block" width={200} height={30} className="rn-sk-chips" />
+            <TableSkeleton columns={columns} />
+          </>
         ) : tab === "runs" ? (
           <>
             <FilterChips

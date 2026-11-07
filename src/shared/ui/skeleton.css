@@ -1,0 +1,139 @@
+/* Loading placeholders (SPEC §9). Tokens only, both themes. */
+
+.sk {
+  position: relative;
+  display: block;
+  flex: none;
+  max-width: 100%;
+  height: 12px;
+  overflow: hidden;
+  background: var(--color-skeleton);
+  border-radius: var(--radius-sm);
+  /* Invisible but in place during the delay (SKELETON_DELAY_MS): a fast load
+     neither flashes it nor moves the page. */
+  opacity: 0;
+  animation: sk-in 160ms ease 200ms forwards;
+}
+
+.sk[data-shape="block"] {
+  border-radius: var(--radius-md);
+}
+
+.sk[data-shape="circle"] {
+  border-radius: 50%;
+}
+
+/* Only `transform` moves, so the sheen costs no repaint. */
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--color-skeleton-shine), transparent);
+  transform: translateX(-100%);
+  animation: sk-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes sk-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sk-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Reduced motion: flat shapes, no sheen. The fade stays within the 100 ms of
+   SPEC §9 through the global rule of base.css. */
+@media (prefers-reduced-motion: reduce) {
+  .sk::after {
+    display: none;
+  }
+}
+
+/* Continues the wait of the skeleton just gone (SAME_WAIT_MS): no second delay. */
+.sk-region[data-continues] .sk {
+  opacity: 1;
+  animation: none;
+}
+
+/* The wrapper adds no box: the shapes lay out in the screen's own grid. */
+.sk-region__shapes {
+  display: contents;
+}
+
+.sk-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sk-stack--grow {
+  flex: 1;
+}
+
+.sk-list {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.sk-list__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sk-list__row:last-child {
+  border-bottom: 0;
+}
+
+.sk-list__row > .sk-stack {
+  flex: 1;
+}
+
+.sk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.sk-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sk-form__card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* TableSkeleton (DataTable.tsx): the row height of a real row, whose cells hold
+   pills and small buttons taller than a line of text. */
+.dt__cell--sk {
+  min-height: var(--sk-row, 24px);
+}
+
+.dt-card--sk {
+  flex-direction: column;
+  gap: 10px;
+}
