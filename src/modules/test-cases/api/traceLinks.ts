@@ -2,25 +2,19 @@ import type { TestCase, TraceableCase } from "../model/types";
 import { testCaseApi } from "./testCaseApi";
 
 /** Cases of a project with their requirement links (for the traceability
- *  matrix). Reads each case in full because the links live in `data`. */
+ *  matrix). One read: the summaries carry the links (FIX-20). */
 export async function projectTraceableCases(
   projectId: string,
   userId: string,
 ): Promise<TraceableCase[]> {
-  const out: TraceableCase[] = [];
-  for (const s of await testCaseApi.list(projectId, userId)) {
-    const c = await testCaseApi.get(s.id, userId);
-    if (!c) continue;
-    out.push({
-      id: c.id,
-      scenarioId: c.scenarioId,
-      title: c.title,
-      status: c.status,
-      requirementKeys: c.data?.requirementKeys ?? [],
-      traceability: c.data?.traceability ?? "",
-    });
-  }
-  return out;
+  return (await testCaseApi.list(projectId, userId)).map((s) => ({
+    id: s.id,
+    scenarioId: s.scenarioId,
+    title: s.title,
+    status: s.status,
+    requirementKeys: s.requirementKeys,
+    traceability: s.traceability,
+  }));
 }
 
 /** The project's cases as a picker lists them (a cycle's «Añadir casos»,

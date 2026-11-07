@@ -207,6 +207,8 @@ describe(".feature batch", () => {
       caseType,
       automationStatus: null,
       custom: {},
+      requirementKeys: [],
+      traceability: "",
       updatedAt: "",
       revision: 1,
     });

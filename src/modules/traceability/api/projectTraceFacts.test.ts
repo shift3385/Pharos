@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { projectCoverage } from "./projectCoverage";
+import { projectTraceFacts } from "./projectTraceFacts";
 
 const requirements = vi.fn();
 const cases = vi.fn();
@@ -16,11 +16,11 @@ const tc = (id: string, keys: string[], status = "approved") => ({
   traceability: "",
 });
 
-describe("projectCoverage", () => {
-  it("is null without requirements", async () => {
+describe("projectTraceFacts", () => {
+  it("has no coverage without requirements, but still counts the cases", async () => {
     requirements.mockResolvedValue([]);
     cases.mockResolvedValue([tc("c1", [])]);
-    expect(await projectCoverage("p1", "u1")).toBeNull();
+    expect(await projectTraceFacts("p1", "u1")).toEqual({ cases: 1, coverage: null });
     expect(requirements).toHaveBeenCalledWith("p1", "u1");
     expect(cases).toHaveBeenCalledWith("p1", "u1");
   });
@@ -32,6 +32,7 @@ describe("projectCoverage", () => {
       tc("c2", ["REQ-2", "REQ-9"]),
       tc("c3", ["REQ-3"], "obsolete"),
     ]);
-    expect(await projectCoverage("p1", "u1")).toBe(0.5);
+    // Obsolete cases still count as cases: the list shows them.
+    expect(await projectTraceFacts("p1", "u1")).toEqual({ cases: 3, coverage: 0.5 });
   });
 });

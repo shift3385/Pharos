@@ -10,7 +10,6 @@ import { aiAvailable, type AiProvenance, type TestSuggestion } from "@modules/ai
 import { projectHasPlan } from "@modules/test-plan";
 import { testCaseApi } from "../api/testCaseApi";
 import { announceCasesChanged } from "../model/events";
-import { projectTraceableCases } from "../api/traceLinks";
 import { CASE_PARAM } from "../model/caseLink";
 import {
   CASE_PAGE_SIZES,
@@ -67,21 +66,13 @@ export function TestCasesPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latest = useRef(0);
 
-  /** Loads the cases, then their requirement links (one read per case), so
-   *  the table shows first and the Requisito column fills in after. */
+  /** Loads the cases with their requirement links (one read, FIX-20). */
   async function refresh() {
     const request = ++latest.current;
     const summaries = await testCaseApi.list(projectId, userId);
     if (request !== latest.current) return;
-    setCases((prev) => {
-      const keys = new Map(prev.map((c) => [c.id, c.requirementKeys]));
-      return summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] }));
-    });
+    setCases(summaries);
     setLoading(false);
-    const traced = await projectTraceableCases(projectId, userId);
-    if (request !== latest.current) return;
-    const keys = new Map(traced.map((c) => [c.id, c.requirementKeys]));
-    setCases(summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] })));
   }
 
   useEffect(() => {
