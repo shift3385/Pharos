@@ -8,10 +8,10 @@ import { AiFailureNotice } from "./AiFailureNotice";
 import { ProvenanceBadge } from "./ProvenanceBadge";
 import "./Assist.css";
 
-/** "Suggest with AI" for list fields (IA-10: risks, preconditions). Asks the AI
- *  for a validated list, shows it as a checklist and adds only the items the
- *  user keeps. An invalid answer is reported and nothing is added. Disabled
- *  with a tooltip when no AI provider is available. */
+/** "Suggest with AI" for list fields (IA-10: risks; IA-16: the lists of a case).
+ *  Asks the AI for a validated list, shows it as a checklist and adds only the
+ *  items the user keeps. An invalid answer is reported and nothing is added.
+ *  Disabled with a tooltip when no AI provider is available. */
 export function AiSuggestList<T>({
   available,
   buttonLabel,
@@ -21,6 +21,8 @@ export function AiSuggestList<T>({
   onAdd,
   onReview,
   blockedReason,
+  startsSelected = () => true,
+  applyLabel,
 }: {
   available: boolean;
   buttonLabel: string;
@@ -33,6 +35,11 @@ export function AiSuggestList<T>({
   provenance?: AiProvenance;
   onAdd: (items: T[], provenance: AiProvenance) => void;
   onReview?: () => void;
+  /** Whether a proposal starts ticked: one that changes what the user wrote can
+   *  wait for an explicit tick (IA-16). All of them, by default. */
+  startsSelected?: (item: T) => boolean;
+  /** The apply button, when it does more than add. */
+  applyLabel?: (count: number) => string;
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -55,7 +62,7 @@ export function AiSuggestList<T>({
       const r = await run();
       if (id !== request.current) return;
       setResult(r);
-      setSelected(new Set(r.value.map((_, i) => i)));
+      setSelected(new Set(r.value.flatMap((item, i) => (startsSelected(item) ? [i] : []))));
     } catch (e) {
       if (id !== request.current) return;
       setFailure(describeAiFailure(e));
@@ -130,7 +137,7 @@ export function AiSuggestList<T>({
                 setResult(null);
               }}
             >
-              {t("ai.structured.addSelected", { count: selected.size })}
+              {applyLabel?.(selected.size) ?? t("ai.structured.addSelected", { count: selected.size })}
             </button>
             <button type="button" className="assist__discard" onClick={() => setResult(null)}>
               {t("ai.assist.discard")}

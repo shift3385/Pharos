@@ -136,7 +136,8 @@
       "discard": "Descartar",
       "unavailable": "Configura la IA (un proveedor online u Ollama) para usar esto",
       "empty": "La IA no devolvió texto.",
-      "error": "No se pudo redactar con la IA"
+      "error": "No se pudo redactar con la IA",
+      "replaces": "Sustituye a:"
     },
     "structured": {
       "thinking": "Pensando…",
@@ -152,6 +153,14 @@
         "timeout": "La IA no respondió a tiempo.",
         "provider": "El proveedor de IA devolvió un error."
       }
+    },
+    "review": {
+      "add": "Añadir",
+      "rewrite": "Reformular",
+      "remove": "Eliminar",
+      "apply": "Aplicar {{count}}",
+      "after": "Después de: {{target}}",
+      "atStart": "Al principio"
     },
     "provenance": {
       "pending": "IA · pendiente de revisión",
@@ -1181,7 +1190,37 @@
       "button": "Importar .xlsx",
       "title": "Importar caso desde .xlsx"
     },
-    "suggestPreconditions": "Sugerir precondiciones",
+    "aiReview": {
+      "preconditions": {
+        "suggest": "Sugerir precondiciones",
+        "review": "Revisar precondiciones"
+      },
+      "flowPreconditions": {
+        "suggest": "Sugerir precondiciones",
+        "review": "Revisar precondiciones"
+      },
+      "background": {
+        "suggest": "Sugerir precondiciones compartidas",
+        "review": "Revisar precondiciones compartidas"
+      },
+      "checklist": {
+        "suggest": "Sugerir comprobaciones",
+        "review": "Revisar comprobaciones"
+      },
+      "steps": {
+        "suggest": "Sugerir pasos",
+        "review": "Revisar pasos"
+      },
+      "postconditions": {
+        "suggest": "Sugerir postcondiciones",
+        "review": "Revisar postcondiciones"
+      },
+      "acceptanceCriteria": {
+        "suggest": "Sugerir criterios",
+        "review": "Revisar criterios"
+      },
+      "expectedResult": "Redactar el resultado esperado con IA"
+    },
     "suggest": {
       "button": "✨ Sugerir pruebas",
       "disabled": "Necesitas IA configurada y un plan en el proyecto",

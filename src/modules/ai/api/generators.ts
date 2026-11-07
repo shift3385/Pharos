@@ -6,14 +6,16 @@
 import {
   closureSuggestionsSchema,
   generatedCasesSchema,
-  preconditionSuggestionsSchema,
+  listReviewSchema,
   responsibilitySuggestionsSchema,
   riskSuggestionsSchema,
+  withoutKeyword,
   type ClosureSuggestion,
   type GeneratedCase,
   type ResponsibilitySuggestion,
   type RiskSuggestion,
 } from "../model/schemas";
+import { usableProposals, type ListProposal } from "../model/listReview";
 import type { AiMessage } from "../model/types";
 import type { AiResult } from "./aiApi";
 import { aiJson, requireItems } from "./structured";
@@ -199,29 +201,144 @@ export async function suggestResponsibilities(
   return { value: requireItems(onlyListedRoles(value.responsibilities, roles), value.reason), provenance };
 }
 
-export function buildPreconditionMessages(context: string, existing: string[], lang: string): AiMessage[] {
+/** The lists of a test case the AI reviews (IA-16). */
+export type CaseListField =
+  | "preconditions"
+  | "background"
+  | "flowPreconditions"
+  | "steps"
+  | "checklist"
+  | "postconditions"
+  | "acceptanceCriteria";
+
+/** What each list is for, so an item in the wrong one can be flagged. In our own
+ *  words, after the ISTQB glossary and CTFL v4.0.1 (ADR-0005). */
+const CASE_LISTS: Record<CaseListField, { name: string; rule: string; gherkin?: boolean; ordered?: boolean }> = {
+  preconditions: {
+    name: "preconditions",
+    gherkin: true,
+    rule:
+      `A precondition is the state that must hold before the steps run (data, user, ` +
+      `configuration). It is not a test action or a result.`,
+  },
+  background: {
+    name: "shared preconditions",
+    gherkin: true,
+    rule:
+      `A shared precondition is a state that must hold before the steps of every flow of the ` +
+      `case run. One that only some flows need belongs to those flows, not here.`,
+  },
+  flowPreconditions: {
+    name: "preconditions of this flow",
+    gherkin: true,
+    rule:
+      `A precondition of a flow is the state only this flow needs before its steps run, ` +
+      `beyond the shared preconditions. One that repeats a shared precondition is redundant.`,
+  },
+  steps: {
+    name: "test steps",
+    gherkin: true,
+    ordered: true,
+    rule:
+      `A test step is one action of the tester, in execution order: one action per step. ` +
+      `It is not a precondition, and it does not state the expected result, which has its ` +
+      `own field. Keep any <placeholder> exactly as written.`,
+  },
+  checklist: {
+    name: "checklist items",
+    rule:
+      `A checklist item is one point a tester checks and marks as met or not met, without ` +
+      `Gherkin steps. It states one verifiable condition, not a sequence of actions.`,
+  },
+  postconditions: {
+    name: "postconditions",
+    rule:
+      `A postcondition is the state of the test object and its data once the test has ` +
+      `ended. It is not a test action, and it does not repeat the expected result.`,
+  },
+  acceptanceCriteria: {
+    name: "acceptance criteria",
+    rule:
+      `An acceptance criterion is a condition the test object must meet to be accepted, ` +
+      `that can be answered yes or no. It is not a test step.`,
+  },
+};
+
+/** The checks behind a critical review: each proposal must rest on one of them
+ *  and on what the case says, not on taste or on assumptions (IA-16). */
+const REVIEW_CHECKS =
+  `Reason critically and from evidence, as in a formal test case review. Check each numbered ` +
+  `item in turn: is it verifiable (can it be objectively checked)? Necessary (does the test ` +
+  `depend on it)? Unambiguous (no vague terms such as "sufficient" or "correctly" when the ` +
+  `case allows precision)? Atomic (one thing only)? Consistent with the other items and ` +
+  `fields? In the right field?`;
+
+export function buildListReviewMessages(
+  field: CaseListField,
+  context: string,
+  existing: string[],
+  lang: string,
+): AiMessage[] {
+  const { name, rule, ordered } = CASE_LISTS[field];
+  const items = existing.map((text) => text.trim()).filter(Boolean);
+  const numbered = items.map((text, i) => `${i + 1}. ${text}`).join("\n");
+  const data = asData(
+    `${capped(context.trim(), MAX_CONTEXT) || "(no details yet)"}\n\nCurrent ${name}:\n${numbered || "(none yet)"}`,
+  );
+  const addShape = ordered
+    ? `{"action":"add","text":"new item","after":2,"reason":"why"}`
+    : `{"action":"add","text":"new item","reason":"why"}`;
+  const task = items.length
+    ? [
+        `Review the current ${name} against the rest of this test case. ${rule}`,
+        ``,
+        REVIEW_CHECKS,
+        ``,
+        `If an item passes, propose nothing for it. Use "rewrite" if it fails on wording, ` +
+          `ambiguity or atomicity. Use "remove" if it repeats another item, the test does not ` +
+          `depend on it or it belongs in another field. Then use "add" only for what the rest ` +
+          `of the case shows to be missing.`,
+      ]
+    : [
+        `Propose the ${name} of this test case. ${rule} Use only "add", with 1 to 8 items, each ` +
+          `verifiable, unambiguous and atomic.`,
+      ];
   const user = [
-    contextData(context, "Preconditions already listed", existing),
+    `<data>\n${data}\n</data>`,
     ``,
-    `Propose 1 to 6 preconditions for this test case: the state that must hold before ` +
-      `the steps run (data, user, configuration). One plain sentence each, without the ` +
-      `word "Given". Skip the ones already listed.`,
+    ...task,
     ``,
-    `Return exactly this shape: {"preconditions":["precondition"]}`,
-    `If there is not enough context, return {"preconditions":[],"reason":"why"}.`,
+    `Everything must follow from the case: never invent values, names, messages or behaviour ` +
+      `it does not give, and propose nothing you can only assume. Propose only changes that ` +
+      `improve the case: do not pad.`,
+    ``,
+    `Return exactly this shape: {"proposals":[${addShape},` +
+      `{"action":"rewrite","item":1,"text":"better wording","reason":"why"},` +
+      `{"action":"remove","item":3,"reason":"why"}]}`,
+    `"item" is the number of the listed item, with at most one proposal for each. ` +
+      (ordered ? `"after" is the number of the step the new one follows, 0 to go first. ` : ``) +
+      `"reason" names the concrete defect or the evidence in the case, in at most 12 words ` +
+      `(e.g. "repeats item 2", "step 3 needs this state"). Items are plain sentences without ` +
+      `a Gherkin keyword.`,
+    `If nothing should change or there is not enough context, return {"proposals":[],"reason":"why"}.`,
   ].join("\n");
   return [systemRules("You are a senior QA test analyst (ISTQB CTFL).", lang), { role: "user", content: user }];
 }
 
-/** Preconditions from the case description (spec §5.3 step 7, IA-10). */
-export async function suggestPreconditions(
+/** Reviews one list of a test case against the rest of it: what to add, what to
+ *  reword and what to remove, each with its reason (IA-16). Nothing is applied
+ *  here: the user picks, and `applyProposals` applies the picks. */
+export async function reviewCaseList(
+  field: CaseListField,
   context: string,
   existing: string[],
   lang: string,
-): Promise<AiResult<string[]>> {
+): Promise<AiResult<ListProposal[]>> {
   const { value, provenance } = await aiJson(
-    buildPreconditionMessages(context, existing, lang),
-    preconditionSuggestionsSchema,
+    buildListReviewMessages(field, context, existing, lang),
+    listReviewSchema,
   );
-  return { value: requireItems(value.preconditions, value.reason), provenance };
+  // Rendered as Given/When steps, so those drop a keyword the model added.
+  const clean = CASE_LISTS[field].gherkin ? withoutKeyword : undefined;
+  return { value: requireItems(usableProposals(value.proposals, existing, clean), value.reason), provenance };
 }

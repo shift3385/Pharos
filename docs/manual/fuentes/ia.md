@@ -4,8 +4,8 @@
 
 La IA de Pharos es **opcional**: con tu propia clave de un proveedor online
 (Gemini, OpenAI, Claude, OpenRouter o un servicio compatible) o sin internet
-con Ollama, redacta borradores de campos del plan, sugiere riesgos y
-precondiciones y propone casos a partir de un requisito o del plan. **Nada se
+con Ollama, redacta borradores de campos del plan, sugiere riesgos, revisa las
+listas de un caso de prueba y propone casos a partir de un requisito o del plan. **Nada se
 aplica sin que lo aceptes**, y lo aceptado queda marcado como generado por IA.
 
 ## Consejos
