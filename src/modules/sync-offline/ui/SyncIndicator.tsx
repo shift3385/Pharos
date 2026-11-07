@@ -101,9 +101,10 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-sync once the session is ready (waits for the token refresh on startup,
-  // so we never fire a request with a stale/expired access token), and again
-  // when another account signs in: counts and sync are per account (FIX-07).
+  // Auto-sync once the session is ready, and again when another account signs
+  // in: counts and sync are per account (FIX-07). At startup the app enters with
+  // the cached session before validating it, so this first sync may carry an
+  // expired token; `sessionRequester` renews it, sharing the startup renewal.
   // The purge (SYNC-06) runs then too, also offline.
   useEffect(() => {
     void refresh();

@@ -79,7 +79,9 @@ memory) and no history, and a desktop-only action says so in a toast.
   are single-use, so parallel requests, the startup check and other tabs share
   one renewal. If the server refuses the refresh token, the app goes back to
   the sign-in screen, keeping the execution drafts; if it cannot be asked, the
-  session stays and the screen reports the failure.
+  session stays and the screen reports the failure. The desktop sync and the
+  hand-over of old browser data renew the same way (`sessionRequester`,
+  `sync-offline/api/sessionRequest.ts`).
 - **Keys.** On the web the server numbers cases, requirements and defects from
   the same key series as the devices' leased blocks (`key_blocks`), so a web
   key never collides with a device's. A typed key that is taken (`key_taken`),
