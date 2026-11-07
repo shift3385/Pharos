@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import i18n from "i18next";
+import { notify } from "@shared/ui/notify";
 import { authApi, ApiError, NetworkError } from "../api/authApi";
 import type { LoginInput, RegisterInput, Session } from "../model/types";
 import {
   defaultSessionStore,
   type SessionStore,
 } from "./session-store";
+import { onSessionRenewal, renewSession } from "./sessionRenewal";
 import { AuthContext, type AuthStatus } from "./auth-context";
 
 interface AuthProviderProps {
@@ -53,6 +56,25 @@ export function AuthProvider({
     await store.clear();
   }, [store]);
 
+  // A renewal, here or from a request that found its token expired. A session
+  // that ends this way is not a sign-out: `pharos:signed-out` would throw away
+  // the unsaved execution drafts, which wait for the user to sign in again.
+  useEffect(
+    () =>
+      onSessionRenewal((next) => {
+        if (next) {
+          session.current = next;
+          setUser(next.user);
+          setOffline(false);
+          setStatus("authenticated");
+          return;
+        }
+        if (session.current) notify(i18n.t("auth.sessionExpired"), "warning");
+        void clearSession();
+      }),
+    [clearSession],
+  );
+
   // Restore session on startup.
   useEffect(() => {
     if (initialSession) return; // caller supplied a session (preload / tests)
@@ -78,10 +100,10 @@ export function AuthProvider({
           setOffline(true);
         } else if (error instanceof ApiError && error.statusCode === 401) {
           try {
-            const refreshed = await authApi.refresh(stored.refreshToken);
-            if (!cancelled) await applySession(refreshed);
-          } catch {
-            if (!cancelled) await clearSession();
+            await renewSession(stored.accessToken, store);
+          } catch (renewal) {
+            // The session is kept: the server could not be asked, not said no.
+            if (!cancelled && renewal instanceof NetworkError) setOffline(true);
           }
         }
       }
@@ -89,7 +111,7 @@ export function AuthProvider({
     return () => {
       cancelled = true;
     };
-  }, [store, applySession, clearSession, initialSession]);
+  }, [store, applySession, initialSession]);
 
   const login = useCallback(
     async (input: LoginInput) => {

@@ -6,6 +6,7 @@ import { Route, Routes, useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
+import { projectRows } from "../model/projectRows";
 import type { ProjectRow } from "../model/projectTable";
 import { ProjectsPage } from "./ProjectsPage";
 
@@ -49,6 +50,41 @@ function renderPage(route = "/projects") {
 
 beforeEach(async () => {
   await i18n.changeLanguage("es");
+  vi.mocked(projectRows).mockClear();
+});
+
+describe("Proyectos when the list fails to load", () => {
+  it("shows the error instead of «Cargando…», and «Reintentar» loads it", async () => {
+    setViewportWidth(1440);
+    vi.mocked(projectRows).mockRejectedValueOnce(new Error("Authentication is required."));
+    renderPage();
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar la lista de proyectos.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("table", { name: "Todos los proyectos" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("a retry that fails again says so again", async () => {
+    vi.mocked(projectRows).mockRejectedValueOnce(new Error("down"));
+    vi.mocked(projectRows).mockRejectedValueOnce(new Error("down"));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(projectRows).toHaveBeenCalledTimes(2);
+  });
+
+  it("a failed reload keeps the list on screen and adds the error", async () => {
+    setViewportWidth(1440);
+    renderPage();
+    await screen.findByRole("table", { name: "Todos los proyectos" });
+    vi.mocked(projectRows).mockRejectedValueOnce(new Error("down"));
+    window.dispatchEvent(new CustomEvent("pharos:synced"));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Todos los proyectos" })).toBeInTheDocument();
+  });
 });
 
 describe("Proyectos (SPEC §8)", () => {

@@ -14,10 +14,12 @@ import {
   FolderOpen,
   GitFork,
   Plus,
+  RotateCw,
   Search,
   Settings,
 } from "lucide-react";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
 import { FieldMessage } from "@shared/ui/FormField";
 import { controlProps } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
@@ -80,6 +82,7 @@ function ProjectList() {
   // Home links here with ?new=1 to start one.
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
   const { exportAll, exportProject, busy, progressModal } = useProjectExport();
   const [name, setName] = useState("");
@@ -103,7 +106,17 @@ function ProjectList() {
   }
 
   async function refresh() {
-    setRows(await projectRows(ownerId));
+    try {
+      setRows(await projectRows(ownerId));
+      setLoadFailed(false);
+    } catch (e) {
+      logClientError(e, "projects list");
+      setLoadFailed(true);
+    }
+  }
+  function retryLoad() {
+    setLoadFailed(false);
+    void refresh();
   }
   useEffect(() => {
     void refresh();
@@ -327,8 +340,18 @@ function ProjectList() {
         </div>
       )}
 
+      {loadFailed && (
+        <div className="pj-load-error" role="alert">
+          <span>{t("projects.list.loadFailed")}</span>
+          <button type="button" className="header-action" onClick={retryLoad}>
+            <RotateCw size={16} aria-hidden="true" />
+            <span>{t("projects.list.retry")}</span>
+          </button>
+        </div>
+      )}
+
       {rows === null ? (
-        <p className="pj-muted">{t("common.loading")}</p>
+        !loadFailed && <p className="pj-muted">{t("common.loading")}</p>
       ) : all.length === 0 ? (
         !creating && <p className="pj-empty">{t("projects.empty")}</p>
       ) : (
