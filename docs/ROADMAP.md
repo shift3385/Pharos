@@ -276,6 +276,8 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | Absorbido por el rediseño (RED-*) |
+| UX-15  | Pasos de pares del plan: campos que crecen, apilado por ancho del campo, foco al añadir y quitar, confirmación fija a su fila y filas de Excel que crecen | P2  | 0.3.0 · Hecho |
+| UX-16  | Cronograma: calendario más compacto y fijo; sprints e hitos con desplazamiento propio | P2  | 0.3.0 · Hecho |
 | UX-09  | "Exportar diagnóstico" también en la pantalla de BD que no abre (`DbErrorScreen`); hoy solo queda el log (R1) | P2  | 0.1.x   |
 | UX-10  | Revisión del manual: avisos por color de estado, ayuda `InfoTip`, campos alineados, papelera para quitar filas (ADR-0028) | P1  | 0.2.0 · Hecho |
 | DEU-01 | Backend compilado con `tsc` para producción                                                         | P2  | 0.5.0   |

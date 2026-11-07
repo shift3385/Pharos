@@ -154,19 +154,12 @@
   gap: var(--space-2);
 }
 
-.tp-list-field__row,
-.tp-pair-field__row {
+.tp-list-field__row {
   display: flex;
   gap: var(--space-2);
 }
 
-.tp-pair-field__row input {
-  flex: 1;
-  min-width: 0;
-}
-
-.tp-list-field__row input,
-.tp-pair-field__row input {
+.tp-list-field__row input {
   height: 38px;
   padding: 0 var(--space-3);
   font-family: inherit;

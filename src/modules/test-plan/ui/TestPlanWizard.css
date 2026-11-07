@@ -672,16 +672,65 @@
 .tps {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   min-width: 0;
+}
+
+/* Room for both (ScheduleStep): calendar on the left, rows on the right, as
+   tall as the calendar. */
+.tps[data-layout="side"] {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+}
+
+.tps[data-layout="side"][data-months="2"] {
+  grid-template-columns: 600px minmax(0, 1fr);
+}
+
+/* Only the rows scroll, so the calendar stays in place however many there are.
+   On a phone the page scrolls as usual: a calendar held in place would leave
+   no room, and a scroll inside a scroll is hard to use with a finger. */
+.tps-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tps:not([data-layout="phone"]) .tps-lists {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  /* Room for the focus ring, which a scroll box would clip. */
+  padding: 2px;
+  /* A focused field is never left under the sticky section title. */
+  scroll-padding-top: 32px;
+}
+
+.tps[data-layout="stacked"] .tps-lists {
+  max-block-size: clamp(240px, 42dvh, 420px);
+}
+
+/* The calendar alone sets the row's height. */
+.tps[data-layout="side"] .tps-lists {
+  block-size: 0;
+  min-block-size: 100%;
+}
+
+.tps:not([data-layout="phone"]) .tps-list__head {
+  position: sticky;
+  top: -2px;
+  z-index: 1;
+  padding-block: 2px 4px;
+  background: var(--color-surface-1);
 }
 
 .tps-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
-  padding: clamp(12px, 2cqi, 18px);
+  padding: clamp(10px, 1.6cqi, 14px);
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -798,8 +847,8 @@
 }
 
 .tps-month__label {
-  padding: 0 4px 4px;
-  font-size: 15px;
+  padding: 0 4px;
+  font-size: 14px;
   font-weight: var(--fw-semibold);
 }
 
@@ -834,9 +883,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  height: 32px;
   cursor: pointer;
   user-select: none;
+}
+
+/* A day stays easy to tap on a phone. */
+[data-viewport="mobile"] .tps-day {
+  height: 40px;
 }
 
 .tps-day--empty {
@@ -858,18 +912,18 @@
 
 .tps-band {
   position: absolute;
-  inset: 3px 0;
+  inset: 2px 0;
   background: var(--color-navy-100);
 }
 
 .tps-band[data-cap-start] {
-  border-top-left-radius: 17px;
-  border-bottom-left-radius: 17px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
 }
 
 .tps-band[data-cap-end] {
-  border-top-right-radius: 17px;
-  border-bottom-right-radius: 17px;
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
 }
 
 /* Amber and red tints mix in sRGB: in oklch they turn purple on the dark
@@ -903,12 +957,17 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  font-size: 13.5px;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-primary);
   border-radius: 50%;
+}
+
+[data-viewport="mobile"] .tps-num {
+  width: 32px;
+  height: 32px;
 }
 
 .tps-num[data-strong] {
@@ -928,7 +987,7 @@
 
 .tps-diamond {
   position: absolute;
-  bottom: 2px;
+  bottom: 0;
   left: 50%;
   width: 7px;
   height: 7px;
@@ -938,7 +997,7 @@
 }
 
 .tps-diamond[data-active] {
-  bottom: 1px;
+  bottom: -1px;
   width: 9px;
   height: 9px;
   margin-left: -4.5px;
@@ -948,9 +1007,9 @@
 .tps-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: 6px 14px;
   margin: 0;
-  padding: 10px 0 0;
+  padding: 8px 0 0;
   font-size: 12px;
   color: var(--color-text-secondary);
   list-style: none;

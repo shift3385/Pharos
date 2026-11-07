@@ -1,6 +1,7 @@
 // WCAG 2.1 AA audit of the app shell, the shared dialogs and form parts, and admin (UX-05, ADR-0027). axe checks the markup;
 // keyboard and form behaviour axe cannot see is asserted directly. Report:
 // docs/accesibilidad/auditoria-wcag-0.1.0.md.
+import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -165,6 +166,136 @@ describe("shared form parts", () => {
       screen.getByRole("button", { name: "Remove: Scope · Row 2" }),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+
+  describe("pair list (UX-15)", () => {
+    type Row = { a: string; b: string };
+
+    function Pairs({ initial, onChange }: { initial: Row[]; onChange?: (rows: Row[]) => void }) {
+      const [items, setItems] = useState(initial);
+      return (
+        <PairListField
+          label="Risks"
+          items={items}
+          keys={["a", "b"]}
+          labels={["Risk", "Mitigation"]}
+          onChange={(next) => {
+            setItems(next);
+            onChange?.(next);
+          }}
+        />
+      );
+    }
+
+    const rows: Row[] = [
+      { a: "First", b: "One" },
+      { a: "Second", b: "Two" },
+      { a: "Third", b: "Three" },
+    ];
+
+    it("uses multi-line fields with real labels, no placeholder, and passes axe", async () => {
+      renderWithProviders(<Pairs initial={rows} />);
+      const risk = screen.getByRole("textbox", { name: "Risk · Row 2" });
+      expect(risk.tagName).toBe("TEXTAREA");
+      expect(risk).toHaveValue("Second");
+      expect(risk).not.toHaveAttribute("placeholder");
+      await expectNoAxeViolations();
+    });
+
+    it("keeps the fields, then the remove button, in tab order, and Enter adds a line", async () => {
+      renderWithProviders(<Pairs initial={rows} />);
+      const risk = screen.getByRole("textbox", { name: "Risk · Row 1" });
+      await userEvent.click(risk);
+      await userEvent.keyboard("{Enter}x");
+      expect(risk).toHaveValue("First\nx");
+      await userEvent.tab();
+      expect(screen.getByRole("textbox", { name: "Mitigation · Row 1" })).toHaveFocus();
+      await userEvent.tab();
+      expect(screen.getByRole("button", { name: "Remove: Risks · Row 1" })).toHaveFocus();
+    });
+
+    it("moves the focus to the new row when a person adds one", async () => {
+      renderWithProviders(<Pairs initial={rows} />);
+      await userEvent.click(screen.getByRole("button", { name: /Add row/ }));
+      expect(screen.getByRole("textbox", { name: "Risk · Row 4" })).toHaveFocus();
+    });
+
+    it("does not take the focus when the rows arrive from outside", async () => {
+      const { rerender } = renderWithProviders(
+        <PairListField label="Risks" items={rows} keys={["a", "b"]} labels={["Risk", "Mitigation"]} onChange={() => {}} />,
+      );
+      const before = document.activeElement;
+      rerender(
+        <PairListField
+          label="Risks"
+          items={[...rows, { a: "From the AI", b: "Fix" }]}
+          keys={["a", "b"]}
+          labels={["Risk", "Mitigation"]}
+          onChange={() => {}}
+        />,
+      );
+      expect(screen.getByRole("textbox", { name: "Risk · Row 4" })).toBeInTheDocument();
+      expect(document.activeElement).toBe(before);
+    });
+
+    it("starts a removal on Cancel and returns to the icon when cancelled", async () => {
+      renderWithProviders(<Pairs initial={rows} />);
+      await userEvent.click(screen.getByRole("button", { name: "Remove: Risks · Row 2" }));
+      const group = screen.getByRole("group", { name: "Remove: Risks · Row 2" });
+      const cancel = within(group).getByRole("button", { name: "Cancel" });
+      expect(cancel).toHaveFocus();
+      await userEvent.click(cancel);
+      expect(screen.getByRole("button", { name: "Remove: Risks · Row 2" })).toHaveFocus();
+    });
+
+    it("after removing, focuses the row in that place and announces it", async () => {
+      renderWithProviders(<Pairs initial={rows} />);
+      await userEvent.click(screen.getByRole("button", { name: "Remove: Risks · Row 2" }));
+      await userEvent.click(screen.getByRole("button", { name: "Yes, delete" }));
+      const nowSecond = screen.getByRole("textbox", { name: "Risk · Row 2" });
+      expect(nowSecond).toHaveValue("Third");
+      expect(nowSecond).toHaveFocus();
+      expect(screen.getByRole("status")).toHaveTextContent("Row 2 removed");
+    });
+
+    it("focuses «Add row» after removing the last one", async () => {
+      renderWithProviders(<Pairs initial={[{ a: "", b: "" }]} />);
+      await userEvent.click(screen.getByRole("button", { name: "Remove: Risks · Row 1" }));
+      expect(screen.getByRole("button", { name: /Add row/ })).toHaveFocus();
+    });
+
+    it("never leaves a confirmation open on a row that took another's place", async () => {
+      const onChange = vi.fn();
+      renderWithProviders(<Pairs initial={rows} onChange={onChange} />);
+      // Ask to remove «Second», then remove «First» before answering.
+      await userEvent.click(screen.getByRole("button", { name: "Remove: Risks · Row 2" }));
+      await userEvent.click(screen.getByRole("button", { name: "Remove: Risks · Row 1" }));
+      const first = screen.getByRole("group", { name: "Remove: Risks · Row 1" });
+      await userEvent.click(within(first).getByRole("button", { name: "Yes, delete" }));
+      expect(onChange).toHaveBeenLastCalledWith([rows[1], rows[2]]);
+      // «Third» moved to row 2: nothing is waiting to remove it.
+      expect(screen.queryByRole("button", { name: "Yes, delete" })).toBeNull();
+    });
+
+    it("describes a repeated row on both of its fields", () => {
+      renderWithProviders(<Pairs initial={[rows[0], rows[0]]} />);
+      expect(screen.getByRole("textbox", { name: "Risk · Row 2" })).toHaveAccessibleDescription(/Duplicate row/);
+      expect(screen.getByRole("textbox", { name: "Mitigation · Row 2" })).toHaveAccessibleDescription(/Duplicate row/);
+    });
+  });
+
+  it("a plain list never leaves a confirmation open on the wrong row either (UX-15)", async () => {
+    function Items() {
+      const [items, setItems] = useState(["One", "Two", "Three"]);
+      return <ListField label="Scope" items={items} onChange={setItems} />;
+    }
+    renderWithProviders(<Items />);
+    await userEvent.click(screen.getByRole("button", { name: "Remove: Scope · Row 2" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove: Scope · Row 1" }));
+    const first = screen.getByRole("group", { name: "Remove: Scope · Row 1" });
+    await userEvent.click(within(first).getByRole("button", { name: "Yes, delete" }));
+    expect(screen.queryByRole("button", { name: "Yes, delete" })).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Scope · Row 1" })).toHaveValue("Two");
   });
 });
 

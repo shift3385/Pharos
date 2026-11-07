@@ -324,6 +324,7 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           items={form.closureCriteria}
           keys={["criterion", "metric"]}
           labels={[t("testPlan.criterionCol"), t("testPlan.metricCol")]}
+          wideFirst
           onChange={(v) => set("closureCriteria", v)}
         />
       );

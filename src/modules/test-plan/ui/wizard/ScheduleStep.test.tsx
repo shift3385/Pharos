@@ -83,6 +83,55 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("step 14 · fixed calendar and scrolling rows (UX-16)", () => {
+  const lists = () => screen.getByRole("region", { name: "Sprints e hitos" });
+  const root = () => document.querySelector<HTMLElement>(".tps")!;
+
+  it("keeps the rows in their own region and the calendar out of it", async () => {
+    renderStep();
+    const grids = await openStep14();
+    expect(within(lists()).getByRole("heading", { name: "Sprints" })).toBeInTheDocument();
+    expect(within(lists()).getByRole("heading", { name: "Hitos" })).toBeInTheDocument();
+    for (const grid of grids) expect(lists()).not.toContainElement(grid);
+  });
+
+  it.each([
+    [1440, "side", 2],
+    [1000, "side", 1],
+    [700, "stacked", 2],
+  ])("at %i px: %s layout with %i month(s)", async (width, layout, months) => {
+    setViewportWidth(width);
+    renderStep();
+    const grids = await openStep14();
+    expect(root().dataset.layout).toBe(layout);
+    expect(grids).toHaveLength(months);
+  });
+
+  it("a phone scrolls the page, without a scroll box inside it", async () => {
+    setViewportWidth(390);
+    renderStep();
+    await screen.findByText("Paso 1 de 19");
+    await userEvent.click(screen.getByRole("button", { name: "Ver pasos" }));
+    const sheet = screen.getByRole("dialog", { name: "Pasos del plan" });
+    await userEvent.click(within(sheet).getByRole("button", { name: /Cronograma/ }));
+    expect(root().dataset.layout).toBe("phone");
+  });
+
+  it("a sprint added from the calendar is brought into view in its list only", async () => {
+    renderStep();
+    await openStep14();
+    const box = lists();
+    // Every row sits below the visible part of the list.
+    const rows = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ top: 500, bottom: 560 } as DOMRect);
+    box.getBoundingClientRect = () => ({ top: 100, bottom: 400 }) as DOMRect;
+    await userEvent.click(screen.getByRole("button", { name: /Siguiente sprint/ }));
+    expect(box.scrollTop).toBe(160);
+    rows.mockRestore();
+  });
+});
+
 describe("step 14 · Cronograma (RED-W5)", () => {
   it("replaces the old step: no «Próximamente», no «Añadir fila», no native date inputs", async () => {
     renderStep();

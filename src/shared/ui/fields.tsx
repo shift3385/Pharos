@@ -1,13 +1,16 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { duplicateRow, duplicateRows } from "@shared/validation";
 import { FieldMessage } from "./FormField";
-import { controlProps } from "./fieldProps";
+import { controlProps, type ControlProps } from "./fieldProps";
 import "./fields.css";
 
 /** Remove-row control (UX-10): a trash icon named «Quitar: <fila>», which asks
- *  for confirmation when the row has content. «✕» is kept for close/dismiss. */
+ *  for confirmation when the row has content. «✕» is kept for close/dismiss.
+ *  Asking moves the focus to «Cancelar», and cancelling returns it to the icon
+ *  (UX-15). A list keys this button by row and length, so a confirmation never
+ *  stays open on a row that took another one's place. */
 export function DeleteButton({
   onDelete,
   needsConfirm,
@@ -20,9 +23,21 @@ export function DeleteButton({
 }) {
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
   const name = itemLabel
     ? `${t("common.remove")}: ${itemLabel}`
     : t("common.remove");
+
+  useEffect(() => {
+    if (confirming) {
+      cancelRef.current?.focus();
+    } else if (returnFocus.current) {
+      returnFocus.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [confirming]);
 
   if (!needsConfirm) {
     return (
@@ -52,9 +67,13 @@ export function DeleteButton({
           {t("common.confirmDelete")}
         </button>
         <button
+          ref={cancelRef}
           type="button"
           className="tp-confirm__no"
-          onClick={() => setConfirming(false)}
+          onClick={() => {
+            returnFocus.current = true;
+            setConfirming(false);
+          }}
         >
           {t("common.cancel")}
         </button>
@@ -64,6 +83,7 @@ export function DeleteButton({
 
   return (
     <button
+      ref={triggerRef}
       type="button"
       className="tp-list-field__del"
       aria-label={name}
@@ -112,6 +132,7 @@ export function ListField({
                 }}
               />
               <DeleteButton
+                key={`${i}-${items.length}`}
                 itemLabel={rowLabel}
                 needsConfirm={value.trim() !== ""}
                 onDelete={() => onChange(items.filter((_, j) => j !== i))}
@@ -133,23 +154,35 @@ export function ListField({
 }
 
 /** Editable list of two-column rows (e.g. role / responsibility). `label`
- *  names the group; each cell is named by its column and row number, and a
- *  row repeating an earlier one gets a warning. */
+ *  names the group; each field has a real label (its column plus the row, for
+ *  assistive tech) and grows with its text, so a long text is read whole
+ *  (UX-15). Wide enough, one header names both columns; narrower, each pair
+ *  stacks with visible labels (fields.css, by the field's own width). A row
+ *  repeating an earlier one gets a warning. */
 export function PairListField<T>({
   items,
   keys,
   labels,
   onChange,
   label,
+  wideFirst,
 }: {
   items: T[];
   keys: [keyof T, keyof T];
   labels: [string, string];
   onChange: (next: T[]) => void;
   label: string;
+  /** The second column holds short values (e.g. a metric): 2:1 instead of 1:1. */
+  wideFirst?: boolean;
 }) {
   const { t } = useTranslation();
   const baseId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const addRef = useRef<HTMLButtonElement>(null);
+  // Row to focus once the list changes. Only a person's own action sets it, so
+  // rows added by the AI never move the focus.
+  const pendingFocus = useRef<number | null>(null);
+  const [announcement, setAnnouncement] = useState("");
   const [ka, kb] = keys;
   const cell = (item: T, k: keyof T) => String(item[k] ?? "").trim();
   const dupes = duplicateRows(items, (item) =>
@@ -157,54 +190,96 @@ export function PairListField<T>({
       ? `${cell(item, ka)} | ${cell(item, kb)}`
       : "",
   );
+
+  useEffect(() => {
+    if (pendingFocus.current === null) return;
+    const row = Math.min(pendingFocus.current, items.length - 1);
+    pendingFocus.current = null;
+    if (row < 0) addRef.current?.focus();
+    else rootRef.current?.querySelector<HTMLTextAreaElement>(`#${CSS.escape(`${baseId}-${row}`)}`)?.focus();
+  }, [items.length, baseId]);
+
+  const field = (item: T, i: number, k: keyof T, column: string, control: ControlProps) => (
+    <div className="tp-pair-field__cell">
+      <label className="tp-pair-field__label" htmlFor={control.id}>
+        {column}
+        <span className="sr-only"> · {t("a11y.row", { n: i + 1 })}</span>
+      </label>
+      <textarea
+        {...control}
+        rows={1}
+        value={String(item[k] ?? "")}
+        onChange={(e) => {
+          const next = [...items];
+          next[i] = { ...item, [k]: e.target.value } as T;
+          onChange(next);
+        }}
+      />
+    </div>
+  );
+
   return (
-    <div className="tp-pair-field" role="group" aria-label={label}>
-      {items.map((item, i) => {
-        const hasContent = cell(item, ka) !== "" || cell(item, kb) !== "";
-        const id = `${baseId}-${i}`;
-        const issue = duplicateRow(dupes, i);
-        const row = t("a11y.row", { n: i + 1 });
-        return (
-          <div className="tp-list-field__item" key={i}>
-            <div className="tp-pair-field__row">
-              <input
-                {...controlProps(id, issue)}
-                aria-label={`${labels[0]} · ${row}`}
-                value={String(item[ka] ?? "")}
-                placeholder={labels[0]}
-                onChange={(e) => {
-                  const next = [...items];
-                  next[i] = { ...item, [ka]: e.target.value } as T;
-                  onChange(next);
-                }}
-              />
-              <input
-                aria-label={`${labels[1]} · ${row}`}
-                value={String(item[kb] ?? "")}
-                placeholder={labels[1]}
-                onChange={(e) => {
-                  const next = [...items];
-                  next[i] = { ...item, [kb]: e.target.value } as T;
-                  onChange(next);
-                }}
-              />
-              <DeleteButton
-                itemLabel={`${label} · ${row}`}
-                needsConfirm={hasContent}
-                onDelete={() => onChange(items.filter((_, j) => j !== i))}
-              />
-            </div>
-            {issue && <FieldMessage id={`${id}-msg`} issue={issue} />}
+    <div
+      ref={rootRef}
+      className={`tp-pair-field${wideFirst ? " tp-pair-field--wide-first" : ""}`}
+      role="group"
+      aria-label={label}
+    >
+      {items.length > 0 && (
+        <>
+          <div className="tp-pair-field__head" aria-hidden="true">
+            <span>{labels[0]}</span>
+            <span>{labels[1]}</span>
           </div>
-        );
-      })}
+          <ol className="tp-pair-field__list">
+            {items.map((item, i) => {
+              const hasContent = cell(item, ka) !== "" || cell(item, kb) !== "";
+              const id = `${baseId}-${i}`;
+              const issue = duplicateRow(dupes, i);
+              const row = t("a11y.row", { n: i + 1 });
+              return (
+                <li className="tp-list-field__item" key={i}>
+                  <div className="tp-pair-field__row">
+                    {field(item, i, ka, labels[0], controlProps(id, issue))}
+                    {field(
+                      item,
+                      i,
+                      kb,
+                      labels[1],
+                      controlProps(`${id}-b`, null, issue ? `${id}-msg` : undefined),
+                    )}
+                    <DeleteButton
+                      key={`${i}-${items.length}`}
+                      itemLabel={`${label} · ${row}`}
+                      needsConfirm={hasContent}
+                      onDelete={() => {
+                        pendingFocus.current = i;
+                        setAnnouncement(t("a11y.rowRemoved", { row }));
+                        onChange(items.filter((_, j) => j !== i));
+                      }}
+                    />
+                  </div>
+                  {issue && <FieldMessage id={`${id}-msg`} issue={issue} />}
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      )}
       <button
+        ref={addRef}
         type="button"
         className="tp-list-field__add"
-        onClick={() => onChange([...items, { [ka]: "", [kb]: "" } as T])}
+        onClick={() => {
+          pendingFocus.current = items.length;
+          onChange([...items, { [ka]: "", [kb]: "" } as T]);
+        }}
       >
         + {t("testPlan.addRow")}
       </button>
+      <span className="sr-only" role="status">
+        {announcement}
+      </span>
     </div>
   );
 }

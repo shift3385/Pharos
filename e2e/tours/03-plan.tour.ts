@@ -45,14 +45,14 @@ async function fillList(label: string, items: string[]) {
   }
 }
 
-/** Adds rows to a PairListField (two inputs per row). */
+/** Adds rows to a PairListField (two text areas per row). */
 async function fillPairs(label: string, rows: [string, string][]) {
   const group = $(`[role="group"][aria-label="${label}"]`);
   for (const [a, b] of rows) {
     await group.$(".tp-list-field__add").click();
-    const inputs = await group.$$("input");
-    await inputs[inputs.length - 2].setValue(a);
-    await inputs[inputs.length - 1].setValue(b);
+    const fields = await group.$$("textarea");
+    await fields[fields.length - 2].setValue(a);
+    await fields[fields.length - 1].setValue(b);
   }
 }
 
@@ -264,7 +264,7 @@ chapter("plan", () => {
   step("cronograma", {
     title: "Paso 14 · Cronograma: sprints",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin: el sprint aparece como una franja sobre las semanas que ocupa y, debajo, en la lista «Sprints», con su nombre y sus fechas, que puedes editar. «Siguiente sprint» añade el siguiente a continuación, con la duración que fijaste en la metodología (paso 6). La leyenda explica el calendario: las franjas de sprint alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es el día de hoy y el rojo claro señala los días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro (en este ejemplo, el segundo) y se resalta su fila; puedes arrastrar sus extremos en el calendario. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin: el sprint aparece como una franja sobre las semanas que ocupa y en la lista «Sprints», con su nombre y sus fechas, que puedes editar. La lista se desplaza por su cuenta, sin mover el calendario. «Siguiente sprint» añade el siguiente a continuación, con la duración que fijaste en la metodología (paso 6). La leyenda explica el calendario: las franjas de sprint alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es el día de hoy y el rojo claro señala los días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro (en este ejemplo, el segundo) y se resalta su fila; puedes arrastrar sus extremos en el calendario. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
     focus: ".tps-legend",
     run: async () => {
@@ -305,7 +305,7 @@ chapter("plan", () => {
   step("riesgos", {
     title: "Paso 15 · Riesgos y mitigación",
     caption:
-      "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, es decir, lo que se hará para reducirlo (en este ejemplo, el retraso del proveedor de pagos QR se mitiga con un simulador propio). Si has configurado un motor de IA, «✨ Sugerir riesgos con IA» propone riesgos con su mitigación para que elijas cuáles añadir (capítulo 11).",
+      "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, es decir, lo que se hará para reducirlo (en este ejemplo, el retraso del proveedor de pagos QR se mitiga con un simulador propio). Cada campo crece con su texto, para que se lea entero. Si has configurado un motor de IA, «✨ Sugerir riesgos con IA» propone riesgos con su mitigación para que elijas cuáles añadir (capítulo 11).",
     covers: ["wizard:risks"],
     run: async () => {
       await next();
