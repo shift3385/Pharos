@@ -1,27 +1,34 @@
-import { projectApi } from "@modules/projects";
-import { projectPlanClosure } from "@modules/test-plan";
+import { projectApi, type ProjectSummary } from "@modules/projects";
+import { planClosure, projectPlanClosure } from "@modules/test-plan";
+import { isTauri } from "@shared/platform";
 import { projectKey, type HomeProject } from "./homeData";
 
-/** Reads what the Home shows besides the execution numbers (read-only): one
- *  project list, then one read per project, its plan's closing date and
- *  criteria. Cases, results and defects come from the metrics read
- *  (`loadHomeMetrics`), so the web makes no per-project case or defect calls.
- *  Projects come most recently updated first. */
+type Closure = ReturnType<typeof planClosure> | null;
+
+const homeProject = (p: ProjectSummary, closure: Closure): HomeProject => ({
+  id: p.id,
+  name: p.name,
+  key: projectKey(p.caseIdPrefix),
+  closeDate: closure?.closeDate ?? null,
+  hasPlan: closure !== null,
+  criteria: closure?.criteria ?? [],
+});
+
+const latestFirst = (a: ProjectSummary, b: ProjectSummary) => b.updatedAt.localeCompare(a.updatedAt);
+
+/** Reads what the Home shows besides the execution numbers (read-only), each
+ *  project with its plan's closing date and criteria, most recently updated
+ *  first. The web gets them in one read of the server (ADR-0035); the desktop
+ *  asks its local store project by project. Cases, results and defects come
+ *  from the metrics read (`loadHomeMetrics`). */
 export async function loadHome(ownerId: string): Promise<HomeProject[]> {
-  const projects = [...(await projectApi.list(ownerId))].sort((a, b) =>
-    b.updatedAt.localeCompare(a.updatedAt),
-  );
+  if (!isTauri()) {
+    return (await projectApi.webOverview())
+      .sort(latestFirst)
+      .map((p) => homeProject(p, p.plan ? planClosure(p.plan.data) : null));
+  }
+  const projects = [...(await projectApi.list(ownerId))].sort(latestFirst);
   return Promise.all(
-    projects.map(async (p): Promise<HomeProject> => {
-      const closure = await projectPlanClosure(p.id, ownerId);
-      return {
-        id: p.id,
-        name: p.name,
-        key: projectKey(p.caseIdPrefix),
-        closeDate: closure?.closeDate ?? null,
-        hasPlan: closure !== null,
-        criteria: closure?.criteria ?? [],
-      };
-    }),
+    projects.map(async (p) => homeProject(p, await projectPlanClosure(p.id, ownerId))),
   );
 }

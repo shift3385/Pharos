@@ -93,8 +93,10 @@ memory) and no history, and a desktop-only action says so in a toast.
   its own (`pharos.sync.cacheOwner`, or none, as before FIX-07).
 
 **Proyectos (RED-V2).** `ProjectsPage` loads `projectRows` (projects with
-plan status, case count and requirement coverage, through the `test-plan`,
-`test-cases` and `traceability` public APIs) and builds the screen from pure
+plan status, case count and requirement coverage: on the web from one read,
+`projectApi.webOverview` → `GET /api/projects/overview`, ADR-0035; on the
+desktop through the `test-plan`, `test-cases` and `traceability` public APIs
+over the local store) and builds the screen from pure
 functions in `model/projectTable.ts` (recent, search, sort with nulls last,
 pages). The table is the shared `DataTable` + `Pagination` + `FilterChips` +
 `SortMenu`. Ajustes del proyecto is `ProjectSettings`: the delete dialog is
@@ -162,11 +164,13 @@ gate is needed (VERSIONING §6.5).
 
 **Home (UX-08, redesign RED-V1, SPEC §8).** `app/dashboard` is the Inicio of
 the redesign. `model/loadHome.ts` reads only public read APIs, most recently
-updated first: `projectApi.list` (case-id prefix → key) and, per project,
-`projectPlanClosure` (`test-plan`: latest sprint end or milestone, and the
-closure criteria). Cases, results and defects are not read per project: the
-metrics read below carries their counts, totals and queues, so the web makes
-one call per project plus one metrics call.
+updated first: each project (case-id prefix → key) with `planClosure`
+(`test-plan`: latest sprint end or milestone, and the closure criteria). The
+web gets them in one read, `projectApi.webOverview` (ADR-0035); the desktop
+uses `projectApi.list` and `projectPlanClosure` per project on its local store.
+Cases, results and defects are not read per project: the metrics read below
+carries their counts, totals and queues, so the web makes two calls whatever
+the number of projects, the overview and the metrics.
 `model/homeData.ts` aggregates it as pure functions (projects closing this
 month, the exit-criteria choices and default, the period days and which day
 labels show).
@@ -958,8 +962,9 @@ through `src-tauri/src/journal.rs`:
     on one page apart.
   - Styles in `controls.css`; no i18n of their own (callers pass the texts).
 - **Read-only exports for the Home** (RED-V1; no writes):
-  - `projectPlanClosure(projectId, userId)` (`@modules/test-plan`) →
-    `{ closeDate, criteria } | null`: the latest sprint end or milestone of the
+  - `planClosure(data)` (`@modules/test-plan`) → `{ closeDate, criteria }` of
+    a plan's data, and `projectPlanClosure(projectId, userId)` → the same for
+    a project's plan, or null without one: the latest sprint end or milestone of the
     plan's schedule (only ISO `YYYY-MM-DD` dates count; raw text from an
     imported plan is ignored; null without one) and its filled closure
     criteria; null without a plan. V2 reuses it for «Cierre del ciclo».
@@ -1285,7 +1290,9 @@ core Postgres lacks). Modules:
   by leaving it out (sending `null` stays the recommended practice). Tombstones are never removed; at start
   and then daily (`server.ts`) the payload of those older than
   `SYNC_TOMBSTONE_DAYS` is cleared (SYNC-06). See `src/modules/sync-offline/README.md`.
-- `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`,
+- `domain` — the web's domain API (BASE-10, ADR-0004): `/api/projects`
+  (and `/api/projects/overview`, the one read behind the project lists of
+  Proyectos and Inicio, `project-overview.ts`, ADR-0035),
   `/api/test-plans`, `/api/test-cases`, `/api/requirements` (+ `/import`),
   `/api/planner-cards` (+ `/reorder`; a `defect` card is refused with
   `defect_moved`), `/api/custom-fields` (+ `/reorder`, `/copy`,

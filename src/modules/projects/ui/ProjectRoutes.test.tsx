@@ -47,6 +47,7 @@ vi.mock("../api/projectApi", () => ({
   projectApi: {
     get: vi.fn(),
     list: vi.fn(async () => []),
+    webOverview: vi.fn(async () => []),
     update: vi.fn(async () => null),
   },
 }));

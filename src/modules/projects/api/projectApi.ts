@@ -1,7 +1,16 @@
 import { serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import { PROJECT_SAVED_EVENT } from "../model/events";
+import type { PlanClosureData } from "@modules/test-plan";
 import type { Project, ProjectInput, ProjectSummary } from "../model/types";
+
+/** A project with what the lists show (ADR-0035). */
+export interface WebProjectOverview extends ProjectSummary {
+  plan: { status: string; data: PlanClosureData } | null;
+  cases: number;
+  /** 0..1; null without requirements. */
+  coverage: number | null;
+}
 
 /** Announces a saved project to the views that cache the list (FIX-11). */
 function announced(saved: Promise<Project | null>): Promise<Project | null> {
@@ -18,6 +27,9 @@ function announced(saved: Promise<Project | null>): Promise<Project | null> {
 export const projectApi = {
   list: (ownerId: string): Promise<ProjectSummary[]> =>
     isTauri() ? invoke("project_list", { ownerId }) : serverApi.get("/api/projects"),
+  /** Web only: one request for every project of the lists, where the desktop
+   *  asks its local store project by project (no network, ADR-0035). */
+  webOverview: (): Promise<WebProjectOverview[]> => serverApi.get("/api/projects/overview"),
   get: (id: string, ownerId: string): Promise<Project | null> =>
     isTauri()
       ? invoke("project_get", { id, ownerId })

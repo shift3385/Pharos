@@ -70,24 +70,34 @@ export async function projectPlanStatus(
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Closing date and exit criteria of a project’s plan, for the Home (RED-V1):
- *  the date is the latest sprint end or milestone of the schedule (null when
- *  the schedule has none); null when the project has no plan. Read-only. */
+/** What a plan's closure is read from (the web's overview sends only this). */
+export type PlanClosureData = Pick<TestPlan["data"], "sprints" | "milestones" | "closureCriteria">;
+
+/** Closing date and exit criteria of a plan, for the lists (RED-V1): the date
+ *  is the latest sprint end or milestone of the schedule (null when the
+ *  schedule has none). */
+export function planClosure(data: PlanClosureData): {
+  closeDate: string | null;
+  criteria: ClosureCriterion[];
+} {
+  // Only ISO dates (YYYY-MM-DD) compare as text; an imported plan may keep
+  // the raw cell text («14/11/2026», «Nov 28»), which is ignored here.
+  const dates = [
+    ...(data.sprints ?? []).map((s) => s.end),
+    ...(data.milestones ?? []).map((m) => m.date),
+  ].filter((d) => ISO_DAY.test(d ?? ""));
+  const closeDate = dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
+  const criteria = (data.closureCriteria ?? []).filter((c) => c.criterion.trim());
+  return { closeDate, criteria };
+}
+
+/** `planClosure` of a project’s plan; null when the project has none. Read-only. */
 export async function projectPlanClosure(
   projectId: string,
   userId: string,
 ): Promise<{ closeDate: string | null; criteria: ClosureCriterion[] } | null> {
   const plan = await testPlanApi.byProject(projectId, userId);
-  if (!plan) return null;
-  // Only ISO dates (YYYY-MM-DD) compare as text; an imported plan may keep
-  // the raw cell text («14/11/2026», «Nov 28»), which is ignored here.
-  const dates = [
-    ...(plan.data.sprints ?? []).map((s) => s.end),
-    ...(plan.data.milestones ?? []).map((m) => m.date),
-  ].filter((d) => ISO_DAY.test(d ?? ""));
-  const closeDate = dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
-  const criteria = (plan.data.closureCriteria ?? []).filter((c) => c.criterion.trim());
-  return { closeDate, criteria };
+  return plan ? planClosure(plan.data) : null;
 }
 
 /** Id, title and version of a project’s plan (null when it has none): the

@@ -6,9 +6,11 @@ export {
   projectPlanFiles,
   projectHasPlan,
   projectPlanStatus,
+  planClosure,
   projectPlanClosure,
   projectPlanVersion,
   projectPlanRef,
 } from "./export/batch";
+export type { PlanClosureData } from "./export/batch";
 export { exportPlanPdf } from "./export/planPdf";
 export { planContextForProject } from "./ai/context";

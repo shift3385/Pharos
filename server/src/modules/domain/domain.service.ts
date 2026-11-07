@@ -85,7 +85,7 @@ const byTime = (key: string) => (a: RemoteDoc, b: RemoteDoc) => {
   const [x, y] = [sortable(str(a.payload, key)), sortable(str(b.payload, key))];
   return x < y ? -1 : x > y ? 1 : a.seq - b.seq;
 };
-const newestFirst = (a: RemoteDoc, b: RemoteDoc) => byTime("updatedAt")(b, a);
+export const newestFirst = (a: RemoteDoc, b: RemoteDoc) => byTime("updatedAt")(b, a);
 
 /** A requirement key: letters, digits and `- _ . :` (`requirement.rs`). */
 export const isValidKey = (key: string) => /^[A-Za-z0-9_.:-]+$/.test(key);
