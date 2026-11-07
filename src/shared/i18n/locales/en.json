@@ -22,6 +22,7 @@
     }
   },
   "common": {
+    "retry": "Retry",
     "loading": "Loading…",
     "delete": "Delete",
     "confirmDelete": "Yes, delete",
@@ -41,6 +42,7 @@
     }
   },
   "templates": {
+    "loadFailed": "The templates could not be loaded.",
     "kind": {
       "plan": "Test plans",
       "case": "Test cases"
@@ -660,6 +662,9 @@
     "defects": "Defects"
   },
   "projects": {
+    "loadFailed": "The project could not be loaded.",
+    "createFailed": "The project could not be created.",
+    "exportFailed": "«{{name}}» could not be exported.",
     "title": "Projects",
     "subtitle": "Each project is a folder with its test plan and its test cases.",
     "new": "New project",
@@ -711,7 +716,6 @@
     },
     "list": {
       "loadFailed": "The project list could not be loaded.",
-      "retry": "Retry",
       "recentTitle": "Recent",
       "recentHint_one": "The last one you opened",
       "recentHint_other": "The last {{count}} you opened",
@@ -802,6 +806,7 @@
     "themeDark": "Dark"
   },
   "testPlan": {
+    "loadFailed": "The test plan could not be loaded.",
     "defaultTitle": "New test plan",
     "revShort": "rev.",
     "fieldTitle": "Title",
@@ -1126,6 +1131,7 @@
     "leaveMessage": "The plan has unsaved changes. If you leave, they are lost; to keep them, press “Save” first."
   },
   "testCase": {
+    "loadFailed": "The test cases could not be loaded.",
     "title": "Test cases",
     "subtitle": "Create cases with synced Editor and Gherkin views.",
     "new": "New case",
@@ -1418,6 +1424,7 @@
     "importSkippedFields": "These values were not imported because they do not fit their field: {{keys}}"
   },
   "dashboard": {
+    "loadFailed": "Your projects could not be loaded.",
     "title": "Home",
     "greeting": "Hello, {{name}}",
     "summary": "You have <b>{{pending}}</b> across {{projects}}.",
@@ -1712,6 +1719,7 @@
     "openDefects": "Go to Defects"
   },
   "traceability": {
+    "loadFailed": "Traceability could not be loaded.",
     "title": "Traceability",
     "priorityLabel": {
       "low": "Low",
@@ -2471,6 +2479,7 @@
     }
   },
   "defects": {
+    "loadFailed": "The defects could not be loaded.",
     "title": "Defects",
     "newDefect": "New defect",
     "fromResult": "From a result",
@@ -2604,6 +2613,7 @@
       "afterSave": "Results are linked once the defect is saved."
     },
     "results": {
+      "loadFailed": "The results could not be loaded.",
       "title": "Results that did not pass",
       "pickToCreate": "Choose the failed attempt the defect comes from: the steps of the executed revision, the actual result, the build and the environment are filled in, and its evidence is added.",
       "pickToLink": "Choose the attempt to link to this defect.",

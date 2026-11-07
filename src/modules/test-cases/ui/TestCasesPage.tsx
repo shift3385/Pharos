@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
+import { LoadError } from "@shared/ui/LoadError";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
 import { useToast } from "@shared/ui/Toast";
 import { saveFile } from "@shared/export/saveFile";
@@ -58,7 +60,9 @@ export function TestCasesPage({
   const [canSuggest, setCanSuggest] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [cases, setCases] = useState<ListedCase[]>([]);
+  // True until the list has loaded once, also after a failure.
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [filters, setFilters] = useState<CaseFilters>(EMPTY_FILTERS);
   const [fields, setFields] = useState<CustomField[]>([]);
   const [sort, setSort] = useState<CaseSort>(DEFAULT_SORT);
@@ -71,17 +75,28 @@ export function TestCasesPage({
    *  the table shows first and the Requisito column fills in after. */
   async function refresh() {
     const request = ++latest.current;
-    const summaries = await testCaseApi.list(projectId, userId);
-    if (request !== latest.current) return;
-    setCases((prev) => {
-      const keys = new Map(prev.map((c) => [c.id, c.requirementKeys]));
-      return summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] }));
-    });
-    setLoading(false);
-    const traced = await projectTraceableCases(projectId, userId);
-    if (request !== latest.current) return;
-    const keys = new Map(traced.map((c) => [c.id, c.requirementKeys]));
-    setCases(summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] })));
+    try {
+      const summaries = await testCaseApi.list(projectId, userId);
+      if (request !== latest.current) return;
+      setCases((prev) => {
+        const keys = new Map(prev.map((c) => [c.id, c.requirementKeys]));
+        return summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] }));
+      });
+      setLoading(false);
+      const traced = await projectTraceableCases(projectId, userId);
+      if (request !== latest.current) return;
+      const keys = new Map(traced.map((c) => [c.id, c.requirementKeys]));
+      setCases(summaries.map((s) => ({ ...s, requirementKeys: keys.get(s.id) ?? [] })));
+      setLoadFailed(false);
+    } catch (e) {
+      if (request !== latest.current) return;
+      logClientError(e, "test cases");
+      setLoadFailed(true);
+    }
+  }
+  function retryLoad() {
+    setLoadFailed(false);
+    void refresh();
   }
 
   useEffect(() => {
@@ -93,9 +108,13 @@ export function TestCasesPage({
       .then((list) => {
         if (!cancelled) setFields(list);
       });
-    void Promise.all([aiAvailable(), projectHasPlan(projectId, userId)]).then(([ai, plan]) => {
-      if (!cancelled) setCanSuggest(ai && plan);
-    });
+    void Promise.all([aiAvailable(), projectHasPlan(projectId, userId)])
+      .then(([ai, plan]) => {
+        if (!cancelled) setCanSuggest(ai && plan);
+      })
+      .catch(() => {
+        if (!cancelled) setCanSuggest(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -298,8 +317,13 @@ export function TestCasesPage({
     );
   }
 
+  const loadError = loadFailed && <LoadError message={t("testCase.loadFailed")} onRetry={retryLoad} />;
+  // Never loaded: an empty table would look like a project without cases.
+  if (loadFailed && loading) return loadError;
+
   return (
     <>
+      {loadError}
       <TestCaseList
         projectId={projectId}
         cases={cases}

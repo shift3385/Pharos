@@ -193,3 +193,17 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(within(screen.getByRole("table", { name: "Matriz de trazabilidad" })).getAllByRole("row")[1]).toHaveTextContent("REQ-031");
   });
 });
+
+describe("Trazabilidad when it fails to load", () => {
+  it("shows the error instead of «Cargando…», and «Reintentar» loads the matrix", async () => {
+    setViewportWidth(1440);
+    list.mockRejectedValueOnce(new Error("down"));
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar la trazabilidad.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("table", { name: "Matriz de trazabilidad" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});

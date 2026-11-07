@@ -1,7 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
+import { logClientError } from "@shared/diagnostics";
 import { Dialog } from "@shared/ui/Dialog";
+import { LoadError } from "@shared/ui/LoadError";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { defectsApi } from "../api/defectsApi";
 import type { ResultCandidate } from "../model/types";
@@ -31,10 +33,25 @@ export function ResultPickerDialog({
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [results, setResults] = useState<ResultCandidate[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [query, setQuery] = useState("");
   useEffect(() => {
-    void defectsApi.results(projectId, userId).then(setResults);
-  }, [projectId, userId]);
+    let live = true;
+    defectsApi
+      .results(projectId, userId)
+      .then((list) => {
+        if (live) setResults(list);
+      })
+      .catch((e: unknown) => {
+        if (!live) return;
+        logClientError(e, "defect result picker");
+        setLoadFailed(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [projectId, userId, loadAttempt]);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (results ?? [])
@@ -65,7 +82,15 @@ export function ResultPickerDialog({
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
-      {results === null ? (
+      {loadFailed ? (
+        <LoadError
+          message={t("defects.results.loadFailed")}
+          onRetry={() => {
+            setLoadFailed(false);
+            setLoadAttempt((n) => n + 1);
+          }}
+        />
+      ) : results === null ? (
         <p className="df-muted">{t("common.loading")}</p>
       ) : shown.length === 0 ? (
         <p className="df-muted">{t("defects.results.empty")}</p>

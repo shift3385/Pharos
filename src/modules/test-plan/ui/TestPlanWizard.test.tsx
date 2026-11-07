@@ -275,3 +275,23 @@ describe("plan wizard · leaving with unsaved changes (RED-V3k guard)", () => {
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/projects$/);
   });
 });
+
+describe("plan wizard when the plan fails to load", () => {
+  it("shows the error instead of «Cargando…», and «Reintentar» opens the plan", async () => {
+    setViewportWidth(1440);
+    vi.mocked(testPlanApi.get).mockRejectedValueOnce(new Error("down"));
+    renderWizard();
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar el plan de pruebas.");
+    expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByText("Paso 1 de 19")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("a plan that no longer exists says so too", async () => {
+    vi.mocked(testPlanApi.get).mockResolvedValueOnce(null);
+    renderWizard();
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo cargar el plan de pruebas.");
+  });
+});

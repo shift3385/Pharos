@@ -8,6 +8,8 @@ import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useAuth } from "@modules/auth";
+import { logClientError } from "@shared/diagnostics";
+import { LoadError } from "@shared/ui/LoadError";
 import { saveFile } from "@shared/export/saveFile";
 import { unlessReported } from "@shared/ui/notify";
 import { templateApi } from "../api/templateApi";
@@ -36,7 +38,10 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
+  // True until the list has loaded once, also after a failure.
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [kind, setKind] = useState<TemplateKind>("plan");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -45,7 +50,13 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
-    setTemplates(await templateApi.list(userId));
+    try {
+      setTemplates(await templateApi.list(userId));
+      setLoadFailed(false);
+    } catch (e) {
+      logClientError(e, "templates");
+      setLoadFailed(true);
+    }
   }
 
   useEffect(() => {
@@ -56,16 +67,21 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
       } catch {
         /* seeding is best-effort; listing still works */
       }
-      const list = await templateApi.list(userId);
-      if (!cancelled) {
+      try {
+        const list = await templateApi.list(userId);
+        if (cancelled) return;
         setTemplates(list);
         setLoading(false);
+      } catch (e) {
+        if (cancelled) return;
+        logClientError(e, "templates");
+        setLoadFailed(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, loadAttempt]);
 
   useEffect(() => {
     if (!loading) onCount?.(templates.length);
@@ -178,8 +194,17 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
         />
       </div>
 
+      {loadFailed && (
+        <LoadError
+          message={t("templates.loadFailed")}
+          onRetry={() => {
+            setLoadFailed(false);
+            setLoadAttempt((n) => n + 1);
+          }}
+        />
+      )}
       {loading ? (
-        <p className="adm-hint">{t("common.loading")}</p>
+        !loadFailed && <p className="adm-hint">{t("common.loading")}</p>
       ) : shown.length === 0 ? (
         <p className="tpl__empty" role="status">
           {q ? t("templates.noResults", { query: query.trim() }) : t(`templates.empty.${kind}`)}

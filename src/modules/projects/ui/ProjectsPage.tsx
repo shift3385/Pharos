@@ -14,13 +14,14 @@ import {
   FolderOpen,
   GitFork,
   Plus,
-  RotateCw,
   Search,
   Settings,
 } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { FieldMessage } from "@shared/ui/FormField";
+import { LoadError } from "@shared/ui/LoadError";
+import { ReportedError } from "@shared/ui/notify";
 import { controlProps } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
@@ -83,6 +84,8 @@ function ProjectList() {
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  // The last create or row export that failed, to say so and repeat it.
+  const [actionFailed, setActionFailed] = useState<{ create: true } | { exporting: ProjectRow } | null>(null);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
   const { exportAll, exportProject, busy, progressModal } = useProjectExport();
   const [name, setName] = useState("");
@@ -101,8 +104,15 @@ function ProjectList() {
   }, []);
 
   async function exportRow(row: ProjectRow) {
-    const project = await projectApi.get(row.id, ownerId);
-    if (project) await exportProject(project);
+    setActionFailed(null);
+    try {
+      const project = await projectApi.get(row.id, ownerId);
+      if (project) await exportProject(project);
+    } catch (e) {
+      if (e instanceof ReportedError) return;
+      logClientError(e, "project export");
+      setActionFailed({ exporting: row });
+    }
   }
 
   async function refresh() {
@@ -136,7 +146,18 @@ function ProjectList() {
     setNameTried(true);
     if (!trimmed) return;
     setNameTried(false);
-    const project = await projectApi.create({ name: trimmed, ownerId });
+    setActionFailed(null);
+    let project;
+    try {
+      project = await projectApi.create({ name: trimmed, ownerId });
+    } catch (e) {
+      // The form stays open with the name; «Reintentar» sends what it says then.
+      // A refusal the user was already told about (a toast) is not repeated.
+      if (e instanceof ReportedError) return;
+      logClientError(e, "project create");
+      setActionFailed({ create: true });
+      return;
+    }
     setName("");
     setCreating(false);
     if (project) navigate(projectPath(project.id));
@@ -328,6 +349,7 @@ function ProjectList() {
               setCreating(false);
               setName("");
               setNameTried(false);
+              setActionFailed(null);
             }}
           >
             {t("common.cancel")}
@@ -340,15 +362,17 @@ function ProjectList() {
         </div>
       )}
 
-      {loadFailed && (
-        <div className="pj-load-error" role="alert">
-          <span>{t("projects.list.loadFailed")}</span>
-          <button type="button" className="header-action" onClick={retryLoad}>
-            <RotateCw size={16} aria-hidden="true" />
-            <span>{t("projects.list.retry")}</span>
-          </button>
-        </div>
+      {actionFailed && (
+        <LoadError
+          message={
+            "exporting" in actionFailed
+              ? t("projects.exportFailed", { name: actionFailed.exporting.name })
+              : t("projects.createFailed")
+          }
+          onRetry={() => void ("exporting" in actionFailed ? exportRow(actionFailed.exporting) : create())}
+        />
       )}
+      {loadFailed && <LoadError message={t("projects.list.loadFailed")} onRetry={retryLoad} />}
 
       {rows === null ? (
         !loadFailed && <p className="pj-muted">{t("common.loading")}</p>
