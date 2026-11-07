@@ -24,7 +24,8 @@ import i18n from "i18next";
 import { getSession } from "@modules/auth";
 import { saveFile } from "@shared/export/saveFile";
 import { notify } from "@shared/ui/notify";
-import { batchDeltas, sendIsolating, syncRequest, withRetry } from "../api/transport";
+import { sessionRequester } from "../api/sessionRequest";
+import { batchDeltas, sendIsolating, withRetry, type SyncCaller } from "../api/transport";
 
 /** A change of the old web outbox. */
 interface LegacyDelta {
@@ -103,15 +104,14 @@ export const leftoverCount = (l: LegacyLeftovers) =>
   l.refusedChanges.length + l.conflicts.length + l.attachments.length + l.templates.length + l.revisions.length;
 
 /** Pushes the old outbox and tells which changes the server did not take. */
-async function pushOutbox(token: string, outbox: LegacyDelta[]): Promise<LegacyDelta[]> {
+async function pushOutbox(request: SyncCaller, outbox: LegacyDelta[]): Promise<LegacyDelta[]> {
   const left: LegacyDelta[] = outbox.filter((d) => d.refused);
   const send = (part: LegacyDelta[]) =>
     withRetry(() =>
-      syncRequest<{ conflicts?: { entity: string; entityId: string }[]; keyConflicts?: { entity: string; entityId: string }[] }>(
-        "/sync/push",
-        token,
-        { method: "POST", body: { deltas: part.map(({ refused: _r, ...d }) => d) } },
-      ),
+      request<{ conflicts?: { entity: string; entityId: string }[]; keyConflicts?: { entity: string; entityId: string }[] }>("/sync/push", {
+        method: "POST",
+        body: { deltas: part.map(({ refused: _r, ...d }) => d) },
+      }),
     );
   for (const batch of batchDeltas(outbox.filter((d) => !d.refused))) {
     const refused = await sendIsolating(batch, send, (part, body) => {
@@ -155,14 +155,14 @@ function claimBrowserData(userId: string, outbox: LegacyDelta[]) {
 export async function drainLegacyWebData(): Promise<{ pushed: number; leftovers: number }> {
   const session = await getSession();
   if (!session) return { pushed: 0, leftovers: 0 };
-  const { userId, accessToken } = session;
+  const { userId } = session;
   const own = [outboxKey(userId), conflictsKey(userId), cursorKey(userId)];
   const shared = [...CACHE_KEYS, ATTACHMENTS, TEMPLATES, ...REVISION_KEYS, CACHE_OWNER];
   const waiting = read<LegacyLeftovers | null>(unsentKey(userId), null);
   if (![...own, ...shared].some(present)) return { pushed: 0, leftovers: waiting ? leftoverCount(waiting) : 0 };
 
   const outbox = read<LegacyDelta[]>(outboxKey(userId), []);
-  const refusedChanges = await pushOutbox(accessToken, outbox);
+  const refusedChanges = await pushOutbox(sessionRequester(session), outbox);
   const { take, leave } = claimBrowserData(userId, outbox);
   const found: LegacyLeftovers = {
     refusedChanges,

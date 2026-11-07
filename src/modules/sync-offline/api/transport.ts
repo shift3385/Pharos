@@ -162,7 +162,7 @@ const MAX_PULL_PAGES = 1000;
  *  the next, so progress survives an interruption (FIX-02). Returns the
  *  number of documents received. */
 export async function pullPages(
-  token: string,
+  request: SyncCaller,
   cursor: string,
   apply: (page: PullPage) => Promise<void> | void,
 ): Promise<number> {
@@ -170,7 +170,7 @@ export async function pullPages(
   let pulled = 0;
   for (let i = 0; i < MAX_PULL_PAGES; i++) {
     const page = await withRetry(() =>
-      syncRequest<PullPage>(`/sync/pull?since=${since}`, token),
+      request<PullPage>(`/sync/pull?since=${since}`),
     );
     await apply(page);
     pulled += page.docs.length;
@@ -180,12 +180,21 @@ export async function pullPages(
   return pulled;
 }
 
+/** Method and body of a request to the server. */
+export interface SyncRequestInit {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  body?: unknown;
+}
+
+/** Sends a request on behalf of one account (`sessionRequester`). */
+export type SyncCaller = <T>(path: string, init?: SyncRequestInit) => Promise<T>;
+
 /** One authenticated request to the server; throws `SyncHttpError` on a
  *  non-2xx. An empty answer (204) resolves to `undefined`. */
 export async function syncRequest<T>(
   path: string,
   token: string,
-  init: { method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; body?: unknown } = {},
+  init: SyncRequestInit = {},
 ): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method: init.method ?? "GET",
