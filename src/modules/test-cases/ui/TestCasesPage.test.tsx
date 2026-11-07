@@ -489,7 +489,7 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     );
     await userEvent.click(screen.getByRole("radio", { name: "Checklist" }));
     expect(
-      screen.getByText("Comprobaciones", { selector: "p" }),
+      screen.getByRole("heading", { name: "Comprobaciones" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("radiogroup", { name: "Vista del caso" }),

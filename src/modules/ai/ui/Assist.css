@@ -106,21 +106,6 @@
   align-items: center;
   gap: var(--space-2);
 }
-/* Next to «+ Añadir» (IA-16): Añadir | IA | mark on one line, which wraps when
-   narrow; proposals and notices take a line of their own below. */
-.tp-list-field__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-.tp-list-field__actions > .tp-list-field__add {
-  align-self: center;
-}
-.tp-list-field__actions > .assist,
-.tp-list-field__actions > .assist > .assist__row {
-  display: contents;
-}
 .assist__message {
   font-size: var(--fs-metadata);
   color: var(--color-text-secondary);

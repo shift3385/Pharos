@@ -856,9 +856,9 @@ through `src-tauri/src/journal.rs`:
     `<select>`.
   - AI buttons (UX-13): `AssistButton` is the icon alone, with its name for
     assistive technology and in the tooltip, and so is `AiSuggestList` with
-    `iconOnly`. The provenance mark goes on the button's line, after it. A list's
-    AI button goes in the `actions` of `ListField` or `SortableSteps`, on the line
-    of «+ Añadir» (IA-16). Both animate the
+    `iconOnly`. The provenance mark goes on the button's line, after it. In the
+    case form, `CaseSection` (UX-19) puts both beside the block's title, and what
+    the AI proposes opens right under it. Both animate the
     icon (`.assist__spark`, `aria-busy`) while the AI answers.
   - List review (IA-16): `reviewCaseList` asks for `add` / `rewrite` / `remove`
     proposals, each with its reason, about a numbered list. `usableProposals`

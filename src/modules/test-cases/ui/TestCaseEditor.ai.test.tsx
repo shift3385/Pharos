@@ -132,17 +132,35 @@ describe("TestCaseEditor AI (IA-16)", () => {
     }
   });
 
-  it("each list has «Add», the AI icon and the mark on one action line", async () => {
+  it("the AI icon goes beside its field's title, and proposals open right below (UX-19)", async () => {
+    reviewCaseList.mockResolvedValue({ value: [{ action: "add", text: "New step", reason: "x" }], provenance });
     await openEditor();
-    const line = (name: string) => screen.getByRole("button", { name }).closest(".tp-list-field__actions");
-    expect(line("Review preconditions")).toHaveTextContent("Add");
-    expect(line("Review steps")).toHaveTextContent("Add step");
-    expect(line("Suggest postconditions")).toHaveTextContent("Add");
-    expect(line("Suggest criteria")).toHaveTextContent("Add");
+    const head = (name: string) => screen.getByRole("button", { name }).closest(".tc-section__head");
+    expect(head("Review preconditions")).toHaveTextContent("Preconditions");
+    expect(head("Review steps")).toHaveTextContent(i18n.t("testCase.steps"));
+    expect(head("Write the expected result with AI")).toHaveTextContent("Expected result");
+    expect(head("Suggest postconditions")).toHaveTextContent("Postconditions");
+    expect(head("Suggest criteria")).toHaveTextContent("Acceptance criteria");
     // Only the icon: the name is for assistive technology and the tooltip.
     const button = screen.getByRole("button", { name: "Review steps" });
     expect(button).toHaveAttribute("title", "Review steps");
     expect(button.querySelector(".sr-only")).toHaveTextContent("Review steps");
+    // The title still labels its control.
+    expect(screen.getByRole("textbox", { name: "Expected result" })).toHaveValue("The transfer is sent");
+    expect(screen.getByRole("textbox", { name: "Notes" })).toHaveValue("SOME-NOTE");
+    expect(screen.getByRole("heading", { name: i18n.t("testCase.steps"), level: 3 })).toBeInTheDocument();
+
+    await userEvent.click(button);
+    const proposal = await screen.findByRole("checkbox", { name: /New step/ });
+    expect(proposal.closest(".tc-section__head")).toBe(head("Review steps"));
+  });
+
+  it("test data and notes form one block; each other block has its line (UX-19)", async () => {
+    await openEditor();
+    const section = (value: string) => screen.getByDisplayValue(value).closest(".tc-section");
+    expect(section("SOME-NOTE")).toHaveClass("tc-section--joined");
+    expect(section("SECRET-TEST-DATA")).not.toHaveClass("tc-section--joined");
+    expect(section("The transfer is sent")).not.toHaveClass("tc-section--joined");
   });
 
   it("applies only what the user ticks; removing and rewording start unticked", async () => {

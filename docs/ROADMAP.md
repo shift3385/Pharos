@@ -290,6 +290,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | UX-16  | Cronograma: calendario más compacto y fijo; sprints e hitos con desplazamiento propio | P2  | 0.3.0 · Hecho |
 | UX-17  | Carga con skeleton en Inicio, Proyectos, pestañas de proyecto, detalles y Administración. Quedan con texto los diálogos, la ejecución, el Perfil y el arranque | P2  | 0.3.0 · Hecho |
 | UX-18  | Mensajes de IA sin proveedor ni modelo: la marca los lleva en su tooltip y quedan guardados en los datos (IA-01) | P3  | 0.3.0 · Hecho |
+| UX-19  | Editor de casos por bloques: botón de IA junto al título, más espacio, títulos más marcados y línea divisoria que se desvanece | P2  | 0.3.0 | Hecho | IA-16 |
 | UX-09  | "Exportar diagnóstico" también en la pantalla de BD que no abre (`DbErrorScreen`); hoy solo queda el log (R1) | P2  | 0.1.x   |
 | UX-10  | Revisión del manual: avisos por color de estado, ayuda `InfoTip`, campos alineados, papelera para quitar filas (ADR-0028) | P1  | 0.2.0 · Hecho |
 | DEU-01 | Backend compilado con `tsc` para producción                                                         | P2  | 0.5.0   |

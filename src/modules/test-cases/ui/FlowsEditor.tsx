@@ -11,6 +11,7 @@ import {
   type FlowBriefScope,
 } from "./caseAi";
 import { CaseListReview } from "./CaseListReview";
+import { CaseSection } from "./CaseSection";
 import { StepListField } from "./StepListField";
 import { SortableSteps } from "./SortableSteps";
 import { ExamplesTable } from "./ExamplesTable";
@@ -56,13 +57,9 @@ export function FlowsEditor({
 
   return (
     <div className="tc-flows">
-      <p className="tp-field__grouplabel">{t("testCase.flow.background")}</p>
-      <p className="tp-field__hint">{t("testCase.flow.backgroundHint")}</p>
-      <StepListField
-        label={t("testCase.flow.background")}
-        items={background}
-        onChange={onBackgroundChange}
-        actions={
+      <CaseSection
+        title={t("testCase.flow.background")}
+        assist={
           <CaseListReview
             field="background"
             available={ai.available}
@@ -75,7 +72,14 @@ export function FlowsEditor({
             onReview={() => ai.review(BACKGROUND_KEY)}
           />
         }
-      />
+      >
+        <p className="tp-field__hint">{t("testCase.flow.backgroundHint")}</p>
+        <StepListField
+          label={t("testCase.flow.background")}
+          items={background}
+          onChange={onBackgroundChange}
+        />
+      </CaseSection>
 
       {flows.map((flow, i) => (
         <div className="tc-flow" key={flow.id}>
@@ -103,14 +107,9 @@ export function FlowsEditor({
             )}
           </div>
 
-          <p className="tp-field__grouplabel">
-            {t("testCase.flow.preconditions")}
-          </p>
-          <StepListField
-            label={`${t("testCase.flow.preconditions")} · ${flow.name}`}
-            items={flow.preconditions ?? []}
-            onChange={(v) => setFlow(i, { preconditions: v })}
-            actions={
+          <CaseSection
+            title={t("testCase.flow.preconditions")}
+            assist={
               <CaseListReview
                 field="flowPreconditions"
                 scope={flow.name}
@@ -128,14 +127,17 @@ export function FlowsEditor({
                 onReview={() => ai.review(flowProvenanceKey(flow.id, "preconditions"))}
               />
             }
-          />
+          >
+            <StepListField
+              label={`${t("testCase.flow.preconditions")} · ${flow.name}`}
+              items={flow.preconditions ?? []}
+              onChange={(v) => setFlow(i, { preconditions: v })}
+            />
+          </CaseSection>
 
-          <p className="tp-field__grouplabel">{t("testCase.flow.steps")}</p>
-          <SortableSteps
-            label={`${t("testCase.flow.steps")} · ${flow.name}`}
-            steps={flow.steps}
-            onChange={(v) => setFlow(i, { steps: v })}
-            actions={
+          <CaseSection
+            title={t("testCase.flow.steps")}
+            assist={
               <CaseListReview
                 field="steps"
                 scope={flow.name}
@@ -153,36 +155,48 @@ export function FlowsEditor({
                 onReview={() => ai.review(flowProvenanceKey(flow.id, "steps"))}
               />
             }
-          />
+          >
+            <SortableSteps
+              label={`${t("testCase.flow.steps")} · ${flow.name}`}
+              steps={flow.steps}
+              onChange={(v) => setFlow(i, { steps: v })}
+            />
+          </CaseSection>
 
-          <label className="tp-field">
-            <span>{t("testCase.flow.expected")}</span>
+          <CaseSection
+            title={t("testCase.flow.expected")}
+            labelFor={`tc-flow-${flow.id}-expected`}
+            assist={
+              <AssistButton
+                available={ai.available}
+                label={`${t("testCase.aiReview.expectedResult")} · ${flow.name}`}
+                instruction={EXPECTED_RESULT_INSTRUCTION}
+                notes={flow.expectedResult}
+                context={ai.brief({ flowId: flow.id, omit: "expectedResult" })}
+                showReplaced
+                provenance={ai.provenance[flowProvenanceKey(flow.id, "expectedResult")]}
+                onUse={(v, p) =>
+                  ai.apply({ flows: withFlow(i, { expectedResult: v }) }, flowProvenanceKey(flow.id, "expectedResult"), p)
+                }
+                onReview={() => ai.review(flowProvenanceKey(flow.id, "expectedResult"))}
+              />
+            }
+          >
             <textarea
+              id={`tc-flow-${flow.id}-expected`}
               rows={2}
               value={flow.expectedResult}
               onChange={(e) => setFlow(i, { expectedResult: e.target.value })}
             />
-          </label>
-          <AssistButton
-            available={ai.available}
-            label={`${t("testCase.aiReview.expectedResult")} · ${flow.name}`}
-            instruction={EXPECTED_RESULT_INSTRUCTION}
-            notes={flow.expectedResult}
-            context={ai.brief({ flowId: flow.id, omit: "expectedResult" })}
-            showReplaced
-            provenance={ai.provenance[flowProvenanceKey(flow.id, "expectedResult")]}
-            onUse={(v, p) =>
-              ai.apply({ flows: withFlow(i, { expectedResult: v }) }, flowProvenanceKey(flow.id, "expectedResult"), p)
-            }
-            onReview={() => ai.review(flowProvenanceKey(flow.id, "expectedResult"))}
-          />
+          </CaseSection>
 
-          <p className="tp-field__grouplabel">{t("testCase.examples.title")}</p>
-          <p className="tp-field__hint">{t("testCase.flow.examplesHint")}</p>
-          <ExamplesTable
-            value={flow.examples ?? EMPTY}
-            onChange={(v) => setFlow(i, { examples: v })}
-          />
+          <CaseSection title={t("testCase.examples.title")}>
+            <p className="tp-field__hint">{t("testCase.flow.examplesHint")}</p>
+            <ExamplesTable
+              value={flow.examples ?? EMPTY}
+              onChange={(v) => setFlow(i, { examples: v })}
+            />
+          </CaseSection>
         </div>
       ))}
 
