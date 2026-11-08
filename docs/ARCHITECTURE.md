@@ -1015,16 +1015,27 @@ through `src-tauri/src/journal.rs`:
     defects of a project with their `caseIds`, for the matrix and Inicio;
   - `projectCardCount(projectId, ownerId)` (`@modules/planner`): how many
     cards a board has (Proyectos);
-  - `projectCoverage(projectId, ownerId)` (`@modules/traceability`): the
-    share of covered requirements by the matrix rule, `null` without
-    requirements (Proyectos);
+  - `projectTraceFacts(projectId, ownerId)` (`@modules/traceability`): a
+    project's case count and the share of covered requirements by the matrix
+    rule (`coverage` is `null` without requirements), from one read of its
+    cases and one of its requirements (Proyectos);
+  - `projectTraceableCases(projectId, userId)` (`@modules/test-cases`): the
+    cases with their `requirementKeys` and free-text `traceability`, for the
+    matrix, Defectos and Ejecuciones. **One list read (FIX-20):** the case
+    summary (`TestCaseSummary`: `GET /api/test-cases?projectId=` on the web,
+    `test_case_list` on the desktop) carries both fields from `data`, so no
+    screen opens the cases one by one. Proyectos makes three reads per
+    project (plan, cases, requirements) plus the project list: 22 for 7
+    projects, against 68 before (in development React's StrictMode runs each
+    effect twice: 44 against 136). The web client needs a server with the
+    fields: deploy the server first;
   - `caseLink(projectId, caseId)` (`@modules/test-cases`): the Casos route
     with `?case=`. It repeats the shape of `projectPath(id, "cases")`
     because projects depends on test-cases, not the other way.
 - **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
   defects once for both views (Requisitos, Matriz) and owns their dialogs; the
   views only render (`buildMatrix` stays the single source, also for
-  `projectCoverage`). Since EJE-04 it also loads the execution summary under
+  `projectTraceFacts`). Since EJE-04 it also loads the execution summary under
   the URL's filters and the cycle and configuration options.
 - **Switches, segmented controls and tabs** (`src/shared/ui`, SPEC §4/§5/§9/§10,
   RED-V1; also used by Casos, RED-V3, and Administración, RED-V4):
@@ -1053,7 +1064,11 @@ through `src-tauri/src/journal.rs`:
     `{ closeDate, criteria } | null`: the latest sprint end or milestone of the
     plan's schedule (only ISO `YYYY-MM-DD` dates count; raw text from an
     imported plan is ignored; null without one) and its filled closure
-    criteria; null without a plan. V2 reuses it for «Cierre del ciclo».
+    criteria; null without a plan.
+  - `projectPlanOverview(projectId, userId)` (`@modules/test-plan`) →
+    `{ status, closeDate } | null`: the plan's status and the same closing
+    date from one read, for Proyectos and the project header («Cierre del
+    ciclo», FIX-20).
   - `projectLiveCases(projectId, userId)` (`@modules/test-cases`): the cases
     that are not obsolete.
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses

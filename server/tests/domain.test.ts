@@ -197,6 +197,25 @@ describe("domain API", () => {
     ]);
   });
 
+  it("lists each case's requirement links, so the matrix reads no case one by one", async () => {
+    const token = await tokenFor();
+    const p = await project(token);
+    const linked = { requirementKeys: ["REQ-001", "REQ-002"], traceability: "US-12" };
+    await call(token, "POST", "/api/test-cases", caseInput(p.id, "Linked", { data: linked }));
+    await call(token, "POST", "/api/test-cases", caseInput(p.id, "Plain"));
+    // A document from another device may hold anything: it never breaks the list.
+    await call(token, "POST", "/api/test-cases", caseInput(p.id, "Odd", { data: { requirementKeys: ["REQ-003", 7], traceability: 9 } }));
+    await call(token, "POST", "/api/test-cases", caseInput(p.id, "Odder", { data: { requirementKeys: "REQ-004" } }));
+
+    const list = (await call(token, "GET", `/api/test-cases?projectId=${p.id}`)).body;
+    expect(list.map((c: { requirementKeys: string[]; traceability: string }) => [c.requirementKeys, c.traceability])).toEqual([
+      [["REQ-001", "REQ-002"], "US-12"],
+      [[], ""],
+      [["REQ-003"], ""],
+      [[], ""],
+    ]);
+  });
+
   it("does not hand out a number a device already leased", async () => {
     const token = await tokenFor();
     const p = await project(token);

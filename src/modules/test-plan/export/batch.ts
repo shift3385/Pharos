@@ -80,24 +80,37 @@ export async function projectPlanStatus(
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Closing date and exit criteria of a project’s plan, for the Home (RED-V1):
- *  the date is the latest sprint end or milestone of the schedule (null when
- *  the schedule has none); null when the project has no plan. Read-only. */
+/** The latest sprint end or milestone of a plan's schedule (null when it has
+ *  none). Only ISO dates (YYYY-MM-DD) compare as text; an imported plan may keep
+ *  the raw cell text («14/11/2026», «Nov 28»), which is ignored here. */
+function planCloseDate(plan: TestPlan): string | null {
+  const dates = [
+    ...(plan.data.sprints ?? []).map((s) => s.end),
+    ...(plan.data.milestones ?? []).map((m) => m.date),
+  ].filter((d) => ISO_DAY.test(d ?? ""));
+  return dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
+}
+
+/** Closing date and exit criteria of a project’s plan, for the Home (RED-V1);
+ *  null when the project has no plan. Read-only. */
 export async function projectPlanClosure(
   projectId: string,
   userId: string,
 ): Promise<{ closeDate: string | null; criteria: ClosureCriterion[] } | null> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return null;
-  // Only ISO dates (YYYY-MM-DD) compare as text; an imported plan may keep
-  // the raw cell text («14/11/2026», «Nov 28»), which is ignored here.
-  const dates = [
-    ...(plan.data.sprints ?? []).map((s) => s.end),
-    ...(plan.data.milestones ?? []).map((m) => m.date),
-  ].filter((d) => ISO_DAY.test(d ?? ""));
-  const closeDate = dates.length ? dates.reduce((a, b) => (b > a ? b : a)) : null;
   const criteria = (plan.data.closureCriteria ?? []).filter((c) => c.criterion.trim());
-  return { closeDate, criteria };
+  return { closeDate: planCloseDate(plan), criteria };
+}
+
+/** Status and closing date of a project’s plan from one read, for Proyectos and
+ *  the project header (FIX-20); null when the project has no plan. */
+export async function projectPlanOverview(
+  projectId: string,
+  userId: string,
+): Promise<{ status: string; closeDate: string | null } | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
+  return plan ? { status: plan.status, closeDate: planCloseDate(plan) } : null;
 }
 
 /** Id, title and version of a project’s plan (null when it has none): the

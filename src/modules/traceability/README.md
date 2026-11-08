@@ -23,7 +23,7 @@ configuraciones de `@modules/cycles` para los filtros.
 
 - `buildMatrix(requirements, cases, defects, execution?, sort = "risk")`
   (`model/matrix.ts`) es la única fuente de la vista, del `.xlsx` y de
-  `projectCoverage`. Sin `execution`, cada caso es «No ejecutado» (como antes de
+  `projectTraceFacts` (casos y cobertura de cada fila de Proyectos). Sin `execution`, cada caso es «No ejecutado» (como antes de
   0.2.0). Con él, cada fila trae el estado del caso (`passed`, `failed`,
   `retest`, `blocked`, `skipped`, `other` o `not_run`), su último resultado
   (`last`: run, fecha, origen, flaky, desactualizado), el riesgo del requisito

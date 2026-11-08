@@ -146,6 +146,10 @@ export interface TestCaseSummary {
   custom: CustomValues;
   /** Some AI-generated content of the case is still pending review (IA-01). */
   aiPending?: boolean;
+  /** `data.requirementKeys`: the requirements the case links. */
+  requirementKeys: string[];
+  /** `data.traceability`: free-text links, not yet requirements. */
+  traceability: string;
   updatedAt: string;
   revision: number;
 }

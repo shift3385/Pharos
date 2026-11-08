@@ -11,10 +11,8 @@ import {
 } from "@modules/custom-fields";
 import type { TestCaseStatus, TestCaseSummary } from "./types";
 
-/** A case row: its summary plus the requirements it links (from the trace). */
-export interface ListedCase extends TestCaseSummary {
-  requirementKeys: string[];
-}
+/** A case row: its summary, which also carries the requirements it links. */
+export type ListedCase = TestCaseSummary;
 
 export type StatusFilter = "all" | TestCaseStatus;
 

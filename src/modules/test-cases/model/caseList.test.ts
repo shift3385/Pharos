@@ -22,6 +22,7 @@ const c = (scenarioId: string, over: Partial<ListedCase> = {}): ListedCase => ({
   updatedAt: "2026-10-01T10:00:00Z",
   revision: 1,
   requirementKeys: [],
+  traceability: "",
   ...over,
 });
 

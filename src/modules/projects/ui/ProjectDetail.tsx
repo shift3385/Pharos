@@ -6,12 +6,7 @@ import { Navigate, useParams } from "react-router";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
-import {
-  PLAN_SAVED_EVENT,
-  TestPlanPage,
-  projectPlanClosure,
-  projectPlanStatus,
-} from "@modules/test-plan";
+import { PLAN_SAVED_EVENT, TestPlanPage, projectPlanOverview } from "@modules/test-plan";
 import {
   CASES_CHANGED_EVENT,
   TestCasesPage,
@@ -242,16 +237,15 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     const load = async () => {
       const request = ++latest.current;
       try {
-        const [planStatus, closure, cases, requirements] = await Promise.all([
-          projectPlanStatus(projectId, ownerId),
-          projectPlanClosure(projectId, ownerId),
+        const [plan, cases, requirements] = await Promise.all([
+          projectPlanOverview(projectId, ownerId),
           projectCaseCount(projectId, ownerId),
           requirementApi.list(projectId, ownerId),
         ]);
         if (!live || request !== latest.current) return;
         setFacts({
-          planStatus,
-          closeDate: closure?.closeDate ?? null,
+          planStatus: plan?.status ?? null,
+          closeDate: plan?.closeDate ?? null,
           cases,
           requirements: requirements.map((r) => ({ requirementKey: r.requirementKey, title: r.title })),
         });

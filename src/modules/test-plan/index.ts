@@ -7,6 +7,7 @@ export {
   projectHasPlan,
   projectPlanStatus,
   projectPlanClosure,
+  projectPlanOverview,
   projectPlanVersion,
   projectPlanRef,
 } from "./export/batch";

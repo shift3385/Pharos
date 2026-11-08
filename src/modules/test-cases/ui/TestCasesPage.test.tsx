@@ -44,10 +44,6 @@ vi.mock("../api/testCaseApi", () => ({
     update: (...a: unknown[]) => update(...a),
   },
 }));
-vi.mock("../api/traceLinks", () => ({
-  projectTraceableCases: () =>
-    Promise.resolve([{ id: "c2", scenarioId: "PCL-2", title: "", status: "", requirementKeys: ["REQ-031"], traceability: "" }]),
-}));
 vi.mock("@modules/ai", async (orig) => ({
   ...(await orig<typeof import("@modules/ai")>()),
   aiAvailable: () => Promise.resolve(false),
@@ -69,13 +65,15 @@ const summary = (n: number, over: Partial<TestCaseSummary> = {}): TestCaseSummar
   caseType: null,
   automationStatus: null,
   custom: {},
+  requirementKeys: [],
+  traceability: "",
   updatedAt: new Date().toISOString(),
   revision: 1,
   ...over,
 });
 const SUMMARIES = [
   summary(1, { status: "draft", title: "Descarga de factura" }),
-  summary(2, { priority: "critical", title: "Pago con tarjeta" }),
+  summary(2, { priority: "critical", title: "Pago con tarjeta", requirementKeys: ["REQ-031"] }),
   summary(3, { status: "reviewed", title: "Reembolso parcial" }),
 ];
 const full = (s: TestCaseSummary): TestCase => ({

@@ -44,8 +44,26 @@ pub struct TestCaseSummary {
     custom: Value,
     /// Some AI-generated content is still pending human review (IA-01).
     ai_pending: bool,
+    /// `data.requirementKeys`: the list row and the traceability matrix read
+    /// them from here, without opening each case.
+    requirement_keys: Vec<String>,
+    /// `data.traceability`: free-text links, for the migration to requirements.
+    traceability: String,
     updated_at: String,
     revision: i64,
+}
+
+/// The string entries of `data.requirementKeys`; anything else is ignored.
+fn requirement_keys(data: &Value) -> Vec<String> {
+    data.get("requirementKeys")
+        .and_then(Value::as_array)
+        .map(|keys| {
+            keys.iter()
+                .filter_map(Value::as_str)
+                .map(String::from)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// True when any entry of `data.aiProvenance` has no `reviewedAt` yet.
@@ -222,6 +240,12 @@ pub(crate) fn list_cases(
                     .cloned()
                     .unwrap_or_else(empty_object),
                 ai_pending: ai_pending(&data),
+                requirement_keys: requirement_keys(&data),
+                traceability: data
+                    .get("traceability")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string(),
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })
@@ -573,6 +597,38 @@ mod tests {
 
     fn scenario(c: &Connection, id: &str) -> String {
         get_case(c, id, USER).unwrap().unwrap().scenario_id
+    }
+
+    #[test]
+    fn the_list_carries_each_cases_requirement_links() {
+        let c = conn();
+        let p = project(&c, "ATS_");
+        let with_data = |title: &str, data: Value| TestCaseInput {
+            data,
+            ..input(&p, None, title)
+        };
+        let linked = serde_json::json!({
+            "requirementKeys": ["REQ-001", "REQ-002"], "traceability": "US-12"
+        });
+        insert_case(&c, &with_data("Linked", linked)).unwrap();
+        insert_case(&c, &input(&p, None, "Plain")).unwrap();
+        // A document from another device may hold anything: the list survives.
+        let odd = serde_json::json!({ "requirementKeys": ["REQ-003", 7], "traceability": 9 });
+        insert_case(&c, &with_data("Odd", odd)).unwrap();
+
+        let list = list_cases(&c, &p, USER).unwrap();
+        let links: Vec<(Vec<String>, &str)> = list
+            .iter()
+            .map(|s| (s.requirement_keys.clone(), s.traceability.as_str()))
+            .collect();
+        assert_eq!(
+            links,
+            vec![
+                (vec!["REQ-001".to_string(), "REQ-002".to_string()], "US-12"),
+                (vec![], ""),
+                (vec!["REQ-003".to_string()], ""),
+            ]
+        );
     }
 
     fn oplog_rows(c: &Connection) -> i64 {

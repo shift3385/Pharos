@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { projectPlanClosure } from "./batch";
+import { testPlanApi } from "../api/testPlanApi";
+import { projectPlanClosure, projectPlanOverview } from "./batch";
 
 // Home exit criteria (RED-V1): closing date from the schedule and the plan's
 // closure criteria. Kept apart from batch.test.ts, which stubs the exporters.
@@ -21,6 +22,7 @@ vi.mock("../api/testPlanApi", () => ({
           : projectId === "empty"
             ? { data: {} }
             : {
+                status: "reviewed",
                 data: {
                   sprints: [
                     { name: "S1", start: "2026-11-03", end: "2026-11-14" },
@@ -56,5 +58,15 @@ describe("plan closure for the Home (RED-V1)", () => {
       criteria: [],
     });
     expect(await projectPlanClosure("none", "u1")).toBeNull();
+  });
+
+  it("gives status and closing date from one read of the plan (FIX-20)", async () => {
+    const read = vi.spyOn(testPlanApi, "byProject");
+    expect(await projectPlanOverview("p1", "u1")).toEqual({
+      status: "reviewed",
+      closeDate: "2026-11-28",
+    });
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(await projectPlanOverview("none", "u1")).toBeNull();
   });
 });

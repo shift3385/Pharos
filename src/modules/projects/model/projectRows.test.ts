@@ -1,12 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { projectRows } from "./projectRows";
 
-vi.mock("@modules/test-plan", () => ({
-  projectPlanStatus: async () => null,
-  projectPlanClosure: async () => null,
-}));
-vi.mock("@modules/test-cases", () => ({ projectCaseCount: async () => 0 }));
-vi.mock("@modules/traceability", () => ({ projectCoverage: async () => null }));
+const plan = vi.fn();
+const facts = vi.fn();
+vi.mock("@modules/test-plan", () => ({ projectPlanOverview: (...a: unknown[]) => plan(...a) }));
+vi.mock("@modules/traceability", () => ({ projectTraceFacts: (...a: unknown[]) => facts(...a) }));
 vi.mock("../api/projectApi", () => ({
   projectApi: {
     list: async () => [
@@ -17,8 +15,31 @@ vi.mock("../api/projectApi", () => ({
 }));
 
 describe("projectRows", () => {
+  beforeEach(() => {
+    plan.mockReset().mockResolvedValue(null);
+    facts.mockReset().mockResolvedValue({ cases: 0, coverage: null });
+  });
+
   it("reads stored UTC times and survives one that is not a date", async () => {
     const rows = await projectRows("u1");
     expect(rows.map((r) => r.updatedAt)).toEqual(["2026-10-30T18:02:00.000Z", "not a date"]);
+  });
+
+  it("fills each row from one read of its plan and one of its trace facts (FIX-20)", async () => {
+    plan.mockImplementation(async (id: string) =>
+      id === "a" ? { status: "approved", closeDate: "2026-12-15" } : null,
+    );
+    facts.mockImplementation(async (id: string) =>
+      id === "a" ? { cases: 3, coverage: 0.5 } : { cases: 1, coverage: null },
+    );
+
+    const rows = await projectRows("u1");
+
+    expect(rows.map((r) => [r.id, r.planStatus, r.closeDate, r.cases, r.coverage])).toEqual([
+      ["a", "approved", "2026-12-15", 3, 0.5],
+      ["b", null, null, 1, null],
+    ]);
+    expect(plan).toHaveBeenCalledTimes(2);
+    expect(facts).toHaveBeenCalledTimes(2);
   });
 });

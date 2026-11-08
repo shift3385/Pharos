@@ -16,7 +16,7 @@ vi.mock("@modules/test-plan", () => ({
   PLAN_SAVED_EVENT: "pharos:plan-saved",
   projectPlanStatus: async () => "reviewed",
   projectHasPlan: async () => false,
-  projectPlanClosure: async () => ({ closeDate: "2026-11-07", criteria: [] }),
+  projectPlanOverview: async () => ({ status: "reviewed", closeDate: "2026-11-07" }),
 }));
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
@@ -35,7 +35,7 @@ vi.mock("@modules/planner", () => ({
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
   requirementApi: { list: async () => [] },
-  projectCoverage: async () => null,
+  projectTraceFacts: async () => ({ cases: 0, coverage: null }),
 }));
 
 const PROJECTS = {
