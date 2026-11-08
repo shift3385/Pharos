@@ -329,7 +329,7 @@
         "test_plan": "Plan de pruebas",
         "test_case": "Caso de prueba",
         "requirement": "Requisito",
-        "planner_card": "Tarjeta del planificador",
+        "planner_card": "Tarjeta del tablero",
         "custom_field": "Campo personalizado",
         "defect": "Defecto",
         "defect_link": "Vínculo de defecto"
@@ -519,7 +519,7 @@
         "days": "Días…",
         "daysLabel": "Días de retención de {{kind}}",
         "exceptions": "Nunca caduca",
-        "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del planificador, de los defectos ni de los borradores.",
+        "exceptionsText": "La evidencia de la ejecución manual, la de un resultado final fallido o bloqueado, y la de un resultado vinculado a un defecto abierto. Tampoco caducan los adjuntos del tablero, de los defectos ni de los borradores.",
         "savedWhat": "Retención guardada en este equipo: {{changes}}.",
         "pending": "Por guardar: {{changes}}. Pulsa «Guardar» para aplicar los cambios.",
         "noChanges": "Sin cambios",
@@ -745,7 +745,7 @@
       "runs": "Ejecuciones"
     },
     "deleteTitle": "Eliminar proyecto",
-    "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el planificador. Esta acción no se puede deshacer fácilmente.",
+    "deleteWarning": "Se eliminará «{{name}}» y TODO su contenido: el plan de pruebas, los casos de prueba y el tablero. Esta acción no se puede deshacer fácilmente.",
     "deleteConfirm": "Sí, eliminar todo",
     "savedToast": "Ajustes actualizados",
     "header": {
@@ -1827,11 +1827,9 @@
     "linksTitle_one": "{{count}} caso de prueba vinculado",
     "linksTitle_other": "{{count}} casos de prueba vinculados",
     "deleteTitle": "¿Eliminar la tarjeta?",
-    "deleteMessage": "Se elimina «{{card}}» del planificador.",
+    "deleteMessage": "Se elimina «{{card}}» del tablero.",
     "deleteConfirm": "Sí, eliminar",
-    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo.",
-    "defectsMoved": "Los defectos tienen ahora su propio módulo, con su ciclo de vida y su severidad.",
-    "openDefects": "Ir a Defectos"
+    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo."
   },
   "traceability": {
     "loadFailed": "No se pudo cargar la trazabilidad.",

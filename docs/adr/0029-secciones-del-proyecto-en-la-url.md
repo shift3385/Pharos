@@ -21,7 +21,8 @@
   `section` ∈ `plan | cases | planner | traceability | settings` (ampliada
   después con `cycles`, `runs`, `defects` y, en UX-21, `requirements`; ver la
   enmienda al final).
-  - Una sección desconocida o ausente lleva a `plan`.
+  - Una sección desconocida o ausente lleva a `plan` (a `planner`, el
+    Tablero, desde UX-22; ver la enmienda al final).
   - `projectPath(id, section?)` y `PROJECT_SECTIONS` son la API pública de
     `@modules/projects`.
 - `ProjectDetail` lee la sección de la URL. Las pestañas dentro de la página
@@ -80,3 +81,12 @@
   «Board» de Jira: «Planif.» junto a «Plan» se confundía, y en Jira
   «Plans» es otra cosa (el cronograma).
   Las URLs anteriores siguen valiendo: `/traceability` abre la matriz.
+
+## Enmienda UX-22 (2026-11-08) · Abrir un proyecto lleva al Tablero
+
+- `DEFAULT_PROJECT_SECTION` pasa de `plan` a `planner`. Abrir un proyecto
+  (desde la lista, Inicio, las migas o un enlace `?open=`) y cualquier
+  sección ausente o desconocida llevan al Tablero, que es el trabajo del día a
+  día. El plan se escribe al empezar y se consulta después, y sigue a un clic,
+  el primero del menú. Crear un proyecto sigue abriendo su plan: es el primer
+  paso (`projectPath(id, "plan")` en `ProjectsPage`).

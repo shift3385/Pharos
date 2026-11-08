@@ -84,10 +84,10 @@ describe("project routes (ADR-0029)", () => {
     caseCount.value = 240;
   });
 
-  it("a project without a section opens its plan", async () => {
+  it("a project without a section opens its board (UX-22)", async () => {
     renderAt("/projects/a");
-    expect(await screen.findByText("sección plan")).toBeInTheDocument();
-    expect(where()).toBe("/projects/a/plan");
+    expect(await screen.findByText("sección planificador")).toBeInTheDocument();
+    expect(where()).toBe("/projects/a/planner");
   });
 
   it("heads every section with the project, without the old «← Proyectos» bar", async () => {
@@ -108,16 +108,16 @@ describe("project routes (ADR-0029)", () => {
     expect(await screen.findByText("241 casos")).toBeInTheDocument();
   });
 
-  it("an unknown section opens the plan", async () => {
+  it("an unknown section opens the board", async () => {
     renderAt("/projects/a/zzz");
-    expect(await screen.findByText("sección plan")).toBeInTheDocument();
-    expect(where()).toBe("/projects/a/plan");
+    expect(await screen.findByText("sección planificador")).toBeInTheDocument();
+    expect(where()).toBe("/projects/a/planner");
   });
 
   it("an old /projects?open=<id> link redirects without loading the list", async () => {
     renderAt("/projects?open=a");
-    expect(await screen.findByText("sección plan")).toBeInTheDocument();
-    expect(where()).toBe("/projects/a/plan");
+    expect(await screen.findByText("sección planificador")).toBeInTheDocument();
+    expect(where()).toBe("/projects/a/planner");
     expect(projectApi.list).not.toHaveBeenCalled();
   });
 

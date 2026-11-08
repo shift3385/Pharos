@@ -38,7 +38,7 @@ import { ProjectSettings } from "./ProjectSettings";
 import "./Projects.css";
 
 /** Route `/projects/:projectId/:section` (ADR-0029). A missing or unknown
- *  section opens the plan. Keyed by the project: switching project (e.g. from
+ *  section opens the board (UX-22). Keyed by the project: switching project (e.g. from
  *  the sidebar switcher while in Ajustes) mounts a fresh workspace, so no
  *  form or option of the previous project is shown, or saved, for the new one. */
 export function ProjectDetailPage() {

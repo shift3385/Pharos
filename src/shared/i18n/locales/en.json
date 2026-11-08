@@ -329,7 +329,7 @@
         "test_plan": "Test plan",
         "test_case": "Test case",
         "requirement": "Requirement",
-        "planner_card": "Planner card",
+        "planner_card": "Board card",
         "custom_field": "Custom field",
         "defect": "Defect",
         "defect_link": "Defect link"
@@ -745,7 +745,7 @@
       "runs": "Runs"
     },
     "deleteTitle": "Delete project",
-    "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the planner. This can't be easily undone.",
+    "deleteWarning": "“{{name}}” and ALL its content will be deleted: the test plan, the test cases and the board. This can't be easily undone.",
     "deleteConfirm": "Yes, delete everything",
     "savedToast": "Settings updated",
     "header": {
@@ -1827,11 +1827,9 @@
     "linksTitle_one": "{{count}} linked test case",
     "linksTitle_other": "{{count}} linked test cases",
     "deleteTitle": "Delete the card?",
-    "deleteMessage": "«{{card}}» is removed from the planner.",
+    "deleteMessage": "«{{card}}» is removed from the board.",
     "deleteConfirm": "Yes, delete",
-    "deleteFailed": "The card could not be deleted. Try again.",
-    "defectsMoved": "Defects now have their own module, with their lifecycle and severity.",
-    "openDefects": "Go to Defects"
+    "deleteFailed": "The card could not be deleted. Try again."
   },
   "traceability": {
     "loadFailed": "Traceability could not be loaded.",

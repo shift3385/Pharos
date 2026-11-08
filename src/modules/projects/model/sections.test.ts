@@ -21,6 +21,10 @@ describe("project sections (ADR-0029, UX-21)", () => {
     expect(PROJECT_NAV.map((n) => n.section)).toEqual([...PROJECT_SECTIONS]);
   });
 
+  it("opening a project shows its board (UX-22)", () => {
+    expect(projectPath("p1")).toBe("/projects/p1/planner");
+  });
+
   it("«requirements» is a section with its own route", () => {
     expect(isProjectSection("requirements")).toBe(true);
     expect(projectPath("p 1", "requirements")).toBe("/projects/p%201/requirements");
