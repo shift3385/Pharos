@@ -97,6 +97,24 @@ se publica:
       es nativo (fuera de la WebView) y «Usar Descargas» escribiría en tu
       carpeta real, que los tours nunca tocan. Lo cubren además los tests de
       Rust de `downloads.rs`.
+- [ ] **Requisitos desde un proyecto (IA-17)** (Trazabilidad → «Importar /
+      Exportar»): con una clave real, elegir una carpeta de proyecto; el
+      inventario no lista `node_modules`, `.env` ni claves; el aviso dice si
+      sale del equipo y a qué proveedor; las propuestas citan `archivo:línea`
+      que existen; aplicar deja «IA · pendiente de revisión» y las fuentes en
+      el formulario. *Por qué no:* el selector de carpetas es nativo (fuera de
+      la WebView) y el análisis necesita una clave real. Lo cubren además
+      `ProjectRequirementsModal.test.tsx` y los tests de Rust de
+      `project_scan.rs`.
+- [ ] **Requisitos desde diseños (IA-18)** (Trazabilidad → «Importar /
+      Exportar»): con una clave real y un modelo con visión, pegar una captura,
+      añadir un PDF y la carpeta de un proyecto de Claude Design; el resumen
+      cuenta imágenes, MB y tokens; el aviso dice a qué proveedor va, sin el
+      modelo; cada propuesta muestra su imagen con la zona marcada; con
+      `llama3.2:3b` en Ollama, «Analizar» se bloquea con su motivo. *Por qué
+      no:* el análisis necesita una clave real y un modelo de visión. Lo cubren
+      además `RequirementsFromDesignModal.test.tsx`, los tests de
+      `fromDesign/` y los de Rust de `ai.rs`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
       antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
       («Los adjuntos solo están disponibles en el escritorio», borrador en el navegador) y los

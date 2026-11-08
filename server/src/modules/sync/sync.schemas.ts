@@ -72,6 +72,7 @@ export const isDefectEntity = (entity: string): boolean => (DEFECT_ENTITIES as r
 export const FEATURE_KEYS: Record<string, Partial<Record<string, readonly string[]>>> = {
   runs: { requirement: ["riskLikelihood", "riskImpact"] },
   "custom-fields": { test_case: ["caseType", "automationStatus"] },
+  "requirement-data": { requirement: ["data"] },
 };
 
 /** The same for keys inside `data` (FLD-01: `data.custom`, the values of

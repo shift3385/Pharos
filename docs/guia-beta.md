@@ -392,6 +392,23 @@ en la misma matriz.
 - [ ] En un caso, revisar con IA precondiciones, pasos, postcondiciones y criterios: propone
       añadir, reformular y eliminar con su motivo, y solo se aplica lo que marcas (IA-16).
       Repite en un caso avanzado (cada flujo) y en una checklist.
+- [ ] En la app de escritorio, Trazabilidad → «Importar / Exportar» → «Requisitos desde un
+      proyecto (IA)» sobre una carpeta real (IA-17): el inventario no lista `node_modules`,
+      `.env` ni claves; el aviso dice si el contenido sale del equipo; cada propuesta lleva
+      motivo y `archivo:línea` que existen; un requisito con casos vinculados no se puede
+      eliminar; lo aplicado queda «IA · pendiente de revisión» y el formulario muestra sus
+      fuentes. Repite con Ollama y anota el tiempo y los tokens.
+- [ ] Trazabilidad → «Importar / Exportar» → «Requisitos desde diseños» (IA-18) con
+      un modelo con visión:
+      - pega una captura con Ctrl+V y añade un PDF exportado de Figma, un `.excalidraw`
+        y la carpeta de un proyecto de Claude Design;
+      - comprueba que el resumen cuenta imágenes, MB y tokens, y que el aviso nombra
+        al proveedor sin el modelo;
+      - comprueba que cada propuesta muestra su imagen con la zona marcada, que
+        «Escrito en la fuente» solo marca lo que está escrito, y que nada se propone
+        eliminar porque no salga en las capturas;
+      - prueba una captura con un texto que dé órdenes a la IA: debe ignorarlo;
+      - con `llama3.2:3b` en Ollama, «Analizar» debe bloquearse con su motivo.
 - [ ] Sin internet, con Ollama (Fase 7). Anota qué modelos devuelven JSON
       inválido a menudo.
 

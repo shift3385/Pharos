@@ -152,6 +152,8 @@
         "invalid-json": "La respuesta de la IA no es un JSON válido.",
         "invalid-schema": "La respuesta de la IA no tiene el formato esperado.",
         "no-provider": "No hay IA disponible: configura un proveedor online u Ollama.",
+        "no-vision": "El modelo de IA configurado no ve imágenes: elige uno con visión en Motor de IA.",
+        "no-pdf": "Este modelo no lee PDF: exporta las páginas como imágenes (PNG o JPG).",
         "timeout": "La IA no respondió a tiempo.",
         "provider": "El proveedor de IA devolvió un error."
       }
@@ -268,7 +270,11 @@
     "testNoKey": "Falta la clave de {{provider}}: escríbela arriba para probarla.",
     "testNeedsUrl": "Escribe la URL base para probar la clave.",
     "testNeedsModelWeb": "Escribe un modelo para probar la clave.",
-    "testNeedsModel": "Escribe un modelo para probar la clave. Para listarlos, guarda primero la clave."
+    "testNeedsModel": "Escribe un modelo para probar la clave. Para listarlos, guarda primero la clave.",
+    "send": {
+      "cloud": "El contenido sale de este equipo hacia {{provider}}.",
+      "local": "El contenido no sale de este equipo: lo procesa {{provider}}."
+    }
   },
   "sync": {
     "synced": "Sincronizado",
@@ -1987,6 +1993,60 @@
       "applying": "Aplicando…",
       "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
     },
+    "fromDesign": {
+      "open": "Requisitos desde diseños",
+      "openHint": "Capturas, bocetos, PDF, Excalidraw o Claude Design",
+      "title": "Requisitos desde diseños",
+      "intro": "La IA lee capturas, bocetos y diseños y propone requisitos para revisar. Nada se envía hasta que pulses «Analizar» y nada se guarda sin tu elección.",
+      "dropLabel": "Material para analizar",
+      "drop": "Arrastra aquí imágenes o archivos, o pega una captura con Ctrl+V.",
+      "pickFiles": "Elegir archivos",
+      "pickFolder": "Elegir carpeta",
+      "sources": "PNG, JPG, WebP, GIF, SVG, PDF, .excalidraw, y la carpeta o el ZIP de un proyecto de Claude Design. Desde Figma o Canva, exporta los frames como PNG o PDF.",
+      "itemsLabel": "Material",
+      "meta": {
+        "image": "Imagen {{w}} × {{h}} px · ≈ {{tokens}} tokens",
+        "pdf_one": "PDF de {{count}} página · ≈ {{tokens}} tokens",
+        "pdf_other": "PDF de {{count}} páginas · ≈ {{tokens}} tokens",
+        "text": "Texto · {{chars}} caracteres · ≈ {{tokens}} tokens",
+        "textCut": "Texto recortado a {{chars}} caracteres · ≈ {{tokens}} tokens",
+        "screen": "pantalla {{name}}"
+      },
+      "note": "Nota sobre {{name}}",
+      "notePlaceholder": "Nota opcional: flujo de alta, paso 2…",
+      "remove": "Quitar {{name}}",
+      "context": "Contexto del producto (opcional)",
+      "contextPlaceholder": "Ej.: portal de clientes de un banco, rol cliente",
+      "summary": "{{count}} de {{max}} imágenes o PDF · {{mb}} MB · ≈ {{tokens}} tokens de entrada (estimación)",
+      "over": {
+        "attachments": "Como mucho {{max}} imágenes o PDF por análisis: desmarca algunas.",
+        "size": "Las imágenes y los PDF pesan demasiado para un análisis: desmarca algunos.",
+        "text": "Hay demasiado texto para un análisis: desmarca algunos archivos."
+      },
+      "blocked": {
+        "noAi": "No hay IA disponible: configura un proveedor en línea u Ollama en Motor de IA.",
+        "noVision": "El modelo de IA configurado no ve imágenes: elige uno con visión en Motor de IA o desmarca las imágenes.",
+        "noPdf": "Este modelo no lee PDF: exporta las páginas como imágenes o desmarca los PDF."
+      },
+      "visionUnknown": "Pharos no sabe si este modelo ve imágenes: si no las ve, el proveedor lo dirá.",
+      "privacy": "Revisa que las imágenes y los textos no tengan datos personales ni secretos. Pharos no guarda las imágenes: solo el nombre y la huella de cada archivo.",
+      "synthesizing": "Comparando con los {{count}} requisitos del proyecto…",
+      "noCandidates": "La IA no encontró requisitos en este material.",
+      "nothingToChange": "Lo que muestra el material ya está en los requisitos del proyecto.",
+      "back": "Volver al material",
+      "page": "página {{page}}",
+      "region": "zona marcada",
+      "reading": "Preparando el material…",
+      "analyzing": "Leyendo el material con IA…",
+      "analyze": "Analizar",
+      "issue": {
+        "unsupported": "{{name}}: tipo de archivo no admitido.",
+        "too-large": "{{name}}: es demasiado grande.",
+        "unreadable": "{{name}}: no se pudo leer.",
+        "too-many-pages": "{{name}}: tiene demasiadas páginas; exporta solo las que importan.",
+        "too-many-files": "La carpeta tiene demasiados archivos: solo se leen los primeros."
+      }
+    },
     "io": {
       "label": "Importar / Exportar",
       "import": "Importar",
@@ -1994,7 +2054,9 @@
       "importCsv": "Importar requisitos (.csv)",
       "importHint": "Crea o actualiza requisitos por ID",
       "exportXlsx": "Exportar matriz (.xlsx)",
-      "exportHint": "Requisitos, casos, estados y defectos"
+      "exportHint": "Requisitos, casos, estados y defectos",
+      "fromProject": "Requisitos desde un proyecto (IA)",
+      "fromProjectHint": "Propone requisitos a partir de la documentación y el código de una carpeta"
     },
     "risk": {
       "label": "Riesgo",
@@ -2060,6 +2122,108 @@
         "stale": "Desactualizado",
         "defects": "Defectos"
       }
+    },
+    "fromProject": {
+      "title": "Requisitos desde un proyecto",
+      "intro": "Elige la carpeta de un proyecto en marcha o de su documentación. Verás qué archivos se leen antes de enviar nada. La IA propondrá requisitos nuevos, mejoras, posibles duplicados y requisitos redundantes, cada uno con su motivo y su fuente. Solo se aplica lo que elijas, marcado «IA · pendiente de revisión».",
+      "pick": "Elegir carpeta…",
+      "pickAnother": "Elegir otra carpeta",
+      "picking": "Leyendo la carpeta…",
+      "continue": "Continuar",
+      "back": "Volver",
+      "send": "Enviar y analizar",
+      "stop": "Detener",
+      "reading": "Preparando los archivos elegidos…",
+      "extracting": "Analizando: lote {{done}} de {{total}}…",
+      "synthesizing": "Comparando con los {{count}} requisitos actuales…",
+      "selection": "{{files}} archivos elegidos · ≈ {{tokens}} tokens · {{calls}} llamadas a la IA",
+      "budget": "Presupuesto (tokens)",
+      "budgetDefault": "presupuesto por defecto: {{tokens}}",
+      "context": "Contexto (opcional)",
+      "contextPlaceholder": "p. ej. tienda online, rol cliente",
+      "nothingReadable": "No hay documentación ni código legible en esta carpeta.",
+      "truncated": "La carpeta es muy grande: solo se listan los primeros archivos. Elige una subcarpeta para ver el resto.",
+      "leftOut_one": "1 archivo no se enviará nunca",
+      "leftOut_other": "{{count}} archivos no se enviarán nunca",
+      "excluded": {
+        "secret": "posible secreto",
+        "lockfile": "archivo de bloqueo",
+        "minified": "código minificado",
+        "binary": "binario o multimedia",
+        "large": "demasiado grande"
+      },
+      "category": {
+        "docs": "Documentación",
+        "routes": "Rutas y puntos de entrada",
+        "models": "Modelos y esquemas",
+        "tests": "Tests",
+        "ui": "Interfaz",
+        "config": "Configuración",
+        "other": "Otros"
+      },
+      "sendWhat": "Se enviarán {{files}} archivos (≈ {{tokens}} tokens) en {{calls}} llamadas.",
+      "neverSent": "Nunca se envían dependencias, builds, archivos ocultos, binarios ni archivos con secretos (.env, claves, certificados).",
+      "redacted_one": "{{count}} línea con aspecto de secreto se sustituye por «[secreto omitido]» ({{files}} archivos)",
+      "redacted_other": "{{count}} líneas con aspecto de secreto se sustituyen por «[secreto omitido]» ({{files}} archivos)",
+      "unreadable_one": "1 archivo no se pudo leer y no se enviará.",
+      "unreadable_other": "{{count}} archivos no se pudieron leer y no se enviarán.",
+      "batchesFailed_one": "Falló 1 lote de {{total}}. Puedes reintentarlo o seguir sin él (cobertura parcial).",
+      "batchesFailed_other": "Fallaron {{count}} lotes de {{total}}. Puedes reintentarlos o seguir sin ellos (cobertura parcial).",
+      "retryBatches_one": "Reintentar 1 lote",
+      "retryBatches_other": "Reintentar {{count}} lotes",
+      "continueWithout": "Seguir sin ellos",
+      "noCandidates": "La IA no encontró requisitos en los archivos enviados.",
+      "nothingToChange": "La IA no propone cambios: la lista actual ya cubre lo que encontró."
+    },
+    "proposals": {
+      "count_one": "1 propuesta de la IA",
+      "count_other": "{{count}} propuestas de la IA",
+      "selectAll": "Marcar todo",
+      "selectNone": "Ninguno",
+      "section": {
+        "add": "Nuevos ({{count}})",
+        "improve": "Mejoras ({{count}})",
+        "merge": "Posibles duplicados ({{count}})",
+        "remove": "Eliminar por redundante ({{count}})"
+      },
+      "action": {
+        "add": "Nuevo",
+        "improve": "Mejora",
+        "merge": "Duplicado",
+        "remove": "Eliminar"
+      },
+      "reason": "Motivo:",
+      "source_one": "Fuente:",
+      "source_other": "Fuentes:",
+      "sourceImage": "Imagen {{index}} · {{name}}",
+      "basis": {
+        "stated": "Escrito en la fuente",
+        "inferred": "Inferido"
+      },
+      "inferredHint": "Deducido del código: confirma que es el comportamiento esperado y no un defecto.",
+      "acceptance": "Criterios de aceptación",
+      "assumptions": "Supuestos",
+      "questions": "Preguntas abiertas",
+      "acceptanceHeading": "Criterios de aceptación:",
+      "similarTo": "Se parece a {{key}} «{{title}}»",
+      "coveredBy": "Lo cubre {{key}} «{{title}}»",
+      "mergeTitle": "{{keys}}: conservar {{keep}}",
+      "priorityChange": "Prioridad: {{from}} → {{to}}",
+      "linkedBlocked_one": "{{keys}} tiene 1 caso vinculado: desvincúlalo antes de eliminarlo.",
+      "linkedBlocked_other": "{{keys}} tiene {{count}} casos vinculados: desvincúlalos antes de eliminarlo.",
+      "edit": "Editar",
+      "editDone": "Listo",
+      "apply_one": "Aplicar 1 cambio",
+      "apply_other": "Aplicar {{count}} cambios",
+      "applying": "Aplicando…",
+      "deleteTitle": "Eliminar requisitos",
+      "deleteWarning_one": "Se eliminará {{keys}}. Su ID no se reutilizará.",
+      "deleteWarning_other": "Se eliminarán {{keys}}. Sus IDs no se reutilizarán.",
+      "doneToast": "Requisitos: {{created}} creados · {{updated}} actualizados · {{removed}} eliminados",
+      "skippedToast_one": "1 propuesta no se aplicó: el requisito cambió o ya no existe.",
+      "skippedToast_other": "{{count}} propuestas no se aplicaron: el requisito cambió o ya no existe.",
+      "failed_one": "No se pudo aplicar 1 propuesta. Sigue marcada: vuelve a aplicarla o cancela.",
+      "failed_other": "No se pudieron aplicar {{count}} propuestas. Siguen marcadas: vuelve a aplicarlas o cancela."
     }
   },
   "downloads": {

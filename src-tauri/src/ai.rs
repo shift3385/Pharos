@@ -167,6 +167,117 @@ pub fn ai_key_clear(provider: String) -> Result<(), String> {
 pub struct AiMessage {
     role: String,
     content: String,
+    /// Images or PDF pages sent with a user message (IA-18, ADR-0037). The
+    /// frontend reduces them first; Rust only checks type and size.
+    #[serde(default)]
+    images: Vec<AiImage>,
+}
+
+/// One attachment, base64 without the `data:` prefix.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiImage {
+    media_type: String,
+    data: String,
+}
+
+const IMAGE_TYPES: &[&str] = &["image/png", "image/jpeg", "image/webp", "image/gif"];
+const PDF_TYPE: &str = "application/pdf";
+/// Same limits as the frontend (`fromDesign/limits.ts`): every provider takes
+/// this much in one request (Gemini caps inline data at 20 MB per request).
+const MAX_ATTACHMENTS: usize = 8;
+const MAX_ATTACHMENT_BASE64: usize = 16_000_000;
+
+impl AiImage {
+    fn is_pdf(&self) -> bool {
+        self.media_type == PDF_TYPE
+    }
+}
+
+/// Rejects attachments a provider would refuse, before the call goes out.
+fn validate_attachments(messages: &[AiMessage]) -> Result<(), String> {
+    let mut count = 0;
+    let mut total = 0;
+    for m in messages {
+        if m.images.is_empty() {
+            continue;
+        }
+        if m.role != "user" {
+            return Err("Images can only go in a user message".into());
+        }
+        for img in &m.images {
+            if !IMAGE_TYPES.contains(&img.media_type.as_str()) && !img.is_pdf() {
+                return Err(format!("Unsupported attachment type: {}", img.media_type));
+            }
+            let valid = !img.data.is_empty()
+                && img
+                    .data
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='));
+            if !valid {
+                return Err("An attachment is not valid base64".into());
+            }
+            count += 1;
+            total += img.data.len();
+        }
+    }
+    if count > MAX_ATTACHMENTS {
+        return Err(format!("Too many attachments (at most {MAX_ATTACHMENTS})"));
+    }
+    if total > MAX_ATTACHMENT_BASE64 {
+        return Err("The attachments are too large for one request".into());
+    }
+    Ok(())
+}
+
+/// Gemini parts of a turn: its text, then each attachment inline.
+fn gemini_parts(m: &AiMessage) -> Value {
+    let mut parts = vec![json!({ "text": m.content })];
+    parts.extend(
+        m.images
+            .iter()
+            .map(|i| json!({ "inline_data": { "mime_type": i.media_type, "data": i.data } })),
+    );
+    Value::Array(parts)
+}
+
+/// Anthropic content: a plain string without attachments (as before), else the
+/// attachments first (the order Anthropic recommends) and the text last.
+fn anthropic_content(m: &AiMessage) -> Value {
+    if m.images.is_empty() {
+        return json!(m.content);
+    }
+    let mut blocks: Vec<Value> = m
+        .images
+        .iter()
+        .map(|i| {
+            let kind = if i.is_pdf() { "document" } else { "image" };
+            json!({
+                "type": kind,
+                "source": { "type": "base64", "media_type": i.media_type, "data": i.data },
+            })
+        })
+        .collect();
+    blocks.push(json!({ "type": "text", "text": m.content }));
+    Value::Array(blocks)
+}
+
+/// OpenAI-style content: a plain string without attachments, else the text and
+/// each attachment as a data URL (a PDF goes as a `file` part).
+fn openai_content(m: &AiMessage) -> Value {
+    if m.images.is_empty() {
+        return json!(m.content);
+    }
+    let mut parts = vec![json!({ "type": "text", "text": m.content })];
+    parts.extend(m.images.iter().enumerate().map(|(n, i)| {
+        let url = format!("data:{};base64,{}", i.media_type, i.data);
+        if i.is_pdf() {
+            json!({ "type": "file", "file": { "filename": format!("document-{}.pdf", n + 1), "file_data": url } })
+        } else {
+            json!({ "type": "image_url", "image_url": { "url": url } })
+        }
+    }));
+    Value::Array(parts)
 }
 
 /// A provider HTTP call, built without touching the network.
@@ -231,7 +342,7 @@ fn chat_call(
                     } else {
                         "user"
                     };
-                    json!({ "role": role, "parts": [{ "text": m.content }] })
+                    json!({ "role": role, "parts": gemini_parts(m) })
                 })
                 .collect();
             let mut body = json!({ "contents": contents });
@@ -255,7 +366,7 @@ fn chat_call(
                     } else {
                         "user"
                     };
-                    json!({ "role": role, "content": m.content })
+                    json!({ "role": role, "content": anthropic_content(m) })
                 })
                 .collect();
             let mut body = json!({
@@ -279,7 +390,7 @@ fn chat_call(
         _ => {
             let msgs: Vec<Value> = messages
                 .iter()
-                .map(|m| json!({ "role": m.role, "content": m.content }))
+                .map(|m| json!({ "role": m.role, "content": openai_content(m) }))
                 .collect();
             let mut body = json!({ "model": model, "messages": msgs });
             if let Some(t) = temperature {
@@ -494,6 +605,7 @@ async fn chat(
     temperature: Option<f32>,
     messages: &[AiMessage],
 ) -> Result<String, String> {
+    validate_attachments(messages)?;
     let temp = temperature.filter(|_| provider != Provider::Anthropic);
 
     let call = chat_call(provider, base, key, model, temp, messages);
@@ -535,18 +647,22 @@ mod tests {
             AiMessage {
                 role: "system".into(),
                 content: "Be brief".into(),
+                images: Vec::new(),
             },
             AiMessage {
                 role: "user".into(),
                 content: "Hi".into(),
+                images: Vec::new(),
             },
             AiMessage {
                 role: "assistant".into(),
                 content: "Hello".into(),
+                images: Vec::new(),
             },
             AiMessage {
                 role: "user".into(),
                 content: "Draft".into(),
+                images: Vec::new(),
             },
         ]
     }
@@ -818,6 +934,7 @@ mod tests {
         vec![AiMessage {
             role: "user".into(),
             content: "Reply OK".into(),
+            images: Vec::new(),
         }]
     }
 
@@ -981,5 +1098,109 @@ mod tests {
         assert!(Provider::Custom.base_url(Some("https://x.dev/v1")).is_ok());
         assert!(!Provider::Custom.key_required());
         assert!(Provider::Anthropic.key_required());
+    }
+
+    fn with_images(images: Vec<(&str, &str)>) -> Vec<AiMessage> {
+        vec![
+            AiMessage {
+                role: "system".into(),
+                content: "Analyst".into(),
+                images: Vec::new(),
+            },
+            AiMessage {
+                role: "user".into(),
+                content: "Read these".into(),
+                images: images
+                    .into_iter()
+                    .map(|(t, d)| AiImage {
+                        media_type: t.into(),
+                        data: d.into(),
+                    })
+                    .collect(),
+            },
+        ]
+    }
+
+    #[test]
+    fn gemini_sends_attachments_inline_after_the_text() {
+        let m = with_images(vec![("image/webp", "QUJD"), ("application/pdf", "UERG")]);
+        let body = chat_call(Provider::Gemini, "b", Some("k"), "g", None, &m)
+            .body
+            .unwrap();
+        let parts = body["contents"][0]["parts"].as_array().unwrap();
+        assert_eq!(parts[0]["text"], "Read these");
+        assert_eq!(parts[1]["inline_data"]["mime_type"], "image/webp");
+        assert_eq!(parts[1]["inline_data"]["data"], "QUJD");
+        assert_eq!(parts[2]["inline_data"]["mime_type"], "application/pdf");
+    }
+
+    #[test]
+    fn anthropic_sends_image_and_pdf_blocks_before_the_text() {
+        let m = with_images(vec![("image/png", "QUJD"), ("application/pdf", "UERG")]);
+        let body = chat_call(Provider::Anthropic, "b", Some("k"), "c", None, &m)
+            .body
+            .unwrap();
+        let blocks = body["messages"][0]["content"].as_array().unwrap();
+        assert_eq!(blocks[0]["type"], "image");
+        assert_eq!(blocks[0]["source"]["type"], "base64");
+        assert_eq!(blocks[0]["source"]["media_type"], "image/png");
+        assert_eq!(blocks[1]["type"], "document");
+        assert_eq!(blocks[2]["text"], "Read these");
+    }
+
+    #[test]
+    fn openai_style_sends_data_urls_and_a_pdf_as_a_file() {
+        let m = with_images(vec![("image/jpeg", "QUJD"), ("application/pdf", "UERG")]);
+        let body = chat_call(Provider::OpenAi, "b", Some("k"), "o", None, &m)
+            .body
+            .unwrap();
+        assert_eq!(body["messages"][0]["content"], "Analyst");
+        let parts = body["messages"][1]["content"].as_array().unwrap();
+        assert_eq!(parts[0]["type"], "text");
+        assert_eq!(parts[1]["image_url"]["url"], "data:image/jpeg;base64,QUJD");
+        assert_eq!(
+            parts[2]["file"]["file_data"],
+            "data:application/pdf;base64,UERG"
+        );
+    }
+
+    #[test]
+    fn messages_without_attachments_keep_plain_string_content() {
+        let body = chat_call(Provider::Anthropic, "b", Some("k"), "c", None, &msgs())
+            .body
+            .unwrap();
+        assert!(body["messages"][0]["content"].is_string());
+        assert!(validate_attachments(&msgs()).is_ok());
+    }
+
+    #[test]
+    fn attachments_are_checked_before_the_call() {
+        assert!(validate_attachments(&with_images(vec![("image/png", "QUJD")])).is_ok());
+        assert!(validate_attachments(&with_images(vec![("text/html", "QUJD")])).is_err());
+        assert!(validate_attachments(&with_images(vec![("image/png", "not base64!")])).is_err());
+        assert!(validate_attachments(&with_images(vec![("image/png", "")])).is_err());
+        let many = vec![("image/png", "QUJD"); MAX_ATTACHMENTS + 1];
+        assert!(validate_attachments(&with_images(many)).is_err());
+        let big = "A".repeat(MAX_ATTACHMENT_BASE64 + 1);
+        assert!(validate_attachments(&with_images(vec![("image/png", big.as_str())])).is_err());
+        let mut m = with_images(vec![("image/png", "QUJD")]);
+        m[0].images = std::mem::take(&mut m[1].images);
+        assert!(
+            validate_attachments(&m).is_err(),
+            "images in a system message"
+        );
+    }
+
+    #[test]
+    fn a_message_without_images_deserializes_as_before() {
+        let m: AiMessage =
+            serde_json::from_value(json!({ "role": "user", "content": "x" })).unwrap();
+        assert!(m.images.is_empty());
+        let m: AiMessage = serde_json::from_value(json!({
+            "role": "user", "content": "x",
+            "images": [{ "mediaType": "image/png", "data": "QUJD", "name": "a.png" }]
+        }))
+        .unwrap();
+        assert_eq!(m.images[0].media_type, "image/png");
     }
 }

@@ -59,6 +59,9 @@ os_info = { version = "3", default-features = false }
 regex = "1"
 # Checksum of the recovery key (SEC-03, ADR-0024); already in the tree via Tauri.
 sha2 = "0.10"
+# Walks a project folder for the AI requirement extraction (IA-17, ADR-0036),
+# honouring .gitignore; MIT OR Unlicense, by the author of ripgrep.
+ignore = "0.4"
 
 # Native folder picker for the download folder (UX-02), called only from Rust
 # (downloads.rs): no dialog plugin, so the webview gets no dialog permission.

@@ -487,6 +487,7 @@ export function createDomainService(store: DomainStore) {
       // update without it keeps it (`patchRequirement` spreads the payload).
       riskLikelihood: input.riskLikelihood ?? null,
       riskImpact: input.riskImpact ?? null,
+      data: input.data ?? {},
       createdAt: at,
       updatedAt: at,
     };
@@ -507,6 +508,7 @@ export function createDomainService(store: DomainStore) {
       priority: priorityOf(input.priority),
       ...(input.riskLikelihood !== undefined && { riskLikelihood: input.riskLikelihood }),
       ...(input.riskImpact !== undefined && { riskImpact: input.riskImpact }),
+      ...(input.data !== undefined && { data: input.data }),
       updatedAt: now(),
     };
     return tx.put("requirement", doc.entityId, payload, doc, false, opts);

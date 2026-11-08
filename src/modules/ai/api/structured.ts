@@ -78,13 +78,15 @@ export async function aiJson<T>(
 /** What went wrong with an AI call, for the UI message. */
 export type AiFailure =
   | { kind: AiOutputErrorKind; details: string[] }
-  | { kind: "no-provider" | "timeout"; details: [] }
+  | { kind: "no-provider" | "timeout" | "no-vision" | "no-pdf"; details: [] }
   | { kind: "provider"; details: string[] };
 
 export function describeAiFailure(e: unknown): AiFailure {
   if (e instanceof AiOutputError) return { kind: e.kind, details: e.details };
   const message = e instanceof Error ? e.message : String(e);
   if (message === "no-provider") return { kind: "no-provider", details: [] };
+  if (message === "no-vision" || message === "ai-no-pdf" || message === "no-pdf")
+    return { kind: message === "no-vision" ? "no-vision" : "no-pdf", details: [] };
   if (message.includes(AI_TIMEOUT_MESSAGE)) return { kind: "timeout", details: [] };
   return { kind: "provider", details: message ? [message.slice(0, MAX_SNIPPET)] : [] };
 }

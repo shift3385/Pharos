@@ -218,7 +218,7 @@ pub(crate) fn read_payload(
         ),
         "requirement" => (
             "SELECT id, workspace_id, project_id, requirement_key, title, description, priority,
-                    risk_likelihood, risk_impact, created_at, updated_at, revision, deleted_at
+                    risk_likelihood, risk_impact, data, created_at, updated_at, revision, deleted_at
                FROM requirements WHERE id = ?1",
             |r| {
                 Ok((
@@ -232,6 +232,7 @@ pub(crate) fn read_payload(
                         "priority": r.get::<_, String>("priority")?,
                         "riskLikelihood": r.get::<_, Option<i64>>("risk_likelihood")?,
                         "riskImpact": r.get::<_, Option<i64>>("risk_impact")?,
+                        "data": crate::requirement::parse_data(&r.get::<_, String>("data")?),
                         "createdAt": r.get::<_, String>("created_at")?,
                         "updatedAt": r.get::<_, String>("updated_at")?,
                         "revision": r.get::<_, i64>("revision")?,
@@ -1152,16 +1153,23 @@ fn write_doc(
                     .filter(|v| (1..=5).contains(v))
             };
             let has_risk = p.get("riskLikelihood").is_some() || p.get("riskImpact").is_some();
+            // `data` (IA-17): only an object replaces the local one; a payload
+            // without it (an older Pharos) keeps it, like the risk.
+            let data = p
+                .get("data")
+                .filter(|v| v.is_object())
+                .map(|v| v.to_string());
             conn.execute(
                 "INSERT INTO requirements (id, workspace_id, project_id, requirement_key, title, description,
-                        priority, risk_likelihood, risk_impact, created_by, updated_by, created_at,
+                        priority, risk_likelihood, risk_impact, data, created_by, updated_by, created_at,
                         updated_at, revision, deleted_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?10, ?11, ?8, ?8, datetime('now'), datetime('now'), ?9, NULL)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?10, ?11, COALESCE(?13, '{}'), ?8, ?8, datetime('now'), datetime('now'), ?9, NULL)
                  ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id,
                         requirement_key=excluded.requirement_key, title=excluded.title,
                         description=excluded.description, priority=excluded.priority,
                         risk_likelihood=CASE WHEN ?12 THEN excluded.risk_likelihood ELSE risk_likelihood END,
                         risk_impact=CASE WHEN ?12 THEN excluded.risk_impact ELSE risk_impact END,
+                        data=COALESCE(?13, data),
                         updated_by=excluded.updated_by, updated_at=datetime('now'),
                         revision=excluded.revision, deleted_at=NULL",
                 params![
@@ -1177,6 +1185,7 @@ fn write_doc(
                     risk("riskLikelihood"),
                     risk("riskImpact"),
                     has_risk,
+                    data,
                 ],
             )
             .map_err(|e| e.to_string())?;

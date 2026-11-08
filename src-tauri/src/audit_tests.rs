@@ -1295,6 +1295,15 @@ const EXEMPT: &[(&str, &str)] = &[
     ("diag::diag_export", "read"),
     ("downloads::download_dir_get", "read"),
     ("downloads::download_dir_pick", "a setting"),
+    (
+        "project_scan::project_scan_pick",
+        "reads a folder; changes nothing",
+    ),
+    ("project_scan::project_scan_read", "a read"),
+    (
+        "project_scan::project_scan_close",
+        "forgets a picked folder; changes nothing",
+    ),
     ("downloads::download_dir_reset", "a setting"),
     ("downloads::download_save", "writes a file the user exports"),
     (

@@ -20,6 +20,25 @@ primero.
 - Importa los requisitos de tu herramienta de gestión con un CSV: Pharos
   reconoce columnas en español o inglés («Título», «Title», «Clave», «ID»…) y
   actualiza los que ya existen por su ID.
+- Si el proyecto ya está en marcha, en la app de escritorio «Importar / Exportar →
+  Requisitos desde un proyecto (IA)» lee la carpeta del proyecto o de su
+  documentación y propone requisitos nuevos, mejoras, posibles duplicados y
+  redundantes, cada uno con su motivo y su archivo y líneas de origen. Antes de
+  enviar nada ves qué archivos se leen; los secretos y las dependencias no se
+  envían nunca. Lo deducido solo del código va marcado «Inferido»: confírmalo,
+  porque el código puede tener un defecto.
+- Si tienes capturas, bocetos o diseños, «Importar / Exportar → Requisitos desde
+  diseños» los lee con un modelo de IA que vea imágenes:
+  - Admite PNG, JPG, PDF, un `.excalidraw` y la carpeta o el ZIP de un proyecto de
+    Claude Design. Desde Figma o Canva, exporta los frames como PNG o PDF.
+  - Arrastra los archivos o pega una captura con Ctrl+V. Añade una nota a cada
+    imagen («alta, paso 2») y el contexto del producto: la IA acierta más.
+  - Las propuestas se comparan con tus requisitos. Unas capturas son solo una
+    muestra, así que nunca se propone eliminar un requisito porque no aparezca en
+    ellas.
+  - Cada propuesta muestra su imagen con la zona marcada. «Escrito en la fuente»
+    significa que el texto está en el diseño; lo «Inferido» llega con sus
+    supuestos y preguntas abiertas, para que lo confirmes.
 - Un ID eliminado no se reutiliza nunca, para que ningún caso antiguo apunte
   a otro requisito por error.
 - «Mostrar solo huecos» es la vista de trabajo antes de cerrar un ciclo.

@@ -708,3 +708,279 @@
     max-width: none;
   }
 }
+
+/* Requirements from a project (IA-17): the wizard and the common review of
+ * the AI's requirement proposals (shared with IA-18). */
+.tz-scan {
+  max-width: 760px;
+}
+.tz-scan__inv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tz-scan__list {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tz-scan__group summary,
+.tz-prop__extra summary {
+  cursor: pointer;
+  font-size: var(--fs-metadata);
+  color: var(--color-navy-500);
+}
+.tz-scan__group ul,
+.tz-prop__extra ul {
+  list-style: none;
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-3);
+  font-size: var(--fs-caption);
+  overflow-wrap: anywhere;
+}
+.tz-scan__group li {
+  padding: 2px 0;
+}
+.tz-scan__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.tz-scan__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+.tz-scan__field--wide {
+  flex: 1 1 240px;
+}
+.tz-scan__summary {
+  margin: 0;
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-medium);
+}
+.tz-scan__progress {
+  width: 100%;
+}
+.tz-prop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tz-prop__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tz-prop__count {
+  font-weight: var(--fw-semibold);
+  margin-right: auto;
+}
+.tz-prop__list {
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+.tz-prop__items {
+  max-height: none;
+  overflow: visible;
+}
+.tz-prop__heading {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-ui);
+}
+.tz-prop__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tz-prop__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-left: var(--space-5);
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.tz-prop__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+.tz-prop__warn,
+.tz-prop__blocked {
+  font-size: var(--fs-caption);
+  color: var(--color-warning-text);
+}
+.tz-prop__keys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--fs-caption);
+}
+.tz-prop__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-left: var(--space-5);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+.tz-prop__editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+/* Requirements from designs (IA-18) */
+.tr-design {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.tr-design__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  text-align: center;
+}
+.tr-design__drop:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.tr-design__drop--over {
+  border-color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+.tr-design__drop p {
+  margin: 0;
+}
+.tr-design__pick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.tr-design__btn {
+  position: relative;
+  cursor: pointer;
+}
+.tr-design__btn:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+/* The native input stays reachable by keyboard and screen readers, but unseen. */
+.tr-design__file {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.tr-design__issues {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--color-warning-text);
+  font-size: var(--fs-caption);
+}
+.tr-design__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.tr-design__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.tr-design__item--off .tr-gen__check > span:last-child {
+  color: var(--color-text-muted);
+}
+.tr-design__thumb {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-1);
+}
+.tr-design__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tr-design__kind {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+.tr-design__note {
+  min-width: 0;
+}
+.tr-design__remove {
+  min-width: 2rem;
+}
+.tr-design__context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+@media (max-width: 599px) {
+  .tr-design__item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .tr-design__note {
+    grid-column: 1 / -1;
+  }
+  .tr-design__remove {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}
+.tr-design__source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tr-design__shot {
+  position: relative;
+  display: inline-block;
+  width: 120px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  line-height: 0;
+}
+.tr-design__shot img {
+  width: 100%;
+  height: auto;
+}
+/* Where in the image the requirement comes from. */
+.tr-design__region {
+  position: absolute;
+  border: 2px solid var(--color-warning);
+  border-radius: 2px;
+  box-sizing: border-box;
+}

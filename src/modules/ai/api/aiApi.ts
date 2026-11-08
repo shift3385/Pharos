@@ -12,7 +12,7 @@ import {
   type ResolvedProvider,
 } from "../model/types";
 import { newProvenance } from "../model/provenance";
-import { sendsTemperature } from "../model/capabilities";
+import { sendsTemperature, visionFor, type VisionCapability } from "../model/capabilities";
 import { onlineKeyTest, onlineModels, onlineProvider } from "../providers/online";
 import { browserKeyTest } from "../providers/onlineBrowser";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
@@ -141,6 +141,14 @@ export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDes
   return null;
 }
 
+/** Where a request would go right now, without sending anything: what a
+ *  notice before sending says (cloud or this device), and how much a batch may
+ *  hold (IA-17). Null when no AI is available. */
+export async function aiDestinationNow(): Promise<AiDestination | null> {
+  const config = loadConfig();
+  return destinationFor(resolveProvider(config, await aiStatus(config)), config);
+}
+
 /** A drafting request for the "Assist with AI" buttons. */
 export interface AssistRequest {
   /** What to write, e.g. "the Summary section of a software test plan". */
@@ -249,6 +257,24 @@ export function chatTemperature(configured: number, json: boolean): number {
   return json ? Math.min(configured, STRUCTURED_MAX_TEMPERATURE) : configured;
 }
 
+/** Stops images a model cannot read before they leave the machine (pure —
+ *  testable): `no-vision` for a text-only model, `no-pdf` for a PDF to one that
+ *  only takes images. A model Pharos does not know is let through (ADR-0037). */
+export function checkAttachments(messages: AiMessage[], destination: AiDestination): void {
+  const attached = messages.flatMap((m) => m.images ?? []);
+  if (!attached.length) return;
+  const vision = visionFor(destination.provider, destination.model);
+  if (vision.images === "no") throw new Error("no-vision");
+  if (!vision.pdf && attached.some((i) => i.mediaType === "application/pdf")) throw new Error("no-pdf");
+}
+
+/** What the active provider would do with images right now: null = no AI. */
+export async function aiVision(): Promise<VisionCapability | null> {
+  const config = loadConfig();
+  const destination = destinationFor(resolveProvider(config, await aiStatus(config)), config);
+  return destination ? visionFor(destination.provider, destination.model) : null;
+}
+
 /** Runs a chat completion through the resolved provider and records which
  *  provider + model produced the reply (IA-01). Throws "no-provider" when
  *  neither online nor offline AI is available (callers disable UI then).
@@ -262,6 +288,7 @@ export async function aiChatWithProvenance(
   const which = resolveProvider(config, status);
   const destination = destinationFor(which, config);
   if (!destination) throw new Error("no-provider");
+  checkAttachments(messages, destination);
   const temperature = chatTemperature(config.temperature, json);
   // Online, only what the model accepts is sent (ADR-0031); Ollama always takes it.
   const sendTemperature = destination.provider === "ollama" || sendsTemperature(config, destination.provider);
