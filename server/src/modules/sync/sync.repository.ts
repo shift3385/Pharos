@@ -477,7 +477,7 @@ export function createSyncRepository(pool: Pool) {
      *  refused. */
     async leaseBlocks(
       userId: string,
-      requests: { projectId: string; kind: KeyKind; prefix: string; floor: number }[],
+      requests: { projectId: string; kind: KeyKind; prefix: string; floor: number; size?: number }[],
     ): Promise<{ blocks: KeyBlock[]; refused: { projectId: string; kind: KeyKind }[] }> {
       const blocks: KeyBlock[] = [];
       const refused: { projectId: string; kind: KeyKind }[] = [];
@@ -486,12 +486,14 @@ export function createSyncRepository(pool: Pool) {
           `SELECT 1 FROM documents WHERE entity = 'project' AND entity_id = $1 AND user_id <> $2 LIMIT 1`,
           [r.projectId, userId],
         );
-        const start = foreign.rowCount ? null : await leaseRange(pool, userId, r, KEY_BLOCK_SIZE);
+        // A desktop since DAT-04 asks for what it needs; an older one, for 50.
+        const size = r.size ?? KEY_BLOCK_SIZE;
+        const start = foreign.rowCount ? null : await leaseRange(pool, userId, r, size);
         if (start === null) {
           refused.push({ projectId: r.projectId, kind: r.kind });
           continue;
         }
-        blocks.push({ projectId: r.projectId, kind: r.kind, start, end: start + KEY_BLOCK_SIZE - 1 });
+        blocks.push({ projectId: r.projectId, kind: r.kind, start, end: start + size - 1 });
       }
       return { blocks, refused };
     },

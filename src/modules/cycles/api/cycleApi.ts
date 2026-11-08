@@ -1,4 +1,4 @@
-import { serverApi } from "@modules/sync-offline";
+import { reserveKeys, serverApi, type KeyKind } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
   AddOutcome,
@@ -17,6 +17,13 @@ import type {
 } from "../model/types";
 
 const enc = encodeURIComponent;
+
+/** Desktop: numbers for `count` keys of a cycle's project before creating
+ *  them (DAT-04); the project is read from the cycle. */
+async function reserveForCycle(cycleId: string, userId: string, kind: KeyKind, count: number): Promise<void> {
+  const cycle = await invoke<TestCycle | null>("cycle_get", { id: cycleId, userId }).catch(() => null);
+  if (cycle?.projectId) await reserveKeys(cycle.projectId, kind, count);
+}
 
 // The desktop reads and writes its encrypted local store (`cycles.rs`); the
 // web is a client of the server, which applies the same rules (BASE-10).
@@ -51,12 +58,16 @@ export const cycleApi = {
   get: (id: string, userId: string): Promise<TestCycle | null> =>
     isTauri() ? invoke("cycle_get", { id, userId }) : serverApi.get(`/api/cycles/${enc(id)}`),
   create: (input: TestCycleInput): Promise<TestCycle | null> =>
-    isTauri() ? invoke("cycle_create", { input }) : serverApi.post("/api/cycles", input),
+    isTauri()
+      ? reserveKeys(input.projectId ?? "", "cycle").then(() => invoke<TestCycle | null>("cycle_create", { input }))
+      : serverApi.post("/api/cycles", input),
   update: (id: string, input: TestCycleInput): Promise<TestCycle | null> =>
     isTauri() ? invoke("cycle_update", { id, input }) : serverApi.put(`/api/cycles/${enc(id)}`, id, input),
   clone: (id: string, userId: string, title?: string): Promise<TestCycle | null> =>
     isTauri()
-      ? invoke("cycle_clone", { id, title: title ?? null, userId })
+      ? reserveForCycle(id, userId, "cycle", 1).then(() =>
+          invoke<TestCycle | null>("cycle_clone", { id, title: title ?? null, userId }),
+        )
       : serverApi.post(`/api/cycles/${enc(id)}/clone`, title ? { title } : {}),
   remove: (id: string, userId: string): Promise<void> =>
     isTauri() ? invoke("cycle_delete", { id, userId }) : serverApi.remove(`/api/cycles/${enc(id)}`, id),
@@ -90,7 +101,10 @@ export const cycleApi = {
       : serverApi.post(`/api/cycles/${enc(cycleId)}/items/reorder`, { ids }),
   execute: (cycleId: string, input: ExecuteInput): Promise<ExecuteResult> =>
     isTauri()
-      ? invoke("cycle_execute", { cycleId, input })
+      ? // One run per chosen configuration, or one without any.
+        reserveForCycle(cycleId, input.userId, "run", Math.max(1, input.configurationIds?.length ?? 0)).then(() =>
+          invoke<ExecuteResult>("cycle_execute", { cycleId, input }),
+        )
       : serverApi.post(`/api/cycles/${enc(cycleId)}/execute`, input),
   runs: (cycleId: string, userId: string): Promise<CycleRun[]> =>
     isTauri() ? invoke("cycle_runs", { cycleId, userId }) : serverApi.get(`/api/cycles/${enc(cycleId)}/runs`),

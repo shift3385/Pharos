@@ -9,10 +9,16 @@ import { testCaseApi } from "./testCaseApi";
 const invoke = vi.fn();
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 
+/** A signed-in desktop with its reserve of key numbers left (`key_lease_for`
+ *  asks for nothing, DAT-04). */
+const session = JSON.stringify({ accessToken: "t", refreshToken: "r", user: { id: "u1", email: "qa@pharos.dev" } });
+const desktopAnswer = async (cmd: string) =>
+  cmd === "session_load" ? session : cmd === "key_lease_for" ? null : [];
+
 function onDesktop() {
   (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
   invoke.mockReset();
-  invoke.mockResolvedValue([]);
+  invoke.mockImplementation(desktopAnswer);
 }
 afterEach(() => {
   delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
@@ -45,14 +51,31 @@ describe("testCaseApi", () => {
     expect(invoke).toHaveBeenCalledWith("test_case_list", { projectId: "p1", userId: "u1" });
   });
 
+  it("desktop: asks for a key number before an auto-numbered case, not for a typed key (DAT-04)", async () => {
+    onDesktop();
+    await testCaseApi.create(input);
+    const order = invoke.mock.calls.map((c) => c[0]);
+    expect(order.indexOf("key_lease_for")).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf("key_lease_for")).toBeLessThan(order.indexOf("test_case_create"));
+    expect(invoke).toHaveBeenCalledWith("key_lease_for", expect.objectContaining({ projectId: "p1", kind: "case", count: 1 }));
+
+    invoke.mockClear();
+    await testCaseApi.create({ ...input, scenarioId: "ATS_900" });
+    expect(invoke.mock.calls.map((c) => c[0])).toEqual(["test_case_create"]);
+  });
+
   it("announces a created or deleted case, not an edit or a failure (FIX-13)", async () => {
     onDesktop();
     const heard = vi.fn();
     window.addEventListener(CASES_CHANGED_EVENT, heard);
     try {
-      invoke.mockRejectedValueOnce(new Error("offline"));
+      invoke.mockImplementation(async (cmd: string) => {
+        if (cmd === "test_case_create") throw new Error("offline");
+        return desktopAnswer(cmd);
+      });
       await expect(testCaseApi.create(input)).rejects.toThrow();
       expect(heard).not.toHaveBeenCalled();
+      invoke.mockImplementation(desktopAnswer);
       await testCaseApi.create(input);
       await testCaseApi.update("c1", input);
       await testCaseApi.remove("c1", "u1");

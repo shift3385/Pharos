@@ -231,6 +231,37 @@
   - **La web** numera con su caché hasta BASE-10. Si el servidor rechaza una
     clave suya, el cambio queda en la bandeja de salida marcado como
     rechazado, igual que un cambio demasiado grande.
+- **Enmienda DAT-04** (2026-11-08, decisión del usuario). Cambia la regla 4 y
+  las cifras de la enmienda A3:
+  - **El problema:** cada equipo pedía en cada sync un bloque de 50 para
+    **cada** proyecto y **cada** tipo, aunque no fuera a usarlo, y cada base
+    local nueva (reinstalar, otro PC, otro perfil) pedía los suyos. Lo que
+    sobraba se perdía. Un proyecto visto por tres bases empezaba sus
+    requisitos en `REQ-101` (caso real, 2026-11-07), y con 20 proyectos un
+    equipo reservaba 20 × 5 × 50 = 5000 números sin usar.
+  - **Con conexión, el equipo pide justo los números que va a usar.** Antes
+    de crear una clave automática, el cliente de escritorio pregunta a
+    `key_lease_for` y, si su reserva está vacía, pide al servidor un bloque de
+    ese tamaño: 1 para una creación, las filas sin clave en una importación,
+    como mucho 50. Así las claves salen seguidas entre equipos, como en la
+    web, que ya pedía de una en una. Si no hay sesión, conexión o respuesta en
+    4 s, la creación sigue sin esperar.
+  - **La reserva sin conexión es pequeña y solo se pide al usarla.** En el
+    sync se pide una reserva de 10 solo para los tipos que **este equipo** ya
+    numeró en ese proyecto (tiene contador o claves provisionales), y solo
+    cuando está agotada, así que no se tira ningún número que quedara. El
+    bloque cubre además las provisionales que esperan.
+  - **Lo que se acepta:** sin conexión y sin reserva, la primera clave de un
+    tipo en un equipo es provisional hasta el siguiente sync, igual que antes
+    sin bloque. Lo que otro equipo crea mientras uno tiene reserva va detrás
+    de ella: el hueco máximo es la reserva (10) y no 50, y solo queda si ese
+    equipo no vuelve a crear. Con otra base local se pierde, como mucho, su
+    reserva.
+  - **Protocolo:** `POST /sync/key-blocks` acepta `size` (1 a 50) en cada
+    petición. Sin `size`, el servidor sigue dando 50, así que un escritorio
+    anterior no cambia; un servidor anterior ignora `size` y da 50 (más
+    hueco, nunca colisión). Las claves ya asignadas no cambian: `REQ-101`
+    sigue siendo `REQ-101`.
 - **Nota DEF-01 (2026-10-31).** La serie `DEF-` pasa de `planner_cards.card_key`
   a `defects.defect_key` con el mismo tipo `defect` en `key_counters`,
   `retired_keys` y `key_blocks` (no hizo falta reconstruir ningún `CHECK`). La

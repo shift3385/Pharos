@@ -146,6 +146,42 @@ fn store(conn: &Connection, kind: KeyKind, project_id: &str, next: u64) -> Resul
     Ok(())
 }
 
+/// True once this device numbered a key of the kind in the project, or leased
+/// numbers for it: only then does it keep an offline reserve (DAT-04).
+pub(crate) fn has_counter(
+    conn: &Connection,
+    kind: KeyKind,
+    project_id: &str,
+) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM key_counters WHERE project_id = ?1 AND kind = ?2",
+        params![project_id, kind.name()],
+        |_| Ok(()),
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+    .map(|r| r.is_some())
+}
+
+/// Live rows of the project whose key of this kind is still provisional.
+pub(crate) fn provisional_count(
+    conn: &Connection,
+    kind: KeyKind,
+    project_id: &str,
+) -> Result<u64, String> {
+    let (table, column) = kind.column();
+    conn.query_row(
+        &format!(
+            "SELECT count(*) FROM {table} WHERE project_id = ?1 AND deleted_at IS NULL \
+             AND instr({column}, '?') > 0"
+        ),
+        params![project_id],
+        |r| r.get::<_, i64>(0),
+    )
+    .map_err(|e| e.to_string())
+    .map(|n| n.max(0) as u64)
+}
+
 /// Last number of the block leased from the server, if any (ADR-0010 rule 4).
 fn block_end(conn: &Connection, kind: KeyKind, project_id: &str) -> Result<Option<u64>, String> {
     let end: Option<Option<i64>> = conn

@@ -353,8 +353,8 @@ export const KEY_FIELD: Record<string, string> = {
   defect: "defectKey",
 };
 
-/** Numbers per leased block; the desktop asks for another when fewer than 10
- *  are left. */
+/** Numbers per leased block when the request names no `size`: what desktops
+ *  before DAT-04 ask for. Also the most a request may take. */
 export const KEY_BLOCK_SIZE = 50;
 
 /** A provisional key (`ATS_?KQZD`) is local and never checked for duplicates. */
@@ -373,6 +373,9 @@ export const keyBlocksSchema = z.object({
         // for the floor. Empty: the device floor alone.
         prefix: z.string().max(64).default(""),
         floor: z.number().int().positive().max(1e12).default(1),
+        // How many numbers (DAT-04): one per key about to be created, or a
+        // small offline reserve. Absent: a block of KEY_BLOCK_SIZE.
+        size: z.number().int().min(1).max(KEY_BLOCK_SIZE).optional(),
       }),
     )
     .max(300),
