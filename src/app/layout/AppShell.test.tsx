@@ -161,7 +161,7 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(screen.getByTestId("nav-project-plan")).toHaveAttribute("href", "/projects/p1/plan");
       const crumbs = screen.getByRole("navigation", { name: "Ruta de navegación" });
       expect(await within(crumbs).findByRole("link", { name: "Portal Clientes v3" })).toBeInTheDocument();
-      expect(within(crumbs).getByText("Planificador")).toHaveAttribute("aria-current", "page");
+      expect(within(crumbs).getByText("Tablero")).toHaveAttribute("aria-current", "page");
     });
 
     it("the project switcher lists the projects and filters them", async () => {

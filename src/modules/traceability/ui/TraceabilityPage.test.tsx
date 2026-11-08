@@ -6,7 +6,7 @@ import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import type { Requirement } from "../model/types";
-import { TraceabilityPage } from "./TraceabilityPage";
+import { RequirementsPage, TraceabilityPage } from "./TraceabilityPage";
 
 const list = vi.fn();
 const remove = vi.fn();
@@ -147,9 +147,8 @@ describe("Trazabilidad (RED-V3)", () => {
 
   it("lists the requirements and deletes one only through «Cancelar»-guarded confirmation", async () => {
     setViewportWidth(1440);
-    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
-    await userEvent.click(await screen.findByRole("button", { name: "Requisitos 3" }));
-    const table = screen.getByRole("table", { name: "Requisitos" });
+    renderWithProviders(<RequirementsPage projectId="p1" projectName="Portal" />);
+    const table = await screen.findByRole("table", { name: "Requisitos" });
     expect(within(table).getAllByRole("row")).toHaveLength(4);
     await expectNoAxeViolations();
     await userEvent.click(within(table).getByRole("button", { name: "Eliminar REQ-047" }));
@@ -192,6 +191,39 @@ describe("Trazabilidad (RED-V3)", () => {
     // By ID: REQ-031 first again.
     await userEvent.selectOptions(screen.getByTestId("trace-sort"), "key");
     expect(within(screen.getByRole("table", { name: "Matriz de trazabilidad" })).getAllByRole("row")[1]).toHaveTextContent("REQ-031");
+  });
+});
+
+describe("Requisitos and Trazabilidad as two sections (UX-21)", () => {
+  it("«Requisitos» has the list, «Importar» and «Nuevo requisito», and no matrix nor execution read", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<RequirementsPage projectId="p1" projectName="Portal" />);
+    expect(await screen.findByRole("table", { name: "Requisitos" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nuevo requisito" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Importar" }));
+    expect(await screen.findByRole("menuitem", { name: /Importar requisitos \(\.csv\)/ })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Exportar matriz/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Matriz de trazabilidad" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Requisitos 3" })).not.toBeInTheDocument();
+    expect(summary).not.toHaveBeenCalled();
+  });
+
+  it("«Trazabilidad» has the matrix and its export, and no requirement form", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
+    expect(await screen.findByRole("table", { name: "Matriz de trazabilidad" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Exportar matriz (.xlsx)" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Nuevo requisito" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Importar" })).not.toBeInTheDocument();
+  });
+
+  it("an empty matrix links to «Requisitos», its sibling section", async () => {
+    setViewportWidth(1440);
+    list.mockResolvedValue([]);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />, { route: "/projects/p1/traceability" });
+    const link = await screen.findByRole("link", { name: "Ir a Requisitos" });
+    expect(link).toHaveAttribute("href", "/projects/p1/requirements");
+    expect(screen.getByRole("button", { name: "Exportar matriz (.xlsx)" })).toBeDisabled();
   });
 });
 

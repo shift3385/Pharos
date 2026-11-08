@@ -1,6 +1,7 @@
-// Chapter 5 — Trazabilidad y requisitos: requirements (new, edit, CSV import,
-// delete), linking them to cases, the matrix, its gaps, migrating free-text
-// references to links and exporting the matrix.
+// Chapter 5 — Requisitos y trazabilidad: the «Requisitos» section (new, edit,
+// CSV import, delete), linking them to cases and the «Trazabilidad» section
+// (UX-21): the matrix, its gaps, migrating free-text references to links and
+// exporting the matrix.
 import { join } from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
@@ -16,7 +17,6 @@ import {
   menuItem,
   openProject,
   openSection,
-  pickFromMenu,
   selectOption,
   tf,
   waitForText,
@@ -46,14 +46,13 @@ async function saveCase() {
 
 chapter("trazabilidad", () => {
   step("vacio", {
-    title: "Trazabilidad, sin requisitos",
+    title: "Requisitos, sin requisitos todavía",
     caption:
-      "La trazabilidad responde a una pregunta: ¿qué requisitos están probados y cuáles no? Pulsa «Trazabilidad» en el menú lateral y elige la vista «Requisitos». Arriba, «Importar / Exportar» y «Nuevo requisito»; sin requisitos, la lista lo indica.",
-    covers: ["section:traceability", "state:requirements-empty"],
+      "Los requisitos son la base de prueba: lo que hay que probar, antes de escribir los casos. Por eso «Requisitos» va en el menú lateral justo antes de «Casos de prueba». Arriba, «Importar» y «Nuevo requisito»; sin requisitos, la lista lo indica.",
+    covers: ["section:requirements", "state:requirements-empty"],
     run: async () => {
       await openProject(PROJECT_A.name);
-      await openSection("traceability");
-      await $(`button.chips__chip*=${T.view.requirements}`).click();
+      await openSection("requirements");
       await waitForText(T.requirement.empty);
     },
   });
@@ -78,13 +77,13 @@ chapter("trazabilidad", () => {
   step("importar-csv", {
     title: "Importar requisitos desde CSV",
     caption:
-      "Si tus requisitos ya están en una hoja de cálculo, «Importar / Exportar → Importar requisitos (.csv)» acepta un CSV con coma o punto y coma (como lo guarda Excel en español). La vista previa muestra las columnas detectadas y qué se creará o actualizará antes de tocar nada.",
+      "Si tus requisitos ya están en una hoja de cálculo, «Importar → Importar requisitos (.csv)» acepta un CSV con coma o punto y coma (como lo guarda Excel en español). La vista previa muestra las columnas detectadas y qué se creará o actualizará antes de tocar nada.",
     covers: ["upload:src/modules/traceability/ui/TraceabilityPage.tsx", "dialogs:src/modules/traceability/ui/RequirementImportModal.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
       await clickButton(T.requirement.save, '[role="dialog"]');
       await waitForToast(T.requirement.savedToast);
-      await clickButton(T.io.label);
+      await clickButton(T.io.import);
       await expect(menuItem(T.io.importCsv)).toBeDisplayed();
       await browser.keys("Escape");
       await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(fixturesDir, "requisitos.csv"));
@@ -167,11 +166,10 @@ chapter("trazabilidad", () => {
   step("matriz", {
     title: "La matriz de trazabilidad",
     caption:
-      "«Matriz» muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, y arriba la cobertura: cuántos requisitos están cubiertos y cuántos no. Es la vista que enseñar cuando alguien pregunta qué se ha probado.",
-    covers: ["screen:matrix"],
+      "«Trazabilidad», al final del menú lateral, muestra cada requisito con los casos que lo verifican, su estado de prueba y sus defectos, y arriba la cobertura: cuántos requisitos están cubiertos y cuántos no. Va al final porque mide el resultado de todo lo anterior; es la vista que enseñar cuando alguien pregunta qué se ha probado.",
+    covers: ["section:traceability", "screen:matrix"],
     run: async () => {
       await openSection("traceability");
-      await $(`button.chips__chip*=${T.view.matrix}`).click();
       await waitForText(T.matrix.title);
     },
   });
@@ -219,14 +217,14 @@ chapter("trazabilidad", () => {
   step("exportar-matriz", {
     title: "Exportar la matriz",
     caption:
-      "«Importar / Exportar → Exportar matriz (.xlsx)» guarda requisitos, casos, estados y defectos en un libro de Excel, para compartirlos con quien no usa Pharos o adjuntarlos a una auditoría.",
+      "«Exportar matriz (.xlsx)», en la cabecera, guarda requisitos, casos, estados y defectos en un libro de Excel, para compartirlos con quien no usa Pharos o adjuntarlos a una auditoría.",
     covers: ["action:matrix-export"],
     shot: false,
     run: async () => {
       await clickButton(T.migrate.apply, '[role="dialog"]');
       await waitForToast(T.migrate.doneToast.split(":")[0]);
       await $(".cd-overlay").waitForExist({ reverse: true });
-      await pickFromMenu(T.io.label, T.io.exportXlsx);
+      await clickButton(T.io.exportXlsx);
       await waitForToast(tf("traceability.matrix.exportedToast", { name: "" }).trim(), 30_000);
     },
   });
@@ -238,7 +236,7 @@ chapter("trazabilidad", () => {
     covers: ["dialogs:src/modules/traceability/ui/TraceabilityPage.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
-      await $(`button.chips__chip*=${T.view.requirements}`).click();
+      await openSection("requirements");
       await $(`button[aria-label="${tf("traceability.requirement.delete", { key: "REQ-005" })}"]`).click();
       await expect($('[role="alertdialog"]')).toBeDisplayed();
     },

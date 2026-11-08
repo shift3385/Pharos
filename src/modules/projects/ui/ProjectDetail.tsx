@@ -23,7 +23,7 @@ import {
 import { PlannerBoard } from "@modules/planner";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
-import { TraceabilityPage, requirementApi } from "@modules/traceability";
+import { RequirementsPage, TraceabilityPage, requirementApi } from "@modules/traceability";
 import { RunsPage, StatusReportButton } from "@modules/runs";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
@@ -184,6 +184,14 @@ export function ProjectDetail({
             loadCases={() => projectCaseOptions(projectId, ownerId)}
             requirementKeys={(facts?.requirements ?? []).map((r) => r.requirementKey)}
             cycleActions={(cycleId) => <StatusReportButton projectId={projectId} projectName={project.name} cycleId={cycleId} />}
+          />
+        )}
+        {tab === "requirements" && (
+          <RequirementsPage
+            projectId={projectId}
+            projectName={project.name}
+            caseIdPrefix={project.caseIdPrefix}
+            caseIdDigits={project.caseIdDigits}
           />
         )}
         {tab === "traceability" && (

@@ -1,4 +1,4 @@
-// Chapter 6 — Planificador: the kanban board of tasks and test data, the card
+// Chapter 6 — Tablero (UX-21; before, «Planificador»): the kanban board of tasks and test data, the card
 // editor with attachments, moving cards with the keyboard, filters and delete.
 import { join } from "node:path";
 import { $, $$, browser, expect } from "@wdio/globals";
@@ -39,9 +39,9 @@ async function back() {
 
 chapter("planificador", () => {
   step("tablero", {
-    title: "El tablero del planificador",
+    title: "El tablero",
     caption:
-      "El planificador organiza el trabajo del equipo de pruebas que no es un caso: tareas y preparación de datos. Pulsa «Planificador» en el menú lateral: cuatro columnas (Backlog, En progreso, En revisión y Hecho) muestran en qué punto está cada tarjeta; el «+» de cada columna crea una tarjeta directamente en ella. Arriba, los filtros por tipo y prioridad y el buscador.",
+      "El tablero organiza el trabajo del equipo de pruebas que no es un caso: tareas y preparación de datos. Pulsa «Tablero» en el menú lateral, justo debajo de «Plan»: cuatro columnas (Backlog, En progreso, En revisión y Hecho) muestran en qué punto está cada tarjeta; el «+» de cada columna crea una tarjeta directamente en ella. Arriba, los filtros por tipo y prioridad y el buscador.",
     covers: ["section:planner"],
     run: async () => {
       await openProject(PROJECT_A.name);

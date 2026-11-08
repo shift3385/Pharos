@@ -211,8 +211,7 @@ chapter("administracion", () => {
       );
       // This device: the same requirement, edited before syncing.
       await openProject(PROJECT_A.name);
-      await openSection("traceability");
-      await $(`button.chips__chip*=${es.traceability.view.requirements}`).click();
+      await openSection("requirements");
       await $("button.tz-open*=Pago con código QR").click();
       await (await field(es.traceability.requirement.title, D)).setValue("Pago con código QR · versión de este equipo");
       await clickButton(es.traceability.requirement.save, D);

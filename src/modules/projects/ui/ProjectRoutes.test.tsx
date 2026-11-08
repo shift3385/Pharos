@@ -34,6 +34,7 @@ vi.mock("@modules/planner", () => ({
 }));
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
+  RequirementsPage: () => <p>sección requisitos</p>,
   requirementApi: { list: async () => [] },
   projectCoverage: async () => null,
 }));

@@ -18,7 +18,9 @@
 ## Decisión
 
 - Cada sección es una ruta: **`/projects/:projectId/:section`**, con
-  `section` ∈ `plan | cases | planner | traceability | settings`.
+  `section` ∈ `plan | cases | planner | traceability | settings` (ampliada
+  después con `cycles`, `runs`, `defects` y, en UX-21, `requirements`; ver la
+  enmienda al final).
   - Una sección desconocida o ausente lleva a `plan`.
   - `projectPath(id, section?)` y `PROJECT_SECTIONS` son la API pública de
     `@modules/projects`.
@@ -58,3 +60,23 @@
   su clave es la ruta.
 - V2 y V3 reestilizan las cabeceras de las secciones sobre estas rutas. Un
   enlace a una sección se construye con `projectPath`, nunca a mano.
+
+## Enmienda UX-21 (2026-11-08) · Requisitos como sección propia y orden del menú
+
+- **Contexto:** los requisitos (la base de prueba) vivían como una pestaña
+  interna de «Trazabilidad», que además tenía la matriz. El menú no seguía el
+  proceso: Casos antes que los requisitos de los que salen, Defectos antes que
+  Ejecuciones y la matriz, que mide la cobertura, en medio.
+- **Decisión:** nueva sección `requirements` (`/projects/:id/requirements`)
+  con la lista, «Importar» (CSV, IA-17, IA-18) y «Nuevo requisito».
+  `traceability` queda solo con la matriz y «Exportar matriz (.xlsx)».
+  `PROJECT_SECTIONS` y el menú siguen el flujo principal de ISTQB: Plan ·
+  Tablero · Requisitos · Casos · Ciclos · Ejecuciones · Defectos ·
+  Trazabilidad · Ajustes. Es una guía de orden, no una regla: nada impide crear
+  casos sin requisito.
+- **Consecuencias:** una sección más en la franja y en las pastillas móviles
+  (que ya se desplazan). La matriz vacía enlaza a «Requisitos». El Planificador
+  pasa a llamarse «Tablero» en el menú completo y en el corto, como el
+  «Board» de Jira: «Planif.» junto a «Plan» se confundía, y en Jira
+  «Plans» es otra cosa (el cronograma).
+  Las URLs anteriores siguen valiendo: `/traceability` abre la matriz.

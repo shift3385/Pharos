@@ -305,6 +305,13 @@
   color: var(--color-text-secondary);
 }
 
+/* «Ir a Requisitos» in the empty matrix (UX-21). */
+.tz-empty a {
+  color: var(--color-navy-500);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .tz-clip {
   min-width: 0;
   overflow: hidden;

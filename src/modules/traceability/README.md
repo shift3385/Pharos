@@ -1,20 +1,23 @@
-# Módulo `traceability` — «Trazabilidad»
+# Módulo `traceability` — «Requisitos» y «Trazabilidad»
 
 Requisitos de un proyecto (TRZ-01) y la matriz requisito ↔ caso ↔ último
-resultado ↔ defecto (TRZ-02, ampliada por EJE-04 en el paso 10).
+resultado ↔ defecto (TRZ-02, ampliada por EJE-04 en el paso 10). Desde UX-21
+son dos secciones del proyecto: `RequirementsPage` (`/requirements`, antes de
+«Casos») y `TraceabilityPage` (`/traceability`, al final del menú). Las dos
+usan el mismo componente con `view`.
 
 ## Pantallas
 
-| Vista | Componente | Qué hace |
+| Sección | Componente | Qué hace |
 | --- | --- | --- |
-| «Requisitos» | `RequirementsPanel` | Lista con prioridad y casos que cubren cada requisito; nuevo, editar (con su riesgo), eliminar, generar casos con IA |
-| «Matriz» | `MatrixView` | Los cuatro indicadores, la matriz de 9 columnas del SPEC (§8), «Mostrar solo huecos», tarjetas en móvil y los huecos de la cadena |
+| «Requisitos» | `RequirementsPanel` | Lista con prioridad y casos que cubren cada requisito; nuevo, editar (con su riesgo), eliminar, generar casos con IA. Cabecera: «Importar» (CSV, desde un proyecto, desde diseños) y «Nuevo requisito» |
+| «Trazabilidad» | `MatrixView` | Los cuatro indicadores, la matriz de 9 columnas del SPEC (§8), «Mostrar solo huecos», tarjetas en móvil y los huecos de la cadena. Cabecera: «Exportar matriz (.xlsx)». Sin requisitos, enlaza a «Requisitos» |
 | Diálogos | `RequirementFormModal`, `RequirementImportModal`, `GenerateCasesModal`, `MigrateTraceabilityModal` | Requisito (con riesgo, marca de IA y fuentes), importar CSV, IA, migrar referencias escritas a mano |
 | «Requisitos desde un proyecto (IA)» | `ProjectRequirementsModal` → `RequirementProposalsReview` | IA-17: carpeta → inventario → aviso de envío → lotes → propuestas (solo escritorio) |
 | «Requisitos desde diseños» | `RequirementsFromDesignModal` → `RequirementProposalsReview` | IA-18: material (imágenes, PDF, `.excalidraw`, Claude Design) → aviso → lectura con visión → síntesis común → propuestas con su imagen |
 
-`TraceabilityPage` carga una vez requisitos, casos y defectos para las dos
-vistas, y desde EJE-04 también el resumen de ejecución (`executionApi.summary`
+`TraceabilityPage` carga requisitos, casos y defectos (la lista también los
+necesita: casos por requisito y cobertura). Solo la matriz pide, desde EJE-04, el resumen de ejecución (`executionApi.summary`
 de `@modules/runs`) con los filtros de la dirección de la página
 (`?cycle=&configuration=&build=&environment=&sort=key`), más los ciclos y
 configuraciones de `@modules/cycles` para los filtros.

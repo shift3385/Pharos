@@ -147,14 +147,13 @@ chapter("ia", () => {
 
   step("generar-casos", {
     title: "Generar casos desde un requisito",
-    caption: "En «Trazabilidad», el botón de IA de un requisito propone escenarios Gherkin y casos para él. Revisa cada propuesta («Ver Gherkin»), marca las buenas y pulsa «Crear N casos»: quedan vinculados al requisito.",
+    caption: "En «Requisitos», el botón de IA de un requisito propone escenarios Gherkin y casos para él. Revisa cada propuesta («Ver Gherkin»), marca las buenas y pulsa «Crear N casos»: quedan vinculados al requisito.",
     covers: ["dialogs:src/modules/traceability/ui/GenerateCasesModal.tsx"],
     skip: AI_SKIP,
     shot: { element: D },
     run: async () => {
       await clickButton(X.assist.discard);
-      await openSection("traceability");
-      await $(`button.chips__chip*=${es.traceability.view.requirements}`).click();
+      await openSection("requirements");
       await $(`button[aria-label="${tf("traceability.generate.button", { key: "REQ-004" })}"]`).click();
       await expect(dialog()).toBeDisplayed();
       aiCall();

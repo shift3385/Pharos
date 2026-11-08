@@ -1,6 +1,11 @@
-# Trazabilidad y requisitos (fuente del capítulo 5)
+# Requisitos y trazabilidad (fuente del capítulo 5)
 
 ## Para qué sirve
+
+Son dos secciones del menú del proyecto, en el orden del proceso de prueba:
+**Requisitos**, justo antes de «Casos de prueba», porque los requisitos son
+la base de la que salen los casos; y **Trazabilidad**, al final, porque la
+matriz mide el resultado de todo lo anterior.
 
 La **trazabilidad** responde a «¿está probado este requisito?». Cada requisito
 tiene un ID estable (`REQ-001`) que los casos enlazan como tag; la matriz
@@ -20,14 +25,14 @@ primero.
 - Importa los requisitos de tu herramienta de gestión con un CSV: Pharos
   reconoce columnas en español o inglés («Título», «Title», «Clave», «ID»…) y
   actualiza los que ya existen por su ID.
-- Si el proyecto ya está en marcha, en la app de escritorio «Importar / Exportar →
+- Si el proyecto ya está en marcha, en la app de escritorio «Requisitos → Importar →
   Requisitos desde un proyecto (IA)» lee la carpeta del proyecto o de su
   documentación y propone requisitos nuevos, mejoras, posibles duplicados y
   redundantes, cada uno con su motivo y su archivo y líneas de origen. Antes de
   enviar nada ves qué archivos se leen; los secretos y las dependencias no se
   envían nunca. Lo deducido solo del código va marcado «Inferido»: confírmalo,
   porque el código puede tener un defecto.
-- Si tienes capturas, bocetos o diseños, «Importar / Exportar → Requisitos desde
+- Si tienes capturas, bocetos o diseños, «Requisitos → Importar → Requisitos desde
   diseños» los lee con un modelo de IA que vea imágenes:
   - Admite PNG, JPG, PDF, un `.excalidraw` y la carpeta o el ZIP de un proyecto de
     Claude Design. Desde Figma o Canva, exporta los frames como PNG o PDF.
@@ -47,7 +52,7 @@ primero.
 - Filtra por ciclo o por build para ver la foto de una ronda concreta; los
   filtros quedan en la dirección de la página, así que puedes guardarla o
   compartirla.
-- La exportación a Excel trae la hoja «Resultados» con el run, la fecha y los
+- «Exportar matriz (.xlsx)», en la cabecera de «Trazabilidad», trae la hoja «Resultados» con el run, la fecha y los
   defectos de cada caso, para revisarla fuera de la app.
 
 ## Véase también

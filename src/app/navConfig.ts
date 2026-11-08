@@ -8,6 +8,7 @@ import {
   GitFork,
   LayoutDashboard,
   ListChecks,
+  ScrollText,
   Settings2,
   SlidersHorizontal,
   SquareKanban,
@@ -40,15 +41,17 @@ export const MAIN_NAV: NavItem[] = [HOME, PROJECTS];
 /** Mobile bottom bar (SPEC §2): Inicio, Proyectos, Admin, Perfil. */
 export const BOTTOM_NAV: NavItem[] = [HOME, PROJECTS, ADMIN, PROFILE];
 
-/** The «Proyecto activo» group, shown only inside a project. */
+/** The «Proyecto activo» group, shown only inside a project, in the order of
+ *  the test process (UX-21, see PROJECT_SECTIONS). */
 export const PROJECT_NAV: { section: ProjectSection; icon: LucideIcon }[] = [
   { section: "plan", icon: FileText },
+  { section: "planner", icon: SquareKanban },
+  { section: "requirements", icon: ScrollText },
   { section: "cases", icon: ListChecks },
   { section: "cycles", icon: CalendarRange },
-  { section: "defects", icon: Bug },
-  { section: "planner", icon: SquareKanban },
-  { section: "traceability", icon: GitFork },
   { section: "runs", icon: CirclePlay },
+  { section: "defects", icon: Bug },
+  { section: "traceability", icon: GitFork },
   { section: "settings", icon: SlidersHorizontal },
 ];
 

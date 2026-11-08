@@ -55,8 +55,8 @@ export const CHAPTERS: Chapter[] = [
   { id: "proyectos", number: 2, title: "Inicio, proyectos y ajustes", file: "02-proyectos.tour.ts", status: "active" },
   { id: "plan", number: 3, title: "Plan de pruebas", file: "03-plan.tour.ts", status: "active", needs: ["proyectos"] },
   { id: "casos", number: 4, title: "Casos de prueba", file: "04-casos.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "trazabilidad", number: 5, title: "Trazabilidad y requisitos", file: "05-trazabilidad.tour.ts", status: "active", needs: ["casos"] },
-  { id: "planificador", number: 6, title: "Planificador", file: "06-planificador.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "trazabilidad", number: 5, title: "Requisitos y trazabilidad", file: "05-trazabilidad.tour.ts", status: "active", needs: ["casos"] },
+  { id: "planificador", number: 6, title: "Tablero", file: "06-planificador.tour.ts", status: "active", needs: ["proyectos"] },
   { id: "ciclos", number: 7, title: "Ciclos y configuraciones", file: "07-ciclos.tour.ts", status: "active", needs: ["proyectos", "casos"] },
   { id: "ejecuciones", number: 8, title: "Ejecuciones e importación de resultados", file: "08-ejecuciones.tour.ts", status: "active", needs: ["casos"] },
   { id: "defectos", number: 9, title: "Defectos", file: "09-defectos.tour.ts", status: "active", needs: ["ejecuciones"] },
@@ -265,8 +265,9 @@ export const INVENTORY: Item[] = [
   I("casos", "action", "action:cases-bulk", "Acciones con varios casos seleccionados"),
   I("casos", "keyboard", "keyboard:steps-reorder", "Reordenar pasos con el teclado (asa de arrastre)"),
 
-  // ---- 5 · Trazabilidad ----------------------------------------------------------------
-  I("trazabilidad", "section", "section:traceability", "Trazabilidad"),
+  // ---- 5 · Requisitos y trazabilidad (UX-21: two sections) -----------------------------
+  I("trazabilidad", "section", "section:requirements", "Requisitos"),
+  I("trazabilidad", "section", "section:traceability", "Trazabilidad (matriz)"),
   I("trazabilidad", "state", "state:requirements-empty", "Sin requisitos todavía"),
   I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/RequirementFormModal.tsx", "Nuevo / editar requisito"),
   I("trazabilidad", "action", "action:requirement-edit", "Editar un requisito"),
@@ -282,8 +283,8 @@ export const INVENTORY: Item[] = [
   I("trazabilidad", "action", "action:matrix-filters", "Filtrar los resultados de la matriz (ciclo, configuración, build, entorno)"),
   I("trazabilidad", "action", "action:matrix-run-link", "Último resultado en la matriz: abrir su run"),
 
-  // ---- 6 · Planificador ----------------------------------------------------------------
-  I("planificador", "section", "section:planner", "Planificador (tablero)"),
+  // ---- 6 · Tablero -----------------------------------------------------------------------
+  I("planificador", "section", "section:planner", "Tablero (kanban)"),
   I("planificador", "action", "action:card-create", "Crear una tarjeta"),
   I("planificador", "upload", "upload:src/modules/planner/ui/CardEditor.tsx", "Adjuntar un archivo a una tarjeta"),
   I("planificador", "dialog", "dialogs:src/modules/planner/ui/CardEditor.tsx", "Aviso de archivo demasiado grande"),
