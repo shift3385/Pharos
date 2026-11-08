@@ -24,7 +24,7 @@ aplicación cambia: cada paso es también una prueba automática
 
 - **Proyectos** con su plan de pruebas (asistente de 21 campos, ISO/IEC/IEEE
   29119, con frecuencia de las ceremonias ágiles), sus casos de prueba
-  (editor y Gherkin sincronizados) y su planificador kanban.
+  (editor y Gherkin sincronizados) y su tablero kanban.
 - **Inicio** con búsqueda de proyectos, último acceso y progreso.
 - **Trazabilidad:** requisitos `REQ-xxx`, matriz requisito ↔ caso ↔ defecto y
   tags estables (`@REQ-014`, `@ATS_001`) en los `.feature`.
@@ -302,7 +302,7 @@ en la misma matriz.
 
 - [ ] Con un caso vinculado a un requisito: ejecutarlo a mano (falla) e
       importar después un informe de Playwright con su etiqueta (`@<ID del
-      caso>`) que lo pasa. En **Trazabilidad → Matriz**, el caso muestra
+      caso>`) que lo pasa. En **Trazabilidad** (la matriz), el caso muestra
       «Pasa» con la clave del run importado y la fecha; la clave abre el run.
       Volver a ejecutarlo a mano: ahora manda el run manual (gana el último
       resultado final).

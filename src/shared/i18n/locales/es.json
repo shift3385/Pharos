@@ -542,7 +542,7 @@
         "daysInvalid": "Escribe un número de días entre 1 y {{max}}."
       },
       "owners": {
-        "planner_card": "Planificador",
+        "planner_card": "Tablero",
         "defect": "Defectos",
         "test_case": "Casos de prueba",
         "run_shard": "Reportes de ejecución",
@@ -684,7 +684,7 @@
     "projects": "Proyectos",
     "testPlan": "Plan de pruebas",
     "testCases": "Casos de prueba",
-    "planner": "Planificador",
+    "planner": "Tablero",
     "templates": "Plantillas",
     "ai": "Motor de IA",
     "admin": "Administración",
@@ -699,6 +699,7 @@
         "cases": "Casos",
         "cycles": "Ciclos",
         "planner": "Tablero",
+        "requirements": "Requisitos",
         "traceability": "Trazab.",
         "settings": "Proyecto",
         "defects": "Defectos",
@@ -737,7 +738,8 @@
       "cases": "Casos de prueba",
       "cycles": "Ciclos de prueba",
       "settings": "Ajustes del proyecto",
-      "planner": "Planificador",
+      "planner": "Tablero",
+      "requirements": "Requisitos",
       "traceability": "Trazabilidad",
       "defects": "Defectos",
       "runs": "Ejecuciones"
@@ -1562,7 +1564,7 @@
       "rate": "Tasa de éxito",
       "rateTitle": "Casos que pasan sobre los ejecutados en el periodo ({{period}}), en todos los proyectos abiertos",
       "defects": "Defectos abiertos",
-      "defectsTitle": "Defectos sin cerrar en el Planificador de tus proyectos",
+      "defectsTitle": "Defectos sin cerrar en el Tablero de tus proyectos",
       "critical_one": "{{count}} crítico",
       "critical_other": "{{count}} críticos",
       "noCritical": "Ninguno crítico",
@@ -1747,7 +1749,7 @@
       "subtitle": "Editor de plantilla y vista Gherkin sincronizados en tiempo real."
     },
     "planner": {
-      "title": "Planificador",
+      "title": "Tablero",
       "subtitle": "Tablero kanban local para tareas, datos de prueba y defectos."
     },
     "templates": {
@@ -1925,7 +1927,8 @@
       "uncovered": "Sin cubrir",
       "coverage": "Cobertura",
       "onlyGaps": "Mostrar solo huecos",
-      "empty": "Aún no hay requisitos. Créalos en la vista Requisitos.",
+      "empty": "Aún no hay requisitos: la matriz se llena con los requisitos del proyecto y sus casos.",
+      "goToRequirements": "Ir a Requisitos",
       "col": {
         "requirement": "ID requisito",
         "requirementTitle": "Requisito",

@@ -821,7 +821,9 @@ through `src-tauri/src/journal.rs`:
   moon/sun sets an explicit mode.
 - **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
   `projectPath()`. `useActiveProject` (`useMatch`) feeds:
-  - the «Proyecto activo» sidebar group (switcher + 5 sections). Inside a
+  - the «Proyecto activo» sidebar group (switcher + the sections, in the
+    order of the test process since UX-21: `PROJECT_SECTIONS` in
+    `@modules/projects` and `PROJECT_NAV` in `src/app/navConfig.ts`). Inside a
     project only the section is marked current; «Proyectos» is not (it stays
     current in the mobile bottom bar);
   - the breadcrumbs;

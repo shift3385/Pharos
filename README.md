@@ -176,8 +176,8 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   - «Contraer menú» shrinks it to an 84 px icon strip, and Pharos remembers
     the choice. Between 600 and 1279 px it is always the strip.
   - Inside a project, the «Proyecto activo» group switches project and
-    jumps between Plan, Casos, Planificador, Trazabilidad and Ajustes del
-    proyecto. Each one has its own address (`#/projects/<id>/<section>`).
+    jumps between Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones,
+    Defectos, Trazabilidad and Ajustes del proyecto. Each one has its own address (`#/projects/<id>/<section>`).
 - **Proyectos:** the 4 projects you opened last, then every project in a table
   with search, order and pages. A project's **Ajustes** holds its name and case
   numbering, «Exportar proyecto (ZIP)» and «Eliminar proyecto» (type the prefix

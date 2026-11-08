@@ -269,11 +269,10 @@ chapter("ejecucion-manual", () => {
 
   step("matriz-resultados", {
     title: "Los resultados en la matriz",
-    caption: "En «Trazabilidad → Matriz», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.",
+    caption: "En «Trazabilidad», cada caso muestra su último resultado final, venga de un run manual o de un informe importado (capítulo 8): el estado, la clave del run y la fecha, y avisos como «Flaky» o «Desactualizado» (se ejecutó una revisión anterior del caso). Los filtros de arriba limitan los resultados a un ciclo, una configuración, una build o un entorno.",
     covers: ["action:matrix-filters"],
     run: async () => {
       await openSection("traceability");
-      await $(`button.chips__chip*=${es.traceability.view.matrix}`).click();
       await waitForText(es.traceability.matrix.title);
       await browser.waitUntil(async () => (await $$('[data-testid="trace-run-link"]')).length >= 1, {
         timeoutMsg: "the matrix shows no run of a result",

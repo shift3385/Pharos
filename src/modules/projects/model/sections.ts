@@ -1,14 +1,18 @@
 /** A project's sections. Each one is a URL, `/projects/:projectId/:section`
  *  (ADR-0029), so the sidebar, the breadcrumbs, "back" and a reload all know
- *  which project and section are open. */
+ *  which project and section are open. In the menu's order (UX-21): the
+ *  main flow of the test process, from the plan and the requirements (the
+ *  test basis) to the cases, their execution, the defects and, last, the
+ *  traceability matrix that measures the coverage. */
 export const PROJECT_SECTIONS = [
   "plan",
+  "planner",
+  "requirements",
   "cases",
   "cycles",
-  "defects",
-  "planner",
-  "traceability",
   "runs",
+  "defects",
+  "traceability",
   "settings",
 ] as const;
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number];

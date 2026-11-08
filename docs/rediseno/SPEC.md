@@ -135,7 +135,7 @@ Fuentes: **Inter** (UI) y **JetBrains Mono** (IDs, código, contadores). Número
 
 ## 7. Navegación
 
-- **Menú lateral:** Inicio, Proyectos, Administración. El grupo **Proyecto activo** (selector, Plan, Casos, Planificador, Trazabilidad, Ajustes del proyecto) solo aparece dentro de un proyecto. Elemento activo: fondo blanco 8 %, barra izquierda de 3 px `--color-navy-300` e icono navy-300.
+- **Menú lateral:** Inicio, Proyectos, Administración. El grupo **Proyecto activo** (selector, Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones, Defectos, Trazabilidad, Ajustes del proyecto) solo aparece dentro de un proyecto. El orden sigue el proceso de prueba (enmienda 2026-11-08, UX-21): la base de prueba antes que los casos y la matriz, que mide la cobertura, al final. Elemento activo: fondo blanco 8 %, barra izquierda de 3 px `--color-navy-300` e icono navy-300.
 - **Contraer menú** (botón arriba a la derecha): pasa a la franja de 84 px y aparece **Expandir menú**. Recordar la elección entre sesiones.
 - **Barra superior (escritorio/tablet):** migas, buscador (Ctrl K), notificaciones, **acceso rápido claro/oscuro** (luna/sol). El idioma está solo en el menú del usuario.
 - **Móvil:** pantallas de proyecto con flecha atrás + título + subtítulo; secciones del proyecto como pastillas desplazables arriba. Mientras se edita Gherkin se oculta la barra inferior.
