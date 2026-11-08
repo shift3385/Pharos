@@ -2505,12 +2505,12 @@ mod tests {
                         .entry((r.project_id.clone(), r.kind.to_string()))
                         .or_insert(1);
                     let start = (*next).max(r.floor);
-                    *next = start + 50;
+                    *next = start + r.size;
                     crate::key_sync::KeyBlock {
                         project_id: r.project_id,
                         kind: r.kind.to_string(),
                         start,
-                        end: start + 49,
+                        end: start + r.size - 1,
                     }
                 })
                 .collect()

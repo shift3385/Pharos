@@ -4,5 +4,6 @@
  * One block this device needs: `floor` is its next number, so a project
  * numbered before its first push keeps the keys it already has. `prefix` lets
  * the server count only the keys of this series (`JIRA-48213` is not one).
+ * `size`: how many numbers (a server before DAT-04 ignores it and gives 50).
  */
-export type LeaseRequest = { projectId: string, kind: string, prefix: string, floor: number, };
+export type LeaseRequest = { projectId: string, kind: string, prefix: string, floor: number, size: number, };

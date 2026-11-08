@@ -283,6 +283,7 @@ pub fn run() {
             sync::sync_conflict_resolve,
             purge::purge_deleted,
             key_sync::key_lease_requests,
+            key_sync::key_lease_for,
             key_sync::key_blocks_apply,
             key_sync::key_conflicts_record,
             key_sync::key_conflicts_list,
