@@ -530,3 +530,48 @@ describe("Casos when the list fails to load", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
+
+describe("Casos · IA sin revisar en el estado y sin filtro Nivel (UX-20)", () => {
+  beforeEach(() => {
+    list.mockResolvedValue([
+      summary(1, { status: "draft", title: "Descarga de factura", aiPending: true }),
+      summary(2, { status: "reviewed", title: "Pago con tarjeta", aiPending: true }),
+      summary(3, { status: "draft", title: "Reembolso parcial" }),
+    ]);
+  });
+
+  it("marks the state, not the title, and keeps the state counts", async () => {
+    setViewportWidth(1440);
+    renderPage();
+    const table = await screen.findByRole("table", { name: "Casos de prueba" });
+    const [, first, second, third] = within(table).getAllByRole("row");
+    // The title is only the title.
+    expect(within(first).getByRole("link", { name: "Descarga de factura" })).toBeInTheDocument();
+    expect(within(first).queryByText(/IA · sin revisar/)).not.toBeInTheDocument();
+    // The state keeps its name and adds the mark, with its explanation.
+    const pill = within(first).getByText("Borrador").closest(".pill")!;
+    expect(pill).toHaveTextContent("Borrador (con IA sin revisar)");
+    expect(pill).toHaveAttribute("title", expect.stringMatching(/sugerido por IA/));
+    // Moved on without reviewing: its own state, same mark.
+    expect(within(second).getByText("Revisado").closest(".pill")).toHaveTextContent("Revisado (con IA sin revisar)");
+    expect(within(third).getByText("Borrador").closest(".pill")).not.toHaveTextContent("IA");
+    // The chips count states: an AI case counts in its own.
+    expect(screen.getByRole("button", { name: "Borrador 2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Revisado 1" })).toBeInTheDocument();
+    // No «Nivel» filter; the column stays.
+    expect(screen.queryByRole("button", { name: /^Nivel/ })).not.toBeInTheDocument();
+    expect(within(table).getByRole("columnheader", { name: "Nivel" })).toBeInTheDocument();
+    await expectNoAxeViolations();
+  });
+
+  it("on mobile the card names it and the filters sheet has no Nivel", async () => {
+    setViewportWidth(390);
+    renderPage();
+    const cards = await screen.findByRole("list", { name: "Casos de prueba" });
+    expect(within(cards).getAllByRole("listitem")[0]).toHaveTextContent("Borrador (con IA sin revisar)");
+    await userEvent.click(screen.getByRole("button", { name: "Filtros" }));
+    const sheet = screen.getByRole("dialog", { name: "Filtros" });
+    expect(within(sheet).queryByText("Nivel")).not.toBeInTheDocument();
+    expect(within(sheet).getByText("Prioridad")).toBeInTheDocument();
+  });
+});

@@ -9,7 +9,8 @@ export type PillTone = "success" | "error" | "warning" | "info" | "neutral";
  * A state pill (SPEC §4): background `color-mix(tone 14%, transparent)` and
  * text in the tone's `-text` variant. It only knows tones: each module maps
  * its own states to one. `dot` adds the leading dot of execution results;
- * `strike` crosses out a retired state (Obsoleto).
+ * `strike` crosses out a retired state (Obsoleto). `after` goes after the
+ * text, outside its ellipsis and strike (a mark such as UX-20's AI one).
  */
 export function StatusPill({
   tone,
@@ -17,6 +18,7 @@ export function StatusPill({
   strike,
   title,
   className = "",
+  after,
   children,
 }: {
   tone: PillTone;
@@ -24,6 +26,7 @@ export function StatusPill({
   strike?: boolean;
   title?: string;
   className?: string;
+  after?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -35,6 +38,7 @@ export function StatusPill({
     >
       {dot && <span className="pill__dot" aria-hidden="true" />}
       <span className="pill__text">{children}</span>
+      {after}
     </span>
   );
 }

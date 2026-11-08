@@ -9,7 +9,7 @@ import {
   type CaseType,
   type CustomField,
 } from "@modules/custom-fields";
-import type { GherkinLevel, TestCaseStatus, TestCaseSummary } from "./types";
+import type { TestCaseStatus, TestCaseSummary } from "./types";
 
 /** A case row: its summary plus the requirements it links (from the trace). */
 export interface ListedCase extends TestCaseSummary {
@@ -24,7 +24,6 @@ export interface CaseFilters {
   status: StatusFilter;
   /** Empty = any. */
   priorities: ReadonlySet<string>;
-  levels: ReadonlySet<GherkinLevel>;
   /** FLD-01. A case that never set them counts as standard / manual. */
   caseTypes: ReadonlySet<CaseType>;
   automation: ReadonlySet<AutomationStatus>;
@@ -38,7 +37,6 @@ export const EMPTY_FILTERS: CaseFilters = {
   query: "",
   status: "all",
   priorities: new Set(),
-  levels: new Set(),
   caseTypes: new Set(),
   automation: new Set(),
   custom: new Set(),
@@ -47,7 +45,6 @@ export const EMPTY_FILTERS: CaseFilters = {
 /** True when any filter besides the search and the state is on. */
 export const hasMenuFilters = (f: CaseFilters) =>
   f.priorities.size +
-    f.levels.size +
     f.caseTypes.size +
     f.automation.size +
     f.custom.size >
@@ -90,7 +87,6 @@ export const DEFAULT_SORT: CaseSort = { id: "id", dir: "asc" };
 
 export const CASE_STATUSES: TestCaseStatus[] = ["draft", "reviewed", "approved", "obsolete"];
 export const CASE_PRIORITIES = ["critical", "high", "medium", "low"] as const;
-export const CASE_LEVELS: GherkinLevel[] = ["basic", "outline", "advanced"];
 export const CASE_PAGE_SIZES = [10, 25, 50];
 
 const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -114,7 +110,6 @@ function matchesOthers(c: ListedCase, f: CaseFilters): boolean {
   return (
     matchesQuery(c, f.query) &&
     (f.priorities.size === 0 || f.priorities.has(c.priority)) &&
-    (f.levels.size === 0 || f.levels.has(c.gherkinLevel)) &&
     (f.caseTypes.size === 0 ||
       f.caseTypes.has(effectiveCaseType(c.caseType))) &&
     (f.automation.size === 0 ||

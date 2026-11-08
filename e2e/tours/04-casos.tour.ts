@@ -269,7 +269,7 @@ chapter("casos", () => {
   step("lista", {
     title: "La lista de casos",
     caption:
-      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado y fecha de la última edición. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, nivel, tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta.",
+      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado y fecha de la última edición. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta.",
     covers: ["action:cases-search", "action:cases-filter", "action:cases-sort"],
     run: async () => {
       await backToList();

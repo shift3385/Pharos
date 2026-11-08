@@ -79,7 +79,7 @@ Para cambiar el orden de los pasos, arrastra el asa que tiene cada uno. Con el t
 
 ### 4.12. La lista de casos
 
-Con casos, la tabla muestra ID, título, requisito, prioridad, estado y fecha de la última edición. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, nivel, tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta.
+Con casos, la tabla muestra ID, título, requisito, prioridad, estado y fecha de la última edición. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta.
 
 ![La lista de casos](img/casos/12-lista.png)
 

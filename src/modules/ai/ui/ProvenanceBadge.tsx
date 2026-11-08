@@ -9,24 +9,16 @@ import "./Assist.css";
 export function ProvenanceBadge({
   provenance,
   onReview,
-  compact = false,
 }: {
   provenance: AiProvenance | undefined;
-  /** Omit to show the mark without the review action (e.g. in lists). */
+  /** Omit to show the mark without the review action. (Lists mark the
+   *  case in its state instead, UX-20.) */
   onReview?: () => void;
-  compact?: boolean;
 }) {
   const { t } = useTranslation();
   if (!isPendingReview(provenance)) return null;
   const source = `${t(`ai.provenance.provider.${provenance.provider}`)} · ${provenance.model}`;
 
-  if (compact) {
-    return (
-      <span className="ai-prov ai-prov--compact" title={source}>
-        {t("ai.provenance.short")}
-      </span>
-    );
-  }
   return (
     <div className="ai-prov" role="status">
       <span className="ai-prov__label" title={source}>

@@ -166,7 +166,6 @@
     },
     "provenance": {
       "pending": "AI · pending review",
-      "short": "AI · not reviewed",
       "markReviewed": "Mark reviewed",
       "provider": {
         "gemini": "Gemini",
@@ -1454,7 +1453,9 @@
       "checklistMark": "Checklist",
       "featuresSkipped_one": "{{count}} checklist is not exported to .feature.",
       "featuresSkipped_other": "{{count}} checklists are not exported to .feature.",
-      "automationMark": "Automation: {{status}}"
+      "automationMark": "Automation: {{status}}",
+      "aiPending": "(with unreviewed AI content)",
+      "aiPendingHint": "It has AI-suggested content nobody has reviewed. Open it and press «Mark reviewed» on each AI mark."
     },
     "nav": {
       "allCases": "All cases",

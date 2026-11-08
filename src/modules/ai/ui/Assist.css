@@ -138,16 +138,6 @@
   border: 1px solid var(--color-navy-300);
   border-radius: var(--radius-sm);
 }
-.ai-prov--compact {
-  display: inline-flex;
-  margin-left: var(--space-2);
-  padding: 0 var(--space-2);
-  font-size: var(--fs-metadata);
-  font-weight: var(--fw-semibold);
-  color: var(--color-warning-text);
-  vertical-align: middle;
-  border-radius: var(--radius-pill);
-}
 
 /* ---- Structured AI answers (ADR-0023): pick lists and failure notices ---- */
 .assist__picklist {

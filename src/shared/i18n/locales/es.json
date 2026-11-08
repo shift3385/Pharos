@@ -166,7 +166,6 @@
     },
     "provenance": {
       "pending": "IA · pendiente de revisión",
-      "short": "IA · sin revisar",
       "markReviewed": "Marcar revisado",
       "provider": {
         "gemini": "Gemini",
@@ -1454,7 +1453,9 @@
       "checklistMark": "Checklist",
       "featuresSkipped_one": "{{count}} checklist no se exporta a .feature.",
       "featuresSkipped_other": "{{count}} checklists no se exportan a .feature.",
-      "automationMark": "Automatización: {{status}}"
+      "automationMark": "Automatización: {{status}}",
+      "aiPending": "(con IA sin revisar)",
+      "aiPendingHint": "Tiene contenido sugerido por IA que nadie ha revisado. Ábrelo y pulsa «Marcar revisado» en cada marca de IA."
     },
     "nav": {
       "allCases": "Todos los casos",
