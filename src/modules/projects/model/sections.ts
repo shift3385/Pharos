@@ -16,13 +16,14 @@ export const PROJECT_SECTIONS = [
   "settings",
 ] as const;
 export type ProjectSection = (typeof PROJECT_SECTIONS)[number];
-export const DEFAULT_PROJECT_SECTION: ProjectSection = "plan";
+/** What opening a project shows (UX-22): the board, the day-to-day work. */
+export const DEFAULT_PROJECT_SECTION: ProjectSection = "planner";
 
 export function isProjectSection(value: string | undefined): value is ProjectSection {
   return PROJECT_SECTIONS.includes(value as ProjectSection);
 }
 
-/** Route of a project section (the plan when none is given). */
+/** Route of a project section (the board when none is given). */
 export function projectPath(projectId: string, section: ProjectSection = DEFAULT_PROJECT_SECTION) {
   return `/projects/${encodeURIComponent(projectId)}/${section}`;
 }

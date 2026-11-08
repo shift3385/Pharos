@@ -161,7 +161,9 @@ function ProjectList() {
     }
     setName("");
     setCreating(false);
-    if (project) navigate(projectPath(project.id));
+    // A new project starts by writing its plan; an existing one opens on the
+    // board (UX-22).
+    if (project) navigate(projectPath(project.id, "plan"));
     else await refresh();
   }
 

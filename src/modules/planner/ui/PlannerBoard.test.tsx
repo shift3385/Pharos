@@ -50,16 +50,14 @@ beforeEach(async () => {
 });
 
 describe("Planificador (RED-V3)", () => {
-  it("is a 4-column kanban with typed cards and priority flags, and points to Defectos", async () => {
+  it("is a 4-column kanban with typed cards and priority flags, and no defects (DEF-01, the note went in UX-22)", async () => {
     setViewportWidth(1440);
     renderWithProviders(<PlannerBoard projectId="p1" ownerId="u1" />);
     const progress = await screen.findByRole("region", { name: "En progreso" });
     const task = await within(progress).findByRole("article");
     expect(task).toHaveTextContent("Tarea");
     expect(task).toHaveTextContent("Crítica");
-    // Defects left the board (DEF-01): a note leads to their module.
-    expect(screen.getByRole("note")).toHaveTextContent("Los defectos tienen ahora su propio módulo");
-    expect(screen.getByRole("link", { name: "Ir a Defectos" })).toBeInTheDocument();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Defectos \d/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
       "Backlog",

@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, useState, type KeyboardEventHandler } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
 import {
   DndContext,
   KeyboardSensor,
@@ -19,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Bug, Database, Flag, GripVertical, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
+import { Database, Flag, GripVertical, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
@@ -193,13 +192,6 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
   return (
     <div className="pl">
       {!inHeader && <div className="pl-head">{newCard}</div>}
-      <p className="pl-moved" role="note">
-        <Bug size={16} aria-hidden="true" />
-        <span>{t("planner.defectsMoved")}</span>
-        <Link to="../defects" relative="path" className="pl-moved__link">
-          {t("planner.openDefects")}
-        </Link>
-      </p>
       <div className="pl-toolbar">
         <FilterChips
           label={t("planner.kind")}
