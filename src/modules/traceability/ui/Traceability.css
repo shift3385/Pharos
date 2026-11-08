@@ -839,4 +839,148 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+/* Requirements from designs (IA-18) */
+.tr-design {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.tr-design__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  text-align: center;
+}
+.tr-design__drop:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.tr-design__drop--over {
+  border-color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+.tr-design__drop p {
+  margin: 0;
+}
+.tr-design__pick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.tr-design__btn {
+  position: relative;
+  cursor: pointer;
+}
+.tr-design__btn:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+/* The native input stays reachable by keyboard and screen readers, but unseen. */
+.tr-design__file {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.tr-design__issues {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--color-warning-text);
+  font-size: var(--fs-caption);
+}
+.tr-design__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.tr-design__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.tr-design__item--off .tr-gen__check > span:last-child {
+  color: var(--color-text-muted);
+}
+.tr-design__thumb {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-1);
+}
+.tr-design__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tr-design__kind {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+.tr-design__note {
+  min-width: 0;
+}
+.tr-design__remove {
+  min-width: 2rem;
+}
+.tr-design__context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+@media (max-width: 599px) {
+  .tr-design__item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .tr-design__note {
+    grid-column: 1 / -1;
+  }
+  .tr-design__remove {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}
+.tr-design__source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tr-design__shot {
+  position: relative;
+  display: inline-block;
+  width: 120px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  line-height: 0;
+}
+.tr-design__shot img {
+  width: 100%;
+  height: auto;
+}
+/* Where in the image the requirement comes from. */
+.tr-design__region {
+  position: absolute;
+  border: 2px solid var(--color-warning);
+  border-radius: 2px;
+  box-sizing: border-box;
 }

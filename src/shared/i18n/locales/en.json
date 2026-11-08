@@ -152,6 +152,8 @@
         "invalid-json": "The AI's answer is not valid JSON.",
         "invalid-schema": "The AI's answer does not have the expected format.",
         "no-provider": "No AI available: set up an online provider or Ollama.",
+        "no-vision": "The configured AI model cannot see images: pick one with vision in AI engine.",
+        "no-pdf": "This model does not read PDF: export the pages as images (PNG or JPG).",
         "timeout": "The AI did not answer in time.",
         "provider": "The AI provider returned an error."
       }
@@ -1990,6 +1992,60 @@
       "apply": "Apply",
       "applying": "Applying…",
       "doneToast": "Migration applied: {{links}} links, {{creates}} new requirements"
+    },
+    "fromDesign": {
+      "open": "Requirements from designs",
+      "openHint": "Screenshots, sketches, PDF, Excalidraw or Claude Design",
+      "title": "Requirements from designs",
+      "intro": "The AI reads screenshots, sketches and designs and proposes requirements to review. Nothing is sent until you press «Analyze» and nothing is saved without your choice.",
+      "dropLabel": "Material to analyze",
+      "drop": "Drag images or files here, or paste a screenshot with Ctrl+V.",
+      "pickFiles": "Choose files",
+      "pickFolder": "Choose folder",
+      "sources": "PNG, JPG, WebP, GIF, SVG, PDF, .excalidraw, and the folder or ZIP of a Claude Design project. From Figma or Canva, export the frames as PNG or PDF.",
+      "itemsLabel": "Material",
+      "meta": {
+        "image": "Image {{w}} × {{h}} px · ≈ {{tokens}} tokens",
+        "pdf_one": "PDF of {{count}} page · ≈ {{tokens}} tokens",
+        "pdf_other": "PDF of {{count}} pages · ≈ {{tokens}} tokens",
+        "text": "Text · {{chars}} characters · ≈ {{tokens}} tokens",
+        "textCut": "Text cut to {{chars}} characters · ≈ {{tokens}} tokens",
+        "screen": "screen {{name}}"
+      },
+      "note": "Note about {{name}}",
+      "notePlaceholder": "Optional note: sign-up flow, step 2…",
+      "remove": "Remove {{name}}",
+      "context": "Product context (optional)",
+      "contextPlaceholder": "E.g. a bank's customer portal, customer role",
+      "summary": "{{count}} of {{max}} images or PDF · {{mb}} MB · ≈ {{tokens}} input tokens (estimate)",
+      "over": {
+        "attachments": "At most {{max}} images or PDF per analysis: untick some.",
+        "size": "The images and PDF are too large for one analysis: untick some.",
+        "text": "There is too much text for one analysis: untick some files."
+      },
+      "blocked": {
+        "noAi": "No AI available: set up an online provider or Ollama in AI engine.",
+        "noVision": "The configured AI model cannot see images: pick one with vision in AI engine or untick the images.",
+        "noPdf": "This model does not read PDF: export the pages as images or untick the PDF."
+      },
+      "visionUnknown": "Pharos does not know whether this model sees images: if it does not, the provider will say so.",
+      "privacy": "Check the images and texts hold no personal data or secrets. Pharos does not keep the images: only each file's name and fingerprint.",
+      "synthesizing": "Comparing with the project's {{count}} requirements…",
+      "noCandidates": "The AI found no requirements in this material.",
+      "nothingToChange": "What the material shows is already in the project's requirements.",
+      "back": "Back to the material",
+      "page": "page {{page}}",
+      "region": "marked area",
+      "reading": "Preparing the material…",
+      "analyzing": "Reading the material with AI…",
+      "analyze": "Analyze",
+      "issue": {
+        "unsupported": "{{name}}: file type not supported.",
+        "too-large": "{{name}}: it is too large.",
+        "unreadable": "{{name}}: it could not be read.",
+        "too-many-pages": "{{name}}: it has too many pages; export only the ones that matter.",
+        "too-many-files": "The folder has too many files: only the first ones are read."
+      }
     },
     "io": {
       "label": "Import / Export",

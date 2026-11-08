@@ -383,6 +383,12 @@ export const INVENTORY: Item[] = [
     skip: "Solo se llega desde «Requisitos desde un proyecto» (selector nativo y clave de IA real, arriba) o desde las imágenes de IA-18. Lo cubren ProjectRequirementsModal.test.tsx, applyProposals.test.ts y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
   }),
   I("ia", "action", "ai:suggest-preconditions", "Sugerir y revisar las listas del caso con IA"),
+  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: material", {
+    skip: "El análisis necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementsFromDesignModal.test.tsx (material, límites, visión, aviso de envío, síntesis y aplicar), los tests de fromDesign/ y de ai.rs, y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
+  }),
+  I("ia", "upload", "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: archivos, carpeta y Ctrl+V", {
+    skip: "El análisis necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementsFromDesignModal.test.tsx (material, límites, visión, aviso de envío, síntesis y aplicar), los tests de fromDesign/ y de ai.rs, y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
+  }),
   I("ia", "state", "ai:disabled-without-key", "Botones de IA deshabilitados sin configurar"),
 
   // ---- 12 · Móvil -------------------------------------------------------------------------

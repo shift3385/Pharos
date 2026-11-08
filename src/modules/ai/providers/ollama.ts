@@ -1,4 +1,11 @@
-import { AI_REQUEST_TIMEOUT_MS, AI_TIMEOUT_MESSAGE, type AiProvider } from "../model/types";
+import { AI_REQUEST_TIMEOUT_MS, AI_TIMEOUT_MESSAGE, type AiMessage, type AiProvider } from "../model/types";
+
+/** Ollama's message: images go as a list of base64 strings. It reads no PDF:
+ *  the router stops one before it gets here (pure — testable). */
+export function ollamaMessage({ role, content, images }: AiMessage) {
+  if (images?.some((i) => i.mediaType === "application/pdf")) throw new Error("ai-no-pdf");
+  return images?.length ? { role, content, images: images.map((i) => i.data) } : { role, content };
+}
 
 /** Ollama answers within a context window of `num_ctx` tokens and silently
  *  drops what does not fit; its default is a few thousand. A long request
@@ -26,7 +33,7 @@ export function ollamaProvider(endpoint: string): AiProvider {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             model: opts.model,
-            messages,
+            messages: messages.map(ollamaMessage),
             stream: false,
             // Native JSON mode: small local models drift from the schema without it.
             ...(opts.json ? { format: "json" } : {}),

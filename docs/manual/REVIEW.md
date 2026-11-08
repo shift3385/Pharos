@@ -106,6 +106,15 @@ se publica:
       la WebView) y el análisis necesita una clave real. Lo cubren además
       `ProjectRequirementsModal.test.tsx` y los tests de Rust de
       `project_scan.rs`.
+- [ ] **Requisitos desde diseños (IA-18)** (Trazabilidad → «Importar /
+      Exportar»): con una clave real y un modelo con visión, pegar una captura,
+      añadir un PDF y la carpeta de un proyecto de Claude Design; el resumen
+      cuenta imágenes, MB y tokens; el aviso dice a qué proveedor va, sin el
+      modelo; cada propuesta muestra su imagen con la zona marcada; con
+      `llama3.2:3b` en Ollama, «Analizar» se bloquea con su motivo. *Por qué
+      no:* el análisis necesita una clave real y un modelo de visión. Lo cubren
+      además `RequirementsFromDesignModal.test.tsx`, los tests de
+      `fromDesign/` y los de Rust de `ai.rs`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
       antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
       («Los adjuntos solo están disponibles en el escritorio», borrador en el navegador) y los

@@ -42,6 +42,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0033](0033-probar-clave-ia-antes-de-guardarla.md) | Probar una clave de IA antes de guardarla; «Guardar clave» activa su proveedor       | Aceptado | 2026-11-06 |
 | [0034](0034-boveda-de-claves-ia-para-la-web.md)    | Bóveda en el servidor para usar en la web la clave de escritorio (sin implementar)   | Aceptado | 2026-11-06 |
 | [0036](0036-requisitos-desde-un-proyecto.md)      | Requisitos propuestos por la IA a partir de un proyecto existente (IA-17)            | Aceptado | 2026-11-07 |
+| [0037](0037-requisitos-desde-disenos.md)          | Imágenes en las llamadas de IA y requisitos desde capturas, bocetos y diseños        | Aceptado | 2026-11-07 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

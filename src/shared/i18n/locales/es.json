@@ -152,6 +152,8 @@
         "invalid-json": "La respuesta de la IA no es un JSON válido.",
         "invalid-schema": "La respuesta de la IA no tiene el formato esperado.",
         "no-provider": "No hay IA disponible: configura un proveedor online u Ollama.",
+        "no-vision": "El modelo de IA configurado no ve imágenes: elige uno con visión en Motor de IA.",
+        "no-pdf": "Este modelo no lee PDF: exporta las páginas como imágenes (PNG o JPG).",
         "timeout": "La IA no respondió a tiempo.",
         "provider": "El proveedor de IA devolvió un error."
       }
@@ -1990,6 +1992,60 @@
       "apply": "Aplicar",
       "applying": "Aplicando…",
       "doneToast": "Migración aplicada: {{links}} vínculos, {{creates}} requisitos nuevos"
+    },
+    "fromDesign": {
+      "open": "Requisitos desde diseños",
+      "openHint": "Capturas, bocetos, PDF, Excalidraw o Claude Design",
+      "title": "Requisitos desde diseños",
+      "intro": "La IA lee capturas, bocetos y diseños y propone requisitos para revisar. Nada se envía hasta que pulses «Analizar» y nada se guarda sin tu elección.",
+      "dropLabel": "Material para analizar",
+      "drop": "Arrastra aquí imágenes o archivos, o pega una captura con Ctrl+V.",
+      "pickFiles": "Elegir archivos",
+      "pickFolder": "Elegir carpeta",
+      "sources": "PNG, JPG, WebP, GIF, SVG, PDF, .excalidraw, y la carpeta o el ZIP de un proyecto de Claude Design. Desde Figma o Canva, exporta los frames como PNG o PDF.",
+      "itemsLabel": "Material",
+      "meta": {
+        "image": "Imagen {{w}} × {{h}} px · ≈ {{tokens}} tokens",
+        "pdf_one": "PDF de {{count}} página · ≈ {{tokens}} tokens",
+        "pdf_other": "PDF de {{count}} páginas · ≈ {{tokens}} tokens",
+        "text": "Texto · {{chars}} caracteres · ≈ {{tokens}} tokens",
+        "textCut": "Texto recortado a {{chars}} caracteres · ≈ {{tokens}} tokens",
+        "screen": "pantalla {{name}}"
+      },
+      "note": "Nota sobre {{name}}",
+      "notePlaceholder": "Nota opcional: flujo de alta, paso 2…",
+      "remove": "Quitar {{name}}",
+      "context": "Contexto del producto (opcional)",
+      "contextPlaceholder": "Ej.: portal de clientes de un banco, rol cliente",
+      "summary": "{{count}} de {{max}} imágenes o PDF · {{mb}} MB · ≈ {{tokens}} tokens de entrada (estimación)",
+      "over": {
+        "attachments": "Como mucho {{max}} imágenes o PDF por análisis: desmarca algunas.",
+        "size": "Las imágenes y los PDF pesan demasiado para un análisis: desmarca algunos.",
+        "text": "Hay demasiado texto para un análisis: desmarca algunos archivos."
+      },
+      "blocked": {
+        "noAi": "No hay IA disponible: configura un proveedor en línea u Ollama en Motor de IA.",
+        "noVision": "El modelo de IA configurado no ve imágenes: elige uno con visión en Motor de IA o desmarca las imágenes.",
+        "noPdf": "Este modelo no lee PDF: exporta las páginas como imágenes o desmarca los PDF."
+      },
+      "visionUnknown": "Pharos no sabe si este modelo ve imágenes: si no las ve, el proveedor lo dirá.",
+      "privacy": "Revisa que las imágenes y los textos no tengan datos personales ni secretos. Pharos no guarda las imágenes: solo el nombre y la huella de cada archivo.",
+      "synthesizing": "Comparando con los {{count}} requisitos del proyecto…",
+      "noCandidates": "La IA no encontró requisitos en este material.",
+      "nothingToChange": "Lo que muestra el material ya está en los requisitos del proyecto.",
+      "back": "Volver al material",
+      "page": "página {{page}}",
+      "region": "zona marcada",
+      "reading": "Preparando el material…",
+      "analyzing": "Leyendo el material con IA…",
+      "analyze": "Analizar",
+      "issue": {
+        "unsupported": "{{name}}: tipo de archivo no admitido.",
+        "too-large": "{{name}}: es demasiado grande.",
+        "unreadable": "{{name}}: no se pudo leer.",
+        "too-many-pages": "{{name}}: tiene demasiadas páginas; exporta solo las que importan.",
+        "too-many-files": "La carpeta tiene demasiados archivos: solo se leen los primeros."
+      }
     },
     "io": {
       "label": "Importar / Exportar",

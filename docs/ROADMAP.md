@@ -249,6 +249,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | IA-16 | Revisión crítica de las listas del caso (añadir, reformular, eliminar, con motivo) y asistencia independiente en pasos, resultado esperado, postcondiciones y criterios; también en flujos del nivel avanzado y en checklists | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
 | IA-17 | Requisitos propuestos por la IA desde la carpeta de un proyecto: lectura en Rust con exclusiones y secretos redactados, aviso antes de enviar, lotes y síntesis contra la lista (nuevo, mejora, duplicado, eliminar, con motivo y fuente) ([ADR-0036](adr/0036-requisitos-desde-un-proyecto.md)) | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales y Ollama           | IA-01, TRZ-01 |
 | IA-12 | Usar en la web la clave de escritorio: bóveda cifrada en el servidor e interruptor ([ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)) | P1  | Por decidir                                                | Pendiente                                                    | IA-11         |
+| IA-18 | Requisitos desde capturas, bocetos y diseños (imágenes, PDF, Excalidraw, carpeta o ZIP de Claude Design; Figma y Canva exportados) con IA de visión, con fuentes, marca hecho/inferido y criterios de aceptación ([ADR-0037](adr/0037-requisitos-desde-disenos.md)) | P2  | 0.3.0 | Hecho: imágenes en las llamadas de IA (Rust y Ollama), `visionFor`, lectura del material, prompt `requirements-from-design@1`, síntesis y revisión comunes de IA-17 y botón en Trazabilidad; falta validación con claves reales | IA-17, IA-01 |
 | IA-02 | Detección de duplicados con embeddings locales                                                                           | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-03 | _Lint_ de oráculo (resultados esperados débiles)                                                                         | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-06 | Servidor MCP local (stdio)                                                                                               | P1  | 0.7.0                                                      | Pendiente                                                    | SEC-05        |
@@ -376,6 +377,11 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   cite archivos y líneas que existen, que «Inferido» marque lo deducido del código y que
   los duplicados y redundantes propuestos lo sean. Anotar tokens, tiempo y coste por
   proveedor.
+- **IA-18:** con claves reales de Claude, Gemini u OpenAI (y con un modelo de visión de Ollama), analizar
+  capturas de una app, un PDF exportado de Figma, un `.excalidraw` y la carpeta de un proyecto de Claude Design:
+  que cada propuesta cite su imagen o pantalla, que «Visto en el diseño» solo marque lo que está escrito,
+  que no invente cifras y que ignore un texto de la captura que dé órdenes. Comprobar en el escritorio que
+  pegar con Ctrl+V y «Elegir carpeta» funcionan en WebView2.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario

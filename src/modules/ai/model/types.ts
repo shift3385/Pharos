@@ -9,6 +9,19 @@ export type AiRole = "system" | "user" | "assistant";
 export interface AiMessage {
   role: AiRole;
   content: string;
+  /** Images or PDF sent with a user message (IA-18, ADR-0037). Only models
+   *  that see images take them (`visionFor`); reduced before sending. */
+  images?: AiImage[];
+}
+
+export type AiImageType = "image/png" | "image/jpeg" | "image/webp" | "image/gif" | "application/pdf";
+
+/** One attachment: base64 without the `data:` prefix. `name` is only for the
+ *  person (the providers never receive it). */
+export interface AiImage {
+  mediaType: AiImageType;
+  data: string;
+  name?: string;
 }
 
 /** Which provider to use: auto picks online when available, else offline. */

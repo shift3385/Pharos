@@ -803,6 +803,18 @@ through `src-tauri/src/journal.rs`:
   The Motor de IA tab draws its controls from it and `aiApi` decides from it
   whether `temperature` is sent; Rust takes `temperature: Option<f32>`.
   Reasoning is listed with `sent: false` (locked, "coming soon").
+  `visionFor` says whether a model reads images and PDF (IA-18, ADR-0037).
+- **Images in AI calls** (IA-18, ADR-0037): `AiMessage.images` (base64, PNG,
+  JPEG, WebP, GIF or PDF, user messages only). `ai.rs` checks type and size
+  and maps them to each wire format (Gemini `inline_data`, Claude `image` /
+  `document` blocks, OpenAI-style data URLs and `file`); `ollama.ts` sends
+  `images`. `checkAttachments` in the router stops them for a model without
+  vision. Requirements from designs: `traceability/fromDesign/` reads the
+  material (images reduced on a canvas, PDF as is, `.excalidraw` texts, a
+  Claude Design folder or ZIP as Markdown plus a DOMParser outline per
+  `*.dc.html`, nothing executed), `ai/api/designPrompts.ts` is the prompt
+  `requirements-from-design@1`, and `fromDesign/candidates.ts` writes each
+  candidate's sources from the material for the common review of IA-17.
 - **Theme preference:** `ThemeProvider` keeps `preference`
   (`light | dark | system`, stored in `pharos.theme`) and the resolved
   `theme`; «system» follows `prefers-color-scheme` live. The topbar's

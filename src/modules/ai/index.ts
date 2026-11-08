@@ -45,4 +45,14 @@ export { applyProposals } from "./model/listReview";
 export type { ListProposal, ListProposalOps } from "./model/listReview";
 export type { GeneratedCase, RiskSuggestion } from "./model/schemas";
 export { hasPendingReview, isPendingReview, markReviewed, withProvenance } from "./model/provenance";
-export type { AiDestination, AiMessage, AiProvenance, ProvenanceMap } from "./model/types";
+export type { AiDestination, AiImage, AiImageType, AiMessage, AiProvenance, ProvenanceMap } from "./model/types";
+export { aiVision } from "./api/aiApi";
+export { visionFor } from "./model/capabilities";
+export type { VisionCapability } from "./model/capabilities";
+export {
+  DESIGN_PROMPT_VERSION,
+  buildDesignExtractionMessages,
+  extractRequirementsFromDesign,
+} from "./api/designPrompts";
+export type { DesignPromptItem } from "./api/designPrompts";
+export type { DesignExtraction } from "./model/schemas";

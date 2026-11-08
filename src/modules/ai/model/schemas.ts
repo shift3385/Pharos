@@ -233,3 +233,52 @@ export type RiskSuggestion = z.infer<typeof riskSuggestionsSchema>["risks"][numb
 export type ResponsibilitySuggestion = z.infer<typeof responsibilitySuggestionsSchema>["responsibilities"][number];
 export type ClosureSuggestion = z.infer<typeof closureSuggestionsSchema>["criteria"][number];
 export type RawListProposal = z.infer<typeof listReviewSchema>["proposals"][number];
+
+// --- Requirements from designs (IA-18, ADR-0037) ------------------------------
+
+/** A region of an image, 0..1 of its size. A region outside the image is
+ *  dropped, not the requirement: it only helps to find the place. */
+const region = z
+  .object({
+    x: z.coerce.number().min(0).max(1),
+    y: z.coerce.number().min(0).max(1),
+    w: z.coerce.number().gt(0).max(1),
+    h: z.coerce.number().gt(0).max(1),
+  })
+  .refine((r) => r.x + r.w <= 1.001 && r.y + r.h <= 1.001);
+
+export const designExtractionSchema = z.object({
+  screens: z
+    .array(z.object({ item: itemNumber, name: line(200), purpose: line(300).optional() }))
+    .max(40)
+    .default([]),
+  candidates: z
+    .array(
+      z.object({
+        title: line(200),
+        description: z.string().trim().min(1).max(2000),
+        priority: requirementPriority,
+        kind: z.enum(["functional", "non-functional", "constraint"]).optional().catch(undefined),
+        basis: z.enum(["stated", "inferred"]).catch("inferred"),
+        acceptance: z.array(line(300)).max(10).default([]),
+        assumptions: z.array(line(300)).max(5).default([]),
+        questions: z.array(line(300)).max(5).default([]),
+        evidence: z
+          .array(
+            z.object({
+              item: itemNumber,
+              page: z.coerce.number().int().min(1).optional().catch(undefined),
+              region: region.optional().catch(undefined),
+              quote: z.string().trim().max(200).optional(),
+            }),
+          )
+          .min(1)
+          .max(5),
+      }),
+    )
+    .max(40)
+    .default([]),
+  reason,
+});
+
+export type DesignExtraction = z.infer<typeof designExtractionSchema>;

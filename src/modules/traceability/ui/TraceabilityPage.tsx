@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { ArrowLeftRight, Download, FolderSearch, Plus, Upload } from "lucide-react";
+import { ArrowLeftRight, Download, FolderSearch, ImageUp, Plus, Upload } from "lucide-react";
 import { aiAvailable, markReviewed } from "@modules/ai";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
@@ -23,6 +23,7 @@ import { requirementApi } from "../api/requirementApi";
 import { projectScanApi } from "../api/projectScanApi";
 import type { ApplyResult } from "../proposals/types";
 import { ProjectRequirementsModal } from "./ProjectRequirementsModal";
+import { RequirementsFromDesignModal } from "./RequirementsFromDesignModal";
 import type { CsvImportResult } from "../import/requirementCsv";
 import { buildMatrix, type MatrixDefect, type MatrixSort } from "../model/matrix";
 import { proposeMigration, type MigrationProposal } from "../model/migration";
@@ -104,6 +105,7 @@ export function TraceabilityPage({
   const [generating, setGenerating] = useState<Requirement | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [fromProject, setFromProject] = useState(false);
+  const [fromDesign, setFromDesign] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [params, setParams] = useSearchParams();
   const filters = filtersOf(params);
@@ -338,6 +340,7 @@ export function TraceabilityPage({
           <ImportExportMenu
             onImport={() => fileInputRef.current?.click()}
             onFromProject={projectScanApi.available() ? () => setFromProject(true) : undefined}
+            onFromDesign={() => setFromDesign(true)}
             aiReady={aiReady}
             onExport={() => void exportXlsx()}
             canExport={Boolean(matrix && matrix.rows.length)}
@@ -455,6 +458,15 @@ export function TraceabilityPage({
           onClose={() => setFromProject(false)}
         />
       )}
+      {fromDesign && data && (
+        <RequirementsFromDesignModal
+          projectId={projectId}
+          existing={data.requirements}
+          linkedCases={linkedCases}
+          onApplied={proposalsApplied}
+          onClose={() => setFromDesign(false)}
+        />
+      )}
       {migrating && (
         <MigrateTraceabilityModal
           proposals={proposals}
@@ -470,6 +482,7 @@ export function TraceabilityPage({
 function ImportExportMenu({
   onImport,
   onFromProject,
+  onFromDesign,
   aiReady,
   onExport,
   canExport,
@@ -477,6 +490,8 @@ function ImportExportMenu({
   onImport: () => void;
   /** Desktop only (IA-17): Rust reads the folder. */
   onFromProject?: () => void;
+  /** Desktop and web (IA-18); the dialog says when the model sees no images. */
+  onFromDesign: () => void;
   aiReady: boolean;
   onExport: () => void;
   canExport: boolean;
@@ -515,6 +530,15 @@ function ImportExportMenu({
             {t("traceability.io.fromProject")}
           </MenuItem>
         )}
+        <MenuItem
+          icon={ImageUp}
+          onSelect={onFromDesign}
+          disabled={!aiReady}
+          title={aiReady ? undefined : t("ai.assist.unavailable")}
+          description={aiReady ? t("traceability.fromDesign.openHint") : t("ai.assist.unavailable")}
+        >
+          {t("traceability.fromDesign.open")}
+        </MenuItem>
         <MenuSeparator />
         <MenuLabel>{t("traceability.io.export")}</MenuLabel>
         <MenuItem

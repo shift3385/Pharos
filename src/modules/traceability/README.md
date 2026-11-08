@@ -11,6 +11,7 @@ resultado ↔ defecto (TRZ-02, ampliada por EJE-04 en el paso 10).
 | «Matriz» | `MatrixView` | Los cuatro indicadores, la matriz de 9 columnas del SPEC (§8), «Mostrar solo huecos», tarjetas en móvil y los huecos de la cadena |
 | Diálogos | `RequirementFormModal`, `RequirementImportModal`, `GenerateCasesModal`, `MigrateTraceabilityModal` | Requisito (con riesgo, marca de IA y fuentes), importar CSV, IA, migrar referencias escritas a mano |
 | «Requisitos desde un proyecto (IA)» | `ProjectRequirementsModal` → `RequirementProposalsReview` | IA-17: carpeta → inventario → aviso de envío → lotes → propuestas (solo escritorio) |
+| «Requisitos desde diseños» | `RequirementsFromDesignModal` → `RequirementProposalsReview` | IA-18: material (imágenes, PDF, `.excalidraw`, Claude Design) → aviso → lectura con visión → síntesis común → propuestas con su imagen |
 
 `TraceabilityPage` carga una vez requisitos, casos y defectos para las dos
 vistas, y desde EJE-04 también el resumen de ejecución (`executionApi.summary`
@@ -69,6 +70,27 @@ con los filtros activos arriba.
   `requirement-data`): objeto JSON libre; un cliente sin la feature lo conserva.
 - Prompts versionados en `@modules/ai` (`api/requirementPrompts.ts`):
   `req-extract@1` (un lote de archivos) y `req-synthesis@1` (común).
+
+## Requisitos desde diseños (IA-18, ADR-0037)
+
+- **Material** en `fromDesign/` (puro salvo `imageReduce.ts`):
+  - `material.ts`: lee archivos sueltos, una carpeta (`webkitdirectory`) o un ZIP
+    (`jszip`). Lee una vez cada archivo repetido (SHA-256) y deja desmarcado lo que
+    pasa de los límites.
+  - `outline.ts`: el esquema textual de un HTML con `DOMParser`, sin ejecutar
+    nada; los textos de un `.excalidraw` y el Markdown.
+  - `imageReduce.ts`: canvas con 1568 px de lado largo, en WebP o JPEG y sin
+    metadatos.
+  - `limits.ts`: los límites y las estimaciones de tokens, iguales que en `ai.rs`.
+  - `candidates.ts`: numera lo enviado y escribe las fuentes de cada candidato
+    a partir del material, nunca del modelo.
+- **Dos llamadas:** `requirements-from-design@1` (`@modules/ai`, con las
+  imágenes) y `req-synthesis@1` con `partialMaterial: true`. Un fallo de la
+  síntesis se reintenta sin volver a enviar las imágenes. La procedencia guarda
+  los dos prompts.
+- **Fuente en la revisión:** `ui/DesignSourceLabel.tsx` pinta la miniatura con la
+  región. La imagen solo vive en el diálogo; en `data.sources` quedan el nombre,
+  el índice y el SHA-256.
 
 ## Riesgo del requisito (TRZ-04, parcial)
 
