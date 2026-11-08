@@ -401,6 +401,43 @@ fn requirement_risk_is_set_validated_and_synced() {
     assert_eq!(derive::risk_level(Some(4), Some(5)), Some(20));
 }
 
+#[test]
+fn requirement_data_travels_and_an_older_payload_keeps_it() {
+    let a = device();
+    let p = new_project(&a);
+    let data = json!({
+        "aiProvenance": {"requirement": {"provider": "ollama", "model": "m", "generatedAt": "t"}},
+        "sources": [{"kind": "file", "path": "docs/spec.md", "startLine": 4, "endLine": 9}],
+    });
+    let input: requirement::RequirementInput =
+        serde_json::from_value(json!({"projectId": p, "title": "R", "userId": U, "data": data}))
+            .unwrap();
+    let r = requirement::insert_requirement(&a, &input).unwrap();
+    let docs = push(&a);
+    let b = device();
+    pull(&b, &docs);
+    let (on_b, _, _) = sync::read_payload(&b, "requirement", &r).unwrap().unwrap();
+    assert_eq!(on_b["data"], data);
+
+    // A payload written by a Pharos without `data` leaves B's as it is.
+    let older: Vec<Value> = docs
+        .iter()
+        .map(|d| {
+            let mut d = d.clone();
+            if d["entity"] == "requirement" {
+                d["payload"].as_object_mut().unwrap().remove("data");
+                d["payload"]["title"] = json!("R v2");
+                d["revision"] = json!(2);
+            }
+            d
+        })
+        .collect();
+    pull(&b, &older);
+    let (on_b, _, _) = sync::read_payload(&b, "requirement", &r).unwrap().unwrap();
+    assert_eq!(on_b["title"], "R v2");
+    assert_eq!(on_b["data"], data);
+}
+
 // ---- sync between devices ----------------------------------------------------
 
 fn as_doc(d: &Value) -> sync::RemoteDoc {

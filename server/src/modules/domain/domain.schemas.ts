@@ -100,6 +100,9 @@ export const requirementInputSchema = z.object({
   // stored value (the form of the web sends both).
   riskLikelihood: z.number().int().min(1).max(5).nullable().optional(),
   riskImpact: z.number().int().min(1).max(5).nullable().optional(),
+  // Free-form object (IA-17, ADR-0036): AI provenance and sources. A missing
+  // key keeps the stored value; an object replaces it.
+  data: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const requirementImportSchema = z.object({

@@ -20,6 +20,13 @@ primero.
 - Importa los requisitos de tu herramienta de gestión con un CSV: Pharos
   reconoce columnas en español o inglés («Título», «Title», «Clave», «ID»…) y
   actualiza los que ya existen por su ID.
+- Si el proyecto ya está en marcha, en la app de escritorio «Importar / Exportar →
+  Requisitos desde un proyecto (IA)» lee la carpeta del proyecto o de su
+  documentación y propone requisitos nuevos, mejoras, posibles duplicados y
+  redundantes, cada uno con su motivo y su archivo y líneas de origen. Antes de
+  enviar nada ves qué archivos se leen; los secretos y las dependencias no se
+  envían nunca. Lo deducido solo del código va marcado «Inferido»: confírmalo,
+  porque el código puede tener un defecto.
 - Un ID eliminado no se reutiliza nunca, para que ningún caso antiguo apunte
   a otro requisito por error.
 - «Mostrar solo huecos» es la vista de trabajo antes de cerrar un ciclo.

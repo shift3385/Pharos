@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ProvenanceBadge, isPendingReview } from "@modules/ai";
 import { Dialog } from "@shared/ui/Dialog";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
@@ -11,6 +12,7 @@ import {
   type RequirementPriority,
 } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
+import { defaultSourceLabel } from "./sourceLabel";
 import "./Traceability.css";
 
 export interface RequirementDraft {
@@ -21,6 +23,8 @@ export interface RequirementDraft {
   /** Risk factors 1..5, null = not assessed (RUN-00, TRZ-04). */
   riskLikelihood: number | null;
   riskImpact: number | null;
+  /** The person marked the AI content reviewed (IA-01, IA-17). */
+  markReviewed?: boolean;
 }
 
 const RISK_VALUES = [1, 2, 3, 4, 5];
@@ -40,6 +44,8 @@ export function RequirementFormModal({
 }) {
   const { t } = useTranslation();
   const id = useId();
+  const provenance = requirement?.data?.aiProvenance?.requirement;
+  const sources = requirement?.data?.sources ?? [];
   const [start] = useState<RequirementDraft>(() => ({
     requirementKey: requirement?.requirementKey ?? "",
     title: requirement?.title ?? "",
@@ -88,6 +94,10 @@ export function RequirementFormModal({
       <h3 id={`${id}-title`} className="cd__title">
         {isNew ? t("traceability.requirement.newTitle") : t("traceability.requirement.editTitle")}
       </h3>
+
+      {isPendingReview(provenance) && !draft.markReviewed && (
+        <ProvenanceBadge provenance={provenance} onReview={() => setDraft({ ...draft, markReviewed: true })} />
+      )}
 
       {showSummary && (
         <ErrorSummary
@@ -158,6 +168,17 @@ export function RequirementFormModal({
           </select>
         )}
       </FormField>
+
+      {sources.length > 0 && (
+        <details className="tz-prop__extra" data-testid="requirement-sources">
+          <summary>{t("traceability.proposals.source", { count: sources.length })}</summary>
+          <ul>
+            {sources.map((s, i) => (
+              <li key={i}>{defaultSourceLabel(s, t)}</li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <fieldset className="tr-risk">
         <legend className="tp-field__label">{t("traceability.risk.label")}</legend>

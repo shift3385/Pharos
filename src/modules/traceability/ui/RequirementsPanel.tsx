@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Pencil, Sparkles, Trash2 } from "lucide-react";
 import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { StatusPill } from "@shared/ui/StatusPill";
+import { isPendingReview } from "@modules/ai";
 import { PriorityFlag } from "@shared/ui/PriorityFlag";
 import type { TraceabilityMatrix } from "../model/matrix";
 import type { Requirement } from "../model/types";
@@ -84,6 +85,7 @@ export function RequirementsPanel({
       cell: (r) => (
         <span className="tz-reqcell">
           {open(r)}
+          <AiMark r={r} />
           {r.description && (
             <span className="tz-muted tz-clip" title={r.description}>
               {r.description}
@@ -131,6 +133,7 @@ export function RequirementsPanel({
               {coverage(r)}
             </div>
             {open(r)}
+            <AiMark r={r} />
             <span className="tz-reqcard__meta">
               {flag(r)}
               <span>{t("traceability.matrix.linkedCases", { count: linked(r.requirementKey) })}</span>
@@ -140,5 +143,18 @@ export function RequirementsPanel({
         )}
       />
     </section>
+  );
+}
+
+/** «IA · pendiente de revisión» on a requirement the AI wrote or changed
+ *  (IA-01, IA-17): provider and model only in its tooltip (UX-18). */
+function AiMark({ r }: { r: Requirement }) {
+  const { t } = useTranslation();
+  const p = r.data?.aiProvenance?.requirement;
+  if (!isPendingReview(p)) return null;
+  return (
+    <span title={`${t(`ai.provenance.provider.${p.provider}`)} · ${p.model}`} data-testid={`requirement-ai-${r.requirementKey}`}>
+      <StatusPill tone="warning">{t("ai.provenance.pending")}</StatusPill>
+    </span>
   );
 }

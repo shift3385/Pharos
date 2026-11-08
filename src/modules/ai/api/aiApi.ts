@@ -141,6 +141,14 @@ export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDes
   return null;
 }
 
+/** Where a request would go right now, without sending anything: what a
+ *  notice before sending says (cloud or this device), and how much a batch may
+ *  hold (IA-17). Null when no AI is available. */
+export async function aiDestinationNow(): Promise<AiDestination | null> {
+  const config = loadConfig();
+  return destinationFor(resolveProvider(config, await aiStatus(config)), config);
+}
+
 /** A drafting request for the "Assist with AI" buttons. */
 export interface AssistRequest {
   /** What to write, e.g. "the Summary section of a software test plan". */

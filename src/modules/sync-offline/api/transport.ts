@@ -28,11 +28,13 @@ export const VERSION_HEADER = "x-pharos-version";
  *  client without it. `cycles` (CYC-01): it syncs configurations, test
  *  cycles and their items and leases `cycle` key blocks. `defects`
  *  (DEF-01): it syncs defects and their links, and has no planner defect
- *  cards. Inside one minor the version string does not change
+ *  cards. `requirement-data` (IA-17): it sends the `data` of requirements
+ *  (AI provenance and sources); the server keeps it for a client without it.
+ *  Inside one minor the version string does not change
  *  between builds, so this header is what tells them apart. */
 export const FEATURES_HEADER = "x-pharos-sync-features";
 export const SYNC_FEATURES =
-  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects";
+  "key-conflicts,append-only,complete-payload,stable-steps,runs,custom-fields,cycles,defects,requirement-data";
 
 /** The app version, from its single source (`@shared/version`, UX-07). */
 export { APP_VERSION };

@@ -68,6 +68,8 @@ export const SERVER_FEATURES = [
   "custom-fields",
   "cycles",
   "defects",
+  // IA-17 (ADR-0036): requirements carry `data`; kept for clients without it.
+  "requirement-data",
 ] as const;
 
 /** Features the client sent. Inside one minor the version string does not

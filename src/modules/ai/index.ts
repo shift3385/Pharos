@@ -25,6 +25,22 @@ export {
   suggestRisks,
 } from "./api/generators";
 export type { CaseListField, RequirementBrief } from "./api/generators";
+export {
+  REQ_EXTRACT_PROMPT,
+  REQ_SYNTHESIS_PROMPT,
+  MAX_SYNTHESIS_CANDIDATES,
+  extractRequirementCandidates,
+  synthesizeRequirements,
+} from "./api/requirementPrompts";
+export type {
+  ExistingRequirementBrief,
+  ProjectFileText,
+  SynthesisCandidate,
+  SynthesisOptions,
+} from "./api/requirementPrompts";
+export type { RawRequirementCandidate, RawRequirementProposal } from "./model/schemas";
+export { AiSendNotice } from "./ui/AiSendNotice";
+export { aiDestinationNow } from "./api/aiApi";
 export { applyProposals } from "./model/listReview";
 export type { ListProposal, ListProposalOps } from "./model/listReview";
 export type { GeneratedCase, RiskSuggestion } from "./model/schemas";

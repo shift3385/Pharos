@@ -30,11 +30,20 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   Offline: Ollama, called from the frontend. Structured answers (IA-05 cases
   from a requirement, IA-10 risks and preconditions, IA-13 responsibilities of
   the roles the user wrote, dropping any role it invents, IA-14 exit criteria of
-  the plan, dropping any it repeats, IA-16 critical review of a case's lists)
-  reuse the same chat path
+  the plan, dropping any it repeats, IA-16 critical review of a case's lists,
+  IA-17 requirements from a project folder) reuse the same chat path
   with a strict prompt and are validated with zod on the client before use
   ([ADR-0023](adr/0023-salida-estructurada-ia.md)); the traceability module
   creates the accepted cases through the test-cases public API.
+  IA-17 ([ADR-0036](adr/0036-requisitos-desde-un-proyecto.md)): Rust picks and
+  walks a project folder (`project_scan.rs`, crate `ignore`, fixed exclusions,
+  secret lines replaced) and hands the webview an inventory, then the numbered
+  text of the chosen files; `req-extract@1` runs per batch (two at a time) and
+  `req-synthesis@1` compares the candidates with the existing requirements.
+  `traceability/proposals` checks the answer against what was sent and is the
+  contract shared with IA-18 (images and designs); `requirements.data`
+  (migration 0038) keeps the AI provenance, with the prompt version, and the
+  sources. Ollama gets a `num_ctx` sized to long requests (`ollamaContext`).
 
 ## Modular monolith (spec §2)
 
@@ -1342,7 +1351,9 @@ core Postgres lacks). Modules:
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
   `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`,
-  `cycles`, `defects`). Configurations, test cycles and their items (CYC-01)
+  `cycles`, `defects`, `requirement-data`). A requirement upsert from a
+  client without `requirement-data` (IA-17) keeps the stored `data`
+  (`FEATURE_KEYS`). Configurations, test cycles and their items (CYC-01)
   only reach clients that send `cycles`, and only those may push them (else
   400 `cycles_unsupported`); `cycleKey` is a key like the others (migration
   0009 rebuilds `documents_key_idx` with it). Without `defects` (DEF-01) a

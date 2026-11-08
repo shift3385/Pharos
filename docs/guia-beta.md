@@ -392,6 +392,12 @@ en la misma matriz.
 - [ ] En un caso, revisar con IA precondiciones, pasos, postcondiciones y criterios: propone
       añadir, reformular y eliminar con su motivo, y solo se aplica lo que marcas (IA-16).
       Repite en un caso avanzado (cada flujo) y en una checklist.
+- [ ] En la app de escritorio, Trazabilidad → «Importar / Exportar» → «Requisitos desde un
+      proyecto (IA)» sobre una carpeta real (IA-17): el inventario no lista `node_modules`,
+      `.env` ni claves; el aviso dice si el contenido sale del equipo; cada propuesta lleva
+      motivo y `archivo:línea` que existen; un requisito con casos vinculados no se puede
+      eliminar; lo aplicado queda «IA · pendiente de revisión» y el formulario muestra sus
+      fuentes. Repite con Ollama y anota el tiempo y los tokens.
 - [ ] Sin internet, con Ollama (Fase 7). Anota qué modelos devuelven JSON
       inválido a menudo.
 

@@ -268,7 +268,11 @@
     "testNoKey": "The {{provider}} key is missing: enter it above to test it.",
     "testNeedsUrl": "Enter the base URL to test the key.",
     "testNeedsModelWeb": "Enter a model to test the key.",
-    "testNeedsModel": "Enter a model to test the key. To list them, save the key first."
+    "testNeedsModel": "Enter a model to test the key. To list them, save the key first.",
+    "send": {
+      "cloud": "The content leaves this device for {{provider}}.",
+      "local": "The content stays on this device: {{provider}} processes it."
+    }
   },
   "sync": {
     "synced": "Synced",
@@ -1994,7 +1998,9 @@
       "importCsv": "Import requirements (.csv)",
       "importHint": "Creates or updates requirements by ID",
       "exportXlsx": "Export matrix (.xlsx)",
-      "exportHint": "Requirements, cases, states and defects"
+      "exportHint": "Requirements, cases, states and defects",
+      "fromProject": "Requirements from a project (AI)",
+      "fromProjectHint": "Proposes requirements from the documentation and code of a folder"
     },
     "risk": {
       "label": "Risk",
@@ -2060,6 +2066,108 @@
         "stale": "Outdated",
         "defects": "Defects"
       }
+    },
+    "fromProject": {
+      "title": "Requirements from a project",
+      "intro": "Pick the folder of a running project or of its documentation. You will see which files are read before anything is sent. The AI will propose new requirements, improvements, possible duplicates and redundant ones, each with its reason and source. Only what you pick is applied, marked “AI · pending review”.",
+      "pick": "Pick folder…",
+      "pickAnother": "Pick another folder",
+      "picking": "Reading the folder…",
+      "continue": "Continue",
+      "back": "Back",
+      "send": "Send and analyse",
+      "stop": "Stop",
+      "reading": "Preparing the chosen files…",
+      "extracting": "Analysing: batch {{done}} of {{total}}…",
+      "synthesizing": "Comparing with the {{count}} current requirements…",
+      "selection": "{{files}} files chosen · ≈ {{tokens}} tokens · {{calls}} AI calls",
+      "budget": "Budget (tokens)",
+      "budgetDefault": "default budget: {{tokens}}",
+      "context": "Context (optional)",
+      "contextPlaceholder": "e.g. online shop, customer role",
+      "nothingReadable": "There is no readable documentation or code in this folder.",
+      "truncated": "The folder is very large: only the first files are listed. Pick a subfolder to see the rest.",
+      "leftOut_one": "1 file will never be sent",
+      "leftOut_other": "{{count}} files will never be sent",
+      "excluded": {
+        "secret": "possible secret",
+        "lockfile": "lockfile",
+        "minified": "minified code",
+        "binary": "binary or media",
+        "large": "too large"
+      },
+      "category": {
+        "docs": "Documentation",
+        "routes": "Routes and entry points",
+        "models": "Models and schemas",
+        "tests": "Tests",
+        "ui": "Interface",
+        "config": "Configuration",
+        "other": "Other"
+      },
+      "sendWhat": "{{files}} files (≈ {{tokens}} tokens) will be sent in {{calls}} calls.",
+      "neverSent": "Dependencies, builds, hidden files, binaries and files with secrets (.env, keys, certificates) are never sent.",
+      "redacted_one": "{{count}} line that looks like a secret is replaced by “[secreto omitido]” ({{files}} files)",
+      "redacted_other": "{{count}} lines that look like a secret are replaced by “[secreto omitido]” ({{files}} files)",
+      "unreadable_one": "1 file could not be read and will not be sent.",
+      "unreadable_other": "{{count}} files could not be read and will not be sent.",
+      "batchesFailed_one": "1 batch of {{total}} failed. Retry it or go on without it (partial coverage).",
+      "batchesFailed_other": "{{count}} batches of {{total}} failed. Retry them or go on without them (partial coverage).",
+      "retryBatches_one": "Retry 1 batch",
+      "retryBatches_other": "Retry {{count}} batches",
+      "continueWithout": "Go on without them",
+      "noCandidates": "The AI found no requirements in the files sent.",
+      "nothingToChange": "The AI proposes no changes: the current list already covers what it found."
+    },
+    "proposals": {
+      "count_one": "1 AI proposal",
+      "count_other": "{{count}} AI proposals",
+      "selectAll": "Select all",
+      "selectNone": "None",
+      "section": {
+        "add": "New ({{count}})",
+        "improve": "Improvements ({{count}})",
+        "merge": "Possible duplicates ({{count}})",
+        "remove": "Remove as redundant ({{count}})"
+      },
+      "action": {
+        "add": "New",
+        "improve": "Improve",
+        "merge": "Duplicate",
+        "remove": "Remove"
+      },
+      "reason": "Reason:",
+      "source_one": "Source:",
+      "source_other": "Sources:",
+      "sourceImage": "Image {{index}} · {{name}}",
+      "basis": {
+        "stated": "Stated in the source",
+        "inferred": "Inferred"
+      },
+      "inferredHint": "Deduced from the code: confirm it is the expected behaviour and not a defect.",
+      "acceptance": "Acceptance criteria",
+      "assumptions": "Assumptions",
+      "questions": "Open questions",
+      "acceptanceHeading": "Acceptance criteria:",
+      "similarTo": "Looks like {{key}} “{{title}}”",
+      "coveredBy": "Covered by {{key}} “{{title}}”",
+      "mergeTitle": "{{keys}}: keep {{keep}}",
+      "priorityChange": "Priority: {{from}} → {{to}}",
+      "linkedBlocked_one": "{{keys}} has 1 linked case: unlink it before removing it.",
+      "linkedBlocked_other": "{{keys}} has {{count}} linked cases: unlink them before removing it.",
+      "edit": "Edit",
+      "editDone": "Done",
+      "apply_one": "Apply 1 change",
+      "apply_other": "Apply {{count}} changes",
+      "applying": "Applying…",
+      "deleteTitle": "Delete requirements",
+      "deleteWarning_one": "{{keys}} will be deleted. Its ID will not be reused.",
+      "deleteWarning_other": "{{keys}} will be deleted. Their IDs will not be reused.",
+      "doneToast": "Requirements: {{created}} created · {{updated}} updated · {{removed}} deleted",
+      "skippedToast_one": "1 proposal was not applied: the requirement changed or no longer exists.",
+      "skippedToast_other": "{{count}} proposals were not applied: the requirement changed or no longer exists.",
+      "failed_one": "1 proposal could not be applied. It stays ticked: apply it again or cancel.",
+      "failed_other": "{{count}} proposals could not be applied. They stay ticked: apply them again or cancel."
     }
   },
   "downloads": {

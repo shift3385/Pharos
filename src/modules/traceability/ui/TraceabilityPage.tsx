@@ -1,8 +1,8 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { ArrowLeftRight, Download, Plus, Upload } from "lucide-react";
-import { aiAvailable } from "@modules/ai";
+import { ArrowLeftRight, Download, FolderSearch, Plus, Upload } from "lucide-react";
+import { aiAvailable, markReviewed } from "@modules/ai";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
@@ -20,6 +20,9 @@ import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import { ListSkeleton } from "@shared/ui/Skeleton";
 import { requirementApi } from "../api/requirementApi";
+import { projectScanApi } from "../api/projectScanApi";
+import type { ApplyResult } from "../proposals/types";
+import { ProjectRequirementsModal } from "./ProjectRequirementsModal";
 import type { CsvImportResult } from "../import/requirementCsv";
 import { buildMatrix, type MatrixDefect, type MatrixSort } from "../model/matrix";
 import { proposeMigration, type MigrationProposal } from "../model/migration";
@@ -100,6 +103,7 @@ export function TraceabilityPage({
   const [importing, setImporting] = useState<{ fileName: string; result: CsvImportResult } | null>(null);
   const [generating, setGenerating] = useState<Requirement | null>(null);
   const [migrating, setMigrating] = useState(false);
+  const [fromProject, setFromProject] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [params, setParams] = useSearchParams();
   const filters = filtersOf(params);
@@ -199,6 +203,19 @@ export function TraceabilityPage({
     [data],
   );
   const keys = data?.requirements.map((r) => r.requirementKey) ?? [];
+  // Cases linking each requirement: those are never deleted from a proposal.
+  const linkedCases = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const row of matrix?.rows ?? []) if (row.caseId) counts[row.requirementKey] = (counts[row.requirementKey] ?? 0) + 1;
+    return counts;
+  }, [matrix]);
+
+  function proposalsApplied({ created, updated, removed, skipped, failed }: ApplyResult) {
+    if (created || updated || removed) toast(t("traceability.proposals.doneToast", { created, updated, removed }));
+    if (skipped.length) toast(t("traceability.proposals.skippedToast", { count: skipped.length }));
+    if (failed.length) toast(t("traceability.proposals.failed", { count: failed.length }));
+    void refresh();
+  }
   const generate = (key: string) => {
     const r = data?.requirements.find((x) => x.requirementKey === key);
     if (r) setGenerating(r);
@@ -214,6 +231,15 @@ export function TraceabilityPage({
       priority: draft.priority,
       riskLikelihood: draft.riskLikelihood,
       riskImpact: draft.riskImpact,
+      // «Marcar revisado» (IA-01): the AI mark goes, its record stays.
+      ...(draft.markReviewed && editing && editing !== "new"
+        ? {
+            data: {
+              ...(editing.data ?? {}),
+              aiProvenance: markReviewed(editing.data?.aiProvenance, "requirement", userId),
+            },
+          }
+        : {}),
     };
     try {
       if (editing && editing !== "new") await requirementApi.update(editing.id, input);
@@ -311,6 +337,8 @@ export function TraceabilityPage({
     <>
           <ImportExportMenu
             onImport={() => fileInputRef.current?.click()}
+            onFromProject={projectScanApi.available() ? () => setFromProject(true) : undefined}
+            aiReady={aiReady}
             onExport={() => void exportXlsx()}
             canExport={Boolean(matrix && matrix.rows.length)}
           />
@@ -418,6 +446,15 @@ export function TraceabilityPage({
           onCancel={() => setDeleting(null)}
         />
       )}
+      {fromProject && data && (
+        <ProjectRequirementsModal
+          projectId={projectId}
+          existing={data.requirements}
+          linkedCases={linkedCases}
+          onApplied={proposalsApplied}
+          onClose={() => setFromProject(false)}
+        />
+      )}
       {migrating && (
         <MigrateTraceabilityModal
           proposals={proposals}
@@ -432,10 +469,15 @@ export function TraceabilityPage({
 /** «Importar / Exportar» (SPEC §8): requirements from CSV, the matrix to .xlsx. */
 function ImportExportMenu({
   onImport,
+  onFromProject,
+  aiReady,
   onExport,
   canExport,
 }: {
   onImport: () => void;
+  /** Desktop only (IA-17): Rust reads the folder. */
+  onFromProject?: () => void;
+  aiReady: boolean;
   onExport: () => void;
   canExport: boolean;
 }) {
@@ -462,6 +504,17 @@ function ImportExportMenu({
         <MenuItem icon={Upload} onSelect={onImport} description={t("traceability.io.importHint")}>
           {t("traceability.io.importCsv")}
         </MenuItem>
+        {onFromProject && (
+          <MenuItem
+            icon={FolderSearch}
+            onSelect={onFromProject}
+            disabled={!aiReady}
+            title={aiReady ? undefined : t("ai.assist.unavailable")}
+            description={aiReady ? t("traceability.io.fromProjectHint") : t("ai.assist.unavailable")}
+          >
+            {t("traceability.io.fromProject")}
+          </MenuItem>
+        )}
         <MenuSeparator />
         <MenuLabel>{t("traceability.io.export")}</MenuLabel>
         <MenuItem

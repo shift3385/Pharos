@@ -1,5 +1,19 @@
 import { AI_REQUEST_TIMEOUT_MS, AI_TIMEOUT_MESSAGE, type AiProvider } from "../model/types";
 
+/** Ollama answers within a context window of `num_ctx` tokens and silently
+ *  drops what does not fit; its default is a few thousand. A long request
+ *  (IA-17 sends whole files) asks for room for itself plus the answer, within
+ *  what a local machine can hold. Pure — testable. */
+export const OLLAMA_MIN_CTX = 4096;
+export const OLLAMA_MAX_CTX = 32768;
+export function ollamaContext(messages: { content: string }[]): number | undefined {
+  const chars = messages.reduce((n, m) => n + m.content.length, 0);
+  const prompt = Math.ceil(chars / 3.5);
+  // A short request fits the default window with room to answer.
+  if (prompt + 1024 <= OLLAMA_MIN_CTX) return undefined;
+  return Math.min(OLLAMA_MAX_CTX, Math.ceil((prompt + 4096) / 1024) * 1024);
+}
+
 /** Offline provider (Ollama). Runs locally over HTTP — no key, no TLS. A call
  *  slower than the online limit fails with the same timeout error. */
 export function ollamaProvider(endpoint: string): AiProvider {
@@ -16,7 +30,7 @@ export function ollamaProvider(endpoint: string): AiProvider {
             stream: false,
             // Native JSON mode: small local models drift from the schema without it.
             ...(opts.json ? { format: "json" } : {}),
-            options: { temperature: opts.temperature },
+            options: { temperature: opts.temperature, ...numCtx(messages) },
           }),
           signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
         });
@@ -30,6 +44,11 @@ export function ollamaProvider(endpoint: string): AiProvider {
     },
   };
 }
+
+const numCtx = (messages: { content: string }[]) => {
+  const ctx = ollamaContext(messages);
+  return ctx ? { num_ctx: ctx } : {};
+};
 
 /** Lists the models already pulled locally (throws if Ollama is not reachable). */
 export async function ollamaModels(endpoint: string): Promise<string[]> {

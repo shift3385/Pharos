@@ -708,3 +708,135 @@
     max-width: none;
   }
 }
+
+/* Requirements from a project (IA-17): the wizard and the common review of
+ * the AI's requirement proposals (shared with IA-18). */
+.tz-scan {
+  max-width: 760px;
+}
+.tz-scan__inv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tz-scan__list {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tz-scan__group summary,
+.tz-prop__extra summary {
+  cursor: pointer;
+  font-size: var(--fs-metadata);
+  color: var(--color-navy-500);
+}
+.tz-scan__group ul,
+.tz-prop__extra ul {
+  list-style: none;
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-3);
+  font-size: var(--fs-caption);
+  overflow-wrap: anywhere;
+}
+.tz-scan__group li {
+  padding: 2px 0;
+}
+.tz-scan__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.tz-scan__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--fs-metadata);
+  color: var(--color-text-secondary);
+}
+.tz-scan__field--wide {
+  flex: 1 1 240px;
+}
+.tz-scan__summary {
+  margin: 0;
+  font-size: var(--fs-metadata);
+  font-weight: var(--fw-medium);
+}
+.tz-scan__progress {
+  width: 100%;
+}
+.tz-prop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tz-prop__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tz-prop__count {
+  font-weight: var(--fw-semibold);
+  margin-right: auto;
+}
+.tz-prop__list {
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+.tz-prop__items {
+  max-height: none;
+  overflow: visible;
+}
+.tz-prop__heading {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-ui);
+}
+.tz-prop__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tz-prop__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-left: var(--space-5);
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.tz-prop__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+.tz-prop__warn,
+.tz-prop__blocked {
+  font-size: var(--fs-caption);
+  color: var(--color-warning-text);
+}
+.tz-prop__keys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--fs-caption);
+}
+.tz-prop__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-left: var(--space-5);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+.tz-prop__editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

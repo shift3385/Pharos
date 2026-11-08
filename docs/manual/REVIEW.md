@@ -97,6 +97,15 @@ se publica:
       es nativo (fuera de la WebView) y «Usar Descargas» escribiría en tu
       carpeta real, que los tours nunca tocan. Lo cubren además los tests de
       Rust de `downloads.rs`.
+- [ ] **Requisitos desde un proyecto (IA-17)** (Trazabilidad → «Importar /
+      Exportar»): con una clave real, elegir una carpeta de proyecto; el
+      inventario no lista `node_modules`, `.env` ni claves; el aviso dice si
+      sale del equipo y a qué proveedor; las propuestas citan `archivo:línea`
+      que existen; aplicar deja «IA · pendiente de revisión» y las fuentes en
+      el formulario. *Por qué no:* el selector de carpetas es nativo (fuera de
+      la WebView) y el análisis necesita una clave real. Lo cubren además
+      `ProjectRequirementsModal.test.tsx` y los tests de Rust de
+      `project_scan.rs`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
       antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
       («Los adjuntos solo están disponibles en el escritorio», borrador en el navegador) y los

@@ -247,6 +247,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | IA-14 | Criterios de cierre sugeridos con su métrica, a partir del alcance y los riesgos del plan (paso 17)                  | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
 | IA-15 | Textos de IA directos y breves, según el syllabus ISTQB en cada paso; asistencia también en datos de prueba, defectos y comunicación | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
 | IA-16 | Revisión crítica de las listas del caso (añadir, reformular, eliminar, con motivo) y asistencia independiente en pasos, resultado esperado, postcondiciones y criterios; también en flujos del nivel avanzado y en checklists | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales                    | IA-10         |
+| IA-17 | Requisitos propuestos por la IA desde la carpeta de un proyecto: lectura en Rust con exclusiones y secretos redactados, aviso antes de enviar, lotes y síntesis contra la lista (nuevo, mejora, duplicado, eliminar, con motivo y fuente) ([ADR-0036](adr/0036-requisitos-desde-un-proyecto.md)) | P2  | 0.3.0                                                      | Hecho; falta validación con claves reales y Ollama           | IA-01, TRZ-01 |
 | IA-12 | Usar en la web la clave de escritorio: bóveda cifrada en el servidor e interruptor ([ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)) | P1  | Por decidir                                                | Pendiente                                                    | IA-11         |
 | IA-02 | Detección de duplicados con embeddings locales                                                                           | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
 | IA-03 | _Lint_ de oráculo (resultados esperados débiles)                                                                         | P1  | 0.7.0                                                      | Pendiente                                                    | —             |
@@ -370,6 +371,11 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   postcondiciones y criterios: que proponga eliminar lo redundante y reformular lo ambiguo,
   que cada motivo nombre un defecto concreto y que no invente datos. Repetir en un caso
   avanzado (que detecte una precondición de flujo ya compartida) y en una checklist.
+- **IA-17:** con claves reales (y con Ollama), analizar la carpeta de un proyecto real y la
+  del propio Pharos: que el inventario excluya dependencias y secretos, que cada propuesta
+  cite archivos y líneas que existen, que «Inferido» marque lo deducido del código y que
+  los duplicados y redundantes propuestos lo sean. Anotar tokens, tiempo y coste por
+  proveedor.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario
