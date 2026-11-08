@@ -881,6 +881,18 @@
     "sprintWeeks": "Sprint length (weeks)",
     "ceremonies": "Agile events",
     "phases": "Phases",
+    "methodologyLines": {
+      "sprintLength_one": "Sprint length: {{count}} week",
+      "sprintLength_other": "Sprint length: {{count}} weeks",
+      "frequency": {
+        "daily": "every day",
+        "twiceWeekly": "2 times a week",
+        "weekly": "once a week",
+        "biweekly": "every 2 weeks",
+        "perSprint": "once per sprint",
+        "monthly": "once a month"
+      }
+    },
     "methodologyGap": {
       "sprintWeeks": "Choose the sprint length to complete this step.",
       "ceremonies": "Pick at least one agile event to complete this step.",

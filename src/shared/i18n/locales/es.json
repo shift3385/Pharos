@@ -881,6 +881,18 @@
     "sprintWeeks": "Duración de sprint (semanas)",
     "ceremonies": "Reuniones del equipo",
     "phases": "Fases",
+    "methodologyLines": {
+      "sprintLength_one": "Duración de sprint: {{count}} semana",
+      "sprintLength_other": "Duración de sprint: {{count}} semanas",
+      "frequency": {
+        "daily": "a diario",
+        "twiceWeekly": "2 veces por semana",
+        "weekly": "1 vez por semana",
+        "biweekly": "cada 2 semanas",
+        "perSprint": "1 vez por sprint",
+        "monthly": "1 vez al mes"
+      }
+    },
     "methodologyGap": {
       "sprintWeeks": "Elige la duración del sprint para completar este paso.",
       "ceremonies": "Elige al menos una reunión del equipo para completar este paso.",

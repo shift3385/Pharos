@@ -16,6 +16,9 @@ export interface ExportablePlan {
   scopeOut: string[];
   testTypes: string[]; // localized
   methodology: string; // composed text
+  /** The methodology one entry per line, for the PDF (PLN-05). Without it
+   *  the PDF prints `methodology`. */
+  methodologyLines?: string[];
   testLevels: string[]; // localized
   deliverables: string[];
   environmentConfig: string;

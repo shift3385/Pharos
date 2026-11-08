@@ -1,12 +1,15 @@
 import type ExcelJS from "exceljs";
 import type { Content } from "pdfmake/interfaces";
-import { dataTable, sectionHeader } from "./pdfDoc";
+import { dataTable, section } from "./pdfDoc";
 
 /** A table an export adds after its template's own content (EXP-03): one
  *  sheet of its own in the `.xlsx` (after the template's sheets, which stay
  *  as they are) and one section at the end of the PDF. `pdf` narrows a wide
  *  table for the page; without it the PDF shows the same columns. */
 export interface ExportTable {
+  /** Which table it is, for an export that places it somewhere else in
+   *  the PDF (the plan puts «milestones» under its schedule, PLN-05). */
+  id?: string;
   /** Sheet name and PDF section title (≤ 31 characters, Excel's limit). */
   name: string;
   headers: string[];
@@ -60,19 +63,21 @@ export function tableSections(
 ): Content[] {
   return (tables ?? [])
     .filter((table) => table.rows.length > 0)
-    .flatMap((table) => [
-      sectionHeader(table.name),
-      table.pdf
-        ? dataTable(
-            table.pdf.headers,
-            table.pdf.rows,
-            emptyLabel,
-            table.pdf.widths,
-          )
-        : dataTable(
-            table.headers,
-            table.rows.map((r) => r.map(String)),
-            emptyLabel,
-          ),
-    ]);
+    .flatMap((table) =>
+      section(
+        table.name,
+        table.pdf
+          ? dataTable(
+              table.pdf.headers,
+              table.pdf.rows,
+              emptyLabel,
+              table.pdf.widths,
+            )
+          : dataTable(
+              table.headers,
+              table.rows.map((r) => r.map(String)),
+              emptyLabel,
+            ),
+      ),
+    );
 }

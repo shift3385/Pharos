@@ -165,6 +165,13 @@ Para traer un plan escrito fuera de Pharos, «Importar / Exportar → Importar .
 - Para empezar un plan desde Excel, descarga una plantilla en
   «Administración → Plantillas», rellénala e impórtala con «Importar .xlsx».
 - «Restaurar» una revisión no guarda nada hasta que pulses «Guardar».
+- El plan en PDF mantiene cada título de sección junto al inicio de su
+  contenido: si no cabe al pie de una página, pasa a la siguiente con él. Si
+  una tabla sigue en otra página, su título y sus columnas se repiten arriba.
+  Los párrafos y las listas van justificados, la Metodología muestra una
+  entrada por línea («Ágil», «Duración de sprint: 2 semanas», «Revisión: 1 vez
+  por sprint»…) y los rangos del cronograma se leen «2026-11-09 – 2026-11-22».
+  Los hitos aparecen bajo el cronograma y los ciclos, al final.
 - Si el documento debe llevar su historial, elige «Historial de revisiones» en
   «Ajustes del proyecto → Historial en el plan exportado». El .pdf y el .xlsx
   (también los del ZIP del proyecto) añaden entonces la tabla «Historial de

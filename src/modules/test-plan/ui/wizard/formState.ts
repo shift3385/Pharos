@@ -21,7 +21,11 @@ import {
   normalizeTools,
   toolLabels,
 } from "../../model/catalogLabels";
-import { frequenciesFor, methodologyText } from "../../model/methodology";
+import {
+  frequenciesFor,
+  methodologyLines,
+  methodologyText,
+} from "../../model/methodology";
 import {
   isIsoDay,
   normalizeSchedule,
@@ -380,6 +384,7 @@ export function toExportable(form: FormState, author: string, t: Translate): Exp
     scopeOut: form.scopeOut,
     testTypes: loc(form.testTypes, TEST_TYPES, "testPlan.typeLabel"),
     methodology: methodologyText(form, t),
+    methodologyLines: methodologyLines(form, t),
     testLevels: loc(form.testLevels, TEST_LEVELS, "testPlan.levelLabel"),
     deliverables: deliverableLabels(form.deliverables, t),
     environmentConfig: form.environmentConfig,
