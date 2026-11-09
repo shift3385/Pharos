@@ -288,18 +288,21 @@ export function CustomFieldsCard({
   );
   const ids = live.map((f) => f.id);
   const n = (id: UniqueIdentifier) => ids.indexOf(String(id)) + 1;
+  const label = (id: UniqueIdentifier) =>
+    live.find((f) => f.id === String(id))?.label ?? "";
   const announcements: Announcements = {
-    onDragStart: ({ active }) => t("testCase.drag.start", { n: n(active.id) }),
+    onDragStart: ({ active }) =>
+      t("customFields.dragStart", { label: label(active.id) }),
     onDragOver: ({ active, over }) =>
       over
-        ? t("testCase.drag.over", { n: n(active.id), to: n(over.id) })
+        ? t("customFields.dragOver", { label: label(active.id), to: n(over.id) })
         : undefined,
     onDragEnd: ({ active, over }) =>
       over
-        ? t("testCase.drag.end", { n: n(active.id), to: n(over.id) })
+        ? t("customFields.dragEnd", { label: label(active.id), to: n(over.id) })
         : undefined,
     onDragCancel: ({ active }) =>
-      t("testCase.drag.cancel", { n: n(active.id) }),
+      t("customFields.dragCancel", { label: label(active.id) }),
   };
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (over && active.id !== over.id)
@@ -381,7 +384,7 @@ export function CustomFieldsCard({
             onDragEnd={onDragEnd}
             accessibility={{
               announcements,
-              screenReaderInstructions: { draggable: t("testCase.drag.help") },
+              screenReaderInstructions: { draggable: t("customFields.dragHelp") },
             }}
           >
             <SortableContext items={ids} strategy={verticalListSortingStrategy}>

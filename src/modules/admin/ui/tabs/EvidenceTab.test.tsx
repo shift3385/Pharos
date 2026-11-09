@@ -447,6 +447,9 @@ describe("Administración → Evidencias", () => {
     expect(api.previewRetention).toHaveBeenCalledWith("p1", "log", { mode: "days", days: 7 }, expect.any(String));
     expect(api.setRetention).not.toHaveBeenCalled();
     await expectNoAxeViolations(dialog);
+    // Critical tier (NC-014): it deletes saved evidence, so Escape does not answer.
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("alertdialog", { name: "¿Acortar la retención?" })).toBeInTheDocument();
     await user.click(within(dialog).getByTestId("evidence-retention-confirm"));
     await waitFor(() =>
       expect(api.setRetention).toHaveBeenCalledWith("p1", "log", { mode: "days", days: 7 }, expect.any(String)),

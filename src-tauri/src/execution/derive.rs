@@ -556,10 +556,17 @@ pub struct ExecutionSummary {
 #[derive(Serialize, Clone, Debug, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct WindowCounts {
+    /// By case (R8, amended by NC-029): a case with finals in the window
+    /// counts once, with the progress rule (`decide`: the worst status of
+    /// its latest run, so it passes only if every target passes).
     #[serde(flatten)]
     pub counts: StatusCounts,
     pub executed: i64,
+    /// passed / executed cases; None without executed cases.
     pub pass_rate: Option<f64>,
+    /// Tests without a case with a final in the window: outside the rate,
+    /// shown apart («Además, N tests sin vincular»).
+    pub unlinked: i64,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -698,8 +705,6 @@ fn cmp(a: &AttemptData, b: &AttemptData) -> Ordering {
 type TestKey<'a> = (&'a str, &'a str, &'a str);
 /** A target `(case, flow, row)`. */
 type TargetKey<'a> = (&'a str, Option<&'a str>, Option<&'a str>);
-/** A window's target: a case's, or an unlinked test's. */
-type WindowTarget<'a> = (String, Option<&'a str>, Option<&'a str>);
 
 fn test_of(a: &AttemptData) -> TestKey<'_> {
     (
@@ -1611,21 +1616,18 @@ pub fn home(all_projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics 
                 .filter(|a| time_of(a).is_some_and(|(t, _)| t >= start && t <= request.now))
                 .collect();
             let (finals, _) = finals(&in_window);
-            let mut groups: BTreeMap<WindowTarget, Vec<&AttemptData>> = BTreeMap::new();
+            // By case, as the progress (NC-029); unlinked tests apart.
+            let mut groups: BTreeMap<&str, Vec<&AttemptData>> = BTreeMap::new();
+            let mut unlinked: HashSet<TestKey> = HashSet::new();
             for f in finals {
-                let key = match f.case_id.as_deref() {
-                    Some(case) => (
-                        format!("c:{case}"),
-                        f.flow_id.as_deref(),
-                        f.row_id.as_deref(),
-                    ),
+                match f.case_id.as_deref() {
+                    Some(case) => groups.entry(case).or_default().push(f),
                     None => {
-                        let (run, test, label) = test_of(f);
-                        (format!("t:{run}\u{1f}{test}\u{1f}{label}"), None, None)
+                        unlinked.insert(test_of(f));
                     }
-                };
-                groups.entry(key).or_default().push(f);
+                }
             }
+            counts.unlinked += unlinked.len() as i64;
             for group in groups.values() {
                 if let Some((status, _)) = decide(group) {
                     counts.counts.count(status);

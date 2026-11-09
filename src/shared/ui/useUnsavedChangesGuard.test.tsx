@@ -136,6 +136,17 @@ describe("useUnsavedChangesGuard (RED-V3k)", () => {
     expect(screen.getByText("Otra sección abierta")).toBeInTheDocument();
   });
 
+  it("is a normal confirmation: Escape means «Seguir editando» (NC-014)", async () => {
+    setup();
+    await type("borrador");
+    await userEvent.click(screen.getByRole("link", { name: "Otra sección" }));
+    expect(screen.getByRole("alertdialog", { name: "¿Descartar los cambios?" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent("/editor");
+    expect(screen.getByRole("textbox", { name: "Nota" })).toHaveValue("borrador");
+  });
+
   it("holds «Atrás» (a history pop) the same way", async () => {
     const { router } = setup();
     await type("borrador");

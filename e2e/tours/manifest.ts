@@ -1,7 +1,11 @@
 // Manifest of the guided tours and the user manual (MAN-01).
 //
-// - CHAPTERS: one per area of the app, in manual order; each names its tour
-//   file and the routes / project sections / admin tabs / plan steps it covers.
+// - CHAPTERS: one per area of the app, in RUN order: the tours share one app
+//   session and each reads the data the earlier ones made (`needs`). The
+//   manual prints them in `number` order instead (MANUAL_ORDER), the order of
+//   the app's menu and of the test process (manual v2, MAN-03); a tour file
+//   starts with its chapter's number. Each chapter names the routes / project
+//   sections / admin tabs / plan steps it covers.
 // - INVENTORY: every screen, tab, dialog and main action (create, edit, delete
 //   with confirmation, import, export, filter, sort, keyboard, empty and error
 //   states, desktop vs web). Each item must be exercised by a tour step
@@ -17,11 +21,15 @@
 export type ChapterId =
   | "preparacion"
   | "acceso"
+  | "navegacion"
+  | "inicio"
   | "proyectos"
   | "plan"
+  | "tablero"
+  | "requisitos"
   | "casos"
   | "trazabilidad"
-  | "planificador"
+  | "ajustes"
   | "ciclos"
   | "defectos"
   | "ejecuciones"
@@ -43,6 +51,9 @@ export interface Chapter {
   pending?: string;
   /** False for the preparation tour (seed data), which is not a chapter. */
   inManual?: boolean;
+  /** In every run, also a partial one: chapter 1 creates the account every
+   *  other chapter signs in with (NC-052). */
+  always?: boolean;
   /** Chapters whose data this one reads (direct ones; they run first). A
    *  partial run (`--spec`) adds them, see selectTours. Each must come earlier
    *  in CHAPTERS. */
@@ -51,35 +62,32 @@ export interface Chapter {
 
 export const CHAPTERS: Chapter[] = [
   { id: "preparacion", number: 0, title: "Preparación de los datos", file: "00-preparacion.tour.ts", status: "active", inManual: false },
-  { id: "acceso", number: 1, title: "Acceso y cuenta", file: "01-acceso.tour.ts", status: "active" },
-  { id: "proyectos", number: 2, title: "Inicio, proyectos y ajustes", file: "02-proyectos.tour.ts", status: "active" },
-  { id: "plan", number: 3, title: "Plan de pruebas", file: "03-plan.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "casos", number: 4, title: "Casos de prueba", file: "04-casos.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "trazabilidad", number: 5, title: "Requisitos y trazabilidad", file: "05-trazabilidad.tour.ts", status: "active", needs: ["casos"] },
-  { id: "planificador", number: 6, title: "Tablero", file: "06-planificador.tour.ts", status: "active", needs: ["proyectos"] },
-  { id: "ciclos", number: 7, title: "Ciclos y configuraciones", file: "07-ciclos.tour.ts", status: "active", needs: ["proyectos", "casos"] },
-  { id: "ejecuciones", number: 8, title: "Ejecuciones e importación de resultados", file: "08-ejecuciones.tour.ts", status: "active", needs: ["casos"] },
-  { id: "defectos", number: 9, title: "Defectos", file: "09-defectos.tour.ts", status: "active", needs: ["ejecuciones"] },
-  { id: "administracion", number: 10, title: "Administración", file: "10-administracion.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
-  { id: "ia", number: 11, title: "Asistente de IA", file: "11-ia.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
-  { id: "movil", number: 12, title: "Pantallas estrechas y móvil", file: "12-movil.tour.ts", status: "active", needs: ["plan", "casos"] },
-  {
-    id: "ejecucion-manual",
-    number: 13,
-    title: "Ejecución manual",
-    file: "13-ejecucion-manual.tour.ts",
-    status: "active",
-    needs: ["proyectos", "casos"],
-  },
-  {
-    id: "evidencias",
-    number: 14,
-    title: "Evidencias",
-    file: "14-evidencias.tour.ts",
-    status: "active",
-  },
-  { id: "errores", number: 15, title: "Si algo sale mal", file: "15-errores.tour.ts", status: "active" },
+  // Creates the tour account on screen (NC-052): every run includes it.
+  { id: "acceso", number: 1, title: "Acceso y cuenta", file: "01-acceso.tour.ts", status: "active", always: true },
+  { id: "proyectos", number: 4, title: "Proyectos", file: "04-proyectos.tour.ts", status: "active" },
+  { id: "ajustes", number: 14, title: "Ajustes del proyecto", file: "14-ajustes.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "navegacion", number: 2, title: "La aplicación de un vistazo", file: "02-navegacion.tour.ts", status: "active", needs: ["proyectos", "ajustes"] },
+  { id: "plan", number: 5, title: "Plan de pruebas", file: "05-plan.tour.ts", status: "active", needs: ["acceso", "proyectos", "ajustes"] },
+  { id: "requisitos", number: 7, title: "Requisitos", file: "07-requisitos.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "casos", number: 8, title: "Casos de prueba", file: "08-casos.tour.ts", status: "active", needs: ["proyectos", "ajustes", "requisitos"] },
+  { id: "tablero", number: 6, title: "Tablero", file: "06-tablero.tour.ts", status: "active", needs: ["proyectos"] },
+  { id: "ciclos", number: 9, title: "Ciclos de prueba", file: "09-ciclos.tour.ts", status: "active", needs: ["proyectos", "casos", "ajustes"] },
+  { id: "ejecuciones", number: 10, title: "Ejecuciones e importación de resultados", file: "10-ejecuciones.tour.ts", status: "active", needs: ["casos", "ciclos"] },
+  { id: "defectos", number: 12, title: "Defectos", file: "12-defectos.tour.ts", status: "active", needs: ["ejecuciones"] },
+  { id: "ejecucion-manual", number: 11, title: "Ejecución manual", file: "11-ejecucion-manual.tour.ts", status: "active", needs: ["proyectos", "casos"] },
+  // After the runs, the imports and the defects: the matrix shows their
+  // results and defects (MAN-03).
+  { id: "trazabilidad", number: 13, title: "Trazabilidad", file: "13-trazabilidad.tour.ts", status: "active", needs: ["casos", "requisitos", "defectos", "ejecucion-manual"] },
+  { id: "administracion", number: 15, title: "Administración", file: "15-administracion.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
+  { id: "ia", number: 17, title: "Asistente de IA", file: "17-ia.tour.ts", status: "active", needs: ["plan", "trazabilidad"] },
+  { id: "movil", number: 18, title: "Pantallas estrechas y móvil", file: "18-movil.tour.ts", status: "active", needs: ["plan", "casos"] },
+  { id: "inicio", number: 3, title: "Inicio", file: "03-inicio.tour.ts", status: "active", needs: ["plan", "defectos", "ejecucion-manual"] },
+  { id: "evidencias", number: 16, title: "Evidencias", file: "16-evidencias.tour.ts", status: "active" },
+  { id: "errores", number: 19, title: "Si algo sale mal", file: "19-errores.tour.ts", status: "active" },
 ];
+
+/** The chapters as the manual prints them (by `number`), without the preparation. */
+export const MANUAL_ORDER: Chapter[] = CHAPTERS.filter((c) => c.inManual !== false).sort((x, y) => x.number - y.number);
 
 /** Tour files in run order (one WebdriverIO group, one app session). */
 export const TOUR_FILES: string[] = CHAPTERS.filter((c) => c.file).map((c) => c.file as string);
@@ -102,7 +110,7 @@ export function selectTours(only?: string | null, chapters: Chapter[] = CHAPTERS
   const first = withFile[0];
   const asked = withFile.filter((c) => c !== first && filter.test(c.file as string));
   if (asked.length === 0) throw new Error(`--spec «${only}» matches no tour file`);
-  const chosen = new Set<ChapterId>([first.id]);
+  const chosen = new Set<ChapterId>([first.id, ...withFile.filter((c) => c.always).map((c) => c.id)]);
   const visit = (c: Chapter) => {
     if (chosen.has(c.id)) return;
     chosen.add(c.id);
@@ -162,45 +170,67 @@ export const INVENTORY: Item[] = [
   I("acceso", "action", "action:profile-save", "Guardar alias y nombre del perfil"),
   I("acceso", "action", "action:profile-preferences", "Preferencias de idioma y tema en el perfil"),
   I("acceso", "state", "action:login-google", "«Continuar con Google» deshabilitado («Próximamente»)"),
+  I("acceso", "platform", "platform:mobile-login", "La entrada en una pantalla estrecha (hoja inferior)"),
+  I("acceso", "state", "state:session-expired", "Sesión caducada («Tu sesión ha caducado…»)", {
+    skip: "Necesita que el servidor rechace la renovación de la sesión de la app, algo que el tour no provoca sin trucar la app. Lo cubren AuthProvider.test.tsx y sessionRenewal.test.ts; el capítulo lo explica en «Si algo no sale».",
+  }),
+  I("acceso", "state", "state:offline", "Sin conexión al abrir la app (pastilla «Sin conexión»)", {
+    skip: "Necesita parar la API del tour a mitad de la sesión, y las demás pruebas guiadas dependen de ella. Lo cubren las pruebas de AuthProvider.test.tsx; el capítulo lo explica en «Si algo no sale».",
+  }),
+
+  // ---- 2 · La aplicación de un vistazo (manual v2) ---------------------------------
+  I("navegacion", "screen", "screen:shell", "Estructura de la pantalla: menú lateral, barra superior y contenido"),
+  I("navegacion", "action", "action:project-nav", "Secciones del proyecto en el orden del proceso de prueba (UX-21)"),
+  I("navegacion", "action", "action:project-switcher", "Cambiar de proyecto desde el menú lateral"),
+  I("navegacion", "action", "action:breadcrumbs", "Migas de pan de la barra superior"),
+  I("navegacion", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda y notificaciones (avisos «próximamente»)"),
+  I("navegacion", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
+  I("navegacion", "action", "action:theme-toggle", "Cambio rápido de tema claro u oscuro"),
+  I("navegacion", "action", "action:sync-indicator", "Indicador de sincronización y «Sincronizar ahora»"),
+  I("navegacion", "action", "action:sidebar-collapse", "Contraer y expandir el menú lateral"),
+  I("navegacion", "platform", "platform:tablet-icon-strip", "Menú de iconos en pantallas medianas"),
+
+  I("inicio", "screen", "screen:home-exec", "Inicio: ejecución por proyecto"),
+  I("inicio", "action", "action:home-daily-table", "Inicio: «Ver los datos» de las ejecuciones diarias"),
 
   // ---- 2 · Inicio, proyectos y ajustes --------------------------------------------
-  I("proyectos", "route", "route:/", "Inicio (panel)"),
-  I("proyectos", "state", "state:home-empty", "Inicio sin proyectos"),
-  I("proyectos", "action", "action:home-period", "Periodo del panel de Inicio"),
-  I("proyectos", "action", "action:home-exit-criteria", "Criterios de salida: elegir proyecto"),
-  I("proyectos", "action", "action:home-kpi", "Tarjetas KPI de Inicio"),
-  I("proyectos", "state", "state:home-metrics", "Inicio con ejecuciones: tasa de éxito, ejecución por proyecto, ejecuciones diarias (RED-W6)"),
-  I("proyectos", "action", "action:home-exit-filter", "Criterios de salida: filtros Todos / En riesgo / Cumplen"),
-  I("proyectos", "tab", "tabs:src/app/dashboard/UpcomingTests.tsx", "Próximas pruebas: pestañas No ejecutadas / Bloqueadas / Re-test"),
-  I("proyectos", "state", "state:home-metrics-error", "Inicio: las ejecuciones no se pudieron cargar («Reintentar»)", {
+  I("inicio", "route", "route:/", "Inicio (panel)"),
+  I("inicio", "state", "state:home-empty", "Inicio sin proyectos"),
+  I("inicio", "action", "action:home-period", "Periodo del panel de Inicio"),
+  I("inicio", "action", "action:home-exit-criteria", "Criterios de salida: elegir proyecto"),
+  I("inicio", "action", "action:home-kpi", "Tarjetas KPI de Inicio"),
+  I("inicio", "state", "state:home-metrics", "Inicio con ejecuciones: tasa de éxito, ejecución por proyecto, ejecuciones diarias (RED-W6)"),
+  I("inicio", "action", "action:home-exit-filter", "Criterios de salida: filtros Todos / En riesgo / Cumplen"),
+  I("inicio", "tab", "tabs:src/app/dashboard/UpcomingTests.tsx", "Próximas pruebas: pestañas No ejecutadas / Bloqueadas / Re-test"),
+  I("inicio", "state", "state:home-metrics-error", "Inicio: las ejecuciones no se pudieron cargar («Reintentar»)", {
     skip: "Necesita que falle la lectura de métricas con el resto de la app en pie, algo que el tour aislado no provoca sin trucar la app. Lo cubren las pruebas de DashboardPage.test.tsx y loadHomeMetrics.test.ts (estado de error, «Reintentar» y la caché que se mantiene) y la revisión manual (docs/manual/REVIEW.md).",
   }),
-  I("movil", "tab", "tabs:src/app/dashboard/DashboardPage.tsx", "Pestañas de Inicio (Resumen / Ejecución / Pruebas)"),
-  I("proyectos", "dialog", "dialogs:src/app/layout/TopbarControls.tsx", "Búsqueda y notificaciones (avisos «próximamente»)"),
-  I("proyectos", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
-  I("proyectos", "action", "action:sidebar-collapse", "Contraer y expandir el menú lateral"),
-  I("proyectos", "action", "action:project-switcher", "Cambiar de proyecto desde el menú lateral"),
+  I("inicio", "tab", "tabs:src/app/dashboard/DashboardPage.tsx", "Pestañas de Inicio (Resumen / Ejecución / Pruebas)"),
   I("proyectos", "route", "route:/projects", "Lista de proyectos"),
   I("proyectos", "state", "state:projects-empty", "Lista de proyectos vacía"),
-  I("proyectos", "action", "action:project-create", "Crear un proyecto"),
+  I("proyectos", "action", "action:project-create", "Crear un proyecto (se abre en su Plan, UX-22)"),
+  I("proyectos", "screen", "screen:project-header", "Cabecera del proyecto (prefijo, plan, casos, requisitos, cierre)"),
+  I("proyectos", "action", "action:project-open", "Abrir un proyecto existente (se abre en su Tablero, UX-22)"),
+  I("proyectos", "action", "action:projects-export-all", "Exportar todos los proyectos (ZIP)"),
   I("proyectos", "state", "state:project-create-required", "Nombre obligatorio al crear un proyecto"),
   I("proyectos", "keyboard", "keyboard:project-create-enter", "Enter crea el proyecto"),
   I("proyectos", "action", "action:projects-search", "Buscar proyectos"),
   I("proyectos", "action", "action:projects-sort", "Ordenar la lista de proyectos"),
   I("proyectos", "action", "action:projects-row-menu", "Menú de fila de un proyecto"),
   I("proyectos", "dialog", "dialogs:src/modules/projects/ui/ExportProgressModal.tsx", "Exportar todo / exportar proyecto (ZIP) con progreso"),
-  I("proyectos", "section", "section:settings", "Ajustes del proyecto"),
-  I("proyectos", "action", "action:project-settings-save", "Cambiar nombre, prefijo y dígitos de los IDs"),
+  I("ajustes", "section", "section:settings", "Ajustes del proyecto"),
+  I("ajustes", "action", "action:project-settings-save", "Cambiar nombre, prefijo y dígitos de los IDs"),
+  I("ajustes", "action", "action:plan-export-history", "Historial en el plan exportado (vigente o con revisiones)"),
   I("proyectos", "dialog", "dialogs:src/modules/projects/ui/ProjectSettings.tsx", "Eliminar proyecto (confirmación escribiendo el prefijo)"),
-  I("proyectos", "action", "action:custom-field-create", "Crear un campo personalizado"),
-  I("proyectos", "dialog", "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx", "Diálogo de campo personalizado"),
-  I("proyectos", "action", "action:custom-field-archive", "Archivar y restaurar un campo personalizado"),
-  I("proyectos", "action", "action:custom-field-defect", "Campos personalizados de defectos (selector Casos / Defectos)"),
-  I("proyectos", "dialog", "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx", "Copiar campos de otro proyecto"),
-  I("proyectos", "action", "action:configuration-create", "Crear una configuración"),
-  I("proyectos", "dialog", "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx", "Diálogo de configuración (etiquetas de importación)"),
-  I("proyectos", "keyboard", "keyboard:config-labels", "Enter o coma añaden una etiqueta de importación"),
-  I("proyectos", "action", "action:configuration-archive", "Archivar una configuración"),
+  I("ajustes", "action", "action:custom-field-create", "Crear un campo personalizado"),
+  I("ajustes", "dialog", "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx", "Diálogo de campo personalizado"),
+  I("ajustes", "action", "action:custom-field-archive", "Archivar y restaurar un campo personalizado"),
+  I("ajustes", "action", "action:custom-field-defect", "Campos personalizados de defectos (selector Casos / Defectos)"),
+  I("ajustes", "dialog", "dialogs:src/modules/custom-fields/ui/CopyFieldsDialog.tsx", "Copiar campos de otro proyecto"),
+  I("ajustes", "action", "action:configuration-create", "Crear una configuración"),
+  I("ajustes", "dialog", "dialogs:src/modules/cycles/ui/ConfigurationDialog.tsx", "Diálogo de configuración (etiquetas de importación)"),
+  I("ajustes", "keyboard", "keyboard:config-labels", "Enter o coma añaden una etiqueta de importación"),
+  I("ajustes", "action", "action:configuration-archive", "Archivar una configuración"),
 
   // ---- 3 · Plan de pruebas ----------------------------------------------------------
   I("plan", "section", "section:plan", "Plan de pruebas (asistente)"),
@@ -264,33 +294,41 @@ export const INVENTORY: Item[] = [
   I("casos", "dialog", "dialogs:src/modules/test-cases/ui/TestCaseList.tsx", "Eliminar casos seleccionados (confirmación)"),
   I("casos", "action", "action:cases-bulk", "Acciones con varios casos seleccionados"),
   I("casos", "keyboard", "keyboard:steps-reorder", "Reordenar pasos con el teclado (asa de arrastre)"),
+  I("casos", "platform", "platform:mobile-gherkin", "El Gherkin en el móvil (lectura, «Editar» a pantalla completa con barra de teclas)"),
+  I("casos", "dialog", "dialogs:src/modules/test-cases/ui/TestCaseEditor.tsx", "Restaurar una revisión de un caso (confirmación)"),
 
   // ---- 5 · Requisitos y trazabilidad (UX-21: two sections) -----------------------------
-  I("trazabilidad", "section", "section:requirements", "Requisitos"),
+  I("requisitos", "section", "section:requirements", "Requisitos"),
   I("trazabilidad", "section", "section:traceability", "Trazabilidad (matriz)"),
-  I("trazabilidad", "state", "state:requirements-empty", "Sin requisitos todavía"),
-  I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/RequirementFormModal.tsx", "Nuevo / editar requisito"),
-  I("trazabilidad", "action", "action:requirement-edit", "Editar un requisito"),
-  I("trazabilidad", "upload", "upload:src/modules/traceability/ui/TraceabilityPage.tsx", "Importar requisitos desde CSV"),
-  I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/RequirementImportModal.tsx", "Vista previa de la importación CSV"),
-  I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/TraceabilityPage.tsx", "Eliminar un requisito (confirmación)"),
+  I("requisitos", "state", "state:requirements-empty", "Sin requisitos todavía"),
+  I("requisitos", "dialog", "dialogs:src/modules/traceability/ui/RequirementFormModal.tsx", "Nuevo / editar requisito"),
+  I("requisitos", "action", "action:requirement-edit", "Editar un requisito"),
+  I("requisitos", "upload", "upload:src/modules/traceability/ui/TraceabilityPage.tsx", "Importar requisitos desde CSV"),
+  I("requisitos", "dialog", "dialogs:src/modules/traceability/ui/RequirementImportModal.tsx", "Vista previa de la importación CSV"),
+  I("requisitos", "dialog", "dialogs:src/modules/traceability/ui/TraceabilityPage.tsx", "Eliminar un requisito (confirmación)"),
   I("trazabilidad", "screen", "screen:matrix", "Matriz de trazabilidad"),
   I("trazabilidad", "action", "action:matrix-gaps", "Mostrar solo huecos"),
   I("trazabilidad", "action", "action:matrix-export", "Exportar la matriz (.xlsx)"),
   I("trazabilidad", "dialog", "dialogs:src/modules/traceability/ui/MigrateTraceabilityModal.tsx", "Migrar referencias escritas a mano a vínculos"),
-  I("trazabilidad", "action", "action:requirement-risk", "Riesgo del requisito (probabilidad × impacto)"),
+  I("requisitos", "action", "action:requirement-risk", "Riesgo del requisito (probabilidad × impacto)"),
+  I("requisitos", "action", "action:requirements-import-menu", "Menú «Importar»: CSV, desde un proyecto y desde diseños (IA)"),
+  I("requisitos", "platform", "platform:mobile-requirements", "Los requisitos en el móvil (tarjetas)"),
   I("trazabilidad", "action", "action:matrix-sort", "Ordenar la matriz por riesgo o por ID"),
   I("trazabilidad", "action", "action:matrix-filters", "Filtrar los resultados de la matriz (ciclo, configuración, build, entorno)"),
   I("trazabilidad", "action", "action:matrix-run-link", "Último resultado en la matriz: abrir su run"),
 
   // ---- 6 · Tablero -----------------------------------------------------------------------
-  I("planificador", "section", "section:planner", "Tablero (kanban)"),
-  I("planificador", "action", "action:card-create", "Crear una tarjeta"),
-  I("planificador", "upload", "upload:src/modules/planner/ui/CardEditor.tsx", "Adjuntar un archivo a una tarjeta"),
-  I("planificador", "dialog", "dialogs:src/modules/planner/ui/CardEditor.tsx", "Aviso de archivo demasiado grande"),
-  I("planificador", "action", "action:card-move", "Mover una tarjeta de columna (teclado)"),
-  I("planificador", "action", "action:planner-filter", "Filtrar y buscar tarjetas"),
-  I("planificador", "dialog", "dialogs:src/modules/planner/ui/PlannerBoard.tsx", "Eliminar una tarjeta (confirmación)"),
+  I("tablero", "section", "section:planner", "Tablero (kanban)"),
+  I("tablero", "action", "action:card-create", "Crear una tarjeta"),
+  I("tablero", "upload", "upload:src/modules/planner/ui/CardEditor.tsx", "Adjuntar un archivo a una tarjeta"),
+  I("tablero", "dialog", "dialogs:src/modules/planner/ui/CardEditor.tsx", "Aviso de archivo demasiado grande y salir con cambios sin guardar"),
+  I("tablero", "action", "action:card-move", "Mover una tarjeta de columna (teclado)"),
+  I("tablero", "action", "action:planner-filter", "Filtrar y buscar tarjetas"),
+  I("tablero", "dialog", "dialogs:src/modules/planner/ui/PlannerBoard.tsx", "Eliminar una tarjeta (confirmación)"),
+  I("tablero", "platform", "platform:mobile-planner", "El tablero en el móvil (filtro de prioridad incluido, NC-020)"),
+  I("tablero", "state", "state:planner-load-error", "El tablero no se pudo cargar («Reintentar», NC-016)", {
+    skip: "Necesita que falle la lectura del tablero con el resto de la app en pie, algo que el tour no provoca sin trucar la app. Lo cubre PlannerBoard.test.tsx; el capítulo lo explica en «Si algo no sale».",
+  }),
 
   // ---- 7 · Ciclos y configuraciones ------------------------------------------------------
   I("ciclos", "section", "section:cycles", "Ciclos de prueba"),
@@ -300,10 +338,14 @@ export const INVENTORY: Item[] = [
   I("ciclos", "action", "action:cycle-assignee", "Asignar un elemento del ciclo"),
   I("ciclos", "action", "action:cycle-item-menu", "Subir, bajar y quitar elementos del ciclo"),
   I("ciclos", "dialog", "dialogs:src/modules/cycles/ui/ExecuteDialog.tsx", "Ejecutar un ciclo (crear runs)"),
-  I("ciclos", "dialog", "dialogs:src/modules/cycles/ui/CycleDetail.tsx", "Clonar y eliminar un ciclo (confirmación)"),
+  I("ciclos", "dialog", "dialogs:src/modules/cycles/ui/CycleDetail.tsx", "Clonar y eliminar un ciclo, quitar un elemento (confirmación)"),
   I("ciclos", "action", "action:cycles-filter", "Filtrar ciclos por estado"),
   I("ciclos", "tab", "tabs:src/modules/cycles/ui/CycleDetail.tsx", "Pestañas del ciclo (Elementos / Runs)"),
   I("ciclos", "action", "action:cycle-report", "Informe de estado de un ciclo"),
+  I("ciclos", "platform", "platform:mobile-cycles", "Los ciclos en el móvil (tarjetas)"),
+  I("ciclos", "state", "state:cycles-load-error", "Los ciclos no se pudieron cargar («Reintentar», NC-008)", {
+    skip: "Necesita que falle la lectura de los ciclos con el resto de la app en pie, algo que el tour no provoca sin trucar la app. Lo cubre Cycles.test.tsx; el capítulo lo explica en «Si algo no sale».",
+  }),
 
   // ---- 8 · Ejecuciones ------------------------------------------------------------------
   I("ejecuciones", "section", "section:runs", "Ejecuciones (lista de runs)"),
@@ -318,9 +360,11 @@ export const INVENTORY: Item[] = [
   I("ejecuciones", "action", "action:tray-filter", "Filtrar la bandeja"),
   I("ejecuciones", "action", "action:import-attachments-folder", "Carpeta de adjuntos del informe"),
   I("ejecuciones", "action", "action:import-into-cycle", "Importar un informe en un ciclo"),
+  I("ejecuciones", "platform", "platform:mobile-runs", "Las ejecuciones en el móvil (tarjetas)"),
   I("ejecuciones", "dialog", "dialogs:src/modules/runs/report/StatusReportDialog.tsx", "Informe de estado (ISO 29119-3): alcance, periodo, resumen y recomendaciones"),
   I("ejecuciones", "action", "action:report-export-xlsx", "Exportar el informe de estado (.xlsx)"),
   I("ejecuciones", "action", "action:report-export-pdf", "Exportar el informe de estado (PDF)"),
+  I("ejecuciones", "dialog", "dialogs:src/modules/runs/ui/UnlinkedTray.tsx", "Desvincular un test (confirmación)"),
 
   // ---- 9 · Defectos ----------------------------------------------------------------------
   I("defectos", "section", "section:defects", "Defectos (lista)"),
@@ -337,6 +381,7 @@ export const INVENTORY: Item[] = [
   I("defectos", "dialog", "dialogs:src/modules/defects/ui/TransitionDialog.tsx", "Cerrar o rechazar un defecto (resolución)"),
   I("defectos", "action", "action:defects-filter", "Filtrar y buscar defectos"),
   I("defectos", "dialog", "dialogs:src/modules/defects/ui/DefectsPage.tsx", "Eliminar un defecto (confirmación)"),
+  I("defectos", "dialog", "dialogs:src/modules/defects/ui/DefectEditor.tsx", "Quitar un vínculo o una evidencia de un defecto (confirmación)"),
 
   // ---- 10 · Administración --------------------------------------------------------------
   I("administracion", "route", "route:/admin", "Administración"),
@@ -360,6 +405,7 @@ export const INVENTORY: Item[] = [
   }),
   I("administracion", "tab", "admin:sync", "Sincronización"),
   I("administracion", "action", "action:sync-now", "Sincronizar ahora"),
+  I("administracion", "action", "action:sync-auto", "Sincronización automática y su intervalo"),
   I("administracion", "dialog", "dialogs:src/modules/sync-offline/ui/ConflictPanel.tsx", "Conflictos de sincronización (con un segundo equipo simulado por la API del tour)"),
   I("administracion", "dialog", "dialogs:src/modules/sync-offline/ui/LegacyUnsentNotice.tsx", "Aviso de cambios antiguos sin enviar", {
     skip: `${WEB_ONLY} Lo cubren sus pruebas unitarias (Vitest) y la revisión manual de la versión web (docs/manual/REVIEW.md).`,
@@ -397,7 +443,6 @@ export const INVENTORY: Item[] = [
   I("movil", "platform", "platform:mobile-project-pills", "Secciones del proyecto en móvil"),
   I("movil", "platform", "platform:mobile-search", "Búsqueda en móvil"),
   I("movil", "platform", "platform:mobile-filters", "Filtros en una hoja inferior"),
-  I("movil", "platform", "platform:tablet-icon-strip", "Menú de iconos en pantallas medianas"),
   I("movil", "platform", "platform:desktop-only-gates", "Funciones solo de escritorio en la versión web", {
     skip: `${WEB_ONLY} Lo cubren las pruebas unitarias de cada módulo con isTauri() = false y la revisión manual de la versión web (docs/manual/REVIEW.md).`,
   }),
@@ -409,9 +454,10 @@ export const INVENTORY: Item[] = [
   I("ejecucion-manual", "action", "action:manual-run-result", "Marcar cada paso y guardar el intento"),
   I("ejecucion-manual", "keyboard", "keyboard:exec-keys", "Teclado del ejecutor (P/F/B/S, J/K, Ctrl+Enter)"),
   I("ejecucion-manual", "upload", "upload:src/modules/runs/ui/ExecutionPanel.tsx", "Adjuntar evidencias a un intento"),
-  I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/ExecutionPanel.tsx", "Descartar un borrador (confirmación)"),
+  I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/ExecutionPanel.tsx", "Descartar un borrador y quitar una evidencia (confirmación)"),
   I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/RunDetail.tsx", "Cerrar y reabrir el run"),
   I("ejecucion-manual", "action", "action:exec-paste", "Pegar una captura (Ctrl+V)"),
+  I("ejecucion-manual", "platform", "platform:mobile-run", "El run en el móvil (el ejecutor a pantalla completa)"),
   I("ejecucion-manual", "dialog", "dialogs:src/modules/runs/ui/DeleteRunDialog.tsx", "Eliminar un run (confirmación, EJE-07)"),
 
   // ---- 14 · Evidencias (E5, DAT-03b) ---------------------------------------------------------------

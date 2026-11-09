@@ -126,6 +126,7 @@ export type * from "./generated/TemplateSeedItem";
 export type * from "./generated/TemplateSummary";
 export type * from "./generated/TestCase";
 export type * from "./generated/TestCaseInput";
+export type * from "./generated/TestCaseRevisionDetail";
 export type * from "./generated/TestCaseRevisionSummary";
 export type * from "./generated/TestCaseSummary";
 export type * from "./generated/TestCycle";

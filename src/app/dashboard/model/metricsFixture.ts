@@ -25,7 +25,7 @@ export function counts(over: Partial<ProgressSummary> = {}): ProgressSummary {
 
 export function rollup(over: Partial<WindowRollup> = {}): WindowRollup {
   const { total: _t, ...c } = counts();
-  return { ...c, passRate: null, ...over };
+  return { ...c, passRate: null, unlinked: 0, ...over };
 }
 
 export function day(over: Partial<DailyCount> = {}): DailyCount {

@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import { CalendarRange, Plus } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
+import { LoadError } from "@shared/ui/LoadError";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
@@ -52,6 +53,8 @@ export function CyclesPage({
   const [params, setParams] = useSearchParams();
   const openId = params.get("cycle");
   const [cycles, setCycles] = useState<CycleSummary[] | null>(null);
+  // NC-008 (MAN-03): a failed read says so, with «Reintentar».
+  const [loadFailed, setLoadFailed] = useState(false);
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [creating, setCreating] = useState(false);
@@ -67,9 +70,9 @@ export function CyclesPage({
       ]);
       setCycles(list);
       setConfigurations(configs);
+      setLoadFailed(false);
     } catch {
-      setCycles([]);
-      notify.current.toast(notify.current.t("cycles.loadFailed"), "error");
+      setLoadFailed(true);
     }
   }, [projectId, userId]);
   useEffect(() => {
@@ -217,10 +220,13 @@ export function CyclesPage({
           ...CYCLE_STATUSES.map((s) => ({ value: s, label: t(`cycles.statusPlural.${s}`) })),
         ]}
       />
-      {cycles === null ? (
+      {loadFailed ? (
+        <LoadError message={t("cycles.loadFailed")} onRetry={() => void reload()} />
+      ) : cycles === null ? (
         <TableSkeleton columns={columns} minWidth={640} rows={4} />
       ) : (
         <DataTable
+          className="dt-surface"
           rows={shown}
           columns={columns}
           getRowId={(c) => c.id}

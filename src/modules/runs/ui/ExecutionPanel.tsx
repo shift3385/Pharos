@@ -27,6 +27,7 @@ import {
   createDefectFromResult,
   DefectEditor,
   type DefectInput,
+  type LinkableItem,
 } from "@modules/defects";
 import type {
   ExecutionAttachment,
@@ -38,6 +39,7 @@ import { isTauri } from "@shared/platform";
 import { Dialog } from "@shared/ui/Dialog";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { runsApi } from "../api/runsApi";
 import {
   attemptsOf,
@@ -89,6 +91,8 @@ export function ExecutionPanel({
   runOpen,
   projectId,
   userId,
+  cases = [],
+  requirements = [],
   onChanged,
   onNextItem,
   onClose,
@@ -98,6 +102,10 @@ export function ExecutionPanel({
   runOpen: boolean;
   projectId: string;
   userId: string;
+  /** What a defect created from here can link (NC-007): the project's cases
+   *  and requirements, as in «Defectos». */
+  cases?: LinkableItem[];
+  requirements?: LinkableItem[];
   /** An attempt was recorded or a draft changed: refresh the run. */
   onChanged: () => void;
   onNextItem: (() => void) | null;
@@ -105,6 +113,7 @@ export function ExecutionPanel({
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const uid = useId();
   const [detail, setDetail] = useState<RunItemDetail | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
@@ -451,7 +460,16 @@ export function ExecutionPanel({
     void attach(files, inStep && step && !step.id.startsWith("#") ? step.id : null, true);
   }
 
+  /** Removing an evidence deletes it for good: a critical confirmation
+   *  (NC-012, NC-014). */
   async function removeFile(a: ExecutionAttachment) {
+    const ok = await confirm({
+      title: t("common.removeEvidenceTitle"),
+      message: t("common.removeEvidenceConfirm", { name: a.name }),
+      confirmLabel: t("common.remove"),
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       await runsApi.deleteDraftAttachment(a.id, userId);
       await load();
@@ -553,6 +571,8 @@ export function ExecutionPanel({
           defect={null}
           draft={defect.draft}
           fromLabel={defect.label}
+          cases={cases}
+          requirements={requirements}
           onClose={() => setDefect(null)}
         />
       </section>
@@ -1068,9 +1088,11 @@ export function ExecutionPanel({
         {announce}
       </p>
 
+      {confirmDialog}
       {help && <ShortcutsDialog paste={desktop} onClose={() => setHelp(false)} />}
       {discarding && (
-        <Dialog className="cd" label={t("execution.discardTitle")} onClose={() => setDiscarding(false)}>
+        // Critical tier (NC-014): the draft's attachments go too; only the buttons answer.
+        <Dialog className="cd" label={t("execution.discardTitle")} onClose={() => setDiscarding(false)} dismissable={false}>
           <h3 className="cd__title">{t("execution.discardTitle")}</h3>
           <p className="cd__msg">{t("execution.discardMessage")}</p>
           <div className="cd__actions">

@@ -1,17 +1,47 @@
 // Pure helpers of the manual generator (MAN-01), apart from build-manual.mjs
 // so scripts/manual.test.mjs can test them without building anything.
 
-/** docs/manual/fuentes/<id>.md: «## Para qué sirve», «## Consejos»,
+/** docs/manual/fuentes/<id>.md: «## Para qué sirve», «## Atajos de teclado»,
+ *  «## Si algo no sale», «## En el móvil» (manual v2, MAN-03), «## Consejos»,
  *  «## Véase también» and per-step notes as «### Paso <id>». */
+const SECTIONS = [
+  ["para qué", "purpose"],
+  ["atajos", "keys"],
+  ["si algo", "trouble"],
+  ["en el móvil", "mobile"],
+  ["consejos", "tips"],
+  ["véase", "seeAlso"],
+];
+
+/** The headings the manual prints for the sections after the steps, in order. */
+export const AFTER_STEPS = [
+  ["keys", "Atajos de teclado"],
+  ["trouble", "Si algo no sale"],
+  ["mobile", "En el móvil"],
+];
+
+/** The appendix «Atajos de teclado» (MAN-03): every chapter's «Atajos de
+ *  teclado» table, in manual order, under the chapter's number and title.
+ *  Generated, never written by hand, so it cannot drift from the chapters.
+ *  `entries`: [{ number, title, keys }]; chapters without keys are left out. */
+export function keyboardAppendix(entries) {
+  return entries
+    .filter((e) => e.keys && e.keys.trim())
+    .map((e) => `### ${e.number}. ${e.title}\n\n${e.keys.trim()}\n`)
+    .join("\n");
+}
+
 export function parseSource(text) {
-  const out = { purpose: "", tips: "", seeAlso: "", notes: {} };
+  const out = { purpose: "", extra: [], keys: "", trouble: "", mobile: "", tips: "", seeAlso: "", notes: {} };
   let key = null;
   let buf = [];
   const flush = () => {
     if (!key) return;
     const body = buf.join("\n").trim();
     if (key.startsWith("paso:")) out.notes[key.slice(5)] = body;
-    else out[key] = body;
+    else if (key.startsWith("extra:")) {
+      if (body) out.extra.push({ heading: key.slice(6), body });
+    } else out[key] = body;
   };
   for (const line of text.split(/\r?\n/)) {
     const h2 = /^##\s+(.+?)\s*$/.exec(line);
@@ -23,7 +53,9 @@ export function parseSource(text) {
     } else if (h2 && !line.startsWith("###")) {
       flush();
       const name = h2[1].toLowerCase();
-      key = name.startsWith("para qué") ? "purpose" : name.startsWith("consejos") ? "tips" : name.startsWith("véase") ? "seeAlso" : null;
+      // A section the manual does not name (e.g. «Cómo se vincula un test»)
+      // prints after the steps, with its own heading (NC-045, MAN-03).
+      key = SECTIONS.find(([prefix]) => name.startsWith(prefix))?.[1] ?? `extra:${h2[1]}`;
       buf = [];
     } else if (key) buf.push(line);
   }

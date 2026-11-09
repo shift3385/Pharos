@@ -15,6 +15,7 @@ import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
 import { FormSkeleton } from "@shared/ui/Skeleton";
 import { runsApi } from "../api/runsApi";
+import type { LinkableItem } from "@modules/defects";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { CasePickerDialog } from "./CasePickerDialog";
 import { DeleteRunDialog } from "./DeleteRunDialog";
@@ -35,10 +36,12 @@ export function RunDetail({
   projectId,
   runId,
   cases,
+  requirements = [],
 }: {
   projectId: string;
   runId: string;
   cases: LinkableCase[];
+  requirements?: LinkableItem[];
 }) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -330,6 +333,8 @@ export function RunDetail({
       runOpen={open}
       projectId={projectId}
       userId={userId}
+      cases={cases.map((c) => ({ id: c.id, key: c.scenarioId, title: c.title }))}
+      requirements={requirements}
       onChanged={() => void refresh()}
       onNextItem={nextItem ? () => openItem(nextItem) : null}
       onClose={() => openItem(null)}
@@ -417,6 +422,7 @@ export function RunDetail({
               </button>
             )}
             <DataTable
+              className="dt-surface"
               label={t("execution.run.items")}
               rows={shown}
               columns={split && itemId ? columns.slice(0, 2) : columns}

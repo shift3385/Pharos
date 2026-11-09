@@ -21,6 +21,7 @@ import {
   sortCases,
   type CaseFilters,
   type CaseSort,
+  type CaseLastResult,
   type ListedCase,
 } from "../model/caseList";
 import { TestCaseList } from "./TestCaseList";
@@ -42,12 +43,17 @@ export function TestCasesPage({
   caseIdPrefix = "ATS_",
   caseIdDigits = 3,
   requirements = [],
+  loadResults,
 }: {
   projectId: string;
   caseIdPrefix?: string;
   caseIdDigits?: number;
   /** The project's requirements (from the traceability module, via projects). */
   requirements?: RequirementOption[];
+  /** Each case's latest final result (NC-019), from the execution
+   *  derivation: the projects module passes it, as it does the requirements.
+   *  Without it (or if it fails) the «Ejecución» column says «—». */
+  loadResults?: () => Promise<Map<string, CaseLastResult>>;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -58,7 +64,12 @@ export function TestCasesPage({
   const [seed, setSeed] = useState<CaseImportResult["input"] | null>(null);
   const [canSuggest, setCanSuggest] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
-  const [cases, setCases] = useState<ListedCase[]>([]);
+  const [summaries, setSummaries] = useState<ListedCase[]>([]);
+  const [results, setResults] = useState<Map<string, CaseLastResult>>(new Map());
+  const cases = useMemo(
+    (): ListedCase[] => summaries.map((c) => ({ ...c, lastResult: results.get(c.id) ?? null })),
+    [summaries, results],
+  );
   // True until the list has loaded once, also after a failure.
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -74,9 +85,9 @@ export function TestCasesPage({
   async function refresh() {
     const request = ++latest.current;
     try {
-      const summaries = await testCaseApi.list(projectId, userId);
+      const list = await testCaseApi.list(projectId, userId);
       if (request !== latest.current) return;
-      setCases(summaries);
+      setSummaries(list);
       setLoading(false);
       setLoadFailed(false);
     } catch (e) {
@@ -89,6 +100,22 @@ export function TestCasesPage({
     setLoadFailed(false);
     void refresh();
   }
+
+  // The latest results: on opening, after a sync and when the list reloads.
+  useEffect(() => {
+    if (!loadResults) return;
+    let cancelled = false;
+    const load = () =>
+      void loadResults()
+        .then((map) => !cancelled && setResults(map))
+        .catch(() => !cancelled && setResults(new Map()));
+    load();
+    window.addEventListener("pharos:synced", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("pharos:synced", load);
+    };
+  }, [loadResults, summaries]);
 
   useEffect(() => {
     void refresh();

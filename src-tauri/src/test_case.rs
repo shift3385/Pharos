@@ -109,6 +109,26 @@ pub struct RevisionSummary {
     created_at: String,
 }
 
+/// The content of one case revision, to restore it in the editor (NC-018,
+/// MAN-03): what `fromCase` reads. The case key is not part of it: a restored
+/// revision keeps the case's current key.
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestCaseRevisionDetail"))]
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevisionDetail {
+    id: String,
+    revision: i64,
+    title: String,
+    version: String,
+    status: String,
+    priority: String,
+    case_type: Option<String>,
+    automation_status: Option<String>,
+    #[cfg_attr(test, ts(type = "unknown"))]
+    data: Value,
+    created_at: String,
+}
+
 #[cfg_attr(test, derive(TS), ts(export, optional_fields))]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -501,6 +521,41 @@ fn list_revisions(
         .map_err(|e| e.to_string())
 }
 
+/// One revision of a case the user owns; `None` for another user's, a
+/// deleted case or an unknown id. Rows from before 0.2.0 may lack the version,
+/// status or priority columns' values: the case's current ones fill them.
+fn get_revision(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<RevisionDetail>, String> {
+    conn.query_row(
+        "SELECT r.id, r.revision, r.title, COALESCE(r.version, c.version), \
+         COALESCE(r.status, c.status), COALESCE(r.priority, c.priority), r.case_type, \
+         r.automation_status, r.data, r.created_at FROM test_case_revisions r \
+         JOIN test_cases c ON c.id = r.test_case_id JOIN projects p ON p.id = c.project_id \
+         WHERE r.id = ?1 AND p.owner_id = ?2 AND c.deleted_at IS NULL AND p.deleted_at IS NULL",
+        params![id, user_id],
+        |r| {
+            let data_str: String = r.get(8)?;
+            Ok(RevisionDetail {
+                id: r.get(0)?,
+                revision: r.get(1)?,
+                title: r.get(2)?,
+                version: r.get(3)?,
+                status: r.get(4)?,
+                priority: r.get(5)?,
+                case_type: r.get(6)?,
+                automation_status: r.get(7)?,
+                data: serde_json::from_str(&data_str).unwrap_or_else(|_| empty_object()),
+                created_at: r.get(9)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn test_case_list(
     db: State<Db>,
@@ -550,6 +605,15 @@ pub fn test_case_revisions(
     user_id: String,
 ) -> Result<Vec<RevisionSummary>, String> {
     db.with_conn(|conn| list_revisions(conn, &id, &user_id))
+}
+
+#[tauri::command]
+pub fn test_case_revision_get(
+    db: State<Db>,
+    id: String,
+    user_id: String,
+) -> Result<Option<RevisionDetail>, String> {
+    db.with_conn(|conn| get_revision(conn, &id, &user_id))
 }
 
 #[cfg(test)]
@@ -754,6 +818,27 @@ mod tests {
             )
             .unwrap();
         assert_eq!(queued, 2);
+    }
+
+    #[test]
+    fn a_revision_reads_back_its_content_for_its_owner_only() {
+        let c = conn();
+        let p = project(&c, "ATS_");
+        let mut first = input(&p, None, "Case");
+        first.priority = Some("high".to_string());
+        first.data = serde_json::json!({ "description": "v1" });
+        let id = insert_case(&c, &first).unwrap();
+        let rev1 = revisions::current_id(&c, &id).unwrap().unwrap().0;
+        let mut second = input(&p, Some("ATS_001"), "Case v2");
+        second.data = serde_json::json!({ "description": "v2" });
+        update_case(&c, &id, &second).unwrap();
+
+        let back = get_revision(&c, &rev1, USER).unwrap().unwrap();
+        assert_eq!((back.revision, back.title.as_str()), (1, "Case"));
+        assert_eq!(back.priority, "high");
+        assert_eq!(back.data["description"], "v1");
+        assert!(get_revision(&c, &rev1, OTHER).unwrap().is_none());
+        assert!(get_revision(&c, "nope", USER).unwrap().is_none());
     }
 
     #[test]

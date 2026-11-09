@@ -159,7 +159,8 @@ export function useUnsavedChangesGuard(
   const dialog =
     blocker.state === "blocked" ? (
       <ConfirmDialog
-        variant="destructive"
+        // Normal tier (NC-014): Escape or a click outside = «Seguir editando».
+        danger
         title={t("dialog.unsaved.title")}
         message={message ?? t("dialog.unsaved.message")}
         confirmLabel={t("dialog.unsaved.discard")}

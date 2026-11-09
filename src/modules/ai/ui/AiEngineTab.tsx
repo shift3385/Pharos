@@ -16,6 +16,7 @@ import { isTauri } from "@shared/platform";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { joinLabels } from "@shared/ui/joinLabels";
 import { useToast } from "@shared/ui/Toast";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { ErrorSummary, FieldMessage } from "@shared/ui/FormField";
@@ -87,6 +88,7 @@ type TestResult = { ok: true; ms: number; typedKey: boolean } | { ok: false; mes
  */
 export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean) => void }) {
   const { t } = useTranslation();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const toast = useToast();
   const uid = useId();
   const [saved, setSaved] = useState<AiConfig>(loadConfig);
@@ -166,7 +168,15 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   async function confirmReplaceKey() {
     if (test?.ok && test.typedKey) return true;
     const stored = await aiKeys.status(provider).catch(() => false);
-    return !stored || window.confirm(t("ai.keyReplaceConfirm", { provider: providerLabel(provider) }));
+    return (
+      !stored ||
+      (await confirm({
+        title: t("ai.keyReplaceTitle"),
+        message: t("ai.keyReplaceConfirm", { provider: providerLabel(provider) }),
+        confirmLabel: t("ai.keyReplaceAction"),
+        danger: true,
+      }))
+    );
   }
 
   useEffect(() => {
@@ -197,7 +207,11 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
   async function selectProvider(id: OnlineProviderId) {
     if (id === provider) return;
     // The typed key belongs to the current provider: switching drops it.
-    if (keyDirty && !window.confirm(t("ai.keyDiscardConfirm"))) return;
+    if (
+      keyDirty &&
+      !(await confirm({ title: t("ai.keyDiscardTitle"), message: t("ai.keyDiscardConfirm"), confirmLabel: t("ai.keyDiscardAction"), danger: true }))
+    )
+      return;
     const next = { ...draft, onlineProvider: id };
     setDraft(next);
     setKeyInput("");
@@ -336,6 +350,7 @@ export function AiEngineTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean
 
   return (
     <div className="ai-tab">
+      {confirmDialog}
       <div className="ai-tab__mode">
         <span className="adm-label" aria-hidden="true">
           {t("ai.mode")}

@@ -321,6 +321,8 @@ export function DefectsPage({
           columns={columns}
           getRowId={(d) => d.id}
           label={t("defects.title")}
+          // On a surface, as the other tables (NC-041): readable over the background.
+          className="dt-surface"
           mobileCard={card}
           minWidth={view === "desktop" ? 860 : 600}
           empty={

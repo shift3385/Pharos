@@ -103,6 +103,18 @@ describe("profile page", () => {
     ).toBeInTheDocument();
   });
 
+  it("offers «Según el sistema» and keeps it chosen (NC-022, MAN-03)", async () => {
+    const user = userEvent.setup();
+    setViewportWidth(1440);
+    renderWithProviders(<ProfilePage />);
+    await screen.findByDisplayValue("Quality");
+    const theme = screen.getByRole("radiogroup", { name: "Tema" });
+    await user.click(within(theme).getByRole("radio", { name: "Según el sistema" }));
+    expect(within(theme).getByRole("radio", { name: "Según el sistema" })).toHaveAttribute("aria-checked", "true");
+    expect(localStorage.getItem("pharos.theme")).toBe("system");
+    await user.click(within(theme).getByRole("radio", { name: "Claro" }));
+  });
+
   it("changes language and theme from Preferencias", async () => {
     const user = userEvent.setup();
     setViewportWidth(1440);

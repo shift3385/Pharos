@@ -65,7 +65,8 @@ export function DeleteRunDialog({
   }
 
   return (
-    <Dialog className="cd rn-modal" labelledBy={`${id}-t`} onClose={onCancel}>
+    // Critical tier (NC-014): Escape and the backdrop do nothing; «Cancelar» does.
+    <Dialog className="cd rn-modal" labelledBy={`${id}-t`} onClose={onCancel} dismissable={false}>
       <h3 id={`${id}-t`} className="cd__title">
         {t("execution.run.deleteTitle")}
       </h3>

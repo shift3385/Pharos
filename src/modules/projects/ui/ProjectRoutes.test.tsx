@@ -35,9 +35,12 @@ vi.mock("@modules/planner", () => ({
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
   RequirementsPage: () => <p>sección requisitos</p>,
-  requirementApi: { list: async () => [] },
+  requirementApi: { list: async () => requirements.value },
+  REQUIREMENTS_CHANGED_EVENT: "pharos:requirements-changed",
   projectTraceFacts: async () => ({ cases: 0, coverage: null }),
 }));
+
+const requirements = vi.hoisted(() => ({ value: [] as { requirementKey: string; title: string }[] }));
 
 const PROJECTS = {
   a: { id: "a", ownerId: "test-user", name: "Proyecto A", caseIdPrefix: "AAA_", caseIdDigits: 3 },
@@ -106,6 +109,19 @@ describe("project routes (ADR-0029)", () => {
     caseCount.value = 241;
     window.dispatchEvent(new Event("pharos:cases-changed"));
     expect(await screen.findByText("241 casos")).toBeInTheDocument();
+  });
+
+  it("the requirement count follows requirements created or imported in the section (NC-038, MAN-03)", async () => {
+    requirements.value = [];
+    renderAt("/projects/a/requirements");
+    expect(await screen.findByText("0 requisitos")).toBeInTheDocument();
+    requirements.value = [
+      { requirementKey: "REQ-001", title: "Iniciar sesión" },
+      { requirementKey: "REQ-002", title: "Crear un proyecto" },
+    ];
+    window.dispatchEvent(new Event("pharos:requirements-changed"));
+    expect(await screen.findByText("2 requisitos")).toBeInTheDocument();
+    requirements.value = [];
   });
 
   it("an unknown section opens the board", async () => {

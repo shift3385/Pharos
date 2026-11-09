@@ -92,11 +92,21 @@ describe("Planificador (RED-V3)", () => {
     await waitFor(() => expect(remove).toHaveBeenCalledWith("d1", "u1"));
   });
 
-  it("keeps the kanban on mobile, without the priority filter", async () => {
+  it("keeps the kanban on mobile, with the priority filter too (NC-020, MAN-03)", async () => {
     setViewportWidth(390);
     renderWithProviders(<PlannerBoard projectId="p1" ownerId="u1" />);
     expect(await screen.findAllByRole("article")).toHaveLength(3);
-    expect(screen.queryByRole("button", { name: "Prioridad" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Prioridad" })).toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+
+  it("says when the board cannot load and retries (NC-016, MAN-03)", async () => {
+    setViewportWidth(1440);
+    list.mockRejectedValueOnce(new Error("offline"));
+    renderWithProviders(<PlannerBoard projectId="p1" ownerId="u1" />);
+    expect(await screen.findByText("No se pudo cargar el tablero.")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Backlog" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findAllByRole("article")).toHaveLength(3);
   });
 });

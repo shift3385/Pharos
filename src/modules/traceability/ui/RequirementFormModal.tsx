@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProvenanceBadge, isPendingReview } from "@modules/ai";
 import { Dialog } from "@shared/ui/Dialog";
+import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { hasBlocking, required, type Issue } from "@shared/validation";
@@ -57,7 +58,9 @@ export function RequirementFormModal({
   const [draft, setDraft] = useState<RequirementDraft>(start);
   // Typed data is never thrown away without asking (draft rule, ADR-0027).
   const dirty = JSON.stringify(draft) !== JSON.stringify(start);
-  const confirmDiscard = () => !dirty || window.confirm(t("common.discardConfirm"));
+  // A Pharos confirmation, not the browser's (NC-017).
+  const { confirm, dialog: discardDialog } = useConfirm();
+  const confirmDiscard = async () => !dirty || (await confirm(discardOptions(t)));
   const [saving, setSaving] = useState(false);
   const isNew = requirement === null;
 
@@ -214,7 +217,7 @@ export function RequirementFormModal({
       </fieldset>
 
       <div className="cd__actions">
-        <button type="button" className="cd__cancel" onClick={() => confirmDiscard() && onCancel()}>
+        <button type="button" className="cd__cancel" onClick={() => void confirmDiscard().then((ok) => ok && onCancel())}>
           {t("common.cancel")}
         </button>
         <button
@@ -226,6 +229,7 @@ export function RequirementFormModal({
           {saving ? t("traceability.requirement.saving") : t("traceability.requirement.save")}
         </button>
       </div>
+      {discardDialog}
     </Dialog>
   );
 }

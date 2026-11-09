@@ -1,33 +1,99 @@
-# Inicio, proyectos y ajustes (fuente del capítulo 2)
+# Proyectos (fuente del capítulo 4)
+
+Texto escrito a mano del capítulo. Los pasos (pie y captura) los genera el
+tour `e2e/tours/04-proyectos.tour.ts`. Los ajustes de cada proyecto
+(numeración, campos personalizados y configuraciones) tienen su propio
+capítulo, el 14.
 
 ## Para qué sirve
 
-Un **proyecto** es la carpeta de un producto o una versión que pruebas: tiene
-un plan de pruebas, sus casos, requisitos, ciclos, ejecuciones, defectos y un
-planificador. «Inicio» resume todos tus proyectos de un vistazo, y en los
-**ajustes** de cada proyecto se decide cómo se numeran sus casos, qué campos
-propios tienen y en qué configuraciones (navegadores, dispositivos) se
-ejecutan.
+Un **proyecto** es el producto, o la versión de un producto, que pruebas. Todo
+lo demás vive dentro de él:
+
+- su plan de pruebas;
+- su tablero de tareas;
+- sus requisitos y sus casos;
+- los ciclos, las ejecuciones y los defectos;
+- la matriz de trazabilidad.
+
+Lo primero es crear el proyecto. Después, Pharos te lleva de la mano: un
+proyecto nuevo se abre en su **plan de pruebas**, el punto de partida natural.
+Uno que ya existe se abre en su **Tablero**, donde está el trabajo del día a
+día.
+
+En este manual, Liomar crea dos proyectos:
+
+- **Pharos** (prefijo `PH`): la propia aplicación.
+- **API de sincronización** (prefijo `API`): el servidor con el que Pharos
+  sincroniza.
+
+## Atajos de teclado
+
+| Tecla | Dónde | Qué hace |
+| --- | --- | --- |
+| Intro | Campo «Nombre del proyecto» | Crea el proyecto |
+| Esc | Fila de crear proyecto | No la cierra: usa «Cancelar» |
+| Tab | Lista | Recorre las tarjetas de «Recientes», el buscador, el orden y las filas de la tabla |
+| Intro | El nombre de un proyecto | Lo abre |
+| ↑ ↓ e Intro | Menú «⋯» de una fila y menú de orden | Recorren y eligen una opción |
+| Esc | Un menú abierto | Lo cierra |
+
+## Si algo no sale
+
+- **«Este campo es obligatorio.»** Escribe un nombre antes de pulsar «Crear».
+- **«No se pudo crear el proyecto.»** Pulsa «Reintentar». En la versión web,
+  comprueba la conexión.
+- **«No se pudo cargar la lista de proyectos.»** Pulsa «Reintentar».
+- **«Ningún proyecto coincide con «…».»** El buscador busca en el nombre y en
+  el prefijo. Borra el texto para volver a ver todos.
+- **«Ejecutado» dice «—».** El proyecto aún no tiene casos o ninguno tiene
+  un resultado. Al pasar el cursor se ve el recuento («3 de 4 casos con
+  resultado»); es la misma cifra que «Ejecución por proyecto» del Inicio
+  (capítulo 3).
+- **Los filtros «En curso» y «Cerrados», y el orden «Defectos abiertos», no se
+  pueden elegir.** Llegan en una próxima versión: los proyectos aún no tienen
+  estado abierto o cerrado.
+- **«No se pudo exportar «…».»** Pulsa «Reintentar». Si el aviso dice que
+  algún PDF no se pudo generar, el ZIP se guarda igualmente sin ese archivo.
+- **«Sí, eliminar todo» no se activa.** Escribe exactamente la palabra que
+  pide el diálogo: el prefijo del proyecto sin su separador (por ejemplo, `PH`)
+  o, si no tiene prefijo, su nombre.
+- **El proyecto que buscaba ha desaparecido.** Si se eliminó en otro equipo, al
+  sincronizar desaparece también aquí. Si abres un enlace a un proyecto que ya
+  no existe, Pharos te lleva a la lista.
+
+## En el móvil
+
+- La lista muestra cada proyecto como una tarjeta: su insignia, su nombre y una
+  línea con el plan, la ejecución y el último acceso.
+- El menú de orden no aparece; el buscador sí.
+- El menú «⋯» de cada proyecto se abre como una hoja desde abajo.
+- Dentro de un proyecto, la cabecera se reduce a los botones de la sección, y
+  el nombre del proyecto pasa a la barra superior.
 
 ## Consejos
 
-- Elige el **prefijo** de los casos al principio (por ejemplo `BM-`): el ID de
-  un caso no cambia una vez asignado, porque viaja como tag (por ejemplo, `@BM-001`) en la
-  automatización.
-- Los **campos personalizados** nunca se borran, se archivan: así los valores
-  que ya tienen los casos no se pierden.
-- Las **etiquetas de importación** de una configuración deben coincidir con
-  los nombres que usa tu herramienta (por ejemplo, el nombre del proyecto de
-  Playwright, `chromium`). Así un informe importado sabe en qué configuración
-  se ejecutó.
-- «Historial en el plan exportado» decide si el .pdf y el .xlsx del plan
-  llevan solo la versión vigente (como siempre) o también la tabla «Historial
-  de revisiones» (capítulo 3). Se guarda al elegirlo y vale para el asistente
-  y para el ZIP.
-- Eliminar un proyecto borra todo su contenido: exporta antes un ZIP si
-  quieres conservarlo.
+- Crea un proyecto por producto o por versión importante que pruebes por
+  separado (por ejemplo, «Pharos 0.3» y «Pharos 0.4»), no uno por ciclo de
+  pruebas: los ciclos van dentro del proyecto (capítulo 9).
+- Al crear un proyecto, Pharos sugiere un prefijo sacado del nombre y libre
+  entre tus proyectos («Pharos» → `PHA-`). Ajústalo antes de crear casos, ahí
+  mismo o en «Ajustes del proyecto» (capítulo 14): la clave de un caso no
+  cambia una vez asignada, porque viaja como tag (por ejemplo, `@PH-001`) en
+  la automatización.
+- Dos prefijos se solapan si son iguales (sin contar el separador final ni
+  las mayúsculas) o si uno empieza por el otro, como `PH-` y `PHA-`: Pharos no
+  lo permite, porque una búsqueda o una importación por `PH` encontraría los
+  casos de los dos proyectos.
+- Exporta el ZIP antes de eliminar un proyecto, o como copia periódica fuera de
+  Pharos.
 
 ## Véase también
 
-- [Guía de pruebas de la beta](../guia-beta.md), apartado 4.3 «Plan, casos y exportaciones».
+- Capítulo 3, «Inicio»: el resumen de todos tus proyectos.
+- Capítulo 5, «Plan de pruebas»: lo primero que se escribe en un proyecto
+  nuevo.
+- Capítulo 14, «Ajustes del proyecto».
+- [Guía de pruebas de la beta](../guia-beta.md), apartado 4.3 «Plan, casos y
+  exportaciones».
 - [Glosario](../GLOSARIO.md): «Proyecto», «Prefijo de ID de caso», «Recientes».

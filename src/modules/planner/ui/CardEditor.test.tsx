@@ -1,7 +1,7 @@
 // DAT-03 (ADR-0014): attachments live in the evidence store; the editor shows
 // the 200 MB limit, uploads through plannerApi and saves through Rust.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import type { PlannerCard } from "../model/types";
@@ -38,11 +38,33 @@ const card: PlannerCard = {
   revision: 1,
 };
 
-function editor() {
+function editor(onClose: () => void = () => {}) {
   renderWithProviders(
-    <CardEditor projectId="p1" ownerId="u1" card={card} initialStatus="backlog" onClose={() => {}} />,
+    <CardEditor projectId="p1" ownerId="u1" card={card} initialStatus="backlog" onClose={onClose} />,
   );
 }
+
+describe("CardEditor unsaved changes (NC-016, MAN-03)", () => {
+  it("leaves at once when nothing changed", async () => {
+    const onClose = vi.fn();
+    editor(onClose);
+    await userEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("asks before throwing away a change, and stays on «Seguir editando»", async () => {
+    const onClose = vi.fn();
+    editor(onClose);
+    await userEvent.type(screen.getByRole("textbox", { name: "Título" }), " urgente");
+    await userEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    const ask = await screen.findByRole("alertdialog", { name: "¿Descartar los cambios?" });
+    await userEvent.click(within(ask).getByRole("button", { name: "Seguir editando" }));
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: /Volver/ }));
+    await userEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Descartar cambios" }));
+    expect(onClose).toHaveBeenCalled();
+  });
+});
 
 beforeEach(async () => {
   await i18n.changeLanguage("es");
@@ -57,16 +79,24 @@ describe("CardEditor attachments", () => {
     expect(await screen.findByText("Hasta 200 MB por archivo. Se guardan cifrados en este equipo.")).toBeInTheDocument();
   });
 
-  it("refuses a file over 200 MB before uploading anything", async () => {
-    const alert = vi.spyOn(window, "alert").mockImplementation(() => {});
+  it("«Adjuntar archivos» is a Pharos button that opens the hidden picker (NC-037)", async () => {
+    editor();
+    const pick = await screen.findByRole("button", { name: "Adjuntar archivos" });
+    const input = document.querySelector<HTMLInputElement>(".pl-attach__input")!;
+    expect(input).not.toBeVisible();
+    const click = vi.spyOn(input, "click");
+    await userEvent.click(pick);
+    expect(click).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a file over 200 MB before uploading anything, with a toast (NC-017)", async () => {
     editor();
     const big = new File(["x"], "video.mp4");
     Object.defineProperty(big, "size", { value: 200 * 1024 * 1024 + 1 });
     const input = document.querySelector<HTMLInputElement>(".pl-attach__input")!;
     await userEvent.upload(input, big);
-    expect(alert).toHaveBeenCalledWith("«video.mp4» supera el límite de 200 MB.");
+    expect(notify).toHaveBeenCalledWith("«video.mp4» supera el límite de 200 MB.", "error");
     expect(attachmentAdd).not.toHaveBeenCalled();
-    alert.mockRestore();
   });
 
   it("uploads the file itself and saves through Rust", async () => {

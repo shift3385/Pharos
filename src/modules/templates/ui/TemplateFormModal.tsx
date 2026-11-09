@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
+import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
@@ -44,7 +45,9 @@ export function TemplateFormModal({
   const [values, setValues] = useState<TemplateFormValues>(start);
   // Typed data is never thrown away without asking (draft rule, ADR-0027).
   const dirty = JSON.stringify(values) !== JSON.stringify(start);
-  const confirmDiscard = () => !dirty || window.confirm(t("common.discardConfirm"));
+  // A Pharos confirmation, not the browser's (NC-017).
+  const { confirm, dialog: discardDialog } = useConfirm();
+  const confirmDiscard = async () => !dirty || (await confirm(discardOptions(t)));
   const set = <K extends keyof TemplateFormValues>(k: K, v: TemplateFormValues[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
   const id = useId();
@@ -134,7 +137,7 @@ export function TemplateFormModal({
       </label>
 
       <div className="cd__actions">
-        <button type="button" className="cd__cancel" onClick={() => confirmDiscard() && onCancel()}>
+        <button type="button" className="cd__cancel" onClick={() => void confirmDiscard().then((ok) => ok && onCancel())}>
           {t("common.cancel")}
         </button>
         <button
@@ -145,6 +148,7 @@ export function TemplateFormModal({
           {t("templates.form.save")}
         </button>
       </div>
+      {discardDialog}
     </Dialog>
   );
 }

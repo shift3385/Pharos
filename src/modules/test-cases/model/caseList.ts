@@ -11,8 +11,27 @@ import {
 } from "@modules/custom-fields";
 import type { TestCaseStatus, TestCaseSummary } from "./types";
 
-/** A case row: its summary, which also carries the requirements it links. */
-export type ListedCase = TestCaseSummary;
+/** A case's latest final result (NC-019, MAN-03): what the execution
+ *  derivation says, as the matrix shows it. The projects module loads it, so
+ *  this module never depends on runs. */
+export interface CaseLastResult {
+  /** passed · failed · blocked · skipped · retest (never `not_run`). */
+  status: string;
+  at: string | null;
+}
+
+/** A case row: its summary, which also carries the requirements it links,
+ *  and its latest result when there is one. */
+export type ListedCase = TestCaseSummary & { lastResult?: CaseLastResult | null };
+
+/** The «Ejecución» filter's values: a result status, or `not_run` for a case
+ *  with no result yet. */
+export const RESULT_FILTERS = ["passed", "failed", "blocked", "skipped", "retest", "not_run"] as const;
+export type ResultFilter = (typeof RESULT_FILTERS)[number];
+
+/** The «Ejecución» value of a case: its latest result, or `not_run`. */
+export const resultOf = (c: ListedCase): string =>
+  c.lastResult && c.lastResult.status !== "not_run" ? c.lastResult.status : "not_run";
 
 export type StatusFilter = "all" | TestCaseStatus;
 
@@ -29,6 +48,8 @@ export interface CaseFilters {
    *  yes/no fields). Within a field any value matches; across fields all
    *  must. */
   custom: ReadonlySet<string>;
+  /** «Ejecución» (NC-019): latest result statuses, `not_run` included. */
+  results: ReadonlySet<string>;
 }
 
 export const EMPTY_FILTERS: CaseFilters = {
@@ -38,6 +59,7 @@ export const EMPTY_FILTERS: CaseFilters = {
   caseTypes: new Set(),
   automation: new Set(),
   custom: new Set(),
+  results: new Set(),
 };
 
 /** True when any filter besides the search and the state is on. */
@@ -45,7 +67,8 @@ export const hasMenuFilters = (f: CaseFilters) =>
   f.priorities.size +
     f.caseTypes.size +
     f.automation.size +
-    f.custom.size >
+    f.custom.size +
+    f.results.size >
   0;
 
 /** The fields the list can filter by (ADR-0018 amendment: choices and yes/no
@@ -112,7 +135,8 @@ function matchesOthers(c: ListedCase, f: CaseFilters): boolean {
       f.caseTypes.has(effectiveCaseType(c.caseType))) &&
     (f.automation.size === 0 ||
       f.automation.has(effectiveAutomation(c.automationStatus))) &&
-    matchesCustom(c, f.custom)
+    matchesCustom(c, f.custom) &&
+    (f.results.size === 0 || f.results.has(resultOf(c)))
   );
 }
 

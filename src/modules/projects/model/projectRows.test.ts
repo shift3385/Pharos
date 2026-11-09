@@ -5,6 +5,8 @@ const plan = vi.fn();
 const facts = vi.fn();
 vi.mock("@modules/test-plan", () => ({ projectPlanOverview: (...a: unknown[]) => plan(...a) }));
 vi.mock("@modules/traceability", () => ({ projectTraceFacts: (...a: unknown[]) => facts(...a) }));
+const summary = vi.fn();
+vi.mock("@modules/runs", () => ({ executionApi: { summary: (...a: unknown[]) => summary(...a) } }));
 vi.mock("../api/projectApi", () => ({
   projectApi: {
     list: async () => [
@@ -18,6 +20,16 @@ describe("projectRows", () => {
   beforeEach(() => {
     plan.mockReset().mockResolvedValue(null);
     facts.mockReset().mockResolvedValue({ cases: 0, coverage: null });
+    summary.mockReset().mockResolvedValue(null);
+  });
+
+  it("reads each project's execution progress; a failed read leaves it empty (NC-021)", async () => {
+    summary.mockImplementation(async ({ projectId }: { projectId: string }) => {
+      if (projectId === "b") throw new Error("down");
+      return { progress: { executed: 2, total: 5 } };
+    });
+    const rows = await projectRows("u1");
+    expect(rows.map((r) => r.execution)).toEqual([{ executed: 2, total: 5 }, null]);
   });
 
   it("reads stored UTC times and survives one that is not a date", async () => {

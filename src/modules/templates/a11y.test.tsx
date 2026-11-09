@@ -41,24 +41,28 @@ describe("template form", () => {
 
   it("Escape asks before throwing typed changes away (draft rule)", async () => {
     const onCancel = vi.fn();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderWithProviders(<TemplateFormModal mode="create" fileName="base.xlsx" onSubmit={() => {}} onCancel={onCancel} />);
     await userEvent.keyboard("{Escape}"); // untouched: closes without asking
-    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
   it("with typed changes, Escape and Cancel ask first and can keep the form", async () => {
     const onCancel = vi.fn();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderWithProviders(<TemplateFormModal mode="create" fileName="base.xlsx" onSubmit={() => {}} onCancel={onCancel} />);
     await userEvent.type(screen.getByRole("textbox", { name: /Name/ }), " v2");
+    // A Pharos confirmation (NC-017), not the browser's.
     await userEvent.keyboard("{Escape}");
+    await userEvent.click(await screen.findByRole("button", { name: "Keep editing" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(confirm).toHaveBeenCalledTimes(2);
-    expect(onCancel).not.toHaveBeenCalled();
-    confirm.mockReturnValue(true);
+    // A normal confirmation: Escape on it = «Keep editing» (NC-014).
+    expect(await screen.findByRole("alertdialog", { name: "Discard the changes?" })).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(onCancel).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(await screen.findByRole("button", { name: "Discard changes" }));
     expect(onCancel).toHaveBeenCalledOnce();
   });
 });

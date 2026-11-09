@@ -1,62 +1,87 @@
-# Requisitos y trazabilidad (fuente del capítulo 5)
+# Trazabilidad (fuente del capítulo 13)
+
+Texto escrito a mano del capítulo. Los pasos (pie y captura) los genera el
+tour `e2e/tours/13-trazabilidad.tour.ts`. Los requisitos se crean en el
+capítulo 7 y se enlazan a los casos en el capítulo 8.
 
 ## Para qué sirve
 
-Son dos secciones del menú del proyecto, en el orden del proceso de prueba:
-**Requisitos**, justo antes de «Casos de prueba», porque los requisitos son
-la base de la que salen los casos; y **Trazabilidad**, al final, porque la
-matriz mide el resultado de todo lo anterior.
+La **matriz de trazabilidad** responde a «¿está probado este requisito?».
+Cruza cuatro cosas que se hacen en otros capítulos:
 
-La **trazabilidad** responde a «¿está probado este requisito?». Cada requisito
-tiene un ID estable (`REQ-001`) que los casos enlazan como tag; la matriz
-cruza requisitos, casos, su último resultado y los defectos, y marca en rojo
-los requisitos sin ningún caso. Así sabes qué cubre tu plan y qué falta.
+- los **requisitos** (capítulo 7), con su prioridad y su riesgo;
+- los **casos** que los verifican (capítulo 8), enlazados por la clave del
+  requisito (`@REQ-001` en su Gherkin);
+- el **último resultado** de cada caso, de los runs manuales (capítulo 11) o
+  de los informes importados (capítulo 10);
+- los **defectos** de cada caso (capítulo 12).
 
-El **último resultado** de cada caso es el último resultado final de sus
-ejecuciones, manuales o importadas (por ejemplo, de Playwright), con la clave
-del run y la fecha. «Flaky» avisa de un test que pasó tras fallar,
-«Desactualizado» de que se ejecutó una revisión anterior del caso y «Re-test»
-de un caso que falló y cuyo defecto ya está corregido. El **riesgo** del
-requisito (probabilidad × impacto) ordena la matriz: lo más arriesgado,
-primero.
+Un requisito está **cubierto** si tiene al menos un caso vivo que no esté
+obsoleto. La **cobertura** es el porcentaje de requisitos cubiertos; los que
+no tienen ningún caso salen en rojo.
+
+El **estado de prueba** de un caso es el último resultado final de sus
+ejecuciones, con la clave del run y la fecha. Gana siempre el más reciente,
+sea manual o importado: repetir a mano una prueba después de un informe de
+Playwright cambia lo que muestra la matriz. Lo matizan tres avisos:
+
+- **Flaky:** el test pasó después de fallar.
+- **Desactualizado:** se ejecutó una revisión anterior del caso.
+- **Re-test:** el caso falló y su defecto ya está corregido; toca repetirlo.
+
+El **riesgo** del requisito (probabilidad × impacto) ordena la matriz: lo más
+arriesgado, primero.
+
+En este manual, Liomar revisa qué está probado de Pharos 0.3.0 cuando ya
+tiene la importación de JUnit, la ejecución manual y los dos defectos.
+
+## Atajos de teclado
+
+| Tecla | Dónde | Qué hace |
+| --- | --- | --- |
+| Tab | Filtros, orden e interruptor «Mostrar solo huecos» | Recorre los controles |
+| Espacio | Interruptor «Mostrar solo huecos» | Lo activa o lo desactiva |
+| ↑ ↓ | Selectores de filtro y de orden | Cambian la opción |
+| Esc | Diálogo «Migrar trazabilidad» | Lo cierra sin aplicar nada |
+
+## Si algo no sale
+
+- **«Aún no hay requisitos…».** La matriz se llena con los requisitos del
+  proyecto. «Ir a Requisitos» lleva al capítulo 7.
+- **Un requisito sale en rojo.** No tiene ningún caso. Enlázale uno desde el
+  editor del caso (capítulo 8) o genera casos desde él.
+- **Un caso enlazado no cuenta.** Está obsoleto: un caso obsoleto no cubre
+  (la columna «Comentarios» lo dice).
+- **Todo dice «No ejecutado».** No hay resultados con los filtros elegidos.
+  Pulsa «Quitar filtros».
+- **«No se pudieron leer los resultados: la matriz muestra los casos como no
+  ejecutados.»** Los requisitos y los casos se ven igual; recarga la sección.
+- **El caso menciona el requisito pero la matriz no lo cuenta.** La mención
+  está en «Otras referencias (texto libre)». Usa «Migrar trazabilidad».
+- **«Todos los requisitos tienen al menos un caso. No hay huecos.»** Con
+  «Mostrar solo huecos» activo, es buena señal.
+
+## En el móvil
+
+- La matriz pasa a una lista: cada requisito es una tarjeta con sus casos,
+  sus estados y sus defectos, cada dato con su etiqueta.
 
 ## Consejos
 
-- Importa los requisitos de tu herramienta de gestión con un CSV: Pharos
-  reconoce columnas en español o inglés («Título», «Title», «Clave», «ID»…) y
-  actualiza los que ya existen por su ID.
-- Si el proyecto ya está en marcha, en la app de escritorio «Requisitos → Importar →
-  Requisitos desde un proyecto (IA)» lee la carpeta del proyecto o de su
-  documentación y propone requisitos nuevos, mejoras, posibles duplicados y
-  redundantes, cada uno con su motivo y su archivo y líneas de origen. Antes de
-  enviar nada ves qué archivos se leen; los secretos y las dependencias no se
-  envían nunca. Lo deducido solo del código va marcado «Inferido»: confírmalo,
-  porque el código puede tener un defecto.
-- Si tienes capturas, bocetos o diseños, «Requisitos → Importar → Requisitos desde
-  diseños» los lee con un modelo de IA que vea imágenes:
-  - Admite PNG, JPG, PDF, un `.excalidraw` y la carpeta o el ZIP de un proyecto de
-    Claude Design. Desde Figma o Canva, exporta los frames como PNG o PDF.
-  - Arrastra los archivos o pega una captura con Ctrl+V. Añade una nota a cada
-    imagen («alta, paso 2») y el contexto del producto: la IA acierta más.
-  - Las propuestas se comparan con tus requisitos. Unas capturas son solo una
-    muestra, así que nunca se propone eliminar un requisito porque no aparezca en
-    ellas.
-  - Cada propuesta muestra su imagen con la zona marcada. «Escrito en la fuente»
-    significa que el texto está en el diseño; lo «Inferido» llega con sus
-    supuestos y preguntas abiertas, para que lo confirmes.
-- Un ID eliminado no se reutiliza nunca, para que ningún caso antiguo apunte
-  a otro requisito por error.
 - «Mostrar solo huecos» es la vista de trabajo antes de cerrar un ciclo.
 - Evalúa el riesgo de los requisitos importantes: sin probabilidad e impacto,
-  un requisito queda «Sin evaluar» al final de la matriz.
-- Filtra por ciclo o por build para ver la foto de una ronda concreta; los
-  filtros quedan en la dirección de la página, así que puedes guardarla o
-  compartirla.
-- «Exportar matriz (.xlsx)», en la cabecera de «Trazabilidad», trae la hoja «Resultados» con el run, la fecha y los
-  defectos de cada caso, para revisarla fuera de la app.
+  quedan «Sin evaluar» al final de la matriz.
+- Filtra por ciclo o por build para ver la foto de una ronda concreta. Los
+  filtros quedan en la dirección de la página: guárdala o compártela.
+- «Exportar matriz (.xlsx)» trae la hoja «Resultados» con el run, la fecha y
+  los defectos de cada caso, y los filtros activos anotados, para revisarla
+  fuera de la app o adjuntarla a una auditoría.
 
 ## Véase también
 
-- [Guía de pruebas de la beta](../guia-beta.md), apartados 4.4 «Trazabilidad» y 4.4e «Resultados en la matriz e informe de estado».
-- Capítulo 13, «Ejecución manual»: los resultados en la matriz y el informe de estado.
-- [Glosario](../GLOSARIO.md): «Requisito», «Clave de requisito», «Requisitos vinculados», «Trazabilidad (texto libre)», «Último resultado», «Desactualizado», «Re-test», «Banda de riesgo».
+- Capítulo 7, «Requisitos»: crear, importar y evaluar el riesgo.
+- Capítulo 8, «Casos de prueba»: enlazar requisitos.
+- Capítulo 11, «Ejecución manual»: el informe de estado, que resume la misma
+  información por ronda.
+- [Glosario](../GLOSARIO.md): «Último resultado», «Desactualizado»,
+  «Re-test», «Banda de riesgo».

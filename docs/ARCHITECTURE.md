@@ -128,13 +128,22 @@ events, which the web has: there it starts at the plan's first event.)
 
 **Proyectos (RED-V2).** `ProjectsPage` loads `projectRows` (projects with
 plan status, case count and requirement coverage, through the `test-plan`,
-`test-cases` and `traceability` public APIs) and builds the screen from pure
+`test-cases` and `traceability` public APIs, and the execution progress of
+each one through `executionApi.summary` of `runs`, NC-021) and builds the screen from pure
 functions in `model/projectTable.ts` (recent, search, sort with nulls last,
 pages). The table is the shared `DataTable` + `Pagination` + `FilterChips` +
 `SortMenu`. Ajustes del proyecto is `ProjectSettings`: the delete dialog is
 `ConfirmDialog variant="destructive"` with `confirmText` set to the prefix
 without its separator (`deleteConfirmWord`), and `useProjectExport` holds the
-export progress shared with the list.
+export progress shared with the list. Case-key prefixes never overlap
+(NC-030, `model/prefix.ts`): two overlap when, without the trailing
+separator and ignoring case, they are equal or one starts with the other
+(`PH-` / `PHA-`). The create row suggests a free one from the name
+(`suggestPrefix`: three letters of the first word, the initials, two to five
+letters, then `<first letter>AA…ZZ`) and refuses an overlapping one; the
+settings refuse it only when the prefix changes, so projects that already
+shared `ATS_` keep saving. The check is in the UI: the desktop store does not
+enforce it, and two devices can still create overlapping prefixes offline.
 
 **Plan wizard (RED-V2).** `TestPlanWizard` composes `ui/wizard/*`:
 - `formState.ts`: the form and its pure conversions (from a plan, an import or
@@ -214,8 +223,9 @@ limit 1–50) and call the shared execution derivation of step 10 —
 `execution::home_metrics` in Rust, `createExecutionService(store).homeMetrics`
 (`server/src/modules/domain/execution.ts`) on the server, which `app.ts`
 passes to the route as its `core`; contract v1, shared vectors. The
-derivation holds every rule (latest final per case/target, windows, daily
-buckets, exit criteria, re-test, queues, owner scope, deleted runs); the
+derivation holds every rule (latest final per case/target, windows by case
+with unlinked tests counted apart in `unlinked` (NC-029, ADR-0013 «Enmienda
+del contrato v1»), daily buckets of attempts, exit criteria, re-test, queues, owner scope, deleted runs); the
 dashboard derives nothing and uses the ts-rs types of
 `@shared/contracts/contract`. The **client** builds the request
 (`model/metrics.ts::metricsRequest`) at the moment of each read: the local
@@ -754,7 +764,7 @@ through `src-tauri/src/journal.rs`:
   - `useUnsavedChangesGuard(dirty, message | { message, ignore })`
     (`@shared/ui/useUnsavedChangesGuard`) uses `useBlocker` for every
     address change (links, sidebar, pills, `navigate`/`setSearchParams`,
-    the system/Android «Atrás») and shows the destructive `ConfirmDialog`
+    the system/Android «Atrás») and shows a normal `ConfirmDialog` (Escape = «Seguir editando», NC-014)
     «Descartar cambios» / «Seguir editando»; it also sets `beforeunload`
     while dirty. `ignore: true` lets query-string-only changes through (or
     pass a predicate, evaluated per path or query change, never for hash-only
@@ -870,6 +880,14 @@ through `src-tauri/src/journal.rs`:
 - **Sync status:**
   - `SyncStatusProvider` (in `AppShell`, mounted once) holds the sync state
     and the background work: refresh, auto-sync, purge and the conflict panel.
+    Auto-sync runs at sign-in, on reconnect and, while `autoSync` is on
+    (off by default), every `autoSyncMinutes` (1 / 5 / 15 / 30, default 5)
+    counted from the last sync that ended: a manual or reconnect sync bumps
+    `lastSync` and restarts the timer (NC-025: admin settings,
+    `saveSyncSettings` fires `SYNC_SETTINGS_EVENT` so the loop re-reads
+    them). A `busy` ref keeps it to one sync at a time — a tick, a
+    reconnect or «Sincronizar ahora» during a sync does nothing — and a tick
+    offline is skipped.
   - `SyncIndicator` only shows it:
     - `full` in the sidebar foot, above the user, and in the mobile user
       sheet;
@@ -953,7 +971,14 @@ through `src-tauri/src/journal.rs`:
     same items.
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
-    until that text is typed.
+    until that text is typed. The two tiers (normal / critical) and what
+    counts as critical are in SPEC §10 (NC-014).
+  - `useConfirm()` (`@shared/ui/useConfirm`): `await confirm({ title,
+    message, confirmLabel, danger?, variant? })` resolves to the button
+    pressed; render its `dialog`. `discardOptions(t)` is the usual
+    «¿Descartar los cambios?». It replaces `window.confirm`, which the app
+    never uses (NC-017, guarded by `useConfirm.test.tsx`). `Dialog`'s
+    `confirmClose` may return its promise.
   - `LoadError` (FIX-16): `role="alert"` with the message and a «Reintentar»
     button, for a read or an action that failed.
   - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
@@ -1010,7 +1035,13 @@ through `src-tauri/src/journal.rs`:
   (`model/caseList.ts`, pure) and keeps the open case in `?case=`
   (`caseLink`), so the editor walks the same ordered list and «Atrás» works.
   The editor keeps a snapshot of the loaded form to tell «Guardado» from
-  «Cambios sin guardar» and asks before leaving with changes.
+  «Cambios sin guardar» and asks before leaving with changes. «Revisiones»
+  lists the case's revisions and «Restaurar» loads one into the form,
+  unsaved and with the current key (`test_case_revision_get`, NC-018);
+  saving makes it a new revision. The «Ejecución» column and filter show each
+  case's latest final result, «—» without one (NC-019): `ProjectDetail`
+  passes `loadResults`, built on `executionApi.summary`, so test-cases never
+  depends on runs.
 - **Cross-module read APIs** used by other screens (each additive, with a
   test):
   - `projectDefects(projectId, userId)` (`@modules/defects`): the live

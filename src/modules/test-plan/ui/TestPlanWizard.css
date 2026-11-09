@@ -414,8 +414,11 @@
   grid-template-columns: auto minmax(0, 1fr);
 }
 
-.tpw-revs-dialog {
+/* Wider than a confirmation: `.cd` caps dialogs at 440 px, which cut the
+   plan title of every revision (MAN-03, NC-034). */
+.cd.tpw-revs-dialog {
   width: min(560px, calc(100vw - 32px));
+  max-width: none;
 }
 
 .tpw-revs-dialog__head {

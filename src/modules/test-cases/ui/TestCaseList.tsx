@@ -24,7 +24,7 @@ import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable"
 import { Pagination } from "@shared/ui/Pagination";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
-import { StatusPill } from "@shared/ui/StatusPill";
+import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { PriorityFlag } from "@shared/ui/PriorityFlag";
 import { BottomSheet, MenuCheckItem, MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
@@ -37,9 +37,11 @@ import {
   CASE_PRIORITIES,
   CASE_STATUSES,
   EMPTY_FILTERS,
+  RESULT_FILTERS,
   customFilterValue,
   filterableFields,
   hasMenuFilters,
+  resultOf,
   statusCounts,
   type CaseFilters,
   type CaseSort,
@@ -83,6 +85,15 @@ function useWideWindow(): boolean {
   }, []);
   return wide;
 }
+
+/** The pill tone of a latest result (SPEC §4), as in runs and the matrix. */
+const RESULT_TONE: Record<string, PillTone> = {
+  passed: "success",
+  failed: "error",
+  blocked: "warning",
+  skipped: "neutral",
+  retest: "info",
+};
 
 /**
  * Casos · lista (SPEC §8, RED-V3): the full table with search, state chips,
@@ -265,11 +276,29 @@ export function TestCaseList({
       {t(`testCase.statusLabel.${c.status}`)}
     </StatusPill>
   );
-  const execution = (
-    <StatusPill tone="neutral" dot title={t("testCase.list.executionSoon")}>
-      {t("testCase.list.notRun")}
-    </StatusPill>
-  );
+  // «Ejecución» (NC-019): the case's latest final result, as the matrix
+  // shows it; «—» while it has none.
+  const execution = (c: ListedCase) => {
+    const status = resultOf(c);
+    if (status === "not_run") {
+      return (
+        <span className="cl-muted" title={t("testCase.list.noResult")}>
+          —<span className="sr-only"> {t("testCase.list.noResult")}</span>
+        </span>
+      );
+    }
+    const at = c.lastResult?.at;
+    return (
+      <StatusPill
+        tone={RESULT_TONE[status] ?? "info"}
+        dot
+        title={at ? t("testCase.list.resultAt", { date: stampLabel(at, lang) }) : undefined}
+      >
+        {t(`testCase.list.result.${status}`, { defaultValue: status })}
+      </StatusPill>
+    );
+  };
+  const resultOptions = RESULT_FILTERS.map((r) => ({ value: r, label: t(`testCase.list.result.${r}`) }));
   const titleLink = (c: ListedCase) => (
     <Link className="cl-title" to={caseLink(projectId, c.id)} title={c.title}>
       {c.title}
@@ -317,8 +346,7 @@ export function TestCaseList({
       cell: (c) => <span className="cl-ellipsis">{t(`testCase.level.${c.gherkinLevel}.name`)}</span>,
     },
     { id: "status", header: t("testCase.list.col.status"), width: "104px", sortable: true, cell: statusPill },
-    // A placeholder until manual execution (step 7): on a narrower desktop
-    // its width goes to the titles (FLD-01 review 7).
+    // On a narrower desktop its width goes to the titles (FLD-01 review 7).
     ...(wide
       ? [
           {
@@ -326,7 +354,7 @@ export function TestCaseList({
             header: t("testCase.list.col.execution"),
             width: "128px",
             minView: "desktop" as const,
-            cell: () => execution,
+            cell: execution,
           },
         ]
       : []),
@@ -347,7 +375,7 @@ export function TestCaseList({
     <div className="cl-card">
       <div className="cl-card__top">
         <span className="cl-id">{c.scenarioId}</span>
-        {execution}
+        {execution(c)}
       </div>
       {titleLink(c)}
       <span className="cl-card__meta">
@@ -428,6 +456,11 @@ export function TestCaseList({
                   key: "automation",
                   options: automationOptions,
                 },
+                {
+                  label: t("testCase.list.col.execution"),
+                  key: "results",
+                  options: resultOptions,
+                },
                 ...(customOptions.length
                   ? [
                       {
@@ -459,11 +492,9 @@ export function TestCaseList({
               <FilterMenuButton
                 label={t("testCase.list.col.execution")}
                 icon={Play}
-                options={[]}
-                selected={new Set()}
-                onChange={() => {}}
-                disabled
-                disabledReason={t("testCase.list.executionSoon")}
+                options={resultOptions}
+                selected={filters.results}
+                onChange={(v) => set({ results: v })}
               />
               <FilterMenuButton
                 label={t("testCase.list.col.type")}
@@ -658,7 +689,7 @@ function MobileFilters({
   /** Type, automation and custom field filters (FLD-01). */
   groups: {
     label: string;
-    key: "caseTypes" | "automation" | "custom";
+    key: "caseTypes" | "automation" | "custom" | "results";
     options: { value: string; label: string; description?: string }[];
   }[];
 }) {
@@ -668,7 +699,8 @@ function MobileFilters({
     filters.priorities.size +
     filters.caseTypes.size +
     filters.automation.size +
-    filters.custom.size;
+    filters.custom.size +
+    filters.results.size;
   const toggle = <T,>(set: ReadonlySet<T>, v: T) => {
     const next = new Set(set);
     if (next.has(v)) next.delete(v);
@@ -726,10 +758,6 @@ function MobileFilters({
               ))}
             </Fragment>
           ))}
-          <MenuLabel>{t("testCase.list.col.execution")}</MenuLabel>
-          <MenuCheckItem checked={false} onToggle={() => {}} disabled title={t("testCase.list.executionSoon")}>
-            {t("testCase.list.executionSoonShort")}
-          </MenuCheckItem>
         </BottomSheet>
       )}
     </>

@@ -53,9 +53,17 @@ const defects = vi.hoisted(() => ({
 }));
 vi.mock("@modules/defects", () => ({
   createDefectFromResult: defects.createDefectFromResult,
-  DefectEditor: ({ fromLabel }: { fromLabel?: string }) => (
+  DefectEditor: ({
+    fromLabel,
+    cases = [],
+    requirements = [],
+  }: {
+    fromLabel?: string;
+    cases?: { key: string }[];
+    requirements?: { key: string }[];
+  }) => (
     <div aria-label="defect editor" role="region">
-      {fromLabel}
+      {fromLabel} · {[...cases, ...requirements].map((x) => x.key).join(",")}
     </div>
   ),
 }));
@@ -221,7 +229,12 @@ const detail = (over: Partial<RunItemDetail> = {}): RunItemDetail => ({
 function renderRun(route = "/projects/p/runs/r1?item=i1") {
   return renderWithProviders(
     <ToastProvider>
-      <RunsPage projectId="p" runId="r1" cases={[{ id: "c3", scenarioId: "TC-003", title: "Buscar" }]} />
+      <RunsPage
+        projectId="p"
+        runId="r1"
+        cases={[{ id: "c3", scenarioId: "TC-003", title: "Buscar" }]}
+        requirements={[{ id: "q1", key: "REQ-001", title: "Buscar" }]}
+      />
     </ToastProvider>,
     { route },
   );
@@ -300,6 +313,47 @@ describe("run screen", () => {
     await waitFor(() => expect(api.overview.mock.calls.length).toBeGreaterThan(1));
   });
 
+  it("discarding a draft is critical: Escape does not answer, «Descartar borrador» does (NC-014)", async () => {
+    const user = userEvent.setup();
+    api.draftDiscard.mockResolvedValue(undefined);
+    renderRun();
+    const panel = await screen.findByTestId("exec-panel");
+    within(panel).getAllByRole("listitem", { name: /^Paso \d/ })[0].focus();
+    await user.keyboard("p");
+    await waitFor(() => expect(screen.getByTestId("exec-discard")).toBeEnabled());
+    await user.click(screen.getByTestId("exec-discard"));
+    const dialog = await screen.findByRole("dialog", { name: "¿Descartar el borrador?" });
+    await user.keyboard("{Escape}");
+    expect(dialog).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Descartar borrador" }));
+    await waitFor(() => expect(api.draftDiscard).toHaveBeenCalled());
+  });
+
+  it("removing an evidence is critical: Escape does not answer, «Quitar» deletes it (NC-012)", async () => {
+    const user = userEvent.setup();
+    api.deleteDraftAttachment.mockResolvedValue(undefined);
+    api.itemDetail.mockResolvedValue(
+      detail({
+        draft: {
+          targets: {},
+          attachments: [
+            { id: "a1", name: "captura.png", mime: "image/png", size: 2048, kind: "screenshot", targetKey: "-/-", stepId: null },
+          ],
+          updatedAt: "2026-11-04T09:00:00.000Z",
+        } as unknown as RunItemDetail["draft"],
+      }),
+    );
+    renderRun();
+    await user.click(await screen.findByRole("button", { name: "Quitar «captura.png»" }));
+    const ask = await screen.findByRole("alertdialog", { name: "¿Quitar esta evidencia?" });
+    expect(ask).toHaveTextContent("«captura.png» se borra y no se puede recuperar.");
+    await user.keyboard("{Escape}");
+    expect(ask).toBeInTheDocument();
+    expect(api.deleteDraftAttachment).not.toHaveBeenCalled();
+    await user.click(within(ask).getByRole("button", { name: "Quitar" }));
+    await waitFor(() => expect(api.deleteDraftAttachment).toHaveBeenCalledWith("a1", "test-user"));
+  });
+
   it("creates a defect from a failed attempt with the step that failed", async () => {
     const user = userEvent.setup();
     api.itemDetail.mockResolvedValue(detail({ results: [result()] }));
@@ -307,8 +361,9 @@ describe("run screen", () => {
     const { container } = renderRun();
     await user.click(await screen.findByTestId("exec-create-defect"));
     expect(defects.createDefectFromResult).toHaveBeenCalledWith("res1", "test-user", "S2");
+    // NC-007: the editor gets the project's cases and requirements to link.
     expect(await screen.findByRole("region", { name: "defect editor" })).toHaveTextContent(
-      "RUN-007 · TC-001",
+      "RUN-007 · TC-001 · TC-003,REQ-001",
     );
     await expectNoAxeViolations(container);
   });
@@ -373,6 +428,9 @@ describe("run screen", () => {
     expect(hidden).toHaveTextContent("el defecto conserva el vínculo hasta la purga");
     expect(dialog).toHaveTextContent("la purga se los lleva con el run pasados");
     await expectNoAxeViolations(dialog);
+    // Critical tier (NC-014): Escape does not dismiss it; only its buttons answer.
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog", { name: "Eliminar el run" })).toBeInTheDocument();
     await user.click(within(dialog).getByTestId("run-delete-confirm"));
     await waitFor(() => expect(api.delete).toHaveBeenCalledWith("r1", "test-user"));
     expect(await screen.findByText("Run RUN-007 eliminado.", { exact: false })).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Archive, Check, Download, Hash, Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ import { CustomFieldsCard } from "@modules/custom-fields";
 import { ConfigurationsCard } from "@modules/cycles";
 import { projectApi } from "../api/projectApi";
 import { deleteConfirmWord } from "../model/projectTable";
+import { prefixIssue, type PrefixOwner } from "../model/prefix";
 import type { PlanExportHistory, Project } from "../model/types";
 import { useProjectExport } from "./useProjectExport";
 import "@shared/ui/headerActions.css";
@@ -113,7 +114,22 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
   const [digits, setDigits] = useState(project.caseIdDigits);
   const [saving, setSaving] = useState(false);
   const nameIssue = required(name);
-  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(nameIssue !== null);
+  // NC-030: a changed prefix may not overlap another project's (an old
+  // overlap, such as two «ATS_», does not block saving a new name).
+  const [others, setOthers] = useState<PrefixOwner[]>([]);
+  useEffect(() => {
+    let live = true;
+    void projectApi
+      .list(owner)
+      .then((list) => live && setOthers(list))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [owner]);
+  const prefixProblem =
+    prefix.trim() === project.caseIdPrefix ? null : prefixIssue(prefix, others, project.id);
+  const { guard, showSummary, attempted, summaryRef } = useSaveGuard(nameIssue !== null || prefixProblem !== null);
   const [loss, setLoss] = useState<LossSummary | null>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -123,7 +139,7 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
       await projectApi.update(project.id, {
         ownerId: project.ownerId,
         name: name.trim(),
-        caseIdPrefix: prefix,
+        caseIdPrefix: prefix.trim(),
         caseIdDigits: digits,
       });
       toast(t("projects.savedToast"));
@@ -191,7 +207,7 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
           )}
         </FormField>
         <div className="pj-settings__row">
-          <FormField id="pj-prefix" label={t("projects.caseIdPrefix")}>
+          <FormField id="pj-prefix" label={t("projects.caseIdPrefix")} issue={prefixProblem}>
             {(p) => (
               <input
                 {...p}
@@ -232,10 +248,13 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
             {sample(3)}…
           </code>
         </p>
-        {showSummary && nameIssue && (
+        {showSummary && (nameIssue || prefixProblem) && (
           <ErrorSummary
             ref={summaryRef}
-            items={[{ label: t("projects.name"), issue: nameIssue, fieldId: "pj-name" }]}
+            items={[
+              ...(nameIssue ? [{ label: t("projects.name"), issue: nameIssue, fieldId: "pj-name" }] : []),
+              ...(prefixProblem ? [{ label: t("projects.caseIdPrefix"), issue: prefixProblem, fieldId: "pj-prefix" }] : []),
+            ]}
           />
         )}
         <div className="pj-settings__save">
