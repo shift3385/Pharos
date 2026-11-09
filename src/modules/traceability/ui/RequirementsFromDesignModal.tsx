@@ -271,6 +271,21 @@ export function RequirementsFromDesignModal({
 
   const busy =
     phase === "reading" || phase === "analyzing" || phase === "synthesizing";
+  const thinking = phase === "analyzing" || phase === "synthesizing";
+
+  // UX-23: the analysis takes a minute or more; the step and the seconds
+  // show it is working, not stuck.
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!thinking) return;
+    const started = Date.now();
+    setElapsed(0);
+    const timer = window.setInterval(
+      () => setElapsed(Math.floor((Date.now() - started) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [thinking]);
 
   return (
     <Dialog
@@ -424,7 +439,7 @@ export function RequirementsFromDesignModal({
                       )}
                     </span>
                     <span>
-                      <span className="tr-gen__name tr-mono">{item.name}</span>
+                      <span className="tr-gen__name tr-mono" title={item.name}>{item.name}</span>
                       <span className="tr-gen__desc">
                         {item.kind === "image"
                           ? t("traceability.fromDesign.meta.image", {
@@ -539,13 +554,25 @@ export function RequirementsFromDesignModal({
             {phase === "reading"
               ? t("traceability.fromDesign.reading")
               : phase === "analyzing"
-                ? t("traceability.fromDesign.analyzing")
+                ? `${t("traceability.fromDesign.step", { n: 1, total: 2 })} · ${t("traceability.fromDesign.analyzing")}`
                 : phase === "synthesizing"
-                  ? t("traceability.fromDesign.synthesizing", {
-                      count: existing.length,
-                    })
+                  ? `${t("traceability.fromDesign.step", { n: 2, total: 2 })} · ${t(
+                      "traceability.fromDesign.synthesizing",
+                      { count: existing.length },
+                    )}`
                   : ""}
+            {thinking && (
+              // Outside the announcement: a screen reader hears the step once,
+              // not every second.
+              <span className="tr-gen__elapsed" aria-hidden="true" data-testid="design-elapsed">
+                {" "}
+                {t("traceability.fromDesign.elapsed", { s: elapsed })}
+              </span>
+            )}
           </p>
+          {thinking && (
+            <p className="tr-gen__hint">{t("traceability.fromDesign.slowHint")}</p>
+          )}
           {phase === "failed" && failure && (
             <AiFailureNotice failure={failure} />
           )}

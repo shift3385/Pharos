@@ -149,3 +149,15 @@ describe("proposed cases (IA-05)", () => {
     }
   });
 });
+
+describe("proposalCaseData › step text (NC-039)", () => {
+  it("continues each keyword in lower case, keeping names", () => {
+    const data = proposalCaseData(
+      { title: "T", description: "", priority: "high", given: ["El usuario está en el login"], when: ["Pulsar Ingresar"], then: ["Pharos muestra el panel"] },
+      "REQ-001",
+    );
+    expect(data.preconditions?.map((s) => (typeof s === "string" ? s : s.text))).toEqual(["el usuario está en el login"]);
+    expect(data.steps?.map((s) => (typeof s === "string" ? s : s.text))).toEqual(["pulsar Ingresar"]);
+    expect(data.expectedResult).toBe("Pharos muestra el panel");
+  });
+});

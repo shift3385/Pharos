@@ -88,7 +88,7 @@ describe("GenerateCasesModal (IA-05)", () => {
     expect(ai.generate).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole("button", { name: "Generate" }));
-    expect(await screen.findByText("Successful login")).toBeInTheDocument();
+    expect(await screen.findByRole("checkbox", { name: /Successful login/ })).toBeInTheDocument();
     expect(screen.getByText("AI · pending review")).toBeInTheDocument();
     expect(screen.queryByText(/claude-opus-5-5/)).not.toBeInTheDocument();
     await expectNoAxeViolations(); // the review list (UX-05)
@@ -127,7 +127,7 @@ describe("GenerateCasesModal (IA-05)", () => {
 
     ai.generate.mockResolvedValueOnce({ value: cases, provenance });
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByText("Locked account")).toBeInTheDocument();
+    expect(await screen.findByRole("checkbox", { name: /Locked account/ })).toBeInTheDocument();
     expect(ai.generate).toHaveBeenCalledTimes(2);
   }, UI_TIMEOUT);
 
@@ -144,7 +144,7 @@ describe("GenerateCasesModal (IA-05)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("1 case could not be saved. It is still selected");
     expect(onCreated).toHaveBeenCalledWith({ created: 1, failed: 1, failedIndexes: [1] });
     // The saved one is gone (no duplicates); the unchosen one stays unchosen.
-    expect(screen.queryByText("Successful login")).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /Successful login/ })).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /Locked account/ })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Wrong password/ })).not.toBeChecked();
 
@@ -212,4 +212,17 @@ describe("Trazabilidad — AI button on an uncovered requirement (IA-05)", () =>
     expect(screen.queryByText(/created and linked/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create 2 cases" })).toBeEnabled();
   }, UI_TIMEOUT);
+});
+
+describe("GenerateCasesModal › Gherkin preview (UX-23)", () => {
+  it("shows each proposal's Gherkin with the editor's colors", async () => {
+    ai.generate.mockResolvedValue({ value: cases, provenance });
+    renderModal();
+    await userEvent.click(screen.getByRole("button", { name: "Generate" }));
+    await screen.findByRole("checkbox", { name: /Successful login/ });
+    const code = document.querySelector(".tr-gen__gherkin .tc-gherkin pre.tc-gherkin__code");
+    expect(code).not.toBeNull();
+    expect(code!.querySelector(".token.keyword")).not.toBeNull();
+    expect(code!.textContent).toContain("When sign in");
+  });
 });

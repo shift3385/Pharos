@@ -111,6 +111,22 @@ escritorio se guardan con `requirement_risk_set` después de crear o editar; en
 la web van como claves opcionales (`riskLikelihood`, `riskImpact`: si faltan
 se conservan, `null` las borra). Las bandas por proyecto y la cobertura
 ponderada siguen en TRZ-04.
+Junto al título, el formulario muestra el resultado al momento con
+`riskOfRecord` (`model/matrix.ts`) y el mismo color que la matriz; las bandas
+van en el icono ⓘ (UX-23).
+
+## Presentación de las propuestas (UX-23)
+
+- `@shared/gherkin/stepText`: `stepText` pone en minúscula la primera palabra
+  tras una palabra clave cuando no es un nombre (NC-039); `criterionLines` parte
+  un criterio «Given a, when b, then c» en una línea por palabra clave.
+- La revisión pinta los criterios con `Criteria` (un bloque por criterio,
+  palabras clave en negrita) y `describedWithAcceptance` los guarda en la
+  descripción con una palabra clave por línea.
+- «Generar casos» usa `GherkinCode` (`@modules/test-cases`): los colores y el
+  aspecto del editor de casos.
+- «Requisitos desde diseños» muestra «Paso N de 2» y los segundos (fuera del
+  anuncio del lector de pantalla).
 
 ## `data-testid` estables (recorridos de MAN-01)
 

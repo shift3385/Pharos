@@ -2103,7 +2103,10 @@
       "sourceNotKept": "La imagen no se guardó en Pharos.",
       "sourcePurged": "La imagen se borró por la política de retención.",
       "sourceDesktopOnly": "Las imágenes guardadas solo se ven en la app de escritorio.",
-      "sourceOpen": "Ver {{name}} a tamaño completo"
+      "sourceOpen": "Ver {{name}} a tamaño completo",
+      "step": "Paso {{n}} de {{total}}",
+      "elapsed": "({{s}} s)",
+      "slowHint": "Suele tardar entre uno y dos minutos. Puedes seguir esperando: no se ha quedado colgado."
     },
     "io": {
       "label": "Importar / Exportar",
@@ -2128,8 +2131,9 @@
       "likelihood": "Probabilidad",
       "impact": "Impacto",
       "notAssessed": "Sin evaluar",
-      "hint": "Probabilidad × impacto, de 1 a 5 cada uno. Ordena la matriz por riesgo (bandas: hasta 4 bajo, hasta 12 medio, más alto).",
-      "level": "{{value}} de 5"
+      "hint": "Puntúa cada uno de 1 (muy baja) a 5 (muy alta).",
+      "level": "{{value}} de 5",
+      "bands": "Riesgo = probabilidad × impacto. Bajo: 1–4 · Medio: 5–12 · Alto: 13–25. La matriz de trazabilidad ordena los requisitos por este valor."
     },
     "result": {
       "runAt": "{{run}} · {{date}}",

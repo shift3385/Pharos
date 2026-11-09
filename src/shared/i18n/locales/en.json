@@ -2103,7 +2103,10 @@
       "sourceNotKept": "The image was not kept in Pharos.",
       "sourcePurged": "The image was removed by the retention policy.",
       "sourceDesktopOnly": "Kept images can only be seen in the desktop app.",
-      "sourceOpen": "View {{name}} full size"
+      "sourceOpen": "View {{name}} full size",
+      "step": "Step {{n}} of {{total}}",
+      "elapsed": "({{s}} s)",
+      "slowHint": "It usually takes one to two minutes. Keep waiting: it is not stuck."
     },
     "io": {
       "label": "Import / Export",
@@ -2128,8 +2131,9 @@
       "likelihood": "Likelihood",
       "impact": "Impact",
       "notAssessed": "Not assessed",
-      "hint": "Likelihood × impact, 1 to 5 each. Orders the matrix by risk (bands: up to 4 low, up to 12 medium, above high).",
-      "level": "{{value}} of 5"
+      "hint": "Score each from 1 (very low) to 5 (very high).",
+      "level": "{{value}} of 5",
+      "bands": "Risk = likelihood × impact. Low: 1–4 · Medium: 5–12 · High: 13–25. The traceability matrix sorts the requirements by this value."
     },
     "result": {
       "runAt": "{{run}} · {{date}}",

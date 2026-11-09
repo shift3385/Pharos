@@ -14,6 +14,16 @@ import {
 } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
 import { RequirementSources } from "./RequirementSources";
+import { Info } from "lucide-react";
+import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
+import { riskOfRecord, type RiskBand } from "../model/matrix";
+
+const RISK_TONE: Record<RiskBand, PillTone> = {
+  high: "error",
+  medium: "warning",
+  low: "success",
+  unassessed: "neutral",
+};
 import "./Traceability.css";
 
 export interface RequirementDraft {
@@ -56,6 +66,7 @@ export function RequirementFormModal({
     riskImpact: requirement?.riskImpact ?? null,
   }));
   const [draft, setDraft] = useState<RequirementDraft>(start);
+  const risk = riskOfRecord(draft);
   // Typed data is never thrown away without asking (draft rule, ADR-0027).
   const dirty = JSON.stringify(draft) !== JSON.stringify(start);
   // A Pharos confirmation, not the browser's (NC-017).
@@ -180,7 +191,27 @@ export function RequirementFormModal({
       )}
 
       <fieldset className="tr-risk">
-        <legend className="tp-field__label">{t("traceability.risk.label")}</legend>
+        <legend className="tp-field__label tr-risk__legend">
+          {t("traceability.risk.label")}
+          {/* UX-23: the result in sight, so nobody has to multiply. */}
+          <StatusPill tone={RISK_TONE[risk.riskBand]} className="tz-risk">
+            {risk.riskLevel === null
+              ? t("traceability.risk.band.unassessed")
+              : t("traceability.risk.badge", {
+                  level: risk.riskLevel,
+                  band: t(`traceability.risk.band.${risk.riskBand}`),
+                })}
+          </StatusPill>
+          <span
+            className="tr-risk__info"
+            tabIndex={0}
+            role="img"
+            title={t("traceability.risk.bands")}
+            aria-label={t("traceability.risk.bands")}
+          >
+            <Info size={15} aria-hidden="true" />
+          </span>
+        </legend>
         <p className="tp-field__hint" id={`${id}-risk-hint`}>
           {t("traceability.risk.hint")}
         </p>

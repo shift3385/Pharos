@@ -1033,3 +1033,73 @@
 .tz-prop__keep {
   margin-top: var(--space-3);
 }
+
+/* UX-23: easier to read proposals. More room between proposals, and each
+   acceptance criterion in its own block, one Gherkin keyword per line. */
+.tz-prop__items > .tr-gen__row {
+  padding: var(--space-3) 0;
+}
+.tz-prop__extra ul li {
+  padding: 3px 0;
+}
+.tz-criteria {
+  list-style: none;
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-3);
+  font-size: var(--fs-caption);
+  overflow-wrap: anywhere;
+}
+.tz-criteria__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+.tz-criteria__item:first-child {
+  border-top: 0;
+  padding-top: var(--space-1);
+}
+.tz-criteria__line--cont {
+  padding-left: var(--space-3);
+}
+.tz-criteria__kw {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
+/* UX-23: a long file name no longer runs over its note. */
+.tr-design__item .tr-gen__check {
+  min-width: 0;
+}
+.tr-design__item .tr-gen__check > span:last-child {
+  min-width: 0;
+}
+.tr-design__item .tr-gen__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* UX-23: the risk result next to its title. */
+.tr-risk__legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tr-risk__info {
+  display: inline-flex;
+  color: var(--color-text-secondary);
+  cursor: help;
+}
+.tr-risk__info:focus-visible {
+  outline: 2px solid var(--color-navy-500);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+.tr-gen__elapsed {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}

@@ -78,3 +78,18 @@ describe("RequirementProposalsReview › keep images (IA-19)", () => {
     expect(apply.mock.calls.at(-1)?.[0].afterSave).toBe(keepImages);
   });
 });
+
+describe("RequirementProposalsReview › acceptance criteria (UX-23)", () => {
+  it("shows each Gherkin criterion one keyword per line, the keyword in bold", async () => {
+    const withCriteria: RequirementProposal[] = [
+      { ...(proposals[0] as Extract<RequirementProposal, { action: "add" }>), acceptance: ["Given la pantalla de login, when se muestra, then existe un botón", "El botón está visible"] },
+    ];
+    renderWithProviders(<RequirementProposalsReview {...props} proposals={withCriteria} />);
+    const items = document.querySelectorAll(".tz-criteria__item");
+    expect(items).toHaveLength(2);
+    const kws = Array.from(items[0].querySelectorAll("strong.tz-criteria__kw")).map((k) => k.textContent);
+    expect(kws).toEqual(["Given", "When", "Then"]);
+    expect(items[0].textContent).toContain("Given la pantalla de login");
+    expect(items[1].querySelector("strong")).toBeNull();
+  });
+});

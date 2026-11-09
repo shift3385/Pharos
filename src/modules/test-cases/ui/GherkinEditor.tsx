@@ -6,6 +6,8 @@ import "prismjs/components/prism-gherkin";
 import { ArrowLeftRight, Copy, FileCode, PencilLine } from "lucide-react";
 import { useToast } from "@shared/ui/Toast";
 import "@shared/ui/buttons.css";
+import "./TestCase.css";
+import "./CaseList.css";
 
 // Keyword palette (spec §5.3 "autocompletado de palabras clave"): clicking a chip
 // inserts the keyword at the caret. Text includes the trailing space/colon so it
@@ -248,4 +250,16 @@ function useKeyboardInset(active: boolean): number {
     };
   }, [active]);
   return inset;
+}
+
+/** Read-only Gherkin with the editor's colors and console look (UX-23), for
+ *  previews outside the editor (e.g. «Generar casos desde un requisito»). */
+export function GherkinCode({ code, label }: { code: string; label?: string }) {
+  return (
+    <div className="tc-gherkin tc-gherkin--preview">
+      <pre className="tc-gherkin__code" tabIndex={0} aria-label={label}>
+        <code dangerouslySetInnerHTML={{ __html: highlight(code) }} />
+      </pre>
+    </div>
+  );
 }

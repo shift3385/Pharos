@@ -10,7 +10,7 @@ import {
   type GeneratedCase,
 } from "@modules/ai";
 import { useAuth } from "@modules/auth";
-import { createProposedCases, proposalGherkin, type CreateProposedCasesResult } from "@modules/test-cases";
+import { GherkinCode, createProposedCases, proposalGherkin, type CreateProposedCasesResult } from "@modules/test-cases";
 import type { Requirement } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
 import "./Traceability.css";
@@ -172,7 +172,7 @@ export function GenerateCasesModal({
                 </label>
                 <details className="tr-gen__gherkin">
                   <summary>{t("traceability.generate.gherkin")}</summary>
-                  <pre>{proposalGherkin(c, key)}</pre>
+                  <GherkinCode code={proposalGherkin(c, key)} label={t("traceability.generate.gherkin")} />
                 </details>
               </li>
             ))}
