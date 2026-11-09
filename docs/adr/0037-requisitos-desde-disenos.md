@@ -95,3 +95,27 @@
     unos 28 px por token de lado y unos 2 000 tokens por página de PDF.
   - En la web solo funciona con un modelo de visión de Ollama hasta que llegue IA-12.
   - Los PDF no van a Ollama: hay que exportar las páginas como imágenes.
+
+## Enmienda IA-19 (2026-11-09) · Guardar la imagen de la fuente, si se pide
+
+- **Contexto:** el usuario quería ver, desde un requisito ya guardado, la imagen de la
+  que salió; con solo el nombre y la huella no podía. Aprobó (2026-11-09) hacerlo
+  opcional para no romper la decisión de privacidad.
+- **Decisión:**
+  - Al aplicar las propuestas, la casilla «Guardar las imágenes como adjunto de los
+    requisitos» empieza **desmarcada**: sin marcarla, Pharos sigue sin guardar imágenes.
+  - Marcada, cada requisito creado o mejorado recibe como adjunto (`owner_entity =
+    'requirement'`, tabla común `attachments`, almacén de evidencias cifrado,
+    ADR-0014) la imagen **que leyó la IA** (la reducida), con el nombre de su fuente.
+    Una imagen citada por varios requisitos se guarda una vez en el almacén (por su
+    SHA-256) y una fila por requisito.
+  - «Fuente» la encuentra por el nombre y muestra la miniatura con la región; al
+    pulsarla, el visor a tamaño completo. Si no se guardó, lo dice.
+  - Solo escritorio, como el resto de adjuntos (SYNC-04b): en la web, «Fuente» avisa de
+    que las imágenes se ven en la app de escritorio. No se sincronizan.
+  - Un fallo al guardar la imagen no deshace el requisito: se avisa aparte.
+  - Borrar el requisito para siempre (purga) borra sus filas; el archivo se va con la
+    siguiente recogida de evidencias. «Evidencias» las cuenta como «Requisitos».
+- **Consecuencias:** comandos `requirement_attachment_add`, `_list` y `_preview`;
+  `applyRequirementProposals` acepta `afterSave` y cuenta `attachFailed`.
+

@@ -132,3 +132,37 @@ describe("applyRequirementProposals", () => {
     expect(api.remove.mock.calls.map((c) => c[0])).toEqual(["id-REQ-002", "id-REQ-003"]);
   });
 });
+
+describe("applyRequirementProposals › afterSave (IA-19)", () => {
+  const add = (id: number): RequirementProposal => ({
+    id,
+    action: "add",
+    title: `R${id}`,
+    description: "d",
+    priority: "medium",
+    reason: "r",
+    acceptance: [],
+    sources: [{ kind: "image", name: "boceto.jpg", index: 1 }],
+  });
+
+  it("runs after each requirement created, with the saved requirement", async () => {
+    const api = fakeApi([]);
+    const afterSave = vi.fn(async (_p: RequirementProposal, _saved: Requirement) => undefined);
+    const r = await applyRequirementProposals({ ...base, accepted: [add(0), add(1)], existing: [], afterSave }, api);
+    expect(afterSave).toHaveBeenCalledTimes(2);
+    expect(afterSave.mock.calls[0][1]).toMatchObject({ title: "R0" });
+    expect(r.created).toBe(2);
+    expect(r.attachFailed).toBeUndefined();
+  });
+
+  it("a failure keeps the requirement and is counted apart", async () => {
+    const api = fakeApi([]);
+    const afterSave = vi.fn(async () => {
+      throw new Error("disk");
+    });
+    const r = await applyRequirementProposals({ ...base, accepted: [add(0)], existing: [], afterSave }, api);
+    expect(r.created).toBe(1);
+    expect(r.failed).toEqual([]);
+    expect(r.attachFailed).toBe(1);
+  });
+});

@@ -565,6 +565,7 @@
       "owners": {
         "planner_card": "Board",
         "defect": "Defects",
+        "requirement": "Requirements",
         "test_case": "Test cases",
         "run_shard": "Run reports",
         "result": "Results",
@@ -2094,7 +2095,15 @@
         "unreadable": "{{name}}: it could not be read.",
         "too-many-pages": "{{name}}: it has too many pages; export only the ones that matter.",
         "too-many-files": "The folder has too many files: only the first ones are read."
-      }
+      },
+      "keepImages": "Keep the images as attachments of the requirements",
+      "keepImagesHint": "So you can see later the image each requirement comes from. They are stored encrypted in this computer's evidence store.",
+      "keepImagesFailed_one": "The requirements were saved, but {{count}} image could not be kept.",
+      "keepImagesFailed_other": "The requirements were saved, but {{count}} images could not be kept.",
+      "sourceNotKept": "The image was not kept in Pharos.",
+      "sourcePurged": "The image was removed by the retention policy.",
+      "sourceDesktopOnly": "Kept images can only be seen in the desktop app.",
+      "sourceOpen": "View {{name}} full size"
     },
     "io": {
       "label": "Import / Export",

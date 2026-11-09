@@ -992,3 +992,44 @@
   border-radius: 2px;
   box-sizing: border-box;
 }
+
+/* IA-19: kept source images in a requirement's «Fuente». */
+.tr-sources {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tr-sources .tr-gen__desc {
+  display: block;
+}
+.tr-design__open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: zoom-in;
+}
+.tr-design__open:focus-visible {
+  outline: 2px solid var(--color-focus, var(--color-navy-500));
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.tr-design__full {
+  max-height: 70vh;
+  overflow: auto;
+}
+.tr-design__canvas {
+  position: relative;
+}
+.tr-design__full img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tz-prop__keep {
+  margin-top: var(--space-3);
+}

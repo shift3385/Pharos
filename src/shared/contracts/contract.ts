@@ -88,6 +88,7 @@ export type * from "./generated/ReportImportPreview";
 export type * from "./generated/ReportImportRequest";
 export type * from "./generated/ReportImportWarning";
 export type * from "./generated/Requirement";
+export type * from "./generated/RequirementAttachment";
 export type * from "./generated/RequirementExecution";
 export type * from "./generated/RequirementImportRow";
 export type * from "./generated/RequirementInput";

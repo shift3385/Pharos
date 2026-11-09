@@ -31,6 +31,8 @@ import type {
 import { usableRequirementProposals } from "../proposals/proposals";
 import { RequirementProposalsReview } from "./RequirementProposalsReview";
 import { DesignSourceLabel } from "./DesignSourceLabel";
+import { useAuth } from "@modules/auth";
+import { imageBlob, requirementAttachments } from "../api/requirementAttachments";
 import { promptItems, toCandidates } from "../fromDesign/candidates";
 import {
   readMaterial,
@@ -91,6 +93,7 @@ export function RequirementsFromDesignModal({
   reduce?: (blob: Blob) => Promise<ReducedImage>;
 }) {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const id = useId();
   const [phase, setPhase] = useState<Phase>("material");
   const [items, setItems] = useState<MaterialItem[]>([]);
@@ -289,9 +292,14 @@ export function RequirementsFromDesignModal({
           sourceLabel={(s) => (
             <DesignSourceLabel source={s} sent={extracted.sent} />
           )}
+          keepImages={
+            requirementAttachments.available()
+              ? (p, saved) => keepSourceImages(p, saved, extracted.sent, user?.id ?? "")
+              : undefined
+          }
           onApplied={(r) => {
             onApplied(r);
-            if (!r.failed.length) onClose();
+            if (!r.failed.length && !r.attachFailed) onClose();
           }}
           onClose={onClose}
         />
@@ -564,4 +572,26 @@ export function RequirementsFromDesignModal({
       )}
     </Dialog>
   );
+}
+
+/** IA-19: keeps each image a requirement came from as its attachment, the
+ *  same image the AI read (reduced), named as its source so «Fuente» finds
+ *  it. Images only; one copy per image even if cited twice. */
+async function keepSourceImages(
+  p: RequirementProposal,
+  saved: Requirement,
+  sent: MaterialItem[],
+  userId: string,
+): Promise<void> {
+  if (p.action !== "add" && p.action !== "improve") return;
+  const done = new Set<number>();
+  const kept = new Set((await requirementAttachments.list(saved.id, userId)).map((a) => a.name));
+  for (const s of p.sources ?? []) {
+    if (s.kind !== "image" || done.has(s.index)) continue;
+    done.add(s.index);
+    const item = sent[s.index - 1];
+    const image = item?.kind === "image" ? item.attachment : undefined;
+    if (!image || !image.mediaType.startsWith("image/") || kept.has(s.name)) continue;
+    await requirementAttachments.add(saved.id, userId, s.name, imageBlob(image.mediaType, image.data));
+  }
 }

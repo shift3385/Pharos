@@ -115,6 +115,15 @@ se publica:
       no:* el análisis necesita una clave real y un modelo de visión. Lo cubren
       además `RequirementsFromDesignModal.test.tsx`, los tests de
       `fromDesign/` y los de Rust de `ai.rs`.
+- [ ] **Guardar la imagen de la fuente (IA-19)** (Requisitos → «Importar» →
+      «Requisitos desde diseños», en la app de escritorio): aplicar con
+      «Guardar las imágenes como adjunto de los requisitos» marcada; en
+      «Editar requisito › Fuente» se ve la miniatura con la zona y, al pulsarla,
+      la imagen a tamaño completo; sin marcarla, dice «La imagen no se guardó
+      en Pharos.»; «Evidencias» la cuenta en «Requisitos». *Por qué no:* necesita
+      una clave real y un modelo de visión. Lo cubren además
+      `RequirementSources.test.tsx` y los tests de Rust de
+      `requirement_attachments.rs`.
 - [ ] **Versión web** (`npm run dev`, navegador): el aviso de cambios
       antiguos sin enviar («Descargar» / «Descartar»), la ejecución sin archivos
       («Los adjuntos solo están disponibles en el escritorio», borrador en el navegador) y los
