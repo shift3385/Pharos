@@ -188,6 +188,37 @@ pub(crate) fn set(
     Ok(true)
 }
 
+/// Copies the retention of every kind from one project to another, both
+/// owned by the user (UX-25, «Copiar ajustes de…» when a project is
+/// created): the kinds the source left at the default go back to the default
+/// in the target, the others take the source's setting. A one-time copy: the
+/// two projects stay independent. One `update` event per kind that changed.
+/// Returns how many kinds changed.
+pub(crate) fn copy(
+    conn: &Connection,
+    from_project_id: &str,
+    to_project_id: &str,
+    user: &str,
+) -> Result<usize, String> {
+    owns(conn, from_project_id, user)?;
+    owns(conn, to_project_id, user)?;
+    if from_project_id == to_project_id {
+        return Ok(0);
+    }
+    let mut changed = 0;
+    for (kind, _) in DEFAULT_RETENTION {
+        let policy = match stored(conn, from_project_id, kind)? {
+            None => RetentionPolicy::Default,
+            Some(None) => RetentionPolicy::Always,
+            Some(Some(days)) => RetentionPolicy::Days { days },
+        };
+        if set(conn, to_project_id, kind, &policy, user)? {
+            changed += 1;
+        }
+    }
+    Ok(changed)
+}
+
 // ---- exceptions -------------------------------------------------------------
 
 /// What `exempt` already read during one expiry pass.
@@ -635,4 +666,20 @@ pub fn evidence_retention_set(
         db.persist()?;
     }
     db.with_conn(|conn| get(conn, &project_id, &user_id))
+}
+
+/// Copies the retention of one project to another (UX-25); returns how many
+/// kinds changed. All or nothing: one transaction.
+#[tauri::command]
+pub fn evidence_retention_copy(
+    db: State<Db>,
+    from_project_id: String,
+    to_project_id: String,
+    user_id: String,
+) -> Result<usize, String> {
+    let changed = db.with_tx(|conn| copy(conn, &from_project_id, &to_project_id, &user_id))?;
+    if changed > 0 {
+        db.persist()?;
+    }
+    Ok(changed)
 }

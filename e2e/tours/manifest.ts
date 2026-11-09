@@ -214,6 +214,7 @@ export const INVENTORY: Item[] = [
   I("proyectos", "action", "action:projects-export-all", "Exportar todos los proyectos (ZIP)"),
   I("proyectos", "state", "state:project-create-required", "Nombre obligatorio al crear un proyecto"),
   I("proyectos", "keyboard", "keyboard:project-create-enter", "Enter crea el proyecto"),
+  I("proyectos", "action", "action:project-create-copy-settings", "Copiar ajustes de otro proyecto al crear (UX-25)"),
   I("proyectos", "action", "action:projects-search", "Buscar proyectos"),
   I("proyectos", "action", "action:projects-sort", "Ordenar la lista de proyectos"),
   I("proyectos", "action", "action:projects-row-menu", "Menú de fila de un proyecto"),

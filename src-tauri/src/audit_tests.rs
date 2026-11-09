@@ -1157,6 +1157,7 @@ const AUDITED: &[&str] = &[
     "evidence::check::evidence_orphans_delete",
     // DAT-03c: a local setting, one event per change.
     "evidence::retention::evidence_retention_set",
+    "evidence::retention::evidence_retention_copy",
     "project::project_create",
     "project::project_update",
     "project::project_delete",
@@ -1600,6 +1601,11 @@ fn every_audited_command_leaves_an_event() {
             U,
         )
         .map(drop)
+    });
+    // UX-25: `p` now keeps traces 10 days; a new project takes that setting.
+    let retention_target = new_project(&c, U);
+    step("evidence::retention::evidence_retention_copy", &mut |tx| {
+        crate::evidence::retention::copy(tx, &p, &retention_target, U).map(drop)
     });
     step("runs::unlinked_mapping_set", &mut |tx| {
         crate::runs::set_mapping(tx, &p, "tests/a.spec.ts::x", None, U).map(drop)

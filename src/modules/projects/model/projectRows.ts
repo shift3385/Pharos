@@ -25,6 +25,7 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         name: p.name,
         caseIdPrefix: p.caseIdPrefix,
         caseIdDigits: p.caseIdDigits,
+        planExportHistory: p.planExportHistory,
         updatedAt: isoStamp(p.updatedAt),
         lastAccess: access[p.id] ?? null,
         planStatus: plan?.status ?? null,
