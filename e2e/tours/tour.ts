@@ -368,7 +368,7 @@ export const AI = {
   model: process.env.PHAROS_TOURS_AI_MODEL || "",
   /** Base URL of an OpenAI-compatible endpoint (provider "custom"). */
   baseUrl: process.env.PHAROS_TOURS_AI_BASE_URL || "",
-  maxCalls: Number(process.env.PHAROS_TOURS_AI_MAX_CALLS || 8),
+  maxCalls: Number(process.env.PHAROS_TOURS_AI_MAX_CALLS || 12),
 };
 export const AI_SKIP = AI.key
   ? undefined

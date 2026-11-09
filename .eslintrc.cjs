@@ -23,6 +23,8 @@ module.exports = {
     "coverage",
     "e2e/.bin",
     "e2e/results",
+    // Sample project read by «Requisitos desde un proyecto» (MAN-03).
+    "e2e/tours/fixtures/proyecto-billetera",
     ".eslintrc.cjs",
   ],
   rules: {

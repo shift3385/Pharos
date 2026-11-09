@@ -28,7 +28,7 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 14. [Ajustes del proyecto](14-ajustes.md) (11 pasos)
 15. [Administración](15-administracion.md) (16 pasos)
 16. [Evidencias](16-evidencias.md) (7 pasos)
-17. [Asistente de IA](17-ia.md) (10 pasos)
+17. [Asistente de IA](17-ia.md) (19 pasos)
 18. [Pantallas estrechas y móvil](18-movil.md) (6 pasos)
 19. [Si algo sale mal](19-errores.md) (4 pasos)
 

@@ -9,7 +9,10 @@ por tanto, lo que hay que comprobar. Cada requisito tiene:
 
 - un **ID estable** (`REQ-001`), que no cambia ni se reutiliza;
 - un título, una descripción y una prioridad;
-- un **riesgo** opcional: probabilidad × impacto, de 1 a 5 cada uno.
+- un **riesgo** opcional: la probabilidad y el impacto, de 1 (muy baja) a 5 (muy
+  alta) cada uno. Junto a «Riesgo» ves el resultado al momento, por ejemplo
+  «Riesgo 12 · Medio»; el icono ⓘ explica las bandas (bajo 1–4, medio 5–12,
+  alto 13–25), por las que la matriz ordena los requisitos.
 
 Los casos de prueba enlazan los requisitos (capítulo 8) y el ID viaja como tag
 (`@REQ-001`) en el Gherkin y en la automatización. Con esos vínculos, la
@@ -77,7 +80,7 @@ Si cierras el diálogo con cambios sin guardar («Cancelar», Esc o un clic fuer
 
 ### 7.8. Más formas de traer requisitos: la IA
 
-El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos con IA, que proponen requisitos para que tú decidas cuáles aplicar. «Requisitos desde un proyecto (IA)» lee la documentación y el código de una carpeta (solo en la app de escritorio); «Requisitos desde diseños» parte de capturas, bocetos, PDF o un proyecto de Claude Design. Sin un motor de IA configurado aparecen en gris, como aquí; el capítulo 17 los recorre con IA.
+El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos con IA, que proponen requisitos para que tú decidas cuáles aplicar. «Requisitos desde un proyecto (IA)» lee la documentación y el código de una carpeta (solo en la app de escritorio); «Requisitos desde diseños» parte de capturas, bocetos, PDF o un proyecto de Claude Design. Sin un motor de IA configurado aparecen en gris, como aquí. El capítulo 17 los recorre paso a paso, con la IA activa, en «Las tres formas de traer requisitos».
 
 ![Más formas de traer requisitos: la IA](img/requisitos/08-menu-importar.png)
 
@@ -100,8 +103,10 @@ En el móvil, cada requisito es una tarjeta con su ID, su título, su prioridad,
 ## Requisitos con IA
 
 Estos flujos necesitan un motor de IA configurado (capítulo 15). Sin él, sus
-entradas del menú y el botón ✨ aparecen en gris. El capítulo 17 los muestra
-paso a paso.
+entradas del menú y el botón ✨ aparecen en gris (apartado «Más formas de traer
+requisitos: la IA»). El capítulo 17 los muestra paso a paso con otro producto, la
+Billetera SafeGuard: «Las tres formas de traer requisitos», «Requisitos desde un
+proyecto» y «Requisitos desde diseños».
 
 - **✨ Generar casos desde un requisito** (en cada fila, y en la matriz):
   - La IA propone escenarios con su Gherkin.
@@ -124,13 +129,24 @@ paso a paso.
      Figma o Canva, exporta los frames como PNG o PDF.
   2. Añade una nota a cada imagen («alta, paso 2») y el contexto del producto:
      la IA acierta más.
-  3. «Analizar». Se envían como mucho 8 imágenes o PDF por análisis. Pharos no
-     guarda las imágenes: solo el nombre y la huella de cada archivo.
+  3. «Analizar». Se envían como mucho 8 imágenes o PDF por análisis. El
+     análisis tiene dos pasos («Paso 1 de 2 · Leyendo el material con IA…» y
+     «Paso 2 de 2 · Comparando…») y muestra los segundos que lleva: suele tardar
+     entre uno y dos minutos. Pharos no
+     guarda las imágenes: solo el nombre y la huella de cada archivo, salvo que
+     al aplicar marques «Guardar las imágenes como adjunto de los requisitos»
+     (solo en la app de escritorio).
+  4. Con la casilla marcada, «Editar requisito › Fuente» muestra la miniatura
+     de la imagen con la zona marcada; púlsala para verla a tamaño completo. Sin
+     marcarla, «Fuente» dice «La imagen no se guardó en Pharos.».
 - **La revisión de las propuestas**, común a las dos formas anteriores:
   - Las propuestas se agrupan en «Nuevos», «Mejoras», «Posibles duplicados» y
     «Eliminar por redundante». Los nuevos y las mejoras empiezan marcados.
   - Cada propuesta lleva su motivo y su fuente: el archivo y las líneas, o la
     imagen con la zona marcada.
+  - Los criterios de aceptación van uno por bloque. Los que siguen Gherkin se
+    leen una palabra clave por línea, en negrita (Given, When, Then, And, But),
+    y el texto sigue en minúscula: «Given el campo vacío».
   - «Escrito en la fuente» significa que el texto está ahí. «Inferido» es una
     deducción, que llega con sus supuestos y sus preguntas abiertas, para que
     la confirmes. Lo deducido solo del código puede ser un defecto: confírmalo

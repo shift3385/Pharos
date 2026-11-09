@@ -58,13 +58,13 @@
       ],
       "image": "acceso/02-idioma-entrada.png",
       "viewport": {
-        "height": 900,
-        "width": 1440
+        "height": 1009,
+        "width": 1920
       },
       "status": "passed",
       "focus": {
         "x": 48,
-        "y": 747,
+        "y": 856,
         "w": 233,
         "h": 117
       }
@@ -629,7 +629,7 @@
         "x": 1060,
         "y": 560,
         "w": 306,
-        "h": 104
+        "h": 143
       }
     },
     {
@@ -1253,7 +1253,7 @@
       "n": 20,
       "id": "revisiones",
       "title": "Revisiones del plan",
-      "caption": "Cada guardado crea una revisión, una copia fechada del plan. «Revisiones», en la cabecera (o «Ver todas» en el panel lateral, que enseña las tres últimas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.",
+      "caption": "Cada guardado crea una revisión, una copia fechada del plan. «Ver todas», en el panel «Revisiones» (que enseña las tres últimas, junto al formulario o debajo en pantallas estrechas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.",
       "covers": [
         "dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"
       ],
@@ -1299,7 +1299,7 @@
         "x": 1008,
         "y": 141,
         "w": 266,
-        "h": 278
+        "h": 217
       }
     },
     {
@@ -1633,7 +1633,7 @@
       "n": 8,
       "id": "menu-importar",
       "title": "Más formas de traer requisitos: la IA",
-      "caption": "El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos con IA, que proponen requisitos para que tú decidas cuáles aplicar. «Requisitos desde un proyecto (IA)» lee la documentación y el código de una carpeta (solo en la app de escritorio); «Requisitos desde diseños» parte de capturas, bocetos, PDF o un proyecto de Claude Design. Sin un motor de IA configurado aparecen en gris, como aquí; el capítulo 17 los recorre con IA.",
+      "caption": "El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos con IA, que proponen requisitos para que tú decidas cuáles aplicar. «Requisitos desde un proyecto (IA)» lee la documentación y el código de una carpeta (solo en la app de escritorio); «Requisitos desde diseños» parte de capturas, bocetos, PDF o un proyecto de Claude Design. Sin un motor de IA configurado aparecen en gris, como aquí. El capítulo 17 los recorre paso a paso, con la IA activa, en «Las tres formas de traer requisitos».",
       "covers": [
         "action:requirements-import-menu"
       ],
@@ -3851,13 +3851,11 @@
     {
       "chapter": "ia",
       "n": 4,
-      "id": "asistir",
-      "title": "«Asistir con IA» en un campo",
-      "caption": "En los campos de texto del plan, el botón de IA (✨, «Asistir con IA») propone un borrador breve a partir del resto del plan, con lo que pide el syllabus ISTQB para esa sección. En «Conclusión», valora el plan frente a sus objetivos y criterios de salida, y no inventa resultados. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
-      "covers": [
-        "ai:assist-field"
-      ],
-      "image": "ia/04-asistir.png",
+      "id": "billetera-csv",
+      "title": "Otro producto: importar sus requisitos (.csv)",
+      "caption": "Liomar prueba también la Billetera SafeGuard, una app de billetera digital. Crea su proyecto («Billetera SafeGuard») y, en «Requisitos», trae los que ya tenía en una hoja de cálculo con «Importar › Importar requisitos (.csv)» (capítulo 7). La vista previa muestra los cinco antes de crearlos.",
+      "covers": [],
+      "image": "ia/04-billetera-csv.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3867,11 +3865,156 @@
     {
       "chapter": "ia",
       "n": 5,
+      "id": "importar-menu-ia",
+      "title": "Las tres formas de traer requisitos",
+      "caption": "Con un motor de IA configurado, el menú «Importar» de «Requisitos» tiene sus tres opciones activas: «Importar requisitos (.csv)» crea o actualiza requisitos por su ID; «Requisitos desde un proyecto (IA)» propone requisitos a partir de la documentación y el código de una carpeta (solo en la app de escritorio); y «Requisitos desde diseños» los propone a partir de capturas, bocetos, PDF, un dibujo de Excalidraw o un proyecto de Claude Design. Con las de IA, nada se crea hasta que revisas y aplicas las propuestas.",
+      "covers": [
+        "action:requirements-import-menu-ai"
+      ],
+      "image": "ia/05-importar-menu-ia.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed",
+      "focus": {
+        "x": 1139,
+        "y": 157,
+        "w": 286,
+        "h": 199
+      }
+    },
+    {
+      "chapter": "ia",
+      "n": 6,
+      "id": "desde-proyecto",
+      "title": "Requisitos desde un proyecto: la carpeta",
+      "caption": "«Requisitos desde un proyecto (IA)» abre su diálogo; «Elegir carpeta…» abre el selector de carpetas de Windows. Elige la carpeta de un proyecto en marcha o de su documentación: aquí, la de la Billetera SafeGuard, con su README, dos documentos y algo de código y de pruebas. Pharos lista lo que leería, agrupado por tipo, sin enviar nada todavía. Desmarca lo que no quieras enviar; las dependencias, los builds, los archivos ocultos, los binarios y los archivos con secretos nunca se envían. Abajo ves cuántos archivos, cuántos tokens (aproximados) y cuántas llamadas a la IA supone, y puedes ajustar el presupuesto y añadir un contexto («p. ej. tienda online, rol cliente»).",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/ProjectRequirementsModal.tsx"
+      ],
+      "image": "ia/06-desde-proyecto.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 7,
+      "id": "desde-proyecto-enviar",
+      "title": "Antes de enviar",
+      "caption": "«Continuar» resume lo que saldrá del equipo: cuántos archivos, unos cuántos tokens y en cuántas llamadas, y a qué proveedor van. Las líneas con aspecto de secreto (claves, tokens) se sustituyen por «[secreto omitido]» antes de enviar. «Volver» te deja cambiar la selección; «Enviar y analizar» empieza.",
+      "covers": [],
+      "image": "ia/07-desde-proyecto-enviar.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 8,
+      "id": "desde-proyecto-propuestas",
+      "title": "Las propuestas desde el proyecto",
+      "caption": "La IA lee los archivos por lotes («Analizando: lote 1 de 1…»; «Detener» para) y compara lo que encuentra con los requisitos que ya tiene el proyecto. Propone requisitos nuevos, mejoras de los que ya existen, posibles duplicados y requisitos que sobran, cada uno con su motivo, su fuente (el archivo y las líneas) y sus criterios de aceptación. «Escrito en la fuente» es lo que el material dice; «Inferido», una deducción con sus supuestos y sus preguntas abiertas, para que la confirmes. Marca lo que quieras y pulsa «Aplicar N cambios»: lo aplicado queda «IA · pendiente de revisión».",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/RequirementProposalsReview.tsx"
+      ],
+      "image": "ia/08-desde-proyecto-propuestas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 9,
+      "id": "desde-disenos",
+      "title": "Requisitos desde diseños: el material",
+      "caption": "Tras aplicar, «Importar › Requisitos desde diseños» parte de lo que se ve: capturas, bocetos, PDF, un dibujo de Excalidraw o la carpeta o el ZIP de un proyecto de Claude Design (desde Figma o Canva, exporta los frames como PNG o PDF). Arrástralos, pega una captura con Ctrl+V o usa «Elegir archivos» o «Elegir carpeta». Aquí, el boceto a mano de dos pantallas de la billetera: el acceso y el inicio. Cada imagen muestra su tamaño y una estimación de tokens; añádele una nota («alta, paso 2») y escribe el contexto del producto: la IA acierta más. Se envían como mucho 8 imágenes o PDF por análisis, y el aviso dice a qué proveedor van.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx",
+        "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx"
+      ],
+      "image": "ia/09-desde-disenos.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 10,
+      "id": "desde-disenos-analizando",
+      "title": "Analizar: dos pasos",
+      "caption": "«Analizar» envía el material. El análisis tiene dos pasos: primero la IA lee las imágenes («Paso 1 de 2 · Leyendo el material con IA…») y después compara lo que encontró con los requisitos del proyecto («Paso 2 de 2»). Al lado ves los segundos que lleva: suele tardar uno o dos minutos, no se ha quedado colgado. «Cancelar» lo deja.",
+      "covers": [],
+      "image": "ia/10-desde-disenos-analizando.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 11,
+      "id": "desde-disenos-propuestas",
+      "title": "Las propuestas desde el boceto",
+      "caption": "Las propuestas se revisan igual que las de un proyecto. La fuente de cada una es la imagen, con un recuadro en la zona de la que sale el requisito. Los criterios de aceptación van uno por bloque y, si siguen Gherkin, con una palabra clave por línea en negrita (Given, When, Then). Abajo, «Guardar las imágenes como adjunto de los requisitos» (desmarcada: Pharos no guarda las imágenes salvo que lo pidas) las guarda cifradas junto a cada requisito, para verlas después.",
+      "covers": [],
+      "image": "ia/11-desde-disenos-propuestas.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 12,
+      "id": "fuente-imagen",
+      "title": "La imagen de la que sale un requisito",
+      "caption": "Con la casilla marcada, abre un requisito («Editar requisito») y despliega «Fuente»: verás la miniatura de la imagen con la zona marcada. Púlsala para verla a tamaño completo; «Cerrar» o Esc vuelven. Si no se guardó, «Fuente» lo dice («La imagen no se guardó en Pharos.»). Las imágenes guardadas cuentan en «Administración › Evidencias» como «Requisitos» y solo se ven en la app de escritorio.",
+      "covers": [
+        "dialogs:src/modules/traceability/ui/RequirementSources.tsx"
+      ],
+      "image": "ia/12-fuente-imagen.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 13,
+      "id": "asistir",
+      "title": "«Asistir con IA» en un campo",
+      "caption": "En los campos de texto del plan, el botón de IA (✨, «Asistir con IA») propone un borrador breve a partir del resto del plan, con lo que pide el syllabus ISTQB para esa sección. En «Conclusión», valora el plan frente a sus objetivos y criterios de salida, y no inventa resultados. Revisa el «Borrador de la IA» y pulsa «Usar» o «Descartar»: nada se aplica solo, y lo aceptado queda marcado como generado por IA.",
+      "covers": [
+        "ai:assist-field"
+      ],
+      "image": "ia/13-asistir.png",
+      "viewport": {
+        "height": 900,
+        "width": 1440
+      },
+      "status": "passed"
+    },
+    {
+      "chapter": "ia",
+      "n": 14,
       "id": "borrador-usado",
       "title": "Lo que escribió la IA queda marcado",
       "caption": "«Usar» pasa el borrador al campo, donde puedes corregirlo como cualquier texto; se guarda con el plan («Guardar»). Junto al campo queda la marca «IA · pendiente de revisión» hasta que alguien lo lea y pulse «Marcar revisado». Al pasar el cursor por la marca se ve qué proveedor y qué modelo lo generaron (en este ejemplo, Claude y su modelo): así se sabe, también después, qué IA escribió cada cosa.",
       "covers": [],
-      "image": "ia/05-borrador-usado.png",
+      "image": "ia/14-borrador-usado.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3886,14 +4029,14 @@
     },
     {
       "chapter": "ia",
-      "n": 6,
+      "n": 15,
       "id": "riesgos",
       "title": "Sugerir riesgos",
       "caption": "En «Riesgos y mitigación», «Sugerir riesgos con IA» propone riesgos con su mitigación, un buen punto de partida que conviene revisar: marca los que te sirvan y pulsa «Añadir».",
       "covers": [
         "ai:suggest-risks"
       ],
-      "image": "ia/06-riesgos.png",
+      "image": "ia/15-riesgos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3902,14 +4045,14 @@
     },
     {
       "chapter": "ia",
-      "n": 7,
+      "n": 16,
       "id": "generar-casos",
       "title": "Generar casos desde un requisito",
       "caption": "En «Requisitos», el botón de IA de un requisito propone escenarios Gherkin y casos para él. Revisa cada propuesta («Ver Gherkin»), marca las buenas y pulsa «Crear N casos»: quedan vinculados al requisito.",
       "covers": [
         "dialogs:src/modules/traceability/ui/GenerateCasesModal.tsx"
       ],
-      "image": "ia/07-generar-casos.png",
+      "image": "ia/16-generar-casos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3918,14 +4061,14 @@
     },
     {
       "chapter": "ia",
-      "n": 8,
+      "n": 17,
       "id": "sugerir-casos",
       "title": "Sugerir casos a partir del plan",
       "caption": "En «Casos de prueba», «Sugerir casos con IA» propone casos según los tipos y niveles del plan (capítulo 5); elige los que quieras crear y revísalos como cualquier otro caso.",
       "covers": [
         "dialogs:src/modules/test-cases/ui/SuggestTestsModal.tsx"
       ],
-      "image": "ia/08-sugerir-casos.png",
+      "image": "ia/17-sugerir-casos.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3934,14 +4077,14 @@
     },
     {
       "chapter": "ia",
-      "n": 9,
+      "n": 18,
       "id": "precondiciones",
       "title": "Sugerir y revisar el caso con IA",
       "caption": "En el editor de un caso, cada lista tiene su botón de IA (✨) junto a su título; su nombre aparece al pasar el cursor. «Sugerir precondiciones» las propone a partir del resto del caso, y con la lista ya escrita pasa a «Revisar precondiciones». Igual en pasos, postcondiciones y criterios, en cada flujo de un caso avanzado y en las comprobaciones de una checklist. La revisión propone añadir, reformular o eliminar, y cada propuesta dice por qué. Reformular y eliminar empiezan sin marcar: solo se aplican si los marcas. Datos de prueba y Notas no llevan IA.",
       "covers": [
         "ai:suggest-preconditions"
       ],
-      "image": "ia/09-precondiciones.png",
+      "image": "ia/18-precondiciones.png",
       "viewport": {
         "height": 900,
         "width": 1440
@@ -3950,7 +4093,7 @@
     },
     {
       "chapter": "ia",
-      "n": 10,
+      "n": 19,
       "id": "borrar-clave",
       "title": "Borrar la clave",
       "caption": "«Borrar clave» la quita del almacén de credenciales, por ejemplo, si cambias de cuenta o vas a dejar el equipo; la IA vuelve a quedar sin configurar.",
@@ -4082,8 +4225,8 @@
       "covers": [],
       "image": null,
       "viewport": {
-        "height": 800,
-        "width": 1280
+        "height": 900,
+        "width": 1440
       },
       "status": "passed"
     },

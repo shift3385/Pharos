@@ -54,8 +54,10 @@ sin conexión e imprimir el plan, este último descartado después.
 ## Requisitos con IA
 
 Estos flujos necesitan un motor de IA configurado (capítulo 15). Sin él, sus
-entradas del menú y el botón ✨ aparecen en gris. El capítulo 17 los muestra
-paso a paso.
+entradas del menú y el botón ✨ aparecen en gris (apartado «Más formas de traer
+requisitos: la IA»). El capítulo 17 los muestra paso a paso con otro producto, la
+Billetera SafeGuard: «Las tres formas de traer requisitos», «Requisitos desde un
+proyecto» y «Requisitos desde diseños».
 
 - **✨ Generar casos desde un requisito** (en cada fila, y en la matriz):
   - La IA propone escenarios con su Gherkin.

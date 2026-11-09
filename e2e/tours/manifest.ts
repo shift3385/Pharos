@@ -423,22 +423,13 @@ export const INVENTORY: Item[] = [
   I("ia", "action", "ai:suggest-risks", "Sugerir riesgos con IA"),
   I("ia", "dialog", "dialogs:src/modules/traceability/ui/GenerateCasesModal.tsx", "Generar casos desde un requisito con IA"),
   I("ia", "dialog", "dialogs:src/modules/test-cases/ui/SuggestTestsModal.tsx", "Sugerir casos con IA"),
-  I("ia", "dialog", "dialogs:src/modules/traceability/ui/ProjectRequirementsModal.tsx", "Requisitos desde un proyecto con IA (IA-17)", {
-    skip: "«Elegir carpeta…» abre el selector de carpetas nativo de Windows (rfd, desde Rust), fuera de la WebView que WebDriver maneja, y el análisis necesita una clave de IA real. Lo cubren ProjectRequirementsModal.test.tsx (inventario, aviso de envío, lotes, propuestas y aplicar), los tests de Rust de project_scan.rs y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
-  }),
-  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementProposalsReview.tsx", "Revisar las propuestas de requisitos de la IA (IA-17, IA-18)", {
-    skip: "Solo se llega desde «Requisitos desde un proyecto» (selector nativo y clave de IA real, arriba) o desde las imágenes de IA-18. Lo cubren ProjectRequirementsModal.test.tsx, applyProposals.test.ts y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
-  }),
+  I("ia", "dialog", "dialogs:src/modules/traceability/ui/ProjectRequirementsModal.tsx", "Requisitos desde un proyecto con IA (IA-17)"),
+  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementProposalsReview.tsx", "Revisar las propuestas de requisitos de la IA (IA-17, IA-18)"),
   I("ia", "action", "ai:suggest-preconditions", "Sugerir y revisar las listas del caso con IA"),
-  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: material", {
-    skip: "El análisis necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementsFromDesignModal.test.tsx (material, límites, visión, aviso de envío, síntesis y aplicar), los tests de fromDesign/ y de ai.rs, y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
-  }),
-  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementSources.tsx", "Fuente de un requisito: la imagen guardada a tamaño completo (IA-19)", {
-    skip: "Solo hay imagen guardada tras aplicar «Requisitos desde diseños» con la casilla marcada, y eso necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementSources.test.tsx (miniatura, región, visor y avisos), RequirementProposalsReview.keep.test.tsx, applyProposals.test.ts, los tests de Rust de requirement_attachments.rs y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
-  }),
-  I("ia", "upload", "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: archivos, carpeta y Ctrl+V", {
-    skip: "El análisis necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementsFromDesignModal.test.tsx (material, límites, visión, aviso de envío, síntesis y aplicar), los tests de fromDesign/ y de ai.rs, y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
-  }),
+  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: material"),
+  I("ia", "action", "action:requirements-import-menu-ai", "Menú «Importar» de Requisitos con las tres opciones activas (con IA)"),
+  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementSources.tsx", "Fuente de un requisito: la imagen guardada a tamaño completo (IA-19)"),
+  I("ia", "upload", "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: archivos, carpeta y Ctrl+V"),
   I("ia", "state", "ai:disabled-without-key", "Botones de IA deshabilitados sin configurar"),
 
   // ---- 12 · Móvil -------------------------------------------------------------------------

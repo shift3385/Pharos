@@ -7,7 +7,20 @@
     "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework"]
+    "types": [
+      "node",
+      "@wdio/globals/types",
+      "@wdio/mocha-framework"
+    ]
   },
-  "include": ["wdio.conf.ts", "wdio.tours.conf.ts", "support.ts", "specs/**/*.ts", "tours/**/*.ts"]
+  "include": [
+    "wdio.conf.ts",
+    "wdio.tours.conf.ts",
+    "support.ts",
+    "specs/**/*.ts",
+    "tours/**/*.ts"
+  ],
+  "exclude": [
+    "tours/fixtures/**"
+  ]
 }

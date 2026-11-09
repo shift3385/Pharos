@@ -126,13 +126,16 @@ pub(crate) fn list_attachments(
     rows.collect::<rusqlite::Result<_>>().map_err(err)
 }
 
+/// (mime, size, sha256, purged) of an attachment.
+type OwnedAttachment = (Option<String>, i64, String, bool);
+
 /// (mime, size, sha256, purged) of a live attachment of a live requirement
 /// the user owns.
 fn owned_attachment(
     conn: &Connection,
     id: &str,
     user: &str,
-) -> Result<Option<(Option<String>, i64, String, bool)>, String> {
+) -> Result<Option<OwnedAttachment>, String> {
     conn.query_row(
         "SELECT a.mime, a.size, a.sha256, a.blob_purged_at IS NOT NULL
            FROM attachments a JOIN requirements r ON r.id = a.owner_id
@@ -269,7 +272,16 @@ mod tests {
     #[test]
     fn an_attachment_belongs_to_its_requirement_and_owner() {
         let c = conn();
-        add_attachment(&c, "a1", "r1", USER, "boceto.webp", Some("image/webp"), &stored("s1")).unwrap();
+        add_attachment(
+            &c,
+            "a1",
+            "r1",
+            USER,
+            "boceto.webp",
+            Some("image/webp"),
+            &stored("s1"),
+        )
+        .unwrap();
         let list = list_attachments(&c, "r1", USER).unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].name, "boceto.webp");
@@ -284,9 +296,21 @@ mod tests {
     #[test]
     fn a_deleted_requirement_has_no_attachments() {
         let c = conn();
-        add_attachment(&c, "a1", "r1", USER, "boceto.webp", Some("image/webp"), &stored("s1")).unwrap();
-        c.execute("UPDATE requirements SET deleted_at = datetime('now') WHERE id = 'r1'", [])
-            .unwrap();
+        add_attachment(
+            &c,
+            "a1",
+            "r1",
+            USER,
+            "boceto.webp",
+            Some("image/webp"),
+            &stored("s1"),
+        )
+        .unwrap();
+        c.execute(
+            "UPDATE requirements SET deleted_at = datetime('now') WHERE id = 'r1'",
+            [],
+        )
+        .unwrap();
         assert!(list_attachments(&c, "r1", USER).unwrap().is_empty());
         assert!(owned_attachment(&c, "a1", USER).unwrap().is_none());
     }

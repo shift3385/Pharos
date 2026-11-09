@@ -482,6 +482,16 @@ fn scan_folder(scans: &ProjectScans, picked: &Path) -> Result<ScanInventory, Str
     })
 }
 
+/// The folder a test run picks instead of the person (`PHAROS_E2E_PICK_FOLDER`),
+/// only with an e2e profile, which only a debug build honours: a release build
+/// always asks the person.
+fn e2e_pick_folder() -> Option<std::path::PathBuf> {
+    crate::instance::e2e_profile()?;
+    let folder = std::env::var("PHAROS_E2E_PICK_FOLDER").ok()?;
+    let path = std::path::PathBuf::from(folder);
+    path.is_dir().then_some(path)
+}
+
 /// Opens the native folder picker and returns the inventory of the folder
 /// (None when the person cancels). Nothing is read beyond the first bytes.
 #[cfg(windows)]
@@ -490,6 +500,11 @@ pub async fn project_scan_pick(
     window: tauri::WebviewWindow,
     scans: State<'_, ProjectScans>,
 ) -> Result<Option<ScanInventory>, String> {
+    // The guided tours (MAN-03) cannot drive Windows' own folder picker:
+    // a test run of a debug build (an e2e profile) may name the folder.
+    if let Some(folder) = e2e_pick_folder() {
+        return scan_folder(scans.inner(), &folder).map(Some);
+    }
     let dialog = rfd::AsyncFileDialog::new().set_parent(&window);
     let Some(picked) = dialog.pick_folder().await else {
         return Ok(None);
