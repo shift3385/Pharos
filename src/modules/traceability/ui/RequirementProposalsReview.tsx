@@ -14,6 +14,7 @@ import {
 } from "../model/types";
 import { blockedByLinks, deletedKeys } from "../proposals/proposals";
 import { defaultSourceLabel } from "./sourceLabel";
+import { criterionLines } from "@shared/gherkin/stepText";
 import type {
   ApplyResult,
   ProposalAction,
@@ -305,7 +306,7 @@ export function RequirementProposalsReview({
                           </span>
                         )}
                         {"acceptance" in p && (
-                          <Extra
+                          <Criteria
                             title={t("traceability.proposals.acceptance")}
                             items={p.acceptance}
                           />
@@ -547,6 +548,35 @@ function Extra({ title, items }: { title: string; items?: string[] }) {
           <li key={i}>{item}</li>
         ))}
       </ul>
+    </details>
+  );
+}
+
+/** The acceptance criteria (UX-23): one block each, apart from the next, and
+ *  a Gherkin criterion as one line per keyword, the keyword in bold. */
+function Criteria({ title, items }: { title: string; items?: string[] }) {
+  if (!items?.length) return null;
+  return (
+    <details className="tz-prop__extra">
+      <summary>
+        {title} ({items.length})
+      </summary>
+      <ol className="tz-criteria">
+        {items.map((item, i) => {
+          const lines = criterionLines(item);
+          return (
+            <li key={i} className="tz-criteria__item">
+              {lines
+                ? lines.map((l, j) => (
+                    <span key={j} className={`tz-criteria__line${j ? " tz-criteria__line--cont" : ""}`}>
+                      <strong className="tz-criteria__kw">{l.keyword}</strong> {l.text}
+                    </span>
+                  ))
+                : item}
+            </li>
+          );
+        })}
+      </ol>
     </details>
   );
 }

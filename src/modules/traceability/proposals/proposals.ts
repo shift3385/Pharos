@@ -3,6 +3,7 @@
 // (as `usableProposals` in IA-16). Pure — testable.
 
 import type { RawRequirementProposal } from "@modules/ai";
+import { criterionText } from "@shared/gherkin/stepText";
 import type {
   Requirement,
   RequirementPriority,
@@ -275,5 +276,5 @@ export function describedWithAcceptance(
   heading: string,
 ) {
   if (!acceptance?.length) return description;
-  return `${description.trim()}\n\n${heading}\n${acceptance.map((a) => `- ${a}`).join("\n")}`;
+  return `${description.trim()}\n\n${heading}\n${acceptance.map((a) => `- ${criterionText(a, "  ")}`).join("\n")}`;
 }

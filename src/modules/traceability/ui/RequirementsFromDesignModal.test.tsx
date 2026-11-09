@@ -250,3 +250,17 @@ describe("RequirementsFromDesignModal", () => {
     UI_TIMEOUT,
   );
 });
+
+describe("RequirementsFromDesignModal › progress (UX-23)", () => {
+  it("says which of the two steps is running and for how long", async () => {
+    const user = userEvent.setup();
+    ai.extract.mockImplementationOnce(() => new Promise(() => {}));
+    open();
+    await addFiles([png("login.png")]);
+    await screen.findByText("login.png");
+    await user.click(screen.getByRole("button", { name: "Analizar" }));
+    expect(await screen.findByText(/Paso 1 de 2 · Leyendo el material con IA…/)).toBeInTheDocument();
+    expect(screen.getByTestId("design-elapsed")).toHaveTextContent("(0 s)");
+    expect(screen.getByText(/no se ha quedado colgado/)).toBeInTheDocument();
+  });
+});

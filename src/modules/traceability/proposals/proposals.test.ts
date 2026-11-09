@@ -155,4 +155,10 @@ describe("helpers", () => {
     );
     expect(describedWithAcceptance("Do it.", [], "x")).toBe("Do it.");
   });
+
+  it("writes a Gherkin criterion one keyword per line (UX-23)", () => {
+    expect(describedWithAcceptance("Do it.", ["Given El campo vacío, when pulsa Ingresar, then no entra"], "Criterios:")).toBe(
+      "Do it.\n\nCriterios:\n- Given el campo vacío\n  When pulsa Ingresar\n  Then no entra",
+    );
+  });
 });

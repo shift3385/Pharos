@@ -92,3 +92,17 @@ describe("traceability dialogs", () => {
     await expectNoAxeViolations();
   });
 });
+
+describe("RequirementFormModal › risk (UX-23)", () => {
+  it("shows the risk level and band as soon as both factors are set", async () => {
+    renderWithProviders(
+      <RequirementFormModal requirement={null} existingKeys={[]} onSave={vi.fn()} onCancel={() => {}} />,
+    );
+    const legend = screen.getByText("Risk", { selector: "legend" });
+    expect(legend).toHaveTextContent("Not assessed");
+    await userEvent.selectOptions(screen.getByTestId("requirement-risk-likelihood"), "3");
+    await userEvent.selectOptions(screen.getByTestId("requirement-risk-impact"), "4");
+    expect(legend).toHaveTextContent("Risk 12 · Medium");
+    expect(screen.getByRole("img", { name: /Low: 1–4/ })).toBeInTheDocument();
+  });
+});
