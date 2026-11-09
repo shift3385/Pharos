@@ -1117,8 +1117,7 @@
       "exportPdf": "Export .pdf",
       "exportPdfDesc": "A document ready to sign",
       "exportXlsx": "Export .xlsx",
-      "exportXlsxDesc": "Editable in Excel",
-      "historyMode": "History: {{mode}} (change it in Project settings)"
+      "exportXlsxDesc": "Editable in Excel"
     },
     "panel": {
       "title": "Plan status",
