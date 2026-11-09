@@ -376,14 +376,14 @@ chapter("plan", () => {
   step("revisiones", {
     title: "Revisiones del plan",
     caption:
-      "Cada guardado crea una revisión, una copia fechada del plan. «Revisiones», en la cabecera (o «Ver todas» en el panel lateral, que enseña las tres últimas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.",
+      "Cada guardado crea una revisión, una copia fechada del plan. «Ver todas», en el panel «Revisiones» (que enseña las tres últimas, junto al formulario o debajo en pantallas estrechas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.",
     covers: ["dialogs:src/modules/test-plan/ui/wizard/PlanSidePanels.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {
       await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
       await button(P.save).click();
       await waitForToast(P.savedToast);
-      await button(P.revisions).click();
+      await $('section[aria-labelledby="tpw-revs-title"]').$(`button=${P.panel.seeAll}`).click();
       await expect(dialog().$(".tp-revs__restore")).toBeDisplayed();
     },
   });

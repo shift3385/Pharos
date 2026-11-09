@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 // Tests of the user-manual tooling (MAN-01): the PNG codec, the Markdown
 // subset, the prose-source parser, the AI-key lookup, the secret scan and the
 // coverage check.
@@ -11,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
 import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
-import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
+import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
 import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
@@ -357,6 +358,15 @@ test("printWithEdge: a fresh profile per attempt, one retry on EPERM, none other
     );
     assert.equal(other, 1, "no retry for other errors");
     assert.throws(() => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => {} }), /did not print/, "a stale PDF never passes");
+  }));
+
+test("printWithEdge waits for a PDF Edge writes after returning (MAN-04)", () =>
+  tempDir((dir) => {
+    const pdf = join(dir, "late.pdf");
+    assert.ok(!settled(pdf, 0), "nothing yet");
+    // Another process writes it a moment later, as Edge 157 does.
+    spawn(process.execPath, ["-e", `setTimeout(() => require("fs").writeFileSync(${JSON.stringify(pdf)}, "%PDF-1.7"), 300)`], { stdio: "ignore" });
+    assert.ok(settled(pdf, 10_000));
   }));
 
 test("selectTours adds what a partial run needs, in run order, and refuses a bad filter (MAN-02)", async () => {

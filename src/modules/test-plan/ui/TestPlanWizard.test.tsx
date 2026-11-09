@@ -203,12 +203,12 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Alcance" })).toBeInTheDocument();
   });
 
-  it("puts Revisiones, Importar / Exportar and Guardar in the header, and the status panel beside the form", async () => {
+  it("puts Importar / Exportar and Guardar in the header and the revisions in the status panel (UX-24)", async () => {
     setViewportWidth(1440);
     renderWizard();
     await screen.findByText("Paso 1 de 19");
     const header = screen.getByTestId("header-actions");
-    expect(within(header).getByRole("button", { name: "Revisiones" })).toBeInTheDocument();
+    expect(within(header).queryByRole("button", { name: "Revisiones" })).not.toBeInTheDocument();
     expect(within(header).getByRole("button", { name: "Importar / Exportar" })).toBeInTheDocument();
     expect(within(header).getByRole("button", { name: "Guardar" })).toBeInTheDocument();
     const panel = screen.getByRole("complementary", { name: "Estado del plan" });
@@ -218,27 +218,28 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
 });
 
 describe("plan wizard · revision history in the export (PLN-02)", () => {
-  it("the menu says the history is only the current version, and the PDF has none", async () => {
+  it("the PDF has no history by default, and the menu no longer names it (UX-24)", async () => {
     setViewportWidth(1440);
     exportPlanPdf.mockClear();
     vi.mocked(testPlanApi.history).mockClear();
     renderWizard();
     await screen.findByText("Paso 1 de 19");
     await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Importar / Exportar" }));
-    expect(await screen.findByTestId("plan-io-history")).toHaveTextContent("Historial: Solo la versión vigente");
+    await screen.findByRole("menuitem", { name: /Exportar .pdf/ });
+    expect(screen.queryByText(/se cambia en Ajustes del proyecto/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("menuitem", { name: /Exportar .pdf/ }));
     await vi.waitFor(() => expect(exportPlanPdf).toHaveBeenCalled());
     expect(testPlanApi.history).not.toHaveBeenCalled();
     expect(exportPlanPdf.mock.calls[0][0]).toMatchObject({ history: undefined });
   });
 
-  it("with the project set to it, the menu says so and the PDF carries the history", async () => {
+  it("with the project set to it, the PDF carries the history", async () => {
     setViewportWidth(1440);
     exportPlanPdf.mockClear();
     renderWizard("plan1", "revisions");
     await screen.findByText("Paso 1 de 19");
     await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Importar / Exportar" }));
-    expect(await screen.findByTestId("plan-io-history")).toHaveTextContent("Historial: Historial de revisiones");
+    await screen.findByRole("menuitem", { name: /Exportar .pdf/ });
     await userEvent.click(screen.getByRole("menuitem", { name: /Exportar .pdf/ }));
     await vi.waitFor(() => expect(exportPlanPdf).toHaveBeenCalled());
     expect(testPlanApi.history).toHaveBeenCalledWith("plan1", "test-user");

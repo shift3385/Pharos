@@ -132,7 +132,7 @@ chapter("requisitos", () => {
   step("menu-importar", {
     title: "Más formas de traer requisitos: la IA",
     caption:
-      "El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos con IA, que proponen requisitos para que tú decidas cuáles aplicar. «Requisitos desde un proyecto (IA)» lee la documentación y el código de una carpeta (solo en la app de escritorio); «Requisitos desde diseños» parte de capturas, bocetos, PDF o un proyecto de Claude Design. Sin un motor de IA configurado aparecen en gris, como aquí; el capítulo 17 los recorre con IA.",
+      "El menú «Importar» reúne las tres formas de traer requisitos: el CSV y dos con IA, que proponen requisitos para que tú decidas cuáles aplicar. «Requisitos desde un proyecto (IA)» lee la documentación y el código de una carpeta (solo en la app de escritorio); «Requisitos desde diseños» parte de capturas, bocetos, PDF o un proyecto de Claude Design. Sin un motor de IA configurado aparecen en gris, como aquí. El capítulo 17 los recorre paso a paso, con la IA activa, en «Las tres formas de traer requisitos».",
     covers: ["action:requirements-import-menu"],
     focus: '[role="menu"]',
     run: async () => {

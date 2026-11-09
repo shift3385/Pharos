@@ -199,7 +199,14 @@ pending; they are never faked.
 | `PHAROS_TOURS_AI_KEY`        | The API key (required to run the AI chapter)                                |
 | `PHAROS_TOURS_AI_PROVIDER`   | `gemini` (default), `openai`, `anthropic` or `openrouter`                    |
 | `PHAROS_TOURS_AI_MODEL`      | Model id; default the cheapest suitable one (`gemini-2.0-flash-lite`, `gpt-4o-mini`, `claude-haiku-5-5`; required for `openrouter`) |
-| `PHAROS_TOURS_AI_MAX_CALLS`  | Cap on AI requests per run (default 8; the chapter makes 6)                  |
+| `PHAROS_TOURS_AI_MAX_CALLS`  | Cap on AI requests per run (default 12; the chapter makes 10)                |
+
+**«Requisitos desde un proyecto» (MAN-04).** Windows' folder picker is
+outside the WebView, so the runner sets `PHAROS_E2E_PICK_FOLDER` to
+`e2e/tours/fixtures/proyecto-billetera` and the debug build, only with an e2e
+profile, scans it instead of opening the picker (`project_scan.rs`). A release
+build always asks the person. The chapter's other sample data (the wallet's
+CSV and the sketch `boceto-billetera.jpg`) sit in the same folder.
 
 **Fallback: `.env`.** When `PHAROS_TOURS_AI_KEY` is not set, the runner
 reads `ANTHROPIC_API_KEY` (and `ANTHROPIC_MODEL`, used as given) from the

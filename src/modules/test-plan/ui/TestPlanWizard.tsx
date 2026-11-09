@@ -37,7 +37,7 @@ import {
 import { STEP_IDS, stepCompletion } from "./wizard/steps";
 import { StepBody } from "./wizard/StepBody";
 import { StepCompact, StepRail, StepStrip } from "./wizard/StepNav";
-import { PlanIoMenu, PlanStatusPanel, RevisionsButton, RevisionsDialog } from "./wizard/PlanSidePanels";
+import { PlanIoMenu, PlanStatusPanel, RevisionsDialog } from "./wizard/PlanSidePanels";
 import type { StepProps } from "./wizard/stepProps";
 import { useWideApp } from "./wizard/useWideApp";
 import { parseStamp } from "@shared/time/stamp";
@@ -302,12 +302,10 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
   useHeaderActions(
     form && (
       <>
-        {plan && <RevisionsButton onClick={() => setShowRev(true)} />}
         <PlanIoMenu
           onImport={() => fileInputRef.current?.click()}
           onExportPdf={() => void exportPdf()}
           onExportXlsx={() => void exportXlsx()}
-          history={exportHistory}
         />
         <button type="button" className="header-action" data-primary="" onClick={trySave} disabled={saving}>
           <Check size={16} aria-hidden="true" />

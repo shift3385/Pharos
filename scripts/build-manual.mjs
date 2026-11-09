@@ -504,6 +504,7 @@ function printPdf(htmlFile, pdfFile) {
       pdfFile,
       profilesDir,
       exec: (edgeArgs) => execFileSync(edge, edgeArgs, { stdio: ["ignore", "ignore", "pipe"], timeout: 180_000 }),
+      waitMs: 180_000,
     });
     if (attempt > 1) console.log(`› Edge printed ${relative(repoDir, pdfFile)} on retry (EPERM the first time)`);
   } catch (err) {

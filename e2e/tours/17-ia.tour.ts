@@ -11,14 +11,20 @@
 // the key's value appears in any generated file (check-manual --secret-scan).
 // Cost: the cheapest suitable model per provider (tour.ts → CHEAP_MODELS),
 // short prompts and a cap on calls per run (PHAROS_TOURS_AI_MAX_CALLS).
-import { $, browser, expect } from "@wdio/globals";
+import { join } from "node:path";
+import { $, $$, browser, expect } from "@wdio/globals";
 import { AI, AI_SKIP, CHEAP_MODELS, aiCall, chapter, step } from "./tour";
 import {
   PROJECT_A,
+  button,
   byTestId,
+  chooseFile,
   clickButton,
   dialog,
   es,
+  fixturesDir,
+  menuItem,
+  pickFromMenu,
   openAdminTab,
   openProject,
   openSection,
@@ -30,6 +36,18 @@ import {
 const X = es.ai;
 const D = '[role="dialog"]';
 const AI_TIMEOUT = 90_000;
+/** Reading a folder or a sketch and comparing: a minute or two (MAN-03). */
+const DESIGN_TIMEOUT = 240_000;
+/** The second product of the example: its CSV, folder and sketch. */
+const WALLET = { name: "Billetera SafeGuard" };
+
+/** Opens every «Criterios de aceptación», «Supuestos» and «Preguntas
+ *  abiertas» of the proposals, so the capture shows them. */
+async function openCriteria() {
+  await browser.execute(() =>
+    document.querySelectorAll('[data-testid="req-proposals"] details').forEach((d) => d.setAttribute("open", "")),
+  );
+}
 
 async function goToPlanStep(id: keyof typeof es.testPlan.step) {
   await openProject(PROJECT_A.name);
@@ -116,6 +134,176 @@ chapter("ia", () => {
         timeout: AI_TIMEOUT,
         timeoutMsg: "the connection test did not answer «Respuesta en N ms»",
       });
+    },
+  });
+
+  // ---- The three ways to bring requirements, with AI (MAN-03) -------------
+  // In a second product, the Billetera SafeGuard app: its CSV, its project
+  // folder and the sketch of its screens (e2e/tours/fixtures).
+
+  step("billetera-csv", {
+    title: "Otro producto: importar sus requisitos (.csv)",
+    caption:
+      "Liomar prueba también la Billetera SafeGuard, una app de billetera digital. Crea su proyecto («Billetera SafeGuard») y, en «Requisitos», trae los que ya tenía en una hoja de cálculo con «Importar › Importar requisitos (.csv)» (capítulo 7). La vista previa muestra los cinco antes de crearlos.",
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      await byTestId("nav-projects").click();
+      await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
+      await button(es.projects.new).click();
+      await $("#pj-new-name").setValue(WALLET.name);
+      await button(es.projects.create).click();
+      await expect($(`h1=${WALLET.name}`)).toBeDisplayed();
+      await openSection("requirements");
+      await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(fixturesDir, "requisitos-billetera.csv"));
+      await expect(dialog()).toBeDisplayed();
+      await expect(dialog()).toHaveText(expect.stringContaining("REQ-005"));
+    },
+  });
+
+  step("importar-menu-ia", {
+    title: "Las tres formas de traer requisitos",
+    caption:
+      "Con un motor de IA configurado, el menú «Importar» de «Requisitos» tiene sus tres opciones activas: «Importar requisitos (.csv)» crea o actualiza requisitos por su ID; «Requisitos desde un proyecto (IA)» propone requisitos a partir de la documentación y el código de una carpeta (solo en la app de escritorio); y «Requisitos desde diseños» los propone a partir de capturas, bocetos, PDF, un dibujo de Excalidraw o un proyecto de Claude Design. Con las de IA, nada se crea hasta que revisas y aplicas las propuestas.",
+    covers: ["action:requirements-import-menu-ai"],
+    skip: AI_SKIP,
+    focus: '[role="menu"]',
+    run: async () => {
+      await clickButton(tf("traceability.import.confirm", { count: 5 }), D);
+      await waitForToast(tf("traceability.import.doneToast", { created: 5, updated: 0 }));
+      await clickButton(es.traceability.io.import);
+      for (const item of [es.traceability.io.importCsv, es.traceability.io.fromProject, es.traceability.fromDesign.open]) {
+        await expect(menuItem(item)).toBeDisplayed();
+        await expect(menuItem(item)).not.toHaveAttribute("aria-disabled", "true");
+      }
+    },
+    after: async () => {
+      await browser.keys("Escape");
+    },
+  });
+
+  step("desde-proyecto", {
+    title: "Requisitos desde un proyecto: la carpeta",
+    caption:
+      "«Requisitos desde un proyecto (IA)» abre su diálogo; «Elegir carpeta…» abre el selector de carpetas de Windows. Elige la carpeta de un proyecto en marcha o de su documentación: aquí, la de la Billetera SafeGuard, con su README, dos documentos y algo de código y de pruebas. Pharos lista lo que leería, agrupado por tipo, sin enviar nada todavía. Desmarca lo que no quieras enviar; las dependencias, los builds, los archivos ocultos, los binarios y los archivos con secretos nunca se envían. Abajo ves cuántos archivos, cuántos tokens (aproximados) y cuántas llamadas a la IA supone, y puedes ajustar el presupuesto y añadir un contexto («p. ej. tienda online, rol cliente»).",
+    covers: ["dialogs:src/modules/traceability/ui/ProjectRequirementsModal.tsx"],
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      await pickFromMenu(es.traceability.io.import, es.traceability.io.fromProject);
+      await expect(dialog()).toBeDisplayed();
+      // The debug build picks the fixture folder (PHAROS_E2E_PICK_FOLDER).
+      await clickButton(es.traceability.fromProject.pick, D);
+      await waitForText(es.traceability.fromProject.continue, 30_000);
+      await expect(dialog()).toHaveText(expect.stringContaining("README.md"));
+    },
+  });
+
+  step("desde-proyecto-enviar", {
+    title: "Antes de enviar",
+    caption:
+      "«Continuar» resume lo que saldrá del equipo: cuántos archivos, unos cuántos tokens y en cuántas llamadas, y a qué proveedor van. Las líneas con aspecto de secreto (claves, tokens) se sustituyen por «[secreto omitido]» antes de enviar. «Volver» te deja cambiar la selección; «Enviar y analizar» empieza.",
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      await clickButton(es.traceability.fromProject.continue, D);
+      await waitForText(es.traceability.fromProject.send);
+    },
+  });
+
+  step("desde-proyecto-propuestas", {
+    title: "Las propuestas desde el proyecto",
+    caption:
+      "La IA lee los archivos por lotes («Analizando: lote 1 de 1…»; «Detener» para) y compara lo que encuentra con los requisitos que ya tiene el proyecto. Propone requisitos nuevos, mejoras de los que ya existen, posibles duplicados y requisitos que sobran, cada uno con su motivo, su fuente (el archivo y las líneas) y sus criterios de aceptación. «Escrito en la fuente» es lo que el material dice; «Inferido», una deducción con sus supuestos y sus preguntas abiertas, para que la confirmes. Marca lo que quieras y pulsa «Aplicar N cambios»: lo aplicado queda «IA · pendiente de revisión».",
+    covers: ["dialogs:src/modules/traceability/ui/RequirementProposalsReview.tsx"],
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      aiCall();
+      aiCall();
+      await clickButton(es.traceability.fromProject.send, D);
+      await $('[data-testid="req-proposals-apply"]').waitForExist({ timeout: DESIGN_TIMEOUT });
+      await openCriteria();
+    },
+  });
+
+  step("desde-disenos", {
+    title: "Requisitos desde diseños: el material",
+    caption:
+      "Tras aplicar, «Importar › Requisitos desde diseños» parte de lo que se ve: capturas, bocetos, PDF, un dibujo de Excalidraw o la carpeta o el ZIP de un proyecto de Claude Design (desde Figma o Canva, exporta los frames como PNG o PDF). Arrástralos, pega una captura con Ctrl+V o usa «Elegir archivos» o «Elegir carpeta». Aquí, el boceto a mano de dos pantallas de la billetera: el acceso y el inicio. Cada imagen muestra su tamaño y una estimación de tokens; añádele una nota («alta, paso 2») y escribe el contexto del producto: la IA acierta más. Se envían como mucho 8 imágenes o PDF por análisis, y el aviso dice a qué proveedor van.",
+    covers: [
+      "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx",
+      "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx",
+    ],
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      aiCall();
+      aiCall();
+      await $('[data-testid="req-proposals-apply"]').click();
+      await dialog().waitForExist({ reverse: true, timeout: 60_000 });
+      await pickFromMenu(es.traceability.io.import, es.traceability.fromDesign.open);
+      await expect(dialog()).toBeDisplayed();
+      await chooseFile(`${D} input.tr-design__file[accept]`, join(fixturesDir, "boceto-billetera.jpg"));
+      await $(`${D} .tr-design__item`).waitForExist({ timeout: 30_000 });
+      await $(`${D} .tr-design__note`).setValue("acceso e inicio");
+      await $(`${D} .tr-design__context textarea`).setValue("App móvil de billetera digital, rol cliente");
+    },
+  });
+
+  step("desde-disenos-analizando", {
+    title: "Analizar: dos pasos",
+    caption:
+      "«Analizar» envía el material. El análisis tiene dos pasos: primero la IA lee las imágenes («Paso 1 de 2 · Leyendo el material con IA…») y después compara lo que encontró con los requisitos del proyecto («Paso 2 de 2»). Al lado ves los segundos que lleva: suele tardar uno o dos minutos, no se ha quedado colgado. «Cancelar» lo deja.",
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      await $(`${D} button.cd__confirm`).click();
+      await waitForText(tf("traceability.fromDesign.step", { n: 1, total: 2 }), 15_000);
+      await browser.waitUntil(async () => /\(([3-9]|\d\d+) s\)/.test(await $('[data-testid="design-elapsed"]').getText()), {
+        timeout: 30_000,
+      });
+    },
+  });
+
+  step("desde-disenos-propuestas", {
+    title: "Las propuestas desde el boceto",
+    caption:
+      "Las propuestas se revisan igual que las de un proyecto. La fuente de cada una es la imagen, con un recuadro en la zona de la que sale el requisito. Los criterios de aceptación van uno por bloque y, si siguen Gherkin, con una palabra clave por línea en negrita (Given, When, Then). Abajo, «Guardar las imágenes como adjunto de los requisitos» (desmarcada: Pharos no guarda las imágenes salvo que lo pidas) las guarda cifradas junto a cada requisito, para verlas después.",
+    skip: AI_SKIP,
+    shot: { element: D },
+    run: async () => {
+      await $('[data-testid="req-proposals-apply"]').waitForExist({ timeout: DESIGN_TIMEOUT });
+      await openCriteria();
+      const keep = $(`//label[contains(., "${es.traceability.fromDesign.keepImages}")]//input`);
+      await keep.click();
+      await expect(keep).toBeSelected();
+    },
+  });
+
+  step("fuente-imagen", {
+    title: "La imagen de la que sale un requisito",
+    caption:
+      "Con la casilla marcada, abre un requisito («Editar requisito») y despliega «Fuente»: verás la miniatura de la imagen con la zona marcada. Púlsala para verla a tamaño completo; «Cerrar» o Esc vuelven. Si no se guardó, «Fuente» lo dice («La imagen no se guardó en Pharos.»). Las imágenes guardadas cuentan en «Administración › Evidencias» como «Requisitos» y solo se ven en la app de escritorio.",
+    covers: ["dialogs:src/modules/traceability/ui/RequirementSources.tsx"],
+    skip: AI_SKIP,
+    shot: { element: ".tr-design__viewer" },
+    run: async () => {
+      await $('[data-testid="req-proposals-apply"]').click();
+      await dialog().waitForExist({ reverse: true, timeout: 60_000 });
+      // A requirement the sketch proposed: the last one in the list.
+      const rows = await $$("button.tz-open");
+      await rows[rows.length - 1].click();
+      await expect(dialog()).toBeDisplayed();
+      const sources = $('[data-testid="requirement-sources"]');
+      await sources.$("summary").click();
+      await sources.$("button.tr-design__open").waitForDisplayed({ timeout: 15_000 });
+      await sources.$("button.tr-design__open").click();
+      await $(".tr-design__viewer").waitForDisplayed({ timeout: 10_000 });
+    },
+    after: async () => {
+      await browser.keys("Escape");
+      await browser.keys("Escape");
     },
   });
 

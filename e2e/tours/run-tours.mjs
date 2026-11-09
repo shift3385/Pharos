@@ -361,6 +361,9 @@ try {
         PHAROS_E2E_PROFILE: profile,
         PHAROS_TOURS_DOWNLOADS: downloads,
         PHAROS_TOURS_API: apiUrl,
+        // «Requisitos desde un proyecto»: the folder the debug build picks
+        // instead of Windows' own picker (project_scan.rs, MAN-03).
+        PHAROS_E2E_PICK_FOLDER: join(toursDir, "fixtures", "proyecto-billetera"),
         // The one account of the manual (a test address, never a real one).
         TEST_USER_EMAIL: PERSONA.email,
         TEST_USER_PASSWORD: TOURS_PASSWORD,

@@ -1,0 +1,6 @@
+ID;Título;Descripción;Prioridad
+REQ-001;Iniciar sesión con correo o usuario;La persona entra en la billetera con su correo o su nombre de usuario y su contraseña. Los dos campos son obligatorios.;Alta
+REQ-002;Recuperar la contraseña;Desde la pantalla de acceso, «¿Olvidaste tu contraseña?» envía un enlace para crear una nueva.;Media
+REQ-003;Ver el saldo de la cuenta principal;La pantalla de inicio muestra el saldo disponible de la cuenta principal.;Alta
+REQ-004;Pagar o enviar dinero;Desde la acción rápida «Pagar / Enviar» se paga con QR o se envía dinero a un contacto.;Alta
+REQ-005;Consultar los últimos movimientos;La pantalla de inicio lista los últimos movimientos con su comercio, su tipo y su importe.;Media

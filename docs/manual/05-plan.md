@@ -151,7 +151,7 @@ Si cambias algo y vas a otra sección sin guardar (o cierras la ventana), Pharos
 
 ### 5.20. Revisiones del plan
 
-Cada guardado crea una revisión, una copia fechada del plan. «Revisiones», en la cabecera (o «Ver todas» en el panel lateral, que enseña las tres últimas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.
+Cada guardado crea una revisión, una copia fechada del plan. «Ver todas», en el panel «Revisiones» (que enseña las tres últimas, junto al formulario o debajo en pantallas estrechas), abre la lista con el número, el título y la fecha de cada una. «Restaurar» vuelve al contenido de una revisión anterior, tras pedir confirmación. En la versión web todavía no se guardan revisiones.
 
 ![Revisiones del plan](img/plan/20-revisiones.png)
 
