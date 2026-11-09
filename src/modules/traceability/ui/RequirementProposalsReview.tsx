@@ -52,6 +52,7 @@ export function RequirementProposalsReview({
   sourceLabel,
   onApplied,
   onClose,
+  keepImages,
 }: {
   proposals: RequirementProposal[];
   existing: Requirement[];
@@ -63,6 +64,9 @@ export function RequirementProposalsReview({
   /** After every apply; the caller closes when nothing failed. */
   onApplied: (result: ApplyResult) => void;
   onClose: () => void;
+  /** IA-19: offers «keep the images as attachments» (unticked) and, when
+   *  ticked, runs after each requirement created or improved. */
+  keepImages?: (proposal: RequirementProposal, saved: Requirement) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -87,6 +91,9 @@ export function RequirementProposalsReview({
     "review",
   );
   const [lastFailed, setLastFailed] = useState(0);
+  // Unticked: by default Pharos keeps no image (IA-18 privacy decision).
+  const [keep, setKeep] = useState(false);
+  const [attachFailed, setAttachFailed] = useState(0);
   const applyRef = useRef<HTMLButtonElement>(null);
   const label =
     sourceLabel ?? ((s: RequirementSource) => defaultSourceLabel(s, t));
@@ -125,7 +132,9 @@ export function RequirementProposalsReview({
       linkedCases,
       provenance,
       acceptanceHeading: t("traceability.proposals.acceptanceHeading"),
+      afterSave: keep && keepImages ? keepImages : undefined,
     });
+    setAttachFailed(result.attachFailed ?? 0);
     // Applied and skipped ones leave the list; failed ones stay ticked for a retry.
     const failed = new Set(result.failed);
     const done = new Set(
@@ -335,6 +344,25 @@ export function RequirementProposalsReview({
         })}
       </div>
 
+      {keepImages && (
+        <label className="tr-gen__check tz-prop__keep">
+          <input
+            type="checkbox"
+            checked={keep}
+            disabled={phase === "applying"}
+            onChange={(e) => setKeep(e.target.checked)}
+          />
+          <span>
+            <span className="tr-gen__name">{t("traceability.fromDesign.keepImages")}</span>
+            <span className="tr-gen__desc">{t("traceability.fromDesign.keepImagesHint")}</span>
+          </span>
+        </label>
+      )}
+      {attachFailed > 0 && (
+        <p className="tr-warn" role="alert">
+          {t("traceability.fromDesign.keepImagesFailed", { count: attachFailed })}
+        </p>
+      )}
       <p className="cd__msg tr-gen__status" role="status" aria-live="polite">
         {phase === "applying" ? t("traceability.proposals.applying") : ""}
       </p>

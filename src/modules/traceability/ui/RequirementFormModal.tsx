@@ -13,7 +13,7 @@ import {
   type RequirementPriority,
 } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
-import { defaultSourceLabel } from "./sourceLabel";
+import { RequirementSources } from "./RequirementSources";
 import "./Traceability.css";
 
 export interface RequirementDraft {
@@ -175,11 +175,7 @@ export function RequirementFormModal({
       {sources.length > 0 && (
         <details className="tz-prop__extra" data-testid="requirement-sources">
           <summary>{t("traceability.proposals.source", { count: sources.length })}</summary>
-          <ul>
-            {sources.map((s, i) => (
-              <li key={i}>{defaultSourceLabel(s, t)}</li>
-            ))}
-          </ul>
+          <RequirementSources requirementId={requirement?.id} sources={sources} />
         </details>
       )}
 

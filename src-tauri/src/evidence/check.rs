@@ -576,6 +576,7 @@ fn owner_label(conn: &Connection, entity: &str, id: &str) -> Option<String> {
              FROM defects WHERE id = ?1"
         }
         "test_case" => "SELECT title FROM test_cases WHERE id = ?1",
+        "requirement" => "SELECT requirement_key || ' · ' || title FROM requirements WHERE id = ?1",
         "run_shard" => {
             "SELECT r.run_key || ' · ' || r.title FROM run_shards s \
              JOIN runs r ON r.id = s.run_id WHERE s.id = ?1"

@@ -93,6 +93,8 @@ export interface ApplyResult {
   skipped: { id: number; why: "changed" | "linked" | "missing" }[];
   /** Proposals whose save failed: the person may retry them. */
   failed: number[];
+  /** Requirements saved whose `afterSave` failed (IA-19: an image not kept). */
+  attachFailed?: number;
 }
 
 export type { RequirementProvenance, RequirementSource };

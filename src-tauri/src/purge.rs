@@ -165,7 +165,8 @@ const CHILDREN: [Child; 13] = [
         entity: "requirement",
         table: "requirements",
         key: Some(("requirement_key", KeyKind::Requirement)),
-        dependents: &[],
+        // The images it came from (IA-19) go with the next evidence collection.
+        dependents: &["DELETE FROM attachments WHERE owner_entity = 'requirement' AND owner_id = ?1"],
     },
     Child {
         entity: "planner_card",

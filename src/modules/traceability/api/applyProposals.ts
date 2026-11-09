@@ -25,6 +25,10 @@ export interface ApplyProposalsInput {
   provenance: RequirementProvenance;
   /** «Criterios de aceptación:», in the app language. */
   acceptanceHeading: string;
+  /** After a requirement is created or improved (IA-19: keep the images it
+   *  came from). Its failure does not undo the requirement: it is counted in
+   *  `attachFailed`. */
+  afterSave?: (proposal: RequirementProposal, saved: Requirement) => Promise<void>;
 }
 
 type Api = Pick<typeof requirementApi, "create" | "update" | "remove" | "get">;
@@ -63,6 +67,14 @@ export async function applyRequirementProposals(
     skipped: [],
     failed: [],
   };
+  async function after(p: RequirementProposal, saved: Requirement) {
+    if (!input.afterSave) return;
+    try {
+      await input.afterSave(p, saved);
+    } catch {
+      result.attachFailed = (result.attachFailed ?? 0) + 1;
+    }
+  }
 
   /** The stored requirement, if it is still as the proposal saw it. */
   async function unchanged(
@@ -96,6 +108,7 @@ export async function applyRequirementProposals(
         });
         if (!saved) throw new Error("not saved");
         result.created++;
+        await after(p, saved);
         continue;
       }
       if (p.action === "improve") {
@@ -121,6 +134,7 @@ export async function applyRequirementProposals(
         });
         if (!saved) throw new Error("not saved");
         result.updated++;
+        await after(p, saved);
         continue;
       }
       if (p.action === "merge") {

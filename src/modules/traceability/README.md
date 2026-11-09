@@ -94,6 +94,15 @@ con los filtros activos arriba.
 - **Fuente en la revisión:** `ui/DesignSourceLabel.tsx` pinta la miniatura con la
   región. La imagen solo vive en el diálogo; en `data.sources` quedan el nombre,
   el índice y el SHA-256.
+- **Guardar la imagen (IA-19, enmienda de ADR-0037):** la revisión ofrece
+  «Guardar las imágenes como adjunto de los requisitos» (desmarcada) cuando recibe
+  `keepImages`. Marcada, `applyRequirementProposals({ afterSave })` guarda tras cada
+  requisito creado o mejorado la imagen reducida como adjunto del requisito
+  (`api/requirementAttachments.ts` → `requirement_attachment_add`, solo
+  escritorio). Un fallo se cuenta en `attachFailed` y no deshace el requisito.
+- **Fuente del requisito guardado:** `ui/RequirementSources.tsx` busca el adjunto por
+  el nombre de la fuente y pinta la miniatura con la región y el visor a tamaño
+  completo; sin adjunto, dice por qué no se ve.
 
 ## Riesgo del requisito (TRZ-04, parcial)
 

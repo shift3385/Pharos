@@ -20,11 +20,12 @@ import { SettingsRow, SettingsSection } from "../SettingsSection";
 import { EvidenceRetentionSection } from "./EvidenceRetentionSection";
 
 /** Owner kinds with their own label; any other shows as «Otros (kind)». */
-const OWNERS = ["planner_card", "defect", "test_case", "run_shard", "result", "step_result", "execution_draft", "session_note"];
+const OWNERS = ["planner_card", "defect", "requirement", "test_case", "run_shard", "result", "step_result", "execution_draft", "session_note"];
 /** The project section where an owner kind lives (ADR-0029). */
 const SECTION: Record<string, string> = {
   planner_card: "planner",
   defect: "defects",
+  requirement: "requirements",
   test_case: "cases",
   run_shard: "runs",
   result: "runs",

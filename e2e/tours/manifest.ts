@@ -433,6 +433,9 @@ export const INVENTORY: Item[] = [
   I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: material", {
     skip: "El análisis necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementsFromDesignModal.test.tsx (material, límites, visión, aviso de envío, síntesis y aplicar), los tests de fromDesign/ y de ai.rs, y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
   }),
+  I("ia", "dialog", "dialogs:src/modules/traceability/ui/RequirementSources.tsx", "Fuente de un requisito: la imagen guardada a tamaño completo (IA-19)", {
+    skip: "Solo hay imagen guardada tras aplicar «Requisitos desde diseños» con la casilla marcada, y eso necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementSources.test.tsx (miniatura, región, visor y avisos), RequirementProposalsReview.keep.test.tsx, applyProposals.test.ts, los tests de Rust de requirement_attachments.rs y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
+  }),
   I("ia", "upload", "upload:src/modules/traceability/ui/RequirementsFromDesignModal.tsx", "Requisitos desde diseños: archivos, carpeta y Ctrl+V", {
     skip: "El análisis necesita una clave de IA real con un modelo que vea imágenes. Lo cubren RequirementsFromDesignModal.test.tsx (material, límites, visión, aviso de envío, síntesis y aplicar), los tests de fromDesign/ y de ai.rs, y la revisión manual (docs/manual/REVIEW.md, «Fuera de los tours»).",
   }),

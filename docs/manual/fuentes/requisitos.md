@@ -76,7 +76,12 @@ paso a paso.
   2. Añade una nota a cada imagen («alta, paso 2») y el contexto del producto:
      la IA acierta más.
   3. «Analizar». Se envían como mucho 8 imágenes o PDF por análisis. Pharos no
-     guarda las imágenes: solo el nombre y la huella de cada archivo.
+     guarda las imágenes: solo el nombre y la huella de cada archivo, salvo que
+     al aplicar marques «Guardar las imágenes como adjunto de los requisitos»
+     (solo en la app de escritorio).
+  4. Con la casilla marcada, «Editar requisito › Fuente» muestra la miniatura
+     de la imagen con la zona marcada; púlsala para verla a tamaño completo. Sin
+     marcarla, «Fuente» dice «La imagen no se guardó en Pharos.».
 - **La revisión de las propuestas**, común a las dos formas anteriores:
   - Las propuestas se agrupan en «Nuevos», «Mejoras», «Posibles duplicados» y
     «Eliminar por redundante». Los nuevos y las mejoras empiezan marcados.
