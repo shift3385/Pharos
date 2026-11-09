@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -8,8 +9,10 @@ import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
 import { projectApi } from "../api/projectApi";
 import { ReportedError } from "@shared/ui/notify";
+import { ToastProvider } from "@shared/ui/Toast";
 import { projectRows } from "../model/projectRows";
 import type { ProjectRow } from "../model/projectTable";
+import { copyAfterCreate } from "../model/copySettings";
 import { ProjectsPage } from "./ProjectsPage";
 
 const now = Date.now();
@@ -19,7 +22,8 @@ const ROWS: ProjectRow[] = Array.from({ length: 14 }, (_, i) => ({
   id: `p${i}`,
   name: i === 0 ? "Portal Clientes v3" : `Proyecto ${String(i).padStart(2, "0")}`,
   caseIdPrefix: i === 0 ? "PCL-" : `P${i}_`,
-  caseIdDigits: 4,
+  caseIdDigits: i === 0 ? 5 : 4,
+  planExportHistory: i === 0 ? "revisions" : undefined,
   updatedAt: ago(500 + i),
   lastAccess: i < 5 ? ago(i + 1) : null,
   planStatus: i === 0 ? "approved" : i % 2 ? "reviewed" : null,
@@ -34,19 +38,32 @@ vi.mock("../api/projectApi", () => ({
   projectApi: { create: vi.fn(async () => ({ id: "new" })), get: vi.fn(), list: vi.fn(async () => []) },
 }));
 
+// UX-25: the platform (the web unless a test says desktop) and the copy after
+// the create, whose outcome each test chooses.
+const desktop = vi.hoisted(() => ({ on: false }));
+vi.mock("@shared/platform", async (orig) => {
+  const real = await orig<typeof import("@shared/platform")>();
+  return { ...real, isTauri: () => desktop.on };
+});
+vi.mock("../model/copySettings", async (orig) => {
+  const real = await orig<typeof import("../model/copySettings")>();
+  return { ...real, copyAfterCreate: vi.fn(async () => ({ fieldsFailed: [], retentionFailed: false })) };
+});
+
 function Where() {
   return <output data-testid="where">{useLocation().pathname + useLocation().search}</output>;
 }
 
-function renderPage(route = "/projects") {
+function renderPage(route = "/projects", { toasts = false } = {}) {
+  const Wrap = toasts ? ToastProvider : Fragment;
   return renderWithProviders(
-    <>
+    <Wrap>
       <Routes>
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:projectId/:section" element={<p>dentro</p>} />
       </Routes>
       <Where />
-    </>,
+    </Wrap>,
     { route },
   );
 }
@@ -56,6 +73,8 @@ beforeEach(async () => {
   vi.mocked(projectRows).mockClear();
   vi.mocked(projectApi.create).mockClear();
   vi.mocked(projectApi.get).mockReset();
+  vi.mocked(copyAfterCreate).mockClear();
+  desktop.on = false;
 });
 
 describe("Proyectos when the list fails to load", () => {
@@ -245,5 +264,96 @@ describe("Proyectos when an action fails", () => {
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
     expect(projectApi.get).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("«Copiar ajustes de…» when a project is created (UX-25)", () => {
+  async function openForm() {
+    setViewportWidth(1440);
+    renderPage("/projects?new=1", { toasts: true });
+    const name = await screen.findByRole("textbox", { name: "Nombre del proyecto" });
+    const from = await screen.findByRole("combobox", { name: "Copiar ajustes de:" });
+    return { name, from };
+  }
+
+  it("copies nothing by default, and offers every part checked once a project is chosen", async () => {
+    desktop.on = true;
+    const { name, from } = await openForm();
+    expect(from).toHaveValue("");
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(from, "p0");
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes.map((b) => b.closest("label")?.textContent)).toEqual([
+      "Campos personalizados (casos, requisitos, defectos, ejecuciones y ciclos)",
+      "Dígitos de las claves (5)",
+      "Historial en el plan exportado: Historial de revisiones",
+      "Retención de evidencias",
+    ]);
+    boxes.forEach((b) => expect(b).toBeChecked());
+    expect(screen.getByText(/el nombre, el prefijo y los datos/)).toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    // The new project keeps its own name and suggested prefix.
+    await userEvent.type(name, "Pharos{Enter}");
+    expect(await screen.findByText("dentro")).toBeInTheDocument();
+    expect(projectApi.create).toHaveBeenCalledWith({
+      name: "Pharos",
+      ownerId: expect.any(String),
+      caseIdPrefix: "PHA-",
+      caseIdDigits: 5,
+      planExportHistory: "revisions",
+    });
+    expect(copyAfterCreate).toHaveBeenCalledWith(
+      "p0",
+      "new",
+      expect.any(String),
+      new Set(["fields", "digits", "planHistory", "retention"]),
+    );
+    expect(await screen.findByText("Ajustes copiados de «Portal Clientes v3».")).toBeInTheDocument();
+  });
+
+  it("copies only the parts left checked", async () => {
+    desktop.on = true;
+    const { name, from } = await openForm();
+    await userEvent.selectOptions(from, "p0");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Dígitos de las claves (5)" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Retención de evidencias" }));
+    await userEvent.type(name, "Pharos{Enter}");
+    expect(await screen.findByText("dentro")).toBeInTheDocument();
+    const input = vi.mocked(projectApi.create).mock.calls[0][0];
+    expect(input).not.toHaveProperty("caseIdDigits");
+    expect(input).toHaveProperty("planExportHistory", "revisions");
+    expect(vi.mocked(copyAfterCreate).mock.calls[0][3]).toEqual(new Set(["fields", "planHistory"]));
+  });
+
+  it("on the web the evidence retention is not offered and the form says why", async () => {
+    const { from } = await openForm();
+    await userEvent.selectOptions(from, "p0");
+    expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+    expect(screen.queryByRole("checkbox", { name: "Retención de evidencias" })).not.toBeInTheDocument();
+    expect(screen.getByText(/en la web no se copia/)).toBeInTheDocument();
+  });
+
+  it("a copy that fails still creates the project and says what was left out", async () => {
+    desktop.on = true;
+    vi.mocked(copyAfterCreate).mockResolvedValueOnce({ fieldsFailed: ["requirement", "defect"], retentionFailed: true });
+    const { name, from } = await openForm();
+    await userEvent.selectOptions(from, "p0");
+    await userEvent.type(name, "Pharos{Enter}");
+    expect(await screen.findByText("dentro")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "El proyecto se creó, pero no se copió: campos personalizados de requisitos, defectos; la retención de evidencias. Puedes ajustarlo en Ajustes del proyecto o en Administración › Evidencias.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("«(ninguno)» creates a project with its defaults and copies nothing", async () => {
+    const { name } = await openForm();
+    await userEvent.type(name, "Pharos{Enter}");
+    expect(await screen.findByText("dentro")).toBeInTheDocument();
+    expect(projectApi.create).toHaveBeenCalledWith({ name: "Pharos", ownerId: expect.any(String), caseIdPrefix: "PHA-" });
+    expect(copyAfterCreate).not.toHaveBeenCalled();
   });
 });

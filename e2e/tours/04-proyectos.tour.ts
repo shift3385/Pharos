@@ -1,7 +1,8 @@
 // Chapter 4 — Proyectos (manual v2, MAN-03): the empty list, creating a
 // project (a new one opens on its Plan, UX-22) and its header, a second one
 // with Enter, the list (recent, search, sort), opening an existing project
-// (it opens on its Tablero, UX-22), the row menu, exporting one project or all
+// (it opens on its Tablero, UX-22), a third one that copies the settings of
+// «Pharos» (UX-25), the row menu, exporting one project or all
 // of them, and deleting a project. The example: Liomar creates «Pharos» (the
 // app under test) and «API de sincronización».
 import { $, browser, expect } from "@wdio/globals";
@@ -87,6 +88,38 @@ chapter("proyectos", () => {
     },
   });
 
+  step("copiar-ajustes", {
+    title: "Copiar los ajustes de otro proyecto",
+    caption:
+      "Al crear un proyecto puedes partir de los ajustes de otro tuyo con «Copiar ajustes de:», bajo el nombre. Por defecto dice «(ninguno)» y el proyecto nace con los ajustes de siempre. Al elegir uno (aquí, «Pharos») aparecen, todas marcadas, las casillas de lo que se puede copiar: los campos personalizados de casos, requisitos, defectos, ejecuciones y ciclos, el número de dígitos de las claves, el «Historial en el plan exportado» y la retención de evidencias. Desmarca lo que no quieras. Nunca se copian el nombre, el prefijo (Pharos sigue proponiendo uno libre) ni los datos: plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero. En la web no aparece la retención de evidencias, que es un ajuste de la app de escritorio.",
+    covers: ["action:project-create-copy-settings"],
+    focus: ".pj-create",
+    run: async () => {
+      // A third project, deleted at the end of the chapter.
+      await byTestId("nav-projects").click();
+      await button(es.projects.new).click();
+      await $("#pj-new-name").setValue(TEMP_PROJECT);
+      const from = $("#pj-new-copy-from");
+      const value = await from.$(`option*=${PROJECT_A.name}`).getAttribute("value");
+      await from.selectByAttribute("value", value ?? "");
+      for (const part of ["fields", "digits", "planHistory", "retention"]) {
+        await expect(byTestId(`pj-new-copy-${part}`)).toBeSelected();
+      }
+    },
+  });
+
+  step("ajustes-copiados", {
+    title: "Ajustes copiados",
+    caption:
+      "Al pulsar «Crear», el proyecto se crea con los ajustes elegidos y un aviso lo confirma. La copia se hace una sola vez: si después cambias los ajustes de uno, el otro no cambia. Si alguna parte no se pudo copiar, el proyecto se crea igualmente y el aviso dice qué faltó, para que lo ajustes a mano en «Ajustes del proyecto» (capítulo 14) o en «Administración › Evidencias».",
+    shot: false,
+    run: async () => {
+      await button(es.projects.create).click();
+      await expect($(`h1=${TEMP_PROJECT}`)).toBeDisplayed();
+      await waitForToast(es.projects.copySettings.copiedToast.split("{{")[0]);
+    },
+  });
+
   step("lista-proyectos", {
     title: "Todos los proyectos",
     caption:
@@ -94,8 +127,6 @@ chapter("proyectos", () => {
     covers: ["action:projects-search", "action:projects-sort"],
     focus: [SEARCH, ".pj-table"],
     run: async () => {
-      // A third project, deleted at the end of the chapter.
-      await newProject(TEMP_PROJECT, "click");
       await byTestId("nav-projects").click();
       await expect($(".pj-recent")).toBeDisplayed();
       await $(".sort-menu__trigger").click();

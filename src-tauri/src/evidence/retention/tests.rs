@@ -311,6 +311,70 @@ fn a_project_setting_changes_the_days_and_is_audited() {
     assert_eq!((trace.days, trace.custom), (Some(30), false));
 }
 
+/// A second project of `owner`, with no settings of its own.
+fn other_project(c: &Connection, id: &str, owner: &str) {
+    c.execute(
+        "INSERT INTO projects (id, workspace_id, owner_id, name, created_by, updated_by, \
+         created_at, updated_at) SELECT ?1, id, ?2, 'Q', ?2, ?2, datetime('now'), datetime('now') \
+         FROM workspaces",
+        params![id, owner],
+    )
+    .unwrap();
+}
+
+#[test]
+fn copying_the_retention_gives_the_new_project_the_same_settings_once() {
+    let c = conn();
+    other_project(&c, "p2", OWNER);
+    set(
+        &c,
+        "p1",
+        "trace",
+        &RetentionPolicy::Days { days: 10 },
+        OWNER,
+    )
+    .unwrap();
+    set(&c, "p1", "video", &RetentionPolicy::Always, OWNER).unwrap();
+    // The target had its own log setting: the source's default wins.
+    set(&c, "p2", "log", &RetentionPolicy::Days { days: 5 }, OWNER).unwrap();
+
+    assert_eq!(copy(&c, "p1", "p2", OWNER).unwrap(), 3);
+    let days = |project: &str| -> Vec<(String, Option<i64>, bool)> {
+        get(&c, project, OWNER)
+            .unwrap()
+            .kinds
+            .into_iter()
+            .map(|k| (k.kind, k.days, k.custom))
+            .collect()
+    };
+    assert_eq!(days("p1"), days("p2"));
+    // Copied once: the projects stay independent.
+    set(&c, "p1", "trace", &RetentionPolicy::Days { days: 3 }, OWNER).unwrap();
+    let trace = get(&c, "p2", OWNER).unwrap();
+    let trace = trace.kinds.iter().find(|k| k.kind == "trace").unwrap();
+    assert_eq!(trace.days, Some(10));
+    // Again with nothing new changes nothing.
+    set(
+        &c,
+        "p1",
+        "trace",
+        &RetentionPolicy::Days { days: 10 },
+        OWNER,
+    )
+    .unwrap();
+    assert_eq!(copy(&c, "p1", "p2", OWNER).unwrap(), 0);
+    // Only between the user's own projects.
+    other_project(&c, "p3", "someone-else");
+    assert_eq!(
+        copy(&c, "p1", "p3", OWNER).unwrap_err(),
+        "project-not-found"
+    );
+    assert_eq!(
+        copy(&c, "p3", "p2", OWNER).unwrap_err(),
+        "project-not-found"
+    );
+}
+
 #[test]
 fn settings_are_checked() {
     let c = conn();

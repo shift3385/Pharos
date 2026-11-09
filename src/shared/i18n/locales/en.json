@@ -865,6 +865,30 @@
       "overlap": "It overlaps “{{prefix}}” of {{name}}: two prefixes may not be equal or one start with the other.",
       "placeholder": "Prefix",
       "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings."
+    },
+    "copySettings": {
+      "label": "Copy settings from:",
+      "none": "(none)",
+      "partsLegend": "Settings copied from «{{name}}»",
+      "part": {
+        "fields": "Custom fields (cases, requirements, defects, runs and cycles)",
+        "digits": "Key digits ({{digits}})",
+        "planHistory": "History in the exported plan: {{mode}}",
+        "retention": "Evidence retention"
+      },
+      "note": "Copied once, on create: the name, the prefix and the data (plan, cases, requirements, cycles, runs, defects and board) are never copied, and the two projects stay independent.",
+      "webNoRetention": "Evidence retention is a setting of the desktop app: it is not copied on the web.",
+      "copiedToast": "Settings copied from «{{name}}».",
+      "failedToast": "The project was created, but this was not copied: {{parts}}. You can set it in Project settings or in Administration › Evidence.",
+      "failedFields": "custom fields of {{entities}}",
+      "failedRetention": "the evidence retention",
+      "entity": {
+        "test_case": "cases",
+        "requirement": "requirements",
+        "defect": "defects",
+        "run": "runs",
+        "test_cycle": "cycles"
+      }
     }
   },
   "profile": {

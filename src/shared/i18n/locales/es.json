@@ -865,6 +865,30 @@
       "overlap": "Se solapa con «{{prefix}}» de {{name}}: dos prefijos no pueden ser iguales ni empezar uno por el otro.",
       "placeholder": "Prefijo",
       "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto."
+    },
+    "copySettings": {
+      "label": "Copiar ajustes de:",
+      "none": "(ninguno)",
+      "partsLegend": "Ajustes que se copian de «{{name}}»",
+      "part": {
+        "fields": "Campos personalizados (casos, requisitos, defectos, ejecuciones y ciclos)",
+        "digits": "Dígitos de las claves ({{digits}})",
+        "planHistory": "Historial en el plan exportado: {{mode}}",
+        "retention": "Retención de evidencias"
+      },
+      "note": "Se copian una vez, al crear: el nombre, el prefijo y los datos (plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero) nunca se copian, y los dos proyectos quedan independientes.",
+      "webNoRetention": "La retención de evidencias es un ajuste de la app de escritorio: en la web no se copia.",
+      "copiedToast": "Ajustes copiados de «{{name}}».",
+      "failedToast": "El proyecto se creó, pero no se copió: {{parts}}. Puedes ajustarlo en Ajustes del proyecto o en Administración › Evidencias.",
+      "failedFields": "campos personalizados de {{entities}}",
+      "failedRetention": "la retención de evidencias",
+      "entity": {
+        "test_case": "casos",
+        "requirement": "requisitos",
+        "defect": "defectos",
+        "run": "ejecuciones",
+        "test_cycle": "ciclos"
+      }
     }
   },
   "profile": {

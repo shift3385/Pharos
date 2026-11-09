@@ -34,4 +34,11 @@ export const projectApi = {
     isTauri()
       ? invoke("project_delete", { id, ownerId })
       : serverApi.remove(`/api/projects/${encodeURIComponent(id)}`, id),
+  /** Copies the evidence retention of one project to another (UX-25); how
+   *  many kinds changed. Desktop only: the retention is a setting of this
+   *  device (DAT-03c) and the web has none, so it refuses there. */
+  copyRetention: (fromProjectId: string, toProjectId: string, userId: string): Promise<number> =>
+    isTauri()
+      ? invoke("evidence_retention_copy", { fromProjectId, toProjectId, userId })
+      : Promise.reject(new Error("evidence-retention-desktop-only")),
 };

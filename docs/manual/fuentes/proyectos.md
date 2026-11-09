@@ -43,6 +43,14 @@ En este manual, Liomar crea dos proyectos:
 - **«Este campo es obligatorio.»** Escribe un nombre antes de pulsar «Crear».
 - **«No se pudo crear el proyecto.»** Pulsa «Reintentar». En la versión web,
   comprueba la conexión.
+- **«El proyecto se creó, pero no se copió: …».** Al crear con «Copiar
+  ajustes de:», alguna parte no se pudo copiar. El proyecto ya existe: no lo
+  crees otra vez. Ajusta a mano lo que dice el aviso, los campos y los dígitos
+  en «Ajustes del proyecto» (capítulo 14) o la retención en «Administración ›
+  Evidencias»; los campos también se pueden traer con «Copiar de otro
+  proyecto».
+- **«Copiar ajustes de:» no ofrece la retención de evidencias.** Estás en la
+  web: la retención es un ajuste de la app de escritorio y allí no se copia.
 - **«No se pudo cargar la lista de proyectos.»** Pulsa «Reintentar».
 - **«Ningún proyecto coincide con «…».»** El buscador busca en el nombre y en
   el prefijo. Borra el texto para volver a ver todos.
@@ -85,6 +93,13 @@ En este manual, Liomar crea dos proyectos:
   las mayúsculas) o si uno empieza por el otro, como `PH-` y `PHA-`: Pharos no
   lo permite, porque una búsqueda o una importación por `PH` encontraría los
   casos de los dos proyectos.
+- Para un proyecto parecido a otro (la versión siguiente del mismo producto,
+  por ejemplo), créalo con «Copiar ajustes de:» y ese proyecto: nace con sus
+  campos personalizados, sus dígitos, su historial del plan exportado y, en
+  el escritorio, su retención de evidencias. Solo se copian ajustes, nunca el
+  nombre, el prefijo ni los datos, y una sola vez: después, cada proyecto
+  cambia por su cuenta. Como los proyectos se sincronizan entre tus equipos,
+  no hace falta exportar los ajustes para usarlos en otro equipo.
 - Exporta el ZIP antes de eliminar un proyecto, o como copia periódica fuera de
   Pharos.
 
