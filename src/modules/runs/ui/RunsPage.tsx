@@ -16,6 +16,7 @@ import { StatusPill } from "@shared/ui/StatusPill";
 import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useToast } from "@shared/ui/Toast";
 import { runsApi } from "../api/runsApi";
+import type { LinkableItem } from "@modules/defects";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { ImportReportDialog } from "./ImportReportDialog";
 import { NewRunDialog } from "./NewRunDialog";
@@ -38,15 +39,18 @@ export function RunsPage({
   projectName = "",
   runId,
   cases,
+  requirements = [],
 }: {
   projectId: string;
   /** For the status report's identification and file names (EJE-03). */
   projectName?: string;
   runId?: string;
   cases: LinkableCase[];
+  /** The project's requirements, for a defect created from the executor (NC-007). */
+  requirements?: LinkableItem[];
 }) {
   return runId ? (
-    <RunDetail key={runId} projectId={projectId} runId={runId} cases={cases} />
+    <RunDetail key={runId} projectId={projectId} runId={runId} cases={cases} requirements={requirements} />
   ) : (
     <RunsList projectId={projectId} projectName={projectName} cases={cases} />
   );
@@ -182,7 +186,9 @@ function RunsList({
       header: t("runs.list.results"),
       cell: (r) => {
         const c = counts[r.id];
-        if (!c) return "…";
+        // The counts load with the list: a run missing here has no results
+        // yet (NC-042), it is not still loading.
+        if (!c) return <span className="tp-field__hint">{t("runs.list.noResults")}</span>;
         return (
           <span className="rn-counts">
             <StatusPill tone={statusTone("passed")} dot>
@@ -274,11 +280,12 @@ function RunsList({
               ]}
             />
             <DataTable
+              className="dt-surface"
               label={t("runs.tabs.runs")}
               rows={shown}
               columns={columns}
               getRowId={(r) => r.id}
-              empty={<p className="tp-field__hint">{t("runs.list.empty")}</p>}
+              empty={<p className="tp-field__hint">{t(isTauri() ? "runs.list.empty" : "runs.list.emptyWeb")}</p>}
               mobileCard={(r) => (
                 <div className="rn-card">
                   <div className="rn-card__row">

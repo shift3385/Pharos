@@ -14,3 +14,4 @@ export { projectCaseOptions, projectTraceableCases, setCaseRequirementKeys } fro
 export { createProposedCases, proposalGherkin } from "./api/proposedCases";
 export type { CreateProposedCasesResult, ScenarioProposal } from "./api/proposedCases";
 export type { RequirementOption, TraceableCase } from "./model/types";
+export type { CaseLastResult } from "./model/caseList";

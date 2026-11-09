@@ -9,8 +9,8 @@ export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "f
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 
 /** The tour's projects (fixed names and prefixes: the manual shows them). */
-export const PROJECT_A = { name: "Banca Móvil", prefix: "BM" };
-export const PROJECT_B = { name: "Portal Clientes", prefix: "PC" };
+export const PROJECT_A = { name: "Pharos", prefix: "PH" };
+export const PROJECT_B = { name: "API de sincronización", prefix: "API" };
 
 /** Clicks the theme toggle until the app is in the light theme. */
 export async function switchToLightTheme() {
@@ -315,20 +315,32 @@ export async function pickFromMenu(trigger: string, item: string) {
   await menuItem(item).click();
 }
 
-/** Waits for a native confirm()/alert() and accepts it. */
-export async function acceptNativeDialog(timeout = 5_000) {
-  await browser.waitUntil(
-    async () => {
-      try {
-        await browser.getAlertText();
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    { timeout, timeoutMsg: "no native dialog appeared" },
-  );
-  await browser.acceptAlert();
+/** Waits for Pharos's confirmation (the topmost alertdialog; the app never
+ *  uses the browser's, NC-017) and presses its confirm button. With `text`,
+ *  checks first that the question says it. */
+export async function acceptConfirm(text?: string, timeout = 5_000) {
+  const ask = $$('[role="alertdialog"]');
+  await browser.waitUntil(async () => (await ask.length) > 0, {
+    timeout,
+    timeoutMsg: "no Pharos confirmation appeared",
+  });
+  const top = ask[(await ask.length) - 1];
+  if (text) await expect(top).toHaveText(expect.stringContaining(text));
+  await top.$("button.cd__confirm").click();
+  await top.waitForExist({ reverse: true, timeout });
+}
+
+/** Answers Pharos's topmost confirmation «no» (its cancel button, NC-017). */
+export async function dismissConfirm(text?: string, timeout = 5_000) {
+  const ask = $$('[role="alertdialog"]');
+  await browser.waitUntil(async () => (await ask.length) > 0, {
+    timeout,
+    timeoutMsg: "no Pharos confirmation appeared",
+  });
+  const top = ask[(await ask.length) - 1];
+  if (text) await expect(top).toHaveText(expect.stringContaining(text));
+  await top.$("button.cd__cancel").click();
+  await top.waitForExist({ reverse: true, timeout });
 }
 
 export { button, es };

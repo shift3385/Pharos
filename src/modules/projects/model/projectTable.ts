@@ -17,12 +17,16 @@ export interface ProjectRow {
   cases: number;
   /** Covered requirements (0..1); null without requirements. */
   coverage: number | null;
+  /** Cases with a final result over the project's live cases (NC-021), from
+   *  the execution derivation, as «Ejecución por proyecto» of the Home; null
+   *  when it could not be read. */
+  execution: { executed: number; total: number } | null;
   /** End of the test cycle from the plan's schedule; null when unknown. */
   closeDate: string | null;
 }
 
-/** Orders of the «Orden» menu. «execution» and «defects» have no data yet
- *  (execution arrives with 0.2.0): the screen offers them disabled. */
+/** Orders of the «Orden» menu. «defects» has no data in the list yet: the
+ *  screen offers it disabled. */
 export const PROJECT_SORTS = [
   "access",
   "name",
@@ -33,7 +37,7 @@ export const PROJECT_SORTS = [
   "defects",
 ] as const;
 export type ProjectSort = (typeof PROJECT_SORTS)[number];
-export const UNAVAILABLE_SORTS: ReadonlySet<ProjectSort> = new Set(["execution", "defects"]);
+export const UNAVAILABLE_SORTS: ReadonlySet<ProjectSort> = new Set(["defects"]);
 
 export const PAGE_SIZES = [5, 10, 20];
 export const RECENT_COUNT = 4;
@@ -80,6 +84,8 @@ function sortValue(row: ProjectRow, key: ProjectSort): string | number | null {
       return row.closeDate;
     case "coverage":
       return row.coverage;
+    case "execution":
+      return executedShare(row);
     default:
       return null;
   }
@@ -106,6 +112,12 @@ export function sortProjects(
           : String(va).localeCompare(String(vb));
     return cmp * sign || collator.compare(a.name, b.name);
   });
+}
+
+/** Executed cases (0..1); null without cases or without the data (NC-021). */
+export function executedShare(row: ProjectRow): number | null {
+  const e = row.execution;
+  return e && e.total > 0 ? e.executed / e.total : null;
 }
 
 /** The rows of a 1-based page; a page past the end shows the last one. */

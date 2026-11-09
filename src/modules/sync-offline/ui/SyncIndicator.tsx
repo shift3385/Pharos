@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { loadSettings } from "@modules/admin";
+import { SYNC_SETTINGS_EVENT, loadSettings } from "@modules/admin";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
 import {
@@ -17,8 +17,10 @@ import { SyncStatusContext, type SyncStatusValue } from "./syncStatusContext";
 import "./SyncIndicator.css";
 
 /** Sync state and background work (spec §9): Synced / Pending changes (n) /
- *  Offline / Conflicts (n), the 5 s refresh, auto-sync at sign-in and on
- *  reconnect, the purge (SYNC-06) and the conflict panel (Phase 8C). Counts are
+ *  Offline / Conflicts (n), the 5 s refresh, auto-sync at sign-in, on
+ *  reconnect and every few minutes (NC-025: Administración › Sincronización
+ *  switches it and sets the interval), the purge (SYNC-06) and the conflict
+ *  panel (Phase 8C). Never two syncs at once, and none offline. Counts are
  *  the signed-in account's: from the local oplog on the desktop, from the
  *  outbox and web conflicts in the browser. Mount it **once** (the app shell
  *  does): every `SyncIndicator` reads it, so moving the indicator between the
@@ -35,6 +37,16 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     typeof navigator !== "undefined" ? navigator.onLine : true,
   );
   const [syncing, setSyncing] = useState(false);
+  // One sync at a time (NC-025): a tick, a reconnect or the button while
+  // another one runs does nothing.
+  const busy = useRef(false);
+  // Bumped when a sync ends: the next automatic one is N minutes after the
+  // last sync of any kind (manual, reconnect, sign-in) — NC-025.
+  const [lastSync, setLastSync] = useState(0);
+  const [schedule, setSchedule] = useState(() => {
+    const s = loadSettings();
+    return { on: s.autoSync, minutes: s.autoSyncMinutes };
+  });
   // Read the latest auth status inside stable event handlers.
   const authedRef = useRef(authStatus === "authenticated");
   authedRef.current = authStatus === "authenticated";
@@ -131,7 +143,9 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
    *  the manual button surfaces errors. A failure is logged once until it
    *  changes. On the web a failed push stays in the outbox and is retried. */
   async function autoSync() {
-    if (!navigator.onLine || !authedRef.current) return;
+    if (busy.current || !navigator.onLine || !authedRef.current) return;
+    busy.current = true;
+    setSyncing(true);
     try {
       await syncAny();
       failures.clear("auto");
@@ -139,9 +153,31 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       // Offline or transient: the indicator stays as-is.
       failures.report(e, "auto");
+    } finally {
+      busy.current = false;
+      setSyncing(false);
+      setLastSync((n) => n + 1);
     }
     await refresh();
   }
+
+  // The periodic sync (NC-025): every `minutes` while it is on and the user
+  // is signed in, counted from the last sync that ended (the timer restarts
+  // with `lastSync`); `autoSync` skips a tick offline or while a sync runs.
+  useEffect(() => {
+    const reread = () => {
+      const s = loadSettings();
+      setSchedule({ on: s.autoSync, minutes: s.autoSyncMinutes });
+    };
+    window.addEventListener(SYNC_SETTINGS_EVENT, reread);
+    return () => window.removeEventListener(SYNC_SETTINGS_EVENT, reread);
+  }, []);
+  useEffect(() => {
+    if (!schedule.on || authStatus !== "authenticated") return;
+    const id = window.setInterval(() => void autoSync(), schedule.minutes * 60_000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule.on, schedule.minutes, authStatus, user?.id, lastSync]);
 
   const status = syncStatus(online, pending, conflicts);
   const label =
@@ -157,6 +193,8 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
     orphans > 0 ? `${label} · ${t("sync.orphans", { count: orphans })}` : label;
 
   async function runSync() {
+    if (busy.current) return;
+    busy.current = true;
     setSyncing(true);
     try {
       const { pushed, pulled, conflicts: found } = await syncAny();
@@ -171,7 +209,9 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
       logSyncFailure(e, "manual");
       toast(failure(e));
     } finally {
+      busy.current = false;
       setSyncing(false);
+      setLastSync((n) => n + 1);
       await refresh();
     }
   }

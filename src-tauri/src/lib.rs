@@ -160,6 +160,7 @@ pub fn run() {
             test_case::test_case_update,
             test_case::test_case_delete,
             test_case::test_case_revisions,
+            test_case::test_case_revision_get,
             custom_fields::custom_field_list,
             custom_fields::custom_field_create,
             custom_fields::custom_field_update,

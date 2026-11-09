@@ -2,6 +2,7 @@
 // test-cases and planner through their public APIs; neither depends on it (the
 // projects module composes them), so the module graph stays acyclic.
 export { RequirementsPage, TraceabilityPage } from "./ui/TraceabilityPage";
+export { REQUIREMENTS_CHANGED_EVENT } from "./model/events";
 export { requirementApi } from "./api/requirementApi";
 export { projectTraceFacts } from "./api/projectTraceFacts";
 export type { Requirement, RequirementPriority } from "./model/types";

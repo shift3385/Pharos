@@ -10,7 +10,7 @@
     "newerBody": "La base de datos local la guardó una versión más reciente que esta. Para no estropearla, Pharos no la abre ni la modifica. Instala esa versión o una posterior.",
     "keyMissingTitle": "Falta la clave de la base de datos local",
     "keyMismatchTitle": "La clave guardada no abre la base de datos local",
-    "keyBody": "Los datos siguen cifrados en este equipo, pero la clave no está en el almacén de credenciales del sistema (pasa en un PC nuevo o tras reinstalar Windows). Escribe la clave de recuperación que guardaste desde Perfil para abrirlos. Pharos no modifica ningún archivo hasta que la clave sea correcta.",
+    "keyBody": "Los datos siguen cifrados en este equipo, pero la clave no está en el almacén de credenciales del sistema (pasa en un PC nuevo o tras reinstalar Windows). Escribe la clave de recuperación que guardaste en Administración › Seguridad para abrirlos. Pharos no modifica ningún archivo hasta que la clave sea correcta.",
     "recovery": {
       "label": "Clave de recuperación",
       "hint": "56 caracteres en grupos de 4. Da igual mayúsculas, espacios o guiones.",
@@ -40,7 +40,10 @@
       "error": "Error",
       "warning": "Aviso",
       "info": "Información"
-    }
+    },
+    "removeEvidenceTitle": "¿Quitar esta evidencia?",
+    "removeEvidenceConfirm": "«{{name}}» se borra y no se puede recuperar.",
+    "removeEvidenceFailed": "No se pudo quitar la evidencia. Inténtalo de nuevo."
   },
   "templates": {
     "loadFailed": "No se pudieron cargar las plantillas.",
@@ -246,9 +249,13 @@
       }
     },
     "providerCompat": "Compatible",
-    "keyDiscardConfirm": "Tienes una clave escrita sin guardar. Si cambias de proveedor, se descarta. ¿Continuar?",
+    "keyDiscardTitle": "¿Descartar la clave escrita?",
+    "keyDiscardAction": "Descartar y cambiar",
+    "keyDiscardConfirm": "Tienes una clave escrita sin guardar. Si cambias de proveedor, se descarta.",
     "keySavedActive": "Clave guardada en el keychain. {{provider}} es ahora el proveedor activo",
-    "keyReplaceConfirm": "Ya hay una clave guardada para {{provider}}. Si la reemplazas, Pharos no podrá recuperarla. «Probar conexión» comprueba la nueva sin reemplazar nada. ¿Reemplazarla?",
+    "keyReplaceTitle": "¿Reemplazar la clave guardada?",
+    "keyReplaceAction": "Reemplazar clave",
+    "keyReplaceConfirm": "Ya hay una clave guardada para {{provider}}. Si la reemplazas, Pharos no podrá recuperarla. «Probar conexión» comprueba la nueva sin reemplazar nada.",
     "pending": {
       "none": "Sin cambios",
       "needsKey": "Para usar {{provider}}, pega su clave de API.",
@@ -261,7 +268,7 @@
       "temperature": "temperatura",
       "ollama": "ajustes de Ollama"
     },
-    "keyWebHint":"«Guardar clave» solo está disponible en la app de escritorio.",
+    "keyWebHint": "«Guardar clave» solo está disponible en la app de escritorio.",
     "listModelsDesktopOnly": "«Listar modelos» solo está disponible en la app de escritorio.",
     "modelsShow": "Ver los modelos",
     "modelsHide": "Ocultar los modelos",
@@ -286,11 +293,15 @@
     "needsAuth": "Inicia sesión para sincronizar",
     "failed": "No se pudo sincronizar (¿servidor no disponible?)",
     "conflicts": "Conflictos ({{count}})",
-    "conflictToast": "Sincronizado con {{count}} conflicto(s) por revisar",
+    "conflictToast_one": "Sincronizado con {{count}} conflicto por revisar",
+    "conflictToast_other": "Sincronizado con {{count}} conflictos por revisar",
     "unsupportedVersion": "Esta versión de Pharos ya no es compatible con el servidor. Actualiza la app para sincronizar; tus cambios se conservan.",
-    "webConflictToast": "Otro dispositivo guardó una versión más reciente de {{count}} elemento(s). Tu edición se conserva: revísala en Conflictos.",
-    "skippedToast": "El servidor rechazó {{count}} cambio(s) (demasiado grandes o no válidos). Siguen pendientes y el resto se sincronizó.",
-    "orphans": "{{count}} cambio(s) sin proyecto conocido todavía; se enviarán cuando llegue su proyecto",
+    "webConflictToast_one": "Otro dispositivo guardó una versión más reciente de {{count}} elemento. Tu edición se conserva: revísala en Conflictos.",
+    "webConflictToast_other": "Otro dispositivo guardó una versión más reciente de {{count}} elementos. Tu edición se conserva: revísala en Conflictos.",
+    "skippedToast_one": "El servidor rechazó {{count}} cambio (demasiado grande o no válido). Sigue pendiente y el resto se sincronizó.",
+    "skippedToast_other": "El servidor rechazó {{count}} cambios (demasiado grandes o no válidos). Siguen pendientes y el resto se sincronizó.",
+    "orphans_one": "{{count}} cambio sin proyecto conocido todavía; se enviará cuando llegue su proyecto",
+    "orphans_other": "{{count}} cambios sin proyecto conocido todavía; se enviarán cuando llegue su proyecto",
     "web": {
       "staleWrite": "Este elemento se cambió en otro sitio desde que lo abriste. Tu edición sigue en el formulario: guarda de nuevo para reemplazar esa versión, o cierra sin guardar para conservarla.",
       "deletedElsewhere": "Este elemento se eliminó en otro sitio desde que lo abriste. Tu edición sigue en el formulario: copia lo que necesites antes de cerrarlo.",
@@ -298,14 +309,18 @@
       "keyRetired": "Ese ID era de un elemento eliminado y no se reutiliza nunca. Elige otro o déjalo vacío.",
       "invalidKey": "Ese ID no es válido. Usa solo letras, dígitos y - _ . :",
       "desktopOnly": "Por ahora solo está disponible en la app de escritorio.",
-      "legacyLeftovers": "{{count}} elemento(s) de una versión web anterior no se pudieron enviar al servidor. Descárgalos desde el aviso de arriba.",
-      "legacyNotice": "{{count}} elemento(s) de una versión web anterior sin enviar",
+      "legacyLeftovers_one": "{{count}} elemento de una versión web anterior no se pudo enviar al servidor. Descárgalo desde el aviso de arriba.",
+      "legacyLeftovers_other": "{{count}} elementos de una versión web anterior no se pudieron enviar al servidor. Descárgalos desde el aviso de arriba.",
+      "legacyNotice_one": "{{count}} elemento de una versión web anterior sin enviar",
+      "legacyNotice_other": "{{count}} elementos de una versión web anterior sin enviar",
       "legacyDownload": "Descargar",
       "legacyDiscard": "Descartar",
       "legacySaved": "Ya guardé el archivo",
       "legacyDiscardTitle": "Elementos de una versión web anterior",
-      "legacyDiscardConfirm": "¿Descartar los {{count}} elemento(s) sin descargarlos? No se podrán recuperar.",
-      "legacySavedConfirm": "¿Quitar los {{count}} elemento(s) de este navegador? Comprueba antes que el archivo descargado está en tus descargas."
+      "legacyDiscardConfirm_one": "¿Descartar {{count}} elemento sin descargarlo? No se podrá recuperar.",
+      "legacyDiscardConfirm_other": "¿Descartar los {{count}} elementos sin descargarlos? No se podrán recuperar.",
+      "legacySavedConfirm_one": "¿Quitar {{count}} elemento de este navegador? Comprueba antes que el archivo descargado está en tus descargas.",
+      "legacySavedConfirm_other": "¿Quitar los {{count}} elementos de este navegador? Comprueba antes que el archivo descargado está en tus descargas."
     },
     "conflict": {
       "review": "Revisar conflictos",
@@ -470,7 +485,13 @@
       "review_other": "Revisar conflictos ({{count}})",
       "noConflicts": "No hay conflictos que revisar.",
       "now": "Sincronizar ahora",
-      "syncing": "Sincronizando…"
+      "syncing": "Sincronizando…",
+      "auto": "Sincronización automática",
+      "autoHint": "Apagada, Pharos sincroniza al entrar, al recuperar la conexión y con «Sincronizar ahora». Encendida, además envía y recibe los cambios cada pocos minutos, contados desde la última sincronización.",
+      "interval": "Cada",
+      "intervalHint": "Sin conexión, o mientras ya hay una sincronización en curso, se salta esa vuelta.",
+      "minutes_one": "{{count}} min",
+      "minutes_other": "{{count}} min"
     },
     "nothingToSave": "No hay cambios que guardar.",
     "savedWhat": "Guardado: {{changes}}",
@@ -627,7 +648,8 @@
   "importReport": {
     "detecting": "Detectando… ({{done}}/{{total}})",
     "doneMsg": "Detección completa. Revisa y aplica.",
-    "rows": "{{count}} fila(s)",
+    "rows_one": "{{count}} fila",
+    "rows_other": "{{count}} filas",
     "notFound": "no detectado",
     "blank": "en blanco",
     "apply": "Aplicar al formulario"
@@ -787,7 +809,6 @@
       },
       "sortSoon": {
         "closure": "Ningún plan tiene fechas de cierre todavía.",
-        "execution": "Próximamente: llega con la ejecución de pruebas (0.2.0).",
         "defects": "Próximamente."
       },
       "col": {
@@ -799,8 +820,6 @@
         "access": "Último acceso",
         "actions": "Acciones"
       },
-      "executedSoon": "La ejecución de pruebas llega en la versión 0.2.0.",
-      "executedShort": "— ejec.",
       "noRequirements": "Sin requisitos que cubrir",
       "percent": "{{value}} %",
       "coverageShort": "{{value}} % cob.",
@@ -811,7 +830,10 @@
       "noMatch": "Ningún proyecto coincide con «{{query}}».",
       "rowMenu": "Más acciones de {{name}}",
       "moreActions": "Más acciones",
-      "open": "Abrir"
+      "open": "Abrir",
+      "executedOf": "{{executed}} de {{total}} casos con resultado",
+      "executedNone": "Sin casos o sin resultados todavía",
+      "executedShortValue": "{{value}} ejec."
     },
     "settings": {
       "general": "General",
@@ -836,6 +858,12 @@
       "planHistoryDesc_revisions": "Añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió.",
       "planHistorySaved": "Ajuste del historial guardado.",
       "planHistoryFailed": "No se pudo guardar el ajuste del historial."
+    },
+    "prefix": {
+      "required": "Escribe un prefijo, por ejemplo «PHA-».",
+      "overlap": "Se solapa con «{{prefix}}» de {{name}}: dos prefijos no pueden ser iguales ni empezar uno por el otro.",
+      "placeholder": "Prefijo",
+      "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto."
     }
   },
   "profile": {
@@ -855,7 +883,7 @@
     "preferences": "Preferencias",
     "language": "Idioma",
     "theme": "Tema",
-    "themeHelp": "Faro Nocturno, en claro u oscuro.",
+    "themeHelp": "Faro Nocturno, en claro u oscuro. «Según el sistema» sigue el ajuste de tu equipo.",
     "themeLight": "Claro",
     "themeDark": "Oscuro"
   },
@@ -1027,7 +1055,9 @@
     },
     "sprintDateError": "La fecha de fin es anterior a la de inicio.",
     "restore": "Restaurar",
-    "restoreConfirm": "¿Restaurar el contenido de esta revisión? Reemplazará lo que tienes ahora sin guardar.",
+    "restoreTitle": "¿Restaurar esta revisión?",
+    "restoreAction": "Restaurar",
+    "restoreConfirm": "Su contenido reemplazará lo que tienes ahora, todavía sin guardar. Si te convence, pulsa «Guardar»: se crea una revisión nueva.",
     "closureDefault": {
       "executed": "% de casos ejecutados",
       "executedMetric": "≥ 95%",
@@ -1387,12 +1417,13 @@
       "label": "Requisitos vinculados",
       "unknown": "Requisito desconocido",
       "remove": "Quitar {{key}}",
-      "none": "Este proyecto aún no tiene requisitos (pestaña Trazabilidad).",
+      "none": "Este proyecto aún no tiene requisitos (sección Requisitos).",
       "add": "Vincular un requisito…"
     },
     "exportFeatures": "Exportar .feature (todos)",
     "exportFeaturesToast": "{{count}} archivos .feature exportados en {{path}}",
-    "exportProvisionalToast": "{{count}} caso(s) aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
+    "exportProvisionalToast_one": "{{count}} caso aún tiene una clave provisional: su archivo va sin tag de ID. Sincroniza y vuelve a exportar.",
+    "exportProvisionalToast_other": "{{count}} casos aún tienen una clave provisional: sus archivos van sin tag de ID. Sincroniza y vuelve a exportar.",
     "aiPendingCase": "Caso generado por IA",
     "stepN": "Paso {{n}}",
     "drag": {
@@ -1438,9 +1469,6 @@
       },
       "noRequirement": "Sin requisito",
       "more": "+{{count}}",
-      "notRun": "No ejecutado",
-      "executionSoon": "Próximamente: los resultados de ejecución llegan con la ingesta de ejecuciones.",
-      "executionSoonShort": "Próximamente",
       "today": "Hoy",
       "yesterday": "Ayer",
       "summary": "Mostrando <b>{{from}}–{{to}}</b> de <b>{{total}}</b> casos",
@@ -1475,7 +1503,17 @@
       "featuresSkipped_other": "{{count}} checklists no se exportan a .feature.",
       "automationMark": "Automatización: {{status}}",
       "aiPending": "(con IA sin revisar)",
-      "aiPendingHint": "Tiene contenido sugerido por IA que nadie ha revisado. Ábrelo y pulsa «Marcar revisado» en cada marca de IA."
+      "aiPendingHint": "Tiene contenido sugerido por IA que nadie ha revisado. Ábrelo y pulsa «Marcar revisado» en cada marca de IA.",
+      "result": {
+        "passed": "Pasa",
+        "failed": "Falla",
+        "blocked": "Bloqueado",
+        "skipped": "Omitido",
+        "retest": "Re-test",
+        "not_run": "Sin resultados"
+      },
+      "noResult": "Sin resultados todavía",
+      "resultAt": "Último resultado: {{date}}"
     },
     "nav": {
       "allCases": "Todos los casos",
@@ -1536,7 +1574,13 @@
       "noGherkin": "Una checklist no tiene vista Gherkin."
     },
     "exportSheet": "Campos personalizados",
-    "importSkippedFields": "No se importaron estos valores porque no encajan con su campo: {{keys}}"
+    "importSkippedFields": "No se importaron estos valores porque no encajan con su campo: {{keys}}",
+    "restoreTitle": "¿Restaurar la revisión {{revision}}?",
+    "restoreConfirm": "Su contenido reemplaza lo que ves en el editor, todavía sin guardar; la clave del caso no cambia. Si te convence, pulsa «Guardar»: se crea una revisión nueva y las anteriores se conservan.",
+    "restoreAction": "Restaurar",
+    "restoredToast": "Revisión {{revision}} cargada en el editor. Guarda para conservarla.",
+    "restoreFailed": "No se pudo leer esa revisión. Inténtalo de nuevo.",
+    "currentRevision": "Actual"
   },
   "dashboard": {
     "loadFailed": "No se pudieron cargar tus proyectos.",
@@ -1562,7 +1606,7 @@
       "pendingOf": "de {{total}}",
       "pendingTitle": "Casos sin ejecutar o bloqueados en todos los proyectos abiertos",
       "rate": "Tasa de éxito",
-      "rateTitle": "Casos que pasan sobre los ejecutados en el periodo ({{period}}), en todos los proyectos abiertos",
+      "rateTitle": "Casos que pasan sobre los casos con un resultado final en el periodo ({{period}}), en todos los proyectos abiertos. Un caso con varios flujos, filas o configuraciones pasa solo si pasan todos. Los tests sin vincular no cuentan",
       "defects": "Defectos abiertos",
       "defectsTitle": "Defectos sin cerrar en el Tablero de tus proyectos",
       "critical_one": "{{count}} crítico",
@@ -1571,10 +1615,13 @@
       "blocked_one": "{{count}} bloqueada",
       "blocked_other": "{{count}} bloqueadas",
       "noneBlocked": "Ninguna bloqueada",
-      "rateOf_one": "de {{count}} ejecutado · {{period}}",
-      "rateOf_other": "de {{count}} ejecutados · {{period}}",
+      "rateOf_one": "de {{count}} caso ejecutado · {{period}}",
+      "rateOf_other": "de {{count}} casos ejecutados · {{period}}",
       "rateEmpty": "Sin ejecuciones: {{period}}",
-      "rateError": "No disponible"
+      "rateError": "No disponible",
+      "unlinked_one": "Además, {{count}} test sin vincular",
+      "unlinked_other": "Además, {{count}} tests sin vincular",
+      "unlinkedTitle": "Tests importados sin un caso en el periodo: no cuentan en la tasa. Vincúlalos en Ejecuciones"
     },
     "period": {
       "label": "Periodo",
@@ -1668,9 +1715,9 @@
       "ringLoading": "Porcentaje ejecutado: cargando"
     },
     "daily": {
-      "title": "Ejecuciones diarias",
-      "subtitle": "Todos los proyectos · {{period}}",
-      "totalLabel": "Ejecuciones en el periodo",
+      "title": "Ejecuciones diarias (intentos)",
+      "subtitle": "Todos los proyectos · cada intento cuenta · {{period}}",
+      "totalLabel": "Intentos en el periodo",
       "pass": "Pasa",
       "fail": "Falla",
       "none": "Sin ejecuciones",
@@ -1742,7 +1789,7 @@
     },
     "testPlan": {
       "title": "Plan de pruebas",
-      "subtitle": "Asistente de 21 pasos conforme a ISO/IEC/IEEE 29119."
+      "subtitle": "Asistente de 19 pasos conforme a ISO/IEC/IEEE 29119."
     },
     "testCases": {
       "title": "Casos de prueba",
@@ -1802,8 +1849,8 @@
       "critical": "Crítica"
     },
     "savedToast": "Tarjeta guardada",
-    "linkedCases": "Casos de prueba vinculados",
-    "noCasesToLink": "Este proyecto aún no tiene casos de prueba.",
+    "loadFailed": "No se pudo cargar el tablero.",
+    "saveFailed": "No se pudo guardar la tarjeta. Inténtalo de nuevo.",
     "drag": {
       "handle": "Mover la tarjeta «{{card}}»",
       "help": "Para mover una tarjeta, pulsa Espacio o Intro en su asa, muévela con las flechas (arriba y abajo en la columna, izquierda y derecha entre columnas) y pulsa Espacio o Intro para soltarla. Escape cancela.",
@@ -1829,7 +1876,8 @@
     "deleteTitle": "¿Eliminar la tarjeta?",
     "deleteMessage": "Se elimina «{{card}}» del tablero.",
     "deleteConfirm": "Sí, eliminar",
-    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo."
+    "deleteFailed": "No se pudo eliminar la tarjeta. Inténtalo de nuevo.",
+    "attachFiles": "Adjuntar archivos"
   },
   "traceability": {
     "loadFailed": "No se pudo cargar la trazabilidad.",
@@ -2292,8 +2340,10 @@
     "format": "Formato no válido. Ejemplo: {{example}}.",
     "duplicateRow": "Fila repetida: ya hay otra igual.",
     "duplicateKey": "Ese ID ya existe.",
-    "summary": "No se puede guardar: revisa {{count}} campo(s).",
-    "savedWithWarnings": "Guardado con {{count}} aviso(s) por revisar.",
+    "summary_one": "No se puede guardar: revisa {{count}} campo.",
+    "summary_other": "No se puede guardar: revisa {{count}} campos.",
+    "savedWithWarnings_one": "Guardado con {{count}} aviso por revisar.",
+    "savedWithWarnings_other": "Guardado con {{count}} avisos por revisar.",
     "customRequired": "Este campo es obligatorio."
   },
   "dialog": {
@@ -2385,6 +2435,11 @@
     "moveUp": "Subir",
     "moveDown": "Bajar",
     "drag": "Arrastrar para reordenar «{{label}}»",
+    "dragHelp": "Para reordenar un campo, pulsa Espacio o Intro en su asa, muévelo con las flechas arriba y abajo, y pulsa Espacio o Intro para soltarlo. Escape cancela.",
+    "dragStart": "Campo «{{label}}» seleccionado para mover.",
+    "dragOver": "Campo «{{label}}» sobre la posición {{to}}.",
+    "dragEnd": "Campo «{{label}}» movido a la posición {{to}}.",
+    "dragCancel": "Movimiento cancelado; el campo «{{label}}» vuelve a su sitio.",
     "moved": "«{{label}}» movido a la posición {{n}}",
     "type": {
       "text": "Texto",
@@ -2515,7 +2570,7 @@
     "archivedToast": "Configuración «{{name}}» archivada",
     "restoredToast": "Configuración «{{name}}» restaurada",
     "moved": "{{name}} movida a la posición {{n}}",
-    "loadFailed": "No se pudieron cargar las configuraciones",
+    "loadFailed": "No se pudieron cargar las configuraciones.",
     "saveFailed": "No se pudo guardar la configuración",
     "error": {
       "labelTaken": "La etiqueta ya la usa otra configuración: {{detail}}."
@@ -2573,7 +2628,7 @@
     "empty": "Aún no hay ciclos. Crea uno para planificar qué casos se ejecutan y en qué configuraciones.",
     "emptyFilter": "Ningún ciclo con este estado.",
     "notFound": "Este ciclo ya no existe.",
-    "loadFailed": "No se pudieron cargar los ciclos",
+    "loadFailed": "No se pudieron cargar los ciclos.",
     "saveFailed": "No se pudo guardar el ciclo",
     "createdToast": "Ciclo {{key}} creado",
     "savedToast": "Ciclo guardado",
@@ -2670,7 +2725,9 @@
       "actions": "Acciones de {{key}}",
       "actionsHeader": "Acciones",
       "remove": "Quitar del ciclo",
-      "removedToast": "{{key}} quitado del ciclo"
+      "removedToast": "{{key}} quitado del ciclo",
+      "removeTitle": "¿Quitar {{key}} del ciclo?",
+      "removeConfirm": "El caso deja de formar parte de este ciclo. Sus resultados ya registrados se conservan y puedes volver a añadirlo cuando quieras."
     },
     "add": {
       "action": "Añadir casos",
@@ -2871,7 +2928,7 @@
       "reporter": "Reportado por",
       "externalKey": "Clave externa",
       "externalUrl": "Enlace externo",
-      "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llega con INT-05.",
+      "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llegará en una próxima versión.",
       "labels": "Etiquetas"
     },
     "links": {
@@ -2883,7 +2940,12 @@
       "noResults": "Ningún resultado vinculado.",
       "addResult": "Vincular un resultado",
       "remove": "Quitar el vínculo con {{label}}",
-      "afterSave": "Los resultados se vinculan una vez guardado el defecto."
+      "afterSave": "Los resultados se vinculan una vez guardado el defecto.",
+      "removeTitle": "¿Quitar el vínculo?",
+      "removeConfirm": "El defecto deja de estar vinculado a {{label}}. El resultado no se borra y puedes volver a vincularlo.",
+      "removeAction": "Quitar el vínculo",
+      "linkFailed": "No se pudo vincular el resultado. Inténtalo de nuevo.",
+      "unlinkFailed": "No se pudo quitar el vínculo. Inténtalo de nuevo."
     },
     "results": {
       "loadFailed": "No se pudieron cargar los resultados.",
@@ -2929,7 +2991,9 @@
       "origin": "Origen de los runs",
       "all": "Todos",
       "imported": "Importados",
-      "empty": "Aún no hay runs. Importa un informe con «Importar informe».",
+      "empty": "Aún no hay runs. Crea uno con «Nuevo run manual», importa un informe con «Importar informe» o ejecuta un ciclo.",
+      "emptyWeb": "Aún no hay runs. Crea uno con «Nuevo run manual» o ejecuta un ciclo; los informes se importan desde la app de escritorio.",
+      "noResults": "Sin resultados",
       "build": "build {{build}}",
       "unlinked_one": "{{count}} sin vincular",
       "unlinked_other": "{{count}} sin vincular",
@@ -3091,7 +3155,9 @@
         "mapped": "Ningún test vinculado a mano.",
         "all": "Ningún test importado sin caso."
       },
-      "linkError": "No se pudo guardar el vínculo. Inténtalo de nuevo."
+      "linkError": "No se pudo guardar el vínculo. Inténtalo de nuevo.",
+      "unlinkTitle": "¿Desvincular {{name}}?",
+      "unlinkConfirm": "Sus resultados, pasados y futuros, dejan de contar para {{key}} y vuelven a la bandeja. Los resultados no cambian; puedes vincularlo de nuevo."
     }
   },
   "execution": {
@@ -3195,7 +3261,7 @@
       "draftUnavailable": "Este navegador no deja guardar borradores. Lo marcado se guarda al registrar el resultado.",
       "importDesktopOnly": "Importar informes y la bandeja «Sin vincular» solo en la app de escritorio."
     },
-    "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan (llegará con SYNC-04b).",
+    "evidenceLocal": "Las evidencias se guardan cifradas en este equipo y aún no se sincronizan con tus otros equipos.",
     "run": {
       "addCases": "Añadir casos",
       "edit": "Editar datos",

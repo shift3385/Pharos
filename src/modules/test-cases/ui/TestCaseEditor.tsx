@@ -49,6 +49,7 @@ import {
 } from "./caseAi";
 import { RequirementLinks } from "./RequirementLinks";
 import { useToast } from "@shared/ui/Toast";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { saveFile } from "@shared/export/saveFile";
 import { unlessReported } from "@shared/ui/notify";
 import {
@@ -328,6 +329,7 @@ export function TestCaseEditor({
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const toast = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [testCase, setTestCase] = useState<TestCase | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [gherkin, setGherkin] = useState("");
@@ -704,6 +706,38 @@ export function TestCaseEditor({
   function showExportDone(name: string) {
     setNotice(t("testCase.exportDone", { name }));
     window.setTimeout(() => setNotice(null), 5000);
+  }
+
+  /** «Restaurar» (NC-018, as in the plan): loads that revision's content in
+   *  the editor, still unsaved and with the case's current key; «Guardar»
+   *  then makes it a new revision, so the history is never lost. */
+  async function restoreRevision(revisionId: string) {
+    if (!testCase) return;
+    const rev = await testCaseApi.revisionDetail(revisionId, userId).catch(() => null);
+    if (!rev) {
+      toast(t("testCase.restoreFailed"), "error");
+      return;
+    }
+    const ok = await confirm({
+      title: t("testCase.restoreTitle", { revision: rev.revision }),
+      message: t("testCase.restoreConfirm"),
+      confirmLabel: t("testCase.restoreAction"),
+    });
+    if (!ok) return;
+    const f = fromCase({
+      ...testCase,
+      title: rev.title,
+      version: rev.version,
+      status: rev.status,
+      priority: rev.priority,
+      caseType: rev.caseType as TestCase["caseType"],
+      automationStatus: rev.automationStatus as TestCase["automationStatus"],
+      data: rev.data as TestCase["data"],
+    });
+    setForm(f);
+    setGherkin(buildGherkin(f));
+    setRevisions(null);
+    toast(t("testCase.restoredToast", { revision: rev.revision }));
   }
 
   async function toggleRevisions() {
@@ -1223,6 +1257,7 @@ export function TestCaseEditor({
 
   const dialogs = (
     <>
+      {confirmDialog}
       {goingTo && nav && (
         <GoToCaseDialog
           cases={nav.cases}
@@ -1348,6 +1383,18 @@ export function TestCaseEditor({
                   </span>
                   <span className="tp-revs__title">{r.title}</span>
                   <span className="tp-revs__date">{stampLabel(r.createdAt, i18n.resolvedLanguage ?? "es")}</span>
+                  {r.revision === testCase?.revision ? (
+                    <span className="tp__muted">{t("testCase.currentRevision")}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="ui-btn ui-btn--small ui-btn--ghost tp-revs__restore"
+                      onClick={() => void restoreRevision(r.id)}
+                    >
+                      {t("testCase.restoreAction")}
+                      <span className="sr-only"> {t("testCase.revShort")} {r.revision}</span>
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

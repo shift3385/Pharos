@@ -6,6 +6,7 @@ import type {
   TestCaseInput,
   TestCaseSummary,
 } from "../model/types";
+import type { TestCaseRevisionDetail } from "@shared/contracts/contract";
 import { announceCasesChanged, type BatchOptions } from "../model/events";
 
 /** Announces a created or deleted case once the store has it (FIX-13),
@@ -50,4 +51,7 @@ export const testCaseApi = {
     ),
   revisions: (id: string, userId: string): Promise<RevisionSummary[]> =>
     isTauri() ? invoke("test_case_revisions", { id, userId }) : Promise.resolve([]),
+  /** One revision's content, to restore it in the editor (NC-018). */
+  revisionDetail: (id: string, userId: string): Promise<TestCaseRevisionDetail | null> =>
+    isTauri() ? invoke("test_case_revision_get", { id, userId }) : Promise.resolve(null),
 };

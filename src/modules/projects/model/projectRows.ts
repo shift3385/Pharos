@@ -2,6 +2,7 @@
 // shows. The projects module composes the other modules' public APIs.
 import { projectPlanOverview } from "@modules/test-plan";
 import { projectTraceFacts } from "@modules/traceability";
+import { executionApi } from "@modules/runs";
 import { parseStamp } from "@shared/time/stamp";
 import { projectApi } from "../api/projectApi";
 import { lastAccessMap } from "./lastAccess";
@@ -12,10 +13,12 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
   const projects = await projectApi.list(ownerId);
   return Promise.all(
     projects.map(async (p): Promise<ProjectRow> => {
-      // Three reads per project: its plan, its cases and its requirements (FIX-20).
-      const [plan, { cases, coverage }] = await Promise.all([
+      // Its plan, its cases and requirements (FIX-20) and its execution
+      // progress (NC-021). A failed execution read leaves «—», not an error.
+      const [plan, { cases, coverage }, summary] = await Promise.all([
         projectPlanOverview(p.id, ownerId),
         projectTraceFacts(p.id, ownerId),
+        executionApi.summary({ projectId: p.id }, ownerId).catch(() => null),
       ]);
       return {
         id: p.id,
@@ -28,6 +31,7 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         cases,
         coverage,
         closeDate: plan?.closeDate ?? null,
+        execution: summary ? { executed: summary.progress.executed, total: summary.progress.total } : null,
       };
     }),
   );

@@ -17,6 +17,7 @@
 // exercises; `npm run check:manual` reads them statically, so they must be
 // string literals.
 import { appendFileSync, mkdirSync } from "node:fs";
+import { foreignNames } from "../../scripts/manual/persona.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser } from "@wdio/globals";
@@ -30,6 +31,9 @@ export const stepsFile = join(resultsDir, "steps.jsonl");
 /** Desktop shots at 1440×900 (the manual's size); mobile notes at 390×844. */
 export const DESKTOP = { width: 1440, height: 900, view: "desktop" as const };
 export const MOBILE = { width: 390, height: 844, view: "mobile" as const };
+/** Medium screens (icon strip), 1024×768 (MAN-03). */
+export const TABLET = { width: 1024, height: 768, view: "tablet" as const };
+export type Viewport = typeof DESKTOP | typeof MOBILE | typeof TABLET;
 
 export type Shot =
   | "page"
@@ -87,6 +91,8 @@ export interface StepRecord {
   focus?: FocusBox;
   /** The step declared a focus that was not displayed at capture time. */
   focusMissing?: boolean;
+  /** Other people or accounts the capture showed (NC-052; only in report mode). */
+  foreignNames?: string[];
   group?: string;
 }
 
@@ -125,7 +131,22 @@ async function focusBox(selectors: string[], origin: string | null): Promise<Foc
 
 let current: { id: ChapterId; n: number; failed: string | null } | null = null;
 /** The window size the next captures must have (setViewport changes it). */
-let target: typeof DESKTOP | typeof MOBILE = DESKTOP;
+let target: Viewport = DESKTOP;
+
+/** The text a capture shows: the visible text of the page and the values of
+ *  its fields (an alias typed in a form is not in innerText). */
+async function screenText(): Promise<string> {
+  return browser.execute(() => {
+    const values = Array.from(document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea"))
+      .filter((el) => el.type !== "password" && el.type !== "hidden" && el.type !== "file")
+      .map((el) => el.value);
+    return [document.body.innerText, ...values].join("\n");
+  });
+}
+
+/** NC-052: every capture shows only the manual's person. `report` lists the
+ *  hits without failing (PHAROS_TOURS_NAMES=report, for an audit). */
+const NAMES_MODE = process.env.PHAROS_TOURS_NAMES === "report" ? "report" : "strict";
 
 function record(rec: StepRecord) {
   mkdirSync(resultsDir, { recursive: true });
@@ -212,7 +233,8 @@ async function closeLeftovers(id: ChapterId, failed: string | null) {
         for (const el of await $$(OVERLAY)) if (await el.isDisplayed()) open.push(el);
         if (open.length === 0) return closed;
         closed++;
-        if (await discard().isExisting()) await discard().click();
+        // Chaining $ on a missing alertdialog throws: look for it first.
+        if ((await $('[role="alertdialog"]').isExisting()) && (await discard().isExisting())) await discard().click();
         else await browser.keys("Escape");
         await browser.execute(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
       }
@@ -279,6 +301,7 @@ export function step(id: string, spec: StepSpec) {
       let image: string | null = null;
       let focus: FocusBox | null = null;
       let focusMissing = false;
+      let foreign: string[] = [];
       if (shot !== false) {
         await settle();
         image = `${ch.id}/${String(ch.n).padStart(2, "0")}-${id}.png`;
@@ -300,13 +323,25 @@ export function step(id: string, spec: StepSpec) {
           }
           if (shot === "page") await browser.saveScreenshot(file);
           else await $(shot.element).saveScreenshot(file);
+          foreign = [...new Set(foreignNames(await screenText()))];
         } finally {
           await setMask([]);
+        }
+        if (foreign.length && NAMES_MODE === "strict") {
+          throw new Error(`la captura muestra otra persona o cuenta: ${foreign.join(", ")} (NC-052)`);
         }
       }
       const size = await viewport();
       if (spec.after) await spec.after();
-      record({ ...base, image, viewport: size, status: "passed", ...(focus ? { focus } : {}), ...(focusMissing ? { focusMissing } : {}) });
+      record({
+        ...base,
+        image,
+        viewport: size,
+        status: "passed",
+        ...(focus ? { focus } : {}),
+        ...(focusMissing ? { focusMissing } : {}),
+        ...(foreign.length ? { foreignNames: foreign } : {}),
+      });
     } catch (err) {
       ch.failed = id;
       const file = join(resultsDir, "failures", `${ch.id}-${id}.png`);
@@ -319,7 +354,7 @@ export function step(id: string, spec: StepSpec) {
 }
 
 /** Switches the window for the next steps (and waits for the layout). */
-export async function setViewport(v: typeof DESKTOP | typeof MOBILE) {
+export async function setViewport(v: Viewport) {
   target = v;
   await setAppWindow(v.width, v.height, v.view);
 }

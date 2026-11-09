@@ -1,7 +1,7 @@
 // Administración by grouped tabs (SPEC §8, ADR-0031): the tab lives in the URL,
 // Motor de IA is the default, the old routes redirect, the keyboard moves
 // through every tab, and each tab passes axe at phone and desktop widths.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -67,7 +67,6 @@ describe("Administración", () => {
 
   it("General saves only with changes, and leaving with them asks first", async () => {
     const user = userEvent.setup();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderAdmin("/admin?tab=general");
     const save = screen.getByRole("button", { name: "Guardar ajustes" });
     expect(save).toBeDisabled();
@@ -76,7 +75,8 @@ describe("Administración", () => {
     await user.type(retention, "45");
     expect(save).toBeEnabled();
     await user.click(screen.getByTestId("admin-tab-sync"));
-    expect(confirm).toHaveBeenCalledOnce();
+    const ask = await screen.findByRole("alertdialog", { name: "¿Descartar los cambios?" });
+    await user.click(within(ask).getByRole("button", { name: "Seguir editando" }));
     expect(screen.getByTestId("where")).toHaveTextContent("tab=general");
     await user.click(save);
     expect(save).toBeDisabled();
@@ -110,15 +110,14 @@ describe("Administración", () => {
 
   it("asks before leaving Motor de IA with unsaved changes", async () => {
     const user = userEvent.setup();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderAdmin();
     await user.click(await screen.findByRole("radio", { name: /^OpenAI/ }));
     await user.click(screen.getByTestId("admin-tab-general"));
-    expect(confirm).toHaveBeenCalledOnce();
+    await user.click(await screen.findByRole("button", { name: "Seguir editando" }));
     expect(screen.getByTestId("where")).not.toHaveTextContent("general");
-    confirm.mockReturnValue(true);
     await user.click(screen.getByTestId("admin-tab-general"));
-    expect(screen.getByTestId("where")).toHaveTextContent("tab=general");
+    await user.click(await screen.findByRole("button", { name: "Descartar cambios" }));
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("tab=general"));
   });
 
   it("Seguridad holds the recovery key (SEC-03), which left Perfil", () => {
@@ -128,7 +127,6 @@ describe("Administración", () => {
 
   it("leaving Administración with unsaved changes asks; switching tabs does not ask twice", async () => {
     const user = userEvent.setup();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderAdmin();
     await user.click(await screen.findByRole("radio", { name: /^OpenAI/ }));
 
@@ -138,11 +136,12 @@ describe("Administración", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("/admin");
     expect(screen.getByRole("radio", { name: /^OpenAI/ })).toBeChecked();
 
-    // A tab switch asks once (its own confirm), never the leave dialog.
+    // A tab switch asks once (its own confirmation), never the leave dialog too.
     await user.click(screen.getByTestId("admin-tab-general"));
-    expect(confirm).toHaveBeenCalledOnce();
+    expect(await screen.findAllByRole("alertdialog")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Descartar cambios" }));
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("tab=general"));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    expect(screen.getByTestId("where")).toHaveTextContent("tab=general");
 
     // Clean now: leaving does not ask.
     await user.click(screen.getByRole("link", { name: "Ir a Proyectos" }));

@@ -4,6 +4,7 @@ import {
   customFilterValue,
   hasMenuFilters,
   filterCases,
+  resultOf,
   sortCases,
   statusCounts,
   type ListedCase,
@@ -34,6 +35,22 @@ const CASES = [
 ];
 
 describe("case list model", () => {
+  it("«Ejecución» filters by the latest result; no result counts as «Sin resultados» (NC-019)", () => {
+    const listed = [
+      c("PCL-1", { lastResult: { status: "passed", at: null } }),
+      c("PCL-2", { lastResult: { status: "failed", at: null } }),
+      c("PCL-3", { lastResult: null }),
+      c("PCL-4", { lastResult: { status: "not_run", at: null } }),
+    ];
+    const ids = (results: string[]) =>
+      filterCases(listed, { ...EMPTY_FILTERS, results: new Set(results) }).map((x) => x.scenarioId);
+    expect(ids(["failed"])).toEqual(["PCL-2"]);
+    expect(ids(["not_run"])).toEqual(["PCL-3", "PCL-4"]);
+    expect(ids(["passed", "not_run"])).toEqual(["PCL-1", "PCL-3", "PCL-4"]);
+    expect(resultOf(listed[3])).toBe("not_run");
+    expect(hasMenuFilters({ ...EMPTY_FILTERS, results: new Set(["passed"]) })).toBe(true);
+  });
+
   it("searches the ID, the title (without accents) and the linked requirements", () => {
     const ids = (q: string) => filterCases(CASES, { ...EMPTY_FILTERS, query: q }).map((x) => x.scenarioId);
     expect(ids("req-031")).toEqual(["PCL-10"]);

@@ -111,6 +111,8 @@ describe("Defectos (DEF-01)", () => {
     setViewportWidth(1440);
     renderWithProviders(<DefectsPage projectId="p1" userId="u1" cases={cases} />);
     const table = await screen.findByRole("table", { name: "Defectos" });
+    // On a surface, readable over the background image (NC-041).
+    expect(table.closest(".dt-surface")).not.toBeNull();
     const rows = within(table).getAllByRole("row").slice(1);
     // Open = not closed nor rejected: deferred counts.
     expect(rows).toHaveLength(3);
@@ -239,6 +241,9 @@ describe("DefectEditor", () => {
     renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
     expect(fieldList).toHaveBeenCalledWith("p1", "u1", "defect");
     const customer = await screen.findByRole("textbox", { name: /Cliente afectado/ });
+    // One «Campos personalizados» title, the editor's section (NC-050).
+    expect(screen.getAllByText("Campos personalizados")).toHaveLength(1);
+    expect(screen.getByRole("region", { name: "Campos personalizados" })).toContainElement(customer);
     await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), "Cobro doble");
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(create).not.toHaveBeenCalled();

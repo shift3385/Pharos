@@ -1,15 +1,23 @@
-// Chapter 1 — Acceso y cuenta: the sign-in screen, its errors, creating an
-// account, the user menu, the profile and the recovery key.
+// Chapter 1 — Acceso y cuenta (manual v2, MAN-03): the sign-in screen and its
+// errors, creating an account, the sign-in screen on a phone, signing in and
+// out, the user menu and the profile. The example: Liomar Rodríguez, QA lead
+// of Pharos, creates his own account here and tests Pharos itself with it in
+// every chapter (NC-052: the one person and account of the manual).
 import { $, browser, expect } from "@wdio/globals";
 import { email, signOut, userMenuTrigger } from "../support";
-import { chapter, step } from "./tour";
+import { PERSONA } from "../../scripts/manual/persona.mjs";
+import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import { button, byTestId, clearInput, es, waitForText } from "./helpers";
 
-/** A throwaway account on the tour's own server (dropped with its database). */
-const NEW_ACCOUNT = { alias: "Ana QA", first: "Ana", last: "Pérez", email: "ana.qa@pharos.test", password: "tour-ana-2026" };
+/** The tour account (run-tours passes its e-mail and password). Liomar types
+ *  his surname without its accent when he registers and corrects it in his
+ *  profile: the profile step shows a real fix, never another person. */
 const TOUR_PASSWORD = process.env.TEST_USER_PASSWORD ?? "supersecret1";
+const TYPED_LAST = "Rodriguez";
 /** Shown in clear in the manual on purpose: an example, not a real password. */
 const EXAMPLE_PASSWORD = "Ejemplo-2026";
+/** The tour account's person in the manual (docs: datos de ejemplo). */
+export const LEAD = { alias: PERSONA.alias, first: PERSONA.first, last: PERSONA.last };
 const REVEAL = `button[aria-label="${es.auth.showPassword}"]`;
 const USER_MENU = '[data-testid="user-menu-trigger"]';
 
@@ -17,7 +25,7 @@ chapter("acceso", () => {
   step("pantalla-entrada", {
     title: "La pantalla de entrada",
     caption:
-      "Al abrir Pharos sin una sesión iniciada aparece «Iniciar sesión». A la izquierda está el formulario: tu correo electrónico, tu contraseña y el botón «Entrar»; bajo el título, el enlace «Regístrate» por si aún no tienes cuenta. «Continuar con Google» ya se ve, pero todavía no está disponible («Próximamente»). A la derecha, un resumen de lo que ofrece la aplicación.",
+      "Al abrir Pharos sin una sesión iniciada aparece «Iniciar sesión». A la izquierda está el formulario: tu correo electrónico, tu contraseña y el botón «Entrar»; bajo el título, el enlace «Regístrate» por si aún no tienes cuenta. «Continuar con Google» ya se ve, pero todavía no funciona («Próximamente»). A la derecha, un resumen de lo que ofrece Pharos. Al pie, la versión instalada: dila siempre si informas de un fallo.",
     covers: ["screen:login", "action:login-google"],
     run: async () => {
       if (await userMenuTrigger().isExisting()) await signOut();
@@ -34,7 +42,7 @@ chapter("acceso", () => {
   step("idioma-entrada", {
     title: "Elegir el idioma antes de entrar",
     caption:
-      "El selector de idioma, en la esquina inferior izquierda (muestra el idioma actual, «Español»), despliega los idiomas disponibles: español e inglés. Al elegir uno, toda la interfaz cambia al momento, también esta pantalla. Una vez dentro, el idioma se cambia desde el menú de usuario o desde «Mi perfil».",
+      "El selector de idioma, en la esquina inferior izquierda (muestra el idioma actual, «Español»), despliega los idiomas disponibles: español e inglés. Muévete por la lista con las flechas y elige con Intro, o haz clic. Toda la interfaz cambia al momento, también esta pantalla, y Pharos lo recuerda en este equipo. Una vez dentro, el idioma se cambia desde el menú de usuario o desde «Mi perfil».",
     covers: ["action:login-language"],
     focus: ['[data-testid="login-language"]', '[role="menu"]'],
     run: async () => {
@@ -77,7 +85,7 @@ chapter("acceso", () => {
   step("error-credenciales", {
     title: "Si el correo o la contraseña no son correctos",
     caption:
-      "Si el correo o la contraseña no corresponden a ninguna cuenta, Pharos no entra y lo indica bajo el formulario: «Correo o contraseña incorrectos.». Por seguridad no dice cuál de los dos falla, así que revisa ambos (el ojo te ayuda con la contraseña) y vuelve a intentarlo. Tras varios intentos seguidos, pide esperar un momento.",
+      "Si el correo o la contraseña no corresponden a ninguna cuenta, Pharos no entra y lo indica bajo el formulario: «Correo o contraseña incorrectos.». Por seguridad no dice cuál de los dos falla, así que revisa ambos (el ojo te ayuda con la contraseña) y vuelve a intentarlo. Tras varios intentos seguidos, pide que esperes un momento antes de probar otra vez.",
     covers: ["state:login-error"],
     focus: ".auth-form__error",
     run: async () => {
@@ -93,23 +101,23 @@ chapter("acceso", () => {
   step("registro", {
     title: "Crear una cuenta",
     caption:
-      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu alias, tu nombre y apellidos, tu correo y una contraseña de al menos 8 caracteres (en este ejemplo, la cuenta de Ana Pérez, con el alias «Ana QA»). El alias es como te verá el resto de la aplicación; el nombre y los apellidos forman tu nombre oficial, el que firma los documentos que exportas.",
+      "Si es tu primera vez, «Regístrate» abre «Crear cuenta». Escribe tu alias, tu nombre, tus apellidos, tu correo y una contraseña de al menos 8 caracteres. En este ejemplo, Liomar Rodríguez, responsable de QA de Pharos, crea la cuenta con la que hará todas las pruebas del manual, con el alias «Liomar QA». El alias es como te ve el resto de la aplicación; el nombre y los apellidos forman tu nombre oficial, el que firma los documentos que exportas (el plan de pruebas, por ejemplo). Todos los campos son obligatorios: si falta uno, el formulario te lleva a él.",
     covers: ["screen:register"],
     run: async () => {
       await $(`button=${es.auth.signUpLink}`).click();
       await expect($(`h1=${es.auth.registerTitle}`)).toBeDisplayed();
-      await $("#displayName").setValue(NEW_ACCOUNT.alias);
-      await $("#firstName").setValue(NEW_ACCOUNT.first);
-      await $("#lastName").setValue(NEW_ACCOUNT.last);
-      await $("#email").setValue(NEW_ACCOUNT.email);
-      await $("#password").setValue(NEW_ACCOUNT.password);
+      await $("#displayName").setValue(LEAD.alias);
+      await $("#firstName").setValue(LEAD.first);
+      await $("#lastName").setValue(TYPED_LAST);
+      await $("#email").setValue(email);
+      await $("#password").setValue(TOUR_PASSWORD);
     },
   });
 
   step("registro-hecho", {
     title: "Primera entrada con la cuenta nueva",
     caption:
-      "«Registrarme» crea la cuenta y entra directamente, sin pasos intermedios. Como la cuenta es nueva, «Inicio» aparece todavía vacío, con el saludo y la invitación a crear tu primer proyecto (capítulo 2). Tu alias y tu correo quedan al pie del menú lateral.",
+      "«Registrarme» (o Intro) crea la cuenta y entra directamente, sin pasos intermedios. Como la cuenta es nueva, «Inicio» aparece vacío: el saludo y la invitación a crear tu primer proyecto con «Nuevo proyecto» (capítulo 4). Tu alias y tu correo quedan al pie del menú lateral, junto al estado de la sincronización.",
     covers: ["action:register", "state:home-empty"],
     focus: USER_MENU,
     run: async () => {
@@ -121,7 +129,7 @@ chapter("acceso", () => {
   step("cerrar-sesion", {
     title: "Cerrar sesión",
     caption:
-      "Para salir, abre el menú de usuario con un clic en tu avatar, al pie del menú lateral, y elige «Cerrar sesión». Pharos vuelve a la pantalla de entrada. Hazlo siempre si compartes el equipo: si no, la sesión sigue abierta la próxima vez que alguien abra la aplicación.",
+      "Para salir, abre el menú de usuario con un clic en tu avatar, al pie del menú lateral, y elige «Cerrar sesión». Pharos vuelve a la pantalla de entrada y borra de este equipo los datos en caché de tu cuenta; lo que ya está sincronizado sigue en el servidor. Ciérrala siempre si compartes el equipo: si no, la sesión sigue abierta la próxima vez que alguien abra la aplicación.",
     covers: ["action:logout", "screen:user-menu"],
     focus: `button=${es.auth.logout}`,
     run: async () => {
@@ -130,15 +138,30 @@ chapter("acceso", () => {
     },
   });
 
-  step("entrar", {
-    title: "Iniciar sesión",
+  step("entrada-movil", {
+    title: "La entrada en el móvil",
     caption:
-      "Para entrar, escribe tu correo y tu contraseña y pulsa «Entrar» (o Intro). Pharos abre «Inicio» con el resumen de tus proyectos (capítulo 2) y recuerda la sesión en este equipo hasta que la cierres, así que no tendrás que volver a escribirla cada vez que abras la aplicación.",
-    covers: ["action:login"],
-    focus: `button=${es.auth.login}`,
+      "En una pantalla estrecha (un móvil, o la ventana muy reducida), la foto queda arriba con el logotipo y el selector de idioma, y el formulario sube como una hoja desde abajo. Es el mismo formulario, con los mismos campos y errores; solo se desplaza la hoja, no la foto.",
+    covers: ["platform:mobile-login"],
     run: async () => {
       await button(es.auth.logout).click();
       await expect(button(es.auth.login)).toBeDisplayed();
+      await setViewport(MOBILE);
+      await expect($(".auth--mobile .auth-sheet")).toBeDisplayed();
+    },
+    after: async () => {
+      await setViewport(DESKTOP);
+      await expect($(".auth--mobile")).not.toBeExisting();
+    },
+  });
+
+  step("entrar", {
+    title: "Iniciar sesión",
+    caption:
+      "Para entrar, escribe tu correo y tu contraseña y pulsa «Entrar» (o Intro); el botón pasa a «Entrando…» mientras tanto. Pharos abre «Inicio» y recuerda la sesión en este equipo hasta que la cierres, así que no tendrás que escribirla cada vez que abras la aplicación. En el resto del manual, Liomar trabaja con esta misma cuenta.",
+    covers: ["action:login"],
+    focus: `button=${es.auth.login}`,
+    run: async () => {
       await $("#email").setValue(email);
       await $("#password").setValue(TOUR_PASSWORD);
     },
@@ -152,7 +175,7 @@ chapter("acceso", () => {
   step("menu-usuario", {
     title: "El menú de usuario",
     caption:
-      "El menú de tu avatar reúne lo que es tuyo y no de un proyecto: «Mi perfil», «Administración» (la configuración de la aplicación, capítulo 10), el idioma de la interfaz (español o inglés, se aplica al momento) y «Cerrar sesión».",
+      "El menú de tu avatar reúne lo que es tuyo y no de un proyecto: «Mi perfil», «Administración» (la configuración de la aplicación, capítulo 15), el idioma de la interfaz (español o inglés, con una ✓ en el actual; se aplica al momento) y «Cerrar sesión». Se recorre con las flechas ↑ ↓ y se cierra con Esc.",
     covers: ["action:user-menu-language"],
     focus: '[role="menu"]',
     run: async () => {
@@ -165,7 +188,7 @@ chapter("acceso", () => {
   step("perfil", {
     title: "Tu perfil",
     caption:
-      "«Mi perfil» reúne tus datos personales: el alias y tu nombre oficial (nombre y apellidos, el que firma los documentos que exportas), el estado de la sincronización con «Sincronizar ahora» y, en «Preferencias», el idioma y el tema (claro u oscuro), que se aplican al momento en este equipo.",
+      "«Mi perfil» reúne tus datos: el alias y tu nombre oficial (nombre y apellidos), el estado de la sincronización con «Sincronizar ahora» y, en «Preferencias», el idioma y el tema (claro u oscuro), que se aplican al momento en este equipo. La cuenta de este ejemplo tiene los datos con los que Liomar la creó.",
     covers: ["route:/profile", "action:profile-preferences"],
     run: async () => {
       await $(`[role="menuitem"]*=${es.shell.myProfile}`).click();
@@ -176,18 +199,21 @@ chapter("acceso", () => {
   });
 
   step("perfil-guardar", {
-    title: "Cambiar el alias",
+    title: "Cambiar el alias y el nombre",
     caption:
-      "Cambia el alias o el nombre (en este ejemplo, el alias pasa a «Smoke QA») y pulsa «Guardar». Junto al botón aparece «Guardado» y, debajo, cuándo se creó y se actualizó por última vez tu perfil y su número de revisión, que sube con cada cambio guardado. El nuevo alias llega a tus otros equipos con la siguiente sincronización.",
+      "Corrige lo que haga falta y pulsa «Guardar» (o Intro). En este ejemplo, Liomar escribió su apellido sin tilde al registrarse y lo corrige: «Rodríguez». Ese nombre oficial es el que firma el plan de pruebas que redacta en el capítulo 5. Junto al botón aparece «Guardado» (si cambias el alias, el avatar y el pie del menú lateral lo muestran al momento) y, debajo, cuándo se creó y se actualizó tu perfil y su número de revisión, que sube con cada cambio. Los cambios llegan a tus otros equipos con la siguiente sincronización.",
     covers: ["action:profile-save"],
     focus: [".profile__audit", `button=${es.profile.save}`],
     run: async () => {
       await expect($("#displayName")).toBeEnabled(); // once the profile has loaded
-      await clearInput("#displayName");
-      await $("#displayName").setValue("Smoke QA");
+      await expect($("#lastName")).toHaveValue(TYPED_LAST);
+      await clearInput("#lastName");
+      await $("#lastName").setValue(LEAD.last);
       await button(es.profile.save).click();
       await waitForText(es.profile.saved);
       await expect($(".profile__audit")).toBeDisplayed();
+      await expect($("#lastName")).toHaveValue(LEAD.last);
+      await expect(userMenuTrigger()).toHaveText(expect.stringContaining(LEAD.alias));
     },
   });
 });

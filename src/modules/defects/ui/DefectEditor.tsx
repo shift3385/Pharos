@@ -30,6 +30,7 @@ import {
   type LinkTarget,
   type LinkableItem,
 } from "../model/types";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { ResultPickerDialog } from "./ResultPickerDialog";
 import { StatusBadge } from "./badges";
 import "@shared/ui/buttons.css";
@@ -120,6 +121,7 @@ export function DefectEditor({
 }) {
   const { t } = useTranslation();
   const toast = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const uid = useId();
   const [current, setCurrent] = useState<Defect | null>(defect);
   const [form, setForm] = useState<Form>(() => formOf(defect, draft));
@@ -223,8 +225,13 @@ export function DefectEditor({
   async function linkResult(resultId: string, linked: boolean) {
     if (!current) return;
     setPicking(false);
-    const next = await defectsApi.link(current.id, userId, { targetKind: "result", targetId: resultId }, linked);
-    if (next) setCurrent(next);
+    try {
+      const next = await defectsApi.link(current.id, userId, { targetKind: "result", targetId: resultId }, linked);
+      if (next) setCurrent(next);
+    } catch {
+      // NC-013: a failed link or unlink is said; the defect stays as it was.
+      notify(t(linked ? "defects.links.linkFailed" : "defects.links.unlinkFailed"), "error");
+    }
   }
 
   async function addFiles(files: FileList | null) {
@@ -256,9 +263,34 @@ export function DefectEditor({
     if (path) toast(t("downloads.saved", { path }));
   }
 
-  async function removeAttachment(id: string) {
-    await defectsApi.attachmentDelete(id, userId);
-    if (current) setAttachments(await defectsApi.attachmentList(current.id, userId));
+  /** Removing an evidence deletes it for good: a critical confirmation
+   *  (NC-012, NC-014). */
+  async function removeAttachment(a: { id: string; name: string }) {
+    const ok = await confirm({
+      title: t("common.removeEvidenceTitle"),
+      message: t("common.removeEvidenceConfirm", { name: a.name }),
+      confirmLabel: t("common.remove"),
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await defectsApi.attachmentDelete(a.id, userId);
+      if (current) setAttachments(await defectsApi.attachmentList(current.id, userId));
+    } catch {
+      toast(t("common.removeEvidenceFailed"), "error");
+    }
+  }
+
+  /** Unlinking a result asks first (NC-012, a normal confirmation). */
+  async function unlinkResult(l: { targetId: string; label?: string | null }) {
+    const label = l.label ?? l.targetId;
+    const ok = await confirm({
+      title: t("defects.links.removeTitle"),
+      message: t("defects.links.removeConfirm", { label }),
+      confirmLabel: t("defects.links.removeAction"),
+      danger: true,
+    });
+    if (ok) await linkResult(l.targetId, false);
   }
 
   const checkList = (items: LinkableItem[], chosen: string[], set: (v: string[]) => void, empty: string) =>
@@ -283,6 +315,7 @@ export function DefectEditor({
 
   return (
     <div className="df-editor">
+      {confirmDialog}
       <header className="tc-editor__top">
         <button type="button" className="tp-editor__back" onClick={onClose}>
           ← {t("defects.back")}
@@ -337,6 +370,10 @@ export function DefectEditor({
                   </option>
                 ))}
               </select>
+              {/* Under its own field, not after the whole row (NC-051). */}
+              <span id={`${uid}-sev-hint`} className="tp-field__hint">
+                {t("defects.field.severityHint")}
+              </span>
             </label>
             <label className="tp-field">
               <span>{t("defects.field.priority")}</span>
@@ -382,9 +419,6 @@ export function DefectEditor({
               </label>
             )}
           </div>
-          <p id={`${uid}-sev-hint`} className="tp-field__hint">
-            {t("defects.field.severityHint")}
-          </p>
           <label className="tp-field">
             <span>{t("defects.field.description")}</span>
             <textarea rows={3} value={form.description} onChange={(e) => update({ description: e.target.value })} />
@@ -466,7 +500,7 @@ export function DefectEditor({
                     type="button"
                     className="df-chip__del"
                     aria-label={t("defects.links.remove", { label: l.label ?? l.targetId })}
-                    onClick={() => void linkResult(l.targetId, false)}
+                    onClick={() => void unlinkResult(l)}
                   >
                     <X size={13} aria-hidden="true" />
                   </button>
@@ -512,6 +546,7 @@ export function DefectEditor({
               {t("defects.section.custom")}
             </h3>
             <CustomFieldsSection
+              labelledBy={`${uid}-custom`}
               fields={fields}
               caseType="standard"
               values={form.custom}
@@ -542,7 +577,7 @@ export function DefectEditor({
                     <button
                       type="button"
                       className="pl-attach__del"
-                      onClick={() => removeAttachment(a.id)}
+                      onClick={() => void removeAttachment(a)}
                       aria-label={`${t("common.remove")}: ${a.name}`}
                       title={`${t("common.remove")}: ${a.name}`}
                     >
@@ -551,13 +586,23 @@ export function DefectEditor({
                   </li>
                 ))}
               </ul>
-              <input
+              <button
+              type="button"
+              className="ui-btn ui-btn--secondary ui-btn--small pl-attach__pick"
+              aria-describedby={`${uid}-limit`}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Paperclip size={14} aria-hidden="true" />
+              {t("planner.attachFiles")}
+            </button>
+            {/* The native picker stays hidden (NC-037): the button opens it. */}
+            <input
                 ref={fileRef}
                 type="file"
                 multiple
+                hidden
                 className="pl-attach__input"
                 aria-label={t("defects.section.attachments")}
-                aria-describedby={`${uid}-limit`}
                 onChange={(e) => void addFiles(e.target.files)}
               />
               <p id={`${uid}-limit`} className="tp-field__hint">

@@ -1,5 +1,7 @@
 ID;Título;Descripción;Prioridad
-REQ-002;Pago con código QR;El cliente paga en un comercio escaneando su código QR;Alta
-REQ-003;Notificación push de cada movimiento;Cada cargo o abono genera una notificación en menos de 30 s;Media
-REQ-004;Inicio de sesión con huella;El cliente entra con la huella registrada en el dispositivo;Alta
-REQ-005;Extracto mensual en PDF;El cliente descarga el extracto del mes en PDF;Baja
+REQ-002;Crear un proyecto con su prefijo;Quien prueba crea un proyecto y elige el prefijo con el que se numeran sus casos.;Alta
+REQ-003;Guardar el plan con historial de revisiones;Cada guardado del plan de pruebas crea una revisión que se puede consultar y restaurar.;Media
+REQ-004;Importar resultados JUnit;Un informe JUnit se importa como run y vincula cada test a su caso por la propiedad test_id.;Alta
+REQ-005;Exportar la matriz de trazabilidad a .xlsx;La matriz se exporta con requisitos, casos, estados y defectos.;Media
+REQ-006;Trabajar sin conexión y sincronizar;Los cambios hechos sin conexión se envían al servidor cuando vuelve la conexión.;Alta
+REQ-007;Imprimir el plan desde el navegador;La versión web imprime el plan con el diálogo de impresión del navegador.;Baja

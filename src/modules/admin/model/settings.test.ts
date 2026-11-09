@@ -5,7 +5,9 @@ import {
   DEFAULT_BACKGROUND,
   DEFAULT_SETTINGS,
   loadSettings,
+  SYNC_SETTINGS_EVENT,
   saveSettings,
+  saveSyncSettings,
 } from "./settings";
 
 describe("admin settings", () => {
@@ -16,13 +18,35 @@ describe("admin settings", () => {
   });
 
   it("persists and reloads settings", () => {
-    saveSettings({ retentionDays: 15, backgroundImage: "data:x", backgroundOpacity: 50, cardShadow: false });
+    saveSettings({
+      retentionDays: 15,
+      backgroundImage: "data:x",
+      backgroundOpacity: 50,
+      cardShadow: false,
+      autoSync: false,
+      autoSyncMinutes: 15,
+    });
     expect(loadSettings()).toEqual({
       retentionDays: 15,
       backgroundImage: "data:x",
       backgroundOpacity: 50,
       cardShadow: false,
+      autoSync: false,
+      autoSyncMinutes: 15,
     });
+  });
+
+  it("automatic sync is off by default, at 5 min; an unknown interval reads as 5 (NC-025)", () => {
+    expect(loadSettings()).toMatchObject({ autoSync: false, autoSyncMinutes: 5 });
+    localStorage.setItem("pharos.admin.settings", JSON.stringify({ autoSync: false, autoSyncMinutes: 7 }));
+    expect(loadSettings()).toMatchObject({ autoSync: false, autoSyncMinutes: 5 });
+    let told = 0;
+    const tell = () => told++;
+    window.addEventListener(SYNC_SETTINGS_EVENT, tell);
+    saveSyncSettings({ autoSync: true, autoSyncMinutes: 30 });
+    window.removeEventListener(SYNC_SETTINGS_EVENT, tell);
+    expect(told).toBe(1);
+    expect(loadSettings()).toMatchObject({ autoSync: true, autoSyncMinutes: 30 });
   });
 
   it("drops the legacy free-text download folder (UX-02)", () => {
@@ -45,7 +69,7 @@ describe("admin settings", () => {
       "pharos.admin.settings",
       JSON.stringify({ backgroundImage: "", backgroundOpacity: 30, retentionDays: 15 }),
     );
-    expect(loadSettings()).toEqual({ backgroundImage: DEFAULT_BACKGROUND, backgroundOpacity: 40, cardShadow: true, retentionDays: 15 });
+    expect(loadSettings()).toEqual({ backgroundImage: DEFAULT_BACKGROUND, backgroundOpacity: 40, cardShadow: true, retentionDays: 15, autoSync: false, autoSyncMinutes: 5 });
   });
 
   it("a custom image from before keeps its opacity", () => {

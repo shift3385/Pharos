@@ -10,7 +10,9 @@ import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { usePopover } from "@shared/ui/usePopover";
 import { useToast } from "@shared/ui/Toast";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { FormSkeleton } from "@shared/ui/Skeleton";
+import { LoadError } from "@shared/ui/LoadError";
 import { cycleApi } from "../api/cycleApi";
 import {
   cellStatus,
@@ -122,7 +124,7 @@ function AssigneeInput({
 
 /** One cycle (ADR-0017): its header, what it runs (items) by configuration
  *  with each cell's latest final result, and its runs. «Ejecutar» creates one
- *  run per configuration (desktop only until runs reach the web). */
+ *  run per configuration, on the desktop and on the web (EJE-06). */
 export function CycleDetail({
   cycleId,
   projectId,
@@ -150,7 +152,10 @@ export function CycleDetail({
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [cycle, setCycle] = useState<TestCycle | null | undefined>(undefined);
+  // NC-008 (MAN-03): a failed read is not a deleted cycle.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [items, setItems] = useState<CycleItem[]>([]);
   const [progress, setProgress] = useState<CycleProgress | null>(null);
   const [runs, setRuns] = useState<CycleRun[]>([]);
@@ -176,9 +181,9 @@ export function CycleDetail({
       setItems(list);
       setProgress(p);
       setRuns(r);
+      setLoadFailed(false);
     } catch {
-      setCycle(null);
-      notify.current.toast(notify.current.t("cycles.loadFailed"), "error");
+      setLoadFailed(true);
     }
   }, [cycleId, userId]);
   useEffect(() => {
@@ -203,6 +208,17 @@ export function CycleDetail({
     }));
   }, [progress, configurations, t]);
 
+  if (loadFailed && !cycle) {
+    return (
+      <section className="cy-page">
+        <button type="button" className="cy-back" onClick={onBack}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t("cycles.back")}
+        </button>
+        <LoadError message={t("cycles.loadFailed")} onRetry={() => void reload()} />
+      </section>
+    );
+  }
   if (cycle === undefined) return <FormSkeleton fields={3} />;
   if (cycle === null) {
     return (
@@ -224,6 +240,22 @@ export function CycleDetail({
   const present = new Set(items.filter((i) => !i.flowId && !i.exampleRowId).map((i) => i.testCaseId));
   const cell = (itemId: string, configurationId: string | null) =>
     progress?.cells.find((c) => c.itemId === itemId && c.configurationId === configurationId);
+
+  /** «Quitar del ciclo» asks first (NC-012, a normal confirmation): the
+   *  results already recorded stay, and the case can be added again. */
+  async function removeItem(i: CycleItem) {
+    const ok = await confirm({
+      title: t("cycles.items.removeTitle", { key: i.caseKey }),
+      message: t("cycles.items.removeConfirm"),
+      confirmLabel: t("cycles.items.remove"),
+      danger: true,
+    });
+    if (!ok) return;
+    await act(
+      () => cycleApi.removeItems(cycle!.id, [i.id], userId),
+      () => t("cycles.items.removedToast", { key: i.caseKey }),
+    );
+  }
 
   /** Runs a change, then reloads; a refusal goes to the open form, or to a
    *  toast. Returns whether it worked, with its value. */
@@ -333,12 +365,7 @@ export function CycleDetail({
           count={items.length}
           disabled={closed}
           onMove={(to) => move(items.indexOf(i), to)}
-          onRemove={() =>
-            void act(
-              () => cycleApi.removeItems(cycle.id, [i.id], userId),
-              () => t("cycles.items.removedToast", { key: i.caseKey }),
-            )
-          }
+          onRemove={() => void removeItem(i)}
         />
       ),
     },
@@ -511,6 +538,7 @@ export function CycleDetail({
             </button>
           </div>
           <DataTable
+            className="dt-surface"
             rows={items}
             columns={itemColumns}
             getRowId={(i) => i.id}
@@ -527,7 +555,7 @@ export function CycleDetail({
                     count={items.length}
                     disabled={closed}
                     onMove={(to) => move(items.indexOf(i), to)}
-                    onRemove={() => void act(() => cycleApi.removeItems(cycle.id, [i.id], userId))}
+                    onRemove={() => void removeItem(i)}
                   />
                 </div>
                 <span className="cy-mcard__title">{i.caseTitle}</span>
@@ -559,6 +587,7 @@ export function CycleDetail({
         <TabPanel id="runs" idPrefix="cy-" className="cy-panel">
           <p className="cy-note">{t("cycles.runs.hint")}</p>
           <DataTable
+            className="dt-surface"
             rows={runs}
             columns={runColumns}
             getRowId={(r) => r.id}
@@ -630,6 +659,7 @@ export function CycleDetail({
           onCancel={() => setDialog(null)}
         />
       )}
+      {confirmDialog}
       {dialog === "delete" && (
         <ConfirmDialog
           variant="destructive"

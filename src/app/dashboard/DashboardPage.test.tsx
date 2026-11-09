@@ -61,7 +61,7 @@ vi.mock("./model/loadHome", () => ({ loadHome: () => load() }));
 function metricsPayload(): HomeMetrics {
   const m = homeMetrics({
     windows: {
-      "14d": rollup({ passed: 3, failed: 1, executed: 4, passRate: 0.75 }),
+      "14d": rollup({ passed: 3, failed: 1, executed: 4, passRate: 0.75, unlinked: 2 }),
       "7d": rollup({ passed: 1, executed: 1, passRate: 1 }),
       today: rollup(),
     },
@@ -167,8 +167,14 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     const rate = screen.getByTestId("kpi-rate");
     expect(rate).toHaveAttribute("href", "/projects");
     expect(rate).toHaveTextContent("75,0%");
-    expect(rate).toHaveTextContent("de 4 ejecutados · últimos 14 días");
+    // By case (NC-029): unlinked tests stay out, in a note under the card.
+    expect(rate).toHaveTextContent("de 4 casos ejecutados · últimos 14 días");
     expect(rate.getAttribute("title")).toMatch(/últimos 14 días/);
+    expect(rate.getAttribute("title")).toMatch(/Los tests sin vincular no cuentan/);
+    const unlinked = screen.getByTestId("kpi-rate-unlinked");
+    expect(unlinked).toHaveTextContent("Además, 2 tests sin vincular");
+    expect(unlinked).toHaveAttribute("href", "/projects");
+    expect(rate).not.toContainElement(unlinked);
     expect(fetchMetrics).toHaveBeenCalledTimes(1);
     expect(fetchMetrics.mock.calls[0][0]).toMatch(
       /^\/api\/home\/metrics\?dayStarts=\d+(%2C\d+){29}&now=\d+&windows=today%3A29%2C7d%3A23/,

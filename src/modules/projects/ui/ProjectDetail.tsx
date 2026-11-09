@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FormSkeleton, Skeleton } from "@shared/ui/Skeleton";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useTranslation } from "react-i18next";
@@ -13,13 +13,14 @@ import {
   projectCaseCount,
   projectCaseOptions,
   projectTraceableCases,
+  type CaseLastResult,
   type RequirementOption,
 } from "@modules/test-cases";
 import { PlannerBoard } from "@modules/planner";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
-import { RequirementsPage, TraceabilityPage, requirementApi } from "@modules/traceability";
-import { RunsPage, StatusReportButton } from "@modules/runs";
+import { REQUIREMENTS_CHANGED_EVENT, RequirementsPage, TraceabilityPage, requirementApi } from "@modules/traceability";
+import { RunsPage, StatusReportButton, executionApi } from "@modules/runs";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import { recordProjectAccess } from "../model/lastAccess";
@@ -69,6 +70,16 @@ export function ProjectDetail({
   // defects never depend on traceability (or on each other).
   const [linkableCases, setLinkableCases] = useState<LinkableItem[]>([]);
   const [linkableRequirements, setLinkableRequirements] = useState<LinkableItem[]>([]);
+  // Each case's latest final result for the case list (NC-019): the same
+  // derivation the matrix reads, with no filter.
+  const loadResults = useCallback(async () => {
+    const summary = await executionApi.summary({ projectId }, ownerId);
+    const map = new Map<string, CaseLastResult>();
+    for (const c of summary?.cases ?? []) {
+      if (c.status !== "not_run") map.set(c.caseId, { status: c.status, at: c.last?.at ?? null });
+    }
+    return map;
+  }, [projectId, ownerId]);
 
   /** Loads the project; an answer that arrives after a newer request is
    *  dropped, so a slow response never overwrites newer data. */
@@ -171,6 +182,7 @@ export function ProjectDetail({
             caseIdPrefix={project.caseIdPrefix}
             caseIdDigits={project.caseIdDigits}
             requirements={facts?.requirements ?? []}
+            loadResults={loadResults}
           />
         )}
         {tab === "cycles" && (
@@ -211,6 +223,7 @@ export function ProjectDetail({
             projectName={project.name}
             runId={runId}
             cases={linkableCases.map((c) => ({ id: c.id, scenarioId: c.key, title: c.title }))}
+            requirements={linkableRequirements}
           />
         )}
         {tab === "planner" && <PlannerBoard projectId={projectId} ownerId={ownerId} />}
@@ -265,11 +278,13 @@ function useHeaderFacts(projectId: string, ownerId: string, tab: ProjectSection)
     window.addEventListener("pharos:synced", load);
     window.addEventListener(PLAN_SAVED_EVENT, load);
     window.addEventListener(CASES_CHANGED_EVENT, load);
+    window.addEventListener(REQUIREMENTS_CHANGED_EVENT, load);
     return () => {
       live = false;
       window.removeEventListener("pharos:synced", load);
       window.removeEventListener(PLAN_SAVED_EVENT, load);
       window.removeEventListener(CASES_CHANGED_EVENT, load);
+      window.removeEventListener(REQUIREMENTS_CHANGED_EVENT, load);
     };
   }, [projectId, ownerId, tab]);
   return facts;

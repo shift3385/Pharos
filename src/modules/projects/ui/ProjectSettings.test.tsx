@@ -22,7 +22,16 @@ vi.mock("@modules/custom-fields/api/customFieldApi", () => ({
   customFieldApi: { list: async () => [] },
 }));
 vi.mock("../api/projectApi", () => ({
-  projectApi: { update: vi.fn(async () => null), remove: vi.fn(async () => undefined), get: vi.fn() },
+  projectApi: {
+    update: vi.fn(async () => null),
+    remove: vi.fn(async () => undefined),
+    get: vi.fn(),
+    // The other projects, for the prefix overlap (NC-030).
+    list: vi.fn(async () => [
+      { id: "p1", name: "Portal Clientes v3", caseIdPrefix: "PCL-" },
+      { id: "p2", name: "Pharos", caseIdPrefix: "PH-" },
+    ]),
+  },
 }));
 
 const PROJECT: Project = {
@@ -73,6 +82,22 @@ describe("Ajustes del proyecto (SPEC §6/§8)", () => {
       expect.objectContaining({ name: "Portal Clientes v3", caseIdPrefix: "PCL-", caseIdDigits: 3 }),
     );
     await expectNoAxeViolations();
+  });
+
+  it("a prefix that overlaps another project's is explained and not saved (NC-030)", async () => {
+    setViewportWidth(1440);
+    renderSettings();
+    const field = screen.getByLabelText("Prefijo de ID de caso");
+    await userEvent.clear(field);
+    await userEvent.type(field, "PHA-");
+    expect(await screen.findByText(/Se solapa con «PH-» de Pharos/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(projectApi.update).not.toHaveBeenCalled();
+    await userEvent.clear(field);
+    await userEvent.type(field, "PCV-");
+    expect(screen.queryByText(/Se solapa/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(projectApi.update).toHaveBeenCalledWith("p1", expect.objectContaining({ caseIdPrefix: "PCV-" }));
   });
 
   it("«Historial en el plan exportado» starts at the current version and saves the choice (PLN-02)", async () => {

@@ -185,6 +185,14 @@ describe("RunsPage", () => {
     await expectNoAxeViolations();
   });
 
+  it("says «Sin resultados» for a run with no results instead of loading for ever (NC-042, MAN-03)", async () => {
+    api.counts.mockResolvedValue([{ runId: "r1", passed: 1, failed: 1, other: 0, unlinked: 1 }]);
+    renderWithProviders(<RunsPage projectId="p" cases={cases} />);
+    const table = await screen.findByRole("table", { name: "Runs" });
+    expect(await within(table).findByText("Sin resultados")).toBeInTheDocument();
+    expect(within(table).queryByText("…")).not.toBeInTheDocument();
+  });
+
   it("links a test of the tray to a case and unlinks a manual link", async () => {
     renderWithProviders(<RunsPage projectId="p" cases={cases} />);
     await userEvent.click(
@@ -214,8 +222,21 @@ describe("RunsPage", () => {
       screen.getByRole("button", { name: /Vinculados a mano/ }),
     );
     expect(screen.getByText("Vinculado a TC-002")).toBeInTheDocument();
+    const calls = api.link.mock.calls.length;
     await userEvent.click(
       screen.getByRole("button", { name: "Desvincular other" }),
+    );
+    // A normal confirmation first (NC-012): Escape keeps the link.
+    expect(
+      await screen.findByRole("alertdialog", { name: "¿Desvincular other?" }),
+    ).toHaveTextContent("dejan de contar para TC-002");
+    await userEvent.keyboard("{Escape}");
+    expect(api.link.mock.calls.length).toBe(calls);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Desvincular other" }),
+    );
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Desvincular" }),
     );
     expect(api.link).toHaveBeenLastCalledWith(
       "p",
@@ -454,6 +475,9 @@ describe("RunsPage", () => {
     );
     await userEvent.click(
       screen.getByRole("button", { name: "Desvincular other" }),
+    );
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Desvincular" }),
     );
     expect(
       await screen.findByText(/No se pudo guardar el vínculo/),

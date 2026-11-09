@@ -30,6 +30,8 @@ const get = vi.fn();
 const remove = vi.fn();
 const update = vi.fn();
 const fieldList = vi.fn();
+const revisions = vi.fn();
+const revisionDetail = vi.fn();
 vi.mock("@modules/custom-fields", async (orig) => ({
   ...(await orig<typeof import("@modules/custom-fields")>()),
   customFieldApi: { list: (...a: unknown[]) => fieldList(...a) },
@@ -39,7 +41,8 @@ vi.mock("../api/testCaseApi", () => ({
     list: (...a: unknown[]) => list(...a),
     get: (...a: unknown[]) => get(...a),
     remove: (...a: unknown[]) => remove(...a),
-    revisions: () => Promise.resolve([]),
+    revisions: (...a: unknown[]) => revisions(...a),
+    revisionDetail: (...a: unknown[]) => revisionDetail(...a),
     create: vi.fn(),
     update: (...a: unknown[]) => update(...a),
   },
@@ -104,14 +107,17 @@ function Where() {
     </>
   );
 }
-function renderPage(route = "/projects/p1/cases") {
+function renderPage(
+  route = "/projects/p1/cases",
+  loadResults?: () => Promise<Map<string, { status: string; at: string | null }>>,
+) {
   return renderWithProviders(
     <Routes>
       <Route
         path="/projects/:projectId/cases"
         element={
           <>
-            <TestCasesPage projectId="p1" caseIdPrefix="PCL-" />
+            <TestCasesPage projectId="p1" caseIdPrefix="PCL-" loadResults={loadResults} />
             <Where />
           </>
         }
@@ -129,6 +135,8 @@ beforeEach(async () => {
   remove.mockResolvedValue(undefined);
   update.mockReset().mockResolvedValue(null);
   fieldList.mockResolvedValue([]);
+  revisions.mockResolvedValue([]);
+  revisionDetail.mockResolvedValue(null);
 });
 
 describe("Casos · lista (RED-V3)", () => {
@@ -139,12 +147,40 @@ describe("Casos · lista (RED-V3)", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(4);
     expect(await within(table).findByText("REQ-031")).toBeInTheDocument();
     expect(within(table).getAllByText("Sin requisito")).toHaveLength(2);
-    expect(within(table).getAllByText("No ejecutado")).toHaveLength(3);
+    // No results read: «Ejecución» says «—», never a made-up «No ejecutado» (NC-019).
+    expect(within(table).getAllByText("Sin resultados todavía")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Todos 3" })).toHaveAttribute("aria-pressed", "true");
     // Three cases fit in the smallest page: no pagination footer.
     expect(screen.queryByText(/Mostrando/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ejecución" })).toHaveAttribute("aria-disabled", "true");
+    // «Ejecución» filters now (NC-019): no «Próximamente».
+    expect(screen.getByRole("button", { name: "Ejecución" })).not.toHaveAttribute("aria-disabled", "true");
     await expectNoAxeViolations();
+  });
+
+  it("«Ejecución» shows each case's latest result or «—», and filters by it (NC-019)", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    renderPage(
+      "/projects/p1/cases",
+      () =>
+        Promise.resolve(
+          new Map([
+            ["c1", { status: "passed", at: "2026-11-03T10:00:00Z" }],
+            ["c2", { status: "failed", at: "2026-11-04T10:00:00Z" }],
+          ]),
+        ),
+    );
+    const table = await screen.findByRole("table", { name: "Casos de prueba" });
+    const rows = () => within(table).getAllByRole("row").slice(1);
+    await waitFor(() => expect(within(rows()[0]).getByText("Pasa")).toBeInTheDocument());
+    expect(within(rows()[1]).getByText("Falla").closest("[title]")).toHaveAttribute("title", expect.stringContaining("Último resultado"));
+    expect(within(rows()[2]).getByText("Sin resultados todavía")).toBeInTheDocument();
+
+    // The filter is live, no «Próximamente»: «Sin resultados» keeps PCL-3 only.
+    await user.click(screen.getByRole("button", { name: /^Ejecución/ }));
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: /Sin resultados/ }));
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(rows()[0]).toHaveTextContent("PCL-3");
   });
 
   it("filters by state chip and finds a case by its requirement", async () => {
@@ -240,6 +276,44 @@ describe("Casos · editor navigation (RED-V3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Todos los casos" }));
     expect(await screen.findByRole("table")).toBeInTheDocument();
     expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+  });
+
+  it("restores an earlier revision into the editor, unsaved, after asking (NC-018)", async () => {
+    setViewportWidth(1440);
+    const user = userEvent.setup();
+    get.mockImplementation((id: string) =>
+      Promise.resolve({ ...full(SUMMARIES.find((x) => x.id === id)!), revision: 2 }),
+    );
+    revisions.mockResolvedValue([
+      { id: "r2", revision: 2, title: "Pago con tarjeta", createdAt: "2026-11-02T10:00:00Z" },
+      { id: "r1", revision: 1, title: "Pago con tarjeta (borrador)", createdAt: "2026-11-01T10:00:00Z" },
+    ]);
+    revisionDetail.mockResolvedValue({
+      id: "r1",
+      revision: 1,
+      title: "Pago con tarjeta (borrador)",
+      version: "0.9",
+      status: "draft",
+      priority: "low",
+      caseType: null,
+      automationStatus: null,
+      data: { gherkinLevel: "basic", steps: st("Abrir el pago"), expectedResult: "Ok" },
+      createdAt: "2026-11-01T10:00:00Z",
+    });
+    renderPage("/projects/p1/cases?case=c2");
+    await screen.findByRole("textbox", { name: /Título/ });
+    await user.click(screen.getByRole("button", { name: "Más acciones del caso" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Revisiones" }));
+    expect(await screen.findByText("Actual")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Restaurar rev. 1" }));
+    const ask = await screen.findByRole("alertdialog", { name: "¿Restaurar la revisión 1?" });
+    expect(ask).toHaveTextContent("la clave del caso no cambia");
+    await user.click(within(ask).getByRole("button", { name: "Restaurar" }));
+    expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue("Pago con tarjeta (borrador)");
+    expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument();
+    expect(toast).toHaveBeenCalledWith("Revisión 1 cargada en el editor. Guarda para conservarla.");
+    expect(update).not.toHaveBeenCalled();
+    expect(revisionDetail).toHaveBeenCalledWith("r1", expect.any(String));
   });
 
   it("asks before leaving with unsaved changes", async () => {

@@ -76,8 +76,9 @@ export function Dialog({
   describedBy?: string;
   onClose?: () => void;
   /** Asked before Escape or the backdrop close the dialog; false keeps it
-   *  open (e.g. "discard your changes?" when the form is dirty). */
-  confirmClose?: () => boolean;
+   *  open (e.g. "discard your changes?" when the form is dirty). It may be a
+   *  promise, the answer of a Pharos confirmation (`useConfirm`, NC-017). */
+  confirmClose?: () => boolean | Promise<boolean>;
   dismissable?: boolean;
   initialFocus?: RefObject<HTMLElement | null>;
   role?: "dialog" | "alertdialog";
@@ -93,8 +94,14 @@ export function Dialog({
   confirmRef.current = confirmClose;
   const dismiss = () => {
     if (!closeRef.current) return;
-    if (confirmRef.current && !confirmRef.current()) return;
-    closeRef.current();
+    const ok = confirmRef.current ? confirmRef.current() : true;
+    if (ok instanceof Promise) {
+      void ok.then((yes) => {
+        if (yes) closeRef.current?.();
+      });
+      return;
+    }
+    if (ok) closeRef.current();
   };
   const dismissRef = useRef(dismiss);
   dismissRef.current = dismiss;

@@ -35,6 +35,7 @@ import { MigrateTraceabilityModal } from "./MigrateTraceabilityModal";
 import { RequirementFormModal, type RequirementDraft } from "./RequirementFormModal";
 import { RequirementImportModal } from "./RequirementImportModal";
 import { RequirementsPanel } from "./RequirementsPanel";
+import { announceRequirementsChanged } from "../model/events";
 import "@shared/ui/buttons.css";
 import "./Traceability.css";
 
@@ -228,7 +229,7 @@ export function TraceabilityPage({
     if (created || updated || removed) toast(t("traceability.proposals.doneToast", { created, updated, removed }));
     if (skipped.length) toast(t("traceability.proposals.skippedToast", { count: skipped.length }));
     if (failed.length) toast(t("traceability.proposals.failed", { count: failed.length }));
-    void refresh();
+    void refresh().then(announceRequirementsChanged);
   }
   const generate = (key: string) => {
     const r = data?.requirements.find((x) => x.requirementKey === key);
@@ -261,6 +262,7 @@ export function TraceabilityPage({
       toast(t("traceability.requirement.savedToast"));
       setEditing(null);
       await refresh();
+      announceRequirementsChanged();
     } catch {
       toast(t("traceability.requirement.saveError"));
     }
@@ -275,6 +277,7 @@ export function TraceabilityPage({
       toast(t("traceability.requirement.deleteFailed", { key: r.requirementKey }));
     }
     await refresh();
+    announceRequirementsChanged();
   }
 
   async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -295,6 +298,7 @@ export function TraceabilityPage({
       }
       setImporting(null);
       await refresh();
+      announceRequirementsChanged();
     } catch {
       toast(t("traceability.import.error"));
     }
@@ -318,6 +322,7 @@ export function TraceabilityPage({
     toast(t("traceability.migrate.doneToast", { links: selected.length, creates: toCreate.length }));
     setMigrating(false);
     await refresh();
+    announceRequirementsChanged();
   }
 
   /** The active filters as «Ciclo: CYC-001 · …», for the export. */
@@ -443,7 +448,7 @@ export function TraceabilityPage({
           onCreated={({ created, failed }) => {
             if (created) {
               toast(t("traceability.generate.doneToast", { count: created, key: generating.requirementKey }));
-              void refresh();
+              void refresh().then(announceRequirementsChanged);
             }
             // Failed ones stay in the modal for a retry (it says so itself).
             if (!failed) setGenerating(null);

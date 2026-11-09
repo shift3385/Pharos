@@ -93,6 +93,7 @@ export function KpiCards({
         noteTone={ready && exec.blocked ? "warning" : undefined}
         testId="kpi-pending"
       />
+      <div className="home-kpi-stack">
       <Kpi
         to={only ? projectPath(only.id, "runs") : "/projects"}
         icon={CircleCheck}
@@ -112,6 +113,19 @@ export function KpiCards({
         }
         testId="kpi-rate"
       />
+      {/* NC-029: the rate counts cases; unlinked tests go apart, under the
+          card (a link of its own: the card is already one). */}
+      {ready && (rate?.unlinked ?? 0) > 0 && (
+        <Link
+          to={only ? projectPath(only.id, "runs") : "/projects"}
+          className="home-kpi__extra"
+          title={t("dashboard.kpi.unlinkedTitle")}
+          data-testid="kpi-rate-unlinked"
+        >
+          {t("dashboard.kpi.unlinked", { count: rate!.unlinked })}
+        </Link>
+      )}
+      </div>
       <Kpi
         to={only ? projectPath(only.id, "defects") : "/projects"}
         icon={Bug}

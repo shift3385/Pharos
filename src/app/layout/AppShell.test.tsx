@@ -49,10 +49,11 @@ describe("AppShell (SPEC §2/§7)", () => {
       expect(document.querySelector(".bottom-nav")).toBeNull();
     });
 
-    it("shows the sync status in the sidebar foot, not in the top bar", () => {
+    it("shows the sync status in the sidebar foot, not in the top bar", async () => {
       renderShell();
       const foot = document.querySelector(".sidebar__foot") as HTMLElement;
-      expect(within(foot).getByRole("button", { name: "Sincronizar ahora" })).toBeInTheDocument();
+      // The sign-in sync runs first («Sincronizando…», NC-025: one at a time).
+      expect(await within(foot).findByRole("button", { name: "Sincronizar ahora" })).toBeInTheDocument();
       expect(document.querySelector(".topbar .sync")).toBeNull();
     });
 
