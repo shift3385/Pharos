@@ -23,6 +23,7 @@ import type { ReportLabels } from "./reportXlsx";
 import "@shared/ui/ConfirmDialog.css";
 import "@shared/ui/buttons.css";
 import "./StatusReport.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 type Scope = "project" | "cycle" | "plan";
 
@@ -400,9 +401,9 @@ export function StatusReportDialog({
               <h4>{t("statusReport.section.summary")}</h4>
               <FormField label={t("statusReport.summaryLabel")} hint={t("statusReport.summaryHint")}>
                 {(p) => (
-                  <textarea
+                  <TextArea
+                    size="document"
                     {...p}
-                    rows={4}
                     value={shownSummary}
                     data-testid="report-summary"
                     onChange={(e) => edit({ summary: e.target.value })}
@@ -414,9 +415,9 @@ export function StatusReportDialog({
               <h4>{t("statusReport.section.recommendations")}</h4>
               <FormField label={t("statusReport.recommendationsLabel")}>
                 {(p) => (
-                  <textarea
+                  <TextArea
+                    size="document"
                     {...p}
-                    rows={4}
                     value={draft.recommendations}
                     placeholder={t("statusReport.recommendationsPlaceholder")}
                     data-testid="report-recommendations"

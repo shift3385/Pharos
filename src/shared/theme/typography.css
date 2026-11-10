@@ -13,6 +13,14 @@
   -webkit-hyphens: auto;
 }
 
+/* What a person types is never hyphenated (UX-33): in a field a word moves
+   whole to the next line, as it was written. */
+.screen-root input,
+.screen-root textarea {
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
 .screen-root p {
   text-wrap: pretty;
 }

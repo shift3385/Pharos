@@ -30,7 +30,6 @@
   align-items: start;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
   padding-bottom: 6px;
 }
 

@@ -22,6 +22,7 @@ import { keyFromLabel, validateValue, validKey } from "../model/validate";
 import { FieldValueGroup, FieldValueInput } from "./FieldValueInput";
 import "@shared/ui/ConfirmDialog.css";
 import "./CustomFields.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 type Applies = "all" | CaseType;
 
@@ -300,9 +301,9 @@ export function CustomFieldDialog({
 
         <FormField label={t("customFields.dialog.description")}>
           {(p) => (
-            <textarea
+            <TextArea
+              size="short"
               {...p}
-              rows={2}
               maxLength={500}
               value={draft.description}
               onChange={(e) => set({ description: e.target.value })}

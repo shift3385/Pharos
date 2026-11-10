@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AiProvenance } from "@modules/ai";
 import type { AssistedField, FormState, ReviewableField } from "./formState";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** What every step body gets from the wizard. */
 export interface StepProps {
@@ -60,7 +61,7 @@ export function AreaField({
   return (
     <label className="tp-field">
       <span className={solo ? "sr-only" : undefined}>{label}</span>
-      <textarea rows={solo ? 12 : 4} value={value} onChange={(e) => onChange(e.target.value)} />
+      <TextArea size="document" value={value} onChange={(e) => onChange(e.target.value)} />
     </label>
   );
 }

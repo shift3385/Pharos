@@ -12,6 +12,7 @@ import {
 } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
 import "./Cycles.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 
 /** «Nuevo ciclo» / «Editar ciclo» (ADR-0017): what (the items are added
@@ -124,7 +125,7 @@ export function CycleDialog({
         </FormField>
         <FormField label={t("cycles.field.description")}>
           {(p) => (
-            <textarea {...p} rows={3} value={form.description} onChange={(e) => set("description")(e.target.value)} />
+            <TextArea size="short" {...p} value={form.description} onChange={(e) => set("description")(e.target.value)} />
           )}
         </FormField>
         <div className="cy-form__grid">

@@ -16,6 +16,7 @@ import { StepListField } from "./StepListField";
 import { SortableSteps } from "./SortableSteps";
 import { ExamplesTable } from "./ExamplesTable";
 import { newFlow } from "./gherkin";
+import { TextArea } from "@shared/ui/TextArea";
 
 const EMPTY: ExampleTable = { headers: [], rows: [] };
 
@@ -182,9 +183,9 @@ export function FlowsEditor({
               />
             }
           >
-            <textarea
+            <TextArea
+              size="step"
               id={`tc-flow-${flow.id}-expected`}
-              rows={2}
               value={flow.expectedResult}
               onChange={(e) => setFlow(i, { expectedResult: e.target.value })}
             />

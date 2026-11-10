@@ -1,0 +1,68 @@
+/* Multi-line fields (UX-33, TextArea.tsx). The field starts at its size's lines
+ * and grows with its text (`field-sizing: content`; a JS fallback elsewhere),
+ * so the page scrolls instead of the field. Past its cap it stops and scrolls
+ * inside. No resize grip, and words are never split with a hyphen.
+ *
+ * The class is doubled so these sizes win over each module's
+ * `.x textarea { … }` rules, which keep their colours, borders and widths. */
+.ui-textarea.ui-textarea {
+  /* Padding plus a 1 px border, top and bottom. */
+  --ta-chrome: calc(2 * var(--space-2) + 2px);
+  --ta-less: 0;
+  box-sizing: border-box;
+  padding-block: var(--space-2);
+  line-height: var(--lh-normal);
+  field-sizing: content;
+  min-block-size: calc(
+    max(1, var(--ta-min-lines) - var(--ta-less)) * 1lh + var(--ta-chrome)
+  );
+  max-block-size: var(
+    --ta-max,
+    calc(var(--ta-max-lines) * 1lh + var(--ta-chrome))
+  );
+  overflow-y: auto;
+  resize: none;
+  overflow-wrap: break-word;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
+.ui-textarea--document {
+  --ta-min-lines: 8;
+  --ta-max: 50vh;
+}
+
+.ui-textarea--description {
+  --ta-min-lines: 5;
+  --ta-max-lines: 15;
+}
+
+.ui-textarea--short {
+  --ta-min-lines: 3;
+  --ta-max-lines: 10;
+}
+
+.ui-textarea--step {
+  --ta-min-lines: 2;
+  --ta-max-lines: 6;
+}
+
+.ui-textarea--paste {
+  --ta-min-lines: 2;
+  --ta-max-lines: 4;
+}
+
+.ui-textarea--cell {
+  --ta-min-lines: 1;
+  --ta-max-lines: 12;
+}
+
+/* Phone: one line less to start, and never taller than half the visible
+ * height (the keyboard takes the other half). */
+[data-viewport="mobile"] .ui-textarea.ui-textarea {
+  --ta-less: 1;
+  max-block-size: min(
+    var(--ta-max, calc(var(--ta-max-lines) * 1lh + var(--ta-chrome))),
+    50dvh
+  );
+}

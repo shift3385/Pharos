@@ -46,6 +46,7 @@ import { reduceImage, type ReducedImage } from "../fromDesign/imageReduce";
 import { MAX_ATTACHMENTS } from "../fromDesign/limits";
 import "@shared/ui/ConfirmDialog.css";
 import "./Traceability.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 type Phase =
   | "material"
@@ -502,9 +503,9 @@ export function RequirementsFromDesignModal({
 
           <label className="tr-design__context">
             <span>{t("traceability.fromDesign.context")}</span>
-            <textarea
+            <TextArea
+              size="paste"
               value={context}
-              rows={2}
               maxLength={2000}
               disabled={busy}
               placeholder={t("traceability.fromDesign.contextPlaceholder")}
