@@ -93,6 +93,16 @@ a {
   outline-color: var(--color-focus-on-navy);
 }
 
+/* Every password field brings its own show/hide button (with aria-label and
+   aria-pressed). Edge and WebView2 add a native eye (`::-ms-reveal`) and a
+   clear "×" (`::-ms-clear`) as soon as the field has text, so the user saw two
+   eyes. Chrome, Firefox and Safari draw no reveal button; the browser's
+   autofill and password-manager buttons are left as they are. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* Visually hidden until focused: the "skip to content" link (2.4.1). */
 .skip-link {
   position: absolute;
