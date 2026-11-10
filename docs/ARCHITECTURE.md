@@ -216,7 +216,7 @@ labels show).
 
 **Home board and account preferences (UX-27, ADR-0038).** On the desktop the
 Inicio cards are gadgets on a 24 × 24 grid (`react-grid-layout`, MIT): the
-row height fills the free height (no scroll from 1280 × 800), and «Personalizar
+row height fills the free height (never under 14 px; compact under 18 px), no gadget ever scrolls (lists fit their rows and end in «+N más», UX-28), and «Personalizar
 Inicio» moves, resizes (pointer and keyboard), hides and resets them. The pure
 model is `app/dashboard/model/board.ts` (default layout, minimum per gadget,
 vertical compaction, `readBoard` migration of the versioned format); the

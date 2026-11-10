@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Calendar,
@@ -23,11 +24,16 @@ import { PERIODS, type Period } from "./model/homeData";
 export function PeriodSelector({
   value,
   onChange,
+  description,
 }: {
   value: Period;
   onChange: (p: Period) => void;
+  /** What the numbers of the period add up (UX-28): the button's tooltip
+   *  and its description for screen readers. */
+  description?: string;
 }) {
   const { t } = useTranslation();
+  const descId = useId();
   const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
   const soon = t("dashboard.period.soonTitle");
 
@@ -37,6 +43,8 @@ export function PeriodSelector({
         type="button"
         className="home-btn"
         {...menu.triggerProps}
+        title={description}
+        aria-describedby={description ? descId : undefined}
         data-testid="home-period"
       >
         <Calendar size={16} className="home-btn__icon" aria-hidden="true" />
@@ -44,6 +52,11 @@ export function PeriodSelector({
         <span className="home-btn__text">{t(`dashboard.period.${value}`)}</span>
         <ChevronDown size={14} className="home-btn__chev" aria-hidden="true" />
       </button>
+      {description && (
+        <span id={descId} className="sr-only">
+          {description}
+        </span>
+      )}
       <ResponsiveMenu
         open={menu.open}
         onClose={menu.close}

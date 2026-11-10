@@ -25,8 +25,8 @@ export const GADGETS = [
   "kpiRate",
   "kpiDefects",
   "byProject",
-  "exitCriteria",
   "upcoming",
+  "exitCriteria",
   "daily",
 ] as const;
 
@@ -53,32 +53,40 @@ export interface Board {
   hidden: ({ id: GadgetId } & CellSize)[];
 }
 
-/** The smallest size at which each gadget's content still reads (measured at
- *  1280 × 800 with the sidebar open: one column ≈ 29 px, one row ≈ 15 px;
- *  what does not fit at the minimum scrolls inside the gadget). */
+/** The smallest size at which each gadget's essential content fits with no
+ *  scroll of its own (UX-28), measured on the narrowest, shortest board: 1280
+ *  px wide with the sidebar open (one column ≈ 29 px) and the compact rows of
+ *  a ~700 px window (14 px). Lists then show at least one row and «+N más»:
+ *  - indicator: icon and name, the number, its note;
+ *  - «Ejecución por proyecto»: title, legend dots, one project, «+N más»;
+ *  - «Próximas pruebas»: title, the three tabs side by side, one case;
+ *  - «Criterios de salida»: title and project, the ring with its verdict,
+ *    one criterion;
+ *  - «Ejecuciones diarias»: title and total, the chart, «Ver los datos». */
 export const MIN_SIZE: Record<GadgetId, CellSize> = {
   kpiProjects: { w: 5, h: 4 },
   kpiPending: { w: 5, h: 4 },
   kpiRate: { w: 5, h: 4 },
   kpiDefects: { w: 5, h: 4 },
-  byProject: { w: 8, h: 6 },
-  exitCriteria: { w: 6, h: 8 },
-  upcoming: { w: 6, h: 8 },
+  byProject: { w: 8, h: 7 },
+  upcoming: { w: 7, h: 9 },
+  exitCriteria: { w: 7, h: 11 },
   daily: { w: 8, h: 8 },
 };
 
-/** The approved default (2026-11-09): four indicators on top, then «Ejecución
- *  por proyecto», «Criterios de salida» and «Próximas pruebas» down the right,
- *  and «Ejecuciones diarias» under the first two. It fills the 24 rows. */
+/** The default (UX-28, the layout the user saved on 2026-11-10): four
+ *  indicators on top; «Ejecución por proyecto» with «Ejecuciones diarias»
+ *  under it on the left; «Próximas pruebas» and «Criterios de salida» down
+ *  the middle and the right. It takes 23 of the 24 rows. */
 const DEFAULT_ITEMS: readonly BoardItem[] = [
   { id: "kpiProjects", x: 0, y: 0, w: 6, h: 4 },
   { id: "kpiPending", x: 6, y: 0, w: 6, h: 4 },
   { id: "kpiRate", x: 12, y: 0, w: 6, h: 4 },
   { id: "kpiDefects", x: 18, y: 0, w: 6, h: 4 },
-  { id: "byProject", x: 0, y: 4, w: 10, h: 10 },
-  { id: "exitCriteria", x: 10, y: 4, w: 7, h: 10 },
-  { id: "upcoming", x: 17, y: 4, w: 7, h: 20 },
-  { id: "daily", x: 0, y: 14, w: 17, h: 10 },
+  { id: "byProject", x: 0, y: 4, w: 9, h: 10 },
+  { id: "upcoming", x: 9, y: 4, w: 7, h: 19 },
+  { id: "exitCriteria", x: 16, y: 4, w: 8, h: 19 },
+  { id: "daily", x: 0, y: 14, w: 9, h: 9 },
 ];
 
 export function defaultSize(id: GadgetId): CellSize {
@@ -372,13 +380,12 @@ export function readBoard(raw: unknown): { board: Board; changed: boolean } {
       y: Math.max(0, y),
     });
   }
-  // Each in reading order where it was, or in the first gap if that is taken.
+  // Each where it was, keeping its size: what overlaps (a size raised to a
+  // new minimum, a broken record) settles below, as the compaction does. A
+  // gadget pushed past the last row waits among the hidden ones.
   const items: BoardItem[] = [];
-  for (const it of readingOrder(wanted)) {
-    const fits =
-      it.y + it.h <= MAX_ROWS && items.every((o) => !overlaps(o, it));
-    const placed = fits ? it : placeInGap(items, it.id, it);
-    if (placed) items.push(placed);
+  for (const it of compact(wanted)) {
+    if (it.y + it.h <= MAX_ROWS) items.push(it);
     else hidden.push({ id: it.id, w: it.w, h: it.h });
   }
   // Gadgets the stored board never knew.

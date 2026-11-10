@@ -21,19 +21,31 @@ están en cada sección.
 ## Tu pizarra: colócala a tu gusto
 
 En el escritorio, el Inicio es una **pizarra** de 24 columnas por 24 filas que
-ocupa justo el alto de la ventana: desde 1280 × 800 lo ves todo sin
-desplazarte. Cada tarjeta es un **gadget** (las cuatro cifras clave, la
+ocupa justo el alto de la ventana: en una ventana de 1280 × 820 lo ves todo
+sin desplazarte, y ningún panel se desplaza por dentro. Cada tarjeta es un **gadget** (las cuatro cifras clave, la
 ejecución por proyecto, los criterios de salida, las ejecuciones diarias y las
 próximas pruebas) con su sitio y su tamaño en la cuadrícula.
 
 - **Personalizar.** El engranaje pequeño junto a «Nuevo proyecto»
   («Personalizar Inicio») activa el modo configurar. Se ven la cuadrícula, el
   asa de cada gadget para moverlo, su esquina para cambiar el tamaño y una
-  etiqueta con su tamaño y su mínimo, por ejemplo «10×10 · mín 8×6».
+  etiqueta con su tamaño y su mínimo, por ejemplo «9×10 · mín 8×7».
 - **Nada se solapa.** Al mover o agrandar un gadget, los vecinos se apartan y
   todo sube a llenar los huecos. Ningún gadget baja de su tamaño mínimo, el
-  que necesita para que su contenido se lea; lo que no cabe se desplaza dentro
-  del gadget.
+  que necesita para que su contenido esencial se vea entero.
+- **Sin desplazamiento dentro de los paneles.** Una lista (proyectos,
+  próximas pruebas, criterios) muestra las filas que caben y termina en
+  «+N más», que lleva a la lista completa. «Ver los datos» de las ejecuciones
+  diarias se abre en una ventana.
+- **Con poco alto, compacto.** En una ventana baja los paneles se compactan:
+  menos márgenes, leyendas solo con puntos de color (pasa el ratón para ver
+  su nombre) y sin el texto bajo el gráfico diario. Por debajo de unos 700 px
+  de alto, la pizarra deja de encogerse y aparece un único desplazamiento de
+  página.
+- **Ayuda «?».** Junto al título de cada panel, «?» explica qué muestra. Se
+  abre al pasar el ratón, con un clic o con el teclado, y se cierra con Esc.
+- **Lo que suman las cifras.** Pasa el ratón por el periodo («Últimos 14
+  días») para ver que las cifras suman todos tus proyectos abiertos.
 - **Ocultar y mostrar.** El ojo tachado oculta un gadget. «Gadgets ocultos»
   lista los ocultos; al elegir uno, vuelve al primer hueco donde quepa.
 - **Restablecer** vuelve a la distribución de siempre, con todo visible.
@@ -94,7 +106,7 @@ salieras desde otra pantalla.
 - **Falta una tarjeta del Inicio.** La ocultaste al personalizarlo. Pulsa el
   engranaje, abre «Gadgets ocultos» y elígela, o usa «Restablecer».
 - **El Inicio tiene desplazamiento en el escritorio.** O la ventana mide menos
-  de 800 px de alto, o tu distribución pasa de 24 filas. Reduce algún gadget o
+  de unos 700 px de alto, o tu distribución pasa de 24 filas. Reduce algún gadget o
   pulsa «Restablecer».
 - **No veo el engranaje.** Solo está en el escritorio, con la ventana a 1280 px
   de ancho o más. En la tableta los gadgets se apilan y en el móvil van en

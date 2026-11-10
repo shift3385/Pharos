@@ -130,27 +130,28 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     setViewportWidth(1440);
   });
 
-  it("greets, sums the pending tests and shows the note only with several projects", async () => {
+  it("greets in one line and puts what the numbers add up on the period button (UX-28)", async () => {
     renderHome();
     expect(
       screen.getByRole("heading", { level: 1, name: "Hola, Quality" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Jueves, 29 de octubre")).toBeInTheDocument();
-    expect(
-      await screen.findByText(
-        (_, el) =>
-          el?.textContent ===
-          "Tienes 2 pruebas pendientes en 3 proyectos abiertos.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/· periodo: últimos 14 días/)).toBeInTheDocument();
+    expect(screen.getByText("Jueves, 29 de octubre")).toHaveClass("home-header__date");
+    await waitFor(() => expect(screen.getByTestId("kpi-pending")).toHaveTextContent("2de 3"));
+    // No summary sentences any more.
+    const greeting = document.querySelector(".home-header__text")!;
+    expect(greeting).not.toHaveTextContent(/Tienes .* pendientes/);
+    expect(greeting).not.toHaveTextContent(/Suma de tus/);
+    const periodBtn = screen.getByTestId("home-period");
+    expect(periodBtn).toHaveAttribute("title", "Suma de tus 3 proyectos abiertos · periodo: últimos 14 días");
+    expect(periodBtn).toHaveAccessibleDescription("Suma de tus 3 proyectos abiertos · periodo: últimos 14 días");
 
     load.mockResolvedValueOnce([portal]);
     renderHome();
     await waitFor(() =>
       expect(screen.getAllByTestId("kpi-projects")).toHaveLength(2),
     );
-    expect(screen.getAllByText(/· periodo:/)).toHaveLength(1);
+    // With one project there is nothing to add up.
+    expect(screen.getAllByTestId("home-period")[1]).not.toHaveAttribute("title");
   });
 
   it("makes the KPI cards links, with the period's pass rate", async () => {
@@ -276,11 +277,9 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(
       Array.from(today.children).map((c) => c.getAttribute("data-tone")),
     ).toEqual(["other", "fail", "pass"]);
-    // Screen readers get the numbers as a table.
-    expect(
-      screen.getByRole("table", { name: "Ejecuciones por día, últimos 14 días" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Otras", { selector: "li" })).toBeInTheDocument();
+    // Screen readers get the numbers as a table, in a dialog on the board.
+    expect(screen.getByRole("button", { name: "Ver los datos" })).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.getByText("Otras", { selector: ".home-legend__label" }).closest("li")).toHaveAttribute("title", "Otras");
 
     const labels = Array.from(chart.querySelectorAll(".home-chart__label"));
     expect(labels.filter((l) => l.textContent)).toHaveLength(14);
@@ -425,9 +424,6 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     // No verdicts at all (not even «Sin datos») until the metrics load.
     expect(screen.queryByText("Sin datos")).toBeNull();
     expect(screen.queryByText("No cumple")).toBeNull();
-    expect(
-      screen.getByText((_, el) => el?.textContent === "Tienes 3 proyectos abiertos."),
-    ).toBeInTheDocument();
     await user.click(within(alerts[0]).getByRole("button", { name: "Reintentar" }));
     await waitFor(() => expect(screen.queryAllByRole("alert")).toHaveLength(0));
     expect(screen.getByTestId("kpi-rate")).toHaveTextContent("75,0%");
@@ -495,8 +491,9 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(screen.queryAllByRole("alert")).toHaveLength(0);
   });
 
-  it("opens the per-day numbers as a table (a native disclosure)", async () => {
+  it("opens the per-day numbers as a table (a native disclosure off the board)", async () => {
     const user = userEvent.setup();
+    setViewportWidth(1000);
     renderHome();
     const data = await screen.findByTestId("home-daily-data");
     const summary = within(data).getByText("Ver los datos");
@@ -531,9 +528,10 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
       screen.getByText("1 de 2 criterios evaluables se cumplen."),
     ).toBeInTheDocument();
     expect(screen.getByText(/Se usan los criterios por defecto/)).toBeInTheDocument();
+    // The bars at 0 % show it; only screen readers hear it (UX-28).
     expect(
       await screen.findByText("Aún no hay ejecuciones registradas en tus proyectos."),
-    ).toBeInTheDocument();
+    ).toHaveClass("sr-only");
     expect(screen.getByTestId("kpi-rate")).toHaveTextContent(
       "Sin ejecuciones: últimos 14 días",
     );
@@ -562,9 +560,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     load.mockResolvedValueOnce([]);
     renderHome();
     expect(
-      await screen.findByText(
-        "Aún no tienes proyectos. Crea el primero para empezar.",
-      ),
+      await screen.findByText(/· Aún no tienes proyectos. Crea el primero para empezar.$/),
     ).toBeInTheDocument();
     expect(screen.getByText("Sin proyectos abiertos.")).toBeInTheDocument();
   });

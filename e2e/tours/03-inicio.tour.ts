@@ -10,7 +10,6 @@ import { byTestId, es, goHome } from "./helpers";
 
 const EXEC = "section.home-exec";
 const EXIT = "section.home-exit";
-const DAILY = "section.home-daily";
 const UPCOMING = 'section[aria-labelledby="home-upcoming-title"]';
 const KPIS = '[data-gadget^="kpi"]';
 
@@ -21,6 +20,19 @@ const noScroll = () =>
     return !!main && main.scrollHeight <= main.clientHeight + 1;
   });
 
+/** Elements inside the board that scroll (UX-28: there must be none). */
+const innerScrolls = () =>
+  browser.execute(() =>
+    [...document.querySelectorAll(".home-board *")]
+      .filter((el) => {
+        const cs = getComputedStyle(el);
+        const y = /auto|scroll/.test(cs.overflowY) && el.scrollHeight > el.clientHeight + 1;
+        const x = /auto|scroll/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1;
+        return y || x;
+      })
+      .map((el) => el.getAttribute("class") || el.tagName),
+  );
+
 /** Gives the keyboard focus to a gadget of the board (customizing). */
 const focusGadget = (id: string) =>
   browser.execute((sel: string) => (document.querySelector(sel) as HTMLElement | null)?.focus(), `[data-testid="gadget-${id}"]`);
@@ -29,7 +41,7 @@ chapter("inicio", () => {
   step("resumen", {
     title: "Tu Inicio",
     caption:
-      "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, la fecha, el saludo y una frase con lo pendiente (en este ejemplo, las pruebas sin hacer en los proyectos de Liomar); a la derecha, el periodo de los datos y «Nuevo proyecto». Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, los criterios de salida, las ejecuciones diarias y las próximas pruebas. Se actualiza solo cada vez que llegan datos de otro equipo.",
+      "«Inicio» es lo primero que ves al entrar: un resumen de todos tus proyectos abiertos. Arriba, en una sola línea, el saludo y la fecha; a la derecha, el periodo de los datos, «Nuevo proyecto» y el engranaje para personalizarlo. Debajo, cuatro tarjetas con las cifras clave y cuatro paneles: la ejecución por proyecto, las próximas pruebas, los criterios de salida y las ejecuciones diarias. Ningún panel se desplaza por dentro: una lista muestra las filas que caben y termina en «+N más». Se actualiza solo cada vez que llegan datos de otro equipo.",
     covers: ["route:/", "state:home-metrics"],
     run: async () => {
       await goHome();
@@ -39,6 +51,8 @@ chapter("inicio", () => {
       await expect(byTestId("home-daily")).toBeDisplayed();
       // Loaded, not failed: no «No se pudieron cargar las ejecuciones».
       await expect($$(".home [role=alert]")).toBeElementsArrayOfSize(0);
+      // No gadget scrolls inside (UX-28).
+      await expect(await innerScrolls()).toEqual([]);
     },
   });
 
@@ -82,6 +96,29 @@ chapter("inicio", () => {
     },
   });
 
+  step("ayuda", {
+    title: "La ayuda de cada panel",
+    caption:
+      "Junto al título de cada panel, el botón «?» explica qué muestra: «Ejecución por proyecto», el último resultado de cada caso en cada proyecto abierto; «Próximas pruebas», qué ejecutar según su último resultado y por prioridad; «Criterios de salida», los definidos en el plan de pruebas; y «Ejecuciones diarias», qué cuenta como intento. Se abre al pasar el ratón, con un clic o con el teclado (Tab), y se cierra con Esc.",
+    covers: ["action:home-gadget-help"],
+    focus: ['[aria-label="Más información: Ejecución por proyecto"]', '[role="tooltip"]'],
+    run: async () => {
+      // Keyboard focus opens it (a click would toggle what hovering opened).
+      await browser.execute(() =>
+        (document.querySelector('[aria-label="Más información: Ejecución por proyecto"]') as HTMLElement | null)?.focus(),
+      );
+      await expect($('[role="tooltip"]')).toBeDisplayed();
+      await expect($('[role="tooltip"]')).toHaveText(expect.stringContaining(es.dashboard.exec.subtitle));
+    },
+    after: async () => {
+      // Esc closes it; the pointer, still over «?» after the click, leaves.
+      await browser.keys("Escape");
+      await $("h1").moveTo();
+      // The help text stays in the DOM (it describes the card), hidden.
+      await expect($('[role="tooltip"]')).not.toBeDisplayed();
+    },
+  });
+
   step("criterios", {
     title: "Criterios de salida",
     caption:
@@ -114,17 +151,16 @@ chapter("inicio", () => {
   step("diarias", {
     title: "Ejecuciones diarias y sus datos",
     caption:
-      "Una columna por día del periodo con los intentos: cada vez que se ejecutó algo, reintentos y tests sin vincular incluidos, por eso puede sumar más que la tasa de éxito, que cuenta casos. Cada columna separa «Pasa», «Falla» y «Otras», sumando todos los proyectos; arriba a la derecha, el total del periodo. Pasa el ratón por una columna para ver su día. «Ver los datos» despliega la misma información en una tabla (día, pasa, falla, otras, manuales e importadas), más cómoda de leer con un lector de pantalla o para copiar.",
-    covers: ["action:home-daily-table"],
-    focus: DAILY,
+      "Una columna por día del periodo con los intentos: cada vez que se ejecutó algo, reintentos y tests sin vincular incluidos, por eso puede sumar más que la tasa de éxito, que cuenta casos. Cada columna separa «Pasa», «Falla» y «Otras», sumando todos los proyectos; arriba a la derecha, el total del periodo. Pasa el ratón por una columna para ver su día. «Ver los datos» abre la misma información en una tabla (día, pasa, falla, otras, manuales e importadas), más cómoda de leer con un lector de pantalla o para copiar; en el escritorio se abre en una ventana, para que el panel no crezca.",
+    covers: ["action:home-daily-table", "dialogs:src/app/dashboard/DailyExecutionsChart.tsx"],
+    focus: '[role="dialog"]',
     run: async () => {
-      const details = byTestId("home-daily-data");
-      await details.scrollIntoView({ block: "center" });
-      await details.$("summary").click();
-      await browser.waitUntil(async () => (await details.getProperty("open")) === true, { timeoutMsg: "«Ver los datos» did not open" });
+      await byTestId("home-daily-data").click();
+      await expect($('[role="dialog"] table')).toBeDisplayed();
     },
     after: async () => {
-      await byTestId("home-daily-data").$("summary").click();
+      await $('[role="dialog"]').$(`button=${es.common.close}`).click();
+      await expect($('[role="dialog"]')).not.toBeExisting();
     },
   });
 
@@ -147,13 +183,14 @@ chapter("inicio", () => {
   step("sin-scroll", {
     title: "Todo a la vista, sin desplazarte",
     caption:
-      "En el escritorio, el Inicio es una pizarra de 24 columnas por 24 filas que ocupa justo el alto de la ventana: desde 1280 × 800 lo ves todo sin desplazarte. Cada tarjeta es un «gadget» con su sitio y su tamaño en la cuadrícula. En una tableta los gadgets se apilan uno debajo de otro, y en el móvil se reparten en pestañas.",
+      "En el escritorio, el Inicio es una pizarra de 24 columnas por 24 filas que ocupa justo el alto de la ventana: desde 1280 × 800 en una ventana como esta, de 1280 × 820, lo ves todo sin desplazarte, y ningún panel se desplaza por dentro. Con menos alto, los paneles se compactan (menos márgenes y leyendas solo con puntos de color, con su nombre al pasar el ratón); por debajo de unos 700 px de alto aparece un único desplazamiento de página. Cada tarjeta es un «gadget» con su sitio y su tamaño en la cuadrícula. En una tableta los gadgets se apilan uno debajo de otro, y en el móvil se reparten en pestañas.",
     covers: ["platform:home-no-scroll"],
     run: async () => {
       await setViewport(LAPTOP);
       await goHome();
       await expect(byTestId("home-board")).toBeDisplayed();
-      await browser.waitUntil(noScroll, { timeoutMsg: "Inicio scrolls at 1280 × 800" });
+      await browser.waitUntil(noScroll, { timeoutMsg: "Inicio scrolls at 1280 × 820" });
+      await expect(await innerScrolls()).toEqual([]);
     },
     after: async () => {
       await setViewport(DESKTOP);
@@ -163,7 +200,7 @@ chapter("inicio", () => {
   step("personalizar", {
     title: "Personalizar el Inicio",
     caption:
-      "El engranaje junto a «Nuevo proyecto» («Personalizar Inicio») activa el modo configurar: se ve la cuadrícula punteada y cada gadget con un borde discontinuo, su asa para moverlo (arriba a la izquierda), su tamaño y su mínimo («10×10 · mín 8×6») y la esquina inferior derecha para cambiar el tamaño. Al mover o agrandar uno, los demás se apartan y suben a llenar los huecos: nunca se solapan. Cada gadget tiene un tamaño mínimo para que su contenido se lea bien. «Listo» guarda la distribución en tu cuenta, así que la verás igual en tus otros equipos; Esc sale sin guardar (y pregunta si cambiaste algo).",
+      "El engranaje junto a «Nuevo proyecto» («Personalizar Inicio») activa el modo configurar: se ve la cuadrícula punteada y cada gadget con un borde discontinuo, su asa para moverlo (arriba a la izquierda), su tamaño y su mínimo («9×10 · mín 8×7») y la esquina inferior derecha para cambiar el tamaño. Al mover o agrandar uno, los demás se apartan y suben a llenar los huecos: nunca se solapan. Cada gadget tiene un tamaño mínimo para que su contenido se lea bien. «Listo» guarda la distribución en tu cuenta, así que la verás igual en tus otros equipos; Esc sale sin guardar (y pregunta si cambiaste algo).",
     covers: ["action:home-customize"],
     focus: ['[data-testid="home-customize"]', '[data-gadget="byProject"]'],
     run: async () => {
@@ -171,7 +208,7 @@ chapter("inicio", () => {
       await expect(byTestId("home-customize")).toHaveAttribute("aria-pressed", "true");
       await expect(byTestId("home-board-done")).toBeDisplayed();
       await expect(byTestId("home-period")).not.toBeExisting();
-      await expect($('[data-gadget="byProject"] .home-gadget__size')).toHaveText(expect.stringContaining("10×10"));
+      await expect($('[data-gadget="byProject"] .home-gadget__size')).toHaveText(expect.stringContaining("9×10"));
     },
   });
 

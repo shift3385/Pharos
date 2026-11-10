@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { projectPath } from "@modules/projects";
 import { caseLink } from "@modules/test-cases";
 import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Skeleton } from "@shared/ui/Skeleton";
 import { skeletonWidth } from "@shared/ui/skeletonWidth";
 import { Tabs } from "@shared/ui/Tabs";
@@ -13,6 +14,8 @@ import type { HomeProject } from "./model/homeData";
 import { queueCounts, queueRows, type QueueTab } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
+import { FitMore } from "./FitMore";
+import { useFitRows } from "./model/fitRows";
 
 const PRIORITY_TONE: Record<string, FlagTone> = {
   critical: "error",
@@ -42,23 +45,32 @@ export function UpcomingTests({
   const counts = queueCounts(state.data);
   const rows = state.data ? queueRows(projects, state.data, tab) : [];
   const only = projects.length === 1 ? projects[0] : null;
+  const allTo = only ? projectPath(only.id, "cases") : "/projects";
+  // On the board only the cases that fit, then «+N más» (UX-28).
+  const fitRows = useFitRows(rows.length);
 
   return (
     <section
       className="home-card home-card--flush home-upcoming"
       aria-labelledby="home-upcoming-title"
+      aria-describedby="home-upcoming-help"
     >
       <div className="home-card__head home-card__head--nowrap home-card__pad">
         <div className="home-card__titles">
-          <h2 id="home-upcoming-title" className="home-card__title">
-            {t("dashboard.upcoming.title")}
-          </h2>
-          <p className="home-card__sub">{t("dashboard.upcoming.subtitle")}</p>
+          <div className="home-card__titleline">
+            <h2 id="home-upcoming-title" className="home-card__title">
+              {t("dashboard.upcoming.title")}
+            </h2>
+            {/* The subtitle is help behind «?» (UX-28). */}
+            <InfoTip
+              id="home-upcoming-help"
+              label={t("dashboard.upcoming.title")}
+            >
+              {t("dashboard.upcoming.subtitle")}
+            </InfoTip>
+          </div>
         </div>
-        <Link
-          to={only ? projectPath(only.id, "cases") : "/projects"}
-          className="home-link home-link--strong"
-        >
+        <Link to={allTo} className="home-link home-link--strong">
           {t("dashboard.upcoming.viewAll")}
           <ArrowRight size={14} aria-hidden="true" />
         </Link>
@@ -83,7 +95,8 @@ export function UpcomingTests({
       />
       <div
         {...tabPanelProps(tab, "home-up-")}
-        className="home-upcoming__panel"
+        className="home-upcoming__panel home-fit"
+        ref={fitRows.boxRef}
       >
         {state.status === "loading" ? (
           <div aria-hidden="true">
@@ -109,11 +122,12 @@ export function UpcomingTests({
           </p>
         ) : (
           <ul
+            ref={fitRows.listRef}
             className="home-queue"
             data-testid="home-upcoming"
             data-tab={tab}
           >
-            {rows.map((r) => {
+            {rows.slice(0, fitRows.shown).map((r) => {
               const tone = PRIORITY_TONE[r.priority];
               return (
                 <li key={`${r.projectId}/${r.caseId}`}>
@@ -145,6 +159,17 @@ export function UpcomingTests({
               );
             })}
           </ul>
+        )}
+        {state.status === "ready" && (
+          <FitMore
+            count={fitRows.more}
+            to={allTo}
+            label={t("dashboard.more", {
+              count: fitRows.more,
+              action: t("dashboard.upcoming.viewAll"),
+            })}
+            testId="home-upcoming-more"
+          />
         )}
       </div>
     </section>

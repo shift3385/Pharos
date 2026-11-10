@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { Check, ChevronDown, Eye, Layers, Plus, RotateCcw, Settings } from "lucide-react";
+import { Check, ChevronDown, Eye, Plus, RotateCcw, Settings } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
 import { Menu, MenuItem, MenuLabel } from "@shared/ui/Menu";
-import { LoadingStatus, Skeleton } from "@shared/ui/Skeleton";
+import { LoadingStatus } from "@shared/ui/Skeleton";
 import { Tabs } from "@shared/ui/Tabs";
 import { tabPanelProps } from "@shared/ui/tabPanel";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -245,92 +245,61 @@ export function DashboardPage() {
     void cancel();
   };
 
+  // What the numbers add up (UX-28): no longer a line of its own, it is the
+  // period button's tooltip and description.
   const sumNote =
-    projects === null ? (
-      <p className="home-sum-note" aria-hidden="true">
-        <Skeleton width="min(360px, 70%)" className="home-header__summary-sk" />
-      </p>
-    ) : kpis.projects > 1 ? (
-      <p className="home-sum-note">
-        <Layers size={14} aria-hidden="true" />
-        <span>
-          <Trans
-            i18nKey="dashboard.sumNote"
-            values={{
-              projects: t("dashboard.openProjects", { count: kpis.projects }),
-              period: t(`dashboard.period.lower.${period}`),
-            }}
-            components={{ b: <b /> }}
-          />
-        </span>
-      </p>
-    ) : null;
+    kpis.projects > 1
+      ? t("dashboard.sumNote", {
+          projects: t("dashboard.openProjects", { count: kpis.projects }),
+          period: t(`dashboard.period.lower.${period}`),
+        }).replace(/<\/?b>/g, "")
+      : undefined;
 
+  // One line (UX-28): the greeting and the date on the left, the actions on
+  // the right. While customizing, the hint takes the date's place.
   const header = (
     <div className="home-header" ref={headerRef}>
       <div className="home-header__text">
-        <span className="home-header__date">{dateLine}</span>
         <h1 className="t-page-title home-header__title">
           {user?.firstName
             ? t("dashboard.greeting", { name: user.firstName })
             : t("dashboard.title")}
         </h1>
-        <p className="home-header__summary">
-          {editing ? (
-            t("dashboard.board.editingHint")
-          ) : projects === null ? (
-            !loadFailed && <Skeleton width="min(340px, 80%)" className="home-header__summary-sk" />
-          ) : list.length === 0 ? (
-            t("dashboard.summaryEmpty")
-          ) : metrics.status !== "ready" ? (
-            // Pending tests are unknown until the metrics load.
-            <Trans
-              i18nKey="dashboard.summaryProjects"
-              values={{
-                projects: t("dashboard.openProjects", { count: kpis.projects }),
-              }}
-              components={{ b: <b /> }}
-            />
-          ) : (
-            <Trans
-              i18nKey="dashboard.summary"
-              values={{
-                pending: t("dashboard.pendingTests", { count: exec.pending }),
-                projects: t("dashboard.openProjects", { count: kpis.projects }),
-              }}
-              components={{ b: <b /> }}
-            />
-          )}
-        </p>
+        {editing ? (
+          <span className="home-header__hint" title={t("dashboard.board.help")}>
+            {t("dashboard.board.editingHint")}
+            {boardBottom(board.items) > BOARD_ROWS && ` · ${t("dashboard.board.overflow")}`}
+          </span>
+        ) : (
+          <span className="home-header__date">
+            {dateLine}
+            {projects !== null && list.length === 0 && ` · ${t("dashboard.summaryEmpty")}`}
+          </span>
+        )}
+        {editing && (
+          <span id="home-board-help" className="sr-only">
+            {t("dashboard.board.help")}
+          </span>
+        )}
         {/* The one announcement of the Home: its cards only draw placeholders. */}
         <LoadingStatus
           active={projects === null || metrics.status === "loading"}
           label={t("dashboard.loading")}
         />
-        <div className="home-header__meta">
-          {editing ? (
-            <p className="home-sum-note" id="home-board-help">
-              {t("dashboard.board.help")}
-              {boardBottom(board.items) > BOARD_ROWS && ` ${t("dashboard.board.overflow")}`}
-            </p>
-          ) : (
-            sumNote
-          )}
-          {/* How fresh the execution numbers are (RED-W6 review): a refresh in
-              flight, or the time of the payload shown after a failed one. */}
-          <p className="home-header__fresh" role="status" data-testid="home-fresh">
-            {metrics.status === "ready" && metrics.stale
-              ? t("dashboard.metrics.staleAt", {
-                  time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }).format(metrics.at),
-                })
-              : metrics.status === "ready" && metrics.refreshing
-                ? t("dashboard.metrics.refreshing")
-                : ""}
-          </p>
-        </div>
+        {/* How fresh the execution numbers are (RED-W6 review): a refresh in
+            flight, or the time of the payload shown after a failed one. */}
+        <span className="home-header__fresh" role="status" data-testid="home-fresh">
+          {metrics.status === "ready" && metrics.stale
+            ? t("dashboard.metrics.staleAt", {
+                time: new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(metrics.at),
+              })
+            : metrics.status === "ready" && metrics.refreshing
+              ? t("dashboard.metrics.refreshing")
+              : ""}
+        </span>
       </div>
       <div className="home-header__actions">
         {editing ? (
@@ -393,7 +362,7 @@ export function DashboardPage() {
           </>
         ) : (
           <>
-            <PeriodSelector value={period} onChange={choosePeriod} />
+            <PeriodSelector value={period} onChange={choosePeriod} description={sumNote} />
             <button
               type="button"
               className="home-btn home-btn--primary"
@@ -560,7 +529,7 @@ export function DashboardPage() {
               {/* The chart is the widget the period changes, so the selector
                   is here too (user's decision); same state as in Resumen. */}
               <div className="home-period-row">
-                <PeriodSelector value={period} onChange={choosePeriod} />
+                <PeriodSelector value={period} onChange={choosePeriod} description={sumNote} />
               </div>
               {visible.has("daily") && daily}
             </>

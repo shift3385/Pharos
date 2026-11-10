@@ -9,24 +9,28 @@
 }
 
 /* ---- Header ---- */
+/* One line (UX-28): «Hola, …» and the date on the left, the actions on the
+   right; it wraps only when the view is too narrow for both. */
 .home-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px;
+  align-items: center;
+  gap: 8px 16px;
 }
 
 .home-header__text {
   flex: 1 1 280px;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
 }
 
-.home-header__date {
-  font-size: 13px;
-  color: var(--color-text-secondary);
+.home-header__date,
+.home-header__hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .home-header__title {
@@ -34,22 +38,12 @@
 }
 
 .home-header__fresh {
-  margin: 2px 0 0;
-  min-height: 16px;
   font-size: 12px;
   color: var(--color-text-muted);
 }
 
-.home-header__summary {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.home-header__summary b,
-.home-sum-note b {
-  color: var(--color-text-primary);
-  font-weight: var(--fw-semibold);
+.home-header__fresh:empty {
+  display: none;
 }
 
 .home-header__actions {
@@ -161,23 +155,6 @@
   border-radius: 50%;
   background: var(--color-surface-1);
   box-shadow: var(--shadow-1);
-}
-
-/* ---- Indicators ---- */
-.home-sum-note {
-  margin: 0 0 -8px;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--color-text-secondary);
-}
-
-.home-sum-note svg {
-  flex: none;
-  margin-top: 3px;
-  color: var(--color-text-muted);
 }
 
 .home-kpis {
@@ -302,11 +279,6 @@ a.home-kpi:hover {
   margin-block: 3px;
 }
 
-.home-header__summary-sk {
-  height: 14px;
-  margin-block: 3px;
-}
-
 .home-ring__sk {
   margin-inline: auto;
 }
@@ -322,35 +294,6 @@ a.home-kpi:hover {
   right: 0;
   bottom: 0;
   border-radius: 3px 3px 0 0;
-}
-
-/* ---- Rows of cards ---- */
-.home-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: clamp(12px, 1.6cqi, 20px);
-}
-
-.home-row > * {
-  min-width: 0;
-  display: flex;
-}
-
-.home-row > * > .home-card {
-  flex: 1;
-}
-
-.home-row__wide {
-  flex: 2 1 520px;
-}
-
-.home-row__narrow {
-  flex: 1 1 300px;
-}
-
-.home-row__half {
-  flex: 1 1 380px;
 }
 
 .home-card {
@@ -398,12 +341,6 @@ a.home-kpi:hover {
   margin: 0;
   font-size: 15px;
   font-weight: var(--fw-semibold);
-}
-
-.home-card__sub {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-text-secondary);
 }
 
 .home-empty {
@@ -1220,25 +1157,6 @@ a.home-kpi:hover {
   font-weight: var(--fw-medium);
 }
 
-/* ---- Board of gadgets (UX-27) ----
-   On the desktop the gadgets sit on a 24 × 24 grid (react-grid-layout); the
-   row height is measured so the 24 rows fill the content area. */
-
-/* The sum note and the freshness line share one row under the summary, so
-   the board starts as high as it can. */
-.home-header__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 16px;
-  min-height: 18px;
-}
-
-.home-header__meta .home-sum-note,
-.home-header__meta .home-header__fresh {
-  margin: 2px 0 0;
-}
-
 /* «Personalizar Inicio»: an icon only, quiet until hovered or pressed. */
 .home-gear {
   align-self: center;
@@ -1285,21 +1203,150 @@ a.home-kpi:hover {
   border-radius: 12px;
 }
 
-/* A gadget never breaks its cell: what does not fit scrolls inside it. */
+/* A gadget never scrolls (UX-28): its card takes exactly its cell, the
+   lists show the rows that fit and end in «+N más», and the minimum sizes
+   keep the essentials in view. */
 .home-gadget__body {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
   border-radius: 12px;
 }
 
 .home-gadget__body > .home-card,
 .home-gadget__body > .home-kpi,
 .home-gadget__body > .home-kpi-stack {
-  flex: 1 0 auto;
-  min-height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home-board .home-card > * {
+  flex: none;
+  min-height: 0;
+}
+
+/* The area of a list: the card's free height; what does not fit is not drawn
+   (useFitRows), never scrolled. */
+.home-board .home-card > .home-fit,
+.home-board .home-upcoming__panel {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.home-more {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.home-upcoming .home-more {
+  margin: 6px clamp(14px, 1.4cqi, 18px) 0;
+}
+
+/* One line per row on the board, so every row has the same height. */
+.home-board .home-exit__criteria li {
+  white-space: nowrap;
+}
+
+.home-board .home-exit__criterion {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-board .home-exit .home-empty--left {
+  padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-board .home-ring {
+  width: 92px;
+  height: 92px;
+}
+
+.home-board .home-exit__summary {
+  gap: 14px;
+}
+
+/* «Ver los datos» opens a dialog on the board. */
+button.home-daily__data {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.home-daily__dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.home-daily__dialog .home-daily__table {
+  max-height: 60vh;
+}
+
+/* -- Compact board (UX-28): rows under 18 px -- */
+.home-board[data-compact] .home-card {
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.home-board[data-compact] .home-card--flush {
+  padding: 10px 0 6px;
+}
+
+.home-board[data-compact] .home-card__pad,
+.home-board[data-compact] .home-upcoming .home-more {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.home-board[data-compact] .home-kpi {
+  padding: 6px 12px;
+}
+
+.home-board[data-compact] .home-kpi__num {
+  font-size: 20px;
+}
+
+/* Legends: the dots only, each name in its tooltip. */
+.home-board[data-compact] .home-legend {
+  gap: 4px 8px;
+}
+
+.home-board[data-compact] .home-legend__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* No foot text under the daily chart. */
+.home-board[data-compact] .home-daily__month {
+  display: none;
+}
+
+.home-board[data-compact] .home-ring {
+  width: 72px;
+  height: 72px;
+}
+
+.home-board[data-compact] .home-exit__criteria li {
+  padding: 6px 0;
 }
 
 .home-gadget__body .home-kpi-stack > .home-kpi {
@@ -1308,7 +1355,7 @@ a.home-kpi:hover {
 
 /* Tighter cards on the grid: its rows are counted. */
 .home-board .home-card {
-  gap: 12px;
+  gap: 10px;
   padding: clamp(14px, 1.4cqi, 18px);
 }
 
@@ -1496,4 +1543,25 @@ a.home-kpi:hover {
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* A gadget's title and its help «?» (UX-28). */
+.home-card__titleline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.home-card__titleline .home-card__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The tabs of «Próximas pruebas» never scroll sideways on the board: its
+   minimum width (7 columns) holds the three of them. */
+.home-board .tabs--underline {
+  overflow: hidden;
 }

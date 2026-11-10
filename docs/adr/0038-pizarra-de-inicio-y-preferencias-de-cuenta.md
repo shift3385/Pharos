@@ -1,7 +1,8 @@
 # ADR-0038 · Pizarra de Inicio y preferencias que viajan con la cuenta
 
 - **Estado:** Aceptado (boceto y decisiones aprobados por el usuario el
-  2026-11-09; UX-27)
+  2026-11-09; UX-27). Enmendado el 2026-11-10 (UX-28): ver «Enmienda UX-28» al
+  final.
 - **Contexto:**
   - En el escritorio, Inicio obligaba a desplazarse para verlo entero, y la
     información principal quedaba fuera de la vista.
@@ -103,3 +104,32 @@
   - Una app anterior a UX-27 no conoce la ruta; una más nueva que cambie la
     versión del formato no rompe a esta, que mostrará la distribución por
     defecto.
+- **Enmienda UX-28** (2026-11-10, aprobada por el usuario). Lo que cambia
+  respecto a lo anterior:
+  - **Distribución por defecto.** Es la que guardó el usuario: las cuatro
+    cifras clave arriba (6 × 4 cada una); «Ejecución por proyecto» (9 × 10) con
+    «Ejecuciones diarias» (9 × 9) debajo, a la izquierda; «Próximas pruebas»
+    (7 × 19) en el centro y «Criterios de salida» (8 × 19) a la derecha.
+    - Ocupa 23 de las 24 filas, así que ya no las ocupa exactamente.
+    - «Restablecer» vuelve a ella.
+    - Una cuenta con su distribución guardada la conserva; solo cambia lo que
+      queda por debajo de un mínimo nuevo.
+  - **Ningún gadget se desplaza por dentro.** Sustituye a «lo que no cabe se
+    desplaza dentro del gadget».
+    - Las listas muestran las filas que caben y terminan en «+N más · …»
+      (`model/fitRows.ts`).
+    - «Ver los datos» de las ejecuciones diarias se abre en un diálogo.
+    - Los mínimos se recalculan para que lo esencial quepa con las filas de
+      14 px de una ventana de unos 700 px de alto:
+      «Ejecución por proyecto» 8 × 7, «Próximas pruebas» 7 × 9, «Criterios de
+      salida» 7 × 11 y «Ejecuciones diarias» 8 × 8; los indicadores siguen en
+      5 × 4.
+  - **Una distribución guardada se lee manteniendo los tamaños.** Si un gadget
+    crece hasta un mínimo nuevo, lo que pisa baja, como en la compactación, en
+    vez de ir al primer hueco.
+  - **Modo compacto.** Con filas de menos de 18 px la pizarra se compacta:
+    - menos márgenes;
+    - leyendas solo con puntos de color, con su nombre en el tooltip;
+    - sin el texto bajo el gráfico diario.
+  - **La altura de fila no baja de 14 px.** Por debajo de unos 700 px de alto
+    de ventana aparece un único desplazamiento de página.
