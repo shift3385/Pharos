@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser, expect } from "@wdio/globals";
-import { button, es } from "../support";
+import { button, es, startBlankProject } from "../support";
 
 export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
@@ -46,9 +46,8 @@ export async function openProject(name: string) {
   await $(".pj-table, .pj-empty").waitForExist();
   const row = $(`a.pj-row__link*=${name}`);
   if (!(await row.isExisting())) {
-    await button(es.projects.new).click();
-    await $("#pj-new-name").setValue(name);
-    await button(es.projects.create).click();
+    await startBlankProject(name);
+    await button(es.projects.wizard.create).click();
   } else await row.click();
   await expect($(`h1=${name}`)).toBeDisplayed();
 }
@@ -343,7 +342,7 @@ export async function dismissConfirm(text?: string, timeout = 5_000) {
   await top.waitForExist({ reverse: true, timeout });
 }
 
-export { button, es };
+export { button, es, startBlankProject };
 
 /** XPath (relative to a scope element) of the innermost element whose own
  *  text contains `text`. */

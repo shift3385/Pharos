@@ -1,6 +1,7 @@
 import { serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import { PROJECT_SAVED_EVENT } from "../model/events";
+import type { EvidenceRetention } from "@shared/contracts/contract";
 import type { Project, ProjectInput, ProjectSummary } from "../model/types";
 
 /** Announces a saved project to the views that cache the list (FIX-11). */
@@ -37,6 +38,14 @@ export const projectApi = {
   /** Copies the evidence retention of one project to another (UX-25); how
    *  many kinds changed. Desktop only: the retention is a setting of this
    *  device (DAT-03c) and the web has none, so it refuses there. */
+  /** The evidence retention of a project, to show what «Nuevo proyecto»
+   *  would copy (UX-29). Desktop only, like `copyRetention`. The same
+   *  command as Administración › Evidencias, called here because this module
+   *  may not import admin. */
+  retention: (projectId: string, userId: string): Promise<EvidenceRetention> =>
+    isTauri()
+      ? invoke("evidence_retention_get", { projectId, userId })
+      : Promise.reject(new Error("evidence-retention-desktop-only")),
   copyRetention: (fromProjectId: string, toProjectId: string, userId: string): Promise<number> =>
     isTauri()
       ? invoke("evidence_retention_copy", { fromProjectId, toProjectId, userId })

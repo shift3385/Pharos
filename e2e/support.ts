@@ -94,12 +94,21 @@ async function projectListLoaded() {
   await $(".pj-table, .pj-empty").waitForExist({ timeoutMsg: "the project list never loaded" });
 }
 
+/** «Nuevo proyecto» (UX-29) on its blank path: opens the wizard, goes past
+ *  «Cómo empezar» and types the name in «Datos generales». The caller creates
+ *  (`button(es.projects.wizard.create)`) or shows the step first. */
+export async function startBlankProject(name: string) {
+  await button(es.projects.new).click();
+  await $(".pj-wizard").waitForDisplayed();
+  await button(es.projects.wizard.next).click();
+  await $("#pj-new-name").setValue(name);
+}
+
 /** Creates a project; the app then opens it, titled with its name. */
 export async function createProject(name: string) {
   await openProjects();
-  await button(es.projects.new).click();
-  await $(`input[placeholder="${es.projects.namePlaceholder}"]`).setValue(name);
-  await button(es.projects.create).click();
+  await startBlankProject(name);
+  await button(es.projects.wizard.create).click();
   await expect($(`h1=${name}`)).toBeDisplayed();
 }
 

@@ -1,0 +1,288 @@
+/* «Nuevo proyecto» (UX-29): a wizard in a ConfirmDialog box (.cd), full
+   screen on mobile. */
+.cd.pj-wizard {
+  max-width: 600px;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  gap: var(--space-4);
+}
+
+.pj-wizard__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---- Step indicator ---- */
+.pj-wizard__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  /* A line between the steps (navigation) and the step itself. */
+  padding: 0 0 var(--space-4);
+  list-style: none;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pj-wizard__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pj-wizard__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-weight: var(--fw-semibold);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.pj-wizard__step[aria-current="step"] {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
+.pj-wizard__step[aria-current="step"] .pj-wizard__num {
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.pj-wizard__step[data-done] {
+  color: var(--color-text-secondary);
+}
+
+.pj-wizard__step[data-done] .pj-wizard__num {
+  color: var(--color-success-text);
+  border-color: var(--color-success);
+}
+
+/* ---- Step 1: how to start ---- */
+.pj-wizard__starts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.pj-start {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  cursor: pointer;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.pj-start:hover:not([data-disabled]) {
+  border-color: var(--color-navy-300);
+}
+
+.pj-start[data-checked] {
+  background: color-mix(
+    in oklab,
+    var(--color-accent) 8%,
+    var(--color-surface-1)
+  );
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.pj-start:has(.pj-start__radio:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.pj-start[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* The radio stays for the keyboard and assistive tech; the card shows it. */
+.pj-start__radio {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.pj-start__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+.pj-start[data-checked] .pj-start__icon {
+  color: var(--color-accent-text, var(--color-text-primary));
+  background: color-mix(in oklab, var(--color-accent) 18%, transparent);
+}
+
+.pj-start__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pj-start__title {
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
+.pj-start__desc {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Step 2: what to copy ---- */
+.pj-parts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pj-parts__legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-secondary);
+}
+
+.pj-part {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.pj-part > input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+.pj-part[data-disabled] {
+  cursor: not-allowed;
+  background: var(--color-surface-2);
+}
+
+.pj-part__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pj-part__label {
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+}
+
+.pj-part[data-disabled] .pj-part__label {
+  color: var(--color-text-muted);
+}
+
+.pj-part__value {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.pj-wizard__note,
+.pj-wizard__summary {
+  margin: 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-normal);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Step 3: general data ---- */
+.pj-wizard__summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: 10px;
+}
+
+.pj-wizard__summary > svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--color-text-muted);
+}
+
+.pj-free {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: var(--fw-medium);
+  color: var(--color-success-text);
+}
+
+.pj-copied {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+}
+
+.pj-wizard__error {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-error-text);
+}
+
+/* ---- Buttons ---- */
+.pj-wizard__actions {
+  align-items: center;
+}
+
+.pj-wizard__spacer {
+  flex: 1 1 auto;
+}
+
+/* Mobile: the whole screen, buttons at the bottom. */
+[data-viewport="mobile"] .pj-wizard-overlay {
+  padding: 0;
+}
+
+[data-viewport="mobile"] .cd.pj-wizard {
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+}
+
+[data-viewport="mobile"] .pj-wizard__body {
+  flex: 1 1 auto;
+}
+
+[data-viewport="mobile"] .pj-wizard__spacer {
+  display: none;
+}

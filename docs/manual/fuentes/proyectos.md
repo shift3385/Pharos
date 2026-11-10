@@ -31,8 +31,10 @@ En este manual, Liomar crea dos proyectos:
 
 | Tecla | Dónde | Qué hace |
 | --- | --- | --- |
-| Intro | Campo «Nombre del proyecto» | Crea el proyecto |
-| Esc | Fila de crear proyecto | No la cierra: usa «Cancelar» |
+| ← → (o ↑ ↓) | «Cómo empezar», en «Nuevo proyecto» | Cambian entre «Proyecto en blanco» y «A partir de uno existente» |
+| Intro | «Cómo empezar» | Pasa al paso siguiente, como «Siguiente» |
+| Intro | «Nombre del proyecto» o «Prefijo de ID de caso», en «Datos generales» | Crea el proyecto, como «Crear proyecto» |
+| Esc | El asistente «Nuevo proyecto» | Lo cierra sin crear nada; si ya habías escrito o elegido algo, antes pregunta |
 | Tab | Lista | Recorre las tarjetas de «Recientes», el buscador, el orden y las filas de la tabla |
 | Intro | El nombre de un proyecto | Lo abre |
 | ↑ ↓ e Intro | Menú «⋯» de una fila y menú de orden | Recorren y eligen una opción |
@@ -40,17 +42,22 @@ En este manual, Liomar crea dos proyectos:
 
 ## Si algo no sale
 
-- **«Este campo es obligatorio.»** Escribe un nombre antes de pulsar «Crear».
-- **«No se pudo crear el proyecto.»** Pulsa «Reintentar». En la versión web,
-  comprueba la conexión.
-- **«El proyecto se creó, pero no se copió: …».** Al crear con «Copiar
-  ajustes de:», alguna parte no se pudo copiar. El proyecto ya existe: no lo
+- **«Este campo es obligatorio.»** Escribe un nombre antes de pulsar «Crear
+  proyecto».
+- **«No se pudo crear el proyecto. Inténtalo de nuevo.»** El asistente sigue
+  abierto con lo que escribiste: pulsa otra vez «Crear proyecto». En la versión
+  web, comprueba la conexión.
+- **«A partir de uno existente» está desactivado.** Aún no tienes proyectos de
+  los que copiar: crea el primero en blanco.
+- **«El proyecto se creó, pero no se copió: …».** Al crear a partir de otro
+  proyecto, alguna parte no se pudo copiar. El proyecto ya existe: no lo
   crees otra vez. Ajusta a mano lo que dice el aviso, los campos y los dígitos
   en «Ajustes del proyecto» (capítulo 14) o la retención en «Administración ›
   Evidencias»; los campos también se pueden traer con «Copiar de otro
   proyecto».
-- **«Copiar ajustes de:» no ofrece la retención de evidencias.** Estás en la
-  web: la retención es un ajuste de la app de escritorio y allí no se copia.
+- **La retención de evidencias aparece desactivada en «Qué copiar».** Estás
+  en la web: la retención es un ajuste de la app de escritorio y allí no se
+  copia.
 - **«No se pudo cargar la lista de proyectos.»** Pulsa «Reintentar».
 - **«Ningún proyecto coincide con «…».»** El buscador busca en el nombre y en
   el prefijo. Borra el texto para volver a ver todos.
@@ -76,6 +83,7 @@ En este manual, Liomar crea dos proyectos:
   línea con el plan, la ejecución y el último acceso.
 - El menú de orden no aparece; el buscador sí.
 - El menú «⋯» de cada proyecto se abre como una hoja desde abajo.
+- «Nuevo proyecto» ocupa toda la pantalla, con los botones del paso abajo.
 - Dentro de un proyecto, la cabecera se reduce a los botones de la sección, y
   el nombre del proyecto pasa a la barra superior.
 
@@ -94,7 +102,7 @@ En este manual, Liomar crea dos proyectos:
   lo permite, porque una búsqueda o una importación por `PH` encontraría los
   casos de los dos proyectos.
 - Para un proyecto parecido a otro (la versión siguiente del mismo producto,
-  por ejemplo), créalo con «Copiar ajustes de:» y ese proyecto: nace con sus
+  por ejemplo), créalo «A partir de uno existente» con ese proyecto: nace con sus
   campos personalizados, sus dígitos, su historial del plan exportado y, en
   el escritorio, su retención de evidencias. Solo se copian ajustes, nunca el
   nombre, el prefijo ni los datos, y una sola vez: después, cada proyecto

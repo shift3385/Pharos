@@ -19,13 +19,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
-import { FieldMessage } from "@shared/ui/FormField";
 import { LoadError } from "@shared/ui/LoadError";
 import { ReportedError } from "@shared/ui/notify";
-import { useToast } from "@shared/ui/Toast";
-import { isTauri } from "@shared/platform";
-import { controlProps } from "@shared/ui/fieldProps";
-import { required } from "@shared/validation";
 import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
 import { CardGridSkeleton, LoadingStatus, Skeleton } from "@shared/ui/Skeleton";
 import { Pagination } from "@shared/ui/Pagination";
@@ -55,15 +50,8 @@ import {
 } from "../model/projectTable";
 import { useProjectExport } from "./useProjectExport";
 import "@shared/ui/headerActions.css";
-import { prefixIssue, suggestPrefix } from "../model/prefix";
-import {
-  copyAfterCreate,
-  copyFailed,
-  copyParts,
-  withCopiedSettings,
-  type CopyOutcome,
-  type CopyPart,
-} from "../model/copySettings";
+import type { Project } from "../model/types";
+import { NewProjectWizard } from "./NewProjectWizard";
 import "./Projects.css";
 
 const SORT_ICONS = {
@@ -97,19 +85,10 @@ function ProjectList() {
   const [params, setParams] = useSearchParams();
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  // The last create or row export that failed, to say so and repeat it.
-  const [actionFailed, setActionFailed] = useState<{ create: true } | { exporting: ProjectRow } | null>(null);
+  // The last row export that failed, to say so and repeat it.
+  const [actionFailed, setActionFailed] = useState<{ exporting: ProjectRow } | null>(null);
   const [creating, setCreating] = useState(() => params.get("new") === "1");
   const { exportAll, exportProject, busy, progressModal } = useProjectExport();
-  const [name, setName] = useState("");
-  // NC-030: a free prefix, suggested from the name until the user types one.
-  const [prefix, setPrefix] = useState("");
-  const [prefixTouched, setPrefixTouched] = useState(false);
-  // UX-25: «Copiar ajustes de…» another project, every part checked.
-  const [copyFrom, setCopyFrom] = useState("");
-  const [copyChecked, setCopyChecked] = useState<ReadonlySet<CopyPart>>(new Set());
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: ProjectSort; dir: SortDirection }>({
     key: "access",
@@ -158,83 +137,10 @@ function ProjectList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId]);
 
-  // A blank name is explained (and announced) instead of a disabled button.
-  const [nameTried, setNameTried] = useState(false);
-  const nameIssue = nameTried ? required(name) : null;
-  const suggested = useMemo(() => suggestPrefix(name, rows ?? []), [name, rows]);
-  const shownPrefix = prefixTouched ? prefix : name.trim() ? suggested : "";
-  const prefixProblem = name.trim() || prefixTouched ? prefixIssue(shownPrefix, rows ?? []) : null;
-  const resetCreate = () => {
-    setName("");
-    setPrefix("");
-    setPrefixTouched(false);
-    setNameTried(false);
-    setCopyFrom("");
-    setCopyChecked(new Set());
-  };
-  const offeredParts = copyParts(isTauri());
-  const copySource = rows?.find((r) => r.id === copyFrom) ?? null;
-  function chooseCopySource(id: string) {
-    setCopyFrom(id);
-    setCopyChecked(new Set(id ? offeredParts : []));
-  }
-  function toggleCopyPart(part: CopyPart, on: boolean) {
-    const next = new Set(copyChecked);
-    if (on) next.add(part);
-    else next.delete(part);
-    setCopyChecked(next);
-  }
-  /** What the copy left out, in words («campos personalizados de requisitos»). */
-  function copyMissing(outcome: CopyOutcome): string {
-    const parts: string[] = [];
-    if (outcome.fieldsFailed.length) {
-      const entities = outcome.fieldsFailed.map((e) => t(`projects.copySettings.entity.${e}`)).join(", ");
-      parts.push(t("projects.copySettings.failedFields", { entities }));
-    }
-    if (outcome.retentionFailed) parts.push(t("projects.copySettings.failedRetention"));
-    return parts.join("; ");
-  }
-
-  async function create() {
-    const trimmed = name.trim();
-    setNameTried(true);
-    if (!trimmed || prefixProblem || saving) return;
-    setNameTried(false);
-    setActionFailed(null);
-    // The chosen settings of another project (UX-25): digits and plan history
-    // travel in the create; fields and retention are copied right after.
-    const source = copySource;
-    const parts = new Set(copyChecked);
-    let project;
-    setSaving(true);
-    try {
-      project = await projectApi.create(
-        withCopiedSettings({ name: trimmed, ownerId, caseIdPrefix: shownPrefix.trim() }, source, parts),
-      );
-      if (project && source) {
-        // The project exists: a copy that fails is said, never undone.
-        const outcome = await copyAfterCreate(source.id, project.id, ownerId, parts);
-        if (copyFailed(outcome)) {
-          logClientError(new Error("project settings copy incomplete"), "project create");
-          toast(t("projects.copySettings.failedToast", { parts: copyMissing(outcome) }), "warning");
-        } else {
-          toast(t("projects.copySettings.copiedToast", { name: source.name }), "success");
-        }
-      }
-    } catch (e) {
-      // The form stays open with the name; «Reintentar» sends what it says then.
-      // A refusal the user was already told about (a toast) is not repeated.
-      if (e instanceof ReportedError) return;
-      logClientError(e, "project create");
-      setActionFailed({ create: true });
-      return;
-    } finally {
-      setSaving(false);
-    }
-    resetCreate();
+  // «Nuevo proyecto» (UX-29): the wizard creates it; a new project starts by
+  // writing its plan, an existing one opens on the board (UX-22).
+  async function created(project: Project | null) {
     setCreating(false);
-    // A new project starts by writing its plan; an existing one opens on the
-    // board (UX-22).
     if (project) navigate(projectPath(project.id, "plan"));
     else await refresh();
   }
@@ -411,118 +317,19 @@ function ProjectList() {
         </div>
       </header>
 
-      {creating && (
-        <div className="pj-create">
-          <input
-            {...controlProps("pj-new-name", nameIssue)}
-            className="pj-input"
-            aria-label={t("projects.namePlaceholder")}
-            autoFocus
-            value={name}
-            placeholder={t("projects.namePlaceholder")}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && create()}
-          />
-          <input
-            {...controlProps("pj-new-prefix", prefixProblem)}
-            className="pj-input pj-input--prefix t-id"
-            aria-label={t("projects.caseIdPrefix")}
-            title={t("projects.prefix.suggestedHint")}
-            value={shownPrefix}
-            placeholder={t("projects.prefix.placeholder")}
-            autoComplete="off"
-            spellCheck={false}
-            data-testid="pj-new-prefix"
-            onChange={(e) => {
-              setPrefixTouched(true);
-              setPrefix(e.target.value);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && create()}
-          />
-          <button type="button" className="pj-primary" onClick={create} disabled={saving}>
-            {t("projects.create")}
-          </button>
-          <button
-            type="button"
-            className="header-action"
-            onClick={() => {
-              setCreating(false);
-              resetCreate();
-              setActionFailed(null);
-            }}
-          >
-            {t("common.cancel")}
-          </button>
-          {all.length > 0 && (
-            <div className="pj-create__copy" data-testid="pj-new-copy">
-              <label htmlFor="pj-new-copy-from" className="pj-create__copy-label">
-                {t("projects.copySettings.label")}
-              </label>
-              <select
-                id="pj-new-copy-from"
-                className="pj-input pj-input--select"
-                value={copyFrom}
-                onChange={(e) => chooseCopySource(e.target.value)}
-              >
-                <option value="">{t("projects.copySettings.none")}</option>
-                {[...all].sort((a, b) => a.name.localeCompare(b.name, lang)).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.caseIdPrefix ? `${p.caseIdPrefix} · ${p.name}` : p.name}
-                  </option>
-                ))}
-              </select>
-              {copySource && (
-                <>
-                  <fieldset className="pj-create__parts">
-                    <legend className="sr-only">
-                      {t("projects.copySettings.partsLegend", { name: copySource.name })}
-                    </legend>
-                    {offeredParts.map((part) => (
-                      <label key={part} className="pj-create__part">
-                        <input
-                          type="checkbox"
-                          checked={copyChecked.has(part)}
-                          data-testid={`pj-new-copy-${part}`}
-                          onChange={(e) => toggleCopyPart(part, e.target.checked)}
-                        />
-                        <span>
-                          {t(`projects.copySettings.part.${part}`, {
-                            digits: copySource.caseIdDigits,
-                            mode: t(`testPlan.historyMode.${copySource.planExportHistory ?? "current"}`),
-                          })}
-                        </span>
-                      </label>
-                    ))}
-                  </fieldset>
-                  <p className="pj-create__note">{t("projects.copySettings.note")}</p>
-                  {!offeredParts.includes("retention") && (
-                    <p className="pj-create__note">{t("projects.copySettings.webNoRetention")}</p>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-          {nameIssue && (
-            <span role="alert" className="pj-create__msg">
-              <FieldMessage id="pj-new-name-msg" issue={nameIssue} />
-            </span>
-          )}
-          {prefixProblem && (
-            <span role="alert" className="pj-create__msg">
-              <FieldMessage id="pj-new-prefix-msg" issue={prefixProblem} />
-            </span>
-          )}
-        </div>
+      {creating && rows !== null && (
+        <NewProjectWizard
+          projects={rows}
+          ownerId={ownerId}
+          onClose={() => setCreating(false)}
+          onCreated={(project) => void created(project)}
+        />
       )}
 
       {actionFailed && (
         <LoadError
-          message={
-            "exporting" in actionFailed
-              ? t("projects.exportFailed", { name: actionFailed.exporting.name })
-              : t("projects.createFailed")
-          }
-          onRetry={() => void ("exporting" in actionFailed ? exportRow(actionFailed.exporting) : create())}
+          message={t("projects.exportFailed", { name: actionFailed.exporting.name })}
+          onRetry={() => void exportRow(actionFailed.exporting)}
         />
       )}
       {loadFailed && <LoadError message={t("projects.list.loadFailed")} onRetry={retryLoad} />}
@@ -549,7 +356,7 @@ function ProjectList() {
           </>
         )
       ) : all.length === 0 ? (
-        !creating && <p className="pj-empty">{t("projects.empty")}</p>
+        <p className="pj-empty">{t("projects.empty")}</p>
       ) : (
         <>
           {recent.length > 0 && (

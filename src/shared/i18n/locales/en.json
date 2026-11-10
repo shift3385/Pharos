@@ -752,12 +752,10 @@
   },
   "projects": {
     "loadFailed": "The project could not be loaded.",
-    "createFailed": "The project could not be created.",
     "exportFailed": "«{{name}}» could not be exported.",
     "title": "Projects",
     "subtitle": "Each project is a folder with its test plan and its test cases.",
     "new": "New project",
-    "create": "Create",
     "exportAll": "Export all",
     "exporting": "Exporting…",
     "exportProject": "Export project (ZIP)",
@@ -768,7 +766,6 @@
     "exportZipping": "Compressing the ZIP…",
     "exportFinishing": "Finishing…",
     "empty": "No projects yet. Create the first one.",
-    "namePlaceholder": "Project name",
     "name": "Project name",
     "caseIdPrefix": "Case id prefix",
     "caseIdDigits": "Number digits",
@@ -883,20 +880,10 @@
       "required": "Type a prefix, for example “PHA-”.",
       "overlap": "It overlaps “{{prefix}}” of {{name}}: two prefixes may not be equal or one start with the other.",
       "placeholder": "Prefix",
-      "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings."
+      "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings.",
+      "free": "Free"
     },
     "copySettings": {
-      "label": "Copy settings from:",
-      "none": "(none)",
-      "partsLegend": "Settings copied from «{{name}}»",
-      "part": {
-        "fields": "Custom fields (cases, requirements, defects, runs and cycles)",
-        "digits": "Key digits ({{digits}})",
-        "planHistory": "History in the exported plan: {{mode}}",
-        "retention": "Evidence retention"
-      },
-      "note": "Copied once, on create: the name, the prefix and the data (plan, cases, requirements, cycles, runs, defects and board) are never copied, and the two projects stay independent.",
-      "webNoRetention": "Evidence retention is a setting of the desktop app: it is not copied on the web.",
       "copiedToast": "Settings copied from «{{name}}».",
       "failedToast": "The project was created, but this was not copied: {{parts}}. You can set it in Project settings or in Administration › Evidence.",
       "failedFields": "custom fields of {{entities}}",
@@ -907,6 +894,66 @@
         "defect": "defects",
         "run": "runs",
         "test_cycle": "cycles"
+      }
+    },
+    "wizard": {
+      "title": "New project",
+      "stepsLabel": "Steps",
+      "stepOf": "Step {{n}} of {{total}}",
+      "step": {
+        "start": "How to start",
+        "copy": "What to copy",
+        "general": "General data"
+      },
+      "blank": {
+        "title": "Blank project",
+        "desc": "Start from scratch with the default settings"
+      },
+      "existing": {
+        "title": "From an existing one",
+        "desc": "Reuse settings from another of your projects",
+        "none": "You have no projects yet"
+      },
+      "source": "Source project",
+      "cases_one": "{{count}} case",
+      "cases_other": "{{count}} cases",
+      "take": "What to bring along",
+      "settingsTag": "Settings",
+      "part": {
+        "fields": "Custom fields",
+        "digits": "Case number digits",
+        "planHistory": "History in the exported plan",
+        "retention": "Evidence retention"
+      },
+      "value": {
+        "loading": "Reading…",
+        "unread": "Could not be read; it is copied anyway",
+        "fieldsNone": "None yet",
+        "fieldsOf": "{{count}} for {{entity}}",
+        "retentionDefault": "The default values",
+        "retentionKind": "{{kind}}: {{days}}",
+        "desktopOnly": "Desktop app only: the web has no evidence retention"
+      },
+      "never": "The name, the prefix and the data (plan, cases, requirements, runs) are never copied.",
+      "copiedFrom": "copied from {{name}}",
+      "summary": "Copied from «{{name}}»: {{parts}}.",
+      "summaryNothing": "Nothing is copied from «{{name}}»: the project starts with the default settings.",
+      "summaryPart": {
+        "fields": "the custom fields",
+        "digits": "the number digits ({{digits}})",
+        "planHistory": "the history in the exported plan ({{mode}})",
+        "retention": "the evidence retention"
+      },
+      "next": "Next",
+      "back": "Back",
+      "create": "Create project",
+      "creating": "Creating…",
+      "createFailed": "The project could not be created. Try again.",
+      "discard": {
+        "title": "Discard the new project?",
+        "message": "What you typed or chose is lost and no project is created.",
+        "confirm": "Discard",
+        "keep": "Keep creating"
       }
     }
   },

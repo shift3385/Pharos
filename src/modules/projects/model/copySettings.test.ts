@@ -3,7 +3,9 @@ import {
   copyAfterCreate,
   copyFailed,
   copyParts,
-  withCopiedSettings,
+  loadSourceFacts,
+  newProjectInput,
+  partOffered,
   type CopyPart,
 } from "./copySettings";
 
@@ -13,8 +15,9 @@ const source = {
   planExportHistory: "revisions" as const,
 };
 const all = new Set<CopyPart>(["fields", "digits", "planHistory", "retention"]);
+const data = { name: "  Nuevo ", prefix: " NUE- ", digits: 4 };
 
-describe("«Copiar ajustes de…» (UX-25)", () => {
+describe("copying another project's settings (UX-25, UX-29)", () => {
   it("offers the evidence retention on the desktop only", () => {
     expect(copyParts(true)).toEqual([
       "fields",
@@ -23,30 +26,79 @@ describe("«Copiar ajustes de…» (UX-25)", () => {
       "retention",
     ]);
     expect(copyParts(false)).toEqual(["fields", "digits", "planHistory"]);
+    expect(partOffered("retention", false)).toBe(false);
+    expect(partOffered("fields", false)).toBe(true);
   });
 
-  it("puts the digits and the plan history in the create, never the name or the prefix", () => {
-    const input = { name: "Nuevo", caseIdPrefix: "NUE-", ownerId: "u" };
-    expect(withCopiedSettings(input, source, all)).toEqual({
-      ...input,
-      caseIdDigits: 6,
+  it("creates with the general data as typed and the source's plan history, never its name or prefix", () => {
+    const base = {
+      name: "Nuevo",
+      ownerId: "u",
+      caseIdPrefix: "NUE-",
+      caseIdDigits: 4,
+    };
+    // The digits are a field: a copied value the user changed stays changed.
+    expect(newProjectInput(data, "u", source, all)).toEqual({
+      ...base,
       planExportHistory: "revisions",
     });
-    expect(withCopiedSettings(input, source, new Set(["fields"]))).toEqual(
-      input,
+    expect(newProjectInput(data, "u", source, new Set(["fields"]))).toEqual(
+      base,
     );
-    expect(withCopiedSettings(input, null, all)).toEqual(input);
+    expect(newProjectInput(data, "u", null, all)).toEqual(base);
     // A source without the setting is «current».
     expect(
-      withCopiedSettings(
-        input,
+      newProjectInput(
+        data,
+        "u",
         { id: "s", caseIdDigits: 3 },
         new Set(["planHistory"]),
       ),
     ).toEqual({
-      ...input,
+      ...base,
       planExportHistory: "current",
     });
+  });
+
+  it("reads the live fields per entity and, on the desktop, the retention of the source", async () => {
+    const listFields = vi.fn(async (_p: string, _u: string, entity: string) =>
+      entity === "test_case"
+        ? [
+            { archivedAt: null },
+            { archivedAt: null },
+            { archivedAt: "2026-01-01" },
+          ]
+        : entity === "defect"
+          ? [{ archivedAt: null }]
+          : [],
+    );
+    const retention = vi.fn(async () => ({ projectId: "src", kinds: [] }));
+    expect(
+      await loadSourceFacts("src", "u", true, { listFields, retention }),
+    ).toEqual({
+      fields: { test_case: 2, defect: 1 },
+      retention: { projectId: "src", kinds: [] },
+    });
+    expect(listFields).toHaveBeenCalledTimes(5);
+
+    retention.mockClear();
+    const web = await loadSourceFacts("src", "u", false, {
+      listFields,
+      retention,
+    });
+    expect(web.retention).toBeNull();
+    expect(retention).not.toHaveBeenCalled();
+
+    // A failed read is «not read», never an error.
+    const failing = await loadSourceFacts("src", "u", true, {
+      listFields: async () => {
+        throw new Error("down");
+      },
+      retention: async () => {
+        throw new Error("down");
+      },
+    });
+    expect(failing).toEqual({ fields: null, retention: null });
   });
 
   it("copies the fields of every entity and the retention, and reports what failed without stopping", async () => {
