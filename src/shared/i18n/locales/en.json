@@ -1008,13 +1008,11 @@
     "revisions": "Revisions",
     "noRevisions": "No previous revisions.",
     "step": {
-      "title": "Title",
-      "meta": "Version, date and author",
+      "identification": "Plan identification",
       "summary": "Summary",
       "scope": "Scope",
-      "types": "Test types",
+      "levelsTypes": "Test levels and types",
       "methodology": "Methodology",
-      "levels": "Test levels",
       "deliverables": "Deliverables",
       "environment": "Test environment",
       "tools": "Tools and automation",
@@ -1029,8 +1027,11 @@
       "conclusion": "Conclusion"
     },
     "typeGroup": {
-      "functional": "Functional coverage",
-      "nonFunctional": "Non-functional coverage"
+      "functional": "Functional",
+      "nonFunctional": "Non-functional",
+      "changeRelated": "Confirmation and regression",
+      "own": "Own",
+      "levels": "Test levels"
     },
     "typeLabel": {
       "functional": "Functional",
@@ -1045,7 +1046,8 @@
       "smoke": "Smoke",
       "sanity": "Sanity",
       "exploratory": "Exploratory",
-      "uat": "UAT (user acceptance)"
+      "uat": "UAT (user acceptance)",
+      "retest": "Confirmation (re-test)"
     },
     "levelLabel": {
       "unit": "Unit",
@@ -1112,14 +1114,12 @@
     },
     "savedToast": "Test plan saved",
     "stepDesc": {
-      "title": "Document name and approval status.",
-      "meta": "Document control data shown on the PDF cover.",
+      "identification": "The document’s identification block (ISO/IEC/IEEE 29119-3): title, status, version, date and author. It is shown on the PDF’s cover.",
       "summary": "A short introduction: what is tested and why.",
       "scope": "What is in and out of the testing.",
-      "types": "Choose the test types this plan covers. You can add your own.",
+      "levelsTypes": "What is tested, at which level and with which type (ISTQB). Levels say where it is tested: a component, its interfaces, the whole system end to end, or the user’s and business’s acceptance. Types say which characteristic is checked: functional, non-functional (performance, security…) or confirmation and regression after a change. Tick at least one level and one type; you can add your own types.",
       "methodology": "How the testing work is organised.",
-      "levels": "At which levels the tests will run.",
-      "deliverables": "Documents and artefacts the test team produces.",
+      "deliverables": "Documents and artefacts the test team produces. Tick what will be delivered when the cycle closes; the list follows the ISO/IEC/IEEE 29119-3 documentation. Deliverables you add go to “Own” and are removed with ✕.",
       "environment": "Setup and requirements of the environment where it runs.",
       "tools": "The project's tools and automation strategy.",
       "testData": "How test data is created, protected and refreshed.",
@@ -1172,12 +1172,9 @@
       "latest": "Latest revisions"
     },
     "deliverables": {
-      "hint": "Tick what will be delivered when the cycle closes. The list follows the ISO/IEC/IEEE 29119-3 documentation.",
       "other": "Other deliverable",
-      "otherPlaceholder": "Name another…",
+      "otherPlaceholder": "Other deliverable…",
       "add": "Add",
-      "otherHint": "It is added to “Acceptance and other” marked as Own. You can remove it at any time.",
-      "own": "Own",
       "remove": "Remove {{name}}"
     },
     "deliverableGroup": {
@@ -1185,7 +1182,8 @@
       "specification": "Specification",
       "dataEnvironment": "Data and environment",
       "execution": "Execution and results",
-      "acceptance": "Acceptance and other"
+      "acceptance": "Acceptance and other",
+      "own": "Own"
     },
     "toolsPicker": {
       "selected_one": "1 selected",
@@ -1284,7 +1282,26 @@
       "approved": "Approved",
       "otherChanges": "Other changes",
       "unknownAuthor": "Unknown author"
-    }
+    },
+    "levelHint": {
+      "unit": "component",
+      "integration": "interfaces",
+      "system": "end to end",
+      "acceptance": "user and business"
+    },
+    "typeHint": {
+      "retest": "Test again what failed, once it is fixed.",
+      "regression": "Check that what worked still works.",
+      "smoke": "A quick pass over the basics of a new build.",
+      "sanity": "A short check of what has just changed."
+    },
+    "levelsTypes": {
+      "other": "Other test type",
+      "otherPlaceholder": "Other test type…",
+      "add": "Add"
+    },
+    "testTypes": "Test types",
+    "testLevels": "Test levels"
   },
   "testCase": {
     "loadFailed": "The test cases could not be loaded.",

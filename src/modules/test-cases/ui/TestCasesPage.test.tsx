@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { selectValue } from "@test/select";
 import { Link, Route, Routes, useLocation } from "react-router";
 import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
@@ -555,7 +556,7 @@ describe("Casos · tipo, automatización y campos (FLD-01)", () => {
     ).toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
 
-    await userEvent.selectOptions(
+    await selectValue(
       screen.getByRole("combobox", { name: /Sprint/ }),
       "OPT00001",
     );

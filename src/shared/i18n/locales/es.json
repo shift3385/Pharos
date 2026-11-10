@@ -1008,13 +1008,11 @@
     "revisions": "Revisiones",
     "noRevisions": "Sin revisiones anteriores.",
     "step": {
-      "title": "Título",
-      "meta": "Versión, fecha y autor",
+      "identification": "Identificación del plan",
       "summary": "Resumen",
       "scope": "Alcance",
-      "types": "Tipos de prueba",
+      "levelsTypes": "Niveles y tipos de prueba",
       "methodology": "Metodología",
-      "levels": "Niveles de prueba",
       "deliverables": "Entregables",
       "environment": "Entorno de pruebas",
       "tools": "Herramientas y automatización",
@@ -1029,8 +1027,11 @@
       "conclusion": "Conclusión"
     },
     "typeGroup": {
-      "functional": "Cobertura funcional",
-      "nonFunctional": "Cobertura no funcional"
+      "functional": "Funcionales",
+      "nonFunctional": "No funcionales",
+      "changeRelated": "Confirmación y regresión",
+      "own": "Propios",
+      "levels": "Niveles de prueba"
     },
     "typeLabel": {
       "functional": "Funcionales",
@@ -1045,7 +1046,8 @@
       "smoke": "Humo",
       "sanity": "Sanidad",
       "exploratory": "Exploratorias",
-      "uat": "UAT (aceptación de usuario)"
+      "uat": "UAT (aceptación de usuario)",
+      "retest": "Confirmación (re-test)"
     },
     "levelLabel": {
       "unit": "Unitarias",
@@ -1112,14 +1114,12 @@
     },
     "savedToast": "Plan de pruebas guardado",
     "stepDesc": {
-      "title": "Nombre del documento y estado de aprobación.",
-      "meta": "Datos de control del documento que aparecen en la portada del PDF.",
+      "identification": "Bloque de identificación del documento (ISO/IEC/IEEE 29119-3): título, estado, versión, fecha y autor. Aparece en la portada del PDF.",
       "summary": "Introducción breve: qué se prueba y por qué.",
       "scope": "Qué entra y qué queda fuera de las pruebas.",
-      "types": "Selecciona qué tipos de prueba cubre este plan. Puedes añadir tipos propios.",
+      "levelsTypes": "Qué se prueba, en qué nivel y con qué tipo (ISTQB). Los niveles dicen dónde se prueba: un componente, sus interfaces, el sistema de extremo a extremo o la aceptación del usuario y el negocio. Los tipos dicen qué característica se comprueba: funcional, no funcional (rendimiento, seguridad…) o la confirmación y la regresión tras un cambio. Marca al menos un nivel y un tipo; puedes añadir tipos propios.",
       "methodology": "Cómo se organiza el trabajo de pruebas.",
-      "levels": "En qué niveles se ejecutarán las pruebas.",
-      "deliverables": "Documentos y artefactos que produce el equipo de pruebas.",
+      "deliverables": "Documentos y artefactos que produce el equipo de pruebas. Marca lo que se entregará al cerrar el ciclo; la lista sigue la documentación de ISO/IEC/IEEE 29119-3. Los entregables que añadas van a «Propios» y se quitan con ✕.",
       "environment": "Configuración y requisitos del entorno donde se ejecuta.",
       "tools": "Herramientas del proyecto y estrategia de automatización.",
       "testData": "Cómo se crean, protegen y renuevan los datos de prueba.",
@@ -1172,12 +1172,9 @@
       "latest": "Últimas revisiones"
     },
     "deliverables": {
-      "hint": "Marca lo que se entregará al cerrar el ciclo. La lista sigue la documentación de ISO/IEC/IEEE 29119-3.",
       "other": "Otro entregable",
-      "otherPlaceholder": "Especifica otro…",
+      "otherPlaceholder": "Otro entregable…",
       "add": "Añadir",
-      "otherHint": "Se añade a «Aceptación y otros» marcado como Propio. Puedes quitarlo cuando quieras.",
-      "own": "Propio",
       "remove": "Quitar {{name}}"
     },
     "deliverableGroup": {
@@ -1185,7 +1182,8 @@
       "specification": "Especificación",
       "dataEnvironment": "Datos y entorno",
       "execution": "Ejecución y resultados",
-      "acceptance": "Aceptación y otros"
+      "acceptance": "Aceptación y otros",
+      "own": "Propios"
     },
     "toolsPicker": {
       "selected_one": "1 seleccionada",
@@ -1284,7 +1282,26 @@
       "approved": "Aprobado",
       "otherChanges": "Otros cambios",
       "unknownAuthor": "Autor desconocido"
-    }
+    },
+    "levelHint": {
+      "unit": "componente",
+      "integration": "interfaces",
+      "system": "extremo a extremo",
+      "acceptance": "usuario y negocio"
+    },
+    "typeHint": {
+      "retest": "Volver a probar lo que falló, una vez arreglado.",
+      "regression": "Comprobar que lo que funcionaba sigue funcionando.",
+      "smoke": "Una pasada rápida por lo básico de una versión nueva.",
+      "sanity": "Una comprobación corta de lo que se acaba de cambiar."
+    },
+    "levelsTypes": {
+      "other": "Otro tipo de prueba",
+      "otherPlaceholder": "Otro tipo de prueba…",
+      "add": "Añadir"
+    },
+    "testTypes": "Tipos de prueba",
+    "testLevels": "Niveles de prueba"
   },
   "testCase": {
     "loadFailed": "No se pudieron cargar los casos de prueba.",

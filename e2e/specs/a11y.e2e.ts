@@ -92,7 +92,7 @@ describe("Accessibility on the desktop binary (UX-05)", () => {
   it("a project and the plan wizard have no WCAG A/AA violations", async () => {
     // A project without a plan opens straight into the plan wizard.
     await createProject(projectName);
-    await expect($(`h2*=${es.testPlan.step.title}`)).toBeDisplayed();
+    await expect($(`h2*=${es.testPlan.step.identification}`)).toBeDisplayed();
     expect(await violations()).toEqual([]);
   });
 

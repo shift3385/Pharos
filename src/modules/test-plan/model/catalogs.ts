@@ -1,40 +1,22 @@
 // Shared option catalogs for the test plan (spec §5.1). Kept in one place so the
 // wizard UI and the export mapping stay in sync (e.g. adding a tool).
 
-export const TEST_TYPES = [
-  "functional",
-  "performance",
-  "load",
-  "stress",
-  "security",
-  "usability",
-  "compatibility",
-  "accessibility",
-  "regression",
-  "smoke",
-  "sanity",
-  "exploratory",
-  "uat",
+/** Test types by group (step «Niveles y tipos de prueba», UX-31). A plan
+ *  stores the keys; anything else is a type the team typed. «Confirmación y
+ *  regresión» follows ISTQB CTFL v4 §2.2.3 (change-related testing):
+ *  `retest` (confirmation testing) is the stable key of «Confirmación». */
+export const TYPE_GROUPS: { id: "functional" | "nonFunctional" | "changeRelated"; keys: string[] }[] = [
+  { id: "functional", keys: ["functional", "exploratory", "uat"] },
+  {
+    id: "nonFunctional",
+    keys: ["performance", "load", "stress", "security", "usability", "compatibility", "accessibility"],
+  },
+  { id: "changeRelated", keys: ["retest", "regression", "smoke", "sanity"] },
 ];
-
-// Test types split into functional vs non-functional coverage (visual grouping).
-export const FUNCTIONAL_TYPES = [
-  "functional",
-  "usability",
-  "compatibility",
-  "accessibility",
-  "uat",
-  "exploratory",
-  "sanity",
-];
-export const NON_FUNCTIONAL_TYPES = [
-  "performance",
-  "load",
-  "stress",
-  "security",
-  "regression",
-  "smoke",
-];
+/** Every catalog type, in the order of its groups (the order of the exports). */
+export const TEST_TYPES = TYPE_GROUPS.flatMap((g) => g.keys);
+/** Types with a one-line explanation in their tooltip. */
+export const EXPLAINED_TYPES = ["retest", "regression", "smoke", "sanity"];
 
 export const TEST_LEVELS = ["unit", "integration", "system", "acceptance"];
 export const CEREMONIES = ["daily", "review", "retrospective", "planning"];

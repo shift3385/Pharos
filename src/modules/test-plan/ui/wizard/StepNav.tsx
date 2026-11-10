@@ -15,7 +15,7 @@ function useStepText() {
   return {
     t,
     title: (i: number) => t(`testPlan.step.${STEP_IDS[i]}`),
-    /** «Paso 5 de 19 · 4 completados» */
+    /** «Paso 5 de 17 · 4 completados» */
     summary: (current: number, done: number) =>
       `${t("testPlan.nav.stepOf", { n: current + 1, total: STEP_IDS.length })} · ${t("testPlan.nav.completed", { count: done })}`,
   };

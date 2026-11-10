@@ -7,7 +7,7 @@
 // something to show. Example: Liomar checks what is tested of Pharos 0.3.0.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { PROJECT_A, byTestId, clickButton, dialog, es, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
+import { PROJECT_A, byTestId, chooseOption, clickButton, dialog, es, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
 
 const T = es.traceability;
 const D = '[role="dialog"]';
@@ -46,8 +46,7 @@ chapter("trazabilidad", () => {
     focus: '[data-testid="trace-filter-build"]',
     run: async () => {
       const build = $('[data-testid="trace-filter-build"]');
-      await build.scrollIntoView({ block: "center" });
-      await build.selectByAttribute("value", "0.3.0-rc1");
+      await chooseOption(build, { value: "0.3.0-rc1" });
       await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
       await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
     },
@@ -76,9 +75,8 @@ chapter("trazabilidad", () => {
     focus: '[data-testid="trace-sort"]',
     run: async () => {
       const sort = $('[data-testid="trace-sort"]');
-      await sort.scrollIntoView({ block: "center" });
-      await sort.selectByAttribute("value", "key");
-      await sort.selectByAttribute("value", "risk");
+      await chooseOption(sort, { value: "key" });
+      await chooseOption(sort, { value: "risk" });
       await expect($('[data-testid^="trace-result-"]')).toBeExisting();
     },
   });

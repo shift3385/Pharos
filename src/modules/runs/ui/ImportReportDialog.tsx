@@ -8,6 +8,7 @@ import type {
 } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { cycleApi } from "@modules/cycles";
 import { runsApi } from "../api/runsApi";
@@ -362,19 +363,16 @@ export function ImportReportDialog({
                     className="tp-field rn-grid__wide"
                   >
                     {(p) => (
-                      <select
+                      <Select
                         {...p}
                         data-testid="import-cycle"
                         value={cycleId}
-                        onChange={(e) => setCycleId(e.target.value)}
-                      >
-                        <option value="">{t("runs.import.noCycle")}</option>
-                        {openCycles.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.cycleKey} · {c.title}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setCycleId}
+                        options={[
+                          { value: "", label: t("runs.import.noCycle") },
+                          ...openCycles.map((c) => ({ value: c.id, label: `${c.cycleKey} · ${c.title}` })),
+                        ]}
+                      />
                     )}
                   </FormField>
                 )}
@@ -390,17 +388,12 @@ export function ImportReportDialog({
             ) : (
               <FormField label={t("runs.import.run")}>
                 {(p) => (
-                  <select
+                  <Select
                     {...p}
                     value={runId}
-                    onChange={(e) => setRunId(e.target.value)}
-                  >
-                    {openRuns.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.runKey} · {r.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setRunId}
+                    options={openRuns.map((r) => ({ value: r.id, label: `${r.runKey} · ${r.title}` }))}
+                  />
                 )}
               </FormField>
             )}

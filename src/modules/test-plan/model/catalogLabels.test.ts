@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { DELIVERABLE_GROUPS, DELIVERABLE_KEYS, MORE_TOOLS, TOOL_NAMES, TOP_TOOLS, toolName } from "./catalogs";
-import { deliverableLabels, normalizeDeliverables, normalizeTools, toolLabels } from "./catalogLabels";
+import { DELIVERABLE_GROUPS, DELIVERABLE_KEYS, MORE_TOOLS, TEST_TYPES, TOOL_NAMES, TOP_TOOLS, TYPE_GROUPS, toolName } from "./catalogs";
+import {
+  deliverableLabels,
+  levelLabels,
+  normalizeDeliverables,
+  normalizeTools,
+  toolLabels,
+  typeGroupLines,
+  typeLabels,
+} from "./catalogLabels";
 import { defaults } from "../ui/wizard/formState";
 import { STEP_IDS, stepCompletion } from "../ui/wizard/steps";
 import i18n from "@shared/i18n";
@@ -59,11 +67,35 @@ describe("step completion", () => {
   it("a new plan has its title, control data, methodology, deliverables, roles and criteria", () => {
     const done = stepCompletion(defaults(t));
     const completed = STEP_IDS.filter((_, i) => done[i]);
-    expect(completed).toEqual(["title", "meta", "methodology", "deliverables", "roles", "closure"]);
+    // Title, version and date are «Identificación del plan» (UX-31).
+    expect(completed).toEqual(["identification", "methodology", "deliverables", "roles", "closure"]);
   });
 
   it("a blank title is not completed", () => {
     const form = { ...defaults(t), title: "  " };
     expect(stepCompletion(form)[0]).toBe(false);
+  });
+});
+
+describe("test types by group (UX-31)", () => {
+  it("groups the catalog as the step does, with `retest` first in «Confirmación y regresión»", () => {
+    expect(TYPE_GROUPS.map((g) => [g.id, g.keys])).toEqual([
+      ["functional", ["functional", "exploratory", "uat"]],
+      ["nonFunctional", ["performance", "load", "stress", "security", "usability", "compatibility", "accessibility"]],
+      ["changeRelated", ["retest", "regression", "smoke", "sanity"]],
+    ]);
+    expect(TEST_TYPES).toHaveLength(14);
+    expect(t("testPlan.typeLabel.retest")).toBe("Confirmación (re-test)");
+  });
+
+  it("the PDF lists the types one line per group, own ones last", () => {
+    expect(typeGroupLines(["Caos", "regression", "retest", "uat"], t)).toEqual([
+      "Funcionales: UAT (aceptación de usuario)",
+      "Confirmación y regresión: Confirmación (re-test), Regresión",
+      "Propios: Caos",
+    ]);
+    expect(typeGroupLines([], t)).toEqual([]);
+    expect(levelLabels(["system", "unit"], t)).toEqual(["Unitarias", "Sistema"]);
+    expect(typeLabels(["retest", "functional", "retest"], t)).toEqual(["Funcionales", "Confirmación (re-test)"]);
   });
 });

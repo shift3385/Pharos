@@ -23,6 +23,7 @@ import {
   tf,
   waitForText,
   waitForToast,
+  chooseOption,
 } from "./helpers";
 
 const T = es.traceability;
@@ -107,8 +108,8 @@ chapter("requisitos", () => {
     run: async () => {
       const likelihood = $('[data-testid="requirement-risk-likelihood"]');
       await likelihood.scrollIntoView();
-      await likelihood.selectByAttribute("value", "4");
-      await $('[data-testid="requirement-risk-impact"]').selectByAttribute("value", "5");
+      await chooseOption(likelihood, { value: "4" });
+      await chooseOption($('[data-testid="requirement-risk-impact"]'), { value: "5" });
     },
   });
 

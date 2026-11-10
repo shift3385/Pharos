@@ -545,26 +545,142 @@
 }
 
 /* Step 8: deliverables by group. */
-.tpw-deliv {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+/* Checkboxes in columns by group (UX-31): «Niveles y tipos de prueba» and
+   «Entregables». Thin lines between rows and between columns, no boxes or
+   fills: each cell draws a line on its top and left, and the grid clips the
+   ones on its outer edge (the cells sit 1 px outside it). The columns follow
+   the form's width, not the window's. */
+.tpw-cols {
+  container-type: inline-size;
 }
 
-.tpw-deliv__groups {
+.tpw-cols__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 14px 20px;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
 }
 
-.tpw-deliv__group {
+@container (min-width: 480px) {
+  .tpw-cols__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Two columns: «No funcionales» takes the whole row, so its two
+   sub-columns never break a word. */
+@container (min-width: 480px) and (max-width: 719.98px) {
+  .tpw-lt .tpw-cols__cell[data-group="nonFunctional"] {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (min-width: 720px) {
+  .tpw-cols__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Levels and types: «No funcionales» has two sub-columns. */
+  .tpw-lt .tpw-cols__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr);
+  }
+
+  .tpw-cols__cell[style*="--span"] {
+    grid-column: span var(--span);
+  }
+}
+
+.tpw-cols__cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  margin: -1px 0 0 -1px;
+  padding: 14px 18px 16px;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+}
+
+/* A fieldset's legend sits on its border: floated, it is a plain head. */
+.tpw-cols__head {
+  float: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tpw-cols__head + * {
+  clear: both;
+}
+
+.tpw-cols__icon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.tpw-cols__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tpw-cols__list--split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.tpw-cols__own {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 0;
-  border: 0;
+  list-style: none;
+}
+
+/* The field and «Añadir» share a line; the field gives way. */
+.tpw-cols .tpw-cols__add {
+  flex-wrap: nowrap;
+  margin-top: 6px;
+}
+
+.tpw-cols .tpw-cols__add .tpw-input {
+  flex: 1 1 auto;
+}
+
+.tpw-cols .tpw-cols__add .header-action {
+  flex: none;
+}
+
+/* A label wraps between words, never inside one. */
+.tpw-cols .tpw-check__text {
+  overflow-wrap: break-word;
+}
+
+/* The grey aside of a level («· componente»). */
+.tpw-check__aside {
+  color: var(--color-text-muted);
+}
+
+/* «Identificación del plan»: the title takes the row, the status beside it. */
+.tpw-ident {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 220px);
+  gap: 14px;
+  align-items: start;
+}
+
+[data-viewport="mobile"] .tpw-ident {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .tpw-check {

@@ -29,6 +29,7 @@ import {
   waitForText,
   waitForToast,
   xpathString,
+  chooseOption,
 } from "./helpers";
 
 const C = es.testCase;
@@ -83,9 +84,7 @@ async function rows(ok: (n: number) => boolean, what: string) {
 
 /** Links a requirement from «Requisitos vinculados». */
 async function linkRequirement(key: string) {
-  const select = $(`select[aria-label="${C.requirements.add}"]`);
-  await select.scrollIntoView({ block: "center" });
-  await select.selectByAttribute("value", key);
+  await chooseOption($('[data-testid="requirement-add"]'), { value: key });
   await expect($(`[aria-label="${tf("testCase.requirements.remove", { key })}"]`)).toBeDisplayed();
 }
 

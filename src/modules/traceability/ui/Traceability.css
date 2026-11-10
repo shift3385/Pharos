@@ -599,7 +599,7 @@
 }
 
 /* ---- EJE-04: result filters, latest result, risk and defect pills.
-   No design in docs/rediseno for these: native selects and the shared
+   No design in docs/rediseno for these: Pharos selects (UX-30) and the shared
    pills, with the matrix's tokens. ---- */
 .tz-filters {
   display: flex;
@@ -624,7 +624,9 @@
   color: var(--color-text-secondary);
 }
 
-.tz-filter select {
+.tz-filter select,
+.tz-filter .pselect {
+  height: auto;
   min-height: 36px;
   padding: 0 8px;
   font: inherit;

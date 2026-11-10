@@ -14,7 +14,10 @@ export interface ExportablePlan {
   purpose: string;
   scopeIn: string[];
   scopeOut: string[];
-  testTypes: string[]; // localized
+  testTypes: string[]; // localized, by the step's groups (UX-31)
+  /** The types one line per group («Funcionales: …»), for the PDF. Without
+   *  it the PDF lists `testTypes`. */
+  testTypeLines?: string[];
   methodology: string; // composed text
   /** The methodology one entry per line, for the PDF (PLN-05). Without it
    *  the PDF prints `methodology`. */

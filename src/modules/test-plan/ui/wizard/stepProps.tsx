@@ -16,9 +16,9 @@ export interface StepProps {
   review: (field: ReviewableField) => () => void;
   /** A save was attempted: required fields show their error. */
   attempted: boolean;
-  /** Author shown in step 2 (the plan's, else the signed-in user). */
+  /** Author shown in «Identificación del plan» (the plan's, else the signed-in user). */
   author: string;
-  /** Completed flag of every step (step 19 lists the missing ones). */
+  /** Completed flag of every step (the last step lists the missing ones). */
   completion: boolean[];
   goTo: (index: number) => void;
 }

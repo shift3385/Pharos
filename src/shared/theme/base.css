@@ -162,3 +162,22 @@ input::-ms-clear {
     opacity: 0;
   }
 }
+
+/* UX-30: the chevron of every dropdown trigger (Select, menus, filters, sort,
+   pagination, «Importar / Exportar», pickers) points down while closed and up
+   while open. The only source is the trigger's `aria-expanded`, so it never
+   gets out of step when the list closes with Esc, a click outside or a
+   choice. */
+button[aria-expanded] .lucide-chevron-down {
+  transition: transform 150ms ease-out;
+}
+
+button[aria-expanded="true"] .lucide-chevron-down {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button[aria-expanded] .lucide-chevron-down {
+    transition: none !important;
+  }
+}

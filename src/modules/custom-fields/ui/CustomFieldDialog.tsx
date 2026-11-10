@@ -6,6 +6,7 @@ import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
+import { Select } from "@shared/ui/Select";
 import { Switch } from "@shared/ui/Switch";
 import { hasBlocking, type Issue } from "@shared/validation";
 import {
@@ -281,23 +282,18 @@ export function CustomFieldDialog({
             hint={isNew ? undefined : t("customFields.dialog.typeLocked")}
           >
             {(p) => (
-              <select
+              <Select<FieldType>
                 {...p}
                 value={draft.fieldType}
                 disabled={!isNew}
-                onChange={(e) =>
+                onChange={(fieldType) =>
                   set({
-                    fieldType: e.target.value as FieldType,
+                    fieldType,
                     defaultValue: undefined,
                   })
                 }
-              >
-                {FIELD_TYPES.map((ft) => (
-                  <option key={ft} value={ft}>
-                    {t(`customFields.type.${ft}`)}
-                  </option>
-                ))}
-              </select>
+                options={FIELD_TYPES.map((ft) => ({ value: ft, label: t(`customFields.type.${ft}`) }))}
+              />
             )}
           </FormField>
         </div>

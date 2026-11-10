@@ -63,19 +63,19 @@ export interface HistoryRow {
 
 /** Step of each field of a plan (`data.<key>` for the content). */
 const FIELD_STEP: Record<string, StepId> = {
-  title: "title",
-  planDate: "meta",
-  author: "meta",
+  title: "identification",
+  planDate: "identification",
+  author: "identification",
   "data.summary": "summary",
   "data.scopeIn": "scope",
   "data.scopeOut": "scope",
-  "data.testTypes": "types",
+  "data.testTypes": "levelsTypes",
   "data.methodologyType": "methodology",
   "data.sprintWeeks": "methodology",
   "data.ceremonies": "methodology",
   "data.ceremonyFrequency": "methodology",
   "data.phases": "methodology",
-  "data.testLevels": "levels",
+  "data.testLevels": "levelsTypes",
   "data.deliverables": "deliverables",
   "data.environmentConfig": "environment",
   "data.environmentRequirements": "environment",
@@ -127,8 +127,8 @@ function describe(
   let approved = false;
   if (statusChange && statusChange[0] !== statusChange[1]) {
     if (statusChange[1] === APPROVED) approved = true;
-    // Another status is set in step 2 (version, date and author).
-    else sections.add("meta");
+    // Another status is set in «Identificación del plan».
+    else sections.add("identification");
   }
   return { sections: STEP_IDS.filter((s) => sections.has(s)), approved, other };
 }

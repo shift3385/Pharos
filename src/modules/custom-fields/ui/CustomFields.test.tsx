@@ -7,6 +7,7 @@ import "@test/slow";
 import { useState } from "react";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { customFieldApi } from "../api/customFieldApi";
@@ -145,7 +146,7 @@ describe("Ajustes · Campos personalizados", () => {
 
     await userEvent.clear(key);
     await userEvent.type(key, "browser_version");
-    await userEvent.selectOptions(
+    await selectValue(
       within(dialog).getByRole("combobox", { name: "Tipo" }),
       "select",
     );
@@ -322,7 +323,7 @@ describe("Editor · Campos personalizados", () => {
     const browser = screen.getByRole("combobox", { name: /Navegador/ });
     // The archived option is not offered for a new value.
     expect(within(browser).queryByRole("option", { name: "IE 11" })).toBeNull();
-    await userEvent.selectOptions(browser, "OPT00001");
+    await selectValue(browser, "OPT00001");
     await userEvent.type(
       screen.getByRole("spinbutton", { name: "Puntos" }),
       "5",
@@ -345,7 +346,7 @@ describe("Editor · Campos personalizados", () => {
   it("an archived option the case already has stays selectable", () => {
     renderWithProviders(<Section start={{ browser: "OPT00002" }} />);
     const browser = screen.getByRole("combobox", { name: /Navegador/ });
-    expect(browser).toHaveValue("OPT00002");
+    expect(browser).toHaveAttribute("data-value", "OPT00002");
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

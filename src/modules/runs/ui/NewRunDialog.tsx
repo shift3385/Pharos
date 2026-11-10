@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Configuration, Run } from "@shared/contracts/contract";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import { runsApi } from "../api/runsApi";
 import type { LinkableCase } from "../model/types";
 import { CasePickerDialog } from "./CasePickerDialog";
@@ -86,18 +87,15 @@ export function NewRunDialog({
           {configurations.length > 0 && (
             <FormField label={t("execution.run.configuration")} className="tp-field rn-grid__wide">
               {(p) => (
-                <select
+                <Select
                   {...p}
                   value={configurationId}
-                  onChange={(e) => setConfigurationId(e.target.value)}
-                >
-                  <option value="">{t("execution.newRun.noConfiguration")}</option>
-                  {configurations.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setConfigurationId}
+                  options={[
+                    { value: "", label: t("execution.newRun.noConfiguration") },
+                    ...configurations.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                />
               )}
             </FormField>
           )}

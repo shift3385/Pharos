@@ -1,5 +1,5 @@
 // Test plan model (spec §5.1). Scalar/searchable fields live on the plan; the
-// 19-step wizard content (21 fields of spec §5.1) lives in `data` so the shape can evolve without a migration.
+// 17-step wizard content (UX-31) (21 fields of spec §5.1) lives in `data` so the shape can evolve without a migration.
 
 import type { Assert, Contract, Covers } from "@shared/contracts";
 import type { ProvenanceMap } from "@modules/ai";
@@ -35,7 +35,7 @@ export interface ClosureCriterion {
   metric: string;
 }
 
-/** The plan wizard content: the 21 fields of spec §5.1 in 19 steps. All optional — filled progressively. */
+/** The plan wizard content: the 21 fields of spec §5.1 in 17 steps (UX-31). All optional — filled progressively. */
 export interface TestPlanData {
   summary?: string;
   scopeIn?: string[];

@@ -60,7 +60,7 @@ En la lista de casos, «Filtros» abre una hoja desde abajo con los mismos filtr
 
 ### 18.5. Los pasos del plan en el móvil
 
-En el plan de pruebas, «Ver pasos» abre la lista de los 19 pasos en una hoja inferior.
+En el plan de pruebas, «Ver pasos» abre la lista de los 17 pasos en una hoja inferior.
 
 <img src="img/movil/05-movil-pasos-plan.png" alt="Los pasos del plan en el móvil" width="280">
 

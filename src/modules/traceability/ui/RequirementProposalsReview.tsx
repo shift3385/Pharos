@@ -4,6 +4,7 @@ import { Pencil } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { Select } from "@shared/ui/Select";
 import { FormField } from "@shared/ui/FormField";
 import { applyRequirementProposals } from "../api/applyProposals";
 import {
@@ -618,22 +619,12 @@ function ProposalEditor({
       </FormField>
       <FormField label={t("traceability.requirement.priority")}>
         {(p) => (
-          <select
+          <Select<RequirementPriority>
             {...p}
             value={draft.priority}
-            onChange={(e) =>
-              setDraft({
-                ...draft,
-                priority: e.target.value as RequirementPriority,
-              })
-            }
-          >
-            {REQUIREMENT_PRIORITIES.map((pr) => (
-              <option key={pr} value={pr}>
-                {t(`traceability.priorityLabel.${pr}`)}
-              </option>
-            ))}
-          </select>
+            onChange={(priority) => setDraft({ ...draft, priority })}
+            options={REQUIREMENT_PRIORITIES.map((pr) => ({ value: pr, label: t(`traceability.priorityLabel.${pr}`) }))}
+          />
         )}
       </FormField>
       <span className="tz-prop__editor-actions">

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { cycleApi } from "../api/cycleApi";
 import type { CaseOption, CycleFilter, CycleItemInput } from "../model/types";
@@ -247,14 +248,15 @@ export function AddByFilterDialog({
         <div className="cy-form__grid">
           <FormField label={t("cycles.filter.minRisk")} hint={t("cycles.filter.minRiskHint")}>
             {(p) => (
-              <select {...p} value={minRisk} onChange={(e) => setMinRisk(e.target.value)}>
-                <option value="">{t("cycles.filter.anyRisk")}</option>
-                {RISK_FLOORS.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {t(`cycles.filter.risk.${r.key}`)}
-                  </option>
-                ))}
-              </select>
+              <Select
+                {...p}
+                value={minRisk}
+                onChange={setMinRisk}
+                options={[
+                  { value: "", label: t("cycles.filter.anyRisk") },
+                  ...RISK_FLOORS.map((r) => ({ value: String(r.value), label: t(`cycles.filter.risk.${r.key}`) })),
+                ]}
+              />
             )}
           </FormField>
           <FormField label={t("cycles.add.assignee")}>

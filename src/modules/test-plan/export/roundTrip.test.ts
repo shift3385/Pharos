@@ -77,3 +77,30 @@ describe("schedule ids through export → import (RED-W5)", () => {
     expect(imported.map((s) => s.id)).not.toContain("AAAAAAAA");
   });
 });
+
+describe("test types and levels through export → import (UX-31)", () => {
+  it.each(["es", "en"] as const)(
+    "«Confirmación (re-test)» comes back as `retest`, by the step's groups, with own types whole (%s)",
+    async (lang) => {
+      const t = i18n.getFixedT(lang);
+      serveTemplate(lang);
+      const form = {
+        ...defaults(t),
+        // Ticked in any order: the export follows the step's groups.
+        testTypes: ["Pruebas de contrato", "smoke", "retest", "security", "functional"],
+        testLevels: ["acceptance", "unit"],
+      };
+      const exportable = toExportable(form, "Autor", t);
+      expect(exportable.testTypes).toEqual(
+        lang === "es"
+          ? ["Funcionales", "Seguridad", "Confirmación (re-test)", "Humo", "Pruebas de contrato"]
+          : ["Functional", "Security", "Confirmation (re-test)", "Smoke", "Pruebas de contrato"],
+      );
+      expect(exportable.testLevels).toEqual(lang === "es" ? ["Unitarias", "Aceptación"] : ["Unit", "Acceptance"]);
+      const { buffer } = await buildPlanXlsx(exportable, lang);
+      const { input } = await parsePlanXlsx(buffer, "plan.xlsx", "Autor");
+      expect(input.data.testTypes).toEqual(["functional", "security", "retest", "smoke", "Pruebas de contrato"]);
+      expect(input.data.testLevels).toEqual(["unit", "acceptance"]);
+    },
+  );
+});

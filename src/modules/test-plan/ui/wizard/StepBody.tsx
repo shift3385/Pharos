@@ -2,6 +2,7 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import { required } from "@shared/validation";
 import {
   AiSuggestList,
@@ -11,20 +12,14 @@ import {
   suggestRisks,
   withProvenance,
 } from "@modules/ai";
-import {
-  CEREMONIES,
-  CEREMONY_FREQUENCIES,
-  FUNCTIONAL_TYPES,
-  NON_FUNCTIONAL_TYPES,
-  TEST_LEVELS,
-  TEST_TYPES,
-} from "../../model/catalogs";
+import { CEREMONIES, CEREMONY_FREQUENCIES } from "../../model/catalogs";
 import { frequencyOf } from "../../model/methodology";
 import { ASSIST_INSTRUCTION } from "./aiGuidance";
 import { closureBrief, conclusionBrief, planBrief, rolesWithoutResponsibility, withResponsibilities } from "./formState";
 import { methodologyGaps, type StepId } from "./steps";
 import { AreaField, FieldLabel, TextField, type StepProps } from "./stepProps";
 import { DeliverablesStep } from "./DeliverablesStep";
+import { LevelsTypesStep } from "./LevelsTypesStep";
 import { ToolsStep } from "./ToolsStep";
 import { ScheduleStep } from "./ScheduleStep";
 import { FinishStep } from "./FinishStep";
@@ -36,42 +31,48 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
   const gapId = useId();
 
   switch (id) {
-    case "title":
+    // The document's identification block (ISO/IEC/IEEE 29119-3, UX-31):
+    // what were the steps «Título» and «Versión, fecha y autor».
+    case "identification":
       return (
         <>
-          <FormField
-            id="tp-title"
-            label={t("testPlan.fieldTitle")}
-            issue={attempted ? required(form.title) : null}
-            required
-          >
-            {(p) => <input {...p} value={form.title} onChange={(e) => set("title", e.target.value)} />}
-          </FormField>
-          <label className="tp-field">
-            <span>{t("testPlan.status")}</span>
-            <select value={form.status} onChange={(e) => set("status", e.target.value)}>
-              {["draft", "reviewed", "approved", "obsolete"].map((s) => (
-                <option key={s} value={s}>
-                  {t(`testPlan.statusLabel.${s}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="tpw-ident">
+            <FormField
+              id="tp-title"
+              label={t("testPlan.fieldTitle")}
+              issue={attempted ? required(form.title) : null}
+              required
+              className="tp-field tpw-ident__title"
+            >
+              {(p) => <input {...p} value={form.title} onChange={(e) => set("title", e.target.value)} />}
+            </FormField>
+            <FormField id="tp-status" label={t("testPlan.status")}>
+              {(p) => (
+                <Select
+                  {...p}
+                  value={form.status}
+                  onChange={(v) => set("status", v)}
+                  data-testid="plan-status"
+                  options={["draft", "reviewed", "approved", "obsolete"].map((s) => ({
+                    value: s,
+                    label: t(`testPlan.statusLabel.${s}`),
+                  }))}
+                />
+              )}
+            </FormField>
+          </div>
+          <div className="tpw-grid">
+            <TextField label={t("testPlan.version")} value={form.version} onChange={(v) => set("version", v)} />
+            <label className="tp-field">
+              <span>{t("testPlan.date")}</span>
+              <input type="date" value={form.planDate} onChange={(e) => set("planDate", e.target.value)} />
+            </label>
+            <label className="tp-field">
+              <span>{t("testPlan.author")}</span>
+              <input value={props.author} readOnly />
+            </label>
+          </div>
         </>
-      );
-    case "meta":
-      return (
-        <div className="tpw-grid">
-          <TextField label={t("testPlan.version")} value={form.version} onChange={(v) => set("version", v)} />
-          <label className="tp-field">
-            <span>{t("testPlan.date")}</span>
-            <input type="date" value={form.planDate} onChange={(e) => set("planDate", e.target.value)} />
-          </label>
-          <label className="tp-field">
-            <span>{t("testPlan.author")}</span>
-            <input value={props.author} readOnly />
-          </label>
-        </div>
       );
     case "summary":
       return (
@@ -95,47 +96,38 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           <ListField label={t("testPlan.scopeOut")} items={form.scopeOut} onChange={(v) => set("scopeOut", v)} />
         </>
       );
-    case "types":
-      return (
-        <CheckboxGroup
-          label={t("testPlan.step.types")}
-          options={TEST_TYPES}
-          selected={form.testTypes}
-          onChange={(v) => set("testTypes", v)}
-          labelFor={(k) => t(`testPlan.typeLabel.${k}`)}
-          allowCustom
-          variant="pills"
-          groups={[
-            { title: t("testPlan.typeGroup.functional"), options: FUNCTIONAL_TYPES },
-            { title: t("testPlan.typeGroup.nonFunctional"), options: NON_FUNCTIONAL_TYPES },
-          ]}
-        />
-      );
+    case "levelsTypes":
+      return <LevelsTypesStep form={form} set={set} />;
     case "methodology":
       return (
         <>
-          <label className="tp-field">
-            <span>{t("testPlan.methodology")}</span>
-            <select
-              value={form.methodologyType}
-              onChange={(e) => set("methodologyType", e.target.value as "agile" | "traditional")}
-            >
-              <option value="agile">{t("testPlan.agile")}</option>
-              <option value="traditional">{t("testPlan.traditional")}</option>
-            </select>
-          </label>
+          <FormField id="tp-methodology" label={t("testPlan.methodology")}>
+            {(p) => (
+              <Select<"agile" | "traditional">
+                {...p}
+                value={form.methodologyType}
+                onChange={(v) => set("methodologyType", v)}
+                data-testid="plan-methodology"
+                options={[
+                  { value: "agile", label: t("testPlan.agile") },
+                  { value: "traditional", label: t("testPlan.traditional") },
+                ]}
+              />
+            )}
+          </FormField>
           {form.methodologyType === "agile" ? (
             <>
-              <label className="tp-field">
-                <span>{t("testPlan.sprintWeeks")}</span>
-                <select value={form.sprintWeeks} onChange={(e) => set("sprintWeeks", Number(e.target.value))}>
-                  {[1, 2, 3, 4].map((w) => (
-                    <option key={w} value={w}>
-                      {w}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <FormField id="tp-sprint-weeks" label={t("testPlan.sprintWeeks")}>
+                {(p) => (
+                  <Select
+                    {...p}
+                    value={String(form.sprintWeeks)}
+                    onChange={(v) => set("sprintWeeks", Number(v))}
+                    placeholder="—"
+                    options={[1, 2, 3, 4].map((w) => ({ value: String(w), label: String(w) }))}
+                  />
+                )}
+              </FormField>
               <FieldLabel text={t("testPlan.ceremonies")} />
               <CheckboxGroup
                 label={t("testPlan.ceremonies")}
@@ -151,21 +143,19 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
                   {form.ceremonies.map((c) => {
                     const label = CEREMONIES.includes(c) ? t(`testPlan.ceremonyLabel.${c}`) : c;
                     return (
-                      <label key={c} className="tp-field">
-                        <span>{t("testPlan.frequencyFor", { ceremony: label })}</span>
-                        <select
-                          value={frequencyOf(c, form.ceremonyFrequency)}
-                          onChange={(e) =>
-                            set("ceremonyFrequency", { ...form.ceremonyFrequency, [c]: e.target.value })
-                          }
-                        >
-                          {CEREMONY_FREQUENCIES.map((f) => (
-                            <option key={f} value={f}>
-                              {t(`testPlan.frequencyLabel.${f}`)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <FormField key={c} label={t("testPlan.frequencyFor", { ceremony: label })}>
+                        {(p) => (
+                          <Select
+                            {...p}
+                            value={frequencyOf(c, form.ceremonyFrequency)}
+                            onChange={(v) => set("ceremonyFrequency", { ...form.ceremonyFrequency, [c]: v })}
+                            options={CEREMONY_FREQUENCIES.map((f) => ({
+                              value: f,
+                              label: t(`testPlan.frequencyLabel.${f}`),
+                            }))}
+                          />
+                        )}
+                      </FormField>
                     );
                   })}
                 </div>
@@ -185,17 +175,6 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
               .join(" ")}
           </p>
         </>
-      );
-    case "levels":
-      return (
-        <CheckboxGroup
-          label={t("testPlan.step.levels")}
-          options={TEST_LEVELS}
-          selected={form.testLevels}
-          onChange={(v) => set("testLevels", v)}
-          labelFor={(k) => t(`testPlan.levelLabel.${k}`)}
-          variant="pills"
-        />
       );
     case "deliverables":
       return <DeliverablesStep value={form.deliverables} onChange={(v) => set("deliverables", v)} />;

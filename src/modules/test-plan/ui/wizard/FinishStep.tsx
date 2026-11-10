@@ -3,7 +3,7 @@ import { CircleCheck, CircleAlert } from "lucide-react";
 import { STEP_IDS } from "./steps";
 import type { StepProps } from "./stepProps";
 
-/** Step 19's «Antes de terminar»: how many steps have content, which are
+/** The last step's «Antes de terminar»: how many steps have content, which are
  *  missing (each a link to its step), the plan's status and where to export. */
 export function FinishStep({ form, completion, goTo }: StepProps) {
   const { t } = useTranslation();

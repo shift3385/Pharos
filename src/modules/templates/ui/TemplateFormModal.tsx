@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
+import { Select } from "@shared/ui/Select";
 import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
@@ -88,20 +89,25 @@ export function TemplateFormModal({
         <div className="tpl-form__row">
           <label className="tpl-form__field">
             <span>{t("templates.form.kind")}</span>
-            <select value={values.kind} onChange={(e) => set("kind", e.target.value as TemplateKind)}>
-              <option value="plan">{t("templates.kind.plan")}</option>
-              <option value="case">{t("templates.kind.case")}</option>
-            </select>
+            <Select<TemplateKind>
+              value={values.kind}
+              onChange={(v) => set("kind", v)}
+              options={[
+                { value: "plan", label: t("templates.kind.plan") },
+                { value: "case", label: t("templates.kind.case") },
+              ]}
+            />
           </label>
           <label className="tpl-form__field">
             <span>{t("templates.form.language")}</span>
-            <select
+            <Select<TemplateLanguage>
               value={values.language}
-              onChange={(e) => set("language", e.target.value as TemplateLanguage)}
-            >
-              <option value="es">ES</option>
-              <option value="en">EN</option>
-            </select>
+              onChange={(v) => set("language", v)}
+              options={[
+                { value: "es", label: "ES" },
+                { value: "en", label: "EN" },
+              ]}
+            />
           </label>
           <label className="tpl-form__field tpl-form__field--sm">
             <span>{t("templates.form.version")}</span>

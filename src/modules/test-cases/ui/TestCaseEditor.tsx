@@ -3,6 +3,7 @@ import { ArrowLeft, Columns2, FileCode, MoreHorizontal, PencilLine, Save } from 
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
+import { Select } from "@shared/ui/Select";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { duplicateRows, required } from "@shared/validation";
@@ -788,27 +789,25 @@ export function TestCaseEditor({
   }
 
   const fileName = `${form.scenarioId || "scenario"}.feature`;
+  const locked =
+    requiredLevel !== "basic"
+      ? t("testCase.level.locked", { level: t(`testCase.level.${requiredLevel}.name`) })
+      : undefined;
   const levelSelect = (
     <label className="tc-meta">
       <span className="tc-meta__label">{t("testCase.level.label")}</span>
-      <select
+      <Select<GherkinLevel>
         className="tc-meta__select"
         value={level}
-        onChange={(e) => changeLevel(e.target.value as GherkinLevel)}
-        title={
-          requiredLevel !== "basic"
-            ? t("testCase.level.locked", {
-                level: t(`testCase.level.${requiredLevel}.name`),
-              })
-            : undefined
-        }
-      >
-        {(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => (
-          <option key={l} value={l} disabled={levelRank(l) < levelRank(requiredLevel)}>
-            {t(`testCase.level.${l}.name`)}
-          </option>
-        ))}
-      </select>
+        onChange={changeLevel}
+        title={locked}
+        options={(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => ({
+          value: l,
+          label: t(`testCase.level.${l}.name`),
+          disabled: levelRank(l) < levelRank(requiredLevel),
+          reason: locked,
+        }))}
+      />
     </label>
   );
 

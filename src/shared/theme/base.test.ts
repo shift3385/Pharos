@@ -24,4 +24,24 @@ describe("base.css", () => {
   it("leaves the browser's autofill button alone", () => {
     expect(css).not.toMatch(/credentials-auto-fill-button/);
   });
+
+  // UX-30: every dropdown chevron turns with its trigger's aria-expanded.
+  describe("dropdown chevrons", () => {
+    /** The declarations of the first rule whose selector is exactly `selector`. */
+    const rule = (selector: string) => {
+      const at = css.indexOf(`${selector} {`);
+      return at < 0 ? "" : css.slice(at, css.indexOf("}", at));
+    };
+
+    it("point up while the trigger says it is expanded, down otherwise", () => {
+      expect(rule('button[aria-expanded="true"] .lucide-chevron-down')).toMatch(/transform:\s*rotate\(180deg\)/);
+      expect(css).not.toMatch(/aria-expanded="false"\][^{]*\{[^}]*rotate/);
+    });
+
+    it("turn in a short ease-out, and at once with reduced motion", () => {
+      expect(rule("button[aria-expanded] .lucide-chevron-down")).toMatch(/transition:\s*transform 150ms ease-out/);
+      const reduced = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+      expect(reduced).toMatch(/button\[aria-expanded\] \.lucide-chevron-down\s*\{\s*transition:\s*none/);
+    });
+  });
 });

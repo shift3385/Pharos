@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ControlProps } from "@shared/ui/fieldProps";
+import { Select } from "@shared/ui/Select";
 import type { CustomField } from "../model/types";
 import { MAX_LENGTH } from "../model/validate";
 
@@ -57,36 +58,30 @@ export function FieldValueInput({
       );
     case "boolean":
       return (
-        <select
+        <Select
           {...control}
           value={value === true ? "yes" : value === false ? "no" : ""}
-          onChange={(e) =>
-            onChange(
-              e.target.value === "" ? undefined : e.target.value === "yes",
-            )
-          }
-        >
-          <option value="">{t("customFields.section.choose")}</option>
-          <option value="yes">{t("customFields.section.yes")}</option>
-          <option value="no">{t("customFields.section.no")}</option>
-        </select>
+          onChange={(v) => onChange(v === "" ? undefined : v === "yes")}
+          options={[
+            { value: "", label: t("customFields.section.choose") },
+            { value: "yes", label: t("customFields.section.yes") },
+            { value: "no", label: t("customFields.section.no") },
+          ]}
+        />
       );
     case "select":
       return (
-        <select
+        <Select
           {...control}
           value={text}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        >
-          <option value="">{t("customFields.section.choose")}</option>
-          {field.options
-            .filter((o) => !o.archived || o.id === value)
-            .map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-        </select>
+          onChange={(v) => onChange(v || undefined)}
+          options={[
+            { value: "", label: t("customFields.section.choose") },
+            ...field.options
+              .filter((o) => !o.archived || o.id === value)
+              .map((o) => ({ value: o.id, label: o.label })),
+          ]}
+        />
       );
     case "url":
       return (
