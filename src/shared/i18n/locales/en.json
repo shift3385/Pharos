@@ -1645,6 +1645,8 @@
       "rateError": "Not available",
       "unlinked_one": "Also, {{count}} unlinked test",
       "unlinked_other": "Also, {{count}} unlinked tests",
+      "unlinkedShort_one": "+{{count}} unlinked",
+      "unlinkedShort_other": "+{{count}} unlinked",
       "unlinkedTitle": "Imported tests with no case in the period: they do not count in the rate. Link them in Runs"
     },
     "period": {
@@ -1800,6 +1802,32 @@
       "retry": "Retry",
       "refreshing": "Updating…",
       "staleAt": "Data as of {{time}}: could not refresh"
+    },
+    "board": {
+      "customize": "Customize Home",
+      "editingHint": "Drag to move, pull the corner to resize",
+      "reset": "Reset",
+      "done": "Done",
+      "hiddenMenu": "Hidden gadgets",
+      "hiddenCount": "Hidden gadgets ({{count}})",
+      "hiddenNone": "No hidden gadgets",
+      "show": "Show “{{name}}”",
+      "hide": "Hide “{{name}}”",
+      "gadget": "gadget",
+      "dragTitle": "Drag to move “{{name}}”",
+      "size": "{{w}}×{{h}} · min {{minW}}×{{minH}}",
+      "place": "{{name}}: column {{col}}, row {{row}}, {{w}}×{{h}}",
+      "help": "Arrows: move. Shift + arrows: resize. Esc: leave without saving.",
+      "refused": "{{name}}: cannot move or resize that way",
+      "hidden": "{{name}}: hidden",
+      "noRoom": "No room for “{{name}}”",
+      "resetTitle": "Reset Home?",
+      "resetMessage": "The gadgets go back to the default layout and all are shown. It is saved when you press “Done”.",
+      "resetDone": "Default layout restored",
+      "saved": "Home layout saved",
+      "discarded": "Home changes discarded",
+      "overflow": "Over 24 rows: Home will scroll.",
+      "regionLabel": "Home gadgets"
     }
   },
   "section": {

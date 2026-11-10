@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes, useLocation } from "react-router";
+import { useLayoutEffect, useRef } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import { ErrorBoundary } from "@shared/ui/ErrorBoundary";
 import { useAuth, AuthScreen } from "@modules/auth";
 import { AppShell } from "./layout/AppShell";
@@ -14,6 +15,16 @@ export function App() {
   const { status } = useAuth();
   const [dbError, markDbOpened] = useDbOpenError();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  // Signing in always opens Inicio (UX-27), wherever the last session ended
+  // (the address stays on the sign-in screen). Restoring a saved session at
+  // startup or on a reload keeps the address.
+  const previous = useRef(status);
+  useLayoutEffect(() => {
+    if (previous.current === "unauthenticated" && status === "authenticated" && pathname !== "/")
+      navigate("/", { replace: true });
+    previous.current = status;
+  }, [status, pathname, navigate]);
 
   if (dbError)
     return <DbErrorScreen error={dbError} onRecovered={markDbOpened} />;

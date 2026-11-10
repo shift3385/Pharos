@@ -1219,3 +1219,281 @@ a.home-kpi:hover {
   text-align: left;
   font-weight: var(--fw-medium);
 }
+
+/* ---- Board of gadgets (UX-27) ----
+   On the desktop the gadgets sit on a 24 × 24 grid (react-grid-layout); the
+   row height is measured so the 24 rows fill the content area. */
+
+/* The sum note and the freshness line share one row under the summary, so
+   the board starts as high as it can. */
+.home-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 16px;
+  min-height: 18px;
+}
+
+.home-header__meta .home-sum-note,
+.home-header__meta .home-header__fresh {
+  margin: 2px 0 0;
+}
+
+/* «Personalizar Inicio»: an icon only, quiet until hovered or pressed. */
+.home-gear {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.home-gear:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.home-gear[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--color-navy-500) 14%, transparent);
+  color: var(--color-navy-500);
+}
+
+.home-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home-board {
+  position: relative;
+  min-width: 0;
+}
+
+.home-gadget {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 12px;
+}
+
+/* A gadget never breaks its cell: what does not fit scrolls inside it. */
+.home-gadget__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border-radius: 12px;
+}
+
+.home-gadget__body > .home-card,
+.home-gadget__body > .home-kpi,
+.home-gadget__body > .home-kpi-stack {
+  flex: 1 0 auto;
+  min-height: 100%;
+}
+
+.home-gadget__body .home-kpi-stack > .home-kpi {
+  min-height: 0;
+}
+
+/* Tighter cards on the grid: its rows are counted. */
+.home-board .home-card {
+  gap: 12px;
+  padding: clamp(14px, 1.4cqi, 18px);
+}
+
+.home-board .home-card--flush {
+  padding: clamp(14px, 1.4cqi, 18px) 0 8px;
+}
+
+.home-board .home-card__pad {
+  padding-left: clamp(14px, 1.4cqi, 18px);
+  padding-right: clamp(14px, 1.4cqi, 18px);
+}
+
+/* An indicator fits its 4 rows (about 84 px at 1280 × 800): tighter, one
+   line per text, never a scroll bar of its own. */
+.home-gadget__body:has(> .home-kpi, > .home-kpi-stack) {
+  overflow: hidden;
+}
+
+.home-board .home-kpi {
+  gap: 2px;
+  min-height: 0;
+  padding: 8px 12px;
+  overflow: hidden;
+}
+
+.home-board .home-kpi__icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+}
+
+.home-board .home-kpi__label,
+.home-board .home-kpi__note,
+.home-board .home-kpi__extra {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-board .home-kpi-stack {
+  position: relative;
+  gap: 0;
+}
+
+/* «+N sin vincular» (NC-029) at the top of «Tasa de éxito», left of its arrow. */
+.home-board .home-kpi__extra--badge {
+  position: absolute;
+  top: 9px;
+  right: 34px;
+  max-width: calc(100% - 140px);
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  font-size: 11px;
+  line-height: 18px;
+  text-decoration: none;
+}
+
+/* The daily chart takes the gadget's height instead of its fixed 180 px. */
+.home-board .home-daily .home-chart {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 60px;
+}
+
+/* -- Customizing -- */
+.home-board[data-editing] {
+  background-image: radial-gradient(
+    circle,
+    var(--color-navy-300) 1.2px,
+    transparent 1.6px
+  );
+  background-size:
+    calc(var(--board-col) + var(--board-gap-x))
+    calc(var(--board-row) + var(--board-gap-y));
+  background-position:
+    calc(var(--board-gap-x) / -2) calc(var(--board-gap-y) / -2);
+}
+
+.home-board[data-editing] .home-gadget {
+  outline: 1.5px dashed var(--color-navy-300);
+  outline-offset: 2px;
+}
+
+.home-board[data-editing] .home-gadget:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.home-board[data-editing] .home-gadget__body {
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.88;
+}
+
+.home-gadget__chrome {
+  position: absolute;
+  inset: -12px 10px auto;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.home-gadget__handle,
+.home-gadget__hide {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-1);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-1);
+}
+
+.home-gadget__handle {
+  cursor: grab;
+}
+
+.home-gadget__handle:active {
+  cursor: grabbing;
+}
+
+.home-gadget__hide {
+  cursor: pointer;
+}
+
+.home-gadget__hide:hover,
+.home-gadget__handle:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-navy-300);
+}
+
+.home-gadget__size {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-navy-700);
+  color: var(--color-on-navy);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+/* The library's drop shadow and resize corner, in Pharos colours. */
+.home-board .react-grid-item.react-grid-placeholder {
+  background: var(--color-navy-500);
+  opacity: 0.14;
+  border-radius: 12px;
+}
+
+.home-board .react-grid-item > .react-resizable-handle {
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  right: 2px;
+  bottom: 2px;
+  background: none;
+}
+
+.home-board .react-grid-item > .react-resizable-handle::after {
+  right: 5px;
+  bottom: 5px;
+  width: 9px;
+  height: 9px;
+  border-right: 2.5px solid var(--color-navy-500);
+  border-bottom: 2.5px solid var(--color-navy-500);
+}
+
+/* Tablet: the gadgets one under the other. */
+.home-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.6cqi, 20px);
+  min-width: 0;
+}
+
+.home-stack__item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}

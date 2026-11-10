@@ -1,16 +1,29 @@
 // Chapter 3 — Inicio (manual v2, MAN-03): the home panel once the team has
 // work in Pharos. The KPI cards, the period, execution by project, the exit
 // criteria and their picker, daily executions with their data table, upcoming
-// tests and the Home on a phone. It runs after the manual-execution chapter
+// tests, the board without scrolling at 1280 × 800 and how to customize it
+// (move, resize, hide, show and reset, UX-27), and the Home on a phone. It runs after the manual-execution chapter
 // so every card has real data; the empty Home is shown in chapter 1.
 import { $, $$, browser, expect } from "@wdio/globals";
-import { DESKTOP, MOBILE, chapter, setViewport, step } from "./tour";
+import { DESKTOP, LAPTOP, MOBILE, chapter, setViewport, step } from "./tour";
 import { byTestId, es, goHome } from "./helpers";
 
 const EXEC = "section.home-exec";
 const EXIT = "section.home-exit";
 const DAILY = "section.home-daily";
 const UPCOMING = 'section[aria-labelledby="home-upcoming-title"]';
+const KPIS = '[data-gadget^="kpi"]';
+
+/** The content area does not scroll: the whole Inicio is in view. */
+const noScroll = () =>
+  browser.execute(() => {
+    const main = document.querySelector(".app-shell__content");
+    return !!main && main.scrollHeight <= main.clientHeight + 1;
+  });
+
+/** Gives the keyboard focus to a gadget of the board (customizing). */
+const focusGadget = (id: string) =>
+  browser.execute((sel: string) => (document.querySelector(sel) as HTMLElement | null)?.focus(), `[data-testid="gadget-${id}"]`);
 
 chapter("inicio", () => {
   step("resumen", {
@@ -34,7 +47,7 @@ chapter("inicio", () => {
     caption:
       "«Proyectos abiertos» (y cuántos cierran este mes), «Pruebas pendientes» (casos sin ejecutar o bloqueados, sobre el total), «Tasa de éxito» (casos que pasan sobre los casos ejecutados en el periodo; un caso con varios flujos, filas o configuraciones pasa solo si pasan todos, y los tests importados sin vincular no cuentan: si los hay, debajo pone «Además, N tests sin vincular», con enlace a Ejecuciones) y «Defectos abiertos» (con los críticos aparte, en rojo). Cada tarjeta es un enlace: lleva a la lista de proyectos o, si solo tienes un proyecto, directamente a sus casos, sus ejecuciones o sus defectos.",
     covers: ["action:home-kpi"],
-    focus: ".home-kpis",
+    focus: KPIS,
     run: async () => {
       for (const id of ["kpi-projects", "kpi-pending", "kpi-rate", "kpi-defects"]) await expect(byTestId(id)).toBeDisplayed();
     },
@@ -128,6 +141,118 @@ chapter("inicio", () => {
       await expect(byTestId("tab-home-up-blocked")).toHaveAttribute("aria-selected", "true");
       await byTestId("tab-home-up-notRun").click();
       await expect(byTestId("tab-home-up-notRun")).toHaveAttribute("aria-selected", "true");
+    },
+  });
+
+  step("sin-scroll", {
+    title: "Todo a la vista, sin desplazarte",
+    caption:
+      "En el escritorio, el Inicio es una pizarra de 24 columnas por 24 filas que ocupa justo el alto de la ventana: desde 1280 × 800 lo ves todo sin desplazarte. Cada tarjeta es un «gadget» con su sitio y su tamaño en la cuadrícula. En una tableta los gadgets se apilan uno debajo de otro, y en el móvil se reparten en pestañas.",
+    covers: ["platform:home-no-scroll"],
+    run: async () => {
+      await setViewport(LAPTOP);
+      await goHome();
+      await expect(byTestId("home-board")).toBeDisplayed();
+      await browser.waitUntil(noScroll, { timeoutMsg: "Inicio scrolls at 1280 × 800" });
+    },
+    after: async () => {
+      await setViewport(DESKTOP);
+    },
+  });
+
+  step("personalizar", {
+    title: "Personalizar el Inicio",
+    caption:
+      "El engranaje junto a «Nuevo proyecto» («Personalizar Inicio») activa el modo configurar: se ve la cuadrícula punteada y cada gadget con un borde discontinuo, su asa para moverlo (arriba a la izquierda), su tamaño y su mínimo («10×10 · mín 8×6») y la esquina inferior derecha para cambiar el tamaño. Al mover o agrandar uno, los demás se apartan y suben a llenar los huecos: nunca se solapan. Cada gadget tiene un tamaño mínimo para que su contenido se lea bien. «Listo» guarda la distribución en tu cuenta, así que la verás igual en tus otros equipos; Esc sale sin guardar (y pregunta si cambiaste algo).",
+    covers: ["action:home-customize"],
+    focus: ['[data-testid="home-customize"]', '[data-gadget="byProject"]'],
+    run: async () => {
+      await byTestId("home-customize").click();
+      await expect(byTestId("home-customize")).toHaveAttribute("aria-pressed", "true");
+      await expect(byTestId("home-board-done")).toBeDisplayed();
+      await expect(byTestId("home-period")).not.toBeExisting();
+      await expect($('[data-gadget="byProject"] .home-gadget__size')).toHaveText(expect.stringContaining("10×10"));
+    },
+  });
+
+  step("teclado", {
+    title: "Mover y cambiar el tamaño con el teclado",
+    caption:
+      "Con el teclado: pasa de un gadget a otro con Tab, muévelo con las flechas y cambia su tamaño con Mayús + flechas. Dos gadgets iguales y contiguos, como las cifras clave, se intercambian. Cada cambio se anuncia a los lectores de pantalla, por ejemplo «Proyectos abiertos: columna 7, fila 1, 6×4». Aquí, «Proyectos abiertos» ha pasado a la derecha de «Pruebas pendientes».",
+    covers: ["keyboard:home-board"],
+    focus: KPIS,
+    run: async () => {
+      await focusGadget("kpiProjects");
+      await browser.keys("ArrowRight");
+      await expect(byTestId("home-board-live")).toHaveText(
+        expect.stringContaining(`${es.dashboard.kpi.projects}: columna 7, fila 1, 6×4`),
+      );
+    },
+  });
+
+  step("ocultar", {
+    title: "Ocultar un gadget",
+    caption:
+      "El ojo tachado de cada gadget lo oculta y los demás suben a ocupar su sitio. Aquí se ha ocultado «Criterios de salida». Los gadgets ocultos no se pierden: se cuentan en «Gadgets ocultos», arriba.",
+    covers: ["action:home-gadget-hide"],
+    focus: '[data-testid="home-hidden-gadgets"]',
+    run: async () => {
+      await byTestId("hide-exitCriteria").click();
+      await expect(byTestId("gadget-exitCriteria")).not.toBeExisting();
+      await expect(byTestId("home-hidden-gadgets")).toHaveText(expect.stringContaining("(1)"));
+    },
+  });
+
+  step("mostrar", {
+    title: "Volver a mostrar un gadget",
+    caption:
+      "«Gadgets ocultos» lista los que has ocultado. Al elegir uno, vuelve al primer hueco donde quepa, con su tamaño o, si no cabe, con su tamaño mínimo. Si no queda sitio en las 24 filas, se coloca debajo y el Inicio pasa a tener desplazamiento; la línea de ayuda lo avisa.",
+    covers: ["action:home-gadget-hide"],
+    focus: '[role="menu"]',
+    run: async () => {
+      await byTestId("home-hidden-gadgets").click();
+      await expect(byTestId("show-exitCriteria")).toBeDisplayed();
+    },
+    after: async () => {
+      await byTestId("show-exitCriteria").click();
+      await expect(byTestId("gadget-exitCriteria")).toBeDisplayed();
+    },
+  });
+
+  step("salir-sin-guardar", {
+    title: "Salir sin guardar",
+    caption:
+      "Esc sale del modo configurar sin guardar. Si has cambiado algo, Pharos pregunta antes: «Descartar cambios» deja el Inicio como estaba y «Seguir editando» vuelve a la pizarra. Lo mismo ocurre si sales a otra pantalla con cambios sin guardar.",
+    covers: ["dialogs:src/app/dashboard/DashboardPage.tsx"],
+    focus: '[role="alertdialog"]',
+    run: async () => {
+      await focusGadget("kpiPending");
+      await browser.keys("Escape");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
+      await expect($('[role="alertdialog"]')).not.toBeExisting();
+      await expect(byTestId("home-board-done")).toBeDisplayed();
+    },
+  });
+
+  step("restablecer", {
+    title: "Restablecer la distribución",
+    caption:
+      "«Restablecer» vuelve a la distribución de siempre, con todos los gadgets visibles: arriba las cuatro cifras clave; debajo «Ejecución por proyecto» y «Criterios de salida», con «Ejecuciones diarias» bajo ambos; y «Próximas pruebas» a lo alto, a la derecha. Antes pide confirmación, y el cambio se guarda al pulsar «Listo».",
+    covers: ["action:home-board-reset", "dialogs:src/app/dashboard/DashboardPage.tsx"],
+    focus: '[role="alertdialog"]',
+    run: async () => {
+      await byTestId("home-board-reset").click();
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await $('[role="alertdialog"]').$(`button=${es.dashboard.board.reset}`).click();
+      await expect($('[role="alertdialog"]')).not.toBeExisting();
+      await byTestId("home-board-done").click();
+      await expect(byTestId("home-customize")).toHaveAttribute("aria-pressed", "false");
+      await expect(byTestId("home-period")).toBeDisplayed();
     },
   });
 

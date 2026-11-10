@@ -172,7 +172,10 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(rate.getAttribute("title")).toMatch(/últimos 14 días/);
     expect(rate.getAttribute("title")).toMatch(/Los tests sin vincular no cuentan/);
     const unlinked = screen.getByTestId("kpi-rate-unlinked");
-    expect(unlinked).toHaveTextContent("Además, 2 tests sin vincular");
+    // On the desktop board the card has 4 rows: a short badge (UX-27) that
+    // still reads in full.
+    expect(unlinked).toHaveTextContent("+2 sin vincular");
+    expect(unlinked).toHaveAccessibleName("Además, 2 tests sin vincular");
     expect(unlinked).toHaveAttribute("href", "/projects");
     expect(rate).not.toContainElement(unlinked);
     expect(fetchMetrics).toHaveBeenCalledTimes(1);

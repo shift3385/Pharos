@@ -214,6 +214,19 @@ one call per project plus one metrics call.
 month, the exit-criteria choices and default, the period days and which day
 labels show).
 
+**Home board and account preferences (UX-27, ADR-0038).** On the desktop the
+Inicio cards are gadgets on a 24 × 24 grid (`react-grid-layout`, MIT): the
+row height fills the free height (no scroll from 1280 × 800), and «Personalizar
+Inicio» moves, resizes (pointer and keyboard), hides and resets them. The pure
+model is `app/dashboard/model/board.ts` (default layout, minimum per gadget,
+vertical compaction, `readBoard` migration of the versioned format); the
+module README has the details. The layout is an **account preference**:
+`user_preferences` (server migration 0017) behind `GET`/`PUT
+/api/me/preferences/:key` (`server/src/modules/preferences`), newest change
+wins by the client's `updatedAt` (clamped to now + 5 min), with a per-account
+copy on each device (`@modules/profile` `savePreference`/`pullPreference`,
+pending while offline). Signing in always opens Inicio (`App.tsx`).
+
 **Home execution metrics (RED-W6).** Every execution number of Inicio comes
 from **one read**: the desktop command `home_metrics` (`home_metrics.rs`) or
 `GET /api/home/metrics` (`server/src/modules/domain/home-metrics.ts`). Both
