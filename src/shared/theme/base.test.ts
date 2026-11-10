@@ -15,4 +15,13 @@ describe("base.css", () => {
   it("keeps the document scrollable for screens outside the app shell", () => {
     expect(css).not.toMatch(/(html|body)[^{}]*\{[^}]*overflow(-x|-y)?:\s*(hidden|clip)/);
   });
+
+  // FIX-21: Edge/WebView2 drew its own eye next to Pharos's show/hide button.
+  it("hides Edge's native password eye and clear button", () => {
+    expect(css).toMatch(/input::-ms-reveal,\s*input::-ms-clear\s*\{\s*display:\s*none;\s*\}/);
+  });
+
+  it("leaves the browser's autofill button alone", () => {
+    expect(css).not.toMatch(/credentials-auto-fill-button/);
+  });
 });
