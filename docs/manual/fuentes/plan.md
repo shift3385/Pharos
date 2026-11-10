@@ -12,7 +12,7 @@ asistente de **17 pasos** que sigue la norma ISO/IEC/IEEE 29119-3:
 
 | Pasos | Qué decides |
 | --- | --- |
-| 1–2 | Identificación del plan (título, estado, versión, fecha y autor) y resumen |
+| 1–2 | Identificación del plan (título, estado, versión y fecha; el autor es tu nombre del perfil y lo ves en «Estado del plan») y resumen |
 | 3–6 | Alcance, niveles y tipos de prueba, metodología y entregables |
 | 7–10 | Entorno, herramientas y automatización, datos de prueba y gestión de defectos |
 | 11–13 | Roles, cronograma (sprints e hitos) y riesgos con su mitigación |

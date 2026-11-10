@@ -365,7 +365,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
   }
   const heading = () => screen.getByRole("heading", { level: 2 });
 
-  it("«Identificación del plan» joins the title, status, version, date and author; Siguiente and Anterior move one step", async () => {
+  it("«Identificación del plan» joins the title, status, version and date (the author is in the status panel, FIX-24); Siguiente and Anterior move one step", async () => {
     setViewportWidth(1440);
     renderWizard();
     await screen.findByText("Paso 1 de 17");
@@ -374,7 +374,8 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Revisado");
     expect(screen.getByRole("textbox", { name: "Versión" })).toHaveValue("1.3");
     expect(screen.getByLabelText("Fecha")).toHaveValue("2026-10-29");
-    expect(screen.getByRole("textbox", { name: "Elaborado por" })).toHaveValue("Laura Méndez");
+    expect(screen.queryByRole("textbox", { name: "Elaborado por" })).not.toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Estado del plan" })).toHaveTextContent("Laura Méndez");
     // 17 steps in the rail, 4 of them complete: 4 / 17 = 24 %.
     const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
     expect(within(nav).getAllByRole("button")).toHaveLength(17);
