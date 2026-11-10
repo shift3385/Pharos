@@ -4,6 +4,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
+import { selectValue } from "@test/select";
 import { expectNoAxeViolations } from "@test/axe";
 import { ToastProvider } from "@shared/ui/Toast";
 import { customFieldApi } from "@modules/custom-fields";
@@ -285,7 +286,7 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
     const digits = within(wizard).getByRole("combobox", {
       name: "Dígitos del número",
     });
-    expect(digits).toHaveValue("4");
+    expect(digits).toHaveAttribute("data-value", "4");
     expect(
       within(wizard).getByText("copiado de Banca Móvil"),
     ).toBeInTheDocument();
@@ -325,7 +326,7 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
       within(wizard).getByRole("checkbox", { name: /Retención/ }),
     );
     await next(wizard);
-    await userEvent.selectOptions(
+    await selectValue(
       within(wizard).getByRole("combobox", { name: "Dígitos del número" }),
       "5",
     );
