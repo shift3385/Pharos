@@ -118,7 +118,7 @@ chapter("plan", () => {
   step("identificacion", {
     title: "Paso 1 · Identificación del plan",
     caption:
-      "El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0»), el estado (Borrador, Revisado, Aprobado u Obsoleto), la versión («0.3») y la fecha. «Elaborado por» no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1), el que firma el plan cuando lo exportas. El estado se elige en una lista desplegable de Pharos, como todas las de la aplicación: la opción elegida lleva una ✓, y con el teclado ↑ ↓ recorren las opciones, una letra salta a la que empieza por ella, Intro elige y Esc cierra; en el móvil se abre como una hoja desde abajo.",
+      "El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0»), el estado (Borrador, Revisado, Aprobado u Obsoleto), la versión («0.3») y la fecha. El autor no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1); lo ves en el panel «Estado del plan» y firma el plan cuando lo exportas. El estado se elige en una lista desplegable de Pharos, como todas las de la aplicación: la opción elegida lleva una ✓, y con el teclado ↑ ↓ recorren las opciones, una letra salta a la que empieza por ella, Intro elige y Esc cierra; en el móvil se abre como una hoja desde abajo.",
     covers: ["wizard:identification", "action:pharos-select"],
     focus: ".popover .pselect__option[data-selected]",
     run: async () => {

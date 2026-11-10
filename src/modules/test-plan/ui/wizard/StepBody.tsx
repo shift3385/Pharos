@@ -67,10 +67,6 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
               <span>{t("testPlan.date")}</span>
               <input type="date" value={form.planDate} onChange={(e) => set("planDate", e.target.value)} />
             </label>
-            <label className="tp-field">
-              <span>{t("testPlan.author")}</span>
-              <input value={props.author} readOnly />
-            </label>
           </div>
         </>
       );
