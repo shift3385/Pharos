@@ -260,12 +260,13 @@ function RunsList({
             </button>
           </div>
         ) : runs === null ? (
-          <>
-            <Skeleton shape="block" width={200} height={30} className="rn-sk-chips" />
+          <div className="rn-list">
+            <Skeleton shape="block" width={200} height={30} />
             <TableSkeleton columns={columns} />
-          </>
+          </div>
         ) : tab === "runs" ? (
-          <>
+          // The origin chips and the table, apart as in «Ciclos» (FIX-22).
+          <div className="rn-list" data-testid="runs-list">
             <FilterChips
               label={t("runs.list.origin")}
               value={origin}
@@ -297,7 +298,7 @@ function RunsList({
                 </div>
               )}
             />
-          </>
+          </div>
         ) : !isTauri() ? (
           // Imports and their tray stay on the desktop (EJE-06, Q4).
           <p className="tp-field__hint" role="note" data-testid="runs-unlinked-desktop-only">
