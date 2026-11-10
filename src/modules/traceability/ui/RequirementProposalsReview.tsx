@@ -24,6 +24,7 @@ import type {
 } from "../proposals/types";
 import "@shared/ui/buttons.css";
 import "./Traceability.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 const ORDER: ProposalAction[] = ["add", "improve", "merge", "remove"];
 const TONE: Record<ProposalAction, PillTone> = {
@@ -607,9 +608,9 @@ function ProposalEditor({
       </FormField>
       <FormField label={t("traceability.requirement.description")}>
         {(p) => (
-          <textarea
+          <TextArea
+            size="short"
             {...p}
-            rows={3}
             value={draft.description}
             onChange={(e) =>
               setDraft({ ...draft, description: e.target.value })

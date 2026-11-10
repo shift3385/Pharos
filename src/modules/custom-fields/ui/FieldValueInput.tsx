@@ -4,6 +4,7 @@ import type { ControlProps } from "@shared/ui/fieldProps";
 import { Select } from "@shared/ui/Select";
 import type { CustomField } from "../model/types";
 import { MAX_LENGTH } from "../model/validate";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** The control of one custom field value, by type. `undefined` from
  *  `onChange` clears the value. A select or multi-select offers the live
@@ -25,9 +26,9 @@ export function FieldValueInput({
   switch (field.fieldType) {
     case "long_text":
       return (
-        <textarea
+        <TextArea
+          size="short"
           {...control}
-          rows={3}
           maxLength={MAX_LENGTH.long_text}
           value={text}
           onChange={(e) => onChange(e.target.value || undefined)}

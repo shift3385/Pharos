@@ -35,6 +35,7 @@ import { useConfirm } from "@shared/ui/useConfirm";
 import { ResultPickerDialog } from "./ResultPickerDialog";
 import { StatusBadge } from "./badges";
 import "@shared/ui/buttons.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 const MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
 
@@ -406,7 +407,7 @@ export function DefectEditor({
           </div>
           <label className="tp-field">
             <span>{t("defects.field.description")}</span>
-            <textarea rows={3} value={form.description} onChange={(e) => update({ description: e.target.value })} />
+            <TextArea size="description" value={form.description} onChange={(e) => update({ description: e.target.value })} />
           </label>
           <p className="tp-field__grouplabel">{t("defects.field.labels")}</p>
           <ListField label={t("defects.field.labels")} items={form.labels} onChange={(labels) => update({ labels })} />
@@ -418,8 +419,8 @@ export function DefectEditor({
           </h3>
           <label className="tp-field">
             <span>{t("defects.field.steps")}</span>
-            <textarea
-              rows={5}
+            <TextArea
+              size="description"
               value={form.stepsToReproduce}
               onChange={(e) => update({ stepsToReproduce: e.target.value })}
             />
@@ -427,11 +428,11 @@ export function DefectEditor({
           <div className="tc-form__grid df-grid df-grid--2">
             <label className="tp-field">
               <span>{t("defects.field.expected")}</span>
-              <textarea rows={3} value={form.expected} onChange={(e) => update({ expected: e.target.value })} />
+              <TextArea size="short" value={form.expected} onChange={(e) => update({ expected: e.target.value })} />
             </label>
             <label className="tp-field">
               <span>{t("defects.field.actual")}</span>
-              <textarea rows={3} value={form.actual} onChange={(e) => update({ actual: e.target.value })} />
+              <TextArea size="short" value={form.actual} onChange={(e) => update({ actual: e.target.value })} />
             </label>
           </div>
         </section>

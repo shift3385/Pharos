@@ -18,6 +18,7 @@ import {
   type CardStatus,
   type PlannerCard,
 } from "../model/types";
+import { TextArea } from "@shared/ui/TextArea";
 
 const MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
 
@@ -174,8 +175,8 @@ export function CardEditor({
         </label>
         <label className="tp-field">
           <span>{t("planner.description")}</span>
-          <textarea
-            rows={3}
+          <TextArea
+            size="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />

@@ -68,6 +68,7 @@ import { webDrafts } from "../model/webDrafts";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** Autosave delay of a draft after the last change. */
 const SAVE_DELAY = 600;
@@ -903,9 +904,9 @@ export function ExecutionPanel({
                       <label htmlFor={`${uid}-actual-${i}`} className="tp-field__label">
                         {t("execution.actualLabel")}
                       </label>
-                      <textarea
+                      <TextArea
+                        size="short"
                         id={`${uid}-actual-${i}`}
-                        rows={2}
                         value={sd?.actual ?? ""}
                         readOnly={!editable}
                         onChange={(e) =>
@@ -977,8 +978,8 @@ export function ExecutionPanel({
               </div>
               <label className="tp-field">
                 <span className="tp-field__label">{t("execution.notes")}</span>
-                <textarea
-                  rows={3}
+                <TextArea
+                  size="short"
                   value={d.notes}
                   onChange={(e) => change((x) => ({ ...x, notes: e.target.value }))}
                   data-testid="exec-notes"

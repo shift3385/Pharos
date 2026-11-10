@@ -26,6 +26,7 @@ const RISK_TONE: Record<RiskBand, PillTone> = {
   unassessed: "neutral",
 };
 import "./Traceability.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 export interface RequirementDraft {
   requirementKey: string;
@@ -159,9 +160,9 @@ export function RequirementFormModal({
 
       <FormField label={t("traceability.requirement.description")}>
         {(p) => (
-          <textarea
+          <TextArea
+            size="description"
             {...p}
-            rows={3}
             value={draft.description}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
           />

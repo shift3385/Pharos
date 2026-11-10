@@ -299,7 +299,6 @@
   gap: 6px;
   padding: 2px;
   overflow-x: auto;
-  scrollbar-width: thin;
 }
 
 .tpw-strip__list > li {
@@ -818,7 +817,6 @@
 .tps:not([data-layout="phone"]) .tps-lists {
   overflow-y: auto;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
   /* Room for the focus ring, which a scroll box would clip. */
   padding: 2px;
   /* A focused field is never left under the sticky section title. */

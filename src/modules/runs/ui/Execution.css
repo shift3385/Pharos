@@ -366,7 +366,6 @@
   font: inherit;
   width: 100%;
   box-sizing: border-box;
-  resize: vertical;
 }
 .ex-files {
   list-style: none;

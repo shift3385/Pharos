@@ -5,6 +5,7 @@ import { duplicateRow, duplicateRows } from "@shared/validation";
 import { FieldMessage } from "./FormField";
 import { controlProps, type ControlProps } from "./fieldProps";
 import "./fields.css";
+import { TextArea } from "./TextArea";
 
 /** Remove-row control (UX-10): a trash icon named «Quitar: <fila>», which asks
  *  for confirmation when the row has content. «✕» is kept for close/dismiss.
@@ -205,9 +206,9 @@ export function PairListField<T>({
         {column}
         <span className="sr-only"> · {t("a11y.row", { n: i + 1 })}</span>
       </label>
-      <textarea
+      <TextArea
+        size="cell"
         {...control}
-        rows={1}
         value={String(item[k] ?? "")}
         onChange={(e) => {
           const next = [...items];

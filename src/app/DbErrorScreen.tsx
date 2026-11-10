@@ -11,6 +11,7 @@ import {
   recoverDb,
 } from "./dbStatus";
 import "./AppSplash.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** Full-screen, blocking explanation shown instead of the app when the local
  *  database could not be opened (SEC-06). The file is never modified here.
@@ -80,13 +81,13 @@ function RecoveryForm({ onRecovered }: { onRecovered: () => void }) {
       <label className="db-recovery__label" htmlFor="recovery-key">
         {t("dbError.recovery.label")}
       </label>
-      <textarea
+      <TextArea
+        size="paste"
         id="recovery-key"
         className="db-recovery__input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="XXXX-XXXX-XXXX-…"
-        rows={3}
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="characters"

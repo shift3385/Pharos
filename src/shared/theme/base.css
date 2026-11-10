@@ -181,3 +181,41 @@ button[aria-expanded="true"] .lucide-chevron-down {
     transition: none !important;
   }
 }
+
+/* UX-33: Pharos's scrollbar, everywhere a box scrolls (fields, lists, dialogs,
+   panels): 6 px, the colour of the borders and darker under the pointer,
+   rounded, and without the arrow buttons. Tokens follow the light and dark
+   themes. Phones keep the system's overlay scrollbar.
+   Chromium ignores the ::-webkit-scrollbar rules wherever `scrollbar-width`
+   or `scrollbar-color` apply, so the standard properties are only for browsers
+   without those pseudo-elements (Firefox); a module's `scrollbar-width: none`
+   still hides its own strip. */
+:root:not([data-viewport="mobile"]) ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+:root:not([data-viewport="mobile"]) ::-webkit-scrollbar-track,
+:root:not([data-viewport="mobile"]) ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:root:not([data-viewport="mobile"]) ::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+:root:not([data-viewport="mobile"]) ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-input);
+}
+
+:root:not([data-viewport="mobile"]) ::-webkit-scrollbar-button {
+  display: none;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  :root:not([data-viewport="mobile"]) * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+}

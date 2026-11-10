@@ -25,6 +25,41 @@ describe("base.css", () => {
     expect(css).not.toMatch(/credentials-auto-fill-button/);
   });
 
+  // UX-33: one thin, rounded scrollbar without arrows, in both themes.
+  describe("scrollbar", () => {
+    const desk = ':root:not([data-viewport="mobile"])';
+    const block = (selector: string) => {
+      const at = css.indexOf(`${selector} {`);
+      return at < 0 ? "" : css.slice(at, css.indexOf("}", at));
+    };
+
+    it("is 6 px, rounded and the colour of the borders", () => {
+      expect(block(`${desk} ::-webkit-scrollbar`)).toMatch(/width:\s*6px;[\s\S]*height:\s*6px;/);
+      const thumb = block(`${desk} ::-webkit-scrollbar-thumb`);
+      expect(thumb).toMatch(/background:\s*var\(--color-border\);/);
+      expect(thumb).toMatch(/border-radius:/);
+      expect(block(`${desk} ::-webkit-scrollbar-thumb:hover`)).toMatch(/background:\s*var\(--color-border-input\);/);
+    });
+
+    it("has no arrow buttons", () => {
+      expect(block(`${desk} ::-webkit-scrollbar-button`)).toMatch(/display:\s*none;/);
+    });
+
+    it("uses the standard properties where the pseudo-elements do not exist", () => {
+      const std = css.slice(css.indexOf("@supports not selector(::-webkit-scrollbar)"));
+      expect(std).toMatch(/scrollbar-width:\s*thin;/);
+      expect(std).toMatch(/scrollbar-color:\s*var\(--color-border\) transparent;/);
+    });
+
+    it("leaves phones with the system scrollbar", () => {
+      const selectors = css
+        .split("\n")
+        .filter((l) => !l.startsWith("@") && /::-webkit-scrollbar.*[,{]\s*$/.test(l));
+      expect(selectors.length).toBeGreaterThan(0);
+      for (const s of selectors) expect(s.startsWith(desk)).toBe(true);
+    });
+  });
+
   // UX-30: every dropdown chevron turns with its trigger's aria-expanded.
   describe("dropdown chevrons", () => {
     /** The declarations of the first rule whose selector is exactly `selector`. */

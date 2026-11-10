@@ -107,6 +107,7 @@ import { FormSkeleton } from "@shared/ui/Skeleton";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 export type { CaseNav } from "./CaseNavBar";
 
@@ -912,9 +913,9 @@ export function TestCaseEditor({
           />
         }
       >
-        <textarea
+        <TextArea
+          size="description"
           id="tc-description"
-          rows={2}
           value={form.description}
           onChange={(e) => update({ description: e.target.value })}
         />
@@ -928,18 +929,18 @@ export function TestCaseEditor({
     <>
       {level === "basic" && (
         <CaseSection title={t("testCase.testData")} labelFor="tc-test-data">
-          <textarea
+          <TextArea
+            size="short"
             id="tc-test-data"
-            rows={2}
             value={form.testData}
             onChange={(e) => update({ testData: e.target.value })}
           />
         </CaseSection>
       )}
       <CaseSection title={t("testCase.notes")} labelFor="tc-notes" joined={level === "basic"}>
-        <textarea
+        <TextArea
+          size="short"
           id="tc-notes"
-          rows={2}
           value={form.notes}
           onChange={(e) => update({ notes: e.target.value })}
         />
@@ -1018,9 +1019,9 @@ export function TestCaseEditor({
             )}
           </CaseSection>
           <CaseSection title={t("testCase.notes")} labelFor="tc-notes">
-            <textarea
+            <TextArea
+              size="short"
               id="tc-notes"
-              rows={2}
               value={form.notes}
               onChange={(e) => update({ notes: e.target.value })}
             />
@@ -1120,9 +1121,9 @@ export function TestCaseEditor({
               />
             }
           >
-            <textarea
+            <TextArea
+              size="short"
               id="tc-expected-result"
-              rows={2}
               value={form.expectedResult}
               onChange={(e) => update({ expectedResult: e.target.value })}
             />

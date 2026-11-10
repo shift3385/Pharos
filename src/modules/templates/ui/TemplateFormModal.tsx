@@ -9,6 +9,7 @@ import { required } from "@shared/validation";
 import "@shared/ui/ConfirmDialog.css";
 import "./Templates.css";
 import type { TemplateKind, TemplateLanguage, TemplateSummary } from "../model/types";
+import { TextArea } from "@shared/ui/TextArea";
 
 export interface TemplateFormValues {
   name: string;
@@ -125,8 +126,8 @@ export function TemplateFormModal({
 
       <label className="tpl-form__field">
         <span>{t("templates.form.description")}</span>
-        <textarea
-          rows={2}
+        <TextArea
+          size="description"
           value={values.description}
           onChange={(e) => set("description", e.target.value)}
         />
@@ -134,8 +135,8 @@ export function TemplateFormModal({
 
       <label className="tpl-form__field">
         <span>{t("templates.form.usagePrompt")}</span>
-        <textarea
-          rows={3}
+        <TextArea
+          size="description"
           value={values.usagePrompt}
           placeholder={t("templates.form.usagePromptHint")}
           onChange={(e) => set("usagePrompt", e.target.value)}
