@@ -176,6 +176,11 @@ describe("RunsPage", () => {
     await waitFor(() =>
       expect(within(table).getAllByText("1 sin vincular")).toHaveLength(2),
     );
+    // FIX-22: the origin chips and the table share one spaced column.
+    const list = screen.getByTestId("runs-list");
+    expect(list).toHaveClass("rn-list");
+    expect(list).toContainElement(table);
+    expect(list).toContainElement(screen.getByRole("button", { name: /Importados/ }));
     await userEvent.click(screen.getByRole("button", { name: /Importados/ }));
     expect(within(table).queryByText("RUN-002")).not.toBeInTheDocument();
     // The tray tab says how many tests wait for a link.
