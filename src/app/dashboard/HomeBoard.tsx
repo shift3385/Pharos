@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { GridLayout, type Layout } from "react-grid-layout";
 import { EyeOff, GripVertical } from "lucide-react";
 import "react-grid-layout/css/styles.css";
+import { GadgetFitContext } from "./model/fitRows";
 import {
   BOARD_COLS,
   BOARD_ROWS,
@@ -28,9 +29,14 @@ import {
 
 /** Space between gadgets, in px: [between columns, between rows]. */
 const BOARD_GAP: [number, number] = [12, 8];
-/** Rows never get shorter than this: a shorter window scrolls instead. At
- *  1280 × 800 a row is 15 px. */
-const MIN_ROW_HEIGHT = 12;
+/** Rows never get shorter than this (UX-28): it is the height at which every
+ *  gadget's minimum still fits its essentials, compacted. A window under
+ *  about 700 px tall gets one page scroll instead. */
+export const MIN_ROW_HEIGHT = 14;
+/** Under this row height the board is compact (UX-28): tighter cards,
+ *  legends as dots, no foot text under the daily chart. At 1280 × 820 a row
+ *  is about 19 px; at 1440 × 900, 22 px. */
+export const COMPACT_BELOW = 18;
 /** Width used before the first measurement (and in tests, without layout). */
 const FALLBACK_WIDTH = 1000;
 
@@ -153,6 +159,7 @@ export function HomeBoard({
       ref={boardRef}
       className="home-board"
       data-editing={editing || undefined}
+      data-compact={rowHeight < COMPACT_BELOW || undefined}
       style={cell}
       data-testid="home-board"
     >
@@ -233,7 +240,8 @@ function GadgetBody({ inert, children }: { inert: boolean; children: ReactNode }
   }, [inert]);
   return (
     <div ref={ref} className="home-gadget__body">
-      {children}
+      {/* Its lists show the rows that fit, never a scroll (UX-28). */}
+      <GadgetFitContext.Provider value={true}>{children}</GadgetFitContext.Provider>
     </div>
   );
 }

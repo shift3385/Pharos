@@ -13,10 +13,33 @@ El panel con el que se abre Pharos (SPEC §8): saludo, resumen, periodo y
 | `kpiPending`    | `KpiCard` «Pruebas pendientes»   | 5 × 4  |
 | `kpiRate`       | `KpiCard` «Tasa de éxito»        | 5 × 4  |
 | `kpiDefects`    | `KpiCard` «Defectos abiertos»    | 5 × 4  |
-| `byProject`     | `ExecutionByProject`             | 8 × 6  |
-| `exitCriteria`  | `ExitCriteriaCard`               | 6 × 8  |
-| `upcoming`      | `UpcomingTests`                  | 6 × 8  |
+| `byProject`     | `ExecutionByProject`             | 8 × 7  |
+| `upcoming`      | `UpcomingTests`                  | 7 × 9  |
+| `exitCriteria`  | `ExitCriteriaCard`               | 7 × 11 |
 | `daily`         | `DailyExecutionsChart`           | 8 × 8  |
+
+Distribución por defecto (UX-28, la que guardó el usuario; columna y fila
+desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
+`byProject` en 0,4 (9 × 10); `daily` en 0,14 (9 × 9); `upcoming` en 9,4
+(7 × 19); `exitCriteria` en 16,4 (8 × 19).
+
+**Nunca hay scroll dentro de un gadget (UX-28).**
+
+- Las listas de «Ejecución por proyecto», «Próximas pruebas» y «Criterios de
+  salida» dibujan solo las filas que caben y terminan en «+N más · …»
+  (`model/fitRows.ts`: `useFitRows` y `GadgetFitContext`, que solo está
+  activo dentro de la pizarra; `FitMore.tsx`).
+- En la pizarra, «Ver los datos» de las ejecuciones diarias abre un diálogo.
+- Los mínimos son el tamaño en el que lo esencial cabe con filas de 14 px.
+- Con filas de menos de 18 px (`COMPACT_BELOW`) la pizarra lleva
+  `data-compact`:
+  - menos márgenes;
+  - leyendas solo con puntos de color, con su nombre en el `title`;
+  - sin el texto bajo el gráfico diario.
+- La fila no baja de 14 px (`MIN_ROW_HEIGHT`): por debajo de unos 700 px de
+  alto de ventana, la página tiene un único scroll.
+- Los subtítulos de los paneles son una ayuda «?» (`InfoTip`) junto al
+  título, que también sirve de `aria-describedby` de la sección.
 
 - **`model/board.ts`** contiene el modelo puro de la pizarra:
   - una cuadrícula de 24 columnas en la que caben 24 filas a la vista (hasta
@@ -29,7 +52,7 @@ El panel con el que se abre Pharos (SPEC §8): saludo, resumen, periodo y
   Usa la compactación vertical de `react-grid-layout`, así que nada se solapa.
 - **`HomeBoard.tsx`** dibuja la pizarra en el escritorio:
   - Usa `GridLayout` y calcula la altura de fila para que las 24 filas llenen
-    el alto libre del contenido, sin desplazamiento desde 1280 × 800.
+    el alto libre del contenido, sin desplazamiento en una ventana de 1280 × 820.
   - En el modo configurar cada gadget es un `group` enfocable con su asa, su
     etiqueta «ancho×alto · mín» y su botón «Ocultar». Su contenido queda
     `inert`.
@@ -68,5 +91,8 @@ El panel con el que se abre Pharos (SPEC §8): saludo, resumen, periodo y
 - `HomeBoard.test.tsx`: el modo configurar en la página, «Restablecer» con
   confirmación, Esc, persistencia por cuenta, tableta y móvil.
 - `DashboardPage.test.tsx`: el contenido de cada gadget.
-- `e2e/tours/03-inicio.tour.ts`: la vista sin desplazamiento a 1280 × 800, el
+- `fitRows.test.tsx`: las filas que caben y «+N más»; ninguna regla de CSS
+  deja desplazarse a un gadget.
+- `e2e/tours/03-inicio.tour.ts`: sin desplazamiento de página ni de gadget a
+  1440 × 900 y a 1280 × 820, la ayuda «?», el
   modo configurar, ocultar y mostrar, y restablecer.

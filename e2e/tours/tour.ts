@@ -33,8 +33,9 @@ export const DESKTOP = { width: 1440, height: 900, view: "desktop" as const };
 export const MOBILE = { width: 390, height: 844, view: "mobile" as const };
 /** Medium screens (icon strip), 1024×768 (MAN-03). */
 export const TABLET = { width: 1024, height: 768, view: "tablet" as const };
-/** The smallest desktop Inicio must show without scrolling (UX-27). */
-export const LAPTOP = { width: 1280, height: 800, view: "desktop" as const };
+/** A laptop window like the user's (UX-28): Inicio shows whole, without any
+ *  scroll, page or gadget. */
+export const LAPTOP = { width: 1280, height: 820, view: "desktop" as const };
 export type Viewport = typeof DESKTOP | typeof MOBILE | typeof TABLET | typeof LAPTOP;
 
 export type Shot =

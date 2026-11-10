@@ -22,6 +22,9 @@ import {
 } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
+import { FitMore } from "./FitMore";
+import { useFitRows } from "./model/fitRows";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Skeleton } from "@shared/ui/Skeleton";
 import { skeletonWidth } from "@shared/ui/skeletonWidth";
 
@@ -76,7 +79,12 @@ export function ExitCriteriaCard({
       ? m.exitCriteria.map((e) => ({ ...e, evaluation: e }))
       : (selected?.criteria ?? []);
   const defaults =
-    ready && !!m && rows.length > 0 && m.exitCriteria.every((e) => e.index === null);
+    ready &&
+    !!m &&
+    rows.length > 0 &&
+    m.exitCriteria.every((e) => e.index === null);
+  // On the board only the criteria that fit, then «+N más» (UX-28).
+  const fitRows = useFitRows(rows.length);
 
   let headline = t("dashboard.exit.headline");
   let sub = t("dashboard.exit.sub");
@@ -106,13 +114,22 @@ export function ExitCriteriaCard({
   }
 
   return (
-    <section className="home-card home-exit" aria-labelledby="home-exit-title">
+    <section
+      className="home-card home-exit"
+      aria-labelledby="home-exit-title"
+      aria-describedby="home-exit-help"
+    >
       <div className="home-card__head home-card__head--nowrap">
         <div className="home-card__titles">
-          <h2 id="home-exit-title" className="home-card__title">
-            {t("dashboard.exit.title")}
-          </h2>
-          <p className="home-card__sub">{t("dashboard.exit.subtitle")}</p>
+          <div className="home-card__titleline">
+            <h2 id="home-exit-title" className="home-card__title">
+              {t("dashboard.exit.title")}
+            </h2>
+            {/* The subtitle is help behind «?» (UX-28). */}
+            <InfoTip id="home-exit-help" label={t("dashboard.exit.title")}>
+              {t("dashboard.exit.subtitle")}
+            </InfoTip>
+          </div>
         </div>
         {selected && (
           <ExitProjectPicker
@@ -183,7 +200,11 @@ export function ExitCriteriaCard({
                   {share !== null ? (
                     percent.format(share)
                   ) : state.status === "loading" ? (
-                    <Skeleton width={44} height={22} className="home-ring__sk" />
+                    <Skeleton
+                      width={44}
+                      height={22}
+                      className="home-ring__sk"
+                    />
                   ) : (
                     "—"
                   )}
@@ -230,18 +251,33 @@ export function ExitCriteriaCard({
             </p>
           )}
           {rows.length > 0 && (
-            <ul className="home-exit__criteria" data-testid="home-criteria">
-              {rows.map((c, i) => (
-                <li key={i}>
-                  <span className="home-exit__criterion">{c.criterion}</span>
-                  {c.metric && (
-                    <span className="home-exit__metric t-id">{c.metric}</span>
-                  )}
-                  {/* No verdict until the metrics load (not even «Sin datos»). */}
-                  {ready && <CriterionResult evaluation={c.evaluation} />}
-                </li>
-              ))}
-            </ul>
+            <div className="home-fit" ref={fitRows.boxRef}>
+              <ul
+                ref={fitRows.listRef}
+                className="home-exit__criteria"
+                data-testid="home-criteria"
+              >
+                {rows.slice(0, fitRows.shown).map((c, i) => (
+                  <li key={i}>
+                    <span className="home-exit__criterion">{c.criterion}</span>
+                    {c.metric && (
+                      <span className="home-exit__metric t-id">{c.metric}</span>
+                    )}
+                    {/* No verdict until the metrics load (not even «Sin datos»). */}
+                    {ready && <CriterionResult evaluation={c.evaluation} />}
+                  </li>
+                ))}
+              </ul>
+              <FitMore
+                count={fitRows.more}
+                to={projectPath(selected.id, "plan")}
+                label={t("dashboard.more", {
+                  count: fitRows.more,
+                  action: t("dashboard.exit.openPlan"),
+                })}
+                testId="home-criteria-more"
+              />
+            </div>
           )}
         </>
       )}
@@ -394,7 +430,11 @@ function ExitProjectPicker({
               ))}
             </div>
             {/* In the header: a menu may only hold menu items. */}
-            <p className="home-picker__none" role="status" data-testid="exit-picker-status">
+            <p
+              className="home-picker__none"
+              role="status"
+              data-testid="exit-picker-status"
+            >
               {choices.length > 0
                 ? ""
                 : query.trim()

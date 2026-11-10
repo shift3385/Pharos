@@ -1704,7 +1704,8 @@
       "noCases": "Sin casos todavía",
       "empty": "Sin proyectos abiertos.",
       "other": "Otro",
-      "rowUnknown": "{{name}}: ejecución sin datos todavía"
+      "rowUnknown": "{{name}}: ejecución sin datos todavía",
+      "viewAll": "Ver todos los proyectos"
     },
     "exit": {
       "title": "Criterios de salida",
@@ -1847,7 +1848,8 @@
       "discarded": "Cambios de Inicio descartados",
       "overflow": "Pasa de 24 filas: Inicio tendrá scroll.",
       "regionLabel": "Gadgets de Inicio"
-    }
+    },
+    "more": "+{{count}} más · {{action}}"
   },
   "section": {
     "comingInPhase": "Se implementará en la Fase {{phase}}",

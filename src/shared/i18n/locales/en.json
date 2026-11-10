@@ -1704,7 +1704,8 @@
       "noCases": "No cases yet",
       "empty": "No open projects.",
       "other": "Other",
-      "rowUnknown": "{{name}}: run data not available yet"
+      "rowUnknown": "{{name}}: run data not available yet",
+      "viewAll": "See all projects"
     },
     "exit": {
       "title": "Exit criteria",
@@ -1847,7 +1848,8 @@
       "discarded": "Home changes discarded",
       "overflow": "Over 24 rows: Home will scroll.",
       "regionLabel": "Home gadgets"
-    }
+    },
+    "more": "+{{count}} more · {{action}}"
   },
   "section": {
     "comingInPhase": "Coming in Phase {{phase}}",
