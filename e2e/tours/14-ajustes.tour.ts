@@ -10,6 +10,7 @@ import {
   PROJECT_B,
   acceptConfirm,
   button,
+  chooseOption,
   clickButton,
   dialog,
   es,
@@ -27,7 +28,7 @@ import {
 async function setPrefix(prefix: string) {
   await openSection("settings");
   await $("#pj-prefix").setValue(prefix);
-  await $("#pj-digits").selectByAttribute("value", "3");
+  await chooseOption($("#pj-digits"), { value: "3" });
   await button(es.projects.save).click();
   await waitForToast(es.projects.savedToast);
 }

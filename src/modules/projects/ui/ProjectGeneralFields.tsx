@@ -2,6 +2,7 @@ import type { Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, Hash } from "lucide-react";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import type { Issue } from "@shared/validation";
 import { DIGITS, sampleKey } from "../model/numbering";
 
@@ -116,18 +117,13 @@ export function ProjectGeneralFields({
           }
         >
           {(p) => (
-            <select
+            // The Pharos select (UX-30), not the native one (FIX-23).
+            <Select
               {...p}
-              className="pj-input"
-              value={digits}
-              onChange={(e) => onDigits(Number(e.target.value))}
-            >
-              {DIGITS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+              value={String(digits)}
+              onChange={(v) => onDigits(Number(v))}
+              options={DIGITS.map((d) => ({ value: String(d), label: String(d) }))}
+            />
           )}
         </FormField>
       </div>
