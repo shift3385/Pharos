@@ -19,11 +19,18 @@ export const email = process.env.TEST_USER_EMAIL ?? "smoke@pharos.dev";
 const password = process.env.TEST_USER_PASSWORD ?? "supersecret1";
 
 export const button = (text: string) => $(`button=${text}`);
-/** The version at the sidebar foot. It is in the DOM in every layout but only
- *  visible in the full sidebar (≥ 1280 px): read its text, do not wait for it
- *  to be displayed. The specs run at 1440 px (wdio.conf), but a spec may
- *  narrow the window to the icon strip. */
-export const versionBadge = () => $('[data-testid="app-version"]');
+/** The installed version, read from «Acerca de Pharos» (UX-26): opens it from
+ *  the logo at the top of the sidebar (full or icon strip), reads the version
+ *  and closes it with Escape. */
+export async function readAppVersion(): Promise<string> {
+  await $('[data-testid="about-open"]').click();
+  const version = $('[role="dialog"] [data-testid="app-version"]');
+  await version.waitForDisplayed();
+  const text = await version.getText();
+  await browser.keys("Escape");
+  await $('[role="dialog"]').waitForExist({ reverse: true });
+  return text;
+}
 /** A project's link in the «Todos los proyectos» table (RED-V2). */
 export const projectRow = (name: string) => $(`a.pj-row__link*=${name}`);
 /**

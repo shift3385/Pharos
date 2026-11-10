@@ -50,10 +50,58 @@
   border: 0;
   border-radius: var(--radius-md);
 }
-.sync--compact .sync__dot {
-  width: 10px;
-  height: 10px;
+
+/* Sync icon (UX-26): the arrows turn while a sync runs, manual or automatic.
+   `sync__spin` is only set without reduced motion; the media query below
+   also stops it if the setting changes mid-sync. */
+.sync__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.sync--compact:disabled {
+.sync__icon {
+  flex: none;
+}
+.sync__spin {
+  animation: sync-spin 900ms linear infinite;
+}
+@keyframes sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sync__spin {
+    animation: none;
+  }
+}
+
+/* While syncing, the dot turns into a ring: the static change of state that
+   reduced motion keeps (and a second cue with the motion). */
+.sync--busy .sync__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* Strip: the icon with the status dot at its lower right. */
+.sync--compact {
+  position: relative;
+  width: 40px;
+  height: 36px;
+  color: var(--color-on-navy-muted);
+}
+.sync--compact:hover:not([aria-disabled="true"]) {
+  color: var(--color-on-navy);
+  background: color-mix(in srgb, var(--color-on-navy) 6%, transparent);
+}
+.sync--compact[aria-disabled="true"] {
   cursor: default;
+}
+.sync--compact .sync__dot {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  width: 9px;
+  height: 9px;
+  outline: 2px solid var(--color-navy-900);
 }

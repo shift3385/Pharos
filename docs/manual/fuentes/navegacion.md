@@ -56,13 +56,18 @@ lo cierras.
 - **No veo «Proyecto activo» en el menú.** Solo aparece dentro de un proyecto.
   Abre uno desde «Proyectos» o desde el Inicio.
 - **El menú lateral es una tira de iconos y no puedo expandirlo.** La ventana
-  mide menos de 1280 px de ancho. Agrándala o maximízala: el botón de contraer
-  solo existe en pantallas anchas.
+  mide menos de 1280 px de ancho. Agrándala o maximízala: la pestaña de
+  contraer y expandir, en el borde derecho del menú, solo existe en pantallas
+  anchas.
 - **La búsqueda y la campana solo dicen «próximamente».** Es lo esperado en
   esta versión. Usa el buscador de cada lista y, en los casos, Ctrl+P.
 - **Ctrl+K no hace nada.** Hay un diálogo abierto: ciérralo antes con Esc.
 - **«Sincronizar ahora» no aparece.** Estás sin conexión. Pharos sincroniza
-  solo cuando vuelve la conexión.
+  solo cuando vuelve la conexión. En la tira de iconos, el botón de las
+  flechas sigue ahí, pero no hace nada hasta entonces: su tooltip lo dice.
+- **Las flechas de sincronizar giran y no he pulsado nada.** Pharos está
+  sincronizando solo: al entrar, al volver la conexión o con la
+  sincronización automática. Paran al terminar.
 - **Mis cambios tardan en llegar al otro equipo.** Sin la sincronización
   automática, Pharos solo sincroniza al entrar, al volver la conexión y con
   «Sincronizar ahora». Púlsalo, o activa «Sincronización automática» en
@@ -91,8 +96,9 @@ lo cierras.
   trazabilidad o el editor de casos en vista dividida.
 - El selector de proyecto conserva la sección: compara rápidamente el Tablero
   o los Defectos de dos proyectos.
-- Si informas de un fallo, di la versión que aparece al pie del menú lateral
-  (en este manual, la 0.2.0).
+- Si informas de un fallo, di la versión y la compilación de «Acerca de
+  Pharos»: un clic en el logotipo o en el nombre, arriba del menú lateral (en
+  este manual, la 0.2.0).
 
 ## Véase también
 
