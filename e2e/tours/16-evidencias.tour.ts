@@ -12,7 +12,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { byTestId, openAdminTab } from "./helpers";
+import { byTestId, chooseOption, openAdminTab } from "./helpers";
 
 function plantOrphan() {
   const profile = process.env.PHAROS_E2E_PROFILE;
@@ -55,12 +55,11 @@ chapter("evidencias", () => {
       await card.scrollIntoView();
       const trace = byTestId("evidence-retention-trace");
       await trace.waitForDisplayed();
-      await trace.selectByAttribute("value", "days");
+      await chooseOption(trace, { value: "days" });
       const days = byTestId("evidence-retention-trace-days");
       await days.waitForDisplayed();
       await days.setValue("45");
-      await byTestId("evidence-retention-video").click();
-      await byTestId("evidence-retention-video").selectByAttribute("value", "always");
+      await chooseOption(byTestId("evidence-retention-video"), { value: "always" });
       await expect(byTestId("evidence-retention-device")).toBeDisplayed();
       // Longer than before: «Guardar» applies it without asking.
       await byTestId("evidence-retention-save").click();
@@ -78,7 +77,7 @@ chapter("evidencias", () => {
     covers: ["dialogs:src/modules/admin/ui/tabs/EvidenceRetentionSection.tsx"],
     shot: { element: '[role="alertdialog"]' },
     run: async () => {
-      await byTestId("evidence-retention-log").selectByAttribute("value", "days");
+      await chooseOption(byTestId("evidence-retention-log"), { value: "days" });
       const days = byTestId("evidence-retention-log-days");
       await days.waitForDisplayed();
       await days.setValue("7");

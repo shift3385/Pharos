@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { optionLabels, selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { parseReportText } from "@shared/contracts/pharos-run/importers";
@@ -310,17 +311,13 @@ describe("RunsPage", () => {
     const picker = await within(dialog).findByRole("combobox", {
       name: /^Ciclo/,
     });
-    expect(
-      within(picker)
-        .getAllByRole("option")
-        .map((o) => o.textContent),
-    ).toEqual(["Sin ciclo", "CYC-001 · Regresión CYC-001"]);
+    expect(await optionLabels(picker)).toEqual(["Sin ciclo", "CYC-001 · Regresión CYC-001"]);
     await userEvent.upload(
       within(dialog).getByLabelText(/^Informe/),
       new File(["{}"], "ctrf.json"),
     );
     await within(dialog).findByText(/2 tests, 3 intentos/);
-    await userEvent.selectOptions(picker, "c1");
+    await selectValue(picker, "c1");
     // The preview follows the cycle (a closed one would fail here).
     await waitFor(() =>
       expect(api.preview).toHaveBeenLastCalledWith(
@@ -350,7 +347,7 @@ describe("RunsPage", () => {
     );
     const dialog = screen.getByRole("dialog");
     // A cycle picked for a new run is not sent once the target is an open run.
-    await userEvent.selectOptions(
+    await selectValue(
       await within(dialog).findByRole("combobox", { name: /^Ciclo/ }),
       "c2",
     );
@@ -382,7 +379,7 @@ describe("RunsPage", () => {
       screen.getByRole("button", { name: "Importar informe" }),
     );
     const dialog = screen.getByRole("dialog");
-    await userEvent.selectOptions(
+    await selectValue(
       await within(dialog).findByRole("combobox", { name: /^Ciclo/ }),
       "c1",
     );

@@ -7,6 +7,7 @@ import { projectPlanRef } from "@modules/test-plan";
 import type { ExecutionSummary } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
@@ -303,13 +304,13 @@ export function StatusReportDialog({
           {scope === "cycle" && (
             <FormField label={t("statusReport.cycle")}>
               {(p) => (
-                <select {...p} value={cycleId} data-testid="report-cycle" onChange={(e) => setCycleId(e.target.value)}>
-                  {cycles.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  {...p}
+                  value={cycleId}
+                  data-testid="report-cycle"
+                  onChange={setCycleId}
+                  options={cycles.map((c) => ({ value: c.id, label: c.label }))}
+                />
               )}
             </FormField>
           )}

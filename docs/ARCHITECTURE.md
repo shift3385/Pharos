@@ -148,10 +148,14 @@ enforce it, and two devices can still create overlapping prefixes offline.
 **Plan wizard (RED-V2).** `TestPlanWizard` composes `ui/wizard/*`:
 - `formState.ts`: the form and its pure conversions (from a plan, an import or
   a revision; to the saved input and the export shape);
-- `steps.ts`: the 19 step ids and `stepCompletion` (a step is complete when its
-  main field has content);
-- `StepBody` and one component per large step (`DeliverablesStep`,
-  `ToolsStep`, `ScheduleStep`, `FinishStep`);
+- `steps.ts`: the 17 step ids, `stepCompletion` (a step is complete when its
+  main field has content) and `LEGACY_STEPS` / `stepIndex`: the ids of the
+  19-step wizard (`title`, `meta`, `types`, `levels`) land on the step they
+  were joined into (UX-31); `?step=<id>` opens a step;
+- `StepBody` and one component per large step (`LevelsTypesStep`,
+  `DeliverablesStep`, `ToolsStep`, `ScheduleStep`, `FinishStep`); the
+  checkbox steps share `CheckColumns` (columns by group with thin lines, a
+  grey icon per head and the «Propios» cell with ✕ and the field to add);
 - `StepNav`: one navigation is rendered, chosen by the app container's width.
   `StepRail` (sticky, `z-index: 2`, its own scroll) from 1360 px, measured by
   `useWideApp` on `.viewport-root` like `ViewportProvider`; `StepStrip`
@@ -982,6 +986,22 @@ through `src-tauri/src/journal.rs`:
   - `BottomSheet` (on top of `Dialog`): handle, title, ✕ and ≥ 46 px options.
   - `ResponsiveMenu`: a `Menu` from 600 px, a `BottomSheet` below, with the
     same items.
+  - `Select` (UX-30): the form control for one choice, instead of a native
+    `<select>` (WebView2 drew those with the system's grey list). A
+    select-only combobox (WAI-ARIA APG): the focus stays on the button and
+    `aria-activedescendant` names the option; the `listbox` opens in a
+    `Popover` (`matchAnchorWidth`) with the menu's look, or as a
+    `BottomSheet` on mobile. Options take an icon, a description, a group
+    title and `disabled` + `reason`. It takes `FormField`'s props and a
+    `<label htmlFor>` (or wrapping) names it; `data-value` on the button and
+    on each option is what tests and tours pick by (`@test/select`,
+    `chooseOption` in the tours). Native selects left: «Copiar ajustes de:»
+    (`ProjectsPage`) and the key digits (`ProjectSettings`).
+  - Dropdown chevrons (UX-30): one rule in `theme/base.css` turns the
+    `ChevronDown` of any `button[aria-expanded]` 180° while it is `true`
+    (150 ms ease-out, none under reduced motion). The trigger's
+    `aria-expanded` is the only source, so a trigger needs no state or class
+    of its own; the up-down switcher icon (`ChevronsUpDown`) does not turn.
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
     until that text is typed. The two tiers (normal / critical) and what

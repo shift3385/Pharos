@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { setViewportWidth } from "@test/viewport";
@@ -400,14 +401,14 @@ describe("Administración → Evidencias", () => {
       "resultado final fallido o bloqueado",
     );
     const trace = await within(card).findByTestId("evidence-retention-trace");
-    expect(trace).toHaveValue("default");
-    expect(within(trace).getByRole("option", { name: "Por defecto (30 días)" })).toBeInTheDocument();
+    expect(trace).toHaveAttribute("data-value", "default");
+    expect(trace).toHaveTextContent("Por defecto (30 días)");
     const save = within(card).getByTestId("evidence-retention-save");
     expect(save).toBeDisabled();
 
     // Choosing and typing saves nothing.
-    await user.selectOptions(within(card).getByTestId("evidence-retention-video"), "always");
-    await user.selectOptions(trace, "days");
+    await selectValue(within(card).getByTestId("evidence-retention-video"), "always");
+    await selectValue(trace, "days");
     const days = within(card).getByTestId("evidence-retention-trace-days");
     await user.clear(days);
     await user.type(days, "45");
@@ -435,7 +436,7 @@ describe("Administración → Evidencias", () => {
     api.previewRetention.mockResolvedValue(12);
     renderTab();
     const card = await screen.findByTestId("evidence-retention");
-    await user.selectOptions(await within(card).findByTestId("evidence-retention-log"), "days");
+    await selectValue(await within(card).findByTestId("evidence-retention-log"), "days");
     const days = within(card).getByTestId("evidence-retention-log-days");
     await user.clear(days);
     await user.type(days, "7");
@@ -462,17 +463,17 @@ describe("Administración → Evidencias", () => {
     renderTab();
     const card = await screen.findByTestId("evidence-retention");
     const video = await within(card).findByTestId("evidence-retention-video");
-    await user.selectOptions(video, "always");
+    await selectValue(video, "always");
     await user.click(within(card).getByTestId("evidence-retention-save"));
     expect(await screen.findByText("No se pudo leer o guardar la retención.", { exact: false })).toBeInTheDocument();
-    await waitFor(() => expect(within(card).getByTestId("evidence-retention-video")).toHaveValue("default"));
+    await waitFor(() => expect(within(card).getByTestId("evidence-retention-video")).toHaveAttribute("data-value", "default"));
   });
 
   it("does not save an out-of-range number of days and says why", async () => {
     const user = userEvent.setup();
     renderTab();
     const card = await screen.findByTestId("evidence-retention");
-    await user.selectOptions(await within(card).findByTestId("evidence-retention-log"), "days");
+    await selectValue(await within(card).findByTestId("evidence-retention-log"), "days");
     const days = within(card).getByTestId("evidence-retention-log-days");
     await user.clear(days);
     await user.type(days, "0");

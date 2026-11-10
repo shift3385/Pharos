@@ -111,6 +111,8 @@ export function ModelCombobox({
           type="button"
           tabIndex={-1}
           className="adm-icon-btn"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listId : undefined}
           aria-label={t(isOpen ? "ai.modelsHide" : "ai.modelsShow")}
           title={t(isOpen ? "ai.modelsHide" : "ai.modelsShow")}
           // The field keeps the focus, ready to search.

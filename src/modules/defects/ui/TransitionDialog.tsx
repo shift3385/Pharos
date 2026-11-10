@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
+import { Select } from "@shared/ui/Select";
 import { needsResolution } from "../model/lifecycle";
 import { DEFECT_RESOLUTIONS, type Defect, type DefectResolution, type DefectStatus } from "../model/types";
 
@@ -70,18 +71,15 @@ export function TransitionDialog({
       {needs && (
         <label className="tp-field">
           <span>{t("defects.resolution.label")}</span>
-          <select
+          <Select<DefectResolution | "">
             value={resolution}
-            required
-            onChange={(e) => setResolution(e.target.value as DefectResolution | "")}
-          >
-            <option value="">{t("defects.resolution.none")}</option>
-            {DEFECT_RESOLUTIONS.map((r) => (
-              <option key={r} value={r}>
-                {t(`defects.resolution.${r}`)}
-              </option>
-            ))}
-          </select>
+            aria-required
+            onChange={setResolution}
+            options={[
+              { value: "", label: t("defects.resolution.none") },
+              ...DEFECT_RESOLUTIONS.map((r) => ({ value: r, label: t(`defects.resolution.${r}`) })),
+            ]}
+          />
         </label>
       )}
       {status === "closed" && (

@@ -28,7 +28,7 @@ export const config: WebdriverIO.Config = {
   // A tour clicks the first match (a page often repeats a label, e.g. two
   // «Guardar»); every step asserts its outcome, so a wrong click still fails.
   strictSelectors: false,
-  // A few long chapters (the 19-step plan wizard) need more than the smoke.
+  // A few long chapters (the 17-step plan wizard) need more than the smoke.
   mochaOpts: { ui: "bdd", timeout: 600_000 },
   // No JUnit report: it records every WebDriver command with its arguments,
   // the AI key included (found by check-manual --secret-scan). The tours'

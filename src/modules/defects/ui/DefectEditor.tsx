@@ -13,6 +13,7 @@ import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
 import { ListField } from "@shared/ui/fields";
 import { notify, unlessReported } from "@shared/ui/notify";
+import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { MAX_ATTACHMENT_MB, defectsApi } from "../api/defectsApi";
 import { NEXT_STATUSES, needsResolution } from "../model/lifecycle";
@@ -359,17 +360,12 @@ export function DefectEditor({
           <div className="tc-form__grid df-grid">
             <label className="tp-field">
               <span>{t("defects.field.severity")}</span>
-              <select
+              <Select<DefectSeverity>
                 value={form.severity}
                 aria-describedby={`${uid}-sev-hint`}
-                onChange={(e) => update({ severity: e.target.value as DefectSeverity })}
-              >
-                {DEFECT_SEVERITIES.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`defects.severity.${s}`)}
-                  </option>
-                ))}
-              </select>
+                onChange={(severity) => update({ severity })}
+                options={DEFECT_SEVERITIES.map((s) => ({ value: s, label: t(`defects.severity.${s}`) }))}
+              />
               {/* Under its own field, not after the whole row (NC-051). */}
               <span id={`${uid}-sev-hint`} className="tp-field__hint">
                 {t("defects.field.severityHint")}
@@ -377,45 +373,34 @@ export function DefectEditor({
             </label>
             <label className="tp-field">
               <span>{t("defects.field.priority")}</span>
-              <select value={form.priority} onChange={(e) => update({ priority: e.target.value as DefectPriority })}>
-                {DEFECT_PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {t(`defects.priority.${p}`)}
-                  </option>
-                ))}
-              </select>
+              <Select<DefectPriority>
+                value={form.priority}
+                onChange={(priority) => update({ priority })}
+                options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: t(`defects.priority.${p}`) }))}
+              />
             </label>
             <label className="tp-field">
               <span>{t("defects.field.status")}</span>
-              <select
+              <Select<DefectStatus>
                 value={form.status}
-                onChange={(e) => {
-                  const status = e.target.value as DefectStatus;
+                onChange={(status) => {
                   update({ status, resolution: needsResolution(status) ? form.resolution || (status === "closed" ? "fixed" : "") : "" });
                 }}
-              >
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`defects.status.${s}`)}
-                  </option>
-                ))}
-              </select>
+                options={statusOptions.map((s) => ({ value: s, label: t(`defects.status.${s}`) }))}
+              />
             </label>
             {needs && (
               <label className="tp-field">
                 <span>{t("defects.resolution.label")}</span>
-                <select
+                <Select<DefectResolution | "">
                   value={form.resolution}
                   aria-invalid={(attempted && !form.resolution) || undefined}
-                  onChange={(e) => update({ resolution: e.target.value as DefectResolution | "" })}
-                >
-                  <option value="">{t("defects.resolution.none")}</option>
-                  {DEFECT_RESOLUTIONS.map((r) => (
-                    <option key={r} value={r}>
-                      {t(`defects.resolution.${r}`)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(resolution) => update({ resolution })}
+                  options={[
+                    { value: "", label: t("defects.resolution.none") },
+                    ...DEFECT_RESOLUTIONS.map((r) => ({ value: r, label: t(`defects.resolution.${r}`) })),
+                  ]}
+                />
               </label>
             )}
           </div>

@@ -38,6 +38,7 @@ import type {
 import { isTauri } from "@shared/platform";
 import { Dialog } from "@shared/ui/Dialog";
 import { StatusPill } from "@shared/ui/StatusPill";
+import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { runsApi } from "../api/runsApi";
@@ -937,25 +938,25 @@ export function ExecutionPanel({
               <div className="ex-result__row">
                 <label className="tp-field ex-result__status">
                   <span className="tp-field__label">{t("execution.resultStatus")}</span>
-                  <select
+                  <Select<StepStatus | "">
                     value={d.status ?? ""}
-                    onChange={(e) =>
+                    onChange={(v) =>
                       change((x) => ({
                         ...x,
-                        status: (e.target.value || undefined) as StepStatus | undefined,
+                        status: v || undefined,
                       }))
                     }
                     data-testid="exec-status"
-                  >
-                    <option value="">
-                      {t("execution.derived", { status: t(`runs.status.${resultStatus(steps, { ...d, status: undefined })}`) })}
-                    </option>
-                    {STEP_STATUSES.map((st) => (
-                      <option key={st} value={st}>
-                        {t(`runs.status.${st}`)}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      {
+                        value: "",
+                        label: t("execution.derived", {
+                          status: t(`runs.status.${resultStatus(steps, { ...d, status: undefined })}`),
+                        }),
+                      },
+                      ...STEP_STATUSES.map((st) => ({ value: st, label: t(`runs.status.${st}`) })),
+                    ]}
+                  />
                 </label>
                 <div className="ex-timer" role="timer" aria-live="off">
                   <span className="ex-timer__value">{formatElapsed(elapsedAt(d, new Date()))}</span>

@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import {
   CYCLE_STATUSES,
   attributesLine,
@@ -143,13 +144,12 @@ export function CycleDialog({
           {cycle && (
             <FormField label={t("cycles.field.status")}>
               {(p) => (
-                <select {...p} value={form.status} onChange={(e) => set("status")(e.target.value)}>
-                  {CYCLE_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {t(`cycles.status.${s}`)}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  {...p}
+                  value={form.status}
+                  onChange={(v) => set("status")(v)}
+                  options={CYCLE_STATUSES.map((s) => ({ value: s, label: t(`cycles.status.${s}`) }))}
+                />
               )}
             </FormField>
           )}

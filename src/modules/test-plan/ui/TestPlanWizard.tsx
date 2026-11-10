@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
@@ -34,7 +35,7 @@ import {
   type FormState,
   type ReviewableField,
 } from "./wizard/formState";
-import { STEP_IDS, stepCompletion } from "./wizard/steps";
+import { STEP_IDS, stepCompletion, stepIndex } from "./wizard/steps";
 import { StepBody } from "./wizard/StepBody";
 import { StepCompact, StepRail, StepStrip } from "./wizard/StepNav";
 import { PlanIoMenu, PlanStatusPanel, RevisionsDialog } from "./wizard/PlanSidePanels";
@@ -57,8 +58,8 @@ interface Props {
 }
 
 /**
- * The plan's 19-step wizard (spec §5.1, SPEC §8 «Plan», ScrPlan): step
- * navigation that follows the container's width, «Paso N de 19 · Guardado ·
+ * The plan's 17-step wizard (spec §5.1, SPEC §8 «Plan», ScrPlan, UX-31): step
+ * navigation that follows the container's width, «Paso N de 17 · Guardado ·
  * hace N min» above the step, a one-line footer («Siguiente: …»), «Estado del
  * plan» and the latest revisions beside the form, and «Revisiones»,
  * «Importar / Exportar» and «Guardar» in the project header.
@@ -72,7 +73,10 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
   const view = useBreakpoint();
   const wide = useWideApp();
   const [plan, setPlan] = useState<TestPlan | null>(null);
-  const [step, setStep] = useState(0);
+  // `?step=<id>` opens that step; an id of the 19-step wizard («meta»,
+  // «levels»…) lands on the step it was joined into (UX-31).
+  const [params] = useSearchParams();
+  const [step, setStep] = useState(() => Math.max(stepIndex(params.get("step")), 0));
   const [saving, setSaving] = useState(false);
   const [showRev, setShowRev] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);

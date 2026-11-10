@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Select } from "@shared/ui/Select";
 import { X } from "lucide-react";
 import type { MatrixSort } from "../model/matrix";
 import { NO_FILTERS, type MatrixFilters } from "../model/matrixFilters";
@@ -41,19 +42,13 @@ export function ExecutionFilters({
   ) => (
     <label className="tz-filter">
       <span className="tz-filter__label">{label}</span>
-      <select
+      <Select
         value={value[key]}
         data-testid={`trace-filter-${key === "cycleId" ? "cycle" : key === "configurationId" ? "configuration" : key}`}
-        onChange={(e) => onChange({ ...value, [key]: e.target.value })}
+        onChange={(v) => onChange({ ...value, [key]: v })}
         disabled={options.length === 0 && !value[key]}
-      >
-        <option value="">{any}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        options={[{ value: "", label: any }, ...options.map((o) => ({ value: o.value, label: o.label }))]}
+      />
     </label>
   );
   const plain = (list: string[]) => list.map((v) => ({ value: v, label: v }));
@@ -79,16 +74,15 @@ export function ExecutionFilters({
         <span className="tz-filter__label">
           {t("traceability.filters.sort")}
         </span>
-        <select
+        <Select<MatrixSort>
           value={value.sort}
           data-testid="trace-sort"
-          onChange={(e) =>
-            onChange({ ...value, sort: e.target.value as MatrixSort })
-          }
-        >
-          <option value="risk">{t("traceability.filters.sortRisk")}</option>
-          <option value="key">{t("traceability.filters.sortKey")}</option>
-        </select>
+          onChange={(sort) => onChange({ ...value, sort })}
+          options={[
+            { value: "risk", label: t("traceability.filters.sortRisk") },
+            { value: "key", label: t("traceability.filters.sortKey") },
+          ]}
+        />
       </label>
       {active && (
         <button

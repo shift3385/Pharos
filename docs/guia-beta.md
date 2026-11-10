@@ -55,7 +55,7 @@ aplicación cambia: cada paso es también una prueba automática
   (RED-W6).
 - **Proyectos** con recientes, tabla con búsqueda, orden y paginación;
   **Ajustes del proyecto** con borrado que pide escribir el prefijo.
-- **Plan** de 19 pasos con lista de pasos, barra de progreso y panel de
+- **Plan** de 17 pasos con lista de pasos, barra de progreso y panel de
   estado; entregables ISO 29119-3 y 75 herramientas en catálogo.
 - **Casos** con tabla, filtros y selección múltiple; editor con vistas
   Editor / Gherkin / Dividida y «Ir a un caso…» (Ctrl P).
@@ -446,7 +446,7 @@ Los puntos abiertos de la auditoría están en
       bloqueadas y re-test. Con el servidor parado (web), «Reintentar».
 - [ ] Proyectos: buscar, ordenar y paginar; borrar un proyecto desde sus
       Ajustes pide escribir el prefijo y solo se cierra con «Cancelar».
-- [ ] Plan: recorrer los 19 pasos con la lista de pasos; cambiar un campo e
+- [ ] Plan: recorrer los 17 pasos con la lista de pasos; cambiar un campo e
       intentar salir: Pharos pregunta antes de descartar.
 - [ ] Casos: filtrar, seleccionar y exportar `.feature`; abrir un caso y
       pasar al siguiente con «›»; «Ir a un caso…» con Ctrl P.

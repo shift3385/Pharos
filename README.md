@@ -182,7 +182,7 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   with search, order and pages. A project's **Ajustes** holds its name and case
   numbering, «Exportar proyecto (ZIP)» and «Eliminar proyecto» (type the prefix
   to confirm).
-- **Plan de pruebas:** 19 steps. The step list is on the left in wide windows,
+- **Plan de pruebas:** 17 steps. The step list is on the left in wide windows,
   a strip above the form in narrower ones, and «Ver pasos» on phones.
   «Revisiones», «Importar / Exportar» and «Guardar» are in the project header.
 - **Casos:** the list filters by state, priority and level and searches IDs,

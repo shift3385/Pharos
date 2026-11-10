@@ -1,5 +1,5 @@
-// Chapter 5 — Plan de pruebas (manual v2, MAN-03): the 19-step ISO/IEC/IEEE
-// 29119 wizard filled with the plan of Pharos 0.3.0 (the app under test), the
+// Chapter 5 — Plan de pruebas (manual v2, MAN-03): the 17-step ISO/IEC/IEEE
+// 29119 wizard (UX-31) filled with the plan of Pharos 0.3.0 (the app under test), the
 // schedule calendar with mouse and keyboard, saving, the unsaved-changes
 // guard, revisions, export / import as .xlsx and .pdf. The AI buttons of the
 // plan are toured in chapter 17 (they need a real key).
@@ -58,11 +58,15 @@ async function fillPairs(label: string, rows: [string, string][]) {
   }
 }
 
-/** Selects pills (CheckboxGroup) by their visible text. */
-async function pickPills(label: string, names: string[]) {
-  const group = $(`[role="group"][aria-label="${label}"]`);
+/** Ticks the checkboxes of the columns of a step (UX-31) by the start of
+ *  their label («Integración» for «Integración · interfaces»), leaving the
+ *  ones already ticked as they are. */
+async function tick(names: string[]) {
   for (const name of names) {
-    await group.$(`.//button[@class="tp-pill"][normalize-space(.)=${xpathString(name)}]`).click();
+    const box = $(
+      `.//label[contains(@class,"tpw-check")][starts-with(normalize-space(.), ${xpathString(name)})]/input[@type="checkbox"]`,
+    );
+    if (!(await box.isSelected())) await box.click();
   }
 }
 
@@ -101,37 +105,42 @@ chapter("plan", () => {
   step("asistente", {
     title: "El asistente del plan",
     caption:
-      "El plan de pruebas dice qué se prueba, cómo, con qué medios, quién y cuándo. Pharos lo redacta con un asistente de 19 pasos que sigue la norma ISO/IEC/IEEE 29119-3: «Plan de pruebas», la primera sección del proyecto. A la izquierda, la lista de pasos con una ✓ en los completos y el porcentaje de avance; en el centro, el paso actual, con «Paso N de 19» y si hay cambios sin guardar; a la derecha, «Estado del plan» (estado, versión, autor y última actualización). El paso 1 pide el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0») y el estado: Borrador, Revisado, Aprobado u Obsoleto. No hace falta seguir el orden: salta a cualquier paso desde la lista.",
-    covers: ["section:plan", "wizard:title"],
+      "El plan de pruebas dice qué se prueba, cómo, con qué medios, quién y cuándo. Pharos lo redacta con un asistente de 17 pasos que sigue la norma ISO/IEC/IEEE 29119-3: «Plan de pruebas», la primera sección del proyecto. A la izquierda, la lista de pasos con una ✓ en los completos y el porcentaje de avance; en el centro, el paso actual, con «Paso N de 17» y si hay cambios sin guardar; a la derecha, «Estado del plan» (estado, versión, autor y última actualización). No hace falta seguir el orden: salta a cualquier paso desde la lista.",
+    covers: ["section:plan"],
     run: async () => {
       await openProject(PROJECT_A.name);
       await openSection("plan");
       await expect(byTestId("plan-wizard")).toBeDisplayed();
-      await $("#tp-title").setValue("Plan de pruebas de Pharos 0.3.0");
-      await selectOption(P.status, P.statusLabel.draft);
+      await expect($("h2.tpw__title")).toHaveText(P.step.identification);
     },
   });
 
-  step("meta", {
-    title: "Paso 2 · Versión, fecha y autor",
+  step("identificacion", {
+    title: "Paso 1 · Identificación del plan",
     caption:
-      "«Siguiente: …», al pie, avanza al paso 2 y lo nombra; «Anterior» vuelve. Indica la versión del documento (en este ejemplo, «0.3») y su fecha. «Elaborado por» no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1), el que firma el plan cuando lo exportas.",
-    covers: ["wizard:meta", "action:plan-step-nav"],
+      "El paso 1 es el bloque de identificación del documento de ISO/IEC/IEEE 29119-3: el título (en este ejemplo, «Plan de pruebas de Pharos 0.3.0»), el estado (Borrador, Revisado, Aprobado u Obsoleto), la versión («0.3») y la fecha. «Elaborado por» no se escribe: es tu nombre oficial del perfil (en este ejemplo, Liomar Rodríguez, capítulo 1), el que firma el plan cuando lo exportas. El estado se elige en una lista desplegable de Pharos, como todas las de la aplicación: la opción elegida lleva una ✓, y con el teclado ↑ ↓ recorren las opciones, una letra salta a la que empieza por ella, Intro elige y Esc cierra; en el móvil se abre como una hoja desde abajo.",
+    covers: ["wizard:identification", "action:pharos-select"],
+    focus: ".popover .pselect__option[data-selected]",
     run: async () => {
-      await next();
-      await expect($("h2.tpw__title")).toHaveText(P.step.meta);
+      await $("#tp-title").setValue("Plan de pruebas de Pharos 0.3.0");
       await (await field(P.version)).setValue("0.3");
       await setDate(await field(P.date), "2026-11-02");
+      await selectOption(P.status, P.statusLabel.draft);
+      // The capture shows the list open, with the ✓ on «Borrador».
+      await $("#tp-status").click();
+      await expect($('[role="listbox"]')).toBeDisplayed();
     },
   });
 
   step("resumen", {
-    title: "Paso 3 · Resumen",
+    title: "Paso 2 · Resumen",
     caption:
-      "El resumen es lo primero que leerá quien reciba el plan: en pocas líneas, qué se prueba y por qué (en este ejemplo, la versión 0.3.0 de Pharos, en escritorio y en la web). Con un motor de IA configurado (capítulo 15), el botón ✨ «Asistir con IA» redacta un borrador a partir de lo que hayas escrito; lo usas, lo editas o lo descartas, y nada se aplica sin que lo aceptes (capítulo 17).",
-    covers: ["wizard:summary"],
+      "«Siguiente: …», al pie, avanza al paso siguiente y lo nombra; «Anterior» vuelve. El resumen es lo primero que leerá quien reciba el plan: en pocas líneas, qué se prueba y por qué (en este ejemplo, la versión 0.3.0 de Pharos, en escritorio y en la web). Con un motor de IA configurado (capítulo 15), el botón ✨ «Asistir con IA» redacta un borrador a partir de lo que hayas escrito; lo usas, lo editas o lo descartas, y nada se aplica sin que lo aceptes (capítulo 17).",
+    covers: ["wizard:summary", "action:plan-step-nav"],
     run: async () => {
+      await browser.keys("Escape");
       await next();
+      await expect($("h2.tpw__title")).toHaveText(P.step.summary);
       await (await field(P.summary)).setValue(
         "Plan de pruebas de Pharos 0.3.0, la aplicación de gestión de pruebas: acceso, plan, requisitos, casos, ciclos, ejecución manual e importada, defectos, trazabilidad y sincronización, en la app de escritorio (Windows) y en la versión web.",
       );
@@ -139,7 +148,7 @@ chapter("plan", () => {
   });
 
   step("alcance", {
-    title: "Paso 4 · Alcance",
+    title: "Paso 3 · Alcance",
     caption:
       "El alcance fija qué se prueba y, tan importante como eso, qué no: así nadie da por cubierto lo que queda fuera. En «Elementos dentro del alcance» y «Fuera del alcance», «+ Añadir» crea una fila por elemento (en este ejemplo, el acceso, el plan con los requisitos y los casos, la ejecución y la sincronización dentro; la integración con Jira y una app móvil nativa fuera). La papelera de cada fila («Quitar») la elimina; si la fila tiene texto, pide confirmarlo con «Sí, eliminar» o «Cancelar». Pharos avisa de las filas repetidas.",
     covers: ["wizard:scope"],
@@ -150,21 +159,27 @@ chapter("plan", () => {
     },
   });
 
-  step("tipos", {
-    title: "Paso 5 · Tipos de prueba",
+  step("niveles-tipos", {
+    title: "Paso 4 · Niveles y tipos de prueba",
     caption:
-      "Marca los tipos de prueba que el equipo se compromete a ejecutar, agrupados en cobertura funcional (funcional, regresión…) y no funcional (seguridad, usabilidad, rendimiento…). En este ejemplo hay cinco marcados. Si el que necesitas no está en la lista, escríbelo en «Especifica otro…» y pulsa Intro o «+ Otro».",
-    covers: ["wizard:types"],
+      "Qué se prueba, en qué nivel y con qué tipo (ISTQB), en columnas. Los niveles dicen dónde se prueba: unitarias (un componente), integración (sus interfaces), sistema (de extremo a extremo) y aceptación (usuario y negocio); en este ejemplo, integración, sistema y aceptación, porque las unitarias son cosa del equipo de desarrollo. Los tipos dicen qué se comprueba: funcionales, no funcionales (rendimiento, seguridad, usabilidad…) y «Confirmación y regresión», las pruebas que siguen a un cambio: confirmación (volver a probar lo que falló, una vez arreglado), regresión, humo y sanidad; pasa el ratón por cada una para leer qué es. Si falta un tipo, escríbelo al pie de «Propios» y pulsa Intro o «Añadir» (en este ejemplo, «Pruebas de sincronización»); la ✕ lo quita. La ayuda «?» del título lo explica.",
+    covers: ["wizard:levelsTypes"],
+    focus: ".tpw-lt",
     run: async () => {
       await next();
-      await pickPills(P.step.types, [P.typeLabel.functional, P.typeLabel.regression, P.typeLabel.security, P.typeLabel.usability, P.typeLabel.performance]);
+      await expect($("h2.tpw__title")).toHaveText(P.step.levelsTypes);
+      await tick([P.levelLabel.integration, P.levelLabel.system, P.levelLabel.acceptance]);
+      await tick([P.typeLabel.functional, P.typeLabel.security, P.typeLabel.usability, P.typeLabel.performance, P.typeLabel.retest, P.typeLabel.regression]);
+      await (await field(P.levelsTypes.other)).setValue("Pruebas de sincronización");
+      await browser.keys("Enter");
+      await expect(byTestId("plan-types-own").$(hasText("Pruebas de sincronización"))).toBeDisplayed();
     },
   });
 
   step("metodologia", {
-    title: "Paso 6 · Metodología",
+    title: "Paso 5 · Metodología",
     caption:
-      "Indica cómo trabaja el equipo. Con «Ágil» eliges la duración del sprint (de 1 a 4 semanas) y las reuniones del equipo (diaria, revisión, retrospectiva, planificación), cada una con su frecuencia; con «Tradicional / V-model», las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 14) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
+      "Indica cómo trabaja el equipo. Con «Ágil» eliges la duración del sprint (de 1 a 4 semanas) y las reuniones del equipo (diaria, revisión, retrospectiva, planificación), cada una con su frecuencia; con «Tradicional / V-model», las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 12) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
     covers: ["wizard:methodology"],
     run: async () => {
       await next();
@@ -183,35 +198,25 @@ chapter("plan", () => {
     },
   });
 
-  step("niveles", {
-    title: "Paso 7 · Niveles de prueba",
-    caption:
-      "Los niveles indican en qué capas del producto se prueba: unitarias, integración, sistema y aceptación. Marca solo los que cubre este plan (en este ejemplo, integración, sistema y aceptación: las pruebas unitarias son cosa del equipo de desarrollo); lo que no marques queda, de forma explícita, fuera de este plan.",
-    covers: ["wizard:levels"],
-    run: async () => {
-      await next();
-      await pickPills(P.step.levels, [P.levelLabel.integration, P.levelLabel.system, P.levelLabel.acceptance]);
-    },
-  });
-
   step("entregables", {
-    title: "Paso 8 · Entregables",
+    title: "Paso 6 · Entregables",
     caption:
-      "Los entregables son los documentos y artefactos que el equipo de pruebas se compromete a producir. La lista sigue la documentación de ISO/IEC/IEEE 29119-3, agrupada en gestión de pruebas, especificación, datos y entorno, ejecución y resultados, y aceptación. Marca los que se acordaron con el proyecto y desmarca los que no se van a entregar: el plan deja constancia de ese acuerdo y sirve de referencia al cerrar el ciclo. Si se acordó algo que no está en la lista, escríbelo en «Otro entregable» y pulsa Intro o «Añadir» (en este ejemplo, «Informe de accesibilidad WCAG 2.2»): aparece en «Aceptación y otros» con la etiqueta «Propio» y su papelera para quitarlo.",
+      "Los entregables son los documentos y artefactos que el equipo de pruebas se compromete a producir. La lista sigue la documentación de ISO/IEC/IEEE 29119-3, en columnas: gestión de pruebas, especificación, datos y entorno, ejecución y resultados, y aceptación. Marca los que se acordaron con el proyecto y desmarca los que no se van a entregar: el plan deja constancia de ese acuerdo y sirve de referencia al cerrar el ciclo. Si se acordó algo que no está en la lista, escríbelo al pie de la sexta columna, «Propios», y pulsa Intro o «Añadir» (en este ejemplo, «Informe de accesibilidad WCAG 2.2»): queda en esa columna con su ✕ para quitarlo.",
     covers: ["wizard:deliverables"],
     focus: ".tpw-check--own",
     run: async () => {
       await next();
-      const checks = await atLeast(".tpw-check input[type=checkbox]", 4);
+      await expect($("h2.tpw__title")).toHaveText(P.step.deliverables);
+      const checks = await atLeast(".tpw-deliv .tpw-check input[type=checkbox]", 4);
       for (const c of checks.slice(0, 4)) await c.click();
       await (await field(P.deliverables.other)).setValue("Informe de accesibilidad WCAG 2.2");
       await browser.keys("Enter");
-      await expect($(hasText("Informe de accesibilidad WCAG 2.2"))).toBeDisplayed();
+      await expect(byTestId("plan-deliverables-own").$(hasText("Informe de accesibilidad WCAG 2.2"))).toBeDisplayed();
     },
   });
 
   step("entorno", {
-    title: "Paso 9 · Entorno de pruebas",
+    title: "Paso 7 · Entorno de pruebas",
     caption:
       "Describe dónde se va a probar: la configuración del entorno (en este ejemplo, la app de escritorio en Windows 11 y la versión web contra el servidor de staging) y el hardware y software que necesita. Sirve para preparar el entorno a tiempo y para saber, ante un fallo, en qué condiciones se encontró. Los dos campos tienen su botón ✨ de IA.",
     covers: ["wizard:environment"],
@@ -223,7 +228,7 @@ chapter("plan", () => {
   });
 
   step("herramientas", {
-    title: "Paso 10 · Herramientas y automatización",
+    title: "Paso 8 · Herramientas y automatización",
     caption:
       "Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con un buscador que no distingue acentos; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa Intro o «Añadir». Las elegidas quedan resaltadas y se cuentan («N seleccionadas»). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. El botón ✨ «Asistir con IA» propone un borrador; sin un motor de IA configurado (capítulo 15) aparece en gris, como en esta captura, y su aviso explica por qué.",
     covers: ["wizard:tools"],
@@ -237,9 +242,9 @@ chapter("plan", () => {
   });
 
   step("datos", {
-    title: "Pasos 11 y 12 · Datos y defectos",
+    title: "Pasos 9 y 10 · Datos y defectos",
     caption:
-      "Dos pasos de texto libre. En el 11, cómo se consiguen y se protegen los datos de prueba (en este ejemplo, cuentas y proyectos de prueba creados por script, sin datos reales). En el 12, el que muestra la captura, cómo se gestionan los defectos: dónde se registran, con qué severidad y prioridad y quién los revisa. Los dos tienen su botón ✨ de IA.",
+      "Dos pasos de texto libre. En el 9, cómo se consiguen y se protegen los datos de prueba (en este ejemplo, cuentas y proyectos de prueba creados por script, sin datos reales). En el 10, el que muestra la captura, cómo se gestionan los defectos: dónde se registran, con qué severidad y prioridad y quién los revisa. Los dos tienen su botón ✨ de IA.",
     covers: ["wizard:testData", "wizard:defects"],
     run: async () => {
       await next();
@@ -250,7 +255,7 @@ chapter("plan", () => {
   });
 
   step("roles", {
-    title: "Paso 13 · Roles y responsabilidades",
+    title: "Paso 11 · Roles y responsabilidades",
     caption:
       "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Responsable de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos; en Pharos, Liomar lleva los dos roles). «+ Añadir fila» crea otra y la papelera de cada una la quita. Con un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que escribiste y aún no la tienen; eliges cuáles usar, y lo ya escrito no cambia.",
     covers: ["wizard:roles"],
@@ -264,9 +269,9 @@ chapter("plan", () => {
   });
 
   step("cronograma", {
-    title: "Paso 14 · Cronograma: sprints",
+    title: "Paso 12 · Cronograma: sprints",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 6. La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro y se resalta su fila; con el ratón puedes arrastrar sus extremos. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 5 (Metodología). La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro y se resalta su fila; con el ratón puedes arrastrar sus extremos. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
     focus: ".tps-legend",
     run: async () => {
@@ -305,7 +310,7 @@ chapter("plan", () => {
   });
 
   step("riesgos", {
-    title: "Paso 15 · Riesgos y mitigación",
+    title: "Paso 13 · Riesgos y mitigación",
     caption:
       "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, lo que se hará para reducirlo (en este ejemplo, que una actualización de WebView2 rompa la automatización de escritorio se mitiga fijando la versión del controlador). Cada campo crece con su texto, para que se lea entero. Con un motor de IA, «Sugerir riesgos con IA» propone riesgos con su mitigación según el resto del plan, y eliges cuáles añadir (capítulo 17).",
     covers: ["wizard:risks"],
@@ -319,9 +324,9 @@ chapter("plan", () => {
   });
 
   step("comunicacion", {
-    title: "Pasos 16 a 18 · Comunicación, cierre y propósito",
+    title: "Pasos 14 a 16 · Comunicación, cierre y propósito",
     caption:
-      "Tres pasos de texto que completan el plan: el plan de comunicación (paso 16: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 17: cada criterio con su métrica objetivo; el plan trae tres por defecto, «% de casos ejecutados ≥ 95%», «Defectos críticos abiertos 0» y «Cobertura de requisitos ≥ 90%», y en este ejemplo se añade «Casos críticos ejecutados» al «100 %»; el Inicio los evalúa como criterios de salida, capítulo 3; con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan) y el propósito del documento (paso 18, el de la captura).",
+      "Tres pasos de texto que completan el plan: el plan de comunicación (paso 14: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 15: cada criterio con su métrica objetivo; el plan trae tres por defecto, «% de casos ejecutados ≥ 95%», «Defectos críticos abiertos 0» y «Cobertura de requisitos ≥ 90%», y en este ejemplo se añade «Casos críticos ejecutados» al «100 %»; el Inicio los evalúa como criterios de salida, capítulo 3; con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan) y el propósito del documento (paso 16, el de la captura).",
     covers: ["wizard:communication", "wizard:closure", "wizard:purpose"],
     run: async () => {
       await next();
@@ -334,9 +339,9 @@ chapter("plan", () => {
   });
 
   step("conclusion", {
-    title: "Paso 19 · Conclusión y «Antes de terminar»",
+    title: "Paso 17 · Conclusión y «Antes de terminar»",
     caption:
-      "El paso 19 recoge la conclusión del plan y, debajo, «Antes de terminar»: cuántos pasos están completos y la lista de los que no, cada uno con un enlace que lleva a él, junto con el estado actual del plan. Úsala como lista de comprobación; un plan con pasos pendientes se guarda igualmente. Solo el título es obligatorio.",
+      "El paso 17, el último, recoge la conclusión del plan y, debajo, «Antes de terminar»: cuántos pasos están completos y la lista de los que no, cada uno con un enlace que lleva a él, junto con el estado actual del plan. Úsala como lista de comprobación; un plan con pasos pendientes se guarda igualmente. Solo el título es obligatorio.",
     covers: ["wizard:conclusion"],
     focus: "section.tpw-finish",
     run: async () => {

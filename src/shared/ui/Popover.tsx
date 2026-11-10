@@ -39,6 +39,7 @@ export function Popover({
   onKeyDown,
   panelRef: externalRef,
   initialFocus,
+  matchAnchorWidth,
   children,
 }: {
   open: boolean;
@@ -54,6 +55,8 @@ export function Popover({
   /** Element to focus once the panel is placed. By default a `dialog`
    *  popover focuses itself, so its content is next in the reading order. */
   initialFocus?: () => HTMLElement | null | undefined;
+  /** At least as wide as the trigger (a `Select`'s list under its field). */
+  matchAnchorWidth?: boolean;
   children: ReactNode;
 }) {
   const ownRef = useRef<HTMLDivElement>(null);
@@ -155,6 +158,7 @@ export function Popover({
   }, [open, anchorRef, ref, place]);
 
   if (!open) return null;
+  const minWidth = matchAnchorWidth ? anchorRef.current?.offsetWidth : undefined;
   return createPortal(
     <div
       ref={ref}
@@ -167,9 +171,10 @@ export function Popover({
       tabIndex={role === "dialog" ? -1 : undefined}
       // Transparent for the first measurement so it never flashes in the wrong
       // place (not `visibility: hidden`, which would refuse the focus).
-      style={
-        position ? position.style : { opacity: 0, pointerEvents: "none", top: 0, left: 0 }
-      }
+      style={{
+        ...(position ? position.style : { opacity: 0, pointerEvents: "none", top: 0, left: 0 }),
+        ...(minWidth ? { minWidth } : {}),
+      }}
       onKeyDown={onKeyDown}
       onFocus={() => (focusInside.current = true)}
       onBlur={(e) => {
