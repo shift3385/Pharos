@@ -20,9 +20,12 @@ describe("new project", () => {
   it("a blank name is announced instead of a disabled Create", async () => {
     renderWithProviders(<ProjectsPage />);
     await userEvent.click(await screen.findByRole("button", { name: "New project" }));
-    const name = screen.getByRole("textbox", { name: "Project name" });
+    // UX-29: the wizard; «General data» is its last step.
+    await expectNoAxeViolations();
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+    const name = screen.getByRole("textbox", { name: /Project name/ });
     expect(name).toHaveFocus();
-    const create = screen.getByRole("button", { name: "Create" });
+    const create = screen.getByRole("button", { name: "Create project" });
     expect(create).toBeEnabled();
     await userEvent.click(create);
     expect(screen.getByRole("alert")).toHaveTextContent("This field is required.");

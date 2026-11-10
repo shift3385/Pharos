@@ -752,12 +752,10 @@
   },
   "projects": {
     "loadFailed": "No se pudo cargar el proyecto.",
-    "createFailed": "No se pudo crear el proyecto.",
     "exportFailed": "No se pudo exportar «{{name}}».",
     "title": "Proyectos",
     "subtitle": "Cada proyecto es una carpeta con su plan de pruebas y sus casos.",
     "new": "Nuevo proyecto",
-    "create": "Crear",
     "exportAll": "Exportar todo",
     "exporting": "Exportando…",
     "exportProject": "Exportar proyecto (ZIP)",
@@ -768,7 +766,6 @@
     "exportZipping": "Comprimiendo el ZIP…",
     "exportFinishing": "Finalizando…",
     "empty": "Aún no hay proyectos. Crea el primero.",
-    "namePlaceholder": "Nombre del proyecto",
     "name": "Nombre del proyecto",
     "caseIdPrefix": "Prefijo de ID de caso",
     "caseIdDigits": "Dígitos del número",
@@ -883,20 +880,10 @@
       "required": "Escribe un prefijo, por ejemplo «PHA-».",
       "overlap": "Se solapa con «{{prefix}}» de {{name}}: dos prefijos no pueden ser iguales ni empezar uno por el otro.",
       "placeholder": "Prefijo",
-      "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto."
+      "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto.",
+      "free": "Libre"
     },
     "copySettings": {
-      "label": "Copiar ajustes de:",
-      "none": "(ninguno)",
-      "partsLegend": "Ajustes que se copian de «{{name}}»",
-      "part": {
-        "fields": "Campos personalizados (casos, requisitos, defectos, ejecuciones y ciclos)",
-        "digits": "Dígitos de las claves ({{digits}})",
-        "planHistory": "Historial en el plan exportado: {{mode}}",
-        "retention": "Retención de evidencias"
-      },
-      "note": "Se copian una vez, al crear: el nombre, el prefijo y los datos (plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero) nunca se copian, y los dos proyectos quedan independientes.",
-      "webNoRetention": "La retención de evidencias es un ajuste de la app de escritorio: en la web no se copia.",
       "copiedToast": "Ajustes copiados de «{{name}}».",
       "failedToast": "El proyecto se creó, pero no se copió: {{parts}}. Puedes ajustarlo en Ajustes del proyecto o en Administración › Evidencias.",
       "failedFields": "campos personalizados de {{entities}}",
@@ -907,6 +894,66 @@
         "defect": "defectos",
         "run": "ejecuciones",
         "test_cycle": "ciclos"
+      }
+    },
+    "wizard": {
+      "title": "Nuevo proyecto",
+      "stepsLabel": "Pasos",
+      "stepOf": "Paso {{n}} de {{total}}",
+      "step": {
+        "start": "Cómo empezar",
+        "copy": "Qué copiar",
+        "general": "Datos generales"
+      },
+      "blank": {
+        "title": "Proyecto en blanco",
+        "desc": "Empieza desde cero con los ajustes por defecto"
+      },
+      "existing": {
+        "title": "A partir de uno existente",
+        "desc": "Reutiliza ajustes de otro de tus proyectos",
+        "none": "Aún no tienes proyectos"
+      },
+      "source": "Proyecto de origen",
+      "cases_one": "{{count}} caso",
+      "cases_other": "{{count}} casos",
+      "take": "Qué quieres llevarte",
+      "settingsTag": "Ajustes",
+      "part": {
+        "fields": "Campos personalizados",
+        "digits": "Dígitos del número de caso",
+        "planHistory": "Historial en el plan exportado",
+        "retention": "Retención de evidencias"
+      },
+      "value": {
+        "loading": "Leyendo…",
+        "unread": "No se pudo leer; se copia igualmente",
+        "fieldsNone": "Ninguno todavía",
+        "fieldsOf": "{{count}} de {{entity}}",
+        "retentionDefault": "Los valores por defecto",
+        "retentionKind": "{{kind}}: {{days}}",
+        "desktopOnly": "Solo en la app de escritorio: en la web no hay retención de evidencias"
+      },
+      "never": "Nunca se copian el nombre, el prefijo ni los datos (plan, casos, requisitos, ejecuciones).",
+      "copiedFrom": "copiado de {{name}}",
+      "summary": "Se copiarán de «{{name}}»: {{parts}}.",
+      "summaryNothing": "No se copiará nada de «{{name}}»: el proyecto empieza con los ajustes por defecto.",
+      "summaryPart": {
+        "fields": "los campos personalizados",
+        "digits": "los dígitos del número ({{digits}})",
+        "planHistory": "el historial en el plan exportado ({{mode}})",
+        "retention": "la retención de evidencias"
+      },
+      "next": "Siguiente",
+      "back": "Atrás",
+      "create": "Crear proyecto",
+      "creating": "Creando…",
+      "createFailed": "No se pudo crear el proyecto. Inténtalo de nuevo.",
+      "discard": {
+        "title": "¿Descartar el proyecto nuevo?",
+        "message": "Lo que has escrito o elegido se pierde y no se crea ningún proyecto.",
+        "confirm": "Descartar",
+        "keep": "Seguir creando"
       }
     }
   },

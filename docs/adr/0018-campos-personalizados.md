@@ -294,3 +294,20 @@ entre los equipos del usuario, así que basta con copiar al crear.
 - **Si falla la copia,** el proyecto se crea igual (la copia va después del
   create y nunca lo deshace) y un aviso dice qué no se copió (las entidades de
   campos y/o la retención).
+
+### Nota (UX-29, 2026-11-10): la copia pasa a un asistente
+
+El usuario aprobó sustituir la fila de creación en línea y su select «Copiar
+ajustes de:» por el asistente «Nuevo proyecto» (`NewProjectWizard`). Las
+reglas de esta enmienda no cambian: qué se copia, qué nunca, la copia única,
+`custom_field_copy` por entidad, `evidence_retention_copy` y el aviso de lo que
+no se copió. Cambia solo dónde se decide y un detalle:
+
+- **«Qué copiar»** muestra el valor real del origen en cada casilla (campos no
+  archivados por entidad, leídos con `custom_field_list`; la retención con
+  `evidence_retention_get`, solo en el escritorio). En la web la retención se
+  ve desactivada con su motivo en lugar de no aparecer.
+- **Los dígitos** dejan de ser una casilla que viaja sola en el create: son el
+  campo «Dígitos del número» de «Datos generales», puesto con el valor del
+  origen y marcado «copiado de …». Si el usuario lo cambia, se crea con el que
+  escribió. El historial del plan exportado sigue viajando en el create.
