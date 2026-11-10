@@ -1645,6 +1645,8 @@
       "rateError": "No disponible",
       "unlinked_one": "Además, {{count}} test sin vincular",
       "unlinked_other": "Además, {{count}} tests sin vincular",
+      "unlinkedShort_one": "+{{count}} sin vincular",
+      "unlinkedShort_other": "+{{count}} sin vincular",
       "unlinkedTitle": "Tests importados sin un caso en el periodo: no cuentan en la tasa. Vincúlalos en Ejecuciones"
     },
     "period": {
@@ -1800,6 +1802,32 @@
       "retry": "Reintentar",
       "refreshing": "Actualizando…",
       "staleAt": "Datos de las {{time}}: no se pudieron actualizar"
+    },
+    "board": {
+      "customize": "Personalizar Inicio",
+      "editingHint": "Arrastra para mover, tira de la esquina para cambiar el tamaño",
+      "reset": "Restablecer",
+      "done": "Listo",
+      "hiddenMenu": "Gadgets ocultos",
+      "hiddenCount": "Gadgets ocultos ({{count}})",
+      "hiddenNone": "No hay gadgets ocultos",
+      "show": "Mostrar «{{name}}»",
+      "hide": "Ocultar «{{name}}»",
+      "gadget": "gadget",
+      "dragTitle": "Arrastra para mover «{{name}}»",
+      "size": "{{w}}×{{h}} · mín {{minW}}×{{minH}}",
+      "place": "{{name}}: columna {{col}}, fila {{row}}, {{w}}×{{h}}",
+      "help": "Flechas: mover. Mayús + flechas: cambiar el tamaño. Esc: salir sin guardar.",
+      "refused": "{{name}}: no se puede mover ni cambiar de tamaño hacia ahí",
+      "hidden": "{{name}}: oculto",
+      "noRoom": "No hay hueco para «{{name}}»",
+      "resetTitle": "¿Restablecer Inicio?",
+      "resetMessage": "Los gadgets vuelven a la distribución por defecto y se muestran todos. Se guarda al pulsar «Listo».",
+      "resetDone": "Distribución por defecto restablecida",
+      "saved": "Distribución de Inicio guardada",
+      "discarded": "Cambios de Inicio descartados",
+      "overflow": "Pasa de 24 filas: Inicio tendrá scroll.",
+      "regionLabel": "Gadgets de Inicio"
     }
   },
   "section": {
