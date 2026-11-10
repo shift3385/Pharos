@@ -1,8 +1,10 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { RefreshCw } from "lucide-react";
 import { SYNC_SETTINGS_EVENT, loadSettings } from "@modules/admin";
 import { useAuth } from "@modules/auth";
 import { useToast } from "@shared/ui/Toast";
+import { useReducedMotion } from "@shared/ui/useReducedMotion";
 import {
   syncAny,
   syncLocalState,
@@ -244,35 +246,57 @@ export function SyncStatusProvider({ children }: { children: ReactNode }) {
  * Sync status (spec §9), read from `SyncStatusProvider`.
  * - `full` (sidebar foot, mobile user sheet): dot, label, «Revisar
  *   conflictos» when there are any, and «Sincronizar ahora».
- * - `compact` (84 px icon strip): only the dot, as a button that syncs now;
- *   its name and tooltip carry the status. With conflicts, it opens the panel.
+ * - `compact` (84 px icon strip): a sync icon with the status dot on it, as
+ *   a button that syncs now; its name and tooltip carry the status. With
+ *   conflicts, it opens the panel.
+ *
+ * While a sync runs, manual or automatic (sign-in, reconnect, NC-025), the
+ * arrows turn (`sync__spin`); with reduced motion they stay still and the
+ * dot changes instead (`sync--busy`), UX-26.
  */
 export function SyncIndicator({ variant = "full" }: { variant?: "full" | "compact" }) {
   const { t } = useTranslation();
+  const reducedMotion = useReducedMotion();
   const sync = useContext(SyncStatusContext);
   if (!sync) return null;
   const { status, label, title, conflicts, syncing } = sync;
+  const busy = syncing ? " sync--busy" : "";
+  const icon = (size: number) => (
+    <RefreshCw
+      className={`sync__icon${syncing && !reducedMotion ? " sync__spin" : ""}`}
+      size={size}
+      aria-hidden="true"
+      data-testid="sync-icon"
+    />
+  );
+  const dot = <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />;
 
   if (variant === "compact") {
     const action = conflicts > 0 ? t("sync.conflict.review") : t("sync.now");
+    // Still a button while it syncs or offline (`aria-disabled`), so its
+    // tooltip keeps saying why it does nothing.
+    const idle = (syncing || status === "offline") && conflicts === 0;
+    const name = syncing ? t("sync.syncing") : `${label}. ${action}`;
     return (
       <button
         type="button"
-        className="sync sync--compact"
-        title={`${title} · ${action}`}
-        aria-label={`${label}. ${action}`}
+        className={`sync sync--compact${busy}`}
+        title={syncing ? t("sync.syncing") : `${title} · ${action}`}
+        aria-label={name}
+        aria-disabled={idle || undefined}
+        aria-busy={syncing || undefined}
         data-testid="sync-compact"
-        disabled={(syncing || status === "offline") && conflicts === 0}
-        onClick={conflicts > 0 ? sync.openConflicts : sync.runSync}
+        onClick={idle ? undefined : conflicts > 0 ? sync.openConflicts : sync.runSync}
       >
-        <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
+        {icon(18)}
+        {dot}
       </button>
     );
   }
 
   return (
-    <div className="sync" title={title}>
-      <span className={`sync__dot sync__dot--${status}`} aria-hidden="true" />
+    <div className={`sync${busy}`} title={title} aria-busy={syncing || undefined}>
+      {dot}
       <span className="sync__label">{label}</span>
       {conflicts > 0 && (
         <button type="button" className="sync__btn" onClick={sync.openConflicts}>
@@ -286,6 +310,7 @@ export function SyncIndicator({ variant = "full" }: { variant?: "full" | "compac
           onClick={sync.runSync}
           disabled={syncing}
         >
+          {icon(13)}
           {syncing ? t("sync.syncing") : t("sync.now")}
         </button>
       )}

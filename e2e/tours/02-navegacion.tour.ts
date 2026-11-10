@@ -1,8 +1,8 @@
 // Chapter 2 — La aplicación de un vistazo (manual v2, MAN-03): the shell every
 // screen shares. The side menu and the project menu in test-process order
 // (UX-21), the project switcher, the breadcrumbs, search (Ctrl+K),
-// notifications, the theme, the sync indicator, collapsing the menu and the
-// icon strip of medium screens. It runs after chapter 4, which makes the two
+// notifications, the theme, «Acerca de Pharos», the sync indicator,
+// collapsing the menu with its edge tab and the icon strip of medium screens. It runs after chapter 4, which makes the two
 // projects (Pharos and API de sincronización).
 import { $, browser, expect } from "@wdio/globals";
 import { DESKTOP, TABLET, chapter, setViewport, step } from "./tour";
@@ -14,12 +14,28 @@ chapter("navegacion", () => {
   step("estructura", {
     title: "La pantalla de Pharos",
     caption:
-      "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización, la versión instalada y tu menú de usuario. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
+      "Todas las pantallas comparten la misma estructura. A la izquierda, el menú lateral: «Inicio» y «Proyectos» arriba; dentro de un proyecto, el bloque «Proyecto activo» con sus secciones; «Administración» en «Configuración» y, al pie, la sincronización y tu menú de usuario. Arriba del todo, el logotipo y el nombre «Pharos», que abren «Acerca de Pharos»; en el borde derecho del menú, a media altura, la pestaña que lo contrae. Arriba, la barra con la ruta (migas de pan), el buscador, las notificaciones y el cambio de tema. El resto es el contenido de la sección abierta: en este ejemplo, el «Tablero» del proyecto «Pharos».",
     covers: ["screen:shell"],
     run: async () => {
       await openProject(PROJECT_A.name);
       await expect($(PROJECT_GROUP)).toBeDisplayed();
       await expect($("nav.crumbs")).toBeDisplayed();
+    },
+  });
+
+  step("acerca-de", {
+    title: "Acerca de Pharos",
+    caption:
+      "Un clic en el logotipo o en el nombre «Pharos», arriba del menú lateral, abre «Acerca de Pharos»: la versión instalada y su compilación, la plataforma (escritorio o web), las tecnologías con que está hecha, la licencia, el responsable del proyecto y el asistente de IA que ayuda en su desarrollo. Con el teclado, llega a él con Tab y pulsa Intro o Espacio. Si informas de un fallo, di siempre la versión y la compilación. «Cerrar» o Esc lo cierran. En la tira de iconos también se abre desde el logotipo.",
+    covers: ["dialogs:src/app/layout/AboutDialog.tsx"],
+    focus: '[role="dialog"]',
+    run: async () => {
+      await byTestId("about-open").click();
+      await expect($('[role="dialog"] [data-testid="app-version"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await browser.keys("Escape");
+      await expect($('[role="dialog"]')).not.toBeExisting();
     },
   });
 
@@ -110,7 +126,7 @@ chapter("navegacion", () => {
   step("sincronizar", {
     title: "La sincronización, al pie del menú",
     caption:
-      "Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Con conflictos aparece «Revisar conflictos» (capítulo 15).",
+      "Al pie del menú lateral, un punto de color y una palabra dicen cómo está la sincronización con el servidor: «Sincronizado», «Cambios pendientes (N)», «Sin conexión» o «Conflictos (N)». Pharos sincroniza solo al entrar y cuando vuelve la conexión (y, si activas «Sincronización automática» en Administración › Sincronización, capítulo 15, cada pocos minutos); «Sincronizar ahora» lo hace al momento y avisa de cuántos cambios envió (↑) y recibió (↓). Mientras sincroniza, también cuando lo hace solo, las flechas del botón giran y el punto se vuelve un anillo; si tu sistema pide reducir el movimiento, las flechas no giran y basta el anillo. Con conflictos aparece «Revisar conflictos» (capítulo 15).",
     covers: ["action:sync-indicator"],
     toast: true,
     focus: ".sidebar .sync",
@@ -123,11 +139,13 @@ chapter("navegacion", () => {
   step("menu-contraido", {
     title: "Contraer el menú lateral",
     caption:
-      "El botón junto al logotipo contrae el menú lateral a una tira de iconos con su nombre corto, para dar más espacio a tablas y editores; al pasar el ratón, cada icono dice su nombre completo. Vuelve a pulsarlo para expandirlo. Pharos recuerda tu elección en este equipo. En la tira, la sincronización es solo el punto: púlsalo para sincronizar.",
+      "La pestaña con la flecha ‹, en el borde derecho del menú lateral y a media altura, lo contrae a una tira de iconos con su nombre corto, para dar más espacio a tablas y editores; al pasar el ratón, cada icono dice su nombre completo. En la tira la flecha es ›: púlsala para expandirlo. Pharos recuerda tu elección en este equipo. Al pie de la tira, el icono de las flechas con el punto de estado sincroniza al pulsarlo; al pasar el ratón dice cómo está la sincronización, y sus flechas giran mientras sincroniza.",
     covers: ["action:sidebar-collapse"],
-    focus: "aside.sidebar",
+    focus: ".sidebar-frame",
     run: async () => {
+      await expect(byTestId("sidebar-collapse")).toHaveAttribute("aria-expanded", "true");
       await byTestId("sidebar-collapse").click();
+      await expect(byTestId("sidebar-collapse")).toHaveAttribute("aria-expanded", "false");
       await expect($('aside.sidebar[data-mode="rail"], aside.sidebar[data-mode="collapsed"]')).toBeExisting();
       await expect(byTestId("sync-compact")).toBeDisplayed();
     },

@@ -3,6 +3,25 @@
     "name": "Pharos",
     "version": "Versión {{version}}"
   },
+  "about": {
+    "open": "Acerca de Pharos",
+    "title": "Acerca de Pharos",
+    "tagline": "Gestión de pruebas de software, en el escritorio y en la web.",
+    "version": "Versión",
+    "build": "Compilación",
+    "platform": "Plataforma",
+    "platformDesktop": "Escritorio (Tauri)",
+    "platformWeb": "Web (navegador)",
+    "stack": "Tecnologías",
+    "sqliteEncrypted": "SQLite cifrado (AES-256-GCM)",
+    "license": "Licencia",
+    "licenseValue": "Privativa: todos los derechos reservados",
+    "owner": "Responsable del proyecto",
+    "ownerValue": "Liomar Rodríguez, CEO y líder del producto",
+    "assistant": "Asistente de desarrollo",
+    "assistantValue": "Claude (Anthropic), ayudante de IA en el desarrollo",
+    "close": "Cerrar"
+  },
   "dbError": {
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",

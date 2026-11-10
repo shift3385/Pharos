@@ -72,7 +72,7 @@ chapter("movil", () => {
     run: async () => {
       await $(".bs__close").click();
       await setViewport(DESKTOP);
-      await expect(byTestId("app-version")).toBeExisting();
+      await expect($('aside.sidebar[data-mode="full"]')).toBeExisting();
     },
   });
 });

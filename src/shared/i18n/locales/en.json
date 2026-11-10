@@ -3,6 +3,25 @@
     "name": "Pharos",
     "version": "Version {{version}}"
   },
+  "about": {
+    "open": "About Pharos",
+    "title": "About Pharos",
+    "tagline": "Software test management, on the desktop and on the web.",
+    "version": "Version",
+    "build": "Build",
+    "platform": "Platform",
+    "platformDesktop": "Desktop (Tauri)",
+    "platformWeb": "Web (browser)",
+    "stack": "Technologies",
+    "sqliteEncrypted": "Encrypted SQLite (AES-256-GCM)",
+    "license": "License",
+    "licenseValue": "Proprietary: all rights reserved",
+    "owner": "Project owner",
+    "ownerValue": "Liomar Rodríguez, CEO and product lead",
+    "assistant": "Development assistant",
+    "assistantValue": "Claude (Anthropic), AI assistant in development",
+    "close": "Close"
+  },
   "dbError": {
     "title": "The local database could not be opened",
     "body": "Pharos has not modified any file. Close the app and try again; if it keeps happening, share this detail with support.",

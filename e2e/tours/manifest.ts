@@ -187,7 +187,8 @@ export const INVENTORY: Item[] = [
   I("navegacion", "keyboard", "keyboard:ctrl-k", "Ctrl+K abre la búsqueda"),
   I("navegacion", "action", "action:theme-toggle", "Cambio rápido de tema claro u oscuro"),
   I("navegacion", "action", "action:sync-indicator", "Indicador de sincronización y «Sincronizar ahora»"),
-  I("navegacion", "action", "action:sidebar-collapse", "Contraer y expandir el menú lateral"),
+  I("navegacion", "action", "action:sidebar-collapse", "Contraer y expandir el menú lateral con la pestaña del borde (UX-26)"),
+  I("navegacion", "dialog", "dialogs:src/app/layout/AboutDialog.tsx", "«Acerca de Pharos»: versión, compilación, plataforma, tecnologías y responsables (UX-26)"),
   I("navegacion", "platform", "platform:tablet-icon-strip", "Menú de iconos en pantallas medianas"),
 
   I("inicio", "screen", "screen:home-exec", "Inicio: ejecución por proyecto"),

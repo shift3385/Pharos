@@ -51,7 +51,8 @@ Liomar y simula un fallo de una vista; después todo vuelve a la normalidad.
 
 - En «Algo salió mal», prueba primero «Reintentar»; si se repite, exporta el
   diagnóstico y adjúntalo al informe del fallo, con la versión que aparece en
-  la pantalla de entrada o al pie del menú lateral.
+  la pantalla de entrada o en «Acerca de Pharos» (un clic en el logotipo del
+  menú lateral).
 - Guarda la clave de recuperación el primer día (capítulo 15) y haz copias de
   `pharos.db.enc` y de su carpeta `evidence`: son lo único que devuelve tus
   datos en otro equipo.
