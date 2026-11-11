@@ -45,7 +45,7 @@ A plan stores catalog **keys** plus the team's own entries as typed
   `exploratory`, `uat`), non-functional (`performance`, `load`, `stress`,
   `security`, `usability`, `compatibility`, `accessibility`) and
   «Confirmación y regresión» (`changeRelated`, ISTQB CTFL v4 §2.2.3):
-  `retest` («Confirmación (re-test)», added in UX-31), `regression`, `smoke`,
+  `retest` («Confirmación», added in UX-31; «Confirmación (re-test)» until UX-34), `regression`, `smoke`,
   `sanity`. `TEST_TYPES` is the flat list in group order.
 - Deliverables by ISO 29119-3 group (`DELIVERABLE_GROUPS`) and the tool catalog
   (`TOOL_NAMES`, `TOP_TOOLS`, `MORE_TOOL_GROUPS`).

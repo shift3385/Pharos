@@ -50,17 +50,17 @@ describe("status report model (EJE-03)", () => {
     expect(r.identification).toContainEqual(["Ejecuciones incluidas", "RUN-002, RUN-001"]);
     expect(r.progress).toContainEqual(["% ejecutado", "75.0 %"]);
     expect(r.progress).toContainEqual(["Tasa de éxito", "33.3 %"]);
-    expect(r.results.rows).toContainEqual(["Re-test", "1"]);
+    expect(r.results.rows).toContainEqual(["Por confirmar", "1"]);
     expect(r.defects.rows[0]).toEqual(["Crítica", "1", "1"]);
     expect(r.defectsNote).toBe("a fecha de hoy");
     expect(r.coverageLine).toBe("Cobertura de requisitos: 2 de 2 (100.0 %).");
     expect(r.risky.rows).toEqual([["REQ-002", "Payment", "20", "Falla"]]);
     expect(r.exit.rows.map((x) => x[3])).toEqual(["No cumple", "No cumple", "Cumple"]);
     expect(r.exitStates).toEqual(["notMet", "notMet", "met"]);
-    // Blocked, waiting for a re-test, flaky and outdated, case by case.
+    // Blocked, waiting to be confirmed, flaky and outdated, case by case.
     expect(r.issues.rows.map((x) => [x[0], x[2]])).toEqual([
       ["TC-001", "Flaky"],
-      ["TC-002", "Pendiente de re-test, Revisión anterior"],
+      ["TC-002", "Por confirmar, Revisión anterior"],
       ["TC-003", "Bloqueado"],
     ]);
     expect(r.summary).toBe(ctx.summary);
