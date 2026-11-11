@@ -3,6 +3,25 @@
     "name": "Pharos",
     "version": "Versión {{version}}"
   },
+  "about": {
+    "open": "Acerca de Pharos",
+    "title": "Acerca de Pharos",
+    "tagline": "Gestión de pruebas de software, en el escritorio y en la web.",
+    "version": "Versión",
+    "build": "Compilación",
+    "platform": "Plataforma",
+    "platformDesktop": "Escritorio (Tauri)",
+    "platformWeb": "Web (navegador)",
+    "stack": "Tecnologías",
+    "sqliteEncrypted": "SQLite cifrado (AES-256-GCM)",
+    "license": "Licencia",
+    "licenseValue": "Privativa: todos los derechos reservados",
+    "owner": "Responsable del proyecto",
+    "ownerValue": "Liomar Rodríguez, CEO y líder del producto",
+    "assistant": "Asistente de desarrollo",
+    "assistantValue": "Claude (Anthropic), ayudante de IA en el desarrollo",
+    "close": "Cerrar"
+  },
   "dbError": {
     "title": "No se pudo abrir la base de datos local",
     "body": "Pharos no ha modificado ningún archivo. Cierra la app y vuelve a intentarlo; si el problema sigue, comparte este detalle con soporte.",
@@ -865,6 +884,30 @@
       "overlap": "Se solapa con «{{prefix}}» de {{name}}: dos prefijos no pueden ser iguales ni empezar uno por el otro.",
       "placeholder": "Prefijo",
       "suggestedHint": "Prefijo de las claves de los casos (PHA-001…), sugerido a partir del nombre y libre en tus proyectos. Puedes cambiarlo ahora o en Ajustes del proyecto."
+    },
+    "copySettings": {
+      "label": "Copiar ajustes de:",
+      "none": "(ninguno)",
+      "partsLegend": "Ajustes que se copian de «{{name}}»",
+      "part": {
+        "fields": "Campos personalizados (casos, requisitos, defectos, ejecuciones y ciclos)",
+        "digits": "Dígitos de las claves ({{digits}})",
+        "planHistory": "Historial en el plan exportado: {{mode}}",
+        "retention": "Retención de evidencias"
+      },
+      "note": "Se copian una vez, al crear: el nombre, el prefijo y los datos (plan, casos, requisitos, ciclos, ejecuciones, defectos y tablero) nunca se copian, y los dos proyectos quedan independientes.",
+      "webNoRetention": "La retención de evidencias es un ajuste de la app de escritorio: en la web no se copia.",
+      "copiedToast": "Ajustes copiados de «{{name}}».",
+      "failedToast": "El proyecto se creó, pero no se copió: {{parts}}. Puedes ajustarlo en Ajustes del proyecto o en Administración › Evidencias.",
+      "failedFields": "campos personalizados de {{entities}}",
+      "failedRetention": "la retención de evidencias",
+      "entity": {
+        "test_case": "casos",
+        "requirement": "requisitos",
+        "defect": "defectos",
+        "run": "ejecuciones",
+        "test_cycle": "ciclos"
+      }
     }
   },
   "profile": {
@@ -1621,6 +1664,8 @@
       "rateError": "No disponible",
       "unlinked_one": "Además, {{count}} test sin vincular",
       "unlinked_other": "Además, {{count}} tests sin vincular",
+      "unlinkedShort_one": "+{{count}} sin vincular",
+      "unlinkedShort_other": "+{{count}} sin vincular",
       "unlinkedTitle": "Tests importados sin un caso en el periodo: no cuentan en la tasa. Vincúlalos en Ejecuciones"
     },
     "period": {
@@ -1659,7 +1704,8 @@
       "noCases": "Sin casos todavía",
       "empty": "Sin proyectos abiertos.",
       "other": "Otro",
-      "rowUnknown": "{{name}}: ejecución sin datos todavía"
+      "rowUnknown": "{{name}}: ejecución sin datos todavía",
+      "viewAll": "Ver todos los proyectos"
     },
     "exit": {
       "title": "Criterios de salida",
@@ -1776,7 +1822,34 @@
       "retry": "Reintentar",
       "refreshing": "Actualizando…",
       "staleAt": "Datos de las {{time}}: no se pudieron actualizar"
-    }
+    },
+    "board": {
+      "customize": "Personalizar Inicio",
+      "editingHint": "Arrastra para mover, tira de la esquina para cambiar el tamaño",
+      "reset": "Restablecer",
+      "done": "Listo",
+      "hiddenMenu": "Gadgets ocultos",
+      "hiddenCount": "Gadgets ocultos ({{count}})",
+      "hiddenNone": "No hay gadgets ocultos",
+      "show": "Mostrar «{{name}}»",
+      "hide": "Ocultar «{{name}}»",
+      "gadget": "gadget",
+      "dragTitle": "Arrastra para mover «{{name}}»",
+      "size": "{{w}}×{{h}} · mín {{minW}}×{{minH}}",
+      "place": "{{name}}: columna {{col}}, fila {{row}}, {{w}}×{{h}}",
+      "help": "Flechas: mover. Mayús + flechas: cambiar el tamaño. Esc: salir sin guardar.",
+      "refused": "{{name}}: no se puede mover ni cambiar de tamaño hacia ahí",
+      "hidden": "{{name}}: oculto",
+      "noRoom": "No hay hueco para «{{name}}»",
+      "resetTitle": "¿Restablecer Inicio?",
+      "resetMessage": "Los gadgets vuelven a la distribución por defecto y se muestran todos. Se guarda al pulsar «Listo».",
+      "resetDone": "Distribución por defecto restablecida",
+      "saved": "Distribución de Inicio guardada",
+      "discarded": "Cambios de Inicio descartados",
+      "overflow": "Pasa de 24 filas: Inicio tendrá scroll.",
+      "regionLabel": "Gadgets de Inicio"
+    },
+    "more": "+{{count}} más · {{action}}"
   },
   "section": {
     "comingInPhase": "Se implementará en la Fase {{phase}}",

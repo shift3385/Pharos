@@ -13,8 +13,8 @@ import {
   pkg,
   projectRow,
   signIn,
+  readAppVersion,
   userMenuTrigger,
-  versionBadge,
 } from "../support";
 
 const projectName = `${TEST_PROJECT_PREFIX}smoke ${process.env.PHAROS_E2E_PROFILE}`;
@@ -30,8 +30,8 @@ describe("Pharos desktop smoke (BASE-14)", () => {
 
   it("signs in with the seeded test account", async () => {
     await signIn();
-    // In the DOM in every layout, visible only in the full sidebar.
-    expect(await versionBadge().getProperty("textContent")).toBe(`v${pkg.version}`);
+    // The version lives in «Acerca de Pharos» (UX-26).
+    expect(await readAppVersion()).toBe(pkg.version);
   });
 
   it("creates a project", async () => {

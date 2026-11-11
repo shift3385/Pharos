@@ -31,9 +31,15 @@ export const AUTOMATION_STATUSES = [
 ] as const;
 export type AutomationStatus = (typeof AUTOMATION_STATUSES)[number];
 
-/** Entities a definition can belong to; 0.2.0 has UI for test cases only. */
-export type FieldEntity =
-  "test_case" | "requirement" | "defect" | "run" | "test_cycle";
+/** Entities a definition can belong to (FLD-03). */
+export const FIELD_ENTITIES = [
+  "test_case",
+  "requirement",
+  "defect",
+  "run",
+  "test_cycle",
+] as const;
+export type FieldEntity = (typeof FIELD_ENTITIES)[number];
 
 export interface FieldOption {
   /** 8 Crockford base32 characters; empty for a new one (Rust fills it). */

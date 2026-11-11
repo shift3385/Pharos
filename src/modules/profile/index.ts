@@ -2,3 +2,10 @@
 export { ProfilePage } from "./ui/ProfilePage";
 export { RecoveryKeySection } from "./ui/RecoveryKeySection";
 export type { Profile } from "./model/types";
+export {
+  pullPreference,
+  readLocalPreference,
+  savePreference,
+  type PreferenceKey,
+  type StoredPreference,
+} from "./api/accountPreferences";

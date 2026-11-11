@@ -2,7 +2,12 @@
 // project, value checks and formatting, the case type and automation status.
 // It depends on no other domain module; test-cases and projects use it.
 export { customFieldApi } from "./api/customFieldApi";
-export { AUTOMATION_STATUSES, CASE_TYPES, FIELD_TYPES } from "./model/types";
+export {
+  AUTOMATION_STATUSES,
+  CASE_TYPES,
+  FIELD_ENTITIES,
+  FIELD_TYPES,
+} from "./model/types";
 export type {
   AutomationStatus,
   CaseType,

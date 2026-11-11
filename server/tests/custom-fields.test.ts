@@ -340,6 +340,64 @@ describe("custom fields through the web's domain API", () => {
     expect(await keys(other, "test_case")).toEqual([]);
   });
 
+  // UX-25: «Copiar ajustes de…» on the web is a create with the source's
+  // digits and plan history, then one copy per entity; never the prefix.
+  it("a new project copies another's settings: digits, plan history and the fields of every entity", async () => {
+    const call = api(await tokenFor());
+    const source = (
+      await call("POST", "/api/projects", {
+        name: "Checkout",
+        caseIdPrefix: "CHK-",
+        caseIdDigits: 6,
+        planExportHistory: "revisions",
+      })
+    ).body;
+    const entities = ["test_case", "requirement", "defect", "run", "test_cycle"];
+    for (const entity of entities) {
+      const res = await call("POST", "/api/custom-fields", {
+        projectId: source.id,
+        entity,
+        fieldKey: `${entity}_note`,
+        label: "Note",
+        fieldType: "text",
+      });
+      expect(res.status, entity).toBe(200);
+    }
+
+    const created = (
+      await call("POST", "/api/projects", {
+        name: "Checkout v2",
+        caseIdPrefix: "CK2-",
+        caseIdDigits: source.caseIdDigits,
+        planExportHistory: source.planExportHistory,
+      })
+    ).body;
+    expect(created).toMatchObject({ caseIdPrefix: "CK2-", caseIdDigits: 6, planExportHistory: "revisions" });
+    for (const entity of entities) {
+      const copy = await call("POST", "/api/custom-fields/copy", {
+        fromProjectId: source.id,
+        toProjectId: created.id,
+        entity,
+      });
+      expect(copy.body, entity).toEqual({ copied: 1, skipped: [] });
+      const keys = (await call("GET", `/api/custom-fields?projectId=${created.id}&entity=${entity}`)).body.map(
+        (f: { fieldKey: string }) => f.fieldKey,
+      );
+      expect(keys).toEqual([`${entity}_note`]);
+    }
+    // Copied once: a field added to the source later stays there.
+    await call("POST", "/api/custom-fields", {
+      projectId: source.id,
+      fieldKey: "later",
+      label: "Later",
+      fieldType: "text",
+    });
+    const caseKeys = (await call("GET", `/api/custom-fields?projectId=${created.id}&entity=test_case`)).body.map(
+      (f: { fieldKey: string }) => f.fieldKey,
+    );
+    expect(caseKeys).toEqual(["test_case_note"]);
+  });
+
   it("a defect field takes no case type, on create or edit", async () => {
     const call = api(await tokenFor());
     const projectId = (await call("POST", "/api/projects", { name: "Checkout" })).body.id;

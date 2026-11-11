@@ -260,6 +260,7 @@ pub fn run() {
             evidence::retention::evidence_retention_get,
             evidence::retention::evidence_retention_set,
             evidence::retention::evidence_retention_preview,
+            evidence::retention::evidence_retention_copy,
             planner::planner_attachment_add,
             planner::planner_attachment_list,
             planner::planner_attachment_save,

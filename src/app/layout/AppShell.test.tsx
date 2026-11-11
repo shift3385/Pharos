@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { resizeViewport, setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
+import { APP_VERSION } from "@shared/version";
 import { AppShell } from "./AppShell";
 import { SIDEBAR_COLLAPSED_KEY } from "./useShellState";
 
@@ -82,6 +83,80 @@ describe("AppShell (SPEC §2/§7)", () => {
       await userEvent.click(screen.getByRole("button", { name: "Expandir menú" }));
       expect(sidebar()).toHaveAttribute("data-mode", "full");
       expect(localStorage.getItem(SIDEBAR_COLLAPSED_KEY)).toBe("0");
+    });
+
+    it("the collapse tab says what it does and whether the menu is expanded (UX-26)", async () => {
+      renderShell();
+      const tab = screen.getByTestId("sidebar-collapse");
+      // Outside the scrolling sidebar, on its edge: not one more menu entry.
+      expect(tab.closest("aside.sidebar")).toBeNull();
+      expect(tab).toHaveClass("sidebar-tab");
+      expect(tab).toHaveAccessibleName("Contraer menú");
+      expect(tab).toHaveAttribute("title", "Contraer menú");
+      expect(tab).toHaveAttribute("aria-expanded", "true");
+      // Keyboard: Tab reaches it, Enter toggles it.
+      tab.focus();
+      await userEvent.keyboard("{Enter}");
+      expect(sidebar()).toHaveAttribute("data-mode", "rail");
+      expect(tab).toHaveAccessibleName("Expandir menú");
+      expect(tab).toHaveAttribute("aria-expanded", "false");
+      await userEvent.keyboard(" ");
+      expect(sidebar()).toHaveAttribute("data-mode", "full");
+    });
+
+    it("the sidebar foot has no version: it is in «Acerca de Pharos» (UX-26)", () => {
+      renderShell();
+      const foot = document.querySelector(".sidebar__foot") as HTMLElement;
+      expect(foot).not.toHaveTextContent(APP_VERSION);
+      expect(screen.queryByTestId("app-version")).not.toBeInTheDocument();
+    });
+
+    it("the name next to the logo opens «Acerca de Pharos» with a click (UX-26)", async () => {
+      renderShell();
+      const brand = screen.getByRole("button", { name: "Acerca de Pharos" });
+      expect(brand).toHaveTextContent("Pharos");
+      expect(brand).toHaveAttribute("title", "Acerca de Pharos");
+      await userEvent.click(brand);
+      const about = screen.getByRole("dialog", { name: "Acerca de Pharos" });
+      expect(within(about).getByTestId("app-version")).toHaveTextContent(APP_VERSION);
+      expect(about).toHaveTextContent("Compilación");
+      expect(about).toHaveTextContent("Web (navegador)");
+      // The stack comes from the manifests, with their major versions.
+      expect(about).toHaveTextContent(
+        /Tauri \d+ · Rust · SQLite cifrado \(AES-256-GCM\) · React \d+ · TypeScript \d+/,
+      );
+      expect(about).toHaveTextContent(/Fastify \d+ · PostgreSQL/);
+      expect(about).toHaveTextContent("Privativa: todos los derechos reservados");
+      expect(about).toHaveTextContent("Liomar Rodríguez, CEO y líder del producto");
+      expect(about).toHaveTextContent("Claude (Anthropic)");
+      await userEvent.click(within(about).getByRole("button", { name: "Cerrar" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(brand).toHaveFocus();
+    });
+
+    it("«Acerca de Pharos» opens with Enter and Space, and Escape closes it (UX-26)", async () => {
+      renderShell();
+      const brand = screen.getByTestId("about-open");
+      brand.focus();
+      await userEvent.keyboard("{Enter}");
+      expect(screen.getByRole("dialog", { name: "Acerca de Pharos" })).toBeInTheDocument();
+      await userEvent.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(brand).toHaveFocus();
+      await userEvent.keyboard(" ");
+      expect(screen.getByRole("dialog", { name: "Acerca de Pharos" })).toBeInTheDocument();
+    });
+
+    it("in the strip, the logo opens «Acerca de Pharos» and the sync is a button (UX-26)", async () => {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
+      renderShell();
+      expect(sidebar()).toHaveAttribute("data-mode", "rail");
+      const sync = screen.getByTestId("sync-compact");
+      expect(sync.tagName).toBe("BUTTON");
+      expect(sync).toHaveAttribute("title");
+      expect(await screen.findByRole("button", { name: /Sincronizar ahora/ })).toBe(sync);
+      await userEvent.click(screen.getByRole("button", { name: "Acerca de Pharos" }));
+      expect(screen.getByRole("dialog", { name: "Acerca de Pharos" })).toBeInTheDocument();
     });
 
     it("the moon/sun button switches light and dark", async () => {
@@ -231,14 +306,16 @@ describe("AppShell (SPEC §2/§7)", () => {
   });
 
   describe("tablet (600–1279 px)", () => {
-    it("shows the icon strip, without the collapse button", () => {
+    it("shows the icon strip, without the collapse button", async () => {
       setViewportWidth(820);
       renderShell();
       expect(sidebar()).toHaveAttribute("data-mode", "rail");
       expect(screen.queryByTestId("sidebar-collapse")).not.toBeInTheDocument();
       expect(screen.getByTestId("search-trigger")).toBeInTheDocument();
-      // Only the sync dot in the strip; it syncs on click.
-      expect(screen.getByTestId("sync-compact")).toHaveAccessibleName(/Sincronizar ahora/);
+      // A sync button in the strip (after the sign-in sync, «Sincronizando…»).
+      expect(await screen.findByRole("button", { name: /Sincronizar ahora/ })).toBe(
+        screen.getByTestId("sync-compact"),
+      );
     });
   });
 

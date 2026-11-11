@@ -1,4 +1,7 @@
+import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Dialog } from "@shared/ui/Dialog";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { Skeleton } from "@shared/ui/Skeleton";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { RunLegend } from "./ExecutionByProject";
@@ -6,6 +9,7 @@ import { visibleDayLabels, type Period } from "./model/homeData";
 import { axisMax, dailySeries } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
+import { GadgetFitContext } from "./model/fitRows";
 
 /** Bar heights of the loading chart: only a shape, it means nothing. */
 const SHAPE_HEIGHTS = [38, 62, 28, 74, 46, 84, 34, 56];
@@ -29,6 +33,9 @@ export function DailyExecutionsChart({
   onRetry: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  // On the board (UX-28) the data opens in a dialog instead of a disclosure.
+  const fit = useContext(GadgetFitContext);
+  const [showData, setShowData] = useState(false);
   const lang = i18n.resolvedLanguage;
   const alternate = useBreakpoint() !== "desktop";
   const points = dailySeries(state.data, period, today);
@@ -63,30 +70,73 @@ export function DailyExecutionsChart({
     !ready
       ? longDate.format(p.day)
       : p.total
-      ? t("dashboard.daily.dayTitle", {
-          date: longDate.format(p.day),
-          count: p.total,
-          passed: p.passed,
-          failed: p.failed,
-          other: p.others,
-          manual: p.manual,
-          imported: p.imported,
-        })
-      : t("dashboard.daily.dayEmpty", { date: longDate.format(p.day) });
+        ? t("dashboard.daily.dayTitle", {
+            date: longDate.format(p.day),
+            count: p.total,
+            passed: p.passed,
+            failed: p.failed,
+            other: p.others,
+            manual: p.manual,
+            imported: p.imported,
+          })
+        : t("dashboard.daily.dayEmpty", { date: longDate.format(p.day) });
+
+  const table = (
+    <>
+      <table className="home-daily__table">
+        <caption className="sr-only">
+          {t("dashboard.daily.tableCaption", { period: periodText })}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{t("dashboard.daily.colDay")}</th>
+            <th scope="col">{t("dashboard.daily.pass")}</th>
+            <th scope="col">{t("dashboard.daily.fail")}</th>
+            <th scope="col">{t("dashboard.daily.other")}</th>
+            <th scope="col">{t("dashboard.daily.colManual")}</th>
+            <th scope="col">{t("dashboard.daily.colImported")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {points
+            .filter((p) => p.total)
+            .map((p) => (
+              <tr key={p.day.toISOString()}>
+                <th scope="row">{longDate.format(p.day)}</th>
+                <td>{p.passed}</td>
+                <td>{p.failed}</td>
+                <td>{p.others}</td>
+                <td>{p.manual}</td>
+                <td>{p.imported}</td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      {undated > 0 && (
+        <p className="home-note">
+          {t("dashboard.daily.undatedNote", { count: undated })}
+        </p>
+      )}
+    </>
+  );
 
   return (
     <section
       className="home-card home-daily"
       aria-labelledby="home-daily-title"
+      aria-describedby="home-daily-help"
     >
       <div className="home-card__head home-daily__head">
         <div className="home-card__titles">
-          <h2 id="home-daily-title" className="home-card__title">
-            {t("dashboard.daily.title")}
-          </h2>
-          <p className="home-card__sub">
-            {t("dashboard.daily.subtitle", { period: periodText })}
-          </p>
+          <div className="home-card__titleline">
+            <h2 id="home-daily-title" className="home-card__title">
+              {t("dashboard.daily.title")}
+            </h2>
+            {/* The subtitle is help behind «?» (UX-28). */}
+            <InfoTip id="home-daily-help" label={t("dashboard.daily.title")}>
+              {t("dashboard.daily.subtitle", { period: periodText })}
+            </InfoTip>
+          </div>
         </div>
         <div className="home-daily__total">
           <span
@@ -150,7 +200,10 @@ export function DailyExecutionsChart({
                       style={{ height: pct(p.total) }}
                     >
                       {p.others > 0 && (
-                        <span data-tone="other" style={{ flexGrow: p.others }} />
+                        <span
+                          data-tone="other"
+                          style={{ flexGrow: p.others }}
+                        />
                       )}
                       {p.failed > 0 && (
                         <span data-tone="fail" style={{ flexGrow: p.failed }} />
@@ -181,48 +234,51 @@ export function DailyExecutionsChart({
       </div>
 
       {/* The numbers of each day, for the keyboard and screen readers too
-          (a chart is an image): a disclosure with the table. */}
-      {ready && (total > 0 || undated > 0) && (
-        <details className="home-daily__data" data-testid="home-daily-data">
-          <summary className="home-link">
-            {t("dashboard.daily.showData")}
-          </summary>
-        <table className="home-daily__table">
-          <caption className="sr-only">
-            {t("dashboard.daily.tableCaption", { period: periodText })}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">{t("dashboard.daily.colDay")}</th>
-              <th scope="col">{t("dashboard.daily.pass")}</th>
-              <th scope="col">{t("dashboard.daily.fail")}</th>
-              <th scope="col">{t("dashboard.daily.other")}</th>
-              <th scope="col">{t("dashboard.daily.colManual")}</th>
-              <th scope="col">{t("dashboard.daily.colImported")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {points
-              .filter((p) => p.total)
-              .map((p) => (
-                <tr key={p.day.toISOString()}>
-                  <th scope="row">{longDate.format(p.day)}</th>
-                  <td>{p.passed}</td>
-                  <td>{p.failed}</td>
-                  <td>{p.others}</td>
-                  <td>{p.manual}</td>
-                  <td>{p.imported}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-          {undated > 0 && (
-            <p className="home-note">
-              {t("dashboard.daily.undatedNote", { count: undated })}
-            </p>
-          )}
-        </details>
-      )}
+          (a chart is an image): a disclosure with the table. On the board the
+          gadget never grows (UX-28), so the table opens in a dialog there. */}
+      {ready &&
+        (total > 0 || undated > 0) &&
+        (fit ? (
+          <>
+            <button
+              type="button"
+              className="home-link home-daily__data"
+              aria-haspopup="dialog"
+              onClick={() => setShowData(true)}
+              data-testid="home-daily-data"
+            >
+              {t("dashboard.daily.showData")}
+            </button>
+            {showData && (
+              <Dialog
+                labelledBy="home-daily-data-title"
+                onClose={() => setShowData(false)}
+                className="cd home-daily__dialog"
+              >
+                <h3 id="home-daily-data-title" className="cd__title">
+                  {t("dashboard.daily.title")}
+                </h3>
+                {table}
+                <div className="cd__actions">
+                  <button
+                    type="button"
+                    className="ui-btn"
+                    onClick={() => setShowData(false)}
+                  >
+                    {t("common.close")}
+                  </button>
+                </div>
+              </Dialog>
+            )}
+          </>
+        ) : (
+          <details className="home-daily__data" data-testid="home-daily-data">
+            <summary className="home-link">
+              {t("dashboard.daily.showData")}
+            </summary>
+            {table}
+          </details>
+        ))}
 
       <MetricsNotice state={state} onRetry={onRetry} />
 

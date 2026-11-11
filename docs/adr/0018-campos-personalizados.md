@@ -262,3 +262,35 @@ plan (contrastadas con Jira, Xray, Zephyr, TestRail y Azure Test Plans):
   un obligatorio vacío, y lo nombra en la sección. Como con los casos,
   `required` es solo del editor, y la sync no revalida.
   Requisito, run y ciclo siguen sin pantalla de definición.
+
+## Enmienda (UX-25, 2026-11-09): copiar los ajustes al crear un proyecto
+
+Decisión del usuario (2026-11-09): el diálogo «Nuevo proyecto» ofrece
+«Copiar ajustes de:» otro proyecto suyo. No se hace, por ahora, un archivo de
+ajustes exportable: la sincronización por cuenta ya comparte los proyectos
+entre los equipos del usuario, así que basta con copiar al crear.
+
+- **Qué se copia** (casillas, todas marcadas al elegir un proyecto): los
+  campos personalizados de **todas** las entidades (FLD-03), el número de
+  dígitos de las claves, «Historial en el plan exportado» (PLN-02) y, solo en
+  el escritorio, la retención de evidencias (DAT-03c, ADR-0014).
+- **Qué no se copia nunca:** el nombre, el prefijo (sigue siendo único,
+  NC-030: Pharos propone uno libre) ni ningún dato (plan, casos, requisitos,
+  ciclos, ejecuciones, defectos, tablero). La copia es única: después, los
+  dos proyectos son independientes.
+- **Campos: se reutiliza la decisión 3** («Copiar de otro proyecto», sin
+  cambios). `custom_field_copy` y `/api/custom-fields/copy` copian **una**
+  entidad por llamada; la interfaz los llama una vez por entidad
+  (`FIELD_ENTITIES`), cada una en su transacción. El proyecto es nuevo, así
+  que no hay claves que saltar.
+- **Dígitos e historial** viajan en el propio `project_create` /
+  `POST /api/projects`, que ya los aceptaban: sin cambios en Rust ni en el
+  servidor.
+- **Retención:** comando nuevo `evidence_retention_copy` (escritorio): en una
+  transacción pone en el destino el ajuste de cada tipo del origen (también
+  «predeterminado»), con un evento `update` de `evidence_retention` por tipo
+  que cambia, como `evidence_retention_set`. La web no tiene retención: no la
+  ofrece y lo dice en el formulario.
+- **Si falla la copia,** el proyecto se crea igual (la copia va después del
+  create y nunca lo deshace) y un aviso dice qué no se copió (las entidades de
+  campos y/o la retención).

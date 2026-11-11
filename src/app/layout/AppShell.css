@@ -38,9 +38,18 @@
 }
 
 /* ---- Sidebar (navy 900): full 248 px / strip 84 px ---- */
-.sidebar {
+/* The frame holds the sidebar (which scrolls and clips) and the collapse tab
+   that sits over its right border (UX-26). */
+.sidebar-frame {
   position: relative;
   z-index: 10;
+  flex: none;
+  display: flex;
+  height: 100%;
+}
+
+.sidebar {
+  position: relative;
   flex: none;
   width: var(--sidebar-width);
   height: 100%;
@@ -63,11 +72,23 @@
   padding: 16px 8px 14px;
 }
 
+/* The logo and the name: a button that opens «Acerca de Pharos» (UX-26) but
+   reads as the brand, with the normal cursor and no text selection. */
 .sidebar__brand {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: none;
   padding: 0 6px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .sidebar[data-mode="rail"] .sidebar__brand {
@@ -77,32 +98,44 @@
 }
 
 .sidebar__brand-name {
-  flex: 1;
   font-size: 17px;
   font-weight: var(--fw-semibold);
   letter-spacing: -0.01em;
 }
 
-.sidebar__toggle {
+/* Collapse / expand tab (UX-26): on the right edge, half-way down, half over
+   the sidebar and half over the content padding (at least 16 px), so it
+   covers nothing. Navy in both themes, with a light rim that keeps it visible
+   on the dark page too. */
+.sidebar-tab {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  flex: none;
+  width: 24px;
+  height: 48px;
+  padding: 0;
   color: var(--color-on-navy-muted);
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--color-on-navy) 10%, transparent);
-  border-radius: var(--radius-md);
-  transition: background-color 120ms ease;
+  background: var(--color-navy-900);
+  border: 1px solid color-mix(in srgb, var(--color-on-navy) 18%, transparent);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-1);
+  transform: translateY(-50%);
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
 }
 
-.sidebar[data-mode="rail"] .sidebar__toggle {
-  width: 36px;
-}
-
-.sidebar__toggle:hover {
+.sidebar-tab:hover {
   color: var(--color-on-navy);
-  background: color-mix(in srgb, var(--color-on-navy) 6%, transparent);
+  background: var(--color-navy-700);
+}
+
+.sidebar-tab:focus-visible {
+  outline: 2px solid var(--color-focus-on-navy);
+  outline-offset: 2px;
 }
 
 .sidebar__nav {
@@ -310,18 +343,6 @@
   border-top: 0;
 }
 
-.sidebar__version {
-  padding: 0 8px;
-  font-family: var(--font-mono);
-  font-size: var(--fs-metadata);
-  color: var(--color-on-navy-muted);
-}
-
-/* Too wide for the strip; Administration still shows it. */
-.sidebar[data-mode="rail"] .sidebar__version {
-  display: none;
-}
-
 .sidebar :focus-visible {
   outline-color: var(--color-focus-on-navy);
 }
@@ -360,7 +381,6 @@
     .sidebar__brand-name,
     .sidebar__group-label,
     .sidebar__project,
-    .sidebar__version,
     .user-menu__who,
     .user-menu__chev,
     .sync__label,
@@ -375,7 +395,6 @@
     .sidebar__brand-name,
     .sidebar__group-label,
     .sidebar__project,
-    .sidebar__version,
     .user-menu__who,
     .user-menu__chev,
     .sync__label,
@@ -917,4 +936,47 @@
 
 .shell-notice:empty {
   display: none;
+}
+
+/* ---- «Acerca de Pharos» (UX-26) ---- */
+.about {
+  max-width: 520px;
+}
+
+.about__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.about__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.about__row {
+  display: grid;
+  grid-template-columns: minmax(120px, 34%) 1fr;
+  gap: var(--space-3);
+  padding: 8px 0;
+  font-size: var(--fs-caption);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.about__row dt {
+  color: var(--color-text-secondary);
+}
+
+.about__row dd {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 479.98px) {
+  .about__row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }

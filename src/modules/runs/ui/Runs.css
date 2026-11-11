@@ -119,7 +119,11 @@
   white-space: nowrap;
 }
 
-/* Loading: the place of the origin chips above the table. */
-.rn-sk-chips {
-  margin-bottom: 8px;
+/* The origin chips above the table, with the same room as «Ciclos»
+   (.cy-page, FIX-22); also while loading. */
+.rn-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
 }

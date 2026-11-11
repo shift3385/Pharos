@@ -3,12 +3,15 @@
 // rows are loaded by `projectRows`.
 
 import type { SortDirection } from "@shared/ui/SortMenu";
+import type { PlanExportHistory } from "./types";
 
 export interface ProjectRow {
   id: string;
   name: string;
   caseIdPrefix: string;
   caseIdDigits: number;
+  /** «Historial en el plan exportado» (PLN-02), for «Copiar ajustes de…» (UX-25). */
+  planExportHistory?: PlanExportHistory;
   updatedAt: string;
   /** Last time this user opened it on this device (null = never). */
   lastAccess: string | null;

@@ -3,6 +3,25 @@
     "name": "Pharos",
     "version": "Version {{version}}"
   },
+  "about": {
+    "open": "About Pharos",
+    "title": "About Pharos",
+    "tagline": "Software test management, on the desktop and on the web.",
+    "version": "Version",
+    "build": "Build",
+    "platform": "Platform",
+    "platformDesktop": "Desktop (Tauri)",
+    "platformWeb": "Web (browser)",
+    "stack": "Technologies",
+    "sqliteEncrypted": "Encrypted SQLite (AES-256-GCM)",
+    "license": "License",
+    "licenseValue": "Proprietary: all rights reserved",
+    "owner": "Project owner",
+    "ownerValue": "Liomar Rodríguez, CEO and product lead",
+    "assistant": "Development assistant",
+    "assistantValue": "Claude (Anthropic), AI assistant in development",
+    "close": "Close"
+  },
   "dbError": {
     "title": "The local database could not be opened",
     "body": "Pharos has not modified any file. Close the app and try again; if it keeps happening, share this detail with support.",
@@ -865,6 +884,30 @@
       "overlap": "It overlaps “{{prefix}}” of {{name}}: two prefixes may not be equal or one start with the other.",
       "placeholder": "Prefix",
       "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings."
+    },
+    "copySettings": {
+      "label": "Copy settings from:",
+      "none": "(none)",
+      "partsLegend": "Settings copied from «{{name}}»",
+      "part": {
+        "fields": "Custom fields (cases, requirements, defects, runs and cycles)",
+        "digits": "Key digits ({{digits}})",
+        "planHistory": "History in the exported plan: {{mode}}",
+        "retention": "Evidence retention"
+      },
+      "note": "Copied once, on create: the name, the prefix and the data (plan, cases, requirements, cycles, runs, defects and board) are never copied, and the two projects stay independent.",
+      "webNoRetention": "Evidence retention is a setting of the desktop app: it is not copied on the web.",
+      "copiedToast": "Settings copied from «{{name}}».",
+      "failedToast": "The project was created, but this was not copied: {{parts}}. You can set it in Project settings or in Administration › Evidence.",
+      "failedFields": "custom fields of {{entities}}",
+      "failedRetention": "the evidence retention",
+      "entity": {
+        "test_case": "cases",
+        "requirement": "requirements",
+        "defect": "defects",
+        "run": "runs",
+        "test_cycle": "cycles"
+      }
     }
   },
   "profile": {
@@ -1621,6 +1664,8 @@
       "rateError": "Not available",
       "unlinked_one": "Also, {{count}} unlinked test",
       "unlinked_other": "Also, {{count}} unlinked tests",
+      "unlinkedShort_one": "+{{count}} unlinked",
+      "unlinkedShort_other": "+{{count}} unlinked",
       "unlinkedTitle": "Imported tests with no case in the period: they do not count in the rate. Link them in Runs"
     },
     "period": {
@@ -1659,7 +1704,8 @@
       "noCases": "No cases yet",
       "empty": "No open projects.",
       "other": "Other",
-      "rowUnknown": "{{name}}: run data not available yet"
+      "rowUnknown": "{{name}}: run data not available yet",
+      "viewAll": "See all projects"
     },
     "exit": {
       "title": "Exit criteria",
@@ -1776,7 +1822,34 @@
       "retry": "Retry",
       "refreshing": "Updating…",
       "staleAt": "Data as of {{time}}: could not refresh"
-    }
+    },
+    "board": {
+      "customize": "Customize Home",
+      "editingHint": "Drag to move, pull the corner to resize",
+      "reset": "Reset",
+      "done": "Done",
+      "hiddenMenu": "Hidden gadgets",
+      "hiddenCount": "Hidden gadgets ({{count}})",
+      "hiddenNone": "No hidden gadgets",
+      "show": "Show “{{name}}”",
+      "hide": "Hide “{{name}}”",
+      "gadget": "gadget",
+      "dragTitle": "Drag to move “{{name}}”",
+      "size": "{{w}}×{{h}} · min {{minW}}×{{minH}}",
+      "place": "{{name}}: column {{col}}, row {{row}}, {{w}}×{{h}}",
+      "help": "Arrows: move. Shift + arrows: resize. Esc: leave without saving.",
+      "refused": "{{name}}: cannot move or resize that way",
+      "hidden": "{{name}}: hidden",
+      "noRoom": "No room for “{{name}}”",
+      "resetTitle": "Reset Home?",
+      "resetMessage": "The gadgets go back to the default layout and all are shown. It is saved when you press “Done”.",
+      "resetDone": "Default layout restored",
+      "saved": "Home layout saved",
+      "discarded": "Home changes discarded",
+      "overflow": "Over 24 rows: Home will scroll.",
+      "regionLabel": "Home gadgets"
+    },
+    "more": "+{{count}} more · {{action}}"
   },
   "section": {
     "comingInPhase": "Coming in Phase {{phase}}",

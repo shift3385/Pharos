@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router";
-import { ArrowRight, ChevronsUpDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { ADMIN, MAIN_NAV, PROJECT_NAV, PROJECTS, isCurrent, type NavItem } from "@app/navConfig";
 import { projectPath } from "@modules/projects";
 import { SyncIndicator } from "@modules/sync-offline";
@@ -8,7 +9,7 @@ import { Logo } from "@shared/ui/Logo";
 import { MenuItem } from "@shared/ui/Menu";
 import { ProjectMenu } from "@shared/ui/ProjectPicker";
 import { usePopover } from "@shared/ui/usePopover";
-import { APP_VERSION } from "@shared/version";
+import { AboutDialog } from "./AboutDialog";
 import { UserMenu } from "./UserMenu";
 import type { ActiveProject, SidebarPhase } from "./useShellState";
 
@@ -101,7 +102,7 @@ export function Sidebar({
   phase = "idle",
 }: {
   mode: Mode;
-  /** Desktop only: show the collapse / expand button. */
+  /** Desktop only: show the collapse / expand tab on the right edge. */
   collapsible: boolean;
   onToggle: () => void;
   active: ActiveProject | null;
@@ -112,20 +113,9 @@ export function Sidebar({
   const { pathname } = useLocation();
   const rail = mode === "rail";
   const toggleLabel = rail ? t("shell.expandMenu") : t("shell.collapseMenu");
-  const ToggleIcon = rail ? PanelLeftOpen : PanelLeftClose;
-  const toggle = collapsible && (
-    <button
-      type="button"
-      className="sidebar__toggle"
-      onClick={onToggle}
-      aria-label={toggleLabel}
-      title={toggleLabel}
-      aria-expanded={!rail}
-      data-testid="sidebar-collapse"
-    >
-      <ToggleIcon size={16} aria-hidden="true" />
-    </button>
-  );
+  const ToggleIcon = rail ? ChevronRight : ChevronLeft;
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const aboutLabel = t("about.open");
   const link = (item: NavItem) => (
     <SideLink
       key={item.id}
@@ -140,59 +130,83 @@ export function Sidebar({
     />
   );
 
+  // The frame holds the sidebar and its edge tab: the sidebar scrolls and
+  // clips, the tab sits over its right border (UX-26).
   return (
-    <aside className="sidebar" data-mode={mode} data-phase={phase}>
-      <div className="sidebar__brand">
-        {rail && toggle}
-        {/* In the full sidebar the name is written next to it. */}
-        <Logo size={rail ? 38 : 35} surface="navy" decorative={!rail} />
-        {!rail && <span className="sidebar__brand-name">{t("app.name")}</span>}
-        {!rail && toggle}
-      </div>
-
-      <nav className="sidebar__nav" aria-label={t("a11y.mainNav")}>
-        <div className="sidebar__group">{MAIN_NAV.map(link)}</div>
-
-        {active && (
-          <div className="sidebar__group" role="group" aria-labelledby="sidebar-project-label">
-            <span id="sidebar-project-label" className="sidebar__group-label t-group-label">
-              {t("shell.activeProject")}
-            </span>
-            {!rail && <ProjectSwitcher active={active} />}
-            {PROJECT_NAV.map(({ section, icon }) => (
-              <SideLink
-                key={section}
-                to={projectPath(active.projectId, section)}
-                icon={icon}
-                label={t(`projects.tab.${section}`)}
-                short={t(`nav.short.project.${section}`)}
-                current={active.section === section}
-                testId={`nav-project-${section}`}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="sidebar__group sidebar__group--config">
-          {!rail && (
-            <span className="sidebar__group-label t-group-label">{t("shell.configuration")}</span>
-          )}
-          {link(ADMIN)}
-        </div>
-      </nav>
-
-      <div className="sidebar__foot">
-        {/* Sync status above the user (SPEC §7 prototype); only its dot in the strip. */}
-        <SyncIndicator variant={rail ? "compact" : "full"} />
-        <span
-          className="sidebar__version"
-          data-testid="app-version"
-          title={t("app.version", { version: APP_VERSION })}
+    <div className="sidebar-frame" data-mode={mode}>
+      <aside className="sidebar" data-mode={mode} data-phase={phase}>
+        {/* The logo and the name open «Acerca de Pharos» (UX-26): a button that
+            does not look like one, reachable with Tab, Enter and Space. */}
+        <button
+          type="button"
+          className="sidebar__brand"
+          onClick={() => setAboutOpen(true)}
+          aria-label={aboutLabel}
+          title={aboutLabel}
+          aria-haspopup="dialog"
+          data-testid="about-open"
         >
-          v{APP_VERSION}
-        </span>
-        <UserMenu variant={rail ? "rail" : "sidebar"} />
-      </div>
-    </aside>
+          <Logo size={rail ? 38 : 35} surface="navy" decorative />
+          {!rail && (
+            <span className="sidebar__brand-name" aria-hidden="true">
+              {t("app.name")}
+            </span>
+          )}
+        </button>
+
+        <nav className="sidebar__nav" aria-label={t("a11y.mainNav")}>
+          <div className="sidebar__group">{MAIN_NAV.map(link)}</div>
+
+          {active && (
+            <div className="sidebar__group" role="group" aria-labelledby="sidebar-project-label">
+              <span id="sidebar-project-label" className="sidebar__group-label t-group-label">
+                {t("shell.activeProject")}
+              </span>
+              {!rail && <ProjectSwitcher active={active} />}
+              {PROJECT_NAV.map(({ section, icon }) => (
+                <SideLink
+                  key={section}
+                  to={projectPath(active.projectId, section)}
+                  icon={icon}
+                  label={t(`projects.tab.${section}`)}
+                  short={t(`nav.short.project.${section}`)}
+                  current={active.section === section}
+                  testId={`nav-project-${section}`}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="sidebar__group sidebar__group--config">
+            {!rail && (
+              <span className="sidebar__group-label t-group-label">{t("shell.configuration")}</span>
+            )}
+            {link(ADMIN)}
+          </div>
+        </nav>
+
+        <div className="sidebar__foot">
+          {/* Sync status above the user (SPEC §7 prototype); a sync button in the strip. */}
+          <SyncIndicator variant={rail ? "compact" : "full"} />
+          <UserMenu variant={rail ? "rail" : "sidebar"} />
+        </div>
+      </aside>
+      {/* Collapse / expand: a tab on the right edge, half-way down (UX-26).
+          Only where the sidebar can collapse (desktop, ≥ 1280 px). */}
+      {collapsible && (
+        <button
+          type="button"
+          className="sidebar-tab"
+          onClick={onToggle}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          aria-expanded={!rail}
+          data-testid="sidebar-collapse"
+        >
+          <ToggleIcon size={14} strokeWidth={2.5} aria-hidden="true" />
+        </button>
+      )}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+    </div>
   );
 }
