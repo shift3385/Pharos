@@ -41,10 +41,14 @@ describe("DailyLinesChart (UX-32)", () => {
     const table = screen.getByRole("table", { name: "Ejecuciones por día, últimos 7 días" });
     expect(table.parentElement).toHaveClass("sr-only");
     expect(table.querySelectorAll("tbody tr")).toHaveLength(7);
-    // y axis: the top value (4) is under the minimum of 5.
+    // y axis: the top value (4) is under the minimum of 5; whole numbers
+    // only, a test runs or not (FIX-25).
     expect([...document.querySelectorAll(".home-lines__grid text")].map((t) => t.textContent)).toEqual([
       "0",
-      "2,5",
+      "1",
+      "2",
+      "3",
+      "4",
       "5",
     ]);
   });

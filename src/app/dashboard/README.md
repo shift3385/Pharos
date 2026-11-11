@@ -81,7 +81,9 @@ desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
   y Otras, esta discontinua) en los colores de siempre:
   - un punto con anillo del color de la superficie en cada día mayor que 0;
   - el eje Y llega al valor más alto de las series visibles, como poco 5,
-    redondeado (`yAxisMax`);
+    redondeado a un paso entero limpio (1, 2, 5, 10, 20, 50…; `yAxisMax`), y
+    sus líneas son siempre números enteros: una prueba se ejecuta o no, nunca
+    «2,5» (`yTicks`, FIX-25);
   - el eje X lleva el primer día, uno por semana y el último, separados al
     menos 48 px según el ancho (`xLabels`);
   - la leyenda son botones (`aria-pressed`) que muestran u ocultan cada

@@ -5,6 +5,7 @@ import {
   toggleSeries,
   xLabels,
   yAxisMax,
+  yTicks,
   type DailyValues,
 } from "./dailyLines";
 
@@ -18,9 +19,9 @@ describe("«Ejecuciones diarias» as lines (UX-32)", () => {
   it("tops the y axis at the highest visible value, never under 5, on a clean number", () => {
     expect(yAxisMax([v(0)], ["passed"])).toBe(5);
     expect(yAxisMax([v(3, 1)], ["passed", "failed"])).toBe(5);
-    expect(yAxisMax([v(6)], ["passed"])).toBe(10);
+    expect(yAxisMax([v(6)], ["passed"])).toBe(6);
     expect(yAxisMax([v(11)], ["passed"])).toBe(15);
-    expect(yAxisMax([v(31)], ["passed"])).toBe(35);
+    expect(yAxisMax([v(31)], ["passed"])).toBe(40);
     expect(yAxisMax([v(73)], ["passed"])).toBe(80);
     expect(yAxisMax([v(240)], ["passed"])).toBe(250);
     // Only the visible series count: hiding the big one rescales.
@@ -64,5 +65,24 @@ describe("«Ejecuciones diarias» as lines (UX-32)", () => {
     expect(dayAt(140, 300, 7)).toBe(3);
     expect(dayAt(-20, 300, 7)).toBe(0);
     expect(dayAt(999, 300, 7)).toBe(6);
+  });
+});
+
+describe("yTicks (FIX-25)", () => {
+  it("are whole numbers, at most six lines, ending on the maximum", () => {
+    expect(yTicks(5)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(yTicks(10)).toEqual([0, 2, 4, 6, 8, 10]);
+    expect(yTicks(15)).toEqual([0, 5, 10, 15]);
+    expect(yTicks(50)).toEqual([0, 10, 20, 30, 40, 50]);
+    expect(yTicks(200)).toEqual([0, 50, 100, 150, 200]);
+    for (const top of [4, 6, 7, 9, 12, 17, 23, 33, 37, 49, 58, 77, 99, 130, 210, 777]) {
+      const max = yAxisMax([v(top)], ["passed"]);
+      expect(max).toBeGreaterThanOrEqual(top);
+      const ticks = yTicks(max);
+      expect(ticks.length).toBeGreaterThanOrEqual(3);
+      expect(ticks.every(Number.isInteger)).toBe(true);
+      expect(ticks.at(-1)).toBe(max);
+      expect(ticks.length).toBeLessThanOrEqual(6);
+    }
   });
 });

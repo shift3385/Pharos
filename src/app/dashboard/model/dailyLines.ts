@@ -15,25 +15,36 @@ export const MIN_LABEL_GAP = 48;
 /** Under this plot width the gadget shows the total and a bare trend line. */
 export const SPARK_BELOW = 220;
 
-/** Highest value of the visible series, at least 5, rounded up to a clean
- *  number: a multiple of 5 up to 50, then 1, 2 or 5 × 10ⁿ steps. */
+/** Whole-number steps of the y axis: a test runs or not (FIX-25). */
+function stepsUpTo(top: number): number[] {
+  const out: number[] = [];
+  for (let base = 1; base <= Math.max(1, top); base *= 10) out.push(base, 2 * base, 5 * base);
+  out.push(10 * 10 ** Math.ceil(Math.log10(Math.max(1, top))));
+  return out.filter((s) => s === 1 || s === 2 || s % 5 === 0 || s % 2 === 0);
+}
+
+/** Highest value of the visible series, at least 5, rounded up to the first
+ *  multiple of a clean whole step (1, 2, 5, 10, 20, 50…) that needs at most 5
+ *  steps: 4 → 5, 7 → 8, 12 → 15, 33 → 40, 130 → 150. */
 export function yAxisMax(
   points: readonly DailyValues[],
   visible: readonly DailySeries[],
 ): number {
   const top = Math.max(0, ...points.flatMap((p) => visible.map((s) => p[s])));
   if (top <= MIN_Y_MAX) return MIN_Y_MAX;
-  if (top <= 50) return Math.ceil(top / 5) * 5;
-  const base = 10 ** Math.floor(Math.log10(top));
-  const step = [0.1, 0.2, 0.5, 1]
-    .map((k) => k * base)
-    .find((s) => top / s <= 10)!;
+  const step = stepsUpTo(top).find((s) => Math.ceil(top / s) <= 5)!;
   return Math.ceil(top / step) * step;
 }
 
-/** Gridline values of the y axis: 0, the middle and the maximum. */
+/** Gridline values of the y axis: whole numbers only (FIX-25: never «2.5»
+ *  executions), the smallest clean step that splits the maximum into at most
+ *  5 parts. */
 export function yTicks(max: number): number[] {
-  return [0, max / 2, max];
+  const top = Math.max(1, Math.round(max));
+  const step = stepsUpTo(top).find((s) => top % s === 0 && top / s <= 5) ?? top;
+  const ticks: number[] = [];
+  for (let v = 0; v <= top; v += step) ticks.push(v);
+  return ticks;
 }
 
 export interface XLabel {
