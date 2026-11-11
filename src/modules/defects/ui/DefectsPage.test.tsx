@@ -141,7 +141,7 @@ describe("Defectos (DEF-01)", () => {
       "Abierto",
       "En curso",
       "Corregido",
-      "En retest",
+      "Por confirmar",
       "Cerrado",
       "Otros",
     ]);
@@ -198,7 +198,7 @@ describe("DefectEditor", () => {
       />,
     );
     const status = screen.getByLabelText("Estado");
-    expect(await optionLabels(status)).toEqual(["En retest", "Cerrado", "Abierto"]);
+    expect(await optionLabels(status)).toEqual(["Por confirmar", "Cerrado", "Abierto"]);
     await selectValue(status, "closed");
     expect(screen.getByLabelText("Resolución")).toHaveAttribute("data-value", "fixed");
     await userEvent.click(screen.getByLabelText(/ATS_001/));

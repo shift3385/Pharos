@@ -1617,7 +1617,7 @@
         "failed": "Falla",
         "blocked": "Bloqueado",
         "skipped": "Omitido",
-        "retest": "Re-test",
+        "retest": "Por confirmar",
         "not_run": "Sin resultados"
       },
       "noResult": "Sin resultados todavía",
@@ -2150,7 +2150,7 @@
       "not_run": "No ejecutado",
       "skipped": "Omitido",
       "other": "Otro",
-      "retest": "Re-test"
+      "retest": "Por confirmar"
     },
     "coverage": {
       "covered": "Cubierto",
@@ -2159,7 +2159,7 @@
     "note": {
       "obsoleteCase": "Caso obsoleto (no cubre)",
       "openDefect": "Defecto abierto",
-      "retest": "Pendiente de re-test (defecto corregido)",
+      "retest": "Por confirmar (defecto corregido)",
       "flaky": "Flaky: pasó tras fallar",
       "stale": "Se ejecutó una revisión anterior del caso"
     },
@@ -3007,7 +3007,7 @@
       "open": "Abierto",
       "in_progress": "En curso",
       "fixed": "Corregido",
-      "retest": "En retest",
+      "retest": "Por confirmar",
       "closed": "Cerrado",
       "rejected": "Rechazado",
       "deferred": "Aplazado",
@@ -3585,7 +3585,7 @@
     "noRisky": "Ningún requisito de riesgo alto está fallando o sin ejecutar.",
     "issue": {
       "blocked": "Bloqueado",
-      "retest": "Pendiente de re-test",
+      "retest": "Por confirmar",
       "flaky": "Flaky",
       "stale": "Revisión anterior"
     },

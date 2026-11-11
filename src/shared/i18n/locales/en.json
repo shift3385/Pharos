@@ -1617,7 +1617,7 @@
         "failed": "Failed",
         "blocked": "Blocked",
         "skipped": "Skipped",
-        "retest": "Retest",
+        "retest": "To confirm",
         "not_run": "No results"
       },
       "noResult": "No results yet",
@@ -2150,7 +2150,7 @@
       "not_run": "Not run",
       "skipped": "Skipped",
       "other": "Other",
-      "retest": "Re-test"
+      "retest": "To confirm"
     },
     "coverage": {
       "covered": "Covered",
@@ -2159,7 +2159,7 @@
     "note": {
       "obsoleteCase": "Obsolete case (does not cover)",
       "openDefect": "Open defect",
-      "retest": "Waiting for a re-test (defect fixed)",
+      "retest": "To confirm (defect fixed)",
       "flaky": "Flaky: passed after failing",
       "stale": "An earlier revision of the case was executed"
     },
@@ -3007,7 +3007,7 @@
       "open": "Open",
       "in_progress": "In progress",
       "fixed": "Fixed",
-      "retest": "Retest",
+      "retest": "To confirm",
       "closed": "Closed",
       "rejected": "Rejected",
       "deferred": "Deferred",
@@ -3585,7 +3585,7 @@
     "noRisky": "No high-risk requirement is failing or not run.",
     "issue": {
       "blocked": "Blocked",
-      "retest": "Waiting for re-test",
+      "retest": "To confirm",
       "flaky": "Flaky",
       "stale": "Earlier revision"
     },

@@ -202,7 +202,7 @@ export const INVENTORY: Item[] = [
   I("inicio", "action", "action:home-kpi", "Tarjetas KPI de Inicio"),
   I("inicio", "state", "state:home-metrics", "Inicio con ejecuciones: tasa de éxito, ejecución por proyecto, ejecuciones diarias (RED-W6)"),
   I("inicio", "action", "action:home-exit-filter", "Criterios de salida: filtros Todos / En riesgo / Cumplen"),
-  I("inicio", "action", "action:home-upcoming-filter", "Próximas pruebas: selector No ejecutadas / Bloqueadas / Re-test (UX-32)"),
+  I("inicio", "action", "action:home-upcoming-filter", "Próximas pruebas: selector No ejecutadas / Bloqueadas / Por confirmar (UX-32, UX-34)"),
   I("inicio", "action", "action:home-daily-tooltip", "Ejecuciones diarias: línea y burbuja del día con el ratón, el tacto o el teclado (UX-32)"),
   I("inicio", "action", "action:home-daily-legend", "Ejecuciones diarias: la leyenda muestra u oculta cada estado (UX-32)"),
   I("inicio", "state", "state:home-metrics-error", "Inicio: las ejecuciones no se pudieron cargar («Reintentar»)", {

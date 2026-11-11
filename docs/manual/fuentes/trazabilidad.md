@@ -27,7 +27,7 @@ Playwright cambia lo que muestra la matriz. Lo matizan tres avisos:
 
 - **Flaky:** el test pasó después de fallar.
 - **Desactualizado:** se ejecutó una revisión anterior del caso.
-- **Re-test:** el caso falló y su defecto ya está corregido; toca repetirlo.
+- **Por confirmar:** el caso falló y su defecto ya está corregido; toca repetirlo.
 
 El **riesgo** del requisito (probabilidad × impacto) ordena la matriz: lo más
 arriesgado, primero.
@@ -84,4 +84,4 @@ tiene la importación de JUnit, la ejecución manual y los dos defectos.
 - Capítulo 11, «Ejecución manual»: el informe de estado, que resume la misma
   información por ronda.
 - [Glosario](../GLOSARIO.md): «Último resultado», «Desactualizado»,
-  «Re-test», «Banda de riesgo».
+  «Por confirmar», «Banda de riesgo».
