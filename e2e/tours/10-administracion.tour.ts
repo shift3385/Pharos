@@ -11,6 +11,7 @@ import {
   acceptNativeDialog,
   byTestId,
   chooseFile,
+  clearInput,
   clickButton,
   dialog,
   es,
@@ -315,7 +316,10 @@ chapter("administracion", () => {
       await browser.dismissAlert();
       // Declined: nothing was replaced and the typed key is still there.
       await expect($("#ai-key")).toHaveValue("otra-clave-de-ejemplo");
-      await $("#ai-key").clearValue();
+      // React-controlled: clearValue fires no input event, so the typed key
+      // would still count as unsaved (IA-11) and hold the next tour in Admin.
+      await clearInput("#ai-key");
+      await expect($(".adm-savebar")).not.toHaveAttribute("data-dirty");
       await keyCommand("ai_key_clear", { provider: "gemini" });
     },
   });
