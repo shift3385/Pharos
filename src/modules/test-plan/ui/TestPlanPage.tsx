@@ -12,8 +12,11 @@ import { TestPlanWizard } from "./TestPlanWizard";
 export function TestPlanPage({
   projectId,
   exportHistory,
+  projectName,
 }: {
   projectId: string;
+  /** For a new plan's title suggestion (UX-34). */
+  projectName?: string;
   /** The project's «Historial en el plan exportado» (PLN-02). */
   exportHistory?: "current" | "revisions";
 }) {
@@ -54,6 +57,7 @@ export function TestPlanPage({
       planId={planId}
       projectId={projectId}
       exportHistory={exportHistory}
+      projectName={projectName}
       onSaved={(plan) => (plan ? setPlanId(plan.id) : void refresh())}
     />
   );

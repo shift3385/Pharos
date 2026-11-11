@@ -42,7 +42,13 @@ export interface ImportResult {
 }
 
 const tp = (loc: typeof esLocale) => loc.testPlan as unknown as Record<string, Record<string, string>>;
-const TYPE_REV = reverse(tp(esLocale).typeLabel, tp(enLocale).typeLabel);
+const TYPE_REV = reverse(
+  tp(esLocale).typeLabel,
+  tp(enLocale).typeLabel,
+  // Labels of files exported before UX-34 dropped «re-test».
+  { retest: "Confirmación (re-test)" },
+  { retest: "Confirmation (re-test)" },
+);
 const LEVEL_REV = reverse(tp(esLocale).levelLabel, tp(enLocale).levelLabel);
 const STATUS_REV = reverse(tp(esLocale).statusLabel, tp(enLocale).statusLabel);
 const FREQUENCY_REV = reverse(tp(esLocale).frequencyLabel, tp(enLocale).frequencyLabel);

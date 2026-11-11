@@ -108,7 +108,7 @@ describe("parsePlanXlsx (real ES template layout)", () => {
     ws.getCell("C4").value = "3.0";
     ws.getCell("C7").value = "Aprobado";
     ws.getCell("B11").value = "Mi resumen.";
-    // «Confirmación (re-test)» (UX-31) imports as its key.
+    // An older file still says «Confirmación (re-test)»: it imports as its key (UX-34).
     ws.getCell("B21").value = "Funcionales\nSeguridad\nConfirmación (re-test)";
     ws.getCell("B25").value = "Sistema";
     ws.getCell("B35").value = "Cypress\nPostman";

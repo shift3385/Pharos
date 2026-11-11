@@ -146,8 +146,8 @@ salieras desde otra pantalla.
   filtra: pulsa un estado para ocultar o mostrar su línea. Si el panel es muy
   estrecho, muestra solo el total grande con una línea de tendencia.
 - **Próximas pruebas** elige su lista con un selector bajo el título: «No
-  ejecutadas», «Bloqueadas» o «Re-test», cada una con su número. En
-  «Re-test», cada fila dice cuándo falló («· falló el 8 nov»). La flecha a la
+  ejecutadas», «Bloqueadas» o «Por confirmar», cada una con su número. En
+  «Por confirmar», cada fila dice cuándo falló («· falló el 8 nov»). La flecha a la
   derecha del título es «Ver todas».
 
 ## Consejos
@@ -156,7 +156,7 @@ salieras desde otra pantalla.
   izquierda a derecha y de arriba abajo, y en ese orden se apilan en la tableta.
 
 - Empieza el día por «Próximas pruebas»: ordena por prioridad lo que falta,
-  lo bloqueado y lo que espera re-test.
+  lo bloqueado y lo que espera confirmación tras un arreglo.
 - Antes de una reunión de seguimiento, revisa «Criterios de salida» con el
   filtro «En riesgo»: son los proyectos de los que hay que hablar.
 - Para un informe formal del estado, usa el «Informe de estado» de Ejecuciones

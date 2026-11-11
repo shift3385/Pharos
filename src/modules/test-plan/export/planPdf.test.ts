@@ -135,7 +135,7 @@ describe("levels and types in the PDF (UX-31)", () => {
   it("prints the levels, then the types one line per group, before the methodology", () => {
     const json = JSON.stringify(
       planDocDefinition(
-        { ...sample, testTypeLines: ["Funcionales: Funcionales", "Confirmación y regresión: Confirmación (re-test)"] },
+        { ...sample, testTypeLines: ["Funcionales: Funcionales", "Confirmación y regresión: Confirmación"] },
         t,
       ).content,
     );
@@ -143,6 +143,6 @@ describe("levels and types in the PDF (UX-31)", () => {
     expect(at("testPlan.testLevels")).toBeGreaterThan(-1);
     expect(at("testPlan.testLevels")).toBeLessThan(at("testPlan.testTypes"));
     expect(at("testPlan.testTypes")).toBeLessThan(at("testPlan.methodology"));
-    expect(json).toContain('{"text":"Confirmación y regresión: Confirmación (re-test)","style":"value"}');
+    expect(json).toContain('{"text":"Confirmación y regresión: Confirmación","style":"value"}');
   });
 });

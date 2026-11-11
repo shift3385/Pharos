@@ -85,17 +85,17 @@ describe("test types by group (UX-31)", () => {
       ["changeRelated", ["retest", "regression", "smoke", "sanity"]],
     ]);
     expect(TEST_TYPES).toHaveLength(14);
-    expect(t("testPlan.typeLabel.retest")).toBe("Confirmación (re-test)");
+    expect(t("testPlan.typeLabel.retest")).toBe("Confirmación");
   });
 
   it("the PDF lists the types one line per group, own ones last", () => {
     expect(typeGroupLines(["Caos", "regression", "retest", "uat"], t)).toEqual([
       "Funcionales: UAT (aceptación de usuario)",
-      "Confirmación y regresión: Confirmación (re-test), Regresión",
+      "Confirmación y regresión: Confirmación, Regresión",
       "Propios: Caos",
     ]);
     expect(typeGroupLines([], t)).toEqual([]);
     expect(levelLabels(["system", "unit"], t)).toEqual(["Unitarias", "Sistema"]);
-    expect(typeLabels(["retest", "functional", "retest"], t)).toEqual(["Funcionales", "Confirmación (re-test)"]);
+    expect(typeLabels(["retest", "functional", "retest"], t)).toEqual(["Funcionales", "Confirmación"]);
   });
 });

@@ -1094,7 +1094,7 @@
       "sanity": "Sanidad",
       "exploratory": "Exploratorias",
       "uat": "UAT (aceptación de usuario)",
-      "retest": "Confirmación (re-test)"
+      "retest": "Confirmación"
     },
     "levelLabel": {
       "unit": "Unitarias",
@@ -1348,7 +1348,8 @@
       "add": "Añadir"
     },
     "testTypes": "Tipos de prueba",
-    "testLevels": "Niveles de prueba"
+    "testLevels": "Niveles de prueba",
+    "suggestedTitle": "Plan de pruebas {{project}}"
   },
   "testCase": {
     "loadFailed": "No se pudieron cargar los casos de prueba.",
@@ -1859,7 +1860,7 @@
       "filters": "Estado de las pruebas",
       "notRun": "No ejecutadas",
       "blocked": "Bloqueadas",
-      "retest": "Re-test",
+      "retest": "Por confirmar",
       "priority": {
         "critical": "Prioridad crítica",
         "high": "Prioridad alta",
@@ -1869,7 +1870,7 @@
       "empty": {
         "notRun": "No hay casos sin ejecutar.",
         "blocked": "No hay casos bloqueados.",
-        "retest": "No hay casos esperando re-test."
+        "retest": "No hay casos por confirmar."
       },
       "option": "{{label}} · {{count}}",
       "failedOn": "· falló el {{date}}"

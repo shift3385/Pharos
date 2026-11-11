@@ -30,7 +30,7 @@ comprueba, en tres grupos: funcionales; no funcionales (rendimiento, carga,
 estrés, seguridad, usabilidad, compatibilidad, accesibilidad); y
 **confirmación y regresión**, las pruebas que siguen a un cambio:
 
-- **Confirmación (re-test):** volver a probar lo que falló, una vez arreglado.
+- **Confirmación:** volver a probar lo que falló, una vez arreglado.
 - **Regresión:** comprobar que lo que funcionaba sigue funcionando.
 - **Humo:** una pasada rápida por lo básico de una versión nueva.
 - **Sanidad:** una comprobación corta de lo que se acaba de cambiar.

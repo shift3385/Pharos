@@ -80,7 +80,7 @@ describe("schedule ids through export → import (RED-W5)", () => {
 
 describe("test types and levels through export → import (UX-31)", () => {
   it.each(["es", "en"] as const)(
-    "«Confirmación (re-test)» comes back as `retest`, by the step's groups, with own types whole (%s)",
+    "«Confirmación» comes back as `retest`, by the step's groups, with own types whole (%s)",
     async (lang) => {
       const t = i18n.getFixedT(lang);
       serveTemplate(lang);
@@ -93,8 +93,8 @@ describe("test types and levels through export → import (UX-31)", () => {
       const exportable = toExportable(form, "Autor", t);
       expect(exportable.testTypes).toEqual(
         lang === "es"
-          ? ["Funcionales", "Seguridad", "Confirmación (re-test)", "Humo", "Pruebas de contrato"]
-          : ["Functional", "Security", "Confirmation (re-test)", "Smoke", "Pruebas de contrato"],
+          ? ["Funcionales", "Seguridad", "Confirmación", "Humo", "Pruebas de contrato"]
+          : ["Functional", "Security", "Confirmation", "Smoke", "Pruebas de contrato"],
       );
       expect(exportable.testLevels).toEqual(lang === "es" ? ["Unitarias", "Aceptación"] : ["Unit", "Acceptance"]);
       const { buffer } = await buildPlanXlsx(exportable, lang);
