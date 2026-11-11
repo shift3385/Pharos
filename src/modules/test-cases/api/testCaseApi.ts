@@ -1,4 +1,4 @@
-import { serverApi } from "@modules/sync-offline";
+import { reserveKeys, serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
   RevisionSummary,
@@ -34,7 +34,11 @@ export const testCaseApi = {
     isTauri() ? invoke("test_case_get", { id, userId }) : serverApi.get(path(id)),
   create: (input: TestCaseInput, options?: BatchOptions): Promise<TestCase | null> =>
     announced(
-      isTauri() ? invoke("test_case_create", { input }) : serverApi.post("/api/test-cases", input),
+      isTauri()
+        ? (input.scenarioId?.trim() ? Promise.resolve() : reserveKeys(input.projectId, "case")).then(() =>
+            invoke<TestCase | null>("test_case_create", { input }),
+          )
+        : serverApi.post("/api/test-cases", input),
       options,
     ),
   update: (id: string, input: TestCaseInput): Promise<TestCase | null> =>

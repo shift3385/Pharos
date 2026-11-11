@@ -35,7 +35,7 @@ const headers = (token: string) => ({
   [FEATURES_HEADER]: "key-conflicts,stable-steps",
 });
 
-type Req = { projectId: string; kind: "case" | "requirement" | "defect"; prefix?: string; floor?: number };
+type Req = { projectId: string; kind: "case" | "requirement" | "defect"; prefix?: string; floor?: number; size?: number };
 async function lease(token: string, requests: Req[]) {
   const res = await app.inject({ method: "POST", url: "/sync/key-blocks", headers: headers(token), payload: { requests } });
   expect(res.statusCode).toBe(200);
@@ -76,6 +76,30 @@ describe("key blocks (DAT-01)", () => {
       start: 1,
       end: 50,
     });
+  });
+
+  it("hands out the size the device asks for, right after the last number (DAT-04)", async () => {
+    const token = await tokenFor("a@pharos.dev");
+    expect((await lease(token, [{ projectId: "p1", kind: "requirement", size: 1 }])).blocks[0]).toMatchObject({
+      start: 1,
+      end: 1,
+    });
+    expect((await lease(token, [{ projectId: "p1", kind: "requirement", size: 10 }])).blocks[0]).toMatchObject({
+      start: 2,
+      end: 11,
+    });
+    // Without a size, an older desktop still gets 50.
+    expect((await lease(token, [{ projectId: "p1", kind: "requirement" }])).blocks[0]).toMatchObject({
+      start: 12,
+      end: 61,
+    });
+    const tooBig = await app.inject({
+      method: "POST",
+      url: "/sync/key-blocks",
+      headers: headers(token),
+      payload: { requests: [{ projectId: "p1", kind: "case", size: 51 }] },
+    });
+    expect(tooBig.statusCode).toBe(400);
   });
 
   it("never hands out the same range twice, even concurrently", async () => {

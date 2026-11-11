@@ -7,5 +7,7 @@ export { ConflictPanel } from "./ui/ConflictPanel";
 // Web only: what an older web version left unsent (shown by the app shell).
 export { LegacyUnsentNotice } from "./ui/LegacyUnsentNotice";
 export { syncStatus, syncPendingCount, type SyncStatus } from "./api/syncApi";
+// Desktop: numbers for keys about to be created, with a connection (DAT-04).
+export { reserveKeys, type KeyKind } from "./api/keyReserve";
 // The web's client of the server's domain API (BASE-10).
 export { serverApi, desktopOnly } from "./web/serverApi";

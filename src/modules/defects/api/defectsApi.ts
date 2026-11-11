@@ -1,4 +1,4 @@
-import { desktopOnly, serverApi } from "@modules/sync-offline";
+import { desktopOnly, reserveKeys, serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type { SaveResult } from "@shared/export/saveFile";
 import type {
@@ -62,7 +62,9 @@ export const defectsApi = {
   get: (id: string, userId: string): Promise<Defect | null> =>
     isTauri() ? invoke("defect_get", { id, userId }) : serverApi.get(path(id)),
   create: (input: DefectInput): Promise<Defect | null> =>
-    isTauri() ? invoke("defect_create", { input }) : serverApi.post("/api/defects", webCreate(input)),
+    isTauri()
+      ? reserveKeys(input.projectId, "defect").then(() => invoke<Defect | null>("defect_create", { input }))
+      : serverApi.post("/api/defects", webCreate(input)),
   update: (id: string, input: DefectInput): Promise<Defect | null> =>
     isTauri() ? invoke("defect_update", { id, input }) : serverApi.put(path(id), id, input),
   transition: (

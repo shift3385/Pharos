@@ -1,4 +1,4 @@
-import { desktopOnly, serverApi } from "@modules/sync-offline";
+import { desktopOnly, reserveKeys, serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
   Configuration,
@@ -102,6 +102,8 @@ export const runsApi = {
   ): Promise<ReportImportOutcome> => {
     if (!isTauri()) return desktopOnly("attachments");
     const rawUploadId = await upload(file);
+    // A new run gets a key (DAT-04); an import into an existing run does not.
+    if (request.newRun) await reserveKeys(request.projectId, "run");
     return invoke("run_import", { request, rawUploadId });
   },
   /** One attachment of an imported report, to its result or step result. */
@@ -170,7 +172,7 @@ export const runsApi = {
    *  its items in one transaction, so a refused case leaves no empty run. */
   createManual: (input: RunInput, items: RunItemInput[]): Promise<Run | null> =>
     isTauri()
-      ? invoke("run_create_manual", { input, items })
+      ? reserveKeys(input.projectId ?? "", "run").then(() => invoke<Run | null>("run_create_manual", { input, items }))
       : serverApi.post("/api/runs", { input, items }),
   /** The project's live configurations, to give a manual run its context. */
   configurations: (projectId: string, userId: string): Promise<Configuration[]> =>
