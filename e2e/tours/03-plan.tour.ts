@@ -45,14 +45,14 @@ async function fillList(label: string, items: string[]) {
   }
 }
 
-/** Adds rows to a PairListField (two inputs per row). */
+/** Adds rows to a PairListField (two text areas per row). */
 async function fillPairs(label: string, rows: [string, string][]) {
   const group = $(`[role="group"][aria-label="${label}"]`);
   for (const [a, b] of rows) {
     await group.$(".tp-list-field__add").click();
-    const inputs = await group.$$("input");
-    await inputs[inputs.length - 2].setValue(a);
-    await inputs[inputs.length - 1].setValue(b);
+    const fields = await group.$$("textarea");
+    await fields[fields.length - 2].setValue(a);
+    await fields[fields.length - 1].setValue(b);
   }
 }
 
@@ -126,7 +126,7 @@ chapter("plan", () => {
   step("resumen", {
     title: "Paso 3 · Resumen",
     caption:
-      "El resumen es lo primero que leerá quien reciba el plan: describe en pocas líneas qué se prueba y por qué (en este ejemplo, la versión 2.0 de una app de banca móvil). Si has configurado un motor de IA (capítulo 10), «✨ Asistir con IA» propone un borrador que puedes usar, editar o descartar; nada se aplica sin que lo aceptes (capítulo 11).",
+      "El resumen es lo primero que leerá quien reciba el plan: describe en pocas líneas qué se prueba y por qué (en este ejemplo, la versión 2.0 de una app de banca móvil). Si has configurado un motor de IA (capítulo 10), el botón de IA (✨, «Asistir con IA») propone un borrador que puedes usar, editar o descartar; nada se aplica sin que lo aceptes (capítulo 11).",
     covers: ["wizard:summary"],
     run: async () => {
       await next();
@@ -223,7 +223,7 @@ chapter("plan", () => {
   step("herramientas", {
     title: "Paso 10 · Herramientas y automatización",
     caption:
-      "Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con buscador; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa «Añadir». Las elegidas quedan resaltadas (en este ejemplo, Playwright, Selenium y Cypress). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. «✨ Asistir con IA» propone un borrador de esa estrategia; se activa cuando configuras un motor de IA en Administración (capítulo 10), como en esta captura, donde aún aparece en gris.",
+      "Elige las herramientas del proyecto: arriba, las más usadas en QA; «Más herramientas» despliega el resto por categorías, con buscador; si la tuya no está, escríbela en «¿No está en la lista?» y pulsa «Añadir». Las elegidas quedan resaltadas (en este ejemplo, Playwright, Selenium y Cypress). Después describe la estrategia de automatización: qué se automatiza, con qué y cuándo se ejecuta. el botón de IA (✨, «Asistir con IA») propone un borrador de esa estrategia; se activa cuando configuras un motor de IA en Administración (capítulo 10), como en esta captura, donde aún aparece en gris.",
     covers: ["wizard:tools"],
     focus: "button*=Asistir con IA",
     run: async () => {
@@ -250,7 +250,7 @@ chapter("plan", () => {
   step("roles", {
     title: "Paso 13 · Roles y responsabilidades",
     caption:
-      "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Líder de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos). «+ Añadir» crea otra fila y la papelera de cada una la quita.",
+      "Cada fila une un rol con su responsabilidad, para que quede claro quién decide y quién hace qué (en este ejemplo, el «Líder de QA» planifica, prioriza y aprueba el cierre, y el «Analista de pruebas» diseña y ejecuta los casos). «+ Añadir» crea otra fila y la papelera de cada una la quita. Si has configurado un motor de IA, «Sugerir responsabilidades con IA» propone la responsabilidad de los roles que escribiste y aún no la tienen; eliges cuáles usar, y los roles y lo ya escrito no cambian.",
     covers: ["wizard:roles"],
     run: async () => {
       await next();
@@ -264,7 +264,7 @@ chapter("plan", () => {
   step("cronograma", {
     title: "Paso 14 · Cronograma: sprints",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin: el sprint aparece como una franja sobre las semanas que ocupa y, debajo, en la lista «Sprints», con su nombre y sus fechas, que puedes editar. «Siguiente sprint» añade el siguiente a continuación, con la duración que fijaste en la metodología (paso 6). La leyenda explica el calendario: las franjas de sprint alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es el día de hoy y el rojo claro señala los días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro (en este ejemplo, el segundo) y se resalta su fila; puedes arrastrar sus extremos en el calendario. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin: el sprint aparece como una franja sobre las semanas que ocupa y en la lista «Sprints», con su nombre y sus fechas, que puedes editar. La lista se desplaza por su cuenta, sin mover el calendario. «Siguiente sprint» añade el siguiente a continuación, con la duración que fijaste en la metodología (paso 6). La leyenda explica el calendario: las franjas de sprint alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es el día de hoy y el rojo claro señala los días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro (en este ejemplo, el segundo) y se resalta su fila; puedes arrastrar sus extremos en el calendario. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
     focus: ".tps-legend",
     run: async () => {
@@ -305,7 +305,7 @@ chapter("plan", () => {
   step("riesgos", {
     title: "Paso 15 · Riesgos y mitigación",
     caption:
-      "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, es decir, lo que se hará para reducirlo (en este ejemplo, el retraso del proveedor de pagos QR se mitiga con un simulador propio). Si has configurado un motor de IA, «✨ Sugerir riesgos con IA» propone riesgos con su mitigación para que elijas cuáles añadir (capítulo 11).",
+      "Cada fila es un riesgo que podría afectar a las pruebas y su mitigación, es decir, lo que se hará para reducirlo (en este ejemplo, el retraso del proveedor de pagos QR se mitiga con un simulador propio). Cada campo crece con su texto, para que se lea entero. Si has configurado un motor de IA, «Sugerir riesgos con IA» propone riesgos con su mitigación para que elijas cuáles añadir (capítulo 11).",
     covers: ["wizard:risks"],
     run: async () => {
       await next();
@@ -319,7 +319,7 @@ chapter("plan", () => {
   step("comunicacion", {
     title: "Pasos 16 a 18 · Comunicación, cierre y propósito",
     caption:
-      "Tres pasos de texto que completan el plan: el plan de comunicación (paso 16: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 17: cada criterio con su métrica objetivo, en este ejemplo «Casos críticos ejecutados» al «100 %»; «Inicio» los muestra como criterios de salida) y el propósito del documento (paso 18, el de la captura).",
+      "Tres pasos de texto que completan el plan: el plan de comunicación (paso 16: qué se informa, a quién y cada cuánto), los criterios de cierre (paso 17: cada criterio con su métrica objetivo, en este ejemplo «Casos críticos ejecutados» al «100 %»; «Inicio» los muestra como criterios de salida; con un motor de IA, «Sugerir criterios con IA» propone criterios ligados a los riesgos del plan para que elijas cuáles añadir) y el propósito del documento (paso 18, el de la captura).",
     covers: ["wizard:communication", "wizard:closure", "wizard:purpose"],
     run: async () => {
       await next();

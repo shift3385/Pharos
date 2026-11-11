@@ -132,6 +132,20 @@
   color: var(--color-text-muted);
 }
 
+/* UX-20: the state of a case with unreviewed AI content keeps its tone and
+   gets the dashed warning edge of the AI marks (IA-01) plus a ✨. */
+.pill.cl-status--ai {
+  outline: 1px dashed var(--color-warning);
+  outline-offset: -1px;
+}
+
+.cl-ai {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  color: var(--color-warning-text);
+}
+
 .cl-title {
   min-width: 0;
   overflow: hidden;

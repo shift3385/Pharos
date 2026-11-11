@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next";
 import type { EvidenceRetention, EvidenceRetentionKind, RetentionPolicy } from "@shared/contracts/contract";
 import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { joinLabels } from "@shared/ui/joinLabels";
+import { ProjectSelect, type ProjectChoice } from "@shared/ui/ProjectPicker";
 import { useToast } from "@shared/ui/Toast";
 import { evidenceApi } from "../../api/evidenceApi";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
 
-type ProjectSummary = { id: string; name: string };
 
 /** Longest retention the backend accepts (evidence/retention.rs). */
 const MAX_DAYS = 3650;
@@ -74,7 +75,7 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
   const userId = user?.id ?? "";
   const toast = useToast();
   const pickerId = useId();
-  const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
+  const [projects, setProjects] = useState<ProjectChoice[] | null>(null);
   const [projectId, setProjectId] = useState("");
   const [retention, setRetention] = useState<EvidenceRetention | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
@@ -119,6 +120,10 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
   const kinds = retention?.kinds ?? [];
   const changed = kinds.filter((k) => drafts[k.kind] && !same(drafts[k.kind], k));
   const valid = kinds.every((k) => !drafts[k.kind] || validDays(drafts[k.kind]));
+  const changedNames = joinLabels(
+    changed.map((k) => t(`admin.evidence.retention.kinds.${k.kind}`)),
+    t("common.and"),
+  );
 
   async function apply() {
     if (!retention) return;
@@ -130,7 +135,7 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
         last = await evidenceApi.setRetention(projectId, k.kind, policyOf(drafts[k.kind]), userId);
       }
       reset(last);
-      toast(t("admin.evidence.retention.saved"));
+      toast(t("admin.evidence.retention.savedWhat", { changes: changedNames }));
       onChanged?.();
     } catch {
       toast(t("admin.evidence.retention.failed"), "error");
@@ -192,19 +197,15 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
         <p className="adm-hint">{t("admin.evidence.retention.noProjects")}</p>
       ) : (
         <SettingsRow label={t("admin.evidence.retention.project")} htmlFor={pickerId}>
-          <select
+          <ProjectSelect
             id={pickerId}
-            className="adm-input"
+            label={t("admin.evidence.retention.project")}
+            projects={projects ?? []}
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            data-testid="evidence-retention-project"
-          >
-            {(projects ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+            onChange={setProjectId}
+            disabled={projects === null}
+            testId="evidence-retention-project"
+          />
         </SettingsRow>
       )}
       <p className="sr-only" role="status" aria-live="polite">
@@ -222,15 +223,22 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
       )}
       {retention && (
         <SettingsRow label={t("admin.evidence.retention.saveLabel")}>
-          <button
-            type="button"
-            className="adm-btn"
-            disabled={busy || changed.length === 0 || !valid}
-            onClick={() => void save()}
-            data-testid="evidence-retention-save"
-          >
-            {t("admin.evidence.retention.save")}
-          </button>
+          <span className="adm-inline">
+            <button
+              type="button"
+              className="adm-btn"
+              disabled={busy || changed.length === 0 || !valid}
+              onClick={() => void save()}
+              data-testid="evidence-retention-save"
+            >
+              {t("admin.evidence.retention.save")}
+            </button>
+            <span className="adm-hint" role="status" data-testid="evidence-retention-state">
+              {changed.length > 0
+                ? t("admin.evidence.retention.pending", { changes: changedNames })
+                : t("admin.evidence.retention.noChanges")}
+            </span>
+          </span>
         </SettingsRow>
       )}
       <SettingsRow label={t("admin.evidence.retention.exceptions")}>

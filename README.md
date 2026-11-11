@@ -200,8 +200,11 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
     OpenAI-compatible endpoint), its key, model and parameters, then **Guardar**. Parameters
     the model does not accept are locked with a padlock and say why; for «Compatible» you
     choose whether to send the temperature. Reasoning level/effort shows as "coming soon".
-  - **General:** theme (Claro, Oscuro or **Según el sistema**), language, custom background,
-    download folder and retention. The trash is "coming soon".
+    **Probar conexión** tests a typed key without saving it, a provider without a key cannot
+    become the active one, and a mark shows the one in use ([ADR-0033](docs/adr/0033-probar-clave-ia-antes-de-guardarla.md)).
+  - **General:** theme (Claro, Oscuro or **Según el sistema**), language, background (a default
+    image at 40 %; change or remove it, with a live preview before saving), card shadow,
+    download folder and retention. The save bar says what is pending. The trash is "coming soon".
 - **Top bar:** where you are (breadcrumbs), search (Ctrl K), notifications and
   the light/dark switch. Search and notifications say "coming soon" until
   they get their data.
@@ -250,9 +253,10 @@ a provider is set up in the AI panel. Online providers, each with your own key
 Claude (Anthropic), OpenRouter** or any **OpenAI-compatible endpoint** (Groq,
 DeepSeek, Mistral, a local LM Studio or vLLM…; it must use `https`, or `http`
 only on `localhost`). "Listar modelos" lists the models your key offers.
-Offline: **Ollama** (`llama3.2:3b`, downloaded from the AI panel). Before
-sending anything, each AI control says which provider and model will receive
-it. With AI you can:
+Offline: **Ollama** (`llama3.2:3b`, downloaded from the AI panel). The provider
+and model in use are marked in Administración → Motor de IA, and each AI result
+says which ones wrote it. On the web a typed key can only be tested: keys are
+saved in the desktop app. With AI you can:
 
 - draft plan and case fields ("Assist with AI"), including the plan's
   automation strategy;
@@ -263,8 +267,8 @@ it. With AI you can:
 Structured answers are JSON checked against a schema before use: an invalid
 answer or a refusal is reported and nothing is applied
 ([ADR-0023](docs/adr/0023-salida-estructurada-ia.md)). Nothing is added until
-you accept it, and AI content stays marked "AI · pending review" with its
-provider and model until someone reviews it.
+you accept it, and AI content stays marked "AI · pending review" until someone
+reviews it; the mark's tooltip names the provider and model.
 
 ### Accessibility
 

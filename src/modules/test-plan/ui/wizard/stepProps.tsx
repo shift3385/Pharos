@@ -48,18 +48,19 @@ export function AreaField({
   label,
   value,
   onChange,
-  hint,
+  solo,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
-  hint?: string;
+  /** The step's only text: its title already names it, so the label stays for
+   *  assistive technology only and the field takes the room. */
+  solo?: boolean;
 }) {
   return (
     <label className="tp-field">
-      <span>{label}</span>
-      {hint && <span className="tp-field__hint">{hint}</span>}
-      <textarea rows={4} value={value} onChange={(e) => onChange(e.target.value)} />
+      <span className={solo ? "sr-only" : undefined}>{label}</span>
+      <textarea rows={solo ? 12 : 4} value={value} onChange={(e) => onChange(e.target.value)} />
     </label>
   );
 }

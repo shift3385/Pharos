@@ -2,8 +2,9 @@ import { useTranslation } from "react-i18next";
 import { RotateCw } from "lucide-react";
 import type { MetricsState } from "./model/loadHomeMetrics";
 
-/** What an execution widget says while its numbers load or after they fail
- *  (RED-W6): «Cargando…» or the error with «Reintentar». Nothing once ready. */
+/** What an execution widget says after its numbers fail (RED-W6): the error
+ *  with «Reintentar». Nothing otherwise: while they load the widget shows its
+ *  placeholders and the Home says it once, in its header. */
 export function MetricsNotice({
   state,
   onRetry,
@@ -14,13 +15,7 @@ export function MetricsNotice({
   className?: string;
 }) {
   const { t } = useTranslation();
-  if (state.status === "ready") return null;
-  if (state.status === "loading")
-    return (
-      <p className={`home-note ${className}`} role="status">
-        {t("dashboard.metrics.loading")}
-      </p>
-    );
+  if (state.status !== "error") return null;
   return (
     <div className={`home-error ${className}`} role="alert">
       <span>{t("dashboard.metrics.error")}</span>

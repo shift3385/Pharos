@@ -9,7 +9,6 @@ import {
   type LucideIcon,
   Download,
   Flag,
-  Layers,
   ListChecks,
   ListFilter,
   SlidersHorizontal,
@@ -21,7 +20,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
 import { Pagination } from "@shared/ui/Pagination";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -34,7 +33,6 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { caseLink } from "../model/caseLink";
 import {
-  CASE_LEVELS,
   CASE_PAGE_SIZES,
   CASE_PRIORITIES,
   CASE_STATUSES,
@@ -48,7 +46,6 @@ import {
   type ListedCase,
   type StatusFilter,
 } from "../model/caseList";
-import type { GherkinLevel } from "../model/types";
 import {
   AUTOMATION_STATUSES,
   CASE_TYPES,
@@ -89,7 +86,8 @@ function useWideWindow(): boolean {
 
 /**
  * Casos · lista (SPEC §8, RED-V3): the full table with search, state chips,
- * Prioridad / Ejecución / Nivel / Tipo / Automatización filters and, for
+ * Prioridad / Ejecución / Tipo / Automatización filters (no Nivel since
+ * UX-20) and, for
  * choice and yes/no custom fields, «Campos» (FLD-01), multi-selection with
  * bulk actions and
  * pagination; cards on mobile. The page owns the filters, the order and the
@@ -183,7 +181,6 @@ export function TestCaseList({
     label: t(`testCase.priorityLabel.${p}`),
     description: t(`testCase.priorityHelp.${p}`),
   }));
-  const levelOptions = CASE_LEVELS.map((l) => ({ value: l, label: t(`testCase.level.${l}.name`) }));
   const typeOptions = CASE_TYPES.map((c) => ({
     value: c,
     label: t(`testCase.caseTypeLabel.${c}`),
@@ -247,8 +244,24 @@ export function TestCaseList({
         )}
       </span>
     );
+  // UX-20: a case with AI content nobody reviewed yet keeps its state and
+  // adds a mark to it (in the Estado column, not next to the title): the
+  // usual Borrador, or whatever state it was moved to without reviewing.
+  const aiMark = (c: ListedCase) =>
+    c.aiPending && (
+      <span className="cl-ai" title={t("testCase.list.aiPendingHint")}>
+        <Sparkles size={12} aria-hidden="true" />
+        <span className="sr-only">{` ${t("testCase.list.aiPending")}`}</span>
+      </span>
+    );
   const statusPill = (c: ListedCase) => (
-    <StatusPill tone={statusTone(c.status)} strike={c.status === "obsolete"}>
+    <StatusPill
+      tone={statusTone(c.status)}
+      strike={c.status === "obsolete"}
+      className={c.aiPending ? "cl-status--ai" : undefined}
+      title={c.aiPending ? t("testCase.list.aiPendingHint") : undefined}
+      after={aiMark(c)}
+    >
       {t(`testCase.statusLabel.${c.status}`)}
     </StatusPill>
   );
@@ -284,12 +297,7 @@ export function TestCaseList({
       header: t("testCase.list.col.title"),
       width: "minmax(0,2.6fr)",
       sortable: true,
-      cell: (c) => (
-        <>
-          {titleLink(c)}
-          {c.aiPending && <span className="ai-prov ai-prov--compact">{t("ai.provenance.short")}</span>}
-        </>
-      ),
+      cell: titleLink,
     },
     { id: "requirement", header: t("testCase.list.col.requirement"), width: "96px", cell: reqCell },
     {
@@ -350,7 +358,8 @@ export function TestCaseList({
         {effectiveCaseType(c.caseType) === "checklist"
           ? t("testCase.caseTypeLabel.checklist")
           : t(`testCase.level.${c.gherkinLevel}.name`)}{" "}
-        · {t(`testCase.statusLabel.${c.status}`)} ·{" "}
+        · {t(`testCase.statusLabel.${c.status}`)}
+        {aiMark(c)} ·{" "}
         {t(
           `testCase.automationLabel.${effectiveAutomation(c.automationStatus)}`,
         )}
@@ -430,7 +439,6 @@ export function TestCaseList({
                   : []),
               ]}
               priorityOptions={priorityOptions}
-              levelOptions={levelOptions}
             />
           )}
           <FilterChips
@@ -456,13 +464,6 @@ export function TestCaseList({
                 onChange={() => {}}
                 disabled
                 disabledReason={t("testCase.list.executionSoon")}
-              />
-              <FilterMenuButton
-                label={t("testCase.list.col.level")}
-                icon={Layers}
-                options={levelOptions}
-                selected={filters.levels}
-                onChange={(v) => set({ levels: v as Set<GherkinLevel> })}
               />
               <FilterMenuButton
                 label={t("testCase.list.col.type")}
@@ -519,7 +520,7 @@ export function TestCaseList({
         )}
 
         {loading ? (
-          <p className="cl-empty">{t("common.loading")}</p>
+          <TableSkeleton columns={columns} selectable minWidth={view === "desktop" ? 900 : 640} rows={8} rowHeight={22} />
         ) : cases.length === 0 ? (
           <p className="cl-empty">{t("testCase.empty")}</p>
         ) : (
@@ -643,18 +644,17 @@ function ImportExportMenu({
   );
 }
 
-/** On mobile the Prioridad / Ejecución / Nivel filters share one sheet. */
+/** On mobile the menu filters (Prioridad, Tipo, Automatización, Campos,
+ *  Ejecución) share one sheet. */
 function MobileFilters({
   filters,
   onChange,
   priorityOptions,
-  levelOptions,
   groups,
 }: {
   filters: CaseFilters;
   onChange: (f: CaseFilters) => void;
   priorityOptions: { value: string; label: string; description: string }[];
-  levelOptions: { value: GherkinLevel; label: string }[];
   /** Type, automation and custom field filters (FLD-01). */
   groups: {
     label: string;
@@ -666,7 +666,6 @@ function MobileFilters({
   const [open, setOpen] = useState(false);
   const active =
     filters.priorities.size +
-    filters.levels.size +
     filters.caseTypes.size +
     filters.automation.size +
     filters.custom.size;
@@ -700,16 +699,6 @@ function MobileFilters({
               checked={filters.priorities.has(o.value)}
               onToggle={() => onChange({ ...filters, priorities: toggle(filters.priorities, o.value) })}
               description={o.description}
-            >
-              {o.label}
-            </MenuCheckItem>
-          ))}
-          <MenuLabel>{t("testCase.list.col.level")}</MenuLabel>
-          {levelOptions.map((o) => (
-            <MenuCheckItem
-              key={o.value}
-              checked={filters.levels.has(o.value)}
-              onToggle={() => onChange({ ...filters, levels: toggle(filters.levels, o.value) })}
             >
               {o.label}
             </MenuCheckItem>

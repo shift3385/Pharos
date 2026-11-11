@@ -1,0 +1,111 @@
+/* The project chooser (ProjectPicker): its menu and its form control. Tokens only. */
+.project-menu {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-menu .menu__list {
+  min-height: 0;
+}
+
+.project-menu__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin-bottom: 6px;
+  padding: 0 10px;
+  color: var(--color-text-muted);
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.project-menu__search input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--fs-caption);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.project-menu__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* With nothing below it, the list needs no divider. */
+.project-menu__list:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.project-menu__prefix {
+  color: var(--color-text-muted);
+}
+
+.project-menu__empty {
+  padding: 10px;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+
+.project-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--fs-ui);
+  text-align: left;
+  color: var(--color-text-primary);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.project-select:hover:not(:disabled) {
+  border-color: var(--color-navy-300);
+}
+
+.project-select:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.project-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.project-select__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-select > svg {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+[data-viewport="mobile"] .project-select {
+  height: 44px;
+  font-size: 15px;
+}

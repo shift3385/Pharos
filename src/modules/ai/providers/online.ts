@@ -1,4 +1,4 @@
-import type { AiProvider, OnlineProviderId } from "../model/types";
+import type { AiMessage, AiProvider, ChatOptions, OnlineProviderId } from "../model/types";
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   const { invoke } = await import("@tauri-apps/api/core");
@@ -20,6 +20,24 @@ export function onlineProvider(provider: OnlineProviderId, baseUrl: string): AiP
       });
     },
   };
+}
+
+/** One call with a key the user typed, which Rust does not store (ADR-0033). */
+export function onlineKeyTest(
+  provider: OnlineProviderId,
+  baseUrl: string,
+  key: string,
+  messages: AiMessage[],
+  opts: ChatOptions,
+): Promise<string> {
+  return invoke<string>("ai_key_test", {
+    provider,
+    key,
+    model: opts.model,
+    temperature: opts.temperature ?? null,
+    messages,
+    baseUrl: baseUrl.trim() || null,
+  });
 }
 
 /** Models the provider offers to the stored key (throws with the provider's

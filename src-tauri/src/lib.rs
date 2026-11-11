@@ -263,6 +263,7 @@ pub fn run() {
             ai::ai_key_status,
             ai::ai_key_clear,
             ai::ai_chat_online,
+            ai::ai_key_test,
             ai::ai_list_models,
             oplog::oplog_pending_count,
             sync::oplog_pending,

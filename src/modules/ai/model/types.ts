@@ -109,8 +109,8 @@ export type ResolvedProvider = "online" | "offline" | null;
 /** The concrete provider that produced a result (IA-01). */
 export type AiProviderId = OnlineProviderId | "ollama";
 
-/** Where a request goes (or went): provider + model. Shown before sending and
- *  stored with the result, so the user knows which provider processed what. */
+/** Where a request goes (or went): provider + model. Stored with the result, so
+ *  the user knows which provider processed what. */
 export interface AiDestination {
   provider: AiProviderId;
   model: string;

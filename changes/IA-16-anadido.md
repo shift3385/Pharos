@@ -1,0 +1,5 @@
+---
+section: Añadido
+---
+
+- **La IA revisa el caso de prueba con criterio.** En el editor de un caso, Precondiciones, Pasos de prueba, Postcondiciones y Criterios de aceptación tienen cada uno su botón de IA, solo con el icono, junto a su título y con la marca de revisión al lado. Con la lista vacía sugiere; con contenido la revisa frente al resto del caso, comprobando si cada elemento es verificable, necesario, claro, atómico y coherente. Puede proponer añadir, reformular y eliminar, y cada propuesta dice por qué. Lo que se quita aparece tachado antes de aplicarlo; reformular y eliminar empiezan sin marcar, así que solo se aplican si los marcas. Resultado esperado también tiene su botón, y el borrador muestra el texto al que sustituye. Lo aceptado queda marcado como generado por IA hasta que lo revises. En el nivel avanzado, lo mismo vale para las precondiciones compartidas y, en cada flujo, sus precondiciones, sus pasos y su resultado; la IA tiene en cuenta los demás flujos para detectar lo repetido. En una checklist, revisa las comprobaciones. Datos de prueba y Notas no llevan asistencia.

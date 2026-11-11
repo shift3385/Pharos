@@ -1,0 +1,33 @@
+/* Administración → General → «Sombra en las tarjetas»: a light shadow on the cards
+   of the main screens, set on the root by `applyAppearance`. A new kind of card
+   goes in this list.
+   `:where()` keeps the specificity of a single class and this file loads before
+   the components', so a card's own shadow (hover, dragging) still wins. */
+:where(:root[data-card-shadow])
+  :is(
+    .home-kpi,
+    .home-card,
+    .adm-card,
+    .cy-summary,
+    .cy-panel,
+    .cy-mcard,
+    .df-card,
+    .df-mcard,
+    .df-section,
+    .pl-card,
+    .profile-card,
+    .pj-recent__card,
+    .pj-card-box,
+    .tpl-card,
+    .cl-card-box,
+    .tc-body,
+    .tc-level-card,
+    .tps-card,
+    .tz-kpi,
+    .tz-panel,
+    .tz-filters,
+    .rn-card,
+    .empty-section__card
+  ) {
+  box-shadow: var(--shadow-2);
+}

@@ -40,10 +40,9 @@ describe("case list model", () => {
     expect(ids("pcl-2")).toEqual(["PCL-2"]);
   });
 
-  it("combines the state, priority and level filters", () => {
+  it("combines the state and priority filters", () => {
     const f = { ...EMPTY_FILTERS, status: "approved" as const, priorities: new Set(["high", "low"]) };
     expect(filterCases(CASES, f).map((x) => x.scenarioId)).toEqual(["PCL-10", "PCL-1"]);
-    expect(filterCases(CASES, { ...EMPTY_FILTERS, levels: new Set(["outline" as const]) })).toHaveLength(1);
   });
 
   it("counts each state with the other filters on, ignoring the chosen state", () => {

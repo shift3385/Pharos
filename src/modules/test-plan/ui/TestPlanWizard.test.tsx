@@ -133,7 +133,11 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     expect(screen.getByRole("checkbox", { name: "Matriz de trazabilidad" })).not.toBeChecked();
     const acceptance = screen.getByRole("group", { name: "Aceptación y otros" });
     expect(within(acceptance).getByText("Informe para auditoría")).toBeInTheDocument();
-    await userEvent.type(screen.getByRole("textbox", { name: "Otro entregable" }), "Acta de cierre{Enter}");
+    // The explanation lives behind the [?], and the field still announces it.
+    const other = screen.getByRole("textbox", { name: "Otro entregable" });
+    expect(other).toHaveAccessibleDescription(/marcado como Propio/);
+    expect(screen.getByRole("button", { name: "Más información: Otro entregable" })).toBeInTheDocument();
+    await userEvent.type(other, "Acta de cierre{Enter}");
     expect(within(acceptance).getByText("Acta de cierre")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Quitar: Informe para auditoría" }));
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));

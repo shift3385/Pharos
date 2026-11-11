@@ -1,7 +1,7 @@
 import type { ClosureCriterion, TestPlan } from "../model/types";
 import { TEST_LEVELS, TEST_TYPES } from "../model/catalogs";
 import { deliverableLabels, toolLabels } from "../model/catalogLabels";
-import { methodologyText } from "../model/methodology";
+import { methodologyLines, methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
 import { buildPlanPdf, planPdfName } from "./planPdf";
@@ -43,6 +43,7 @@ export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
     scopeOut: d.scopeOut ?? [],
     testTypes: loc(d.testTypes, TEST_TYPES, "testPlan.typeLabel", t),
     methodology,
+    methodologyLines: methodologyLines(d, t),
     testLevels: loc(d.testLevels, TEST_LEVELS, "testPlan.levelLabel", t),
     deliverables: deliverableLabels(d.deliverables, t),
     environmentConfig: d.environmentConfig ?? "",

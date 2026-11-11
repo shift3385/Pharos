@@ -4,7 +4,12 @@ import ExcelJS from "exceljs";
 import i18n from "i18next";
 import "@shared/i18n";
 import { parsePlanXlsx } from "../import/planImport";
-import { frequenciesFor, frequencyOf, methodologyText } from "./methodology";
+import {
+  frequenciesFor,
+  frequencyOf,
+  methodologyLines,
+  methodologyText,
+} from "./methodology";
 
 describe("ceremony frequency (PLN-01, spec §5.1 step 8)", () => {
   it("defaults to the industry values and ignores unknown keys", () => {
@@ -84,5 +89,53 @@ describe("ceremony frequency (PLN-01, spec §5.1 step 8)", () => {
         planning: "perSprint",
       });
     }
+  });
+
+  it("prints the methodology of the PDF one entry per line (PLN-05)", async () => {
+    await i18n.changeLanguage("es");
+    const t = i18n.t.bind(i18n);
+    expect(
+      methodologyLines(
+        {
+          methodologyType: "agile",
+          sprintWeeks: 2,
+          ceremonies: ["daily", "review", "retrospective"],
+        },
+        t,
+      ),
+    ).toEqual([
+      "Ágil",
+      "Duración de sprint: 2 semanas",
+      "Reuniones del equipo: Diaria",
+      "Revisión: 1 vez por sprint",
+      "Retrospectiva: 1 vez por sprint",
+    ]);
+    // A daily held less often, a custom ceremony, one week: each on its line.
+    expect(
+      methodologyLines(
+        {
+          methodologyType: "agile",
+          sprintWeeks: 1,
+          ceremonies: ["daily", "Demo day"],
+          ceremonyFrequency: { daily: "twiceWeekly" },
+        },
+        t,
+      ),
+    ).toEqual([
+      "Ágil",
+      "Duración de sprint: 1 semana",
+      "Diaria: 2 veces por semana",
+      "Demo day: 1 vez por sprint",
+    ]);
+    expect(
+      methodologyLines({ methodologyType: "traditional", phases: ["Diseño", " ", "Pruebas"] }, t),
+    ).toEqual(["Tradicional / V-model", "Fases: Diseño, Pruebas"]);
+    await i18n.changeLanguage("en");
+    expect(
+      methodologyLines(
+        { methodologyType: "agile", sprintWeeks: 3, ceremonies: ["daily", "planning"] },
+        i18n.t.bind(i18n),
+      ),
+    ).toEqual(["Agile", "Sprint length: 3 weeks", "Agile events: Daily", "Planning: once per sprint"]);
   });
 });

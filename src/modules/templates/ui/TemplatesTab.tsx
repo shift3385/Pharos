@@ -12,6 +12,7 @@ import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
 import { saveFile } from "@shared/export/saveFile";
 import { unlessReported } from "@shared/ui/notify";
+import { CardGridSkeleton } from "@shared/ui/Skeleton";
 import { templateApi } from "../api/templateApi";
 import { builtinSeeds, toBase64 } from "../model/builtins";
 import type { TemplateKind, TemplateSummary } from "../model/types";
@@ -204,7 +205,7 @@ export function TemplatesTab({ onCount }: { onCount?: (count: number) => void })
         />
       )}
       {loading ? (
-        !loadFailed && <p className="adm-hint">{t("common.loading")}</p>
+        !loadFailed && <CardGridSkeleton className="tpl__grid" cards={6} minHeight={168} />
       ) : shown.length === 0 ? (
         <p className="tpl__empty" role="status">
           {q ? t("templates.noResults", { query: query.trim() }) : t(`templates.empty.${kind}`)}

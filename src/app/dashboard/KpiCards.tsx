@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { projectPath } from "@modules/projects";
+import { Skeleton } from "@shared/ui/Skeleton";
 import type { HomeKpis, HomeProject, Period } from "./model/homeData";
 import type { ExecutionKpis } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
@@ -23,23 +24,31 @@ export function KpiCards({
   status,
   period,
   projects,
+  projectsLoading = false,
 }: {
   kpis: HomeKpis;
   exec: ExecutionKpis;
   status: MetricsState["status"];
   period: Period;
   projects: HomeProject[];
+  /** The projects are not known yet, so neither is their count (not «0»). */
+  projectsLoading?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   // With a single project the cards go straight into it.
   const only = projects.length === 1 ? projects[0] : null;
   const ready = status === "ready";
-  // Unknown until the metrics load: «…» while loading, «—» after an error.
-  const unknown = status === "loading" ? "…" : "—";
-  const unknownNote =
-    status === "loading"
-      ? t("dashboard.metrics.loading")
-      : t("dashboard.kpi.rateError");
+  // Unknown until the metrics load: a placeholder while loading, «—» after an
+  // error. The note still says it to assistive technology, inside the link.
+  const valueShape = <Skeleton width={48} height={24} />;
+  const noteShape = (
+    <>
+      <span className="sr-only">{t("dashboard.metrics.loading")}</span>
+      <Skeleton width="70%" className="home-kpi__note-sk" />
+    </>
+  );
+  const unknown = status === "loading" ? valueShape : "—";
+  const unknownNote = status === "loading" ? noteShape : t("dashboard.kpi.rateError");
   const periodText = t(`dashboard.period.lower.${period}`);
   const rate = ready ? exec.rate : null;
   const hasRate = rate?.passRate != null;
@@ -48,9 +57,7 @@ export function KpiCards({
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
       }).format(rate.passRate! * 100)
-    : status === "loading"
-      ? "…"
-      : "—";
+    : unknown;
 
   return (
     <div className="home-kpis">
@@ -59,11 +66,13 @@ export function KpiCards({
         icon={FolderOpen}
         label={t("dashboard.kpi.projects")}
         title={t("dashboard.kpi.projectsTitle")}
-        value={kpis.projects}
+        value={projectsLoading ? valueShape : kpis.projects}
         note={
-          kpis.closingThisMonth
-            ? t("dashboard.kpi.closing", { count: kpis.closingThisMonth })
-            : t("dashboard.kpi.noneClosing")
+          projectsLoading
+            ? noteShape
+            : kpis.closingThisMonth
+              ? t("dashboard.kpi.closing", { count: kpis.closingThisMonth })
+              : t("dashboard.kpi.noneClosing")
         }
         testId="kpi-projects"
       />
@@ -76,9 +85,7 @@ export function KpiCards({
         unit={ready ? t("dashboard.kpi.pendingOf", { total: exec.total }) : undefined}
         note={
           !ready
-            ? status === "loading"
-              ? t("dashboard.metrics.loading")
-              : t("dashboard.kpi.rateError")
+            ? unknownNote
             : exec.blocked
               ? t("dashboard.kpi.blocked", { count: exec.blocked })
               : t("dashboard.kpi.noneBlocked")
@@ -94,16 +101,14 @@ export function KpiCards({
         value={rateValue}
         unit={hasRate ? "%" : undefined}
         note={
-          status === "error"
-            ? t("dashboard.kpi.rateError")
-            : status === "loading"
-              ? t("dashboard.metrics.loading")
-              : rate?.executed
-                ? t("dashboard.kpi.rateOf", {
-                    count: rate.executed,
-                    period: periodText,
-                  })
-                : t("dashboard.kpi.rateEmpty", { period: periodText })
+          !ready
+            ? unknownNote
+            : rate?.executed
+              ? t("dashboard.kpi.rateOf", {
+                  count: rate.executed,
+                  period: periodText,
+                })
+              : t("dashboard.kpi.rateEmpty", { period: periodText })
         }
         testId="kpi-rate"
       />
@@ -144,7 +149,7 @@ function Kpi({
   title: string;
   value: ReactNode;
   unit?: string;
-  note: string;
+  note: ReactNode;
   noteTone?: "error" | "warning";
   testId: string;
 }) {

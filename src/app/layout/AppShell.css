@@ -511,60 +511,6 @@
 }
 
 /* ---- Project switcher menu ---- */
-.project-menu {
-  width: 280px;
-  display: flex;
-  flex-direction: column;
-}
-
-.project-menu .menu__list {
-  min-height: 0;
-}
-
-.project-menu__search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  margin-bottom: 6px;
-  padding: 0 10px;
-  color: var(--color-text-muted);
-  background: var(--color-bg-page);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.project-menu__search input {
-  flex: 1;
-  min-width: 0;
-  font: inherit;
-  font-size: var(--fs-caption);
-  color: var(--color-text-primary);
-  background: transparent;
-  border: 0;
-  outline: none;
-}
-
-.project-menu__list {
-  display: flex;
-  flex-direction: column;
-  max-height: 260px;
-  margin-bottom: 4px;
-  padding-bottom: 4px;
-  overflow-y: auto;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.project-menu__prefix {
-  color: var(--color-text-muted);
-}
-
-.project-menu__empty {
-  padding: 10px;
-  font-size: var(--fs-caption);
-  color: var(--color-text-muted);
-}
-
 /* ---- Top bar (tablet/desktop, 64 px) ---- */
 .topbar {
   position: relative;
@@ -957,7 +903,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: var(--app-bg-opacity, 0.3);
+  opacity: var(--app-bg-opacity, 0.4);
 }
 
 /* Web only: data an older web version left unsent (above the content). */

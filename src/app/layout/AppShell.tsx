@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { applyBackground } from "@modules/admin";
+import { applyAppearance } from "@modules/admin";
 import { LegacyUnsentNotice, SyncStatusProvider } from "@modules/sync-offline";
 import { isTauri } from "@shared/platform";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { collapsed, phase, toggle } = useSidebarToggle();
   const active = useActiveProject();
   useEffect(() => {
-    applyBackground();
+    applyAppearance();
   }, []);
 
   const mobile = breakpoint === "mobile";

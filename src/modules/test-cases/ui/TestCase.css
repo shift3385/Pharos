@@ -557,6 +557,65 @@
 
 /* .tc-notice is a shared <Alert kind="success"> (UX-10). */
 
+/* ---- Blocks of the case form (UX-19): space and a title that weighs more do
+   most of the separating; the line that fades at both ends finishes it. ---- */
+.tc-section,
+.tc-form .cf-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-5);
+}
+.tc-section::before,
+.tc-form .cf-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-border) 15%,
+    var(--color-border) 85%,
+    transparent
+  );
+}
+/* Goes with the block before it, or opens a flow's card: no line. */
+.tc-section--joined,
+.tc-flow__head + .tc-section {
+  margin-top: 0;
+  padding-top: 0;
+}
+.tc-section--joined::before,
+.tc-flow__head + .tc-section::before {
+  content: none;
+}
+/* Title | AI | mark; what the AI proposes takes its own line right below. */
+.tc-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tc-section__head > .assist,
+.tc-section__head > .assist > .assist__row {
+  display: contents;
+}
+.tc-section__head .assist__message {
+  flex-basis: 100%;
+}
+.tc-section__title,
+.tc-form .cf-section > .tp-field__grouplabel {
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-primary);
+}
+
 /* ---- Advanced flows editor (main + alternative flows) ---- */
 .tc-flows {
   display: flex;

@@ -4,7 +4,7 @@ import { Columns3, List, Plus, Search, ShieldAlert, Trash2, TriangleAlert } from
 import { capabilities } from "@shared/platform";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { logClientError } from "@shared/diagnostics";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
 import { LoadError } from "@shared/ui/LoadError";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
@@ -303,7 +303,9 @@ export function DefectsPage({
 
       {loadFailed && <LoadError message={t("defects.loadFailed")} onRetry={retryLoad} />}
       {loading ? (
-        !loadFailed && <p className="df-empty">{t("common.loading")}</p>
+        !loadFailed && (
+          <TableSkeleton columns={columns} minWidth={view === "desktop" ? 860 : 600} rowHeight={32} />
+        )
       ) : defects.length === 0 ? (
         <p className="df-empty">{t("defects.empty")}</p>
       ) : mode === "board" ? (

@@ -10,6 +10,7 @@ import { TabPanel, Tabs } from "@shared/ui/Tabs";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { usePopover } from "@shared/ui/usePopover";
 import { useToast } from "@shared/ui/Toast";
+import { FormSkeleton } from "@shared/ui/Skeleton";
 import { cycleApi } from "../api/cycleApi";
 import {
   cellStatus,
@@ -202,7 +203,7 @@ export function CycleDetail({
     }));
   }, [progress, configurations, t]);
 
-  if (cycle === undefined) return <p className="tp__muted">{t("common.loading")}</p>;
+  if (cycle === undefined) return <FormSkeleton fields={3} />;
   if (cycle === null) {
     return (
       <section className="cy-page">

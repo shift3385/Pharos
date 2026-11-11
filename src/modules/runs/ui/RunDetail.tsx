@@ -13,6 +13,7 @@ import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
+import { FormSkeleton } from "@shared/ui/Skeleton";
 import { runsApi } from "../api/runsApi";
 import { instantOf, statusTone, type LinkableCase } from "../model/types";
 import { CasePickerDialog } from "./CasePickerDialog";
@@ -220,7 +221,7 @@ export function RunDetail({
     return (
       <div className="rn">
         {back}
-        <p className="tp-field__hint">{t("common.loading")}</p>
+        <FormSkeleton fields={3} />
       </div>
     );
   if (data === null || !run)

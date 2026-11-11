@@ -1,6 +1,8 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { projectPath } from "@modules/projects";
+import { Skeleton } from "@shared/ui/Skeleton";
+import { skeletonWidth } from "@shared/ui/skeletonWidth";
 import type { HomeProject } from "./model/homeData";
 import { byProject, execRow, type HomeMetrics } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
@@ -37,10 +39,13 @@ export function ExecutionByProject({
   projects,
   state,
   onRetry,
+  loading = false,
 }: {
   projects: HomeProject[];
   state: MetricsState;
   onRetry: () => void;
+  /** The projects are not known yet: placeholders, not «no projects». */
+  loading?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const percent = new Intl.NumberFormat(i18n.resolvedLanguage, {
@@ -72,7 +77,18 @@ export function ExecutionByProject({
         />
       </div>
 
-      {projects.length === 0 ? (
+      {loading ? (
+        <div className="home-exec__list" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="home-exec__row">
+              <span className="home-exec__line">
+                <Skeleton width={skeletonWidth(i)} />
+              </span>
+              <Skeleton shape="block" width="100%" height={10} />
+            </div>
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
         <p className="home-empty">{t("dashboard.exec.empty")}</p>
       ) : (
         <>
@@ -113,7 +129,7 @@ export function ExecutionByProject({
                         className="home-exec__pct"
                         title={c ? t("dashboard.exec.noCases") : undefined}
                       >
-                        —
+                        {state.status === "loading" ? <Skeleton width={36} /> : "—"}
                       </span>
                     )}
                   </span>

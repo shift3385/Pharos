@@ -15,18 +15,6 @@
   gap: var(--space-2) var(--space-4);
 }
 
-.ai-tab__using {
-  min-width: 0;
-  font-size: var(--fs-caption);
-  color: var(--color-text-secondary);
-  overflow-wrap: anywhere;
-}
-
-.ai-tab__using strong {
-  color: var(--color-text-primary);
-  font-weight: var(--fw-semibold);
-}
-
 /* Online provider | (Ollama + where AI is used). */
 .ai-tab__grid {
   display: grid;
@@ -49,10 +37,26 @@
 /* ---- Provider picker: radio cards ---- */
 .ai-providers {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(132px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
   gap: var(--space-2);
 }
+
+.ai-provider-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+/* Over the card's top-right corner, a sibling of its label (AiEngineTab). */
+.ai-provider-cell .infotip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
+}
+
 .ai-provider {
+  flex: 1;
   position: relative;
   display: flex;
   min-width: 0;
@@ -72,7 +76,8 @@
   gap: var(--space-2);
   min-width: 0;
   min-height: 56px;
-  padding: var(--space-2) var(--space-3);
+  /* Room for the help icon in the corner. */
+  padding: var(--space-2) 24px var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-1);
@@ -95,6 +100,18 @@
 .ai-provider input:focus-visible + .ai-provider__box {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
+}
+
+/* The provider in use: in the card's bottom-right corner, below its help. */
+.ai-in-use {
+  display: inline-flex;
+  color: var(--color-success-text);
+}
+
+.ai-provider .ai-in-use {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
 }
 
 .ai-provider__logo {
@@ -242,8 +259,54 @@
 }
 
 /* ---- Connection test, Ollama ---- */
+/* The model field and its list (ModelCombobox). */
+.ai-combo {
+  flex: 1 1 220px;
+}
+
+.ai-combo__list {
+  max-height: 280px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ai-combo__list .menu__item {
+  cursor: pointer;
+}
+
+.ai-combo__list .menu__item[data-active]:not([data-selected]) {
+  background: var(--color-surface-2);
+}
+
+.ai-combo__none {
+  padding: var(--space-3);
+}
+
+/* «Probando…»: the icon turns while the provider has not answered. */
+.ai-spin {
+  animation: ai-spin 900ms linear infinite;
+}
+
+@keyframes ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Without motion the button's text still says it is working. */
+@media (prefers-reduced-motion: reduce) {
+  .ai-spin {
+    animation: none;
+  }
+}
+
 .ai-test {
   display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
   min-width: 0;
   font-size: var(--fs-caption);
 }

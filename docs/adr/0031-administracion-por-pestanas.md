@@ -105,7 +105,9 @@
   envían una temperatura que el proveedor ignora o rechaza.
 - Proveedor, modelo, parámetros, Ollama y una clave escrita son un borrador
   hasta pulsar «Guardar». «Guardar» lleva la clave al llavero y el resto a la
-  configuración; «Guardar clave» guarda solo la clave. Cambiar de proveedor con
+  configuración; «Guardar clave» guarda solo la clave (enmendado por
+  [ADR-0033](0033-probar-clave-ia-antes-de-guardarla.md): también activa su
+  proveedor). Cambiar de proveedor con
   una clave escrita pide confirmación. La clave nunca vuelve al frontend, así
   que no se muestran sus últimos caracteres como en el prototipo.
 - La Papelera (RED-W3) aparece en General como «Próximamente», sin datos

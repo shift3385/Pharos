@@ -32,6 +32,7 @@ import { StatusPill } from "@shared/ui/StatusPill";
 import { Switch } from "@shared/ui/Switch";
 import { usePopover } from "@shared/ui/usePopover";
 import { useToast } from "@shared/ui/Toast";
+import { ListSkeleton } from "@shared/ui/Skeleton";
 import { customFieldApi } from "../api/customFieldApi";
 import type { CustomField, CustomFieldInput } from "../model/types";
 import { CustomFieldDialog } from "./CustomFieldDialog";
@@ -360,7 +361,7 @@ export function CustomFieldsCard({
       />
 
       {fields === null ? (
-        <p className="tp__muted">{t("common.loading")}</p>
+        <ListSkeleton rows={3} />
       ) : fields.length === 0 ? (
         <p className="cf-empty">
           <ListPlus size={18} aria-hidden="true" />

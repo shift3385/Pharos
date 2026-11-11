@@ -341,7 +341,7 @@ export const INVENTORY: Item[] = [
   I("administracion", "route", "route:/admin", "Administración"),
   I("administracion", "tab", "admin:ai", "Motor de IA"),
   I("administracion", "tab", "tabs:src/modules/admin/ui/AdminTabs.tsx", "Pestañas de Administración"),
-  I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar cambios de la clave de IA (confirmación)"),
+  I("administracion", "dialog", "dialogs:src/modules/ai/ui/AiEngineTab.tsx", "Descartar o reemplazar la clave de IA (confirmaciones)"),
   I("administracion", "state", "state:ollama-offline", "Ollama no detectado (tarjeta del motor local)"),
   I("administracion", "action", "action:ai-ollama", "Descargar y usar un modelo de Ollama", {
     skip: "Necesita Ollama instalado y en marcha en el equipo, y descargar un modelo de varios GB: un servicio externo que el tour aislado no instala. Se recorre el estado «No detectado»; la descarga y el uso local se revisan a mano (docs/manual/REVIEW.md, «Fuera de los tours»).",
@@ -376,7 +376,7 @@ export const INVENTORY: Item[] = [
   I("ia", "action", "ai:suggest-risks", "Sugerir riesgos con IA"),
   I("ia", "dialog", "dialogs:src/modules/traceability/ui/GenerateCasesModal.tsx", "Generar casos desde un requisito con IA"),
   I("ia", "dialog", "dialogs:src/modules/test-cases/ui/SuggestTestsModal.tsx", "Sugerir casos con IA"),
-  I("ia", "action", "ai:suggest-preconditions", "Sugerir precondiciones con IA"),
+  I("ia", "action", "ai:suggest-preconditions", "Sugerir y revisar las listas del caso con IA"),
   I("ia", "state", "ai:disabled-without-key", "Botones de IA deshabilitados sin configurar"),
 
   // ---- 12 · Móvil -------------------------------------------------------------------------

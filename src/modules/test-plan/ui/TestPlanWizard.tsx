@@ -10,10 +10,12 @@ import { ErrorSummary } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { useHeaderActions } from "@shared/ui/headerActions";
 import { ImportReportModal } from "@shared/ui/ImportReportModal";
+import { InfoTip } from "@shared/ui/InfoTip";
 import { unlessReported } from "@shared/ui/notify";
 import { useToast } from "@shared/ui/Toast";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
+import { FormSkeleton } from "@shared/ui/Skeleton";
 import { required } from "@shared/validation";
 import { testPlanApi } from "../api/testPlanApi";
 import type { DetectionRow, ImportResult } from "../import/planImport";
@@ -323,7 +325,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
         }}
       />
     ) : (
-      <p className="tp__muted">{t("common.loading")}</p>
+      <FormSkeleton />
     );
 
   const completion = stepCompletion(form);
@@ -368,10 +370,14 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
                 <span aria-hidden="true">·</span>
                 <span data-dirty={dirty || undefined}>{saveState}</span>
               </p>
-              <h2 ref={headingRef} className="tpw__title" tabIndex={-1}>
-                {t(`testPlan.step.${id}`)}
-              </h2>
-              <p className="tpw__desc">{t(`testPlan.stepDesc.${id}`)}</p>
+              <div className="tpw__heading">
+                <h2 ref={headingRef} className="tpw__title" tabIndex={-1}>
+                  {t(`testPlan.step.${id}`)}
+                </h2>
+                <InfoTip id="tpw-step-help" label={t(`testPlan.step.${id}`)}>
+                  {t(`testPlan.stepDesc.${id}`)}
+                </InfoTip>
+              </div>
             </div>
             {showSummary && titleIssue && (
               <ErrorSummary

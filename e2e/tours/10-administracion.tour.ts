@@ -11,6 +11,7 @@ import {
   acceptNativeDialog,
   byTestId,
   chooseFile,
+  clearInput,
   clickButton,
   dialog,
   es,
@@ -162,7 +163,7 @@ chapter("administracion", () => {
   step("general", {
     title: "General",
     caption:
-      "«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema) y el idioma se aplican al momento. También puedes poner un fondo personalizado con su opacidad, elegir la retención de los elementos borrados y la carpeta donde se guardan las exportaciones.",
+      "«General» reúne los ajustes de la aplicación en este equipo. El tema (claro, oscuro o según el sistema), el idioma y la carpeta de las exportaciones se guardan al momento. El fondo viene con una imagen predeterminada que puedes cambiar o quitar; al mover su opacidad ves el resultado antes de pulsar «Guardar ajustes». También eliges la retención de los elementos borrados.",
     covers: ["admin:general", "upload:src/modules/admin/ui/tabs/GeneralTab.tsx"],
     run: async () => {
       await clickButton(es.common.confirmDelete, '[role="alertdialog"]');
@@ -286,6 +287,40 @@ chapter("administracion", () => {
       await openAdminTab("diagnostics");
       await clickButton(es.diagnostics.export);
       await waitForToast(tf("diagnostics.exported", { file: "" }).trim(), 30_000);
+    },
+  });
+
+  step("ia-reemplazar-clave", {
+    title: "Reemplazar una clave de IA guardada",
+    caption:
+      "Si ya hay una clave guardada y guardas otra sin probarla, Pharos pide confirmación, porque la anterior no se puede recuperar. «Probar conexión» comprueba la nueva sin reemplazar nada; si responde, se guarda sin preguntar.",
+    covers: ["dialogs:src/modules/ai/ui/AiEngineTab.tsx"],
+    shot: false,
+    run: async () => {
+      // Obviously fake placeholders, in the tour's isolated keychain profile:
+      // this step only exercises the warning and never reaches a provider.
+      const keyCommand = (cmd: string, args: object) =>
+        browser.execute(
+          async (c: string, a: object) => {
+            const w = window as unknown as { __TAURI_INTERNALS__: { invoke: (c: string, a: object) => Promise<unknown> } };
+            await w.__TAURI_INTERNALS__.invoke(c, a);
+          },
+          cmd,
+          args,
+        );
+      await keyCommand("ai_key_set", { provider: "gemini", key: "clave-de-ejemplo" });
+      await openAdminTab("ai");
+      await $("#ai-key").setValue("otra-clave-de-ejemplo");
+      await clickButton(es.ai.saveKey);
+      await expect(await browser.getAlertText()).toContain(es.ai.keyReplaceConfirm.slice(0, 20));
+      await browser.dismissAlert();
+      // Declined: nothing was replaced and the typed key is still there.
+      await expect($("#ai-key")).toHaveValue("otra-clave-de-ejemplo");
+      // React-controlled: clearValue fires no input event, so the typed key
+      // would still count as unsaved (IA-11) and hold the next tour in Admin.
+      await clearInput("#ai-key");
+      await expect($(".adm-savebar")).not.toHaveAttribute("data-dirty");
+      await keyCommand("ai_key_clear", { provider: "gemini" });
     },
   });
 });

@@ -20,7 +20,6 @@ const createProposedCases = vi.hoisted(() => vi.fn(async () => ({ created: 1, fa
 vi.mock("@modules/ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@modules/ai")>()),
   aiAvailable: ai.available,
-  aiDestination: async () => ({ provider: "anthropic", model: "claude-opus-5-5" }),
   generateCasesFromRequirement: ai.generate,
 }));
 vi.mock("@modules/test-cases", async (importOriginal) => ({
@@ -85,12 +84,13 @@ describe("GenerateCasesModal (IA-05)", () => {
   it("says where the requirement goes, then creates only the accepted proposals", async () => {
     ai.generate.mockResolvedValue({ value: cases, provenance });
     const onCreated = renderModal();
-    expect(await screen.findByText("Will be sent to Claude · claude-opus-5-5")).toBeInTheDocument();
+    expect(screen.queryByText(/Will be sent to/)).not.toBeInTheDocument();
     expect(ai.generate).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole("button", { name: "Generate" }));
     expect(await screen.findByText("Successful login")).toBeInTheDocument();
-    expect(screen.getByText("AI · pending review · Claude · claude-opus-5-5")).toBeInTheDocument();
+    expect(screen.getByText("AI · pending review")).toBeInTheDocument();
+    expect(screen.queryByText(/claude-opus-5-5/)).not.toBeInTheDocument();
     await expectNoAxeViolations(); // the review list (UX-05)
     expect(ai.generate).toHaveBeenCalledWith(
       expect.objectContaining({ requirementKey: "REQ-007", title: "Login with email" }),

@@ -17,7 +17,9 @@
   },
   "server": {
     "dir": "server/migrations",
-    "reserved": {},
+    "reserved": {
+      "0016": "IA-12 (ADR-0034): AI key vault for the web"
+    },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
       "0012": "E5 step 7 (EJE-02) spare, never used: no server change",

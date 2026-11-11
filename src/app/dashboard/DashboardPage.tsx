@@ -5,6 +5,7 @@ import { Layers, Plus } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
+import { LoadingStatus, Skeleton } from "@shared/ui/Skeleton";
 import { Tabs } from "@shared/ui/Tabs";
 import { tabPanelProps } from "@shared/ui/tabPanel";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
@@ -15,7 +16,7 @@ import { ExitCriteriaCard } from "./ExitCriteriaCard";
 import { DailyExecutionsChart } from "./DailyExecutionsChart";
 import { UpcomingTests } from "./UpcomingTests";
 import { loadHome } from "./model/loadHome";
-import { useHomeMetrics } from "./model/loadHomeMetrics";
+import { useHomeMetrics, type MetricsState } from "./model/loadHomeMetrics";
 import { byProject, executionKpis, exitStatus } from "./model/metrics";
 import {
   DEFAULT_PERIOD,
@@ -59,7 +60,10 @@ export function DashboardPage() {
   const [exitId, setExitId] = useState<string | null>(null);
   const [tab, setTab] = useState<MobileTab>("summary");
   // The local day of the metrics: it moves at midnight with them.
-  const { state: metrics, retry, today } = useHomeMetrics(ownerId);
+  const { state: read, retry, today } = useHomeMetrics(ownerId);
+  // Cached numbers of projects not known yet would add up to zeros: they wait.
+  const metrics: MetricsState =
+    projects === null && read.status === "ready" ? { status: "loading", data: null } : read;
   const ready = metrics.status === "ready";
 
   useEffect(() => {
@@ -131,7 +135,7 @@ export function DashboardPage() {
         </h1>
         <p className="home-header__summary">
           {projects === null ? (
-            !loadFailed && t("dashboard.loading")
+            !loadFailed && <Skeleton width="min(340px, 80%)" className="home-header__summary-sk" />
           ) : list.length === 0 ? (
             t("dashboard.summaryEmpty")
           ) : metrics.status !== "ready" ? (
@@ -154,6 +158,11 @@ export function DashboardPage() {
             />
           )}
         </p>
+        {/* The one announcement of the Home: its cards only draw placeholders. */}
+        <LoadingStatus
+          active={projects === null || metrics.status === "loading"}
+          label={t("dashboard.loading")}
+        />
         {/* How fresh the execution numbers are (RED-W6 review): a refresh in
             flight, or the time of the payload shown after a failed one. */}
         <p className="home-header__fresh" role="status" data-testid="home-fresh">
@@ -203,6 +212,11 @@ export function DashboardPage() {
 
   const indicators = (
     <>
+      {projects === null && (
+        <p className="home-sum-note" aria-hidden="true">
+          <Skeleton width="min(360px, 70%)" className="home-header__summary-sk" />
+        </p>
+      )}
       {kpis.projects > 1 && (
         <p className="home-sum-note">
           <Layers size={14} aria-hidden="true" />
@@ -224,12 +238,18 @@ export function DashboardPage() {
         status={metrics.status}
         period={period}
         projects={list}
+        projectsLoading={projects === null}
       />
     </>
   );
 
   const byProjectCard = (
-    <ExecutionByProject projects={list} state={metrics} onRetry={retry} />
+    <ExecutionByProject
+      projects={list}
+      state={metrics}
+      onRetry={retry}
+      loading={projects === null}
+    />
   );
   const exit = (
     <ExitCriteriaCard
@@ -239,6 +259,7 @@ export function DashboardPage() {
       today={today}
       state={metrics}
       onRetry={retry}
+      loading={projects === null}
     />
   );
   const daily = (

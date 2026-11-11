@@ -39,6 +39,8 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0030](0030-entregables-y-herramientas-como-catalogo.md) | Entregables y herramientas del plan como catálogo con claves                    | Aceptado | 2026-10-30 |
 | [0031](0031-administracion-por-pestanas.md)        | Administración por pestañas (`/admin?tab=`), tabla de capacidades de IA y logos inline | Aceptado | 2026-10-30 |
 | [0032](0032-fragmentos-del-changelog.md)           | Fragmentos del CHANGELOG en `changes/` para que los PRs en paralelo no choquen       | Aceptado | 2026-10-30 |
+| [0033](0033-probar-clave-ia-antes-de-guardarla.md) | Probar una clave de IA antes de guardarla; «Guardar clave» activa su proveedor       | Aceptado | 2026-11-06 |
+| [0034](0034-boveda-de-claves-ia-para-la-web.md)    | Bóveda en el servidor para usar en la web la clave de escritorio (sin implementar)   | Aceptado | 2026-11-06 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

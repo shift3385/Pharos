@@ -13,7 +13,8 @@ import {
 } from "../model/types";
 import { newProvenance } from "../model/provenance";
 import { sendsTemperature } from "../model/capabilities";
-import { onlineModels, onlineProvider } from "../providers/online";
+import { onlineKeyTest, onlineModels, onlineProvider } from "../providers/online";
+import { browserKeyTest } from "../providers/onlineBrowser";
 import { ollamaModels, ollamaProvider } from "../providers/ollama";
 import { isTauri } from "@shared/platform";
 
@@ -140,13 +141,6 @@ export function destinationFor(which: ResolvedProvider, config: AiConfig): AiDes
   return null;
 }
 
-/** Where an AI request would go right now (null when no AI is available), so
- *  the UI can say which provider will process the data before sending it. */
-export async function aiDestination(): Promise<AiDestination | null> {
-  const config = loadConfig();
-  return destinationFor(resolveProvider(config, await aiStatus(config)), config);
-}
-
 /** A drafting request for the "Assist with AI" buttons. */
 export interface AssistRequest {
   /** What to write, e.g. "the Summary section of a software test plan". */
@@ -165,9 +159,12 @@ export function buildAssistMessages(req: AssistRequest): AiMessage[] {
   const system: AiMessage = {
     role: "system",
     content:
-      `You are a QA documentation assistant. Write clear, professional ${language} ` +
-      `prose for a software test plan or test case. Return ONLY the requested text: ` +
-      `plain text, no markdown, no headings, no preamble, no quotes.`,
+      `You are a QA documentation assistant. Write ${language} for a software test plan ` +
+      `or test case in a direct, precise and brief tone: at most 3 short sentences ` +
+      `(about 50 words). State concrete facts only: no filler, no introduction, no ` +
+      `restating the section's name or purpose, and no names, dates or figures that the ` +
+      `context and notes do not give. Return ONLY the requested text: plain text, no ` +
+      `markdown, no headings, no preamble, no quotes.`,
   };
   const parts = [`Write ${req.instruction}.`];
   if (req.context?.trim()) parts.push(`Context:\n${req.context.trim()}`);
@@ -274,6 +271,27 @@ export async function aiChatWithProvenance(
       ? await ollamaProvider(config.ollamaEndpoint).chat(messages, opts)
       : await onlineProvider(destination.provider, config.customBaseUrl).chat(messages, opts);
   return { value, provenance: newProvenance(destination) };
+}
+
+/** Whether a provider's error is about the key itself (each words it its own way;
+ *  Rust and the browser both hand over only the text). */
+export function isKeyRejection(message: string): boolean {
+  return /api[ -_]?key|authenticat|unauthori[sz]ed|permission denied/i.test(message);
+}
+
+/** Tries a typed key with the provider, model and URL of `config` (the form on
+ *  screen, saved or not). Nothing is stored, so a key that fails costs nothing:
+ *  the stored one stays. Through Rust on desktop; from the browser on the web,
+ *  where there is no Rust core (ADR-0033). Throws like the chat does. */
+export async function aiTestKey(config: AiConfig, key: string, messages: AiMessage[]): Promise<string> {
+  const provider = config.onlineProvider;
+  if (!isTauri()) {
+    return browserKeyTest(provider, config.customBaseUrl, key, activeOnlineModel(config), messages);
+  }
+  return onlineKeyTest(provider, config.customBaseUrl, key, messages, {
+    model: activeOnlineModel(config),
+    ...(sendsTemperature(config, provider) ? { temperature: config.temperature } : {}),
+  });
 }
 
 /** Plain chat completion (no provenance), e.g. the connection test. */

@@ -57,3 +57,51 @@ export function methodologyText(
     `${t("testPlan.ceremonies")}: ${ceremonies.join(", ")}`
   );
 }
+
+type TranslateCount = (key: string, opts?: Record<string, unknown>) => string;
+
+/** The methodology of the PDF, one entry per line (PLN-05):
+ *  «Ágil» · «Duración de sprint: 2 semanas» · «Reuniones del equipo: Diaria»
+ *  · «Revisión: 1 vez por sprint» · …. A ceremony whose name already says how
+ *  often it is held (the daily, every day) goes on the «Reuniones del equipo»
+ *  line by name; every other ceremony gets a line with its frequency. The
+ *  .xlsx keeps `methodologyText`, the line its import reads back. */
+export function methodologyLines(
+  d: Pick<
+    TestPlanData,
+    | "methodologyType"
+    | "sprintWeeks"
+    | "ceremonies"
+    | "ceremonyFrequency"
+    | "phases"
+  >,
+  t: TranslateCount,
+): string[] {
+  if ((d.methodologyType ?? "agile") !== "agile") {
+    const phases = (d.phases ?? []).filter((p) => p.trim()).join(", ");
+    return [
+      t("testPlan.traditional"),
+      ...(phases ? [`${t("testPlan.phases")}: ${phases}`] : []),
+    ];
+  }
+  const out = [t("testPlan.agile")];
+  if (d.sprintWeeks) {
+    out.push(
+      t("testPlan.methodologyLines.sprintLength", { count: d.sprintWeeks }),
+    );
+  }
+  const implied: string[] = [];
+  const withFrequency: string[] = [];
+  for (const c of d.ceremonies ?? []) {
+    const label = CEREMONIES.includes(c) ? t(`testPlan.ceremonyLabel.${c}`) : c;
+    const freq = frequencyOf(c, d.ceremonyFrequency);
+    if (c === "daily" && freq === "daily") implied.push(label);
+    else
+      withFrequency.push(
+        `${label}: ${t(`testPlan.methodologyLines.frequency.${freq}`)}`,
+      );
+  }
+  if (implied.length > 0)
+    out.push(`${t("testPlan.ceremonies")}: ${implied.join(", ")}`);
+  return [...out, ...withFrequency];
+}

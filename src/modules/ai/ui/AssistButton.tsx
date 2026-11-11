@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { aiDestination, assistDraft } from "../api/aiApi";
-import type { AiDestination, AiProvenance } from "../model/types";
+import { Sparkles } from "lucide-react";
+import { assistDraft } from "../api/aiApi";
+import type { AiProvenance } from "../model/types";
 import { ProvenanceBadge } from "./ProvenanceBadge";
 import "./Assist.css";
 
 /** "Assist with AI" control: drafts text from the current notes + context and
  *  shows a preview the user can Use or Discard (nothing is applied until Use).
- *  Disabled with a tooltip when no AI provider is available. It says which
- *  provider the notes go to before sending, and once a draft is used the field
- *  shows "AI · pending review" until a person marks it reviewed (IA-01). */
+ *  Disabled with a tooltip when no AI provider is available. Once it is used
+ *  the field shows "AI · pending review" until a person marks it reviewed (IA-01). */
 export function AssistButton({
   available,
   instruction,
@@ -18,11 +18,17 @@ export function AssistButton({
   provenance,
   onUse,
   onReview,
+  label: buttonLabel,
+  showReplaced,
 }: {
   available: boolean;
   instruction: string;
   notes: string;
   context?: string;
+  /** The button's name, when «Asistir con IA» does not say which field it is. */
+  label?: string;
+  /** "Use" overwrites the field: the preview also shows what it replaces (IA-16). */
+  showReplaced?: boolean;
   /** Provenance of the field's current content, if it came from the AI. */
   provenance?: AiProvenance;
   onUse: (text: string, provenance: AiProvenance) => void;
@@ -32,13 +38,8 @@ export function AssistButton({
   const [state, setState] = useState<"idle" | "loading">("idle");
   const [draft, setDraft] = useState<{ text: string; provenance: AiProvenance } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [destination, setDestination] = useState<AiDestination | null>(null);
 
-  useEffect(() => {
-    if (available) void aiDestination().then(setDestination).catch(() => setDestination(null));
-  }, [available]);
-
-  const label = (d: AiDestination) => `${t(`ai.provenance.provider.${d.provider}`)} · ${d.model}`;
+  const name = buttonLabel ?? t("ai.assist.button");
 
   async function run() {
     setState("loading");
@@ -62,29 +63,35 @@ export function AssistButton({
 
   return (
     <div className="assist">
-      <ProvenanceBadge provenance={provenance} onReview={onReview} />
       <div className="assist__row">
         <button
           type="button"
-          className="assist__btn"
+          className="assist__btn assist__btn--icon"
           disabled={!available || state === "loading"}
-          title={available ? undefined : t("ai.assist.unavailable")}
+          aria-busy={state === "loading"}
+          title={available ? name : t("ai.assist.unavailable")}
           onClick={() => void run()}
         >
-          {state === "loading" ? t("ai.assist.drafting") : t("ai.assist.button")}
+          <Sparkles size={16} className={state === "loading" ? "assist__spark" : undefined} aria-hidden="true" />
+          {state === "loading" ? (
+            <span>{t("ai.assist.drafting")}</span>
+          ) : (
+            <span className="sr-only">{name}</span>
+          )}
         </button>
-        {available && destination && (
-          <span className="assist__dest">{t("ai.provenance.destination", { source: label(destination) })}</span>
-        )}
+        <ProvenanceBadge provenance={provenance} onReview={onReview} />
       </div>
 
       {message && <p className="assist__message">{message}</p>}
 
       {draft && (
         <div className="assist__preview">
-          <span className="assist__preview-label">
-            {t("ai.assist.previewTitle")} · {label(draft.provenance)}
-          </span>
+          <span className="assist__preview-label">{t("ai.assist.previewTitle")}</span>
+          {showReplaced && notes.trim() && (
+            <p className="assist__replaced">
+              {t("ai.assist.replaces")} <del className="assist__old">{notes.trim()}</del>
+            </p>
+          )}
           <p className="assist__draft">{draft.text}</p>
           <div className="assist__actions">
             <button

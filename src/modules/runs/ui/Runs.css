@@ -118,3 +118,8 @@
   flex: none;
   white-space: nowrap;
 }
+
+/* Loading: the place of the origin chips above the table. */
+.rn-sk-chips {
+  margin-bottom: 8px;
+}

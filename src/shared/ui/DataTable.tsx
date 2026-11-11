@@ -1,6 +1,8 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Skeleton, SkeletonRegion } from "./Skeleton";
+import { skeletonWidth } from "./skeletonWidth";
 import { useBreakpoint } from "./useBreakpoint";
 import type { Breakpoint } from "./viewport";
 import "./dataTable.css";
@@ -227,6 +229,91 @@ export function DataTable<T>({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * The loading state of a `DataTable`, from the same `columns`: same tracks and
+ * real header text, so the table is in place when the rows arrive. On mobile,
+ * when the table turns into cards (`cards`), placeholder cards instead.
+ */
+export function TableSkeleton<T>({
+  columns,
+  rows = 6,
+  selectable = false,
+  cards = true,
+  minWidth,
+  rowHeight,
+  announce,
+  className = "",
+}: {
+  columns: DataColumn<T>[];
+  rows?: number;
+  /** The table has a checkbox column. */
+  selectable?: boolean;
+  /** The real table has `mobileCard`. */
+  cards?: boolean;
+  minWidth?: number;
+  /** Height (px) of the real cells, when they hold more than a pill. */
+  rowHeight?: number;
+  /** False when the screen already says it is loading. */
+  announce?: boolean;
+  className?: string;
+}) {
+  const view = useBreakpoint();
+  const indexes = Array.from({ length: rows }, (_, i) => i);
+
+  if (view === "mobile" && cards) {
+    return (
+      <SkeletonRegion className={`dt-cards-wrap ${className}`.trim()} announce={announce}>
+        {indexes.map((i) => (
+          <div key={i} className="dt-card dt-card--sk">
+            <Skeleton width={skeletonWidth(i + 1)} height={10} />
+            <Skeleton width={skeletonWidth(i)} height={14} />
+            <Skeleton shape="block" width={96} height={20} />
+          </div>
+        ))}
+      </SkeletonRegion>
+    );
+  }
+
+  const visible = columns.filter((c) => !c.minView || RANK[view] >= RANK[c.minView]);
+  const tracks = [selectable ? "36px" : null, ...visible.map((c) => c.width ?? "minmax(0,1fr)")]
+    .filter(Boolean)
+    .join(" ");
+  const style = {
+    "--dt-cols": tracks,
+    "--dt-min": minWidth ? `${minWidth}px` : undefined,
+    "--sk-row": rowHeight ? `${rowHeight}px` : undefined,
+  } as CSSProperties;
+
+  return (
+    <SkeletonRegion className={`dt-wrap ${className}`.trim()} announce={announce}>
+      <div className="dt" style={style}>
+        <div className="dt__row dt__row--head">
+          {selectable && <span className="dt__cell dt__cell--check" />}
+          {visible.map((c) => (
+            <span key={c.id} className="dt__cell" data-align={c.align}>
+              {c.header}
+            </span>
+          ))}
+        </div>
+        {indexes.map((i) => (
+          <div key={i} className="dt__row">
+            {selectable && (
+              <span className="dt__cell dt__cell--check dt__cell--sk">
+                <Skeleton shape="block" width={16} height={16} />
+              </span>
+            )}
+            {visible.map((c, j) => (
+              <span key={c.id} className="dt__cell dt__cell--sk" data-align={c.align}>
+                <Skeleton width={skeletonWidth(i + j)} />
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </SkeletonRegion>
   );
 }
 

@@ -8,6 +8,9 @@ import type { StoredMilestone } from "../model/types";
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
+/** Id of the milestones table: the plan PDF prints it under the schedule. */
+export const MILESTONES_TABLE = "milestones";
+
 /** The milestones of step 14 as a table (EXP-03): the template has a sprint
  *  table but no place for them. Empty rows are left out. */
 export function milestonesTable(
@@ -15,6 +18,7 @@ export function milestonesTable(
   t: Translate,
 ): ExportTable {
   return {
+    id: MILESTONES_TABLE,
     name: t("testPlan.milestones"),
     headers: [t("testPlan.milestoneName"), t("testPlan.date")],
     widths: [48, 16],

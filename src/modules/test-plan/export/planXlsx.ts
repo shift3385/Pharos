@@ -16,6 +16,9 @@ export interface ExportablePlan {
   scopeOut: string[];
   testTypes: string[]; // localized
   methodology: string; // composed text
+  /** The methodology one entry per line, for the PDF (PLN-05). Without it
+   *  the PDF prints `methodology`. */
+  methodologyLines?: string[];
   testLevels: string[]; // localized
   deliverables: string[];
   environmentConfig: string;
@@ -54,6 +57,13 @@ function growRow(ws: ExcelJS.Worksheet, rowNum: number, text: string, cpl = 90) 
   const row = ws.getRow(rowNum);
   if (!row.height || row.height < h) row.height = h;
 }
+
+// Characters per line of the template's merged pair columns (a little under
+// their width, since words wrap whole), so a long row is not cut off.
+const PAIR_LEFT_CPL = 50; // B:C
+const PAIR_RIGHT_CPL = 52; // D:F
+const ROLE_CPL = 30; // B
+const RESPONSIBILITY_CPL = 70; // C:F
 
 const safeMerge = (ws: ExcelJS.Worksheet, range: string) => {
   try {
@@ -148,6 +158,8 @@ export async function buildPlanXlsx(
         const c = it as { criterion: string; metric: string };
         s.getCell(`B${r}`).value = c.criterion;
         s.getCell(`D${r}`).value = c.metric;
+        growRow(s, r, c.criterion, PAIR_LEFT_CPL);
+        growRow(s, r, c.metric, PAIR_RIGHT_CPL);
       },
     },
     p.closureCriteria,
@@ -162,6 +174,8 @@ export async function buildPlanXlsx(
         const c = it as { risk: string; mitigation: string };
         s.getCell(`B${r}`).value = c.risk;
         s.getCell(`D${r}`).value = c.mitigation;
+        growRow(s, r, c.risk, PAIR_LEFT_CPL);
+        growRow(s, r, c.mitigation, PAIR_RIGHT_CPL);
       },
     },
     p.risks,
@@ -190,6 +204,8 @@ export async function buildPlanXlsx(
         const c = it as { role: string; responsibility: string };
         s.getCell(`B${r}`).value = c.role;
         s.getCell(`C${r}`).value = c.responsibility;
+        growRow(s, r, c.role, ROLE_CPL);
+        growRow(s, r, c.responsibility, RESPONSIBILITY_CPL);
       },
     },
     p.roles,

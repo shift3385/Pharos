@@ -24,7 +24,8 @@ import { LoadError } from "@shared/ui/LoadError";
 import { ReportedError } from "@shared/ui/notify";
 import { controlProps } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
-import { DataTable, type DataColumn } from "@shared/ui/DataTable";
+import { DataTable, type DataColumn, TableSkeleton } from "@shared/ui/DataTable";
+import { CardGridSkeleton, LoadingStatus, Skeleton } from "@shared/ui/Skeleton";
 import { Pagination } from "@shared/ui/Pagination";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { StatusPill } from "@shared/ui/StatusPill";
@@ -375,7 +376,26 @@ function ProjectList() {
       {loadFailed && <LoadError message={t("projects.list.loadFailed")} onRetry={retryLoad} />}
 
       {rows === null ? (
-        !loadFailed && <p className="pj-muted">{t("common.loading")}</p>
+        !loadFailed && (
+          <>
+            <LoadingStatus />
+            <section className="pj-recent">
+              <div className="pj-section-head">
+                <Skeleton width={180} height={24} />
+              </div>
+              <CardGridSkeleton className="pj-recent__grid" minHeight={156} announce={false} />
+            </section>
+            <section className="pj-all">
+              <div className="pj-all__toolbar">
+                <div className="pj-all__heading">
+                  <Skeleton width={160} height={16} />
+                </div>
+                <Skeleton shape="block" width="min(320px, 50%)" height={38} />
+              </div>
+              <TableSkeleton columns={columns} minWidth={720} rows={5} rowHeight={32} className="pj-table" announce={false} />
+            </section>
+          </>
+        )
       ) : all.length === 0 ? (
         !creating && <p className="pj-empty">{t("projects.empty")}</p>
       ) : (

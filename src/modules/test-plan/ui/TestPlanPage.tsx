@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FormSkeleton } from "@shared/ui/Skeleton";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
@@ -41,7 +42,7 @@ export function TestPlanPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userId]);
 
-  if (loading) return <p className="tp__muted">{t("common.loading")}</p>;
+  if (loading) return <FormSkeleton />;
   // Never the wizard here: without knowing the plan it would create a second one.
   if (loadFailed) return <LoadError message={t("testPlan.loadFailed")} onRetry={() => void refresh()} />;
 

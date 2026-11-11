@@ -21,3 +21,7 @@
   - SEC-07 entra en el backlog para 0.5.0.
 - **Ver también:** [ADR-0024](0024-clave-de-recuperacion.md) aplica la misma
   regla a la clave de la base de datos local y añade su clave de recuperación.
+  [ADR-0033](0033-probar-clave-ia-antes-de-guardarla.md) permite probar una clave
+  recién escrita sin guardarla; una clave guardada sigue sin volver a la interfaz.
+  [ADR-0034](0034-boveda-de-claves-ia-para-la-web.md) (sin implementar) permitirá, si
+  el usuario lo activa, guardar una copia cifrada en el servidor.

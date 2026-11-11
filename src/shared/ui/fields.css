@@ -148,19 +148,12 @@
   gap: var(--space-2);
 }
 
-.tp-list-field__row,
-.tp-pair-field__row {
+.tp-list-field__row {
   display: flex;
   gap: var(--space-2);
 }
 
-.tp-pair-field__row input {
-  flex: 1;
-  min-width: 0;
-}
-
-.tp-list-field__row input,
-.tp-pair-field__row input {
+.tp-list-field__row input {
   height: 38px;
   padding: 0 var(--space-3);
   font-family: inherit;
@@ -201,6 +194,177 @@
   background: none;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
+}
+
+/* Pairs (UX-15): fields grow with their text, so nothing is cut. The layout
+ * follows the field's own width, not the window's: two columns under one
+ * header, or below 480 px each pair stacked with visible labels. One DOM, so
+ * the tab order is the same in both. */
+.tp-pair-field {
+  container-type: inline-size;
+  --tp-pair-cols: 1fr 1fr;
+  --tp-pair-del: 38px;
+}
+
+.tp-pair-field--wide-first {
+  --tp-pair-cols: 2fr 1fr;
+}
+
+.tp-pair-field__head,
+.tp-pair-field__row {
+  display: grid;
+  grid-template-columns: var(--tp-pair-cols) var(--tp-pair-del);
+  gap: var(--space-2);
+}
+
+.tp-pair-field__head {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.tp-pair-field__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tp-pair-field__row {
+  position: relative;
+}
+
+.tp-pair-field__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Only for assistive tech while the header names the columns. */
+.tp-pair-field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tp-pair-field textarea {
+  flex: 1;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-block-size: 38px;
+  /* 12 lines: covers about 300 characters at any width. */
+  max-block-size: calc(12 * 1.5em + 17px);
+  padding: 7.5px var(--space-3);
+  font-family: inherit;
+  font-size: var(--fs-ui);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  resize: none;
+  overflow: auto;
+  overflow-wrap: break-word;
+  field-sizing: content;
+  /* Focusing a field never leaves it under the wizard's sticky footer. */
+  scroll-margin-block-end: 80px;
+}
+
+/* Without automatic sizing the text stays reachable: room for 3 lines, and the
+ * person can pull the field taller. */
+@supports not (field-sizing: content) {
+  .tp-pair-field textarea {
+    min-block-size: calc(3 * 1.5em + 17px);
+    resize: vertical;
+  }
+}
+
+.tp-pair-field__row .tp-list-field__del {
+  align-self: start;
+  width: var(--tp-pair-del);
+  height: var(--tp-pair-del);
+}
+
+/* The confirmation takes its own line, so the fields keep their width and the
+ * text about to be removed stays readable. */
+.tp-pair-field__row .tp-confirm {
+  grid-column: 1 / -1;
+  justify-self: end;
+  flex-wrap: wrap;
+}
+
+@container (max-width: 479.98px) {
+  .tp-pair-field__head {
+    display: none;
+  }
+
+  .tp-pair-field__list {
+    gap: var(--space-3);
+  }
+
+  .tp-pair-field__row {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+    --tp-pair-del: 44px;
+  }
+
+  .tp-pair-field__list > li:first-child .tp-pair-field__row {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .tp-pair-field__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    font-size: var(--fs-caption);
+    font-weight: var(--fw-medium);
+    color: var(--color-text-secondary);
+  }
+
+  /* The icon sits on the first label's line, clear of its text. */
+  .tp-pair-field__cell:first-child .tp-pair-field__label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding-right: 52px;
+  }
+
+  .tp-pair-field__row .tp-list-field__del {
+    position: absolute;
+    top: var(--space-3);
+    right: 0;
+  }
+
+  .tp-pair-field__list > li:first-child .tp-list-field__del {
+    top: 0;
+  }
+
+  .tp-pair-field textarea {
+    min-block-size: 44px;
+    padding-block: 10.5px;
+  }
+
+  .tp-pair-field__row .tp-confirm {
+    justify-self: stretch;
+  }
+
+  .tp-pair-field__row .tp-confirm__yes,
+  .tp-pair-field__row .tp-confirm__no,
+  .tp-pair-field .tp-list-field__add {
+    min-height: 44px;
+  }
 }
 
 .tp-checks {

@@ -3,7 +3,14 @@ import { useTranslation } from "react-i18next";
 import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
 import { FormField } from "@shared/ui/FormField";
 import { required } from "@shared/validation";
-import { AiSuggestList, AssistButton, suggestRisks, withProvenance } from "@modules/ai";
+import {
+  AiSuggestList,
+  AssistButton,
+  suggestClosureCriteria,
+  suggestResponsibilities,
+  suggestRisks,
+  withProvenance,
+} from "@modules/ai";
 import {
   CEREMONIES,
   CEREMONY_FREQUENCIES,
@@ -13,7 +20,8 @@ import {
   TEST_TYPES,
 } from "../../model/catalogs";
 import { frequencyOf } from "../../model/methodology";
-import { planBrief } from "./formState";
+import { ASSIST_INSTRUCTION } from "./aiGuidance";
+import { closureBrief, conclusionBrief, planBrief, rolesWithoutResponsibility, withResponsibilities } from "./formState";
 import { methodologyGaps, type StepId } from "./steps";
 import { AreaField, FieldLabel, TextField, type StepProps } from "./stepProps";
 import { DeliverablesStep } from "./DeliverablesStep";
@@ -68,12 +76,12 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
     case "summary":
       return (
         <>
-          <AreaField label={t("testPlan.summary")} value={form.summary} onChange={(v) => set("summary", v)} />
+          <AreaField solo label={t("testPlan.summary")} value={form.summary} onChange={(v) => set("summary", v)} />
           <AssistButton
             available={aiReady}
-            instruction="the Summary (introduction) section of a software test plan"
+            instruction={ASSIST_INSTRUCTION.summary}
             notes={form.summary}
-            context={`Test plan title: ${form.title}`}
+            context={planBrief(form)}
             {...aiProps("summary")}
           />
         </>
@@ -201,7 +209,7 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           />
           <AssistButton
             available={aiReady}
-            instruction="the test environment configuration description of a software test plan"
+            instruction={ASSIST_INSTRUCTION.environmentConfig}
             notes={form.environmentConfig}
             context={`Test plan title: ${form.title}`}
             {...aiProps("environmentConfig")}
@@ -213,7 +221,7 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           />
           <AssistButton
             available={aiReady}
-            instruction="the hardware and software requirements of a software test plan's test environment"
+            instruction={ASSIST_INSTRUCTION.environmentRequirements}
             notes={form.environmentRequirements}
             context={`Test plan title: ${form.title}`}
             {...aiProps("environmentRequirements")}
@@ -231,7 +239,7 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           />
           <AssistButton
             available={aiReady}
-            instruction="the test automation strategy of a software test plan: what to automate first, at which levels, with which of the chosen tools, and what stays manual"
+            instruction={ASSIST_INSTRUCTION.automationStrategy}
             notes={form.automationStrategy}
             context={planBrief(form)}
             {...aiProps("automationStrategy")}
@@ -240,30 +248,79 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
       );
     case "testData":
       return (
-        <AreaField
-          label={t("testPlan.testDataManagement")}
-          value={form.testDataManagement}
-          onChange={(v) => set("testDataManagement", v)}
-        />
+        <>
+          <AreaField
+            solo
+            label={t("testPlan.testDataManagement")}
+            value={form.testDataManagement}
+            onChange={(v) => set("testDataManagement", v)}
+          />
+          <AssistButton
+            available={aiReady}
+            instruction={ASSIST_INSTRUCTION.testDataManagement}
+            notes={form.testDataManagement}
+            context={planBrief(form)}
+            {...aiProps("testDataManagement")}
+          />
+        </>
       );
     case "defects":
       return (
-        <AreaField
-          label={t("testPlan.defectManagement")}
-          value={form.defectManagement}
-          onChange={(v) => set("defectManagement", v)}
-        />
+        <>
+          <AreaField
+            solo
+            label={t("testPlan.defectManagement")}
+            value={form.defectManagement}
+            onChange={(v) => set("defectManagement", v)}
+          />
+          <AssistButton
+            available={aiReady}
+            instruction={ASSIST_INSTRUCTION.defectManagement}
+            notes={form.defectManagement}
+            context={planBrief(form)}
+            {...aiProps("defectManagement")}
+          />
+        </>
       );
-    case "roles":
+    case "roles": {
+      const pendingRoles = rolesWithoutResponsibility(form.roles);
       return (
-        <PairListField
-          label={t("testPlan.step.roles")}
-          items={form.roles}
-          keys={["role", "responsibility"]}
-          labels={[t("testPlan.roleCol"), t("testPlan.responsibilityCol")]}
-          onChange={(v) => set("roles", v)}
-        />
+        <>
+          <PairListField
+            label={t("testPlan.step.roles")}
+            items={form.roles}
+            keys={["role", "responsibility"]}
+            labels={[t("testPlan.roleCol"), t("testPlan.responsibilityCol")]}
+            onChange={(v) => set("roles", v)}
+          />
+          <AiSuggestList
+            available={aiReady}
+            buttonLabel={t("testPlan.suggestResponsibilities")}
+            blockedReason={pendingRoles.length ? undefined : t("testPlan.suggestResponsibilitiesNone")}
+            run={() => suggestResponsibilities(planBrief(form), pendingRoles, i18n.resolvedLanguage ?? "es")}
+            renderItem={(r) => (
+              <>
+                {r.role}
+                <span className="assist__pick-sub">{r.responsibility}</span>
+              </>
+            )}
+            provenance={form.aiProvenance.roles}
+            onAdd={(items, provenance) =>
+              setForm((f) =>
+                f
+                  ? {
+                      ...f,
+                      roles: withResponsibilities(f.roles, items),
+                      aiProvenance: withProvenance(f.aiProvenance, "roles", provenance),
+                    }
+                  : f,
+              )
+            }
+            onReview={review("roles")}
+          />
+        </>
       );
+    }
     case "schedule":
       return <ScheduleStep {...props} />;
     case "risks":
@@ -311,34 +368,81 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
       );
     case "communication":
       return (
-        <AreaField
-          label={t("testPlan.communicationPlan")}
-          value={form.communicationPlan}
-          onChange={(v) => set("communicationPlan", v)}
-        />
+        <>
+          <AreaField
+            solo
+            label={t("testPlan.communicationPlan")}
+            value={form.communicationPlan}
+            onChange={(v) => set("communicationPlan", v)}
+          />
+          <AssistButton
+            available={aiReady}
+            instruction={ASSIST_INSTRUCTION.communicationPlan}
+            notes={form.communicationPlan}
+            context={planBrief(form)}
+            {...aiProps("communicationPlan")}
+          />
+        </>
       );
     case "closure":
       return (
-        <PairListField
-          label={t("testPlan.step.closure")}
-          items={form.closureCriteria}
-          keys={["criterion", "metric"]}
-          labels={[t("testPlan.criterionCol"), t("testPlan.metricCol")]}
-          onChange={(v) => set("closureCriteria", v)}
-        />
+        <>
+          <PairListField
+            label={t("testPlan.step.closure")}
+            items={form.closureCriteria}
+            keys={["criterion", "metric"]}
+            labels={[t("testPlan.criterionCol"), t("testPlan.metricCol")]}
+            wideFirst
+            onChange={(v) => set("closureCriteria", v)}
+          />
+          <AiSuggestList
+            available={aiReady}
+            buttonLabel={t("testPlan.suggestClosure")}
+            run={() =>
+              suggestClosureCriteria(
+                closureBrief(form),
+                form.closureCriteria.map((c) => c.criterion).filter((c) => c.trim()),
+                i18n.resolvedLanguage ?? "es",
+              )
+            }
+            renderItem={(c) => (
+              <>
+                {c.criterion}
+                <span className="assist__pick-sub">{c.metric}</span>
+              </>
+            )}
+            provenance={form.aiProvenance.closureCriteria}
+            onAdd={(items, provenance) =>
+              setForm((f) =>
+                f
+                  ? {
+                      ...f,
+                      // Replace an empty row instead of keeping it.
+                      closureCriteria: [
+                        ...f.closureCriteria.filter((c) => c.criterion.trim() || c.metric.trim()),
+                        ...items,
+                      ],
+                      aiProvenance: withProvenance(f.aiProvenance, "closureCriteria", provenance),
+                    }
+                  : f,
+              )
+            }
+            onReview={review("closureCriteria")}
+          />
+        </>
       );
     case "purpose":
       return (
         <>
           <AreaField
+            solo
             label={t("testPlan.purpose")}
-            hint={t("testPlan.purposeHint")}
             value={form.purpose}
             onChange={(v) => set("purpose", v)}
           />
           <AssistButton
             available={aiReady}
-            instruction="the Purpose section of a software test plan"
+            instruction={ASSIST_INSTRUCTION.purpose}
             notes={form.purpose}
             context={[
               `Title: ${form.title}`,
@@ -354,12 +458,12 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
     case "conclusion":
       return (
         <>
-          <AreaField label={t("testPlan.conclusion")} value={form.conclusion} onChange={(v) => set("conclusion", v)} />
+          <AreaField solo label={t("testPlan.conclusion")} value={form.conclusion} onChange={(v) => set("conclusion", v)} />
           <AssistButton
             available={aiReady}
-            instruction="the Conclusion section (summary and next steps) of a software test plan"
+            instruction={ASSIST_INSTRUCTION.conclusion}
             notes={form.conclusion}
-            context={`Test plan title: ${form.title}`}
+            context={conclusionBrief(form)}
             {...aiProps("conclusion")}
           />
           <FinishStep {...props} />
