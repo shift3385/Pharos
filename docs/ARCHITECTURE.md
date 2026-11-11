@@ -1932,7 +1932,7 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   `TextArea` and scrollbar (UX-30/33), contiguous keys across devices (DAT-04)
   and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
   the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
-  where each piece is and §2.2 for the proposed course (pending approval).
+  where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
 - **Known gaps (2026-11-11):** no Rust `pharos-core` crate yet (CORE-01), so no
   CLI and no other process can write while the app is open (SEC-05); no shared
   workspaces or roles (SYNC-07); exit criteria are recognised from free text and

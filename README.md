@@ -740,7 +740,7 @@ growing text areas, manual v2…) is listed in [`changes/`](changes/README.md).
 Part of it is already in `main`; the rest is on the integration branch
 `local/app-completa`, waiting to come in by pull request. The baseline of
 2026-11-11 ([`docs/ROADMAP.md` §2.1](docs/ROADMAP.md)) says where each piece is
-and what the proposed course is.
+and the course approved on 2026-11-11 (ADR-0039): Pharos designs tests and runs them through the frameworks, supervised or not, reached in steps up to 1.0.
 
 Detailed progress lives in `PROGRESO.md` (outside this repo, in the planning
 workspace); the backlog lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
