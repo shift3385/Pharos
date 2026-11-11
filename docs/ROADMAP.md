@@ -642,6 +642,10 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`). Desde el 2026
   conflictos): **T1** hasta `7583809`, **T2** hasta `0f76542` y **T3** hasta `23fb20c`. Cada
   tramo con la CI completa, revisión independiente y fusión con commit de fusión. Al terminar,
   `local/app-completa` se recrea desde `main`. Cada push y cada PR, con OK del usuario.
+  **Avance (2026-11-11):** #62 → `37d864d`; #61 → `7aaa7c9`, con el arreglo del recorrido 10 y la
+  excepción temporal de RUSTSEC-2026-0459 (BASE-22); T1 (#63) → `e8aa5d9`, con el formato de
+  `audit_tests.rs` y la espera de las confirmaciones en los recorridos; T2 (#64) → `cd8abca`.
+  T3 llega hasta `3d39261` (incluye UX-36 y esta línea base) y va en su propio PR.
 - **`main` es la fuente de verdad.** Cada pista abre su PR a `main` el mismo día que entra en
   `local/app-completa`, que pasa a ser una vista previa (`main` más los PR abiertos) y nunca
   se separa más de una semana.
