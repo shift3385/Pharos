@@ -55,6 +55,8 @@ interface Props {
   /** The project's «Historial en el plan exportado» (PLN-02): with
    *  `revisions`, both exports carry the plan's revision history. */
   exportHistory?: "current" | "revisions";
+  /** The project's name: a new plan's title suggestion (UX-34). */
+  projectName?: string;
 }
 
 /**
@@ -64,7 +66,7 @@ interface Props {
  * plan» and the latest revisions beside the form, and «Revisiones»,
  * «Importar / Exportar» and «Guardar» in the project header.
  */
-export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "current" }: Props) {
+export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "current", projectName }: Props) {
   const { t, i18n } = useTranslation();
   const { confirm, dialog: restoreDialog } = useConfirm();
   const { user } = useAuth();
@@ -152,7 +154,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
           setLoadFailed(true);
         }
       } else if (!cancelled && loadedId.current === null) {
-        const f = defaults(tRef.current);
+        const f = defaults(tRef.current, projectName);
         setForm(f);
         initialRef.current = JSON.stringify(f);
       }

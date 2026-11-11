@@ -97,7 +97,7 @@ desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
   Las funciones puras viven en `model/dailyLines.ts`.
 - **`UpcomingTests.tsx`** elige la lista con el `Select` de Pharos (UX-30),
   con icono y número por opción, en lugar de pestañas. «Ver todas» es una
-  flecha con `aria-label` y, en «Re-test», cada fila dice cuándo falló
+  flecha con `aria-label` y, en «Por confirmar», cada fila dice cuándo falló
   (`lastAt`). «+N más» cuenta la lista entera.
 
 ## Añadir un gadget

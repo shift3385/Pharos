@@ -196,7 +196,7 @@ chapter("inicio", () => {
   step("proximas", {
     title: "Próximas pruebas",
     caption:
-      "«Próximas pruebas» propone qué ejecutar a continuación, por prioridad, según el último resultado de cada caso. El selector bajo el título elige la lista, con su número: «No ejecutadas», «Bloqueadas» o «Re-test» (casos que fallaron y cuyo defecto ya está corregido; cada fila dice cuándo falló). Cada fila abre el caso; la flecha de la derecha («Ver todas») lleva a la lista de casos, y si no caben todas, «+N más» también.",
+      "«Próximas pruebas» propone qué ejecutar a continuación, por prioridad, según el último resultado de cada caso. El selector bajo el título elige la lista, con su número: «No ejecutadas», «Bloqueadas» o «Por confirmar» (casos que fallaron y cuyo defecto ya está corregido; cada fila dice cuándo falló). Cada fila abre el caso; la flecha de la derecha («Ver todas») lleva a la lista de casos, y si no caben todas, «+N más» también.",
     covers: ["action:home-upcoming-filter"],
     focus: ['[data-testid="home-upcoming-filter"]', '[role="listbox"]'],
     run: async () => {

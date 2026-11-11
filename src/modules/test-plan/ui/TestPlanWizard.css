@@ -647,9 +647,12 @@
 }
 
 /* The field and «Añadir» share a line; the field gives way. */
+/* The «Otro …» field sits at the foot of «Propios», level with the bottom
+   of its row; the team's entries fill the room above it (UX-34). */
 .tpw-cols .tpw-cols__add {
   flex-wrap: nowrap;
-  margin-top: 6px;
+  margin-top: auto;
+  padding-top: 6px;
 }
 
 .tpw-cols .tpw-cols__add .tpw-input {

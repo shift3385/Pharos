@@ -36,7 +36,7 @@ import {
   sprintDays,
 } from "../../model/schedule";
 
-type Translate = (key: string) => string;
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
 export interface FormState {
   title: string;
@@ -201,9 +201,12 @@ export function conclusionBrief(form: FormState): string {
   return [closureBrief(form), criteria.length ? `Exit criteria: ${criteria.join("; ")}` : ""].filter(Boolean).join("\n");
 }
 
-export function defaults(t: Translate): FormState {
+/** A new plan's fields. Its title is a suggestion from the project's name
+ *  («Plan de pruebas Wallet Bancaria», UX-34), editable like any other. */
+export function defaults(t: Translate, projectName?: string): FormState {
+  const name = projectName?.trim();
   return {
-    title: t("testPlan.defaultTitle"),
+    title: name ? t("testPlan.suggestedTitle", { project: name }) : t("testPlan.defaultTitle"),
     version: "1.0",
     planDate: new Date().toISOString().slice(0, 10),
     status: "draft",

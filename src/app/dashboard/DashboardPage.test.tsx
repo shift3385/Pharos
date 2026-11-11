@@ -345,7 +345,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(screen.getByTestId("home-upcoming")).toHaveTextContent(
       "Consulta de saldo",
     );
-    await pick(/^Re-test · 1/);
+    await pick(/^Por confirmar · 1/);
     const retest = within(screen.getByTestId("home-upcoming")).getAllByRole(
       "link",
     );
@@ -375,12 +375,12 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
       "No ejecutadas · 1",
       "Bloqueadas · 1",
-      "Re-test · 1",
+      "Por confirmar · 1",
     ]);
     expect(select).toHaveAttribute("aria-expanded", "true");
-    await user.click(screen.getByRole("option", { name: /^Re-test/ }));
+    await user.click(screen.getByRole("option", { name: /^Por confirmar/ }));
     expect(screen.getByTestId("home-upcoming")).toHaveTextContent("PCL-0002·Portal Clientes v3· falló el 27 oct");
-    // Only Re-test says it.
+    // Only «Por confirmar» says it.
     await user.click(select);
     await user.click(screen.getByRole("option", { name: /^Bloqueadas/ }));
     expect(screen.getByTestId("home-upcoming")).not.toHaveTextContent("falló");

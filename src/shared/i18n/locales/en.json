@@ -1094,7 +1094,7 @@
       "sanity": "Sanity",
       "exploratory": "Exploratory",
       "uat": "UAT (user acceptance)",
-      "retest": "Confirmation (re-test)"
+      "retest": "Confirmation"
     },
     "levelLabel": {
       "unit": "Unit",
@@ -1348,7 +1348,8 @@
       "add": "Add"
     },
     "testTypes": "Test types",
-    "testLevels": "Test levels"
+    "testLevels": "Test levels",
+    "suggestedTitle": "{{project}} test plan"
   },
   "testCase": {
     "loadFailed": "The test cases could not be loaded.",
@@ -1859,7 +1860,7 @@
       "filters": "Test status",
       "notRun": "Not run",
       "blocked": "Blocked",
-      "retest": "Re-test",
+      "retest": "To confirm",
       "priority": {
         "critical": "Critical priority",
         "high": "High priority",
@@ -1869,7 +1870,7 @@
       "empty": {
         "notRun": "No cases left to run.",
         "blocked": "No blocked cases.",
-        "retest": "No cases waiting for a re-test."
+        "retest": "No cases waiting to be confirmed."
       },
       "option": "{{label}} · {{count}}",
       "failedOn": "· failed on {{date}}"

@@ -396,7 +396,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     expect(heading()).toHaveTextContent("Alcance");
   });
 
-  it("«Niveles y tipos de prueba»: groups, the «Confirmación (re-test)» type with its tooltip, and own types in «Propios»", async () => {
+  it("«Niveles y tipos de prueba»: groups, the «Confirmación» type with its tooltip, and own types in «Propios»", async () => {
     setViewportWidth(1440);
     renderWizard();
     await screen.findByText("Paso 1 de 17");
@@ -410,7 +410,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     const levels = screen.getByRole("group", { name: "Niveles de prueba" });
     expect(within(levels).getByRole("checkbox", { name: "Unitarias , componente" })).not.toBeChecked();
     const change = screen.getByRole("group", { name: "Confirmación y regresión" });
-    const retest = within(change).getByRole("checkbox", { name: "Confirmación (re-test)" });
+    const retest = within(change).getByRole("checkbox", { name: "Confirmación" });
     expect(retest).toHaveAccessibleDescription("Volver a probar lo que falló, una vez arreglado.");
     expect(retest.closest("label")).toHaveAttribute("title", "Volver a probar lo que falló, una vez arreglado.");
     expect(
@@ -418,7 +418,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
         .getAllByRole("checkbox")
         .map((c) => [c.closest("label")?.textContent, c.closest("label")?.title]),
     ).toEqual([
-      ["Confirmación (re-test)", "Volver a probar lo que falló, una vez arreglado."],
+      ["Confirmación", "Volver a probar lo que falló, una vez arreglado."],
       ["Regresión", "Comprobar que lo que funcionaba sigue funcionando."],
       ["Humo", "Una pasada rápida por lo básico de una versión nueva."],
       ["Sanidad", "Una comprobación corta de lo que se acaba de cambiar."],
@@ -480,5 +480,37 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     renderAt(`/?step=${step}`);
     await screen.findByText(/^Paso \d+ de 17$/);
     expect(heading()).toHaveTextContent(title);
+  });
+});
+
+describe("plan wizard · a new plan's title (UX-34)", () => {
+  it("suggests «Plan de pruebas <proyecto>», editable, and keeps it unsaved-free", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(
+      <WithHeader>
+        <TestPlanWizard planId={null} projectId="p1" projectName="Wallet Bancaria" />
+      </WithHeader>,
+    );
+    const title = await screen.findByRole("textbox", { name: /Título/ });
+    expect(title).toHaveValue("Plan de pruebas Wallet Bancaria");
+    await userEvent.clear(title);
+    await userEvent.type(title, "Plan de regresión");
+    expect(title).toHaveValue("Plan de regresión");
+  });
+
+  it("falls back to «Nuevo plan de pruebas» without a project name", async () => {
+    setViewportWidth(1440);
+    renderWizard(null);
+    expect(await screen.findByRole("textbox", { name: /Título/ })).toHaveValue("Nuevo plan de pruebas");
+  });
+
+  it("never renames a plan that already has a title", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(
+      <WithHeader>
+        <TestPlanWizard planId="plan1" projectId="p1" projectName="Wallet Bancaria" />
+      </WithHeader>,
+    );
+    expect(await screen.findByRole("textbox", { name: /Título/ })).toHaveValue(PLAN.title);
   });
 });
