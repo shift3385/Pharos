@@ -106,25 +106,86 @@ Las validaciones nativas pendientes están en §6.
 
 Resumen de la propuesta. El árbol de lo pendiente por área de QA está en la página de la
 línea base del 2026-11-11 y en `files/PROGRESO.md`. Si el usuario la aprueba, se reescriben §3
-y las prioridades de §5, y se enmiendan los ADR que citan números de versión (ADR-0002,
-ADR-0003 y ADR-0005).
+y las prioridades de §5, se crea la serie AUT y se enmiendan los ADR que citan números de
+versión (ADR-0002, ADR-0003 y ADR-0005).
+
+**El eje: la visión del usuario.** Con sus palabras, la cúspide del proyecto es que Pharos,
+«dependiendo de las pruebas que se deseen hacer y la descripción», sea «capaz de diseñar
+pruebas y ejecutarlas autónomamente ya sea supervisadas o no con la interacción humana,
+recogiendo datos y métricas de todo». Leída contra el estado del arte, es el ciclo completo
+guiado por IA sin que Pharos se convierta en motor de ejecución:
+
+1. **Entender** qué probar (requisitos, descripción, diseños, el propio producto) y qué tipo de prueba hace falta.
+2. **Diseñar** casos, datos y Gherkin con técnicas ISTQB.
+3. **Generar** los scripts en el framework de cada plataforma: web con Playwright; API con Karate o Bruno; escritorio Windows con Appium 3 + NovaWindows o FlaUI (WinAppDriver está abandonado desde 2020); móvil con Appium 3 o Maestro; rendimiento con k6; accesibilidad con axe; seguridad con ZAP. «Artemis», que nombró el usuario, está por confirmar.
+4. **Ejecutar** con esos frameworks como procesos externos, en modo supervisado (una persona aprueba el plan o cada paso) o no supervisado (CI o planificado).
+5. **Juzgar y registrar:** resultados, evidencias, defectos, métricas y tendencias, con los criterios de salida como *quality gate* y el informe de cierre.
+
+La regla que lo hace viable es la del estado del arte: **la IA redacta tests deterministas y
+los frameworks los ejecutan sin IA**. Un agente que maneja el navegador en directo (Playwright
+MCP y similares) sirve para explorar y reproducir, y lo que obtiene se guarda como evidencia, no
+como el resultado oficial. Los pasos 1 y 2 ya existen en buena parte (IA-05, IA-10, IA-13..19);
+el 5 llega con 0.4.0. Los escalones hacia el 3 y el 4, cada uno con un hito medible:
+
+| Escalón | Qué es | Versión | Hito medible |
+| --- | --- | --- | --- |
+| a · Importar | Resultados de cualquier herramienta, también desde CI | 0.6.0 | Un PR de GitHub reporta JUnit, SARIF, k6 y axe a Pharos |
+| b · Ejecutar con una orden | `pharos run`, runner local con «doctor» y disparo de CI | 0.7.0 | «Ejecutar @TC-001» lanza Playwright en local, y la suite de escritorio de Pharos corre desde Pharos, con resultados vinculados |
+| c · Scripts generados por IA | La IA escribe el spec desde el caso; una persona lo revisa | 0.8.0 | De un caso aprobado sale un spec de Playwright que se revisa, se ejecuta y queda vinculado; se mide qué parte pasa la revisión sin cambios |
+| d · Agente supervisado | El agente propone qué ejecutar, dónde y con qué; una persona aprueba | 0.9.0 | Un plan propuesto por el agente, aprobado por una persona, corre en el agente headless y cada acción queda auditada como `agent:<id>` |
+| e · Autonomía con políticas | Ejecución planificada sin intervención, dentro de límites | 1.0.0 | Una ejecución planificada respeta su política, el *quality gate* decide y los defectos se abren como «IA · pendiente de revisión» |
+
+Ítems nuevos que se proponen (serie AUT, se crean al aprobar): **AUT-01** scripts generados
+por IA desde un caso, Playwright primero, con procedencia visible; **AUT-02** política de
+ejecución por proyecto (entornos permitidos, secretos por referencia, presupuesto de IA y de
+tiempo, quién aprueba); **AUT-03** plan de ejecución propuesto por el agente y aprobado por una
+persona; **AUT-04** reparación de scripts rotos con el cambio a la vista y aprobación;
+**AUT-05** ejecución no supervisada planificada o desde CI; **AUT-06** aislamiento de la
+ejecución de código generado.
 
 | Versión | Tema | Contenido | Criterio de salida |
 | --- | --- | --- | --- |
 | **0.3.0** | Diseño asistido y experiencia | Lo hecho desde 0.2.0 (§2.1), el selector de fecha, el Cronograma y la Metodología (en curso) y las NC rápidas (NC-009, NC-015, NC-027, NC-053, NC-054) | Los 67 commits en `main` por PR; manual en verde; IA-16..19 validadas con una clave real |
 | **0.4.0** | Estrategia medible | Plan ISO 29119-3 completo con apartado de métricas (NC-023); aprobación con autor y fecha y revisión solo con cambios (NC-031, NC-032, PLN-03, PLN-04); criterios de salida estructurados en lugar de texto libre; *quality gate* al cerrar un ciclo, con aviso y justificación; tendencia entre ciclos y métricas clásicas (adelanta DOC-06 y parte de DOC-02); informe de cierre 29119-3 (DOC-01); Administración › Auditoría (AUD-01); TRZ-04 completo; RED-W4 | Cerrar un ciclo con un criterio en «No cumple» pide una justificación que queda en el informe de cierre; el Inicio muestra la tendencia de los últimos ciclos |
 | **0.5.0** | Equipo | TEN-01 y SYNC-07 (workspaces con roles), CAS-02 (revisión y aprobación por otra persona), SEC-08, SYNC-04b (adjuntos), SYNC-09, IA-12, servidor configurable desde la app y SEC-07 (TLS) | Dos usuarios trabajan en el mismo workspace con roles; un auditor no edita; otra persona aprueba un caso |
-| **0.6.0** | Núcleo y automatización conectada | CORE-01, SEC-04/05, INT-01..04 (CLI `upload`/`watch`, API v1 con tokens, webhooks, plantillas de GitHub Actions), ING-06 (SARIF, k6, axe), ING-07 (Allure), CAS-01, SYNC-02 | Un PR en GitHub reporta JUnit, SARIF, k6 y axe a Pharos; el CLI escribe con la app abierta |
-| **0.7.0** | Campo | MOB-01, EXP-01, EJE-06b, SYNC-05 | Un caso ejecutado en el móvil aparece en el escritorio; una sesión exploratoria genera un Run |
-| **0.8.0** | Runner local e IA de calidad | RUN-01..03, IA-06 (MCP local), IA-02, IA-03, IA-09 | «Ejecutar @TC-001» en local deja un resultado vinculado; Claude Code lee casos por MCP |
-| **0.9.x** | Ecosistema | INT-05..07 (Jira, disparo de CI, importar desde TestRail), IA-04, RUN-04 | Plan → CI → resultado → defecto en Jira |
-| **1.0.0** | Normativo | DOC-03..05 (paquetes EAA/ASVS, modo aprendizaje, modo portafolio) y la decisión explícita de 1.0 | [`VERSIONING.md`](VERSIONING.md) §1 |
+| **0.6.0** | Núcleo y automatización conectada (escalón a) | CORE-01, SEC-04/05, INT-01..04 (CLI `upload`/`watch`, API v1 con tokens, webhooks, plantillas de GitHub Actions), ING-06 (SARIF, k6, axe), ING-07 (Allure), CAS-01, SYNC-02 | Un PR en GitHub reporta JUnit, SARIF, k6 y axe a Pharos; el CLI escribe con la app abierta |
+| **0.7.0** | Ejecutar con una orden (escalón b) | RUN-01 (runner local con «doctor»: Playwright, Karate/Bruno, k6, axe, Appium/FlaUI en Windows), `pharos run`, RUN-02 (Gherkin de ida y vuelta), RUN-03 (la suite de Pharos dentro de Pharos), INT-06 (disparo de CI), AUT-06 (aislamiento) | «Ejecutar @TC-001» en local deja un resultado vinculado; un plan dispara un workflow de GitHub |
+| **0.8.0** | Scripts generados por IA (escalón c) | AUT-01, AUT-02, IA-03 (*lint* de oráculo), IA-02 (duplicados), IA-06 (MCP local), IA-09 (modelo por tarea) | Un spec generado desde un caso se revisa, se ejecuta y queda vinculado; Claude Code lee casos por MCP |
+| **0.9.0** | Agente supervisado (escalón d) | AUT-03, AUT-04, RUN-04 (agente headless: Windows; Mac para iOS), IA-04 (triage de fallos) | Plan del agente aprobado por una persona, ejecutado en el agente headless y auditado como `agent:<id>` |
+| **0.10.0** | Campo y ecosistema | MOB-01, EXP-01 (con exploración asistida como evidencia), EJE-06b, SYNC-05, INT-05 (Jira), INT-07 (TestRail), DOC-03 (paquetes EAA/ASVS) | Un caso ejecutado en el móvil aparece en el escritorio; plan → CI → resultado → defecto en Jira |
+| **1.0.0** | Autonomía con políticas (escalón e) | AUT-05 y la decisión explícita de 1.0; DOC-04/05 (aprendizaje, portafolio) cuando haya hueco | El hito del escalón e; [`VERSIONING.md`](VERSIONING.md) §1 |
 
 La propuesta mantiene la regla de ADR-0003 (equipo antes que móvil) y el orden de «plano de
-control» del estado del arte. Adelanta a 0.4.0 las métricas y el plan ISO completo porque son
-locales, se apoyan en la derivación que ya existe y son la brecha que más pesa hoy para un
-responsable de QA. La integración de `local/app-completa` en `main` y el flujo de trabajo
+control» del estado del arte. No se salta lo básico: las métricas y los *quality gates* (0.4.0)
+van antes que cualquier agente, porque sin ellos un agente no tiene con qué decidir si una
+ejecución pasa; y los roles (0.5.0) van antes del modo supervisado, porque alguien con permiso
+tiene que aprobar. Retrasa la app móvil de ejecución manual (MOB-01) hasta después del agente:
+la automatización móvil (Appium, Maestro) corre desde el escritorio, el agente o la nube, no
+desde el teléfono. La integración de `local/app-completa` en `main` y el flujo de trabajo
 propuestos están en `files/PROGRESO.md` (línea base del 2026-11-11).
+
+**Riesgos y decisiones que abre la ejecución autónoma:**
+
+- **Ejecutar código generado.** Un script escrito por la IA puede borrar datos o llamar a
+  sistemas reales. Propuesta: sin supervisión solo se ejecuta en el agente headless o en CI,
+  nunca en el PC del QA; en local, siempre con aprobación y en un entorno aislado (contenedor o
+  Windows Sandbox, por decidir en un spike).
+- **Credenciales de los entornos.** Se guardan en el llavero o en el almacén del servidor y el
+  script las recibe al ejecutarse por variable de entorno; nunca llegan al modelo de IA ni al
+  oplog (ADR-0006).
+- **Coste de IA.** La IA genera una vez y los frameworks ejecutan muchas; cada proyecto tiene un
+  presupuesto de tokens visible, y el modelo local (Ollama) sirve para lo repetitivo.
+- **Fiabilidad.** La IA en tiempo de ejecución introduce *flakiness* (Thoughtworks la mantiene
+  en «Assess»): lo que decide un resultado oficial es un script determinista, no un modelo.
+- **Inyección de instrucciones.** El agente lee la app que prueba; un texto de la pantalla no
+  puede darle órdenes (la misma regla que ya aplica IA-18).
+- **Licencias.** Pharos no empaqueta los frameworks: los instala el usuario y Pharos los lanza
+  como procesos (k6 es AGPL). Antes de integrar cada uno, verificar su licencia.
+- **Plataformas.** Escritorio Windows primero, porque Pharos corre ahí y ya se prueba a sí
+  mismo con WDIO + tauri-driver; Android por ADB y Appium desde Windows; iOS solo con un agente
+  macOS o una nube de dispositivos.
+- **Responsabilidad.** Todo lo que hace el agente pasa por el oplog como `agent:<id>` con
+  «IA · pendiente de revisión», y la política dice quién aprueba qué.
 
 ## 3. Hitos
 
