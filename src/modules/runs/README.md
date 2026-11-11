@@ -62,7 +62,8 @@ gemelo `server/src/modules/domain/execution-summary.ts`, comprobados con
 `reportXlsx.ts` (ExcelJS sin plantilla: hojas Resumen, Resultados, Defectos y
 Cobertura), `reportPdf.ts` (ayudantes de `pdfDoc`), `StatusReportDialog` y
 `StatusReportButton` («Informe de estado» en Ejecuciones; en un ciclo, a través
-de `CyclesPage.cycleActions`). Alcance Proyecto / Ciclo / Plan y periodo; los
+de `CyclesPage.cycleActions`). Alcance Proyecto / Ciclo / Plan y periodo («Desde» y «Hasta» con el
+`DatePicker` de Pharos, UX-36: cada uno limita los días del otro); los
 defectos van «a fecha de hoy». El resumen (rellenado con las cifras) y las
 recomendaciones se guardan en `localStorage` (`pharos:status-report:<proyecto>:<alcance>`)
 y solo en ese equipo. Las exportaciones van a la carpeta de descargas

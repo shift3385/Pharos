@@ -64,6 +64,18 @@
     "removeEvidenceConfirm": "“{{name}}” is deleted and cannot be recovered.",
     "removeEvidenceFailed": "The evidence could not be removed. Try again."
   },
+  "datePicker": {
+    "placeholder": "dd/mm/yyyy",
+    "open": "Open calendar",
+    "change": "Change date, {{date}}",
+    "dialog": "Choose a date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "todayMark": "today",
+    "todayOut": "Today is outside the allowed dates.",
+    "clear": "Clear"
+  },
   "templates": {
     "loadFailed": "The templates could not be loaded.",
     "kind": {
@@ -1006,6 +1018,11 @@
     "agile": "Agile",
     "traditional": "Traditional / V-model",
     "sprintWeeks": "Sprint length (weeks)",
+    "methodGroup": "Way of working",
+    "sprintLength": "Sprint length",
+    "weeks_one": "{{count}} week",
+    "weeks_other": "{{count}} weeks",
+    "frequencyOff": "Tick «{{ceremony}}» to choose its frequency.",
     "ceremonies": "Agile events",
     "phases": "Phases",
     "methodologyLines": {
@@ -1172,7 +1189,7 @@
       "testData": "How test data is created, protected and refreshed.",
       "defects": "How defects are logged, prioritised and closed.",
       "roles": "Who does what in the testing process.",
-      "schedule": "Sprints and milestones of the test cycle.",
+      "schedule": "Sprints and milestones of the test cycle. Click the start day and then the end day to create a sprint (Esc cancels). Select a sprint and drag its ends to change the dates, or edit them in its row. In «Milestone», click a day to add a milestone.",
       "risks": "Risks that can affect testing and how they are mitigated.",
       "communication": "How and when progress is reported.",
       "closure": "Conditions to meet before closing the cycle.",
@@ -1272,9 +1289,6 @@
       "prevMonth": "Previous month",
       "nextMonth": "Next month",
       "calendar": "Schedule calendar",
-      "hintSprint": "Click the start day and then the end day to create a sprint.",
-      "hintSprintDrag": "Click the start day and then the end day to create a sprint. Select a sprint and drag its ends to change the dates, or edit them in its row.",
-      "hintMilestone": "Click a day to add a milestone. Click a milestone to select it.",
       "hintEnd": "Start: {{date}}. Click the end day. Esc to cancel.",
       "legend": "Calendar legend",
       "listsRegion": "Sprints and milestones",

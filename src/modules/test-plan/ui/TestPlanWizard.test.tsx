@@ -5,6 +5,7 @@ import { Link, useLocation } from "react-router";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { resizeViewport, setViewportWidth } from "@test/viewport";
+import { optionLabels, selectValue } from "@test/select";
 import { testPlanApi } from "../api/testPlanApi";
 import type { TestPlan } from "../model/types";
 import { WithHeader } from "./wizard/testHarness";
@@ -176,7 +177,7 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     const group = screen.getByRole("group", { name: "Reuniones del equipo" });
     expect(group).toHaveAccessibleDescription(/Elige al menos una reunión del equipo/);
     expect(step6()).not.toHaveTextContent("completado");
-    await userEvent.click(within(group).getByRole("button", { name: "Diaria" }));
+    await userEvent.click(within(group).getByRole("checkbox", { name: "Diaria" }));
     expect(screen.getByTestId("methodology-gaps")).toHaveTextContent(/^$/);
     expect(step6()).toHaveTextContent("completado");
     // Traditional asks for a phase instead.
@@ -184,6 +185,75 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     await userEvent.click(screen.getByRole("option", { name: "Tradicional / V-model" }));
     expect(screen.getByTestId("methodology-gaps")).toHaveTextContent("Añade al menos una fase para completar este paso.");
     expect(step6()).not.toHaveTextContent("completado");
+  });
+
+  it("«Metodología» in two columns: the way of working, and one row per meeting with its frequency (UX-36)", async () => {
+    setViewportWidth(1440);
+    vi.mocked(testPlanApi.get).mockResolvedValue({
+      ...structuredClone(PLAN),
+      data: { ...structuredClone(PLAN.data), methodologyType: "agile", sprintWeeks: 2, ceremonies: ["daily"] },
+    });
+    renderWizard();
+    await screen.findByText("Paso 1 de 17");
+    await goToStep(5);
+    const method = screen.getByRole("group", { name: "Método de trabajo" });
+    const meetings = screen.getByRole("group", { name: "Reuniones del equipo" });
+    expect(within(method).getByRole("combobox", { name: "Metodología" })).toHaveTextContent("Ágil");
+    // The sprint length reads «2 semanas», not a bare number.
+    const length = within(method).getByRole("combobox", { name: "Duración del sprint" });
+    expect(length).toHaveTextContent("2 semanas");
+    expect(await optionLabels(length)).toEqual(["1 semana", "2 semanas", "3 semanas", "4 semanas"]);
+    // Four rows: checkbox, name and frequency on one line; no pills, no loose
+    // «Frecuencia de …» row.
+    const rows = meetings.querySelectorAll(".tpw-meet");
+    expect([...rows].map((r) => r.querySelector(".tpw-check__text")?.textContent)).toEqual([
+      "Diaria",
+      "Revisión",
+      "Retrospectiva",
+      "Planificación",
+    ]);
+    for (const row of rows) {
+      expect(within(row as HTMLElement).getAllByRole("checkbox")).toHaveLength(1);
+      expect(within(row as HTMLElement).getAllByRole("combobox")).toHaveLength(1);
+    }
+    expect(screen.queryByTestId("ceremony-frequencies")).not.toBeInTheDocument();
+    expect(document.querySelector(".tp-checks--pills, .tp-pill")).toBeNull();
+    // A meeting not ticked shows its frequency greyed out, and says why.
+    const review = within(meetings).getByRole("combobox", { name: "Frecuencia de Revisión" });
+    expect(review).toBeDisabled();
+    expect(review).toHaveAccessibleDescription("Marca «Revisión» para elegir su frecuencia.");
+    expect(review).toHaveAttribute("title", "Marca «Revisión» para elegir su frecuencia.");
+    expect(within(meetings).getByRole("combobox", { name: "Frecuencia de Diaria" })).toBeEnabled();
+    // Ticking it turns its frequency on.
+    await userEvent.click(within(meetings).getByRole("checkbox", { name: "Revisión" }));
+    expect(review).toBeEnabled();
+    await selectValue(review, "weekly");
+    expect(review).toHaveTextContent("semanal");
+    await selectValue(length, "3");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    const saved = vi.mocked(testPlanApi.update).mock.calls.at(-1)![1].data;
+    // The data is as before: the keys, the length as a number, the frequencies.
+    expect(saved).toMatchObject({
+      methodologyType: "agile",
+      sprintWeeks: 3,
+      ceremonies: ["daily", "review"],
+      ceremonyFrequency: { daily: "daily", review: "weekly" },
+    });
+  });
+
+  it("«Metodología» without sprints hides the length and the meetings and asks for phases (UX-36)", async () => {
+    setViewportWidth(1440);
+    renderWizard();
+    await screen.findByText("Paso 1 de 17");
+    await goToStep(5);
+    await selectValue(screen.getByRole("combobox", { name: "Metodología" }), "traditional");
+    expect(screen.queryByRole("combobox", { name: "Duración del sprint" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Reuniones del equipo" })).not.toBeInTheDocument();
+    const phases = document.querySelector<HTMLElement>('fieldset[data-group="phases"]')!;
+    expect(phases).toHaveAccessibleName("Fases");
+    expect(phases).toHaveAccessibleDescription("Añade al menos una fase para completar este paso.");
+    // Still two columns: the way of working on the left, the phases on the right.
+    expect(phases.parentElement!.children).toHaveLength(2);
   });
 
   it("«Herramientas»: ten tools, «Más herramientas (65)» with search, and a free field", async () => {
@@ -373,7 +443,16 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue(PLAN.title);
     expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Revisado");
     expect(screen.getByRole("textbox", { name: "Versión" })).toHaveValue("1.3");
-    expect(screen.getByLabelText("Fecha")).toHaveValue("2026-10-29");
+    // The date is Pharos' DatePicker (UX-36): dd/mm/aaaa, still ISO in the form.
+    const date = screen.getByRole("textbox", { name: "Fecha" });
+    expect(date).toHaveValue("29/10/2026");
+    expect(document.querySelector('input[type="date"]')).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Cambiar fecha, 29/10/2026" }));
+    const calendar = screen.getByRole("dialog", { name: "Fecha" });
+    expect(within(calendar).getByRole("heading", { name: "Octubre de 2026" })).toBeInTheDocument();
+    await userEvent.click(calendar.querySelector<HTMLElement>('[data-day="2026-10-30"]')!);
+    expect(date).toHaveValue("30/10/2026");
+    expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Elaborado por" })).not.toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Estado del plan" })).toHaveTextContent("Laura Méndez");
     // 17 steps in the rail, 4 of them complete: 4 / 17 = 24 %.

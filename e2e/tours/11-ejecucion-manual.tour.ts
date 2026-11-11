@@ -270,7 +270,7 @@ chapter("ejecucion-manual", () => {
 
   step("informe-estado", {
     title: "Informe de estado",
-    caption: "En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas: identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.",
+    caption: "En «Ejecuciones» (o en la cabecera de un ciclo), «Informe de estado» genera el informe de estado de pruebas (ISO/IEC/IEEE 29119-3) del proyecto, de un ciclo o del plan, entre las fechas que elijas en «Desde» y «Hasta» (con el selector de fechas de Pharos del capítulo 5: «Hasta» abre en el mes de «Desde» y no deja elegir un día anterior): identificación, progreso, resultados por estado, defectos por severidad (a fecha de hoy), cobertura y riesgos, los criterios de salida del plan (cumple / no cumple / sin datos), bloqueos, resumen y recomendaciones. El resumen se rellena solo con las cifras y se puede cambiar; en este ejemplo, Liomar escribe sus recomendaciones. Los dos se guardan solo en este equipo y van en las exportaciones.",
     covers: ["dialogs:src/modules/runs/report/StatusReportDialog.tsx"],
     shot: { element: D },
     run: async () => {

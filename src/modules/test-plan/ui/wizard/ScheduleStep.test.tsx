@@ -202,11 +202,35 @@ describe("«Cronograma» · Cronograma (RED-W5)", () => {
     expect(screen.queryByText(/Dura \d+ días/)).not.toBeInTheDocument();
   });
 
+  it("how to use the calendar is in the step's «?» help, and the calendar sits right under the bar (UX-36)", async () => {
+    renderStep();
+    await openSchedule();
+    // Not above the calendar any more…
+    const step = document.querySelector<HTMLElement>(".tps")!;
+    expect(within(step).queryByText(/Haz clic en el día de inicio/)).not.toBeInTheDocument();
+    expect(step.querySelector(".tps-hint")).toBeNull();
+    // …but in the title's help, like every other step.
+    const help = document.getElementById("tpw-step-help")!;
+    expect(help).toHaveTextContent(
+      "Haz clic en el día de inicio y después en el de fin para crear un sprint (Esc cancela). Selecciona un sprint y arrastra sus extremos para cambiar las fechas, o edítalas en su fila.",
+    );
+    expect(screen.getByRole("button", { name: "Más información: Cronograma" })).toHaveAttribute(
+      "aria-describedby",
+      "tpw-step-help",
+    );
+    // The bar, then (besides a visually hidden live region) the calendar.
+    const bar = document.querySelector(".tps-bar")!;
+    const visible = [...bar.parentElement!.children].filter((el) => !el.classList.contains("sr-only"));
+    expect(visible[visible.indexOf(bar) + 1]).toHaveClass("tps-cal");
+    // A range being marked is still announced.
+    await userEvent.click(day("2026-12-07"));
+    expect(screen.getByTestId("schedule-live")).toHaveTextContent("Inicio: 07/12/2026. Haz clic en el día de fin.");
+  });
+
   it("in «Hito» mode a click on a free day adds a milestone", async () => {
     renderStep();
     await openSchedule();
     await userEvent.click(screen.getByRole("radio", { name: "Hito" }));
-    expect(screen.getByText(/Haz clic en un día para añadir un hito/)).toBeInTheDocument();
     await userEvent.click(day("2026-11-25"));
     expect(milestoneRows()).toHaveLength(3);
     expect(within(milestoneRows()[1]).getByRole("textbox", { name: "Hito" })).toHaveValue("Hito 3");
@@ -353,7 +377,6 @@ describe("«Cronograma» · Cronograma (RED-W5)", () => {
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: q !== "(pointer: fine)", media: q, addEventListener() {}, removeEventListener() {} }));
     renderStep();
     await openSchedule();
-    expect(screen.getByText("Haz clic en el día de inicio y después en el de fin para crear un sprint.")).toBeInTheDocument();
     await userEvent.click(day("2026-11-05"));
     expect(day("2026-11-15")).not.toHaveAttribute("data-drag");
   });

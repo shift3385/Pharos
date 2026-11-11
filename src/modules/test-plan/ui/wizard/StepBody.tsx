@@ -1,6 +1,6 @@
-import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckboxGroup, ListField, PairListField } from "@shared/ui/fields";
+import { ListField, PairListField } from "@shared/ui/fields";
+import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
 import { required } from "@shared/validation";
@@ -12,14 +12,13 @@ import {
   suggestRisks,
   withProvenance,
 } from "@modules/ai";
-import { CEREMONIES, CEREMONY_FREQUENCIES } from "../../model/catalogs";
-import { frequencyOf } from "../../model/methodology";
 import { ASSIST_INSTRUCTION } from "./aiGuidance";
 import { closureBrief, conclusionBrief, planBrief, rolesWithoutResponsibility, withResponsibilities } from "./formState";
-import { methodologyGaps, type StepId } from "./steps";
+import type { StepId } from "./steps";
 import { AreaField, FieldLabel, TextField, type StepProps } from "./stepProps";
 import { DeliverablesStep } from "./DeliverablesStep";
 import { LevelsTypesStep } from "./LevelsTypesStep";
+import { MethodologyStep } from "./MethodologyStep";
 import { ToolsStep } from "./ToolsStep";
 import { ScheduleStep } from "./ScheduleStep";
 import { FinishStep } from "./FinishStep";
@@ -28,7 +27,6 @@ import { FinishStep } from "./FinishStep";
 export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
   const { t, i18n } = useTranslation();
   const { form, set, setForm, aiReady, aiProps, review, attempted } = props;
-  const gapId = useId();
 
   switch (id) {
     // The document's identification block (ISO/IEC/IEEE 29119-3, UX-31):
@@ -63,10 +61,11 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           </div>
           <div className="tpw-grid">
             <TextField label={t("testPlan.version")} value={form.version} onChange={(v) => set("version", v)} />
-            <label className="tp-field">
-              <span>{t("testPlan.date")}</span>
-              <input type="date" value={form.planDate} onChange={(e) => set("planDate", e.target.value)} />
-            </label>
+            <FormField id="tp-date" label={t("testPlan.date")}>
+              {(p) => (
+                <DatePicker {...p} value={form.planDate} onChange={(v) => set("planDate", v)} data-testid="plan-date" />
+              )}
+            </FormField>
           </div>
         </>
       );
@@ -95,83 +94,7 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
     case "levelsTypes":
       return <LevelsTypesStep form={form} set={set} />;
     case "methodology":
-      return (
-        <>
-          <FormField id="tp-methodology" label={t("testPlan.methodology")}>
-            {(p) => (
-              <Select<"agile" | "traditional">
-                {...p}
-                value={form.methodologyType}
-                onChange={(v) => set("methodologyType", v)}
-                data-testid="plan-methodology"
-                options={[
-                  { value: "agile", label: t("testPlan.agile") },
-                  { value: "traditional", label: t("testPlan.traditional") },
-                ]}
-              />
-            )}
-          </FormField>
-          {form.methodologyType === "agile" ? (
-            <>
-              <FormField id="tp-sprint-weeks" label={t("testPlan.sprintWeeks")}>
-                {(p) => (
-                  <Select
-                    {...p}
-                    value={String(form.sprintWeeks)}
-                    onChange={(v) => set("sprintWeeks", Number(v))}
-                    placeholder="—"
-                    options={[1, 2, 3, 4].map((w) => ({ value: String(w), label: String(w) }))}
-                  />
-                )}
-              </FormField>
-              <FieldLabel text={t("testPlan.ceremonies")} />
-              <CheckboxGroup
-                label={t("testPlan.ceremonies")}
-                options={CEREMONIES}
-                selected={form.ceremonies}
-                onChange={(v) => set("ceremonies", v)}
-                labelFor={(k) => t(`testPlan.ceremonyLabel.${k}`)}
-                variant="pills"
-                describedBy={gapId}
-              />
-              {form.ceremonies.length > 0 && (
-                <div className="tp-freq" data-testid="ceremony-frequencies">
-                  {form.ceremonies.map((c) => {
-                    const label = CEREMONIES.includes(c) ? t(`testPlan.ceremonyLabel.${c}`) : c;
-                    return (
-                      <FormField key={c} label={t("testPlan.frequencyFor", { ceremony: label })}>
-                        {(p) => (
-                          <Select
-                            {...p}
-                            value={frequencyOf(c, form.ceremonyFrequency)}
-                            onChange={(v) => set("ceremonyFrequency", { ...form.ceremonyFrequency, [c]: v })}
-                            options={CEREMONY_FREQUENCIES.map((f) => ({
-                              value: f,
-                              label: t(`testPlan.frequencyLabel.${f}`),
-                            }))}
-                          />
-                        )}
-                      </FormField>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <FieldLabel text={t("testPlan.phases")} />
-              <ListField label={t("testPlan.phases")} items={form.phases} onChange={(v) => set("phases", v)} />
-            </>
-          )}
-          {/* What is still missing for the ✓ (FIX-14). Always rendered, so the
-              live region exists before its text changes and is announced. */}
-          <p id={gapId} className="tpw-hint tpw-gap" role="status" data-testid="methodology-gaps">
-            {methodologyGaps(form)
-              .map((g) => t(`testPlan.methodologyGap.${g}`))
-              .join(" ")}
-          </p>
-        </>
-      );
+      return <MethodologyStep form={form} set={set} />;
     case "deliverables":
       return <DeliverablesStep value={form.deliverables} onChange={(v) => set("deliverables", v)} />;
     case "environment":

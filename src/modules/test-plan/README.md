@@ -25,15 +25,31 @@ the shape can evolve without a migration.
   prueba», before «Metodología»). An old id — in `?step=<id>` or anywhere a
   step is named — lands on the joined step. The saved data did not change.
 - `StepBody`: the fields of each step; the large ones have their own component
-  (`LevelsTypesStep`, `DeliverablesStep`, `ToolsStep`, `ScheduleStep`,
-  `FinishStep`).
+  (`LevelsTypesStep`, `MethodologyStep`, `DeliverablesStep`, `ToolsStep`,
+  `ScheduleStep`, `FinishStep`).
+- `MethodologyStep` (UX-36): two columns in the look of `CheckColumns` (its
+  `.tpw-cols` CSS). «Método de trabajo»: the methodology and the sprint
+  length as «N semanas». «Reuniones del equipo»: one row per meeting with its
+  checkbox, name and frequency `Select`; an unticked meeting's frequency is
+  disabled with its reason (title and description). Traditional (no sprints):
+  the right column holds the phases. Same data as before (`sprintWeeks`,
+  `ceremonies`, `ceremonyFrequency`, `phases`).
+- `ScheduleStep`: how to mark sprints and milestones is in the step's «?»
+  help (`stepDesc.schedule`, UX-36); only the range being marked is
+  announced, in a visually hidden live region, so the calendar sits right
+  under its bar. The month grid's geometry and keys are shared with the
+  `DatePicker` (`@shared/ui/monthGrid`), and the day helpers
+  (`isoOf`, `parseIso`, `toDisplay`, `fromDisplay`, `addDays`) live in
+  `@shared/time/isoDay` (re-exported by `model/schedule`).
 - `CheckColumns`: checkboxes in columns by group, shared by «Niveles y tipos de
   prueba» and «Entregables» — thin lines between rows and columns, a grey icon
   and the group's name in small capitals as its head (no counters), an
   optional tooltip per option, and the last cell, «Propios», with the team's
   own entries (each with ✕) and the field to add one. A step's explanation
   goes in the «?» of its title, never as text under it.
-- Selects are Pharos' `Select` (`@shared/ui/Select`, UX-30).
+- Selects are Pharos' `Select` (`@shared/ui/Select`, UX-30); the plan's
+  date is Pharos' `DatePicker` (`@shared/ui/DatePicker`, UX-36), never a
+  native `<input type="date">`.
 
 ## Catalogs (`model/catalogs.ts`, `model/catalogLabels.ts`)
 

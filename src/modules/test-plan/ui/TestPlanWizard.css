@@ -668,6 +668,48 @@
   overflow-wrap: break-word;
 }
 
+/* «Metodología» (UX-36): two columns in the look of «Niveles y tipos»,
+   at any form width from 480 px (not three). Left, the way of working;
+   right, one row per meeting: checkbox and name, then its frequency. */
+@container (min-width: 480px) {
+  .tpw-meth .tpw-cols__grid {
+    grid-template-columns: minmax(140px, 1fr) minmax(min-content, 1.8fr);
+  }
+}
+
+.tpw-meth__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* One grid for all the meetings, so the frequencies line up: the names keep
+   their width (never broken inside a word), the frequencies take the rest.
+   Each row is `display: contents`: its checkbox and select are the cells. */
+.tpw-meet-list {
+  display: grid;
+  /* Wide enough for «una vez por sprint» or «cada dos semanas» whole. */
+  grid-template-columns: max-content minmax(184px, 1fr);
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.tpw-meet {
+  display: contents;
+}
+
+.tpw-meet .tpw-check__text {
+  white-space: nowrap;
+}
+
+.tpw-meet .pselect {
+  height: 36px;
+}
+
+[data-viewport="mobile"] .tpw-meet .pselect {
+  height: 44px;
+}
+
 /* The grey aside of a level («· componente»). */
 .tpw-check__aside {
   color: var(--color-text-muted);
@@ -940,14 +982,6 @@
   border: 0;
   border-radius: 8px;
   cursor: pointer;
-}
-
-.tps-hint {
-  min-height: 18px;
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--color-text-secondary);
-  text-wrap: pretty;
 }
 
 .tps-cal {

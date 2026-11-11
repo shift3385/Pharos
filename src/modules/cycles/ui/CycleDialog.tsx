@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
+import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
 import {
@@ -134,13 +135,21 @@ export function CycleDialog({
           {text("milestone")}
           {text("sprint")}
           <FormField label={t("cycles.field.startsOn")}>
-            {(p) => <input {...p} type="date" value={form.startsOn} onChange={(e) => set("startsOn")(e.target.value)} />}
+            {(p) => <DatePicker {...p} value={form.startsOn} onChange={set("startsOn")} data-testid="cycle-starts-on" />}
           </FormField>
           <FormField
             label={t("cycles.field.endsOn")}
             issue={tried && datesWrong ? { severity: "error", code: "cycles.error.dates" } : null}
           >
-            {(p) => <input {...p} type="date" value={form.endsOn} onChange={(e) => set("endsOn")(e.target.value)} />}
+            {(p) => (
+              <DatePicker
+                {...p}
+                value={form.endsOn}
+                min={form.startsOn || undefined}
+                onChange={set("endsOn")}
+                data-testid="cycle-ends-on"
+              />
+            )}
           </FormField>
           {cycle && (
             <FormField label={t("cycles.field.status")}>
