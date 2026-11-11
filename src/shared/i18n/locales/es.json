@@ -1848,7 +1848,9 @@
       "unavailable": "Ejecuciones por día, {{period}}: no disponibles",
       "showData": "Ver los datos",
       "undatedNote_one": "{{count}} resultado sin fecha válida no está en la tabla.",
-      "undatedNote_other": "{{count}} resultados sin fecha válida no están en la tabla."
+      "undatedNote_other": "{{count}} resultados sin fecha válida no están en la tabla.",
+      "explore": "Ejecuciones por día: usa las flechas para recorrer los días",
+      "legend": "Mostrar u ocultar estados"
     },
     "upcoming": {
       "title": "Próximas pruebas",
@@ -1868,7 +1870,9 @@
         "notRun": "No hay casos sin ejecutar.",
         "blocked": "No hay casos bloqueados.",
         "retest": "No hay casos esperando re-test."
-      }
+      },
+      "option": "{{label}} · {{count}}",
+      "failedOn": "· falló el {{date}}"
     },
     "tabs": {
       "label": "Secciones del Inicio",

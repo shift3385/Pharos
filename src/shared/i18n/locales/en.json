@@ -1848,7 +1848,9 @@
       "unavailable": "Runs per day, {{period}}: not available",
       "showData": "Show the data",
       "undatedNote_one": "{{count}} result without a valid date is not in the table.",
-      "undatedNote_other": "{{count}} results without a valid date are not in the table."
+      "undatedNote_other": "{{count}} results without a valid date are not in the table.",
+      "explore": "Executions per day: use the arrow keys to go through the days",
+      "legend": "Show or hide states"
     },
     "upcoming": {
       "title": "Upcoming tests",
@@ -1868,7 +1870,9 @@
         "notRun": "No cases left to run.",
         "blocked": "No blocked cases.",
         "retest": "No cases waiting for a re-test."
-      }
+      },
+      "option": "{{label}} · {{count}}",
+      "failedOn": "· failed on {{date}}"
     },
     "tabs": {
       "label": "Home sections",

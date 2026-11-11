@@ -80,7 +80,7 @@ function metricsPayload(): HomeMetrics {
         queue: {
           notRun: [ref("c2", "PCL-0001", "Login con 2FA", "critical")],
           blocked: [],
-          retest: [ref("c1", "PCL-0002", "Pago con tarjeta", "medium")],
+          retest: [{ ...ref("c1", "PCL-0002", "Pago con tarjeta", "medium"), lastAt: "2026-10-27T10:00:00.000Z" }],
           counts: { notRun: 1, blocked: 0, retest: 1 },
         },
       }),
@@ -105,6 +105,10 @@ vi.mock("@modules/sync-offline", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   serverApi: { get: (path: string) => fetchMetrics(path) },
 }));
+
+/** The days of «Ejecuciones diarias»: its screen-reader table, a row a day. */
+const dayRows = () =>
+  screen.getByTestId("home-daily").closest(".home-daily")!.querySelectorAll(".home-lines__data tbody tr");
 
 function RouteProbe() {
   const { pathname, search } = useLocation();
@@ -230,9 +234,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     );
     expect(trigger).toHaveTextContent("Últimos 7 días");
     expect(localStorage.getItem("pharos.home.period")).toBe("7d");
-    expect(
-      screen.getByTestId("home-daily").querySelectorAll(".home-chart__col"),
-    ).toHaveLength(7);
+    expect(dayRows()).toHaveLength(7);
     // The rate follows the period from the same payload: no refetch.
     expect(screen.getByTestId("kpi-rate")).toHaveTextContent("100,0%");
     expect(screen.getByTestId("home-daily-total")).toHaveTextContent("5");
@@ -256,47 +258,23 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     ).toBeInTheDocument();
   });
 
-  it("draws each day's executions stacked, with every day label on desktop", async () => {
+  it("draws one line per state, a dot on each day above 0, and the total (UX-32)", async () => {
     renderHome();
-    const chart = screen.getByTestId("home-daily");
     await waitFor(() =>
-      expect(chart.querySelectorAll(".home-chart__stack")).toHaveLength(2),
+      expect(screen.getByTestId("home-daily").querySelectorAll(".home-lines__series")).toHaveLength(3),
     );
-    expect(chart.querySelectorAll(".home-chart__nodata")).toHaveLength(12);
+    const chart = screen.getByTestId("home-daily");
     expect(screen.getByTestId("home-daily-total")).toHaveTextContent("5");
-    expect(chart).toHaveAccessibleName(
-      "Ejecuciones por día, últimos 14 días: 5 en total",
-    );
-    const cols = chart.querySelectorAll(".home-chart__col");
-    expect(cols[13]).toHaveAttribute(
-      "title",
-      "jueves, 29 de octubre: 4 ejecuciones · 2 pasan, 1 fallan, 1 otras · 1 manuales, 3 importadas",
-    );
-    const today = cols[13].querySelector(".home-chart__stack")!;
-    expect(today).toHaveStyle({ height: "80%" }); // 4 of an axis of 5
-    expect(
-      Array.from(today.children).map((c) => c.getAttribute("data-tone")),
-    ).toEqual(["other", "fail", "pass"]);
-    // Screen readers get the numbers as a table, in a dialog on the board.
+    expect(chart).toHaveAccessibleName("Ejecuciones por día, últimos 14 días: 5 en total");
+    // 29 Oct: 2 pass, 1 fail, 1 other; 25 Oct: 1 pass. No dot on empty days.
+    const dots = (s: string) => chart.querySelectorAll(`[data-series="${s}"] circle`).length;
+    expect([dots("passed"), dots("failed"), dots("others")]).toEqual([2, 1, 1]);
+    // The legend filters; «Sin ejecuciones» is gone.
+    expect(screen.getByRole("button", { name: "Pasa" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("Sin ejecuciones")).toBeNull();
+    // Screen readers get a table with every day.
+    expect(dayRows()).toHaveLength(14);
     expect(screen.getByRole("button", { name: "Ver los datos" })).toHaveAttribute("aria-haspopup", "dialog");
-    expect(screen.getByText("Otras", { selector: ".home-legend__label" }).closest("li")).toHaveAttribute("title", "Otras");
-
-    const labels = Array.from(chart.querySelectorAll(".home-chart__label"));
-    expect(labels.filter((l) => l.textContent)).toHaveLength(14);
-    expect(labels.at(-1)).toHaveTextContent("29");
-    expect(labels.at(-1)).toHaveAttribute("data-today");
-    expect(screen.getByText("Octubre")).toBeInTheDocument();
-  });
-
-  it("alternates the day labels on tablet, keeping today", () => {
-    setViewportWidth(820);
-    renderHome();
-    const labels = Array.from(
-      screen.getByTestId("home-daily").querySelectorAll(".home-chart__label"),
-    );
-    expect(labels.filter((l) => l.textContent)).toHaveLength(7);
-    expect(labels.at(-1)).toHaveTextContent("29");
-    expect(labels.at(-2)).toHaveTextContent("");
   });
 
   it("picks the exit-criteria project that closes first, evaluates its criteria and filters by status", async () => {
@@ -352,21 +330,22 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(rows[2]).toHaveTextContent("Revisión del clienteSin datos");
   });
 
-  it("lists the upcoming tests of each tab by priority and opens the case", async () => {
+  it("lists the upcoming tests of each list by priority and opens the case", async () => {
     const user = userEvent.setup();
     renderHome();
-    const tabs = screen.getByRole("tablist", { name: "Estado de las pruebas" });
     const list = await screen.findByTestId("home-upcoming");
     expect(within(list).getAllByRole("link").map((r) => r.textContent)).toEqual([
       expect.stringContaining("Login con 2FA"),
     ]);
-    expect(within(tabs).getByRole("tab", { name: /^Bloqueadas/ })).toHaveTextContent("1");
-
-    await user.click(within(tabs).getByRole("tab", { name: /^Bloqueadas/ }));
+    const pick = async (name: RegExp) => {
+      await user.click(screen.getByRole("combobox", { name: "Estado de las pruebas" }));
+      await user.click(screen.getByRole("option", { name }));
+    };
+    await pick(/^Bloqueadas · 1/);
     expect(screen.getByTestId("home-upcoming")).toHaveTextContent(
       "Consulta de saldo",
     );
-    await user.click(within(tabs).getByRole("tab", { name: /^Re-test/ }));
+    await pick(/^Re-test · 1/);
     const retest = within(screen.getByTestId("home-upcoming")).getAllByRole(
       "link",
     );
@@ -376,6 +355,35 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     expect(screen.getByTestId("route")).toHaveTextContent(
       "/projects/p-pcl/cases?case=c1",
     );
+  });
+
+  it("chooses the list with Pharos' selector, «Ver todas» is an arrow, a re-test says when it failed (UX-32)", async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await screen.findByTestId("home-upcoming");
+    // The title whole, and «Ver todas» only an arrow with its name.
+    expect(screen.getByRole("heading", { name: "Próximas pruebas" })).toBeInTheDocument();
+    const all = screen.getByRole("link", { name: "Ver todas" });
+    expect(all).toHaveAttribute("title", "Ver todas");
+    expect(all).not.toHaveTextContent("Ver todas");
+    // No tabs: one selector with the count in a pill.
+    expect(screen.queryByRole("tablist")).toBeNull();
+    const select = screen.getByRole("combobox", { name: "Estado de las pruebas" });
+    expect(select).toHaveTextContent("No ejecutadas1");
+    expect(screen.getByTestId("home-upcoming-count")).toHaveTextContent("1");
+    await user.click(select);
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "No ejecutadas · 1",
+      "Bloqueadas · 1",
+      "Re-test · 1",
+    ]);
+    expect(select).toHaveAttribute("aria-expanded", "true");
+    await user.click(screen.getByRole("option", { name: /^Re-test/ }));
+    expect(screen.getByTestId("home-upcoming")).toHaveTextContent("PCL-0002·Portal Clientes v3· falló el 27 oct");
+    // Only Re-test says it.
+    await user.click(select);
+    await user.click(screen.getByRole("option", { name: /^Bloqueadas/ }));
+    expect(screen.getByTestId("home-upcoming")).not.toHaveTextContent("falló");
   });
 
   it("draws each project's latest results as one stacked bar", async () => {
@@ -612,9 +620,7 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
     await user.click(
       within(sheet).getByRole("button", { name: "Últimos 7 días" }),
     );
-    expect(
-      screen.getByTestId("home-daily").querySelectorAll(".home-chart__col"),
-    ).toHaveLength(7);
+    expect(dayRows()).toHaveLength(7);
 
     await user.click(screen.getByRole("tab", { name: /^Resumen/ }));
     expect(screen.getByTestId("home-period")).toHaveTextContent(

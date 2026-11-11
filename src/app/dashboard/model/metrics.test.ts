@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { HomeProject } from "./homeData";
 import {
-  axisMax,
   dailySeries,
   execRow,
   executionKpis,
@@ -116,14 +115,6 @@ describe("home metrics mappers (RED-W6)", () => {
     expect(week[0].total).toBe(0); // index 23
     expect(dailySeries(m, "14d", now)[6].total).toBe(9);
     expect(dailySeries(null, "today", now)).toEqual([expect.objectContaining({ total: 0 })]);
-  });
-
-  it("rounds the axis to 1, 2 or 5 × 10ⁿ", () => {
-    expect(axisMax([{ total: 0 }])).toBe(0);
-    expect(axisMax([{ total: 3 }])).toBe(5);
-    expect(axisMax([{ total: 14 }, { total: 2 }])).toBe(20);
-    expect(axisMax([{ total: 50 }])).toBe(50);
-    expect(axisMax([{ total: 51 }])).toBe(100);
   });
 
   it("knows nothing about a project without metrics (unknown, not zero)", () => {

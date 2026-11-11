@@ -89,14 +89,6 @@ export function dailySeries(m: HomeMetrics | null, period: Period, today: Date):
   });
 }
 
-/** A round axis maximum (1, 2, 5 × 10ⁿ) at or above the highest day. */
-export function axisMax(points: { total: number }[]): number {
-  const top = Math.max(0, ...points.map((p) => p.total));
-  if (top === 0) return 0;
-  const base = 10 ** Math.floor(Math.log10(top));
-  return [1, 2, 5, 10].map((k) => k * base).find((v) => v >= top)!;
-}
-
 export interface ExecRow {
   /** Null until the metrics load (unknown, never zero). */
   counts: ProgressSummary | null;

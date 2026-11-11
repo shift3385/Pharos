@@ -202,7 +202,9 @@ export const INVENTORY: Item[] = [
   I("inicio", "action", "action:home-kpi", "Tarjetas KPI de Inicio"),
   I("inicio", "state", "state:home-metrics", "Inicio con ejecuciones: tasa de éxito, ejecución por proyecto, ejecuciones diarias (RED-W6)"),
   I("inicio", "action", "action:home-exit-filter", "Criterios de salida: filtros Todos / En riesgo / Cumplen"),
-  I("inicio", "tab", "tabs:src/app/dashboard/UpcomingTests.tsx", "Próximas pruebas: pestañas No ejecutadas / Bloqueadas / Re-test"),
+  I("inicio", "action", "action:home-upcoming-filter", "Próximas pruebas: selector No ejecutadas / Bloqueadas / Re-test (UX-32)"),
+  I("inicio", "action", "action:home-daily-tooltip", "Ejecuciones diarias: línea y burbuja del día con el ratón, el tacto o el teclado (UX-32)"),
+  I("inicio", "action", "action:home-daily-legend", "Ejecuciones diarias: la leyenda muestra u oculta cada estado (UX-32)"),
   I("inicio", "state", "state:home-metrics-error", "Inicio: las ejecuciones no se pudieron cargar («Reintentar»)", {
     skip: "Necesita que falle la lectura de métricas con el resto de la app en pie, algo que el tour aislado no provoca sin trucar la app. Lo cubren las pruebas de DashboardPage.test.tsx y loadHomeMetrics.test.ts (estado de error, «Reintentar» y la caché que se mantiene) y la revisión manual (docs/manual/REVIEW.md).",
   }),

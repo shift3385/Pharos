@@ -116,13 +116,3 @@ export function periodDays(period: Period, today: Date): Date[] {
     return d;
   });
 }
-
-/** Which day labels show under the bars: all on desktop; on tablet and
- *  mobile one day out of two counting back from today, which always shows
- *  (ACTUALIZACION §2). */
-export function visibleDayLabels(count: number, alternate: boolean): boolean[] {
-  return Array.from(
-    { length: count },
-    (_, i) => !alternate || (count - 1 - i) % 2 === 0,
-  );
-}
