@@ -9,6 +9,11 @@
 > ([`VERSIONING.md`](VERSIONING.md)); los hitos antiguos `v0.0.N` se renumeraron
 > (v0.0.1 + v0.0.2 → 0.1.0, v0.0.3 → 0.2.0, v0.0.3.x → 0.3.0, v0.0.4…v0.0.7 → 0.4.0…0.7.0,
 > v0.1.0 → 0.8.0). La documentación al día es ley del proyecto ([`CONTRIBUTING.md`](../CONTRIBUTING.md)).
+>
+> **Línea base del 2026-11-11** (§2.1): inventario de lo hecho desde `0.2.0`, dónde está cada
+> cosa (`main`, PR abiertos o la rama de integración `local/app-completa`), lo que queda por
+> área de QA y el desfase entre lo hecho y el hito `0.3.0`. La propuesta de rumbo que sale de
+> ella (§2.2) **no cambia todavía §3 ni las prioridades**: espera la aprobación del usuario.
 
 ## 1. Qué cambia y por qué
 
@@ -28,7 +33,7 @@
    móvil en 0.4.0.
 7. **El trabajo se hace en pistas paralelas** coordinadas como un equipo pequeño de agentes (§7).
 
-## 2. Estado real (2026-11-05, ola de ejecución cerrada; `0.2.0`)
+## 2. Estado real (2026-11-11; última versión publicada `0.2.0`, del 2026-11-05)
 
 | Área                                                                            | Estado                                                                           | Commits                         |
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------- |
@@ -43,16 +48,91 @@
 | Tercera ola: compuerta B cerrada, WCAG 2.1 AA y validación común de formularios (UX-05/UX-01), web como cliente puro del servidor y contratos generados (BASE-10/BASE-05), react-router 7 y cobertura en cada PR (BASE-20/BASE-13), E2E obligatorio | Hecho (X1, W1, D1, Q1) | `f1cac23`, `1f93e15`, `446dd7e`, `95958e6` |
 | Fase 9: documentación final, guía de la beta y release `0.1.0-beta.1` (UX-06) | Hecho (R1); falta la validación nativa (§6) | — |
 | Cuarta ola: rediseño completo de la interfaz (RED-F1, RED-V1..V4, [ADR-0028](adr/0028-rediseno-de-la-interfaz.md)…[0031](adr/0031-administracion-por-pestanas.md)), router de datos y aviso de cambios sin guardar (RED-V3k) | Hecho (F1, V1–V4), con revisión visual del usuario; release `0.2.0-alpha.1` | `279fc93`, `5119bdf`, `b6f90e2`, `9164611`, `59adfd4` |
+| Ola de ejecución (E1–E6): compuerta C, Run/Result, ejecución manual, importación JUnit/Cucumber/CTRF/Playwright, ciclos, defectos, matriz con resultados, informe de estado, auditoría | Hecho; release `0.2.0` (2026-11-05) | `966a61d` |
+| Después de 0.2.0, ya en `origin/main`: FIX-16, FIX-19, sesión caducada en la web y en el sync de escritorio, SEC-08/09 en el backlog, PLN-02 | Hecho, sin publicar | `4195836`, `2e29e2a` |
+| Después de 0.2.0, fuera de `main`: IA-11, IA-13..19, UX-11..35, FIX-18, FIX-20..25, PLN-05, DAT-04, MAN-03, MAN-04 | Hecho en la rama de integración `local/app-completa` (PR #61 y #62 abiertos; el resto sin PR) | `23fb20c` |
 
 Las validaciones nativas pendientes están en §6.
+
+### 2.1 Línea base del 2026-11-11
+
+**Dónde está cada cosa** (comprobado con `git` y `gh` el 2026-11-11):
+
+| Lugar | Qué contiene | Estado |
+| --- | --- | --- |
+| `origin/main` (`2e29e2a`) | `0.2.0` más #55 (SEC-08/09 en el backlog), #56 (sesión caducada en la web), #57 (FIX-16), #58 (sesión caducada en el sync de escritorio), #59 (FIX-19) y #60 (PLN-02) | `0.2.0` publicado; lo demás sin publicar |
+| PR #61, `fix/ai-key-save-and-test` (14 commits) | IA-11, IA-13..16, UX-11..20, FIX-18, PLN-05 | Fusionable; los 8 checks obligatorios en verde; falla el job `manual`, que no es obligatorio |
+| PR #62, `feat/key-numbering-on-demand` (1 commit) | DAT-04 | Fusionable; CI en verde |
+| `local/app-completa` (`23fb20c`) | 67 commits sobre `origin/main` (40 de trabajo y 27 fusiones): lo de #61 y #62 más IA-17..19, FIX-20..25, UX-21..35, MAN-03 y MAN-04 | Rama de integración que usa la app del usuario; sin PR; contiene `origin/main` entero (0 commits por detrás); 868 archivos, +42.715/−8.800 líneas; migraciones nuevas: local `0038` (IA-17) y servidor `0017` (UX-27) |
+| Worktree `datepicker-methodology-cd4bcf` | Selector de fecha de Pharos (`DatePicker`), «Cronograma» con la ayuda en «?» y «Metodología» en dos columnas | En curso en otra sesión; sin commit ni ID todavía |
+
+**Lo hecho desde 0.2.0, por tema** (cada ítem tiene su fila y su estado en §4 y §5):
+
+- **Requisitos e IA sobre diseños:** «Requisitos» como sección propia, antes de Casos (UX-21); requisitos propuestos por la IA desde la carpeta de un proyecto (IA-17, ADR-0036) y desde capturas, bocetos y diseños (IA-18, ADR-0037), con la imagen de origen guardada si se marca (IA-19); propuestas más legibles (UX-23, NC-039).
+- **IA en el plan y en los casos:** probar la clave antes de guardarla (IA-11, ADR-0033); responsabilidades, criterios de cierre y textos breves según el syllabus en el plan (IA-13..15); revisión crítica de las listas del caso (IA-16); mensajes sin proveedor ni modelo (UX-18); editor de casos por bloques y la marca de IA en el estado de la lista (UX-19, UX-20).
+- **Proyectos:** se abren en el Tablero (UX-22); «Copiar ajustes de:» (UX-25) y asistente «Nuevo proyecto» en tres pasos (UX-29); claves seguidas entre equipos (DAT-04).
+- **Inicio:** pizarra de gadgets de 24 × 24 guardada con la cuenta (UX-27, ADR-0038); Inicio afinado, sin desplazamiento dentro de los gadgets (UX-28); «Ejecuciones diarias» en líneas y selector en «Próximas pruebas» (UX-32); eje con números enteros (FIX-25).
+- **Plan de pruebas:** cabecera más limpia (UX-24); plan de 17 pasos con «Identificación del plan» y «Niveles y tipos de prueba» (UX-31); título sugerido desde el proyecto (UX-34); historial de revisiones opcional en el plan exportado (PLN-02); maquetación del PDF (PLN-05); sin el «Elaborado por» repetido (FIX-24); pares que crecen y Cronograma fijo (UX-15, UX-16).
+- **Componentes y aspecto:** `Select` de Pharos en toda la app (UX-30, FIX-23); cuadros de texto que crecen y barra de scroll de Pharos (UX-33); barra lateral con pestaña en el borde, «Acerca de Pharos» y sincronización animada (UX-26); fondo, sombras y selector de proyecto único (UX-11, UX-12, UX-14); skeletons de carga (UX-17); «Por confirmar» en lugar de «re-test» (UX-35).
+- **Correcciones:** FIX-16 (errores de carga con «Reintentar» en la web), FIX-18 (rebote del WebView), FIX-19 (borrador del ejecutor), FIX-20 (N+1 en la web), FIX-21 (doble ojo en la contraseña), FIX-22..25; sesión caducada renovada en la web y en el sync de escritorio.
+- **Manual:** manual v2 flujo a flujo, con 19 capítulos, el apéndice de atajos, 236 pasos en verde y una sola persona en las capturas (MAN-03); las tres formas de traer requisitos, recorridas con IA (MAN-04). Registro de no conformidades: NC-001…NC-054.
+
+**No conformidades del manual pendientes de decisión del usuario** ([`NC-log.md`](manual/NC-log.md)):
+
+| NC | Qué falta decidir | Propuesta |
+| --- | --- | --- |
+| NC-009 | Editar el asignado de un elemento del ciclo en tableta y móvil (quitar ya avisa) | Sí, con el `Select` de Pharos |
+| NC-015 | Eliminar un defecto desde el tablero, la tarjeta móvil y el editor | Sí, desde el editor (vale para todas las vistas), con confirmación crítica |
+| NC-023 | Faltan apartados de ISO/IEC/IEEE 29119-3 y CTFL v4 §5.1.1 en el plan: criterios de entrada, suspensión y reanudación, supuestos y restricciones, técnicas, **métricas**, formación, independencia, presupuesto y aprobación | Épica propia del plan (§2.2) |
+| NC-027 | El pie de la tira de iconos (sincronización y avatar) queda fuera de la vista a 1024 × 768 | Fijar el pie |
+| NC-031 | Guardar sin cambios sube la versión y crea una revisión (igual que PLN-03) | Revisión solo con cambios, junto con NC-023 |
+| NC-032 | «Aprobado» no registra quién ni cuándo, y sigue aprobado tras editar | Aprobación con autor y fecha; editar lo devuelve a «Revisado»; junto con NC-023 |
+| NC-053 | Títulos cortados en la matriz a 1440 px | Repartir los anchos por contenido |
+| NC-054 | «Ocupa» y «Adjuntos por tipo» no cuadran en Evidencias | Decir «N archivos para M adjuntos» |
+
+**Diagnóstico de las métricas** (compartido con el usuario el 2026-11-11 y comprobado en el código):
+
+1. **Ninguna métrica bloquea ni avisa.** Los criterios de salida se calculan en la derivación (`execution/derive.rs`, contrato v1, R11) y se ven en el Inicio y en el informe de estado, pero un ciclo se cierra aunque haya criterios en «No cumple»: los ciclos no los leen.
+2. **Los criterios se reconocen por texto libre:** `criterion_kind` busca palabras como «crític», «cobertura», «éxito» o «ejecutad»; un criterio escrito de otra forma queda como «manual» y no se mide.
+3. **No hay tendencia entre ciclos.** Cada vista mira un periodo o un ciclo; «Comparar con el periodo anterior» (RED-W4) sigue pendiente.
+4. **Faltan métricas clásicas de QA:** densidad de defectos, escapes a producción, tiempo de corrección, tasa de reapertura y estabilidad (*flaky*) en el tiempo.
+5. **El plan no tiene apartado de métricas** (parte de NC-023).
+
+**Desfase de versión.** Todo lo hecho desde 0.2.0 está marcado como `0.3.0` en §5, pero **no se ha empezado ningún ítem del contenido previsto para 0.3.0 en §3** (CORE-01, SEC-04/05, SYNC-05, SYNC-07, TEN-01, CAS-01/02), y su criterio de salida no se cumple: dos usuarios en el mismo workspace con roles y el CLI escribiendo con la app abierta. Lo hecho trae funcionalidad nueva y dos migraciones, así que no puede salir como PARCHE ([`VERSIONING.md`](VERSIONING.md) §1 y §6). O se publica como una MENOR con otro tema, o espera en `main` sin publicar hasta que el trabajo en equipo esté hecho. Lo decide el usuario (§2.2).
+
+**Validaciones nativas.** La lista de §6 sigue sin recorrer y `0.1.0` final nunca se cortó. Desde 0.2.0 se suman IA-11 e IA-13..19, que piden claves reales y Ollama.
+
+### 2.2 Propuesta de rumbo (pendiente de aprobación)
+
+Resumen de la propuesta. El árbol de lo pendiente por área de QA está en la página de la
+línea base del 2026-11-11 y en `files/PROGRESO.md`. Si el usuario la aprueba, se reescriben §3
+y las prioridades de §5, y se enmiendan los ADR que citan números de versión (ADR-0002,
+ADR-0003 y ADR-0005).
+
+| Versión | Tema | Contenido | Criterio de salida |
+| --- | --- | --- | --- |
+| **0.3.0** | Diseño asistido y experiencia | Lo hecho desde 0.2.0 (§2.1), el selector de fecha, el Cronograma y la Metodología (en curso) y las NC rápidas (NC-009, NC-015, NC-027, NC-053, NC-054) | Los 67 commits en `main` por PR; manual en verde; IA-16..19 validadas con una clave real |
+| **0.4.0** | Estrategia medible | Plan ISO 29119-3 completo con apartado de métricas (NC-023); aprobación con autor y fecha y revisión solo con cambios (NC-031, NC-032, PLN-03, PLN-04); criterios de salida estructurados en lugar de texto libre; *quality gate* al cerrar un ciclo, con aviso y justificación; tendencia entre ciclos y métricas clásicas (adelanta DOC-06 y parte de DOC-02); informe de cierre 29119-3 (DOC-01); Administración › Auditoría (AUD-01); TRZ-04 completo; RED-W4 | Cerrar un ciclo con un criterio en «No cumple» pide una justificación que queda en el informe de cierre; el Inicio muestra la tendencia de los últimos ciclos |
+| **0.5.0** | Equipo | TEN-01 y SYNC-07 (workspaces con roles), CAS-02 (revisión y aprobación por otra persona), SEC-08, SYNC-04b (adjuntos), SYNC-09, IA-12, servidor configurable desde la app y SEC-07 (TLS) | Dos usuarios trabajan en el mismo workspace con roles; un auditor no edita; otra persona aprueba un caso |
+| **0.6.0** | Núcleo y automatización conectada | CORE-01, SEC-04/05, INT-01..04 (CLI `upload`/`watch`, API v1 con tokens, webhooks, plantillas de GitHub Actions), ING-06 (SARIF, k6, axe), ING-07 (Allure), CAS-01, SYNC-02 | Un PR en GitHub reporta JUnit, SARIF, k6 y axe a Pharos; el CLI escribe con la app abierta |
+| **0.7.0** | Campo | MOB-01, EXP-01, EJE-06b, SYNC-05 | Un caso ejecutado en el móvil aparece en el escritorio; una sesión exploratoria genera un Run |
+| **0.8.0** | Runner local e IA de calidad | RUN-01..03, IA-06 (MCP local), IA-02, IA-03, IA-09 | «Ejecutar @TC-001» en local deja un resultado vinculado; Claude Code lee casos por MCP |
+| **0.9.x** | Ecosistema | INT-05..07 (Jira, disparo de CI, importar desde TestRail), IA-04, RUN-04 | Plan → CI → resultado → defecto en Jira |
+| **1.0.0** | Normativo | DOC-03..05 (paquetes EAA/ASVS, modo aprendizaje, modo portafolio) y la decisión explícita de 1.0 | [`VERSIONING.md`](VERSIONING.md) §1 |
+
+La propuesta mantiene la regla de ADR-0003 (equipo antes que móvil) y el orden de «plano de
+control» del estado del arte. Adelanta a 0.4.0 las métricas y el plan ISO completo porque son
+locales, se apoyan en la derivación que ya existe y son la brecha que más pesa hoy para un
+responsable de QA. La integración de `local/app-completa` en `main` y el flujo de trabajo
+propuestos están en `files/PROGRESO.md` (línea base del 2026-11-11).
 
 ## 3. Hitos
 
 | Versión                         | Tema                     | Contenido                                                                                                                    | Criterio de salida                                                                                                                                                                                                                                    |
 | ------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **0.1.0** (`v0.1.0-beta.1`; pendiente validación nativa; `main` ya está en 0.2.0) | MVP consolidado          | Compuertas A y B; SEC-03, SEC-06, SYNC-08, IA-05; Fase 9 (UX-05/06); huecos de la spec (§5)                                  | Compuertas A y B cerradas con evidencia; `cargo test`, `verify` y tests del servidor en CI; conflicto simulado visible; matriz exportable; `.feature` filtrable por `@TC-xxx`; instalador NSIS limpio en Windows 11; validaciones nativas (§6) hechas |
-| **0.2.0** (publicada: incluye el rediseño de la interfaz, RED-*) | Ejecución                | Compuerta C cerrada (ADRs); EJE-01..04, RUN-00, AUD-01, DAT-02/03, CYC-01 y FLD-01 (recortables a 0.3.0), DEF-01; ING-02..05 | Un run manual y uno de Playwright aparecen en la misma matriz; editar un caso ejecutado no altera sus resultados                                                                                                                                      |
-| **0.3.0**                       | Núcleo y equipo          | CORE-01, SEC-04/05, SYNC-05, SYNC-07, TEN-01, CAS-01/02                                                                      | Dos usuarios trabajan en el mismo workspace con roles; el CLI escribe con la app abierta                                                                                                                                                              |
+| **0.2.0** (publicada el 2026-11-05: incluye el rediseño de la interfaz, RED-*; sin RED-W1..W4 ni TPL-01) | Ejecución                | Compuerta C cerrada (ADRs); EJE-01..04, RUN-00, AUD-01, DAT-02/03, CYC-01 y FLD-01 (recortables a 0.3.0), DEF-01; ING-02..05 | Un run manual y uno de Playwright aparecen en la misma matriz; editar un caso ejecutado no altera sus resultados                                                                                                                                      |
+| **0.3.0** (2026-11-11: ningún ítem empezado; lo hecho desde 0.2.0 es otro tema, §2.1) | Núcleo y equipo          | CORE-01, SEC-04/05, SYNC-05, SYNC-07, TEN-01, CAS-01/02                                                                      | Dos usuarios trabajan en el mismo workspace con roles; el CLI escribe con la app abierta                                                                                                                                                              |
 | **0.4.0**                       | Campo                    | MOB-01, EXP-01, SYNC-04b, SYNC-09                                                                                            | Un caso ejecutado en el móvil aparece en el escritorio; una sesión exploratoria genera un Run                                                                                                                                                         |
 | **0.5.0**                       | Automatización conectada | INT-01..04, ING-06, SYNC-02, SEC-07, DEU-01                                                                                  | Un PR en GitHub reporta resultados (incluidos SARIF, k6 y axe) a Pharos                                                                                                                                                                               |
 | **0.6.0**                       | Runner local             | RUN-01..03, ING-07                                                                                                           | Botón "Ejecutar @TC-001" en local con resultado vinculado                                                                                                                                                                                             |
@@ -120,8 +200,8 @@ Límites conocidos de FIX-08 (rama A2):
 | BASE-21 | Tests del cliente lentos o inestables con carga (AiEngineTab, TestPlanWizard, ScheduleStep, ProjectsPage, a11y del plan ~11,6 s; seguimiento de E4): `testTimeout` por archivo en los de axe o menos workers en CI | P2  | 0.2.0 · Hecho en local; CI pendiente (E6p): `@test/slow` (20 s por archivo) en 27 archivos lentos por naturaleza, sin timeouts por test redundantes; `legacyWebData` con temporizadores falsos; 10 ejecuciones locales seguidas con carga, 954/954. Lentitud previa conocida: `test-plan/a11y` (hasta 16 s con carga, con sus propios 60 s); traceability y dashboard añaden `@test/slow` en sus PRs | `npm test` en CI sin timeouts en 10 ejecuciones seguidas                   |
 | MAN-01  | Tours guiados de cada pantalla (WDIO, servidor y BD aislados en :3100) + manual de usuario autogenerado en `docs/manual/` (Markdown + PDF con Edge headless) y `check:manual` que exige un paso o un motivo para cada pantalla, pestaña, diálogo y acción | P1  | Hecho (MAN-01): 15 capítulos (E5 incluida), 206 elementos de inventario, 202 recorridos (98 %); IA con la clave del usuario; hallazgos en FIX-11..14 | `npm run manual` en verde y `check:manual` en `verify:static` |
 | MAN-02  | Calidad del manual (revisión exploratoria del PDF de MAN-01), por patrones: índice con enlace y página de cada paso; sin bloques partidos y con menos páginas medio vacías (quedan bloques de fin de capítulo); `focus` (contorno ámbar + «Detalle» en el PDF), `group` (antes/después) y `after` en los tours; pies que explican el propósito, con los datos de prueba como ejemplo y al día con la interfaz (UX-10); recorridos sin esperas frágiles y un solo recorrido a la vez (lock) | P1  | Hecho (MAN-02): los 15 capítulos; `--spec` añade los capítulos previos; revisado el maquetado de todas las páginas del PDF | `npm run manual` en verde, `check:manual`, revisión del maquetado de todas las páginas del PDF (docs/manual/REVIEW.md) |
-| MAN-03  | Manual v2, flujo a flujo: cada paso, atajo, función y estado (vacío, error, sin IA, móvil) de los 19 capítulos, con un único ejemplo coherente (Liomar Rodríguez, responsable de QA, prueba la propia app Pharos con la cuenta «Liomar QA»), fuentes con «Para qué sirve», «Atajos de teclado», «Si algo no sale», «En el móvil», «Consejos» y «Véase también», apéndice de atajos generado, y registro de no conformidades (`docs/manual/NC-log.md`) con las encontradas al recorrer la app | P1  | Hecho (MAN-03): 19 capítulos y apéndice; 236 pasos en verde; NC-001…NC-054, resueltas salvo las pendientes de decisión (NC-009, NC-015, NC-023, NC-027, NC-031, NC-032, NC-039, NC-053, NC-054); comprobación automática de una sola persona en capturas y textos (NC-052) | `npm run manual` en verde, `check:manual`, `test:scripts`, revisión del PDF capítulo a capítulo con el responsable de QA |
-| MAN-04  | El manual recorre con IA las tres formas de traer requisitos (CSV, desde un proyecto y desde diseños) con un segundo producto de ejemplo, la Billetera SafeGuard: su CSV, la carpeta de su proyecto y el boceto de sus pantallas en `e2e/tours/fixtures`; el build de pruebas elige la carpeta sin el selector de Windows (`PHAROS_E2E_PICK_FOLDER`) | P2  | 0.3.0 | Hecho | MAN-03, IA-17, IA-18, IA-19 |
+| MAN-03  | Manual v2, flujo a flujo: cada paso, atajo, función y estado (vacío, error, sin IA, móvil) de los 19 capítulos, con un único ejemplo coherente (Liomar Rodríguez, responsable de QA, prueba la propia app Pharos con la cuenta «Liomar QA»), fuentes con «Para qué sirve», «Atajos de teclado», «Si algo no sale», «En el móvil», «Consejos» y «Véase también», apéndice de atajos generado, y registro de no conformidades (`docs/manual/NC-log.md`) con las encontradas al recorrer la app | P1  | Hecho (MAN-03): 19 capítulos y apéndice; 236 pasos en verde; NC-001…NC-054, resueltas salvo las pendientes de decisión (NC-009 en parte, NC-015, NC-023, NC-027, NC-031, NC-032, NC-053, NC-054; NC-039 la resolvió UX-23); comprobación automática de una sola persona en capturas y textos (NC-052) | `npm run manual` en verde, `check:manual`, `test:scripts`, revisión del PDF capítulo a capítulo con el responsable de QA |
+| MAN-04  | El manual recorre con IA las tres formas de traer requisitos (CSV, desde un proyecto y desde diseños) con un segundo producto de ejemplo, la Billetera SafeGuard: su CSV, la carpeta de su proyecto y el boceto de sus pantallas en `e2e/tours/fixtures`; el build de pruebas elige la carpeta sin el selector de Windows (`PHAROS_E2E_PICK_FOLDER`); depende de MAN-03, IA-17, IA-18 e IA-19 | P2  | 0.3.0 · Hecho | `npm run manual` en verde con los recorridos de IA |
 
 ### C · Decisiones de modelo (bloquea empezar 0.2.0; cada una cierra con un ADR)
 
@@ -289,7 +369,7 @@ implementan: [`docs/design/0.2.0-modelo-ejecucion.md`](design/0.2.0-modelo-ejecu
 | PLN-03 | Guardar el plan sin cambios no sube la versión ni deja copia de revisión en el escritorio (hoy sí: `formState.ts` sube la versión en cada guardado). El historial exportado ya ignora esos guardados (PLN-02) | P3  | —       |
 | PLN-04 | ID de documento del plan exportado: la plantilla deja fijo «PHRS-TP-0001» (C3) en todos los planes; darle un ID por plan | P3  | —       |
 | PLN-05 | Maquetación del plan en PDF: cada barra de sección va siempre con el inicio de su contenido (bloque indivisible; en las tablas, la barra es una fila de cabecera más y se repite si la tabla sigue en otra página), párrafos y listas justificados, Metodología con una entrada por línea y el separador de los rangos de fechas con un carácter que la fuente Roboto tiene («–» en lugar de «→»); la tabla «Hitos» va bajo «Cronograma» (antes, tras la Conclusión) y «Ciclos» sigue al final | P2  | 0.3.0 · Hecho |
-| TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | 0.2.0   |
+| TPL-01 | La IA usa el "prompt de uso" de las plantillas para sugerirlas (spec §6)                            | P2  | Pendiente (no entró en 0.2.0) |
 | UX-03  | Undo/redo por paso en el asistente                                                                  | P3  | —       |
 | UX-04  | Revisión UI/UX (pendiente de ejemplos del usuario)                                                  | P2  | Absorbido por el rediseño (RED-*) |
 | UX-11  | Administración: fondo predeterminado con vista previa, sombra opcional en tarjetas y barra de guardar que dice qué falta | P2  | 0.3.0 · Hecho |
@@ -365,10 +445,10 @@ el rediseño (no es un PARCHE según [`VERSIONING.md`](VERSIONING.md)) la decide
 | RED-V3k | Router de datos (`createHashRouter`) y `useUnsavedChangesGuard` compartido (`useBlocker` + `beforeunload` + «Descartar cambios / Seguir editando»), para el editor de casos (V3) y el borrador de IA (V4) | P1  | Hecho (PR #23) |
 | RED-V4 | Administración por grupos (Motor de IA por defecto, Plantillas, General, Sincronización, Seguridad, Diagnóstico) en `/admin?tab=` ([ADR-0031](adr/0031-administracion-por-pestanas.md)); sustituye al `AdminSectionNav` temporal de F1; tabla de capacidades de IA, logos de proveedores, tema «Según el sistema»; Papelera como «Próximamente» hasta RED-W3 | P1  | 0.2.0-alpha.1 · Hecho (V4); revisión visual aprobada |
 | RED-W7 | Motor de IA: enviar el nivel o esfuerzo de razonamiento (Gemini `thinkingConfig`, OpenAI `reasoning_effort`, Claude `thinking`, OpenRouter `reasoning`); hoy figura en la tabla de capacidades como «Próximamente» ([ADR-0031](adr/0031-administracion-por-pestanas.md)) | P2  | Por decidir |
-| RED-W1 | Búsqueda global (Ctrl K; en móvil, resultados agrupados en Casos, Requisitos y Proyectos)                   | P2  | 0.2.0   |
-| RED-W2 | Panel de notificaciones (por día, sin leer, acción directa, «Marcar todo como leído»)                       | P2  | 0.2.0   |
-| RED-W3 | Papelera con contador, desglose, restaurar y vaciar                                                          | P2  | 0.2.0   |
-| RED-W4 | Inicio: periodo y «Comparar con el periodo anterior»                                                         | P2  | 0.2.0   |
+| RED-W1 | Búsqueda global (Ctrl K; en móvil, resultados agrupados en Casos, Requisitos y Proyectos)                   | P2  | Pendiente (no entró en 0.2.0) |
+| RED-W2 | Panel de notificaciones (por día, sin leer, acción directa, «Marcar todo como leído»)                       | P2  | Pendiente (no entró en 0.2.0) |
+| RED-W3 | Papelera con contador, desglose, restaurar y vaciar                                                          | P2  | Pendiente (no entró en 0.2.0) |
+| RED-W4 | Inicio: periodo y «Comparar con el periodo anterior»                                                         | P2  | Periodo hecho (RED-W6); falta «Comparar con el periodo anterior» (§2.1) |
 | RED-W5 | Plan, paso 14: generar sprints desde un rango. **Entregado por el Cronograma nuevo** (actualización 2026-10-31, [`Cronograma.dc.html`](rediseno/prototipos/Cronograma.dc.html)): un calendario con selector Sprint/Hito, «Siguiente sprint» (duración = semanas del paso 6 × 7), sprints como bandas y hitos como rombos, arrastre de los extremos en escritorio, filas en dd/mm/aaaa sincronizadas con el calendario en los dos sentidos y avisos de solapamiento y duración (no impiden guardar). Sprints `{id, name, start, end}` e hitos `{id, name, date}` con fechas ISO; los planes anteriores reciben ids al leerse ([ARCHITECTURE §Plan](ARCHITECTURE.md)). Quita el calendario fijo, las fechas nativas, «Añadir fila», «+ Añadir sprint del rango», el bloque «Próximamente» y `react-day-picker` | P2  | 0.2.0 · Hecho |
 | RED-W6 | Métricas de ejecución en Inicio (tasa de éxito, ejecuciones diarias, criterios de salida): los datos reales de la gráfica «Ejecuciones diarias» y de «Ejecución por proyecto», cuya maquetación hace RED-V1; requiere la ingesta de 0.2.0. Una sola lectura (`home_metrics` / `GET /api/home/metrics`) sobre la derivación compartida del paso 10; el periodo filtra la gráfica y la tasa de éxito; «Otras» en la gráfica; «Próximas pruebas» con No ejecutadas / Bloqueadas / Re-test; filtros «En riesgo / Cumplen». **Pendiente:** comparar con el periodo anterior, ciclo actual/anterior y rango propio en el periodo | P2  | 0.2.0 · Hecho (E6) |
 
@@ -407,6 +487,13 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`):
   que cada propuesta cite su imagen o pantalla, que «Visto en el diseño» solo marque lo que está escrito,
   que no invente cifras y que ignore un texto de la captura que dé órdenes. Comprobar en el escritorio que
   pegar con Ctrl+V y «Elegir carpeta» funcionan en WebView2.
+- **IA-11, IA-13..15 e IA-19 (añadidas en la línea base del 2026-11-11):** con una clave real,
+  «Probar» sin guardar y «Guardar clave» activando su proveedor (IA-11); en el plan, sugerir
+  responsabilidades, criterios de cierre con su métrica y textos breves (IA-13..15); y, al
+  aplicar requisitos desde diseños con la casilla marcada, ver la imagen en la «Fuente» del
+  requisito en la app nativa (IA-19).
+- **Pizarra de Inicio (UX-27, UX-28):** en la app nativa, personalizar, cerrar sesión, entrar
+  en otro equipo con la misma cuenta y comprobar que la distribución viaja con ella.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario
