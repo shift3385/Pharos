@@ -383,32 +383,50 @@ export async function pickFromMenu(trigger: string, item: string) {
   await menuItem(item).click();
 }
 
-/** Waits for Pharos's confirmation (the topmost alertdialog; the app never
- *  uses the browser's, NC-017) and presses its confirm button. With `text`,
- *  checks first that the question says it. */
-export async function acceptConfirm(text?: string, timeout = 5_000) {
-  const ask = $$('[role="alertdialog"]');
-  await browser.waitUntil(async () => (await ask.length) > 0, {
+/** Pharos's topmost confirmation (alertdialog; the app never uses the
+ *  browser's, NC-017), once one is open. The list is queried afresh on every
+ *  try: a confirmation that opens after an async call (the keychain, a read)
+ *  still counts. 15 s like the other waits: CI runners can be slow. */
+async function topConfirm(text?: string, timeout = 15_000) {
+  const open = () => $$('[role="alertdialog"]');
+  await browser.waitUntil(async () => (await open().length) > 0, {
     timeout,
     timeoutMsg: "no Pharos confirmation appeared",
   });
-  const top = ask[(await ask.length) - 1];
+  const all = await open();
+  const top = all[all.length - 1];
   if (text) await expect(top).toHaveText(expect.stringContaining(text));
+  return top;
+}
+
+/** Waits for Pharos's confirmation and presses its confirm button. With
+ *  `text`, checks first that the question says it. */
+export async function acceptConfirm(text?: string, timeout = 15_000) {
+  const top = await topConfirm(text, timeout);
   await top.$("button.cd__confirm").click();
   await top.waitForExist({ reverse: true, timeout });
 }
 
 /** Answers Pharos's topmost confirmation «no» (its cancel button, NC-017). */
-export async function dismissConfirm(text?: string, timeout = 5_000) {
-  const ask = $$('[role="alertdialog"]');
-  await browser.waitUntil(async () => (await ask.length) > 0, {
-    timeout,
-    timeoutMsg: "no Pharos confirmation appeared",
-  });
-  const top = ask[(await ask.length) - 1];
-  if (text) await expect(top).toHaveText(expect.stringContaining(text));
+export async function dismissConfirm(text?: string, timeout = 15_000) {
+  const top = await topConfirm(text, timeout);
   await top.$("button.cd__cancel").click();
   await top.waitForExist({ reverse: true, timeout });
+}
+
+/** Clicks what opens a confirmation and, if the click is lost (the element
+ *  re-rendered under it: «stale element»), clicks again until one opens. */
+export async function clickForConfirm(selector: string, timeout = 15_000) {
+  await browser.waitUntil(
+    async () => {
+      if ((await $$('[role="alertdialog"]').length) > 0) return true;
+      await $(selector)
+        .click()
+        .catch(() => undefined);
+      return false;
+    },
+    { timeout, interval: 2_000, timeoutMsg: `«${selector}» never opened a confirmation` },
+  );
 }
 
 export { button, es, startBlankProject };

@@ -324,6 +324,8 @@ chapter("ia", () => {
     title: "Lo que escribió la IA queda marcado",
     caption:
       "«Usar» pasa el borrador al campo, donde puedes corregirlo como cualquier texto; se guarda con el plan («Guardar»). Junto al campo queda la marca «IA · pendiente de revisión» hasta que alguien lo lea y pulse «Marcar revisado». Al pasar el cursor por la marca se ve qué proveedor y qué modelo lo generaron (en este ejemplo, Claude y su modelo): así se sabe, también después, qué IA escribió cada cosa.",
+    // Uses the draft «asistir» asked for: without a key both are skipped.
+    skip: AI_SKIP,
     focus: ".ai-prov",
     run: async () => {
       await clickButton(X.assist.use);
