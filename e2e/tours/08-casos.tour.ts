@@ -14,6 +14,7 @@ import {
   atLeast,
   chooseFile,
   clearInput,
+  clickForConfirm,
   clickButton,
   dialog,
   es,
@@ -387,7 +388,8 @@ chapter("casos", () => {
     covers: ["dialogs:src/modules/test-cases/ui/TestCaseEditor.tsx"],
     shot: false,
     run: async () => {
-      await $(".tp-revs__restore").click();
+      // The revisions list re-renders after the save of the step before.
+      await clickForConfirm(".tp-revs__restore");
       await acceptConfirm(C.restoreConfirm.slice(0, 20));
       await expect($("#tc-title")).not.toHaveValue(expect.stringContaining("(v2)"));
       await saveCase();
