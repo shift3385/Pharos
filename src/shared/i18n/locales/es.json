@@ -64,6 +64,18 @@
     "removeEvidenceConfirm": "«{{name}}» se borra y no se puede recuperar.",
     "removeEvidenceFailed": "No se pudo quitar la evidencia. Inténtalo de nuevo."
   },
+  "datePicker": {
+    "placeholder": "dd/mm/aaaa",
+    "open": "Abrir calendario",
+    "change": "Cambiar fecha, {{date}}",
+    "dialog": "Elegir fecha",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "today": "Hoy",
+    "todayMark": "hoy",
+    "todayOut": "Hoy queda fuera de las fechas permitidas.",
+    "clear": "Borrar"
+  },
   "templates": {
     "loadFailed": "No se pudieron cargar las plantillas.",
     "kind": {
@@ -1006,6 +1018,11 @@
     "agile": "Ágil",
     "traditional": "Tradicional / V-model",
     "sprintWeeks": "Duración de sprint (semanas)",
+    "methodGroup": "Método de trabajo",
+    "sprintLength": "Duración del sprint",
+    "weeks_one": "{{count}} semana",
+    "weeks_other": "{{count}} semanas",
+    "frequencyOff": "Marca «{{ceremony}}» para elegir su frecuencia.",
     "ceremonies": "Reuniones del equipo",
     "phases": "Fases",
     "methodologyLines": {
@@ -1172,7 +1189,7 @@
       "testData": "Cómo se crean, protegen y renuevan los datos de prueba.",
       "defects": "Cómo se registran, priorizan y cierran los defectos.",
       "roles": "Quién hace qué en el proceso de pruebas.",
-      "schedule": "Sprints e hitos del ciclo de pruebas.",
+      "schedule": "Sprints e hitos del ciclo de pruebas. Haz clic en el día de inicio y después en el de fin para crear un sprint (Esc cancela). Selecciona un sprint y arrastra sus extremos para cambiar las fechas, o edítalas en su fila. En «Hito», haz clic en un día para añadir un hito.",
       "risks": "Riesgos que pueden afectar a las pruebas y cómo se mitigan.",
       "communication": "Cómo y cuándo se informa del avance.",
       "closure": "Condiciones que deben cumplirse para cerrar el ciclo.",
@@ -1272,9 +1289,6 @@
       "prevMonth": "Mes anterior",
       "nextMonth": "Mes siguiente",
       "calendar": "Calendario del cronograma",
-      "hintSprint": "Haz clic en el día de inicio y después en el de fin para crear un sprint.",
-      "hintSprintDrag": "Haz clic en el día de inicio y después en el de fin para crear un sprint. Selecciona un sprint y arrastra sus extremos para cambiar las fechas, o edítalas en su fila.",
-      "hintMilestone": "Haz clic en un día para añadir un hito. Haz clic en un hito para seleccionarlo.",
       "hintEnd": "Inicio: {{date}}. Haz clic en el día de fin. Esc para cancelar.",
       "legend": "Leyenda del calendario",
       "listsRegion": "Sprints e hitos",

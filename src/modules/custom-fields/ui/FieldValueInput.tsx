@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ControlProps } from "@shared/ui/fieldProps";
+import { DatePicker } from "@shared/ui/DatePicker";
 import { Select } from "@shared/ui/Select";
 import type { CustomField } from "../model/types";
 import { MAX_LENGTH } from "../model/validate";
@@ -50,12 +51,7 @@ export function FieldValueInput({
       );
     case "date":
       return (
-        <input
-          {...control}
-          type="date"
-          value={text}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        />
+        <DatePicker {...control} value={text} onChange={(v) => onChange(v || undefined)} />
       );
     case "boolean":
       return (

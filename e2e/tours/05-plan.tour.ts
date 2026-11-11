@@ -14,6 +14,7 @@ import {
   button,
   byTestId,
   chooseFile,
+  chooseOption,
   dialog,
   es,
   field,
@@ -24,6 +25,7 @@ import {
   openSection,
   selectOption,
   tf,
+  typeDate,
   waitForToast,
   xpathString,
 } from "./helpers";
@@ -70,20 +72,6 @@ async function tick(names: string[]) {
   }
 }
 
-/** Sets a value on an <input type="date"> the way React notices. */
-async function setDate(el: WebdriverIO.Element, iso: string) {
-  await browser.execute(
-    (input: HTMLInputElement, value: string) => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-      setter?.call(input, value);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    },
-    el as unknown as HTMLInputElement,
-    iso,
-  );
-}
-
 /** A day of the month the calendar shows (`dd` = "09"). */
 const day = (dd: string) => $(`.tps-grid [data-day$="-${dd}"]`);
 
@@ -124,11 +112,29 @@ chapter("plan", () => {
     run: async () => {
       await $("#tp-title").setValue("Plan de pruebas de Pharos 0.3.0");
       await (await field(P.version)).setValue("0.3");
-      await setDate(await field(P.date), "2026-11-02");
+      await typeDate(await field(P.date), "2026-11-02");
       await selectOption(P.status, P.statusLabel.draft);
       // The capture shows the list open, with the ✓ on «Borrador».
       await $("#tp-status").click();
       await expect($('[role="listbox"]')).toBeDisplayed();
+    },
+  });
+
+  step("fecha", {
+    title: "La fecha: el selector de fechas de Pharos",
+    caption:
+      "La fecha se escribe dd/mm/aaaa (en este ejemplo, 02/11/2026) o se elige en el calendario de Pharos, el mismo del cronograma: el botón del calendario, al final del campo, lo abre en el mes de la fecha, con el mes y el año arriba («Noviembre de 2026») y ‹ › para cambiar de mes. Hoy lleva un anillo naranja y el día elegido va relleno. Con el teclado, las flechas recorren los días, RePág y AvPág cambian de mes, Inicio y Fin van al principio y al final de la semana, Intro elige y Esc cierra y vuelve al botón. Al pie, «Hoy» elige el día de hoy y «Borrar» vacía el campo. En el móvil se abre como una hoja desde abajo. El mismo selector está en los ciclos (capítulo 9), en el informe de estado (capítulo 11) y en los campos personalizados de tipo fecha (capítulo 14).",
+    covers: ["action:date-picker"],
+    focus: ".pdate__pop",
+    run: async () => {
+      // Closes the status list of the step before.
+      await browser.keys("Escape");
+      const date = await field(P.date);
+      await date.$("..").$("button.pdate__btn").click();
+      await expect($(".pdate-cal")).toBeDisplayed();
+      await expect($('.pdate-cal [data-day="2026-11-02"]')).toBeFocused();
+      await browser.keys(["ArrowRight"]);
+      await expect($('.pdate-cal [data-day="2026-11-03"]')).toBeFocused();
     },
   });
 
@@ -179,19 +185,23 @@ chapter("plan", () => {
   step("metodologia", {
     title: "Paso 5 · Metodología",
     caption:
-      "Indica cómo trabaja el equipo. Con «Ágil» eliges la duración del sprint (de 1 a 4 semanas) y las reuniones del equipo (diaria, revisión, retrospectiva, planificación), cada una con su frecuencia; con «Tradicional / V-model», las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 12) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
+      "Indica cómo trabaja el equipo, en dos columnas. En «Método de trabajo», la metodología y, con «Ágil», la duración del sprint («2 semanas»; de 1 a 4). En «Reuniones del equipo», una fila por reunión (diaria, revisión, retrospectiva y planificación): su casilla, su nombre y su frecuencia en la misma fila; la frecuencia de una reunión sin marcar se ve en gris y no se puede cambiar hasta marcarla (en este ejemplo, la planificación). Con «Tradicional / V-model», que no trabaja por sprints, la duración y las reuniones desaparecen y la segunda columna pide las fases del proyecto. Si falta algo, una línea bajo el paso dice qué. La duración del sprint no es solo informativa: el cronograma (paso 12) la usa para proponer el siguiente sprint y avisa si uno dura otra cosa.",
     covers: ["wizard:methodology"],
+    focus: ".tpw-meth",
     run: async () => {
       await next();
       await selectOption(P.methodology, P.agile);
       // Daily, review and retrospective on. A new plan already has them, so a
       // blind click would turn them off (what MAN-01 first captured).
-      const group = $(`[role="group"][aria-label="${P.ceremonies}"]`);
-      for (const name of [P.ceremonyLabel.daily, P.ceremonyLabel.review, P.ceremonyLabel.retrospective]) {
-        const pill = group.$(`button.tp-pill=${name}`);
-        if ((await pill.getAttribute("aria-pressed")) !== "true") await pill.click();
-      }
-      await expect(byTestId("ceremony-frequencies")).toBeDisplayed();
+      await tick([P.ceremonyLabel.daily, P.ceremonyLabel.review, P.ceremonyLabel.retrospective]);
+      // A new plan has the planning ticked too: off, its frequency greys out.
+      const planning = $('[data-meeting="planning"] input[type="checkbox"]');
+      if (await planning.isSelected()) await planning.click();
+      await expect(byTestId("plan-frequency-planning")).toBeDisabled();
+      await chooseOption(byTestId("plan-sprint-weeks"), { value: "2" });
+      await expect(byTestId("plan-sprint-weeks")).toHaveText(tf("testPlan.weeks_other", { count: 2 }));
+      // Each meeting's frequency is on its row.
+      await chooseOption(byTestId("plan-frequency-review"), { value: "biweekly" });
       // FIX-14: nothing left to ask, and the step is marked done.
       await expect(byTestId("methodology-gaps")).toHaveText("");
       await expect($("nav.tpw-rail").$(`button*=${P.step.methodology}`)).toHaveAttribute("data-done", "true");
@@ -271,7 +281,7 @@ chapter("plan", () => {
   step("cronograma", {
     title: "Paso 12 · Cronograma: sprints",
     caption:
-      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 5 (Metodología). La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro y se resalta su fila; con el ratón puedes arrastrar sus extremos. Las flechas de arriba cambian de mes.",
+      "El cronograma sitúa en el calendario los sprints y los hitos del ciclo de pruebas. Con «Sprint» elegido, haz clic en el día de inicio y después en el de fin (Esc cancela el rango a medias; la ayuda «?» del título lo recuerda, y el calendario queda justo debajo de la barra): el sprint aparece como una franja y en la lista «Sprints», con su nombre y sus fechas, que puedes editar (dd/mm/aaaa e Intro). «Siguiente sprint» añade el siguiente a continuación, con la duración del paso 5 (Metodología). La leyenda explica el calendario: las franjas alternan azul y ámbar para distinguir un sprint del siguiente, el rombo marca un hito, el círculo ámbar es hoy y el rojo claro señala días en que dos sprints se solapan (es un aviso: el plan se guarda igualmente). El sprint seleccionado se ve en azul oscuro y se resalta su fila; con el ratón puedes arrastrar sus extremos. Las flechas de arriba cambian de mes.",
     covers: ["wizard:schedule"],
     focus: ".tps-legend",
     run: async () => {

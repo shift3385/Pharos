@@ -292,20 +292,24 @@ describe("Ajustes · Campos personalizados", () => {
   });
 });
 
+const DUE = field({ fieldKey: "due", label: "Entrega", fieldType: "date", position: 3 });
+
 function Section({
   start,
   caseType = "standard" as const,
   attempted = false,
+  fields = [BROWSER, POINTS, OLD],
 }: {
   start: CustomValues;
   caseType?: "standard" | "checklist";
   attempted?: boolean;
+  fields?: CustomField[];
 }) {
   const [values, setValues] = useState<CustomValues>(start);
   return (
     <>
       <CustomFieldsSection
-        fields={[BROWSER, POINTS, OLD]}
+        fields={fields}
         caseType={caseType}
         values={values}
         previous={start}
@@ -341,6 +345,31 @@ describe("Editor · Campos personalizados", () => {
       screen.getByText(/from_elsewhere · campo desconocido/),
     ).toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+
+  it("a date field is Pharos' DatePicker: dd/mm/aaaa, the calendar, «Borrar» removes the value (UX-36)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 11, 10));
+    try {
+      renderWithProviders(<Section start={{ due: "2026-12-01" }} fields={[DUE]} />);
+      const due = screen.getByRole("textbox", { name: "Entrega" });
+      expect(due).toHaveValue("01/12/2026");
+      expect(document.querySelector('input[type="date"]')).toBeNull();
+      await userEvent.clear(due);
+      await userEvent.type(due, "24/12/2026");
+      expect(JSON.parse(screen.getByTestId("values").textContent!)).toEqual({ due: "2026-12-24" });
+      await userEvent.click(screen.getByRole("button", { name: "Cambiar fecha, 24/12/2026" }));
+      const cal = screen.getByRole("dialog", { name: "Entrega" });
+      await userEvent.click(within(cal).getByRole("button", { name: "Hoy" }));
+      expect(JSON.parse(screen.getByTestId("values").textContent!)).toEqual({ due: "2026-11-11" });
+      await userEvent.click(screen.getByRole("button", { name: "Cambiar fecha, 11/11/2026" }));
+      await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Borrar" }));
+      // An empty date is no value at all, as before.
+      expect(JSON.parse(screen.getByTestId("values").textContent!)).toEqual({});
+      await expectNoAxeViolations();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("an archived option the case already has stays selectable", () => {

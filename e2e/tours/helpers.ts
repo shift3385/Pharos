@@ -326,6 +326,39 @@ export async function chooseOption(
   });
 }
 
+/** Types an ISO day as dd/mm/aaaa in a Pharos DatePicker (UX-36), as a
+ *  person does, and waits until the field holds it. */
+export async function typeDate(input: ReturnType<typeof $> | WebdriverIO.Element, iso: string) {
+  const el = await input;
+  const [y, m, d] = iso.split("-");
+  await el.scrollIntoView({ block: "center" });
+  await el.setValue(`${d}/${m}/${y}`);
+  await browser.waitUntil(async () => (await el.getAttribute("data-value")) === iso, {
+    timeout: 5_000,
+    timeoutMsg: `the date field did not take ${iso}`,
+  });
+}
+
+/** Opens the calendar of a Pharos DatePicker (UX-36), moves with ‹ › to the
+ *  month of `iso` and clicks that day. */
+export async function pickDate(input: ReturnType<typeof $> | WebdriverIO.Element, iso: string) {
+  const el = await input;
+  await el.scrollIntoView({ block: "center" });
+  await el.$("..").$("button.pdate__btn").click();
+  const cal = $(".pdate-cal");
+  await cal.waitForDisplayed({ timeout: 5_000 });
+  for (let i = 0; i < 36 && !(await cal.$(`[data-day="${iso}"]`).isExisting()); i++) {
+    const first = (await cal.$("[data-day]").getAttribute("data-day")) ?? "";
+    const [prev, next] = Array.from(await cal.$$("button.pdate-cal__nav"));
+    await (iso < first ? prev : next).click();
+  }
+  await cal.$(`[data-day="${iso}"]`).click();
+  await browser.waitUntil(async () => (await el.getAttribute("data-value")) === iso, {
+    timeout: 5_000,
+    timeoutMsg: `the calendar did not pick ${iso}`,
+  });
+}
+
 /** A menu item (role menuitem/menuitemradio) whose text contains `text`. */
 export const menuItem = (text: string) =>
   $(`//*[starts-with(@role,"menuitem")][contains(normalize-space(.),${xpathString(text)})]`);

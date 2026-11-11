@@ -39,6 +39,22 @@ Las casillas van en columnas por grupo. Lo que el equipo añade queda en la
 columna **«Propios»**, con una ✕ para quitarlo y, al pie, el campo para añadir
 otro; los **Entregables** (paso 6) siguen el mismo diseño.
 
+**Metodología** (paso 5) va en dos columnas con ese mismo aspecto. En **«Método
+de trabajo»**, la metodología y, si es ágil, la duración del sprint («2
+semanas»). En **«Reuniones del equipo»**, una fila por reunión (diaria,
+revisión, retrospectiva y planificación) con su casilla, su nombre y su
+frecuencia; la frecuencia de una reunión sin marcar se ve en gris hasta que la
+marcas. «Tradicional / V-model» no trabaja por sprints: en lugar de la duración
+y las reuniones, pide las fases del proyecto.
+
+**Las fechas** (la del plan, las de los ciclos, el periodo del informe de
+estado y los campos personalizados de tipo fecha) usan el selector de fechas de
+Pharos: se escriben dd/mm/aaaa o se eligen en un calendario con el mismo
+aspecto que el del cronograma, que se abre con el botón del calendario al final
+del campo (en el móvil, como una hoja desde abajo). Al pie, «Hoy» y «Borrar».
+En un rango, el calendario del fin abre en el mes del inicio y no deja elegir
+un día anterior.
+
 El plan alimenta otras pantallas:
 
 - Los **criterios de cierre** (paso 15) son los criterios de salida que evalúa
@@ -63,6 +79,12 @@ prueba de la propia aplicación en esta versión.
 | Intro o Espacio | Una lista desplegable | La abre; abierta, elige la opción marcada |
 | Esc | Una lista desplegable abierta | La cierra sin cambiar nada; el foco vuelve al campo |
 | Intro | Fecha de un sprint o un hito (dd/mm/aaaa) | Aplica la fecha; salir del campo también la aplica |
+| Alt+↓ | Un campo de fecha (la del plan, un ciclo, el informe…) | Abre el calendario |
+| ← → / ↑ ↓ | Calendario de un campo de fecha | Día anterior o siguiente / semana anterior o siguiente |
+| Inicio / Fin | Calendario de un campo de fecha | Primer o último día de la semana |
+| RePág / AvPág | Calendario de un campo de fecha | Mes anterior o siguiente |
+| Intro o Espacio | Calendario de un campo de fecha | Elige el día enfocado y cierra |
+| Esc | Calendario de un campo de fecha | Lo cierra sin cambiar nada; el foco vuelve al botón del calendario |
 | ← → | Calendario del cronograma | Día anterior o siguiente |
 | ↑ ↓ | Calendario del cronograma | Semana anterior o siguiente |
 | Inicio / Fin | Calendario del cronograma | Primer o último día de la semana |
@@ -107,6 +129,8 @@ prueba de la propia aplicación en esta versión.
 - El menú «Importar / Exportar» y las listas desplegables (estado,
   metodología, frecuencia…) se abren como una hoja, con la opción elegida
   marcada.
+- El calendario de un campo de fecha también se abre como una hoja desde
+  abajo, con días más grandes para el dedo.
 - En el cronograma, las fechas se editan en las filas: en pantallas táctiles no
   se arrastran los extremos de los sprints.
 
@@ -152,5 +176,7 @@ prueba de la propia aplicación en esta versión.
 
 ### Paso cronograma
 
-Un sprint seleccionado se puede alargar o acortar arrastrando sus extremos en
+Cómo se marca un sprint o un hito está en la ayuda «?» del título del paso,
+como en los demás; el calendario queda justo debajo de la barra «Sprint /
+Hito / Siguiente sprint». Un sprint seleccionado se puede alargar o acortar arrastrando sus extremos en
 el calendario, o editando sus fechas en la fila (dd/mm/aaaa e Intro).

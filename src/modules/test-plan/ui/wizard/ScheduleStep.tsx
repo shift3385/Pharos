@@ -267,11 +267,9 @@ export function ScheduleStep({ form, setForm }: StepProps) {
   const mNames = duplicateRows(mSorted, (x) => x.name);
   const active = hl ?? sel;
 
-  const hint = anchor
-    ? t("testPlan.schedule.hintEnd", { date: toDisplay(anchor) })
-    : mode === "milestone"
-      ? t("testPlan.schedule.hintMilestone")
-      : t(canDrag ? "testPlan.schedule.hintSprintDrag" : "testPlan.schedule.hintSprint");
+  // How to use the calendar is in the step's «?» help (UX-36); only the
+  // range being marked is announced, so the calendar sits under the bar.
+  const hint = anchor ? t("testPlan.schedule.hintEnd", { date: toDisplay(anchor) }) : "";
   const nextDesc = t("testPlan.schedule.nextTitle", {
     name: nextName,
     from: toDisplay(next.start),
@@ -338,7 +336,7 @@ export function ScheduleStep({ form, setForm }: StepProps) {
             </button>
           </div>
         </div>
-        <p className="tps-hint" aria-live="polite">
+        <p className="sr-only" aria-live="polite" data-testid="schedule-live">
           {hint}
         </p>
         <ScheduleCalendar

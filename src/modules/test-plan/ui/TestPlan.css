@@ -78,13 +78,6 @@
   font-size: var(--fs-ui);
 }
 
-.tp-freq {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-}
-
 .tp-field {
   display: flex;
   flex-direction: column;

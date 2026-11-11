@@ -6,6 +6,7 @@ import { cycleApi } from "@modules/cycles";
 import { projectPlanRef } from "@modules/test-plan";
 import type { ExecutionSummary } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
+import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
 import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
@@ -318,25 +319,23 @@ export function StatusReportDialog({
           <div className="sr-period">
             <FormField label={t("statusReport.from")}>
               {(p) => (
-                <input
+                <DatePicker
                   {...p}
-                  type="date"
                   value={fromDay}
                   max={toDay || undefined}
                   data-testid="report-from"
-                  onChange={(e) => setFromDay(e.target.value)}
+                  onChange={setFromDay}
                 />
               )}
             </FormField>
             <FormField label={t("statusReport.to")}>
               {(p) => (
-                <input
+                <DatePicker
                   {...p}
-                  type="date"
                   value={toDay}
                   min={fromDay || undefined}
                   data-testid="report-to"
-                  onChange={(e) => setToDay(e.target.value)}
+                  onChange={setToDay}
                 />
               )}
             </FormField>

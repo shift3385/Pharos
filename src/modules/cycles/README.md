@@ -14,7 +14,10 @@ web: `server/src/modules/domain/cycles.ts`.
   header, items with one result column per configuration, «Añadir casos»,
   «Añadir por filtro», assignee in place, clone, delete (its runs stay) and
   «Ejecutar» (one run per configuration; on the web too since EJE-06,
-  `/api/cycles/:id/execute`).
+  `/api/cycles/:id/execute`). The dates in `CycleDialog` are Pharos'
+  `DatePicker` (UX-36): the end's calendar opens on the start's month with
+  the days before it disabled; a typed end before the start is still refused
+  on save.
 - **Progress** comes computed from the core (`cycle_progress_get`, or
   `/api/cycles/:id/progress` on the web): this module only shows it.
 - **Exports (EXP-03):** `loadCycleExport`, `cyclesTable` and `caseCyclesTable`

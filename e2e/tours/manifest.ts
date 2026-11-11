@@ -265,6 +265,7 @@ export const INVENTORY: Item[] = [
   I("plan", "wizard-step", "wizard:purpose", "Paso 16 · Propósito"),
   I("plan", "wizard-step", "wizard:conclusion", "Paso 17 · Conclusión y «Antes de terminar»"),
   I("plan", "action", "action:pharos-select", "Listas desplegables de Pharos: ✓ en la elegida, teclado y hoja inferior en el móvil (UX-30)"),
+  I("plan", "action", "action:date-picker", "Selector de fechas de Pharos: dd/mm/aaaa, calendario, teclado, Hoy y Borrar, hoja en el móvil (UX-36)"),
   I("plan", "action", "action:plan-save", "Guardar el plan"),
   I("plan", "action", "action:plan-step-nav", "Navegar entre pasos (carril de pasos, Anterior/Siguiente)"),
   I("plan", "keyboard", "keyboard:schedule-calendar", "Teclado del calendario del cronograma (flechas, Enter)"),
