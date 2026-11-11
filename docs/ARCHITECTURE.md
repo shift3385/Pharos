@@ -1914,7 +1914,30 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   shared UI primitives (F1), Login/Inicio/Perfil (V1), Proyectos/Ajustes/Plan
   (V2), Casos/Planificador/Trazabilidad (V3), Administración by tabs (V4), and
   the data router with the shared unsaved-changes guard (RED-V3k). Released as
-  `0.2.0-alpha.1`; test execution (the rest of 0.2.0) is next.
+  `0.2.0-alpha.1`.
+- **Execution wave (`0.2.0`, 2026-11-05):** gate C closed (ADR-0011…0019): the
+  CTRF-inspired Run/Shard/Result/StepResult model, step-by-step manual execution
+  with encrypted evidence, local import of JUnit, Cucumber Messages, CTRF and
+  Playwright JSON with the "unlinked" tray, cycles and configurations, defects
+  as an entity, custom fields, the matrix extended to results and defects, the
+  ISO 29119-3 status report, the append-only audit log and the Inicio metrics
+  from the shared execution derivation.
+- **After `0.2.0` (unreleased, baseline of 2026-11-11):** AI-assisted design
+  (requirements proposed from a project folder or from designs, IA-17..19,
+  ADR-0036/0037; AI help across the plan and a critical review of a case's
+  lists, IA-11, IA-13..16), «Requisitos» as its own project section and the
+  project opening on its Tablero (UX-21/22), the «Nuevo proyecto» wizard with
+  copied settings (UX-25/29), the Inicio gadget board saved with the account
+  (UX-27/28/32, ADR-0038), the 17-step plan (UX-31), the shared `Select`,
+  `TextArea` and scrollbar (UX-30/33), contiguous keys across devices (DAT-04)
+  and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
+  the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
+  where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
+- **Known gaps (2026-11-11):** no Rust `pharos-core` crate yet (CORE-01), so no
+  CLI and no other process can write while the app is open (SEC-05); no shared
+  workspaces or roles (SYNC-07); exit criteria are recognised from free text and
+  never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
+  mobile app yet.
 - **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
   visible AI provenance. Requirements and planner cards sync since SYNC-04a;

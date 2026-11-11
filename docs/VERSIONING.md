@@ -54,6 +54,23 @@ La numeración anterior de los hitos (`v0.0.N`) queda sustituida:
 | v0.1.0                 | Jira, dashboards, disparo de CI                                          | **0.8.0**                                |
 | v0.2+                  | Agente, nubes, gates, paquetes normativos, SSO, SaaS                     | **0.9.x → 1.0.0**                        |
 
+**Renumeración del 2026-11-11** ([ADR-0039](adr/0039-rumbo-hacia-la-ejecucion-autonoma.md)):
+desde 0.3.0, la tabla anterior queda como documentación inicial y rige esta, con la
+ejecución autónoma como eje (detalle y criterios de salida en `ROADMAP.md` §3). `0.1.0`
+final se da por superada: sus validaciones nativas pasan a la salida de 0.3.0.
+
+| Versión     | Tema                                                    | Antes                         |
+| ----------- | ------------------------------------------------------- | ----------------------------- |
+| **0.3.0**   | Diseño asistido y experiencia (lo hecho desde 0.2.0)    | —                             |
+| **0.4.0**   | Estrategia medible: plan ISO completo, métricas, gates   | Parte de 0.8.0 y 0.9.x        |
+| **0.5.0**   | Equipo: workspaces con roles, aprobaciones              | 0.3.0                         |
+| **0.6.0**   | Núcleo y automatización conectada (escalón a)           | 0.3.0 y 0.5.0                 |
+| **0.7.0**   | Ejecutar con una orden (escalón b)                      | 0.6.0                         |
+| **0.8.0**   | Scripts generados por IA (escalón c)                    | 0.7.0                         |
+| **0.9.0**   | Agente supervisado (escalón d)                          | 0.9.x                         |
+| **0.10.0**  | Campo y ecosistema: móvil, exploratorio, Jira           | 0.4.0 y 0.8.0                 |
+| **1.0.0**   | Autonomía con políticas (escalón e)                     | 0.9.x → 1.0.0                 |
+
 ## 3. Una sola fuente de verdad
 
 La versión vive en el `package.json` raíz. `scripts/version.mjs` la copia a los

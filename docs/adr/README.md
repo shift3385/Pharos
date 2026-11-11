@@ -8,8 +8,8 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | ADR                                                | Decisión                                                                             | Estado   | Fecha      |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- | ---------- |
 | [0001](0001-linea-base-tres-compuertas.md)         | Línea base: tres compuertas antes de construir encima del MVP                        | Aceptado | 2026-10-28 |
-| [0002](0002-conflictos-por-entidad.md)             | Conflictos de sincronización por entidad hasta 0.5.0                                 | Aceptado | 2026-10-28 |
-| [0003](0003-workspaces-compartidos.md)             | Equipo en workspaces compartidos desde 0.3.0                                         | Aceptado | 2026-10-28 |
+| [0002](0002-conflictos-por-entidad.md)             | Conflictos de sincronización por entidad hasta 0.5.0 (0.6.0 desde ADR-0039)           | Aceptado; enmendado por ADR-0039 | 2026-10-28 |
+| [0003](0003-workspaces-compartidos.md)             | Equipo en workspaces compartidos desde 0.3.0 (0.5.0 desde ADR-0039)                  | Aceptado; enmendado por ADR-0039 | 2026-10-28 |
 | [0004](0004-web-cliente-del-servidor.md)           | La web es un cliente del servidor                                                    | Aceptado | 2026-10-28 |
 | [0005](0005-alcance-hasta-1-0.md)                  | Recortes de alcance hasta 1.0                                                        | Aceptado | 2026-10-28 |
 | [0006](0006-claves-ia-y-tls.md)                    | Claves de IA en el keychain; TLS al desplegar                                        | Aceptado | 2026-10-28 |
@@ -44,6 +44,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0036](0036-requisitos-desde-un-proyecto.md)      | Requisitos propuestos por la IA a partir de un proyecto existente (IA-17)            | Aceptado | 2026-11-07 |
 | [0037](0037-requisitos-desde-disenos.md)          | Imágenes en las llamadas de IA y requisitos desde capturas, bocetos y diseños        | Aceptado | 2026-11-07 |
 | [0038](0038-pizarra-de-inicio-y-preferencias-de-cuenta.md) | Pizarra de gadgets en Inicio y preferencias que viajan con la cuenta (UX-27)         | Aceptado | 2026-11-09 |
+| [0039](0039-rumbo-hacia-la-ejecucion-autonoma.md) | Rumbo hacia la ejecución autónoma y nuevos hitos hasta 1.0 (rector desde la línea base del 2026-11-11) | Aceptado | 2026-11-11 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en
