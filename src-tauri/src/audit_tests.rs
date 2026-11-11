@@ -1365,7 +1365,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "read (writes a file the user exports)",
     ),
     ("runs::manual::execution_attachment_preview", "read"),
-    ("requirement_attachments::requirement_attachment_preview", "read"),
+    (
+        "requirement_attachments::requirement_attachment_preview",
+        "read",
+    ),
     (
         "home_metrics::home_metrics",
         "read (Inicio metrics, RED-W6)",
@@ -1527,13 +1530,24 @@ fn every_audited_command_leaves_an_event() {
     step("requirement::requirement_risk_set", &mut |tx| {
         requirement::set_risk(tx, &req, Some(3), Some(4), U)
     });
-    step("requirement_attachments::requirement_attachment_add", &mut |tx| {
-        let x = crate::evidence::Stored {
-            sha256: crate::audit::sha256_hex(b"req-source"),
-            size: 1,
-        };
-        crate::requirement_attachments::add_attachment(tx, "ratt", &req, U, "boceto.webp", Some("image/webp"), &x)
-    });
+    step(
+        "requirement_attachments::requirement_attachment_add",
+        &mut |tx| {
+            let x = crate::evidence::Stored {
+                sha256: crate::audit::sha256_hex(b"req-source"),
+                size: 1,
+            };
+            crate::requirement_attachments::add_attachment(
+                tx,
+                "ratt",
+                &req,
+                U,
+                "boceto.webp",
+                Some("image/webp"),
+                &x,
+            )
+        },
+    );
     let run_input = |title: &str| -> crate::runs::RunInput {
         serde_json::from_value(json!({"projectId": p, "title": title, "userId": U})).unwrap()
     };
