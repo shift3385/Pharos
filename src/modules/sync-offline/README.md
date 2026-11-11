@@ -83,11 +83,17 @@ resolution can be added without a schema change.
 - **Keys across devices (DAT-01, ADR-0010).** Case, requirement and defect
   keys are unique per project between devices:
   - every desktop sync starts with `leaseKeyBlocks`: `key_lease_requests` lists
-    the project/kind pairs with fewer than 10 numbers left,
-    `POST /sync/key-blocks` leases blocks of 50, and `key_blocks_apply` stores
-    them and gives provisional keys (`ATS_?KQZD`, created offline without a
-    block) their definitive one before the push. A server without the
-    endpoint (404) only leaves keys provisional;
+    the project/kind pairs this device numbers (a counter or provisional keys)
+    whose reserve is used up, `POST /sync/key-blocks` leases what they wait for
+    plus a reserve of 10 (`size`, DAT-04), and `key_blocks_apply` stores them
+    and gives provisional keys (`ATS_?KQZD`, created offline without a block)
+    their definitive one before the push. A server without the endpoint (404)
+    only leaves keys provisional;
+  - with a connection, creating a key on the desktop first calls `reserveKeys`
+    (`api/keyReserve.ts`): `key_lease_for` says whether the reserve is empty,
+    and then exactly the numbers about to be used are leased, so keys stay
+    contiguous across devices. It never blocks creating: offline, signed out
+    or after 4 s without an answer, the key is provisional until the next sync;
   - the server refuses an upsert whose key another live document of the
     project has (`keyConflicts` in the push answer). `key_conflicts_record`
     gives the row a provisional key and a key conflict. Only clients that send

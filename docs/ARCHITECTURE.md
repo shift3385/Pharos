@@ -1283,8 +1283,8 @@ core Postgres lacks). Modules:
   a conflict; a project delete also tombstones its plans, cases, requirements
   and planner cards; refuses an upsert whose key another live document of the
   project has, in `keyConflicts`), `GET /sync/pull?since=<seq>` (pages of up
-  to 500 with `hasMore`) and `POST /sync/key-blocks` (blocks of 50 key numbers
-  per project and kind, DAT-01). Every sync request must carry
+  to 500 with `hasMore`) and `POST /sync/key-blocks` (blocks of key numbers
+  per project and kind, DAT-01: `size` of 1 to 50, 50 when absent, DAT-04). Every sync request must carry
   `x-pharos-version`; the server serves its own MINOR and the previous one and
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
@@ -1696,6 +1696,10 @@ fields (`created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`,
   - numbers come from blocks the server leases per project and kind
     (`key_sync.rs`), so two devices never hand out the same key; offline
     without a block the key is provisional (`ATS_?KQZD`) until the next sync;
+  - with a connection, the desktop leases exactly the numbers it is about to
+    use right before creating (`reserveKeys` → `key_lease_for`, DAT-04), so
+    keys stay contiguous across devices; at a sync it keeps an offline reserve
+    of 10, only for the kinds it numbers and only once used up;
   - live keys are unique per project (local unique indexes, migration 0017);
     a key another document already has becomes a key conflict for the user,
     never a silent rename (rules in `src/modules/sync-offline/README.md`).

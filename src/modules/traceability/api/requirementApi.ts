@@ -1,4 +1,4 @@
-import { serverApi } from "@modules/sync-offline";
+import { reserveKeys, serverApi } from "@modules/sync-offline";
 import { invoke, isTauri } from "@shared/platform";
 import type {
   ImportSummary,
@@ -34,10 +34,11 @@ export const requirementApi = {
       : serverApi.get(`/api/requirements?${ofProject(projectId)}`),
   get: (id: string, userId: string): Promise<Requirement | null> =>
     isTauri() ? invoke("requirement_get", { id, userId }) : serverApi.get(path(id)),
-  create: (input: RequirementInput): Promise<Requirement | null> =>
-    isTauri()
-      ? invoke<Requirement | null>("requirement_create", { input }).then((r) => withRisk(r, input))
-      : serverApi.post("/api/requirements", input),
+  create: async (input: RequirementInput): Promise<Requirement | null> => {
+    if (!isTauri()) return serverApi.post("/api/requirements", input);
+    if (!input.requirementKey?.trim()) await reserveKeys(input.projectId, "requirement");
+    return withRisk(await invoke<Requirement | null>("requirement_create", { input }), input);
+  },
   update: (id: string, input: RequirementInput): Promise<Requirement | null> =>
     isTauri()
       ? invoke<Requirement | null>("requirement_update", { id, input }).then((r) => withRisk(r, input))
@@ -48,8 +49,12 @@ export const requirementApi = {
     projectId: string,
     userId: string,
     rows: RequirementImportRow[],
-  ): Promise<ImportSummary> =>
-    isTauri()
-      ? invoke("requirement_import", { projectId, userId, rows })
-      : serverApi.post(`/api/requirements/import?${ofProject(projectId)}`, { rows }),
+  ): Promise<ImportSummary> => {
+    if (!isTauri()) return serverApi.post(`/api/requirements/import?${ofProject(projectId)}`, { rows });
+    // Rows without a key get one; a row whose key exists only updates it.
+    const unkeyed = rows.filter((r) => !r.requirementKey?.trim()).length;
+    return reserveKeys(projectId, "requirement", unkeyed).then(() =>
+      invoke<ImportSummary>("requirement_import", { projectId, userId, rows }),
+    );
+  },
 };

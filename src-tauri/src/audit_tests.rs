@@ -1282,6 +1282,7 @@ const EXEMPT: &[(&str, &str)] = &[
         "removes rows already deleted and audited; expired evidence writes its own `redact`",
     ),
     ("key_sync::key_lease_requests", "read"),
+    ("key_sync::key_lease_for", "read"),
     (
         "key_sync::key_conflicts_record",
         "a server refusal; the user's resolution is audited",

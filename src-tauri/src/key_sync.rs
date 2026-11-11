@@ -25,12 +25,18 @@ use crate::journal::{self, Action, Actor, Change};
 use crate::keys::{self, KeyKind};
 use crate::oplog;
 
-/// A new block is leased when fewer numbers than this are left.
-const LOW_WATER: u64 = 10;
+/// Numbers a device keeps in reserve, per project and kind it numbers, to
+/// create without a connection (DAT-04). Small, because what another device
+/// creates meanwhile goes after it: the reserve is the gap it can leave.
+const RESERVE: u64 = 10;
+
+/// The most numbers one request may take (the server's limit).
+const MAX_BLOCK: u64 = 50;
 
 /// One block this device needs: `floor` is its next number, so a project
 /// numbered before its first push keeps the keys it already has. `prefix` lets
 /// the server count only the keys of this series (`JIRA-48213` is not one).
+/// `size`: how many numbers (a server before DAT-04 ignores it and gives 50).
 #[cfg_attr(test, derive(TS), ts(export))]
 #[derive(Serialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +45,7 @@ pub struct LeaseRequest {
     pub(crate) kind: &'static str,
     pub(crate) prefix: String,
     pub(crate) floor: u64,
+    pub(crate) size: u64,
 }
 
 /// A block leased from the server, both ends included.
@@ -102,10 +109,13 @@ fn projects_of(conn: &Connection, user: &str) -> Result<Vec<String>, String> {
         .map_err(|e| e.to_string())
 }
 
-/// The blocks the account's projects need: every project and kind with fewer
-/// than `LOW_WATER` numbers left. `run` blocks only from a server that lists
-/// `runs`, and `cycle` blocks only from one that lists `cycles`: an older one
-/// refuses the whole request for a kind it does not know.
+/// The offline reserves the account's projects need at a sync (DAT-04): only
+/// the kinds this device numbers in each project (a counter, or keys still
+/// provisional), and only once the reserve is used up, so no number is left
+/// behind. Enough for the provisional keys waiting plus a reserve of `RESERVE`.
+/// `run` blocks only from a server that lists `runs`, and `cycle` blocks only
+/// from one that lists `cycles`: an older one refuses the whole request for a
+/// kind it does not know.
 pub(crate) fn lease_requests(conn: &Connection, user: &str) -> Result<Vec<LeaseRequest>, String> {
     let runs_too = crate::sync::server_takes_runs(conn, user)?;
     let cycles_too = crate::sync::server_takes_cycles(conn, user)?;
@@ -118,19 +128,55 @@ pub(crate) fn lease_requests(conn: &Connection, user: &str) -> Result<Vec<LeaseR
             if matches!(kind, KeyKind::Cycle) && !cycles_too {
                 continue;
             }
+            let waiting = keys::provisional_count(conn, kind, &project_id)?;
+            if waiting == 0 && !keys::has_counter(conn, kind, &project_id)? {
+                continue;
+            }
             let (left, next) = keys::remaining(conn, kind, &project_id)?;
-            if left < LOW_WATER {
+            if left == 0 {
                 let (prefix, _) = keys::numbering(conn, kind, &project_id)?;
                 out.push(LeaseRequest {
                     project_id: project_id.clone(),
                     kind: kind.as_str(),
                     prefix,
                     floor: next,
+                    size: (waiting + RESERVE).min(MAX_BLOCK),
                 });
             }
         }
     }
     Ok(out)
+}
+
+/// The numbers to ask the server for right before creating `count` keys of a
+/// project with a connection (DAT-04): None when the project is not the
+/// account's, when the server never saw it (this device numbers it freely,
+/// ADR-0010 rule 3) or while its reserve has numbers left (those are already
+/// this device's; any key beyond them is provisional until the next sync).
+pub(crate) fn lease_for(
+    conn: &Connection,
+    user: &str,
+    project_id: &str,
+    kind: KeyKind,
+    count: u64,
+) -> Result<Option<LeaseRequest>, String> {
+    if !projects_of(conn, user)?.iter().any(|p| p == project_id)
+        || !crate::oplog::known_to_server(conn, "project", project_id)?
+    {
+        return Ok(None);
+    }
+    let (left, next) = keys::remaining(conn, kind, project_id)?;
+    if left > 0 {
+        return Ok(None);
+    }
+    let (prefix, _) = keys::numbering(conn, kind, project_id)?;
+    Ok(Some(LeaseRequest {
+        project_id: project_id.to_string(),
+        kind: kind.as_str(),
+        prefix,
+        floor: next,
+        size: count.clamp(1, MAX_BLOCK),
+    }))
 }
 
 /// Stores the leased blocks of the account's projects (others are ignored).
@@ -606,6 +652,21 @@ pub fn key_lease_requests(db: State<Db>, user_id: String) -> Result<Vec<LeaseReq
     db.with_conn(|conn| lease_requests(conn, &user_id))
 }
 
+/// What to lease before creating `count` keys of `kind` in a project with a
+/// connection (`lease_for`); None when nothing is needed.
+#[tauri::command]
+pub fn key_lease_for(
+    db: State<Db>,
+    user_id: String,
+    project_id: String,
+    kind: String,
+    count: u64,
+) -> Result<Option<LeaseRequest>, String> {
+    require_user(&user_id)?;
+    let kind = KeyKind::parse(&kind).ok_or_else(|| format!("unknown key kind: {kind}"))?;
+    db.with_conn(|conn| lease_for(conn, &user_id, &project_id, kind, count))
+}
+
 /// Stores the leased blocks and gives the provisional keys their definitive
 /// one, in one transaction. Returns how many keys it assigned.
 #[tauri::command]
@@ -761,32 +822,40 @@ mod tests {
     }
 
     #[test]
-    fn asks_for_a_block_when_few_numbers_are_left() {
+    fn reserves_only_the_kinds_this_device_numbers_once_used_up() {
         let c = conn();
         project(&c, "p1", U, true);
         project(&c, "other", "user-b", true);
         case(&c, "c7", "ATS_007", "{}");
-        let reqs = lease_requests(&c, U).unwrap();
+        // Nothing numbered on this device yet: no reserve, not even for the
+        // cases it pulled (DAT-04), so another device's numbers stay contiguous.
+        assert!(lease_requests(&c, U).unwrap().is_empty());
+
+        // A case created offline waits with a provisional key: its number
+        // plus the reserve.
+        let provisional = next_case(&c);
+        assert!(keys::is_provisional(&provisional));
+        case(&c, "c8", &provisional, "{}");
         assert_eq!(
-            reqs.len(),
-            5,
-            "one per kind (case, requirement, defect, run, cycle), only for the account's projects"
-        );
-        assert_eq!(
-            reqs[0],
-            LeaseRequest {
+            lease_requests(&c, U).unwrap(),
+            vec![LeaseRequest {
                 project_id: "p1".into(),
                 kind: "case",
                 prefix: "ATS_".into(),
-                floor: 8
-            }
+                floor: 8,
+                size: 1 + RESERVE,
+            }],
+            "only the account's projects, only the kind in use"
         );
+        apply_blocks(&c, U, &[block("case", 8, 18)]).unwrap();
+        assert_eq!(finalize(&c, U).unwrap(), 1);
 
-        apply_blocks(&c, U, &[block("case", 8, 57)]).unwrap();
-        assert!(lease_requests(&c, U)
-            .unwrap()
-            .iter()
-            .all(|r| r.kind != "case"));
+        // While the reserve has numbers left, nothing is leased: none is lost.
+        assert!(lease_requests(&c, U).unwrap().is_empty());
+        for n in 9..=18 {
+            assert_eq!(next_case(&c), format!("ATS_{n:03}"));
+        }
+        assert_eq!(lease_requests(&c, U).unwrap()[0].size, RESERVE);
         // Blocks of a foreign project are ignored.
         apply_blocks(
             &c,
@@ -800,6 +869,54 @@ mod tests {
         )
         .unwrap();
         assert_eq!(keys::remaining(&c, KeyKind::Case, "other").unwrap().0, 0);
+    }
+
+    #[test]
+    fn creating_online_leases_just_the_numbers_it_needs() {
+        let c = conn();
+        project(&c, "p1", U, true);
+        project(&c, "local", U, false);
+        project(&c, "other", "user-b", true);
+        assert_eq!(
+            lease_for(&c, U, "p1", KeyKind::Requirement, 1).unwrap(),
+            Some(LeaseRequest {
+                project_id: "p1".into(),
+                kind: "requirement",
+                prefix: "REQ-".into(),
+                floor: 1,
+                size: 1,
+            })
+        );
+        // An import asks for its rows, up to the server's limit.
+        assert_eq!(
+            lease_for(&c, U, "p1", KeyKind::Requirement, 80)
+                .unwrap()
+                .map(|r| r.size),
+            Some(MAX_BLOCK)
+        );
+        // A project the server never saw numbers itself; another account's is
+        // not this device's to number.
+        assert_eq!(
+            lease_for(&c, U, "local", KeyKind::Requirement, 1).unwrap(),
+            None
+        );
+        assert_eq!(
+            lease_for(&c, U, "other", KeyKind::Requirement, 1).unwrap(),
+            None
+        );
+
+        // The leased number makes the key definitive at once.
+        apply_blocks(&c, U, &[block("requirement", 1, 1)]).unwrap();
+        assert_eq!(
+            keys::allocate(&c, KeyKind::Requirement, "p1", "REQ-", 3).unwrap(),
+            "REQ-001"
+        );
+        // A reserve with numbers left is used first.
+        apply_blocks(&c, U, &[block("requirement", 2, 11)]).unwrap();
+        assert_eq!(
+            lease_for(&c, U, "p1", KeyKind::Requirement, 1).unwrap(),
+            None
+        );
     }
 
     #[test]
