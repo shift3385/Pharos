@@ -5,6 +5,7 @@ import { DataTable, type DataColumn } from "@shared/ui/DataTable";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { statusTone, type LinkableCase } from "../model/types";
 import { LinkCaseDialog } from "./LinkCaseDialog";
 import "@shared/ui/buttons.css";
@@ -29,8 +30,17 @@ export function UnlinkedTray({
   const [filter, setFilter] = useState<Filter>("unlinked");
   const [linking, setLinking] = useState<UnlinkedTest | null>(null);
   const toast = useToast();
-  /** Unlinking has no dialog: a failure is said in a toast. */
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  /** Unlinking asks first (NC-012, a normal confirmation); a failure is said
+   *  in a toast. */
   const unlink = async (x: UnlinkedTest) => {
+    const ok = await confirm({
+      title: t("runs.tray.unlinkTitle", { name: x.name }),
+      message: t("runs.tray.unlinkConfirm", { key: byId.get(x.mappedCaseId ?? "")?.scenarioId ?? "—" }),
+      confirmLabel: t("runs.tray.unlink"),
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await onLink(x.testKey, null);
     } catch {
@@ -128,6 +138,7 @@ export function UnlinkedTray({
 
   return (
     <div className="rn-tray">
+      {confirmDialog}
       <p className="tp-field__hint">{t("runs.tray.intro")}</p>
       <FilterChips
         label={t("runs.tray.filter")}
@@ -152,6 +163,7 @@ export function UnlinkedTray({
         ]}
       />
       <DataTable
+        className="dt-surface"
         label={t("runs.tray.title")}
         rows={rows}
         columns={columns}

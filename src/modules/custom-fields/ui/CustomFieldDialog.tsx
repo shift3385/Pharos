@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Archive, ArchiveRestore, Plus, Trash2 } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
+import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
@@ -83,8 +84,9 @@ export function CustomFieldDialog({
   const [draft, setDraft] = useState<Draft>(start);
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(start);
-  const confirmDiscard = () =>
-    !dirty || window.confirm(t("common.discardConfirm"));
+  // A Pharos confirmation, not the browser's (NC-017).
+  const { confirm, dialog: discardDialog } = useConfirm();
+  const confirmDiscard = async () => !dirty || (await confirm(discardOptions(t)));
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const savedOption = (o: FieldOption) =>
     field?.options.some((x) => x.id === o.id) ?? false;
@@ -492,7 +494,7 @@ export function CustomFieldDialog({
         <button
           type="button"
           className="cd__cancel"
-          onClick={() => confirmDiscard() && onCancel()}
+          onClick={() => void confirmDiscard().then((ok) => ok && onCancel())}
         >
           {t("common.cancel")}
         </button>
@@ -509,6 +511,7 @@ export function CustomFieldDialog({
               : t("customFields.dialog.save")}
         </button>
       </div>
+      {discardDialog}
     </Dialog>
   );
 }

@@ -5,6 +5,7 @@ import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import type { ExportTable } from "@shared/export/extraTables";
 import { LoadError } from "@shared/ui/LoadError";
+import { useConfirm } from "@shared/ui/useConfirm";
 import { aiAvailable, markReviewed, withProvenance, type AiProvenance } from "@modules/ai";
 import { ErrorSummary } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
@@ -36,7 +37,7 @@ import {
 import { STEP_IDS, stepCompletion } from "./wizard/steps";
 import { StepBody } from "./wizard/StepBody";
 import { StepCompact, StepRail, StepStrip } from "./wizard/StepNav";
-import { PlanIoMenu, PlanStatusPanel, RevisionsButton, RevisionsDialog } from "./wizard/PlanSidePanels";
+import { PlanIoMenu, PlanStatusPanel, RevisionsDialog } from "./wizard/PlanSidePanels";
 import type { StepProps } from "./wizard/stepProps";
 import { useWideApp } from "./wizard/useWideApp";
 import { parseStamp } from "@shared/time/stamp";
@@ -64,6 +65,7 @@ interface Props {
  */
 export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "current" }: Props) {
   const { t, i18n } = useTranslation();
+  const { confirm, dialog: restoreDialog } = useConfirm();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const toast = useToast();
@@ -190,7 +192,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
     if (!form) return;
     const rev = await testPlanApi.revisionDetail(revisionId, userId);
     if (!rev) return;
-    if (!window.confirm(t("testPlan.restoreConfirm"))) return;
+    if (!(await confirm({ title: t("testPlan.restoreTitle"), message: t("testPlan.restoreConfirm"), confirmLabel: t("testPlan.restoreAction") }))) return;
     setForm(applyRevision(form, rev.title, rev.data, plan?.id ?? planId));
     setShowRev(false);
     setStep(0);
@@ -300,12 +302,10 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
   useHeaderActions(
     form && (
       <>
-        {plan && <RevisionsButton onClick={() => setShowRev(true)} />}
         <PlanIoMenu
           onImport={() => fileInputRef.current?.click()}
           onExportPdf={() => void exportPdf()}
           onExportXlsx={() => void exportXlsx()}
-          history={exportHistory}
         />
         <button type="button" className="header-action" data-primary="" onClick={trySave} disabled={saving}>
           <Check size={16} aria-hidden="true" />
@@ -358,6 +358,7 @@ export function TestPlanWizard({ planId, projectId, onSaved, exportHistory = "cu
 
   return (
     <section className="tpw" data-testid="plan-wizard">
+      {restoreDialog}
       <input ref={fileInputRef} type="file" accept=".xlsx" hidden onChange={(e) => void onImportFile(e)} />
       {view === "desktop" && wide && <StepRail {...nav} />}
       <div className="tpw__main">

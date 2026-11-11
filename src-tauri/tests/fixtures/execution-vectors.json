@@ -2226,6 +2226,120 @@
           }
         ]
       }
+    },
+    {
+      "name": "home: the pass rate counts cases (a case passes only if every target passes) and leaves unlinked tests apart (NC-029)",
+      "kind": "home",
+      "projects": [
+        {
+          "projectId": "P9",
+          "runs": [
+            {
+              "id": "R9",
+              "runKey": "RUN-009",
+              "title": "Regresión",
+              "trigger": "import",
+              "status": "completed",
+              "createdAt": "2026-11-06 02:00:00"
+            }
+          ],
+          "attempts": [
+            {
+              "id": "f1",
+              "runId": "R9",
+              "testKey": "k1-main",
+              "status": "passed",
+              "finishedAt": "2026-11-06T03:00:00Z",
+              "imported": true,
+              "caseId": "C1",
+              "flowId": "F1"
+            },
+            {
+              "id": "f2",
+              "runId": "R9",
+              "testKey": "k1-alt",
+              "status": "failed",
+              "finishedAt": "2026-11-06T04:00:00Z",
+              "imported": true,
+              "caseId": "C1",
+              "flowId": "F2"
+            },
+            {
+              "id": "f3",
+              "runId": "R9",
+              "testKey": "k2",
+              "status": "passed",
+              "finishedAt": "2026-11-06T05:00:00Z",
+              "imported": true,
+              "caseId": "C2"
+            },
+            {
+              "id": "u1",
+              "runId": "R9",
+              "testKey": "tests/acceso.spec.ts::a",
+              "status": "passed",
+              "finishedAt": "2026-11-06T06:00:00Z",
+              "imported": true
+            },
+            {
+              "id": "u2",
+              "runId": "R9",
+              "testKey": "tests/acceso.spec.ts::b",
+              "status": "failed",
+              "finishedAt": "2026-11-06T07:00:00Z",
+              "imported": true
+            }
+          ],
+          "cases": [
+            {
+              "id": "C1",
+              "scenarioId": "PH-001",
+              "title": "Entrar",
+              "status": "approved",
+              "priority": "high"
+            },
+            {
+              "id": "C2",
+              "scenarioId": "PH-002",
+              "title": "Salir",
+              "status": "approved",
+              "priority": "medium"
+            }
+          ]
+        }
+      ],
+      "request": {
+        "dayStarts": [
+          1793833200000,
+          1793919600000
+        ],
+        "now": 1793966400000,
+        "windows": [
+          {
+            "id": "today",
+            "fromIndex": 1
+          },
+          {
+            "id": "7d",
+            "fromIndex": 0
+          }
+        ],
+        "queueLimit": 1
+      },
+      "expected": {
+        "windows": {
+          "today": {
+            "passed": 1,
+            "failed": 1,
+            "blocked": 0,
+            "notRun": 0,
+            "retest": 0,
+            "executed": 2,
+            "passRate": 0.5,
+            "unlinked": 2
+          }
+        }
+      }
     }
   ]
 }

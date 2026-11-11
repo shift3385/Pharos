@@ -145,15 +145,15 @@ describe("AiEngineTab", () => {
 
   it("changing provider with a typed key asks first and can keep it", async () => {
     const { user } = await renderTab();
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     await user.type(screen.getByLabelText(/Clave de API/), "sk-test");
     await user.click(screen.getByRole("radio", { name: /^OpenAI/ }));
-    expect(confirm).toHaveBeenCalledOnce();
+    await screen.findByRole("alertdialog", { name: "¿Descartar la clave escrita?" });
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.getByRole("radio", { name: /^Gemini/ })).toBeChecked();
     expect(screen.getByLabelText(/Clave de API/)).toHaveValue("sk-test");
-    confirm.mockReturnValue(true);
     await user.click(screen.getByRole("radio", { name: /^OpenAI/ }));
-    expect(screen.getByRole("radio", { name: /^OpenAI/ })).toBeChecked();
+    await user.click(await screen.findByRole("button", { name: "Descartar y cambiar" }));
+    await waitFor(() => expect(screen.getByRole("radio", { name: /^OpenAI/ })).toBeChecked());
     expect(screen.getByLabelText(/Clave de API/)).toHaveValue("");
     expect(api.keySet).not.toHaveBeenCalled();
   });
@@ -453,8 +453,9 @@ describe("AiEngineTab", () => {
     expect(testButton()).toBeDisabled();
     expect(screen.getByText(/Escribe un modelo para probar la clave/)).toBeInTheDocument();
 
-    vi.spyOn(window, "confirm").mockReturnValue(true); // Discards the typed key.
     await user.click(screen.getByRole("radio", { name: /^Compatible/ }));
+    await user.click(await screen.findByRole("button", { name: "Descartar y cambiar" })); // Discards the typed key.
+    await waitFor(() => expect(screen.getByRole("radio", { name: /^Compatible/ })).toBeChecked());
     await user.type(screen.getByLabelText(/Clave de API/), "k");
     expect(screen.getByText("Escribe la URL base para probar la clave.")).toBeInTheDocument();
   });
@@ -464,22 +465,21 @@ describe("AiEngineTab", () => {
     ["Guardar", () => screen.getByTestId("ai-save")],
   ])("«%s» asks before replacing a stored key that was not tested", async (_name, button) => {
     api.keyStored.mockResolvedValue(true);
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     const { user } = await renderTab();
     await user.type(screen.getByLabelText(/Clave de API/), "sk-new");
     await user.click(button());
-    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    await screen.findByRole("alertdialog", { name: "¿Reemplazar la clave guardada?" });
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(api.keySet).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/Clave de API/)).toHaveValue("sk-new");
 
-    confirm.mockReturnValue(true);
     await user.click(button());
+    await user.click(await screen.findByRole("button", { name: "Reemplazar clave" }));
     await waitFor(() => expect(api.keySet).toHaveBeenCalledWith("gemini", "sk-new"));
   });
 
   it("a key that just answered replaces the stored one without asking; editing it asks again", async () => {
     api.keyStored.mockResolvedValue(true);
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     const { user } = await renderTab();
     const field = screen.getByLabelText(/Clave de API/);
     await user.type(field, "sk-new");
@@ -488,14 +488,15 @@ describe("AiEngineTab", () => {
 
     await user.type(field, "2");
     await user.click(screen.getByRole("button", { name: "Guardar clave" }));
-    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    await screen.findByRole("alertdialog", { name: "¿Reemplazar la clave guardada?" });
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(api.keySet).not.toHaveBeenCalled();
 
     await user.click(testButton());
     await screen.findByText(/Respuesta en \d+ ms/);
     await user.click(screen.getByRole("button", { name: "Guardar clave" }));
     await waitFor(() => expect(api.keySet).toHaveBeenCalledWith("gemini", "sk-new2"));
-    expect(confirm).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it.each([390, 1440])("passes axe at %i px", async (width) => {

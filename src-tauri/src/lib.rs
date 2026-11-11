@@ -26,9 +26,11 @@ mod oplog;
 mod planner;
 mod profile;
 mod project;
+mod project_scan;
 mod purge;
 mod recovery;
 mod requirement;
+mod requirement_attachments;
 mod revisions;
 #[cfg(test)]
 mod revisions_sync_tests;
@@ -88,6 +90,8 @@ pub fn run() {
             app.manage(diag::init(log_dir));
             app.manage(evidence::Uploads::default());
             app.manage(evidence::check::EvidenceCheck::default());
+            // Project folders picked for the AI requirement extraction (IA-17).
+            app.manage(project_scan::ProjectScans::default());
             // Download folder for exports (UX-02), remembered per instance.
             let prefs_file = app
                 .path()
@@ -157,6 +161,7 @@ pub fn run() {
             test_case::test_case_update,
             test_case::test_case_delete,
             test_case::test_case_revisions,
+            test_case::test_case_revision_get,
             custom_fields::custom_field_list,
             custom_fields::custom_field_create,
             custom_fields::custom_field_update,
@@ -169,6 +174,12 @@ pub fn run() {
             requirement::requirement_update,
             requirement::requirement_delete,
             requirement::requirement_import,
+            requirement_attachments::requirement_attachment_add,
+            requirement_attachments::requirement_attachment_list,
+            requirement_attachments::requirement_attachment_preview,
+            project_scan::project_scan_pick,
+            project_scan::project_scan_read,
+            project_scan::project_scan_close,
             requirement::requirement_risk_set,
             runs::run_create,
             runs::run_update,

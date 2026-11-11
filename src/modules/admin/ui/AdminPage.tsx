@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import { AiEngineTab } from "@modules/ai";
 import { TemplatesTab, useTemplateCount } from "@modules/templates";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
+import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ADMIN_PANEL_ID, adminTabFrom, type AdminTab } from "../model/tabs";
 import { AdminTabs } from "./AdminTabs";
 import { GeneralTab } from "./tabs/GeneralTab";
@@ -41,14 +42,16 @@ export function AdminPage() {
     if (raw !== null && raw !== tab) setParams({ tab }, { replace: true });
   }, [raw, tab, setParams]);
 
+  // Switching tabs with changes asks with a Pharos confirmation (NC-017).
+  const { confirm, dialog: switchDialog } = useConfirm();
   const select = useCallback(
-    (next: AdminTab) => {
+    async (next: AdminTab) => {
       if (next === tab) return;
-      if (dirty && !window.confirm(t("common.discardConfirm"))) return;
+      if (dirty && !(await confirm(discardOptions(t)))) return;
       setDirty(false);
       setParams({ tab: next }, { replace: true });
     },
-    [tab, dirty, setParams, t],
+    [tab, dirty, setParams, t, confirm],
   );
 
   return (
@@ -77,6 +80,7 @@ export function AdminPage() {
         {tab === "diagnostics" && <DiagnosticsTab />}
       </div>
       {dialog}
+      {switchDialog}
     </div>
   );
 }

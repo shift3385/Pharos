@@ -141,9 +141,21 @@ export function AuthProvider({
     window.dispatchEvent(new CustomEvent("pharos:signed-out"));
   }, [clearSession]);
 
+  const updateUser = useCallback(
+    async (patch: Partial<Pick<Session["user"], "displayName" | "firstName" | "lastName">>) => {
+      const current = session.current;
+      if (!current) return;
+      const next = { ...current, user: { ...current.user, ...patch } };
+      session.current = next;
+      setUser(next.user);
+      await store.save(next);
+    },
+    [store],
+  );
+
   const value = useMemo(
-    () => ({ status, user, offline, login, register, logout }),
-    [status, user, offline, login, register, logout],
+    () => ({ status, user, offline, login, register, logout, updateUser }),
+    [status, user, offline, login, register, logout, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

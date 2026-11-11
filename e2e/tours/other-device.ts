@@ -4,6 +4,7 @@
 // Pharos would. When the desktop app then syncs its own edit of the same
 // document, the server answers with a conflict and the app shows its panel.
 import { readFileSync } from "node:fs";
+import { PERSONA } from "../../scripts/manual/persona.mjs";
 
 const API = process.env.PHAROS_TOURS_API ?? "";
 const FEATURES = "stable-steps,append-only,runs,cycles,defects,key-conflicts";
@@ -42,7 +43,8 @@ export async function editOnOtherDevice(
   change: (payload: Record<string, unknown>) => Record<string, unknown>,
 ) {
   if (!API) throw new Error("PHAROS_TOURS_API is not set (run the tours with npm run manual)");
-  const email = process.env.TEST_USER_EMAIL ?? "smoke@pharos.dev";
+  // The tour account (NC-052): run-tours passes it; the default is the same.
+  const email = process.env.TEST_USER_EMAIL ?? PERSONA.email;
   const password = process.env.TEST_USER_PASSWORD ?? "supersecret1";
   const { accessToken } = (await call("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) })) as {
     accessToken: string;

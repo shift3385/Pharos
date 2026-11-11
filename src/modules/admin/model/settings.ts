@@ -20,14 +20,35 @@ export interface AdminSettings {
   /** Days a soft-deleted row is kept on this device before the purge removes
    *  it for good (SYNC-06, `sync-offline/api/purgeApi.ts`). */
   retentionDays: number;
+  /** Sync on its own every `autoSyncMinutes` while online (NC-025, MAN-03);
+   *  off by default. «Sincronizar ahora» is always there, and Pharos also
+   *  syncs at sign-in and when the connection comes back, whatever this says.
+   *  Any completed sync restarts the count. */
+  autoSync: boolean;
+  /** One of `AUTO_SYNC_MINUTES`. */
+  autoSyncMinutes: number;
 }
+
+/** The intervals «Sincronizar automáticamente» offers, in minutes. */
+export const AUTO_SYNC_MINUTES = [1, 5, 15, 30] as const;
+
+/** Fired on `window` when the sync settings change, so the shell's sync
+ *  loop (`SyncStatusProvider`) re-reads them without a reload. */
+export const SYNC_SETTINGS_EVENT = "pharos:sync-settings";
 
 export const DEFAULT_SETTINGS: AdminSettings = {
   backgroundImage: DEFAULT_BACKGROUND,
   backgroundOpacity: 40,
   cardShadow: true,
   retentionDays: 30,
+  // Off by default (NC-025): sync is manual until the user turns it on.
+  autoSync: false,
+  autoSyncMinutes: 5,
 };
+
+/** A stored interval that is not one of the offered ones reads as 5 min. */
+const syncMinutes = (v: unknown): number =>
+  (AUTO_SYNC_MINUTES as readonly number[]).includes(Number(v)) ? Number(v) : DEFAULT_SETTINGS.autoSyncMinutes;
 
 const KEY = "pharos.admin.settings";
 
@@ -55,7 +76,8 @@ export function loadSettings(): AdminSettings {
       delete stored.backgroundImage;
       delete stored.backgroundOpacity;
     }
-    return { ...DEFAULT_SETTINGS, ...stored };
+    const merged = { ...DEFAULT_SETTINGS, ...stored } as AdminSettings;
+    return { ...merged, autoSync: merged.autoSync === true, autoSyncMinutes: syncMinutes(merged.autoSyncMinutes) };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -68,8 +90,17 @@ export function saveSettings(settings: AdminSettings): void {
     retentionDays: clampInt(settings.retentionDays || 0, 1, 3650, 30),
     // Not `clampInt`'s fallback for 0: fully transparent is a valid choice.
     backgroundOpacity: Math.max(0, Math.min(100, Math.round(settings.backgroundOpacity ?? 40))),
+    autoSync: settings.autoSync === true,
+    autoSyncMinutes: syncMinutes(settings.autoSyncMinutes),
   };
   localStorage.setItem(KEY, JSON.stringify({ ...clean, backgroundVersion: BACKGROUND_VERSION }));
+}
+
+/** Saves only the sync settings (they apply at once, with no «Guardar») and
+ *  tells the sync loop. */
+export function saveSyncSettings(patch: Pick<Partial<AdminSettings>, "autoSync" | "autoSyncMinutes">): void {
+  saveSettings({ ...loadSettings(), ...patch });
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(SYNC_SETTINGS_EVENT));
 }
 
 /** Applies the background and the card shadow to the whole app. Safe to call on

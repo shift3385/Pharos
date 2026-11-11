@@ -3,7 +3,7 @@
 // controls from here and the router (aiApi) decides from here what it sends.
 // Never repeat these rules in a component.
 
-import type { AiConfig, OnlineProviderId } from "./types";
+import type { AiConfig, AiProviderId, OnlineProviderId } from "./types";
 
 /** How a model treats `temperature`. */
 export type TemperatureSupport = "supported" | "unsupported" | "optional";
@@ -111,6 +111,50 @@ export function capabilitiesFor(provider: OnlineProviderId, model: string): Mode
   const rule = RULES.find((r) => r.provider === provider && (!r.model || r.model.test(id)));
   // Every provider has a catch-all row; this only guards a future provider.
   return rule?.caps ?? { temperature: temperature("supported", "ai.params.note.range"), reasoning: null };
+}
+
+/** Whether a model reads images (IA-18, ADR-0037). `unknown`: Pharos cannot
+ *  tell (an own endpoint, an OpenRouter model of another family): it is sent,
+ *  with a warning, and the provider's own error says if it was not. */
+export type VisionSupport = "yes" | "no" | "unknown";
+
+export interface VisionCapability {
+  images: VisionSupport;
+  /** Takes a PDF as is (Claude, Gemini, OpenAI); otherwise export images. */
+  pdf: boolean;
+}
+
+/** Ollama models that see images, by the family in their name. */
+const OLLAMA_VISION =
+  /(llava|vision|[-.]vl\b|vl:|\dvl|gemma3|gemma4|minicpm-v|moondream|mistral-small3\.[12]|llama4|granite3\.2-vision)/i;
+
+/** Text-only OpenAI models (every newer chat model sees images). */
+const OPENAI_TEXT_ONLY = /^(gpt-3\.5|gpt-4(-\d{4})?$|gpt-4-32k|o1-mini|o3-mini)/i;
+
+const yes: VisionCapability = { images: "yes", pdf: true };
+const no: VisionCapability = { images: "no", pdf: false };
+const unknown: VisionCapability = { images: "unknown", pdf: false };
+
+export function visionFor(provider: AiProviderId, model: string): VisionCapability {
+  const id = model.trim();
+  switch (provider) {
+    case "anthropic":
+      return /^claude-(2|instant)/i.test(id) ? no : yes;
+    case "gemini":
+      return /embedding|aqa/i.test(id) ? no : yes;
+    case "openai":
+      return OPENAI_TEXT_ONLY.test(id) ? no : yes;
+    case "openrouter": {
+      const [family, name = ""] = id.split("/");
+      if (family === "anthropic" || family === "google") return visionFor(family === "google" ? "gemini" : "anthropic", name);
+      if (family === "openai") return visionFor("openai", name);
+      return unknown;
+    }
+    case "ollama":
+      return OLLAMA_VISION.test(id) ? { images: "yes", pdf: false } : no;
+    default:
+      return unknown;
+  }
 }
 
 /** Whether an online call sends `temperature` with this config. */

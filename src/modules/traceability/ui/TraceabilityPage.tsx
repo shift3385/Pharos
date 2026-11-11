@@ -1,8 +1,8 @@
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
-import { ArrowLeftRight, Download, Plus, Upload } from "lucide-react";
-import { aiAvailable } from "@modules/ai";
+import { Download, FolderSearch, ImageUp, Plus, Upload } from "lucide-react";
+import { aiAvailable, markReviewed } from "@modules/ai";
 import { useAuth } from "@modules/auth";
 import { logClientError } from "@shared/diagnostics";
 import { LoadError } from "@shared/ui/LoadError";
@@ -12,14 +12,17 @@ import { executionApi, type ExecutionSummary } from "@modules/runs";
 import { projectTraceableCases, setCaseRequirementKeys, type TraceableCase } from "@modules/test-cases";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
-import { FilterChips } from "@shared/ui/FilterChips";
-import { MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
+import { MenuItem, ResponsiveMenu } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
 import { useToast } from "@shared/ui/Toast";
 import { unlessReported } from "@shared/ui/notify";
 import { ListSkeleton } from "@shared/ui/Skeleton";
 import { requirementApi } from "../api/requirementApi";
+import { projectScanApi } from "../api/projectScanApi";
+import type { ApplyResult } from "../proposals/types";
+import { ProjectRequirementsModal } from "./ProjectRequirementsModal";
+import { RequirementsFromDesignModal } from "./RequirementsFromDesignModal";
 import type { CsvImportResult } from "../import/requirementCsv";
 import { buildMatrix, type MatrixDefect, type MatrixSort } from "../model/matrix";
 import { proposeMigration, type MigrationProposal } from "../model/migration";
@@ -32,10 +35,13 @@ import { MigrateTraceabilityModal } from "./MigrateTraceabilityModal";
 import { RequirementFormModal, type RequirementDraft } from "./RequirementFormModal";
 import { RequirementImportModal } from "./RequirementImportModal";
 import { RequirementsPanel } from "./RequirementsPanel";
+import { announceRequirementsChanged } from "../model/events";
 import "@shared/ui/buttons.css";
 import "./Traceability.css";
 
-type View = "requirements" | "matrix";
+/** Which section the page is (UX-21): «Requisitos», the test basis, or
+ *  «Trazabilidad», the matrix and its coverage. */
+export type TraceabilityView = "requirements" | "matrix";
 
 interface Data {
   requirements: Requirement[];
@@ -70,28 +76,37 @@ function withFilters(params: URLSearchParams, f: MatrixFilters): URLSearchParams
 const byKey = (a: Requirement, b: Requirement) =>
   a.requirementKey.localeCompare(b.requirementKey, undefined, { numeric: true });
 
-/** Traceability section of a project (v0.0.2, RED-V3): its requirements
- *  (TRZ-01) and the requirement ↔ case ↔ defect matrix (TRZ-02). The page
- *  loads the data once for both views and owns their dialogs: requirement
- *  form, CSV import, delete, AI generation (IA-05) and the free-text
- *  migration (D2). */
-export function TraceabilityPage({
-  projectId,
-  projectName,
-  caseIdPrefix,
-  caseIdDigits,
-}: {
+interface PageProps {
   projectId: string;
   projectName: string;
   /** Numbering of the cases generated from a requirement (browser fallback). */
   caseIdPrefix?: string;
   caseIdDigits?: number;
-}) {
+}
+
+/** «Requisitos» section of a project (UX-21): the test basis, before the
+ *  cases in the menu. */
+export function RequirementsPage(props: PageProps) {
+  return <TraceabilityPage {...props} view="requirements" />;
+}
+
+/** The project's requirements (TRZ-01) or its requirement ↔ case ↔ defect
+ *  matrix (TRZ-02), one section each since UX-21 («Requisitos» and
+ *  «Trazabilidad»). The page loads the data and owns the dialogs: requirement
+ *  form, CSV import, delete, AI generation (IA-05, IA-17, IA-18) and the
+ *  free-text migration (D2). */
+export function TraceabilityPage({
+  projectId,
+  projectName,
+  caseIdPrefix,
+  caseIdDigits,
+  view = "matrix",
+}: PageProps & { view?: TraceabilityView }) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const userId = user?.id ?? "";
   const toast = useToast();
-  const [view, setView] = useState<View>("matrix");
+  const isMatrix = view === "matrix";
   const [data, setData] = useState<Data | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [aiReady, setAiReady] = useState(false);
@@ -100,6 +115,8 @@ export function TraceabilityPage({
   const [importing, setImporting] = useState<{ fileName: string; result: CsvImportResult } | null>(null);
   const [generating, setGenerating] = useState<Requirement | null>(null);
   const [migrating, setMigrating] = useState(false);
+  const [fromProject, setFromProject] = useState(false);
+  const [fromDesign, setFromDesign] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [params, setParams] = useSearchParams();
   const filters = filtersOf(params);
@@ -114,6 +131,8 @@ export function TraceabilityPage({
   // The latest final result of each case under the filters (EJE-04). The
   // matrix still shows its requirements and cases if this read fails.
   async function refreshExecution() {
+    // Only the matrix shows results; the requirements list never asks.
+    if (!isMatrix) return;
     const request = ++executionRequest.current;
     try {
       const summary = await executionApi.summary(
@@ -138,7 +157,7 @@ export function TraceabilityPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userId, filterKey]);
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !isMatrix) return;
     void cycleApi
       .list(projectId, userId)
       .then((list) => setCycles(list.map((c) => ({ value: c.id, label: `${c.cycleKey} · ${c.title}` }))))
@@ -147,7 +166,7 @@ export function TraceabilityPage({
       .list(projectId, userId, true)
       .then((list) => setConfigurations(list.map((c) => ({ value: c.id, label: c.name }))))
       .catch(() => setConfigurations([]));
-  }, [projectId, userId]);
+  }, [projectId, userId, isMatrix]);
 
   async function refresh() {
     void refreshExecution();
@@ -199,6 +218,19 @@ export function TraceabilityPage({
     [data],
   );
   const keys = data?.requirements.map((r) => r.requirementKey) ?? [];
+  // Cases linking each requirement: those are never deleted from a proposal.
+  const linkedCases = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const row of matrix?.rows ?? []) if (row.caseId) counts[row.requirementKey] = (counts[row.requirementKey] ?? 0) + 1;
+    return counts;
+  }, [matrix]);
+
+  function proposalsApplied({ created, updated, removed, skipped, failed }: ApplyResult) {
+    if (created || updated || removed) toast(t("traceability.proposals.doneToast", { created, updated, removed }));
+    if (skipped.length) toast(t("traceability.proposals.skippedToast", { count: skipped.length }));
+    if (failed.length) toast(t("traceability.proposals.failed", { count: failed.length }));
+    void refresh().then(announceRequirementsChanged);
+  }
   const generate = (key: string) => {
     const r = data?.requirements.find((x) => x.requirementKey === key);
     if (r) setGenerating(r);
@@ -214,6 +246,15 @@ export function TraceabilityPage({
       priority: draft.priority,
       riskLikelihood: draft.riskLikelihood,
       riskImpact: draft.riskImpact,
+      // «Marcar revisado» (IA-01): the AI mark goes, its record stays.
+      ...(draft.markReviewed && editing && editing !== "new"
+        ? {
+            data: {
+              ...(editing.data ?? {}),
+              aiProvenance: markReviewed(editing.data?.aiProvenance, "requirement", userId),
+            },
+          }
+        : {}),
     };
     try {
       if (editing && editing !== "new") await requirementApi.update(editing.id, input);
@@ -221,6 +262,7 @@ export function TraceabilityPage({
       toast(t("traceability.requirement.savedToast"));
       setEditing(null);
       await refresh();
+      announceRequirementsChanged();
     } catch {
       toast(t("traceability.requirement.saveError"));
     }
@@ -235,6 +277,7 @@ export function TraceabilityPage({
       toast(t("traceability.requirement.deleteFailed", { key: r.requirementKey }));
     }
     await refresh();
+    announceRequirementsChanged();
   }
 
   async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -255,6 +298,7 @@ export function TraceabilityPage({
       }
       setImporting(null);
       await refresh();
+      announceRequirementsChanged();
     } catch {
       toast(t("traceability.import.error"));
     }
@@ -278,6 +322,7 @@ export function TraceabilityPage({
     toast(t("traceability.migrate.doneToast", { links: selected.length, creates: toCreate.length }));
     setMigrating(false);
     await refresh();
+    announceRequirementsChanged();
   }
 
   /** The active filters as «Ciclo: CYC-001 · …», for the export. */
@@ -307,41 +352,44 @@ export function TraceabilityPage({
   // The section's buttons go to the project header (V2's slot); outside a
   // project page they keep their own row.
   const inHeader = useContext(HeaderActionsContext) !== null;
-  const actions = (
+  const canExport = Boolean(matrix && matrix.rows.length);
+  const actions = isMatrix ? (
+    <button
+      type="button"
+      className="ui-btn ui-btn--io"
+      data-natural
+      onClick={() => void exportXlsx()}
+      disabled={!canExport}
+      title={canExport ? t("traceability.io.exportHint") : t("traceability.matrix.empty")}
+    >
+      <Download size={16} aria-hidden="true" />
+      {t("traceability.io.exportXlsx")}
+    </button>
+  ) : (
     <>
-          <ImportExportMenu
-            onImport={() => fileInputRef.current?.click()}
-            onExport={() => void exportXlsx()}
-            canExport={Boolean(matrix && matrix.rows.length)}
-          />
-          <button type="button" className="ui-btn ui-btn--primary" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden="true" />
-            <span className="ui-btn__text">{t("traceability.requirement.new")}</span>
-          </button>
+      <ImportMenu
+        onImport={() => fileInputRef.current?.click()}
+        onFromProject={projectScanApi.available() ? () => setFromProject(true) : undefined}
+        onFromDesign={() => setFromDesign(true)}
+        aiReady={aiReady}
+      />
+      <button type="button" className="ui-btn ui-btn--primary" onClick={() => setEditing("new")}>
+        <Plus size={16} aria-hidden="true" />
+        <span className="ui-btn__text">{t("traceability.requirement.new")}</span>
+      </button>
     </>
   );
   useHeaderActions(actions);
 
   return (
     <div className="tz">
-      <h2 className="sr-only">{t("traceability.title")}</h2>
+      <h2 className="sr-only">{isMatrix ? t("traceability.title") : t("traceability.view.requirements")}</h2>
       {!inHeader && <div className="tz-actions">{actions}</div>}
-
-      <FilterChips
-        label={t("traceability.title")}
-        options={[
-          { value: "requirements", label: t("traceability.view.requirements"), count: data?.requirements.length },
-          { value: "matrix", label: t("traceability.view.matrix") },
-        ]}
-        value={view}
-        onChange={(v) => setView(v as View)}
-        className="tz-views"
-      />
 
       {loadFailed && <LoadError message={t("traceability.loadFailed")} onRetry={retryLoad} />}
       {!data || !matrix ? (
         !loadFailed && <ListSkeleton rows={5} />
-      ) : view === "requirements" ? (
+      ) : !isMatrix ? (
         <RequirementsPanel
           requirements={data.requirements}
           matrix={matrix}
@@ -400,7 +448,7 @@ export function TraceabilityPage({
           onCreated={({ created, failed }) => {
             if (created) {
               toast(t("traceability.generate.doneToast", { count: created, key: generating.requirementKey }));
-              void refresh();
+              void refresh().then(announceRequirementsChanged);
             }
             // Failed ones stay in the modal for a retry (it says so itself).
             if (!failed) setGenerating(null);
@@ -418,6 +466,24 @@ export function TraceabilityPage({
           onCancel={() => setDeleting(null)}
         />
       )}
+      {fromProject && data && (
+        <ProjectRequirementsModal
+          projectId={projectId}
+          existing={data.requirements}
+          linkedCases={linkedCases}
+          onApplied={proposalsApplied}
+          onClose={() => setFromProject(false)}
+        />
+      )}
+      {fromDesign && data && (
+        <RequirementsFromDesignModal
+          projectId={projectId}
+          existing={data.requirements}
+          linkedCases={linkedCases}
+          onApplied={proposalsApplied}
+          onClose={() => setFromDesign(false)}
+        />
+      )}
       {migrating && (
         <MigrateTraceabilityModal
           proposals={proposals}
@@ -429,24 +495,30 @@ export function TraceabilityPage({
   );
 }
 
-/** «Importar / Exportar» (SPEC §8): requirements from CSV, the matrix to .xlsx. */
-function ImportExportMenu({
+/** «Importar» of the requirements (SPEC §8): from a CSV, or proposed by the AI
+ *  from a project folder (IA-17) or from designs (IA-18). The matrix export
+ *  is the «Trazabilidad» section's own button (UX-21). */
+function ImportMenu({
   onImport,
-  onExport,
-  canExport,
+  onFromProject,
+  onFromDesign,
+  aiReady,
 }: {
   onImport: () => void;
-  onExport: () => void;
-  canExport: boolean;
+  /** Desktop only (IA-17): Rust reads the folder. */
+  onFromProject?: () => void;
+  /** Desktop and web (IA-18); the dialog says when the model sees no images. */
+  onFromDesign: () => void;
+  aiReady: boolean;
 }) {
   const { t } = useTranslation();
   const mobile = useBreakpoint() === "mobile";
   const menu = usePopover(mobile ? "dialog" : "menu");
-  const label = t("traceability.io.label");
+  const label = t("traceability.io.import");
   return (
     <>
       <button type="button" className="ui-btn ui-btn--io" data-natural {...menu.triggerProps}>
-        <ArrowLeftRight size={16} aria-hidden="true" />
+        <Upload size={16} aria-hidden="true" />
         {label}
       </button>
       <ResponsiveMenu
@@ -458,20 +530,28 @@ function ImportExportMenu({
         title={label}
         className="cl-io"
       >
-        <MenuLabel>{t("traceability.io.import")}</MenuLabel>
         <MenuItem icon={Upload} onSelect={onImport} description={t("traceability.io.importHint")}>
           {t("traceability.io.importCsv")}
         </MenuItem>
-        <MenuSeparator />
-        <MenuLabel>{t("traceability.io.export")}</MenuLabel>
+        {onFromProject && (
+          <MenuItem
+            icon={FolderSearch}
+            onSelect={onFromProject}
+            disabled={!aiReady}
+            title={aiReady ? undefined : t("ai.assist.unavailable")}
+            description={aiReady ? t("traceability.io.fromProjectHint") : t("ai.assist.unavailable")}
+          >
+            {t("traceability.io.fromProject")}
+          </MenuItem>
+        )}
         <MenuItem
-          icon={Download}
-          onSelect={onExport}
-          disabled={!canExport}
-          title={canExport ? undefined : t("traceability.matrix.empty")}
-          description={t("traceability.io.exportHint")}
+          icon={ImageUp}
+          onSelect={onFromDesign}
+          disabled={!aiReady}
+          title={aiReady ? undefined : t("ai.assist.unavailable")}
+          description={aiReady ? t("traceability.fromDesign.openHint") : t("ai.assist.unavailable")}
         >
-          {t("traceability.io.exportXlsx")}
+          {t("traceability.fromDesign.open")}
         </MenuItem>
       </ResponsiveMenu>
     </>

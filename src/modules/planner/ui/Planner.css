@@ -322,11 +322,18 @@
 }
 
 /* ---- Card editor ---- */
+/* On its own surface, like the other editors: over the custom background
+   image the fields and the attachment list were hard to read (NC-036). */
 .pl-editor {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   max-width: 640px;
+  padding: clamp(16px, 1.8cqi, 22px);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
 }
 .tc-form__grid {
   display: grid;
@@ -376,9 +383,12 @@
 .pl-attach__del:hover {
   color: var(--color-error-text);
 }
-.pl-attach__input {
-  font-size: var(--fs-ui);
-  color: var(--color-text-secondary);
+/* «Adjuntar archivos» (NC-037): a Pharos button; the native input is hidden. */
+.pl-attach__pick {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Defect ↔ test case links (traceability, TRZ-02). */
@@ -406,23 +416,3 @@
   color: var(--color-text-primary);
 }
 
-
-/* Defects left the board (DEF-01): a note with the way to their module. */
-.pl-moved {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.pl-moved__link {
-  font-weight: var(--fw-semibold);
-  color: var(--color-navy-500);
-}

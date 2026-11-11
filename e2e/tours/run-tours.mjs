@@ -35,6 +35,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { owners } from "../../scripts/api-port.mjs";
 import { findAiKey, readDotenv } from "../../scripts/manual/ai-key.mjs";
+import { PERSONA } from "../../scripts/manual/persona.mjs";
 import { acquireLock, lockMessage, releaseLock } from "../../scripts/manual/run-lock.mjs";
 import { scanForSecret } from "../../scripts/manual/secret-scan.mjs";
 import { driverVersion, major, webview2Version } from "../scripts/edge-driver.mjs";
@@ -50,6 +51,8 @@ const isWindows = process.platform === "win32";
 
 export const TOURS_DB = "pharos_test_db_tours";
 const port = Number(process.env.PHAROS_TOURS_PORT || 3100);
+/** Liomar's password on the tour database (dropped after the run). */
+const TOURS_PASSWORD = "faro-liomar-2026";
 const apiUrl = `http://localhost:${port}`;
 
 const args = process.argv.slice(2);
@@ -295,8 +298,8 @@ try {
   await admin(`CREATE DATABASE ${TOURS_DB}`);
   if (run("npm", ["--prefix", "server", "run", "migrate"], { env: childEnv }) !== 0) throw new Error("the migrations failed on the tour database.");
   checkInterrupted();
-  if (run("npm", ["--prefix", "server", "run", "seed:test-user"], { env: childEnv }) !== 0) throw new Error("could not seed the test account on the tour database.");
-  checkInterrupted();
+  // No seeded account (NC-052): Liomar creates his own in chapter 1, on
+  // screen, and every chapter uses it. The tours always run chapter 1.
 
   console.log(`› Starting the tour API on ${apiUrl}`);
   const log = openSync(join(outDir, "api.log"), "w");
@@ -358,6 +361,12 @@ try {
         PHAROS_E2E_PROFILE: profile,
         PHAROS_TOURS_DOWNLOADS: downloads,
         PHAROS_TOURS_API: apiUrl,
+        // «Requisitos desde un proyecto»: the folder the debug build picks
+        // instead of Windows' own picker (project_scan.rs, MAN-03).
+        PHAROS_E2E_PICK_FOLDER: join(toursDir, "fixtures", "proyecto-billetera"),
+        // The one account of the manual (a test address, never a real one).
+        TEST_USER_EMAIL: PERSONA.email,
+        TEST_USER_PASSWORD: TOURS_PASSWORD,
         ...(specFilter ? { PHAROS_TOURS_ONLY: specFilter } : {}),
       },
     });

@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, useState, type KeyboardEventHandler } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
 import {
   DndContext,
   KeyboardSensor,
@@ -19,14 +18,15 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Bug, Database, Flag, GripVertical, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
+import { Database, Flag, GripVertical, Plus, Search, SquareCheck, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useToast } from "@shared/ui/Toast";
 import { HeaderActionsContext, useHeaderActions } from "@shared/ui/headerActions";
 import { FilterChips } from "@shared/ui/FilterChips";
 import { FilterMenuButton } from "@shared/ui/FilterMenuButton";
 import { PriorityFlag, type FlagTone } from "@shared/ui/PriorityFlag";
-import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { LoadError } from "@shared/ui/LoadError";
+import { ListSkeleton } from "@shared/ui/Skeleton";
 import { plannerApi } from "../api/plannerApi";
 import {
   CARD_KINDS,
@@ -78,13 +78,15 @@ function group(cards: PlannerCard[]): Record<CardStatus, PlannerCard[]> {
 export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerId: string }) {
   const { t } = useTranslation();
   const [cards, setCards] = useState<PlannerCard[]>([]);
+  // NC-016 (MAN-03): the board says it is loading or that it failed, with
+  // «Reintentar», instead of showing four empty columns.
+  const [load, setLoad] = useState<"loading" | "ready" | "error">("loading");
   const [editing, setEditing] = useState<EditView | null>(null);
   const [deleting, setDeleting] = useState<PlannerCard | null>(null);
   const toast = useToast();
   const [kind, setKind] = useState<"all" | CardKind>("all");
   const [query, setQuery] = useState("");
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
-  const mobile = useBreakpoint() === "mobile";
   // The mouse drags the whole card; the keyboard moves it with the card's
   // handle (Space, arrows across rows and columns, Space), announced in the UI
   // language (WCAG 2.1.1, UX-05).
@@ -109,7 +111,12 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
   };
 
   async function refresh() {
-    setCards(await plannerApi.list(projectId, ownerId));
+    try {
+      setCards(await plannerApi.list(projectId, ownerId));
+      setLoad("ready");
+    } catch {
+      setLoad("error");
+    }
   }
   useEffect(() => {
     void refresh();
@@ -193,13 +200,6 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
   return (
     <div className="pl">
       {!inHeader && <div className="pl-head">{newCard}</div>}
-      <p className="pl-moved" role="note">
-        <Bug size={16} aria-hidden="true" />
-        <span>{t("planner.defectsMoved")}</span>
-        <Link to="../defects" relative="path" className="pl-moved__link">
-          {t("planner.openDefects")}
-        </Link>
-      </p>
       <div className="pl-toolbar">
         <FilterChips
           label={t("planner.kind")}
@@ -220,17 +220,19 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
-        {!mobile && (
-          <FilterMenuButton
-            label={t("planner.priority")}
-            icon={Flag}
-            options={[...CARD_PRIORITIES].reverse().map((p) => ({ value: p, label: t(`planner.priorityLabel.${p}`) }))}
-            selected={priorities}
-            onChange={setPriorities}
-          />
-        )}
+        {/* On a phone too (NC-020): the menu opens as a bottom sheet there. */}
+        <FilterMenuButton
+          label={t("planner.priority")}
+          icon={Flag}
+          options={[...CARD_PRIORITIES].reverse().map((p) => ({ value: p, label: t(`planner.priorityLabel.${p}`) }))}
+          selected={priorities}
+          onChange={setPriorities}
+        />
       </div>
-      <DndContext
+      {load === "error" && <LoadError message={t("planner.loadFailed")} onRetry={() => void refresh()} />}
+      {load === "loading" && <ListSkeleton rows={3} />}
+      {load === "ready" && (
+        <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragEnd={onDragEnd}
@@ -249,7 +251,8 @@ export function PlannerBoard({ projectId, ownerId }: { projectId: string; ownerI
             />
           ))}
         </div>
-      </DndContext>
+        </DndContext>
+      )}
       {deleting && (
         <ConfirmDialog
           variant="destructive"

@@ -52,8 +52,9 @@ export function routePaths(appSource) {
 }
 
 /** A dialog the app can open: the Dialog / ConfirmDialog / BottomSheet
- *  primitives, the report-import modal, an ARIA dialog or a native one. */
-export const DIALOG_PATTERN = /<(Dialog|ConfirmDialog|BottomSheet|ImportReportModal)\b|role="(alert)?dialog"|window\.(confirm|prompt|alert)\(|(?<![.\w])alert\(/g;
+ *  primitives, the report-import modal, an ARIA dialog, a question asked with
+ *  `useConfirm` (each `await confirm(` is one, NC-017) or a native one. */
+export const DIALOG_PATTERN = /<(Dialog|ConfirmDialog|BottomSheet|ImportReportModal)\b|role="(alert)?dialog"|\bawait confirm\(|window\.(confirm|prompt|alert)\(|(?<![.\w])alert\(/g;
 /** Tabs (the Tabs primitive or an ARIA tablist). */
 export const TABS_PATTERN = /<Tabs\b|role="tablist"/;
 
@@ -149,6 +150,17 @@ export async function check({ fromRun = false, env = process.env } = {}) {
   const required = requiredIds();
   for (const id of required.ids) {
     if (!ids.has(id)) errors.push(`no inventory item for ${id} (add it to e2e/tours/manifest.ts and tour it)`);
+  }
+
+  // Manual order (MAN-03): one chapter per number, and a tour file carries its
+  // chapter's number (`--spec 08` finds chapter 8).
+  const numbers = new Map();
+  for (const c of CHAPTERS) {
+    if (numbers.has(c.number)) errors.push(`chapters ${numbers.get(c.number)} and ${c.id} share number ${c.number}`);
+    numbers.set(c.number, c.id);
+    if (c.file && !c.file.startsWith(`${String(c.number).padStart(2, "0")}-`)) {
+      errors.push(`chapter ${c.id} is number ${c.number} but its tour file is ${c.file}`);
+    }
   }
 
   const covered = new Map(); // id → number of steps covering it

@@ -9,8 +9,8 @@ export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "f
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 
 /** The tour's projects (fixed names and prefixes: the manual shows them). */
-export const PROJECT_A = { name: "Banca Móvil", prefix: "BM" };
-export const PROJECT_B = { name: "Portal Clientes", prefix: "PC" };
+export const PROJECT_A = { name: "Pharos", prefix: "PH" };
+export const PROJECT_B = { name: "API de sincronización", prefix: "API" };
 
 /** Clicks the theme toggle until the app is in the light theme. */
 export async function switchToLightTheme() {
@@ -315,20 +315,50 @@ export async function pickFromMenu(trigger: string, item: string) {
   await menuItem(item).click();
 }
 
-/** Waits for a native confirm()/alert() and accepts it. */
-export async function acceptNativeDialog(timeout = 5_000) {
+/** Pharos's topmost confirmation (alertdialog; the app never uses the
+ *  browser's, NC-017), once one is open. The list is queried afresh on every
+ *  try: a confirmation that opens after an async call (the keychain, a read)
+ *  still counts. 15 s like the other waits: CI runners can be slow. */
+async function topConfirm(text?: string, timeout = 15_000) {
+  const open = () => $$('[role="alertdialog"]');
+  await browser.waitUntil(async () => (await open().length) > 0, {
+    timeout,
+    timeoutMsg: "no Pharos confirmation appeared",
+  });
+  const all = await open();
+  const top = all[all.length - 1];
+  if (text) await expect(top).toHaveText(expect.stringContaining(text));
+  return top;
+}
+
+/** Waits for Pharos's confirmation and presses its confirm button. With
+ *  `text`, checks first that the question says it. */
+export async function acceptConfirm(text?: string, timeout = 15_000) {
+  const top = await topConfirm(text, timeout);
+  await top.$("button.cd__confirm").click();
+  await top.waitForExist({ reverse: true, timeout });
+}
+
+/** Answers Pharos's topmost confirmation «no» (its cancel button, NC-017). */
+export async function dismissConfirm(text?: string, timeout = 15_000) {
+  const top = await topConfirm(text, timeout);
+  await top.$("button.cd__cancel").click();
+  await top.waitForExist({ reverse: true, timeout });
+}
+
+/** Clicks what opens a confirmation and, if the click is lost (the element
+ *  re-rendered under it: «stale element»), clicks again until one opens. */
+export async function clickForConfirm(selector: string, timeout = 15_000) {
   await browser.waitUntil(
     async () => {
-      try {
-        await browser.getAlertText();
-        return true;
-      } catch {
-        return false;
-      }
+      if ((await $$('[role="alertdialog"]').length) > 0) return true;
+      await $(selector)
+        .click()
+        .catch(() => undefined);
+      return false;
     },
-    { timeout, timeoutMsg: "no native dialog appeared" },
+    { timeout, interval: 2_000, timeoutMsg: `«${selector}» never opened a confirmation` },
   );
-  await browser.acceptAlert();
 }
 
 export { button, es };

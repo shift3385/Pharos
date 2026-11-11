@@ -90,6 +90,29 @@ describe("AuthProvider and the session's renewal", () => {
     expect(authApi.logout).toHaveBeenCalledWith("r2");
   });
 
+  it("a profile save updates the signed-in user at once and in the stored session", async () => {
+    function Rename() {
+      const { user, updateUser } = useAuth();
+      return (
+        <>
+          <p>{user?.displayName ?? "—"}</p>
+          <button type="button" onClick={() => void updateUser({ displayName: "Lucía QA", firstName: "Lucía" })}>
+            rename
+          </button>
+        </>
+      );
+    }
+    render(
+      <AuthProvider store={store} initialSession={saved}>
+        <Rename />
+      </AuthProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "rename" }));
+    expect(screen.getByText("Lucía QA")).toBeInTheDocument();
+    expect(saved?.user).toMatchObject({ id: "u1", displayName: "Lucía QA", firstName: "Lucía" });
+    expect(saved?.accessToken).toBe("old");
+  });
+
   describe("on startup, with an expired token", () => {
     beforeEach(() => {
       vi.mocked(authApi.me).mockRejectedValue(refused);

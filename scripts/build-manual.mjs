@@ -26,10 +26,11 @@ import {
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { changedShare, decodePng, drawFocus, encodePng } from "./manual/png.mjs";
-import { markdownToHtml, escapeHtml } from "./manual/markdown.mjs";
-import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
+import { escapeHtml, leftoverTable, markdownToHtml } from "./manual/markdown.mjs";
+import { AFTER_STEPS, keyboardAppendix, parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
 import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
 import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
+import { foreignNames } from "./manual/persona.mjs";
 
 const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const manualDir = join(repoDir, "docs", "manual");
@@ -41,9 +42,10 @@ export const PDF_NAME = "Pharos-manual-de-usuario.pdf";
 const REPO_URL = "https://github.com/shift3385/Pharos/blob/main";
 const THRESHOLD = Number(process.env.MANUAL_DIFF_THRESHOLD ?? 0.005);
 
-const { CHAPTERS } = await import(pathToFileURL(join(repoDir, "e2e", "tours", "manifest.ts")).href);
+const { CHAPTERS, MANUAL_ORDER } = await import(pathToFileURL(join(repoDir, "e2e", "tours", "manifest.ts")).href);
 const pkg = JSON.parse(readFileSync(join(repoDir, "package.json"), "utf8"));
-const MANUAL_CHAPTERS = CHAPTERS.filter((c) => c.inManual !== false);
+// Printed in menu order (`number`), not in the order the tours run (MAN-03).
+const MANUAL_CHAPTERS = MANUAL_ORDER;
 
 const args = new Set(process.argv.slice(2));
 
@@ -136,7 +138,7 @@ function loadSteps() {
   importImages(steps);
   const unfocused = steps.filter((s) => s.focusMissing).map((s) => `${s.chapter}/${s.id}`);
   if (unfocused.length > 0) console.warn(`! Focus not displayed at capture time (fix the selector): ${unfocused.join(", ")}`);
-  const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
+  const order = new Map(CHAPTERS.map((c) => [c.id, c.number]));
   const clean = steps
     .filter((s) => s.status !== "failed")
     .map(({ chapter, n, id, title, caption, covers, image, viewport, status, reason, focus, group }) => ({
@@ -173,6 +175,20 @@ function source(chapter) {
   return existsSync(file) ? parseSource(readFileSync(file, "utf8")) : parseSource("");
 }
 
+// ---- Keyboard appendix (MAN-03) ---------------------------------------------------------
+
+const APPENDIX = { id: "atajos", file: "A-atajos-de-teclado.md", title: "Apéndice. Atajos de teclado" };
+const APPENDIX_INTRO =
+  "Todos los atajos del manual, capítulo a capítulo. Las letras de una pantalla (por ejemplo, P, F, B y S del ejecutor) solo actúan cuando no estás escribiendo en un campo.";
+
+/** Each chapter's «Atajos de teclado» section, in manual order. */
+const appendixEntries = () => MANUAL_CHAPTERS.map((c) => ({ number: c.number, title: c.title, keys: source(c).keys }));
+
+/** The appendix body in Markdown (the .md file). */
+function appendixBody() {
+  return keyboardAppendix(appendixEntries());
+}
+
 // ---- Markdown ----------------------------------------------------------------------
 
 const docName = (c) => `${String(c.number).padStart(2, "0")}-${c.id}.md`;
@@ -203,6 +219,8 @@ function chapterMarkdown(c, steps) {
       if (src.notes[s.id]) lines.push(src.notes[s.id], "");
     }
   }
+  for (const { heading, body } of src.extra) lines.push(`## ${heading}`, "", body, "");
+  for (const [key, heading] of AFTER_STEPS) if (src[key]) lines.push(`## ${heading}`, "", src[key], "");
   if (src.tips) lines.push("## Consejos", "", src.tips, "");
   if (src.seeAlso) lines.push("## Véase también", "", src.seeAlso, "");
   const i = MANUAL_CHAPTERS.indexOf(c);
@@ -237,8 +255,24 @@ function indexMarkdown(data, byChapter) {
     const pending = c.status === "pending" ? " — *pendiente*" : "";
     lines.push(`${c.number}. [${c.title}](${docName(c)})${pending} (${steps.length} pasos)`);
   }
-  lines.push("");
+  lines.push("", `- [${APPENDIX.title}](${APPENDIX.file})`, "");
   return lines.join("\n");
+}
+
+function appendixMarkdown() {
+  return [
+    "<!-- Generado por `npm run manual` desde las secciones «Atajos de teclado» de docs/manual/fuentes/. No lo edites a mano. -->",
+    "",
+    `# ${APPENDIX.title}`,
+    "",
+    APPENDIX_INTRO,
+    "",
+    appendixBody(),
+    "---",
+    "",
+    "[Índice](README.md)",
+    "",
+  ].join("\n");
 }
 
 // ---- HTML + PDF ----------------------------------------------------------------------
@@ -294,6 +328,7 @@ code { font-family: var(--font-mono); font-size: 0.9em; background: var(--color-
 .toc li.sub a { padding: 0.4mm 0 0.4mm 8mm; font-size: 9.5pt; color: var(--color-text-secondary); border-bottom: none; }
 .toc li.sub a .p { font-weight: 400; }
 .chapter { break-before: page; }
+.keys-block { break-inside: avoid; }
 .chapter .num { color: var(--color-accent); margin-right: 2mm; }
 h2 { font-size: 13.5pt; color: var(--color-navy-700); margin: 6mm 0 2mm; break-after: avoid; }
 h3 { break-after: avoid; }
@@ -324,6 +359,9 @@ p, li { orphans: 3; widows: 3; }
 .note { background: var(--color-navy-100); border-left: 1.2mm solid var(--color-navy-500); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
 .pending { background: #fdf3e2; border-left: 1.2mm solid var(--color-accent); padding: 2mm 3mm; border-radius: 1mm; margin: 2mm 0; }
 .tips { background: var(--color-surface-2); padding: 1mm 4mm; border-radius: 2mm; }
+.md-table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 9.5pt; break-inside: avoid; }
+.md-table th, .md-table td { text-align: left; vertical-align: top; padding: 1.2mm 2mm; border-bottom: 0.2mm solid var(--color-border); }
+.md-table th { background: var(--color-surface-2); font-weight: 600; }
 blockquote { margin: 2mm 0; padding: 2mm 3mm; border-left: 1.2mm solid var(--color-accent); background: #fdf3e2; }
 ul, ol { padding-left: 6mm; }
 `;
@@ -397,12 +435,23 @@ function chapterHtml(c, steps) {
       parts.push(`<div class="group">${members.map((m) => stepHtml(c, m, src, { grouped: true })).join("")}</div>`);
     } else parts.push(stepHtml(c, s, src));
   }
+  for (const { heading, body } of src.extra) parts.push(`<h2>${escapeHtml(heading)}</h2>${markdownToHtml(body)}`);
+  for (const [key, heading] of AFTER_STEPS) if (src[key]) parts.push(`<h2>${heading}</h2>${markdownToHtml(src[key])}`);
   // One block: «Véase también» never ends up alone on a page of its own.
   const tips = src.tips ? `<h2>Consejos</h2><div class="tips">${markdownToHtml(src.tips)}</div>` : "";
   const seeAlso = src.seeAlso ? `<h2>Véase también</h2>${markdownToHtml(src.seeAlso)}` : "";
   if (tips || seeAlso) parts.push(`<div class="endblock">${tips}${seeAlso}</div>`);
   parts.push("</section>");
   return absoluteLinks(parts.join("\n"));
+}
+
+function appendixHtml() {
+  return absoluteLinks(
+    `<section class="chapter" id="cap-${APPENDIX.id}"><h1>${escapeHtml(APPENDIX.title)}</h1><p>${escapeHtml(APPENDIX_INTRO)}</p>${appendixEntries()
+      .filter((e) => e.keys.trim())
+      .map((e) => `<div class="keys-block"><h2>${e.number}. ${escapeHtml(e.title)}</h2>${markdownToHtml(e.keys)}</div>`)
+      .join("")}</section>`,
+  );
 }
 
 function coverHtml(data) {
@@ -428,7 +477,8 @@ function tocHtml(byChapter, pages) {
     const pending = c.status === "pending" ? " <em>(pendiente)</em>" : "";
     return `<li class="chap"><a href="#cap-${c.id}"><span class="t">${c.number}. ${escapeHtml(c.title)}${pending}</span><span class="p">${num(`cap-${c.id}`)}</span></a></li>${subs}`;
   }).join("\n");
-  return `<section class="toc"><h1>Contenido</h1><ol>${rows}</ol></section>`;
+  const appendix = `<li class="chap"><a href="#cap-${APPENDIX.id}"><span class="t">${escapeHtml(APPENDIX.title)}</span><span class="p">${num(`cap-${APPENDIX.id}`)}</span></a></li>`;
+  return `<section class="toc"><h1>Contenido</h1><ol>${rows}\n${appendix}</ol></section>`;
 }
 
 function edgePath() {
@@ -454,6 +504,7 @@ function printPdf(htmlFile, pdfFile) {
       pdfFile,
       profilesDir,
       exec: (edgeArgs) => execFileSync(edge, edgeArgs, { stdio: ["ignore", "ignore", "pipe"], timeout: 180_000 }),
+      waitMs: 180_000,
     });
     if (attempt > 1) console.log(`› Edge printed ${relative(repoDir, pdfFile)} on retry (EPERM the first time)`);
   } catch (err) {
@@ -465,7 +516,13 @@ function buildPdf(data, byChapter) {
   mkdirSync(buildDir, { recursive: true });
   // Profiles an earlier build could not delete (Edge still held them).
   sweepProfiles(profilesDir);
-  const body = MANUAL_CHAPTERS.map((c) => chapterHtml(c, byChapter.get(c.id) ?? [])).join("\n");
+  const body = [...MANUAL_CHAPTERS.map((c) => chapterHtml(c, byChapter.get(c.id) ?? [])), appendixHtml()].join("\n");
+  // A Markdown table that reached the PDF as text (NC-044): never print it.
+  const raw = leftoverTable(body);
+  if (raw) fail(`a Markdown table was not converted to HTML: «${raw}»`);
+  // NC-052: the printed book names only the manual's person.
+  const inHtml = foreignNames(body.replace(/<[^>]+>/g, " "));
+  if (inHtml.length) fail(`the manual HTML names another person or account: ${[...new Set(inHtml)].join(", ")}`);
   // Pass 1: the whole book with placeholder page numbers. Every contents row
   // links to its anchor, so the PDF's named destinations give each page.
   const draftHtml = join(buildDir, "draft.html");
@@ -473,7 +530,7 @@ function buildPdf(data, byChapter) {
   writeFileSync(draftHtml, htmlDocument(coverHtml(data) + tocHtml(byChapter, null) + body));
   printPdf(draftHtml, draftPdf);
   const pages = new Map([...pdfNamedDests(readFileSync(draftPdf))].map(([id, i]) => [id, i + 1]));
-  const missing = MANUAL_CHAPTERS.filter((c) => !pages.has(`cap-${c.id}`)).map((c) => c.id);
+  const missing = [...MANUAL_CHAPTERS.map((c) => c.id), APPENDIX.id].filter((id) => !pages.has(`cap-${id}`));
   if (missing.length > 0) fail(`no page found for chapter(s) ${missing.join(", ")} in the draft PDF`);
   // Pass 2: the same book with the real numbers (same width, so same pages).
   const html = join(buildDir, "manual.html");
@@ -501,9 +558,24 @@ mkdirSync(manualDir, { recursive: true });
 for (const f of readdirSync(manualDir)) {
   if (/^\d\d-.+\.md$/.test(f)) rmSync(join(manualDir, f));
 }
-for (const c of MANUAL_CHAPTERS) {
-  writeFileSync(join(manualDir, docName(c)), chapterMarkdown(c, byChapter.get(c.id) ?? []));
+// NC-052: one person in the whole manual. A capture that showed another one
+// (the tours record it in report mode) or a text that names one stops the build.
+const shownOthers = data.steps.filter((s) => s.foreignNames?.length);
+if (shownOthers.length) {
+  fail(
+    `${shownOthers.length} capture(s) show another person or account: ${shownOthers
+      .slice(0, 5)
+      .map((s) => `${s.chapter}/${s.id} (${s.foreignNames.join(", ")})`)
+      .join("; ")}`,
+  );
 }
+for (const c of MANUAL_CHAPTERS) {
+  const md = chapterMarkdown(c, byChapter.get(c.id) ?? []);
+  const named = foreignNames(md);
+  if (named.length) fail(`chapter ${c.id} names another person or account: ${[...new Set(named)].join(", ")}`);
+  writeFileSync(join(manualDir, docName(c)), md);
+}
+writeFileSync(join(manualDir, APPENDIX.file), appendixMarkdown());
 writeFileSync(join(manualDir, "README.md"), indexMarkdown(data, byChapter));
 console.log(`› Markdown: docs/manual/ (${MANUAL_CHAPTERS.length} chapters, ${data.steps.length} steps)`);
 

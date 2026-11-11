@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ProvenanceBadge, isPendingReview } from "@modules/ai";
 import { Dialog } from "@shared/ui/Dialog";
+import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { hasBlocking, required, type Issue } from "@shared/validation";
@@ -11,6 +13,17 @@ import {
   type RequirementPriority,
 } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
+import { RequirementSources } from "./RequirementSources";
+import { Info } from "lucide-react";
+import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
+import { riskOfRecord, type RiskBand } from "../model/matrix";
+
+const RISK_TONE: Record<RiskBand, PillTone> = {
+  high: "error",
+  medium: "warning",
+  low: "success",
+  unassessed: "neutral",
+};
 import "./Traceability.css";
 
 export interface RequirementDraft {
@@ -21,6 +34,8 @@ export interface RequirementDraft {
   /** Risk factors 1..5, null = not assessed (RUN-00, TRZ-04). */
   riskLikelihood: number | null;
   riskImpact: number | null;
+  /** The person marked the AI content reviewed (IA-01, IA-17). */
+  markReviewed?: boolean;
 }
 
 const RISK_VALUES = [1, 2, 3, 4, 5];
@@ -40,6 +55,8 @@ export function RequirementFormModal({
 }) {
   const { t } = useTranslation();
   const id = useId();
+  const provenance = requirement?.data?.aiProvenance?.requirement;
+  const sources = requirement?.data?.sources ?? [];
   const [start] = useState<RequirementDraft>(() => ({
     requirementKey: requirement?.requirementKey ?? "",
     title: requirement?.title ?? "",
@@ -49,9 +66,12 @@ export function RequirementFormModal({
     riskImpact: requirement?.riskImpact ?? null,
   }));
   const [draft, setDraft] = useState<RequirementDraft>(start);
+  const risk = riskOfRecord(draft);
   // Typed data is never thrown away without asking (draft rule, ADR-0027).
   const dirty = JSON.stringify(draft) !== JSON.stringify(start);
-  const confirmDiscard = () => !dirty || window.confirm(t("common.discardConfirm"));
+  // A Pharos confirmation, not the browser's (NC-017).
+  const { confirm, dialog: discardDialog } = useConfirm();
+  const confirmDiscard = async () => !dirty || (await confirm(discardOptions(t)));
   const [saving, setSaving] = useState(false);
   const isNew = requirement === null;
 
@@ -88,6 +108,10 @@ export function RequirementFormModal({
       <h3 id={`${id}-title`} className="cd__title">
         {isNew ? t("traceability.requirement.newTitle") : t("traceability.requirement.editTitle")}
       </h3>
+
+      {isPendingReview(provenance) && !draft.markReviewed && (
+        <ProvenanceBadge provenance={provenance} onReview={() => setDraft({ ...draft, markReviewed: true })} />
+      )}
 
       {showSummary && (
         <ErrorSummary
@@ -159,8 +183,35 @@ export function RequirementFormModal({
         )}
       </FormField>
 
+      {sources.length > 0 && (
+        <details className="tz-prop__extra" data-testid="requirement-sources">
+          <summary>{t("traceability.proposals.source", { count: sources.length })}</summary>
+          <RequirementSources requirementId={requirement?.id} sources={sources} />
+        </details>
+      )}
+
       <fieldset className="tr-risk">
-        <legend className="tp-field__label">{t("traceability.risk.label")}</legend>
+        <legend className="tp-field__label tr-risk__legend">
+          {t("traceability.risk.label")}
+          {/* UX-23: the result in sight, so nobody has to multiply. */}
+          <StatusPill tone={RISK_TONE[risk.riskBand]} className="tz-risk">
+            {risk.riskLevel === null
+              ? t("traceability.risk.band.unassessed")
+              : t("traceability.risk.badge", {
+                  level: risk.riskLevel,
+                  band: t(`traceability.risk.band.${risk.riskBand}`),
+                })}
+          </StatusPill>
+          <span
+            className="tr-risk__info"
+            tabIndex={0}
+            role="img"
+            title={t("traceability.risk.bands")}
+            aria-label={t("traceability.risk.bands")}
+          >
+            <Info size={15} aria-hidden="true" />
+          </span>
+        </legend>
         <p className="tp-field__hint" id={`${id}-risk-hint`}>
           {t("traceability.risk.hint")}
         </p>
@@ -193,7 +244,7 @@ export function RequirementFormModal({
       </fieldset>
 
       <div className="cd__actions">
-        <button type="button" className="cd__cancel" onClick={() => confirmDiscard() && onCancel()}>
+        <button type="button" className="cd__cancel" onClick={() => void confirmDiscard().then((ok) => ok && onCancel())}>
           {t("common.cancel")}
         </button>
         <button
@@ -205,6 +256,7 @@ export function RequirementFormModal({
           {saving ? t("traceability.requirement.saving") : t("traceability.requirement.save")}
         </button>
       </div>
+      {discardDialog}
     </Dialog>
   );
 }

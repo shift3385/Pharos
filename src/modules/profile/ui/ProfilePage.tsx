@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, LogOut, Moon, Sun } from "lucide-react";
+import { Check, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { SyncIndicator } from "@modules/sync-offline";
 import { SUPPORTED_LANGUAGES, type Language } from "@shared/i18n";
@@ -37,7 +37,7 @@ export function ProfilePage() {
           timeStyle: "short",
         }).format(d);
   };
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const mobile = useBreakpoint() === "mobile";
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState({
@@ -92,6 +92,10 @@ export function ProfilePage() {
       const saved = await profileApi.upsert(form);
       setProfile(saved);
       setStatus("saved");
+      if (saved) {
+        const { displayName, firstName, lastName } = saved;
+        await updateUser({ displayName, firstName, lastName }).catch(() => undefined);
+      }
     } catch {
       setStatus("error");
     }
@@ -252,7 +256,8 @@ function Field({
 
 function Preferences() {
   const { t, i18n } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  // The preference, not the resolved mode: «Según el sistema» stays chosen (NC-022).
+  const { preference, setPreference } = useTheme();
   const language = (i18n.resolvedLanguage ?? "es") as Language;
   return (
     <section
@@ -287,11 +292,12 @@ function Preferences() {
         <div className="profile-pref__control">
           <SegmentedControl
             label={t("profile.theme")}
-            value={theme}
-            onChange={setTheme}
+            value={preference}
+            onChange={setPreference}
             options={[
               { value: "light", label: t("profile.themeLight"), icon: Sun },
               { value: "dark", label: t("profile.themeDark"), icon: Moon },
+              { value: "system", label: t("admin.general.themeOption.system"), icon: Monitor },
             ]}
             testId="profile-theme"
           />

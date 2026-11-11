@@ -30,11 +30,20 @@ backend; data-compatibility rules for migrations and sync): `docs/VERSIONING.md`
   Offline: Ollama, called from the frontend. Structured answers (IA-05 cases
   from a requirement, IA-10 risks and preconditions, IA-13 responsibilities of
   the roles the user wrote, dropping any role it invents, IA-14 exit criteria of
-  the plan, dropping any it repeats, IA-16 critical review of a case's lists)
-  reuse the same chat path
+  the plan, dropping any it repeats, IA-16 critical review of a case's lists,
+  IA-17 requirements from a project folder) reuse the same chat path
   with a strict prompt and are validated with zod on the client before use
   ([ADR-0023](adr/0023-salida-estructurada-ia.md)); the traceability module
   creates the accepted cases through the test-cases public API.
+  IA-17 ([ADR-0036](adr/0036-requisitos-desde-un-proyecto.md)): Rust picks and
+  walks a project folder (`project_scan.rs`, crate `ignore`, fixed exclusions,
+  secret lines replaced) and hands the webview an inventory, then the numbered
+  text of the chosen files; `req-extract@1` runs per batch (two at a time) and
+  `req-synthesis@1` compares the candidates with the existing requirements.
+  `traceability/proposals` checks the answer against what was sent and is the
+  contract shared with IA-18 (images and designs); `requirements.data`
+  (migration 0038) keeps the AI provenance, with the prompt version, and the
+  sources. Ollama gets a `num_ctx` sized to long requests (`ollamaContext`).
 
 ## Modular monolith (spec §2)
 
@@ -119,13 +128,22 @@ events, which the web has: there it starts at the plan's first event.)
 
 **Proyectos (RED-V2).** `ProjectsPage` loads `projectRows` (projects with
 plan status, case count and requirement coverage, through the `test-plan`,
-`test-cases` and `traceability` public APIs) and builds the screen from pure
+`test-cases` and `traceability` public APIs, and the execution progress of
+each one through `executionApi.summary` of `runs`, NC-021) and builds the screen from pure
 functions in `model/projectTable.ts` (recent, search, sort with nulls last,
 pages). The table is the shared `DataTable` + `Pagination` + `FilterChips` +
 `SortMenu`. Ajustes del proyecto is `ProjectSettings`: the delete dialog is
 `ConfirmDialog variant="destructive"` with `confirmText` set to the prefix
 without its separator (`deleteConfirmWord`), and `useProjectExport` holds the
-export progress shared with the list.
+export progress shared with the list. Case-key prefixes never overlap
+(NC-030, `model/prefix.ts`): two overlap when, without the trailing
+separator and ignoring case, they are equal or one starts with the other
+(`PH-` / `PHA-`). The create row suggests a free one from the name
+(`suggestPrefix`: three letters of the first word, the initials, two to five
+letters, then `<first letter>AA…ZZ`) and refuses an overlapping one; the
+settings refuse it only when the prefix changes, so projects that already
+shared `ATS_` keep saving. The check is in the UI: the desktop store does not
+enforce it, and two devices can still create overlapping prefixes offline.
 
 **Plan wizard (RED-V2).** `TestPlanWizard` composes `ui/wizard/*`:
 - `formState.ts`: the form and its pure conversions (from a plan, an import or
@@ -205,8 +223,9 @@ limit 1–50) and call the shared execution derivation of step 10 —
 `execution::home_metrics` in Rust, `createExecutionService(store).homeMetrics`
 (`server/src/modules/domain/execution.ts`) on the server, which `app.ts`
 passes to the route as its `core`; contract v1, shared vectors. The
-derivation holds every rule (latest final per case/target, windows, daily
-buckets, exit criteria, re-test, queues, owner scope, deleted runs); the
+derivation holds every rule (latest final per case/target, windows by case
+with unlinked tests counted apart in `unlinked` (NC-029, ADR-0013 «Enmienda
+del contrato v1»), daily buckets of attempts, exit criteria, re-test, queues, owner scope, deleted runs); the
 dashboard derives nothing and uses the ts-rs types of
 `@shared/contracts/contract`. The **client** builds the request
 (`model/metrics.ts::metricsRequest`) at the moment of each read: the local
@@ -745,7 +764,7 @@ through `src-tauri/src/journal.rs`:
   - `useUnsavedChangesGuard(dirty, message | { message, ignore })`
     (`@shared/ui/useUnsavedChangesGuard`) uses `useBlocker` for every
     address change (links, sidebar, pills, `navigate`/`setSearchParams`,
-    the system/Android «Atrás») and shows the destructive `ConfirmDialog`
+    the system/Android «Atrás») and shows a normal `ConfirmDialog` (Escape = «Seguir editando», NC-014)
     «Descartar cambios» / «Seguir editando»; it also sets `beforeunload`
     while dirty. `ignore: true` lets query-string-only changes through (or
     pass a predicate, evaluated per path or query change, never for hash-only
@@ -794,13 +813,27 @@ through `src-tauri/src/journal.rs`:
   The Motor de IA tab draws its controls from it and `aiApi` decides from it
   whether `temperature` is sent; Rust takes `temperature: Option<f32>`.
   Reasoning is listed with `sent: false` (locked, "coming soon").
+  `visionFor` says whether a model reads images and PDF (IA-18, ADR-0037).
+- **Images in AI calls** (IA-18, ADR-0037): `AiMessage.images` (base64, PNG,
+  JPEG, WebP, GIF or PDF, user messages only). `ai.rs` checks type and size
+  and maps them to each wire format (Gemini `inline_data`, Claude `image` /
+  `document` blocks, OpenAI-style data URLs and `file`); `ollama.ts` sends
+  `images`. `checkAttachments` in the router stops them for a model without
+  vision. Requirements from designs: `traceability/fromDesign/` reads the
+  material (images reduced on a canvas, PDF as is, `.excalidraw` texts, a
+  Claude Design folder or ZIP as Markdown plus a DOMParser outline per
+  `*.dc.html`, nothing executed), `ai/api/designPrompts.ts` is the prompt
+  `requirements-from-design@1`, and `fromDesign/candidates.ts` writes each
+  candidate's sources from the material for the common review of IA-17.
 - **Theme preference:** `ThemeProvider` keeps `preference`
   (`light | dark | system`, stored in `pharos.theme`) and the resolved
   `theme`; «system» follows `prefers-color-scheme` live. The topbar's
   moon/sun sets an explicit mode.
 - **Project routes** (ADR-0029): `/projects/:projectId/:section`, built with
   `projectPath()`. `useActiveProject` (`useMatch`) feeds:
-  - the «Proyecto activo» sidebar group (switcher + 5 sections). Inside a
+  - the «Proyecto activo» sidebar group (switcher + the sections, in the
+    order of the test process since UX-21: `PROJECT_SECTIONS` in
+    `@modules/projects` and `PROJECT_NAV` in `src/app/navConfig.ts`). Inside a
     project only the section is marked current; «Proyectos» is not (it stays
     current in the mobile bottom bar);
   - the breadcrumbs;
@@ -847,6 +880,14 @@ through `src-tauri/src/journal.rs`:
 - **Sync status:**
   - `SyncStatusProvider` (in `AppShell`, mounted once) holds the sync state
     and the background work: refresh, auto-sync, purge and the conflict panel.
+    Auto-sync runs at sign-in, on reconnect and, while `autoSync` is on
+    (off by default), every `autoSyncMinutes` (1 / 5 / 15 / 30, default 5)
+    counted from the last sync that ended: a manual or reconnect sync bumps
+    `lastSync` and restarts the timer (NC-025: admin settings,
+    `saveSyncSettings` fires `SYNC_SETTINGS_EVENT` so the loop re-reads
+    them). A `busy` ref keeps it to one sync at a time — a tick, a
+    reconnect or «Sincronizar ahora» during a sync does nothing — and a tick
+    offline is skipped.
   - `SyncIndicator` only shows it:
     - `full` in the sidebar foot, above the user, and in the mobile user
       sheet;
@@ -930,7 +971,14 @@ through `src-tauri/src/journal.rs`:
     same items.
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
-    until that text is typed.
+    until that text is typed. The two tiers (normal / critical) and what
+    counts as critical are in SPEC §10 (NC-014).
+  - `useConfirm()` (`@shared/ui/useConfirm`): `await confirm({ title,
+    message, confirmLabel, danger?, variant? })` resolves to the button
+    pressed; render its `dialog`. `discardOptions(t)` is the usual
+    «¿Descartar los cambios?». It replaces `window.confirm`, which the app
+    never uses (NC-017, guarded by `useConfirm.test.tsx`). `Dialog`'s
+    `confirmClose` may return its promise.
   - `LoadError` (FIX-16): `role="alert"` with the message and a «Reintentar»
     button, for a read or an action that failed.
   - `SortMenu` (RED-V2): «Orden: <opción>» trigger and a `ResponsiveMenu` with
@@ -987,23 +1035,40 @@ through `src-tauri/src/journal.rs`:
   (`model/caseList.ts`, pure) and keeps the open case in `?case=`
   (`caseLink`), so the editor walks the same ordered list and «Atrás» works.
   The editor keeps a snapshot of the loaded form to tell «Guardado» from
-  «Cambios sin guardar» and asks before leaving with changes.
+  «Cambios sin guardar» and asks before leaving with changes. «Revisiones»
+  lists the case's revisions and «Restaurar» loads one into the form,
+  unsaved and with the current key (`test_case_revision_get`, NC-018);
+  saving makes it a new revision. The «Ejecución» column and filter show each
+  case's latest final result, «—» without one (NC-019): `ProjectDetail`
+  passes `loadResults`, built on `executionApi.summary`, so test-cases never
+  depends on runs.
 - **Cross-module read APIs** used by other screens (each additive, with a
   test):
   - `projectDefects(projectId, userId)` (`@modules/defects`): the live
     defects of a project with their `caseIds`, for the matrix and Inicio;
   - `projectCardCount(projectId, ownerId)` (`@modules/planner`): how many
     cards a board has (Proyectos);
-  - `projectCoverage(projectId, ownerId)` (`@modules/traceability`): the
-    share of covered requirements by the matrix rule, `null` without
-    requirements (Proyectos);
+  - `projectTraceFacts(projectId, ownerId)` (`@modules/traceability`): a
+    project's case count and the share of covered requirements by the matrix
+    rule (`coverage` is `null` without requirements), from one read of its
+    cases and one of its requirements (Proyectos);
+  - `projectTraceableCases(projectId, userId)` (`@modules/test-cases`): the
+    cases with their `requirementKeys` and free-text `traceability`, for the
+    matrix, Defectos and Ejecuciones. **One list read (FIX-20):** the case
+    summary (`TestCaseSummary`: `GET /api/test-cases?projectId=` on the web,
+    `test_case_list` on the desktop) carries both fields from `data`, so no
+    screen opens the cases one by one. Proyectos makes three reads per
+    project (plan, cases, requirements) plus the project list: 22 for 7
+    projects, against 68 before (in development React's StrictMode runs each
+    effect twice: 44 against 136). The web client needs a server with the
+    fields: deploy the server first;
   - `caseLink(projectId, caseId)` (`@modules/test-cases`): the Casos route
     with `?case=`. It repeats the shape of `projectPath(id, "cases")`
     because projects depends on test-cases, not the other way.
 - **Trazabilidad (RED-V3):** `TraceabilityPage` loads requirements, cases and
   defects once for both views (Requisitos, Matriz) and owns their dialogs; the
   views only render (`buildMatrix` stays the single source, also for
-  `projectCoverage`). Since EJE-04 it also loads the execution summary under
+  `projectTraceFacts`). Since EJE-04 it also loads the execution summary under
   the URL's filters and the cycle and configuration options.
 - **Switches, segmented controls and tabs** (`src/shared/ui`, SPEC §4/§5/§9/§10,
   RED-V1; also used by Casos, RED-V3, and Administración, RED-V4):
@@ -1032,7 +1097,11 @@ through `src-tauri/src/journal.rs`:
     `{ closeDate, criteria } | null`: the latest sprint end or milestone of the
     plan's schedule (only ISO `YYYY-MM-DD` dates count; raw text from an
     imported plan is ignored; null without one) and its filled closure
-    criteria; null without a plan. V2 reuses it for «Cierre del ciclo».
+    criteria; null without a plan.
+  - `projectPlanOverview(projectId, userId)` (`@modules/test-plan`) →
+    `{ status, closeDate } | null`: the plan's status and the same closing
+    date from one read, for Proyectos and the project header («Cierre del
+    ciclo», FIX-20).
   - `projectLiveCases(projectId, userId)` (`@modules/test-cases`): the cases
     that are not obsolete.
 - WCAG 2.1 AA by tokens (ADR-0027): semantic hues fill and border; text uses
@@ -1342,7 +1411,9 @@ core Postgres lacks). Modules:
   answers others with 426 (ADR-0020). Inside one minor the
   `x-pharos-sync-features` header tells builds apart (`key-conflicts`,
   `append-only`, `complete-payload`, `stable-steps`, `runs`, `custom-fields`,
-  `cycles`, `defects`). Configurations, test cycles and their items (CYC-01)
+  `cycles`, `defects`, `requirement-data`). A requirement upsert from a
+  client without `requirement-data` (IA-17) keeps the stored `data`
+  (`FEATURE_KEYS`). Configurations, test cycles and their items (CYC-01)
   only reach clients that send `cycles`, and only those may push them (else
   400 `cycles_unsupported`); `cycleKey` is a key like the others (migration
   0009 rebuilds `documents_key_idx` with it). Without `defects` (DEF-01) a

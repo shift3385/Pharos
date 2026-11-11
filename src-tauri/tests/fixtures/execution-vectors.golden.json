@@ -2153,6 +2153,129 @@
     ],
     "undated": 0
   },
+  "home: the pass rate counts cases (a case passes only if every target passes) and leaves unlinked tests apart (NC-029)": {
+    "contractVersion": 1,
+    "daily": [
+      {
+        "blocked": 0,
+        "dayStart": 1793833200000,
+        "failed": 0,
+        "imported": 0,
+        "manual": 0,
+        "other": 0,
+        "passed": 0,
+        "skipped": 0,
+        "total": 0
+      },
+      {
+        "blocked": 0,
+        "dayStart": 1793919600000,
+        "failed": 2,
+        "imported": 5,
+        "manual": 0,
+        "other": 0,
+        "passed": 3,
+        "skipped": 0,
+        "total": 5
+      }
+    ],
+    "projects": [
+      {
+        "counts": {
+          "blocked": 0,
+          "executed": 2,
+          "failed": 1,
+          "notRun": 0,
+          "other": 0,
+          "passed": 1,
+          "retest": 0,
+          "skipped": 0,
+          "total": 2
+        },
+        "coverage": null,
+        "defects": {
+          "open": 0,
+          "openBySeverity": {
+            "critical": 0,
+            "major": 0,
+            "minor": 0,
+            "trivial": 0
+          }
+        },
+        "exitCriteria": [
+          {
+            "criterion": "% de casos ejecutados",
+            "index": null,
+            "kind": "executed",
+            "met": true,
+            "metric": "≥ 95%",
+            "op": ">=",
+            "target": 95.0,
+            "value": 100.0
+          },
+          {
+            "criterion": "Defectos críticos abiertos",
+            "index": null,
+            "kind": "criticalDefects",
+            "met": true,
+            "metric": "0",
+            "op": "=",
+            "target": 0.0,
+            "value": 0.0
+          },
+          {
+            "criterion": "Cobertura de requisitos",
+            "index": null,
+            "kind": "coverage",
+            "met": null,
+            "metric": "≥ 90%",
+            "op": ">=",
+            "target": 90.0,
+            "value": null
+          }
+        ],
+        "lastExecutedAt": "2026-11-06T07:00:00Z",
+        "projectId": "P9",
+        "queue": {
+          "blocked": [],
+          "counts": {
+            "blocked": 0,
+            "notRun": 0,
+            "retest": 0
+          },
+          "notRun": [],
+          "retest": []
+        }
+      }
+    ],
+    "undated": 0,
+    "windows": {
+      "7d": {
+        "blocked": 0,
+        "executed": 2,
+        "failed": 1,
+        "notRun": 0,
+        "other": 0,
+        "passRate": 0.5,
+        "passed": 1,
+        "retest": 0,
+        "skipped": 0,
+        "unlinked": 2
+      },
+      "today": {
+        "blocked": 0,
+        "executed": 2,
+        "failed": 1,
+        "notRun": 0,
+        "other": 0,
+        "passRate": 0.5,
+        "passed": 1,
+        "retest": 0,
+        "skipped": 0,
+        "unlinked": 2
+      }
+    }
+  },
   "home: windows, queues, a project with zero cases and an undated attempt; a deleted run's attempts count nowhere": {
     "contractVersion": 1,
     "daily": [
@@ -2346,7 +2469,8 @@
         "passRate": 0.5,
         "passed": 1,
         "retest": 0,
-        "skipped": 0
+        "skipped": 0,
+        "unlinked": 0
       },
       "today": {
         "blocked": 1,
@@ -2357,7 +2481,8 @@
         "passRate": 0.5,
         "passed": 1,
         "retest": 0,
-        "skipped": 0
+        "skipped": 0,
+        "unlinked": 0
       }
     }
   },

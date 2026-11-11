@@ -44,8 +44,26 @@ pub struct TestCaseSummary {
     custom: Value,
     /// Some AI-generated content is still pending human review (IA-01).
     ai_pending: bool,
+    /// `data.requirementKeys`: the list row and the traceability matrix read
+    /// them from here, without opening each case.
+    requirement_keys: Vec<String>,
+    /// `data.traceability`: free-text links, for the migration to requirements.
+    traceability: String,
     updated_at: String,
     revision: i64,
+}
+
+/// The string entries of `data.requirementKeys`; anything else is ignored.
+fn requirement_keys(data: &Value) -> Vec<String> {
+    data.get("requirementKeys")
+        .and_then(Value::as_array)
+        .map(|keys| {
+            keys.iter()
+                .filter_map(Value::as_str)
+                .map(String::from)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// True when any entry of `data.aiProvenance` has no `reviewedAt` yet.
@@ -88,6 +106,26 @@ pub struct RevisionSummary {
     id: String,
     revision: i64,
     title: String,
+    created_at: String,
+}
+
+/// The content of one case revision, to restore it in the editor (NC-018,
+/// MAN-03): what `fromCase` reads. The case key is not part of it: a restored
+/// revision keeps the case's current key.
+#[cfg_attr(test, derive(TS), ts(export, rename = "TestCaseRevisionDetail"))]
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevisionDetail {
+    id: String,
+    revision: i64,
+    title: String,
+    version: String,
+    status: String,
+    priority: String,
+    case_type: Option<String>,
+    automation_status: Option<String>,
+    #[cfg_attr(test, ts(type = "unknown"))]
+    data: Value,
     created_at: String,
 }
 
@@ -222,6 +260,12 @@ pub(crate) fn list_cases(
                     .cloned()
                     .unwrap_or_else(empty_object),
                 ai_pending: ai_pending(&data),
+                requirement_keys: requirement_keys(&data),
+                traceability: data
+                    .get("traceability")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string(),
                 updated_at: r.get("updated_at")?,
                 revision: r.get("revision")?,
             })
@@ -477,6 +521,41 @@ fn list_revisions(
         .map_err(|e| e.to_string())
 }
 
+/// One revision of a case the user owns; `None` for another user's, a
+/// deleted case or an unknown id. Rows from before 0.2.0 may lack the version,
+/// status or priority columns' values: the case's current ones fill them.
+fn get_revision(
+    conn: &Connection,
+    id: &str,
+    user_id: &str,
+) -> Result<Option<RevisionDetail>, String> {
+    conn.query_row(
+        "SELECT r.id, r.revision, r.title, COALESCE(r.version, c.version), \
+         COALESCE(r.status, c.status), COALESCE(r.priority, c.priority), r.case_type, \
+         r.automation_status, r.data, r.created_at FROM test_case_revisions r \
+         JOIN test_cases c ON c.id = r.test_case_id JOIN projects p ON p.id = c.project_id \
+         WHERE r.id = ?1 AND p.owner_id = ?2 AND c.deleted_at IS NULL AND p.deleted_at IS NULL",
+        params![id, user_id],
+        |r| {
+            let data_str: String = r.get(8)?;
+            Ok(RevisionDetail {
+                id: r.get(0)?,
+                revision: r.get(1)?,
+                title: r.get(2)?,
+                version: r.get(3)?,
+                status: r.get(4)?,
+                priority: r.get(5)?,
+                case_type: r.get(6)?,
+                automation_status: r.get(7)?,
+                data: serde_json::from_str(&data_str).unwrap_or_else(|_| empty_object()),
+                created_at: r.get(9)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn test_case_list(
     db: State<Db>,
@@ -528,6 +607,15 @@ pub fn test_case_revisions(
     db.with_conn(|conn| list_revisions(conn, &id, &user_id))
 }
 
+#[tauri::command]
+pub fn test_case_revision_get(
+    db: State<Db>,
+    id: String,
+    user_id: String,
+) -> Result<Option<RevisionDetail>, String> {
+    db.with_conn(|conn| get_revision(conn, &id, &user_id))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -573,6 +661,38 @@ mod tests {
 
     fn scenario(c: &Connection, id: &str) -> String {
         get_case(c, id, USER).unwrap().unwrap().scenario_id
+    }
+
+    #[test]
+    fn the_list_carries_each_cases_requirement_links() {
+        let c = conn();
+        let p = project(&c, "ATS_");
+        let with_data = |title: &str, data: Value| TestCaseInput {
+            data,
+            ..input(&p, None, title)
+        };
+        let linked = serde_json::json!({
+            "requirementKeys": ["REQ-001", "REQ-002"], "traceability": "US-12"
+        });
+        insert_case(&c, &with_data("Linked", linked)).unwrap();
+        insert_case(&c, &input(&p, None, "Plain")).unwrap();
+        // A document from another device may hold anything: the list survives.
+        let odd = serde_json::json!({ "requirementKeys": ["REQ-003", 7], "traceability": 9 });
+        insert_case(&c, &with_data("Odd", odd)).unwrap();
+
+        let list = list_cases(&c, &p, USER).unwrap();
+        let links: Vec<(Vec<String>, &str)> = list
+            .iter()
+            .map(|s| (s.requirement_keys.clone(), s.traceability.as_str()))
+            .collect();
+        assert_eq!(
+            links,
+            vec![
+                (vec!["REQ-001".to_string(), "REQ-002".to_string()], "US-12"),
+                (vec![], ""),
+                (vec!["REQ-003".to_string()], ""),
+            ]
+        );
     }
 
     fn oplog_rows(c: &Connection) -> i64 {
@@ -698,6 +818,27 @@ mod tests {
             )
             .unwrap();
         assert_eq!(queued, 2);
+    }
+
+    #[test]
+    fn a_revision_reads_back_its_content_for_its_owner_only() {
+        let c = conn();
+        let p = project(&c, "ATS_");
+        let mut first = input(&p, None, "Case");
+        first.priority = Some("high".to_string());
+        first.data = serde_json::json!({ "description": "v1" });
+        let id = insert_case(&c, &first).unwrap();
+        let rev1 = revisions::current_id(&c, &id).unwrap().unwrap().0;
+        let mut second = input(&p, Some("ATS_001"), "Case v2");
+        second.data = serde_json::json!({ "description": "v2" });
+        update_case(&c, &id, &second).unwrap();
+
+        let back = get_revision(&c, &rev1, USER).unwrap().unwrap();
+        assert_eq!((back.revision, back.title.as_str()), (1, "Case"));
+        assert_eq!(back.priority, "high");
+        assert_eq!(back.data["description"], "v1");
+        assert!(get_revision(&c, &rev1, OTHER).unwrap().is_none());
+        assert!(get_revision(&c, "nope", USER).unwrap().is_none());
     }
 
     #[test]

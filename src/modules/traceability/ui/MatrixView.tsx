@@ -406,7 +406,13 @@ export function MatrixView({
           <p className="tr__subtitle">{t("traceability.matrix.subtitle")}</p>
         </div>
         {matrix.rows.length === 0 ? (
-          <p className="tz-empty">{t("traceability.matrix.empty")}</p>
+          <p className="tz-empty">
+            {t("traceability.matrix.empty")}{" "}
+            {/* Sibling section (UX-21): /projects/:id/traceability → …/requirements. */}
+            <Link to="../requirements" relative="path">
+              {t("traceability.matrix.goToRequirements")}
+            </Link>
+          </p>
         ) : groups.length === 0 ? (
           <p className="tz-empty">{t("traceability.matrix.noGaps")}</p>
         ) : mobile ? (

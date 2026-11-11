@@ -4,7 +4,7 @@
 // only, and axe on each (UX-05, ADR-0027).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
@@ -203,6 +203,15 @@ describe("Ciclos", () => {
     );
   });
 
+  it("says when the cycles cannot be read, and retries (NC-008, MAN-03)", async () => {
+    vi.mocked(cycleApi.list).mockRejectedValueOnce(new Error("offline"));
+    page();
+    expect(await screen.findByText("No se pudieron cargar los ciclos.")).toBeInTheDocument();
+    expect(screen.queryByText(/Aún no hay ciclos/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(await screen.findByRole("table", { name: "Ciclos del proyecto" })).toBeInTheDocument();
+  });
+
   it("shows a cycle's items with one result column per configuration and warns about cases not approved", async () => {
     page("/projects/p1/cycles?cycle=cy1");
     const table = await screen.findByRole("table", { name: "Elementos del ciclo" });
@@ -215,6 +224,26 @@ describe("Ciclos", () => {
     expect(rows[1]).toHaveTextContent("No aprobado");
     expect(screen.getByText(/Build 1\.4\.2 · Entorno staging/)).toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+
+  it("«Quitar del ciclo» asks first; Escape or Cancelar keep the case (NC-012)", async () => {
+    vi.mocked(cycleApi.removeItems).mockResolvedValue(undefined as never);
+    const user = userEvent.setup();
+    page("/projects/p1/cycles?cycle=cy1");
+    const table = await screen.findByRole("table", { name: "Elementos del ciclo" });
+    const openMenu = async () => {
+      await user.click(within(table).getByRole("button", { name: "Acciones de ATS_001" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Quitar del ciclo" }));
+    };
+    await openMenu();
+    const ask = await screen.findByRole("alertdialog", { name: "¿Quitar ATS_001 del ciclo?" });
+    expect(ask).toHaveTextContent("Sus resultados ya registrados se conservan");
+    await user.keyboard("{Escape}");
+    expect(cycleApi.removeItems).not.toHaveBeenCalled();
+    await openMenu();
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Quitar del ciclo" }));
+    await waitFor(() => expect(cycleApi.removeItems).toHaveBeenCalledWith("cy1", ["i1"], expect.any(String)));
+    expect(await screen.findByText("ATS_001 quitado del ciclo")).toBeInTheDocument();
   });
 
   it("adds cases: those already in the cycle cannot be picked, a draft is warned", async () => {

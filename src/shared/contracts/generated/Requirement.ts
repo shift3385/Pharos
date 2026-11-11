@@ -5,4 +5,9 @@ export type Requirement = { id: string, projectId: string, requirementKey: strin
  * Risk (RUN-00, ADR-0013): 1..5 per factor, absent until assessed. The
  * level (likelihood × impact) and its band are derived (`runs::derive`).
  */
-riskLikelihood?: number | null, riskImpact?: number | null, createdAt: string, updatedAt: string, revision: number, };
+riskLikelihood?: number | null, riskImpact?: number | null, 
+/**
+ * Free-form JSON object (IA-17, ADR-0036): `aiProvenance` (IA-01) and
+ * `sources` of a requirement proposed by the AI. `{}` when empty.
+ */
+data: unknown, createdAt: string, updatedAt: string, revision: number, };

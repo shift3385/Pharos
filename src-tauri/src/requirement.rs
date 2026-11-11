@@ -9,6 +9,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::State;
 #[cfg(test)]
 use ts_rs::TS;
@@ -39,6 +40,10 @@ pub struct Requirement {
     risk_likelihood: Option<i64>,
     #[cfg_attr(test, ts(optional = nullable))]
     risk_impact: Option<i64>,
+    /// Free-form JSON object (IA-17, ADR-0036): `aiProvenance` (IA-01) and
+    /// `sources` of a requirement proposed by the AI. `{}` when empty.
+    #[cfg_attr(test, ts(type = "unknown"))]
+    data: Value,
     created_at: String,
     updated_at: String,
     revision: i64,
@@ -54,6 +59,10 @@ pub struct RequirementInput {
     title: String,
     description: Option<String>,
     priority: Option<String>,
+    /// A JSON object that replaces the stored `data`; None keeps it (`{}` on
+    /// create). Anything other than an object is rejected.
+    #[cfg_attr(test, ts(type = "unknown"))]
+    data: Option<Value>,
     user_id: String,
 }
 
@@ -80,10 +89,11 @@ pub struct ImportSummary {
 
 /// Live requirements of live projects owned by the given user.
 const SELECT_REQUIREMENT: &str = "SELECT r.id, r.project_id, r.requirement_key, r.title, \
-    r.description, r.priority, r.risk_likelihood, r.risk_impact, r.created_at, r.updated_at, r.revision \
+    r.description, r.priority, r.risk_likelihood, r.risk_impact, r.data, r.created_at, r.updated_at, r.revision \
     FROM requirements r JOIN projects p ON p.id = r.project_id";
 
 fn map_requirement(row: &rusqlite::Row) -> rusqlite::Result<Requirement> {
+    let data: String = row.get("data")?;
     Ok(Requirement {
         id: row.get("id")?,
         project_id: row.get("project_id")?,
@@ -93,6 +103,7 @@ fn map_requirement(row: &rusqlite::Row) -> rusqlite::Result<Requirement> {
         priority: row.get("priority")?,
         risk_likelihood: row.get("risk_likelihood")?,
         risk_impact: row.get("risk_impact")?,
+        data: parse_data(&data),
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         revision: row.get("revision")?,
@@ -106,6 +117,25 @@ pub(crate) fn valid_key(key: &str) -> bool {
         && key
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | ':'))
+}
+
+/// The stored `data` as a JSON object; anything unreadable reads as `{}`.
+pub(crate) fn parse_data(raw: &str) -> Value {
+    match serde_json::from_str::<Value>(raw) {
+        Ok(v @ Value::Object(_)) => v,
+        _ => Value::Object(serde_json::Map::new()),
+    }
+}
+
+/// The `data` an input stores, serialized; None keeps the stored one.
+fn data_of(input: &RequirementInput) -> Result<Option<String>, String> {
+    match &input.data {
+        None => Ok(None),
+        Some(v @ Value::Object(_)) => serde_json::to_string(v)
+            .map(Some)
+            .map_err(|e| e.to_string()),
+        Some(_) => Err("requirement data must be a JSON object".to_string()),
+    }
 }
 
 fn normalize_priority(p: Option<&str>) -> String {
@@ -226,12 +256,13 @@ fn insert_requirement_as(
         }
         _ => next_requirement_key(conn, &input.project_id)?,
     };
+    let data = data_of(input)?.unwrap_or_else(|| "{}".to_string());
     let id = Uuid::new_v4().to_string();
     let workspace_id = ensure_workspace(conn)?;
     conn.execute(
         "INSERT INTO requirements (id, workspace_id, project_id, requirement_key, title, \
-         description, priority, created_by, updated_by, created_at, updated_at, revision) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, datetime('now'), datetime('now'), 1)",
+         description, priority, data, created_by, updated_by, created_at, updated_at, revision) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?9, ?8, ?8, datetime('now'), datetime('now'), 1)",
         params![
             id,
             workspace_id,
@@ -241,6 +272,7 @@ fn insert_requirement_as(
             input.description.clone().unwrap_or_default(),
             normalize_priority(input.priority.as_deref()),
             input.user_id,
+            data,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -277,6 +309,7 @@ fn update_requirement_as(
     if !owns(conn, id, &input.user_id)? {
         return Err("requirement not found".to_string());
     }
+    let data = data_of(input)?;
     let revision: i64 = conn
         .query_row(
             "SELECT revision FROM requirements WHERE id = ?1",
@@ -287,7 +320,8 @@ fn update_requirement_as(
     let before = journal::snapshot(conn, "requirement", id)?;
     conn.execute(
         "UPDATE requirements SET title = ?2, description = ?3, priority = ?4, \
-         updated_by = ?5, updated_at = datetime('now'), revision = ?6 WHERE id = ?1",
+         updated_by = ?5, updated_at = datetime('now'), revision = ?6, \
+         data = COALESCE(?7, data) WHERE id = ?1",
         params![
             id,
             input.title.trim(),
@@ -295,6 +329,7 @@ fn update_requirement_as(
             normalize_priority(input.priority.as_deref()),
             input.user_id,
             revision + 1,
+            data,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -417,6 +452,7 @@ pub(crate) fn import_requirements(
             title: row.title.clone(),
             description: row.description.clone(),
             priority: row.priority.clone(),
+            data: None,
             user_id: user_id.to_string(),
         };
         let key = row
@@ -566,6 +602,7 @@ mod tests {
             title: title.to_string(),
             description: None,
             priority: None,
+            data: None,
             user_id: USER.to_string(),
         }
     }
@@ -663,6 +700,38 @@ mod tests {
             )
             .unwrap();
         assert_eq!((created_by.as_str(), updated_by.as_str()), (USER, USER));
+    }
+
+    #[test]
+    fn data_is_stored_kept_when_left_out_and_must_be_an_object() {
+        let c = conn();
+        let mut with_data = input("p1", None, "A");
+        with_data.data = Some(serde_json::json!({
+            "aiProvenance": {"requirement": {"provider": "ollama", "model": "m", "generatedAt": "t"}},
+            "sources": [{"kind": "file", "path": "README.md", "startLine": 3}],
+        }));
+        let id = insert_requirement(&c, &with_data).unwrap();
+        let r = get_requirement(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(r.data["sources"][0]["path"], "README.md");
+
+        // An edit without `data` (the CSV import, an older client) keeps it.
+        update_requirement(&c, &id, &input("p1", None, "A v2")).unwrap();
+        let r = get_requirement(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(r.data["sources"][0]["path"], "README.md");
+
+        // A new one replaces it; a plain requirement reads as `{}`.
+        let mut cleared = input("p1", None, "A v3");
+        cleared.data = Some(serde_json::json!({}));
+        update_requirement(&c, &id, &cleared).unwrap();
+        let r = get_requirement(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(r.data, serde_json::json!({}));
+
+        let mut bad = input("p1", None, "B");
+        bad.data = Some(serde_json::json!(["not", "an", "object"]));
+        assert!(insert_requirement(&c, &bad)
+            .unwrap_err()
+            .contains("JSON object"));
+        assert!(update_requirement(&c, &id, &bad).is_err());
     }
 
     #[test]

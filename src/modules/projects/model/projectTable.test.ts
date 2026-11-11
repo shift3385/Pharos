@@ -6,6 +6,7 @@ import {
   paginate,
   prefixBadge,
   recentProjects,
+  executedShare,
   sortProjects,
   type ProjectRow,
 } from "./projectTable";
@@ -18,6 +19,7 @@ const row = (over: Partial<ProjectRow>): ProjectRow => ({
   updatedAt: "2026-10-01T10:00:00.000Z",
   lastAccess: null,
   planStatus: null,
+  execution: null,
   cases: 0,
   coverage: null,
   closeDate: null,
@@ -33,6 +35,18 @@ const ROWS = [
 const names = (rows: ProjectRow[]) => rows.map((r) => r.name);
 
 describe("Proyectos table model", () => {
+  it("orders by executed share, projects without data last (NC-021)", () => {
+    const rows = [
+      row({ name: "Mitad", execution: { executed: 2, total: 4 } }),
+      row({ name: "Sin datos", execution: null }),
+      row({ name: "Todo", execution: { executed: 3, total: 3 } }),
+      row({ name: "Sin casos", execution: { executed: 0, total: 0 } }),
+    ];
+    expect(sortProjects(rows, "execution", "desc").map((r) => r.name)).toEqual(["Todo", "Mitad", "Sin casos", "Sin datos"]);
+    expect(executedShare(rows[0])).toBe(0.5);
+    expect(executedShare(rows[3])).toBeNull();
+  });
+
   it("recent: only opened projects, most recent first, at most 4", () => {
     expect(names(recentProjects(ROWS))).toEqual([
       "Portal Clientes v3",

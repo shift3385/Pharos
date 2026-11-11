@@ -1,8 +1,8 @@
 // Rows of the Proyectos screen: every project of the user with what the table
 // shows. The projects module composes the other modules' public APIs.
-import { projectPlanClosure, projectPlanStatus } from "@modules/test-plan";
-import { projectCaseCount } from "@modules/test-cases";
-import { projectCoverage } from "@modules/traceability";
+import { projectPlanOverview } from "@modules/test-plan";
+import { projectTraceFacts } from "@modules/traceability";
+import { executionApi } from "@modules/runs";
 import { parseStamp } from "@shared/time/stamp";
 import { projectApi } from "../api/projectApi";
 import { lastAccessMap } from "./lastAccess";
@@ -13,11 +13,12 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
   const projects = await projectApi.list(ownerId);
   return Promise.all(
     projects.map(async (p): Promise<ProjectRow> => {
-      const [planStatus, closure, cases, coverage] = await Promise.all([
-        projectPlanStatus(p.id, ownerId),
-        projectPlanClosure(p.id, ownerId),
-        projectCaseCount(p.id, ownerId),
-        projectCoverage(p.id, ownerId),
+      // Its plan, its cases and requirements (FIX-20) and its execution
+      // progress (NC-021). A failed execution read leaves «—», not an error.
+      const [plan, { cases, coverage }, summary] = await Promise.all([
+        projectPlanOverview(p.id, ownerId),
+        projectTraceFacts(p.id, ownerId),
+        executionApi.summary({ projectId: p.id }, ownerId).catch(() => null),
       ]);
       return {
         id: p.id,
@@ -26,10 +27,11 @@ export async function projectRows(ownerId: string): Promise<ProjectRow[]> {
         caseIdDigits: p.caseIdDigits,
         updatedAt: isoStamp(p.updatedAt),
         lastAccess: access[p.id] ?? null,
-        planStatus,
+        planStatus: plan?.status ?? null,
         cases,
         coverage,
-        closeDate: closure?.closeDate ?? null,
+        closeDate: plan?.closeDate ?? null,
+        execution: summary ? { executed: summary.progress.executed, total: summary.progress.total } : null,
       };
     }),
   );

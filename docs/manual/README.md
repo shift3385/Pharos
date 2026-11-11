@@ -2,7 +2,7 @@
 
 # Manual de usuario de Pharos
 
-Versión **0.2.0** · generado el 6 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
+Versión **0.2.0** · generado el 9 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
 
 Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es también una prueba automática: si la aplicación cambia, `npm run manual` vuelve a recorrerla, rehace las capturas y regenera el manual (Markdown y PDF).
 
@@ -12,18 +12,24 @@ Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es tamb
 
 ## Contenido
 
-1. [Acceso y cuenta](01-acceso.md) (12 pasos)
-2. [Inicio, proyectos y ajustes](02-proyectos.md) (22 pasos)
-3. [Plan de pruebas](03-plan.md) (24 pasos)
-4. [Casos de prueba](04-casos.md) (22 pasos)
-5. [Trazabilidad y requisitos](05-trazabilidad.md) (15 pasos)
-6. [Planificador](06-planificador.md) (9 pasos)
-7. [Ciclos y configuraciones](07-ciclos.md) (12 pasos)
-8. [Ejecuciones e importación de resultados](08-ejecuciones.md) (10 pasos)
-9. [Defectos](09-defectos.md) (11 pasos)
-10. [Administración](10-administracion.md) (17 pasos)
-11. [Asistente de IA](11-ia.md) (9 pasos)
-12. [Pantallas estrechas y móvil](12-movil.md) (7 pasos)
-13. [Ejecución manual](13-ejecucion-manual.md) (19 pasos)
-14. [Evidencias](14-evidencias.md) (7 pasos)
-15. [Si algo sale mal](15-errores.md) (4 pasos)
+1. [Acceso y cuenta](01-acceso.md) (13 pasos)
+2. [La aplicación de un vistazo](02-navegacion.md) (10 pasos)
+3. [Inicio](03-inicio.md) (9 pasos)
+4. [Proyectos](04-proyectos.md) (12 pasos)
+5. [Plan de pruebas](05-plan.md) (24 pasos)
+6. [Tablero](06-tablero.md) (11 pasos)
+7. [Requisitos](07-requisitos.md) (11 pasos)
+8. [Casos de prueba](08-casos.md) (25 pasos)
+9. [Ciclos de prueba](09-ciclos.md) (14 pasos)
+10. [Ejecuciones e importación de resultados](10-ejecuciones.md) (11 pasos)
+11. [Ejecución manual](11-ejecucion-manual.md) (19 pasos)
+12. [Defectos](12-defectos.md) (13 pasos)
+13. [Trazabilidad](13-trazabilidad.md) (8 pasos)
+14. [Ajustes del proyecto](14-ajustes.md) (11 pasos)
+15. [Administración](15-administracion.md) (16 pasos)
+16. [Evidencias](16-evidencias.md) (7 pasos)
+17. [Asistente de IA](17-ia.md) (19 pasos)
+18. [Pantallas estrechas y móvil](18-movil.md) (6 pasos)
+19. [Si algo sale mal](19-errores.md) (4 pasos)
+
+- [Apéndice. Atajos de teclado](A-atajos-de-teclado.md)

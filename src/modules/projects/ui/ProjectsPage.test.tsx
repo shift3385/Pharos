@@ -26,6 +26,7 @@ const ROWS: ProjectRow[] = Array.from({ length: 14 }, (_, i) => ({
   cases: 10 * i,
   coverage: i === 0 ? 0.92 : null,
   closeDate: null,
+  execution: i === 0 ? { executed: 3, total: 4 } : null,
 }));
 
 vi.mock("../model/projectRows", () => ({ projectRows: vi.fn(async () => ROWS) }));
@@ -104,6 +105,9 @@ describe("Proyectos (SPEC §8)", () => {
     expect(screen.getByRole("button", { name: "5 por página" })).toBeInTheDocument();
     expect(within(table).getAllByText("Aprobado").length).toBeGreaterThan(0);
     expect(within(table).getByText("92 %")).toBeInTheDocument();
+    // «Ejecutado» (NC-021): real progress, with its count in the title; «—» without data.
+    expect(within(table).getByText("75 %")).toHaveAttribute("title", "3 de 4 casos con resultado");
+    expect(within(recent).getAllByText("75 %").length).toBeGreaterThan(0);
     await expectNoAxeViolations();
   });
 
@@ -123,7 +127,8 @@ describe("Proyectos (SPEC §8)", () => {
     setViewportWidth(1440);
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "Orden: Último acceso · Descendente" }));
-    expect(screen.getByRole("menuitemradio", { name: "Progreso de ejecución" })).toBeDisabled();
+    // NC-021: the execution progress has data now.
+    expect(screen.getByRole("menuitemradio", { name: "Progreso de ejecución" })).toBeEnabled();
     expect(screen.getByRole("menuitemradio", { name: "Cierre del ciclo" })).toBeDisabled();
     await userEvent.click(screen.getByRole("menuitemradio", { name: "Nombre (A–Z)" }));
     await userEvent.click(screen.getByRole("button", { name: "Orden: Nombre (A–Z) · Descendente" }));
@@ -193,6 +198,25 @@ describe("Proyectos when an action fails", () => {
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(await screen.findByText("dentro")).toBeInTheDocument();
     expect(vi.mocked(projectApi.create)).toHaveBeenLastCalledWith(expect.objectContaining({ name: "Nuevo" }));
+  });
+
+  it("suggests a free prefix from the name and refuses one that overlaps (NC-030)", async () => {
+    setViewportWidth(1440);
+    renderPage("/projects?new=1");
+    const name = await screen.findByRole("textbox", { name: "Nombre del proyecto" });
+    const prefix = screen.getByRole("textbox", { name: "Prefijo de ID de caso" });
+    expect(prefix).toHaveValue("");
+    await userEvent.type(name, "Pharos");
+    expect(prefix).toHaveValue("PHA-");
+    // «PC-» starts «PCL-» of Portal Clientes v3: explained, nothing created.
+    await userEvent.clear(prefix);
+    await userEvent.type(prefix, "PC-{Enter}");
+    expect(await screen.findByText(/Se solapa con «PCL-» de Portal Clientes v3/)).toBeInTheDocument();
+    expect(projectApi.create).not.toHaveBeenCalled();
+    await userEvent.clear(prefix);
+    await userEvent.type(prefix, "PH-{Enter}");
+    expect(await screen.findByText("dentro")).toBeInTheDocument();
+    expect(projectApi.create).toHaveBeenCalledWith(expect.objectContaining({ name: "Pharos", caseIdPrefix: "PH-" }));
   });
 
   it("«Reintentar» sends the name the form says now", async () => {

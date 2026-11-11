@@ -251,7 +251,8 @@ export function EvidenceRetentionSection({ onChanged }: { onChanged?: () => void
           title={t("admin.evidence.retention.confirmTitle")}
           message={t("admin.evidence.retention.confirmMessage")}
           confirmLabel={t("admin.evidence.retention.confirm")}
-          danger
+          // Critical tier (NC-014): it deletes saved evidence; only the buttons answer.
+          variant="destructive"
           confirmTestId="evidence-retention-confirm"
           onConfirm={() => void apply()}
           onCancel={() => setConfirming(null)}

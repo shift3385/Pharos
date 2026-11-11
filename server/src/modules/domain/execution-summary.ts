@@ -271,9 +271,13 @@ export interface ExecutionSummary {
   runs: RunRef[];
   options: { builds: string[]; environments: string[] };
 }
+/** By case (R8, amended by NC-029): a case counts once with the progress
+ *  rule (`decide`), so it passes only if every target passes. Unlinked tests
+ *  stay out of the rate and are counted apart. */
 export interface WindowCounts extends StatusCounts {
   executed: number;
   passRate: number | null;
+  unlinked: number;
 }
 export interface QueueRef {
   caseId: string;
@@ -994,17 +998,20 @@ export function home(allProjects: ProjectData[], request: HomeRequest): HomeMetr
   for (const w of request.windows) {
     const start = ds[w.fromIndex];
     if (start === undefined) continue;
-    const counts: WindowCounts = { ...emptyCounts(), executed: 0, passRate: null };
+    const counts: WindowCounts = { ...emptyCounts(), executed: 0, passRate: null, unlinked: 0 };
     for (const data of projects) {
       const inWindow = liveAttempts(data).filter((a) => {
         const t = timeOf(a);
         return !!t && t[0] >= start && t[0] <= request.now;
       });
+      // By case, as the progress (NC-029); unlinked tests apart.
       const groups = new Map<string, AttemptData[]>();
+      const unlinked = new Set<string>();
       for (const f of finals(inWindow).finals) {
-        const key = f.caseId ? JSON.stringify(["c", f.caseId, f.flowId ?? null, f.rowId ?? null]) : JSON.stringify(["t", testOf(f)]);
-        groups.set(key, [...(groups.get(key) ?? []), f]);
+        if (f.caseId) groups.set(f.caseId, [...(groups.get(f.caseId) ?? []), f]);
+        else unlinked.add(testOf(f));
       }
+      counts.unlinked += unlinked.size;
       for (const g of groups.values()) {
         const d = decide(g);
         if (d) {

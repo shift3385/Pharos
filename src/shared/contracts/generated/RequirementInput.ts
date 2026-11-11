@@ -4,4 +4,9 @@ export type RequirementInput = { projectId: string,
 /**
  * Only honoured on create (empty → auto-numbered); keys are immutable.
  */
-requirementKey?: string, title: string, description?: string, priority?: string, userId: string, };
+requirementKey?: string, title: string, description?: string, priority?: string, 
+/**
+ * A JSON object that replaces the stored `data`; None keeps it (`{}` on
+ * create). Anything other than an object is rejected.
+ */
+data: unknown, userId: string, };

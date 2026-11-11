@@ -135,7 +135,7 @@ Fuentes: **Inter** (UI) y **JetBrains Mono** (IDs, código, contadores). Número
 
 ## 7. Navegación
 
-- **Menú lateral:** Inicio, Proyectos, Administración. El grupo **Proyecto activo** (selector, Plan, Casos, Planificador, Trazabilidad, Ajustes del proyecto) solo aparece dentro de un proyecto. Elemento activo: fondo blanco 8 %, barra izquierda de 3 px `--color-navy-300` e icono navy-300.
+- **Menú lateral:** Inicio, Proyectos, Administración. El grupo **Proyecto activo** (selector, Plan, Tablero, Requisitos, Casos, Ciclos, Ejecuciones, Defectos, Trazabilidad, Ajustes del proyecto) solo aparece dentro de un proyecto. El orden sigue el proceso de prueba (enmienda 2026-11-08, UX-21): la base de prueba antes que los casos y la matriz, que mide la cobertura, al final. Elemento activo: fondo blanco 8 %, barra izquierda de 3 px `--color-navy-300` e icono navy-300.
 - **Contraer menú** (botón arriba a la derecha): pasa a la franja de 84 px y aparece **Expandir menú**. Recordar la elección entre sesiones.
 - **Barra superior (escritorio/tablet):** migas, buscador (Ctrl K), notificaciones, **acceso rápido claro/oscuro** (luna/sol). El idioma está solo en el menú del usuario.
 - **Móvil:** pantallas de proyecto con flecha atrás + título + subtítulo; secciones del proyecto como pastillas desplazables arriba. Mientras se edita Gherkin se oculta la barra inferior.
@@ -195,6 +195,9 @@ Respetar `prefers-reduced-motion: reduce` → sin desplazamientos, solo cambios 
 - Foco visible con `--color-focus` (navy en claro, ámbar en oscuro y sobre navy).
 - Botones de solo icono con `title` y `aria-label`.
 - Diálogos con `role="dialog"`, `aria-modal`, título enlazado y Esc para cancelar (excepto confirmaciones destructivas, que requieren «Cancelar»).
+- Toda pregunta al usuario es un diálogo de Pharos (`ConfirmDialog`, o `useConfirm` cuando el código espera la respuesta); nunca `window.confirm`, `alert` ni `prompt` (MAN-03, NC-017; un test lo vigila). Hay dos niveles (NC-014):
+  - **Normal** — Esc o un clic fuera equivalen a «Cancelar». Para lo que se puede rehacer o solo pierde lo no guardado: descartar cambios sin guardar, restaurar una revisión, cerrar un run, cambiar de proveedor de IA o reemplazar su clave, quitar del ciclo, desvincular.
+  - **Crítica** (`variant="destructive"`) — solo responden sus botones. Es crítica la confirmación cuyo botón borra algo guardado sin vuelta atrás: eliminar un proyecto, caso, requisito, defecto, tarjeta, ciclo, run o plantilla; borrar huérfanos; acortar la retención de evidencias; descartar un borrador de ejecución con sus adjuntos; quitar una evidencia; y los avisos que no deben pasar desapercibidos (la clave de recuperación recién mostrada, una exportación en curso).
 - Los menús deben poder recorrerse con flechas y cerrarse con Esc.
 - El skeleton es decorativo (`aria-hidden`, sin nada enfocable). La carga se anuncia una sola vez por pantalla, con una región `role="status"` fuera de las formas.
 

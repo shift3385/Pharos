@@ -1,6 +1,7 @@
 import type { AiProvenance } from "@modules/ai";
 import type { TestCaseData } from "../model/types";
 import { stepsOf } from "../model/steps";
+import { stepText } from "@shared/gherkin/stepText";
 import { toGherkin } from "../ui/gherkin";
 import { announceCasesChanged } from "../model/events";
 import { testCaseApi } from "./testCaseApi";
@@ -27,9 +28,10 @@ export function proposalCaseData(
   return {
     gherkinLevel: "basic",
     description: p.description,
-    preconditions: stepsOf(p.given),
-    steps: stepsOf(p.when),
-    expectedResult: p.then.join("\n"),
+    // The AI's sentences continue a keyword: «Given el usuario…» (NC-039).
+    preconditions: stepsOf(p.given.map(stepText)),
+    steps: stepsOf(p.when.map(stepText)),
+    expectedResult: p.then.map(stepText).join("\n"),
     requirementKeys: [requirementKey],
     // The whole case came from the AI and waits for a review (IA-01).
     ...(provenance ? { aiProvenance: { case: provenance } } : {}),

@@ -12,7 +12,7 @@ interface Crumb {
 }
 
 /** Where the user is (SPEC §7): «Pharos › Inicio», «Proyectos › <proyecto> ›
- *  Planificador», «Administración › Motor de IA» (the tab)… The last crumb is the
+ *  Tablero», «Administración › Motor de IA» (the tab)… The last crumb is the
  *  current page; long names end in «…» with the full name in `title`. */
 export function Breadcrumbs({ active }: { active: ActiveProject | null }) {
   const { t } = useTranslation();

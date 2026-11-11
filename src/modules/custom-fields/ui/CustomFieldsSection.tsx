@@ -18,6 +18,7 @@ export function CustomFieldsSection({
   previous,
   attempted,
   onChange,
+  labelledBy,
 }: {
   fields: CustomField[];
   caseType: CaseType;
@@ -27,6 +28,9 @@ export function CustomFieldsSection({
   /** A save was attempted: show `required` errors too. */
   attempted: boolean;
   onChange: (values: CustomValues) => void;
+  /** The id of a heading the host already shows (the defect editor's
+   *  section): then this section prints no title of its own (NC-050). */
+  labelledBy?: string;
 }) {
   const { t } = useTranslation();
   const shown = fieldsFor(fields, caseType);
@@ -52,12 +56,17 @@ export function CustomFieldsSection({
     yes: t("customFields.section.yes"),
     no: t("customFields.section.no"),
   };
+  // Inside a host section that already names it (NC-050): a plain block, not
+  // a second region with the same name.
+  const Wrap = labelledBy ? "div" : "section";
 
   return (
-    <section className="cf-section" aria-labelledby="cf-section-title">
-      <p id="cf-section-title" className="tp-field__grouplabel">
-        {t("customFields.section.title")}
-      </p>
+    <Wrap className="cf-section" aria-labelledby={labelledBy ? undefined : "cf-section-title"}>
+      {!labelledBy && (
+        <p id="cf-section-title" className="tp-field__grouplabel">
+          {t("customFields.section.title")}
+        </p>
+      )}
       <div className="cf-section__grid">
         {shown.map((f) => {
           const raw = issues.get(f.fieldKey) ?? null;
@@ -155,6 +164,6 @@ export function CustomFieldsSection({
           </dl>
         </details>
       )}
-    </section>
+    </Wrap>
   );
 }

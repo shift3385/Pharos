@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { Paperclip, Trash2 } from "lucide-react";
 import { ListField } from "@shared/ui/fields";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { useToast } from "@shared/ui/Toast";
 import { saveVia } from "@shared/export/saveFile";
 import { notify, unlessReported } from "@shared/ui/notify";
@@ -52,6 +54,13 @@ export function CardEditor({
   const [attachments, setAttachments] = useState<AttachmentSummary[]>([]);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [asking, setAsking] = useState(false);
+  // Unsaved changes (NC-016, MAN-03): «← Volver» asks, and so does leaving the
+  // board through the menu (the guard holds the navigation).
+  const initial = useRef(JSON.stringify([card?.kind ?? "task", card?.title ?? "", card?.priority ?? "medium", card?.data.description ?? "", card?.data.labels ?? []]));
+  const dirty = JSON.stringify([kind, title, priority, description, labels]) !== initial.current;
+  const { dialog: leaveDialog } = useUnsavedChangesGuard(dirty && !saving);
+  const back = () => (dirty ? setAsking(true) : onClose());
 
   useEffect(() => {
     if (card) void plannerApi.attachmentList(card.id, ownerId).then(setAttachments);
@@ -77,6 +86,8 @@ export function CardEditor({
       else await plannerApi.create(input);
       toast(t("planner.savedToast"));
       onClose();
+    } catch {
+      notify(t("planner.saveFailed"), "error");
     } finally {
       setSaving(false);
     }
@@ -86,7 +97,7 @@ export function CardEditor({
     if (!files || !card) return;
     for (const file of Array.from(files)) {
       if (file.size > MAX_BYTES) {
-        alert(t("planner.attachTooLarge", { name: file.name, mb: MAX_ATTACHMENT_MB }));
+        notify(t("planner.attachTooLarge", { name: file.name, mb: MAX_ATTACHMENT_MB }), "error");
         continue;
       }
       try {
@@ -119,7 +130,7 @@ export function CardEditor({
   return (
     <div className="pl-editor">
       <header className="tc-editor__top">
-        <button type="button" className="tp-editor__back" onClick={onClose}>
+        <button type="button" className="tp-editor__back" onClick={back}>
           ← {t("planner.back")}
         </button>
         <h2>{card ? t("planner.editCard") : t("planner.newCard")}</h2>
@@ -209,12 +220,23 @@ export function CardEditor({
                 </li>
               ))}
             </ul>
+            <button
+              type="button"
+              className="ui-btn ui-btn--secondary ui-btn--small pl-attach__pick"
+              aria-describedby="pl-attach-limit"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Paperclip size={14} aria-hidden="true" />
+              {t("planner.attachFiles")}
+            </button>
+            {/* The native picker stays hidden (NC-037): the button opens it. */}
             <input
               ref={fileRef}
               type="file"
               multiple
+              hidden
               className="pl-attach__input"
-              aria-describedby="pl-attach-limit"
+              aria-label={t("planner.attachFiles")}
               onChange={(e) => void addFiles(e.target.files)}
             />
             <p id="pl-attach-limit" className="tp-field__hint">
@@ -223,6 +245,21 @@ export function CardEditor({
           </div>
         )}
       </div>
+      {leaveDialog}
+      {asking && (
+        <ConfirmDialog
+          title={t("dialog.unsaved.title")}
+          message={t("dialog.unsaved.message")}
+          confirmLabel={t("dialog.unsaved.discard")}
+          cancelLabel={t("dialog.unsaved.keep")}
+          danger
+          onConfirm={() => {
+            setAsking(false);
+            onClose();
+          }}
+          onCancel={() => setAsking(false)}
+        />
+      )}
     </div>
   );
 }

@@ -107,6 +107,12 @@ function aiPending(data: unknown): boolean {
   return !!prov && typeof prov === "object" && Object.values(prov).some((p) => p?.reviewedAt == null);
 }
 
+/** The requirements a case links, for its list row and the matrix. */
+function requirementKeys(data: unknown): string[] {
+  const keys = (data as { requirementKeys?: unknown } | null)?.requirementKeys;
+  return Array.isArray(keys) ? keys.filter((k): k is string => typeof k === "string") : [];
+}
+
 const isObject = (v: unknown): v is Payload => typeof v === "object" && v !== null && !Array.isArray(v);
 
 const pad = (n: number, digits: number) => String(n).padStart(digits, "0");
@@ -407,6 +413,8 @@ export function createDomainService(store: DomainStore) {
             automationStatus: typeof c.automationStatus === "string" ? c.automationStatus : null,
             custom: isObject((c.data as Payload | undefined)?.custom) ? (c.data as Payload).custom : {},
             aiPending: aiPending(c.data),
+            requirementKeys: requirementKeys(c.data),
+            traceability: str((c.data ?? {}) as Payload, "traceability"),
             updatedAt: c.updatedAt,
             revision: c.revision,
           }));
@@ -487,6 +495,7 @@ export function createDomainService(store: DomainStore) {
       // update without it keeps it (`patchRequirement` spreads the payload).
       riskLikelihood: input.riskLikelihood ?? null,
       riskImpact: input.riskImpact ?? null,
+      data: input.data ?? {},
       createdAt: at,
       updatedAt: at,
     };
@@ -507,6 +516,7 @@ export function createDomainService(store: DomainStore) {
       priority: priorityOf(input.priority),
       ...(input.riskLikelihood !== undefined && { riskLikelihood: input.riskLikelihood }),
       ...(input.riskImpact !== undefined && { riskImpact: input.riskImpact }),
+      ...(input.data !== undefined && { data: input.data }),
       updatedAt: now(),
     };
     return tx.put("requirement", doc.entityId, payload, doc, false, opts);

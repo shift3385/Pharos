@@ -16,4 +16,13 @@ custom: Record<string, unknown>,
 /**
  * Some AI-generated content is still pending human review (IA-01).
  */
-aiPending: boolean, updatedAt: string, revision: number, };
+aiPending: boolean, 
+/**
+ * `data.requirementKeys`: the list row and the traceability matrix read
+ * them from here, without opening each case.
+ */
+requirementKeys: Array<string>, 
+/**
+ * `data.traceability`: free-text links, for the migration to requirements.
+ */
+traceability: string, updatedAt: string, revision: number, };

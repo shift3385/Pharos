@@ -11,6 +11,9 @@ export interface AuthContextValue {
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
+  /** Updates the signed-in user after a profile save, so the shell (menu,
+   *  avatar) shows the new alias and name at once (MAN-03). */
+  updateUser: (patch: Partial<Pick<AuthUser, "displayName" | "firstName" | "lastName">>) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(

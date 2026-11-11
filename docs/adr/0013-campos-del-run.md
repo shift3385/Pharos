@@ -897,8 +897,9 @@ Reglas (R1–R12 del contrato):
   `fixed` o `retest` (y ninguno `new`, `open` o `in_progress`) pasa a
   `retest`: cuenta como ejecutado, no como pasado.
 - **R8 Ventanas** (Inicio): por ventana `[dayStarts[i], now]`, finales y peor
-  por objetivo entre los intentos de todos los proyectos; un intento sin caso
-  es su propio objetivo.
+  por **caso** entre los intentos de todos los proyectos (enmendada por
+  NC-029, ver «Enmienda del contrato v1» al final); los tests sin caso no
+  cuentan en la tasa y se dan aparte en `unlinked`.
 - **R9 Diario.** Cada intento (no solo los finales), por estado y por origen
   (manual / importado), en el día de `dayStarts` (medianoches locales que da el
   cliente) que lo contiene; antes del primer día no cuenta. Así un día de
@@ -942,3 +943,34 @@ falla, un informe de Playwright posterior lo pasa (los dos runs en el resumen,
 gana el último final), otro intento manual posterior gana de nuevo, y editar el
 caso no cambia el resultado, su run ni su revisión (solo lo marca como
 desactualizado).
+
+## Enmienda del contrato v1 (NC-029, MAN-03, 2026-11-09)
+
+La «Tasa de éxito» del Inicio no cuadraba con «Ejecución por proyecto»: la
+tasa (R8) contaba objetivos `(caso, flujo, fila)` y además cada test
+importado sin vincular, mientras el progreso (R6), los criterios y las
+próximas pruebas cuentan casos con resultados vinculados. El responsable de QA
+eligió la opción A del análisis de NC-029:
+
+- **R8 por caso.** En cada ventana, los finales de un caso (todos sus flujos,
+  filas y configuraciones) se resuelven con la regla del progreso (`decide`:
+  el run de su final más reciente y, dentro, el peor estado), así que un caso
+  pasa solo si pasan todos sus objetivos. `executed` son los casos con al
+  menos un resultado final vinculado en la ventana; `passRate` = casos que
+  pasan / `executed`.
+- **Sin vincular, aparte.** Los tests sin caso no entran en la tasa.
+  `WindowCounts.unlinked` cuenta los tests `(run, test_key, etiqueta)` sin
+  caso con un final en la ventana; la tarjeta lo muestra debajo («Además, N
+  tests sin vincular», con enlace a Ejecuciones).
+- **R9 sin cambios**, pero la gráfica se llama «Ejecuciones diarias
+  (intentos)»: cuenta cada intento, no casos.
+- **Compatibilidad.** `unlinked` es un campo nuevo de `WindowCounts`;
+  `contractVersion` sigue en 1 porque escritorio, servidor y cliente se
+  publican juntos y ningún dato guardado cambia (la derivación se calcula al
+  leer). Un cliente anterior ignora el campo; uno nuevo frente a un servidor
+  anterior lee `unlinked` ausente y no muestra la nota.
+- **Pruebas.** Vector compartido «home: the pass rate counts cases …
+  (NC-029)» en `execution-vectors.json` y su golden; lo comprueban
+  `execution::tests::the_shared_vectors_hold` (Rust) y
+  `server/tests/execution.test.ts` (web); la tarjeta, en
+  `DashboardPage.test.tsx`.

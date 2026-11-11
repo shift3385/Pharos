@@ -1,8 +1,9 @@
+import { spawn } from "node:child_process";
 // Tests of the user-manual tooling (MAN-01): the PNG codec, the Markdown
 // subset, the prose-source parser, the AI-key lookup, the secret scan and the
 // coverage check.
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,13 +11,14 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { arrayLiteral, check, countDialogs, coversIn, hasViewSwitch, routePaths, stepsIn } from "./check-manual.mjs";
 import { findAiKey } from "./manual/ai-key.mjs";
-import { inline, markdownToHtml } from "./manual/markdown.mjs";
-import { printWithEdge, sweepProfiles } from "./manual/edge-print.mjs";
+import { inline, leftoverTable, markdownToHtml, tableCells } from "./manual/markdown.mjs";
+import { printWithEdge, settled, sweepProfiles } from "./manual/edge-print.mjs";
 import { focusLayout, FOCUS_COLOR, groupInset, insetStyle } from "./manual/focus.mjs";
 import { acquireLock, lockMessage, pidAlive, releaseLock, UNREADABLE_GRACE_MS } from "./manual/run-lock.mjs";
 import { changedShare, decodePng, drawFocus, encodePng, quantize } from "./manual/png.mjs";
 import { needlesFor, scanForSecret } from "./manual/secret-scan.mjs";
-import { parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
+import { keyboardAppendix, parseSource, pdfNamedDests, pdfPageCount } from "./manual/sources.mjs";
+import { foreignNames } from "./manual/persona.mjs";
 
 const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -72,7 +74,112 @@ test("the Markdown subset renders lists, notes, links and code, and escapes HTML
 
 test("parseSource splits a chapter source into its parts", () => {
   const src = parseSource("# T\n\nintro ignorada\n\n## Para qué sirve\n\nA.\n\n## Consejos\n\n- B\n\n## Véase también\n\nC\n\n### Paso nuevo\n\nNota.");
-  assert.deepEqual(src, { purpose: "A.", tips: "- B", seeAlso: "C", notes: { nuevo: "Nota." } });
+  assert.deepEqual(src, { purpose: "A.", extra: [], keys: "", trouble: "", mobile: "", tips: "- B", seeAlso: "C", notes: { nuevo: "Nota." } });
+});
+
+test("parseSource reads the manual v2 sections: keyboard, problems and mobile (MAN-03)", () => {
+  const src = parseSource(
+    "## Para qué sirve\n\nA.\n\n## Atajos de teclado\n\n| Tecla |\n\n## Si algo no sale\n\nE.\n\n## En el móvil\n\nM.\n\n## Otra cosa\n\nignorada",
+  );
+  assert.equal(src.keys, "| Tecla |");
+  assert.equal(src.trouble, "E.");
+  assert.equal(src.mobile, "M.");
+  assert.equal(src.tips, "");
+  // A section the manual does not name is kept, not dropped (NC-045).
+  assert.deepEqual(src.extra, [{ heading: "Otra cosa", body: "ignorada" }]);
+});
+
+test("GFM tables become HTML tables, also right after a paragraph (MAN-03, NC-044)", () => {
+  const md = "Intro\n| Tecla | Qué hace |\n| --- | --- |\n| Ctrl+K (⌘K en Mac) | Abre la búsqueda |\n| `a|b` | **Esc** |\n\nFin";
+  const html = markdownToHtml(md);
+  assert.match(html, /<p>Intro<\/p>\n<table class="md-table"><thead><tr><th>Tecla<\/th><th>Qué hace<\/th><\/tr><\/thead>/);
+  assert.match(html, /<td>Ctrl\+K \(⌘K en Mac\)<\/td><td>Abre la búsqueda<\/td>/);
+  assert.match(html, /<td><code>a\|b<\/code><\/td><td><strong>Esc<\/strong><\/td>/);
+  assert.match(html, /<p>Fin<\/p>$/);
+  assert.equal(leftoverTable(html), null);
+  assert.deepEqual(tableCells("| x | `y|z` |"), ["x", "`y|z`"]);
+  assert.ok(leftoverTable("<p>| Tecla | | --- | --- |</p>"), "the guard spots a table left as text");
+});
+
+test("a nested list stays nested, with continuation lines (NC-046)", () => {
+  const html = markdownToHtml("- Uno:\n  - a\n  - b que\n    sigue\n- Dos\n\n1. Paso\n   con más\n   - detalle");
+  assert.match(html, /<ul><li>Uno:<ul><li>a<\/li><li>b que sigue<\/li><\/ul><\/li><li>Dos<\/li><\/ul>/);
+  assert.match(html, /<ol><li>Paso con más<ul><li>detalle<\/li><\/ul><\/li><\/ol>/);
+});
+
+test("every table of every chapter source renders as a table (NC-044)", () => {
+  const dir = join(repoDir, "docs", "manual", "fuentes");
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".md"))) {
+    const html = markdownToHtml(readFileSync(join(dir, f), "utf8"));
+    assert.equal(leftoverTable(html), null, `${f}: a table stayed as text`);
+  }
+});
+
+test("the keyboard appendix gathers each chapter's table, in order, skipping chapters without one (MAN-03)", () => {
+  const table = ["| Tecla | Dónde | Qué hace |", "| --- | --- | --- |", "| Esc | Diálogo | Lo cierra |"].join("\n");
+  const md = keyboardAppendix([
+    { number: 2, title: "La aplicación de un vistazo", keys: table },
+    { number: 3, title: "Inicio", keys: "" },
+    { number: 11, title: "Ejecución manual", keys: `${table}\n` },
+  ]);
+  assert.match(md, /^### 2\. La aplicación de un vistazo\n\n\| Tecla/);
+  assert.ok(md.indexOf("### 2.") < md.indexOf("### 11."));
+  assert.doesNotMatch(md, /Inicio/);
+  assert.equal(leftoverTable(markdownToHtml(md)), null, "the tables render as tables");
+});
+
+test("every chapter source has its «Atajos de teclado» table, so the appendix covers the whole manual (MAN-03)", () => {
+  const dir = join(repoDir, "docs", "manual", "fuentes");
+  const without = readdirSync(dir)
+    .filter((f) => f.endsWith(".md"))
+    .filter((f) => !parseSource(readFileSync(join(dir, f), "utf8")).keys.includes("| Tecla"));
+  assert.deepEqual(without, [], "chapters without a keyboard table");
+});
+
+test("foreignNames: other people and accounts are hits, ordinary words are not (NC-052)", () => {
+  assert.deepEqual(foreignNames("Lucía Romero y Ana Pérez; Smoke · smoke@pharos.dev"), [
+    "Lucía",
+    "Romero",
+    "Ana",
+    "Pérez",
+    "Smoke",
+    "smoke@pharos.dev",
+  ]);
+  assert.deepEqual(foreignNames("Analista de QA · una semana · Liomar QA · liomar.qa@pharos.test · Mañana"), []);
+  assert.deepEqual(foreignNames("ana minúscula, Perezoso, Romeros"), []);
+});
+
+test("the chapter sources and the tour captions name only the manual's person (NC-052)", () => {
+  const files = [
+    ...readdirSync(join(repoDir, "docs", "manual", "fuentes")).map((f) => join(repoDir, "docs", "manual", "fuentes", f)),
+    ...readdirSync(join(repoDir, "e2e", "tours"))
+      .filter((f) => f.endsWith(".ts"))
+      .map((f) => join(repoDir, "e2e", "tours", f)),
+  ];
+  for (const file of files) {
+    const names = foreignNames(readFileSync(file, "utf8"));
+    assert.deepEqual(names, [], `${file} names another person or account`);
+  }
+});
+
+test("the NC log keeps its title and a well-formed table of 8 columns, in order (MAN-03)", () => {
+  const lines = readFileSync(join(repoDir, "docs", "manual", "NC-log.md"), "utf8").split(/\r?\n/);
+  assert.match(lines[0], /^# Registro de no conformidades/);
+  const rows = lines.filter((l) => l.startsWith("| NC-"));
+  assert.ok(rows.length > 0);
+  rows.forEach((row, i) => {
+    assert.equal(tableCells(row).length, 8, `${row.slice(0, 12)}: 8 cells`);
+    assert.ok(row.startsWith(`| NC-${String(i + 1).padStart(3, "0")} |`), `row ${i + 1} is NC-${i + 1}`);
+  });
+  assert.equal(leftoverTable(markdownToHtml(lines.join("\n"))), null, "the log renders as a table");
+});
+
+test("the interface never shows an internal roadmap ID (NC-047)", () => {
+  for (const lang of ["es", "en"]) {
+    const text = readFileSync(join(repoDir, "src", "shared", "i18n", "locales", `${lang}.json`), "utf8");
+    const hits = [...text.matchAll(/"[^"]*\b(?:SYNC|INT|EJE|IA|DAT|RED|UX|FIX|MAN|ING|PLN|DEF|CYC|EVI|PDF)-\d+[a-z]?\b[^"]*"/g)].map((m) => m[0]);
+    assert.deepEqual(hits, [], `${lang}.json: roadmap IDs in user-facing text`);
+  }
 });
 
 test("pdfPageCount reads the page tree", () => {
@@ -139,6 +246,9 @@ test("the code readers find covers, literal skips, dialogs and view switches", (
   assert.deepEqual(coversIn(tour), ["x", "y", "z"]);
   assert.deepEqual(stepsIn(tour).map((s) => s.literalSkip), [false, true, false]);
   assert.equal(countDialogs("<Dialog a/> <ConfirmDialog/> window.confirm(x) alert(y) obj.alert(z) <DialogTitle/>"), 4);
+  // Each question asked with useConfirm is a dialog to tour (NC-017); a local
+  // function named confirm is not.
+  assert.equal(countDialogs("if (!(await confirm({ title }))) return; async function confirm() {}"), 1);
   assert.ok(hasViewSwitch('<SegmentedControl\n  value={v}\n  label={t("defects.view.label")}\n/>'));
   assert.ok(!hasViewSwitch('<SegmentedControl label={t("admin.general.theme")} />'));
 });
@@ -250,6 +360,15 @@ test("printWithEdge: a fresh profile per attempt, one retry on EPERM, none other
     assert.throws(() => printWithEdge({ htmlUrl: "file:///x.html", pdfFile: pdf, profilesDir, exec: () => {} }), /did not print/, "a stale PDF never passes");
   }));
 
+test("printWithEdge waits for a PDF Edge writes after returning (MAN-04)", () =>
+  tempDir((dir) => {
+    const pdf = join(dir, "late.pdf");
+    assert.ok(!settled(pdf, 0), "nothing yet");
+    // Another process writes it a moment later, as Edge 157 does.
+    spawn(process.execPath, ["-e", `setTimeout(() => require("fs").writeFileSync(${JSON.stringify(pdf)}, "%PDF-1.7"), 300)`], { stdio: "ignore" });
+    assert.ok(settled(pdf, 10_000));
+  }));
+
 test("selectTours adds what a partial run needs, in run order, and refuses a bad filter (MAN-02)", async () => {
   const { CHAPTERS, selectTours } = await import("../e2e/tours/manifest.ts");
   const order = new Map(CHAPTERS.map((c, i) => [c.id, i]));
@@ -258,10 +377,12 @@ test("selectTours adds what a partial run needs, in run order, and refuses a bad
   }
   assert.equal(selectTours(null).files.length, CHAPTERS.filter((c) => c.file).length);
   assert.deepEqual(selectTours(null).added, []);
-  const defects = selectTours("^09");
-  assert.deepEqual(defects.files, ["00-preparacion.tour.ts", "02-proyectos.tour.ts", "04-casos.tour.ts", "08-ejecuciones.tour.ts", "09-defectos.tour.ts"]);
-  assert.deepEqual(defects.added, ["02-proyectos.tour.ts", "04-casos.tour.ts", "08-ejecuciones.tour.ts"]);
-  assert.deepEqual(selectTours("^14").added, [], "a chapter that reads nothing adds nothing");
+  const defects = selectTours("^12");
+  // Chapter 1 always runs: it creates the account (NC-052).
+  assert.deepEqual(defects.files, ["00-preparacion.tour.ts", "01-acceso.tour.ts", "04-proyectos.tour.ts", "14-ajustes.tour.ts", "07-requisitos.tour.ts", "08-casos.tour.ts", "09-ciclos.tour.ts", "10-ejecuciones.tour.ts", "12-defectos.tour.ts"]);
+  assert.deepEqual(defects.added, ["01-acceso.tour.ts", "04-proyectos.tour.ts", "14-ajustes.tour.ts", "07-requisitos.tour.ts", "08-casos.tour.ts", "09-ciclos.tour.ts", "10-ejecuciones.tour.ts"]);
+  assert.deepEqual(selectTours("^16").added, ["01-acceso.tour.ts"], "a chapter that reads nothing adds only the account");
+  assert.deepEqual(selectTours("^01").added, [], "chapter 1 asked for is not added twice");
   assert.throws(() => selectTours("["), /not a valid regular expression/);
   assert.throws(() => selectTours("^99"), /matches no tour file/);
   assert.throws(() => selectTours("^00"), /matches no tour file/, "the preparation alone is not a run");

@@ -16,7 +16,7 @@ vi.mock("@modules/test-plan", () => ({
   PLAN_SAVED_EVENT: "pharos:plan-saved",
   projectPlanStatus: async () => "reviewed",
   projectHasPlan: async () => false,
-  projectPlanClosure: async () => ({ closeDate: "2026-11-07", criteria: [] }),
+  projectPlanOverview: async () => ({ status: "reviewed", closeDate: "2026-11-07" }),
 }));
 vi.mock("@modules/test-cases", () => ({
   TestCasesPage: ({ caseIdPrefix }: { caseIdPrefix: string }) => <p>casos {caseIdPrefix}</p>,
@@ -34,9 +34,13 @@ vi.mock("@modules/planner", () => ({
 }));
 vi.mock("@modules/traceability", () => ({
   TraceabilityPage: () => <p>sección trazabilidad</p>,
-  requirementApi: { list: async () => [] },
-  projectCoverage: async () => null,
+  RequirementsPage: () => <p>sección requisitos</p>,
+  requirementApi: { list: async () => requirements.value },
+  REQUIREMENTS_CHANGED_EVENT: "pharos:requirements-changed",
+  projectTraceFacts: async () => ({ cases: 0, coverage: null }),
 }));
+
+const requirements = vi.hoisted(() => ({ value: [] as { requirementKey: string; title: string }[] }));
 
 const PROJECTS = {
   a: { id: "a", ownerId: "test-user", name: "Proyecto A", caseIdPrefix: "AAA_", caseIdDigits: 3 },
@@ -83,10 +87,10 @@ describe("project routes (ADR-0029)", () => {
     caseCount.value = 240;
   });
 
-  it("a project without a section opens its plan", async () => {
+  it("a project without a section opens its board (UX-22)", async () => {
     renderAt("/projects/a");
-    expect(await screen.findByText("sección plan")).toBeInTheDocument();
-    expect(where()).toBe("/projects/a/plan");
+    expect(await screen.findByText("sección planificador")).toBeInTheDocument();
+    expect(where()).toBe("/projects/a/planner");
   });
 
   it("heads every section with the project, without the old «← Proyectos» bar", async () => {
@@ -107,16 +111,29 @@ describe("project routes (ADR-0029)", () => {
     expect(await screen.findByText("241 casos")).toBeInTheDocument();
   });
 
-  it("an unknown section opens the plan", async () => {
+  it("the requirement count follows requirements created or imported in the section (NC-038, MAN-03)", async () => {
+    requirements.value = [];
+    renderAt("/projects/a/requirements");
+    expect(await screen.findByText("0 requisitos")).toBeInTheDocument();
+    requirements.value = [
+      { requirementKey: "REQ-001", title: "Iniciar sesión" },
+      { requirementKey: "REQ-002", title: "Crear un proyecto" },
+    ];
+    window.dispatchEvent(new Event("pharos:requirements-changed"));
+    expect(await screen.findByText("2 requisitos")).toBeInTheDocument();
+    requirements.value = [];
+  });
+
+  it("an unknown section opens the board", async () => {
     renderAt("/projects/a/zzz");
-    expect(await screen.findByText("sección plan")).toBeInTheDocument();
-    expect(where()).toBe("/projects/a/plan");
+    expect(await screen.findByText("sección planificador")).toBeInTheDocument();
+    expect(where()).toBe("/projects/a/planner");
   });
 
   it("an old /projects?open=<id> link redirects without loading the list", async () => {
     renderAt("/projects?open=a");
-    expect(await screen.findByText("sección plan")).toBeInTheDocument();
-    expect(where()).toBe("/projects/a/plan");
+    expect(await screen.findByText("sección planificador")).toBeInTheDocument();
+    expect(where()).toBe("/projects/a/planner");
     expect(projectApi.list).not.toHaveBeenCalled();
   });
 

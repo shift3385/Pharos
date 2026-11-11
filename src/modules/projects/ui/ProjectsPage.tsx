@@ -39,6 +39,7 @@ import { projectRows } from "../model/projectRows";
 import {
   PAGE_SIZES,
   UNAVAILABLE_SORTS,
+  executedShare,
   coverageTone,
   filterProjects,
   formatAccess,
@@ -52,6 +53,7 @@ import {
 } from "../model/projectTable";
 import { useProjectExport } from "./useProjectExport";
 import "@shared/ui/headerActions.css";
+import { prefixIssue, suggestPrefix } from "../model/prefix";
 import "./Projects.css";
 
 const SORT_ICONS = {
@@ -90,6 +92,9 @@ function ProjectList() {
   const [creating, setCreating] = useState(() => params.get("new") === "1");
   const { exportAll, exportProject, busy, progressModal } = useProjectExport();
   const [name, setName] = useState("");
+  // NC-030: a free prefix, suggested from the name until the user types one.
+  const [prefix, setPrefix] = useState("");
+  const [prefixTouched, setPrefixTouched] = useState(false);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: ProjectSort; dir: SortDirection }>({
     key: "access",
@@ -141,16 +146,25 @@ function ProjectList() {
   // A blank name is explained (and announced) instead of a disabled button.
   const [nameTried, setNameTried] = useState(false);
   const nameIssue = nameTried ? required(name) : null;
+  const suggested = useMemo(() => suggestPrefix(name, rows ?? []), [name, rows]);
+  const shownPrefix = prefixTouched ? prefix : name.trim() ? suggested : "";
+  const prefixProblem = name.trim() || prefixTouched ? prefixIssue(shownPrefix, rows ?? []) : null;
+  const resetCreate = () => {
+    setName("");
+    setPrefix("");
+    setPrefixTouched(false);
+    setNameTried(false);
+  };
 
   async function create() {
     const trimmed = name.trim();
     setNameTried(true);
-    if (!trimmed) return;
+    if (!trimmed || prefixProblem) return;
     setNameTried(false);
     setActionFailed(null);
     let project;
     try {
-      project = await projectApi.create({ name: trimmed, ownerId });
+      project = await projectApi.create({ name: trimmed, ownerId, caseIdPrefix: shownPrefix.trim() });
     } catch (e) {
       // The form stays open with the name; «Reintentar» sends what it says then.
       // A refusal the user was already told about (a toast) is not repeated.
@@ -159,9 +173,11 @@ function ProjectList() {
       setActionFailed({ create: true });
       return;
     }
-    setName("");
+    resetCreate();
     setCreating(false);
-    if (project) navigate(projectPath(project.id));
+    // A new project starts by writing its plan; an existing one opens on the
+    // board (UX-22).
+    if (project) navigate(projectPath(project.id, "plan"));
     else await refresh();
   }
 
@@ -199,9 +215,18 @@ function ProjectList() {
     },
   );
 
-  const executedCell = () => (
-    <span className="pj-muted" title={t("projects.list.executedSoon")}>
-      —
+  // «Ejecutado» (NC-021): cases with a final result over the project's cases.
+  const executedText = (row: ProjectRow) => {
+    const share = executedShare(row);
+    return share === null ? "—" : `${Math.round(share * 100)} %`;
+  };
+  const executedTitle = (row: ProjectRow) =>
+    row.execution && row.execution.total > 0
+      ? t("projects.list.executedOf", { executed: row.execution.executed, total: row.execution.total })
+      : t("projects.list.executedNone");
+  const executedCell = (row: ProjectRow) => (
+    <span className="pj-num" title={executedTitle(row)}>
+      {executedText(row)}
     </span>
   );
 
@@ -292,7 +317,7 @@ function ProjectList() {
         <span className="pj-card__meta">
           <span className="pj-dot" data-tone={planTone(row.planStatus)} aria-hidden="true" />
           <span className="u-truncate">
-            {[planLabel(row), t("projects.list.executedShort"), access(row)].join(" · ")}
+            {[planLabel(row), t("projects.list.executedShortValue", { value: executedText(row) }), access(row)].join(" · ")}
           </span>
         </span>
       </span>
@@ -340,6 +365,22 @@ function ProjectList() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && create()}
           />
+          <input
+            {...controlProps("pj-new-prefix", prefixProblem)}
+            className="pj-input pj-input--prefix t-id"
+            aria-label={t("projects.caseIdPrefix")}
+            title={t("projects.prefix.suggestedHint")}
+            value={shownPrefix}
+            placeholder={t("projects.prefix.placeholder")}
+            autoComplete="off"
+            spellCheck={false}
+            data-testid="pj-new-prefix"
+            onChange={(e) => {
+              setPrefixTouched(true);
+              setPrefix(e.target.value);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && create()}
+          />
           <button type="button" className="pj-primary" onClick={create}>
             {t("projects.create")}
           </button>
@@ -348,8 +389,7 @@ function ProjectList() {
             className="header-action"
             onClick={() => {
               setCreating(false);
-              setName("");
-              setNameTried(false);
+              resetCreate();
               setActionFailed(null);
             }}
           >
@@ -358,6 +398,11 @@ function ProjectList() {
           {nameIssue && (
             <span role="alert" className="pj-create__msg">
               <FieldMessage id="pj-new-name-msg" issue={nameIssue} />
+            </span>
+          )}
+          {prefixProblem && (
+            <span role="alert" className="pj-create__msg">
+              <FieldMessage id="pj-new-prefix-msg" issue={prefixProblem} />
             </span>
           )}
         </div>
@@ -421,12 +466,14 @@ function ProjectList() {
                           <span className="pj-meta">{access(row)}</span>
                         </span>
                       </span>
-                      <span className="pj-recent__exec" title={t("projects.list.executedSoon")}>
+                      <span className="pj-recent__exec" title={executedTitle(row)}>
                         <span className="pj-recent__exec-row">
                           <span>{t("projects.list.col.executed")}</span>
-                          <span className="pj-num">—</span>
+                          <span className="pj-num">{executedText(row)}</span>
                         </span>
-                        <span className="pj-bar" aria-hidden="true" />
+                        <span className="pj-bar" aria-hidden="true">
+                          <span className="pj-bar__fill" style={{ width: `${Math.round((executedShare(row) ?? 0) * 100)}%` }} />
+                        </span>
                       </span>
                       <span className="pj-recent__foot">
                         <StatusPill

@@ -113,8 +113,172 @@ export const listReviewSchema = z.object({
   reason,
 });
 
+// --- Requirements from a project (IA-17, ADR-0036) ------------------------------
+
+/** Free text cut to `max` instead of failing the whole answer: a reason or a
+ *  quote a few characters too long is still usable. */
+const clipped = (max: number) =>
+  z
+    .string()
+    .trim()
+    .transform((s) => (s.length > max ? `${s.slice(0, max - 1)}…` : s));
+
+export const REQUIREMENT_PRIORITIES = ["low", "medium", "high"] as const;
+
+/** A requirement has three priorities: «critical» and its Spanish names map to
+ *  the nearest. Anything else reads as not given. */
+const requirementPriority = z.preprocess((v) => {
+  if (typeof v !== "string") return undefined;
+  const k = v
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  const mapped = PRIORITY_ALIASES[k] ?? k;
+  return mapped === "critical" ? "high" : mapped;
+}, z.enum(REQUIREMENT_PRIORITIES).optional().catch(undefined));
+
+const basis = z.enum(["stated", "inferred"]).catch("inferred");
+const kind = z.enum(["functional", "non-functional", "constraint"]).optional().catch(undefined);
+const lineNumber = z.coerce.number().int().min(1).optional().catch(undefined);
+
+/** One requirement a batch of project files shows (`req-extract@1`). Its
+ *  `sources` are checked against what was sent in `usableCandidates`. */
+export const requirementCandidateSchema = z.object({
+  title: line(200),
+  description: z.string().trim().min(1).max(2000),
+  priority: requirementPriority,
+  kind,
+  basis,
+  acceptance: z.array(line(300)).max(10).default([]),
+  sources: z
+    .array(z.object({ path: z.string().trim().min(1).max(500), startLine: lineNumber, endLine: lineNumber }))
+    .min(1)
+    .max(5),
+  evidence: clipped(200).optional(),
+});
+
+export const requirementCandidatesSchema = z.object({
+  candidates: z.array(requirementCandidateSchema).max(40).default([]),
+  reason,
+});
+
+/** A candidate as the synthesis prompt numbers it: "C3", "c3" or 3. */
+const candidateRef = z.union([z.string(), z.number()]).transform((v, ctx) => {
+  const n = typeof v === "number" ? v : Number(String(v).trim().replace(/^c/i, ""));
+  if (!Number.isInteger(n) || n < 1) {
+    ctx.addIssue({ code: "custom", message: "not a candidate number" });
+    return z.NEVER;
+  }
+  return n;
+});
+const requirementKey = z.string().trim().min(1).max(100);
+/** An optional key: empty or null reads as not given. */
+const optionalKey = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() ? v.trim() : undefined),
+  z.string().max(100).optional(),
+);
+
+/** The answer of `req-synthesis@1`: what to do with the candidates and the
+ *  existing requirements. Keys and candidate numbers are checked against what
+ *  was sent in `usableRequirementProposals` (traceability). */
+export const requirementSynthesisSchema = z.object({
+  proposals: z
+    .array(
+      z.discriminatedUnion("action", [
+        z.object({
+          action: z.literal("add"),
+          from: z.array(candidateRef).min(1).max(20),
+          title: line(200),
+          description: z.string().trim().min(1).max(4000),
+          priority: requirementPriority,
+          reason: clipped(200),
+          similarTo: optionalKey,
+        }),
+        z.object({
+          action: z.literal("improve"),
+          key: requirementKey,
+          from: z.array(candidateRef).max(20).default([]),
+          title: line(200).optional(),
+          description: z.string().trim().min(1).max(4000).optional(),
+          priority: requirementPriority,
+          reason: clipped(200),
+        }),
+        z.object({
+          action: z.literal("merge"),
+          keys: z.array(requirementKey).min(2).max(10),
+          keep: requirementKey,
+          title: line(200).optional(),
+          description: z.string().trim().min(1).max(4000).optional(),
+          reason: clipped(200),
+        }),
+        z.object({
+          action: z.literal("remove"),
+          key: requirementKey,
+          coveredBy: optionalKey,
+          reason: clipped(200),
+        }),
+      ]),
+    )
+    .max(100)
+    .default([]),
+  reason,
+});
+
+export type RawRequirementCandidate = z.infer<typeof requirementCandidateSchema>;
+export type RawRequirementProposal = z.infer<typeof requirementSynthesisSchema>["proposals"][number];
+
 export type GeneratedCase = z.infer<typeof generatedCaseSchema>;
 export type RiskSuggestion = z.infer<typeof riskSuggestionsSchema>["risks"][number];
 export type ResponsibilitySuggestion = z.infer<typeof responsibilitySuggestionsSchema>["responsibilities"][number];
 export type ClosureSuggestion = z.infer<typeof closureSuggestionsSchema>["criteria"][number];
 export type RawListProposal = z.infer<typeof listReviewSchema>["proposals"][number];
+
+// --- Requirements from designs (IA-18, ADR-0037) ------------------------------
+
+/** A region of an image, 0..1 of its size. A region outside the image is
+ *  dropped, not the requirement: it only helps to find the place. */
+const region = z
+  .object({
+    x: z.coerce.number().min(0).max(1),
+    y: z.coerce.number().min(0).max(1),
+    w: z.coerce.number().gt(0).max(1),
+    h: z.coerce.number().gt(0).max(1),
+  })
+  .refine((r) => r.x + r.w <= 1.001 && r.y + r.h <= 1.001);
+
+export const designExtractionSchema = z.object({
+  screens: z
+    .array(z.object({ item: itemNumber, name: line(200), purpose: line(300).optional() }))
+    .max(40)
+    .default([]),
+  candidates: z
+    .array(
+      z.object({
+        title: line(200),
+        description: z.string().trim().min(1).max(2000),
+        priority: requirementPriority,
+        kind: z.enum(["functional", "non-functional", "constraint"]).optional().catch(undefined),
+        basis: z.enum(["stated", "inferred"]).catch("inferred"),
+        acceptance: z.array(line(300)).max(10).default([]),
+        assumptions: z.array(line(300)).max(5).default([]),
+        questions: z.array(line(300)).max(5).default([]),
+        evidence: z
+          .array(
+            z.object({
+              item: itemNumber,
+              page: z.coerce.number().int().min(1).optional().catch(undefined),
+              region: region.optional().catch(undefined),
+              quote: z.string().trim().max(200).optional(),
+            }),
+          )
+          .min(1)
+          .max(5),
+      }),
+    )
+    .max(40)
+    .default([]),
+  reason,
+});
+
+export type DesignExtraction = z.infer<typeof designExtractionSchema>;

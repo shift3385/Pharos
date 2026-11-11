@@ -1176,6 +1176,7 @@ const AUDITED: &[&str] = &[
     "requirement::requirement_delete",
     "requirement::requirement_import",
     "requirement::requirement_risk_set",
+    "requirement_attachments::requirement_attachment_add",
     "runs::run_create",
     "runs::run_update",
     "runs::run_items_add",
@@ -1296,6 +1297,15 @@ const EXEMPT: &[(&str, &str)] = &[
     ("diag::diag_export", "read"),
     ("downloads::download_dir_get", "read"),
     ("downloads::download_dir_pick", "a setting"),
+    (
+        "project_scan::project_scan_pick",
+        "reads a folder; changes nothing",
+    ),
+    ("project_scan::project_scan_read", "a read"),
+    (
+        "project_scan::project_scan_close",
+        "forgets a picked folder; changes nothing",
+    ),
     ("downloads::download_dir_reset", "a setting"),
     ("downloads::download_save", "writes a file the user exports"),
     (
@@ -1355,6 +1365,10 @@ const EXEMPT: &[(&str, &str)] = &[
         "read (writes a file the user exports)",
     ),
     ("runs::manual::execution_attachment_preview", "read"),
+    (
+        "requirement_attachments::requirement_attachment_preview",
+        "read",
+    ),
     (
         "home_metrics::home_metrics",
         "read (Inicio metrics, RED-W6)",
@@ -1516,6 +1530,24 @@ fn every_audited_command_leaves_an_event() {
     step("requirement::requirement_risk_set", &mut |tx| {
         requirement::set_risk(tx, &req, Some(3), Some(4), U)
     });
+    step(
+        "requirement_attachments::requirement_attachment_add",
+        &mut |tx| {
+            let x = crate::evidence::Stored {
+                sha256: crate::audit::sha256_hex(b"req-source"),
+                size: 1,
+            };
+            crate::requirement_attachments::add_attachment(
+                tx,
+                "ratt",
+                &req,
+                U,
+                "boceto.webp",
+                Some("image/webp"),
+                &x,
+            )
+        },
+    );
     let run_input = |title: &str| -> crate::runs::RunInput {
         serde_json::from_value(json!({"projectId": p, "title": title, "userId": U})).unwrap()
     };
