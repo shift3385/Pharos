@@ -2950,6 +2950,593 @@
           }
         ]
       }
+    },
+    {
+      "name": "TRZ-04: the project's own risk bands and the coverage weighted by risk",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "RUN-001",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "t1",
+            "runId": "R1",
+            "testKey": "k1",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F1"
+          },
+          {
+            "id": "t2",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:01:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F2"
+          },
+          {
+            "id": "t3",
+            "runId": "R1",
+            "testKey": "k3",
+            "status": "other",
+            "finishedAt": "2026-11-01T10:02:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W1"
+          },
+          {
+            "id": "t4",
+            "runId": "R1",
+            "testKey": "k4",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:03:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W2"
+          },
+          {
+            "id": "t5",
+            "runId": "R1",
+            "testKey": "k5",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:04:00Z",
+            "imported": true,
+            "caseId": "C3"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "ATS_1",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-1"
+            ]
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "ATS_2",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-2"
+            ]
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "ATS_3",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-3"
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-1",
+            "title": "Medium",
+            "priority": "medium",
+            "riskLikelihood": 3,
+            "riskImpact": 3
+          },
+          {
+            "id": "Q2",
+            "requirementKey": "REQ-2",
+            "title": "Low",
+            "priority": "low",
+            "riskLikelihood": 2,
+            "riskImpact": 2
+          },
+          {
+            "id": "Q3",
+            "requirementKey": "REQ-3",
+            "title": "Medium edge",
+            "priority": "low",
+            "riskLikelihood": 3,
+            "riskImpact": 4
+          },
+          {
+            "id": "Q4",
+            "requirementKey": "REQ-4",
+            "title": "Unassessed",
+            "priority": "low"
+          }
+        ],
+        "defects": [
+          {
+            "id": "D1",
+            "defectKey": "DEF-001",
+            "severity": "major",
+            "status": "deferred",
+            "caseIds": [
+              "C1"
+            ]
+          },
+          {
+            "id": "D2",
+            "defectKey": "DEF-002",
+            "severity": "trivial",
+            "status": "rejected",
+            "caseIds": [
+              "C2"
+            ]
+          },
+          {
+            "id": "D3",
+            "defectKey": "DEF-003",
+            "severity": "minor",
+            "status": "open",
+            "caseIds": [],
+            "requirementIds": [
+              "Q3"
+            ]
+          }
+        ],
+        "riskBands": {
+          "low": 9,
+          "medium": 11
+        }
+      },
+      "filter": {
+        "projectId": "P",
+        "dayStarts": [
+          1793491200000
+        ]
+      },
+      "expected": {
+        "coverage": {
+          "requirements": 4,
+          "covered": 3,
+          "riskBands": {
+            "low": 9,
+            "medium": 11
+          },
+          "byRisk": {
+            "high": {
+              "requirements": 1
+            },
+            "medium": {
+              "requirements": 0
+            },
+            "low": {
+              "requirements": 2
+            },
+            "unassessed": {
+              "requirements": 1
+            }
+          },
+          "weighted": {
+            "totalWeight": 25,
+            "coveredWeight": 25,
+            "coverageRatio": 1,
+            "unassessed": 1
+          }
+        },
+        "requirements": [
+          {
+            "requirementKey": "REQ-1",
+            "riskLevel": 9,
+            "riskBand": "low"
+          },
+          {
+            "requirementKey": "REQ-2",
+            "riskLevel": 4,
+            "riskBand": "low"
+          },
+          {
+            "requirementKey": "REQ-3",
+            "riskLevel": 12,
+            "riskBand": "high"
+          },
+          {
+            "requirementKey": "REQ-4",
+            "riskLevel": null,
+            "riskBand": "unassessed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TRZ-04: invalid project bands fall back to the defaults (4 and 12)",
+      "kind": "summary",
+      "project": {
+        "projectId": "P",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "RUN-001",
+            "trigger": "import",
+            "status": "completed",
+            "createdAt": "2026-11-01 09:00:00"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "t1",
+            "runId": "R1",
+            "testKey": "k1",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F1"
+          },
+          {
+            "id": "t2",
+            "runId": "R1",
+            "testKey": "k2",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:01:00Z",
+            "imported": true,
+            "caseId": "C1",
+            "flowId": "F2"
+          },
+          {
+            "id": "t3",
+            "runId": "R1",
+            "testKey": "k3",
+            "status": "other",
+            "finishedAt": "2026-11-01T10:02:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W1"
+          },
+          {
+            "id": "t4",
+            "runId": "R1",
+            "testKey": "k4",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:03:00Z",
+            "imported": true,
+            "caseId": "C2",
+            "rowId": "W2"
+          },
+          {
+            "id": "t5",
+            "runId": "R1",
+            "testKey": "k5",
+            "status": "skipped",
+            "finishedAt": "2026-11-01T10:04:00Z",
+            "imported": true,
+            "caseId": "C3"
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_1",
+            "title": "ATS_1",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-1"
+            ]
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_2",
+            "title": "ATS_2",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-2"
+            ]
+          },
+          {
+            "id": "C3",
+            "scenarioId": "ATS_3",
+            "title": "ATS_3",
+            "status": "approved",
+            "priority": "medium",
+            "requirementKeys": [
+              "REQ-3"
+            ]
+          }
+        ],
+        "requirements": [
+          {
+            "id": "Q1",
+            "requirementKey": "REQ-1",
+            "title": "Medium",
+            "priority": "medium",
+            "riskLikelihood": 3,
+            "riskImpact": 3
+          },
+          {
+            "id": "Q2",
+            "requirementKey": "REQ-2",
+            "title": "Low",
+            "priority": "low",
+            "riskLikelihood": 2,
+            "riskImpact": 2
+          },
+          {
+            "id": "Q3",
+            "requirementKey": "REQ-3",
+            "title": "Medium edge",
+            "priority": "low",
+            "riskLikelihood": 3,
+            "riskImpact": 4
+          }
+        ],
+        "defects": [
+          {
+            "id": "D1",
+            "defectKey": "DEF-001",
+            "severity": "major",
+            "status": "deferred",
+            "caseIds": [
+              "C1"
+            ]
+          },
+          {
+            "id": "D2",
+            "defectKey": "DEF-002",
+            "severity": "trivial",
+            "status": "rejected",
+            "caseIds": [
+              "C2"
+            ]
+          },
+          {
+            "id": "D3",
+            "defectKey": "DEF-003",
+            "severity": "minor",
+            "status": "open",
+            "caseIds": [],
+            "requirementIds": [
+              "Q3"
+            ]
+          }
+        ],
+        "riskBands": {
+          "low": 12,
+          "medium": 3
+        }
+      },
+      "filter": {
+        "projectId": "P",
+        "dayStarts": [
+          1793491200000
+        ]
+      },
+      "expected": {
+        "coverage": {
+          "riskBands": {
+            "low": 4,
+            "medium": 12
+          },
+          "byRisk": {
+            "medium": {
+              "requirements": 2
+            },
+            "low": {
+              "requirements": 1
+            }
+          },
+          "weighted": {
+            "totalWeight": 25,
+            "unassessed": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "RED-W4: a window with toIndex ends before that day (the previous period); one that ends where it starts is left out",
+      "kind": "home",
+      "projects": [
+        {
+          "projectId": "P1",
+          "runs": [
+            {
+              "id": "R1",
+              "runKey": "RUN-001",
+              "title": "A",
+              "trigger": "import",
+              "status": "completed",
+              "createdAt": "2026-11-05 09:00:00"
+            }
+          ],
+          "attempts": [
+            {
+              "id": "h1",
+              "runId": "R1",
+              "testKey": "k1",
+              "attempt": 0,
+              "status": "failed",
+              "finishedAt": "2026-11-05T00:00:00Z",
+              "imported": true,
+              "caseId": "C1"
+            },
+            {
+              "id": "h2",
+              "runId": "R1",
+              "testKey": "k1",
+              "attempt": 1,
+              "status": "passed",
+              "finishedAt": "2026-11-06T01:00:00Z",
+              "imported": true,
+              "caseId": "C1"
+            },
+            {
+              "id": "h4",
+              "runId": "R1",
+              "testKey": "k4",
+              "status": "blocked",
+              "finishedAt": "2026-11-06T00:00:00Z",
+              "imported": true,
+              "caseId": "C4"
+            },
+            {
+              "id": "h9",
+              "runId": "R1",
+              "testKey": "k9",
+              "status": "failed",
+              "finishedAt": "2026-11-07T00:00:00Z",
+              "imported": true,
+              "caseId": "C3"
+            },
+            {
+              "id": "hu",
+              "runId": "R1",
+              "testKey": "unlinked",
+              "status": "passed",
+              "imported": true
+            },
+            {
+              "id": "hd",
+              "runId": "RDELETED",
+              "testKey": "k4",
+              "status": "failed",
+              "finishedAt": "2026-11-06T02:00:00Z",
+              "imported": true,
+              "caseId": "C4"
+            },
+            {
+              "id": "hdu",
+              "runId": "RDELETED",
+              "testKey": "undated",
+              "status": "failed",
+              "imported": true
+            }
+          ],
+          "cases": [
+            {
+              "id": "C1",
+              "scenarioId": "ATS_1",
+              "title": "One",
+              "status": "approved",
+              "priority": "high"
+            },
+            {
+              "id": "C2",
+              "scenarioId": "ATS_2",
+              "title": "Two",
+              "status": "approved",
+              "priority": "critical"
+            },
+            {
+              "id": "C3",
+              "scenarioId": "ATS_3",
+              "title": "Three",
+              "status": "approved",
+              "priority": "low"
+            },
+            {
+              "id": "C4",
+              "scenarioId": "ATS_4",
+              "title": "Four",
+              "status": "approved",
+              "priority": "medium"
+            },
+            {
+              "id": "C5",
+              "scenarioId": "ATS_5",
+              "title": "Five",
+              "status": "approved",
+              "priority": "low"
+            }
+          ]
+        },
+        {
+          "projectId": "P2"
+        }
+      ],
+      "request": {
+        "dayStarts": [
+          1793833200000,
+          1793919600000
+        ],
+        "now": 1793966400000,
+        "windows": [
+          {
+            "id": "today",
+            "fromIndex": 1
+          },
+          {
+            "id": "prev:today",
+            "fromIndex": 0,
+            "toIndex": 1
+          },
+          {
+            "id": "empty",
+            "fromIndex": 1,
+            "toIndex": 1
+          },
+          {
+            "id": "past",
+            "fromIndex": 0,
+            "toIndex": 9
+          }
+        ],
+        "queueLimit": 1
+      },
+      "expected": {
+        "windows": {
+          "today": {
+            "passed": 1,
+            "failed": 0,
+            "blocked": 1,
+            "executed": 2,
+            "passRate": 0.5
+          },
+          "prev:today": {
+            "passed": 0,
+            "failed": 1,
+            "blocked": 0,
+            "executed": 1,
+            "passRate": 0
+          },
+          "empty": null,
+          "past": {
+            "passed": 1,
+            "failed": 0,
+            "blocked": 1,
+            "executed": 2,
+            "passRate": 0.5
+          }
+        }
+      }
     }
   ]
 }

@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import { projectPath } from "@modules/projects";
 import { Skeleton } from "@shared/ui/Skeleton";
-import type { HomeKpis, HomeProject, Period } from "./model/homeData";
+import { isoDay, shortDate, type HomeKpis, type HomeProject, type Period } from "./model/homeData";
+import { previousRange, rateDelta } from "./model/compare";
+import { DeltaChip } from "./DeltaChip";
 import type { ExecutionKpis } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 
@@ -35,6 +37,11 @@ export interface KpiProps {
   /** On the board (UX-27) an indicator has 4 rows: the unlinked tests go in
    *  a short badge at its top instead of a line under it. */
   compact?: boolean;
+  /** «Comparar con el periodo anterior» (RED-W4): the pass rate shows its
+   *  difference with the previous period, on the number's row. */
+  compare?: boolean;
+  /** Today, for the previous period's dates (RED-W4). */
+  today?: Date;
 }
 
 /** Indicators of the Home (SPEC §8 «Inicio · indicadores») in a row, all
@@ -64,6 +71,8 @@ export function KpiCard({
   projects,
   projectsLoading = false,
   compact = false,
+  compare = false,
+  today = new Date(),
 }: KpiProps & { id: KpiId }) {
   const { t, i18n } = useTranslation();
   // With a single project the cards go straight into it.
@@ -133,6 +142,40 @@ export function KpiCard({
         testId="kpi-pending"
       />
     );
+  // RED-W4: the pass rate against the previous period of the same length.
+  const previous = ready ? exec.previousRate : null;
+  const rateCompare =
+    compare && ready && hasRate ? (
+      <DeltaChip
+        delta={rateDelta(rate?.passRate, previous?.passRate)}
+        kind="rate"
+        compact={compact}
+        said={previousRateText(previous?.passRate ?? null)}
+        testId="kpi-rate-delta"
+      />
+    ) : undefined;
+  function previousRateText(prev: number | null) {
+    const { from, to } = previousRange(period, today);
+    const dates = t("dashboard.compare.range", {
+      from: shortDate(isoDay(from), i18n.resolvedLanguage),
+      to: shortDate(isoDay(to), i18n.resolvedLanguage),
+    });
+    if (prev === null) return t("dashboard.compare.rateNone", { dates });
+    const pct = new Intl.NumberFormat(i18n.resolvedLanguage, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(prev * 100);
+    const d = rateDelta(rate?.passRate, prev)!;
+    return t(`dashboard.compare.rate_${d.direction}`, {
+      points: new Intl.NumberFormat(i18n.resolvedLanguage, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }).format(Math.abs(d.value)),
+      previous: pct,
+      dates,
+    });
+  }
+
   if (id === "kpiRate")
     return (
       <div className="home-kpi-stack">
@@ -143,6 +186,7 @@ export function KpiCard({
           title={t("dashboard.kpi.rateTitle", { period: periodText })}
           value={rateValue}
           unit={hasRate ? "%" : undefined}
+          delta={rateCompare}
           note={
             !ready
               ? unknownNote
@@ -202,6 +246,7 @@ function Kpi({
   note,
   noteTone,
   testId,
+  delta,
 }: {
   to: string;
   icon: LucideIcon;
@@ -209,6 +254,8 @@ function Kpi({
   title: string;
   value: ReactNode;
   unit?: string;
+  /** The difference with the previous period (RED-W4), after the value. */
+  delta?: ReactNode;
   note: ReactNode;
   noteTone?: "error" | "warning";
   testId: string;
@@ -225,6 +272,7 @@ function Kpi({
       <span className="home-kpi__value">
         <span className="home-kpi__num">{value}</span>
         {unit && <span className="home-kpi__unit">{unit}</span>}
+        {delta}
       </span>
       <span className="home-kpi__note" data-tone={noteTone}>
         {note}

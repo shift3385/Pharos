@@ -12,6 +12,7 @@ import {
   queueRows,
 } from "./metrics";
 import { counts, day, homeMetrics, projectMetrics, ref, rollup } from "./metricsFixture";
+import { countDelta, previousRange, rateDelta } from "./compare";
 
 const now = new Date(2026, 9, 29, 10, 0); // 29 Oct 2026, 10:00 local
 
@@ -30,28 +31,35 @@ const banca = project({ id: "amb", name: "Banca" });
 const HOUR = 3_600_000;
 
 describe("home metrics request (RED-W6)", () => {
-  it("covers 30 local days ending today, as local midnights", () => {
+  it("covers twice 30 local days ending today, as local midnights (RED-W4)", () => {
     const r = metricsRequest(now);
-    expect(r.dayStarts).toHaveLength(30);
+    expect(r.dayStarts).toHaveLength(60);
     expect(r.dayStarts.at(-1)).toBe(new Date(2026, 9, 29).getTime());
-    expect(r.dayStarts[0]).toBe(new Date(2026, 8, 30).getTime());
+    expect(r.dayStarts[30]).toBe(new Date(2026, 8, 30).getTime());
+    expect(r.dayStarts[0]).toBe(new Date(2026, 7, 31).getTime());
     expect(r.now).toBe(now.getTime());
   });
 
-  it("gives every period its first day as an index into the days", () => {
+  it("gives every period its first day, and its previous period of the same length (RED-W4)", () => {
     expect(metricsRequest(now).windows).toEqual([
-      { id: "today", fromIndex: 29 },
-      { id: "7d", fromIndex: 23 },
-      { id: "14d", fromIndex: 16 },
-      { id: "30d", fromIndex: 0 },
-      { id: "month", fromIndex: 1 },
+      { id: "today", fromIndex: 59 },
+      { id: "prev-today", fromIndex: 58, toIndex: 59 },
+      { id: "7d", fromIndex: 53 },
+      { id: "prev-7d", fromIndex: 46, toIndex: 53 },
+      { id: "14d", fromIndex: 46 },
+      { id: "prev-14d", fromIndex: 32, toIndex: 46 },
+      { id: "30d", fromIndex: 30 },
+      { id: "prev-30d", fromIndex: 0, toIndex: 30 },
+      { id: "month", fromIndex: 31 },
+      { id: "prev-month", fromIndex: 2, toIndex: 31 },
     ]);
   });
 
-  it("covers the whole month on the 31st", () => {
+  it("covers the whole month and the 31 days before it on the 31st", () => {
     const r = metricsRequest(new Date(2026, 9, 31, 8));
-    expect(r.dayStarts).toHaveLength(31);
-    expect(r.windows.find((w) => w.id === "month")?.fromIndex).toBe(0);
+    expect(r.dayStarts).toHaveLength(62);
+    expect(r.windows.find((w) => w.id === "month")?.fromIndex).toBe(31);
+    expect(r.windows.find((w) => w.id === "prev-month")).toEqual({ id: "prev-month", fromIndex: 0, toIndex: 31 });
   });
 
   it("keys the cache by user and local day", () => {
@@ -104,11 +112,41 @@ describe("home metrics request (RED-W6)", () => {
   });
 });
 
+describe("comparing with the previous period (RED-W4)", () => {
+  it("takes the previous period's days right before the period's, by position", () => {
+    const m = homeMetrics();
+    m.daily[53] = day({ passed: 2, manual: 2 }); // the first of the last 7
+    m.daily[46] = day({ failed: 3, imported: 3 }); // the first of the 7 before
+    const current = dailySeries(m, "7d", now);
+    const previous = dailySeries(m, "7d", now, true);
+    expect(previous).toHaveLength(7);
+    expect(previous[0].day).toEqual(new Date(2026, 9, 16));
+    expect(previous[6].day).toEqual(new Date(2026, 9, 22));
+    expect(current[0].total).toBe(2);
+    expect(previous[0].total).toBe(3);
+  });
+
+  it("rates differ in points with one decimal, counts in a whole percent, never against zero", () => {
+    expect(rateDelta(0.873, 0.831)).toEqual({ value: 4.2, direction: "up" });
+    expect(rateDelta(0.5, 0.75)).toEqual({ value: -25, direction: "down" });
+    expect(rateDelta(0.5, 0.5)).toEqual({ value: 0, direction: "flat" });
+    expect(rateDelta(0.5, null)).toBeNull();
+    expect(countDelta(312, 264)).toEqual({ value: 0.18, direction: "up" });
+    expect(countDelta(3, 0)).toBeNull();
+  });
+
+  it("the previous period of «Hoy» is yesterday and of «Este mes» the same number of days before the 1st", () => {
+    expect(previousRange("today", now)).toEqual({ from: new Date(2026, 9, 28), to: new Date(2026, 9, 28) });
+    // 1-29 Oct (29 days) against 2-30 Sep.
+    expect(previousRange("month", now)).toEqual({ from: new Date(2026, 8, 2), to: new Date(2026, 8, 30) });
+  });
+});
+
 describe("home metrics mappers (RED-W6)", () => {
   it("takes the last days of the payload for the period", () => {
     const m = homeMetrics();
-    m.daily[29] = day({ passed: 3, failed: 1, blocked: 1, manual: 2, imported: 3 });
-    m.daily[22] = day({ passed: 9, manual: 9 });
+    m.daily[59] = day({ passed: 3, failed: 1, blocked: 1, manual: 2, imported: 3 });
+    m.daily[52] = day({ passed: 9, manual: 9 });
     const week = dailySeries(m, "7d", now);
     expect(week).toHaveLength(7);
     expect(week[6]).toMatchObject({ total: 5, passed: 3, others: 1 });
@@ -128,7 +166,10 @@ describe("home metrics mappers (RED-W6)", () => {
 
   it("sums pending (not run + blocked), defects and the period's rate from the metrics only", () => {
     const m = homeMetrics({
-      windows: { "7d": rollup({ passed: 4, failed: 1, executed: 5, passRate: 0.8 }) },
+      windows: {
+        "7d": rollup({ passed: 4, failed: 1, executed: 5, passRate: 0.8 }),
+        "prev-7d": rollup({ passed: 1, failed: 1, executed: 2, passRate: 0.5 }),
+      },
       projects: [
         projectMetrics("pcl", {
           counts: counts({ passed: 1, blocked: 1, notRun: 1, total: 3, executed: 2 }),
@@ -144,6 +185,7 @@ describe("home metrics mappers (RED-W6)", () => {
       openDefects: 2,
       criticalDefects: 1,
       rate: m.windows["7d"],
+      previousRate: m.windows["prev-7d"],
     });
     expect(executionKpis([portal], m, "today").rate).toBeNull();
     expect(executionKpis([portal], null, "7d")).toMatchObject({ pending: 0, openDefects: 0, rate: null });

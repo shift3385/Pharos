@@ -134,6 +134,26 @@ export interface ProjectData {
   cycleItems?: CycleItemData[];
   planCriteria?: CriterionData[] | null;
   planMetrics?: PlanMetricData[] | null;
+  /** The project's risk bands (TRZ-04); absent or invalid → the defaults. */
+  riskBands?: RiskBands | null;
+}
+
+/** A level up to `low` is low, up to `medium` medium, above high. */
+export interface RiskBands {
+  low: number;
+  medium: number;
+}
+export const DEFAULT_RISK_BANDS: RiskBands = { low: 4, medium: 12 };
+
+/** The pair when `1 ≤ low < medium ≤ 24` (integers), else null. */
+export function checkedBands(low: unknown, medium: unknown): RiskBands | null {
+  return Number.isInteger(low) && Number.isInteger(medium) && 1 <= (low as number) && (low as number) < (medium as number) && (medium as number) <= 24
+    ? { low: low as number, medium: medium as number }
+    : null;
+}
+
+export function riskBandOf(level: number, bands: RiskBands): "low" | "medium" | "high" {
+  return level <= bands.low ? "low" : level <= bands.medium ? "medium" : "high";
 }
 
 export interface ExecutionFilter {
@@ -152,7 +172,8 @@ export interface HomeRequest {
   projectIds?: string[] | null;
   dayStarts: number[];
   now: number;
-  windows: { id: string; fromIndex: number }[];
+  /** RED-W4: `toIndex` ends the window before that day instead of at `now`. */
+  windows: { id: string; fromIndex: number; toIndex?: number | null }[];
   queueLimit?: number | null;
 }
 
@@ -236,6 +257,17 @@ export interface CoverageSummary {
   executed: number;
   passed: number;
   byRisk: Record<"high" | "medium" | "low" | "unassessed", RiskCoverage>;
+  riskBands: RiskBands;
+  weighted: WeightedCoverage;
+}
+/** Each assessed requirement weighs its risk level (TRZ-04, ADR-0043). */
+export interface WeightedCoverage {
+  totalWeight: number;
+  coveredWeight: number;
+  passedWeight: number;
+  coverageRatio: number | null;
+  passedRatio: number | null;
+  unassessed: number;
 }
 type Severity = "critical" | "major" | "minor" | "trivial";
 export interface DefectSummary {
@@ -1149,6 +1181,7 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     (a, b) => naturalCmp(a.requirementKey, b.requirementKey) || cmpStr(a.id, b.id),
   );
   const band = (): RiskCoverage => ({ requirements: 0, covered: 0, executed: 0, passed: 0, failed: 0 });
+  const bands = data.riskBands ? (checkedBands(data.riskBands.low, data.riskBands.medium) ?? DEFAULT_RISK_BANDS) : DEFAULT_RISK_BANDS;
   const coverage: CoverageSummary = {
     requirements: reqs.length,
     covered: 0,
@@ -1156,6 +1189,8 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     executed: 0,
     passed: 0,
     byRisk: { high: band(), medium: band(), low: band(), unassessed: band() },
+    riskBands: { ...bands },
+    weighted: { totalWeight: 0, coveredWeight: 0, passedWeight: 0, coverageRatio: null, passedRatio: null, unassessed: 0 },
   };
   const reqRows: RequirementExecution[] = [];
   for (const r of reqs) {
@@ -1171,7 +1206,7 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     const status = worst(ranked) ?? NOT_RUN;
     const level =
       r.riskLikelihood != null && r.riskImpact != null ? r.riskLikelihood * r.riskImpact : null;
-    const riskBand = level === null ? "unassessed" : level <= 4 ? "low" : level <= 12 ? "medium" : "high";
+    const riskBand = level === null ? "unassessed" : riskBandOf(level, bands);
     const defectIds = orderDefects(
       [...(defectsByRequirement.get(r.id) ?? []), ...linked.flatMap((c) => defectsByCase.get(c.id) ?? [])].map((d) => d.id),
     );
@@ -1185,6 +1220,13 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     b.executed += Number(allExecuted);
     b.passed += Number(allExecuted && status === "passed");
     b.failed += Number(status === "failed");
+    const w = coverage.weighted;
+    if (level === null) w.unassessed++;
+    else {
+      w.totalWeight += level;
+      w.coveredWeight += covered ? level : 0;
+      w.passedWeight += allExecuted && status === "passed" ? level : 0;
+    }
     reqRows.push({
       requirementId: r.id,
       requirementKey: r.requirementKey,
@@ -1204,6 +1246,8 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     });
   }
   coverage.coverageRatio = ratio(coverage.covered, coverage.requirements);
+  coverage.weighted.coverageRatio = ratio(coverage.weighted.coveredWeight, coverage.weighted.totalWeight);
+  coverage.weighted.passedRatio = ratio(coverage.weighted.passedWeight, coverage.weighted.totalWeight);
 
   const scoped = !!filter.cycleId || !!filter.testPlanId;
   const inScopeReqs = new Set(reqRows.filter((r) => r.inScope).map((r) => r.requirementId));
@@ -1432,11 +1476,15 @@ export function home(allProjects: ProjectData[], request: HomeRequest): HomeMetr
   for (const w of request.windows) {
     const start = ds[w.fromIndex];
     if (start === undefined) continue;
+    // RED-W4: with `toIndex` the window ends before that day (the previous
+    // period); without it, or past the last day, at `now`.
+    if (w.toIndex != null && w.toIndex <= w.fromIndex) continue;
+    const end = w.toIndex != null ? ds[w.toIndex] : undefined;
     const counts: WindowCounts = { ...emptyCounts(), executed: 0, passRate: null, unlinked: 0 };
     for (const data of projects) {
       const inWindow = liveAttempts(data).filter((a) => {
         const t = timeOf(a);
-        return !!t && t[0] >= start && t[0] <= request.now;
+        return !!t && t[0] >= start && t[0] <= request.now && (end === undefined || t[0] < end);
       });
       // By case, as the progress (NC-029); unlinked tests apart.
       const groups = new Map<string, AttemptData[]>();

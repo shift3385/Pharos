@@ -7,6 +7,12 @@ export type ProjectInput = { name: string, caseIdPrefix?: string, caseIdDigits?:
  */
 planExportHistory?: string, 
 /**
+ * Risk bands (TRZ-04): both or neither; None keeps what the project has
+ * (4 and 12 on a create). A pair outside `1 ≤ low < medium ≤ 24` is
+ * refused.
+ */
+riskBandLow?: number, riskBandMedium?: number, 
+/**
  * Authenticated user that owns the project (set on create; never changed
  * by an update).
  */

@@ -696,3 +696,110 @@
   font-size: var(--fs-caption);
   color: var(--color-text-secondary);
 }
+
+/* «Bandas de riesgo» (TRZ-04): two thresholds, the rest is high, and the
+   5×5 grid of likelihood × impact painted with the bands as typed. */
+.pj-bands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: 14px;
+}
+
+.pj-bands__dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+}
+
+.pj-bands__dot[data-band="low"],
+.pj-heat__cell[data-band="low"] {
+  --band: var(--color-success);
+  --band-text: var(--color-success-text);
+}
+
+.pj-bands__dot[data-band="medium"],
+.pj-heat__cell[data-band="medium"] {
+  --band: var(--color-warning);
+  --band-text: var(--color-warning-text);
+}
+
+.pj-bands__dot[data-band="high"],
+.pj-heat__cell[data-band="high"] {
+  --band: var(--color-error);
+  --band-text: var(--color-error-text);
+}
+
+.pj-bands__dot {
+  background: var(--band);
+}
+
+.pj-bands__rest {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pj-heat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.pj-heat__grid {
+  display: grid;
+  gap: 3px;
+  max-width: 360px;
+}
+
+.pj-heat__row {
+  display: grid;
+  grid-template-columns: 44px repeat(5, 1fr);
+  gap: 3px;
+}
+
+.pj-heat__cell,
+.pj-heat__axis {
+  display: grid;
+  place-items: center;
+  height: 28px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pj-heat__cell {
+  font-weight: var(--fw-semibold);
+  color: var(--band-text);
+  background: color-mix(in oklab, var(--band) 16%, transparent);
+  border-radius: 4px;
+}
+
+.pj-heat__axis {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.pj-heat__caption {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+}
+
+.pj-bands__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+[data-viewport="mobile"] .pj-bands__actions > * {
+  flex: 1 1 100%;
+}

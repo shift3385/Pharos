@@ -18,6 +18,13 @@ responsable de QA:
 Suma todos tus proyectos abiertos. Para ver uno solo, entra en él: sus cifras
 están en cada sección.
 
+**¿Vamos mejor o peor?** «Comparar con el periodo anterior», al final del menú
+del periodo, enfrenta el periodo con otro de la misma duración justo antes
+(los 7 días con los 7 anteriores, «Hoy» con ayer, «Este mes» con los mismos
+días antes del día 1). Solo comparan las cifras que dependen del periodo: la
+tasa de éxito, en puntos (pp), y las ejecuciones diarias, en %. Las demás son
+el estado de ahora.
+
 ## Tu pizarra: colócala a tu gusto
 
 En el escritorio, el Inicio es una **pizarra** de 24 columnas por 24 filas que
@@ -133,8 +140,10 @@ salieras desde otra pantalla.
   Con «Abrir el plan» puedes definir los tuyos en el paso 20.
 - **Un criterio dice «Sin datos».** Pharos no sabe medirlo solo (por ejemplo,
   uno escrito a mano que no reconoce). Compruébalo tú.
-- **«Ciclo actual», «Rango personalizado…» o «Comparar con el periodo anterior»
-  no se pueden elegir.** Llegan en una próxima versión.
+- **«Ciclo actual» o «Rango personalizado…» no se pueden elegir.** Llegan en
+  una próxima versión.
+- **Con la comparación encendida, la tasa de éxito dice «sin datos antes».**
+  En el periodo anterior no se ejecutó ningún caso: no hay con qué comparar.
 - **Falta una tarjeta del Inicio.** La ocultaste al personalizarlo. Pulsa el
   engranaje, abre «Gadgets ocultos» y elígela, o usa «Restablecer».
 - **El Inicio tiene desplazamiento en el escritorio.** O la ventana mide menos

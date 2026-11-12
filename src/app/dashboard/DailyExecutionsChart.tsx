@@ -6,6 +6,9 @@ import { Skeleton } from "@shared/ui/Skeleton";
 import { DailyLinesChart } from "./DailyLinesChart";
 import type { Period } from "./model/homeData";
 import { dailySeries } from "./model/metrics";
+import { countDelta, previousRange } from "./model/compare";
+import { isoDay, shortDate } from "./model/homeData";
+import { DeltaChip } from "./DeltaChip";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
 import { GadgetFitContext } from "./model/fitRows";
@@ -20,11 +23,15 @@ export function DailyExecutionsChart({
   today,
   state,
   onRetry,
+  compare = false,
 }: {
   period: Period;
   today: Date;
   state: MetricsState;
   onRetry: () => void;
+  /** RED-W4: the previous period as a dashed total line, a delta by the
+   *  total and an «Anterior» column. */
+  compare?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   // On the board (UX-28) the data opens in a dialog instead of a disclosure.
@@ -33,6 +40,25 @@ export function DailyExecutionsChart({
   const lang = i18n.resolvedLanguage;
   const points = dailySeries(state.data, period, today);
   const total = points.reduce((n, p) => n + p.total, 0);
+  const previous = compare ? dailySeries(state.data, period, today, true) : null;
+  const previousTotal = previous?.reduce((n, p) => n + p.total, 0) ?? 0;
+  const range = previousRange(period, today);
+  const dates = t("dashboard.compare.range", {
+    from: shortDate(isoDay(range.from), lang),
+    to: shortDate(isoDay(range.to), lang),
+  });
+  const totalDelta = previous ? countDelta(total, previousTotal) : null;
+  const totalSaid = !previous
+    ? ""
+    : totalDelta
+      ? t(`dashboard.compare.count_${totalDelta.direction}`, {
+          percent: new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 }).format(
+            Math.abs(totalDelta.value),
+          ),
+          previous: new Intl.NumberFormat(lang).format(previousTotal),
+          dates,
+        })
+      : t("dashboard.compare.countNone", { dates });
   const undated = state.data?.undated ?? 0;
   const ready = state.status === "ready";
   const periodText = t(`dashboard.period.lower.${period}`);
@@ -62,12 +88,14 @@ export function DailyExecutionsChart({
             <th scope="col">{t("dashboard.daily.other")}</th>
             <th scope="col">{t("dashboard.daily.colManual")}</th>
             <th scope="col">{t("dashboard.daily.colImported")}</th>
+            {previous && <th scope="col">{t("dashboard.compare.colPrevious")}</th>}
           </tr>
         </thead>
         <tbody>
           {points
-            .filter((p) => p.total)
-            .map((p) => (
+            .map((p, i) => ({ p, before: previous?.[i] }))
+            .filter(({ p, before }) => p.total || before?.total)
+            .map(({ p, before }) => (
               <tr key={p.day.toISOString()}>
                 <th scope="row">{longDate.format(p.day)}</th>
                 <td>{p.passed}</td>
@@ -75,6 +103,7 @@ export function DailyExecutionsChart({
                 <td>{p.others}</td>
                 <td>{p.manual}</td>
                 <td>{p.imported}</td>
+                {previous && <td>{before?.total ?? 0}</td>}
               </tr>
             ))}
         </tbody>
@@ -116,7 +145,12 @@ export function DailyExecutionsChart({
             data-testid="home-daily-total"
           >
             {ready ? (
-              num.format(total)
+              <>
+                {num.format(total)}
+                {previous && (
+                  <DeltaChip delta={totalDelta} kind="count" said={totalSaid} testId="home-daily-delta" />
+                )}
+              </>
             ) : state.status === "loading" ? (
               <Skeleton width={44} height={24} />
             ) : (
@@ -128,6 +162,7 @@ export function DailyExecutionsChart({
 
       <DailyLinesChart
         points={points}
+        previous={previous}
         status={
           state.status === "ready"
             ? "ready"
@@ -152,7 +187,7 @@ export function DailyExecutionsChart({
           (a chart is an image): a disclosure with the table. On the board the
           gadget never grows (UX-28), so the table opens in a dialog there. */}
       {ready &&
-        (total > 0 || undated > 0) &&
+        (total > 0 || undated > 0 || previousTotal > 0) &&
         (fit ? (
           <>
             <button

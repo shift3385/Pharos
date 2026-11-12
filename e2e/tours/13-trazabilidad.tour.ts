@@ -81,6 +81,21 @@ chapter("trazabilidad", () => {
     },
   });
 
+  step("ponderada", {
+    title: "Cobertura ponderada por riesgo",
+    caption:
+      "«Cobertura ponderada» pesa cada requisito por su nivel de riesgo (probabilidad × impacto): cubrir uno de nivel 20 cuenta cinco veces más que uno de nivel 4, así un hueco en lo más arriesgado se nota más que en lo trivial. Debajo pone la «aprobada» (los requisitos con todos sus casos ejecutados y en Pasa) y cuántos requisitos sin evaluar quedan fuera; el ⓘ enseña la cuenta y las bandas del proyecto (capítulo 14). Bajo las cifras, una barra por banda —alto, medio, bajo y sin evaluar— dice cuántos requisitos de cada una tienen caso. Sigue los filtros de ciclo, configuración, build y entorno, como el informe de estado.",
+    covers: ["action:matrix-weighted"],
+    focus: ['[data-testid="tz-weighted"]', '[data-testid="tz-bands"]'],
+    run: async () => {
+      await expect(byTestId("tz-weighted")).toBeDisplayed();
+      await browser.waitUntil(async () => (await byTestId("tz-weighted").getText()).includes("%"), {
+        timeoutMsg: "the weighted coverage has no value",
+      });
+      await expect(byTestId("tz-bands")).toBeDisplayed();
+    },
+  });
+
   step("huecos", {
     title: "Solo los huecos",
     caption:

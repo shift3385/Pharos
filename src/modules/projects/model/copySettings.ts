@@ -5,7 +5,7 @@
 //
 // The case-key digits are a field of «Datos generales» (prefilled from the
 // source, editable) and «Historial en el plan exportado» travels in the create
-// itself; the custom fields (every entity, FLD-03) and the evidence retention
+// itself, as do the risk bands (TRZ-04); the custom fields (every entity, FLD-03) and the evidence retention
 // (desktop only, DAT-03c) are copied right after, each on its own: one that
 // fails does not stop the others nor undo the project.
 import {
@@ -15,6 +15,7 @@ import {
 } from "@modules/custom-fields";
 import type { EvidenceRetention } from "@shared/contracts/contract";
 import { projectApi } from "../api/projectApi";
+import { projectRiskBands } from "@shared/risk/bands";
 import type { PlanExportHistory, ProjectInput } from "./types";
 
 /** What can be copied, in the order the wizard lists it. */
@@ -22,6 +23,7 @@ export const COPY_PARTS = [
   "fields",
   "digits",
   "planHistory",
+  "riskBands",
   "retention",
 ] as const;
 export type CopyPart = (typeof COPY_PARTS)[number];
@@ -40,6 +42,15 @@ export interface CopySource {
   id: string;
   caseIdDigits: number;
   planExportHistory?: PlanExportHistory;
+  riskBandLow?: number;
+  riskBandMedium?: number;
+}
+
+/** The source's risk bands as a create input (TRZ-04); the defaults when it
+ *  has none. */
+function riskBandsInput(source: CopySource): Pick<ProjectInput, "riskBandLow" | "riskBandMedium"> {
+  const bands = projectRiskBands(source);
+  return { riskBandLow: bands.low, riskBandMedium: bands.medium };
 }
 
 /** «Datos generales» of the wizard: always the new project's own. */
@@ -65,6 +76,9 @@ export function newProjectInput(
     caseIdDigits: data.digits,
     ...(source && parts.has("planHistory")
       ? { planExportHistory: source.planExportHistory ?? "current" }
+      : {}),
+    ...(source && parts.has("riskBands")
+      ? riskBandsInput(source)
       : {}),
   };
 }

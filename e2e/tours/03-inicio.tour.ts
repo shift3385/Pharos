@@ -70,7 +70,7 @@ chapter("inicio", () => {
   step("periodo", {
     title: "El periodo de los datos",
     caption:
-      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo, el rango personalizado y la comparación con el periodo anterior llegan en una próxima versión.",
+      "El selector de periodo («Últimos 14 días», por defecto) decide qué días cuentan para la tasa de éxito y para «Ejecuciones diarias»: hoy, los últimos 7, 14 o 30 días, o el mes en curso. Las demás cifras son el estado actual de cada proyecto. Pharos recuerda el periodo en este equipo. Las opciones por ciclo y el rango personalizado llegan en una próxima versión.",
     covers: ["action:home-period"],
     focus: ['[data-testid="home-period"]', '[role="menu"]'],
     run: async () => {
@@ -82,6 +82,28 @@ chapter("inicio", () => {
       await expect(byTestId("home-period")).toHaveText(expect.stringContaining(es.dashboard.period["7d"]));
       // The period really filters: 7 days → 7 rows in the chart's data.
       await browser.waitUntil(async () => (await $$(".home-daily .home-lines__data tbody tr")).length === 7);
+    },
+  });
+
+  step("comparar", {
+    title: "Comparar con el periodo anterior",
+    caption:
+      "Al final del menú del periodo, «Comparar con el periodo anterior» enfrenta el periodo con otro de la misma duración justo antes: los 7 días con los 7 anteriores, «Hoy» con ayer y «Este mes» con los mismos días antes del día 1; debajo del interruptor ves sus fechas. Encendido, el botón del periodo dice «vs anterior», la «Tasa de éxito» muestra la diferencia en puntos (▲ en verde si sube, ▼ en rojo si baja) y «Ejecuciones diarias» suma una línea gris de puntos con el total de cada día del periodo anterior, su diferencia en % junto al total y una columna «Anterior» en «Ver los datos». Las demás cifras son el estado de ahora y no cambian. El interruptor no cierra el menú, y Pharos lo recuerda en este equipo, como el periodo.",
+    covers: ["action:home-compare"],
+    focus: ['[data-testid="home-period"]', '[role="menu"]', '[data-gadget="kpiRate"]', "section.home-daily"],
+    run: async () => {
+      await byTestId("home-period").click();
+      const compare = byTestId("period-compare");
+      await expect(compare).toBeDisplayed();
+      await compare.click();
+      await expect(compare).toHaveAttribute("aria-checked", "true");
+      await expect(byTestId("home-period-compare")).toBeDisplayed();
+    },
+    after: async () => {
+      // Back off, so the next pictures show the board as it was.
+      await byTestId("period-compare").click();
+      await browser.keys("Escape");
+      await expect(byTestId("home-period-compare")).not.toBeExisting();
     },
   });
 

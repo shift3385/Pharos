@@ -1088,7 +1088,28 @@
       "planHistoryDesc_current": "Como hasta ahora: la cabecera con la versión, la fecha, el autor y el estado vigentes.",
       "planHistoryDesc_revisions": "Añade una tabla con una fila por persona y día: su último guardado, el estado y las secciones que cambió.",
       "planHistorySaved": "Ajuste del historial guardado.",
-      "planHistoryFailed": "No se pudo guardar el ajuste del historial."
+      "planHistoryFailed": "No se pudo guardar el ajuste del historial.",
+      "riskBands": {
+        "title": "Bandas de riesgo",
+        "desc": "El nivel de riesgo de un requisito es probabilidad × impacto (1–25), según ISTQB. Elige hasta qué nivel es bajo y hasta cuál es medio; el resto es alto. Cambiarlas no toca ningún dato: cambia cómo se leen la matriz, su orden por riesgo y el informe.",
+        "lowUpTo": "Bajo: hasta",
+        "mediumUpTo": "Medio: hasta",
+        "high": "Alto",
+        "highRange": "{{from}} a {{to}}",
+        "impactShort": "I",
+        "likelihoodShort": "P",
+        "cells": "Impacto (I) por probabilidad (P). Con estas bandas: {{low}} celdas bajas, {{medium}} medias y {{high}} altas.",
+        "reset": "Restablecer ({{low}} y {{medium}})",
+        "saved": "Bandas de riesgo guardadas.",
+        "failed": "No se pudieron guardar las bandas de riesgo.",
+        "error": {
+          "integer": "Escribe un número entero.",
+          "lowRange": "El bajo empieza en 1.",
+          "mediumRange": "El medio llega como mucho a {{max}}, para que el alto tenga al menos un nivel.",
+          "order": "El bajo tiene que ser menor que el medio."
+        },
+        "save": "Guardar bandas"
+      }
     },
     "prefix": {
       "required": "Escribe un prefijo, por ejemplo «PHA-».",
@@ -1137,7 +1158,8 @@
         "fields": "Campos personalizados",
         "digits": "Dígitos del número de caso",
         "planHistory": "Historial en el plan exportado",
-        "retention": "Retención de evidencias"
+        "retention": "Retención de evidencias",
+        "riskBands": "Bandas de riesgo"
       },
       "value": {
         "loading": "Leyendo…",
@@ -1146,7 +1168,8 @@
         "fieldsOf": "{{count}} de {{entity}}",
         "retentionDefault": "Los valores por defecto",
         "retentionKind": "{{kind}}: {{days}}",
-        "desktopOnly": "Solo en la app de escritorio: en la web no hay retención de evidencias"
+        "desktopOnly": "Solo en la app de escritorio: en la web no hay retención de evidencias",
+        "riskBands": "Bajo hasta {{low}} · medio hasta {{medium}}"
       },
       "never": "Nunca se copian el nombre, el prefijo ni los datos (plan, casos, requisitos, ejecuciones).",
       "copiedFrom": "copiado de {{name}}",
@@ -1156,7 +1179,8 @@
         "fields": "los campos personalizados",
         "digits": "los dígitos del número ({{digits}})",
         "planHistory": "el historial en el plan exportado ({{mode}})",
-        "retention": "la retención de evidencias"
+        "retention": "la retención de evidencias",
+        "riskBands": "las bandas de riesgo (bajo hasta {{low}}, medio hasta {{medium}})"
       },
       "next": "Siguiente",
       "back": "Atrás",
@@ -2134,7 +2158,6 @@
       "custom": "Rango personalizado…",
       "soonTitle": "Próximamente: usará los ciclos y rangos del plan",
       "compare": "Comparar con el periodo anterior",
-      "compareTitle": "Próximamente: comparará con el periodo anterior",
       "lower": {
         "today": "hoy",
         "7d": "últimos 7 días",
@@ -2325,6 +2348,27 @@
       "worsening_one": "{{metric}}: empeora {{count}} ciclo seguido",
       "worsening_other": "{{metric}}: empeora {{count}} ciclos seguidos",
       "offTarget": "{{metric}}: fuera del objetivo"
+    },
+    "compare": {
+      "badge": "vs anterior",
+      "hint_one": "Con el día anterior ({{from}})",
+      "hint_other": "Con los {{count}} días anteriores ({{from}} – {{to}})",
+      "range": "{{from}} – {{to}}",
+      "pp": "pp",
+      "vsPrevious": "vs anterior",
+      "noPrevious": "sin datos antes",
+      "rate_up": "{{points}} puntos más que en el periodo anterior ({{previous}} % del {{dates}})",
+      "rate_down": "{{points}} puntos menos que en el periodo anterior ({{previous}} % del {{dates}})",
+      "rate_flat": "Igual que en el periodo anterior ({{previous}} % del {{dates}})",
+      "rateNone": "Sin casos ejecutados en el periodo anterior ({{dates}})",
+      "count_up": "{{percent}} más ejecuciones que en el periodo anterior ({{previous}} del {{dates}})",
+      "count_down": "{{percent}} menos ejecuciones que en el periodo anterior ({{previous}} del {{dates}})",
+      "count_flat": "Las mismas ejecuciones que en el periodo anterior ({{previous}} del {{dates}})",
+      "countNone": "Sin ejecuciones en el periodo anterior ({{dates}})",
+      "colPrevious": "Anterior",
+      "legend": "Total del periodo anterior, día a día por posición (el día 1 con el día 1)",
+      "legendShort": "Anterior (total)",
+      "tipPrevious": "Anterior ({{day}}): {{count}}"
     }
   },
   "section": {
@@ -2548,7 +2592,21 @@
         "highPriority_other": "{{count}} de prioridad alta",
         "withCase": "con al menos un caso"
       },
-      "onlyGapsCount": "Mostrar solo huecos ({{count}})"
+      "onlyGapsCount": "Mostrar solo huecos ({{count}})",
+      "weighted": "Cobertura ponderada",
+      "weightedTitle": "Cobertura ponderada por riesgo",
+      "weightedHow": "Suma del nivel de riesgo (probabilidad × impacto) de los requisitos cubiertos entre la suma del nivel de todos los requisitos evaluados. «Aprobada» cuenta los que tienen todos sus casos ejecutados y en Pasa.",
+      "weightedCalc": "cubierta = {{covered}} / {{total}} = {{coveredPct}} · aprobada = {{passed}} / {{total}} = {{passedPct}}",
+      "weightedBands_one": "1 requisito sin evaluar no entra. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
+      "weightedBands_other": "{{count}} requisitos sin evaluar no entran. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}.",
+      "weightedHint_one": "aprobada {{passed}} · 1 sin evaluar",
+      "weightedHint_other": "aprobada {{passed}} · {{count}} sin evaluar",
+      "weightedNone": "ningún requisito evaluado",
+      "weightedUnknown": "sin datos de ejecución",
+      "byBand": "Cobertura por banda de riesgo",
+      "byBandCount": "{{covered}} / {{total}}",
+      "weightedHint_zero": "aprobada {{passed}} · todos evaluados",
+      "weightedBands_zero": "Todos los requisitos tienen el riesgo evaluado. Bandas del proyecto: bajo hasta {{low}}, medio hasta {{medium}}."
     },
     "execution": {
       "passed": "Pasa",
@@ -2681,7 +2739,7 @@
       "notAssessed": "Sin evaluar",
       "hint": "Puntúa cada uno de 1 (muy baja) a 5 (muy alta).",
       "level": "{{value}} de 5",
-      "bands": "Riesgo = probabilidad × impacto. Bajo: 1–4 · Medio: 5–12 · Alto: 13–25. La matriz de trazabilidad ordena los requisitos por este valor."
+      "bands": "Riesgo = probabilidad × impacto. Bandas del proyecto: Bajo 1–{{low}} · Medio {{mediumFrom}}–{{medium}} · Alto {{highFrom}}–25 (en Ajustes del proyecto). La matriz de trazabilidad ordena los requisitos por este valor."
     },
     "result": {
       "runAt": "{{run}} · {{date}}",
@@ -4017,7 +4075,14 @@
       "coverage": "Cobertura"
     },
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "bandsLine": "Bandas del proyecto: bajo 1–{{low}}, medio {{mediumFrom}}–{{medium}}, alto {{highFrom}}–25 (probabilidad × impacto).",
+    "weightedLine_one": "Cobertura ponderada por riesgo: {{coverage}} (aprobada: {{passed}}). Cada requisito evaluado pesa su nivel de riesgo; 1 sin evaluar no entra.",
+    "weightedLine_other": "Cobertura ponderada por riesgo: {{coverage}} (aprobada: {{passed}}). Cada requisito evaluado pesa su nivel de riesgo; {{count}} sin evaluar no entran.",
+    "weightedNone": "Cobertura ponderada por riesgo: — (ningún requisito tiene el riesgo evaluado).",
+    "weightedCoverage": "Cobertura ponderada",
+    "weightedPassed": "Aprobada ponderada",
+    "weightedLine_zero": "Cobertura ponderada por riesgo: {{coverage}} (aprobada: {{passed}}). Cada requisito pesa su nivel de riesgo; todos están evaluados."
   },
   "metrics": {
     "kind": {

@@ -175,6 +175,8 @@ export function createDomainService(store: DomainStore) {
             caseIdPrefix: p.caseIdPrefix,
             caseIdDigits: p.caseIdDigits,
             planExportHistory: p.planExportHistory === "revisions" ? "revisions" : "current",
+            riskBandLow: typeof p.riskBandLow === "number" ? p.riskBandLow : 4,
+            riskBandMedium: typeof p.riskBandMedium === "number" ? p.riskBandMedium : 12,
             updatedAt: p.updatedAt,
             revision: p.revision,
           })),
@@ -199,6 +201,8 @@ export function createDomainService(store: DomainStore) {
             caseIdPrefix: input.caseIdPrefix?.trim() || DEFAULT_PREFIX,
             caseIdDigits: input.caseIdDigits ?? DEFAULT_DIGITS,
             planExportHistory: input.planExportHistory ?? "current",
+            riskBandLow: input.riskBandLow ?? 4,
+            riskBandMedium: input.riskBandMedium ?? 12,
             createdAt: at,
             updatedAt: at,
           },
@@ -219,6 +223,10 @@ export function createDomainService(store: DomainStore) {
             caseIdDigits: input.caseIdDigits ?? DEFAULT_DIGITS,
             // A client that does not send it keeps the setting (PLN-02).
             planExportHistory: input.planExportHistory ?? doc.payload.planExportHistory ?? "current",
+            // Absent keeps the project's bands (TRZ-04); the schema checks the pair.
+            ...(input.riskBandLow !== undefined && input.riskBandMedium !== undefined
+              ? { riskBandLow: input.riskBandLow, riskBandMedium: input.riskBandMedium }
+              : {}),
             updatedAt: now(),
           },
           doc,

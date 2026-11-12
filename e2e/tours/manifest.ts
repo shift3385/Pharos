@@ -198,6 +198,7 @@ export const INVENTORY: Item[] = [
   I("inicio", "route", "route:/", "Inicio (panel)"),
   I("inicio", "state", "state:home-empty", "Inicio sin proyectos"),
   I("inicio", "action", "action:home-period", "Periodo del panel de Inicio"),
+  I("inicio", "action", "action:home-compare", "Comparar con el periodo anterior: diferencias en la tasa de éxito y en las ejecuciones diarias (RED-W4)"),
   I("inicio", "action", "action:home-exit-criteria", "Criterios de salida: elegir proyecto"),
   I("inicio", "action", "action:home-kpi", "Tarjetas KPI de Inicio"),
   I("inicio", "state", "state:home-metrics", "Inicio con ejecuciones: tasa de éxito, ejecución por proyecto, ejecuciones diarias (RED-W6)"),
@@ -235,6 +236,7 @@ export const INVENTORY: Item[] = [
   I("ajustes", "section", "section:settings", "Ajustes del proyecto"),
   I("ajustes", "action", "action:project-settings-save", "Cambiar nombre, prefijo y dígitos de los IDs"),
   I("ajustes", "action", "action:plan-export-history", "Historial en el plan exportado (vigente o con revisiones)"),
+  I("ajustes", "action", "action:risk-bands", "Bandas de riesgo del proyecto y su mapa 5×5 (TRZ-04)"),
   I("proyectos", "dialog", "dialogs:src/modules/projects/ui/ProjectSettings.tsx", "Eliminar proyecto (confirmación escribiendo el prefijo)"),
   I("ajustes", "action", "action:custom-field-create", "Crear un campo personalizado"),
   I("ajustes", "dialog", "dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx", "Diálogo de campo personalizado"),
@@ -335,6 +337,7 @@ export const INVENTORY: Item[] = [
   I("requisitos", "action", "action:requirements-import-menu", "Menú «Importar»: CSV, desde un proyecto y desde diseños (IA)"),
   I("requisitos", "platform", "platform:mobile-requirements", "Los requisitos en el móvil (tarjetas)"),
   I("trazabilidad", "action", "action:matrix-sort", "Ordenar la matriz por riesgo o por ID"),
+  I("trazabilidad", "action", "action:matrix-weighted", "Cobertura ponderada por riesgo y cobertura por banda (TRZ-04)"),
   I("trazabilidad", "action", "action:matrix-filters", "Filtrar los resultados de la matriz (ciclo, configuración, build, entorno)"),
   I("trazabilidad", "action", "action:matrix-run-link", "Último resultado en la matriz: abrir su run"),
 
