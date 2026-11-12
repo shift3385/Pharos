@@ -121,8 +121,19 @@ export async function syncNow() {
   const failed = es.sync.failed;
   // Full sidebar: the «Sincronizar ahora» button; icon strip: the sync dot.
   const full = button(es.sync.now);
+  const compact = $('[data-testid="sync-compact"]');
+  // A sync may already be running: the automatic one at sign-in, also after
+  // a restart, can outlast the steps before this. Meanwhile the button reads
+  // «Sincronizando…» and the dot is `aria-disabled`, and a click does
+  // nothing, so wait until one of them can sync.
+  await browser.waitUntil(
+    async () =>
+      ((await full.isDisplayed()) && (await full.isEnabled())) ||
+      ((await compact.isExisting()) && (await compact.getAttribute("aria-disabled")) !== "true"),
+    { timeout: 30_000, timeoutMsg: "a running sync never finished" },
+  );
   if (await full.isDisplayed()) await full.click();
-  else await $('[data-testid="sync-compact"]').click();
+  else await compact.click();
   let outcome = "";
   await browser.waitUntil(
     async () => {

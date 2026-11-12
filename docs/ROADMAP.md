@@ -439,7 +439,7 @@ ejecutan sin IA. Todo lo que escribe o lanza un agente pasa por el oplog como `a
 | ------ | ------------------------------------------------------------------ | --- | ------- |
 | DOC-06 | Dashboards: pass rate, flakiness, cobertura por riesgo, tendencia. Hecho ([ADR-0041](adr/0041-quality-gate-y-tendencia-entre-ciclos.md)): catálogo de nueve métricas con unidad fija (`src/shared/metrics/catalog.ts`); densidad, escapes (marcados a mano, D4), tiempo de corrección, reapertura y flaky por ciclo en la derivación (Rust y servidor); `data.lifecycle` del defecto; gadget «Tendencia de ciclos» en Inicio (6 ciclos cerrados + el activo, objetivo del plan, aviso al empeorar), distribución v2 sin desplazamiento (D6 opción A) | P1  | 0.4.0   |
 | DOC-02 | Criterios de salida como quality gates + informe go/no-go. Hecho ([ADR-0041](adr/0041-quality-gate-y-tendencia-entre-ciclos.md)): criterios enlazados a métricas del plan (`metricId`, `blocking`, PLN-06); «Cerrar ciclo…» con justificación obligatoria y veredicto Go / Go con riesgos / No-go (D1–D3, D5), cierre congelado en `data.closures` y auditado; sección «Decisión de salida» en el informe de estado (vista previa, .xlsx, PDF), reutilizable por DOC-01 | P1  | 0.4.0   |
-| DOC-01 | Informe de cierre de pruebas 29119-3                               | P1  | 0.4.0   |
+| DOC-01 | Informe de cierre de pruebas 29119-3. Hecho ([ADR-0044](adr/0044-informe-de-cierre-29119-3.md)): «Informe de cierre» en la cabecera de un ciclo cerrado (D1) con los once apartados del *Test Completion Report*; reutiliza «Decisión de salida» (DOC-02) y compara las medidas con el ciclo anterior y con el objetivo del plan (PLN-06); textos, entregables marcados y aprobación con autor y fecha en `test_cycles.data.completionReport` (D2), atados al último cierre (D3) y aprobados como el plan (D4); vista previa, PDF y .xlsx. El informe de un plan o proyecto queda para DOC-01b | P1  | 0.4.0   |
 | DOC-03 | Paquetes de evidencia EAA/WCAG 2.2/EN 301 549 y ASVS 5.0/MASVS 2.1 | P2  | 0.10.0  |
 | DOC-04 | Modo aprendizaje ISTQB CTFL 4.0.1 (sin reproducir el syllabus)     | P2  | 1.0.0 o después |
 | DOC-05 | Modo portafolio: exportar el trabajo anonimizado                   | P2  | 1.0.0 o después |
@@ -620,6 +620,10 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`). Desde el 2026
   editar un caso y verlo arriba con su antes y después; filtrar por un agente o por un proyecto y
   copiar el enlace; exportar a .xlsx y a CSV y abrirlos en Excel; comprobar que la cadena sale
   íntegra y que «Ver todo su historial» lista solo ese elemento.
+- **Informe de cierre (DOC-01, 0.4.0):** en la app nativa y en la web, abrir «Informe de cierre»
+  de un ciclo cerrado con un criterio en «No cumple», comprobar que la justificación aparece en la
+  vista previa, el PDF y el .xlsx; guardar las lecciones aprendidas, aprobar, abrirlo en el otro
+  equipo y ver la aprobación; reabrir y volver a cerrar el ciclo y ver el aviso sin aprobación.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario

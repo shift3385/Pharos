@@ -1,5 +1,5 @@
 import type { ClosureCriterion, TestPlan } from "../model/types";
-import { deliverableLabels, levelLabels, toolLabels, typeGroupLines, typeLabels } from "../model/catalogLabels";
+import { deliverableLabels, levelLabels, normalizeDeliverables, toolLabels, typeGroupLines, typeLabels } from "../model/catalogLabels";
 import { methodologyLines, methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
@@ -119,6 +119,42 @@ export async function projectPlanRef(
 ): Promise<{ id: string; title: string; version: string } | null> {
   const plan = await testPlanApi.byProject(projectId, userId);
   return plan ? { id: plan.id, title: plan.title, version: plan.version } : null;
+}
+
+/** What the test completion report of a cycle (DOC-01) reads of the
+ *  project's plan: its identification and approval, its measurable
+ *  objectives, its deliverables (stored value and label) and its test data
+ *  line. Null when the project has no plan. */
+export async function projectPlanForCompletion(
+  projectId: string,
+  userId: string,
+  t: Translate,
+  prefix?: string | null,
+): Promise<{
+  title: string;
+  version: string;
+  documentId: string;
+  approved: boolean;
+  objectives: { kind: string; op: string; target: number }[];
+  deliverables: { key: string; label: string }[];
+  testData: string;
+} | null> {
+  const plan = await testPlanApi.byProject(projectId, userId);
+  if (!plan) return null;
+  const d = plan.data ?? {};
+  const stored = normalizeDeliverables(d.deliverables ?? []);
+  const labels = deliverableLabels(stored, t);
+  return {
+    title: plan.title,
+    version: plan.version,
+    documentId: d.documentId?.trim() || documentIdFor(prefix, hexOf(plan.id)),
+    approved: plan.status === "approved" && Boolean(d.approval),
+    objectives: (d.metrics ?? [])
+      .filter((m) => m.kind !== null && Number.isFinite(m.target))
+      .map((m) => ({ kind: m.kind as string, op: m.op, target: m.target })),
+    deliverables: stored.map((key, i) => ({ key, label: labels[i] ?? key })),
+    testData: d.testDataManagement ?? "",
+  };
 }
 
 /** Version of a project’s plan (null when it has none), e.g. for the version

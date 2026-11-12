@@ -368,6 +368,7 @@ export const INVENTORY: Item[] = [
   I("ciclos", "action", "action:cycle-report", "Informe de estado de un ciclo"),
   I("ciclos", "dialog", "dialogs:src/modules/runs/gate/CloseCycleDialog.tsx", "Cerrar un ciclo con su quality gate: justificación y veredicto (DOC-02)"),
   I("ciclos", "action", "action:cycle-verdict", "El veredicto de un ciclo cerrado y su decisión en el informe (DOC-02)"),
+  I("ciclos", "dialog", "dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx", "Informe de cierre 29119-3 de un ciclo cerrado: textos, entregables y aprobación (DOC-01)"),
   I("ciclos", "platform", "platform:mobile-cycles", "Los ciclos en el móvil (tarjetas)"),
   I("ciclos", "state", "state:cycles-load-error", "Los ciclos no se pudieron cargar («Reintentar», NC-008)", {
     skip: "Necesita que falle la lectura de los ciclos con el resto de la app en pie, algo que el tour no provoca sin trucar la app. Lo cubre Cycles.test.tsx; el capítulo lo explica en «Si algo no sale».",
