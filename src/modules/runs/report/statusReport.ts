@@ -1,6 +1,7 @@
 import type { ExecutionSummary } from "@shared/contracts/contract";
 import { parseStamp } from "@shared/time/stamp";
 import { criterionValue, evaluateExitCriteria } from "../model/exitCriteria";
+import { decisionSection, type DecisionSection } from "./decisionSection";
 
 // The test status report (EJE-03, ISO/IEC/IEEE 29119-3 «Test Status
 // Report»), built from the execution derivation (contract v1) only: the
@@ -31,6 +32,8 @@ export interface ReportContext {
 export interface StatusReport {
   title: string;
   subtitle: string;
+  /** A closed cycle's go/no-go decision (DOC-02), first; null otherwise. */
+  decision: DecisionSection | null;
   identification: [string, string][];
   progress: [string, string][];
   results: ReportTable;
@@ -139,6 +142,7 @@ export function buildStatusReport(
   return {
     title: t("statusReport.title"),
     subtitle: t("statusReport.subtitle"),
+    decision: s.closure ? decisionSection(s.closure, s.previous, t, ctx.lang) : null,
     identification: [
       [t("statusReport.field.project"), ctx.projectName],
       [t("statusReport.field.scope"), ctx.scopeLabel],

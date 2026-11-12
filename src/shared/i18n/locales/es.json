@@ -2975,7 +2975,13 @@
       "flowGone": "El flujo elegido de {{key}} ya no existe en el caso. Quita ese elemento y vuelve a añadirlo.",
       "rowGone": "La fila elegida de {{key}} ya no existe en el caso. Quita ese elemento y vuelve a añadirlo.",
       "noConfigurationChosen": "Elige al menos una configuración.",
-      "configurationMissing": "Las configuraciones del ciclo aún no han llegado a este equipo. Sincroniza y vuelve a intentarlo."
+      "configurationMissing": "Las configuraciones del ciclo aún no han llegado a este equipo. Sincroniza y vuelve a intentarlo.",
+      "closeNeedsGate": "Un ciclo se cierra con «Cerrar ciclo…», que evalúa sus criterios de salida."
+    },
+    "verdict": {
+      "go": "Go",
+      "goWithRisks": "Go con riesgos",
+      "noGo": "No-go"
     }
   },
   "defects": {
@@ -3619,5 +3625,82 @@
     },
     "yes": "Sí",
     "no": "No"
+  },
+  "metrics": {
+    "kind": {
+      "executed": "% de casos ejecutados",
+      "passRate": "Tasa de éxito",
+      "criticalDefects": "Defectos críticos abiertos",
+      "coverage": "Cobertura de requisitos",
+      "defectDensity": "Densidad de defectos",
+      "escapedDefects": "Escapes",
+      "fixTime": "Tiempo de corrección",
+      "reopenRate": "Reapertura",
+      "flakyRate": "Flaky"
+    },
+    "unitHint": {
+      "percent": "Porcentaje (0–100)",
+      "count": "Número",
+      "per100cases": "Defectos por cada 100 casos ejecutados",
+      "days": "Días (mediana de alta a «Corregido»)"
+    }
+  },
+  "gate": {
+    "open": "Cerrar ciclo…",
+    "title": "Cerrar {{cycle}}",
+    "loading": "Evaluando los criterios de salida…",
+    "loadFailed": "No se pudieron leer los criterios de salida del ciclo. Vuelve a intentarlo.",
+    "criteria": "Criterios de salida",
+    "advisory": "orientativo",
+    "manual": "manual",
+    "met": "Cumple",
+    "notMet": "No cumple",
+    "markLabel": "¿Se cumple «{{criterion}}»?",
+    "justification": "Justificación · obligatoria",
+    "justificationHint": "Por qué se acepta este riesgo, quién lo asume y cuándo se resuelve…",
+    "count": "{{n}} / mín. {{min}} caracteres",
+    "decision": "Decisión de salida",
+    "banner": {
+      "go": "Todos los criterios obligatorios se cumplen.",
+      "failing_one": "{{count}} criterio obligatorio no se cumple. Para cerrar, justifícalo.",
+      "failing_other": "{{count}} criterios obligatorios no se cumplen. Para cerrar, justifica cada uno."
+    },
+    "verdict": {
+      "go": "Go",
+      "goWithRisks": "Go con riesgos",
+      "noGo": "No-go"
+    },
+    "verdictHelp": {
+      "goWithRisks": "El ciclo se cierra y la versión puede salir; los riesgos justificados constan en el informe.",
+      "noGo": "El ciclo se cierra, pero la versión no sale. Abre otro ciclo para el re-test."
+    },
+    "signs": "Firmará: {{name}} · {{at}} · queda en Auditoría",
+    "close": "Cerrar ciclo",
+    "closedToast": "Ciclo cerrado · {{verdict}}",
+    "error": {
+      "incomplete": "Falta marcar algún criterio manual o justificar algún criterio obligatorio que no se cumple.",
+      "justificationRequired": "Cada criterio obligatorio que no se cumple necesita una justificación de al menos 20 caracteres.",
+      "justificationTooLong": "Una justificación no puede pasar de 2000 caracteres.",
+      "manualUnset": "Marca si se cumple cada criterio manual.",
+      "verdictRequired": "Elige «Go con riesgos» o «No-go».",
+      "closed": "El ciclo ya estaba cerrado.",
+      "generic": "No se pudo cerrar el ciclo. Vuelve a intentarlo."
+    },
+    "report": {
+      "section": "Decisión de salida",
+      "metricsSection": "Métricas del ciclo frente al anterior",
+      "sheet": "Decisión",
+      "closedAt": "Cerrado el {{at}}",
+      "summary": "{{met}} de {{total}} criterios se cumplen.",
+      "previous": "Frente a {{cycle}} ({{verdict}})",
+      "previousNone": "Ciclo anterior",
+      "justification": "Justificación",
+      "byHand": "Marcado a mano",
+      "metric": "Métrica",
+      "value": "Valor",
+      "change": "Cambio",
+      "failing_one": "{{count}} criterio obligatorio no se cumple y tiene su justificación.",
+      "failing_other": "{{count}} criterios obligatorios no se cumplen y tienen su justificación."
+    }
   }
 }

@@ -18,8 +18,11 @@ import {
   cellStatus,
   cellTone,
   cycleTone,
+  latestVerdict,
+  verdictTone,
   type CaseOption,
   type Configuration,
+  type CycleActionContext,
   type CycleItem,
   type CycleProgress,
   type CycleRun,
@@ -137,8 +140,10 @@ export function CycleDetail({
   onOpen,
   onChanged,
 }: {
-  /** More actions from the composing page, after «Ejecutar». */
-  extraActions?: ReactNode;
+  /** More actions from the composing page, after «Ejecutar»: the status
+   *  report and «Cerrar ciclo…» (DOC-02), with the cycle as it is now and a
+   *  way to read it again after a change. */
+  extraActions?: (ctx: CycleActionContext) => ReactNode;
   cycleId: string;
   projectId: string;
   userId: string;
@@ -443,6 +448,11 @@ export function CycleDetail({
               {cycle.title}
             </h2>
             <StatusPill tone={cycleTone(cycle.status)}>{t(`cycles.status.${cycle.status}`, cycle.status)}</StatusPill>
+            {closed && latestVerdict(cycle) && (
+              <StatusPill tone={verdictTone(latestVerdict(cycle))} dot>
+                <span data-testid="cycle-verdict">{t(`cycles.verdict.${latestVerdict(cycle)}`)}</span>
+              </StatusPill>
+            )}
           </div>
           {meta.length > 0 && <p className="cy-detail__meta">{meta.join(" · ")}</p>}
           {cycle.description && <p className="cy-detail__desc">{cycle.description}</p>}
@@ -467,7 +477,14 @@ export function CycleDetail({
             <Play size={16} aria-hidden="true" />
             {t("cycles.execute.action")}
           </button>
-          {extraActions}
+          {extraActions?.({
+            status: cycle.status,
+            label: `${cycle.cycleKey} · ${cycle.title}`,
+            onChanged: () => {
+              void reload();
+              onChanged();
+            },
+          })}
           <button
             type="button"
             className="header-action"

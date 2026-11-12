@@ -2975,7 +2975,13 @@
       "flowGone": "The chosen flow of {{key}} no longer exists in the case. Remove that item and add it again.",
       "rowGone": "The chosen row of {{key}} no longer exists in the case. Remove that item and add it again.",
       "noConfigurationChosen": "Choose at least one configuration.",
-      "configurationMissing": "The cycle's configurations have not reached this device yet. Sync and try again."
+      "configurationMissing": "The cycle's configurations have not reached this device yet. Sync and try again.",
+      "closeNeedsGate": "A cycle closes with «Close cycle…», which evaluates its exit criteria."
+    },
+    "verdict": {
+      "go": "Go",
+      "goWithRisks": "Go with risks",
+      "noGo": "No-go"
     }
   },
   "defects": {
@@ -3619,5 +3625,82 @@
     },
     "yes": "Yes",
     "no": "No"
+  },
+  "metrics": {
+    "kind": {
+      "executed": "% of cases executed",
+      "passRate": "Pass rate",
+      "criticalDefects": "Open critical defects",
+      "coverage": "Requirements coverage",
+      "defectDensity": "Defect density",
+      "escapedDefects": "Escapes",
+      "fixTime": "Time to fix",
+      "reopenRate": "Reopen rate",
+      "flakyRate": "Flaky"
+    },
+    "unitHint": {
+      "percent": "Percentage (0–100)",
+      "count": "Number",
+      "per100cases": "Defects per 100 executed cases",
+      "days": "Days (median from creation to «Fixed»)"
+    }
+  },
+  "gate": {
+    "open": "Close cycle…",
+    "title": "Close {{cycle}}",
+    "loading": "Evaluating the exit criteria…",
+    "loadFailed": "The cycle's exit criteria could not be read. Try again.",
+    "criteria": "Exit criteria",
+    "advisory": "advisory",
+    "manual": "manual",
+    "met": "Met",
+    "notMet": "Not met",
+    "markLabel": "Is «{{criterion}}» met?",
+    "justification": "Justification · required",
+    "justificationHint": "Why this risk is accepted, who owns it and when it gets solved…",
+    "count": "{{n}} / min. {{min}} characters",
+    "decision": "Exit decision",
+    "banner": {
+      "go": "Every mandatory criterion is met.",
+      "failing_one": "{{count}} mandatory criterion is not met. Justify it to close.",
+      "failing_other": "{{count}} mandatory criteria are not met. Justify each one to close."
+    },
+    "verdict": {
+      "go": "Go",
+      "goWithRisks": "Go with risks",
+      "noGo": "No-go"
+    },
+    "verdictHelp": {
+      "goWithRisks": "The cycle closes and the release may ship; the justified risks go into the report.",
+      "noGo": "The cycle closes, but the release does not ship. Open another cycle for the re-test."
+    },
+    "signs": "Signed by: {{name}} · {{at}} · recorded in Audit",
+    "close": "Close cycle",
+    "closedToast": "Cycle closed · {{verdict}}",
+    "error": {
+      "incomplete": "A manual criterion is not marked or a mandatory criterion that is not met has no justification.",
+      "justificationRequired": "Every mandatory criterion that is not met needs a justification of at least 20 characters.",
+      "justificationTooLong": "A justification cannot exceed 2000 characters.",
+      "manualUnset": "Mark whether each manual criterion is met.",
+      "verdictRequired": "Choose «Go with risks» or «No-go».",
+      "closed": "The cycle was already closed.",
+      "generic": "The cycle could not be closed. Try again."
+    },
+    "report": {
+      "section": "Exit decision",
+      "metricsSection": "Cycle metrics against the previous one",
+      "sheet": "Decision",
+      "closedAt": "Closed on {{at}}",
+      "summary": "{{met}} of {{total}} criteria are met.",
+      "previous": "Against {{cycle}} ({{verdict}})",
+      "previousNone": "Previous cycle",
+      "justification": "Justification",
+      "byHand": "Marked by hand",
+      "metric": "Metric",
+      "value": "Value",
+      "change": "Change",
+      "failing_one": "{{count}} mandatory criterion is not met and has its justification.",
+      "failing_other": "{{count}} mandatory criteria are not met and have their justification."
+    }
   }
 }

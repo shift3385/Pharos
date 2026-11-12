@@ -107,3 +107,30 @@ export const SUMMARY: ExecutionSummary = {
   ],
   options: { builds: ["1.4.2"], environments: ["staging"] },
 };
+
+/** The same summary for a closed cycle (DOC-02): its gate record and the
+ *  closed cycle before it. */
+export const CLOSED: ExecutionSummary = {
+  ...SUMMARY,
+  closure: {
+    closedAt: "2026-11-05T16:42:00.000Z",
+    closedBy: "u1",
+    verdict: "goWithRisks",
+    planId: "plan1",
+    criteria: [
+      { index: null, criterion: "% de casos ejecutados", metric: "≥ 95%", kind: "executed", op: ">=", target: 95, value: 75, blocking: true, state: "notMet", manualMet: null, justification: "Los casos restantes son de facturas, detrás de un flag apagado." },
+      { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, blocking: false, state: "notMet", manualMet: null, justification: null },
+      { index: null, criterion: "Visto bueno del PO", metric: "", kind: null, op: null, target: null, value: null, blocking: true, state: "manual", manualMet: true, justification: null },
+    ],
+    metrics: SUMMARY.metrics,
+  },
+  previous: {
+    cycleId: "cy0",
+    cycleKey: "CYC-006",
+    title: "Regresión 11",
+    status: "closed",
+    closedAt: "2026-10-30T10:00:00.000Z",
+    verdict: "go",
+    values: { executed: 100, passRate: 80, criticalDefects: 0, coverage: 100, defectDensity: 20, escapedDefects: 1, fixTime: 3, reopenRate: 10, flakyRate: 25 },
+  },
+};

@@ -4,7 +4,7 @@ import ExcelJS from "exceljs";
 import { i18n } from "@test/utils";
 import { summaryQuery, periodOf, localDayStart } from "../api/executionApi";
 import { evaluateExitCriteria, criterionValue } from "../model/exitCriteria";
-import { SUMMARY } from "./__fixtures__/summary";
+import { CLOSED, SUMMARY } from "./__fixtures__/summary";
 import { buildReportXlsx, type ReportLabels } from "./reportXlsx";
 import { reportDocDefinition } from "./reportPdf";
 import { autoSummary, buildStatusReport, reportFileName } from "./statusReport";
@@ -23,6 +23,8 @@ const ctx = {
 };
 const labels = (): ReportLabels => ({
   sections: {
+    decision: t("gate.report.section"),
+    metrics: t("gate.report.metricsSection"),
     identification: t("statusReport.section.identification"),
     progress: t("statusReport.section.progress"),
     results: t("statusReport.section.results"),
@@ -33,7 +35,7 @@ const labels = (): ReportLabels => ({
     summary: t("statusReport.section.summary"),
     recommendations: t("statusReport.section.recommendations"),
   },
-  sheets: { summary: "Resumen", results: "Resultados", defects: "Defectos", coverage: "Cobertura" },
+  sheets: { summary: "Resumen", results: "Resultados", defects: "Defectos", coverage: "Cobertura", decision: "Decisión" },
   risky: t("statusReport.risky"),
   noRisky: t("statusReport.noRisky"),
   noIssues: t("statusReport.noIssues"),
@@ -117,13 +119,23 @@ describe("status report model (EJE-03)", () => {
 
 describe("status report exports", () => {
   it("writes the .xlsx: summary sections, results, defects and coverage sheets", async () => {
-    const buffer = await buildReportXlsx(buildStatusReport(SUMMARY, ctx, t), labels());
+    const buffer = await buildReportXlsx(buildStatusReport(CLOSED, ctx, t), labels());
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buffer);
-    expect(wb.worksheets.map((w) => w.name)).toEqual(["Resumen", "Resultados", "Defectos", "Cobertura"]);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(["Resumen", "Decisión", "Resultados", "Defectos", "Cobertura"]);
     const texts: string[] = [];
     wb.worksheets[0].eachRow((row) => row.eachCell((c) => texts.push(String(c.value))));
-    for (const s of Object.values(labels().sections)) expect(texts.join("\n")).toContain(s);
+    const { metrics, ...summarySections } = labels().sections;
+    for (const s of Object.values(summarySections)) expect(texts.join("\n")).toContain(s);
+    const decision: string[] = [];
+    wb.getWorksheet("Decisión")!.eachRow((row) => row.eachCell((c) => decision.push(String(c.value))));
+    expect(decision.join("\n")).toContain(metrics);
+    expect(decision[0]).toMatch(/^Go con riesgos · Cerrado el /);
+    expect(decision).toContain("Los casos restantes son de facturas, detrás de un flag apagado.");
+    // Without a closing there is no decision.
+    const open = new ExcelJS.Workbook();
+    await open.xlsx.load(await buildReportXlsx(buildStatusReport(SUMMARY, ctx, t), labels()));
+    expect(open.worksheets.map((w) => w.name)).toEqual(["Resumen", "Resultados", "Defectos", "Cobertura"]);
     expect(texts).toContain("Repetir TC-002.");
     const results = wb.getWorksheet("Resultados")!;
     expect(results.getRow(1).getCell(1).value).toBe("Caso");
@@ -133,10 +145,32 @@ describe("status report exports", () => {
   });
 
   it("writes the PDF definition with the nine sections", () => {
-    const dd = reportDocDefinition(buildStatusReport(SUMMARY, ctx, t), labels());
+    const dd = reportDocDefinition(buildStatusReport(CLOSED, ctx, t), labels());
     const text = JSON.stringify(dd.content);
     for (const s of Object.values(labels().sections)) expect(text).toContain(s.replace(/"/g, '\\"'));
     expect(text).toContain("a fecha de hoy");
+  });
+});
+
+describe("the go/no-go decision (DOC-02)", () => {
+  it("records the verdict, each criterion with its justification and the change against the previous cycle", () => {
+    const d = buildStatusReport(CLOSED, ctx, t).decision!;
+    expect(d.verdictLabel).toBe("Go con riesgos");
+    expect(d.summaryLine).toBe("1 de 3 criterios se cumplen. 1 criterio obligatorio no se cumple y tiene su justificación.");
+    expect(d.previousLine).toBe("Frente a CYC-006 (Go)");
+    expect(d.criteria.rows[0][4]).toBe("Los casos restantes son de facturas, detrás de un flag apagado.");
+    expect(d.criteria.rows[1][0]).toBe("Defectos críticos abiertos (orientativo)");
+    expect(d.criteria.rows[2][3]).toBe("Cumple");
+    expect(d.criteria.rows[2][4]).toBe("Marcado a mano");
+    expect(d.criteriaStates).toEqual(["notMet", "notMet", "met"]);
+    // Pass rate 50 % against 80 %: worse; time to fix 2 d against 3 d: better.
+    const pass = d.metrics.rows.findIndex((r) => r[0] === "Tasa de éxito");
+    expect(d.metrics.rows[pass]).toEqual(["Tasa de éxito", "50 %", "80 %", "-30"]);
+    expect(d.metricTrend[pass]).toBe(false);
+    const fix = d.metrics.rows.findIndex((r) => r[0] === "Tiempo de corrección");
+    expect(d.metrics.rows[fix]).toEqual(["Tiempo de corrección", "2 d", "3 d", "-1"]);
+    expect(d.metricTrend[fix]).toBe(true);
+    expect(buildStatusReport(SUMMARY, ctx, t).decision).toBeNull();
   });
 });
 

@@ -12,7 +12,7 @@ const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 
-type Sheets = { summary: string; results: string; defects: string; coverage: string };
+type Sheets = { summary: string; results: string; defects: string; coverage: string; decision: string };
 
 function headerRow(ws: ExcelJS.Worksheet, row: number, headers: string[]) {
   headers.forEach((h, i) => {
@@ -76,6 +76,8 @@ function text(ws: ExcelJS.Worksheet, row: number, value: string) {
 /** Section titles in the order of the report (i18n `statusReport.section.*`). */
 export interface ReportLabels {
   sections: Record<
+    | "decision"
+    | "metrics"
     | "identification"
     | "progress"
     | "results"
@@ -111,6 +113,14 @@ export async function buildReportXlsx(
   ws.getCell("A2").font = { italic: true, color: { argb: argb(BRAND.textSecondary) } };
   const s = labels.sections;
   let r = 4;
+  const d = report.decision;
+  if (d) {
+    r = section(ws, r, s.decision);
+    r = pairs(ws, r, [
+      [d.verdictLabel, d.closedLine],
+      [d.summaryLine, d.previousLine ?? ""],
+    ]);
+  }
   r = section(ws, r, s.identification);
   r = pairs(ws, r, report.identification);
   r = section(ws, r, s.progress);
@@ -143,6 +153,18 @@ export async function buildReportXlsx(
     if (t.rows.length)
       w.autoFilter = { from: { row: 1, column: 1 }, to: { row: end - 2, column: t.headers.length } };
   };
+  if (d) {
+    // «Decisión» (DOC-02): the gate's record and the metrics against the
+    // previous closed cycle, right after the summary sheet.
+    const w = wb.addWorksheet(labels.sheets.decision);
+    [34, 14, 14, 16, 60].forEach((n, i) => (w.getColumn(i + 1).width = n));
+    w.getCell("A1").value = `${d.verdictLabel} · ${d.closedLine}`;
+    w.getCell("A1").font = { bold: true, size: 14, color: { argb: argb(BRAND.navy900) } };
+    w.getCell("A2").value = [d.summaryLine, d.previousLine].filter(Boolean).join(" · ");
+    let row = table(w, 4, d.criteria, labels.noData);
+    row = section(w, row, s.metrics);
+    table(w, row, d.metrics, labels.noData);
+  }
   sheet(labels.sheets.results, report.cases, [12, 40, 14, 12, 22, 16, 12, 8, 14]);
   sheet(labels.sheets.defects, report.defects, [20, 10, 10]);
   sheet(labels.sheets.coverage, report.requirements, [14, 40, 8, 14, 10, 10, 14, 30]);

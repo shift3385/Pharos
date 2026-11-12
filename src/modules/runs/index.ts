@@ -15,6 +15,9 @@ export {
 export { evaluateExitCriteria } from "./model/exitCriteria";
 export { StatusReportDialog } from "./report/StatusReportDialog";
 export { StatusReportButton } from "./report/StatusReportButton";
+// The quality gate at closing a cycle (DOC-02).
+export { CloseCycleButton } from "./gate/CloseCycleButton";
+export { criterionState, gateState, verdictTone } from "./model/gate";
 export type {
   CaseExecution,
   ExecutionFilter,
