@@ -265,6 +265,28 @@ describe("Ciclos", () => {
     await expectNoAxeViolations();
   });
 
+  it("the assignee is edited on a tablet and on a phone too (NC-009)", async () => {
+    vi.mocked(cycleApi.setAssignee).mockReset().mockResolvedValue(undefined as never);
+    const user = userEvent.setup();
+    const width = window.innerWidth;
+    try {
+      for (const w of [1024, 375]) {
+        window.innerWidth = w;
+        const { unmount } = page("/projects/p1/cycles?cycle=cy1");
+        const field = await screen.findByRole("textbox", { name: "Asignado de ATS_001" });
+        expect(field).toHaveValue("Ada");
+        await user.clear(field);
+        await user.type(field, "Grace{Enter}");
+        await waitFor(() => expect(cycleApi.setAssignee).toHaveBeenCalledWith("i1", "Grace", expect.any(String)));
+        expect(screen.getByRole("textbox", { name: "Asignado de ATS_002" })).toHaveAttribute("placeholder", "Sin asignar");
+        vi.mocked(cycleApi.setAssignee).mockClear();
+        unmount();
+      }
+    } finally {
+      window.innerWidth = width;
+    }
+  });
+
   it("«Quitar del ciclo» asks first; Escape or Cancelar keep the case (NC-012)", async () => {
     vi.mocked(cycleApi.removeItems).mockResolvedValue(undefined as never);
     const user = userEvent.setup();

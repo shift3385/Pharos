@@ -2360,7 +2360,7 @@
       "n": 14,
       "id": "movil",
       "title": "Los ciclos en el móvil",
-      "caption": "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso. Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y una pastilla por configuración; su menú «⋯» lo sube, lo baja o lo quita. El asignado se cambia desde un ordenador.",
+      "caption": "En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso. Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y una pastilla por configuración; su menú «⋯» lo sube, lo baja o lo quita. El asignado se cambia en la propia tarjeta.",
       "covers": [
         "platform:mobile-cycles"
       ],

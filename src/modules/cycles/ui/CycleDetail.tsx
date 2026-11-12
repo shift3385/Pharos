@@ -164,7 +164,8 @@ export function CycleDetail({
   const [cases, setCases] = useState<CaseOption[] | null>(null);
   const [error, setError] = useState("");
   const more = usePopover("menu");
-  // The assignee column shows on desktop only; on a tablet it goes under the title.
+  // The assignee column shows on desktop only; on a tablet and a phone its
+  // field goes under the title (NC-009).
   const view = useBreakpoint();
 
   const notify = useRef({ toast, t });
@@ -293,6 +294,21 @@ export function CycleDetail({
     );
   };
 
+  // Tablet and mobile have no assignee column: the same field goes under the
+  // title, labelled, so it can be edited at any width (NC-009).
+  const assigneeField = (i: CycleItem) => (
+    <span className="cy-assignee">
+      <span className="cy-cell-title__meta" aria-hidden="true">
+        {t("cycles.items.assignee")}
+      </span>
+      <AssigneeInput
+        item={i}
+        disabled={closed}
+        onSave={(v) => void act(() => cycleApi.setAssignee(i.id, v, userId))}
+      />
+    </span>
+  );
+
   const itemColumns: DataColumn<CycleItem>[] = [
     {
       id: "key",
@@ -314,7 +330,7 @@ export function CycleDetail({
                 .join(" · ")}
             </span>
           )}
-          {view === "tablet" && i.assignee && <span className="cy-cell-title__meta">{i.assignee}</span>}
+          {view === "tablet" && assigneeField(i)}
           {i.caseStatus && i.caseStatus !== "approved" && (
             <span className="cy-row__warn">
               <AlertTriangle size={13} aria-hidden="true" />
@@ -559,7 +575,7 @@ export function CycleDetail({
                   />
                 </div>
                 <span className="cy-mcard__title">{i.caseTitle}</span>
-                {i.assignee && <span className="cy-cell-title__meta">{i.assignee}</span>}
+                {assigneeField(i)}
                 {i.caseStatus && i.caseStatus !== "approved" && (
                   <span className="cy-row__warn">
                     <AlertTriangle size={13} aria-hidden="true" />
