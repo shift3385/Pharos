@@ -283,7 +283,7 @@ describe("Inicio gadgets on the board (UX-28)", () => {
     vi.spyOn(serverApi, "get").mockImplementation(async <T,>(path: string) => {
       if (path.startsWith("/api/me/preferences/")) return { key: "home.board", value: null, updatedAt: null } as T;
       const m = homeMetrics({ projects: [] });
-      m.daily[29] = { ...m.daily[29], total: 2, passed: 2, manual: 2 };
+      m.daily[59] = { ...m.daily[59], total: 2, passed: 2, manual: 2 };
       return m as T;
     });
     renderWithProviders(<DashboardPage />);

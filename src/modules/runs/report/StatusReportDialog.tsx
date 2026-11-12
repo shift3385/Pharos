@@ -378,7 +378,9 @@ export function StatusReportDialog({
             <section>
               <h4>{t("statusReport.section.coverage")}</h4>
               <p>{report.coverageLine}</p>
+              <p>{report.bandsLine}</p>
               {preview(report.coverageByRisk, t("common.noData"))}
+              <p data-testid="report-weighted">{report.weightedLine}</p>
               <h5>{t("statusReport.risky")}</h5>
               {preview(report.risky, t("statusReport.noRisky"))}
             </section>

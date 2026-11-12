@@ -76,6 +76,8 @@ const PROJECTS = [
     caseIdPrefix: "BM_",
     caseIdDigits: 4,
     planExportHistory: "revisions",
+    riskBandLow: 6,
+    riskBandMedium: 14,
     cases: 12,
   }),
 ];
@@ -264,12 +266,15 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
     expect(part(/Historial/)).toHaveAccessibleDescription(
       "Historial de revisiones",
     );
+    expect(part(/Bandas de riesgo/)).toHaveAccessibleDescription(
+      "Bajo hasta 6 · medio hasta 14",
+    );
     expect(part(/Retención/)).toHaveAccessibleDescription(
       "Trazas: 10 días · Vídeos: Siempre",
     );
     for (const box of within(wizard).getAllByRole("checkbox"))
       expect(box).toBeChecked();
-    expect(within(wizard).getAllByText("Ajustes")).toHaveLength(4);
+    expect(within(wizard).getAllByText("Ajustes")).toHaveLength(5);
     expect(
       within(wizard).getByText(
         /Nunca se copian el nombre, el prefijo ni los datos/,
@@ -291,7 +296,7 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
       within(wizard).getByText("copiado de Banca Móvil"),
     ).toBeInTheDocument();
     expect(within(wizard).getByTestId("pj-new-summary")).toHaveTextContent(
-      "Se copiarán de «Banca Móvil»: los campos personalizados, los dígitos del número (4), el historial en el plan exportado (Historial de revisiones), la retención de evidencias.",
+      "Se copiarán de «Banca Móvil»: los campos personalizados, los dígitos del número (4), el historial en el plan exportado (Historial de revisiones), las bandas de riesgo (bajo hasta 6, medio hasta 14), la retención de evidencias.",
     );
     // The name and prefix are the new project's own.
     expect(
@@ -308,6 +313,8 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
       caseIdPrefix: "BAN-",
       caseIdDigits: 4,
       planExportHistory: "revisions",
+      riskBandLow: 6,
+      riskBandMedium: 14,
     });
     expect(customFieldApi.copy).toHaveBeenCalledTimes(5);
     expect(projectApi.copyRetention).toHaveBeenCalledWith("bm", "new", "u1");
@@ -334,7 +341,7 @@ describe("«Nuevo proyecto» (UX-29): from an existing project", () => {
       within(wizard).queryByText("copiado de Banca Móvil"),
     ).not.toBeInTheDocument();
     expect(within(wizard).getByTestId("pj-new-summary")).toHaveTextContent(
-      "Se copiarán de «Banca Móvil»: el historial en el plan exportado (Historial de revisiones).",
+      "Se copiarán de «Banca Móvil»: el historial en el plan exportado (Historial de revisiones), las bandas de riesgo (bajo hasta 6, medio hasta 14).",
     );
     await userEvent.type(
       within(wizard).getByRole("textbox", { name: /Nombre del proyecto/ }),

@@ -56,6 +56,15 @@ describe("status report model (EJE-03)", () => {
     expect(r.defects.rows[0]).toEqual(["Crítica", "1", "1"]);
     expect(r.defectsNote).toBe("a fecha de hoy");
     expect(r.coverageLine).toBe("Cobertura de requisitos: 2 de 2 (100.0 %).");
+    // TRZ-04: the project's bands and the coverage weighted by risk.
+    expect(r.bandsLine).toBe("Bandas del proyecto: bajo 1–4, medio 5–12, alto 13–25 (probabilidad × impacto).");
+    expect(r.weightedLine).toBe(
+      "Cobertura ponderada por riesgo: 100.0 % (aprobada: 16.7 %). Cada requisito pesa su nivel de riesgo; todos están evaluados.",
+    );
+    expect(r.weightedRows).toEqual([
+      ["Cobertura ponderada", 1],
+      ["Aprobada ponderada", 4 / 24],
+    ]);
     expect(r.risky.rows).toEqual([["REQ-002", "Payment", "20", "Falla"]]);
     expect(r.exit.rows.map((x) => x[3])).toEqual(["No cumple", "No cumple", "Cumple"]);
     expect(r.exitStates).toEqual(["notMet", "notMet", "met"]);
@@ -137,6 +146,17 @@ describe("status report exports", () => {
     await open.xlsx.load(await buildReportXlsx(buildStatusReport(SUMMARY, ctx, t), labels()));
     expect(open.worksheets.map((w) => w.name)).toEqual(["Resumen", "Resultados", "Defectos", "Cobertura"]);
     expect(texts).toContain("Repetir TC-002.");
+    // TRZ-04: the weighted coverage as two rows with a percentage.
+    const resumen = wb.getWorksheet("Resumen")!;
+    let weightedRow = 0;
+    resumen.eachRow((row, n) => {
+      if (row.getCell(1).value === "Cobertura ponderada") weightedRow = n;
+    });
+    expect(weightedRow).toBeGreaterThan(0);
+    expect(resumen.getRow(weightedRow).getCell(2).value).toBe(1);
+    expect(resumen.getRow(weightedRow).getCell(2).numFmt).toBe("0.0%");
+    expect(resumen.getRow(weightedRow + 1).getCell(1).value).toBe("Aprobada ponderada");
+    expect(texts.join("\n")).toContain("Bandas del proyecto: bajo 1–4");
     const results = wb.getWorksheet("Resultados")!;
     expect(results.getRow(1).getCell(1).value).toBe("Caso");
     expect(results.getRow(2).getCell(1).value).toBe("TC-001");

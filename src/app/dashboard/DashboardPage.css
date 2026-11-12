@@ -1878,3 +1878,97 @@ button.home-daily__data {
   background: var(--color-navy-100);
   border-radius: var(--radius-md);
 }
+
+/* ---- RED-W4: «Comparar con el periodo anterior» ---- */
+/* The difference sits on the number's row, so no gadget grows (UX-27/28). */
+.home-delta {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  flex: none;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.5;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+}
+
+.home-delta[data-kind="rate"][data-direction="up"] {
+  color: var(--color-success-text);
+  background: color-mix(in oklab, var(--color-success) 14%, transparent);
+}
+
+.home-delta[data-kind="rate"][data-direction="down"] {
+  color: var(--color-error-text);
+  background: color-mix(in oklab, var(--color-error) 12%, transparent);
+}
+
+.home-delta[data-direction="none"] {
+  font-weight: var(--fw-regular);
+  color: var(--color-text-muted);
+}
+
+.home-daily__num {
+  display: inline-flex;
+  align-items: center;
+}
+
+.home-btn__badge {
+  flex: none;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.6;
+  color: var(--color-navy-500);
+  background: color-mix(in oklab, var(--color-navy-500) 12%, transparent);
+  white-space: nowrap;
+}
+
+.home-compare[data-on] .home-compare__track {
+  background: var(--color-navy-500);
+}
+
+.home-compare[data-on] .home-compare__knob {
+  left: 16px;
+}
+
+/* The previous period: one grey dotted line of its total, apart from the
+   dashed «Otras». */
+.home-lines__series[data-series="previous"] path {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5px;
+  stroke-dasharray: 1.5 3.5;
+  stroke-linecap: round;
+}
+
+.home-lines__key[data-series="previous"] {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-text-muted) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+.home-lines__toggle--static {
+  cursor: default;
+}
+
+/* The tile keeps its rows: the chip never wraps under the number. */
+.home-kpi__value:has(.home-delta) {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.home-kpi__value .home-delta {
+  min-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

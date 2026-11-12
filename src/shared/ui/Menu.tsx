@@ -147,11 +147,15 @@ export function MenuItem({
   tone,
   testId,
   description,
+  checked,
   children,
 }: {
   icon?: LucideIcon;
   onSelect: () => void;
   selected?: boolean;
+  /** An on/off item (`menuitemcheckbox`, RED-W4): toggling it keeps the
+   *  menu open, and it draws no check mark (its content shows the state). */
+  checked?: boolean;
   disabled?: boolean;
   title?: string;
   tone?: "danger";
@@ -162,13 +166,15 @@ export function MenuItem({
   const { close, kind } = useContext(MenuContext);
   const descId = useId();
   const radio = selected !== undefined;
-  const role = kind === "menu" ? (radio ? "menuitemradio" : "menuitem") : undefined;
+  const box = checked !== undefined;
+  const role = kind === "menu" ? (box ? "menuitemcheckbox" : radio ? "menuitemradio" : "menuitem") : undefined;
+  const on = box ? checked : selected;
   return (
     <button
       type="button"
       role={role}
-      aria-checked={kind === "menu" && radio ? selected : undefined}
-      aria-pressed={kind === "sheet" && radio ? selected : undefined}
+      aria-checked={kind === "menu" && (radio || box) ? on : undefined}
+      aria-pressed={kind === "sheet" && (radio || box) ? on : undefined}
       aria-describedby={description ? descId : undefined}
       data-menu-item=""
       data-selected={selected || undefined}
@@ -179,7 +185,7 @@ export function MenuItem({
       disabled={disabled}
       title={title}
       onClick={() => {
-        close();
+        if (!box) close();
         onSelect();
       }}
     >

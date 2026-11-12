@@ -141,7 +141,11 @@ describe("GET /api/home/metrics (RED-W6)", () => {
       "dayStarts=1&now=3&queueLimit=0",
       // Same rules as the desktop entry point.
       "dayStarts=1,2&now=3&windows=today",
-      "dayStarts=1,2&now=3&windows=today:1:2",
+      // RED-W4: a window that ends early ends after it starts, inside the days.
+      "dayStarts=1,2&now=3&windows=today:1:1",
+      "dayStarts=1,2&now=3&windows=today:0:3",
+      "dayStarts=1,2&now=3&windows=today:0:1:2",
+      "dayStarts=1,2&now=3&windows=today:0:x",
       "dayStarts=1,2&now=3&windows=today:x",
       "dayStarts=1,2&now=3&windows=today:-1",
       "dayStarts=1&now=3&projectIds=a,,b",
@@ -150,6 +154,15 @@ describe("GET /api/home/metrics (RED-W6)", () => {
     ]) {
       expect((await get(`/api/home/metrics?${q}`, t)).statusCode, q).toBe(400);
     }
+  });
+
+  it("parses a window that ends early: the previous period (RED-W4)", () => {
+    expect(
+      homeQuerySchema.parse({ dayStarts: "1,2,3,4", now: "5", windows: "7d:2,prev-7d:0:2" }).windows,
+    ).toEqual([
+      { id: "7d", fromIndex: 2 },
+      { id: "prev-7d", fromIndex: 0, toIndex: 2 },
+    ]);
   });
 
   it("parses project ids and the queue limit", () => {

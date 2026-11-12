@@ -15,6 +15,7 @@ import { usePopover } from "@shared/ui/usePopover";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { KPI_IDS, KpiCard, KpiCards, type KpiId } from "./KpiCards";
 import { PeriodSelector } from "./PeriodSelector";
+import { storeCompare, storedCompare } from "./model/compare";
 import { ExecutionByProject } from "./ExecutionByProject";
 import { ExitCriteriaCard } from "./ExitCriteriaCard";
 import { DailyExecutionsChart } from "./DailyExecutionsChart";
@@ -82,6 +83,12 @@ export function DashboardPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [period, setPeriod] = useState<Period>(storedPeriod);
+  // RED-W4: «Comparar con el periodo anterior», remembered on this device.
+  const [compare, setCompare] = useState<boolean>(storedCompare);
+  const chooseCompare = (on: boolean) => {
+    setCompare(on);
+    storeCompare(on);
+  };
   const [exitId, setExitId] = useState<string | null>(null);
   const [tab, setTab] = useState<MobileTab>("summary");
   // The local day of the metrics: it moves at midnight with them.
@@ -364,7 +371,14 @@ export function DashboardPage() {
           </>
         ) : (
           <>
-            <PeriodSelector value={period} onChange={choosePeriod} description={sumNote} />
+            <PeriodSelector
+              value={period}
+              onChange={choosePeriod}
+              description={sumNote}
+              compare={compare}
+              onCompare={chooseCompare}
+              today={today}
+            />
             <button
               type="button"
               className="home-btn home-btn--primary"
@@ -417,6 +431,8 @@ export function DashboardPage() {
     exec,
     status: metrics.status,
     period,
+    compare,
+    today,
     projects: list,
     projectsLoading: projects === null,
   };
@@ -446,6 +462,7 @@ export function DashboardPage() {
       today={today}
       state={metrics}
       onRetry={retry}
+      compare={compare}
     />
   );
   const upcoming = (
@@ -533,7 +550,14 @@ export function DashboardPage() {
               {/* The chart is the widget the period changes, so the selector
                   is here too (user's decision); same state as in Resumen. */}
               <div className="home-period-row">
-                <PeriodSelector value={period} onChange={choosePeriod} description={sumNote} />
+                <PeriodSelector
+              value={period}
+              onChange={choosePeriod}
+              description={sumNote}
+              compare={compare}
+              onCompare={chooseCompare}
+              today={today}
+            />
               </div>
               {visible.has("daily") && daily}
               {visible.has("trend") && trend}
