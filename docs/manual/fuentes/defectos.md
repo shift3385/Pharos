@@ -80,8 +80,8 @@ En este manual, Liomar registra dos defectos de Pharos:
   título; un toque abre el defecto.
 - El tablero enseña una columna cada vez: desliza a los lados para pasar de
   un estado a otro.
-- Eliminar un defecto, por ahora, solo se puede desde la tabla en escritorio
-  o tableta.
+- Para eliminar un defecto en el móvil (o desde el tablero), ábrelo: su
+  editor tiene «Eliminar defecto».
 
 ## Consejos
 

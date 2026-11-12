@@ -3054,7 +3054,7 @@
       "n": 12,
       "id": "eliminar",
       "title": "Eliminar un defecto",
-      "caption": "Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila («Eliminar defecto») lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.",
+      "caption": "Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.",
       "covers": [
         "dialogs:src/modules/defects/ui/DefectsPage.tsx"
       ],

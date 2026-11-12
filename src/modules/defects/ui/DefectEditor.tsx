@@ -265,6 +265,26 @@ export function DefectEditor({
     if (path) toast(t("downloads.saved", { path }));
   }
 
+  /** Deleting the defect from its editor, the one place every view reaches
+   *  (table, board, phone card; NC-015): the same critical confirmation as the
+   *  table's trash button. */
+  async function removeDefect() {
+    if (!current) return;
+    const ok = await confirm({
+      title: t("defects.deleteTitle"),
+      message: t("defects.deleteMessage", { defect: `${current.defectKey} ${current.title}` }),
+      confirmLabel: t("defects.deleteConfirm"),
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await defectsApi.remove(current.id, userId);
+      onClose();
+    } catch {
+      toast(t("defects.deleteFailed"), "error");
+    }
+  }
+
   /** Removing an evidence deletes it for good: a critical confirmation
    *  (NC-012, NC-014). */
   async function removeAttachment(a: { id: string; name: string }) {
@@ -326,6 +346,17 @@ export function DefectEditor({
         {current && <span className="tc-editor__id">{current.defectKey}</span>}
         {current && <StatusBadge defect={current} />}
         <div className="tc-editor__actions">
+          {current && (
+            <button
+              type="button"
+              className="ui-btn ui-btn--ghost"
+              onClick={() => void removeDefect()}
+              disabled={saving}
+            >
+              <Trash2 size={15} aria-hidden="true" />
+              <span className="ui-btn__text">{t("defects.delete")}</span>
+            </button>
+          )}
           <button type="button" className="tp-editor__save" onClick={save} disabled={saving}>
             {saving ? t("defects.saving") : t("defects.save")}
           </button>

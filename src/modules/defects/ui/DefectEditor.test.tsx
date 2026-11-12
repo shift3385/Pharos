@@ -11,12 +11,14 @@ import { DefectEditor } from "./DefectEditor";
 const link = vi.fn();
 const attachmentList = vi.fn();
 const attachmentDelete = vi.fn();
+const remove = vi.fn();
 vi.mock("../api/defectsApi", () => ({
   MAX_ATTACHMENT_MB: 200,
   defectsApi: {
     link: (...a: unknown[]) => link(...a),
     attachmentList: (...a: unknown[]) => attachmentList(...a),
     attachmentDelete: (...a: unknown[]) => attachmentDelete(...a),
+    remove: (...a: unknown[]) => remove(...a),
     results: () => Promise.resolve([]),
   },
 }));
@@ -74,6 +76,7 @@ beforeEach(async () => {
   link.mockResolvedValue({ ...DEFECT, links: [] });
   attachmentList.mockResolvedValue([{ id: "a1", name: "captura-fallo-acceso.png", size: 2048, purged: false }]);
   attachmentDelete.mockResolvedValue(undefined);
+  remove.mockResolvedValue(undefined);
 });
 
 describe("DefectEditor · links and evidence (MAN-03)", () => {
@@ -115,6 +118,27 @@ describe("DefectEditor · links and evidence (MAN-03)", () => {
     expect(ask).toBeInTheDocument();
     await user.click(within(ask).getByRole("button", { name: "Quitar" }));
     await waitFor(() => expect(attachmentDelete).toHaveBeenCalledWith("a1", "u1"));
+  });
+
+  it("deletes the defect from its editor after a critical confirmation, and goes back (NC-015)", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={DEFECT} onClose={onClose} />);
+    await user.click(await screen.findByRole("button", { name: "Eliminar defecto" }));
+    const ask = await screen.findByRole("alertdialog", { name: "¿Eliminar el defecto?" });
+    expect(ask).toHaveTextContent("DEF-001 Entrar falla con el correo en mayúsculas");
+    await user.keyboard("{Escape}");
+    expect(ask).toBeInTheDocument();
+    expect(remove).not.toHaveBeenCalled();
+    await user.click(within(ask).getByRole("button", { name: "Sí, eliminar" }));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith("d1", "u1"));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("a new defect has nothing to delete yet (NC-015)", async () => {
+    renderWithProviders(<DefectEditor projectId="p1" userId="u1" defect={null} onClose={vi.fn()} />);
+    expect(await screen.findByRole("button", { name: "Guardar" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eliminar defecto" })).not.toBeInTheDocument();
   });
 
   it("«Adjuntar archivos» is a Pharos button that opens the hidden picker (NC-037)", async () => {
