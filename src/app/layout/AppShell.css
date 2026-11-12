@@ -57,9 +57,8 @@
   flex-direction: column;
   gap: 20px;
   padding: 20px 14px 14px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: none;
+  /* Brand and foot (sync, avatar) stay in view; only the nav scrolls (NC-027). */
+  overflow: hidden;
   color: var(--color-on-navy);
   background-color: var(--color-navy-900);
   transition: width 200ms ease;
@@ -140,9 +139,27 @@
 
 .sidebar__nav {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  /* The one scroller of the sidebar, so the foot never leaves the window
+     (NC-027: with the 9 project sections at 1024 × 768 it did). Room for the
+     focus ring, which the scroller would otherwise clip. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  margin: -4px;
+  padding: 4px;
+}
+
+.sidebar__nav::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar__brand,
+.sidebar__foot {
+  flex: none;
 }
 
 .sidebar[data-mode="rail"] .sidebar__nav {
