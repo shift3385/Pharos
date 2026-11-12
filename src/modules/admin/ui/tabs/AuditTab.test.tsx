@@ -99,6 +99,7 @@ describe("Administración › Auditoría (AUD-01)", () => {
     expect(screen.getByText("Importado")).toBeInTheDocument();
     expect(screen.getAllByText("Este equipo").length).toBeGreaterThan(0);
     expect(within(screen.getByTestId("audit-integrity")).getByText("Registro íntegro.")).toBeInTheDocument();
+    expect(within(screen.getByTestId("audit-integrity")).getByText(/^1 cadena, 7 eventos comprobados/)).toBeInTheDocument();
     const [userId, query] = api.list.mock.calls[0];
     expect(userId).toBe(ME);
     expect(query.from).toBeTruthy();

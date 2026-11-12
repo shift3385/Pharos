@@ -349,3 +349,10 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+/* The period sits with the other filters, as wide as its longest choice. */
+.aud-filters .aud-period {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 190px;
+}

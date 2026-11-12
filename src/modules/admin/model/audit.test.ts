@@ -3,6 +3,8 @@ import {
   activeFilterCount,
   deviceKind,
   diffRows,
+  elementName,
+  fieldKey,
   filtersFromParams,
   filtersToParams,
   lineDiff,
@@ -96,5 +98,44 @@ describe("audit actors, devices and changes", () => {
       { text: "Enter", changed: true },
     ]);
     expect(d.after.map((l) => l.changed)).toEqual([false, true, true]);
+  });
+});
+
+describe("audit element names and field keys (AUD-01 polish)", () => {
+  const base = {
+    id: "e",
+    at: "2026-11-12T10:00:00.000Z",
+    actor: "user:u",
+    onBehalfOf: null,
+    action: "create",
+    entity: "project",
+    entityId: "p1",
+    entityKey: null,
+    projectId: "p1",
+    projectName: "Avianca",
+    deviceId: "d",
+    changes: null,
+    summary: null,
+    chainWorkspaceId: "w",
+    chainOwner: "u",
+    chainSeq: 1,
+    prevHash: null,
+    hash: "h",
+    redactedAt: null,
+  };
+
+  it("names an element by its key, its title or name, or its project", () => {
+    expect(elementName({ ...base, entityKey: "ATS_014" })).toBe("ATS_014");
+    expect(elementName({ ...base, entity: "test_plan", changes: '{"title":[null,"Plan Q4"]}' })).toBe("Plan Q4");
+    // A delete keeps the name it had.
+    expect(elementName({ ...base, entity: "custom_field", changes: '{"name":["Canal",null]}' })).toBe("Canal");
+    expect(elementName({ ...base, entity: "custom_field", changes: '{"label":[null,"Canal"]}' })).toBe("Canal");
+    expect(elementName(base)).toBe("Avianca");
+    expect(elementName({ ...base, entity: "run", projectName: "Avianca" })).toBeNull();
+  });
+
+  it("labels a first-level data field like the field itself", () => {
+    expect(fieldKey("data.aiProvenance")).toBe("aiProvenance");
+    expect(fieldKey("title")).toBe("title");
   });
 });
