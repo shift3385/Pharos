@@ -4,7 +4,7 @@
 import esLocale from "@shared/i18n/locales/es.json";
 import enLocale from "@shared/i18n/locales/en.json";
 import { reverse, toKey } from "@shared/import/xlsx";
-import { DELIVERABLE_KEYS, TEST_LEVELS, TEST_TYPES, TOOL_NAMES, TYPE_GROUPS, toolName } from "./catalogs";
+import { DELIVERABLE_KEYS, TECHNIQUE_KEYS, TEST_LEVELS, TEST_TYPES, TOOL_NAMES, TYPE_GROUPS, toolName } from "./catalogs";
 
 type Translate = (key: string) => string;
 
@@ -70,3 +70,15 @@ export function typeGroupLines(list: string[] | undefined, t: Translate): string
   groups.push({ title: t("testPlan.typeGroup.own"), items: own });
   return groups.filter((g) => g.items.length > 0).map((g) => `${g.title}: ${g.items.join(", ")}`);
 }
+
+/** Techniques as the exports show them: by group, own ones last. */
+export const techniqueLabels = (list: string[] | undefined, t: Translate) =>
+  byCatalog(list ?? [], TECHNIQUE_KEYS).map((k) =>
+    TECHNIQUE_KEYS.includes(k) ? t(`testPlan.techniqueLabel.${k}`) : k,
+  );
+
+/** Label (es or en, any case) or key → technique key. */
+export const TECHNIQUE_REV = reverse(
+  esLocale.testPlan.techniqueLabel,
+  enLocale.testPlan.techniqueLabel,
+);

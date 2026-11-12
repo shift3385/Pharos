@@ -7,6 +7,8 @@ import { buildPlanPdf, planPdfName } from "./planPdf";
 import type { CycleExportData } from "@modules/cycles";
 import { planExtraTables } from "./planExtras";
 import { loadHistoryTable } from "./planHistory";
+import { strategyExport } from "./planStrategy";
+import { approvalLine, documentIdFor, hexOf } from "../ui/wizard/formState";
 
 /** The project asks for the revision history in its plan (PLN-02):
  *  `names` maps account ids to official names (first and last name). */
@@ -16,14 +18,17 @@ export interface PlanHistoryOption {
   timeZone?: string;
 }
 
-type Translate = (key: string) => string;
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
 /** Maps a stored plan to the export shape (mirrors the wizard's export mapping),
  *  localizing option lists and composing the methodology line. */
-export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
+export function planToExportable(plan: TestPlan, t: Translate, lang = "es", prefix?: string | null): ExportablePlan {
   const d = plan.data ?? {};
   const methodology = methodologyText(d, t);
   return {
+    ...strategyExport(d, t, lang),
+    documentId: d.documentId?.trim() || documentIdFor(prefix, hexOf(plan.id)),
+    approvedBy: plan.status === "approved" && d.approval ? approvalLine(d.approval, t, lang) : "",
     filenameBase: plan.title?.trim() || "plan",
     version: plan.version,
     planDate: plan.planDate ?? "",
@@ -141,11 +146,13 @@ export async function projectPlanFiles(
   onSkip?: (name: string) => void,
   cycles?: CycleExportData,
   history?: PlanHistoryOption,
+  /** The project's case prefix, for the default document ID (PLN-04). */
+  prefix?: string,
 ): Promise<{ name: string; buffer: ArrayBuffer | Uint8Array }[]> {
   const plan = await testPlanApi.byProject(projectId, userId);
   if (!plan) return [];
   const exportable = {
-    ...planToExportable(plan, t),
+    ...planToExportable(plan, t, lang, prefix),
     extraTables: await planExtraTables(
       projectId,
       userId,
@@ -158,7 +165,7 @@ export async function projectPlanFiles(
       ? { history: (await loadHistoryTable(plan, userId, history.names, t, history.timeZone)) ?? undefined }
       : {}),
   };
-  const { filename, buffer } = await buildPlanXlsx(exportable, lang);
+  const { filename, buffer } = await buildPlanXlsx(exportable, lang, t);
   onEach?.(filename);
   const files: { name: string; buffer: ArrayBuffer | Uint8Array }[] = [
     { name: filename, buffer },

@@ -3,7 +3,7 @@
 - **Estado:** Aceptado (plan, bocetos y decisiones D1–D6 aprobados por el
   usuario el 2026-11-11: «Sí, apruebo todo»; DOC-02 y DOC-06, hito 0.4.0
   «Estrategia medible»). La forma de los datos del plan se acordó con el
-  track «plan-iso» (PLN-06, [ADR-0040](README.md)).
+  track «plan-iso» (PLN-06, [ADR-0040](0040-metricas-del-plan-y-aprobacion.md)).
 - **Contexto:**
   - El usuario preguntó «¿las métricas solo se usan para bonito?». Hasta
     0.3.0 las métricas solo se mostraban: un ciclo se cerraba eligiendo

@@ -1084,13 +1084,18 @@
       "tools": "Tools and automation",
       "testData": "Test data",
       "defects": "Defect management",
-      "roles": "Roles and responsibilities",
+      "roles": "Roles, independence and training",
       "schedule": "Schedule",
       "risks": "Risks and mitigation",
       "communication": "Communication plan",
       "closure": "Closure criteria",
       "purpose": "Purpose",
-      "conclusion": "Conclusion"
+      "conclusion": "Conclusion",
+      "assumptions": "Assumptions and constraints",
+      "techniques": "Test techniques",
+      "estimation": "Estimation and budget",
+      "entry": "Entry, suspension and resumption",
+      "metrics": "Metrics and measurable objectives"
     },
     "typeGroup": {
       "functional": "Functional",
@@ -1196,7 +1201,12 @@
       "communication": "How and when progress is reported.",
       "closure": "Conditions to meet before closing the cycle.",
       "purpose": "The test objectives the plan pursues and what it is for.",
-      "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision."
+      "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision.",
+      "assumptions": "What planning takes for granted and the limits the team cannot change (deadlines, people, rules). If an assumption stops holding, review the plan.",
+      "techniques": "How test cases are designed (ISTQB CTFL v4, ch. 4): black-box, white-box, experience-based and collaboration-based.",
+      "estimation": "How much effort and money it takes, and which technique gave the figure (CTFL v4 §5.1.4). In three-point estimation, E = (O + 4·M + P) / 6.",
+      "entry": "When a cycle may start (entry criteria), when testing stops and what must happen to resume it.",
+      "metrics": "What is measured and the objective it must reach. Pharos measures the catalog metrics; your own ones are judged by hand. Tick «Exit criterion» so they count when a cycle closes."
     },
     "nav": {
       "label": "Plan steps",
@@ -1365,7 +1375,167 @@
     },
     "testTypes": "Test types",
     "testLevels": "Test levels",
-    "suggestedTitle": "{{project}} test plan"
+    "suggestedTitle": "{{project}} test plan",
+    "assumptions": "Assumptions",
+    "constraints": "Constraints",
+    "suggestAssumptions": "Suggest assumptions and constraints with AI",
+    "suggestEntry": "Suggest criteria with AI",
+    "listName": {
+      "assumptions": "Assumption",
+      "constraints": "Constraint",
+      "entryCriteria": "Entry",
+      "suspensionCriteria": "Suspension",
+      "resumptionCriteria": "Resumption"
+    },
+    "techniqueGroup": {
+      "blackBox": "Black-box",
+      "whiteBox": "White-box",
+      "experience": "Experience-based",
+      "collaborative": "Collaboration-based",
+      "own": "Own"
+    },
+    "techniqueLabel": {
+      "equivalencePartitioning": "Equivalence partitioning",
+      "boundaryValues": "Boundary value analysis",
+      "decisionTables": "Decision table testing",
+      "stateTransition": "State transition testing",
+      "statement": "Statement testing",
+      "branch": "Branch testing",
+      "errorGuessing": "Error guessing",
+      "exploratory": "Exploratory testing",
+      "checklist": "Checklist-based testing",
+      "userStories": "Collaborative user story writing",
+      "acceptanceCriteria": "Acceptance criteria",
+      "atdd": "ATDD (acceptance test-driven development)"
+    },
+    "techniqueList": {
+      "other": "Other technique",
+      "otherPlaceholder": "Type a technique",
+      "add": "Add technique"
+    },
+    "independence": "Independence of testing",
+    "independenceLevel": {
+      "author": "The author",
+      "peer": "A peer",
+      "team": "Testers in the team",
+      "organization": "A team in the organization",
+      "external": "External"
+    },
+    "independenceNote": "How it is ensured",
+    "training": "Training needs",
+    "trainingNeedCol": "Need",
+    "trainingWhenCol": "When",
+    "estimationTechnique": "Estimation technique",
+    "estimationTechniqueLabel": {
+      "ratio": "Ratio-based",
+      "extrapolation": "Extrapolation",
+      "wideband": "Wideband Delphi",
+      "threePoint": "Three-point estimation",
+      "expert": "Expert judgement"
+    },
+    "effort": "Effort (person-days)",
+    "optimistic": "Optimistic (person-days)",
+    "likely": "Most likely (person-days)",
+    "pessimistic": "Pessimistic (person-days)",
+    "threePointResult": "E = ({{o}} + 4·{{m}} + {{p}}) / 6 = {{e}} person-days · σ = {{sd}}",
+    "threePointIncomplete": "Enter the three figures to work out the estimate.",
+    "budget": "Budget",
+    "estimationNotes": "Basis and notes",
+    "entryCriteria": "Entry criteria",
+    "suspensionCriteria": "Testing is suspended if…",
+    "resumptionCriteria": "Testing resumes when…",
+    "metricKind": {
+      "executed": "% of cases executed",
+      "passRate": "Pass rate",
+      "criticalDefects": "Open critical defects",
+      "coverage": "Requirements coverage",
+      "defectDensity": "Defect density",
+      "escapedDefects": "Escaped defects",
+      "fixTime": "Time to fix (median)",
+      "reopenRate": "Reopen rate",
+      "flakyRate": "Flaky test rate"
+    },
+    "metricKindTip": {
+      "executed": "Executed cases out of those planned.",
+      "passRate": "Passed cases out of those executed.",
+      "criticalDefects": "Defects of critical severity not closed.",
+      "coverage": "Requirements with at least one passing case.",
+      "defectDensity": "Defects per 100 executed cases.",
+      "escapedDefects": "Defects found after the cycle closed.",
+      "fixTime": "Median days from a defect's creation to «Fixed».",
+      "reopenRate": "Reopened defects out of those fixed.",
+      "flakyRate": "Cases with different results and no change in between."
+    },
+    "metricUnit": {
+      "percent": "%",
+      "count": "Number",
+      "per100cases": "Per 100 cases",
+      "days": "Days",
+      "score": "Score"
+    },
+    "metricUnitShort": {
+      "per100cases": "/ 100 cases",
+      "days_one": "day",
+      "days_other": "days"
+    },
+    "metricsTable": {
+      "metric": "Metric",
+      "op": "Operator",
+      "target": "Objective",
+      "measured": "How it is measured",
+      "exit": "Exit criterion",
+      "note": "Note",
+      "ownName": "Metric name",
+      "unit": "Unit",
+      "remove": "Remove metric"
+    },
+    "measure": {
+      "auto": "Pharos measures it",
+      "manual": "By hand"
+    },
+    "metricsAddCatalog": "Catalog metric",
+    "metricsAddOwn": "Own metric",
+    "metricsNone": "No metrics yet. Add one from the catalog or your own.",
+    "closureLink": {
+      "label": "Measured by",
+      "none": "No metric · checked by hand",
+      "blocking": "Blocking",
+      "advisory": "Advisory",
+      "blockingTip": "A blocking criterion marked «Not met» needs a justification to close the cycle; an advisory one is only reported.",
+      "hint": "Criteria measured by a metric are evaluated by themselves when a cycle closes. Their text is written from the metric."
+    },
+    "approval": {
+      "approve": "Approve version {{version}}",
+      "title": "Approve the plan?",
+      "confirm": "You will approve version {{version}} as {{name}}, today {{date}}. If its content is edited later, the plan goes back to «Reviewed» and needs approving again.",
+      "action": "Approve",
+      "toast": "Plan approved (v{{version}}).",
+      "saveFirst": "Save before approving",
+      "needsReviewed": "Only a saved plan in «Reviewed» can be approved.",
+      "by": "Approved by",
+      "at": "Approved on",
+      "editing": "This plan is approved (v{{version}}). Saving these changes sends it back to «Reviewed».",
+      "optionReason": "It is approved with the «Approve» button of «Plan status».",
+      "byLine": "{{name}} · {{date}}"
+    },
+    "noChangesToast": "No changes: there is nothing to save.",
+    "documentId": "Document ID",
+    "timeline": {
+      "title": "History",
+      "created": "Plan created",
+      "approved": "Approved by {{name}}",
+      "lostApproval": "loses its approval",
+      "none": "No saved changes yet.",
+      "someone": "Another account"
+    },
+    "strategySheet": "29119-3 strategy",
+    "metricsSheet": "Metrics",
+    "criteriaSheet": "Exit criteria",
+    "sectionCol": "Section",
+    "contentCol": "Content",
+    "keyCol": "Key",
+    "typeCol": "Type",
+    "linkedCol": "Measured by"
   },
   "testCase": {
     "loadFailed": "The test cases could not be loaded.",

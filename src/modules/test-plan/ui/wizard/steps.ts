@@ -1,13 +1,16 @@
-// The 17 steps of the plan wizard (spec §5.1, ScrPlan, UX-31) and when each
+// The 22 steps of the plan wizard (spec §5.1, ScrPlan, UX-31, PLN-06) and when each
 // one counts as completed: its main field has content. The navigation shows ✓
 // for those, and the last step lists the ones still missing.
+import type { Estimation } from "../../model/types";
 import type { FormState } from "./formState";
 
 export const STEP_IDS = [
   "identification",
   "summary",
   "scope",
+  "assumptions",
   "levelsTypes",
+  "techniques",
   "methodology",
   "deliverables",
   "environment",
@@ -15,9 +18,12 @@ export const STEP_IDS = [
   "testData",
   "defects",
   "roles",
+  "estimation",
   "schedule",
   "risks",
   "communication",
+  "entry",
+  "metrics",
   "closure",
   "purpose",
   "conclusion",
@@ -61,15 +67,26 @@ export function methodologyGaps(
   return gaps;
 }
 
+/** «Estimación y presupuesto» is complete with a technique and its figures. */
+export function estimationComplete(e: Estimation): boolean {
+  if (!e.technique) return false;
+  if (e.technique === "threePoint")
+    return e.optimistic !== undefined && e.likely !== undefined && e.pessimistic !== undefined;
+  return e.effort !== undefined;
+}
+
 const COMPLETE: Record<StepId, (f: FormState) => boolean> = {
   // The document's identification: title, version and date (the author
   // always comes from the account).
   identification: (f) => text(f.title) && text(f.version) && text(f.planDate),
   summary: (f) => text(f.summary),
   scope: (f) => some(f.scopeIn),
+  // ISO/IEC/IEEE 29119-3 (PLN-06): one assumption or constraint is enough.
+  assumptions: (f) => some(f.assumptions) || some(f.constraints),
   // At least one level and one type: «what is tested, at which level and
   // with which type» (ISTQB).
   levelsTypes: (f) => f.testLevels.length > 0 && f.testTypes.length > 0,
+  techniques: (f) => f.techniques.length > 0,
   methodology: (f) => methodologyGaps(f).length === 0,
   deliverables: (f) => some(f.deliverables),
   environment: (f) => text(f.environmentConfig) || text(f.environmentRequirements),
@@ -77,9 +94,13 @@ const COMPLETE: Record<StepId, (f: FormState) => boolean> = {
   testData: (f) => text(f.testDataManagement),
   defects: (f) => text(f.defectManagement),
   roles: (f) => f.roles.some((r) => text(r.role)),
+  // A technique and its figure: the effort, or the three of three-point.
+  estimation: (f) => estimationComplete(f.estimation),
   schedule: (f) => f.sprints.some((s) => text(s.name) || s.start) || f.milestones.some((m) => text(m.name)),
   risks: (f) => f.risks.some((r) => text(r.risk)),
   communication: (f) => text(f.communicationPlan),
+  entry: (f) => some(f.entryCriteria),
+  metrics: (f) => f.metrics.some((m) => m.kind || text(m.name)),
   closure: (f) => f.closureCriteria.some((c) => text(c.criterion)),
   purpose: (f) => text(f.purpose),
   conclusion: (f) => text(f.conclusion),

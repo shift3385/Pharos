@@ -11,6 +11,8 @@ import {
   buildResponsibilityMessages,
   buildClosureMessages,
   buildListReviewMessages,
+  buildPlanListMessages,
+  suggestPlanLists,
   buildRiskMessages,
   generateCasesFromRequirement,
   reviewCaseList,
@@ -426,5 +428,39 @@ describe("plan and case aids (IA-10), mocked", () => {
     expect(empty.content).toContain("(none yet)");
     expect(empty.content).toContain('Use only "add"');
     expect(empty.content).not.toContain("Check each numbered");
+  });
+});
+
+describe("plan lists of 29119-3 (PLN-06), mocked", () => {
+  it("asks for the group's lists only, and names each one", () => {
+    const [, assumptions] = buildPlanListMessages("assumptions", "Title: X", ["Staging de 8 a 20 h"], "es");
+    expect(assumptions.content).toContain('"list":"assumptions|constraints"');
+    expect(assumptions.content).toContain("- Staging de 8 a 20 h");
+    const [, entry] = buildPlanListMessages("entry", "Title: X", [], "es");
+    expect(entry.content).toContain('"list":"entryCriteria|suspensionCriteria|resumptionCriteria"');
+  });
+
+  it("keeps items of the group's lists that are new, once each", async () => {
+    online(async () =>
+      JSON.stringify({
+        items: [
+          { list: "entryCriteria", text: "Build desplegado en staging" },
+          { list: "suspensionCriteria", text: "Falla el login" },
+          { list: "suspensionCriteria", text: " falla el LOGIN " },
+          { list: "assumptions", text: "De otro paso" },
+          { list: "resumptionCriteria", text: "Casos revisados" },
+        ],
+      }),
+    );
+    const result = await suggestPlanLists("entry", "Title: Banca", ["Casos revisados"], "es");
+    expect(result.value).toEqual([
+      { list: "entryCriteria", text: "Build desplegado en staging" },
+      { list: "suspensionCriteria", text: "Falla el login" },
+    ]);
+  });
+
+  it("nothing usable is reported, not shown as an empty list", async () => {
+    online(async () => JSON.stringify({ items: [{ list: "other", text: "X" }] }));
+    await expect(suggestPlanLists("assumptions", "Title: X", [], "es")).rejects.toBeInstanceOf(AiOutputError);
   });
 });

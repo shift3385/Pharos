@@ -175,7 +175,12 @@ export function ProjectDetail({
     <section className="pj-detail">
       {loadFailed && <LoadError message={t("projects.loadFailed")} onRetry={retryLoad} />}
       <ProjectHeaderLayout info={header}>
-        {tab === "plan" && <TestPlanPage projectId={projectId} exportHistory={project.planExportHistory} projectName={project.name} />}
+        {tab === "plan" && <TestPlanPage
+            projectId={projectId}
+            exportHistory={project.planExportHistory}
+            projectName={project.name}
+            projectPrefix={project.caseIdPrefix}
+          />}
         {tab === "cases" && (
           <TestCasesPage
             projectId={projectId}
