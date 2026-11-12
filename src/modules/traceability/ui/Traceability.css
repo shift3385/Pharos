@@ -319,6 +319,18 @@
   text-overflow: ellipsis;
 }
 
+/* Matrix titles (NC-053): up to two lines before the ellipsis, so a title
+   reads whole at desktop widths; the full text stays in the tooltip. */
+.tz-clamp {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 .tz-muted {
   font-size: 12px;
   color: var(--color-text-muted);

@@ -245,10 +245,10 @@ export function MatrixView({
     {
       id: "reqTitle",
       header: t("traceability.matrix.col.requirementTitle"),
-      width: "minmax(0,1.2fr)",
+      width: "minmax(140px,1.6fr)",
       cell: (l) =>
         l.first && (
-          <span className="tz-clip" title={l.row.requirementTitle}>
+          <span className="tz-clamp" title={l.row.requirementTitle}>
             {l.row.requirementTitle}
           </span>
         ),
@@ -268,10 +268,10 @@ export function MatrixView({
     {
       id: "caseTitle",
       header: t("traceability.matrix.col.caseTitle"),
-      width: "minmax(0,1.3fr)",
+      width: "minmax(140px,1.7fr)",
       cell: (l) =>
         l.row.caseId ? (
-          <span className="tz-clip" title={l.row.caseTitle}>
+          <span className="tz-clamp" title={l.row.caseTitle}>
             {l.row.caseTitle}
           </span>
         ) : (
@@ -299,7 +299,7 @@ export function MatrixView({
     {
       id: "notes",
       header: t("traceability.matrix.col.notes"),
-      width: "minmax(0,1.1fr)",
+      width: "minmax(0,0.8fr)",
       cell: (l) => (
         <span className="tz-clip tz-muted" title={notes(l.row)}>
           {notes(l.row)}

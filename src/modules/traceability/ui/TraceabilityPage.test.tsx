@@ -115,6 +115,19 @@ describe("Trazabilidad (RED-V3)", () => {
     await expectNoAxeViolations();
   });
 
+  it("gives the titles the room and up to two lines, and the notes less (NC-053)", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
+    const table = await screen.findByRole("table", { name: "Matriz de trazabilidad" });
+    const tracks = table.style.getPropertyValue("--dt-cols");
+    expect(tracks).toContain("minmax(140px,1.6fr)");
+    expect(tracks).toContain("minmax(140px,1.7fr)");
+    expect(tracks).toContain("minmax(0,0.8fr)");
+    const titles = table.querySelectorAll(".tz-clamp");
+    expect(titles.length).toBeGreaterThan(0);
+    titles.forEach((title) => expect(title).toHaveAttribute("title", title.textContent ?? ""));
+  });
+
   it("«Mostrar solo huecos» counts and keeps only the uncovered requirements", async () => {
     setViewportWidth(1440);
     renderWithProviders(<TraceabilityPage projectId="p1" projectName="Portal" />);
