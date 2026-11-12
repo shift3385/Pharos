@@ -34,7 +34,7 @@ import {
   linkContext,
   withLinks,
 } from "./defects";
-import { linkId } from "../sync/defects";
+import { linkId, stampLifecycle } from "../sync/defects";
 import type {
   CustomFieldInput,
   DefectInput,
@@ -847,7 +847,11 @@ export function createDomainService(store: DomainStore) {
           projectId: input.projectId,
           defectKey: await nextKey(tx, input.projectId, "defect", DEFECT_PREFIX, DEFECT_DIGITS),
           ...editable(input),
-          data: await defectData(tx, input.projectId, input.data, undefined),
+          data: {
+            ...((await defectData(tx, input.projectId, input.data, undefined)) as Payload),
+            // Only the core writes the lifecycle (DOC-06).
+            lifecycle: stampLifecycle(undefined, status, status, new Date().toISOString()),
+          },
           status,
           resolution,
           reporter: userId,
@@ -864,10 +868,15 @@ export function createDomainService(store: DomainStore) {
         const doc = await liveDefect(tx, id, revision);
         const from = str(doc.payload, "status");
         const status = input.status ?? from;
+        const prevData = (doc.payload.data ?? {}) as Payload;
+        const data = { ...((await defectData(tx, str(doc.payload, "projectId"), input.data, doc.payload.data)) as Payload) };
+        // The lifecycle is the core's (DOC-06); `escaped` survives a client that does not know it.
+        data.lifecycle = stampLifecycle(prevData.lifecycle, from, status, new Date().toISOString());
+        if (data.escaped === undefined && prevData.escaped !== undefined) data.escaped = prevData.escaped;
         const payload = {
           ...doc.payload,
           ...editable(input),
-          data: await defectData(tx, str(doc.payload, "projectId"), input.data, doc.payload.data),
+          data,
           status,
           resolution: checkStatus(from, status, input.resolution),
           updatedAt: now(),
@@ -877,9 +886,12 @@ export function createDomainService(store: DomainStore) {
     transition: (userId: string, id: string, t: DefectTransition) =>
       run(userId, async (tx) => {
         const doc = await liveDefect(tx, id, t.revision);
-        const resolution = checkStatus(str(doc.payload, "status"), t.status, t.resolution);
+        const from = str(doc.payload, "status");
+        const resolution = checkStatus(from, t.status, t.resolution);
+        const prevData = (doc.payload.data ?? {}) as Payload;
         const payload = {
           ...doc.payload,
+          data: { ...prevData, lifecycle: stampLifecycle(prevData.lifecycle, from, t.status, new Date().toISOString()) },
           status: t.status,
           resolution,
           fixedInBuild: t.fixedInBuild?.trim() || doc.payload.fixedInBuild || null,

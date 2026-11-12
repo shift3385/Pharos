@@ -123,6 +123,16 @@ pub struct DefectData {
     pub status: String,
     pub case_ids: Vec<String>,
     pub requirement_ids: Vec<String>,
+    /// The run it was found in: «found in the scope» (DOC-06).
+    pub found_in_run_id: Option<String>,
+    pub created_at: Option<String>,
+    /// `data.lifecycle.fixedAt`: the first time it reached `fixed`.
+    pub fixed_at: Option<String>,
+    /// `data.lifecycle.reopens`: times it went back to `open` from `retest`
+    /// or `closed`.
+    pub reopens: i64,
+    /// `data.escaped`: found outside the tests (DOC-06, D4).
+    pub escaped: bool,
 }
 
 #[derive(Deserialize, Clone, Debug, Default)]
@@ -131,6 +141,11 @@ pub struct CycleData {
     pub id: String,
     pub test_plan_id: Option<String>,
     pub configuration_ids: Vec<String>,
+    pub cycle_key: String,
+    pub title: String,
+    pub status: String,
+    /// The latest of `data.closures` (DOC-02), if it was ever closed.
+    pub closure: Option<CycleClosure>,
 }
 
 /// A live cycle item, in its cycle's order.
@@ -149,6 +164,20 @@ pub struct CycleItemData {
 pub struct CriterionData {
     pub criterion: String,
     pub metric: String,
+    /// The plan metric that measures it (PLN-06 `data.metrics[].id`).
+    pub metric_id: Option<String>,
+    /// Mandatory (None, the default) or advisory (false) (DOC-02, D2).
+    pub blocking: Option<bool>,
+}
+
+/// A plan metric (PLN-06 `data.metrics[]`); kind None = judged by hand.
+#[derive(Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PlanMetricData {
+    pub id: String,
+    pub kind: Option<String>,
+    pub op: String,
+    pub target: Option<f64>,
 }
 
 /// Everything the derivation reads of one project.
@@ -165,6 +194,8 @@ pub struct ProjectData {
     pub cycle_items: Vec<CycleItemData>,
     /// The project plan's `closureCriteria` (raw); None without a plan.
     pub plan_criteria: Option<Vec<CriterionData>>,
+    /// The project plan's `metrics` (PLN-06); None without a plan.
+    pub plan_metrics: Option<Vec<PlanMetricData>>,
 }
 
 #[cfg_attr(test, derive(TS), ts(export, optional_fields))]
@@ -461,12 +492,130 @@ pub struct ExitCriterion {
     pub index: Option<usize>,
     pub criterion: String,
     pub metric: String,
-    /// executed | passRate | criticalDefects | coverage; None = not machine-readable
+    /// One of `METRIC_KINDS`; None = not machine-readable (judged by hand).
     pub kind: Option<String>,
     pub op: Option<String>,
     pub target: Option<f64>,
     pub value: Option<f64>,
     pub met: Option<bool>,
+    /// Mandatory: it decides the gate and asks for a justification when it
+    /// fails (DOC-02, D2). Advisory criteria are shown only.
+    pub blocking: bool,
+}
+
+/// Every metric of the catalog (DOC-06), one value per kind; None when
+/// there is nothing to measure. Percentages are 0–100; `defectDensity` is
+/// per 100 executed cases; `fixTime` is in days.
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct MetricValues {
+    pub executed: Option<f64>,
+    pub pass_rate: Option<f64>,
+    pub critical_defects: Option<f64>,
+    pub coverage: Option<f64>,
+    pub defect_density: Option<f64>,
+    pub escaped_defects: Option<f64>,
+    pub fix_time: Option<f64>,
+    pub reopen_rate: Option<f64>,
+    pub flaky_rate: Option<f64>,
+}
+
+impl MetricValues {
+    pub fn get(&self, kind: &str) -> Option<f64> {
+        match kind {
+            "executed" => self.executed,
+            "passRate" => self.pass_rate,
+            "criticalDefects" => self.critical_defects,
+            "coverage" => self.coverage,
+            "defectDensity" => self.defect_density,
+            "escapedDefects" => self.escaped_defects,
+            "fixTime" => self.fix_time,
+            "reopenRate" => self.reopen_rate,
+            "flakyRate" => self.flaky_rate,
+            _ => None,
+        }
+    }
+}
+
+/// The scope's metrics (DOC-06) and the counts behind them.
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CycleMetrics {
+    pub values: MetricValues,
+    /// Cases with a final result (the density's and flakiness' base).
+    pub executed_cases: i64,
+    /// Defects found in the scope's runs (escapes apart).
+    pub defects_found: i64,
+    pub defects_fixed: i64,
+    /// Found, never fixed yet: outside the time to fix.
+    pub defects_unfixed: i64,
+    pub defects_reopened: i64,
+    /// escaped / (escaped + found), 0–100; shown, never a criterion.
+    pub escape_rate: Option<f64>,
+}
+
+/// A criterion as the gate recorded it at closing (DOC-02).
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ClosureCriterion {
+    pub index: Option<usize>,
+    pub criterion: String,
+    pub metric: String,
+    pub kind: Option<String>,
+    pub op: Option<String>,
+    pub target: Option<f64>,
+    pub value: Option<f64>,
+    pub blocking: bool,
+    /// met | notMet | noData | manual
+    pub state: String,
+    /// A manual criterion's mark.
+    pub manual_met: Option<bool>,
+    pub justification: Option<String>,
+}
+
+/// One closing of a cycle (DOC-02): the gate's decision with the figures
+/// frozen as they were. `test_cycles.data.closures[]`, newest last.
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CycleClosure {
+    pub closed_at: String,
+    pub closed_by: String,
+    /// go | goWithRisks | noGo
+    pub verdict: String,
+    pub plan_id: Option<String>,
+    pub criteria: Vec<ClosureCriterion>,
+    pub metrics: CycleMetrics,
+}
+
+/// One cycle of the trend on Inicio (DOC-06): a closed cycle's frozen
+/// figures (escapes live: they arrive after the closing), or the active
+/// cycle's live ones.
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Serialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CycleTrendPoint {
+    pub cycle_id: String,
+    pub cycle_key: String,
+    pub title: String,
+    /// closed | active
+    pub status: String,
+    pub closed_at: Option<String>,
+    pub verdict: Option<String>,
+    pub values: MetricValues,
+}
+
+/// A measurable objective of the plan (a metric with a kind).
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Serialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MetricObjective {
+    pub kind: String,
+    pub op: String,
+    pub target: f64,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -546,6 +695,12 @@ pub struct ExecutionSummary {
     pub coverage: CoverageSummary,
     pub defects: DefectSummary,
     pub exit_criteria: Vec<ExitCriterion>,
+    pub metrics: CycleMetrics,
+    /// The cycle's latest closing, when the scope is a cycle that has one.
+    pub closure: Option<CycleClosure>,
+    /// With a cycle scope, the closed cycle before it (the one closed last
+    /// before its closing, or before now if it is open), to compare with.
+    pub previous: Option<CycleTrendPoint>,
     pub daily: Vec<DailyCount>,
     pub undated: i64,
     pub runs: Vec<RunRef>,
@@ -620,6 +775,11 @@ pub struct HomeProject {
     pub coverage: Option<f64>,
     pub exit_criteria: Vec<ExitCriterion>,
     pub queue: HomeQueue,
+    /// The last closed cycles (oldest first, at most `TREND_CYCLES`) and
+    /// the active one (DOC-06).
+    pub trend: Vec<CycleTrendPoint>,
+    /// The plan's measurable objectives: the trend's target lines.
+    pub objectives: Vec<MetricObjective>,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -875,62 +1035,387 @@ const DEFAULT_CRITERIA: [(&str, &str); 3] = [
     ("Cobertura de requisitos", "≥ 90%"),
 ];
 
+/// The metric catalog (DOC-06, ADR-0041): the kinds a plan metric may
+/// have. The same literals as `src/shared/metrics/catalog.ts`.
+pub const METRIC_KINDS: [&str; 9] = [
+    "executed",
+    "passRate",
+    "criticalDefects",
+    "coverage",
+    "defectDensity",
+    "escapedDefects",
+    "fixTime",
+    "reopenRate",
+    "flakyRate",
+];
+pub const METRIC_OPS: [&str; 5] = [">=", ">", "<=", "<", "="];
+
+fn known_kind(kind: &str) -> Option<&'static str> {
+    METRIC_KINDS.iter().copied().find(|k| *k == kind)
+}
+
+fn known_op(op: &str) -> Option<&'static str> {
+    METRIC_OPS.iter().copied().find(|o| *o == op)
+}
+
+/// `value op target`.
+pub fn compare(value: f64, op: &str, target: f64) -> bool {
+    match op {
+        ">=" => value >= target,
+        ">" => value > target,
+        "<=" => value <= target,
+        "<" => value < target,
+        _ => value == target,
+    }
+}
+
+/// How a criterion is measured: by the plan metric it links to (PLN-06),
+/// else by its text (`criterion_kind`/`parse_metric`, plans before 0.4.0
+/// and a link to a deleted metric). A link to a metric without a kind (or
+/// an unknown one) is judged by hand: (None, None).
+fn measure_of(
+    c: &CriterionData,
+    metrics: &[PlanMetricData],
+) -> (Option<&'static str>, Option<(&'static str, f64)>) {
+    let linked = c
+        .metric_id
+        .as_deref()
+        .and_then(|id| metrics.iter().find(|m| m.id == id));
+    match linked {
+        Some(m) => match m.kind.as_deref().and_then(known_kind) {
+            Some(kind) => (
+                Some(kind),
+                m.target.map(|t| (known_op(m.op.trim()).unwrap_or(">="), t)),
+            ),
+            None => (None, None),
+        },
+        None => {
+            let kind = criterion_kind(&c.criterion);
+            (kind, kind.and_then(|k| parse_metric(&c.metric, k)))
+        }
+    }
+}
+
 fn exit_criteria(
     plan: Option<&Vec<CriterionData>>,
-    progress: &ExecutionProgress,
-    pass_rate: Option<f64>,
-    open_critical: i64,
-    coverage: Option<f64>,
+    metrics: &[PlanMetricData],
+    values: &MetricValues,
 ) -> Vec<ExitCriterion> {
-    let written: Vec<(Option<usize>, String, String)> = plan
+    let written: Vec<(Option<usize>, CriterionData)> = plan
         .map(|list| {
             list.iter()
                 .enumerate()
                 .filter(|(_, c)| !c.criterion.trim().is_empty())
-                .map(|(i, c)| (Some(i), c.criterion.clone(), c.metric.clone()))
+                .map(|(i, c)| (Some(i), c.clone()))
                 .collect()
         })
         .unwrap_or_default();
     let list = if written.is_empty() {
         DEFAULT_CRITERIA
             .iter()
-            .map(|(c, m)| (None, c.to_string(), m.to_string()))
+            .map(|(c, m)| {
+                (
+                    None,
+                    CriterionData {
+                        criterion: c.to_string(),
+                        metric: m.to_string(),
+                        ..Default::default()
+                    },
+                )
+            })
             .collect()
     } else {
         written
     };
     list.into_iter()
-        .map(|(index, criterion, metric)| {
-            let kind = criterion_kind(&criterion);
-            let parsed = kind.and_then(|k| parse_metric(&metric, k));
-            let value = kind.and_then(|k| match k {
-                "executed" => ratio(progress.executed, progress.total).map(|r| round1(r * 100.0)),
-                "passRate" => pass_rate.map(|r| round1(r * 100.0)),
-                "criticalDefects" => Some(open_critical as f64),
-                _ => coverage.map(|r| round1(r * 100.0)),
-            });
+        .map(|(index, c)| {
+            let (kind, parsed) = measure_of(&c, metrics);
+            let value = kind.and_then(|k| values.get(k));
             let met = match (parsed, value) {
-                (Some((op, target)), Some(v)) => Some(match op {
-                    ">=" => v >= target,
-                    ">" => v > target,
-                    "<=" => v <= target,
-                    "<" => v < target,
-                    _ => v == target,
-                }),
+                (Some((op, target)), Some(v)) => Some(compare(v, op, target)),
                 _ => None,
             };
             ExitCriterion {
                 index,
-                criterion,
-                metric,
+                criterion: c.criterion,
+                metric: c.metric,
                 kind: kind.map(String::from),
                 op: parsed.map(|(op, _)| op.to_string()),
                 target: parsed.map(|(_, n)| n),
                 value,
                 met,
+                blocking: c.blocking.unwrap_or(true),
             }
         })
         .collect()
+}
+
+/// The plan's measurable objectives: its metrics with a known kind and a
+/// target, in the plan's order.
+fn objectives(metrics: &[PlanMetricData]) -> Vec<MetricObjective> {
+    metrics
+        .iter()
+        .filter_map(|m| {
+            Some(MetricObjective {
+                kind: known_kind(m.kind.as_deref()?)?.to_string(),
+                op: known_op(m.op.trim()).unwrap_or(">=").to_string(),
+                target: m.target?,
+            })
+        })
+        .collect()
+}
+
+// ---- metrics (DOC-06) -------------------------------------------------------------
+
+const DAY_MS: f64 = 86_400_000.0;
+
+/// The median, None when there is nothing.
+fn median(mut v: Vec<f64>) -> Option<f64> {
+    if v.is_empty() {
+        return None;
+    }
+    v.sort_by(|a, b| a.total_cmp(b));
+    let n = v.len();
+    Some(if n % 2 == 1 {
+        v[n / 2]
+    } else {
+        (v[n / 2 - 1] + v[n / 2]) / 2.0
+    })
+}
+
+/// The cycle each escaped defect is charged to: the latest cycle closed at or
+/// before the defect was created (ties by id). None before any closing.
+fn escape_cycles(data: &ProjectData) -> HashMap<&str, &str> {
+    let mut closed: Vec<(i64, &str)> = data
+        .cycles
+        .iter()
+        .filter(|c| c.status == "closed")
+        .filter_map(|c| {
+            let t = derive::instant_ms(&c.closure.as_ref()?.closed_at)?;
+            Some((t, c.id.as_str()))
+        })
+        .collect();
+    closed.sort_unstable();
+    data.defects
+        .iter()
+        .filter(|d| d.escaped)
+        .filter_map(|d| {
+            let created = derive::instant_ms(d.created_at.as_deref()?)?;
+            let n = closed.partition_point(|(t, _)| *t <= created);
+            Some((d.id.as_str(), closed.get(n.checked_sub(1)?)?.1))
+        })
+        .collect()
+}
+
+/// The inputs `scope_metrics` reads from the summary.
+struct ScopeFacts<'a> {
+    scoped_runs: &'a HashSet<&'a str>,
+    cycle_plan: &'a HashMap<&'a str, Option<&'a str>>,
+    cases: &'a [CaseExecution],
+    progress: &'a ExecutionProgress,
+    pass_rate: Option<f64>,
+    open_critical: i64,
+    coverage: Option<f64>,
+}
+
+/// The catalog's metrics over the scope (DOC-06):
+/// - found defects: not escaped, found in a run of the scope;
+/// - escapes: charged to a cycle (`escape_cycles`); a project scope takes
+///   every escape;
+/// - fix time: median days from creation to the first `fixed`;
+/// - reopen rate: reopened / fixed or reopened, among the found;
+/// - flakiness: executed cases whose final result is flaky.
+fn scope_metrics(data: &ProjectData, filter: &ExecutionFilter, f: &ScopeFacts) -> CycleMetrics {
+    let executed_cases = f.cases.iter().filter(|c| c.status != NOT_RUN).count() as i64;
+    let flaky = f
+        .cases
+        .iter()
+        .filter(|c| c.status != NOT_RUN && c.last.as_ref().is_some_and(|l| l.flaky))
+        .count() as i64;
+    let found: Vec<&DefectData> = data
+        .defects
+        .iter()
+        .filter(|d| {
+            !d.escaped
+                && d.found_in_run_id
+                    .as_deref()
+                    .is_some_and(|r| f.scoped_runs.contains(r))
+        })
+        .collect();
+    let charged = escape_cycles(data);
+    let escaped = data
+        .defects
+        .iter()
+        .filter(|d| d.escaped)
+        .filter(
+            |d| match (filter.cycle_id.as_deref(), filter.test_plan_id.as_deref()) {
+                (Some(cycle), _) => charged.get(d.id.as_str()) == Some(&cycle),
+                (None, Some(plan)) => {
+                    charged
+                        .get(d.id.as_str())
+                        .and_then(|c| f.cycle_plan.get(c).copied().flatten())
+                        == Some(plan)
+                }
+                (None, None) => true,
+            },
+        )
+        .count() as i64;
+    let days: Vec<f64> = found
+        .iter()
+        .filter_map(|d| {
+            let created = derive::instant_ms(d.created_at.as_deref()?)?;
+            let fixed = derive::instant_ms(d.fixed_at.as_deref()?)?;
+            Some(((fixed - created).max(0) as f64) / DAY_MS)
+        })
+        .collect();
+    let fixed = found.iter().filter(|d| d.fixed_at.is_some()).count() as i64;
+    let reopened = found.iter().filter(|d| d.reopens > 0).count() as i64;
+    let reached_fix = found
+        .iter()
+        .filter(|d| d.fixed_at.is_some() || d.reopens > 0)
+        .count() as i64;
+    let found_n = found.len() as i64;
+    let pct = |n: i64, d: i64| ratio(n, d).map(|r| round1(r * 100.0));
+    CycleMetrics {
+        values: MetricValues {
+            executed: pct(f.progress.executed, f.progress.total),
+            pass_rate: f.pass_rate.map(|r| round1(r * 100.0)),
+            critical_defects: Some(f.open_critical as f64),
+            coverage: f.coverage.map(|r| round1(r * 100.0)),
+            defect_density: pct(found_n, executed_cases),
+            escaped_defects: Some(escaped as f64),
+            fix_time: median(days).map(round1),
+            reopen_rate: pct(reopened, reached_fix),
+            flaky_rate: pct(flaky, executed_cases),
+        },
+        executed_cases,
+        defects_found: found_n,
+        defects_fixed: fixed,
+        defects_unfixed: found_n - fixed,
+        defects_reopened: reopened,
+        escape_rate: pct(escaped, escaped + found_n),
+    }
+}
+
+// ---- the quality gate (DOC-02) ----------------------------------------------------
+
+/// The shortest justification a failing mandatory criterion takes, in
+/// characters (trimmed), and the longest.
+pub const MIN_JUSTIFICATION: usize = 20;
+pub const MAX_JUSTIFICATION: usize = 2000;
+
+/// What the person closing decided for one criterion, by its position in
+/// the summary's `exitCriteria`.
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
+#[derive(Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CloseDecision {
+    pub position: usize,
+    pub manual_met: Option<bool>,
+    pub justification: Option<String>,
+}
+
+/// «Cerrar ciclo» (DOC-02): the verdict, needed only when a mandatory
+/// criterion fails (`goWithRisks` or `noGo`), and the decisions.
+#[cfg_attr(test, derive(TS), ts(export, optional_fields))]
+#[derive(Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CycleCloseInput {
+    pub verdict: Option<String>,
+    pub decisions: Vec<CloseDecision>,
+}
+
+/// met | notMet | noData | manual, as the screens say it.
+pub fn criterion_state(c: &ExitCriterion) -> &'static str {
+    if c.kind.is_none() || c.op.is_none() {
+        "manual"
+    } else {
+        match c.met {
+            None => "noData",
+            Some(true) => "met",
+            Some(false) => "notMet",
+        }
+    }
+}
+
+/// The closing record of a cycle from its summary and the decisions, or the
+/// first rule it breaks:
+/// - a manual criterion needs its mark (`gate-manual-unset:<pos>`);
+/// - a failing mandatory criterion («No cumple», «Sin datos» (D3) or a
+///   manual one marked as not met) needs a justification of at least
+///   `MIN_JUSTIFICATION` characters (`gate-justification-required:<pos>`);
+/// - with a failing mandatory criterion the verdict is `goWithRisks` or
+///   `noGo` (`gate-verdict-required`); without one it is always `go`.
+pub fn close_record(
+    summary: &ExecutionSummary,
+    input: &CycleCloseInput,
+    plan_id: Option<String>,
+    now: &str,
+    user: &str,
+) -> Result<CycleClosure, String> {
+    let mut criteria = Vec::with_capacity(summary.exit_criteria.len());
+    let mut failing_blocking = false;
+    for (pos, c) in summary.exit_criteria.iter().enumerate() {
+        let decision = input.decisions.iter().find(|d| d.position == pos);
+        let state = criterion_state(c);
+        let manual_met = decision.and_then(|d| d.manual_met);
+        if state == "manual" && manual_met.is_none() {
+            return Err(format!("gate-manual-unset:{pos}"));
+        }
+        let failing = match state {
+            "met" => false,
+            "manual" => manual_met == Some(false),
+            _ => true,
+        };
+        let justification = decision
+            .and_then(|d| d.justification.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from);
+        if let Some(j) = &justification {
+            if j.chars().count() > MAX_JUSTIFICATION {
+                return Err(format!("gate-justification-too-long:{pos}"));
+            }
+        }
+        if failing && c.blocking {
+            failing_blocking = true;
+            if justification
+                .as_ref()
+                .map_or(true, |j| j.chars().count() < MIN_JUSTIFICATION)
+            {
+                return Err(format!("gate-justification-required:{pos}"));
+            }
+        }
+        criteria.push(ClosureCriterion {
+            index: c.index,
+            criterion: c.criterion.clone(),
+            metric: c.metric.clone(),
+            kind: c.kind.clone(),
+            op: c.op.clone(),
+            target: c.target,
+            value: c.value,
+            blocking: c.blocking,
+            state: state.to_string(),
+            manual_met: if state == "manual" { manual_met } else { None },
+            justification: if failing { justification } else { None },
+        });
+    }
+    let verdict = if failing_blocking {
+        match input.verdict.as_deref() {
+            Some(v @ ("goWithRisks" | "noGo")) => v.to_string(),
+            _ => return Err("gate-verdict-required".into()),
+        }
+    } else {
+        "go".to_string()
+    };
+    Ok(CycleClosure {
+        closed_at: now.to_string(),
+        closed_by: user.to_string(),
+        verdict,
+        plan_id,
+        criteria,
+        metrics: summary.metrics.clone(),
+    })
 }
 
 // ---- daily (R9) -------------------------------------------------------------------
@@ -1417,13 +1902,37 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         *defects.by_status.entry(d.status.clone()).or_default() += 1;
     }
 
+    let metrics = scope_metrics(
+        data,
+        &filter,
+        &ScopeFacts {
+            scoped_runs: &scoped_runs,
+            cycle_plan: &cycle_plan,
+            cases: &case_rows,
+            progress: &progress,
+            pass_rate,
+            open_critical: defects.open_by_severity.critical,
+            coverage: coverage.coverage_ratio,
+        },
+    );
     let exit_criteria = exit_criteria(
         data.plan_criteria.as_ref(),
-        &progress,
-        pass_rate,
-        defects.open_by_severity.critical,
-        coverage.coverage_ratio,
+        data.plan_metrics.as_deref().unwrap_or_default(),
+        &metrics.values,
     );
+    let closure = filter.cycle_id.as_deref().and_then(|id| {
+        data.cycles
+            .iter()
+            .find(|c| c.id == id)
+            .and_then(|c| c.closure.clone())
+    });
+    let previous = filter.cycle_id.as_deref().and_then(|id| {
+        let closed = closed_points(data);
+        match closed.iter().position(|p| p.cycle_id == id) {
+            Some(i) => i.checked_sub(1).map(|j| closed[j].clone()),
+            None => closed.last().cloned(),
+        }
+    });
 
     // R9: daily.
     let day_starts = filter.day_starts.clone().unwrap_or_default();
@@ -1472,6 +1981,9 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         coverage,
         defects,
         exit_criteria,
+        metrics,
+        closure,
+        previous,
         daily,
         undated,
         runs: run_refs
@@ -1547,6 +2059,78 @@ fn live_attempts(data: &ProjectData) -> impl Iterator<Item = &AttemptData> {
         .filter(move |a| runs.contains(a.run_id.as_str()))
 }
 
+/// Closed cycles the trend shows (DOC-06).
+pub const TREND_CYCLES: usize = 6;
+
+/// The trend of a project (DOC-06): its last `TREND_CYCLES` closed cycles,
+/// oldest first, with the figures frozen at closing (escapes counted now:
+/// they arrive after the closing), then its active cycles, live.
+fn trend(data: &ProjectData) -> Vec<CycleTrendPoint> {
+    let closed = closed_points(data);
+    let skip = closed.len().saturating_sub(TREND_CYCLES);
+    let mut out: Vec<CycleTrendPoint> = closed.into_iter().skip(skip).collect();
+    let mut active: Vec<&CycleData> = data
+        .cycles
+        .iter()
+        .filter(|c| c.status == "active")
+        .collect();
+    active.sort_by(|a, b| natural_cmp(&a.cycle_key, &b.cycle_key).then_with(|| a.id.cmp(&b.id)));
+    for c in active {
+        let s = summarize(
+            data,
+            &ExecutionFilter {
+                project_id: data.project_id.clone(),
+                cycle_id: Some(c.id.clone()),
+                ..Default::default()
+            },
+        );
+        out.push(CycleTrendPoint {
+            cycle_id: c.id.clone(),
+            cycle_key: c.cycle_key.clone(),
+            title: c.title.clone(),
+            status: "active".into(),
+            closed_at: None,
+            verdict: None,
+            values: s.metrics.values,
+        });
+    }
+    out
+}
+
+/// Every closed cycle with its closing, oldest first (ties by id): the
+/// figures frozen at closing, escapes counted now (they arrive after it).
+fn closed_points(data: &ProjectData) -> Vec<CycleTrendPoint> {
+    let mut closed: Vec<(i64, &CycleData, &CycleClosure)> = data
+        .cycles
+        .iter()
+        .filter(|c| c.status == "closed")
+        .filter_map(|c| {
+            let cl = c.closure.as_ref()?;
+            Some((derive::instant_ms(&cl.closed_at)?, c, cl))
+        })
+        .collect();
+    closed.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));
+    let charged = escape_cycles(data);
+    closed
+        .into_iter()
+        .map(|(_, c, cl)| {
+            let escapes = charged.values().filter(|id| **id == c.id).count();
+            CycleTrendPoint {
+                cycle_id: c.id.clone(),
+                cycle_key: c.cycle_key.clone(),
+                title: c.title.clone(),
+                status: "closed".into(),
+                closed_at: Some(cl.closed_at.clone()),
+                verdict: Some(cl.verdict.clone()),
+                values: MetricValues {
+                    escaped_defects: Some(escapes as f64),
+                    ..cl.metrics.values.clone()
+                },
+            }
+        })
+        .collect()
+}
+
 /// The Home metrics of `projects` (contract v1 §2.4, R8–R9).
 pub fn home(all_projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics {
     // A project asked for twice counts once.
@@ -1602,6 +2186,8 @@ pub fn home(all_projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics 
                     retest: r,
                 },
             },
+            trend: trend(data),
+            objectives: objectives(data.plan_metrics.as_deref().unwrap_or_default()),
         });
     }
     // R8: windows over every project's attempts.

@@ -215,6 +215,7 @@ export const INVENTORY: Item[] = [
   I("inicio", "action", "action:home-gadget-hide", "Ocultar un gadget y volver a mostrarlo desde «Gadgets ocultos» (UX-27)"),
   I("inicio", "action", "action:home-board-reset", "Restablecer la distribución de Inicio, con confirmación (UX-27)"),
   I("inicio", "action", "action:home-gadget-help", "Ayuda «?» del título de cada panel de Inicio (UX-28)"),
+  I("inicio", "action", "action:home-trend", "Tendencia de ciclos: una métrica en los últimos ciclos, su objetivo y el aviso al empeorar (DOC-06)"),
   I("inicio", "dialog", "dialogs:src/app/dashboard/DailyExecutionsChart.tsx", "Inicio: «Ver los datos» de las ejecuciones diarias en una ventana (UX-28)"),
   I("inicio", "dialog", "dialogs:src/app/dashboard/DashboardPage.tsx", "Inicio: confirmar «Restablecer» o descartar los cambios al personalizar (UX-27)"),
   I("proyectos", "route", "route:/projects", "Lista de proyectos"),
@@ -362,6 +363,8 @@ export const INVENTORY: Item[] = [
   I("ciclos", "action", "action:cycles-filter", "Filtrar ciclos por estado"),
   I("ciclos", "tab", "tabs:src/modules/cycles/ui/CycleDetail.tsx", "Pestañas del ciclo (Elementos / Runs)"),
   I("ciclos", "action", "action:cycle-report", "Informe de estado de un ciclo"),
+  I("ciclos", "dialog", "dialogs:src/modules/runs/gate/CloseCycleDialog.tsx", "Cerrar un ciclo con su quality gate: justificación y veredicto (DOC-02)"),
+  I("ciclos", "action", "action:cycle-verdict", "El veredicto de un ciclo cerrado y su decisión en el informe (DOC-02)"),
   I("ciclos", "platform", "platform:mobile-cycles", "Los ciclos en el móvil (tarjetas)"),
   I("ciclos", "state", "state:cycles-load-error", "Los ciclos no se pudieron cargar («Reintentar», NC-008)", {
     skip: "Necesita que falle la lectura de los ciclos con el resto de la app en pie, algo que el tour no provoca sin trucar la app. Lo cubre Cycles.test.tsx; el capítulo lo explica en «Si algo no sale».",

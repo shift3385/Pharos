@@ -25,6 +25,7 @@ import "@shared/ui/ConfirmDialog.css";
 import "@shared/ui/buttons.css";
 import "./StatusReport.css";
 import { TextArea } from "@shared/ui/TextArea";
+import { DecisionPreview } from "./DecisionPreview";
 
 type Scope = "project" | "cycle" | "plan";
 
@@ -194,6 +195,8 @@ export function StatusReportDialog({
 
   const labels = (): ReportLabels => ({
     sections: {
+      decision: t("gate.report.section"),
+      metrics: t("gate.report.metricsSection"),
       identification: t("statusReport.section.identification"),
       progress: t("statusReport.section.progress"),
       results: t("statusReport.section.results"),
@@ -209,6 +212,7 @@ export function StatusReportDialog({
       results: t("statusReport.sheet.results"),
       defects: t("statusReport.sheet.defects"),
       coverage: t("statusReport.sheet.coverage"),
+      decision: t("gate.report.sheet"),
     },
     risky: t("statusReport.risky"),
     noRisky: t("statusReport.noRisky"),
@@ -352,6 +356,7 @@ export function StatusReportDialog({
           </p>
         ) : (
           <div className="sr-body" aria-live="polite">
+            {report.decision && <DecisionPreview d={report.decision} />}
             <section>
               <h4>{t("statusReport.section.identification")}</h4>
               {pairs(report.identification)}

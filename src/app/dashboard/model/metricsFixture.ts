@@ -64,6 +64,8 @@ export function projectMetrics(
       retest: [],
       counts: { notRun: 0, blocked: 0, retest: 0 },
     },
+    trend: [],
+    objectives: [],
     ...over,
   };
 }

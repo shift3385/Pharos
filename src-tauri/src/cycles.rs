@@ -1152,6 +1152,10 @@ pub(crate) fn insert_cycle(conn: &Connection, input: &TestCycleInput) -> Result<
     let h = header(conn, &project_id, input)?;
     let status = text(&input.status).unwrap_or_else(|| "planned".into());
     check_status(&status)?;
+    // Closing goes through the quality gate (DOC-02, D5).
+    if status == "closed" {
+        return Err(CLOSE_NEEDS_GATE.into());
+    }
     let configuration_ids = check_configuration_ids(
         conn,
         &project_id,
@@ -1194,9 +1198,11 @@ pub(crate) fn insert_cycle(conn: &Connection, input: &TestCycleInput) -> Result<
     Ok(id)
 }
 
-/// Edits a cycle. Its status moves freely between planned, active and closed
-/// (a closed cycle can be reopened). Removing a configuration is allowed even
-/// if it has runs: they keep their link.
+/// Edits a cycle. Its status moves between planned and active, and a closed
+/// cycle can be reopened; closing goes through the quality gate
+/// (`record_closure`, DOC-02 D5). Removing a configuration is allowed even
+/// if it has runs: they keep their link. `data.closures` is the gate's: an
+/// edit never changes it.
 pub(crate) fn update_cycle(
     conn: &Connection,
     id: &str,
@@ -1215,6 +1221,9 @@ pub(crate) fn update_cycle(
     let status = text(&input.status);
     if let Some(s) = &status {
         check_status(s)?;
+        if s == "closed" && cycle.status != "closed" {
+            return Err(CLOSE_NEEDS_GATE.into());
+        }
     }
     let configuration_ids = input
         .configuration_ids
@@ -1246,8 +1255,72 @@ pub(crate) fn update_cycle(
             starts_on,
             ends_on,
             status.unwrap_or(cycle.status.clone()),
-            h.data.unwrap_or(cycle.data.clone()).to_string(),
+            keep_closures(h.data.unwrap_or(cycle.data.clone()), &cycle.data).to_string(),
         ],
+    )
+    .map_err(err)?;
+    record_update(conn, CYCLE, id, user, before, Audit::Event)?;
+    Ok(())
+}
+
+/// Closes a cycle with a minimal gate record: the tests that need a closed
+/// cycle without going through its criteria.
+#[cfg(test)]
+pub(crate) fn close_for_tests(conn: &Connection, id: &str, user: &str) {
+    let record = serde_json::json!({
+        "closedAt": "2026-11-11T10:00:00.000Z", "closedBy": user, "verdict": "noGo",
+        "criteria": [], "metrics": {}
+    });
+    crate::db::in_tx(conn, |tx| record_closure(tx, id, user, &record)).unwrap();
+}
+
+/// The error of closing a cycle by editing its status (DOC-02, D5).
+pub(crate) const CLOSE_NEEDS_GATE: &str = "cycle-close-needs-gate";
+
+/// `data` with the stored `closures` (the gate's record) whatever an edit
+/// sent.
+fn keep_closures(mut data: Value, stored: &Value) -> Value {
+    if !data.is_object() {
+        data = serde_json::json!({});
+    }
+    match stored.get("closures") {
+        Some(c) => data["closures"] = c.clone(),
+        None => {
+            if let Some(o) = data.as_object_mut() {
+                o.remove("closures");
+            }
+        }
+    }
+    data
+}
+
+/// Closes a cycle with the gate's record (DOC-02): appends it to
+/// `data.closures` and sets the status, in one audited event. The caller
+/// (`execution::close_cycle`) built the record from the cycle's summary.
+pub(crate) fn record_closure(
+    conn: &Connection,
+    id: &str,
+    user: &str,
+    closure: &Value,
+) -> Result<(), String> {
+    let cycle = owned_cycle(conn, id, user)?;
+    require_open(&cycle)?;
+    let mut data = if cycle.data.is_object() {
+        cycle.data.clone()
+    } else {
+        serde_json::json!({})
+    };
+    let mut closures = data
+        .get("closures")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    closures.push(closure.clone());
+    data["closures"] = Value::Array(closures);
+    let before = journal::snapshot(conn, CYCLE, id)?;
+    conn.execute(
+        "UPDATE test_cycles SET status = 'closed', data = ?2 WHERE id = ?1",
+        params![id, data.to_string()],
     )
     .map_err(err)?;
     record_update(conn, CYCLE, id, user, before, Audit::Event)?;

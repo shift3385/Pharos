@@ -30,9 +30,20 @@ export function reportDocDefinition(
   labels: ReportLabels,
 ): TDocumentDefinitions {
   const s = labels.sections;
+  const d = report.decision;
   const content: Content[] = [
     { text: report.title, style: "docTitle", margin: [0, 0, 0, 2] },
     { text: report.subtitle, style: "meta", margin: [0, 0, 0, 6] },
+    ...(d
+      ? ([
+          sectionHeader(s.decision),
+          { text: d.verdictLabel, style: "docTitle", fontSize: 16, margin: [0, 2, 0, 2] },
+          field([d.closedLine, d.summaryLine, d.previousLine].filter(Boolean).join(" · ")),
+          dataTable(d.criteria.headers, d.criteria.rows, labels.noData, ["*", 55, 55, 60, 150]),
+          { text: s.metrics, style: "value", bold: true, margin: [0, 6, 0, 2] },
+          dataTable(d.metrics.headers, d.metrics.rows, labels.noData, ["*", 70, 70, 60]),
+        ] as Content[])
+      : []),
     sectionHeader(s.identification),
     pairsTable(report.identification),
     sectionHeader(s.progress),

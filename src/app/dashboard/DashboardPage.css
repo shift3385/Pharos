@@ -1654,3 +1654,227 @@ button.home-daily__data {
   flex: none;
   white-space: nowrap;
 }
+
+/* «Tendencia de ciclos» (DOC-06, boceto C). The chart scales to its box; the
+   minis, then the side summary, leave when the gadget is small (no scroll
+   inside a gadget, UX-28). */
+.home-trend {
+  gap: 10px;
+}
+
+.home-trend .home-card__head .ui-select,
+.home-trend .home-card__head [role="combobox"] {
+  max-width: 200px;
+}
+
+.home-trend__body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 230px);
+  gap: 16px;
+}
+
+.home-trend__body--narrow {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.home-trend__chart {
+  margin: 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+.home-trend__chart svg {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+}
+
+.home-trend__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.home-trend__axis {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-family: var(--font-sans);
+}
+
+.home-trend__target {
+  stroke: var(--color-success);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.home-trend__target-label {
+  fill: var(--color-success-text);
+  font-size: 11px;
+  font-family: var(--font-sans);
+}
+
+.home-trend__line {
+  fill: none;
+  stroke: var(--color-navy-500);
+  stroke-width: 2.25;
+}
+
+.home-trend__line--live {
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.home-trend__dot {
+  fill: var(--color-navy-500);
+  stroke: var(--color-surface-1);
+  stroke-width: 2;
+}
+
+.home-trend__dot--live {
+  fill: var(--color-surface-1);
+  stroke: var(--color-navy-500);
+}
+
+.home-trend__dot.is-off {
+  fill: var(--color-warning);
+}
+
+.home-trend__verdict[data-tone="pass"] {
+  fill: var(--color-success);
+}
+
+.home-trend__verdict[data-tone="warn"] {
+  fill: var(--color-warning);
+}
+
+.home-trend__verdict[data-tone="fail"] {
+  fill: var(--color-error);
+}
+
+.home-trend__verdict[data-tone="open"] {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+
+.home-trend__side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home-trend__side > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-trend__eyebrow {
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.home-trend__big {
+  font-size: 28px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-trend .is-better {
+  color: var(--color-success-text);
+}
+
+.home-trend .is-worse {
+  color: var(--color-error-text);
+}
+
+.home-trend__alert {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface-1));
+  border-radius: var(--radius-md);
+}
+
+.home-trend__alert b {
+  display: block;
+}
+
+.home-trend__minis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.home-trend__mini {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+  padding: 4px 8px;
+  text-align: left;
+  color: var(--color-text-primary);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+}
+
+.home-trend__mini.is-on {
+  border-color: var(--color-navy-500);
+  background: var(--color-navy-100);
+}
+
+.home-trend__mini span {
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-trend__mini b {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-trend__mini.is-warn b {
+  color: var(--color-warning-text);
+}
+
+.home-trend__mini svg {
+  width: 100%;
+  height: 18px;
+}
+
+.home-trend__mini polyline {
+  fill: none;
+  stroke: var(--color-navy-500);
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+}
+
+.home-trend__mini.is-warn polyline {
+  stroke: var(--color-warning);
+}
+
+.home-new-gadget {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  background: var(--color-navy-100);
+  border-radius: var(--radius-md);
+}

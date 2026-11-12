@@ -23,8 +23,9 @@ están en cada sección.
 En el escritorio, el Inicio es una **pizarra** de 24 columnas por 24 filas que
 ocupa justo el alto de la ventana: en una ventana de 1280 × 820 lo ves todo
 sin desplazarte, y ningún panel se desplaza por dentro. Cada tarjeta es un **gadget** (las cuatro cifras clave, la
-ejecución por proyecto, los criterios de salida, las ejecuciones diarias y las
-próximas pruebas) con su sitio y su tamaño en la cuadrícula.
+ejecución por proyecto, los criterios de salida, las ejecuciones diarias, las
+próximas pruebas y la tendencia de ciclos) con su sitio y su tamaño en la
+cuadrícula.
 
 - **Personalizar.** El engranaje pequeño junto a «Nuevo proyecto»
   («Personalizar Inicio») activa el modo configurar. Se ven la cuadrícula, el
@@ -55,6 +56,29 @@ próximas pruebas) con su sitio y su tamaño en la cuadrícula.
   sin guardar.
 - Si la pizarra pasa de 24 filas (por ejemplo, al agrandar mucho un gadget),
   el Inicio vuelve a tener desplazamiento; la línea de ayuda lo avisa.
+- **Un gadget nuevo** llega a tu pizarra guardada solo si cabe sin desplazar
+  la página. Si no cabe, queda en «Gadgets ocultos» y un aviso lo dice:
+  «Personalizar Inicio» para hacerle sitio, o «Entendido» para dejarlo oculto.
+
+## Tendencia de ciclos
+
+«Tendencia de ciclos» responde a «¿vamos mejor o peor?». Elige un proyecto y
+una métrica: **tasa de éxito**, **densidad de defectos** (defectos encontrados
+por cada 100 casos ejecutados), **escapes** (defectos encontrados fuera de las
+pruebas, capítulo 12), **tiempo de corrección** (mediana de días hasta
+«Corregido»), **reapertura** o **flaky**.
+
+- Cada punto es un ciclo cerrado, con las cifras congeladas al cerrarlo
+  (capítulo 9), salvo los escapes, que siguen llegando después. El ciclo
+  activo va al final, en vivo y con la línea punteada.
+- La línea verde es el **objetivo** del plan para esa métrica (capítulo 5).
+- El punto bajo cada ciclo es su **veredicto**: verde «Go», ámbar «Go con
+  riesgos», rojo «No-go» y hueco si aún no se ha cerrado.
+- A la derecha, el último ciclo cerrado y su cambio frente al anterior. Si la
+  métrica **empeora dos ciclos seguidos** o se sale del objetivo, el gadget lo
+  avisa.
+- Con sitio suficiente, la fila de abajo muestra las seis métricas a la vez;
+  al pulsar una, pasa a ser la principal.
 
 Al iniciar sesión, Pharos abre siempre el Inicio, aunque la última vez
 salieras desde otra pantalla.

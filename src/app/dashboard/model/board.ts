@@ -14,8 +14,9 @@ export const BOARD_COLS = 24;
 export const BOARD_ROWS = 24;
 /** The most rows a layout may reach. */
 export const MAX_ROWS = 48;
-/** Version of the stored format; `readBoard` migrates older ones. */
-export const BOARD_VERSION = 1;
+/** Version of the stored format; `readBoard` migrates older ones (1: the
+ *  UX-28 board before «Tendencia de ciclos», DOC-06). */
+export const BOARD_VERSION = 2;
 
 /** Every gadget, in the default order (also the order they stack in when the
  *  view is too narrow for the grid). */
@@ -28,6 +29,7 @@ export const GADGETS = [
   "upcoming",
   "exitCriteria",
   "daily",
+  "trend",
 ] as const;
 
 export type GadgetId = (typeof GADGETS)[number];
@@ -72,13 +74,12 @@ export const MIN_SIZE: Record<GadgetId, CellSize> = {
   upcoming: { w: 7, h: 9 },
   exitCriteria: { w: 7, h: 11 },
   daily: { w: 8, h: 8 },
+  trend: { w: 8, h: 7 },
 };
 
-/** The default (UX-28, the layout the user saved on 2026-11-10): four
- *  indicators on top; «Ejecución por proyecto» with «Ejecuciones diarias»
- *  under it on the left; «Próximas pruebas» and «Criterios de salida» down
- *  the middle and the right. It takes 23 of the 24 rows. */
-const DEFAULT_ITEMS: readonly BoardItem[] = [
+/** The UX-28 default (the layout the user saved on 2026-11-10), before
+ *  DOC-06: a stored board equal to it moves to today's default. */
+const V1_DEFAULT_ITEMS: readonly BoardItem[] = [
   { id: "kpiProjects", x: 0, y: 0, w: 6, h: 4 },
   { id: "kpiPending", x: 6, y: 0, w: 6, h: 4 },
   { id: "kpiRate", x: 12, y: 0, w: 6, h: 4 },
@@ -87,6 +88,24 @@ const DEFAULT_ITEMS: readonly BoardItem[] = [
   { id: "upcoming", x: 9, y: 4, w: 7, h: 19 },
   { id: "exitCriteria", x: 16, y: 4, w: 8, h: 19 },
   { id: "daily", x: 0, y: 14, w: 9, h: 9 },
+];
+
+/** The default (UX-28, with DOC-06's option A approved on 2026-11-11): four
+ *  indicators on top; «Ejecución por proyecto» with «Ejecuciones diarias»
+ *  under it on the left; «Próximas pruebas» and «Criterios de salida» in
+ *  the middle and on the right, 11 rows each, and «Tendencia de ciclos»
+ *  under both. Every gadget shows and it still takes 23 of the 24 rows: no
+ *  page scroll. */
+const DEFAULT_ITEMS: readonly BoardItem[] = [
+  { id: "kpiProjects", x: 0, y: 0, w: 6, h: 4 },
+  { id: "kpiPending", x: 6, y: 0, w: 6, h: 4 },
+  { id: "kpiRate", x: 12, y: 0, w: 6, h: 4 },
+  { id: "kpiDefects", x: 18, y: 0, w: 6, h: 4 },
+  { id: "byProject", x: 0, y: 4, w: 9, h: 10 },
+  { id: "upcoming", x: 9, y: 4, w: 7, h: 11 },
+  { id: "exitCriteria", x: 16, y: 4, w: 8, h: 11 },
+  { id: "daily", x: 0, y: 14, w: 9, h: 9 },
+  { id: "trend", x: 9, y: 15, w: 15, h: 8 },
 ];
 
 export function defaultSize(id: GadgetId): CellSize {
@@ -148,6 +167,16 @@ export function firstGap(
       const probe = { id: "kpiProjects" as GadgetId, x, y, ...size };
       if (items.every((i) => !overlaps(i, probe))) return { x, y };
     }
+  return null;
+}
+
+/** Places a gadget in the first gap of the 24 rows, at `size` or else at its
+ *  minimum; null when there is none. */
+function placeOnScreen(items: readonly BoardItem[], id: GadgetId, size: CellSize): BoardItem | null {
+  for (const s of [size, MIN_SIZE[id]]) {
+    const at = firstGap(items, s, BOARD_ROWS);
+    if (at) return { id, ...at, ...s };
+  }
   return null;
 }
 
@@ -342,14 +371,23 @@ function clampSize(id: GadgetId, w: number, h: number): CellSize {
 
 /** Reads a stored board, whatever came: a missing or unreadable one is the
  *  default; a gadget the board does not know yet (added in a later version)
- *  goes to the first gap, or is hidden when none is left; unknown gadgets are
- *  dropped; sizes are kept within the minimum and the grid; overlaps settle.
- *  `changed` says the result differs from what was stored (save it back). */
-export function readBoard(raw: unknown): { board: Board; changed: boolean } {
-  if (!raw || typeof raw !== "object") return { board: defaultBoard(), changed: false };
+ *  goes to the first gap on screen, or waits hidden when the 24 rows are
+ *  full (`waiting`: Inicio says so once, never scrolls for it, DOC-06 D6);
+ *  unknown gadgets are dropped; sizes are kept within the minimum and the
+ *  grid; overlaps settle. A version-1 board equal to its default becomes
+ *  today's default. `changed` says the result differs from what was
+ *  stored (save it back). */
+export function readBoard(raw: unknown): { board: Board; changed: boolean; waiting: GadgetId[] } {
+  if (!raw || typeof raw !== "object") return { board: defaultBoard(), changed: false, waiting: [] };
   const r = raw as { version?: unknown; items?: unknown; hidden?: unknown };
   // A format from a newer app: not ours to read or rewrite.
-  if (r.version !== BOARD_VERSION) return { board: defaultBoard(), changed: false };
+  if (r.version !== BOARD_VERSION && r.version !== 1)
+    return { board: defaultBoard(), changed: false, waiting: [] };
+  if (
+    r.version === 1 &&
+    sameBoard({ version: 1 as typeof BOARD_VERSION, items: [...V1_DEFAULT_ITEMS], hidden: [] }, raw)
+  )
+    return { board: defaultBoard(), changed: true, waiting: [] };
   const seen = new Set<GadgetId>();
   const hidden: Board["hidden"] = [];
   for (const h of Array.isArray(r.hidden) ? r.hidden : []) {
@@ -388,15 +426,20 @@ export function readBoard(raw: unknown): { board: Board; changed: boolean } {
     if (it.y + it.h <= MAX_ROWS) items.push(it);
     else hidden.push({ id: it.id, w: it.w, h: it.h });
   }
-  // Gadgets the stored board never knew.
+  // Gadgets the stored board never knew: on screen if they fit, never
+  // below it.
+  const waiting: GadgetId[] = [];
   for (const id of GADGETS) {
     if (seen.has(id)) continue;
-    const placed = placeInGap(items, id, defaultSize(id));
+    const placed = placeOnScreen(items, id, defaultSize(id));
     if (placed) items.push(placed);
-    else hidden.push({ id, ...defaultSize(id) });
+    else {
+      hidden.push({ id, ...defaultSize(id) });
+      waiting.push(id);
+    }
   }
   const board: Board = { version: BOARD_VERSION, items: compact(items), hidden };
-  return { board, changed: !sameBoard(board, raw) };
+  return { board, changed: !sameBoard(board, raw), waiting };
 }
 
 /** Same gadgets in the same places, and the same hidden ones. */

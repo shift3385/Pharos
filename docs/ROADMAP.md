@@ -437,8 +437,8 @@ ejecutan sin IA. Todo lo que escribe o lanza un agente pasa por el oplog como `a
 
 | ID     | Ítem                                                               | P   | Versión |
 | ------ | ------------------------------------------------------------------ | --- | ------- |
-| DOC-06 | Dashboards: pass rate, flakiness, cobertura por riesgo, tendencia  | P1  | 0.4.0   |
-| DOC-02 | Criterios de salida como quality gates + informe go/no-go          | P1  | 0.4.0   |
+| DOC-06 | Dashboards: pass rate, flakiness, cobertura por riesgo, tendencia. Hecho ([ADR-0041](adr/0041-quality-gate-y-tendencia-entre-ciclos.md)): catálogo de nueve métricas con unidad fija (`src/shared/metrics/catalog.ts`); densidad, escapes (marcados a mano, D4), tiempo de corrección, reapertura y flaky por ciclo en la derivación (Rust y servidor); `data.lifecycle` del defecto; gadget «Tendencia de ciclos» en Inicio (6 ciclos cerrados + el activo, objetivo del plan, aviso al empeorar), distribución v2 sin desplazamiento (D6 opción A) | P1  | 0.4.0   |
+| DOC-02 | Criterios de salida como quality gates + informe go/no-go. Hecho ([ADR-0041](adr/0041-quality-gate-y-tendencia-entre-ciclos.md)): criterios enlazados a métricas del plan (`metricId`, `blocking`, PLN-06); «Cerrar ciclo…» con justificación obligatoria y veredicto Go / Go con riesgos / No-go (D1–D3, D5), cierre congelado en `data.closures` y auditado; sección «Decisión de salida» en el informe de estado (vista previa, .xlsx, PDF), reutilizable por DOC-01 | P1  | 0.4.0   |
 | DOC-01 | Informe de cierre de pruebas 29119-3                               | P1  | 0.4.0   |
 | DOC-03 | Paquetes de evidencia EAA/WCAG 2.2/EN 301 549 y ASVS 5.0/MASVS 2.1 | P2  | 0.10.0  |
 | DOC-04 | Modo aprendizaje ISTQB CTFL 4.0.1 (sin reproducir el syllabus)     | P2  | 1.0.0 o después |
@@ -611,6 +611,11 @@ Bloquean el cierre formal de fases (regla 1 de `files/CLAUDE.md`). Desde el 2026
     con un texto que dé órdenes (IA-18).
 - **Pizarra de Inicio (UX-27, UX-28):** en la app nativa, personalizar, cerrar sesión, entrar
   en otro equipo con la misma cuenta y comprobar que la distribución viaja con ella.
+- **Quality gate y tendencia (DOC-02, DOC-06, 0.4.0):** en la app nativa y en la web, cerrar un
+  ciclo con un criterio en «No cumple» (pide justificación y veredicto), abrir su informe de estado
+  y comprobar «Decisión de salida» en la vista previa, el .xlsx y el PDF; marcar un defecto como
+  escape tras el cierre y verlo en «Tendencia de ciclos»; con tu distribución de Inicio guardada,
+  comprobar que la tendencia aparece sin desplazar la página o que el aviso la ofrece.
 - **Primera ola (A1, A2, B1, B2):** en la app nativa, sync entre dos cuentas en el mismo
   equipo (FIX-07), borrado de proyecto en cascada en otro equipo (FIX-05), copia
   `.bak-<versión>` al migrar (SEC-06), "Exportar diagnóstico" sin datos de usuario

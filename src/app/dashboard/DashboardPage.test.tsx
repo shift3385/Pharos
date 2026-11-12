@@ -73,9 +73,9 @@ function metricsPayload(): HomeMetrics {
           openBySeverity: { critical: 1, major: 2, minor: 0, trivial: 0 },
         },
         exitCriteria: [
-          { index: 0, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 50, met: false },
-          { index: 1, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, met: false },
-          { index: 2, criterion: "Revisión del cliente", metric: "", kind: null, op: null, target: null, value: null, met: null },
+          { index: 0, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 50, met: false, blocking: true },
+          { index: 1, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, met: false, blocking: true },
+          { index: 2, criterion: "Revisión del cliente", metric: "", kind: null, op: null, target: null, value: null, met: null, blocking: true },
         ],
         queue: {
           notRun: [ref("c2", "PCL-0001", "Login con 2FA", "critical")],
@@ -522,8 +522,8 @@ describe("Inicio (RED-V1, SPEC §8)", () => {
           projectMetrics("p-amb", {
             counts: counts({ notRun: 1, total: 1 }),
             exitCriteria: [
-              { index: null, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 0, met: false },
-              { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 0, met: true },
+              { index: null, criterion: "% de casos ejecutados", metric: "≥ 95 %", kind: "executed", op: ">=", target: 95, value: 0, met: false, blocking: true },
+              { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 0, met: true, blocking: true },
             ],
           }),
         ],

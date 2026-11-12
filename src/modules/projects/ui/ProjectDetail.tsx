@@ -20,7 +20,7 @@ import { PlannerBoard } from "@modules/planner";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { REQUIREMENTS_CHANGED_EVENT, RequirementsPage, TraceabilityPage, requirementApi } from "@modules/traceability";
-import { RunsPage, StatusReportButton, executionApi } from "@modules/runs";
+import { CloseCycleButton, RunsPage, StatusReportButton, executionApi } from "@modules/runs";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import { recordProjectAccess } from "../model/lastAccess";
@@ -195,7 +195,14 @@ export function ProjectDetail({
             projectId={projectId}
             loadCases={() => projectCaseOptions(projectId, ownerId)}
             requirementKeys={(facts?.requirements ?? []).map((r) => r.requirementKey)}
-            cycleActions={(cycleId) => <StatusReportButton projectId={projectId} projectName={project.name} cycleId={cycleId} />}
+            cycleActions={(cycleId, ctx) => (
+              <>
+                <StatusReportButton projectId={projectId} projectName={project.name} cycleId={cycleId} />
+                {ctx.status !== "closed" && (
+                  <CloseCycleButton projectId={projectId} cycleId={cycleId} cycleLabel={ctx.label} onClosed={ctx.onChanged} />
+                )}
+              </>
+            )}
           />
         )}
         {tab === "requirements" && (
