@@ -1,13 +1,14 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDownUp, ChevronDown, FileSpreadsheet, FileText, FileUp, X } from "lucide-react";
+import { ArrowDownUp, BadgeCheck, ChevronDown, FileSpreadsheet, FileText, FileUp, X } from "lucide-react";
 import { Dialog } from "@shared/ui/Dialog";
 import { MenuItem, MenuLabel, MenuSeparator, ResponsiveMenu } from "@shared/ui/Menu";
 import { StatusPill } from "@shared/ui/StatusPill";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
-import type { TestPlan } from "../../model/types";
+import type { PlanApproval, TestPlan } from "../../model/types";
 import { RevisionHistory } from "../RevisionHistory";
+import { PlanTimeline } from "./PlanTimeline";
 
 const STATUS_TONE: Record<string, "neutral" | "info" | "success"> = {
   draft: "neutral",
@@ -17,7 +18,8 @@ const STATUS_TONE: Record<string, "neutral" | "info" | "success"> = {
 };
 
 /** «Estado del plan» and the latest revisions, next to the form (or below it
- *  when they do not fit). */
+ *  when they do not fit). While not approved, «Aprobar versión N» (PLN-07):
+ *  disabled with its reason until the plan is saved and «Revisado». */
 export function PlanStatusPanel({
   plan,
   status,
@@ -25,6 +27,9 @@ export function PlanStatusPanel({
   author,
   updated,
   onShowRevisions,
+  approval,
+  approveBlocked,
+  onApprove,
 }: {
   plan: TestPlan | null;
   status: string;
@@ -33,8 +38,21 @@ export function PlanStatusPanel({
   /** Formatted last save, or null before the first one. */
   updated: string | null;
   onShowRevisions: () => void;
+  /** Who approved and when, while «Aprobado». */
+  approval: PlanApproval | null;
+  /** Why the plan cannot be approved now; null when it can. */
+  approveBlocked: string | null;
+  onApprove: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const approvedAt = approval
+    ? (() => {
+        const d = new Date(approval.at);
+        return Number.isNaN(d.getTime())
+          ? approval.at
+          : new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: "medium", timeStyle: "short" }).format(d);
+      })()
+    : null;
   return (
     <aside className="tpw-side" aria-label={t("testPlan.panel.title")}>
       <section className="tpw-card" aria-labelledby="tpw-status-title">
@@ -50,6 +68,16 @@ export function PlanStatusPanel({
           </dd>
           <dt>{t("testPlan.panel.version")}</dt>
           <dd className="t-id">v{version}</dd>
+          {status === "approved" && approval && (
+            <>
+              <dt>{t("testPlan.approval.by")}</dt>
+              <dd className="u-truncate" title={approval.byName} data-testid="plan-approved-by">
+                {approval.byName}
+              </dd>
+              <dt>{t("testPlan.approval.at")}</dt>
+              <dd>{approvedAt}</dd>
+            </>
+          )}
           <dt>{t("testPlan.panel.author")}</dt>
           <dd className="u-truncate" title={author}>
             {author || "—"}
@@ -57,19 +85,41 @@ export function PlanStatusPanel({
           <dt>{t("testPlan.panel.updated")}</dt>
           <dd>{updated ?? "—"}</dd>
         </dl>
+        {plan && status !== "approved" && status !== "obsolete" && (
+          <>
+            <button
+              type="button"
+              className="header-action tpw-approve"
+              data-primary={approveBlocked ? undefined : ""}
+              disabled={approveBlocked !== null}
+              aria-describedby={approveBlocked ? "tpw-approve-why" : undefined}
+              onClick={onApprove}
+              data-testid="plan-approve"
+            >
+              <BadgeCheck size={16} aria-hidden="true" />
+              <span className="header-action__label">{t("testPlan.approval.approve", { version })}</span>
+            </button>
+            {approveBlocked && (
+              <p id="tpw-approve-why" className="tpw-approve-why">
+                {approveBlocked}
+              </p>
+            )}
+          </>
+        )}
       </section>
       {plan && (
         <section className="tpw-card" aria-labelledby="tpw-revs-title">
           <div className="tpw-card__head">
             <h3 id="tpw-revs-title" className="tpw-card__title">
-              {t("testPlan.revisions")}
+              {t("testPlan.timeline.title")}
             </h3>
+            {/* The revision copies, to restore one. */}
             <button type="button" className="tpw-link" onClick={onShowRevisions}>
-              {t("testPlan.panel.seeAll")}
+              {t("testPlan.revisions")}
             </button>
           </div>
-          {/* Keyed by the revision: a save adds one. */}
-          <RevisionHistory key={plan.revision} planId={plan.id} limit={3} />
+          {/* Re-read on each save (a new plan object). */}
+          <PlanTimeline plan={plan} />
         </section>
       )}
     </aside>

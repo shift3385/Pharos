@@ -21,10 +21,11 @@ export {
   generateCasesFromRequirement,
   reviewCaseList,
   suggestClosureCriteria,
+  suggestPlanLists,
   suggestResponsibilities,
   suggestRisks,
 } from "./api/generators";
-export type { CaseListField, RequirementBrief } from "./api/generators";
+export type { CaseListField, PlanListGroup, RequirementBrief } from "./api/generators";
 export {
   REQ_EXTRACT_PROMPT,
   REQ_SYNTHESIS_PROMPT,
@@ -43,7 +44,7 @@ export { AiSendNotice } from "./ui/AiSendNotice";
 export { aiDestinationNow } from "./api/aiApi";
 export { applyProposals } from "./model/listReview";
 export type { ListProposal, ListProposalOps } from "./model/listReview";
-export type { GeneratedCase, RiskSuggestion } from "./model/schemas";
+export type { GeneratedCase, PlanListSuggestion, RiskSuggestion } from "./model/schemas";
 export { hasPendingReview, isPendingReview, markReviewed, withProvenance } from "./model/provenance";
 export type { AiDestination, AiImage, AiImageType, AiMessage, AiProvenance, ProvenanceMap } from "./model/types";
 export { aiVision } from "./api/aiApi";

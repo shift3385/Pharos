@@ -1084,13 +1084,18 @@
       "tools": "Herramientas y automatización",
       "testData": "Datos de prueba",
       "defects": "Gestión de defectos",
-      "roles": "Roles y responsabilidades",
+      "roles": "Roles, independencia y formación",
       "schedule": "Cronograma",
       "risks": "Riesgos y mitigación",
       "communication": "Plan de comunicación",
       "closure": "Criterios de cierre",
       "purpose": "Propósito",
-      "conclusion": "Conclusión"
+      "conclusion": "Conclusión",
+      "assumptions": "Supuestos y restricciones",
+      "techniques": "Técnicas de prueba",
+      "estimation": "Estimación y presupuesto",
+      "entry": "Entrada, suspensión y reanudación",
+      "metrics": "Métricas y objetivos medibles"
     },
     "typeGroup": {
       "functional": "Funcionales",
@@ -1196,7 +1201,12 @@
       "communication": "Cómo y cuándo se informa del avance.",
       "closure": "Condiciones que deben cumplirse para cerrar el ciclo.",
       "purpose": "Objetivos de prueba que persigue el plan y para qué sirve.",
-      "conclusion": "Valoración frente a objetivos y criterios de salida, riesgos abiertos y decisión."
+      "conclusion": "Valoración frente a objetivos y criterios de salida, riesgos abiertos y decisión.",
+      "assumptions": "Lo que se da por hecho al planificar y los límites que el equipo no puede cambiar (plazos, personas, normas). Si un supuesto deja de cumplirse, revisa el plan.",
+      "techniques": "Cómo se diseñan los casos (ISTQB CTFL v4, cap. 4): de caja negra, de caja blanca, basadas en la experiencia y colaborativas.",
+      "estimation": "Cuánto esfuerzo y dinero hace falta, y con qué técnica se calculó (CTFL v4 §5.1.4). En la estimación de tres puntos, E = (O + 4·M + P) / 6.",
+      "entry": "Cuándo puede empezar un ciclo (criterios de entrada), cuándo se detiene la prueba y qué debe pasar para retomarla.",
+      "metrics": "Qué se mide y qué objetivo debe alcanzar. Las métricas del catálogo las mide Pharos; las propias se valoran a mano. Marca «Criterio de salida» para que cuenten al cerrar un ciclo."
     },
     "nav": {
       "label": "Pasos del plan",
@@ -1365,7 +1375,167 @@
     },
     "testTypes": "Tipos de prueba",
     "testLevels": "Niveles de prueba",
-    "suggestedTitle": "Plan de pruebas {{project}}"
+    "suggestedTitle": "Plan de pruebas {{project}}",
+    "assumptions": "Supuestos",
+    "constraints": "Restricciones",
+    "suggestAssumptions": "Sugerir supuestos y restricciones con IA",
+    "suggestEntry": "Sugerir criterios con IA",
+    "listName": {
+      "assumptions": "Supuesto",
+      "constraints": "Restricción",
+      "entryCriteria": "Entrada",
+      "suspensionCriteria": "Suspensión",
+      "resumptionCriteria": "Reanudación"
+    },
+    "techniqueGroup": {
+      "blackBox": "Caja negra",
+      "whiteBox": "Caja blanca",
+      "experience": "Basadas en la experiencia",
+      "collaborative": "Colaborativas",
+      "own": "Propias"
+    },
+    "techniqueLabel": {
+      "equivalencePartitioning": "Particiones de equivalencia",
+      "boundaryValues": "Análisis de valores límite",
+      "decisionTables": "Tablas de decisión",
+      "stateTransition": "Transición de estados",
+      "statement": "Prueba de sentencias",
+      "branch": "Prueba de ramas",
+      "errorGuessing": "Predicción de errores",
+      "exploratory": "Prueba exploratoria",
+      "checklist": "Basada en listas de comprobación",
+      "userStories": "Historias de usuario en colaboración",
+      "acceptanceCriteria": "Criterios de aceptación",
+      "atdd": "ATDD (desarrollo guiado por pruebas de aceptación)"
+    },
+    "techniqueList": {
+      "other": "Otra técnica",
+      "otherPlaceholder": "Escribe una técnica",
+      "add": "Añadir técnica"
+    },
+    "independence": "Independencia de las pruebas",
+    "independenceLevel": {
+      "author": "Quien lo escribe",
+      "peer": "Un compañero",
+      "team": "Probadores del equipo",
+      "organization": "Equipo de la organización",
+      "external": "Externa"
+    },
+    "independenceNote": "Cómo se garantiza",
+    "training": "Necesidades de formación",
+    "trainingNeedCol": "Necesidad",
+    "trainingWhenCol": "Cuándo",
+    "estimationTechnique": "Técnica de estimación",
+    "estimationTechniqueLabel": {
+      "ratio": "Por proporciones",
+      "extrapolation": "Por extrapolación",
+      "wideband": "Wideband Delphi",
+      "threePoint": "Estimación de tres puntos",
+      "expert": "Juicio experto"
+    },
+    "effort": "Esfuerzo (persona-días)",
+    "optimistic": "Optimista (persona-días)",
+    "likely": "Más probable (persona-días)",
+    "pessimistic": "Pesimista (persona-días)",
+    "threePointResult": "E = ({{o}} + 4·{{m}} + {{p}}) / 6 = {{e}} persona-días · σ = {{sd}}",
+    "threePointIncomplete": "Escribe las tres cifras para calcular la estimación.",
+    "budget": "Presupuesto",
+    "estimationNotes": "Base y notas",
+    "entryCriteria": "Criterios de entrada",
+    "suspensionCriteria": "Se suspende si…",
+    "resumptionCriteria": "Se reanuda cuando…",
+    "metricKind": {
+      "executed": "% de casos ejecutados",
+      "passRate": "Tasa de éxito",
+      "criticalDefects": "Defectos críticos abiertos",
+      "coverage": "Cobertura de requisitos",
+      "defectDensity": "Densidad de defectos",
+      "escapedDefects": "Defectos escapados",
+      "fixTime": "Tiempo de corrección (mediana)",
+      "reopenRate": "Tasa de reapertura",
+      "flakyRate": "Tasa de pruebas inestables"
+    },
+    "metricKindTip": {
+      "executed": "Casos ejecutados sobre los planificados.",
+      "passRate": "Casos que pasan sobre los ejecutados.",
+      "criticalDefects": "Defectos de severidad crítica sin cerrar.",
+      "coverage": "Requisitos con al menos un caso que pasa.",
+      "defectDensity": "Defectos por cada 100 casos ejecutados.",
+      "escapedDefects": "Defectos encontrados después de cerrar el ciclo.",
+      "fixTime": "Mediana de días desde que se crea un defecto hasta «Corregido».",
+      "reopenRate": "Defectos reabiertos sobre los corregidos.",
+      "flakyRate": "Casos con resultados distintos sin cambios de por medio."
+    },
+    "metricUnit": {
+      "percent": "%",
+      "count": "Número",
+      "per100cases": "Por cada 100 casos",
+      "days": "Días",
+      "score": "Puntuación"
+    },
+    "metricUnitShort": {
+      "per100cases": "/ 100 casos",
+      "days_one": "día",
+      "days_other": "días"
+    },
+    "metricsTable": {
+      "metric": "Métrica",
+      "op": "Comparador",
+      "target": "Objetivo",
+      "measured": "Cómo se mide",
+      "exit": "Criterio de salida",
+      "note": "Nota",
+      "ownName": "Nombre de la métrica",
+      "unit": "Unidad",
+      "remove": "Quitar métrica"
+    },
+    "measure": {
+      "auto": "Pharos la mide",
+      "manual": "A mano"
+    },
+    "metricsAddCatalog": "Métrica del catálogo",
+    "metricsAddOwn": "Métrica propia",
+    "metricsNone": "Todavía no hay métricas. Añade una del catálogo o una propia.",
+    "closureLink": {
+      "label": "Medido por",
+      "none": "Sin métrica · se marca a mano",
+      "blocking": "Bloqueante",
+      "advisory": "Orientativo",
+      "blockingTip": "Un criterio bloqueante en «No cumple» pide justificación para cerrar el ciclo; uno orientativo solo se informa.",
+      "hint": "Los criterios medidos por una métrica se evalúan solos al cerrar un ciclo. El texto se escribe desde la métrica."
+    },
+    "approval": {
+      "approve": "Aprobar versión {{version}}",
+      "title": "¿Aprobar el plan?",
+      "confirm": "Aprobarás la versión {{version}} como {{name}}, hoy {{date}}. Si después se edita el contenido, el plan vuelve a «Revisado» y habrá que aprobarlo de nuevo.",
+      "action": "Aprobar",
+      "toast": "Plan aprobado (v{{version}}).",
+      "saveFirst": "Guarda antes de aprobar",
+      "needsReviewed": "Solo se aprueba un plan guardado en «Revisado».",
+      "by": "Aprobado por",
+      "at": "Aprobado el",
+      "editing": "Este plan está aprobado (v{{version}}). Al guardar estos cambios vuelve a «Revisado».",
+      "optionReason": "Se aprueba con el botón «Aprobar» de «Estado del plan».",
+      "byLine": "{{name}} · {{date}}"
+    },
+    "noChangesToast": "Sin cambios: no hay nada que guardar.",
+    "documentId": "ID de documento",
+    "timeline": {
+      "title": "Historial",
+      "created": "Creación del plan",
+      "approved": "Aprobado por {{name}}",
+      "lostApproval": "pierde la aprobación",
+      "none": "Aún no hay cambios guardados.",
+      "someone": "Otra cuenta"
+    },
+    "strategySheet": "Estrategia 29119-3",
+    "metricsSheet": "Métricas",
+    "criteriaSheet": "Criterios de salida",
+    "sectionCol": "Apartado",
+    "contentCol": "Contenido",
+    "keyCol": "Clave",
+    "typeCol": "Tipo",
+    "linkedCol": "Medido por"
   },
   "testCase": {
     "loadFailed": "No se pudieron cargar los casos de prueba.",

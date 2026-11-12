@@ -8,21 +8,25 @@ capítulo 17, porque necesitan una clave real.
 
 El **plan de pruebas** es el documento que dice qué se prueba, cómo, con qué
 medios, quién y cuándo. Hay un plan por proyecto. Pharos lo redacta con un
-asistente de **17 pasos** que sigue la norma ISO/IEC/IEEE 29119-3:
+asistente de **22 pasos** que sigue la norma ISO/IEC/IEEE 29119-3 y el apartado
+5.1.1 de ISTQB CTFL v4:
 
 | Pasos | Qué decides |
 | --- | --- |
-| 1–2 | Identificación del plan (título, estado, versión y fecha; el autor es tu nombre del perfil y lo ves en «Estado del plan») y resumen |
-| 3–6 | Alcance, niveles y tipos de prueba, metodología y entregables |
-| 7–10 | Entorno, herramientas y automatización, datos de prueba y gestión de defectos |
-| 11–13 | Roles, cronograma (sprints e hitos) y riesgos con su mitigación |
-| 14–17 | Comunicación, criterios de cierre, propósito y conclusión |
+| 1–2 | Identificación del plan (título, estado, ID de documento, versión y fecha; el autor es tu nombre del perfil y lo ves en «Estado del plan») y resumen |
+| 3–8 | Alcance, supuestos y restricciones, niveles y tipos de prueba, técnicas de prueba, metodología y entregables |
+| 9–12 | Entorno, herramientas y automatización, datos de prueba y gestión de defectos |
+| 13–16 | Roles, independencia y formación; estimación y presupuesto; cronograma (sprints e hitos) y riesgos con su mitigación |
+| 17–20 | Comunicación; entrada, suspensión y reanudación; métricas y objetivos medibles; criterios de cierre |
+| 21–22 | Propósito y conclusión |
 
 Hasta la versión 0.2 el asistente tenía 19 pasos: «Título» y «Versión, fecha y
 autor» son ahora el paso 1, y «Tipos de prueba» y «Niveles de prueba» el
-paso 4. Un plan guardado entonces se abre con todos sus datos.
+paso 5. En la 0.3 tenía 17: los pasos 4, 6, 14, 18 y 19 son nuevos en la 0.4.
+Un plan guardado entonces se abre con todos sus datos y los pasos nuevos por
+completar.
 
-**Niveles y tipos de prueba** (paso 4) responde, como propone ISTQB, a qué se
+**Niveles y tipos de prueba** (paso 5) responde, como propone ISTQB, a qué se
 prueba, en qué nivel y con qué tipo. Los niveles dicen dónde: unitarias (un
 componente), integración (sus interfaces), sistema (de extremo a extremo) y
 aceptación (usuario y negocio). Los tipos dicen qué característica se
@@ -37,9 +41,45 @@ estrés, seguridad, usabilidad, compatibilidad, accesibilidad); y
 
 Las casillas van en columnas por grupo. Lo que el equipo añade queda en la
 columna **«Propios»**, con una ✕ para quitarlo y, al pie, el campo para añadir
-otro; los **Entregables** (paso 6) siguen el mismo diseño.
+otro; las **Técnicas de prueba** (paso 6) y los **Entregables** (paso 8) siguen
+el mismo diseño. Las técnicas son las de CTFL v4: de caja negra (particiones de
+equivalencia, valores límite, tablas de decisión, transición de estados), de
+caja blanca (sentencias y ramas), basadas en la experiencia (predicción de
+errores, exploratoria, listas de comprobación) y colaborativas (historias de
+usuario, criterios de aceptación, ATDD).
 
-**Metodología** (paso 5) va en dos columnas con ese mismo aspecto. En **«Método
+**Supuestos y restricciones** (paso 4) separa lo que se da por hecho al
+planificar (un entorno disponible, que las historias lleguen con criterios de
+aceptación) de los límites que el equipo no puede cambiar (plazos, personas,
+normas). **Entrada, suspensión y reanudación** (paso 18) dice cuándo puede
+empezar un ciclo, cuándo se detiene la prueba y qué tiene que pasar para
+retomarla. En los dos pasos, «Sugerir con IA» propone elementos de cada lista.
+
+**Roles, independencia y formación** (paso 13) añade, bajo la tabla de roles,
+la **independencia de las pruebas** en una escala de cinco (de quien escribe el
+código a un equipo externo) con cómo se garantiza, y las **necesidades de
+formación** del equipo con su plazo.
+
+**Estimación y presupuesto** (paso 14) recoge la técnica (por proporciones, por
+extrapolación, Wideband Delphi, tres puntos o juicio experto), el esfuerzo en
+persona-días y el presupuesto. Con la de tres puntos escribes el optimista, el
+más probable y el pesimista, y Pharos calcula E = (O + 4·M + P) / 6 y su
+desviación.
+
+**Métricas y objetivos medibles** (paso 19) es una fila por métrica con su
+comparador y su objetivo. Las del catálogo las mide Pharos y su unidad es fija:
+casos ejecutados, tasa de éxito, cobertura, reapertura e inestables en %;
+defectos críticos abiertos y defectos escapados en número; la densidad de
+defectos por cada 100 casos ejecutados, y el tiempo de corrección en días (la
+mediana hasta «Corregido»). Las **propias** llevan nombre y unidad y se valoran
+a mano. Marcar **«Criterio de salida»** lleva la métrica a «Criterios de
+cierre» (paso 20), donde cada criterio dice **«Medido por»** qué métrica lo mide
+y si es **«Bloqueante»** (por defecto) u **«Orientativo»**. El texto de un
+criterio medido se escribe desde su métrica y se actualiza si la cambias. Un
+plan nuevo empieza con cuatro métricas y los tres criterios de siempre
+enlazados.
+
+**Metodología** (paso 7) va en dos columnas con ese mismo aspecto. En **«Método
 de trabajo»**, la metodología y, si es ágil, la duración del sprint («2
 semanas»). En **«Reuniones del equipo»**, una fila por reunión (diaria,
 revisión, retrospectiva y planificación) con su casilla, su nombre y su
@@ -57,14 +97,27 @@ un día anterior.
 
 El plan alimenta otras pantallas:
 
-- Los **criterios de cierre** (paso 15) son los criterios de salida que evalúa
-  el Inicio (capítulo 3) y el informe de estado (capítulo 11).
+- Los **criterios de cierre** (paso 20) son los criterios de salida que evalúa
+  el Inicio (capítulo 3) y el informe de estado (capítulo 11); los medidos por
+  una métrica se evalúan con ella.
 - El **cronograma** da la fecha de cierre que se ve en la cabecera del
   proyecto y en «Criterios de salida».
 - Los **tipos y niveles** guían las sugerencias de casos con IA (capítulo 17).
 
-Cada guardado crea una **revisión**, y el plan se exporta en PDF (listo para
-firmar) o en Excel.
+Cada guardado **con cambios** crea una revisión y sube la versión (1.3 → 1.4);
+guardar sin cambios avisa de que no hay nada que guardar, y cambiar solo el
+estado no sube la versión. El plan se exporta en PDF (listo para firmar) o en
+Excel, con su **ID de documento** (por defecto `TP-<prefijo del proyecto>-<6
+caracteres>`, editable en el paso 1).
+
+**Aprobar el plan.** «Aprobado» no se elige en el estado: con el plan guardado y
+en «Revisado», pulsa **«Aprobar versión N»** en «Estado del plan» y confirma.
+Queda quién lo aprobó y cuándo, en el panel y en la cabecera del PDF y del
+Excel; aprobar no sube la versión. Si después cambias el contenido, un aviso lo
+dice antes de guardar y el plan vuelve a «Revisado» con una versión nueva. El
+panel **«Historial»** muestra los últimos cambios de estado y versión, quién
+los hizo y qué pasos tocó, con «pierde la aprobación» cuando toca; «Revisiones»
+abre la lista para restaurar una.
 
 En este manual, Liomar escribe el «Plan de pruebas de Pharos 0.3.0»: qué se
 prueba de la propia aplicación en esta versión.
@@ -94,13 +147,20 @@ prueba de la propia aplicación en esta versión.
 
 ## Si algo no sale
 
+- **«Aprobar versión N» está en gris.** Debajo dice por qué: guarda antes de
+  aprobar, o pon el plan en «Revisado» y guárdalo.
+- **«Sin cambios: no hay nada que guardar».** El plan no ha cambiado desde el
+  último guardado; no se crea versión ni revisión.
+- **Un criterio de cierre no se deja editar.** Lo mide una métrica: su texto
+  sale de ella. Cambia la métrica en el paso 19, o elige «Sin métrica» en
+  «Medido por».
 - **«No se puede guardar: revisa 1 campo».** Falta el título (paso 1, «Identificación del plan»): es lo
   único obligatorio. Pharos te lleva a ese paso.
 - **«Guardado con N avisos por revisar».** El plan se guardó, pero hay filas
   repetidas o fechas del cronograma que revisar.
 - **«Niveles y tipos de prueba» no queda completo.** Marca al menos un nivel
   y un tipo.
-- **«Metodología» (paso 5) no queda completa.** La línea bajo el paso dice qué falta: la
+- **«Metodología» (paso 7) no queda completa.** La línea bajo el paso dice qué falta: la
   duración del sprint, al menos una reunión o, en «Tradicional», al menos una
   fase.
 - **Una fila del cronograma dice «Fecha no válida», «La fecha de fin es
@@ -136,9 +196,13 @@ prueba de la propia aplicación en esta versión.
 
 ## Consejos
 
-- No hace falta rellenar los 17 pasos de una vez: la lista marca los completos
-  y «Antes de terminar» (paso 17) enlaza a los que faltan.
-- La duración del sprint (paso 5) se usa en el cronograma: si un sprint dura
+- No hace falta rellenar los 22 pasos de una vez: la lista marca los completos
+  y «Antes de terminar» (paso 22) enlaza a los que faltan.
+- Marca como «Orientativo» un criterio que quieres ver en el cierre sin que lo
+  frene, por ejemplo una métrica propia que todavía se mide a mano.
+- Un .xlsx importado nunca llega aprobado: entra como «Revisado», para que
+  alguien lo apruebe aquí.
+- La duración del sprint (paso 7) se usa en el cronograma: si un sprint dura
   otra cosa, Pharos lo avisa en su fila.
 - Para empezar un plan desde Excel, descarga una plantilla en «Administración ›
   Plantillas», rellénala e impórtala con «Importar .xlsx».
@@ -149,7 +213,9 @@ prueba de la propia aplicación en esta versión.
   («Funcionales: …», «Confirmación y regresión: …», «Propios: …»), antes de la
   Metodología, que muestra una entrada por línea y los rangos del
   cronograma se leen «2026-11-09 – 2026-11-22». Los hitos aparecen bajo el
-  cronograma y los ciclos, al final.
+  cronograma y los ciclos, al final. Los apartados nuevos de la 0.4 van donde
+  los pide el asistente; en el Excel, en las hojas «Estrategia 29119-3»,
+  «Métricas» y «Criterios de salida», que «Importar .xlsx» vuelve a leer.
 - Si el documento debe llevar su historial, elige «Historial de revisiones» en
   «Ajustes del proyecto › Historial en el plan exportado» (capítulo 14). El
   .pdf y el .xlsx (también los del ZIP del proyecto) añaden entonces la tabla
@@ -170,7 +236,7 @@ prueba de la propia aplicación en esta versión.
 - Capítulo 3, «Inicio»: los criterios de salida.
 - Capítulo 14, «Ajustes del proyecto»: el historial en el plan exportado.
 - Capítulo 17, «Asistente de IA»: asistir en un campo y sugerir riesgos,
-  responsabilidades y criterios.
+  responsabilidades, criterios, supuestos y restricciones.
 - [Guía de pruebas de la beta](../guia-beta.md), apartado 4.3.
 - [Glosario](../GLOSARIO.md): «Plan de pruebas», «Identificación del plan», «Prueba de confirmación», «Entregable», «Paso completado», «Cierre del ciclo».
 

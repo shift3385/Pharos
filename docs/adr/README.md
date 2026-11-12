@@ -45,6 +45,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0037](0037-requisitos-desde-disenos.md)          | Imágenes en las llamadas de IA y requisitos desde capturas, bocetos y diseños        | Aceptado | 2026-11-07 |
 | [0038](0038-pizarra-de-inicio-y-preferencias-de-cuenta.md) | Pizarra de gadgets en Inicio y preferencias que viajan con la cuenta (UX-27)         | Aceptado | 2026-11-09 |
 | [0039](0039-rumbo-hacia-la-ejecucion-autonoma.md) | Rumbo hacia la ejecución autónoma y nuevos hitos hasta 1.0 (rector desde la línea base del 2026-11-11) | Aceptado | 2026-11-11 |
+| [0040](0040-metricas-del-plan-y-aprobacion.md) | Métricas del plan, criterios de salida enlazados y aprobación con autor (PLN-03/04/06/07) | Aceptado | 2026-11-11 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

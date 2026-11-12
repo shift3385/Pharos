@@ -1482,3 +1482,368 @@
   flex: 1 1 auto;
   max-width: none;
 }
+
+/* ---- ISO/IEC/IEEE 29119-3 steps (PLN-06) ---- */
+
+/* Two or three text lists side by side («Supuestos» | «Restricciones»). */
+.tpw-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 14px 20px;
+}
+
+.tpw-lists__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Independence of testing: a five-step scale, least to most. */
+.tpw-scale {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.tpw-scale__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  gap: 6px;
+}
+
+.tpw-scale__option {
+  position: relative;
+  display: flex;
+}
+
+.tpw-scale__option input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.tpw-scale__option span {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: var(--fs-caption);
+  text-align: center;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+.tpw-scale__option input:checked + span {
+  font-weight: var(--fw-semibold);
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-color: var(--color-navy-500);
+}
+
+.tpw-scale__option input:focus-visible + span {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The three-point result, in figures. */
+.tpw-calc {
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+/* Metrics: one row per metric, cells that wrap on a narrow form. */
+.tpw-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tpw-metrics__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tpw-metrics__row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(220px, 2fr) auto auto 38px;
+  align-items: end;
+  gap: 8px 14px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.tpw-metrics__row:first-child {
+  border-top: 0;
+}
+
+.tpw-metrics__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tpw-metrics__label {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.tpw-metrics__objective {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tpw-metrics__op {
+  flex: 0 0 64px;
+}
+
+.tpw-metrics__input {
+  height: 40px;
+  min-width: 0;
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+}
+
+.tpw-metrics__number {
+  flex: 0 1 96px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tpw-metrics__unit {
+  font-size: var(--fs-caption);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.tpw-metrics__unitsel {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.tpw-metrics__exit {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+
+.tpw-metrics__remove {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.tpw-metrics__add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tpw-metrics__add .tp-list-field__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@container (max-width: 719.98px) {
+  .tpw-metrics__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .tpw-metrics__cell--metric,
+  .tpw-metrics__cell--target {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Exit criteria: text, metric, «Medido por», blocking or advisory. */
+.tpw-closure__hint {
+  margin: 0;
+  font-size: var(--fs-caption);
+}
+
+.tpw-closure__head,
+.tpw-closure__row {
+  display: grid;
+  grid-template-columns: 2fr 1fr minmax(180px, 1.4fr) auto 38px;
+  gap: var(--space-2);
+}
+
+.tpw-closure__head {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+}
+
+.tpw-closure__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tpw-closure__row {
+  position: relative;
+  align-items: start;
+}
+
+.tpw-closure__texts,
+.tpw-closure__controls {
+  display: contents;
+}
+
+.tpw-closure__row textarea[readonly] {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-1);
+  border-style: dashed;
+}
+
+.tpw-closure__kind {
+  height: 38px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  background: none;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tpw-closure__kind[data-blocking] {
+  color: var(--color-navy-500);
+  background: var(--color-navy-100);
+  border-color: var(--color-navy-500);
+}
+
+.tpw-closure__row .tp-list-field__del {
+  width: 38px;
+  height: 38px;
+}
+
+.tpw-closure__row .tp-confirm,
+.tpw-closure__row .field-msg {
+  grid-column: 1 / -1;
+}
+
+@container (max-width: 719.98px) {
+  .tpw-closure__head {
+    display: none;
+  }
+
+  .tpw-closure__row {
+    grid-template-columns: minmax(0, 1fr) auto 38px;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .tpw-closure__list > li:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .tpw-closure__texts .tp-pair-field__cell {
+    grid-column: 1 / -1;
+  }
+
+  .tpw-closure__texts .tp-pair-field__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    font-size: var(--fs-caption);
+    font-weight: var(--fw-medium);
+    color: var(--color-text-secondary);
+  }
+}
+
+/* ---- Approval (PLN-07) ---- */
+
+.tpw-approve {
+  width: 100%;
+  justify-content: center;
+}
+
+.tpw-approve-why {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+}
+
+/* The plan's history in the side panel: status, version, who and what. */
+.tpw-timeline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-caption);
+}
+
+.tpw-timeline__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.tpw-timeline__item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.tpw-timeline__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tpw-timeline__when {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tpw-timeline__what {
+  color: var(--color-text-secondary);
+}
+
+.tpw-timeline__lost {
+  font-weight: var(--fw-semibold);
+  color: var(--color-warning-text);
+}
