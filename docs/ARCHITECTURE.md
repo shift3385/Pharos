@@ -231,6 +231,16 @@ wins by the client's `updatedAt` (clamped to now + 5 min), with a per-account
 copy on each device (`@modules/profile` `savePreference`/`pullPreference`,
 pending while offline). Signing in always opens Inicio (`App.tsx`).
 
+**Quality gate and cycle trend (DOC-02, DOC-06, ADR-0041).** The same
+derivation measures the metric catalog per scope (`ExecutionSummary.metrics`:
+defect density, escapes, fix time, reopen rate, flakiness) and resolves exit
+criteria through the plan's metrics (`metricId`, `blocking`). Closing a cycle
+goes through the gate (`cycle_close` / `POST /api/cycles/:id/close`, pure
+rules in `derive.rs::close_record` and its twin), which appends a frozen record
+to `test_cycles.data.closures`. The Home read carries each project's trend
+(`HomeProject.trend`, `objectives`); a cycle summary carries its closure and
+the previous closed cycle for the go/no-go report.
+
 **Home execution metrics (RED-W6).** Every execution number of Inicio comes
 from **one read**: the desktop command `home_metrics` (`home_metrics.rs`) or
 `GET /api/home/metrics` (`server/src/modules/domain/home-metrics.ts`). Both

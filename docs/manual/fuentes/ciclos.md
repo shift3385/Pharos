@@ -27,6 +27,37 @@ Un ciclo pasa por tres estados: **Planificado**, **Activo** y **Cerrado**. Un
 ciclo cerrado no admite cambios ni ejecuciones hasta que se reabre (editarlo y
 cambiar su estado).
 
+## Cerrar un ciclo: el quality gate
+
+Un ciclo se cierra con **«Cerrar ciclo…»**, nunca desde «Editar». Cerrar es
+una decisión: ¿la versión puede salir? Pharos evalúa los **criterios de
+salida** del plan (capítulo 5) con los resultados del ciclo y te pide lo que
+falte:
+
+- **Un criterio obligatorio que no se cumple**, o que no tiene datos para
+  medirse, pide una **justificación** de al menos 20 caracteres: por qué se
+  acepta el riesgo, quién lo asume y cuándo se resuelve.
+- **Un criterio manual** (por ejemplo, «Visto bueno del PO») se marca a mano:
+  «Cumple» o «No cumple».
+- **Un criterio orientativo** se muestra y queda en el informe, pero no
+  bloquea.
+- **El veredicto.** Si todo lo obligatorio se cumple, es **Go**. Si algo
+  falla, eliges **Go con riesgos** (el ciclo se cierra y la versión puede
+  salir, con los riesgos justificados) o **No-go** (el ciclo se cierra, pero la
+  versión no sale: abre otro ciclo para el re-test).
+
+Al cerrar, Pharos guarda la decisión con las cifras de ese momento,
+congeladas, y quién la tomó y cuándo (queda en Auditoría). El ciclo muestra su
+veredicto junto al estado. Su **informe de estado** empieza por «Decisión de
+salida»: cada criterio con su valor y su justificación, y las métricas del
+ciclo frente al ciclo cerrado anterior (tasa de éxito, densidad de defectos,
+escapes, tiempo de corrección, reapertura y flaky). También sale en la hoja
+«Decisión» del Excel y en el PDF. Inicio lo suma a «Tendencia de ciclos»
+(capítulo 3).
+
+Si reabres un ciclo y lo vuelves a cerrar, se guarda un cierre nuevo; los
+anteriores no se pierden.
+
 En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 
 - **Build y entorno:** 0.3.0-rc1, en staging.
@@ -70,6 +101,13 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 - **«No se pudieron cargar los ciclos.»** Pulsa «Reintentar».
 - **«Este ciclo ya no existe.»** Se eliminó, quizá en otro equipo. Vuelve a la
   lista con «← Ciclos».
+- **«Cerrar ciclo» no cierra y dice «Falta marcar algún criterio manual o
+  justificar…».** Escribe la justificación de cada criterio obligatorio en rojo
+  (20 caracteres como mínimo) y marca los manuales.
+- **«Elige «Go con riesgos» o «No-go».»** Algún criterio obligatorio no se
+  cumple: decide si la versión sale.
+- **«Un ciclo se cierra con «Cerrar ciclo…»…».** Desde «Editar» ya no se
+  puede elegir «Cerrado»: usa el botón de la cabecera del ciclo.
 
 ## En el móvil
 
