@@ -1284,6 +1284,8 @@ const EXEMPT: &[(&str, &str)] = &[
     ("sync::sync_cursor_set", "sync bookkeeping"),
     ("sync::sync_server_features_set", "sync bookkeeping"),
     ("sync::sync_conflicts_list", "read"),
+    ("audit_read::audit_facets", "read"),
+    ("audit_read::audit_verify", "read: checks the chains"),
     (
         "purge::purge_deleted",
         "removes rows already deleted and audited; expired evidence writes its own `redact`",

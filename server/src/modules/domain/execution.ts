@@ -17,6 +17,7 @@ import { createHash } from "node:crypto";
 import type { DomainReader, DomainStore, DomainTx } from "./domain.store";
 import { withLinks, type LinkContext } from "./defects";
 import {
+  checkedBands,
   closeRecord,
   home,
   summarize,
@@ -310,6 +311,8 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
           return [{ id, kind: typeof kind === "string" ? kind : null, op: str(obj(m), "op"), target: numOrNull(obj(m), "target") }];
         })
       : null,
+    // TRZ-04: the project's bands; absent or invalid → the defaults.
+    riskBands: checkedBands(project.payload.riskBandLow, project.payload.riskBandMedium),
   };
 }
 

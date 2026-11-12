@@ -12,6 +12,9 @@ export interface ProjectRow {
   caseIdDigits: number;
   /** «Historial en el plan exportado» (PLN-02), for «Copiar ajustes de…» (UX-25). */
   planExportHistory?: PlanExportHistory;
+  /** Risk bands (TRZ-04), for «Copiar ajustes de…». */
+  riskBandLow?: number;
+  riskBandMedium?: number;
   updatedAt: string;
   /** Last time this user opened it on this device (null = never). */
   lastAccess: string | null;

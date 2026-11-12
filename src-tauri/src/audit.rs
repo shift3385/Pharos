@@ -435,8 +435,7 @@ pub fn pending_count(conn: &Connection) -> Result<i64, String> {
     .map_err(|e| e.to_string())
 }
 
-/// Where a chain stops being valid.
-#[cfg_attr(not(test), allow(dead_code))] // for Admin > Auditoría (AUD-01) and tests
+/// Where a chain stops being valid (shown in Admin > Auditoría, `audit_read`).
 #[derive(Debug, PartialEq)]
 pub enum ChainBreak {
     /// `chain_seq` jumps or repeats (a row removed, or inserted twice).
@@ -452,7 +451,6 @@ pub enum ChainBreak {
 /// Checks one chain from its first link. A redacted event (changes NULL) still
 /// verifies: its hash covers `changes_sha256`, which stays. Returns how many
 /// links were checked.
-#[cfg_attr(not(test), allow(dead_code))]
 pub fn verify_chain(
     conn: &Connection,
     device: &str,

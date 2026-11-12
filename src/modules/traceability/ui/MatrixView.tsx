@@ -19,6 +19,8 @@ import {
 } from "../model/matrix";
 import type { Requirement } from "../model/types";
 import { priorityTone } from "./traceTones";
+import { InfoTip } from "@shared/ui/InfoTip";
+import type { CoverageSummary } from "@shared/contracts/contract";
 import "@shared/ui/buttons.css";
 import "./Traceability.css";
 
@@ -69,6 +71,88 @@ function groupRows(rows: MatrixRow[]): Group[] {
   return groups;
 }
 
+const percent = (ratio: number | null | undefined) =>
+  ratio == null ? "—" : `${Math.round(ratio * 100)} %`;
+
+/** «Cobertura ponderada» (TRZ-04, ADR-0043): each assessed requirement
+ *  weighs its risk level; the unassessed ones are counted apart. */
+function WeightedKpi({ coverage }: { coverage: CoverageSummary | null }) {
+  const { t } = useTranslation();
+  const w = coverage?.weighted;
+  const has = !!w && w.totalWeight > 0;
+  return (
+    <div className="tz-kpi" data-testid="tz-weighted">
+      <dt className="tz-kpi__term">
+        {t("traceability.matrix.weighted")}
+        <InfoTip id="tz-weighted-info" label={t("traceability.matrix.weightedTitle")}>
+          <span className="tz-weighted-tip">
+            <strong>{t("traceability.matrix.weightedTitle")}</strong>
+            <span>{t("traceability.matrix.weightedHow")}</span>
+            {has && (
+              <span className="tz-weighted-tip__calc">
+                {t("traceability.matrix.weightedCalc", {
+                  covered: w.coveredWeight,
+                  passed: w.passedWeight,
+                  total: w.totalWeight,
+                  coveredPct: percent(w.coverageRatio),
+                  passedPct: percent(w.passedRatio),
+                })}
+              </span>
+            )}
+            {coverage && (
+              <span>
+                {t("traceability.matrix.weightedBands", {
+                  count: w?.unassessed ?? 0,
+                  low: coverage.riskBands.low,
+                  medium: coverage.riskBands.medium,
+                })}
+              </span>
+            )}
+          </span>
+        </InfoTip>
+      </dt>
+      <dd>{has ? percent(w.coverageRatio) : "—"}</dd>
+      <dd className="tz-kpi__hint">
+        {!coverage
+          ? t("traceability.matrix.weightedUnknown")
+          : has
+            ? t("traceability.matrix.weightedHint", { passed: percent(w.passedRatio), count: w.unassessed })
+            : t("traceability.matrix.weightedNone")}
+      </dd>
+    </div>
+  );
+}
+
+const BAND_ROWS = ["high", "medium", "low", "unassessed"] as const;
+
+/** Coverage by risk band in thin bars (TRZ-04), as the report's table. */
+function BandBars({ coverage }: { coverage: CoverageSummary | null }) {
+  const { t } = useTranslation();
+  if (!coverage || coverage.requirements === 0) return null;
+  return (
+    <ul className="tz-bands" aria-label={t("traceability.matrix.byBand")} data-testid="tz-bands">
+      {BAND_ROWS.map((band) => {
+        const b = coverage.byRisk[band];
+        const ratio = b.requirements ? b.covered / b.requirements : 0;
+        return (
+          <li key={band} className="tz-bands__row" data-band={band}>
+            <span className="tz-bands__name">
+              <span className="tz-bands__dot" aria-hidden="true" />
+              {t(`traceability.risk.band.${band}`)}
+            </span>
+            <span className="tz-bands__track" aria-hidden="true">
+              <span className="tz-bands__fill" style={{ width: `${Math.round(ratio * 100)}%` }} />
+            </span>
+            <span className="tz-bands__count">
+              {t("traceability.matrix.byBandCount", { covered: b.covered, total: b.requirements })}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /**
  * Requirement ↔ test case ↔ defect matrix (TRZ-02, SPEC §8): four indicators,
  * the 9-column matrix with uncovered requirements in red and «Generar casos con
@@ -84,9 +168,13 @@ export function MatrixView({
   onGenerate,
   onMigrate,
   filters,
+  coverage = null,
 }: {
   projectId: string;
   matrix: TraceabilityMatrix;
+  /** The derivation's coverage (TRZ-04): weighted by risk and by band;
+   *  null while it loads or when it failed. */
+  coverage?: CoverageSummary | null;
   /** The result filters and order (EJE-04), above the matrix. */
   filters?: ReactNode;
   requirements: Requirement[];
@@ -398,7 +486,9 @@ export function MatrixView({
           <dt>{t("traceability.matrix.coverage")}</dt>
           <dd>{summary.totalRequirements ? `${pct} %` : "—"}</dd>
         </div>
+        <WeightedKpi coverage={coverage} />
       </dl>
+      <BandBars coverage={coverage} />
 
       <section className="tz-panel" aria-labelledby="tz-matrix-title">
         <div className="tz-panel__head">

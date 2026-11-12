@@ -15,25 +15,36 @@ import {
 } from "@shared/ui/Menu";
 import { usePopover } from "@shared/ui/usePopover";
 import { useBreakpoint } from "@shared/ui/useBreakpoint";
-import { PERIODS, type Period } from "./model/homeData";
+import { PERIODS, isoDay, shortDate, type Period } from "./model/homeData";
+import { previousRange } from "./model/compare";
 
 /** «Periodo» of the Home (SPEC §8): a menu on tablet/desktop and a bottom sheet
  *  «Periodo de los datos» on mobile. Test cycles and a custom range need the
- *  plan's sprints from a range (wave 5) and the comparison needs runs
- *  (RED-W4): they are shown disabled with the reason in their title. */
+ *  plan's sprints from a range (wave 5): they are shown disabled with the
+ *  reason in their title. «Comparar con el periodo anterior» (RED-W4) is an
+ *  on/off item that keeps the menu open, with the previous dates under it. */
 export function PeriodSelector({
   value,
   onChange,
   description,
+  compare = false,
+  onCompare,
+  today = new Date(),
 }: {
   value: Period;
   onChange: (p: Period) => void;
+  /** RED-W4: compare with the previous period of the same length. */
+  compare?: boolean;
+  onCompare?: (on: boolean) => void;
+  today?: Date;
   /** What the numbers of the period add up (UX-28): the button's tooltip
    *  and its description for screen readers. */
   description?: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const descId = useId();
+  const range = { ...previousRange(value, today), days: 0 };
+  range.days = Math.round((range.to.getTime() - range.from.getTime()) / 86_400_000) + 1;
   const menu = usePopover(useBreakpoint() === "mobile" ? "dialog" : "menu");
   const soon = t("dashboard.period.soonTitle");
 
@@ -50,6 +61,11 @@ export function PeriodSelector({
         <Calendar size={16} className="home-btn__icon" aria-hidden="true" />
         <span className="sr-only">{t("dashboard.period.trigger")}: </span>
         <span className="home-btn__text">{t(`dashboard.period.${value}`)}</span>
+        {compare && (
+          <span className="home-btn__badge" data-testid="home-period-compare">
+            {t("dashboard.compare.badge")}
+          </span>
+        )}
         <ChevronDown size={14} className="home-btn__chev" aria-hidden="true" />
       </button>
       {description && (
@@ -96,15 +112,20 @@ export function PeriodSelector({
           {t("dashboard.period.custom")}
         </MenuItem>
         <MenuSeparator />
-        {/* A menu holds menu items only, so the comparison is an item with a
-            switch drawn on it; it turns into a real toggle with RED-W4. */}
+        {/* A menu holds menu items only, so the comparison is an on/off item
+            (`menuitemcheckbox`) with a switch drawn on it (RED-W4). */}
         <MenuItem
-          disabled
-          title={t("dashboard.period.compareTitle")}
+          checked={compare}
+          disabled={!onCompare}
           testId="period-compare"
-          onSelect={() => {}}
+          description={t("dashboard.compare.hint", {
+            from: shortDate(isoDay(range.from), i18n.resolvedLanguage),
+            to: shortDate(isoDay(range.to), i18n.resolvedLanguage),
+            count: range.days,
+          })}
+          onSelect={() => onCompare?.(!compare)}
         >
-          <span className="home-compare">
+          <span className="home-compare" data-on={compare || undefined}>
             <span className="home-compare__track" aria-hidden="true">
               <span className="home-compare__knob" />
             </span>

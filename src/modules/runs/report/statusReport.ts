@@ -40,7 +40,13 @@ export interface StatusReport {
   defects: ReportTable;
   defectsNote: string;
   coverageLine: string;
+  /** The project's risk bands (TRZ-04), above the table by band. */
+  bandsLine: string;
   coverageByRisk: ReportTable;
+  /** Coverage weighted by risk (TRZ-04, ADR-0043), under the table. */
+  weightedLine: string;
+  /** The same two figures as label and ratio (the .xlsx rows). */
+  weightedRows: [string, number | null][];
   risky: ReportTable;
   exit: ReportTable;
   /** Met / not met / no data per exit criterion, in `exit.rows` order. */
@@ -195,6 +201,24 @@ export function buildStatusReport(
       total: s.coverage.requirements,
       pct: pct(s.coverage.coverageRatio),
     }),
+    bandsLine: t("statusReport.bandsLine", {
+      low: s.coverage.riskBands.low,
+      mediumFrom: s.coverage.riskBands.low + 1,
+      medium: s.coverage.riskBands.medium,
+      highFrom: s.coverage.riskBands.medium + 1,
+    }),
+    weightedLine:
+      s.coverage.weighted.totalWeight > 0
+        ? t("statusReport.weightedLine", {
+            coverage: pct(s.coverage.weighted.coverageRatio),
+            passed: pct(s.coverage.weighted.passedRatio),
+            count: s.coverage.weighted.unassessed,
+          })
+        : t("statusReport.weightedNone"),
+    weightedRows: [
+      [t("statusReport.weightedCoverage"), s.coverage.weighted.coverageRatio],
+      [t("statusReport.weightedPassed"), s.coverage.weighted.passedRatio],
+    ],
     coverageByRisk: {
       headers: [
         t("statusReport.col.band"),

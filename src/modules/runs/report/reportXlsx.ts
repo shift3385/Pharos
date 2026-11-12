@@ -132,8 +132,17 @@ export async function buildReportXlsx(
   r = table(ws, r, report.defects, labels.noData);
   r = section(ws, r, s.coverage);
   ws.getRow(r).getCell(1).value = report.coverageLine;
-  r += 2;
+  ws.getRow(r + 1).getCell(1).value = report.bandsLine;
+  r += 3;
   r = table(ws, r, report.coverageByRisk, labels.noData);
+  // TRZ-04: the weighted coverage, as two rows with a percentage.
+  for (const [label, ratio] of report.weightedRows) {
+    ws.getRow(r - 1).getCell(1).value = label;
+    const cell = ws.getRow(r - 1).getCell(2);
+    cell.value = ratio;
+    cell.numFmt = "0.0%";
+    r++;
+  }
   ws.getRow(r - 1).getCell(1).value = labels.risky;
   ws.getRow(r - 1).getCell(1).font = { bold: true };
   r = table(ws, r, report.risky, labels.noRisky);

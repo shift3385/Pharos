@@ -20,6 +20,7 @@ import { createRunService, runRoutes } from "./modules/domain/runs";
 import { createExecutionService, executionRoutes } from "./modules/domain/execution";
 import { homeMetricsRoutes } from "./modules/domain/home-metrics";
 import { createPreferenceStore, preferenceRoutes } from "./modules/preferences/preferences";
+import { auditRoutes, createAuditReader } from "./modules/audit/audit.read";
 import { AppError } from "./modules/auth/errors";
 
 /** Routes limited per client IP: guessing passwords on login, and burning
@@ -114,6 +115,9 @@ export function buildApp(deps: { pool: Pool; env: Env }) {
   });
   void app.register(async (instance) => {
     preferenceRoutes(instance, { tokens, store: createPreferenceStore(pool) });
+  });
+  void app.register(async (instance) => {
+    auditRoutes(instance, { tokens, reader: createAuditReader(pool) });
   });
 
   app.setErrorHandler((error, req, reply) => {
