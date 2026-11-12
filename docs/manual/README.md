@@ -2,7 +2,7 @@
 
 # Manual de usuario de Pharos
 
-Versión **0.2.0** · generado el 9 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
+Versión **0.3.0-beta.1** · generado el 9 de noviembre de 2026 a partir de las pruebas guiadas (`e2e/tours/`).
 
 Este manual explica, pantalla a pantalla, cómo se usa Pharos. Cada paso es también una prueba automática: si la aplicación cambia, `npm run manual` vuelve a recorrerla, rehace las capturas y regenera el manual (Markdown y PDF).
 
