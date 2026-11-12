@@ -440,6 +440,10 @@ export const INVENTORY: Item[] = [
   I("administracion", "dialog", "dialogs:src/modules/profile/ui/RecoveryKeySection.tsx", "Mostrar la clave de recuperación"),
   I("administracion", "tab", "admin:diagnostics", "Diagnóstico"),
   I("administracion", "action", "action:diagnostics-export", "Exportar diagnóstico"),
+  I("administracion", "tab", "admin:audit", "Auditoría (registro de cambios)"),
+  I("administracion", "action", "action:audit-verify", "Comprobar la cadena de auditoría"),
+  I("administracion", "dialog", "dialogs:src/modules/admin/ui/audit/AuditDetail.tsx", "Detalle de un evento: antes y después"),
+  I("administracion", "action", "action:audit-export", "Exportar la auditoría (.xlsx o CSV)"),
 
 
   // ---- 11 · Asistente de IA ---------------------------------------------------------------

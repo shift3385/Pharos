@@ -3,6 +3,8 @@
 - **Estado:** Aceptado (decisión del usuario, 2026-10-28: la opción y las
   respuestas recomendadas). Revisado el 2026-10-28 tras la revisión
   independiente (ver "Revisión"). Quién ve la auditoría fue confirmado por el usuario el 2026-10-28.
+  Enmendado el 2026-11-12 con la pantalla Administración › Auditoría (ver
+  «Enmienda de AUD-01»).
 - **Diseño de conjunto:** [`docs/design/0.2.0-modelo-ejecucion.md`](../design/0.2.0-modelo-ejecucion.md).
 
 ## Contexto
@@ -280,3 +282,43 @@ Extiende la decisión a lo que se edita en la web, sin cambiarla:
   eventos de la web como los de cualquier equipo, y
   `audit::verify_chain(conn, "web", "web", cuenta)` los verifica. Los
   clientes sin `append-only` no los reciben.
+
+## Enmienda de AUD-01: Administración › Auditoría (0.4.0, 2026-11-12)
+
+Aprobada por el usuario el 2026-11-12 («Sí, apruebo todo») junto con el plan y
+los bocetos de AUD-01. Añade la pantalla de consulta sin cambiar el registro:
+
+- **Dónde:** una pestaña «Auditoría» en Administración, grupo «Cuenta y datos»,
+  tras Evidencias (`/admin?tab=audit`), en el escritorio y en la web.
+- **Quién ve qué hasta TEN-01.** La decisión 2 reserva la auditoría al Test
+  Manager desde 0.3.0, pero hoy el rol del perfil solo se declara: nada lo
+  aplica hasta los roles de TEN-01 (0.5.0). Hasta entonces cada cuenta ve
+  **sus** eventos:
+  - en el escritorio, los de `audit_log` con `user_id` igual a la cuenta (los
+    suyos, los de sus otros equipos y los de la web, que llegan por sync) y
+    los que se quedan en el equipo (`user_id = ''`: sistema sin dueño, cambios
+    sin sesión);
+  - en la web, los documentos `audit_event` de la cuenta.
+  Con TEN-01 la pestaña pasa a exigir el rol de Test Manager del workspace.
+- **Lectura, solo lectura.** Comandos `audit_list`, `audit_facets` y
+  `audit_verify` (`src-tauri/src/audit_read.rs`) y rutas
+  `GET /api/audit-events`, `/facets` y `/verify`
+  (`server/src/modules/audit/audit.read.ts`), con la misma forma de respuesta.
+  Los filtros son «cualquiera de» por actor, tipo de elemento, acción y
+  proyecto, más periodo `[desde, hasta)` en UTC, un elemento (`entityId`) y
+  parte de la clave. Página de 50, como máximo 500; orden `at` descendente.
+  Las opciones de los filtros salen del registro visible, no de catálogos.
+- **Periodo por defecto:** los últimos 30 días (decisión del usuario).
+- **Verificación al abrir la pestaña** de cada cadena visible
+  `(device_id, chain_workspace_id, chain_owner)`, completa desde su primer
+  eslabón con `verify_chain` / `verifyChain`. El resultado nombra el tipo de
+  rotura (hueco, eslabón, cabecera o contenido), el n.º y el evento y su
+  elemento, para abrir su historial. El registro no se repara solo.
+- **Exportación** de lo filtrado (todas las páginas, hasta 50.000 eventos) a
+  .xlsx o CSV, una fila por campo cambiado; el .xlsx añade la hoja
+  «Integridad» con el resultado de la verificación.
+- **Índice en el servidor:** migración de servidor `0018_audit_read_index.sql`,
+  un índice parcial sobre `documents (user_id, payload->>'at')` para
+  `entity = 'audit_event'`. Sin migración local: bastan los índices de `0019`.
+- **Fuera de alcance:** redactar contenido (SYNC-06), registrar lecturas
+  (0.5.0), la restricción por rol (TEN-01) y reparar una cadena (AUD-01c).

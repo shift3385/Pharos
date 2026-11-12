@@ -690,7 +690,15 @@ through `src-tauri/src/journal.rs`:
   device and is never pushed. So does the event of a `user:` actor without an id (a change
   made signed out).
 - Pulls create no event (they arrive as the other device's events); resolving a
-  conflict does (`resolve_conflict`). There is no audit UI yet (Admin > Auditoría comes later).
+  conflict does (`resolve_conflict`).
+- **Read side (Administración › Auditoría, 0.4.0).** Read-only:
+  `audit_read.rs` (`audit_list`, `audit_facets`, `audit_verify`) on the
+  desktop and `server/src/modules/audit/audit.read.ts`
+  (`GET /api/audit-events`, `/facets`, `/verify`; server migration 0018 adds a
+  partial index) on the web, with the same response shapes. An account sees
+  the events it owns plus the device-only ones (`user_id = ''`) until TEN-01
+  applies roles. `audit_verify` runs `verify_chain` over every visible chain
+  and names the event at a break.
 - **Web edits (AUD-01b)** are audited by the server
   (`server/src/modules/audit/`). `DomainTx.put` writes, in the same
   transaction and under the user's write lock, one `audit_event` document
@@ -824,8 +832,10 @@ through `src-tauri/src/journal.rs`:
     sideways.
   - Panels: `AiEngineTab` (`@modules/ai`), `TemplatesTab`
     (`@modules/templates`), and `GeneralTab`, `SyncTab`, `SecurityTab`
-    (reuses `RecoveryKeySection` from `@modules/profile`), `DiagnosticsTab`
-    in `modules/admin/ui/tabs/`.
+    (reuses `RecoveryKeySection` from `@modules/profile`), `EvidenceTab`,
+    `AuditTab` (AUD-01: filters in the URL, `model/audit.ts`; detail,
+    integrity and labels in `ui/audit/`; export in `export/auditExport.ts`),
+    `DiagnosticsTab` in `modules/admin/ui/tabs/`.
   - Unsaved drafts (Motor de IA, General) report `dirty` to `AdminPage`:
     switching tabs asks with its own confirm; leaving `/admin` or closing
     the window goes through `useUnsavedChangesGuard(dirty, { ignore: true })`.

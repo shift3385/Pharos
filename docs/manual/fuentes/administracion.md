@@ -24,6 +24,9 @@ agrupadas:
     sincronización automática.
   - **Seguridad:** la clave de recuperación de tus datos.
   - **Evidencias:** retención y espacio de las evidencias (capítulo 16).
+  - **Auditoría:** cada cambio de tu cuenta, con quién lo hizo (tú, un agente
+    en tu nombre o el sistema), el antes y el después, la comprobación de que
+    el registro está íntegro y la exportación a Excel o CSV.
 - **Soporte**
   - **Diagnóstico:** un ZIP para informar de un fallo.
 
@@ -37,7 +40,8 @@ archivo, y no se incluyen en exportaciones ni diagnósticos.
 
 En este manual, Liomar deja preparado su Pharos: una plantilla de plan
 propia, la sincronización, su clave de recuperación guardada y el diagnóstico
-a mano por si algo falla.
+a mano por si algo falla. Al final repasa en «Auditoría» lo que ha cambiado
+hoy.
 
 ## Atajos de teclado
 
@@ -47,6 +51,7 @@ a mano por si algo falla.
 | Inicio, Fin | Pestañas de Administración | Van a la primera o a la última |
 | Esc | Diálogos de plantilla y de conflictos | Los cierran; con cambios, preguntan antes |
 | Esc | Clave de recuperación mostrada | No la cierra: marca «Ya la he guardado» |
+| Esc | Detalle de un evento de auditoría | Lo cierra |
 
 ## Si algo no sale
 
@@ -69,11 +74,22 @@ a mano por si algo falla.
 - **«No se pudo leer la clave de recuperación.»** Pasa si el almacén de
   credenciales de Windows no está disponible. Vuelve a intentarlo; en la web
   no existe esta opción.
+- **«La cadena de … está rota en el evento n.º N».** Alguien modificó o
+  borró el registro de auditoría fuera de Pharos (editando la base de datos),
+  o se restauró a mano una copia `.bak` en este equipo. Pharos no repara el
+  registro: «Ver evento» lleva a ese cambio; exporta la auditoría y el
+  diagnóstico si necesitas investigarlo.
+- **«Auditoría» no muestra cambios de otra persona.** Hasta que lleguen los
+  roles del equipo, cada cuenta ve solo sus propios cambios.
+- **«Ningún evento coincide con los filtros».** El periodo por defecto son
+  los últimos 30 días: elige «Todo» o quita algún filtro.
 
 ## En el móvil
 
 - Las pestañas se desplazan de lado; desliza para ver las demás.
 - La clave de recuperación y «Listar modelos» son de la app de escritorio.
+- En «Auditoría», la lista se ve como tarjetas y el detalle de un cambio se
+  abre desde abajo.
 
 ## Consejos
 
@@ -87,6 +103,9 @@ a mano por si algo falla.
 - Si algo falla, adjunta el ZIP de **«Exportar diagnóstico»** al informe: lleva
   la versión, el sistema y los registros recientes, y nunca tus proyectos,
   tus casos ni tus claves.
+- Para revisar qué hizo un **agente de IA** en tu nombre, filtra «Auditoría»
+  por «Quién» y elige el agente; copia la dirección de la página para volver
+  a esa vista.
 
 ## Véase también
 
@@ -94,4 +113,4 @@ a mano por si algo falla.
 - Capítulo 17, «Asistente de IA»: cómo saber qué modelo está activo y qué
   hace la IA en cada pantalla.
 - [Glosario](../GLOSARIO.md): «Pestaña de Administración», «Plantilla»,
-  «Papelera».
+  «Papelera», «Registro de auditoría».
