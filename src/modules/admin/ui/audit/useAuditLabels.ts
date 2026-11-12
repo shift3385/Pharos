@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
-import { deviceKind, parseActor, shortId, type AuditChain } from "../../model/audit";
+import { deviceKind, fieldKey, parseActor, shortId, type AuditChain } from "../../model/audit";
 
 /** The translated names Administración › Auditoría shows for raw values:
  *  actors, actions, element types, fields, devices and chain breaks. Unknown
@@ -28,7 +28,7 @@ export function useAuditLabels(thisDevice: string) {
     const isMe = (raw: string) => user != null && raw === `user:${user.id}`;
     const action = (a: string) => t(`admin.audit.actions.${a}`, { defaultValue: a });
     const entity = (e: string) => t(`admin.audit.entities.${e}`, { defaultValue: e });
-    const field = (f: string) => t(`admin.audit.fields.${f}`, { defaultValue: f });
+    const field = (f: string) => t(`admin.audit.fields.${fieldKey(f)}`, { defaultValue: fieldKey(f) });
     const device = (id: string) => {
       const kind = deviceKind(id, thisDevice);
       return kind === "other" ? t("admin.audit.device.other", { id: shortId(id) }) : t(`admin.audit.device.${kind}`);

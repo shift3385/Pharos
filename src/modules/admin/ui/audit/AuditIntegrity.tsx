@@ -62,7 +62,10 @@ export function AuditIntegrity({
     detail = t("admin.audit.integrity.emptyHint");
   } else {
     title = t("admin.audit.integrity.okTitle");
-    detail = t("admin.audit.integrity.okHint", { chains: chains.length, count: events });
+    detail = t("admin.audit.integrity.okHint", {
+      chains: t("admin.audit.integrity.chainCount", { count: chains.length }),
+      count: events,
+    });
   }
 
   const Icon = tone === "success" ? ShieldCheck : ShieldAlert;

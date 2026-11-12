@@ -5,6 +5,7 @@ import { Dialog } from "@shared/ui/Dialog";
 import { useToast } from "@shared/ui/Toast";
 import {
   diffRows,
+  elementName,
   isEmptyValue,
   lineDiff,
   summaryEntries,
@@ -41,7 +42,7 @@ export function AuditDetail({
   const summary = summaryEntries(row.summary);
   const showBefore = row.action !== "create";
   const showAfter = row.action !== "delete";
-  const key = row.entityKey ?? labels.entity(row.entity);
+  const key = elementName(row) ?? labels.entity(row.entity);
 
   const copy = async () => {
     try {
