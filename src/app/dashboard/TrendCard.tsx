@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { Select } from "@shared/ui/Select";
@@ -30,11 +30,11 @@ const VERDICT_TONE: Record<string, string> = { go: "pass", goWithRisks: "warn", 
 
 /** The card's own size: what fits decides the side summary and the minis
  *  (UX-28: never a scroll inside a gadget). */
-function useBox() {
-  const ref = useRef<HTMLElement>(null);
-  const [box, setBox] = useState({ width: 900, height: 320 });
+function useBox<T extends HTMLElement>(fallback = { width: 900, height: 320 }) {
+  // A callback ref: the chart's figure mounts only once the metrics are in.
+  const [el, setEl] = useState<T | null>(null);
+  const [box, setBox] = useState(fallback);
   useLayoutEffect(() => {
-    const el = ref.current;
     if (!el) return;
     const measure = () => {
       const r = el.getBoundingClientRect();
@@ -45,14 +45,15 @@ function useBox() {
     const o = new ResizeObserver(measure);
     o.observe(el);
     return () => o.disconnect();
-  }, []);
-  return { ref, ...box };
+  }, [el]);
+  return { ref: setEl, ...box };
 }
 
-/** Width and height of the chart's drawing (it scales to its box). */
-const W = 560;
-const H = 200;
-const PAD = { left: 34, right: 12, top: 14, bottom: 38 };
+/** The chart draws at its box's own pixel size, so its text keeps 11 px
+ *  whatever the gadget's size; these are its smallest. */
+const MIN_W = 240;
+const MIN_H = 110;
+const PAD = { left: 34, right: 30, top: 14, bottom: 38 };
 
 /** «Tendencia de ciclos» (DOC-06, boceto C, ADR-0041): one of the six
  *  classic metrics across the project's last closed cycles (the figures
@@ -72,7 +73,10 @@ export function TrendCard({
 }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage;
-  const { ref, width, height } = useBox();
+  const { ref, width, height } = useBox<HTMLElement>();
+  const fig = useBox<HTMLElement>({ width: 560, height: 200 });
+  const W = Math.max(MIN_W, fig.width);
+  const H = Math.max(MIN_H, fig.height);
   const [chosen, setChosen] = useState<string | null>(null);
   const [kind, setKind] = useState<MetricKind>("passRate");
   const pm = byProject(state.data);
@@ -152,10 +156,10 @@ export function TrendCard({
         </p>
       ) : (
         <div className={`home-trend__body${showSide ? "" : " home-trend__body--narrow"}`}>
-          <figure className="home-trend__chart">
+          <figure className="home-trend__chart" ref={fig.ref}>
             <svg
               viewBox={`0 0 ${W} ${H}`}
-              preserveAspectRatio="xMidYMid meet"
+              preserveAspectRatio="none"
               role="img"
               aria-label={t("dashboard.trend.chartLabel", { metric: name, count: series.length })}
             >
