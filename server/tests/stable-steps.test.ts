@@ -130,12 +130,18 @@ const current = (token: string) =>
   client(token, "key-conflicts,append-only,complete-payload,stable-steps");
 /** 0.2.0-alpha.1 (same version string as the server). */
 const alpha1 = (token: string) => client(token, "key-conflicts");
-/** 0.1.0-beta.1: the previous minor. */
-const beta01 = (token: string) => ({
+/** A release `minorsBack` minors before the server's, without stable steps.
+ *  Derived from SERVER_VERSION so a release commit (version:set) keeps the
+ *  test meaning the same thing: one back is the previous minor the server
+ *  still reads for (VERSIONING §6.5), two back is no longer supported. */
+const [MAJOR, MINOR] = SERVER_VERSION.split(".").map(Number);
+const olderMinor = (token: string, minorsBack: number) => ({
   authorization: `Bearer ${token}`,
-  [VERSION_HEADER]: "0.1.0-beta.1",
+  [VERSION_HEADER]: `${MAJOR}.${MINOR - minorsBack}.0`,
   [FEATURES_HEADER]: "key-conflicts",
 });
+/** The previous minor (0.1.0-beta.1 while the server was 0.2). */
+const previousMinor = (token: string) => olderMinor(token, 1);
 /** A build of E1 (append-only, before stable steps). */
 const e1 = (token: string) =>
   client(token, "key-conflicts,append-only,complete-payload");
@@ -227,7 +233,7 @@ function revisionDoc(
 describe("clients without stable-steps may only read (VERSIONING §6.5)", () => {
   it("their push gets 426 read_only_client_version and writes nothing", async () => {
     const token = await tokenFor();
-    for (const headers of [alpha1(token), beta01(token), e1(token)]) {
+    for (const headers of [alpha1(token), previousMinor(token), e1(token)]) {
       const res = await push(headers, [caseDelta(["a plain step"])]);
       expect(res.statusCode).toBe(426);
       expect(res.json()).toMatchObject({
@@ -238,10 +244,19 @@ describe("clients without stable-steps may only read (VERSIONING §6.5)", () => 
     expect(await count()).toBe(0);
   });
 
+  it("two minors back is no longer supported: 426 unsupported_client_version", async () => {
+    const token = await tokenFor();
+    if (MINOR < 2) return; // No such version below 0.2.
+    const res = await push(olderMinor(token, 2), [caseDelta(["a plain step"])]);
+    expect(res.statusCode).toBe(426);
+    expect(res.json()).toMatchObject({ code: "unsupported_client_version", serverVersion: SERVER_VERSION });
+    expect(await count()).toBe(0);
+  });
+
   it("their pull still works, and key blocks too", async () => {
     const token = await tokenFor();
     expect((await push(current(token), [caseDelta()])).statusCode).toBe(200);
-    for (const headers of [alpha1(token), beta01(token)]) {
+    for (const headers of [alpha1(token), previousMinor(token)]) {
       const body = await pull(headers);
       expect(body.docs).toHaveLength(1);
       const blocks = await app.inject({
