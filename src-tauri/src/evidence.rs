@@ -46,7 +46,7 @@ use aes_gcm::aead::{generic_array::GenericArray, KeyInit, OsRng, Payload};
 use aes_gcm::Aes256Gcm;
 use hkdf::Hkdf;
 use hmac::{Hmac, Mac};
-use rusqlite::{params, Connection, DatabaseName, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, MAIN_DB};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use tauri::ipc::{InvokeBody, Request};
@@ -1025,13 +1025,7 @@ pub(crate) fn migrate_planner_attachments(
         }
         // Incremental BLOB I/O: the bytes are read in blocks, not copied whole.
         let blob = conn
-            .blob_open(
-                DatabaseName::Main,
-                "planner_attachments",
-                "bytes",
-                old.rowid,
-                true,
-            )
+            .blob_open(MAIN_DB, "planner_attachments", "bytes", old.rowid, true)
             .map_err(|e| e.to_string())?;
         let stored = store.put(blob, u64::MAX)?;
         fault_point(moved)?;

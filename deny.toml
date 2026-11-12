@@ -12,14 +12,6 @@ targets = ["x86_64-pc-windows-msvc"]
 unmaintained = "all"
 yanked = "deny"
 ignore = [
-  # SQLite < 3.54.0 bundled by libsqlite3-sys 0.30 (rusqlite 0.32): opening a
-  # database file together with a crafted `-wal` can leak page-cache memory.
-  # Pharos only opens its database in memory (`deserialize` of the decrypted
-  # blob, SEC-01) and never opens a file-backed database or a `-wal` in the app.
-  # Temporary, decided by the user on 2026-11-11: BASE-22 upgrades rusqlite to
-  # a libsqlite3-sys >= 0.39 within 0.3.0 and removes this line, always before
-  # SEC-05 (on-disk SQLite with WAL).
-  { id = "RUSTSEC-2026-0459", reason = "in-memory database only, no -wal opened; upgrade tracked as BASE-22" },
   # unic-* (no successor release) come only from tauri-utils -> urlpattern 0.3,
   # a build/config dependency of Tauri itself. Removed when Tauri moves off it.
   { id = "RUSTSEC-2025-0075", reason = "unic-char-range via tauri-utils/urlpattern (upstream Tauri)" },

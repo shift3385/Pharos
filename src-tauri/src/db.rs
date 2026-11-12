@@ -37,7 +37,7 @@ use aes_gcm::{Aes256Gcm, Key, Nonce};
 use base64::Engine as _;
 use keyring::Entry;
 use rusqlite::serialize::OwnedData;
-use rusqlite::{Connection, DatabaseName, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, MAIN_DB};
 
 use crate::evidence::{self, EvidenceStore};
 use crate::recovery;
@@ -449,33 +449,31 @@ impl Db {
     /// removes nothing. Use it instead of `persist` after a change that may
     /// release evidence.
     pub(crate) fn persist_and_collect(&self) -> Result<(), String> {
-        let conn = self
+        let mut conn = self
             .conn
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
-        self.save(&conn)?;
+        self.save(&mut conn)?;
         // Any `deleting` row changes in `collect`: its removal, or its return to
         // `present` / `damaged` when it was referenced again. Either is saved.
         if evidence::has_pending_deletions(&conn)? {
             evidence::collect(&conn, &self.evidence)?;
-            self.save(&conn)?;
+            self.save(&mut conn)?;
         }
         Ok(())
     }
 
     /// Serializes the in-memory database and writes it encrypted to disk.
     pub fn persist(&self) -> Result<(), String> {
-        let conn = self
+        let mut conn = self
             .conn
             .lock()
             .map_err(|_| "db lock poisoned".to_string())?;
-        self.save(&conn)
+        self.save(&mut conn)
     }
 
-    fn save(&self, conn: &Connection) -> Result<(), String> {
-        let image = conn
-            .serialize(DatabaseName::Main)
-            .map_err(|e| e.to_string())?;
+    fn save(&self, conn: &mut Connection) -> Result<(), String> {
+        let image = conn.serialize(MAIN_DB).map_err(|e| e.to_string())?;
         let blob = encrypt(&self.key, &image)?;
         write_atomic(&self.enc_path, &blob)?;
         if let Ok(mut disk) = self.disk.lock() {
@@ -703,7 +701,7 @@ fn load_image(conn: &mut Connection, image: &[u8]) -> Result<(), String> {
         std::ptr::copy_nonoverlapping(image.as_ptr(), ptr.as_ptr(), image.len());
         OwnedData::from_raw_nonnull(ptr, image.len())
     };
-    conn.deserialize(DatabaseName::Main, data, false)
+    conn.deserialize(MAIN_DB, data, false)
         .map_err(|e| format!("failed to load local database: {e}"))
 }
 
@@ -1032,10 +1030,10 @@ mod tests {
     #[test]
     fn open_promotes_complete_pending_save() {
         let dir = temp_dir();
-        let src = Connection::open_in_memory().unwrap();
+        let mut src = Connection::open_in_memory().unwrap();
         src.execute_batch("CREATE TABLE marker (v TEXT); INSERT INTO marker VALUES ('newer');")
             .unwrap();
-        let image = src.serialize(DatabaseName::Main).unwrap();
+        let image = src.serialize(MAIN_DB).unwrap();
         fs::write(dir.join("pharos.db.enc"), encrypt(&KEY, b"older").unwrap()).unwrap();
         fs::write(
             dir.join("pharos.db.enc.new"),
@@ -1078,7 +1076,7 @@ mod tests {
     /// Writes `pharos.db.enc` as an older build would: only the migrations up
     /// to `last` applied. Returns the encrypted bytes on disk.
     fn write_db_migrated_until(dir: &Path, last: &str) -> Vec<u8> {
-        let conn = Connection::open_in_memory().unwrap();
+        let mut conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(
             "CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, \
              applied_at TEXT NOT NULL DEFAULT (datetime('now')))",
@@ -1093,7 +1091,7 @@ mod tests {
             }
         }
         ensure_workspace(&conn).unwrap();
-        let blob = encrypt(&KEY, &conn.serialize(DatabaseName::Main).unwrap()).unwrap();
+        let blob = encrypt(&KEY, &conn.serialize(MAIN_DB).unwrap()).unwrap();
         fs::write(dir.join("pharos.db.enc"), &blob).unwrap();
         blob
     }
@@ -1207,14 +1205,14 @@ mod tests {
     fn refuses_a_newer_pending_save_without_promoting_it() {
         let dir = temp_dir();
         write_db_migrated_until(&dir, "0011_sync_conflicts.sql");
-        let conn = Connection::open_in_memory().unwrap();
+        let mut conn = Connection::open_in_memory().unwrap();
         run_migrations(&conn).unwrap();
         conn.execute(
             "INSERT INTO schema_migrations (name) VALUES ('9999_from_the_future.sql')",
             [],
         )
         .unwrap();
-        let newer = encrypt(&KEY, &conn.serialize(DatabaseName::Main).unwrap()).unwrap();
+        let newer = encrypt(&KEY, &conn.serialize(MAIN_DB).unwrap()).unwrap();
         fs::write(dir.join("pharos.db.enc.new"), &newer).unwrap();
         let before = fs::read(dir.join("pharos.db.enc")).unwrap();
 
@@ -1505,13 +1503,8 @@ mod tests {
                 .map_err(|e| e.to_string())
         })
         .unwrap();
-        let image = db
-            .with_conn(|c| {
-                c.serialize(DatabaseName::Main)
-                    .map(|d| d.to_vec())
-                    .map_err(|e| e.to_string())
-            })
-            .unwrap();
+        // serialize needs the connection mutably (rusqlite 0.41): read it here.
+        let image = db.conn.lock().unwrap().serialize(MAIN_DB).unwrap().to_vec();
         drop(db);
         fs::write(
             dir.join("pharos.db.enc.new"),
