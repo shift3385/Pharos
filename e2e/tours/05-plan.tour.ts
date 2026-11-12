@@ -308,7 +308,9 @@ chapter("plan", () => {
         ["Responsable de QA", "Planifica, prioriza y aprueba el cierre"],
         ["Analista de pruebas", "Diseña y ejecuta los casos"],
       ]);
-      await byTestId("plan-independence").$(`span=${P.independenceLevel.team}`).click();
+      // The radio covers its label (the scale's look): click the radio itself.
+      await byTestId("plan-independence").$('input[value="team"]').click();
+      await expect(byTestId("plan-independence").$('input[value="team"]')).toBeSelected();
       await (await field(P.independenceNote)).setValue("Quien prueba una función no la ha programado.");
       await fillPairs(P.training, [["WebdriverIO y tauri-driver", "Antes del primer ciclo"]]);
     },
