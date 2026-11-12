@@ -1932,9 +1932,30 @@
       "saved": "Distribución de Inicio guardada",
       "discarded": "Cambios de Inicio descartados",
       "overflow": "Pasa de 24 filas: Inicio tendrá scroll.",
-      "regionLabel": "Gadgets de Inicio"
+      "regionLabel": "Gadgets de Inicio",
+      "newGadget": "Nuevo gadget: {{names}}. No cabe en tu Inicio sin desplazar la página, así que está en «Gadgets ocultos».",
+      "makeRoom": "Personalizar Inicio",
+      "dismissNew": "Entendido"
     },
-    "more": "+{{count}} más · {{action}}"
+    "more": "+{{count}} más · {{action}}",
+    "trend": {
+      "title": "Tendencia de ciclos",
+      "help": "Una métrica en los últimos ciclos cerrados del proyecto, con las cifras congeladas al cerrar, y en el ciclo activo, en vivo (punteado). La línea verde es el objetivo del plan; el punto bajo cada ciclo es su veredicto. Avisa cuando la métrica empeora dos ciclos seguidos o se sale del objetivo.",
+      "project": "Proyecto de la tendencia",
+      "metric": "Métrica de la tendencia",
+      "empty": "Este proyecto aún no tiene ciclos cerrados ni activos. La tendencia aparece al cerrar el primero con «Cerrar ciclo…».",
+      "chartLabel_one": "{{metric}} en {{count}} ciclo",
+      "chartLabel_other": "{{metric}} en {{count}} ciclos",
+      "target": "objetivo {{target}}",
+      "targetIs": "Objetivo del plan: {{target}}.",
+      "open": "Sin cerrar",
+      "lastClosed": "Último cerrado · {{cycle}}",
+      "delta": "{{delta}} frente a {{cycle}}",
+      "noClosed": "Ningún ciclo cerrado todavía.",
+      "worsening_one": "{{metric}}: empeora {{count}} ciclo seguido",
+      "worsening_other": "{{metric}}: empeora {{count}} ciclos seguidos",
+      "offTarget": "{{metric}}: fuera del objetivo"
+    }
   },
   "section": {
     "comingInPhase": "Se implementará en la Fase {{phase}}",
@@ -3105,7 +3126,9 @@
       "externalKey": "Clave externa",
       "externalUrl": "Enlace externo",
       "externalHint": "Para anotar la incidencia en otra herramienta. La sincronización con Jira llegará en una próxima versión.",
-      "labels": "Etiquetas"
+      "labels": "Etiquetas",
+      "escaped": "Encontrado fuera de las pruebas (escape)",
+      "escapedHint": "Por ejemplo, en producción. Cuenta como escape del último ciclo cerrado antes de darlo de alta."
     },
     "links": {
       "cases": "Casos de prueba",

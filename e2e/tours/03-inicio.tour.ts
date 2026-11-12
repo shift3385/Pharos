@@ -214,6 +214,18 @@ chapter("inicio", () => {
     },
   });
 
+  step("tendencia", {
+    title: "Tendencia de ciclos",
+    caption:
+      "«Tendencia de ciclos» sigue una métrica a lo largo de los últimos ciclos cerrados del proyecto (con las cifras congeladas al cerrarlos) y del ciclo activo, en vivo y punteado: la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky. La línea verde es el objetivo del plan y el punto bajo cada ciclo, su veredicto (Go, Go con riesgos o No-go). Si una métrica empeora dos ciclos seguidos o se sale del objetivo, el gadget lo avisa. Mientras ningún ciclo se haya cerrado con «Cerrar ciclo…» (capítulo 9), dice cómo empezar.",
+    covers: ["action:home-trend"],
+    focus: '[data-testid="home-trend"]',
+    run: async () => {
+      await expect(byTestId("home-trend")).toBeDisplayed();
+      await expect(byTestId("home-trend-metric")).toBeDisplayed();
+    },
+  });
+
   step("sin-scroll", {
     title: "Todo a la vista, sin desplazarte",
     caption:
@@ -311,7 +323,7 @@ chapter("inicio", () => {
   step("restablecer", {
     title: "Restablecer la distribución",
     caption:
-      "«Restablecer» vuelve a la distribución de siempre, con todos los gadgets visibles: arriba las cuatro cifras clave; debajo «Ejecución por proyecto» y «Criterios de salida», con «Ejecuciones diarias» bajo ambos; y «Próximas pruebas» a lo alto, a la derecha. Antes pide confirmación, y el cambio se guarda al pulsar «Listo».",
+      "«Restablecer» vuelve a la distribución de siempre, con todos los gadgets visibles y sin desplazar la página: arriba las cuatro cifras clave; a la izquierda «Ejecución por proyecto» con «Ejecuciones diarias» debajo; en el centro y a la derecha «Próximas pruebas» y «Criterios de salida», y bajo ambos «Tendencia de ciclos». Antes pide confirmación, y el cambio se guarda al pulsar «Listo».",
     covers: ["action:home-board-reset", "dialogs:src/app/dashboard/DashboardPage.tsx"],
     focus: '[role="alertdialog"]',
     run: async () => {

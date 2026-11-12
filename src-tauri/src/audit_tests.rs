@@ -1189,6 +1189,7 @@ const AUDITED: &[&str] = &[
     "cycles::configuration_reorder",
     "cycles::cycle_create",
     "cycles::cycle_update",
+    "execution::cycle_close",
     "cycles::cycle_clone",
     "cycles::cycle_items_add",
     "cycles::cycle_items_add_by_filter",
@@ -1699,6 +1700,14 @@ fn every_audited_command_leaves_an_event() {
     });
     step("cycles::cycle_clone", &mut |tx| {
         crate::cycles::clone_cycle(tx, &cycle, None, U).map(drop)
+    });
+    step("execution::cycle_close", &mut |tx| {
+        let decisions: Vec<serde_json::Value> = (0..10)
+            .map(|p| json!({"position": p, "manualMet": true, "justification": "Cerrado para el registro de auditoría."}))
+            .collect();
+        let input: crate::execution::derive::CycleCloseInput =
+            serde_json::from_value(json!({"verdict": "noGo", "decisions": decisions})).unwrap();
+        crate::execution::close_cycle(tx, &cycle, &input, U).map(drop)
     });
     step("cycles::cycle_delete", &mut |tx| {
         crate::cycles::delete_cycle(tx, &cycle, U)

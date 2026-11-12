@@ -987,11 +987,8 @@ fn a_run_of_a_closed_cycle_cannot_be_reopened() {
         .run_ids
         .remove(0);
     close_run(&c, &run, "completed", false, U).unwrap();
-    let closed: cycles::TestCycleInput = serde_json::from_value(
-        json!({"projectId": p, "title": "R1", "status": "closed", "userId": U}),
-    )
-    .unwrap();
-    cycles::update_cycle(&c, &cycle, &closed).unwrap();
+    let _ = &p;
+    cycles::close_for_tests(&c, &cycle, U);
     assert_eq!(
         update_run(&c, &run, &run_input(&p, json!({"status": "in_progress"}))).unwrap_err(),
         "cycle-closed"

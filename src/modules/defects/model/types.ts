@@ -52,6 +52,11 @@ export interface DefectData {
   labels?: string[];
   /** Custom field values (ADR-0018). */
   custom?: Record<string, unknown>;
+  /** Found outside the tests, e.g. in production (DOC-06, D4): an escape,
+   *  charged to the cycle closed before it was created. */
+  escaped?: boolean;
+  /** Written by the core on each status change (DOC-06): never by a form. */
+  lifecycle?: { fixedAt?: string; closedAt?: string; reopens?: number };
   [key: string]: unknown;
 }
 

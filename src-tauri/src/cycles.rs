@@ -1263,6 +1263,17 @@ pub(crate) fn update_cycle(
     Ok(())
 }
 
+/// Closes a cycle with a minimal gate record: the tests that need a closed
+/// cycle without going through its criteria.
+#[cfg(test)]
+pub(crate) fn close_for_tests(conn: &Connection, id: &str, user: &str) {
+    let record = serde_json::json!({
+        "closedAt": "2026-11-11T10:00:00.000Z", "closedBy": user, "verdict": "noGo",
+        "criteria": [], "metrics": {}
+    });
+    crate::db::in_tx(conn, |tx| record_closure(tx, id, user, &record)).unwrap();
+}
+
 /// The error of closing a cycle by editing its status (DOC-02, D5).
 pub(crate) const CLOSE_NEEDS_GATE: &str = "cycle-close-needs-gate";
 

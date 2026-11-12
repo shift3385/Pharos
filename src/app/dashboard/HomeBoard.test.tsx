@@ -87,6 +87,7 @@ describe("Inicio board (UX-27)", () => {
       "upcoming",
       "exitCriteria",
       "daily",
+      "trend",
     ]);
     expect(board).not.toHaveAttribute("data-editing");
     expect(screen.queryByRole("group", { name: /columna/ })).not.toBeInTheDocument();
@@ -105,7 +106,7 @@ describe("Inicio board (UX-27)", () => {
     expect(screen.getByText("Arrastra para mover, tira de la esquina para cambiar el tamaño")).toBeInTheDocument();
     expect(gadget("Ejecución por proyecto")).toHaveAccessibleName("Ejecución por proyecto: columna 1, fila 5, 9×10");
     expect(within(gadget("Ejecución por proyecto")).getByText("9×10 · mín 8×7")).toBeInTheDocument();
-    expect(gadget("Próximas pruebas")).toHaveAccessibleName("Próximas pruebas: columna 10, fila 5, 7×19");
+    expect(gadget("Próximas pruebas")).toHaveAccessibleName("Próximas pruebas: columna 10, fila 5, 7×11");
     // Its content cannot be used meanwhile: a drag never opens a card.
     expect(screen.getByTestId("kpi-projects").closest(".home-gadget__body")).toHaveAttribute("inert");
   });
@@ -124,7 +125,7 @@ describe("Inicio board (UX-27)", () => {
     await user.click(screen.getByRole("button", { name: "Listo" }));
     expect(live()).toHaveTextContent("Distribución de Inicio guardada");
     const saved = storedBoard()!;
-    expect(saved.version).toBe(1);
+    expect(saved.version).toBe(2);
     expect(saved.items.find((i) => i.id === "kpiProjects")).toMatchObject({ x: 6, y: 0 });
     expect(saved.items.find((i) => i.id === "byProject")).toMatchObject({ h: 9 });
     await waitFor(() => expect(put).toHaveBeenCalledTimes(1));
@@ -151,7 +152,7 @@ describe("Inicio board (UX-27)", () => {
     const tray = screen.getByRole("button", { name: "Gadgets ocultos (1)" });
     await user.click(tray);
     await user.click(screen.getByRole("menuitem", { name: "Mostrar «Criterios de salida»" }));
-    expect(gadget("Criterios de salida")).toHaveAccessibleName("Criterios de salida: columna 17, fila 5, 8×19");
+    expect(gadget("Criterios de salida")).toHaveAccessibleName("Criterios de salida: columna 17, fila 5, 8×11");
     expect(screen.getByRole("button", { name: "Gadgets ocultos (0)" })).toHaveAttribute("aria-disabled", "true");
   });
 
@@ -160,7 +161,7 @@ describe("Inicio board (UX-27)", () => {
     await user.click(screen.getByRole("button", { name: "Ocultar «Próximas pruebas»" }));
     await user.click(screen.getByRole("button", { name: "Listo" }));
     expect(screen.queryByTestId("gadget-upcoming")).not.toBeInTheDocument();
-    expect(storedBoard()!.hidden).toEqual([{ id: "upcoming", w: 7, h: 19 }]);
+    expect(storedBoard()!.hidden).toEqual([{ id: "upcoming", w: 7, h: 11 }]);
 
     await user.click(screen.getByRole("button", { name: "Personalizar Inicio" }));
     await user.click(screen.getByRole("button", { name: "Restablecer" }));
@@ -171,7 +172,7 @@ describe("Inicio board (UX-27)", () => {
 
     await user.click(screen.getByRole("button", { name: "Restablecer" }));
     await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Restablecer" }));
-    expect(gadget("Próximas pruebas")).toHaveAccessibleName("Próximas pruebas: columna 10, fila 5, 7×19");
+    expect(gadget("Próximas pruebas")).toHaveAccessibleName("Próximas pruebas: columna 10, fila 5, 7×11");
     expect(live()).toHaveTextContent("Distribución por defecto restablecida");
     await user.click(screen.getByRole("button", { name: "Listo" }));
     expect(storedBoard()).toEqual(defaultBoard());
@@ -205,7 +206,36 @@ describe("Inicio board (UX-27)", () => {
       JSON.stringify({ value: { ...old, hidden: [] }, updatedAt: "2026-11-01T00:00:00Z", pending: false }),
     );
     await customize();
-    expect(gadget("Criterios de salida")).toHaveAccessibleName("Criterios de salida: columna 17, fila 5, 8×19");
+    expect(gadget("Criterios de salida")).toHaveAccessibleName("Criterios de salida: columna 17, fila 5, 8×11");
+  });
+
+  it("a customized board with no room says the new gadget waits in «Gadgets ocultos» (DOC-06, D6)", async () => {
+    const user = userEvent.setup();
+    const full = {
+      version: 1,
+      items: [
+        { id: "kpiProjects", x: 0, y: 0, w: 6, h: 4 },
+        { id: "kpiPending", x: 6, y: 0, w: 6, h: 4 },
+        { id: "kpiRate", x: 12, y: 0, w: 6, h: 4 },
+        { id: "kpiDefects", x: 18, y: 0, w: 6, h: 4 },
+        { id: "byProject", x: 0, y: 4, w: 10, h: 10 },
+        { id: "upcoming", x: 10, y: 4, w: 7, h: 20 },
+        { id: "exitCriteria", x: 17, y: 4, w: 7, h: 20 },
+        { id: "daily", x: 0, y: 14, w: 10, h: 10 },
+      ],
+      hidden: [],
+    };
+    localStorage.setItem(
+      "pharos.prefs.test-user.home.board",
+      JSON.stringify({ value: full, updatedAt: "2026-11-01T00:00:00Z", pending: false }),
+    );
+    renderWithProviders(<DashboardPage />);
+    const notice = await screen.findByTestId("home-new-gadget");
+    expect(notice).toHaveTextContent("Nuevo gadget: Tendencia de ciclos.");
+    expect(screen.queryByTestId("gadget-trend")).not.toBeInTheDocument();
+    await user.click(within(notice).getByRole("button", { name: "Entendido" }));
+    expect(screen.queryByTestId("home-new-gadget")).not.toBeInTheDocument();
+    expect(storedBoard()!.hidden).toEqual([{ id: "trend", w: 15, h: 8 }]);
   });
 
   it("passes axe while customizing", async () => {
@@ -300,7 +330,7 @@ describe("Inicio board on narrow views (UX-27)", () => {
     renderWithProviders(<DashboardPage />);
     const stack = await screen.findByTestId("home-stack");
     const order = [...stack.querySelectorAll("[data-gadget]")].map((g) => g.getAttribute("data-gadget"));
-    expect(order).toEqual(["kpiProjects", "kpiPending", "kpiRate", "kpiDefects", "daily", "upcoming", "exitCriteria"]);
+    expect(order).toEqual(["kpiProjects", "kpiPending", "kpiRate", "kpiDefects", "daily", "upcoming", "exitCriteria", "trend"]);
     expect(screen.queryByTestId("home-board")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Personalizar Inicio" })).not.toBeInTheDocument();
   });

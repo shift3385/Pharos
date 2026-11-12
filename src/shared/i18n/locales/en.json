@@ -1932,9 +1932,30 @@
       "saved": "Home layout saved",
       "discarded": "Home changes discarded",
       "overflow": "Over 24 rows: Home will scroll.",
-      "regionLabel": "Home gadgets"
+      "regionLabel": "Home gadgets",
+      "newGadget": "New gadget: {{names}}. It does not fit on your Inicio without scrolling the page, so it is in «Hidden gadgets».",
+      "makeRoom": "Customize Inicio",
+      "dismissNew": "Got it"
     },
-    "more": "+{{count}} more · {{action}}"
+    "more": "+{{count}} more · {{action}}",
+    "trend": {
+      "title": "Cycle trend",
+      "help": "One metric over the project's last closed cycles, with the figures frozen at closing, and over the active cycle, live (dashed). The green line is the plan's target; the dot under each cycle is its verdict. It warns when the metric gets worse two cycles in a row or leaves its target.",
+      "project": "Trend project",
+      "metric": "Trend metric",
+      "empty": "This project has no closed or active cycles yet. The trend appears once the first one is closed with «Close cycle…».",
+      "chartLabel_one": "{{metric}} over {{count}} cycle",
+      "chartLabel_other": "{{metric}} over {{count}} cycles",
+      "target": "target {{target}}",
+      "targetIs": "Plan target: {{target}}.",
+      "open": "Not closed",
+      "lastClosed": "Last closed · {{cycle}}",
+      "delta": "{{delta}} against {{cycle}}",
+      "noClosed": "No closed cycle yet.",
+      "worsening_one": "{{metric}}: worse {{count}} cycle in a row",
+      "worsening_other": "{{metric}}: worse {{count}} cycles in a row",
+      "offTarget": "{{metric}}: off target"
+    }
   },
   "section": {
     "comingInPhase": "Coming in Phase {{phase}}",
@@ -3105,7 +3126,9 @@
       "externalKey": "External key",
       "externalUrl": "External link",
       "externalHint": "To note the issue in another tool. Jira sync is coming in a future version.",
-      "labels": "Labels"
+      "labels": "Labels",
+      "escaped": "Found outside the tests (escape)",
+      "escapedHint": "In production, for example. It counts as an escape of the last cycle closed before it was reported."
     },
     "links": {
       "cases": "Test cases",

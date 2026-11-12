@@ -175,6 +175,56 @@ chapter("ciclos", () => {
     },
   });
 
+  step("cerrar-ciclo", {
+    title: "Cerrar el ciclo: el quality gate",
+    caption:
+      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios manuales («Visto bueno del PO») se marcan a mano y los orientativos solo se muestran. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría.",
+    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      if (await $('[data-testid="status-report"]').isExisting()) {
+        await browser.keys("Escape");
+        await $(".cd-overlay").waitForExist({ reverse: true });
+      }
+      await $('[data-testid="cycle-close"]').click();
+      await $('[data-testid="gate-banner"]').waitForDisplayed();
+      for (const box of await $$(`${D} textarea`))
+        await box.setValue("Se acepta: los casos pendientes se ejecutan en la regresión de la semana que viene.");
+      for (const b of await $$(`${D} .gate-mark button`)) if ((await b.getText()) === es.gate.met) await b.click();
+      const risks = $('[data-testid="gate-verdict-goWithRisks"]');
+      if (await risks.isExisting()) await risks.click();
+    },
+  });
+
+  step("cierre-sin-guardar", {
+    title: "Salir del cierre sin cerrar",
+    caption:
+      "Si sales con Esc o «Cancelar» después de escribir una justificación o marcar un criterio, Pharos pregunta antes de descartarlo: «Seguir editando» vuelve al cierre tal como estaba.",
+    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await browser.keys("Escape");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
+      await expect($('[role="alertdialog"]')).not.toBeExisting();
+      await expect($('[data-testid="gate-banner"]')).toBeDisplayed();
+    },
+  });
+
+  step("ciclo-cerrado", {
+    title: "El veredicto del ciclo",
+    caption:
+      "«Cerrar ciclo» guarda la decisión con las cifras de ese momento, congeladas: el ciclo queda «Cerrado», con su veredicto al lado, y ya no admite casos ni ejecuciones hasta que lo reabras desde «Editar». Su informe de estado empieza ahora por «Decisión de salida», con cada criterio, su justificación y las métricas frente al ciclo anterior, también en Excel y PDF. Inicio lo suma a «Tendencia de ciclos».",
+    covers: ["action:cycle-verdict"],
+    run: async () => {
+      await $('[data-testid="gate-close"]').click();
+      await waitForToast(es.gate.closedToast.split("{{")[0].trim());
+      await expect($('[data-testid="cycle-verdict"]')).toBeDisplayed();
+    },
+  });
+
   step("clonar", {
     title: "Clonar y eliminar un ciclo",
     caption:
