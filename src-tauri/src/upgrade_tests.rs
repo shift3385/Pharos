@@ -1178,8 +1178,8 @@ fn extended(image: Connection) -> Connection {
     image
 }
 
-fn write_image(dir: &Path, image: &Connection) -> Vec<u8> {
-    let blob = encrypt(&FIXTURE_KEY, &image.serialize(DatabaseName::Main).unwrap()).unwrap();
+fn write_image(dir: &Path, image: &mut Connection) -> Vec<u8> {
+    let blob = encrypt(&FIXTURE_KEY, &image.serialize(rusqlite::MAIN_DB).unwrap()).unwrap();
     fs::write(dir.join("pharos.db.enc"), &blob).unwrap();
     blob
 }
@@ -1193,10 +1193,10 @@ fn saved_image_len(dir: &Path) -> usize {
 #[test]
 fn both_fixtures_move_big_duplicate_and_deleted_card_attachments_and_shrink() {
     for image in [fixture_image(), fixture_020a1_image()] {
-        let old = extended(image);
-        let before = old.serialize(DatabaseName::Main).unwrap().len();
+        let mut old = extended(image);
+        let before = old.serialize(rusqlite::MAIN_DB).unwrap().len();
         let dir = temp_dir();
-        write_image(&dir, &old);
+        write_image(&dir, &mut old);
 
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         assert_attachments_moved(&old, &db);
@@ -1238,7 +1238,7 @@ fn both_fixtures_move_big_duplicate_and_deleted_card_attachments_and_shrink() {
 
 #[test]
 fn a_migration_cut_midway_or_before_0023_resumes_without_duplicates() {
-    let old = extended(fixture_020a1_image());
+    let mut old = extended(fixture_020a1_image());
     let movable = old_attachments(&old)
         .iter()
         .filter(|a| a.owner.is_some())
@@ -1246,7 +1246,7 @@ fn a_migration_cut_midway_or_before_0023_resumes_without_duplicates() {
     // After one row; then after the whole Rust step, right before 0023 runs.
     for fail_after in [1, movable] {
         let dir = temp_dir();
-        let original = write_image(&dir, &old);
+        let original = write_image(&dir, &mut old);
         crate::evidence::FAIL_AFTER.with(|f| f.set(Some(fail_after)));
         let err = Db::open_with_key(&dir, FIXTURE_KEY).err().unwrap();
         crate::evidence::FAIL_AFTER.with(|f| f.set(None));
@@ -1272,11 +1272,11 @@ fn a_migration_cut_midway_or_before_0023_resumes_without_duplicates() {
 fn a_database_saved_between_the_rust_step_and_0023_finishes_cleanly() {
     // Defensive: no save happens between them, but an image with 0022 applied
     // and the rows already copied must finish without duplicating anything.
-    let old = extended(fixture_020a1_image());
+    let mut old = extended(fixture_020a1_image());
     let dir = temp_dir();
     let store = EvidenceStore::new(&dir, &FIXTURE_KEY);
     let mut mid = Connection::open_in_memory().unwrap();
-    load_image(&mut mid, &old.serialize(DatabaseName::Main).unwrap()).unwrap();
+    load_image(&mut mid, &old.serialize(rusqlite::MAIN_DB).unwrap()).unwrap();
     for (name, sql) in MIGRATIONS {
         if *name == PLANNER_ATTACHMENTS_OUT {
             break;
@@ -1290,7 +1290,7 @@ fn a_database_saved_between_the_rust_step_and_0023_finishes_cleanly() {
     }
     crate::evidence::migrate_planner_attachments(&mid, Some(&store)).unwrap();
     let copied = count(&mid, "SELECT count(*) FROM attachments");
-    write_image(&dir, &mid);
+    write_image(&dir, &mut mid);
     // One of the copied files was cut short: the rerun stores it again.
     let (big_sha, big_size): (String, i64) = mid
         .query_row(
@@ -1325,7 +1325,7 @@ fn a_database_saved_between_the_rust_step_and_0023_finishes_cleanly() {
 #[test]
 fn a_wrong_key_migrates_nothing_and_touches_no_evidence() {
     let dir = temp_dir();
-    let original = write_image(&dir, &extended(fixture_020a1_image()));
+    let original = write_image(&dir, &mut extended(fixture_020a1_image()));
     let err = Db::open_with_key(&dir, [0x11; 32]).err().unwrap();
     assert_eq!(err, DECRYPT_ERROR);
     assert_eq!(fs::read(dir.join("pharos.db.enc")).unwrap(), original);
@@ -1341,7 +1341,7 @@ fn a_migrated_database_is_newer_than_0_2_0_alpha_1() {
     // planner_attachments. Its known set is 0001–0018, as in its fixture.
     let known = applied_migrations(&fixture_020a1_image()).unwrap();
     let dir = temp_dir();
-    write_image(&dir, &fixture_020a1_image());
+    write_image(&dir, &mut fixture_020a1_image());
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     let applied = db.with_conn(applied_migrations).unwrap();
     let unknown_to_it: Vec<&String> = applied.iter().filter(|m| !known.contains(m)).collect();
@@ -1382,9 +1382,9 @@ fn copy_dir(from: &Path, to: &Path) {
 
 #[test]
 fn the_recovery_key_opens_the_evidence_on_another_pc_and_a_missing_folder_is_reported() {
-    let old = fixture_020a1_image();
+    let mut old = fixture_020a1_image();
     let here = temp_dir();
-    write_image(&here, &old);
+    write_image(&here, &mut old);
     let recovery = Db::open_with_key(&here, FIXTURE_KEY)
         .unwrap()
         .recovery_key();
@@ -1423,7 +1423,7 @@ fn every_gherkin_level_written_by_0_1_migrates_to_stable_ids_without_loss() {
     // The fixtures only hold basic cases, so outline, advanced (flows,
     // background, featureSource) and odd shapes are added to the alpha.1
     // image the way the 0.1 editor stored them, plus an open conflict.
-    let old = fixture_image();
+    let mut old = fixture_image();
     let (project, workspace): (String, String) = old
         .query_row(
             "SELECT id, workspace_id FROM projects WHERE owner_id = ?1",
@@ -1475,7 +1475,7 @@ fn every_gherkin_level_written_by_0_1_migrates_to_stable_ids_without_loss() {
     .unwrap();
 
     let new = Connection::open_in_memory().unwrap();
-    let image = old.serialize(rusqlite::DatabaseName::Main).unwrap();
+    let image = old.serialize(rusqlite::MAIN_DB).unwrap();
     let mut new = new;
     load_image(&mut new, &image).unwrap();
     // Cases only: the attachments need an evidence store (DAT-03, tested apart).
@@ -1563,7 +1563,7 @@ fn every_gherkin_level_written_by_0_1_migrates_to_stable_ids_without_loss() {
 fn stable_steps_migrate_after_or_before_the_evidence_store() {
     for evidence_first in [true, false] {
         let old = fixture_020a1_image();
-        let image = fixture_020a1_image();
+        let mut image = fixture_020a1_image();
         if evidence_first {
             // An evidence-store build has no 0020–0021: hide them for its open.
             for name in ["0020_test_case_revisions.sql", "0021_stable_steps.sql"] {
@@ -1573,7 +1573,7 @@ fn stable_steps_migrate_after_or_before_the_evidence_store() {
             }
         }
         let dir = temp_dir();
-        write_image(&dir, &image);
+        write_image(&dir, &mut image);
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         if evidence_first {
             db.with_conn(|c| {
@@ -1712,10 +1712,10 @@ fn data_of(c: &Connection, id: &str) -> serde_json::Value {
 
 #[test]
 fn a_case_pulled_flattened_gets_the_servers_ids_back_and_no_new_revision() {
-    let image = fixture_020a1_image();
+    let mut image = fixture_020a1_image();
     add_pulled_case(&image, "b1-case", 5, &flattened(&server_case_data()));
     let dir = temp_dir();
-    write_image(&dir, &image);
+    write_image(&dir, &mut image);
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     db.with_conn(|c| {
         // Same content as the server's, `expected` and every id included.
@@ -1764,7 +1764,7 @@ fn a_case_pulled_flattened_gets_the_servers_ids_back_and_no_new_revision() {
 
 #[test]
 fn a_case_edited_while_read_only_keeps_the_ids_of_the_steps_it_did_not_touch() {
-    let image = fixture_020a1_image();
+    let mut image = fixture_020a1_image();
     let server = server_case_data();
     let pulled = flattened(&server);
     add_pulled_case(&image, "b1-edit", 5, &pulled);
@@ -1798,7 +1798,7 @@ fn a_case_edited_while_read_only_keeps_the_ids_of_the_steps_it_did_not_touch() {
         )
         .unwrap();
     let dir = temp_dir();
-    write_image(&dir, &image);
+    write_image(&dir, &mut image);
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     db.with_conn(|c| {
         let data = data_of(c, "b1-edit");
@@ -1892,9 +1892,9 @@ fn assert_revisions_untouched_by_case_fields(c: &Connection) {
 
 #[test]
 fn both_fixtures_open_with_case_fields_unset_and_every_revision_hash_unchanged() {
-    for image in [fixture_image(), fixture_020a1_image()] {
+    for mut image in [fixture_image(), fixture_020a1_image()] {
         let dir = temp_dir();
-        write_image(&dir, &image);
+        write_image(&dir, &mut image);
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         db.with_conn(|c| {
             assert_revisions_untouched_by_case_fields(c);
@@ -1926,7 +1926,7 @@ fn both_fixtures_open_with_case_fields_unset_and_every_revision_hash_unchanged()
 
 #[test]
 fn a_case_pulled_by_a_read_only_client_gets_its_case_type_back_and_the_server_revision() {
-    let image = fixture_020a1_image();
+    let mut image = fixture_020a1_image();
     // Another device set `checklist`; the server sent this read-only app the
     // flattened case with the stash of both lists and the case fields.
     let mut server = server_case_data();
@@ -1936,7 +1936,7 @@ fn a_case_pulled_by_a_read_only_client_gets_its_case_type_back_and_the_server_re
         serde_json::json!({"caseType": "checklist", "automationStatus": "automated"});
     add_pulled_case(&image, "fld-case", 4, &pulled);
     let dir = temp_dir();
-    write_image(&dir, &image);
+    write_image(&dir, &mut image);
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     db.with_conn(|c| {
         assert_eq!(data_of(c, "fld-case"), server, "same data as on the server");
@@ -1989,7 +1989,7 @@ fn a_case_pulled_by_a_read_only_client_gets_its_case_type_back_and_the_server_re
 
 #[test]
 fn a_case_edited_while_read_only_gets_its_custom_values_back() {
-    let image = fixture_020a1_image();
+    let mut image = fixture_020a1_image();
     let mut server = server_case_data();
     server["custom"] = serde_json::json!({"points": 3});
     let mut pulled = flattened(&server);
@@ -2026,7 +2026,7 @@ fn a_case_edited_while_read_only_gets_its_custom_values_back() {
         )
         .unwrap();
     let dir = temp_dir();
-    write_image(&dir, &image);
+    write_image(&dir, &mut image);
     let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
     db.with_conn(|c| {
         let data = data_of(c, "fld-edit");
@@ -2086,7 +2086,7 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
         fixture_020a1_image as fn() -> Connection,
     ] {
         let dir = temp_dir();
-        let old = image();
+        let mut old = image();
         if tables(&old).iter().any(|t| t == "retired_keys") {
             old.execute_batch(
                 "INSERT OR IGNORE INTO key_counters (project_id, kind, next_value, block_end)
@@ -2100,7 +2100,7 @@ fn both_fixtures_get_the_execution_tables_and_keep_their_key_tables() {
             count(&old, "SELECT count(*) FROM requirements") > 0,
             "the fixture has requirements to keep"
         );
-        write_image(&dir, &old);
+        write_image(&dir, &mut old);
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         db.with_conn(|new| {
             for t in [
@@ -2335,10 +2335,10 @@ fn open_defects_per_case(c: &Connection, cards: bool) -> Vec<(String, String)> {
 
 #[test]
 fn upgrading_converts_every_defect_card_with_its_keys_links_files_and_pending_changes() {
-    let old = image_before_defects();
+    let mut old = image_before_defects();
     let matrix_before = open_defects_per_case(&old, true);
     assert_eq!(matrix_before.len(), 3);
-    let image = old.serialize(rusqlite::DatabaseName::Main).unwrap();
+    let image = old.serialize(rusqlite::MAIN_DB).unwrap();
     let mut new = Connection::open_in_memory().unwrap();
     load_image(&mut new, &image).unwrap();
     run_migrations(&new).unwrap();
@@ -2424,17 +2424,9 @@ fn upgrading_converts_every_defect_card_with_its_keys_links_files_and_pending_ch
         1
     );
     // Reopening changes nothing.
-    let before = new
-        .serialize(rusqlite::DatabaseName::Main)
-        .unwrap()
-        .to_vec();
+    let before = new.serialize(rusqlite::MAIN_DB).unwrap().to_vec();
     run_migrations(&new).unwrap();
-    assert_eq!(
-        new.serialize(rusqlite::DatabaseName::Main)
-            .unwrap()
-            .to_vec(),
-        before
-    );
+    assert_eq!(new.serialize(rusqlite::MAIN_DB).unwrap().to_vec(), before);
 }
 
 #[test]
@@ -2477,7 +2469,7 @@ fn both_fixtures_and_a_0027_image_get_the_cycle_tables_and_keep_their_runs() {
         fixture_020a1_image as fn() -> Connection,
     ] {
         let dir = temp_dir();
-        write_image(&dir, &image());
+        write_image(&dir, &mut image());
         let db = Db::open_with_key(&dir, FIXTURE_KEY).unwrap();
         db.with_conn(|new| {
             for t in ["configurations", "test_cycles", "test_cycle_items"] {

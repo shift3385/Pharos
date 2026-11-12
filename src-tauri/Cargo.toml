@@ -32,7 +32,7 @@ keyring = { version = "3", features = ["windows-native"] }
 # AES-256-GCM encryption at rest, key kept in the OS keychain (spec §16 Phase 2).
 # `serialize` moves the database image to/from memory so plaintext never hits disk;
 # `blob` reads the old planner attachment BLOBs in blocks while moving them out.
-rusqlite = { version = "0.32", features = ["bundled", "serialize", "blob"] }
+rusqlite = { version = "0.41.1", features = ["bundled", "serialize", "blob"] }
 # `stream`: the evidence files (`evidence/*.pev`, ADR-0014) are encrypted and
 # decrypted in 64 KiB blocks (STREAM construction), never whole in memory.
 aes-gcm = { version = "0.10", features = ["stream"] }
