@@ -25,10 +25,21 @@ web: `server/src/modules/domain/cycles.ts`.
   `test-cases`) add as a sheet and a PDF section, from the list's own
   progress summary.
 
+- **Closing (DOC-02, ADR-0041):** a cycle closes only through the quality
+  gate («Cerrar ciclo…», `CloseCycleButton` of `@modules/runs`, passed in
+  by the project page through `cycleActions(cycleId, ctx)`). The edit dialog
+  offers «Cerrado» only to a closed cycle, to reopen it
+  (`editableStatuses`), and the core refuses closing by an edit
+  (`cycle-close-needs-gate`). Each closing appends to `data.closures`,
+  which an edit never touches; the detail shows the latest verdict
+  (`latestVerdict`, `verdictTone`).
+
 Boundaries: it depends on no other domain module (`test-plan` and
 `test-cases` depend on it for their exports, never the other way round). The project page passes it
 the cases (`loadCases`, from `@modules/test-cases`), the requirement keys and
-`cycleActions(cycleId)`: extra buttons for an open cycle's header (the status
-report of `@modules/runs`, EJE-03, scoped to that cycle).
+`cycleActions(cycleId, ctx)`: extra buttons for an open cycle's header (the
+status report of `@modules/runs`, EJE-03, scoped to that cycle, and «Cerrar
+ciclo…», DOC-02), with the cycle's status and label and a way to read it
+again after a change.
 No design in `docs/rediseno/` covers these screens: they use the shared
 primitives (`DataTable`, `StatusPill`, `SegmentedControl`, `Tabs`, `Dialog`).

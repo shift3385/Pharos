@@ -73,6 +73,8 @@ export const SUMMARY: ExecutionSummary = {
       low: { requirements: 1, covered: 1, executed: 1, passed: 1, failed: 0 },
       unassessed: { requirements: 0, covered: 0, executed: 0, passed: 0, failed: 0 },
     },
+    riskBands: { low: 4, medium: 12 },
+    weighted: { totalWeight: 24, coveredWeight: 24, passedWeight: 4, coverageRatio: 1, passedRatio: 4 / 24, unassessed: 0 },
   },
   defects: {
     total: 2, open: 1,
@@ -84,10 +86,21 @@ export const SUMMARY: ExecutionSummary = {
     byStatus: { closed: 1, fixed: 1 },
   },
   exitCriteria: [
-    { index: null, criterion: "% de casos ejecutados", metric: "≥ 95%", kind: "executed", op: ">=", target: 95, value: 75, met: false },
-    { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, met: false },
-    { index: null, criterion: "Cobertura de requisitos", metric: "≥ 90%", kind: "coverage", op: ">=", target: 90, value: 100, met: true },
+    { index: null, criterion: "% de casos ejecutados", metric: "≥ 95%", kind: "executed", op: ">=", target: 95, value: 75, met: false, blocking: true },
+    { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, met: false, blocking: true },
+    { index: null, criterion: "Cobertura de requisitos", metric: "≥ 90%", kind: "coverage", op: ">=", target: 90, value: 100, met: true, blocking: true },
   ],
+  metrics: {
+    values: { executed: 75, passRate: 50, criticalDefects: 1, coverage: 100, defectDensity: 50, escapedDefects: 0, fixTime: 2, reopenRate: 0, flakyRate: 25 },
+    executedCases: 3,
+    defectsFound: 1,
+    defectsFixed: 1,
+    defectsUnfixed: 0,
+    defectsReopened: 0,
+    escapeRate: 0,
+  },
+  closure: null,
+  previous: null,
   daily: [],
   undated: 0,
   runs: [
@@ -95,4 +108,31 @@ export const SUMMARY: ExecutionSummary = {
     { id: "run1", runKey: "RUN-001", title: "Manual", trigger: "manual", sourceTool: null, status: "completed", startedAt: "2026-11-01T09:00:00Z", cycleId: null, configurationId: null, build: null, environment: null },
   ],
   options: { builds: ["1.4.2"], environments: ["staging"] },
+};
+
+/** The same summary for a closed cycle (DOC-02): its gate record and the
+ *  closed cycle before it. */
+export const CLOSED: ExecutionSummary = {
+  ...SUMMARY,
+  closure: {
+    closedAt: "2026-11-05T16:42:00.000Z",
+    closedBy: "u1",
+    verdict: "goWithRisks",
+    planId: "plan1",
+    criteria: [
+      { index: null, criterion: "% de casos ejecutados", metric: "≥ 95%", kind: "executed", op: ">=", target: 95, value: 75, blocking: true, state: "notMet", manualMet: null, justification: "Los casos restantes son de facturas, detrás de un flag apagado." },
+      { index: null, criterion: "Defectos críticos abiertos", metric: "0", kind: "criticalDefects", op: "=", target: 0, value: 1, blocking: false, state: "notMet", manualMet: null, justification: null },
+      { index: null, criterion: "Visto bueno del PO", metric: "", kind: null, op: null, target: null, value: null, blocking: true, state: "manual", manualMet: true, justification: null },
+    ],
+    metrics: SUMMARY.metrics,
+  },
+  previous: {
+    cycleId: "cy0",
+    cycleKey: "CYC-006",
+    title: "Regresión 11",
+    status: "closed",
+    closedAt: "2026-10-30T10:00:00.000Z",
+    verdict: "go",
+    values: { executed: 100, passRate: 80, criticalDefects: 0, coverage: 100, defectDensity: 20, escapedDefects: 1, fixTime: 3, reopenRate: 10, flakyRate: 25 },
+  },
 };

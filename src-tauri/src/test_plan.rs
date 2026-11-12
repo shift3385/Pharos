@@ -1,6 +1,8 @@
 //! Test plan repository + Tauri commands (spec §5.1). Scalars are columns; the
-//! full 21-step content is a JSON `data` blob. Every update snapshots the prior
-//! state into `test_plan_revisions` and bumps `revision`.
+//! full 22-step content is a JSON `data` blob. Every update bumps `revision`;
+//! one that changes the title or the content also snapshots the prior state
+//! into `test_plan_revisions` (a status change or an approval does not,
+//! PLN-03/PLN-07).
 //!
 //! A plan belongs to its project's owner: every function takes the signed-in
 //! `user_id` and only touches plans of projects that user owns (FIX-08). Audit
@@ -250,7 +252,12 @@ pub(crate) fn update_plan(
         .map_err(|e| e.to_string())?;
 
     let before = journal::snapshot(conn, "test_plan", id)?;
-    // Snapshot the current state before overwriting it.
+    // Snapshot the current state before overwriting it, only when the save
+    // changes the title or the content (PLN-03): a status change or an
+    // approval (PLN-07) is not a revision of its own.
+    if same_content(&prev_title, &prev_data, input) {
+        return write_plan(conn, id, input, revision, before);
+    }
     conn.execute(
         "INSERT INTO test_plan_revisions (id, test_plan_id, revision, title, data, \
          created_at, created_by) VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), ?6)",
@@ -264,7 +271,33 @@ pub(crate) fn update_plan(
         ],
     )
     .map_err(|e| e.to_string())?;
+    write_plan(conn, id, input, revision, before)
+}
 
+/// Whether a save keeps the plan's title and content: the data is compared
+/// as JSON without `approval`, which only records who approved (PLN-07).
+fn same_content(prev_title: &str, prev_data: &str, input: &TestPlanInput) -> bool {
+    fn content(v: &Value) -> Value {
+        let mut v = v.clone();
+        if let Some(map) = v.as_object_mut() {
+            map.remove("approval");
+        }
+        v
+    }
+    let Ok(prev) = serde_json::from_str::<Value>(prev_data) else {
+        return false;
+    };
+    prev_title == input.title && content(&prev) == content(&input.data)
+}
+
+/// Writes the save over the plan and journals it (one more revision number).
+fn write_plan(
+    conn: &Connection,
+    id: &str,
+    input: &TestPlanInput,
+    revision: i64,
+    before: Option<Value>,
+) -> Result<(), String> {
     let data_str = serde_json::to_string(&input.data).map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE test_plans SET title = ?2, version = ?3, plan_date = ?4, author = ?5, \
@@ -650,6 +683,42 @@ mod tests {
         let detail = get_revision(&c, &revisions[0].id, USER).unwrap().unwrap();
         assert_eq!(detail.title, "Plan A");
         assert_eq!(detail.data, serde_json::json!({}));
+    }
+
+    /// PLN-03 / PLN-07: a save that only changes the status or records the
+    /// approval leaves no revision copy; one that changes the content does.
+    #[test]
+    fn status_or_approval_only_saves_leave_no_revision_copy() {
+        let c = conn();
+        let p = project(&c, USER);
+        let data = serde_json::json!({"summary": "hi"});
+        let id = insert_plan(&c, &input(&p, "Plan A", data.clone())).unwrap();
+
+        let mut reviewed = input(&p, "Plan A", data.clone());
+        reviewed.status = Some("reviewed".to_string());
+        update_plan(&c, &id, &reviewed).unwrap();
+
+        let mut approved = input(
+            &p,
+            "Plan A",
+            serde_json::json!({"summary": "hi", "approval": {"by": USER, "byName": "Ada", "at": "2026-11-11T10:00:00Z", "version": "1.0"}}),
+        );
+        approved.status = Some("approved".to_string());
+        update_plan(&c, &id, &approved).unwrap();
+
+        assert!(list_revisions(&c, &id, USER).unwrap().is_empty());
+        let plan = get_plan(&c, &id, USER).unwrap().unwrap();
+        assert_eq!(plan.status, "approved");
+        assert_eq!(plan.revision, 3);
+        assert_eq!(plan.data["approval"]["byName"], "Ada");
+
+        let mut edited = input(&p, "Plan A", serde_json::json!({"summary": "changed"}));
+        edited.status = Some("reviewed".to_string());
+        update_plan(&c, &id, &edited).unwrap();
+        let revisions = list_revisions(&c, &id, USER).unwrap();
+        assert_eq!(revisions.len(), 1);
+        let copy = get_revision(&c, &revisions[0].id, USER).unwrap().unwrap();
+        assert_eq!(copy.data["approval"]["byName"], "Ada");
     }
 
     /// RED-W5: sprint and milestone ids live inside `data`, which this core

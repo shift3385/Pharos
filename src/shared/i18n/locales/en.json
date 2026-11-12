@@ -466,6 +466,7 @@
       "sync": "Sync",
       "security": "Security",
       "evidence": "Evidence",
+      "audit": "Audit",
       "diagnostics": "Diagnostics"
     },
     "groups": {
@@ -677,6 +678,205 @@
       "noUses": "No current attachments.",
       "useIn": "In {{project}}",
       "open": "Open {{section}}"
+    },
+    "audit": {
+      "actor": {
+        "you": "you",
+        "signedOut": "Signed out",
+        "user": "User {{id}}",
+        "agent": "Agent {{id}}",
+        "ci": "CI {{id}}",
+        "system": "System · {{component}}"
+      },
+      "components": {
+        "sync": "sync",
+        "migration": "migration",
+        "purge": "purge",
+        "keys": "keys",
+        "recovery": "recovery",
+        "evidence": "evidence",
+        "retention": "retention"
+      },
+      "onBehalfOf": "on behalf of {{name}}",
+      "actions": {
+        "create": "Created",
+        "update": "Edited",
+        "delete": "Deleted",
+        "restore": "Restored",
+        "import": "Imported",
+        "execute": "Executed",
+        "link": "Linked",
+        "unlink": "Unlinked",
+        "resolve_conflict": "Conflict resolved",
+        "redact": "Redacted"
+      },
+      "entities": {
+        "project": "Project",
+        "test_case": "Test case",
+        "test_case_revision": "Case revision",
+        "test_plan": "Test plan",
+        "requirement": "Requirement",
+        "test_cycle": "Cycle",
+        "test_cycle_item": "Cycle case",
+        "run": "Run",
+        "run_item": "Run case",
+        "step_result": "Step result",
+        "defect": "Defect",
+        "defect_link": "Defect link",
+        "planner_card": "Board card",
+        "custom_field": "Custom field",
+        "configuration": "Configuration",
+        "template": "Template",
+        "profile": "Profile",
+        "unlinked_mapping": "Unlinked mapping"
+      },
+      "fields": {
+        "title": "Title",
+        "name": "Name",
+        "status": "Status",
+        "priority": "Priority",
+        "severity": "Severity",
+        "description": "Description",
+        "data": "Content",
+        "steps": "Steps",
+        "tags": "Tags",
+        "preconditions": "Preconditions",
+        "expected": "Expected result",
+        "assignee": "Assignee",
+        "author": "Author",
+        "key": "Key",
+        "position": "Position",
+        "column": "Column",
+        "deletedAt": "Deleted",
+        "resolution": "Resolution",
+        "approvedAt": "Approved on",
+        "approvedBy": "Approved by"
+      },
+      "summary": {
+        "created": "Created",
+        "updated": "Updated",
+        "skipped": "Skipped",
+        "total": "Total",
+        "format": "Format",
+        "file": "File",
+        "resolution": "Kept",
+        "cases": "Cases",
+        "cycles": "Cycles",
+        "runs": "Runs",
+        "defects": "Defects",
+        "requirements": "Requirements"
+      },
+      "device": {
+        "this": "This device",
+        "web": "Web",
+        "other": "Another device ({{id}})"
+      },
+      "cols": {
+        "when": "When",
+        "who": "Who",
+        "action": "Action",
+        "element": "Element",
+        "changes": "Changes",
+        "origin": "Origin"
+      },
+      "redacted": "Content redacted",
+      "fieldCount_one": "{{count}} field",
+      "fieldCount_other": "{{count}} fields",
+      "projectGone": "Deleted project",
+      "listLabel": "Audit log",
+      "loading": "Loading the log…",
+      "loadError": "Could not load the log: {{reason}}",
+      "empty": "No events yet. Every change you make from now on will show here.",
+      "emptyFiltered": "No event matches the filters. Try another period or remove a filter.",
+      "range": "{{from}}–{{to}} of {{total}} events",
+      "filters": {
+        "period": "Period",
+        "from": "From",
+        "to": "To",
+        "who": "Who",
+        "element": "Element",
+        "action": "Action",
+        "project": "Project",
+        "search": "Search by key",
+        "searchPlaceholder": "Search by key (ATS_014, REQ-003…)",
+        "oneElement": "History of one element",
+        "clear": "Clear filters"
+      },
+      "period": {
+        "today": "Today",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "all": "All",
+        "custom": "Custom"
+      },
+      "integrity": {
+        "checking": "Checking the chain…",
+        "failed": "Could not check the chain.",
+        "okTitle": "Log intact.",
+        "okHint_one": "{{chains}} chain, {{count}} event checked. No event was deleted, reordered or changed.",
+        "okHint_other": "{{chains}} chains, {{count}} events checked. No event was deleted, reordered or changed.",
+        "empty": "Nothing to check yet.",
+        "emptyHint": "The chain starts with the first change.",
+        "brokenTitle": "The chain of «{{chain}}» is broken at event #{{seq}}.",
+        "brokenHint_one": "The other chain is intact. The log does not repair itself: export the diagnostics if you need to look into it.",
+        "brokenHint_other": "{{count}} other chains are intact. The log does not repair itself: export the diagnostics if you need to look into it.",
+        "noRepair": "The log does not repair itself: export the diagnostics if you need to look into it.",
+        "chainOk": "Intact",
+        "break": {
+          "gap": "An event is missing: #{{expected}} was expected and #{{seq}} is there.",
+          "link": "Event #{{seq}} does not link to the one before it.",
+          "hash": "The data of event #{{seq}} was changed outside Pharos.",
+          "changes": "The content of event #{{seq}} was changed outside Pharos."
+        },
+        "showEvent": "Show event",
+        "showChains": "Show chains",
+        "hideChains": "Hide chains",
+        "recheck": "Check again",
+        "chainsLabel": "Chains of the log",
+        "cols": {
+          "chain": "Chain",
+          "events": "Events",
+          "state": "State",
+          "last": "Last event"
+        }
+      },
+      "detail": {
+        "field": "Field",
+        "before": "Before",
+        "after": "After",
+        "diffLabel": "Changes field by field",
+        "empty": "empty",
+        "noChanges": "This event keeps no field changes.",
+        "redacted": "The content was redacted on {{date}}. The event stays in the chain.",
+        "linkOk": "✓ Valid link",
+        "linkBroken": "✕ Broken link",
+        "linkWhere": "Chain «{{chain}}», #{{seq}}",
+        "hash": "hash {{hash}}… · previous {{prev}}…",
+        "history": "Show its whole history",
+        "copy": "Copy as JSON",
+        "copied": "Event copied",
+        "copyFailed": "Could not copy the event"
+      },
+      "export": {
+        "button": "Export",
+        "working": "Exporting…",
+        "xlsx": "Excel (.xlsx)",
+        "csv": "CSV",
+        "sheet": "Audit",
+        "integritySheet": "Integrity",
+        "checkedAt": "Checked",
+        "cols": {
+          "at": "Date (UTC)",
+          "onBehalfOf": "On behalf of",
+          "type": "Element type",
+          "key": "Key",
+          "seq": "# in chain",
+          "hash": "Hash",
+          "owner": "Account"
+        },
+        "capped": "The export stopped at {{count}} events. Narrow the period to export the rest.",
+        "failed": "Could not export: {{reason}}"
+      }
     }
   },
   "importReport": {
@@ -888,7 +1088,28 @@
       "planHistoryDesc_current": "As before: the header with the current version, date, author and status.",
       "planHistoryDesc_revisions": "Adds a table with one row per person and day: their last save, the status and the sections they changed.",
       "planHistorySaved": "History setting saved.",
-      "planHistoryFailed": "The history setting could not be saved."
+      "planHistoryFailed": "The history setting could not be saved.",
+      "riskBands": {
+        "title": "Risk bands",
+        "desc": "A requirement's risk level is likelihood × impact (1–25), as in ISTQB. Choose up to which level it is low and up to which it is medium; the rest is high. Changing them touches no data: it changes how the matrix, its risk order and the report read.",
+        "lowUpTo": "Low: up to",
+        "mediumUpTo": "Medium: up to",
+        "high": "High",
+        "highRange": "{{from}} to {{to}}",
+        "impactShort": "I",
+        "likelihoodShort": "L",
+        "cells": "Impact (I) by likelihood (L). With these bands: {{low}} low cells, {{medium}} medium and {{high}} high.",
+        "reset": "Reset ({{low}} and {{medium}})",
+        "saved": "Risk bands saved.",
+        "failed": "The risk bands could not be saved.",
+        "error": {
+          "integer": "Type a whole number.",
+          "lowRange": "Low starts at 1.",
+          "mediumRange": "Medium goes up to {{max}} at most, so high keeps at least one level.",
+          "order": "Low must be less than medium."
+        },
+        "save": "Save bands"
+      }
     },
     "prefix": {
       "required": "Type a prefix, for example “PHA-”.",
@@ -937,7 +1158,8 @@
         "fields": "Custom fields",
         "digits": "Case number digits",
         "planHistory": "History in the exported plan",
-        "retention": "Evidence retention"
+        "retention": "Evidence retention",
+        "riskBands": "Risk bands"
       },
       "value": {
         "loading": "Reading…",
@@ -946,7 +1168,8 @@
         "fieldsOf": "{{count}} for {{entity}}",
         "retentionDefault": "The default values",
         "retentionKind": "{{kind}}: {{days}}",
-        "desktopOnly": "Desktop app only: the web has no evidence retention"
+        "desktopOnly": "Desktop app only: the web has no evidence retention",
+        "riskBands": "Low up to {{low}} · medium up to {{medium}}"
       },
       "never": "The name, the prefix and the data (plan, cases, requirements, runs) are never copied.",
       "copiedFrom": "copied from {{name}}",
@@ -956,7 +1179,8 @@
         "fields": "the custom fields",
         "digits": "the number digits ({{digits}})",
         "planHistory": "the history in the exported plan ({{mode}})",
-        "retention": "the evidence retention"
+        "retention": "the evidence retention",
+        "riskBands": "the risk bands (low up to {{low}}, medium up to {{medium}})"
       },
       "next": "Next",
       "back": "Back",
@@ -1084,13 +1308,18 @@
       "tools": "Tools and automation",
       "testData": "Test data",
       "defects": "Defect management",
-      "roles": "Roles and responsibilities",
+      "roles": "Roles, independence and training",
       "schedule": "Schedule",
       "risks": "Risks and mitigation",
       "communication": "Communication plan",
       "closure": "Closure criteria",
       "purpose": "Purpose",
-      "conclusion": "Conclusion"
+      "conclusion": "Conclusion",
+      "assumptions": "Assumptions and constraints",
+      "techniques": "Test techniques",
+      "estimation": "Estimation and budget",
+      "entry": "Entry, suspension and resumption",
+      "metrics": "Metrics and measurable objectives"
     },
     "typeGroup": {
       "functional": "Functional",
@@ -1196,7 +1425,12 @@
       "communication": "How and when progress is reported.",
       "closure": "Conditions to meet before closing the cycle.",
       "purpose": "The test objectives the plan pursues and what it is for.",
-      "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision."
+      "conclusion": "Evaluation against objectives and exit criteria, open risks and the decision.",
+      "assumptions": "What planning takes for granted and the limits the team cannot change (deadlines, people, rules). If an assumption stops holding, review the plan.",
+      "techniques": "How test cases are designed (ISTQB CTFL v4, ch. 4): black-box, white-box, experience-based and collaboration-based.",
+      "estimation": "How much effort and money it takes, and which technique gave the figure (CTFL v4 §5.1.4). In three-point estimation, E = (O + 4·M + P) / 6.",
+      "entry": "When a cycle may start (entry criteria), when testing stops and what must happen to resume it.",
+      "metrics": "What is measured and the objective it must reach. Pharos measures the catalog metrics; your own ones are judged by hand. Tick «Exit criterion» so they count when a cycle closes."
     },
     "nav": {
       "label": "Plan steps",
@@ -1365,7 +1599,167 @@
     },
     "testTypes": "Test types",
     "testLevels": "Test levels",
-    "suggestedTitle": "{{project}} test plan"
+    "suggestedTitle": "{{project}} test plan",
+    "assumptions": "Assumptions",
+    "constraints": "Constraints",
+    "suggestAssumptions": "Suggest assumptions and constraints with AI",
+    "suggestEntry": "Suggest criteria with AI",
+    "listName": {
+      "assumptions": "Assumption",
+      "constraints": "Constraint",
+      "entryCriteria": "Entry",
+      "suspensionCriteria": "Suspension",
+      "resumptionCriteria": "Resumption"
+    },
+    "techniqueGroup": {
+      "blackBox": "Black-box",
+      "whiteBox": "White-box",
+      "experience": "Experience-based",
+      "collaborative": "Collaboration-based",
+      "own": "Own"
+    },
+    "techniqueLabel": {
+      "equivalencePartitioning": "Equivalence partitioning",
+      "boundaryValues": "Boundary value analysis",
+      "decisionTables": "Decision table testing",
+      "stateTransition": "State transition testing",
+      "statement": "Statement testing",
+      "branch": "Branch testing",
+      "errorGuessing": "Error guessing",
+      "exploratory": "Exploratory testing",
+      "checklist": "Checklist-based testing",
+      "userStories": "Collaborative user story writing",
+      "acceptanceCriteria": "Acceptance criteria",
+      "atdd": "ATDD (acceptance test-driven development)"
+    },
+    "techniqueList": {
+      "other": "Other technique",
+      "otherPlaceholder": "Type a technique",
+      "add": "Add technique"
+    },
+    "independence": "Independence of testing",
+    "independenceLevel": {
+      "author": "The author",
+      "peer": "A peer",
+      "team": "Testers in the team",
+      "organization": "A team in the organization",
+      "external": "External"
+    },
+    "independenceNote": "How it is ensured",
+    "training": "Training needs",
+    "trainingNeedCol": "Need",
+    "trainingWhenCol": "When",
+    "estimationTechnique": "Estimation technique",
+    "estimationTechniqueLabel": {
+      "ratio": "Ratio-based",
+      "extrapolation": "Extrapolation",
+      "wideband": "Wideband Delphi",
+      "threePoint": "Three-point estimation",
+      "expert": "Expert judgement"
+    },
+    "effort": "Effort (person-days)",
+    "optimistic": "Optimistic (person-days)",
+    "likely": "Most likely (person-days)",
+    "pessimistic": "Pessimistic (person-days)",
+    "threePointResult": "E = ({{o}} + 4·{{m}} + {{p}}) / 6 = {{e}} person-days · σ = {{sd}}",
+    "threePointIncomplete": "Enter the three figures to work out the estimate.",
+    "budget": "Budget",
+    "estimationNotes": "Basis and notes",
+    "entryCriteria": "Entry criteria",
+    "suspensionCriteria": "Testing is suspended if…",
+    "resumptionCriteria": "Testing resumes when…",
+    "metricKind": {
+      "executed": "% of cases executed",
+      "passRate": "Pass rate",
+      "criticalDefects": "Open critical defects",
+      "coverage": "Requirements coverage",
+      "defectDensity": "Defect density",
+      "escapedDefects": "Escaped defects",
+      "fixTime": "Time to fix (median)",
+      "reopenRate": "Reopen rate",
+      "flakyRate": "Flaky test rate"
+    },
+    "metricKindTip": {
+      "executed": "Executed cases out of those planned.",
+      "passRate": "Passed cases out of those executed.",
+      "criticalDefects": "Defects of critical severity not closed.",
+      "coverage": "Requirements with at least one passing case.",
+      "defectDensity": "Defects per 100 executed cases.",
+      "escapedDefects": "Defects found after the cycle closed.",
+      "fixTime": "Median days from a defect's creation to «Fixed».",
+      "reopenRate": "Reopened defects out of those fixed.",
+      "flakyRate": "Cases with different results and no change in between."
+    },
+    "metricUnit": {
+      "percent": "%",
+      "count": "Number",
+      "per100cases": "Per 100 cases",
+      "days": "Days",
+      "score": "Score"
+    },
+    "metricUnitShort": {
+      "per100cases": "/ 100 cases",
+      "days_one": "day",
+      "days_other": "days"
+    },
+    "metricsTable": {
+      "metric": "Metric",
+      "op": "Operator",
+      "target": "Objective",
+      "measured": "How it is measured",
+      "exit": "Exit criterion",
+      "note": "Note",
+      "ownName": "Metric name",
+      "unit": "Unit",
+      "remove": "Remove metric"
+    },
+    "measure": {
+      "auto": "Pharos measures it",
+      "manual": "By hand"
+    },
+    "metricsAddCatalog": "Catalog metric",
+    "metricsAddOwn": "Own metric",
+    "metricsNone": "No metrics yet. Add one from the catalog or your own.",
+    "closureLink": {
+      "label": "Measured by",
+      "none": "No metric · checked by hand",
+      "blocking": "Blocking",
+      "advisory": "Advisory",
+      "blockingTip": "A blocking criterion marked «Not met» needs a justification to close the cycle; an advisory one is only reported.",
+      "hint": "Criteria measured by a metric are evaluated by themselves when a cycle closes. Their text is written from the metric."
+    },
+    "approval": {
+      "approve": "Approve version {{version}}",
+      "title": "Approve the plan?",
+      "confirm": "You will approve version {{version}} as {{name}}, today {{date}}. If its content is edited later, the plan goes back to «Reviewed» and needs approving again.",
+      "action": "Approve",
+      "toast": "Plan approved (v{{version}}).",
+      "saveFirst": "Save before approving",
+      "needsReviewed": "Only a saved plan in «Reviewed» can be approved.",
+      "by": "Approved by",
+      "at": "Approved on",
+      "editing": "This plan is approved (v{{version}}). Saving these changes sends it back to «Reviewed».",
+      "optionReason": "It is approved with the «Approve» button of «Plan status».",
+      "byLine": "{{name}} · {{date}}"
+    },
+    "noChangesToast": "No changes: there is nothing to save.",
+    "documentId": "Document ID",
+    "timeline": {
+      "title": "History",
+      "created": "Plan created",
+      "approved": "Approved by {{name}}",
+      "lostApproval": "loses its approval",
+      "none": "No saved changes yet.",
+      "someone": "Another account"
+    },
+    "strategySheet": "29119-3 strategy",
+    "metricsSheet": "Metrics",
+    "criteriaSheet": "Exit criteria",
+    "sectionCol": "Section",
+    "contentCol": "Content",
+    "keyCol": "Key",
+    "typeCol": "Type",
+    "linkedCol": "Measured by"
   },
   "testCase": {
     "loadFailed": "The test cases could not be loaded.",
@@ -1764,7 +2158,6 @@
       "custom": "Custom range…",
       "soonTitle": "Coming soon: will use the plan’s cycles and ranges",
       "compare": "Compare with the previous period",
-      "compareTitle": "Coming soon: compares with the previous period",
       "lower": {
         "today": "today",
         "7d": "last 7 days",
@@ -1932,9 +2325,51 @@
       "saved": "Home layout saved",
       "discarded": "Home changes discarded",
       "overflow": "Over 24 rows: Home will scroll.",
-      "regionLabel": "Home gadgets"
+      "regionLabel": "Home gadgets",
+      "newGadget": "New gadget: {{names}}. It does not fit on your Inicio without scrolling the page, so it is in «Hidden gadgets».",
+      "makeRoom": "Customize Inicio",
+      "dismissNew": "Got it"
     },
-    "more": "+{{count}} more · {{action}}"
+    "more": "+{{count}} more · {{action}}",
+    "trend": {
+      "title": "Cycle trend",
+      "help": "One metric over the project's last closed cycles, with the figures frozen at closing, and over the active cycle, live (dashed). The green line is the plan's target; the dot under each cycle is its verdict. It warns when the metric gets worse two cycles in a row or leaves its target.",
+      "project": "Trend project",
+      "metric": "Trend metric",
+      "empty": "This project has no closed or active cycles yet. The trend appears once the first one is closed with «Close cycle…».",
+      "chartLabel_one": "{{metric}} over {{count}} cycle",
+      "chartLabel_other": "{{metric}} over {{count}} cycles",
+      "target": "target {{target}}",
+      "targetIs": "Plan target: {{target}}.",
+      "open": "Not closed",
+      "lastClosed": "Last closed · {{cycle}}",
+      "delta": "{{delta}} against {{cycle}}",
+      "noClosed": "No closed cycle yet.",
+      "worsening_one": "{{metric}}: worse {{count}} cycle in a row",
+      "worsening_other": "{{metric}}: worse {{count}} cycles in a row",
+      "offTarget": "{{metric}}: off target"
+    },
+    "compare": {
+      "badge": "vs previous",
+      "hint_one": "With the day before ({{from}})",
+      "hint_other": "With the previous {{count}} days ({{from}} – {{to}})",
+      "range": "{{from}} – {{to}}",
+      "pp": "pp",
+      "vsPrevious": "vs previous",
+      "noPrevious": "no data before",
+      "rate_up": "{{points}} points more than in the previous period ({{previous}} % on {{dates}})",
+      "rate_down": "{{points}} points less than in the previous period ({{previous}} % on {{dates}})",
+      "rate_flat": "The same as in the previous period ({{previous}} % on {{dates}})",
+      "rateNone": "No executed cases in the previous period ({{dates}})",
+      "count_up": "{{percent}} more executions than in the previous period ({{previous}} on {{dates}})",
+      "count_down": "{{percent}} fewer executions than in the previous period ({{previous}} on {{dates}})",
+      "count_flat": "The same executions as in the previous period ({{previous}} on {{dates}})",
+      "countNone": "No executions in the previous period ({{dates}})",
+      "colPrevious": "Previous",
+      "legend": "Total of the previous period, day by day by position (day 1 with day 1)",
+      "legendShort": "Previous (total)",
+      "tipPrevious": "Previous ({{day}}): {{count}}"
+    }
   },
   "section": {
     "comingInPhase": "Coming in Phase {{phase}}",
@@ -2157,7 +2592,21 @@
         "highPriority_other": "{{count}} high priority",
         "withCase": "with at least one case"
       },
-      "onlyGapsCount": "Show only gaps ({{count}})"
+      "onlyGapsCount": "Show only gaps ({{count}})",
+      "weighted": "Weighted coverage",
+      "weightedTitle": "Risk-weighted coverage",
+      "weightedHow": "Sum of the risk level (likelihood × impact) of the covered requirements over the sum of the level of every assessed requirement. «Passed» counts those with every case executed and passed.",
+      "weightedCalc": "covered = {{covered}} / {{total}} = {{coveredPct}} · passed = {{passed}} / {{total}} = {{passedPct}}",
+      "weightedBands_one": "1 unassessed requirement is left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
+      "weightedBands_other": "{{count}} unassessed requirements are left out. The project's bands: low up to {{low}}, medium up to {{medium}}.",
+      "weightedHint_one": "passed {{passed}} · 1 unassessed",
+      "weightedHint_other": "passed {{passed}} · {{count}} unassessed",
+      "weightedNone": "no assessed requirement",
+      "weightedUnknown": "no execution data",
+      "byBand": "Coverage by risk band",
+      "byBandCount": "{{covered}} / {{total}}",
+      "weightedHint_zero": "passed {{passed}} · all assessed",
+      "weightedBands_zero": "Every requirement has its risk assessed. The project's bands: low up to {{low}}, medium up to {{medium}}."
     },
     "execution": {
       "passed": "Pass",
@@ -2290,7 +2739,7 @@
       "notAssessed": "Not assessed",
       "hint": "Score each from 1 (very low) to 5 (very high).",
       "level": "{{value}} of 5",
-      "bands": "Risk = likelihood × impact. Low: 1–4 · Medium: 5–12 · High: 13–25. The traceability matrix sorts the requirements by this value."
+      "bands": "Risk = likelihood × impact. The project's bands: Low 1–{{low}} · Medium {{mediumFrom}}–{{medium}} · High {{highFrom}}–25 (in Project settings). The traceability matrix orders the requirements by this value."
     },
     "result": {
       "runAt": "{{run}} · {{date}}",
@@ -2975,7 +3424,13 @@
       "flowGone": "The chosen flow of {{key}} no longer exists in the case. Remove that item and add it again.",
       "rowGone": "The chosen row of {{key}} no longer exists in the case. Remove that item and add it again.",
       "noConfigurationChosen": "Choose at least one configuration.",
-      "configurationMissing": "The cycle's configurations have not reached this device yet. Sync and try again."
+      "configurationMissing": "The cycle's configurations have not reached this device yet. Sync and try again.",
+      "closeNeedsGate": "A cycle closes with «Close cycle…», which evaluates its exit criteria."
+    },
+    "verdict": {
+      "go": "Go",
+      "goWithRisks": "Go with risks",
+      "noGo": "No-go"
     }
   },
   "defects": {
@@ -3099,7 +3554,9 @@
       "externalKey": "External key",
       "externalUrl": "External link",
       "externalHint": "To note the issue in another tool. Jira sync is coming in a future version.",
-      "labels": "Labels"
+      "labels": "Labels",
+      "escaped": "Found outside the tests (escape)",
+      "escapedHint": "In production, for example. It counts as an escape of the last cycle closed before it was reported."
     },
     "links": {
       "cases": "Test cases",
@@ -3618,6 +4075,203 @@
       "coverage": "Coverage"
     },
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "bandsLine": "The project's bands: low 1–{{low}}, medium {{mediumFrom}}–{{medium}}, high {{highFrom}}–25 (likelihood × impact).",
+    "weightedLine_one": "Risk-weighted coverage: {{coverage}} (passed: {{passed}}). Each assessed requirement weighs its risk level; 1 unassessed is left out.",
+    "weightedLine_other": "Risk-weighted coverage: {{coverage}} (passed: {{passed}}). Each assessed requirement weighs its risk level; {{count}} unassessed are left out.",
+    "weightedNone": "Risk-weighted coverage: — (no requirement has its risk assessed).",
+    "weightedCoverage": "Weighted coverage",
+    "weightedPassed": "Weighted passed",
+    "weightedLine_zero": "Risk-weighted coverage: {{coverage}} (passed: {{passed}}). Each requirement weighs its risk level; all are assessed."
+  },
+  "metrics": {
+    "kind": {
+      "executed": "% of cases executed",
+      "passRate": "Pass rate",
+      "criticalDefects": "Open critical defects",
+      "coverage": "Requirements coverage",
+      "defectDensity": "Defect density",
+      "escapedDefects": "Escapes",
+      "fixTime": "Time to fix",
+      "reopenRate": "Reopen rate",
+      "flakyRate": "Flaky"
+    },
+    "unitHint": {
+      "percent": "Percentage (0–100)",
+      "count": "Number",
+      "per100cases": "Defects per 100 executed cases",
+      "days": "Days (median from creation to «Fixed»)"
+    }
+  },
+  "gate": {
+    "open": "Close cycle…",
+    "title": "Close {{cycle}}",
+    "loading": "Evaluating the exit criteria…",
+    "loadFailed": "The cycle's exit criteria could not be read. Try again.",
+    "criteria": "Exit criteria",
+    "advisory": "advisory",
+    "manual": "manual",
+    "met": "Met",
+    "notMet": "Not met",
+    "markLabel": "Is «{{criterion}}» met?",
+    "justification": "Justification · required",
+    "justificationHint": "Why this risk is accepted, who owns it and when it gets solved…",
+    "count": "{{n}} / min. {{min}} characters",
+    "decision": "Exit decision",
+    "banner": {
+      "go": "Every mandatory criterion is met.",
+      "failing_one": "{{count}} mandatory criterion is not met. Justify it to close.",
+      "failing_other": "{{count}} mandatory criteria are not met. Justify each one to close."
+    },
+    "verdict": {
+      "go": "Go",
+      "goWithRisks": "Go with risks",
+      "noGo": "No-go"
+    },
+    "verdictHelp": {
+      "goWithRisks": "The cycle closes and the release may ship; the justified risks go into the report.",
+      "noGo": "The cycle closes, but the release does not ship. Open another cycle for the re-test."
+    },
+    "signs": "Signed by: {{name}} · {{at}} · recorded in Audit",
+    "close": "Close cycle",
+    "closedToast": "Cycle closed · {{verdict}}. Its completion report is now in the cycle header.",
+    "error": {
+      "incomplete": "A manual criterion is not marked or a mandatory criterion that is not met has no justification.",
+      "justificationRequired": "Every mandatory criterion that is not met needs a justification of at least 20 characters.",
+      "justificationTooLong": "A justification cannot exceed 2000 characters.",
+      "manualUnset": "Mark whether each manual criterion is met.",
+      "verdictRequired": "Choose «Go with risks» or «No-go».",
+      "closed": "The cycle was already closed.",
+      "generic": "The cycle could not be closed. Try again."
+    },
+    "report": {
+      "section": "Exit decision",
+      "metricsSection": "Cycle metrics against the previous one",
+      "sheet": "Decision",
+      "closedAt": "Closed on {{at}}",
+      "summary": "{{met}} of {{total}} criteria are met.",
+      "previous": "Against {{cycle}} ({{verdict}})",
+      "previousNone": "Previous cycle",
+      "justification": "Justification",
+      "byHand": "Marked by hand",
+      "metric": "Metric",
+      "value": "Value",
+      "change": "Change",
+      "failing_one": "{{count}} mandatory criterion is not met and has its justification.",
+      "failing_other": "{{count}} mandatory criteria are not met and have their justification."
+    }
+  },
+  "completionReport": {
+    "open": "Completion report",
+    "title": "Test completion report",
+    "subtitle": "ISO/IEC/IEEE 29119-3, from the cycle's latest closing",
+    "fileBase": "Completion report",
+    "loadError": "The completion report could not be built. Check that the cycle is closed and try again.",
+    "stale": "This report belonged to the cycle's previous closing. Its texts are kept as a starting point and the approval was removed: review it, save it and approve it again.",
+    "autoVerdict": "The cycle was closed with the verdict «{{verdict}}».",
+    "planApproved": "approved",
+    "noPlan": "The project has no plan",
+    "field": {
+      "document": "Document ID",
+      "cycle": "Cycle",
+      "planned": "Planned period",
+      "closed": "Closed",
+      "buildEnv": "Build and environment"
+    },
+    "deviation": {
+      "end": "End of the cycle",
+      "none": "None",
+      "late_one": "+{{count}} day",
+      "late_other": "+{{count}} days",
+      "early_one": "{{count}} day early",
+      "early_other": "{{count}} days early",
+      "noDate": "No planned end date",
+      "executed": "Executed ({{unit}})",
+      "notRun_one": "{{count}} not run",
+      "notRun_other": "{{count}} not run",
+      "criteria": "Mandatory criteria met",
+      "justified_one": "{{count}} not met, with justification",
+      "justified_other": "{{count}} not met, with justification"
+    },
+    "col": {
+      "aspect": "Aspect",
+      "planned": "Planned",
+      "actual": "Actual",
+      "deviation": "Deviation",
+      "objective": "Plan objective",
+      "reached": "Reached?",
+      "defect": "Defect",
+      "situation": "Situation",
+      "deliverable": "Deliverable",
+      "origin": "Source",
+      "delivered": "Delivered"
+    },
+    "measure": {
+      "noTarget": "No objective"
+    },
+    "measuresNote": "Values frozen when the cycle was closed. The objective comes from the plan's metrics.",
+    "uncovered": "Not covered",
+    "openDefects": "Open defects of the cycle (as of today)",
+    "riskyRequirements": "Requirements not covered or not passed, by risk",
+    "noDefects": "No defect of the cycle is still open.",
+    "noRisky": "Every requirement in scope is covered and passes.",
+    "deliverable": {
+      "plan": "Test plan {{id}} v{{version}}",
+      "runs_one": "Run {{keys}}",
+      "runs_other": "Runs {{keys}} ({{count}})",
+      "defects_one": "{{count}} defect logged in the cycle",
+      "defects_other": "{{count}} defects logged in the cycle",
+      "report": "Completion report {{id}}"
+    },
+    "origin": {
+      "plan": "Plan · Deliverables",
+      "pharos": "Pharos"
+    },
+    "asset": {
+      "cases": "Cases of the cycle («Cases» sheet)",
+      "configurations": "Configurations",
+      "testData": "Test data (per the plan)"
+    },
+    "notes": "Comments",
+    "lessonsLabel": "Lessons learned",
+    "placeholder": {
+      "deviations": "Other deviations: changes of scope, environment or approach, and why.",
+      "blockers": "Causes: environments, data, dependencies, people…",
+      "risks": "The risk that is accepted and how it is mitigated.",
+      "assets": "Scripts, data sets, environments or tools that can be reused, and where they are.",
+      "lessons": "What worked, what you would change in the next cycle…"
+    },
+    "section": {
+      "identification": "Identification",
+      "summary": "Summary",
+      "deviations": "Deviations from the plan",
+      "evaluation": "Evaluation against the exit criteria",
+      "blockers": "Factors that blocked progress",
+      "measures": "Test measures",
+      "risks": "Residual risks",
+      "deliverables": "Test deliverables",
+      "assets": "Reusable test assets",
+      "lessons": "Lessons learned",
+      "approval": "Approval"
+    },
+    "sheet": {
+      "report": "Report",
+      "measures": "Measures",
+      "risks": "Residual risks",
+      "deliverables": "Deliverables",
+      "cases": "Cases"
+    },
+    "approvedBy": "Approved by {{name}} on {{at}}",
+    "draft": "Draft, not approved",
+    "approve": "Approve report",
+    "approveTitle": "Approve the completion report",
+    "approveMessage": "It will be approved by {{name}}, with today's date. If you change a text afterwards, the report loses its approval.",
+    "saveFirst": "Not approved. Save your changes to approve it.",
+    "loseApproval": "Saving these changes removes the report's approval.",
+    "syncNote": "The texts and the approval are saved in the cycle: they sync and are recorded in Audit.",
+    "save": "Save",
+    "savedToast": "Completion report saved",
+    "approvedToast": "Completion report approved",
+    "saveFailed": "The completion report could not be saved. Try again."
   }
 }

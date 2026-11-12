@@ -13,8 +13,10 @@ const source = {
   id: "src",
   caseIdDigits: 6,
   planExportHistory: "revisions" as const,
+  riskBandLow: 6,
+  riskBandMedium: 14,
 };
-const all = new Set<CopyPart>(["fields", "digits", "planHistory", "retention"]);
+const all = new Set<CopyPart>(["fields", "digits", "planHistory", "riskBands", "retention"]);
 const data = { name: "  Nuevo ", prefix: " NUE- ", digits: 4 };
 
 describe("copying another project's settings (UX-25, UX-29)", () => {
@@ -23,9 +25,10 @@ describe("copying another project's settings (UX-25, UX-29)", () => {
       "fields",
       "digits",
       "planHistory",
+      "riskBands",
       "retention",
     ]);
-    expect(copyParts(false)).toEqual(["fields", "digits", "planHistory"]);
+    expect(copyParts(false)).toEqual(["fields", "digits", "planHistory", "riskBands"]);
     expect(partOffered("retention", false)).toBe(false);
     expect(partOffered("fields", false)).toBe(true);
   });
@@ -41,7 +44,13 @@ describe("copying another project's settings (UX-25, UX-29)", () => {
     expect(newProjectInput(data, "u", source, all)).toEqual({
       ...base,
       planExportHistory: "revisions",
+      riskBandLow: 6,
+      riskBandMedium: 14,
     });
+    // TRZ-04: a source without bands (or with a broken pair) gives the defaults.
+    expect(
+      newProjectInput(data, "u", { id: "s", caseIdDigits: 3, riskBandLow: 9, riskBandMedium: 2 }, new Set(["riskBands"])),
+    ).toEqual({ ...base, riskBandLow: 4, riskBandMedium: 12 });
     expect(newProjectInput(data, "u", source, new Set(["fields"]))).toEqual(
       base,
     );

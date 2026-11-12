@@ -19,13 +19,82 @@ Los resultados de esos runs, manuales (capítulo 11) o importados de la
 automatización (capítulo 10), alimentan varias pantallas:
 
 - el progreso del ciclo;
-- el informe de estado (capítulo 11);
+- el informe de estado (capítulo 11) y, al cerrar, el informe de cierre;
 - el Inicio (capítulo 3);
 - la matriz de trazabilidad (capítulo 13).
 
 Un ciclo pasa por tres estados: **Planificado**, **Activo** y **Cerrado**. Un
 ciclo cerrado no admite cambios ni ejecuciones hasta que se reabre (editarlo y
 cambiar su estado).
+
+## Cerrar un ciclo: el quality gate
+
+Un ciclo se cierra con **«Cerrar ciclo…»**, nunca desde «Editar». Cerrar es
+una decisión: ¿la versión puede salir? Pharos evalúa los **criterios de
+salida** del plan (capítulo 5) con los resultados del ciclo y te pide lo que
+falte:
+
+- **Un criterio obligatorio que no se cumple**, o que no tiene datos para
+  medirse, pide una **justificación** de al menos 20 caracteres: por qué se
+  acepta el riesgo, quién lo asume y cuándo se resuelve.
+- **Un criterio manual** (por ejemplo, «Visto bueno del PO») se marca a mano:
+  «Cumple» o «No cumple».
+- **Un criterio orientativo** se muestra y queda en el informe, pero no
+  bloquea.
+- **El veredicto.** Si todo lo obligatorio se cumple, es **Go**. Si algo
+  falla, eliges **Go con riesgos** (el ciclo se cierra y la versión puede
+  salir, con los riesgos justificados) o **No-go** (el ciclo se cierra, pero la
+  versión no sale: abre otro ciclo para el re-test).
+
+Al cerrar, Pharos guarda la decisión con las cifras de ese momento,
+congeladas, y quién la tomó y cuándo (queda en Auditoría). El ciclo muestra su
+veredicto junto al estado. Su **informe de estado** empieza por «Decisión de
+salida»: cada criterio con su valor y su justificación, y las métricas del
+ciclo frente al ciclo cerrado anterior (tasa de éxito, densidad de defectos,
+escapes, tiempo de corrección, reapertura y flaky). También sale en la hoja
+«Decisión» del Excel y en el PDF. Inicio lo suma a «Tendencia de ciclos»
+(capítulo 3).
+
+Si reabres un ciclo y lo vuelves a cerrar, se guarda un cierre nuevo; los
+anteriores no se pierden.
+
+## El informe de cierre
+
+Un ciclo cerrado muestra **«Informe de cierre»** en su cabecera, donde estaba
+«Cerrar ciclo…». Es el informe final de la ronda según ISO/IEC/IEEE 29119-3
+(*Test Completion Report*), con su propio ID (`TCR-` seguido del prefijo del
+proyecto y la clave del ciclo). Tiene once apartados:
+
+1. **Identificación:** proyecto, ciclo, plan, periodo planificado, cierre,
+   build, entorno y ejecuciones.
+2. **Resumen:** empieza con las cifras y el veredicto; puedes reescribirlo.
+3. **Desviaciones respecto al plan:** la fecha de fin planificada frente al
+   cierre, los casos sin ejecutar y los criterios obligatorios que no se
+   cumplen, más tus comentarios.
+4. **Evaluación frente a los criterios de salida:** la «Decisión de salida»
+   del cierre, con cada justificación.
+5. **Factores que bloquearon el avance:** casos bloqueados, por confirmar,
+   flaky o de una revisión anterior, más tus comentarios.
+6. **Medidas de prueba:** las métricas congeladas al cerrar, frente al ciclo
+   anterior y al objetivo del plan (capítulo 5), y si se alcanza.
+7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy y
+   los requisitos sin cubrir o sin pasar, del riesgo más alto al más bajo.
+8. **Entregables:** los que guarda Pharos y los del plan, que marcas como
+   entregados.
+9. **Activos reutilizables:** casos, configuraciones y datos de prueba.
+10. **Lecciones aprendidas.**
+11. **Aprobación.**
+
+«Guardar» deja los textos y las marcas en el ciclo: se sincronizan con los
+demás equipos y quedan en Auditoría. Con todo guardado, **«Aprobar
+informe»** pide confirmación y registra tu nombre y la fecha. Si después
+cambias un texto y guardas, el informe pierde la aprobación. Si reabres el
+ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los
+textos, pero hay que guardarlo y aprobarlo otra vez.
+
+«Exportar PDF» y «Exportar .xlsx» lo guardan en Descargas. El Excel trae el
+informe completo y las hojas «Decisión», «Medidas», «Riesgos residuales»,
+«Entregables» y «Casos».
 
 En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 
@@ -70,6 +139,13 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 - **«No se pudieron cargar los ciclos.»** Pulsa «Reintentar».
 - **«Este ciclo ya no existe.»** Se eliminó, quizá en otro equipo. Vuelve a la
   lista con «← Ciclos».
+- **«Cerrar ciclo» no cierra y dice «Falta marcar algún criterio manual o
+  justificar…».** Escribe la justificación de cada criterio obligatorio en rojo
+  (20 caracteres como mínimo) y marca los manuales.
+- **«Elige «Go con riesgos» o «No-go».»** Algún criterio obligatorio no se
+  cumple: decide si la versión sale.
+- **«Un ciclo se cierra con «Cerrar ciclo…»…».** Desde «Editar» ya no se
+  puede elegir «Cerrado»: usa el botón de la cabecera del ciclo.
 
 ## En el móvil
 

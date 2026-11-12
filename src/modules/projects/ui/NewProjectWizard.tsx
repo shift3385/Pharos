@@ -1,3 +1,4 @@
+import { projectRiskBands } from "@shared/risk/bands";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Copy, FilePlus } from "lucide-react";
@@ -252,6 +253,7 @@ export function NewProjectWizard({
     if (part === "digits")
       return `${source.caseIdDigits} · ${sampleKey(source.caseIdPrefix, source.caseIdDigits)}`;
     if (part === "planHistory") return historyMode(source);
+    if (part === "riskBands") return t("projects.wizard.value.riskBands", { ...projectRiskBands(source) });
     if (part === "retention") {
       if (!desktop) return t("projects.wizard.value.desktopOnly");
       if (!facts) return t("projects.wizard.value.loading");
@@ -295,6 +297,7 @@ export function NewProjectWizard({
         t(`projects.wizard.summaryPart.${part}`, {
           digits: source.caseIdDigits,
           mode: historyMode(source),
+          ...projectRiskBands(source),
         }),
       )
     : [];

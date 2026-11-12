@@ -20,7 +20,13 @@ import { PlannerBoard } from "@modules/planner";
 import { CyclesPage } from "@modules/cycles";
 import { DefectsPage, type LinkableItem } from "@modules/defects";
 import { REQUIREMENTS_CHANGED_EVENT, RequirementsPage, TraceabilityPage, requirementApi } from "@modules/traceability";
-import { RunsPage, StatusReportButton, executionApi } from "@modules/runs";
+import {
+  CloseCycleButton,
+  CompletionReportButton,
+  RunsPage,
+  StatusReportButton,
+  executionApi,
+} from "@modules/runs";
 import { projectApi } from "../api/projectApi";
 import type { Project } from "../model/types";
 import { recordProjectAccess } from "../model/lastAccess";
@@ -175,7 +181,12 @@ export function ProjectDetail({
     <section className="pj-detail">
       {loadFailed && <LoadError message={t("projects.loadFailed")} onRetry={retryLoad} />}
       <ProjectHeaderLayout info={header}>
-        {tab === "plan" && <TestPlanPage projectId={projectId} exportHistory={project.planExportHistory} projectName={project.name} />}
+        {tab === "plan" && <TestPlanPage
+            projectId={projectId}
+            exportHistory={project.planExportHistory}
+            projectName={project.name}
+            projectPrefix={project.caseIdPrefix}
+          />}
         {tab === "cases" && (
           <TestCasesPage
             projectId={projectId}
@@ -190,7 +201,21 @@ export function ProjectDetail({
             projectId={projectId}
             loadCases={() => projectCaseOptions(projectId, ownerId)}
             requirementKeys={(facts?.requirements ?? []).map((r) => r.requirementKey)}
-            cycleActions={(cycleId) => <StatusReportButton projectId={projectId} projectName={project.name} cycleId={cycleId} />}
+            cycleActions={(cycleId, ctx) => (
+              <>
+                <StatusReportButton projectId={projectId} projectName={project.name} cycleId={cycleId} />
+                {ctx.status !== "closed" ? (
+                  <CloseCycleButton projectId={projectId} cycleId={cycleId} cycleLabel={ctx.label} onClosed={ctx.onChanged} />
+                ) : (
+                  <CompletionReportButton
+                    projectId={projectId}
+                    projectName={project.name}
+                    projectPrefix={project.caseIdPrefix}
+                    cycleId={cycleId}
+                  />
+                )}
+              </>
+            )}
           />
         )}
         {tab === "requirements" && (

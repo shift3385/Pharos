@@ -14,6 +14,7 @@ import {
   openProject,
   openSection,
   pickDate,
+  selectOption,
   tf,
   typeDate,
   waitForText,
@@ -172,6 +173,102 @@ chapter("ciclos", () => {
       await $('[data-testid="cycle-report"]').click();
       await expect($('[data-testid="status-report"]')).toBeDisplayed();
       await waitForText(es.statusReport.section.identification);
+    },
+  });
+
+  step("cerrar-ciclo", {
+    title: "Cerrar el ciclo: el quality gate",
+    caption:
+      "Un ciclo se cierra con «Cerrar ciclo…», nunca desde «Editar». Pharos evalúa los criterios de salida del plan sobre los resultados del ciclo. Cada criterio obligatorio que no se cumple, o que no tiene datos, pide una justificación de al menos 20 caracteres: por qué se acepta el riesgo, quién lo asume y cuándo se resuelve. Los criterios manuales («Visto bueno del PO») se marcan a mano y los orientativos solo se muestran. Si algún obligatorio falla, eliges «Go con riesgos» (la versión puede salir) o «No-go» (no sale). Al pie se ve quién firma y cuándo: queda en Auditoría.",
+    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      if (await $('[data-testid="status-report"]').isExisting()) {
+        await browser.keys("Escape");
+        await $(".cd-overlay").waitForExist({ reverse: true });
+      }
+      await $('[data-testid="cycle-close"]').click();
+      await $('[data-testid="gate-banner"]').waitForDisplayed();
+      for (const box of await $$(`${D} textarea`))
+        await box.setValue("Se acepta: los casos pendientes se ejecutan en la regresión de la semana que viene.");
+      for (const b of await $$(`${D} .gate-mark button`)) if ((await b.getText()) === es.gate.met) await b.click();
+      const risks = $('[data-testid="gate-verdict-goWithRisks"]');
+      if (await risks.isExisting()) await risks.click();
+    },
+  });
+
+  step("cierre-sin-guardar", {
+    title: "Salir del cierre sin cerrar",
+    caption:
+      "Si sales con Esc o «Cancelar» después de escribir una justificación o marcar un criterio, Pharos pregunta antes de descartarlo: «Seguir editando» vuelve al cierre tal como estaba.",
+    covers: ["dialogs:src/modules/runs/gate/CloseCycleDialog.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await browser.keys("Escape");
+      await expect($('[role="alertdialog"]')).toBeDisplayed();
+    },
+    after: async () => {
+      await $('[role="alertdialog"]').$(`button=${es.dialog.unsaved.keep}`).click();
+      await expect($('[role="alertdialog"]')).not.toBeExisting();
+      await expect($('[data-testid="gate-banner"]')).toBeDisplayed();
+    },
+  });
+
+  step("ciclo-cerrado", {
+    title: "El veredicto del ciclo",
+    caption:
+      "«Cerrar ciclo» guarda la decisión con las cifras de ese momento, congeladas: el ciclo queda «Cerrado», con su veredicto al lado, y ya no admite casos ni ejecuciones hasta que lo reabras desde «Editar». Su informe de estado empieza ahora por «Decisión de salida», con cada criterio, su justificación y las métricas frente al ciclo anterior, también en Excel y PDF. Inicio lo suma a «Tendencia de ciclos».",
+    covers: ["action:cycle-verdict"],
+    run: async () => {
+      await $('[data-testid="gate-close"]').click();
+      await waitForToast(es.gate.closedToast.split("{{")[0].trim());
+      await expect($('[data-testid="cycle-verdict"]')).toBeDisplayed();
+    },
+  });
+
+  step("informe-cierre", {
+    title: "El informe de cierre",
+    caption:
+      "En un ciclo cerrado, «Cerrar ciclo…» deja paso a «Informe de cierre»: el informe final de la ronda según ISO/IEC/IEEE 29119-3, con su ID (TCR-…). Pharos rellena lo que sabe del cierre: las desviaciones respecto al plan (fecha de fin, casos sin ejecutar, criterios que no se cumplen), la «Decisión de salida» con sus justificaciones, lo que bloqueó el avance, las métricas frente al ciclo anterior y al objetivo del plan, los defectos abiertos y los requisitos sin cubrir o sin pasar por riesgo, los entregables y los activos reutilizables. Tú escribes el resumen, las lecciones aprendidas y los comentarios de cada apartado, marcas los entregables del plan y pulsas «Guardar»: queda en el ciclo, se sincroniza y sale en Excel y PDF.",
+    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      await $('[data-testid="cycle-completion-report"]').click();
+      await expect($('[data-testid="completion-report"]')).toBeDisplayed();
+      await waitForText(es.completionReport.section.deviations);
+      await $('[data-testid="completion-lessons"]').setValue(
+        "Pedir al equipo de plataforma el entorno de staging una semana antes de la regresión.",
+      );
+      await $('[data-testid="completion-save"]').click();
+      await waitForToast(es.completionReport.savedToast);
+    },
+  });
+
+  step("aprobar-informe-cierre", {
+    title: "Aprobar el informe de cierre",
+    caption:
+      "Con todo guardado, «Aprobar informe» pide confirmación y deja tu nombre y la fecha en el apartado «Aprobación», en la cabecera del PDF y en el Excel. Si después cambias un texto, el informe pierde la aprobación al guardar. Si reabres el ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los textos, pero hay que aprobarlo otra vez.",
+    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await $('[data-testid="completion-approve"]').click();
+      await expect($('[data-testid="completion-approve-confirm"]')).toBeDisplayed();
+    },
+    // The later chapters import into this cycle and record results in its
+    // runs (10, 11): approve, close the report and reopen the cycle, as
+    // «Editar» allows, so they find it open.
+    after: async () => {
+      await $('[data-testid="completion-approve-confirm"]').click();
+      await waitForToast(es.completionReport.approvedToast);
+      await browser.keys("Escape");
+      await $(".cd-overlay").waitForExist({ reverse: true });
+      await clickButton(Y.edit);
+      await expect(dialog()).toBeDisplayed();
+      await selectOption(Y.field.status, Y.status.active, D);
+      await clickButton(Y.save, D);
+      await $(D).waitForExist({ reverse: true });
+      await expect($('[data-testid="cycle-verdict"]')).not.toBeExisting();
+      await expect($('[data-testid="cycle-close"]')).toBeDisplayed();
     },
   });
 

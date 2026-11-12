@@ -7,6 +7,8 @@ import {
   closureSuggestionsSchema,
   generatedCasesSchema,
   listReviewSchema,
+  planListSuggestionsSchema,
+  type PlanListSuggestion,
   responsibilitySuggestionsSchema,
   riskSuggestionsSchema,
   withoutKeyword,
@@ -199,6 +201,87 @@ export async function suggestResponsibilities(
     responsibilitySuggestionsSchema,
   );
   return { value: requireItems(onlyListedRoles(value.responsibilities, roles), value.reason), provenance };
+}
+
+/** The two groups of plan lists the AI can fill (PLN-06): what the prompt
+ *  asks for each list, in our words after ISO/IEC/IEEE 29119-3 and CTFL v4. */
+const PLAN_LIST_GROUPS = {
+  assumptions: {
+    ask:
+      `Propose 3 to 8 items for this test plan: assumptions (what planning takes for ` +
+      `granted: availability of environments, people, inputs) and constraints (limits the ` +
+      `team cannot change: deadlines, budget, regulations, tools).`,
+    lists: {
+      assumptions: "an assumption",
+      constraints: "a constraint",
+    },
+  },
+  entry: {
+    ask:
+      `Propose 3 to 9 criteria for this test plan: entry criteria (what must be true ` +
+      `before a test cycle starts), suspension criteria (when testing stops) and resumption ` +
+      `criteria (what must happen to resume it).`,
+    lists: {
+      entryCriteria: "an entry criterion",
+      suspensionCriteria: "a suspension criterion",
+      resumptionCriteria: "a resumption criterion",
+    },
+  },
+} as const;
+export type PlanListGroup = keyof typeof PLAN_LIST_GROUPS;
+
+export function buildPlanListMessages(
+  group: PlanListGroup,
+  context: string,
+  existing: string[],
+  lang: string,
+): AiMessage[] {
+  const spec = PLAN_LIST_GROUPS[group];
+  const lists = Object.entries(spec.lists);
+  const user = [
+    contextData(context, "Items already listed", existing),
+    ``,
+    `${spec.ask} Tie them to this plan rather than generic ones. Skip the items already listed.`,
+    ``,
+    `Return exactly this shape: {"items":[{"list":"${lists.map(([k]) => k).join("|")}","text":"the item"}]}`,
+    `"list" is exactly one of ${lists.map(([k, what]) => `${k} (${what})`).join(", ")}.`,
+    `If there is not enough context, return {"items":[],"reason":"why"}.`,
+  ].join("\n");
+  return [systemRules("You are a senior QA test manager.", lang), { role: "user", content: user }];
+}
+
+/** Keeps the items of the group's lists that are new: an unknown list, an
+ *  item already in the plan or repeated in the answer is dropped (pure). */
+export function onlyNewPlanItems(
+  group: PlanListGroup,
+  items: PlanListSuggestion[],
+  existing: string[],
+): PlanListSuggestion[] {
+  const allowed = new Set(Object.keys(PLAN_LIST_GROUPS[group].lists));
+  const norm = (text: string) => text.trim().toLocaleLowerCase();
+  const seen = new Set(existing.map(norm));
+  return items.filter((item) => {
+    if (!allowed.has(item.list)) return false;
+    const key = norm(item.text);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** Assumptions and constraints, or entry, suspension and resumption
+ *  criteria, for the plan (PLN-06). */
+export async function suggestPlanLists(
+  group: PlanListGroup,
+  context: string,
+  existing: string[],
+  lang: string,
+): Promise<AiResult<PlanListSuggestion[]>> {
+  const { value, provenance } = await aiJson(
+    buildPlanListMessages(group, context, existing, lang),
+    planListSuggestionsSchema,
+  );
+  return { value: requireItems(onlyNewPlanItems(group, value.items, existing), value.reason), provenance };
 }
 
 /** The lists of a test case the AI reviews (IA-16). */

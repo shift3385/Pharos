@@ -22,6 +22,9 @@ import { MethodologyStep } from "./MethodologyStep";
 import { ToolsStep } from "./ToolsStep";
 import { ScheduleStep } from "./ScheduleStep";
 import { FinishStep } from "./FinishStep";
+import { AssumptionsStep, EntryStep, EstimationStep, StaffingFields, TechniquesStep } from "./StrategySteps";
+import { MetricsStep } from "./MetricsStep";
+import { ClosureStep } from "./ClosureStep";
 
 /** The fields of one wizard step (spec §5.1, ScrPlan). */
 export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
@@ -51,15 +54,25 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
                   value={form.status}
                   onChange={(v) => set("status", v)}
                   data-testid="plan-status"
+                  // «Aprobado» comes only from «Aprobar» in «Estado del plan»,
+                  // which records who and when (PLN-07).
                   options={["draft", "reviewed", "approved", "obsolete"].map((s) => ({
                     value: s,
                     label: t(`testPlan.statusLabel.${s}`),
+                    ...(s === "approved" && form.status !== "approved"
+                      ? { disabled: true, reason: t("testPlan.approval.optionReason") }
+                      : {}),
                   }))}
                 />
               )}
             </FormField>
           </div>
-          <div className="tpw-grid">
+          <div className="tpw-grid tpw-grid--3">
+            <TextField
+              label={t("testPlan.documentId")}
+              value={form.documentId}
+              onChange={(v) => set("documentId", v)}
+            />
             <TextField label={t("testPlan.version")} value={form.version} onChange={(v) => set("version", v)} />
             <FormField id="tp-date" label={t("testPlan.date")}>
               {(p) => (
@@ -91,8 +104,12 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           <ListField label={t("testPlan.scopeOut")} items={form.scopeOut} onChange={(v) => set("scopeOut", v)} />
         </>
       );
+    case "assumptions":
+      return <AssumptionsStep {...props} />;
     case "levelsTypes":
       return <LevelsTypesStep form={form} set={set} />;
+    case "techniques":
+      return <TechniquesStep value={form.techniques} onChange={(v) => set("techniques", v)} />;
     case "methodology":
       return <MethodologyStep form={form} set={set} />;
     case "deliverables":
@@ -216,9 +233,12 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
             }
             onReview={review("roles")}
           />
+          <StaffingFields form={form} set={set} />
         </>
       );
     }
+    case "estimation":
+      return <EstimationStep form={form} set={set} />;
     case "schedule":
       return <ScheduleStep {...props} />;
     case "risks":
@@ -282,17 +302,14 @@ export function StepBody({ id, ...props }: StepProps & { id: StepId }) {
           />
         </>
       );
+    case "entry":
+      return <EntryStep {...props} />;
+    case "metrics":
+      return <MetricsStep form={form} setForm={setForm} />;
     case "closure":
       return (
         <>
-          <PairListField
-            label={t("testPlan.step.closure")}
-            items={form.closureCriteria}
-            keys={["criterion", "metric"]}
-            labels={[t("testPlan.criterionCol"), t("testPlan.metricCol")]}
-            wideFirst
-            onChange={(v) => set("closureCriteria", v)}
-          />
+          <ClosureStep form={form} set={set} />
           <AiSuggestList
             available={aiReady}
             buttonLabel={t("testPlan.suggestClosure")}

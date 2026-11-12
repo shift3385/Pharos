@@ -24,7 +24,7 @@ const at = (b: Board, id: GadgetId) => {
 };
 
 describe("Inicio board (UX-27, default of UX-28)", () => {
-  it("defaults to the layout the user saved, in 23 of the 24 rows", () => {
+  it("defaults to the layout the user saved with the trend under the lists (DOC-06 option A), in 23 of the 24 rows", () => {
     const b = defaultBoard();
     expect(at(b, "kpiProjects")).toEqual({ x: 0, y: 0, w: 6, h: 4 });
     expect(at(b, "kpiPending")).toEqual({ x: 6, y: 0, w: 6, h: 4 });
@@ -32,14 +32,15 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
     expect(at(b, "kpiDefects")).toEqual({ x: 18, y: 0, w: 6, h: 4 });
     expect(at(b, "byProject")).toEqual({ x: 0, y: 4, w: 9, h: 10 });
     expect(at(b, "daily")).toEqual({ x: 0, y: 14, w: 9, h: 9 });
-    expect(at(b, "upcoming")).toEqual({ x: 9, y: 4, w: 7, h: 19 });
-    expect(at(b, "exitCriteria")).toEqual({ x: 16, y: 4, w: 8, h: 19 });
+    expect(at(b, "upcoming")).toEqual({ x: 9, y: 4, w: 7, h: 11 });
+    expect(at(b, "exitCriteria")).toEqual({ x: 16, y: 4, w: 8, h: 11 });
+    expect(at(b, "trend")).toEqual({ x: 9, y: 15, w: 15, h: 8 });
     expect(b.hidden).toEqual([]);
     expect(isValidLayout(b.items)).toBe(true);
     expect(boardBottom(b.items)).toBe(23);
     expect(boardBottom(b.items)).toBeLessThanOrEqual(BOARD_ROWS);
     // A stored default reads back unchanged: compaction keeps it as it is.
-    expect(readBoard(defaultBoard())).toEqual({ board: b, changed: false });
+    expect(readBoard(defaultBoard())).toEqual({ board: b, changed: false, waiting: [] });
   });
 
   it("keeps every default size at or over its minimum", () => {
@@ -105,6 +106,7 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
     const wide = resizeBy(defaultBoard(), "byProject", 1, 0)!;
     expect(at(wide, "byProject")).toEqual({ x: 0, y: 4, w: 10, h: 10 });
     expect(at(wide, "upcoming")!.y).toBe(14);
+    expect(at(wide, "trend")!.y).toBeGreaterThanOrEqual(25);
     expect(isValidLayout(wide.items)).toBe(true);
     // Narrower again: everything rises back.
     const back = resizeBy(wide, "byProject", -1, 0)!;
@@ -116,9 +118,9 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
   it("hides a gadget, the rest rise, and it comes back in the first gap", () => {
     const hidden = hideGadget(defaultBoard(), "exitCriteria");
     expect(at(hidden, "exitCriteria")).toBeUndefined();
-    expect(hidden.hidden).toEqual([{ id: "exitCriteria", w: 8, h: 19 }]);
+    expect(hidden.hidden).toEqual([{ id: "exitCriteria", w: 8, h: 11 }]);
     const shown = showGadget(hidden, "exitCriteria")!;
-    expect(at(shown, "exitCriteria")).toEqual({ x: 16, y: 4, w: 8, h: 19 });
+    expect(at(shown, "exitCriteria")).toEqual({ x: 16, y: 4, w: 8, h: 11 });
     expect(shown.hidden).toEqual([]);
     expect(isValidLayout(shown.items)).toBe(true);
   });
@@ -130,7 +132,7 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
     expect(at(shown, "exitCriteria")).toEqual({ x: 17, y: 4, w: 7, h: 11 });
     b = resizeBy(b, "upcoming", 1, 0)!; // 6 columns left
     const below = showGadget(b, "exitCriteria")!;
-    expect(at(below, "exitCriteria")).toMatchObject({ x: 0, y: 23, w: 8, h: 19 });
+    expect(at(below, "exitCriteria")).toMatchObject({ x: 0, y: 23, w: 8, h: 11 });
     expect(boardBottom(below.items)).toBeGreaterThan(BOARD_ROWS);
   });
 
@@ -138,12 +140,60 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
     const old = hideGadget(defaultBoard(), "exitCriteria");
     // As a board saved before «Criterios de salida» existed would read.
     const stored = { version: 1, items: old.items, hidden: [] };
-    const { board, changed } = readBoard(stored);
+    const { board, changed, waiting } = readBoard(stored);
     expect(changed).toBe(true);
-    expect(at(board, "exitCriteria")).toEqual({ x: 16, y: 4, w: 8, h: 19 });
+    expect(waiting).toEqual([]);
+    expect(at(board, "exitCriteria")).toEqual({ x: 16, y: 4, w: 8, h: 11 });
     expect(board.hidden).toEqual([]);
     // A gadget the user hid stays hidden: only unknown ones are added.
-    expect(readBoard(old)).toEqual({ board: old, changed: false });
+    expect(readBoard(old)).toEqual({ board: old, changed: false, waiting: [] });
+  });
+
+  it("moves a stored UX-28 default to today's, with the trend (DOC-06, D6)", () => {
+    const v1 = {
+      version: 1,
+      items: [
+        { id: "kpiProjects", x: 0, y: 0, w: 6, h: 4 },
+        { id: "kpiPending", x: 6, y: 0, w: 6, h: 4 },
+        { id: "kpiRate", x: 12, y: 0, w: 6, h: 4 },
+        { id: "kpiDefects", x: 18, y: 0, w: 6, h: 4 },
+        { id: "byProject", x: 0, y: 4, w: 9, h: 10 },
+        { id: "upcoming", x: 9, y: 4, w: 7, h: 19 },
+        { id: "exitCriteria", x: 16, y: 4, w: 8, h: 19 },
+        { id: "daily", x: 0, y: 14, w: 9, h: 9 },
+      ],
+      hidden: [],
+    };
+    expect(readBoard(v1)).toEqual({ board: defaultBoard(), changed: true, waiting: [] });
+  });
+
+  it("puts a new gadget on screen only: where it does not fit, it waits hidden and is announced", () => {
+    // A customized board with room on the left once «Ejecuciones diarias» is hidden.
+    const roomy = {
+      version: 1,
+      items: [
+        { id: "kpiProjects", x: 0, y: 0, w: 6, h: 4 },
+        { id: "kpiPending", x: 6, y: 0, w: 6, h: 4 },
+        { id: "kpiRate", x: 12, y: 0, w: 6, h: 4 },
+        { id: "kpiDefects", x: 18, y: 0, w: 6, h: 4 },
+        { id: "byProject", x: 0, y: 4, w: 9, h: 10 },
+        { id: "upcoming", x: 9, y: 4, w: 7, h: 20 },
+        { id: "exitCriteria", x: 16, y: 4, w: 8, h: 20 },
+      ],
+      hidden: [{ id: "daily", w: 9, h: 9 }],
+    };
+    const placed = readBoard(roomy);
+    expect(at(placed.board, "trend")).toEqual({ x: 0, y: 14, w: 8, h: 7 });
+    expect(placed.waiting).toEqual([]);
+    expect(boardBottom(placed.board.items)).toBeLessThanOrEqual(BOARD_ROWS);
+    // Full to the last row: never below it.
+    const full = { ...roomy, items: [...roomy.items, { id: "daily", x: 0, y: 14, w: 9, h: 10 }], hidden: [] };
+    const waits = readBoard(full);
+    expect(at(waits.board, "trend")).toBeUndefined();
+    expect(waits.board.hidden).toEqual([{ id: "trend", w: 15, h: 8 }]);
+    expect(waits.waiting).toEqual(["trend"]);
+    // Once saved, the trend is a known hidden gadget: no more notice.
+    expect(readBoard(waits.board)).toEqual({ board: waits.board, changed: false, waiting: [] });
   });
 
   it("keeps a board saved with the UX-27 default, raising what is under a new minimum", () => {
@@ -175,7 +225,7 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
     expect(readBoard(null).board).toEqual(defaultBoard());
     expect(readBoard("x").board).toEqual(defaultBoard());
     // A newer format is not rewritten.
-    expect(readBoard({ version: 99 })).toEqual({ board: defaultBoard(), changed: false });
+    expect(readBoard({ version: 99 })).toEqual({ board: defaultBoard(), changed: false, waiting: [] });
     const messy = {
       version: 1,
       items: [
@@ -202,6 +252,7 @@ describe("Inicio board (UX-27, default of UX-28)", () => {
       "upcoming",
       "exitCriteria",
       "daily",
+      "trend",
     ]);
   });
 });

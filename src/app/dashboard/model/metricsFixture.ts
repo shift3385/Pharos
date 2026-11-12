@@ -64,12 +64,15 @@ export function projectMetrics(
       retest: [],
       counts: { notRun: 0, blocked: 0, retest: 0 },
     },
+    trend: [],
+    objectives: [],
     ...over,
   };
 }
 
-/** `days` empty buckets (the request's 30), then `over`. */
-export function homeMetrics(over: Partial<HomeMetrics> = {}, days = 30): HomeMetrics {
+/** `days` empty buckets (the request's 60 on 29 Oct: two periods of 30,
+ *  RED-W4), then `over`. */
+export function homeMetrics(over: Partial<HomeMetrics> = {}, days = 60): HomeMetrics {
   return {
     contractVersion: 1,
     daily: Array.from({ length: days }, () => day()),

@@ -199,15 +199,37 @@ pub fn risk_level(likelihood: Option<i64>, impact: Option<i64>) -> Option<i64> {
 }
 
 /// Risk bands: a level up to `low` is low, up to `medium` is medium, above is
-/// high. Per-project bands come with TRZ-04's UI; until then the ADR-0013
-/// defaults apply.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// high. Each project has its own (TRZ-04, ADR-0043); the ADR-0013 defaults
+/// apply when it has none or they break `1 ≤ low < medium ≤ 24`.
+#[cfg_attr(test, derive(ts_rs::TS), ts(export))]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RiskBands {
     pub low: i64,
     pub medium: i64,
 }
 
 pub const DEFAULT_RISK_BANDS: RiskBands = RiskBands { low: 4, medium: 12 };
+
+impl Default for RiskBands {
+    fn default() -> Self {
+        DEFAULT_RISK_BANDS
+    }
+}
+
+impl RiskBands {
+    /// The pair when it is valid (`1 ≤ low < medium ≤ 24`, so every band
+    /// holds at least one level).
+    pub fn checked(low: i64, medium: i64) -> Option<RiskBands> {
+        (1 <= low && low < medium && medium <= 24).then_some(RiskBands { low, medium })
+    }
+
+    /// Valid bands, else the defaults.
+    pub fn or_default(bands: Option<RiskBands>) -> RiskBands {
+        bands
+            .and_then(|b| RiskBands::checked(b.low, b.medium))
+            .unwrap_or(DEFAULT_RISK_BANDS)
+    }
+}
 
 pub fn risk_band(level: i64, bands: RiskBands) -> &'static str {
     if level <= bands.low {
@@ -367,5 +389,25 @@ mod tests {
         assert_eq!(risk_band(12, DEFAULT_RISK_BANDS), "medium");
         assert_eq!(risk_band(13, DEFAULT_RISK_BANDS), "high");
         assert_eq!(risk_band(25, DEFAULT_RISK_BANDS), "high");
+    }
+
+    #[test]
+    fn project_bands_are_checked() {
+        let six = RiskBands::checked(6, 14).unwrap();
+        assert_eq!(risk_band(6, six), "low");
+        assert_eq!(risk_band(7, six), "medium");
+        assert_eq!(risk_band(15, six), "high");
+        assert_eq!(
+            RiskBands::checked(1, 24),
+            Some(RiskBands { low: 1, medium: 24 })
+        );
+        assert_eq!(RiskBands::checked(0, 12), None);
+        assert_eq!(RiskBands::checked(12, 12), None);
+        assert_eq!(RiskBands::checked(4, 25), None);
+        assert_eq!(RiskBands::or_default(None), DEFAULT_RISK_BANDS);
+        assert_eq!(
+            RiskBands::or_default(Some(RiskBands { low: 9, medium: 3 })),
+            DEFAULT_RISK_BANDS
+        );
     }
 }

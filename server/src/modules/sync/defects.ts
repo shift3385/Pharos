@@ -47,6 +47,25 @@ export const transitionAllowed = (from: string, to: string): boolean =>
 
 export const needsResolution = (status: string): boolean => status === "closed" || status === "rejected";
 
+/** True when `from → to` reopens a defect (DOC-06, `lifecycle.rs::reopens`):
+ *  back to `open` from `retest` or `closed`. */
+export const reopens = (from: string, to: string): boolean => to === "open" && (from === "retest" || from === "closed");
+
+/** `data.lifecycle` after `from → to` at `now` (`lifecycle.rs::stamp`):
+ *  `fixedAt` the first time it reaches `fixed`, `closedAt` the latest
+ *  closing, `reopens` counted. Only the server and the desktop write it. */
+export function stampLifecycle(previous: unknown, from: string, to: string, now: string): Record<string, unknown> {
+  const l: Record<string, unknown> =
+    previous && typeof previous === "object" && !Array.isArray(previous) ? { ...(previous as Record<string, unknown>) } : { reopens: 0 };
+  if (typeof l.reopens !== "number" || !Number.isInteger(l.reopens)) l.reopens = 0;
+  if (from !== to) {
+    if (to === "fixed" && typeof l.fixedAt !== "string") l.fixedAt = now;
+    if (to === "closed") l.closedAt = now;
+    if (reopens(from, to)) l.reopens = (l.reopens as number) + 1;
+  }
+  return l;
+}
+
 type Json = Record<string, unknown>;
 const str = (p: Json, k: string): string => (typeof p[k] === "string" ? (p[k] as string) : "");
 

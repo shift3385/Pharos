@@ -479,3 +479,138 @@ fn home_metrics_read_every_project_of_the_user() {
         .projects
         .is_empty());
 }
+
+// ---- the quality gate (DOC-02) ---------------------------------------------------
+
+/// A project whose plan has a failing mandatory criterion, an advisory one
+/// and one judged by hand, with nothing executed.
+fn gate_project() -> (ProjectData, ExecutionFilter) {
+    let data: ProjectData = serde_json::from_value(json!({
+        "projectId": "P",
+        "cases": [{"id": "C1", "scenarioId": "ATS_001", "title": "Pay", "status": "approved", "priority": "high"}],
+        "cycles": [{"id": "CY", "cycleKey": "CYC-001", "title": "R", "status": "active"}],
+        "cycleItems": [{"id": "I1", "cycleId": "CY", "caseId": "C1"}],
+        "planCriteria": [
+            {"criterion": "Ejecutados", "metric": "≥ 95%", "metricId": "m1"},
+            {"criterion": "Flaky", "metric": "≤ 5%", "metricId": "m2", "blocking": false},
+            {"criterion": "Visto bueno del PO", "metric": "", "metricId": "m3"}
+        ],
+        "planMetrics": [
+            {"id": "m1", "kind": "executed", "op": ">=", "target": 95},
+            {"id": "m2", "kind": "flakyRate", "op": "<=", "target": 5},
+            {"id": "m3", "kind": null, "op": ">=", "target": 0}
+        ]
+    }))
+    .unwrap();
+    let filter = ExecutionFilter {
+        project_id: "P".into(),
+        cycle_id: Some("CY".into()),
+        ..Default::default()
+    };
+    (data, filter)
+}
+
+fn decide(v: Value) -> derive::CycleCloseInput {
+    serde_json::from_value(v).unwrap()
+}
+
+#[test]
+fn the_gate_asks_for_marks_justifications_and_a_verdict() {
+    let (data, filter) = gate_project();
+    let s = derive::summarize(&data, &filter);
+    let states: Vec<&str> = s
+        .exit_criteria
+        .iter()
+        .map(derive::criterion_state)
+        .collect();
+    // 0 % executed fails; flakiness has no executed case: no data; the PO's is manual.
+    assert_eq!(states, vec!["notMet", "noData", "manual"]);
+    let close =
+        |v: Value| derive::close_record(&s, &decide(v), None, "2026-11-12T10:00:00.000Z", U);
+    // The first rule broken, in the criteria's order.
+    assert_eq!(
+        close(json!({})).unwrap_err(),
+        "gate-justification-required:0"
+    );
+    let why = "Se acepta: el resto se ejecuta en el ciclo siguiente.";
+    assert_eq!(
+        close(json!({"decisions": [{"position": 0, "justification": why}]})).unwrap_err(),
+        "gate-manual-unset:2"
+    );
+    assert_eq!(
+        close(json!({"decisions": [
+            {"position": 0, "justification": "demasiado corto"},
+            {"position": 2, "manualMet": true}
+        ]}))
+        .unwrap_err(),
+        "gate-justification-required:0"
+    );
+    let ok = json!({"decisions": [
+        {"position": 0, "justification": why},
+        {"position": 2, "manualMet": true}
+    ]});
+    assert_eq!(close(ok.clone()).unwrap_err(), "gate-verdict-required");
+    let mut with_verdict = ok;
+    with_verdict["verdict"] = json!("goWithRisks");
+    let record = close(with_verdict).unwrap();
+    assert_eq!(record.verdict, "goWithRisks");
+    assert_eq!(record.criteria[0].justification.as_deref(), Some(why));
+    // The advisory criterion fails without blocking or asking.
+    assert_eq!(record.criteria[1].state, "noData");
+    assert!(!record.criteria[1].blocking);
+    assert_eq!(record.criteria[2].manual_met, Some(true));
+    assert_eq!(record.metrics, s.metrics);
+}
+
+#[test]
+fn every_criterion_met_closes_as_go_whatever_was_asked() {
+    let (mut data, filter) = gate_project();
+    data.plan_criteria.as_mut().unwrap().truncate(1);
+    data.plan_metrics.as_mut().unwrap()[0].target = Some(0.0);
+    let s = derive::summarize(&data, &filter);
+    let record = derive::close_record(
+        &s,
+        &decide(json!({"verdict": "noGo"})),
+        Some("PL".into()),
+        "2026-11-12T10:00:00.000Z",
+        U,
+    )
+    .unwrap();
+    assert_eq!(record.verdict, "go");
+    assert_eq!(record.plan_id.as_deref(), Some("PL"));
+}
+
+#[test]
+fn a_defect_stamps_its_lifecycle_and_old_ones_read_the_audit_log() {
+    let c = device();
+    let p = new_project(&c);
+    let input: crate::defects::DefectInput = serde_json::from_value(json!({
+        "projectId": p, "title": "Falla el pago", "userId": U
+    }))
+    .unwrap();
+    let id = in_tx(&c, |c| crate::defects::insert_defect(c, &input)).unwrap();
+    for to in ["open", "in_progress", "fixed", "retest", "open"] {
+        in_tx(&c, |c| {
+            crate::defects::transition(c, &id, U, to, None, None)
+        })
+        .unwrap();
+    }
+    let data: Value = c
+        .query_row("SELECT data FROM defects WHERE id = ?1", [&id], |r| {
+            r.get::<_, String>(0)
+        })
+        .map(|s| serde_json::from_str(&s).unwrap())
+        .unwrap();
+    assert_eq!(data["lifecycle"]["reopens"], 1);
+    assert!(data["lifecycle"]["fixedAt"].is_string());
+    // Without the stamp (a defect from before 0.4.0) the audit log gives it.
+    c.execute(
+        "UPDATE defects SET data = json_remove(data, '$.lifecycle') WHERE id = ?1",
+        [&id],
+    )
+    .unwrap();
+    let history = crate::defects::audit_lifecycle(&c, &[id.as_str()]).unwrap();
+    let (fixed, reopens) = &history[&id];
+    assert!(fixed.is_some());
+    assert_eq!(*reopens, 1);
+}

@@ -560,6 +560,85 @@ pub(crate) fn result_candidates(
     Ok(out)
 }
 
+/// `(fixedAt, reopens)` of defects without `data.lifecycle`, from the audit
+/// log's status changes (`changes.status = [before, after]`), oldest first:
+/// the first time each reached `fixed`, and how many times it went back to
+/// `open` from `retest` or `closed`. A redacted change counts as nothing.
+pub(crate) fn audit_lifecycle(
+    conn: &Connection,
+    ids: &[&str],
+) -> Result<std::collections::HashMap<String, (Option<String>, i64)>, String> {
+    let mut out = std::collections::HashMap::new();
+    if ids.is_empty() {
+        return Ok(out);
+    }
+    let mut stmt = conn
+        .prepare(
+            "SELECT entity_id, at, json_extract(changes, '$.status[0]'),
+                    json_extract(changes, '$.status[1]')
+               FROM audit_log
+              WHERE entity = 'defect' AND changes IS NOT NULL
+                AND entity_id IN (SELECT value FROM json_each(?1))
+                AND json_extract(changes, '$.status[1]') IS NOT NULL
+              ORDER BY at, chain_seq",
+        )
+        .map_err(err)?;
+    let list = serde_json::to_string(ids).map_err(|e| e.to_string())?;
+    let found = stmt
+        .query_map(params![list], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, Option<String>>(2)?,
+                r.get::<_, Option<String>>(3)?,
+            ))
+        })
+        .map_err(err)?;
+    for row in found {
+        let (id, at, from, to) = row.map_err(err)?;
+        let e: &mut (Option<String>, i64) = out.entry(id).or_default();
+        let (from, to) = (from.unwrap_or_default(), to.unwrap_or_default());
+        if lifecycle::reopens(&from, &to) {
+            e.1 += 1;
+        }
+        if to == "fixed" && e.0.is_none() {
+            e.0 = Some(at);
+        }
+    }
+    Ok(out)
+}
+
+/// The current UTC instant, as the audit log writes it.
+fn now_iso(conn: &Connection) -> Result<String, String> {
+    conn.query_row("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now')", [], |r| {
+        r.get(0)
+    })
+    .map_err(err)
+}
+
+/// The stored `data.lifecycle` of a defect, or the one its audit log
+/// gives (defects from before 0.4.0), to stamp the next change from.
+fn stored_lifecycle(
+    conn: &Connection,
+    id: &str,
+    data: Option<&Value>,
+) -> Result<Option<Value>, String> {
+    if let Some(l) = data
+        .and_then(|d| d.get("lifecycle"))
+        .filter(|l| l.is_object())
+    {
+        return Ok(Some(l.clone()));
+    }
+    let history = audit_lifecycle(conn, &[id])?;
+    Ok(history.get(id).map(|(fixed, reopens)| {
+        let mut l = json!({ "reopens": reopens });
+        if let Some(f) = fixed {
+            l["fixedAt"] = f.as_str().into();
+        }
+        l
+    }))
+}
+
 // ---- writes ----------------------------------------------------------------------
 
 /// A live defect of a project the user owns: (project, status, revision).
@@ -777,6 +856,8 @@ pub(crate) fn insert_defect(conn: &Connection, input: &DefectInput) -> Result<St
     let mut f = check_fields(input)?;
     crate::custom_fields::check_defect_values(conn, &input.project_id, &mut f.data, None)?;
     let status = pick(input.status.as_deref(), &STATUSES, "new", "status")?;
+    // Only the core writes the lifecycle (DOC-06).
+    f.data["lifecycle"] = lifecycle::stamp(None, status, status, &now_iso(conn)?);
     let resolution = lifecycle::check(status, status, input.resolution.as_deref())?;
     let mut links: Vec<LinkTarget> = input.links.clone().unwrap_or_default();
     if let Some(from) = &input.from_result {
@@ -899,6 +980,15 @@ pub(crate) fn update_defect(
         .filter(|s| !s.is_empty())
         .unwrap_or(status.clone());
     let resolution = lifecycle::check(&status, &to, input.resolution.as_deref())?;
+    // The lifecycle is the core's (DOC-06); `escaped` survives a client
+    // that does not know it (0.3).
+    let seed = stored_lifecycle(conn, id, previous.as_ref())?;
+    f.data["lifecycle"] = lifecycle::stamp(seed.as_ref(), &status, &to, &now_iso(conn)?);
+    if f.data.get("escaped").is_none() {
+        if let Some(e) = previous.as_ref().and_then(|p| p.get("escaped")) {
+            f.data["escaped"] = e.clone();
+        }
+    }
     let before = journal::snapshot(conn, DEFECT, id)?;
     conn.execute(
         "UPDATE defects SET title = ?2, description = ?3, steps_to_reproduce = ?4, expected = ?5,
@@ -966,13 +1056,31 @@ pub(crate) fn transition(
     if from == status && fixed_in_build.is_none() {
         return Ok(());
     }
+    let mut data: Value = conn
+        .query_row("SELECT data FROM defects WHERE id = ?1", params![id], |r| {
+            r.get::<_, Option<String>>(0)
+        })
+        .map_err(err)?
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| json!({}));
+    let seed = stored_lifecycle(conn, id, Some(&data))?;
+    data["lifecycle"] = lifecycle::stamp(seed.as_ref(), &from, status, &now_iso(conn)?);
     let before = journal::snapshot(conn, DEFECT, id)?;
     conn.execute(
         "UPDATE defects SET status = ?2, resolution = ?3,
                 fixed_in_build = coalesce(nullif(trim(?4), ''), fixed_in_build),
-                updated_by = ?5, updated_at = datetime('now'), revision = ?6
+                data = ?7, updated_by = ?5, updated_at = datetime('now'), revision = ?6
           WHERE id = ?1",
-        params![id, status, resolution, fixed_in_build, user, revision + 1],
+        params![
+            id,
+            status,
+            resolution,
+            fixed_in_build,
+            user,
+            revision + 1,
+            data.to_string()
+        ],
     )
     .map_err(err)?;
     journal::record(

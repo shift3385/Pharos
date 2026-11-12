@@ -79,10 +79,10 @@ beforeEach(async () => {
 });
 
 describe("plan wizard (SPEC §8 «Plan»)", () => {
-  it("shows «Paso N de 17» and the save state above the step", async () => {
+  it("shows «Paso N de 22» and the save state above the step", async () => {
     setViewportWidth(1440);
     renderWizard();
-    expect(await screen.findByText("Paso 1 de 17")).toBeInTheDocument();
+    expect(await screen.findByText("Paso 1 de 22")).toBeInTheDocument();
     expect(screen.getByText(/^Guardado · hace 5 min/)).toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), " v2");
     expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument();
@@ -91,13 +91,13 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
   it("from 1360 px of container the steps are a vertical list; below, a strip", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
     expect(document.querySelector(".tpw-rail")).toBeInTheDocument();
     expect(document.querySelector(".tpw-strip")).not.toBeInTheDocument();
     resizeViewport(1300);
     expect(document.querySelector(".tpw-rail")).not.toBeInTheDocument();
     const strip = screen.getByRole("navigation", { name: "Pasos del plan" });
-    expect(within(strip).getByText("Paso 1 de 17 · 4 completados")).toBeInTheDocument();
+    expect(within(strip).getByText("Paso 1 de 22 · 4 completados")).toBeInTheDocument();
     // The current step is a pill with its name; the others only a number.
     expect(within(strip).getByRole("button", { current: "step" })).toHaveTextContent("Identificación del plan");
     resizeViewport(900);
@@ -118,7 +118,7 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
     renderWizard();
     expect(await screen.findByRole("button", { name: "Siguiente: Resumen" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Anterior" })).not.toBeInTheDocument();
-    await goToStep(17);
+    await goToStep(22);
     expect(screen.getByRole("button", { name: "Finalizar plan" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Anterior" })).toBeInTheDocument();
   });
@@ -126,8 +126,8 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
   it("«Entregables»: ISO 29119-3 deliverables by group, old labels as keys, and own ones in «Propios» (UX-31)", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(6);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(8);
     expect(screen.getByRole("heading", { level: 2, name: "Entregables" })).toBeInTheDocument();
     // The explanation moved to the [?] of the title.
     expect(screen.getByText(/Marca lo que se entregará/).closest(".infotip__bubble")).not.toBeNull();
@@ -159,17 +159,17 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
       }),
     );
     // Saving keeps the step and the new revision.
-    expect(await screen.findByText("Paso 6 de 17")).toBeInTheDocument();
+    expect(await screen.findByText("Paso 8 de 22")).toBeInTheDocument();
   });
 
   it("«Metodología» says what it still needs, and the ✓ follows the same rule (FIX-14)", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(5);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(7);
     expect(screen.getByRole("heading", { level: 2, name: "Metodología" })).toBeInTheDocument();
     const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
-    const step6 = () => within(nav).getAllByRole("button")[4];
+    const step6 = () => within(nav).getAllByRole("button")[6];
     // The saved plan has no ceremonies: the step is incomplete and says why.
     expect(screen.getByTestId("methodology-gaps")).toHaveTextContent(
       "Elige al menos una reunión del equipo para completar este paso.",
@@ -194,8 +194,8 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
       data: { ...structuredClone(PLAN.data), methodologyType: "agile", sprintWeeks: 2, ceremonies: ["daily"] },
     });
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(5);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(7);
     const method = screen.getByRole("group", { name: "Método de trabajo" });
     const meetings = screen.getByRole("group", { name: "Reuniones del equipo" });
     expect(within(method).getByRole("combobox", { name: "Metodología" })).toHaveTextContent("Ágil");
@@ -244,8 +244,8 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
   it("«Metodología» without sprints hides the length and the meetings and asks for phases (UX-36)", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(5);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(7);
     await selectValue(screen.getByRole("combobox", { name: "Metodología" }), "traditional");
     expect(screen.queryByRole("combobox", { name: "Duración del sprint" })).not.toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "Reuniones del equipo" })).not.toBeInTheDocument();
@@ -259,8 +259,8 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
   it("«Herramientas»: ten tools, «Más herramientas (65)» with search, and a free field", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(8);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(10);
     const top = screen.getByRole("group", { name: "Más usadas en QA" });
     expect(within(top).getAllByRole("button")).toHaveLength(11); // 10 + «Allure Report»
     expect(within(top).getByRole("button", { name: "Allure Report Propia" })).toHaveAttribute("aria-pressed", "true");
@@ -276,10 +276,10 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
   it("the last step lists the missing steps and links to them", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(17);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(22);
     const missing = screen.getByRole("list", { name: "Pasos sin completar" });
-    expect(within(missing).getByRole("button", { name: "4. Niveles y tipos de prueba" })).toBeInTheDocument();
+    expect(within(missing).getByRole("button", { name: "5. Niveles y tipos de prueba" })).toBeInTheDocument();
     await userEvent.click(within(missing).getByRole("button", { name: "3. Alcance" }));
     expect(screen.getByRole("heading", { level: 2, name: "Alcance" })).toBeInTheDocument();
   });
@@ -287,7 +287,7 @@ describe("plan wizard (SPEC §8 «Plan»)", () => {
   it("puts Importar / Exportar and Guardar in the header and the revisions in the status panel (UX-24)", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
     const header = screen.getByTestId("header-actions");
     expect(within(header).queryByRole("button", { name: "Revisiones" })).not.toBeInTheDocument();
     expect(within(header).getByRole("button", { name: "Importar / Exportar" })).toBeInTheDocument();
@@ -304,7 +304,11 @@ describe("plan wizard · revision history in the export (PLN-02)", () => {
     exportPlanPdf.mockClear();
     vi.mocked(testPlanApi.history).mockClear();
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
+    // The status panel reads the history for its timeline (PLN-07); the
+    // export must not.
+    await screen.findByTestId("plan-timeline").catch(() => undefined);
+    vi.mocked(testPlanApi.history).mockClear();
     await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Importar / Exportar" }));
     await screen.findByRole("menuitem", { name: /Exportar .pdf/ });
     expect(screen.queryByText(/se cambia en Ajustes del proyecto/)).not.toBeInTheDocument();
@@ -318,7 +322,7 @@ describe("plan wizard · revision history in the export (PLN-02)", () => {
     setViewportWidth(1440);
     exportPlanPdf.mockClear();
     renderWizard("plan1", "revisions");
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
     await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Importar / Exportar" }));
     await screen.findByRole("menuitem", { name: /Exportar .pdf/ });
     await userEvent.click(screen.getByRole("menuitem", { name: /Exportar .pdf/ }));
@@ -351,11 +355,16 @@ describe("plan wizard · a new plan (review of V2)", () => {
 
     await act(() => i18n.changeLanguage("en"));
     expect(screen.getByRole("textbox", { name: /Title/ })).toHaveValue("Mi plan nuevo");
+    // Nothing changed: saving says so and writes nothing (PLN-03).
+    vi.mocked(testPlanApi.update).mockClear();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(testPlanApi.update).not.toHaveBeenCalled();
+    await userEvent.type(screen.getByRole("textbox", { name: /Title/ }), " 2");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(testPlanApi.create).toHaveBeenCalledTimes(1);
     expect(testPlanApi.update).toHaveBeenCalledWith(
       "new-plan",
-      expect.objectContaining({ title: "Mi plan nuevo" }),
+      expect.objectContaining({ title: "Mi plan nuevo 2" }),
     );
   });
 });
@@ -366,7 +375,7 @@ describe("plan wizard · status panel (SPEC §8)", () => {
     renderWizard();
     const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
     expect(within(panel).getByText("v1.3")).toBeInTheDocument();
-    expect(within(panel).getByRole("heading", { name: "Revisiones" })).toBeInTheDocument();
+    expect(within(panel).getByRole("heading", { name: "Historial" })).toBeInTheDocument();
   });
 });
 
@@ -413,7 +422,7 @@ describe("plan wizard when the plan fails to load", () => {
     expect(screen.queryByText("Cargando…")).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
-    expect(await screen.findByText("Paso 1 de 17")).toBeInTheDocument();
+    expect(await screen.findByText("Paso 1 de 22")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -424,7 +433,7 @@ describe("plan wizard when the plan fails to load", () => {
   });
 });
 
-describe("plan wizard · 17 steps (UX-31)", () => {
+describe("plan wizard · 22 steps (UX-31, PLN-06)", () => {
   function renderAt(route: string) {
     return renderWithProviders(
       <WithHeader>
@@ -438,7 +447,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
   it("«Identificación del plan» joins the title, status, version and date (the author is in the status panel, FIX-24); Siguiente and Anterior move one step", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
     expect(heading()).toHaveTextContent("Identificación del plan");
     expect(screen.getByRole("textbox", { name: /Título/ })).toHaveValue(PLAN.title);
     expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Revisado");
@@ -455,31 +464,34 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Elaborado por" })).not.toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Estado del plan" })).toHaveTextContent("Laura Méndez");
-    // 17 steps in the rail, 4 of them complete: 4 / 17 = 24 %.
+    // 22 steps in the rail, 4 of them complete: 4 / 22 = 18 %.
     const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
-    expect(within(nav).getAllByRole("button")).toHaveLength(17);
-    expect(within(nav).getByText("4 de 17 pasos")).toBeInTheDocument();
-    expect(within(nav).getByText("24 %")).toBeInTheDocument();
+    expect(within(nav).getAllByRole("button")).toHaveLength(22);
+    expect(within(nav).getByText("4 de 22 pasos")).toBeInTheDocument();
+    expect(within(nav).getByText("18 %")).toBeInTheDocument();
     // The status is a Pharos select: choosing keeps the value in the form.
+    // «Aprobado» is not chosen here: «Aprobar» records who and when (PLN-07).
     await userEvent.click(screen.getByRole("combobox", { name: "Estado" }));
-    await userEvent.click(screen.getByRole("option", { name: "Aprobado" }));
-    expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Aprobado");
+    expect(screen.getByRole("option", { name: /Aprobado/ })).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(screen.getByRole("option", { name: "Revisado" }));
+    expect(screen.getByRole("combobox", { name: "Estado" })).toHaveTextContent("Revisado");
 
     await userEvent.click(screen.getByRole("button", { name: "Siguiente: Resumen" }));
-    expect(screen.getByText("Paso 2 de 17")).toBeInTheDocument();
+    expect(screen.getByText("Paso 2 de 22")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Siguiente: Alcance" }));
+    await userEvent.click(screen.getByRole("button", { name: "Siguiente: Supuestos y restricciones" }));
     await userEvent.click(screen.getByRole("button", { name: "Siguiente: Niveles y tipos de prueba" }));
     expect(heading()).toHaveTextContent("Niveles y tipos de prueba");
-    expect(screen.getByRole("button", { name: "Siguiente: Metodología" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Siguiente: Técnicas de prueba" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Anterior" }));
-    expect(heading()).toHaveTextContent("Alcance");
+    expect(heading()).toHaveTextContent("Supuestos y restricciones");
   });
 
   it("«Niveles y tipos de prueba»: groups, the «Confirmación» type with its tooltip, and own types in «Propios»", async () => {
     setViewportWidth(1440);
     renderWizard();
-    await screen.findByText("Paso 1 de 17");
-    await goToStep(4);
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(5);
     expect(heading()).toHaveTextContent("Niveles y tipos de prueba");
     // No text under the title: the ISTQB explanation is behind the [?].
     expect(screen.getByText(/Qué se prueba, en qué nivel/).closest(".infotip__bubble")).not.toBeNull();
@@ -520,7 +532,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
     expect(within(change).getByRole("checkbox", { name: "Humo" })).toBeChecked();
 
     const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
-    expect(within(nav).getAllByRole("button")[3]).toHaveTextContent("completado");
+    expect(within(nav).getAllByRole("button")[4]).toHaveTextContent("completado");
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(testPlanApi.update).toHaveBeenCalledWith(
       "plan1",
@@ -540,7 +552,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
       data: { ...PLAN.data, testTypes: ["functional", "Pruebas A/B"], testLevels: ["unit", "acceptance"] },
     });
     renderAt("/?step=levels");
-    await screen.findByText("Paso 4 de 17");
+    await screen.findByText("Paso 5 de 22");
     expect(heading()).toHaveTextContent("Niveles y tipos de prueba");
     expect(screen.getByRole("checkbox", { name: "Funcionales" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Unitarias/ })).toBeChecked();
@@ -557,7 +569,7 @@ describe("plan wizard · 17 steps (UX-31)", () => {
   ])("?step=%s opens «%s»", async (step, title) => {
     setViewportWidth(1440);
     renderAt(`/?step=${step}`);
-    await screen.findByText(/^Paso \d+ de 17$/);
+    await screen.findByText(/^Paso \d+ de 22$/);
     expect(heading()).toHaveTextContent(title);
   });
 });
@@ -591,5 +603,97 @@ describe("plan wizard · a new plan's title (UX-34)", () => {
       </WithHeader>,
     );
     expect(await screen.findByRole("textbox", { name: /Título/ })).toHaveValue(PLAN.title);
+  });
+});
+
+describe("plan wizard · approval (PLN-07)", () => {
+  it("«Aprobar versión» asks first, then records who, when and which version", async () => {
+    setViewportWidth(1440);
+    vi.mocked(testPlanApi.update).mockClear();
+    renderWizard();
+    const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
+    await userEvent.click(within(panel).getByRole("button", { name: "Aprobar versión 1.3" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "¿Aprobar el plan?" });
+    expect(dialog).toHaveTextContent("Aprobarás la versión 1.3 como");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Aprobar" }));
+    await vi.waitFor(() => expect(testPlanApi.update).toHaveBeenCalled());
+    const input = vi.mocked(testPlanApi.update).mock.calls[0][1];
+    expect(input.status).toBe("approved");
+    // Approving is not an edit: same version (PLN-03).
+    expect(input.version).toBe("1.3");
+    expect(input.data.approval).toMatchObject({ by: "test-user", version: "1.3" });
+    expect(await within(panel).findByTestId("plan-approved-by")).toHaveTextContent(input.data.approval!.byName);
+    expect(within(panel).queryByRole("button", { name: /Aprobar versión/ })).not.toBeInTheDocument();
+  });
+
+  it("cannot approve with unsaved changes or outside «Revisado», and says why", async () => {
+    setViewportWidth(1440);
+    vi.mocked(testPlanApi.get).mockResolvedValue({ ...structuredClone(PLAN), status: "draft" });
+    renderWizard();
+    const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
+    const button = within(panel).getByRole("button", { name: "Aprobar versión 1.3" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription("Solo se aprueba un plan guardado en «Revisado».");
+    await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), " 2");
+    expect(button).toHaveAccessibleDescription("Guarda antes de aprobar");
+  });
+
+  it("editing an approved plan warns, and saving sends it back to «Revisado»", async () => {
+    setViewportWidth(1440);
+    const approval = { by: "someone", byName: "Ana Ruiz", at: "2026-11-11T10:05:00Z", version: "1.3" };
+    vi.mocked(testPlanApi.get).mockResolvedValue({
+      ...structuredClone(PLAN),
+      status: "approved",
+      data: { ...structuredClone(PLAN.data), approval },
+    });
+    vi.mocked(testPlanApi.update).mockClear();
+    renderWizard();
+    const panel = await screen.findByRole("complementary", { name: "Estado del plan" });
+    expect(within(panel).getByTestId("plan-approved-by")).toHaveTextContent("Ana Ruiz");
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole("textbox", { name: /Título/ }), " 2");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Este plan está aprobado (v1.3). Al guardar estos cambios vuelve a «Revisado».",
+    );
+    await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Guardar" }));
+    const input = vi.mocked(testPlanApi.update).mock.calls[0][1];
+    expect(input.status).toBe("reviewed");
+    expect(input.version).toBe("1.4");
+    expect(input.data.approval).toBeNull();
+  });
+});
+
+describe("plan wizard · metrics and exit criteria (PLN-06)", () => {
+  it("ticking «Criterio de salida» adds a linked, blocking criterion; editing the metric rewrites it", async () => {
+    setViewportWidth(1440);
+    vi.mocked(testPlanApi.update).mockClear();
+    renderWizard();
+    await screen.findByText("Paso 1 de 22");
+    await goToStep(19);
+    expect(screen.getByText("Todavía no hay métricas. Añade una del catálogo o una propia.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Métrica del catálogo/ }));
+    const row = screen.getByTestId("plan-metric");
+    const target = within(row).getByRole("spinbutton", { name: /Objetivo/ });
+    await userEvent.clear(target);
+    await userEvent.type(target, "95");
+    await userEvent.click(within(row).getByRole("checkbox", { name: "Criterio de salida" }));
+    await userEvent.clear(target);
+    await userEvent.type(target, "98");
+
+    await goToStep(20);
+    const criterion = screen.getAllByTestId("plan-criterion")[0];
+    expect(within(criterion).getAllByRole("textbox")[0]).toHaveValue("% de casos ejecutados");
+    expect(within(criterion).getAllByRole("textbox")[1]).toHaveValue("≥ 98 %");
+    const kind = within(criterion).getByTestId("plan-criterion-blocking");
+    expect(kind).toHaveTextContent("Bloqueante");
+    await userEvent.click(kind);
+    expect(kind).toHaveTextContent("Orientativo");
+
+    await userEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Guardar" }));
+    const data = vi.mocked(testPlanApi.update).mock.calls[0][1].data;
+    expect(data.metrics).toEqual([expect.objectContaining({ kind: "executed", op: ">=", target: 98, unit: "percent" })]);
+    expect(data.closureCriteria).toEqual([
+      { criterion: "% de casos ejecutados", metric: "≥ 98 %", metricId: data.metrics![0].id, blocking: false },
+    ]);
   });
 });

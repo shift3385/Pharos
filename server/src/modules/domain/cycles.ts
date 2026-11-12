@@ -374,6 +374,15 @@ export function createCycleService(store: DomainStore) {
     return out;
   }
 
+  /** `data` with the stored `closures`, whatever an edit sent. */
+  function keepClosures(data: unknown, stored: unknown): Payload {
+    const next: Payload = data && typeof data === "object" && !Array.isArray(data) ? { ...(data as Payload) } : {};
+    const kept = stored && typeof stored === "object" ? (stored as Payload).closures : undefined;
+    if (kept === undefined) delete next.closures;
+    else next.closures = kept;
+    return next;
+  }
+
   /** The header of an input over `prev`: a key left out keeps its value, an
    *  empty text clears it. */
   async function header(tx: DomainTx, projectId: string, prev: Payload, input: CycleInput): Promise<Payload> {
@@ -390,9 +399,12 @@ export function createCycleService(store: DomainStore) {
     }
     if (input.status !== undefined) {
       if (!(STATUSES as readonly string[]).includes(input.status)) throw bad("invalid_cycle", `unknown cycle status: ${input.status}`);
+      // Closing goes through the quality gate (DOC-02, D5): `POST /api/cycles/:id/close`.
+      if (input.status === "closed" && prev.status !== "closed") throw bad("cycle_close_needs_gate", "cycle-close-needs-gate");
       next.status = input.status;
     }
-    if (input.data !== undefined) next.data = input.data;
+    // `data.closures` is the gate's record: an edit never changes it.
+    if (input.data !== undefined) next.data = keepClosures(input.data, prev.data);
     for (const k of ["startsOn", "endsOn"]) {
       const v = next[k];
       if (typeof v === "string" && !validDay(v)) throw bad("invalid_cycle", `invalid ${k}: ${v} (YYYY-MM-DD)`);

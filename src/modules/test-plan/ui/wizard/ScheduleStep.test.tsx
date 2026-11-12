@@ -48,9 +48,9 @@ function renderStep(plan: TestPlan = PLAN) {
 }
 
 async function openSchedule() {
-  await screen.findByText("Paso 1 de 17");
+  await screen.findByText("Paso 1 de 22");
   const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
-  await userEvent.click(within(nav).getAllByRole("button")[11]);
+  await userEvent.click(within(nav).getAllByRole("button")[14]);
   return screen.getAllByRole("grid");
 }
 
@@ -110,7 +110,7 @@ describe("«Cronograma» · fixed calendar and scrolling rows (UX-16)", () => {
   it("a phone scrolls the page, without a scroll box inside it", async () => {
     setViewportWidth(390);
     renderStep();
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
     await userEvent.click(screen.getByRole("button", { name: "Ver pasos" }));
     const sheet = screen.getByRole("dialog", { name: "Pasos del plan" });
     await userEvent.click(within(sheet).getByRole("button", { name: /Cronograma/ }));
@@ -160,6 +160,9 @@ describe("«Cronograma» · Cronograma (RED-W5)", () => {
   it("saving a legacy plan persists the ids derived on read", async () => {
     renderStep();
     await openSchedule();
+    // A save needs a change (PLN-03): one in another step.
+    await userEvent.click(within(screen.getByRole("navigation", { name: "Pasos del plan" })).getAllByRole("button")[1]);
+    await userEvent.type(screen.getByRole("textbox", { name: /^Resumen/ }), " +");
     const input = await save();
     expect(input.data.sprints?.map((s) => s.id)).toEqual(legacy.wizard020Ids.sprints);
     expect(input.data.milestones?.map((m) => m.id)).toEqual(legacy.wizard020Ids.milestones);
@@ -405,7 +408,7 @@ describe("«Cronograma» · Cronograma (RED-W5)", () => {
   it("on a phone: one month, no dragging", async () => {
     setViewportWidth(390);
     renderStep();
-    await screen.findByText("Paso 1 de 17");
+    await screen.findByText("Paso 1 de 22");
     await userEvent.click(screen.getByRole("button", { name: "Ver pasos" }));
     const sheet = screen.getByRole("dialog", { name: "Pasos del plan" });
     await userEvent.click(within(sheet).getByRole("button", { name: /Cronograma/ }));

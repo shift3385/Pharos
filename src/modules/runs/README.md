@@ -70,6 +70,24 @@ y solo en ese equipo. Las exportaciones van a la carpeta de descargas
 (`saveFile` / `savePdf`). Sin diseño en `docs/rediseno/`: diálogo, campos y
 pastillas compartidos.
 
+## Quality gate al cerrar un ciclo (DOC-02, ADR-0041)
+
+- `gate/CloseCycleDialog` y `gate/CloseCycleButton` («Cerrar ciclo…»):
+  - leen el resumen del ciclo;
+  - piden justificación a cada criterio obligatorio que falla y marca a los
+    manuales;
+  - con un obligatorio que falla, dejan elegir «Go con riesgos» o «No-go».
+- `model/gate.ts` repite las reglas del núcleo para la pantalla. Quien
+  decide es `executionApi.closeCycle`: `cycle_close` en el escritorio y
+  `POST /api/cycles/:id/close` en la web.
+- La página del proyecto pone el botón en la cabecera del ciclo a través de
+  `cycleActions`.
+- En un ciclo cerrado, el informe de estado empieza por «Decisión de
+  salida». La construye `report/decisionSection.ts`, que es pura para que el
+  informe de cierre (DOC-01) la reutilice, y la muestra
+  `report/DecisionPreview.tsx`. Va también en la hoja «Decisión» del .xlsx y
+  al principio del PDF.
+
 ## Ejecución manual (EJE-02)
 
 - **Objetivos.** Un elemento del run se expande en `(flujo, fila de Outline)`

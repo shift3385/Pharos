@@ -309,11 +309,8 @@ fn a_run_of_a_closed_cycle_cannot_be_deleted() {
     let c = device();
     let (p, cycle, run, _) = cycle_with_run(&c);
     crate::runs::manual::close_run(&c, &run, "completed", false, U).unwrap();
-    let closed: cycles::TestCycleInput = serde_json::from_value(
-        json!({"projectId": p, "title": "R1", "status": "closed", "userId": U}),
-    )
-    .unwrap();
-    cycles::update_cycle(&c, &cycle, &closed).unwrap();
+    let _ = &p;
+    cycles::close_for_tests(&c, &cycle, U);
     assert!(preview(&c, &run, U).unwrap().cycle.unwrap().closed);
     assert_eq!(delete_run(&c, &run, U).unwrap_err(), "cycle-closed");
     assert!(get_run(&c, &run, U).unwrap().is_some());

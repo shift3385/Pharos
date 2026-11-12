@@ -15,9 +15,11 @@ import { usePopover } from "@shared/ui/usePopover";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { KPI_IDS, KpiCard, KpiCards, type KpiId } from "./KpiCards";
 import { PeriodSelector } from "./PeriodSelector";
+import { storeCompare, storedCompare } from "./model/compare";
 import { ExecutionByProject } from "./ExecutionByProject";
 import { ExitCriteriaCard } from "./ExitCriteriaCard";
 import { DailyExecutionsChart } from "./DailyExecutionsChart";
+import { TrendCard } from "./TrendCard";
 import { UpcomingTests } from "./UpcomingTests";
 import { HomeBoard, HomeStack, type GadgetView } from "./HomeBoard";
 import { loadHome } from "./model/loadHome";
@@ -81,6 +83,12 @@ export function DashboardPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [period, setPeriod] = useState<Period>(storedPeriod);
+  // RED-W4: «Comparar con el periodo anterior», remembered on this device.
+  const [compare, setCompare] = useState<boolean>(storedCompare);
+  const chooseCompare = (on: boolean) => {
+    setCompare(on);
+    storeCompare(on);
+  };
   const [exitId, setExitId] = useState<string | null>(null);
   const [tab, setTab] = useState<MobileTab>("summary");
   // The local day of the metrics: it moves at midnight with them.
@@ -91,7 +99,7 @@ export function DashboardPage() {
   const ready = metrics.status === "ready";
 
   // The board (UX-27): the saved one, and the draft while customizing.
-  const { board: saved, save } = useHomeBoard(ownerId);
+  const { board: saved, waiting, save } = useHomeBoard(ownerId);
   const [draft, setDraft] = useState<Board | null>(null);
   const editing = draft !== null && view === "desktop";
   const board = editing ? draft : saved;
@@ -172,6 +180,7 @@ export function DashboardPage() {
     exitCriteria: t("dashboard.exit.title"),
     upcoming: t("dashboard.upcoming.title"),
     daily: t("dashboard.daily.title"),
+    trend: t("dashboard.trend.title"),
   };
 
   /** Tells a screen reader what changed (the live region below). A repeated
@@ -362,7 +371,14 @@ export function DashboardPage() {
           </>
         ) : (
           <>
-            <PeriodSelector value={period} onChange={choosePeriod} description={sumNote} />
+            <PeriodSelector
+              value={period}
+              onChange={choosePeriod}
+              description={sumNote}
+              compare={compare}
+              onCompare={chooseCompare}
+              today={today}
+            />
             <button
               type="button"
               className="home-btn home-btn--primary"
@@ -415,6 +431,8 @@ export function DashboardPage() {
     exec,
     status: metrics.status,
     period,
+    compare,
+    today,
     projects: list,
     projectsLoading: projects === null,
   };
@@ -444,11 +462,13 @@ export function DashboardPage() {
       today={today}
       state={metrics}
       onRetry={retry}
+      compare={compare}
     />
   );
   const upcoming = (
     <UpcomingTests projects={list} state={metrics} onRetry={retry} />
   );
+  const trend = <TrendCard projects={list} state={metrics} onRetry={retry} />;
 
   const content: Record<GadgetId, GadgetView["content"]> = {
     kpiProjects: <KpiCard id="kpiProjects" {...kpiProps} compact={view === "desktop"} />,
@@ -459,6 +479,7 @@ export function DashboardPage() {
     exitCriteria: exit,
     upcoming,
     daily,
+    trend,
   };
   const gadgets = Object.fromEntries(
     (Object.keys(content) as GadgetId[]).map((id) => [id, { id, name: names[id], content: content[id] }]),
@@ -529,9 +550,17 @@ export function DashboardPage() {
               {/* The chart is the widget the period changes, so the selector
                   is here too (user's decision); same state as in Resumen. */}
               <div className="home-period-row">
-                <PeriodSelector value={period} onChange={choosePeriod} description={sumNote} />
+                <PeriodSelector
+              value={period}
+              onChange={choosePeriod}
+              description={sumNote}
+              compare={compare}
+              onCompare={chooseCompare}
+              today={today}
+            />
               </div>
               {visible.has("daily") && daily}
+              {visible.has("trend") && trend}
             </>
           )}
           {tab === "tests" && visible.has("upcoming") && upcoming}
@@ -548,6 +577,19 @@ export function DashboardPage() {
     >
       {header}
       {loadError}
+      {waiting.length > 0 && !editing && (
+        // A gadget new to a customized board waits hidden rather than make
+        // Inicio scroll (DOC-06, D6): said once, until the board is saved.
+        <p className="home-new-gadget" role="status" data-testid="home-new-gadget">
+          {t("dashboard.board.newGadget", { names: waiting.map((id) => names[id]).join(", ") })}
+          <button type="button" className="home-link" onClick={startEditing}>
+            {t("dashboard.board.makeRoom")}
+          </button>
+          <button type="button" className="home-link" onClick={() => save(saved)}>
+            {t("dashboard.board.dismissNew")}
+          </button>
+        </p>
+      )}
       {view === "desktop" ? (
         <HomeBoard
           board={board}

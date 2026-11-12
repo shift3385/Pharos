@@ -76,12 +76,26 @@ export interface DefectData {
   status: string;
   caseIds?: string[];
   requirementIds?: string[];
+  /** The run it was found in: «found in the scope» (DOC-06). */
+  foundInRunId?: string | null;
+  createdAt?: string | null;
+  /** `data.lifecycle.fixedAt`: the first time it reached `fixed`. */
+  fixedAt?: string | null;
+  /** `data.lifecycle.reopens`. */
+  reopens?: number;
+  /** `data.escaped` (DOC-06, D4). */
+  escaped?: boolean;
 }
 
 export interface CycleData {
   id: string;
   testPlanId?: string | null;
   configurationIds?: string[];
+  cycleKey?: string;
+  title?: string;
+  status?: string;
+  /** The latest of `data.closures` (DOC-02), raw. */
+  closure?: unknown;
 }
 
 export interface CycleItemData {
@@ -95,6 +109,18 @@ export interface CycleItemData {
 export interface CriterionData {
   criterion: string;
   metric: string;
+  /** The plan metric that measures it (PLN-06). */
+  metricId?: string | null;
+  /** Mandatory (absent, the default) or advisory (false) (DOC-02, D2). */
+  blocking?: boolean | null;
+}
+
+/** A plan metric (PLN-06 `data.metrics[]`); kind null = judged by hand. */
+export interface PlanMetricData {
+  id: string;
+  kind?: string | null;
+  op?: string;
+  target?: number | null;
 }
 
 export interface ProjectData {
@@ -107,6 +133,27 @@ export interface ProjectData {
   cycles?: CycleData[];
   cycleItems?: CycleItemData[];
   planCriteria?: CriterionData[] | null;
+  planMetrics?: PlanMetricData[] | null;
+  /** The project's risk bands (TRZ-04); absent or invalid → the defaults. */
+  riskBands?: RiskBands | null;
+}
+
+/** A level up to `low` is low, up to `medium` medium, above high. */
+export interface RiskBands {
+  low: number;
+  medium: number;
+}
+export const DEFAULT_RISK_BANDS: RiskBands = { low: 4, medium: 12 };
+
+/** The pair when `1 ≤ low < medium ≤ 24` (integers), else null. */
+export function checkedBands(low: unknown, medium: unknown): RiskBands | null {
+  return Number.isInteger(low) && Number.isInteger(medium) && 1 <= (low as number) && (low as number) < (medium as number) && (medium as number) <= 24
+    ? { low: low as number, medium: medium as number }
+    : null;
+}
+
+export function riskBandOf(level: number, bands: RiskBands): "low" | "medium" | "high" {
+  return level <= bands.low ? "low" : level <= bands.medium ? "medium" : "high";
 }
 
 export interface ExecutionFilter {
@@ -125,7 +172,8 @@ export interface HomeRequest {
   projectIds?: string[] | null;
   dayStarts: number[];
   now: number;
-  windows: { id: string; fromIndex: number }[];
+  /** RED-W4: `toIndex` ends the window before that day instead of at `now`. */
+  windows: { id: string; fromIndex: number; toIndex?: number | null }[];
   queueLimit?: number | null;
 }
 
@@ -209,6 +257,17 @@ export interface CoverageSummary {
   executed: number;
   passed: number;
   byRisk: Record<"high" | "medium" | "low" | "unassessed", RiskCoverage>;
+  riskBands: RiskBands;
+  weighted: WeightedCoverage;
+}
+/** Each assessed requirement weighs its risk level (TRZ-04, ADR-0043). */
+export interface WeightedCoverage {
+  totalWeight: number;
+  coveredWeight: number;
+  passedWeight: number;
+  coverageRatio: number | null;
+  passedRatio: number | null;
+  unassessed: number;
 }
 type Severity = "critical" | "major" | "minor" | "trivial";
 export interface DefectSummary {
@@ -227,6 +286,65 @@ export interface ExitCriterion {
   target: number | null;
   value: number | null;
   met: boolean | null;
+  blocking: boolean;
+}
+
+/** The catalog's values (DOC-06): percentages 0–100, density per 100
+ *  executed cases, fix time in days. */
+export interface MetricValues {
+  executed: number | null;
+  passRate: number | null;
+  criticalDefects: number | null;
+  coverage: number | null;
+  defectDensity: number | null;
+  escapedDefects: number | null;
+  fixTime: number | null;
+  reopenRate: number | null;
+  flakyRate: number | null;
+}
+export interface CycleMetrics {
+  values: MetricValues;
+  executedCases: number;
+  defectsFound: number;
+  defectsFixed: number;
+  defectsUnfixed: number;
+  defectsReopened: number;
+  escapeRate: number | null;
+}
+export interface ClosureCriterion {
+  index: number | null;
+  criterion: string;
+  metric: string;
+  kind: string | null;
+  op: string | null;
+  target: number | null;
+  value: number | null;
+  blocking: boolean;
+  state: string;
+  manualMet: boolean | null;
+  justification: string | null;
+}
+export interface CycleClosure {
+  closedAt: string;
+  closedBy: string;
+  verdict: string;
+  planId: string | null;
+  criteria: ClosureCriterion[];
+  metrics: CycleMetrics;
+}
+export interface CycleTrendPoint {
+  cycleId: string;
+  cycleKey: string;
+  title: string;
+  status: "closed" | "active";
+  closedAt: string | null;
+  verdict: string | null;
+  values: MetricValues;
+}
+export interface MetricObjective {
+  kind: string;
+  op: string;
+  target: number;
 }
 export interface DailyCount {
   dayStart: number;
@@ -266,6 +384,9 @@ export interface ExecutionSummary {
   coverage: CoverageSummary;
   defects: DefectSummary;
   exitCriteria: ExitCriterion[];
+  metrics: CycleMetrics;
+  closure: CycleClosure | null;
+  previous: CycleTrendPoint | null;
   daily: DailyCount[];
   undated: number;
   runs: RunRef[];
@@ -301,6 +422,8 @@ export interface HomeProject {
     retest: QueueRef[];
     counts: { notRun: number; blocked: number; retest: number };
   };
+  trend: CycleTrendPoint[];
+  objectives: MetricObjective[];
 }
 export interface HomeMetrics {
   contractVersion: 1;
@@ -509,32 +632,306 @@ const DEFAULT_CRITERIA: [string, string][] = [
   ["Cobertura de requisitos", "≥ 90%"],
 ];
 
+/** The metric catalog (DOC-06, ADR-0041), as `derive.rs`. */
+export const METRIC_KINDS = [
+  "executed",
+  "passRate",
+  "criticalDefects",
+  "coverage",
+  "defectDensity",
+  "escapedDefects",
+  "fixTime",
+  "reopenRate",
+  "flakyRate",
+] as const;
+export const METRIC_OPS = [">=", ">", "<=", "<", "="] as const;
+const knownKind = (k: unknown): string | null =>
+  typeof k === "string" && (METRIC_KINDS as readonly string[]).includes(k) ? k : null;
+const knownOp = (o: unknown): string | null =>
+  typeof o === "string" && (METRIC_OPS as readonly string[]).includes(o.trim()) ? o.trim() : null;
+
+export function compare(value: number, op: string, target: number): boolean {
+  return op === ">="
+    ? value >= target
+    : op === ">"
+      ? value > target
+      : op === "<="
+        ? value <= target
+        : op === "<"
+          ? value < target
+          : value === target;
+}
+
+/** How a criterion is measured (`derive.rs::measure_of`): by its linked plan
+ *  metric, else by its text (plans before 0.4.0, a link to a deleted
+ *  metric); a link to a metric without a known kind is judged by hand. */
+function measureOf(c: CriterionData, metrics: PlanMetricData[]): [string | null, [string, number] | null] {
+  const linked = c.metricId ? metrics.find((m) => m.id === c.metricId) : undefined;
+  if (linked) {
+    const kind = knownKind(linked.kind);
+    if (!kind) return [null, null];
+    const target = typeof linked.target === "number" ? linked.target : null;
+    return [kind, target === null ? null : [knownOp(linked.op) ?? ">=", target]];
+  }
+  const kind = criterionKind(c.criterion ?? "");
+  return [kind, kind ? parseMetric(c.metric ?? "", kind) : null];
+}
+
+const valueOf = (v: MetricValues, kind: string): number | null =>
+  (v as unknown as Record<string, number | null>)[kind] ?? null;
+
 function exitCriteria(
   plan: CriterionData[] | null | undefined,
-  progress: ExecutionProgress,
-  passRate: number | null,
-  openCritical: number,
-  coverage: number | null,
+  metrics: PlanMetricData[],
+  values: MetricValues,
 ): ExitCriterion[] {
   const written = (plan ?? [])
-    .map((c, i) => [i, c.criterion ?? "", c.metric ?? ""] as [number | null, string, string])
-    .filter(([, c]) => c.trim() !== "");
-  const list = written.length ? written : DEFAULT_CRITERIA.map(([c, m]) => [null, c, m] as [number | null, string, string]);
-  return list.map(([index, criterion, metric]) => {
-    const kind = criterionKind(criterion);
-    const parsed = kind ? parseMetric(metric, kind) : null;
-    let value: number | null = null;
-    if (kind === "executed") value = progress.total > 0 ? round1((progress.executed / progress.total) * 100) : null;
-    else if (kind === "passRate") value = passRate === null ? null : round1(passRate * 100);
-    else if (kind === "criticalDefects") value = openCritical;
-    else if (kind === "coverage") value = coverage === null ? null : round1(coverage * 100);
-    let met: boolean | null = null;
-    if (parsed && value !== null) {
-      const [op, target] = parsed;
-      met = op === ">=" ? value >= target : op === ">" ? value > target : op === "<=" ? value <= target : op === "<" ? value < target : value === target;
-    }
-    return { index, criterion, metric, kind, op: parsed?.[0] ?? null, target: parsed?.[1] ?? null, value, met };
+    .map((c, i) => [i, c] as [number | null, CriterionData])
+    .filter(([, c]) => (c.criterion ?? "").trim() !== "");
+  const list = written.length
+    ? written
+    : DEFAULT_CRITERIA.map(([criterion, metric]) => [null, { criterion, metric }] as [number | null, CriterionData]);
+  return list.map(([index, c]) => {
+    const [kind, parsed] = measureOf(c, metrics);
+    const value = kind ? valueOf(values, kind) : null;
+    const met = parsed && value !== null ? compare(value, parsed[0], parsed[1]) : null;
+    return {
+      index,
+      criterion: c.criterion ?? "",
+      metric: c.metric ?? "",
+      kind,
+      op: parsed?.[0] ?? null,
+      target: parsed?.[1] ?? null,
+      value,
+      met,
+      blocking: c.blocking ?? true,
+    };
   });
+}
+
+/** The plan's measurable objectives: metrics with a known kind and a target. */
+function objectives(metrics: PlanMetricData[]): MetricObjective[] {
+  return metrics.flatMap((m) => {
+    const kind = knownKind(m.kind);
+    if (!kind || typeof m.target !== "number") return [];
+    return [{ kind, op: knownOp(m.op) ?? ">=", target: m.target }];
+  });
+}
+
+// ---- metrics (DOC-06) --------------------------------------------------------------
+
+const DAY_MS = 86_400_000;
+
+function median(v: number[]): number | null {
+  if (!v.length) return null;
+  const s = [...v].sort((a, b) => a - b);
+  const n = s.length;
+  return n % 2 === 1 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+}
+
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const text = (v: unknown, d = ""): string => (typeof v === "string" ? v : d);
+const textOrNull = (v: unknown): string | null => (typeof v === "string" ? v : null);
+const rec = (v: unknown): Record<string, unknown> =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+
+const emptyValues = (): MetricValues => ({
+  executed: null,
+  passRate: null,
+  criticalDefects: null,
+  coverage: null,
+  defectDensity: null,
+  escapedDefects: null,
+  fixTime: null,
+  reopenRate: null,
+  flakyRate: null,
+});
+
+/** A stored closing as `derive.rs` reads it (serde's defaults). */
+export function normClosure(raw: unknown): CycleClosure | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const r = rec(raw);
+  const m = rec(r.metrics);
+  const v = rec(m.values);
+  const values = emptyValues();
+  for (const k of METRIC_KINDS) values[k] = num(v[k]);
+  return {
+    closedAt: text(r.closedAt),
+    closedBy: text(r.closedBy),
+    verdict: text(r.verdict),
+    planId: textOrNull(r.planId),
+    criteria: (Array.isArray(r.criteria) ? r.criteria : []).map((x) => {
+      const c = rec(x);
+      return {
+        index: num(c.index),
+        criterion: text(c.criterion),
+        metric: text(c.metric),
+        kind: textOrNull(c.kind),
+        op: textOrNull(c.op),
+        target: num(c.target),
+        value: num(c.value),
+        blocking: c.blocking === true,
+        state: text(c.state),
+        manualMet: typeof c.manualMet === "boolean" ? c.manualMet : null,
+        justification: textOrNull(c.justification),
+      };
+    }),
+    metrics: {
+      values,
+      executedCases: num(m.executedCases) ?? 0,
+      defectsFound: num(m.defectsFound) ?? 0,
+      defectsFixed: num(m.defectsFixed) ?? 0,
+      defectsUnfixed: num(m.defectsUnfixed) ?? 0,
+      defectsReopened: num(m.defectsReopened) ?? 0,
+      escapeRate: num(m.escapeRate),
+    },
+  };
+}
+
+/** The cycle each escaped defect is charged to (`derive.rs::escape_cycles`):
+ *  the latest cycle closed at or before the defect was created. */
+function escapeCycles(data: ProjectData): Map<string, string> {
+  const closed: [number, string][] = [];
+  for (const c of data.cycles ?? []) {
+    if (c.status !== "closed") continue;
+    const cl = normClosure(c.closure);
+    const t = cl ? instantMs(cl.closedAt) : null;
+    if (t !== null) closed.push([t, c.id]);
+  }
+  closed.sort((a, b) => a[0] - b[0] || cmpStr(a[1], b[1]));
+  const out = new Map<string, string>();
+  for (const d of data.defects ?? []) {
+    if (!d.escaped || !d.createdAt) continue;
+    const created = instantMs(d.createdAt);
+    if (created === null) continue;
+    let n = 0;
+    while (n < closed.length && closed[n][0] <= created) n++;
+    if (n > 0) out.set(d.id, closed[n - 1][1]);
+  }
+  return out;
+}
+
+/** The catalog's metrics over the scope (`derive.rs::scope_metrics`). */
+function scopeMetrics(
+  data: ProjectData,
+  filter: { cycleId: string | null; testPlanId: string | null },
+  f: {
+    scopedRuns: Set<string>;
+    cyclePlan: Map<string, string | null>;
+    cases: CaseExecution[];
+    progress: ExecutionProgress;
+    passRate: number | null;
+    openCritical: number;
+    coverage: number | null;
+  },
+): CycleMetrics {
+  const executedCases = f.cases.filter((c) => c.status !== NOT_RUN).length;
+  const flaky = f.cases.filter((c) => c.status !== NOT_RUN && c.last?.flaky).length;
+  const defects = data.defects ?? [];
+  const found = defects.filter((d) => !d.escaped && !!d.foundInRunId && f.scopedRuns.has(d.foundInRunId));
+  const charged = escapeCycles(data);
+  const escaped = defects.filter((d) => {
+    if (!d.escaped) return false;
+    const cycle = charged.get(d.id);
+    if (filter.cycleId) return cycle === filter.cycleId;
+    if (filter.testPlanId) return cycle !== undefined && (f.cyclePlan.get(cycle) ?? null) === filter.testPlanId;
+    return true;
+  }).length;
+  const days = found.flatMap((d) => {
+    const c = d.createdAt ? instantMs(d.createdAt) : null;
+    const x = d.fixedAt ? instantMs(d.fixedAt) : null;
+    return c === null || x === null ? [] : [Math.max(x - c, 0) / DAY_MS];
+  });
+  const fixed = found.filter((d) => !!d.fixedAt).length;
+  const reopened = found.filter((d) => (d.reopens ?? 0) > 0).length;
+  const reachedFix = found.filter((d) => !!d.fixedAt || (d.reopens ?? 0) > 0).length;
+  const pct = (n: number, d: number) => (d > 0 ? round1((n / d) * 100) : null);
+  const fix = median(days);
+  return {
+    values: {
+      executed: pct(f.progress.executed, f.progress.total),
+      passRate: f.passRate === null ? null : round1(f.passRate * 100),
+      criticalDefects: f.openCritical,
+      coverage: f.coverage === null ? null : round1(f.coverage * 100),
+      defectDensity: pct(found.length, executedCases),
+      escapedDefects: escaped,
+      fixTime: fix === null ? null : round1(fix),
+      reopenRate: pct(reopened, reachedFix),
+      flakyRate: pct(flaky, executedCases),
+    },
+    executedCases,
+    defectsFound: found.length,
+    defectsFixed: fixed,
+    defectsUnfixed: found.length - fixed,
+    defectsReopened: reopened,
+    escapeRate: pct(escaped, escaped + found.length),
+  };
+}
+
+// ---- the quality gate (DOC-02) -----------------------------------------------------
+
+export const MIN_JUSTIFICATION = 20;
+export const MAX_JUSTIFICATION = 2000;
+
+export interface CloseDecision {
+  position: number;
+  manualMet?: boolean | null;
+  justification?: string | null;
+}
+export interface CycleCloseInput {
+  verdict?: string | null;
+  decisions?: CloseDecision[];
+}
+
+export function criterionState(c: ExitCriterion): "met" | "notMet" | "noData" | "manual" {
+  if (c.kind === null || c.op === null) return "manual";
+  return c.met === null ? "noData" : c.met ? "met" : "notMet";
+}
+
+/** `derive.rs::close_record`: the closing record, or the first rule broken. */
+export function closeRecord(
+  summary: ExecutionSummary,
+  input: CycleCloseInput,
+  planId: string | null,
+  now: string,
+  user: string,
+): { ok: true; closure: CycleClosure } | { ok: false; error: string } {
+  const criteria: ClosureCriterion[] = [];
+  let failingBlocking = false;
+  for (const [pos, c] of summary.exitCriteria.entries()) {
+    const decision = (input.decisions ?? []).find((d) => d.position === pos);
+    const state = criterionState(c);
+    const manualMet = typeof decision?.manualMet === "boolean" ? decision.manualMet : null;
+    if (state === "manual" && manualMet === null) return { ok: false, error: `gate-manual-unset:${pos}` };
+    const failing = state === "met" ? false : state === "manual" ? manualMet === false : true;
+    const trimmedText = (decision?.justification ?? "").trim();
+    const justification = trimmedText === "" ? null : trimmedText;
+    const len = justification ? [...justification].length : 0;
+    if (len > MAX_JUSTIFICATION) return { ok: false, error: `gate-justification-too-long:${pos}` };
+    if (failing && c.blocking) {
+      failingBlocking = true;
+      if (len < MIN_JUSTIFICATION) return { ok: false, error: `gate-justification-required:${pos}` };
+    }
+    criteria.push({
+      index: c.index,
+      criterion: c.criterion,
+      metric: c.metric,
+      kind: c.kind,
+      op: c.op,
+      target: c.target,
+      value: c.value,
+      blocking: c.blocking,
+      state,
+      manualMet: state === "manual" ? manualMet : null,
+      justification: failing ? justification : null,
+    });
+  }
+  let verdict = "go";
+  if (failingBlocking) {
+    if (input.verdict !== "goWithRisks" && input.verdict !== "noGo") return { ok: false, error: "gate-verdict-required" };
+    verdict = input.verdict;
+  }
+  return { ok: true, closure: { closedAt: now, closedBy: user, verdict, planId, criteria, metrics: summary.metrics } };
 }
 
 // ---- daily (R9) ------------------------------------------------------------------
@@ -784,6 +1181,7 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     (a, b) => naturalCmp(a.requirementKey, b.requirementKey) || cmpStr(a.id, b.id),
   );
   const band = (): RiskCoverage => ({ requirements: 0, covered: 0, executed: 0, passed: 0, failed: 0 });
+  const bands = data.riskBands ? (checkedBands(data.riskBands.low, data.riskBands.medium) ?? DEFAULT_RISK_BANDS) : DEFAULT_RISK_BANDS;
   const coverage: CoverageSummary = {
     requirements: reqs.length,
     covered: 0,
@@ -791,6 +1189,8 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     executed: 0,
     passed: 0,
     byRisk: { high: band(), medium: band(), low: band(), unassessed: band() },
+    riskBands: { ...bands },
+    weighted: { totalWeight: 0, coveredWeight: 0, passedWeight: 0, coverageRatio: null, passedRatio: null, unassessed: 0 },
   };
   const reqRows: RequirementExecution[] = [];
   for (const r of reqs) {
@@ -806,7 +1206,7 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     const status = worst(ranked) ?? NOT_RUN;
     const level =
       r.riskLikelihood != null && r.riskImpact != null ? r.riskLikelihood * r.riskImpact : null;
-    const riskBand = level === null ? "unassessed" : level <= 4 ? "low" : level <= 12 ? "medium" : "high";
+    const riskBand = level === null ? "unassessed" : riskBandOf(level, bands);
     const defectIds = orderDefects(
       [...(defectsByRequirement.get(r.id) ?? []), ...linked.flatMap((c) => defectsByCase.get(c.id) ?? [])].map((d) => d.id),
     );
@@ -820,6 +1220,13 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     b.executed += Number(allExecuted);
     b.passed += Number(allExecuted && status === "passed");
     b.failed += Number(status === "failed");
+    const w = coverage.weighted;
+    if (level === null) w.unassessed++;
+    else {
+      w.totalWeight += level;
+      w.coveredWeight += covered ? level : 0;
+      w.passedWeight += allExecuted && status === "passed" ? level : 0;
+    }
     reqRows.push({
       requirementId: r.id,
       requirementKey: r.requirementKey,
@@ -839,6 +1246,8 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     });
   }
   coverage.coverageRatio = ratio(coverage.covered, coverage.requirements);
+  coverage.weighted.coverageRatio = ratio(coverage.weighted.coveredWeight, coverage.weighted.totalWeight);
+  coverage.weighted.passedRatio = ratio(coverage.weighted.passedWeight, coverage.weighted.totalWeight);
 
   const scoped = !!filter.cycleId || !!filter.testPlanId;
   const inScopeReqs = new Set(reqRows.filter((r) => r.inScope).map((r) => r.requirementId));
@@ -867,6 +1276,16 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     defects.byStatus[d.status] = (defects.byStatus[d.status] ?? 0) + 1;
   }
   defects.byStatus = Object.fromEntries(Object.entries(defects.byStatus).sort(([a], [b]) => cmpStr(a, b)));
+
+  const metrics = scopeMetrics(data, filter, {
+    scopedRuns,
+    cyclePlan,
+    cases: caseRows,
+    progress,
+    passRate,
+    openCritical: defects.openBySeverity.critical,
+    coverage: coverage.coverageRatio,
+  });
 
   const ds = filter.dayStarts ?? [];
   const daily = emptyDaily(ds);
@@ -904,7 +1323,10 @@ export function summarize(data: ProjectData, rawFilter: ExecutionFilter): Execut
     requirements: reqRows,
     coverage,
     defects,
-    exitCriteria: exitCriteria(data.planCriteria, progress, passRate, defects.openBySeverity.critical, coverage.coverageRatio),
+    exitCriteria: exitCriteria(data.planCriteria, data.planMetrics ?? [], metrics.values),
+    metrics,
+    closure: filter.cycleId ? normClosure((data.cycles ?? []).find((c) => c.id === filter.cycleId)?.closure) : null,
+    previous: filter.cycleId ? previousOf(data, filter.cycleId) : null,
     daily,
     undated,
     runs: runRefs.map((r) => ({
@@ -962,6 +1384,60 @@ function liveAttempts(data: ProjectData): AttemptData[] {
   return (data.attempts ?? []).filter((a) => runs.has(a.runId));
 }
 
+export const TREND_CYCLES = 6;
+
+/** The trend of a project (`derive.rs::trend`). */
+function trend(data: ProjectData): CycleTrendPoint[] {
+  const closed = closedPoints(data);
+  const out = closed.slice(Math.max(closed.length - TREND_CYCLES, 0));
+  const active = (data.cycles ?? [])
+    .filter((c) => c.status === "active")
+    .sort((a, b) => naturalCmp(a.cycleKey ?? "", b.cycleKey ?? "") || cmpStr(a.id, b.id));
+  for (const c of active) {
+    const s = summarize(data, { projectId: data.projectId, cycleId: c.id });
+    out.push({
+      cycleId: c.id,
+      cycleKey: c.cycleKey ?? "",
+      title: c.title ?? "",
+      status: "active",
+      closedAt: null,
+      verdict: null,
+      values: s.metrics.values,
+    });
+  }
+  return out;
+}
+
+/** The closed cycle before `cycleId` (`derive.rs`, `previous`). */
+function previousOf(data: ProjectData, cycleId: string): CycleTrendPoint | null {
+  const closed = closedPoints(data);
+  const i = closed.findIndex((p) => p.cycleId === cycleId);
+  if (i < 0) return closed[closed.length - 1] ?? null;
+  return i > 0 ? closed[i - 1] : null;
+}
+
+/** Every closed cycle with its closing, oldest first (`derive.rs::closed_points`). */
+function closedPoints(data: ProjectData): CycleTrendPoint[] {
+  const closed: [number, CycleData, CycleClosure][] = [];
+  for (const c of data.cycles ?? []) {
+    if (c.status !== "closed") continue;
+    const cl = normClosure(c.closure);
+    const t = cl ? instantMs(cl.closedAt) : null;
+    if (cl && t !== null) closed.push([t, c, cl]);
+  }
+  closed.sort((a, b) => a[0] - b[0] || cmpStr(a[1].id, b[1].id));
+  const charged = [...escapeCycles(data).values()];
+  return closed.map(([, c, cl]) => ({
+    cycleId: c.id,
+    cycleKey: c.cycleKey ?? "",
+    title: c.title ?? "",
+    status: "closed" as const,
+    closedAt: cl.closedAt,
+    verdict: cl.verdict,
+    values: { ...cl.metrics.values, escapedDefects: charged.filter((id) => id === c.id).length },
+  }));
+}
+
 /** The Home metrics of `projects` (contract v1 §2.4, R8–R9). */
 export function home(allProjects: ProjectData[], request: HomeRequest): HomeMetrics {
   // A project asked for twice counts once.
@@ -992,17 +1468,23 @@ export function home(allProjects: ProjectData[], request: HomeRequest): HomeMetr
       coverage: s.coverage.coverageRatio === null ? null : s.coverage.coverageRatio * 100,
       exitCriteria: s.exitCriteria,
       queue: { notRun, blocked, retest, counts: { notRun: n, blocked: b, retest: r } },
+      trend: trend(data),
+      objectives: objectives(data.planMetrics ?? []),
     });
   }
   const windows: Record<string, WindowCounts> = {};
   for (const w of request.windows) {
     const start = ds[w.fromIndex];
     if (start === undefined) continue;
+    // RED-W4: with `toIndex` the window ends before that day (the previous
+    // period); without it, or past the last day, at `now`.
+    if (w.toIndex != null && w.toIndex <= w.fromIndex) continue;
+    const end = w.toIndex != null ? ds[w.toIndex] : undefined;
     const counts: WindowCounts = { ...emptyCounts(), executed: 0, passRate: null, unlinked: 0 };
     for (const data of projects) {
       const inWindow = liveAttempts(data).filter((a) => {
         const t = timeOf(a);
-        return !!t && t[0] >= start && t[0] <= request.now;
+        return !!t && t[0] >= start && t[0] <= request.now && (end === undefined || t[0] < end);
       });
       // By case, as the progress (NC-029); unlinked tests apart.
       const groups = new Map<string, AttemptData[]>();
