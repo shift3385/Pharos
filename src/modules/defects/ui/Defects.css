@@ -135,7 +135,6 @@
   padding-bottom: 6px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
 }
 
 /* A phone shows one column at a time, snapping (as the planner). */

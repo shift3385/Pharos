@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Paperclip, Trash2 } from "lucide-react";
 import { ListField } from "@shared/ui/fields";
+import { Select } from "@shared/ui/Select";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { useToast } from "@shared/ui/Toast";
@@ -17,6 +18,7 @@ import {
   type CardStatus,
   type PlannerCard,
 } from "../model/types";
+import { TextArea } from "@shared/ui/TextArea";
 
 const MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
 
@@ -151,26 +153,19 @@ export function CardEditor({
         <div className="tc-form__grid">
           <label className="tp-field">
             <span>{t("planner.kind")}</span>
-            <select value={kind} onChange={(e) => setKind(e.target.value as CardKind)}>
-              {CARD_KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {t(`planner.kindLabel.${k}`)}
-                </option>
-              ))}
-            </select>
+            <Select<CardKind>
+              value={kind}
+              onChange={setKind}
+              options={CARD_KINDS.map((k) => ({ value: k, label: t(`planner.kindLabel.${k}`) }))}
+            />
           </label>
           <label className="tp-field">
             <span>{t("planner.priority")}</span>
-            <select
+            <Select<CardPriority>
               value={priority}
-              onChange={(e) => setPriority(e.target.value as CardPriority)}
-            >
-              {CARD_PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {t(`planner.priorityLabel.${p}`)}
-                </option>
-              ))}
-            </select>
+              onChange={setPriority}
+              options={CARD_PRIORITIES.map((p) => ({ value: p, label: t(`planner.priorityLabel.${p}`) }))}
+            />
           </label>
         </div>
 
@@ -180,8 +175,8 @@ export function CardEditor({
         </label>
         <label className="tp-field">
           <span>{t("planner.description")}</span>
-          <textarea
-            rows={3}
+          <TextArea
+            size="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />

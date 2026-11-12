@@ -8,8 +8,7 @@ Syllabus v4.0.1.
 > test plans, test cases with Gherkin, templates,
 > local planner, AI assist with several providers, offline sync with conflict
 > panel, exports, requirements with a traceability matrix, a recovery key for
-> the local data, and keyboard and screen-reader access (WCAG 2.1 AA). No test
-> execution yet (later in 0.2.0). Beta testers: start with the
+> the local data, and keyboard and screen-reader access (WCAG 2.1 AA). Beta testers: start with the
 > [beta guide](docs/guia-beta.md) (Spanish). Roadmap and backlog:
 > [`docs/ROADMAP.md`](docs/ROADMAP.md) · changes:
 > [`CHANGELOG.md`](CHANGELOG.md) · versioning policy:
@@ -182,7 +181,7 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
   with search, order and pages. A project's **Ajustes** holds its name and case
   numbering, «Exportar proyecto (ZIP)» and «Eliminar proyecto» (type the prefix
   to confirm).
-- **Plan de pruebas:** 19 steps. The step list is on the left in wide windows,
+- **Plan de pruebas:** 17 steps. The step list is on the left in wide windows,
   a strip above the form in narrower ones, and «Ver pasos» on phones.
   «Revisiones», «Importar / Exportar» and «Guardar» are in the project header.
 - **Casos:** the list filters by state, priority and level and searches IDs,
@@ -215,10 +214,10 @@ The app is being redesigned in waves ([`docs/rediseno/`](docs/rediseno/README.md
 - **Inicio** (RED-V1): your open projects, pending tests and open defects
   (from the Planner) as cards that take you there; execution by project,
   exit criteria from each plan (with a project picker), daily runs and the
-  next tests by priority. Run results arrive with 0.2.0: until then the pass
-  rate, the daily runs and whether each criterion is met say so instead of
-  showing numbers. On phones the Home has three tabs (Resumen, Ejecución,
-  Pruebas).
+  next tests by priority, all from the runs since 0.2.0. Since UX-27 (not yet
+  released) the desktop Inicio is a board of gadgets you can move, resize, hide
+  and reset with «Personalizar Inicio», saved with your account. On phones the
+  Home has three tabs (Resumen, Ejecución, Pruebas).
 - **Perfil:** your alias and official name, language and theme (and «Cerrar
   sesión» on phones). The recovery key is in Administración → Seguridad.
 
@@ -723,7 +722,7 @@ run the native validations of [`docs/ROADMAP.md` §6](docs/ROADMAP.md) (the
 [test guide](docs/guia-beta.md) turns them into a checklist); since `main` is
 now on 0.2.0, a final `0.1.0` would be cut from the `v0.1.0-beta.1` tag
 ([`docs/VERSIONING.md`](docs/VERSIONING.md) §5), and fixes on `main` ship as
-`0.2.0-alpha.N`. Known limitations:
+`0.2.x`. Known limitations:
 
 - the installer is not code-signed (SmartScreen warning);
 - the installed app needs the API on `localhost:3000` of the same PC;
@@ -731,7 +730,17 @@ now on 0.2.0, a final `0.1.0` would be cut from the `v0.1.0-beta.1` tag
   diagnóstico" button yet (UX-09): attach that day's log instead;
 - attachments and your own templates do not sync yet (SYNC-04b), and the web
   has no attachments, own templates or revision history;
-- no test execution yet (0.2.0).
+- no shared workspaces or roles yet (SYNC-07), no CLI or public API for CI
+  (INT-01/02), and exit criteria are shown but never block closing a cycle.
+
+Unreleased work since `0.2.0` (AI-assisted requirements from a project folder
+or from designs, AI help across the plan and test cases, the «Nuevo proyecto»
+wizard, the Inicio gadget board, the 17-step plan, the shared `Select` and
+growing text areas, manual v2…) is listed in [`changes/`](changes/README.md).
+Part of it is already in `main`; the rest is on the integration branch
+`local/app-completa`, waiting to come in by pull request. The baseline of
+2026-11-11 ([`docs/ROADMAP.md` §2.1](docs/ROADMAP.md)) says where each piece is
+and the course approved on 2026-11-11 (ADR-0039): Pharos designs tests and runs them through the frameworks, supervised or not, reached in steps up to 1.0.
 
 Detailed progress lives in `PROGRESO.md` (outside this repo, in the planning
 workspace); the backlog lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).

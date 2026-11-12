@@ -40,13 +40,18 @@ export function planDocDefinition(p: ExportablePlan, t: Translate): TDocumentDef
     ...section(t("testPlan.purpose"), field(p.purpose)),
     ...section(t("testPlan.scopeIn"), itemList(p.scopeIn)),
     ...section(t("testPlan.scopeOut"), itemList(p.scopeOut)),
-    ...section(t("testPlan.step.types"), itemList(p.testTypes)),
+    // Levels and types before the methodology, like the wizard (UX-31); the
+    // types one line per group of the step.
+    ...section(t("testPlan.testLevels"), itemList(p.testLevels)),
+    ...section(
+      t("testPlan.testTypes"),
+      p.testTypeLines?.length ? lines(p.testTypeLines) : itemList(p.testTypes),
+    ),
     // One entry per line (PLN-05); older callers only have the composed line.
     ...section(
       t("testPlan.methodology"),
       p.methodologyLines ? lines(p.methodologyLines) : field(p.methodology),
     ),
-    ...section(t("testPlan.step.levels"), itemList(p.testLevels)),
     ...section(t("testPlan.step.deliverables"), itemList(p.deliverables)),
     ...section(t("testPlan.environmentConfig"), field(p.environmentConfig)),
     ...section(t("testPlan.environmentRequirements"), field(p.environmentRequirements)),

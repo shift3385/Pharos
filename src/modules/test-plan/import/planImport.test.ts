@@ -22,7 +22,8 @@ const EN: Record<string, string> = {
   B12: "Purpose", B13: "The purpose.",
   B15: "In-scope items", B16: "Login\nCheckout",
   B17: "Out of scope", // left blank on purpose
-  B20: "Test types", B21: "Functional\nPerformance",
+  // A hand-typed key («retest», UX-31) imports like its label.
+  B20: "Test types", B21: "Functional\nPerformance\nRetest",
   B22: "Agile methodology (sprints, ceremonies, retrospective)",
   B23: "Agile · Sprint length (weeks): 2 · Team meetings: Daily, Retrospective",
   B24: "Test levels", B25: "System\nAcceptance",
@@ -55,7 +56,7 @@ describe("parsePlanXlsx (English template)", () => {
 
     expect(input.data.summary).toBe("Overall summary.");
     expect(input.data.scopeIn).toEqual(["Login", "Checkout"]);
-    expect(input.data.testTypes).toEqual(["functional", "performance"]);
+    expect(input.data.testTypes).toEqual(["functional", "performance", "retest"]);
     expect(input.data.testLevels).toEqual(["system", "acceptance"]);
     expect(input.data.tools).toEqual(["playwright", "jira"]);
 
@@ -107,7 +108,8 @@ describe("parsePlanXlsx (real ES template layout)", () => {
     ws.getCell("C4").value = "3.0";
     ws.getCell("C7").value = "Aprobado";
     ws.getCell("B11").value = "Mi resumen.";
-    ws.getCell("B21").value = "Funcionales\nSeguridad";
+    // An older file still says «Confirmación (re-test)»: it imports as its key (UX-34).
+    ws.getCell("B21").value = "Funcionales\nSeguridad\nConfirmación (re-test)";
     ws.getCell("B25").value = "Sistema";
     ws.getCell("B35").value = "Cypress\nPostman";
     ws.getCell("B50").value = "Líder QA";
@@ -125,7 +127,7 @@ describe("parsePlanXlsx (real ES template layout)", () => {
     expect(input.version).toBe("3.0");
     expect(input.status).toBe("approved");
     expect(input.data.summary).toBe("Mi resumen.");
-    expect(input.data.testTypes).toEqual(["functional", "security"]);
+    expect(input.data.testTypes).toEqual(["functional", "security", "retest"]);
     expect(input.data.testLevels).toEqual(["system"]);
     expect(input.data.tools).toEqual(["cypress", "postman"]);
     expect(input.data.conclusion).toBe("Listo para liberar.");

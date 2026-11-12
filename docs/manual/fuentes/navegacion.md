@@ -75,6 +75,17 @@ lo cierras.
 - **Veo «Conflictos (N)».** El mismo elemento se cambió en dos equipos a la
   vez. Pulsa «Revisar conflictos» y elige qué versión conservar (capítulo 15).
 
+## Los cuadros de texto
+
+- Los cuadros de varias líneas (resumen del plan, descripciones, pasos para
+  reproducir, notas…) empiezan con unas pocas líneas y crecen solos mientras
+  escribes: no hace falta estirarlos. Solo un texto muy largo llega a su tope
+  (en los textos del plan, la mitad de la ventana) y entonces se desplaza
+  dentro del cuadro.
+- Las palabras no se cortan con guion: pasan enteras a la línea siguiente.
+- Donde algo se desplaza, Pharos muestra una barra fina sin flechas que se
+  marca al pasar el ratón. En el móvil, la del sistema.
+
 ## En el móvil
 
 - Por debajo de 600 px de ancho, el menú lateral desaparece:

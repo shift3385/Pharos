@@ -327,6 +327,11 @@
   flex: 1 1 220px;
 }
 
+/* A Pharos select (UX-30) is as wide as its text: rows of them line up. */
+.adm-inline > .pselect {
+  min-width: min(220px, 100%);
+}
+
 .adm-folder {
   display: flex;
   flex-direction: column;

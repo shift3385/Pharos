@@ -55,7 +55,7 @@ chapter("movil", () => {
 
   step("movil-pasos-plan", {
     title: "Los pasos del plan en el móvil",
-    caption: "En el plan de pruebas, «Ver pasos» abre la lista de los 19 pasos en una hoja inferior.",
+    caption: "En el plan de pruebas, «Ver pasos» abre la lista de los 17 pasos en una hoja inferior.",
     covers: ["dialogs:src/modules/test-plan/ui/wizard/StepNav.tsx"],
     run: async () => {
       await $(".bs__close").click();

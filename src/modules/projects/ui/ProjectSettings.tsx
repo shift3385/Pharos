@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { Archive, Check, Download, Hash, Trash2 } from "lucide-react";
+import { Archive, Check, Download, Trash2 } from "lucide-react";
 import { projectCaseCount } from "@modules/test-cases";
 import { projectHasPlan } from "@modules/test-plan";
 import { projectCardCount } from "@modules/planner";
 import { requirementApi } from "@modules/traceability";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { ErrorSummary, FormField } from "@shared/ui/FormField";
+import { ErrorSummary } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { required } from "@shared/validation";
 import { useToast } from "@shared/ui/Toast";
@@ -19,10 +19,10 @@ import { deleteConfirmWord } from "../model/projectTable";
 import { prefixIssue, type PrefixOwner } from "../model/prefix";
 import type { PlanExportHistory, Project } from "../model/types";
 import { useProjectExport } from "./useProjectExport";
+import { ProjectGeneralFields } from "./ProjectGeneralFields";
 import "@shared/ui/headerActions.css";
 import "./Projects.css";
 
-const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const HISTORY_MODES: PlanExportHistory[] = ["current", "revisions"];
 
@@ -179,7 +179,6 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
 
   const loadProjects = useCallback(() => projectApi.list(owner), [owner]);
 
-  const sample = (n: number) => `${prefix}${String(n).padStart(digits, "0")}`;
   const word = deleteConfirmWord(project);
 
   return (
@@ -191,63 +190,17 @@ export function ProjectSettings({ project, onSaved }: { project: Project; onSave
           </h2>
           <p className="pj-card-box__desc">{t("projects.settings.generalDesc")}</p>
         </div>
-        <FormField
-          id="pj-name"
-          label={t("projects.name")}
-          issue={attempted ? nameIssue : null}
-          required
-        >
-          {(p) => (
-            <input
-              {...p}
-              className="pj-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          )}
-        </FormField>
-        <div className="pj-settings__row">
-          <FormField id="pj-prefix" label={t("projects.caseIdPrefix")} issue={prefixProblem}>
-            {(p) => (
-              <input
-                {...p}
-                className="pj-input t-id"
-                value={prefix}
-                placeholder="ATS_"
-                autoComplete="off"
-                spellCheck={false}
-                onChange={(e) => setPrefix(e.target.value)}
-              />
-            )}
-          </FormField>
-          <FormField id="pj-digits" label={t("projects.caseIdDigits")}>
-            {(p) => (
-              <select
-                {...p}
-                className="pj-input"
-                value={digits}
-                onChange={(e) => setDigits(Number(e.target.value))}
-              >
-                {DIGITS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            )}
-          </FormField>
-        </div>
-        <p className="pj-settings__preview">
-          <Hash size={15} aria-hidden="true" />
-          <span>{t("projects.prefixHint")}</span>
-          <code className="t-id" data-strong="">
-            {sample(1)}
-          </code>
-          <code className="t-id">{sample(2)}</code>
-          <code className="t-id" data-faint="">
-            {sample(3)}…
-          </code>
-        </p>
+        <ProjectGeneralFields
+          idPrefix="pj"
+          name={name}
+          onName={setName}
+          prefix={prefix}
+          onPrefix={setPrefix}
+          digits={digits}
+          onDigits={setDigits}
+          nameIssue={attempted ? nameIssue : null}
+          prefixIssue={prefixProblem}
+        />
         {showSummary && (nameIssue || prefixProblem) && (
           <ErrorSummary
             ref={summaryRef}

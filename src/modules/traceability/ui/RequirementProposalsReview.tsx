@@ -4,6 +4,7 @@ import { Pencil } from "lucide-react";
 import { useAuth } from "@modules/auth";
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { Select } from "@shared/ui/Select";
 import { FormField } from "@shared/ui/FormField";
 import { applyRequirementProposals } from "../api/applyProposals";
 import {
@@ -23,6 +24,7 @@ import type {
 } from "../proposals/types";
 import "@shared/ui/buttons.css";
 import "./Traceability.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 const ORDER: ProposalAction[] = ["add", "improve", "merge", "remove"];
 const TONE: Record<ProposalAction, PillTone> = {
@@ -606,9 +608,9 @@ function ProposalEditor({
       </FormField>
       <FormField label={t("traceability.requirement.description")}>
         {(p) => (
-          <textarea
+          <TextArea
+            size="short"
             {...p}
-            rows={3}
             value={draft.description}
             onChange={(e) =>
               setDraft({ ...draft, description: e.target.value })
@@ -618,22 +620,12 @@ function ProposalEditor({
       </FormField>
       <FormField label={t("traceability.requirement.priority")}>
         {(p) => (
-          <select
+          <Select<RequirementPriority>
             {...p}
             value={draft.priority}
-            onChange={(e) =>
-              setDraft({
-                ...draft,
-                priority: e.target.value as RequirementPriority,
-              })
-            }
-          >
-            {REQUIREMENT_PRIORITIES.map((pr) => (
-              <option key={pr} value={pr}>
-                {t(`traceability.priorityLabel.${pr}`)}
-              </option>
-            ))}
-          </select>
+            onChange={(priority) => setDraft({ ...draft, priority })}
+            options={REQUIREMENT_PRIORITIES.map((pr) => ({ value: pr, label: t(`traceability.priorityLabel.${pr}`) }))}
+          />
         )}
       </FormField>
       <span className="tz-prop__editor-actions">

@@ -38,6 +38,7 @@ import type {
 import { isTauri } from "@shared/platform";
 import { Dialog } from "@shared/ui/Dialog";
 import { StatusPill } from "@shared/ui/StatusPill";
+import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { useConfirm } from "@shared/ui/useConfirm";
 import { runsApi } from "../api/runsApi";
@@ -67,6 +68,7 @@ import { webDrafts } from "../model/webDrafts";
 import "@shared/ui/buttons.css";
 import "@shared/ui/ConfirmDialog.css";
 import "./Execution.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** Autosave delay of a draft after the last change. */
 const SAVE_DELAY = 600;
@@ -902,9 +904,9 @@ export function ExecutionPanel({
                       <label htmlFor={`${uid}-actual-${i}`} className="tp-field__label">
                         {t("execution.actualLabel")}
                       </label>
-                      <textarea
+                      <TextArea
+                        size="short"
                         id={`${uid}-actual-${i}`}
-                        rows={2}
                         value={sd?.actual ?? ""}
                         readOnly={!editable}
                         onChange={(e) =>
@@ -937,25 +939,25 @@ export function ExecutionPanel({
               <div className="ex-result__row">
                 <label className="tp-field ex-result__status">
                   <span className="tp-field__label">{t("execution.resultStatus")}</span>
-                  <select
+                  <Select<StepStatus | "">
                     value={d.status ?? ""}
-                    onChange={(e) =>
+                    onChange={(v) =>
                       change((x) => ({
                         ...x,
-                        status: (e.target.value || undefined) as StepStatus | undefined,
+                        status: v || undefined,
                       }))
                     }
                     data-testid="exec-status"
-                  >
-                    <option value="">
-                      {t("execution.derived", { status: t(`runs.status.${resultStatus(steps, { ...d, status: undefined })}`) })}
-                    </option>
-                    {STEP_STATUSES.map((st) => (
-                      <option key={st} value={st}>
-                        {t(`runs.status.${st}`)}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      {
+                        value: "",
+                        label: t("execution.derived", {
+                          status: t(`runs.status.${resultStatus(steps, { ...d, status: undefined })}`),
+                        }),
+                      },
+                      ...STEP_STATUSES.map((st) => ({ value: st, label: t(`runs.status.${st}`) })),
+                    ]}
+                  />
                 </label>
                 <div className="ex-timer" role="timer" aria-live="off">
                   <span className="ex-timer__value">{formatElapsed(elapsedAt(d, new Date()))}</span>
@@ -976,8 +978,8 @@ export function ExecutionPanel({
               </div>
               <label className="tp-field">
                 <span className="tp-field__label">{t("execution.notes")}</span>
-                <textarea
-                  rows={3}
+                <TextArea
+                  size="short"
                   value={d.notes}
                   onChange={(e) => change((x) => ({ ...x, notes: e.target.value }))}
                   data-testid="exec-notes"

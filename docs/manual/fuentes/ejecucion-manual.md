@@ -97,6 +97,9 @@ funcionan «?» y Ctrl+Mayús+N.
 - En la matriz de trazabilidad gana siempre el último resultado final, sea de
   un run manual o de un informe importado: repetir la prueba a mano después de
   un informe de Playwright cambia lo que muestra la matriz.
+- En el informe de estado, «Desde» y «Hasta» usan el selector de fechas de
+  Pharos (capítulo 5): el calendario de «Hasta» abre en el mes de «Desde» y no
+  deja elegir un día anterior, y el de «Desde» no deja pasar de «Hasta».
 - En el informe de estado, los defectos se cuentan «a fecha de hoy», no por el
   periodo elegido. El resumen y las recomendaciones se guardan solo en este
   equipo, pero van en el Excel y en el PDF.

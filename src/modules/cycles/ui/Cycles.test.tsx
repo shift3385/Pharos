@@ -203,6 +203,45 @@ describe("Ciclos", () => {
     );
   });
 
+  it("the cycle's dates are Pharos' DatePicker; the end opens on the start's month with the days before it off (UX-36)", async () => {
+    vi.mocked(cycleApi.create).mockResolvedValue({ ...CYCLE, id: "cy2", cycleKey: "CYC-002" });
+    page();
+    await screen.findByRole("table", { name: "Ciclos del proyecto" });
+    await userEvent.click(screen.getByRole("button", { name: "Nuevo ciclo" }));
+    const dialog = screen.getByRole("dialog", { name: "Nuevo ciclo" });
+    expect(dialog.querySelector('input[type="date"]')).toBeNull();
+    await userEvent.type(within(dialog).getByLabelText(/^Título/), "Humo");
+    const start = within(dialog).getByRole("textbox", { name: "Empieza" });
+    await userEvent.type(start, "16/03/2027");
+    await userEvent.click(within(dialog).getByTestId("cycle-ends-on-calendar"));
+    const cal = screen.getByRole("dialog", { name: "Termina" });
+    expect(within(cal).getByRole("heading", { name: "Marzo de 2027" })).toBeInTheDocument();
+    expect(cal.querySelector('[data-day="2027-03-15"]')).toHaveAttribute("aria-disabled", "true");
+    expect(cal.querySelector('[data-day="2027-03-16"]')).not.toHaveAttribute("aria-disabled");
+    // Esc closes only the calendar, not the cycle's dialog.
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Termina" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Nuevo ciclo" })).toBeInTheDocument();
+    expect(within(dialog).getByTestId("cycle-ends-on-calendar")).toHaveFocus();
+    await userEvent.click(within(dialog).getByTestId("cycle-ends-on-calendar"));
+    await userEvent.click(
+      screen.getByRole("dialog", { name: "Termina" }).querySelector<HTMLElement>('[data-day="2027-03-26"]')!,
+    );
+    expect(within(dialog).getByRole("textbox", { name: "Termina" })).toHaveValue("26/03/2027");
+    // A typed end before the start is still refused, as before.
+    await userEvent.clear(start);
+    await userEvent.type(start, "30/03/2027");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Crear ciclo" }));
+    expect(within(dialog).getByRole("textbox", { name: "Termina" })).toHaveAttribute("aria-invalid", "true");
+    expect(cycleApi.create).not.toHaveBeenCalled();
+    await userEvent.clear(start);
+    await userEvent.type(start, "2027-03-16");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Crear ciclo" }));
+    expect(cycleApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Humo", startsOn: "2027-03-16", endsOn: "2027-03-26" }),
+    );
+  });
+
   it("says when the cycles cannot be read, and retries (NC-008, MAN-03)", async () => {
     vi.mocked(cycleApi.list).mockRejectedValueOnce(new Error("offline"));
     page();

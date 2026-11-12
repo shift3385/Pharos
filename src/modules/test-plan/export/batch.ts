@@ -1,6 +1,5 @@
 import type { ClosureCriterion, TestPlan } from "../model/types";
-import { TEST_LEVELS, TEST_TYPES } from "../model/catalogs";
-import { deliverableLabels, toolLabels } from "../model/catalogLabels";
+import { deliverableLabels, levelLabels, toolLabels, typeGroupLines, typeLabels } from "../model/catalogLabels";
 import { methodologyLines, methodologyText } from "../model/methodology";
 import { testPlanApi } from "../api/testPlanApi";
 import { buildPlanXlsx, type ExportablePlan } from "./planXlsx";
@@ -19,13 +18,6 @@ export interface PlanHistoryOption {
 
 type Translate = (key: string) => string;
 
-const loc = (
-  arr: string[] | undefined,
-  known: string[],
-  prefix: string,
-  t: Translate,
-) => (arr ?? []).map((k) => (known.includes(k) ? t(`${prefix}.${k}`) : k));
-
 /** Maps a stored plan to the export shape (mirrors the wizard's export mapping),
  *  localizing option lists and composing the methodology line. */
 export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
@@ -41,10 +33,11 @@ export function planToExportable(plan: TestPlan, t: Translate): ExportablePlan {
     purpose: d.purpose ?? "",
     scopeIn: d.scopeIn ?? [],
     scopeOut: d.scopeOut ?? [],
-    testTypes: loc(d.testTypes, TEST_TYPES, "testPlan.typeLabel", t),
+    testTypes: typeLabels(d.testTypes, t),
+    testTypeLines: typeGroupLines(d.testTypes, t),
     methodology,
     methodologyLines: methodologyLines(d, t),
-    testLevels: loc(d.testLevels, TEST_LEVELS, "testPlan.levelLabel", t),
+    testLevels: levelLabels(d.testLevels, t),
     deliverables: deliverableLabels(d.deliverables, t),
     environmentConfig: d.environmentConfig ?? "",
     environmentRequirements: d.environmentRequirements ?? "",

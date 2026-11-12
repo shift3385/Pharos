@@ -288,14 +288,6 @@ a.home-kpi:hover {
   gap: 10px;
 }
 
-.home-chart__sk {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 3px 3px 0 0;
-}
-
 .home-card {
   min-width: 0;
   display: flex;
@@ -892,146 +884,7 @@ a.home-kpi:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.home-chart {
-  display: flex;
-  gap: 10px;
-  height: 180px;
-}
-
-.home-chart__axis {
-  flex: none;
-  min-width: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-bottom: 20px;
-  font-size: 11px;
-  text-align: right;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.home-chart__plot {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.home-chart__bars,
-.home-chart__labels {
-  display: flex;
-  gap: clamp(2px, 0.6cqi, 8px);
-}
-
-.home-chart__bars {
-  flex: 1;
-  align-items: flex-end;
-  border-bottom: 1px solid var(--color-border);
-  background: linear-gradient(var(--color-border) 1px, transparent 1px) 0 0 /
-    100% 50%;
-}
-
-.home-chart__col {
-  flex: 1 1 0;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.home-chart__bar {
-  position: relative;
-  width: 100%;
-  max-width: 28px;
-  height: 100%;
-}
-
-/* A single «0» sits on the base line. */
-.home-chart__axis > :only-child {
-  margin-top: auto;
-}
-
-/* A day's attempts: Pasa at the base, then Falla, then Otras on top. */
-.home-chart__stack {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  min-height: 2px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: 3px 3px 0 0;
-}
-
-.home-chart__stack > span {
-  flex-basis: 0;
-  min-height: 0;
-}
-
-.home-chart__stack > [data-tone="pass"] {
-  background: var(--color-navy-500);
-}
-
-.home-chart__stack > [data-tone="fail"] {
-  background: var(--color-error);
-}
-
-.home-chart__stack > [data-tone="other"] {
-  background: var(--color-text-muted);
-}
-
-/* A day without runs: 2 px grey mark on the base line. */
-.home-chart__nodata {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: var(--color-border-input);
-}
-
-.home-chart__labels {
-  height: 20px;
-  align-items: flex-end;
-  font-size: 11px;
-  line-height: 1;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.home-chart__label {
-  flex: 1 1 0;
-  min-width: 0;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.home-chart__label[data-today] {
-  font-weight: var(--fw-semibold);
-  color: var(--color-text-primary);
-}
-
-.home-daily__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-}
-
-.home-daily__month {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
 /* ---- Próximas pruebas ---- */
-.home-upcoming__filters {
-  padding: 0 clamp(16px, 1.8cqi, 22px);
-  border-bottom: 1px solid var(--color-border);
-}
 
 .home-queue {
   margin: 0;
@@ -1335,11 +1188,6 @@ button.home-daily__data {
   white-space: nowrap;
 }
 
-/* No foot text under the daily chart. */
-.home-board[data-compact] .home-daily__month {
-  display: none;
-}
-
 .home-board[data-compact] .home-ring {
   width: 72px;
   height: 72px;
@@ -1412,13 +1260,6 @@ button.home-daily__data {
   font-size: 11px;
   line-height: 18px;
   text-decoration: none;
-}
-
-/* The daily chart takes the gadget's height instead of its fixed 180 px. */
-.home-board .home-daily .home-chart {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 60px;
 }
 
 /* -- Customizing -- */
@@ -1564,4 +1405,252 @@ button.home-daily__data {
    minimum width (7 columns) holds the three of them. */
 .home-board .tabs--underline {
   overflow: hidden;
+}
+
+/* ---- «Ejecuciones diarias» as lines (UX-32) ----
+   Thin 2 px lines in the state colours, a dot with a surface ring on each day
+   above 0, a recessive grid, a hairline and a bubble on the active day. «Otras»
+   is dashed: next to «Falla» it never relies on colour alone. */
+.home-lines {
+  position: relative;
+  flex: none;
+  height: 180px;
+  min-width: 0;
+  border-radius: 6px;
+  touch-action: pan-y;
+}
+
+.home-lines:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.home-board .home-daily .home-lines {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 60px;
+}
+
+.home-lines > svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.home-lines__grid line {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.home-lines__grid text,
+.home-lines__xlabel {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-lines__cross {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.home-lines__series path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.home-lines__series circle {
+  stroke: var(--color-surface-1);
+  stroke-width: 2;
+}
+
+.home-lines__series circle[data-active] {
+  r: 4.5px;
+}
+
+.home-lines__series[data-series="passed"] path,
+.home-lines__series[data-series="passed"] circle {
+  --series: var(--color-navy-500);
+}
+
+.home-lines__series[data-series="failed"] path,
+.home-lines__series[data-series="failed"] circle {
+  --series: var(--color-error);
+}
+
+.home-lines__series[data-series="others"] path,
+.home-lines__series[data-series="others"] circle {
+  --series: var(--color-text-muted);
+}
+
+.home-lines__series path {
+  stroke: var(--series);
+}
+
+.home-lines__series circle {
+  fill: var(--series);
+}
+
+.home-lines__series[data-series="others"] path {
+  stroke-dasharray: 5 4;
+}
+
+/* The bubble: values lead, names follow, a line key per series. */
+.home-lines__tip {
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-1);
+  box-shadow: var(--shadow-2);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.home-lines__tipdate {
+  color: var(--color-text-muted);
+}
+
+.home-lines__tiprow b {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-lines__key {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 1px;
+  background: var(--color-navy-500);
+}
+
+.home-lines__key[data-series="failed"] {
+  background: var(--color-error);
+}
+
+.home-lines__key[data-series="others"] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-text-muted) 0 4px,
+    transparent 4px 6px
+  );
+}
+
+/* The legend filters: each state is a toggle. */
+.home-lines__legend {
+  margin: 0;
+  padding: 0;
+}
+
+.home-lines__toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.home-lines__toggle:hover {
+  background: var(--color-surface-2);
+}
+
+.home-lines__toggle[aria-pressed="false"] {
+  opacity: 0.45;
+}
+
+.home-lines__toggle[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* Too narrow for axes: the total and a bare trend line. */
+.home-lines--spark {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.home-lines--spark > svg {
+  position: static;
+}
+
+.home-lines__big {
+  font-size: 28px;
+  font-weight: var(--fw-semibold);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-lines__spark path {
+  fill: none;
+  stroke: var(--color-navy-500);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+/* ---- «Próximas pruebas»: a selector instead of tabs (UX-32) ---- */
+
+/* The title always whole; «Ver todas» is only an arrow. */
+.home-upcoming .home-card__titleline .home-card__title {
+  overflow: visible;
+  white-space: normal;
+}
+
+.home-upcoming__all {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--color-navy-500);
+}
+
+.home-upcoming__all:hover {
+  background: var(--color-surface-2);
+}
+
+.home-upcoming__filter {
+  display: flex;
+  min-width: 0;
+}
+
+.home-upcoming__filter .pselect {
+  max-width: 100%;
+}
+
+/* The count of the chosen list, in a grey pill. */
+.home-upcoming__count {
+  flex: none;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-queue__failed {
+  flex: none;
+  white-space: nowrap;
 }

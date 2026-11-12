@@ -23,7 +23,8 @@ el otro (`PH-` y `PHA-`), porque una búsqueda o una importación por `PH`
 encontraría los casos de los dos.
 
 Los **campos personalizados** añaden lo que tu equipo necesite y Pharos no trae
-de serie: texto, texto largo, número, número entero, fecha, sí/no, selección,
+de serie (un campo de tipo fecha se rellena en el caso con el selector de
+fechas de Pharos, capítulo 5): texto, texto largo, número, número entero, fecha, sí/no, selección,
 selección múltiple, usuario o URL. Cada campo tiene un nombre, una clave fija
 (minúsculas, números y guion bajo), si es obligatorio y, opcionalmente, un
 valor por defecto para los casos nuevos. Los de los casos y los de los

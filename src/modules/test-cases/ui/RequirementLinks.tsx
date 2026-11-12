@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Select } from "@shared/ui/Select";
 import type { RequirementOption } from "../model/types";
 
 /** Requirements a case verifies (TRZ-02): chips of linked keys plus a picker of
@@ -51,18 +52,14 @@ export function RequirementLinks({
         <span className="tp-field__hint">{t("testCase.requirements.none")}</span>
       ) : (
         available.length > 0 && (
-          <select
+          <Select
             value=""
             aria-label={t("testCase.requirements.add")}
-            onChange={(e) => e.target.value && onChange([...value, e.target.value])}
-          >
-            <option value="">{t("testCase.requirements.add")}</option>
-            {available.map((o) => (
-              <option key={o.requirementKey} value={o.requirementKey}>
-                {o.requirementKey} — {o.title}
-              </option>
-            ))}
-          </select>
+            placeholder={t("testCase.requirements.add")}
+            onChange={(key) => key && onChange([...value, key])}
+            data-testid="requirement-add"
+            options={available.map((o) => ({ value: o.requirementKey, label: `${o.requirementKey} — ${o.title}` }))}
+          />
         )
       )}
     </div>

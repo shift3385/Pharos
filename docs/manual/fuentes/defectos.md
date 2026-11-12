@@ -21,14 +21,14 @@ corrija y se pueda volver a probar. Cada defecto lleva:
 - **Evidencias:** capturas, vídeos o registros, guardados cifrados en este
   equipo.
 
-Su **ciclo de vida**: Nuevo → Abierto → En curso → Corregido → En retest →
+Su **ciclo de vida**: Nuevo → Abierto → En curso → Corregido → Por confirmar →
 Cerrado, y además Rechazado (con su resolución) o Aplazado. Rechazado y
 Cerrado piden siempre una **resolución**. Un defecto aplazado sigue contando
 como abierto.
 
 Cuando el último resultado de un caso es un fallo y uno de sus defectos llega
-a «Corregido» o «En retest» (y ninguno sigue nuevo, abierto o en curso), el
-caso pasa a **Re-test** en la matriz y en el Inicio: toca volver a probarlo.
+a «Corregido» o «Por confirmar» (y ninguno sigue nuevo, abierto o en curso), el
+caso pasa a **Por confirmar** en la matriz y en el Inicio: toca volver a probarlo.
 
 En este manual, Liomar registra dos defectos de Pharos:
 
@@ -104,5 +104,5 @@ En este manual, Liomar registra dos defectos de Pharos:
 - Capítulo 11, «Ejecución manual»: «Crear defecto» desde un intento.
 - Capítulo 13, «Trazabilidad»: los defectos en la matriz.
 - Capítulo 14, «Ajustes del proyecto»: los campos de los defectos.
-- [Glosario](../GLOSARIO.md): «Re-test», y la sección «Execution model
+- [Glosario](../GLOSARIO.md): «Por confirmar», y la sección «Execution model
   identifiers».

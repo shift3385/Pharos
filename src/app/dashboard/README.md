@@ -75,6 +75,31 @@ desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
   - después, la de la cuenta (`/api/me/preferences/home.board`), al abrir
     Inicio y tras cada sincronización.
 
+## «Ejecuciones diarias» y «Próximas pruebas» (UX-32)
+
+- **`DailyLinesChart.tsx`** dibuja una línea en SVG por estado (Pasa, Falla
+  y Otras, esta discontinua) en los colores de siempre:
+  - un punto con anillo del color de la superficie en cada día mayor que 0;
+  - el eje Y llega al valor más alto de las series visibles, como poco 5,
+    redondeado a un paso entero limpio (1, 2, 5, 10, 20, 50…; `yAxisMax`), y
+    sus líneas son siempre números enteros: una prueba se ejecuta o no, nunca
+    «2,5» (`yTicks`, FIX-25);
+  - el eje X lleva el primer día, uno por semana y el último, separados al
+    menos 48 px según el ancho (`xLabels`);
+  - la leyenda son botones (`aria-pressed`) que muestran u ocultan cada
+    línea, y siempre queda al menos una (`toggleSeries`);
+  - una línea vertical y una burbuja siguen al ratón, el tacto o las
+    flechas (`dayAt`);
+  - por debajo de 220 px de ancho, el total grande con una línea de
+    tendencia;
+  - la tabla equivalente queda solo para lectores de pantalla.
+
+  Las funciones puras viven en `model/dailyLines.ts`.
+- **`UpcomingTests.tsx`** elige la lista con el `Select` de Pharos (UX-30),
+  con icono y número por opción, en lugar de pestañas. «Ver todas» es una
+  flecha con `aria-label` y, en «Por confirmar», cada fila dice cuándo falló
+  (`lastAt`). «+N más» cuenta la lista entera.
+
 ## Añadir un gadget
 
 1. Añade su id a `GADGETS`, su mínimo a `MIN_SIZE` y su sitio a la
@@ -91,6 +116,9 @@ desde 0): las cuatro cifras clave en la fila 0 (6 × 4 cada una);
 - `HomeBoard.test.tsx`: el modo configurar en la página, «Restablecer» con
   confirmación, Esc, persistencia por cuenta, tableta y móvil.
 - `DashboardPage.test.tsx`: el contenido de cada gadget.
+- `model/dailyLines.test.ts` y `DailyLinesChart.test.tsx`: el eje Y con
+  mínimo 5, las fechas sin solaparse a 7, 14 y 30 días, la leyenda que filtra,
+  la burbuja con el ratón y el teclado y el modo estrecho.
 - `fitRows.test.tsx`: las filas que caben y «+N más»; ninguna regla de CSS
   deja desplazarse a un gadget.
 - `e2e/tours/03-inicio.tour.ts`: sin desplazamiento de página ni de gadget a

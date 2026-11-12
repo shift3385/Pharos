@@ -1,6 +1,9 @@
 # ADR-0003 · Equipo en workspaces compartidos desde 0.3.0
 
 - **Estado:** Aceptado (decisión D3 del usuario, 2026-10-28). Detalle técnico pendiente en TEN-01.
+  **Enmendado por [ADR-0039](0039-rumbo-hacia-la-ejecucion-autonoma.md) (2026-11-11):**
+  los workspaces compartidos (TEN-01, SYNC-07) pasan a 0.5.0 y el móvil a 0.10.0;
+  donde abajo dice 0.3.0, léase 0.5.0. La regla «equipo antes que móvil» sigue.
 - **Contexto:** hoy hay dos modelos de pertenencia que no encajan:
   - el cliente filtra por `owner_id` y tiene `workspace_id` y `project_members`
     sin uso;

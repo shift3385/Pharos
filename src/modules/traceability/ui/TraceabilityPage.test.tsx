@@ -2,6 +2,7 @@ import "@test/slow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
@@ -176,11 +177,11 @@ describe("Trazabilidad (RED-V3)", () => {
     expect(rows[1]).toHaveTextContent("Riesgo 20 · Alto");
     await expectNoAxeViolations();
     // A filter asks the derivation again, scoped.
-    await userEvent.selectOptions(screen.getByTestId("trace-filter-cycle"), "y1");
+    await selectValue(screen.getByTestId("trace-filter-cycle"), "y1");
     await waitFor(() =>
       expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: "p1", cycleId: "y1" }), expect.any(String)),
     );
-    await userEvent.selectOptions(screen.getByTestId("trace-filter-build"), "1.4.2");
+    await selectValue(screen.getByTestId("trace-filter-build"), "1.4.2");
     await waitFor(() =>
       expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ cycleId: "y1", build: "1.4.2" }), expect.any(String)),
     );
@@ -189,7 +190,7 @@ describe("Trazabilidad (RED-V3)", () => {
       expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ cycleId: undefined, build: undefined }), expect.any(String)),
     );
     // By ID: REQ-031 first again.
-    await userEvent.selectOptions(screen.getByTestId("trace-sort"), "key");
+    await selectValue(screen.getByTestId("trace-sort"), "key");
     expect(within(screen.getByRole("table", { name: "Matriz de trazabilidad" })).getAllByRole("row")[1]).toHaveTextContent("REQ-031");
   });
 });

@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProvenanceBadge, isPendingReview } from "@modules/ai";
 import { Dialog } from "@shared/ui/Dialog";
+import { Select } from "@shared/ui/Select";
 import { discardOptions, useConfirm } from "@shared/ui/useConfirm";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
@@ -25,6 +26,7 @@ const RISK_TONE: Record<RiskBand, PillTone> = {
   unassessed: "neutral",
 };
 import "./Traceability.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 export interface RequirementDraft {
   requirementKey: string;
@@ -158,9 +160,9 @@ export function RequirementFormModal({
 
       <FormField label={t("traceability.requirement.description")}>
         {(p) => (
-          <textarea
+          <TextArea
+            size="description"
             {...p}
-            rows={3}
             value={draft.description}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
           />
@@ -169,17 +171,12 @@ export function RequirementFormModal({
 
       <FormField label={t("traceability.requirement.priority")}>
         {(p) => (
-          <select
+          <Select<RequirementPriority>
             {...p}
             value={draft.priority}
-            onChange={(e) => setDraft({ ...draft, priority: e.target.value as RequirementPriority })}
-          >
-            {REQUIREMENT_PRIORITIES.map((pr) => (
-              <option key={pr} value={pr}>
-                {t(`traceability.priorityLabel.${pr}`)}
-              </option>
-            ))}
-          </select>
+            onChange={(priority) => setDraft({ ...draft, priority })}
+            options={REQUIREMENT_PRIORITIES.map((pr) => ({ value: pr, label: t(`traceability.priorityLabel.${pr}`) }))}
+          />
         )}
       </FormField>
 
@@ -223,20 +220,17 @@ export function RequirementFormModal({
               label={t(`traceability.risk.${k === "riskLikelihood" ? "likelihood" : "impact"}`)}
             >
               {(p) => (
-                <select
+                <Select
                   {...p}
                   aria-describedby={`${id}-risk-hint`}
                   data-testid={k === "riskLikelihood" ? "requirement-risk-likelihood" : "requirement-risk-impact"}
-                  value={draft[k] ?? ""}
-                  onChange={(e) => setDraft({ ...draft, [k]: e.target.value ? Number(e.target.value) : null })}
-                >
-                  <option value="">{t("traceability.risk.notAssessed")}</option>
-                  {RISK_VALUES.map((v) => (
-                    <option key={v} value={v}>
-                      {t("traceability.risk.level", { value: v })}
-                    </option>
-                  ))}
-                </select>
+                  value={draft[k] == null ? "" : String(draft[k])}
+                  onChange={(v) => setDraft({ ...draft, [k]: v ? Number(v) : null })}
+                  options={[
+                    { value: "", label: t("traceability.risk.notAssessed") },
+                    ...RISK_VALUES.map((v) => ({ value: String(v), label: t("traceability.risk.level", { value: v }) })),
+                  ]}
+                />
               )}
             </FormField>
           ))}

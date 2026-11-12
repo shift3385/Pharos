@@ -28,6 +28,7 @@ import {
   openAdminTab,
   openProject,
   openSection,
+  startBlankProject,
   tf,
   waitForText,
   waitForToast,
@@ -150,9 +151,8 @@ chapter("ia", () => {
     run: async () => {
       await byTestId("nav-projects").click();
       await expect($(`h1=${es.projects.title}`)).toBeDisplayed();
-      await button(es.projects.new).click();
-      await $("#pj-new-name").setValue(WALLET.name);
-      await button(es.projects.create).click();
+      await startBlankProject(WALLET.name);
+      await button(es.projects.wizard.create).click();
       await expect($(`h1=${WALLET.name}`)).toBeDisplayed();
       await openSection("requirements");
       await chooseFile('input[type="file"][accept=".csv,text/csv"]', join(fixturesDir, "requisitos-billetera.csv"));

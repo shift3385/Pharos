@@ -42,6 +42,7 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 | ← → | Filtro de estado (Todos · Planificados · Activos · Cerrados) | Cambia de filtro |
 | ← → | Pestañas «Elementos» y «Runs» | Cambian de pestaña |
 | Intro | Diálogo «Nuevo ciclo» / «Editar» | Guarda el ciclo |
+| Alt+↓ | «Empieza» o «Termina» | Abre el calendario (flechas, RePág/AvPág, Inicio/Fin, Intro elige, Esc cierra; capítulo 5) |
 | Intro | Campo «Asignado» de un elemento | Guarda el asignado (salir del campo también) |
 | ↑ ↓ e Intro | Menú de un elemento («Subir», «Bajar», «Quitar del ciclo») y menú «⋯» del ciclo | Recorren y eligen |
 | Esc | Confirmación de eliminar | No la cierra: usa «Cancelar» |
@@ -53,7 +54,8 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
   - no tiene elementos: añade casos;
   - tiene casos eliminados: quítalos del ciclo (los nombra el aviso).
 - **«El ciclo termina antes de empezar.»** La fecha de fin es anterior a la de
-  inicio.
+  inicio. El calendario de «Termina» ya no deja elegir esos días, pero una
+  fecha escrita a mano sí puede serlo.
 - **«El proyecto no tiene configuraciones. Créalas en Ajustes del
   proyecto.»** Sin configuraciones, el ciclo se ejecuta como un único run.
   Créalas en el capítulo 14 si necesitas separar navegadores o equipos.

@@ -148,10 +148,14 @@ enforce it, and two devices can still create overlapping prefixes offline.
 **Plan wizard (RED-V2).** `TestPlanWizard` composes `ui/wizard/*`:
 - `formState.ts`: the form and its pure conversions (from a plan, an import or
   a revision; to the saved input and the export shape);
-- `steps.ts`: the 19 step ids and `stepCompletion` (a step is complete when its
-  main field has content);
-- `StepBody` and one component per large step (`DeliverablesStep`,
-  `ToolsStep`, `ScheduleStep`, `FinishStep`);
+- `steps.ts`: the 17 step ids, `stepCompletion` (a step is complete when its
+  main field has content) and `LEGACY_STEPS` / `stepIndex`: the ids of the
+  19-step wizard (`title`, `meta`, `types`, `levels`) land on the step they
+  were joined into (UX-31); `?step=<id>` opens a step;
+- `StepBody` and one component per large step (`LevelsTypesStep`,
+  `DeliverablesStep`, `ToolsStep`, `ScheduleStep`, `FinishStep`); the
+  checkbox steps share `CheckColumns` (columns by group with thin lines, a
+  grey icon per head and the «Propios» cell with ✕ and the field to add);
 - `StepNav`: one navigation is rendered, chosen by the app container's width.
   `StepRail` (sticky, `z-index: 2`, its own scroll) from 1360 px, measured by
   `useWideApp` on `.viewport-root` like `ViewportProvider`; `StepStrip`
@@ -982,6 +986,22 @@ through `src-tauri/src/journal.rs`:
   - `BottomSheet` (on top of `Dialog`): handle, title, ✕ and ≥ 46 px options.
   - `ResponsiveMenu`: a `Menu` from 600 px, a `BottomSheet` below, with the
     same items.
+  - `Select` (UX-30): the form control for one choice, instead of a native
+    `<select>` (WebView2 drew those with the system's grey list). A
+    select-only combobox (WAI-ARIA APG): the focus stays on the button and
+    `aria-activedescendant` names the option; the `listbox` opens in a
+    `Popover` (`matchAnchorWidth`) with the menu's look, or as a
+    `BottomSheet` on mobile. Options take an icon, a description, a group
+    title and `disabled` + `reason`. It takes `FormField`'s props and a
+    `<label htmlFor>` (or wrapping) names it; `data-value` on the button and
+    on each option is what tests and tours pick by (`@test/select`,
+    `chooseOption` in the tours). Native selects left: «Copiar ajustes de:»
+    (`ProjectsPage`) and the key digits (`ProjectSettings`).
+  - Dropdown chevrons (UX-30): one rule in `theme/base.css` turns the
+    `ChevronDown` of any `button[aria-expanded]` 180° while it is `true`
+    (150 ms ease-out, none under reduced motion). The trigger's
+    `aria-expanded` is the only source, so a trigger needs no state or class
+    of its own; the up-down switcher icon (`ChevronsUpDown`) does not turn.
   - `ConfirmDialog variant="destructive"` closes only with «Cancelar» (not
     Escape or the backdrop). `confirmText` keeps the confirm button disabled
     until that text is typed. The two tiers (normal / critical) and what
@@ -1894,7 +1914,30 @@ account's names on the server (`PATCH /auth/me`, BASE-10).
   shared UI primitives (F1), Login/Inicio/Perfil (V1), Proyectos/Ajustes/Plan
   (V2), Casos/Planificador/Trazabilidad (V3), Administración by tabs (V4), and
   the data router with the shared unsaved-changes guard (RED-V3k). Released as
-  `0.2.0-alpha.1`; test execution (the rest of 0.2.0) is next.
+  `0.2.0-alpha.1`.
+- **Execution wave (`0.2.0`, 2026-11-05):** gate C closed (ADR-0011…0019): the
+  CTRF-inspired Run/Shard/Result/StepResult model, step-by-step manual execution
+  with encrypted evidence, local import of JUnit, Cucumber Messages, CTRF and
+  Playwright JSON with the "unlinked" tray, cycles and configurations, defects
+  as an entity, custom fields, the matrix extended to results and defects, the
+  ISO 29119-3 status report, the append-only audit log and the Inicio metrics
+  from the shared execution derivation.
+- **After `0.2.0` (unreleased, baseline of 2026-11-11):** AI-assisted design
+  (requirements proposed from a project folder or from designs, IA-17..19,
+  ADR-0036/0037; AI help across the plan and a critical review of a case's
+  lists, IA-11, IA-13..16), «Requisitos» as its own project section and the
+  project opening on its Tablero (UX-21/22), the «Nuevo proyecto» wizard with
+  copied settings (UX-25/29), the Inicio gadget board saved with the account
+  (UX-27/28/32, ADR-0038), the 17-step plan (UX-31), the shared `Select`,
+  `TextArea` and scrollbar (UX-30/33), contiguous keys across devices (DAT-04)
+  and manual v2 (MAN-03/04). Part of it is in `main`; most of it still lives on
+  the integration branch `local/app-completa` — see `docs/ROADMAP.md` §2.1 for
+  where each piece is and §2.2 for the approved course (ADR-0039): autonomous execution as the axis up to 1.0.
+- **Known gaps (2026-11-11):** no Rust `pharos-core` crate yet (CORE-01), so no
+  CLI and no other process can write while the app is open (SEC-05); no shared
+  workspaces or roles (SYNC-07); exit criteria are recognised from free text and
+  never gate closing a cycle; no SARIF/k6/axe/Allure ingest, CLI, public API or
+  mobile app yet.
 - **Traceability (former milestone v0.0.2):** requirements, the requirement ↔ case ↔ defect
   matrix with XLSX export, `@REQ-xxx`/case-ID tags in `.feature` files, and
   visible AI provenance. Requirements and planner cards sync since SYNC-04a;

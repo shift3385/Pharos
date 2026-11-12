@@ -1,7 +1,9 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
+import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import {
   CYCLE_STATUSES,
   attributesLine,
@@ -11,6 +13,7 @@ import {
 } from "../model/types";
 import "@shared/ui/ConfirmDialog.css";
 import "./Cycles.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 
 /** «Nuevo ciclo» / «Editar ciclo» (ADR-0017): what (the items are added
@@ -123,7 +126,7 @@ export function CycleDialog({
         </FormField>
         <FormField label={t("cycles.field.description")}>
           {(p) => (
-            <textarea {...p} rows={3} value={form.description} onChange={(e) => set("description")(e.target.value)} />
+            <TextArea size="short" {...p} value={form.description} onChange={(e) => set("description")(e.target.value)} />
           )}
         </FormField>
         <div className="cy-form__grid">
@@ -132,24 +135,31 @@ export function CycleDialog({
           {text("milestone")}
           {text("sprint")}
           <FormField label={t("cycles.field.startsOn")}>
-            {(p) => <input {...p} type="date" value={form.startsOn} onChange={(e) => set("startsOn")(e.target.value)} />}
+            {(p) => <DatePicker {...p} value={form.startsOn} onChange={set("startsOn")} data-testid="cycle-starts-on" />}
           </FormField>
           <FormField
             label={t("cycles.field.endsOn")}
             issue={tried && datesWrong ? { severity: "error", code: "cycles.error.dates" } : null}
           >
-            {(p) => <input {...p} type="date" value={form.endsOn} onChange={(e) => set("endsOn")(e.target.value)} />}
+            {(p) => (
+              <DatePicker
+                {...p}
+                value={form.endsOn}
+                min={form.startsOn || undefined}
+                onChange={set("endsOn")}
+                data-testid="cycle-ends-on"
+              />
+            )}
           </FormField>
           {cycle && (
             <FormField label={t("cycles.field.status")}>
               {(p) => (
-                <select {...p} value={form.status} onChange={(e) => set("status")(e.target.value)}>
-                  {CYCLE_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {t(`cycles.status.${s}`)}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  {...p}
+                  value={form.status}
+                  onChange={(v) => set("status")(v)}
+                  options={CYCLE_STATUSES.map((s) => ({ value: s, label: t(`cycles.status.${s}`) }))}
+                />
               )}
             </FormField>
           )}

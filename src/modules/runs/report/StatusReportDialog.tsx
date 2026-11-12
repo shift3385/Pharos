@@ -6,7 +6,9 @@ import { cycleApi } from "@modules/cycles";
 import { projectPlanRef } from "@modules/test-plan";
 import type { ExecutionSummary } from "@shared/contracts/contract";
 import { Dialog } from "@shared/ui/Dialog";
+import { DatePicker } from "@shared/ui/DatePicker";
 import { FormField } from "@shared/ui/FormField";
+import { Select } from "@shared/ui/Select";
 import { SegmentedControl } from "@shared/ui/SegmentedControl";
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { useToast } from "@shared/ui/Toast";
@@ -22,6 +24,7 @@ import type { ReportLabels } from "./reportXlsx";
 import "@shared/ui/ConfirmDialog.css";
 import "@shared/ui/buttons.css";
 import "./StatusReport.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 type Scope = "project" | "cycle" | "plan";
 
@@ -303,38 +306,36 @@ export function StatusReportDialog({
           {scope === "cycle" && (
             <FormField label={t("statusReport.cycle")}>
               {(p) => (
-                <select {...p} value={cycleId} data-testid="report-cycle" onChange={(e) => setCycleId(e.target.value)}>
-                  {cycles.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  {...p}
+                  value={cycleId}
+                  data-testid="report-cycle"
+                  onChange={setCycleId}
+                  options={cycles.map((c) => ({ value: c.id, label: c.label }))}
+                />
               )}
             </FormField>
           )}
           <div className="sr-period">
             <FormField label={t("statusReport.from")}>
               {(p) => (
-                <input
+                <DatePicker
                   {...p}
-                  type="date"
                   value={fromDay}
                   max={toDay || undefined}
                   data-testid="report-from"
-                  onChange={(e) => setFromDay(e.target.value)}
+                  onChange={setFromDay}
                 />
               )}
             </FormField>
             <FormField label={t("statusReport.to")}>
               {(p) => (
-                <input
+                <DatePicker
                   {...p}
-                  type="date"
                   value={toDay}
                   min={fromDay || undefined}
                   data-testid="report-to"
-                  onChange={(e) => setToDay(e.target.value)}
+                  onChange={setToDay}
                 />
               )}
             </FormField>
@@ -399,9 +400,9 @@ export function StatusReportDialog({
               <h4>{t("statusReport.section.summary")}</h4>
               <FormField label={t("statusReport.summaryLabel")} hint={t("statusReport.summaryHint")}>
                 {(p) => (
-                  <textarea
+                  <TextArea
+                    size="document"
                     {...p}
-                    rows={4}
                     value={shownSummary}
                     data-testid="report-summary"
                     onChange={(e) => edit({ summary: e.target.value })}
@@ -413,9 +414,9 @@ export function StatusReportDialog({
               <h4>{t("statusReport.section.recommendations")}</h4>
               <FormField label={t("statusReport.recommendationsLabel")}>
                 {(p) => (
-                  <textarea
+                  <TextArea
+                    size="document"
                     {...p}
-                    rows={4}
                     value={draft.recommendations}
                     placeholder={t("statusReport.recommendationsPlaceholder")}
                     data-testid="report-recommendations"

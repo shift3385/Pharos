@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { selectValue } from "@test/select";
 import "@test/slow";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -74,7 +75,7 @@ describe("Ajustes del proyecto (SPEC §6/§8)", () => {
     setViewportWidth(1440);
     renderSettings();
     expect(screen.getByText("PCL-0001")).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText("Dígitos del número"), "3");
+    await selectValue(screen.getByRole("combobox", { name: "Dígitos del número" }), "3");
     expect(screen.getByText("PCL-001")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(projectApi.update).toHaveBeenCalledWith(

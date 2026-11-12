@@ -5,6 +5,7 @@ import "@test/slow";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { expectNoAxeViolations } from "@test/axe";
 import { RequirementFormModal } from "./ui/RequirementFormModal";
@@ -100,8 +101,8 @@ describe("RequirementFormModal › risk (UX-23)", () => {
     );
     const legend = screen.getByText("Risk", { selector: "legend" });
     expect(legend).toHaveTextContent("Not assessed");
-    await userEvent.selectOptions(screen.getByTestId("requirement-risk-likelihood"), "3");
-    await userEvent.selectOptions(screen.getByTestId("requirement-risk-impact"), "4");
+    await selectValue(screen.getByTestId("requirement-risk-likelihood"), "3");
+    await selectValue(screen.getByTestId("requirement-risk-impact"), "4");
     expect(legend).toHaveTextContent("Risk 12 · Medium");
     expect(screen.getByRole("img", { name: /Low: 1–4/ })).toBeInTheDocument();
   });

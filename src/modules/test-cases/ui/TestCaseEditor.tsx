@@ -3,6 +3,7 @@ import { ArrowLeft, Columns2, FileCode, MoreHorizontal, PencilLine, Save } from 
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@modules/auth";
 import { ListField } from "@shared/ui/fields";
+import { Select } from "@shared/ui/Select";
 import { ErrorSummary, FormField } from "@shared/ui/FormField";
 import { useSaveGuard } from "@shared/ui/fieldProps";
 import { duplicateRows, required } from "@shared/validation";
@@ -106,6 +107,7 @@ import { FormSkeleton } from "@shared/ui/Skeleton";
 import "@shared/ui/buttons.css";
 import "./TestCase.css";
 import "./CaseList.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 export type { CaseNav } from "./CaseNavBar";
 
@@ -788,27 +790,25 @@ export function TestCaseEditor({
   }
 
   const fileName = `${form.scenarioId || "scenario"}.feature`;
+  const locked =
+    requiredLevel !== "basic"
+      ? t("testCase.level.locked", { level: t(`testCase.level.${requiredLevel}.name`) })
+      : undefined;
   const levelSelect = (
     <label className="tc-meta">
       <span className="tc-meta__label">{t("testCase.level.label")}</span>
-      <select
+      <Select<GherkinLevel>
         className="tc-meta__select"
         value={level}
-        onChange={(e) => changeLevel(e.target.value as GherkinLevel)}
-        title={
-          requiredLevel !== "basic"
-            ? t("testCase.level.locked", {
-                level: t(`testCase.level.${requiredLevel}.name`),
-              })
-            : undefined
-        }
-      >
-        {(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => (
-          <option key={l} value={l} disabled={levelRank(l) < levelRank(requiredLevel)}>
-            {t(`testCase.level.${l}.name`)}
-          </option>
-        ))}
-      </select>
+        onChange={changeLevel}
+        title={locked}
+        options={(["basic", "outline", "advanced"] as GherkinLevel[]).map((l) => ({
+          value: l,
+          label: t(`testCase.level.${l}.name`),
+          disabled: levelRank(l) < levelRank(requiredLevel),
+          reason: locked,
+        }))}
+      />
     </label>
   );
 
@@ -913,9 +913,9 @@ export function TestCaseEditor({
           />
         }
       >
-        <textarea
+        <TextArea
+          size="description"
           id="tc-description"
-          rows={2}
           value={form.description}
           onChange={(e) => update({ description: e.target.value })}
         />
@@ -929,18 +929,18 @@ export function TestCaseEditor({
     <>
       {level === "basic" && (
         <CaseSection title={t("testCase.testData")} labelFor="tc-test-data">
-          <textarea
+          <TextArea
+            size="short"
             id="tc-test-data"
-            rows={2}
             value={form.testData}
             onChange={(e) => update({ testData: e.target.value })}
           />
         </CaseSection>
       )}
       <CaseSection title={t("testCase.notes")} labelFor="tc-notes" joined={level === "basic"}>
-        <textarea
+        <TextArea
+          size="short"
           id="tc-notes"
-          rows={2}
           value={form.notes}
           onChange={(e) => update({ notes: e.target.value })}
         />
@@ -1019,9 +1019,9 @@ export function TestCaseEditor({
             )}
           </CaseSection>
           <CaseSection title={t("testCase.notes")} labelFor="tc-notes">
-            <textarea
+            <TextArea
+              size="short"
               id="tc-notes"
-              rows={2}
               value={form.notes}
               onChange={(e) => update({ notes: e.target.value })}
             />
@@ -1121,9 +1121,9 @@ export function TestCaseEditor({
               />
             }
           >
-            <textarea
+            <TextArea
+              size="short"
               id="tc-expected-result"
-              rows={2}
               value={form.expectedResult}
               onChange={(e) => update({ expectedResult: e.target.value })}
             />

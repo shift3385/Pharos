@@ -253,37 +253,20 @@
   white-space: nowrap;
 }
 
+/* Size, growth and cap come from TextArea (size="cell": 1 line, up to 12). */
 .tp-pair-field textarea {
   flex: 1;
   display: block;
-  box-sizing: border-box;
   width: 100%;
-  min-block-size: 38px;
-  /* 12 lines: covers about 300 characters at any width. */
-  max-block-size: calc(12 * 1.5em + 17px);
-  padding: 7.5px var(--space-3);
+  padding-inline: var(--space-3);
   font-family: inherit;
   font-size: var(--fs-ui);
-  line-height: 1.5;
   color: var(--color-text-primary);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border-input);
   border-radius: var(--radius-md);
-  resize: none;
-  overflow: auto;
-  overflow-wrap: break-word;
-  field-sizing: content;
   /* Focusing a field never leaves it under the wizard's sticky footer. */
   scroll-margin-block-end: 80px;
-}
-
-/* Without automatic sizing the text stays reachable: room for 3 lines, and the
- * person can pull the field taller. */
-@supports not (field-sizing: content) {
-  .tp-pair-field textarea {
-    min-block-size: calc(3 * 1.5em + 17px);
-    resize: vertical;
-  }
 }
 
 .tp-pair-field__row .tp-list-field__del {
@@ -351,8 +334,9 @@
     top: 0;
   }
 
-  .tp-pair-field textarea {
-    min-block-size: 44px;
+  /* A 44 px touch target: one 21 px line plus 23 px. */
+  .tp-pair-field .ui-textarea.ui-textarea {
+    --ta-chrome: 23px;
     padding-block: 10.5px;
   }
 

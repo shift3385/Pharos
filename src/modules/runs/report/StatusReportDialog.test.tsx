@@ -52,12 +52,42 @@ describe("Informe de estado (EJE-03)", () => {
     await expectNoAxeViolations();
   });
 
+  it("the period is two Pharos DatePickers: «Hasta» opens on «Desde»'s month with the days before it off (UX-36)", async () => {
+    setViewportWidth(1440);
+    renderWithProviders(<StatusReportDialog projectId="p1" projectName="Portal" onClose={() => {}} />);
+    const dialog = await screen.findByRole("dialog", { name: "Informe de estado de pruebas" });
+    await within(dialog).findByText("1. Identificación");
+    expect(dialog.querySelector('input[type="date"]')).toBeNull();
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "Desde" }), "02/02/2026");
+    await userEvent.click(within(dialog).getByTestId("report-to-calendar"));
+    const cal = screen.getByRole("dialog", { name: "Hasta" });
+    expect(within(cal).getByRole("heading", { name: "Febrero de 2026" })).toBeInTheDocument();
+    expect(cal.querySelector('[data-day="2026-02-01"]')).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(cal.querySelector<HTMLElement>('[data-day="2026-02-20"]')!);
+    expect(within(dialog).getByRole("textbox", { name: "Hasta" })).toHaveValue("20/02/2026");
+    await waitFor(() =>
+      expect(summary).toHaveBeenLastCalledWith(
+        expect.objectContaining({ from: new Date(2026, 1, 2).getTime() }),
+        expect.any(String),
+      ),
+    );
+    // «Desde» cannot go past «Hasta».
+    await userEvent.click(within(dialog).getByTestId("report-from-calendar"));
+    expect(screen.getByRole("dialog", { name: "Desde" }).querySelector('[data-day="2026-02-21"]')).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("dialog", { name: "Informe de estado de pruebas" })).toBeInTheDocument();
+    await expectNoAxeViolations();
+  });
+
   it("scopes to a cycle and a period, keeps the texts on this device and exports them", async () => {
     setViewportWidth(1440);
     renderWithProviders(<StatusReportDialog projectId="p1" projectName="Portal" initialCycleId="y1" onClose={() => {}} />);
     await screen.findByText("1. Identificación");
     expect(summary).toHaveBeenLastCalledWith(expect.objectContaining({ cycleId: "y1" }), expect.any(String));
-    await userEvent.type(screen.getByTestId("report-from"), "2026-11-01");
+    await userEvent.type(screen.getByTestId("report-from"), "01/11/2026");
     await waitFor(() =>
       expect(summary).toHaveBeenLastCalledWith(
         expect.objectContaining({ cycleId: "y1", from: new Date(2026, 10, 1).getTime() }),

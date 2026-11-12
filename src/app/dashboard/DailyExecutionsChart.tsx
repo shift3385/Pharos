@@ -3,24 +3,18 @@ import { useTranslation } from "react-i18next";
 import { Dialog } from "@shared/ui/Dialog";
 import { InfoTip } from "@shared/ui/InfoTip";
 import { Skeleton } from "@shared/ui/Skeleton";
-import { useBreakpoint } from "@shared/ui/useBreakpoint";
-import { RunLegend } from "./ExecutionByProject";
-import { visibleDayLabels, type Period } from "./model/homeData";
-import { axisMax, dailySeries } from "./model/metrics";
+import { DailyLinesChart } from "./DailyLinesChart";
+import type { Period } from "./model/homeData";
+import { dailySeries } from "./model/metrics";
 import type { MetricsState } from "./model/loadHomeMetrics";
 import { MetricsNotice } from "./MetricsNotice";
 import { GadgetFitContext } from "./model/fitRows";
 
-/** Bar heights of the loading chart: only a shape, it means nothing. */
-const SHAPE_HEIGHTS = [38, 62, 28, 74, 46, 84, 34, 56];
-
 /** «Ejecuciones diarias» (SPEC §8, ACTUALIZACION §2, RED-W6): every attempt
  *  recorded on each local day of the period (manual or imported, retries
- *  included), stacked Pasa / Falla / Otras (blocked, skipped). The layout is
- *  RED-V1's: one column per day (`flex: 1 1 0; min-width: 0`) with the bar
- *  centred (≤ 28 px) and its label underneath, one label out of two on
- *  tablet and mobile counting back from today (bold), a 2 px grey mark on
- *  days without executions. Screen readers get the numbers as a table. */
+ *  included) as one line per state: Pasa, Falla, Otras (blocked, skipped)
+ *  (UX-32, `DailyLinesChart`). The period total stays by the title; «Ver los
+ *  datos» opens the numbers as a table. */
 export function DailyExecutionsChart({
   period,
   today,
@@ -37,10 +31,7 @@ export function DailyExecutionsChart({
   const fit = useContext(GadgetFitContext);
   const [showData, setShowData] = useState(false);
   const lang = i18n.resolvedLanguage;
-  const alternate = useBreakpoint() !== "desktop";
   const points = dailySeries(state.data, period, today);
-  const shown = visibleDayLabels(points.length, alternate);
-  const max = axisMax(points);
   const total = points.reduce((n, p) => n + p.total, 0);
   const undated = state.data?.undated ?? 0;
   const ready = state.status === "ready";
@@ -51,35 +42,11 @@ export function DailyExecutionsChart({
     day: "numeric",
     month: "long",
   });
-  const monthName = (d: Date) =>
-    new Intl.DateTimeFormat(lang, { month: "long" })
-      .format(d)
-      .replace(/^./, (c) => c.toUpperCase());
-  const first = points[0].day;
-  const months =
-    first.getMonth() === today.getMonth()
-      ? monthName(today)
-      : `${monthName(first)} – ${monthName(today)}`;
-  const pct = (n: number) => `${max ? (n / max) * 100 : 0}%`;
   // While loading or after an error the days are unknown, not empty.
   const unknown =
     state.status === "loading"
       ? t("dashboard.daily.loading", { period: periodText })
       : t("dashboard.daily.unavailable", { period: periodText });
-  const dayText = (p: (typeof points)[number]) =>
-    !ready
-      ? longDate.format(p.day)
-      : p.total
-        ? t("dashboard.daily.dayTitle", {
-            date: longDate.format(p.day),
-            count: p.total,
-            passed: p.passed,
-            failed: p.failed,
-            other: p.others,
-            manual: p.manual,
-            imported: p.imported,
-          })
-        : t("dashboard.daily.dayEmpty", { date: longDate.format(p.day) });
 
   const table = (
     <>
@@ -159,10 +126,16 @@ export function DailyExecutionsChart({
         </div>
       </div>
 
-      <div
-        className="home-chart"
-        role="img"
-        aria-label={
+      <DailyLinesChart
+        points={points}
+        status={
+          state.status === "ready"
+            ? "ready"
+            : state.status === "loading"
+              ? "loading"
+              : "error"
+        }
+        label={
           !ready
             ? unknown
             : total
@@ -172,66 +145,8 @@ export function DailyExecutionsChart({
                 })
               : t("dashboard.daily.chartEmpty", { period: periodText })
         }
-        data-testid="home-daily"
-      >
-        <div className="home-chart__axis" aria-hidden="true">
-          {max > 0 && <span>{num.format(max)}</span>}
-          {max > 0 && <span>{num.format(max / 2)}</span>}
-          <span>0</span>
-        </div>
-        <div className="home-chart__plot">
-          <div className="home-chart__bars">
-            {points.map((p, i) => (
-              <span
-                key={p.day.toISOString()}
-                className="home-chart__col"
-                title={dayText(p)}
-              >
-                <span className="home-chart__bar">
-                  {state.status === "loading" ? (
-                    <Skeleton
-                      shape="block"
-                      className="home-chart__sk"
-                      height={`${SHAPE_HEIGHTS[i % SHAPE_HEIGHTS.length]}%`}
-                    />
-                  ) : p.total ? (
-                    <span
-                      className="home-chart__stack"
-                      style={{ height: pct(p.total) }}
-                    >
-                      {p.others > 0 && (
-                        <span
-                          data-tone="other"
-                          style={{ flexGrow: p.others }}
-                        />
-                      )}
-                      {p.failed > 0 && (
-                        <span data-tone="fail" style={{ flexGrow: p.failed }} />
-                      )}
-                      {p.passed > 0 && (
-                        <span data-tone="pass" style={{ flexGrow: p.passed }} />
-                      )}
-                    </span>
-                  ) : (
-                    <span className="home-chart__nodata" />
-                  )}
-                </span>
-              </span>
-            ))}
-          </div>
-          <div className="home-chart__labels" aria-hidden="true">
-            {points.map((p, i) => (
-              <span
-                key={p.day.toISOString()}
-                className="home-chart__label"
-                data-today={i === points.length - 1 || undefined}
-              >
-                {shown[i] ? p.day.getDate() : ""}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+        periodText={periodText}
+      />
 
       {/* The numbers of each day, for the keyboard and screen readers too
           (a chart is an image): a disclosure with the table. On the board the
@@ -281,18 +196,6 @@ export function DailyExecutionsChart({
         ))}
 
       <MetricsNotice state={state} onRetry={onRetry} />
-
-      <div className="home-daily__foot">
-        <RunLegend
-          items={[
-            { tone: "pass-navy", label: t("dashboard.daily.pass") },
-            { tone: "fail", label: t("dashboard.daily.fail") },
-            { tone: "other", label: t("dashboard.daily.other") },
-            { tone: "none", label: t("dashboard.daily.none"), line: true },
-          ]}
-        />
-        <span className="home-daily__month">{months}</span>
-      </div>
     </section>
   );
 }

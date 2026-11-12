@@ -11,6 +11,8 @@ export interface ProjectChoice {
   name: string;
   /** The project's key prefix (`BM_`), shown before its name. */
   caseIdPrefix?: string;
+  /** A short fact after its name, such as «12 casos» (UX-29). */
+  detail?: string;
 }
 
 /** The way to choose a project across the app (SPEC §6): a search field fixed on
@@ -74,6 +76,7 @@ export function ProjectMenu({
         {shown.map((p) => (
           <MenuItem key={p.id} selected={p.id === selectedId} onSelect={() => onSelect(p.id)}>
             {p.caseIdPrefix && <span className="project-menu__prefix t-id">{p.caseIdPrefix}</span>} {p.name}
+            {p.detail && <span className="project-menu__detail">{p.detail}</span>}
           </MenuItem>
         ))}
       </div>
@@ -120,6 +123,7 @@ export function ProjectSelect({
       >
         {current?.caseIdPrefix && <span className="project-menu__prefix t-id">{current.caseIdPrefix}</span>}
         <span className="project-select__name">{current?.name ?? "…"}</span>
+        {current?.detail && <span className="project-menu__detail">{current.detail}</span>}
         <ChevronsUpDown size={14} aria-hidden="true" />
       </button>
       <ProjectMenu

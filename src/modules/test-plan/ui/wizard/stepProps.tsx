@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { AiProvenance } from "@modules/ai";
 import type { AssistedField, FormState, ReviewableField } from "./formState";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** What every step body gets from the wizard. */
 export interface StepProps {
@@ -16,9 +17,9 @@ export interface StepProps {
   review: (field: ReviewableField) => () => void;
   /** A save was attempted: required fields show their error. */
   attempted: boolean;
-  /** Author shown in step 2 (the plan's, else the signed-in user). */
+  /** Author shown in «Identificación del plan» (the plan's, else the signed-in user). */
   author: string;
-  /** Completed flag of every step (step 19 lists the missing ones). */
+  /** Completed flag of every step (the last step lists the missing ones). */
   completion: boolean[];
   goTo: (index: number) => void;
 }
@@ -60,7 +61,7 @@ export function AreaField({
   return (
     <label className="tp-field">
       <span className={solo ? "sr-only" : undefined}>{label}</span>
-      <textarea rows={solo ? 12 : 4} value={value} onChange={(e) => onChange(e.target.value)} />
+      <TextArea size="document" value={value} onChange={(e) => onChange(e.target.value)} />
     </label>
   );
 }

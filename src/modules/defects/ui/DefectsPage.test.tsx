@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@test/slow";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { optionLabels, selectValue } from "@test/select";
 import { renderWithProviders, i18n } from "@test/utils";
 import { setViewportWidth } from "@test/viewport";
 import { expectNoAxeViolations } from "@test/axe";
@@ -140,7 +141,7 @@ describe("Defectos (DEF-01)", () => {
       "Abierto",
       "En curso",
       "Corregido",
-      "En retest",
+      "Por confirmar",
       "Cerrado",
       "Otros",
     ]);
@@ -197,9 +198,9 @@ describe("DefectEditor", () => {
       />,
     );
     const status = screen.getByLabelText("Estado");
-    expect(within(status).getAllByRole("option").map((o) => o.textContent)).toEqual(["En retest", "Cerrado", "Abierto"]);
-    await userEvent.selectOptions(status, "closed");
-    expect(screen.getByLabelText("Resolución")).toHaveValue("fixed");
+    expect(await optionLabels(status)).toEqual(["Por confirmar", "Cerrado", "Abierto"]);
+    await selectValue(status, "closed");
+    expect(screen.getByLabelText("Resolución")).toHaveAttribute("data-value", "fixed");
     await userEvent.click(screen.getByLabelText(/ATS_001/));
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());

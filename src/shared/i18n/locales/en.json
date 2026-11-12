@@ -64,6 +64,18 @@
     "removeEvidenceConfirm": "“{{name}}” is deleted and cannot be recovered.",
     "removeEvidenceFailed": "The evidence could not be removed. Try again."
   },
+  "datePicker": {
+    "placeholder": "dd/mm/yyyy",
+    "open": "Open calendar",
+    "change": "Change date, {{date}}",
+    "dialog": "Choose a date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "todayMark": "today",
+    "todayOut": "Today is outside the allowed dates.",
+    "clear": "Clear"
+  },
   "templates": {
     "loadFailed": "The templates could not be loaded.",
     "kind": {
@@ -752,12 +764,10 @@
   },
   "projects": {
     "loadFailed": "The project could not be loaded.",
-    "createFailed": "The project could not be created.",
     "exportFailed": "«{{name}}» could not be exported.",
     "title": "Projects",
     "subtitle": "Each project is a folder with its test plan and its test cases.",
     "new": "New project",
-    "create": "Create",
     "exportAll": "Export all",
     "exporting": "Exporting…",
     "exportProject": "Export project (ZIP)",
@@ -768,7 +778,6 @@
     "exportZipping": "Compressing the ZIP…",
     "exportFinishing": "Finishing…",
     "empty": "No projects yet. Create the first one.",
-    "namePlaceholder": "Project name",
     "name": "Project name",
     "caseIdPrefix": "Case id prefix",
     "caseIdDigits": "Number digits",
@@ -883,20 +892,10 @@
       "required": "Type a prefix, for example “PHA-”.",
       "overlap": "It overlaps “{{prefix}}” of {{name}}: two prefixes may not be equal or one start with the other.",
       "placeholder": "Prefix",
-      "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings."
+      "suggestedHint": "Prefix of the case keys (PHA-001…), suggested from the name and free among your projects. Change it now or in the project settings.",
+      "free": "Free"
     },
     "copySettings": {
-      "label": "Copy settings from:",
-      "none": "(none)",
-      "partsLegend": "Settings copied from «{{name}}»",
-      "part": {
-        "fields": "Custom fields (cases, requirements, defects, runs and cycles)",
-        "digits": "Key digits ({{digits}})",
-        "planHistory": "History in the exported plan: {{mode}}",
-        "retention": "Evidence retention"
-      },
-      "note": "Copied once, on create: the name, the prefix and the data (plan, cases, requirements, cycles, runs, defects and board) are never copied, and the two projects stay independent.",
-      "webNoRetention": "Evidence retention is a setting of the desktop app: it is not copied on the web.",
       "copiedToast": "Settings copied from «{{name}}».",
       "failedToast": "The project was created, but this was not copied: {{parts}}. You can set it in Project settings or in Administration › Evidence.",
       "failedFields": "custom fields of {{entities}}",
@@ -907,6 +906,66 @@
         "defect": "defects",
         "run": "runs",
         "test_cycle": "cycles"
+      }
+    },
+    "wizard": {
+      "title": "New project",
+      "stepsLabel": "Steps",
+      "stepOf": "Step {{n}} of {{total}}",
+      "step": {
+        "start": "How to start",
+        "copy": "What to copy",
+        "general": "General data"
+      },
+      "blank": {
+        "title": "Blank project",
+        "desc": "Start from scratch with the default settings"
+      },
+      "existing": {
+        "title": "From an existing one",
+        "desc": "Reuse settings from another of your projects",
+        "none": "You have no projects yet"
+      },
+      "source": "Source project",
+      "cases_one": "{{count}} case",
+      "cases_other": "{{count}} cases",
+      "take": "What to bring along",
+      "settingsTag": "Settings",
+      "part": {
+        "fields": "Custom fields",
+        "digits": "Case number digits",
+        "planHistory": "History in the exported plan",
+        "retention": "Evidence retention"
+      },
+      "value": {
+        "loading": "Reading…",
+        "unread": "Could not be read; it is copied anyway",
+        "fieldsNone": "None yet",
+        "fieldsOf": "{{count}} for {{entity}}",
+        "retentionDefault": "The default values",
+        "retentionKind": "{{kind}}: {{days}}",
+        "desktopOnly": "Desktop app only: the web has no evidence retention"
+      },
+      "never": "The name, the prefix and the data (plan, cases, requirements, runs) are never copied.",
+      "copiedFrom": "copied from {{name}}",
+      "summary": "Copied from «{{name}}»: {{parts}}.",
+      "summaryNothing": "Nothing is copied from «{{name}}»: the project starts with the default settings.",
+      "summaryPart": {
+        "fields": "the custom fields",
+        "digits": "the number digits ({{digits}})",
+        "planHistory": "the history in the exported plan ({{mode}})",
+        "retention": "the evidence retention"
+      },
+      "next": "Next",
+      "back": "Back",
+      "create": "Create project",
+      "creating": "Creating…",
+      "createFailed": "The project could not be created. Try again.",
+      "discard": {
+        "title": "Discard the new project?",
+        "message": "What you typed or chose is lost and no project is created.",
+        "confirm": "Discard",
+        "keep": "Keep creating"
       }
     }
   },
@@ -959,6 +1018,11 @@
     "agile": "Agile",
     "traditional": "Traditional / V-model",
     "sprintWeeks": "Sprint length (weeks)",
+    "methodGroup": "Way of working",
+    "sprintLength": "Sprint length",
+    "weeks_one": "{{count}} week",
+    "weeks_other": "{{count}} weeks",
+    "frequencyOff": "Tick «{{ceremony}}» to choose its frequency.",
     "ceremonies": "Agile events",
     "phases": "Phases",
     "methodologyLines": {
@@ -1008,13 +1072,11 @@
     "revisions": "Revisions",
     "noRevisions": "No previous revisions.",
     "step": {
-      "title": "Title",
-      "meta": "Version, date and author",
+      "identification": "Plan identification",
       "summary": "Summary",
       "scope": "Scope",
-      "types": "Test types",
+      "levelsTypes": "Test levels and types",
       "methodology": "Methodology",
-      "levels": "Test levels",
       "deliverables": "Deliverables",
       "environment": "Test environment",
       "tools": "Tools and automation",
@@ -1029,8 +1091,11 @@
       "conclusion": "Conclusion"
     },
     "typeGroup": {
-      "functional": "Functional coverage",
-      "nonFunctional": "Non-functional coverage"
+      "functional": "Functional",
+      "nonFunctional": "Non-functional",
+      "changeRelated": "Confirmation and regression",
+      "own": "Own",
+      "levels": "Test levels"
     },
     "typeLabel": {
       "functional": "Functional",
@@ -1045,7 +1110,8 @@
       "smoke": "Smoke",
       "sanity": "Sanity",
       "exploratory": "Exploratory",
-      "uat": "UAT (user acceptance)"
+      "uat": "UAT (user acceptance)",
+      "retest": "Confirmation"
     },
     "levelLabel": {
       "unit": "Unit",
@@ -1112,20 +1178,18 @@
     },
     "savedToast": "Test plan saved",
     "stepDesc": {
-      "title": "Document name and approval status.",
-      "meta": "Document control data shown on the PDF cover.",
+      "identification": "The document’s identification block (ISO/IEC/IEEE 29119-3): title, status, version, date and author. It is shown on the PDF’s cover.",
       "summary": "A short introduction: what is tested and why.",
       "scope": "What is in and out of the testing.",
-      "types": "Choose the test types this plan covers. You can add your own.",
+      "levelsTypes": "What is tested, at which level and with which type (ISTQB). Levels say where it is tested: a component, its interfaces, the whole system end to end, or the user’s and business’s acceptance. Types say which characteristic is checked: functional, non-functional (performance, security…) or confirmation and regression after a change. Tick at least one level and one type; you can add your own types.",
       "methodology": "How the testing work is organised.",
-      "levels": "At which levels the tests will run.",
-      "deliverables": "Documents and artefacts the test team produces.",
+      "deliverables": "Documents and artefacts the test team produces. Tick what will be delivered when the cycle closes; the list follows the ISO/IEC/IEEE 29119-3 documentation. Deliverables you add go to “Own” and are removed with ✕.",
       "environment": "Setup and requirements of the environment where it runs.",
       "tools": "The project's tools and automation strategy.",
       "testData": "How test data is created, protected and refreshed.",
       "defects": "How defects are logged, prioritised and closed.",
       "roles": "Who does what in the testing process.",
-      "schedule": "Sprints and milestones of the test cycle.",
+      "schedule": "Sprints and milestones of the test cycle. Click the start day and then the end day to create a sprint (Esc cancels). Select a sprint and drag its ends to change the dates, or edit them in its row. In «Milestone», click a day to add a milestone.",
       "risks": "Risks that can affect testing and how they are mitigated.",
       "communication": "How and when progress is reported.",
       "closure": "Conditions to meet before closing the cycle.",
@@ -1172,12 +1236,9 @@
       "latest": "Latest revisions"
     },
     "deliverables": {
-      "hint": "Tick what will be delivered when the cycle closes. The list follows the ISO/IEC/IEEE 29119-3 documentation.",
       "other": "Other deliverable",
-      "otherPlaceholder": "Name another…",
+      "otherPlaceholder": "Other deliverable…",
       "add": "Add",
-      "otherHint": "It is added to “Acceptance and other” marked as Own. You can remove it at any time.",
-      "own": "Own",
       "remove": "Remove {{name}}"
     },
     "deliverableGroup": {
@@ -1185,7 +1246,8 @@
       "specification": "Specification",
       "dataEnvironment": "Data and environment",
       "execution": "Execution and results",
-      "acceptance": "Acceptance and other"
+      "acceptance": "Acceptance and other",
+      "own": "Own"
     },
     "toolsPicker": {
       "selected_one": "1 selected",
@@ -1227,9 +1289,6 @@
       "prevMonth": "Previous month",
       "nextMonth": "Next month",
       "calendar": "Schedule calendar",
-      "hintSprint": "Click the start day and then the end day to create a sprint.",
-      "hintSprintDrag": "Click the start day and then the end day to create a sprint. Select a sprint and drag its ends to change the dates, or edit them in its row.",
-      "hintMilestone": "Click a day to add a milestone. Click a milestone to select it.",
       "hintEnd": "Start: {{date}}. Click the end day. Esc to cancel.",
       "legend": "Calendar legend",
       "listsRegion": "Sprints and milestones",
@@ -1284,7 +1343,27 @@
       "approved": "Approved",
       "otherChanges": "Other changes",
       "unknownAuthor": "Unknown author"
-    }
+    },
+    "levelHint": {
+      "unit": "component",
+      "integration": "interfaces",
+      "system": "end to end",
+      "acceptance": "user and business"
+    },
+    "typeHint": {
+      "retest": "Test again what failed, once it is fixed.",
+      "regression": "Check that what worked still works.",
+      "smoke": "A quick pass over the basics of a new build.",
+      "sanity": "A short check of what has just changed."
+    },
+    "levelsTypes": {
+      "other": "Other test type",
+      "otherPlaceholder": "Other test type…",
+      "add": "Add"
+    },
+    "testTypes": "Test types",
+    "testLevels": "Test levels",
+    "suggestedTitle": "{{project}} test plan"
   },
   "testCase": {
     "loadFailed": "The test cases could not be loaded.",
@@ -1552,7 +1631,7 @@
         "failed": "Failed",
         "blocked": "Blocked",
         "skipped": "Skipped",
-        "retest": "Retest",
+        "retest": "To confirm",
         "not_run": "No results"
       },
       "noResult": "No results yet",
@@ -1784,7 +1863,9 @@
       "unavailable": "Runs per day, {{period}}: not available",
       "showData": "Show the data",
       "undatedNote_one": "{{count}} result without a valid date is not in the table.",
-      "undatedNote_other": "{{count}} results without a valid date are not in the table."
+      "undatedNote_other": "{{count}} results without a valid date are not in the table.",
+      "explore": "Executions per day: use the arrow keys to go through the days",
+      "legend": "Show or hide states"
     },
     "upcoming": {
       "title": "Upcoming tests",
@@ -1793,7 +1874,7 @@
       "filters": "Test status",
       "notRun": "Not run",
       "blocked": "Blocked",
-      "retest": "Re-test",
+      "retest": "To confirm",
       "priority": {
         "critical": "Critical priority",
         "high": "High priority",
@@ -1803,8 +1884,10 @@
       "empty": {
         "notRun": "No cases left to run.",
         "blocked": "No blocked cases.",
-        "retest": "No cases waiting for a re-test."
-      }
+        "retest": "No cases waiting to be confirmed."
+      },
+      "option": "{{label}} · {{count}}",
+      "failedOn": "· failed on {{date}}"
     },
     "tabs": {
       "label": "Home sections",
@@ -2081,7 +2164,7 @@
       "not_run": "Not run",
       "skipped": "Skipped",
       "other": "Other",
-      "retest": "Re-test"
+      "retest": "To confirm"
     },
     "coverage": {
       "covered": "Covered",
@@ -2090,7 +2173,7 @@
     "note": {
       "obsoleteCase": "Obsolete case (does not cover)",
       "openDefect": "Open defect",
-      "retest": "Waiting for a re-test (defect fixed)",
+      "retest": "To confirm (defect fixed)",
       "flaky": "Flaky: passed after failing",
       "stale": "An earlier revision of the case was executed"
     },
@@ -2938,7 +3021,7 @@
       "open": "Open",
       "in_progress": "In progress",
       "fixed": "Fixed",
-      "retest": "Retest",
+      "retest": "To confirm",
       "closed": "Closed",
       "rejected": "Rejected",
       "deferred": "Deferred",
@@ -3516,7 +3599,7 @@
     "noRisky": "No high-risk requirement is failing or not run.",
     "issue": {
       "blocked": "Blocked",
-      "retest": "Waiting for re-test",
+      "retest": "To confirm",
       "flaky": "Flaky",
       "stale": "Earlier revision"
     },

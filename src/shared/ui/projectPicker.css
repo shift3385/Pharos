@@ -109,3 +109,12 @@
   height: 44px;
   font-size: 15px;
 }
+
+/* A short fact after the name («12 casos», UX-29). */
+.project-menu__detail {
+  margin-left: auto;
+  padding-left: var(--space-2);
+  font-size: var(--fs-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}

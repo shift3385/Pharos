@@ -1,6 +1,8 @@
 # ADR-0002 · Conflictos de sincronización por entidad hasta 0.5.0
 
 - **Estado:** Aceptado (decisión D2 del usuario, 2026-10-28). Enmienda la spec §9.
+  **Enmendado por [ADR-0039](0039-rumbo-hacia-la-ejecucion-autonoma.md) (2026-11-11):**
+  la fusión por campo (SYNC-02) pasa a 0.6.0; donde abajo dice 0.5.0, léase 0.6.0.
 - **Contexto:** la spec §9 pide "last-write-wins por campo". El sync se
   implementó por entidad (decisión del 2026-08-13): HLC por cambio y un panel
   de conflictos (Fase 8C) donde se conserva una versión entera.

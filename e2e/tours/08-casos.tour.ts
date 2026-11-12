@@ -30,6 +30,7 @@ import {
   waitForText,
   waitForToast,
   xpathString,
+  chooseOption,
 } from "./helpers";
 
 const C = es.testCase;
@@ -84,9 +85,7 @@ async function rows(ok: (n: number) => boolean, what: string) {
 
 /** Links a requirement from «Requisitos vinculados». */
 async function linkRequirement(key: string) {
-  const select = $(`select[aria-label="${C.requirements.add}"]`);
-  await select.scrollIntoView({ block: "center" });
-  await select.selectByAttribute("value", key);
+  await chooseOption($('[data-testid="requirement-add"]'), { value: key });
   await expect($(`[aria-label="${tf("testCase.requirements.remove", { key })}"]`)).toBeDisplayed();
 }
 
@@ -286,7 +285,7 @@ chapter("casos", () => {
   step("lista", {
     title: "La lista de casos",
     caption:
-      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Re-test»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
+      "Con casos, la tabla muestra ID, título, requisito, prioridad, estado, «Ejecución» y fecha de la última edición. «Ejecución» es el último resultado de cada caso, el mismo que la matriz (capítulo 13): «Pasa», «Falla», «Bloqueado», «Omitido» o «Por confirmar»; «—» si aún no tiene ninguno. Si un caso tiene contenido sugerido por IA que nadie ha revisado, su estado (normalmente «Borrador») lleva un ✨ y un borde discontinuo, y al pasar el puntero lo explica. Busca por ID, título o requisito y filtra por estado (cada uno con su recuento), prioridad, resultado («Ejecución», con «Sin resultados» para los que aún no se han ejecutado), tipo, automatización o un campo personalizado de sí/no, para quedarte, por ejemplo, con los casos aprobados de prioridad alta. Haz clic en la cabecera de una columna para ordenar por ella. En este ejemplo, «credenciales» deja los dos casos de acceso.",
     covers: ["action:cases-search", "action:cases-filter", "action:cases-sort"],
     run: async () => {
       await backToList();

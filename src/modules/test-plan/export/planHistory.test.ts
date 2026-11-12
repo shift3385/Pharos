@@ -181,7 +181,7 @@ describe("revision history of the exported plan (PLN-02)", () => {
     expect(changesText(r[1], t)).toBe(
       "testPlan.step.schedule · testPlan.history.approved",
     );
-    // Another status is a change of step 2.
+    // Another status is a change of «Identificación del plan» (UX-31).
     const reviewed = rows(
       source([
         update(ANA, "2026-11-07T09:00:00.000Z", {
@@ -192,7 +192,7 @@ describe("revision history of the exported plan (PLN-02)", () => {
     );
     expect(reviewed.at(-1)).toMatchObject({
       approved: false,
-      sections: ["meta"],
+      sections: ["identification"],
       status: "reviewed",
     });
   });
@@ -249,7 +249,7 @@ describe("revision history of the exported plan (PLN-02)", () => {
       [true, []],
       [false, ["summary"]],
       [false, []], // copy 2 → copy 3: nothing changed
-      [false, ["title"]],
+      [false, ["identification"]],
       [false, ["risks"]],
     ]);
     // The event's «before» gives the version of the save before it.

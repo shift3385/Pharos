@@ -29,7 +29,7 @@ describe("plan wizard", () => {
     // The vertical list (shown from 1360 px of container by CSS).
     const rail = document.querySelector<HTMLElement>(".tpw-rail")!;
     const steps = within(rail).getAllByRole("button");
-    expect(steps).toHaveLength(19);
+    expect(steps).toHaveLength(17);
     expect(steps[0]).toHaveAttribute("aria-current", "step");
 
     for (let i = 0; i < steps.length; i++) {

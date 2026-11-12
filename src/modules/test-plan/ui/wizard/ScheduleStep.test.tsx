@@ -47,10 +47,10 @@ function renderStep(plan: TestPlan = PLAN) {
   return view;
 }
 
-async function openStep14() {
-  await screen.findByText("Paso 1 de 19");
+async function openSchedule() {
+  await screen.findByText("Paso 1 de 17");
   const nav = screen.getByRole("navigation", { name: "Pasos del plan" });
-  await userEvent.click(within(nav).getAllByRole("button")[13]);
+  await userEvent.click(within(nav).getAllByRole("button")[11]);
   return screen.getAllByRole("grid");
 }
 
@@ -83,13 +83,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("step 14 · fixed calendar and scrolling rows (UX-16)", () => {
+describe("«Cronograma» · fixed calendar and scrolling rows (UX-16)", () => {
   const lists = () => screen.getByRole("region", { name: "Sprints e hitos" });
   const root = () => document.querySelector<HTMLElement>(".tps")!;
 
   it("keeps the rows in their own region and the calendar out of it", async () => {
     renderStep();
-    const grids = await openStep14();
+    const grids = await openSchedule();
     expect(within(lists()).getByRole("heading", { name: "Sprints" })).toBeInTheDocument();
     expect(within(lists()).getByRole("heading", { name: "Hitos" })).toBeInTheDocument();
     for (const grid of grids) expect(lists()).not.toContainElement(grid);
@@ -102,7 +102,7 @@ describe("step 14 · fixed calendar and scrolling rows (UX-16)", () => {
   ])("at %i px: %s layout with %i month(s)", async (width, layout, months) => {
     setViewportWidth(width);
     renderStep();
-    const grids = await openStep14();
+    const grids = await openSchedule();
     expect(root().dataset.layout).toBe(layout);
     expect(grids).toHaveLength(months);
   });
@@ -110,7 +110,7 @@ describe("step 14 · fixed calendar and scrolling rows (UX-16)", () => {
   it("a phone scrolls the page, without a scroll box inside it", async () => {
     setViewportWidth(390);
     renderStep();
-    await screen.findByText("Paso 1 de 19");
+    await screen.findByText("Paso 1 de 17");
     await userEvent.click(screen.getByRole("button", { name: "Ver pasos" }));
     const sheet = screen.getByRole("dialog", { name: "Pasos del plan" });
     await userEvent.click(within(sheet).getByRole("button", { name: /Cronograma/ }));
@@ -119,7 +119,7 @@ describe("step 14 · fixed calendar and scrolling rows (UX-16)", () => {
 
   it("a sprint added from the calendar is brought into view in its list only", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     const box = lists();
     // Every row sits below the visible part of the list.
     const rows = vi
@@ -132,10 +132,10 @@ describe("step 14 · fixed calendar and scrolling rows (UX-16)", () => {
   });
 });
 
-describe("step 14 · Cronograma (RED-W5)", () => {
+describe("«Cronograma» · Cronograma (RED-W5)", () => {
   it("replaces the old step: no «Próximamente», no «Añadir fila», no native date inputs", async () => {
     renderStep();
-    const grids = await openStep14();
+    const grids = await openSchedule();
     expect(grids).toHaveLength(2);
     expect(screen.queryByText("Próximamente")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Añadir fila" })).not.toBeInTheDocument();
@@ -145,7 +145,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("a legacy plan shows its rows in dd/mm/aaaa and its bands and diamonds in the day labels", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     expect(screen.getByRole("grid", { name: "Calendario del cronograma · noviembre de 2026" })).toBeInTheDocument();
     const [first] = sprintRows();
     expect(within(first).getByRole("textbox", { name: "Nombre del sprint" })).toHaveValue("Sprint 1 · Login");
@@ -159,7 +159,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("saving a legacy plan persists the ids derived on read", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     const input = await save();
     expect(input.data.sprints?.map((s) => s.id)).toEqual(legacy.wizard020Ids.sprints);
     expect(input.data.milestones?.map((m) => m.id)).toEqual(legacy.wizard020Ids.milestones);
@@ -168,7 +168,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("clicking a start and an end day creates the next sprint; Esc cancels a range", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(day("2026-12-07"));
     expect(screen.getByText(/Inicio: 07\/12\/2026\. Haz clic en el día de fin/)).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
@@ -183,9 +183,9 @@ describe("step 14 · Cronograma (RED-W5)", () => {
     expect(within(created).getByRole("textbox", { name: /^Fin/ })).toHaveValue("20/12/2026");
   });
 
-  it("«Siguiente sprint» adds the step 6 length after the latest sprint", async () => {
+  it("«Siguiente sprint» adds the «Metodología» sprint length after the latest sprint", async () => {
     renderStep({ ...PLAN, data: { ...PLAN.data, sprintWeeks: 3 } });
-    await openStep14();
+    await openSchedule();
     const next = screen.getByRole("button", { name: "Siguiente sprint" });
     expect(next).toHaveAccessibleDescription("Añade Sprint 3: 30/11/2026 – 20/12/2026 (21 días, paso 6)");
     await userEvent.click(next);
@@ -198,15 +198,39 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("the duration warning is only for agile plans", async () => {
     renderStep({ ...PLAN, data: { ...PLAN.data, methodologyType: "traditional", sprintWeeks: 3 } });
-    await openStep14();
+    await openSchedule();
     expect(screen.queryByText(/Dura \d+ días/)).not.toBeInTheDocument();
+  });
+
+  it("how to use the calendar is in the step's «?» help, and the calendar sits right under the bar (UX-36)", async () => {
+    renderStep();
+    await openSchedule();
+    // Not above the calendar any more…
+    const step = document.querySelector<HTMLElement>(".tps")!;
+    expect(within(step).queryByText(/Haz clic en el día de inicio/)).not.toBeInTheDocument();
+    expect(step.querySelector(".tps-hint")).toBeNull();
+    // …but in the title's help, like every other step.
+    const help = document.getElementById("tpw-step-help")!;
+    expect(help).toHaveTextContent(
+      "Haz clic en el día de inicio y después en el de fin para crear un sprint (Esc cancela). Selecciona un sprint y arrastra sus extremos para cambiar las fechas, o edítalas en su fila.",
+    );
+    expect(screen.getByRole("button", { name: "Más información: Cronograma" })).toHaveAttribute(
+      "aria-describedby",
+      "tpw-step-help",
+    );
+    // The bar, then (besides a visually hidden live region) the calendar.
+    const bar = document.querySelector(".tps-bar")!;
+    const visible = [...bar.parentElement!.children].filter((el) => !el.classList.contains("sr-only"));
+    expect(visible[visible.indexOf(bar) + 1]).toHaveClass("tps-cal");
+    // A range being marked is still announced.
+    await userEvent.click(day("2026-12-07"));
+    expect(screen.getByTestId("schedule-live")).toHaveTextContent("Inicio: 07/12/2026. Haz clic en el día de fin.");
   });
 
   it("in «Hito» mode a click on a free day adds a milestone", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(screen.getByRole("radio", { name: "Hito" }));
-    expect(screen.getByText(/Haz clic en un día para añadir un hito/)).toBeInTheDocument();
     await userEvent.click(day("2026-11-25"));
     expect(milestoneRows()).toHaveLength(3);
     expect(within(milestoneRows()[1]).getByRole("textbox", { name: "Hito" })).toHaveValue("Hito 3");
@@ -215,7 +239,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("the calendar works from the keyboard: arrows, PageDown, Enter twice", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     const start = day("2026-11-01");
     expect(start).toHaveAttribute("tabindex", "0");
     start.focus();
@@ -235,7 +259,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("row dates and the calendar edit the same sprint; what is typed is applied, with its warning", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     const end = () => within(sprintRows()[0]).getByRole("textbox", { name: /^Fin/ });
 
     // Not a real day: kept as typed, warned, not drawn, and saved as typed
@@ -270,7 +294,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("a row that moves when its date is re-sorted keeps the focus", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     const start = within(sprintRows()[0]).getByRole("textbox", { name: /^Inicio/ });
     await userEvent.clear(start);
     await userEvent.type(start, "20/11/2026{Enter}");
@@ -289,7 +313,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
         milestones: [{ name: "Go-live", date: "1/12/2026" }],
       },
     });
-    await openStep14();
+    await openSchedule();
     expect(day("2026-11-02")).toHaveAccessibleName(/Importado, del 02\/11\/2026 al 15\/11\/2026, inicio/);
     expect(day("2026-12-01")).toHaveAccessibleName(/Hito: Go-live/);
     expect(screen.queryByText(/Fecha no válida/)).not.toBeInTheDocument();
@@ -298,7 +322,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("Esc cancels a range only while the focus is in the step", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(day("2026-12-07"));
     screen.getByRole("button", { name: "Guardar" }).focus();
     await userEvent.keyboard("{Escape}");
@@ -310,7 +334,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("an overlap is a warning in words, with an icon, and the plan still saves", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     const second = sprintRows()[1];
     const start = within(second).getByRole("textbox", { name: /^Inicio/ });
     await userEvent.clear(start);
@@ -325,7 +349,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("a band's end can be dragged on desktop once the sprint is selected", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(day("2026-11-05"));
     expect(day("2026-11-15")).toHaveAttribute("data-drag");
     fireEvent.pointerDown(day("2026-11-15"), { button: 0 });
@@ -339,7 +363,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("a release on a day ends the drag without counting as a click there", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(day("2026-11-05"));
     fireEvent.pointerDown(day("2026-11-15"), { button: 0 });
     fireEvent.pointerOver(day("2026-12-03"));
@@ -352,15 +376,14 @@ describe("step 14 · Cronograma (RED-W5)", () => {
   it("touch never drags: a coarse pointer gets no drag handles, and a finger on a handle does nothing", async () => {
     vi.stubGlobal("matchMedia", (q: string) => ({ matches: q !== "(pointer: fine)", media: q, addEventListener() {}, removeEventListener() {} }));
     renderStep();
-    await openStep14();
-    expect(screen.getByText("Haz clic en el día de inicio y después en el de fin para crear un sprint.")).toBeInTheDocument();
+    await openSchedule();
     await userEvent.click(day("2026-11-05"));
     expect(day("2026-11-15")).not.toHaveAttribute("data-drag");
   });
 
   it("a finger on a drag handle of a hybrid screen does nothing", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(day("2026-11-05"));
     // jsdom has no PointerEvent: a mouse event that says it is a finger.
     const touch = new MouseEvent("pointerdown", { bubbles: true, cancelable: true, button: 0 });
@@ -373,7 +396,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
 
   it("a removed row disappears from the calendar", async () => {
     renderStep();
-    await openStep14();
+    await openSchedule();
     await userEvent.click(within(milestoneRows()[0]).getByRole("button", { name: /^Quitar: / }));
     expect(milestoneRows()).toHaveLength(1);
     expect(day("2026-11-12")).not.toHaveAccessibleName(/Hito:/);
@@ -382,7 +405,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
   it("on a phone: one month, no dragging", async () => {
     setViewportWidth(390);
     renderStep();
-    await screen.findByText("Paso 1 de 19");
+    await screen.findByText("Paso 1 de 17");
     await userEvent.click(screen.getByRole("button", { name: "Ver pasos" }));
     const sheet = screen.getByRole("dialog", { name: "Pasos del plan" });
     await userEvent.click(within(sheet).getByRole("button", { name: /Cronograma/ }));
@@ -400,7 +423,7 @@ describe("step 14 · Cronograma (RED-W5)", () => {
         sprints: [...legacy.wizard020.sprints, { name: "Solapado", start: "2026-11-10", end: "2026-11-20" }],
       },
     });
-    await openStep14();
+    await openSchedule();
     await expectNoAxeViolations(container);
   });
 });

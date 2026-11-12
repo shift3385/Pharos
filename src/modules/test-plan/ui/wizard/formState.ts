@@ -14,12 +14,15 @@ import type {
   TestPlanData,
   TestPlanInput,
 } from "../../model/types";
-import { DEFAULT_DELIVERABLES, ROLE_KEYS, TEST_LEVELS, TEST_TYPES } from "../../model/catalogs";
+import { DEFAULT_DELIVERABLES, ROLE_KEYS } from "../../model/catalogs";
 import {
   deliverableLabels,
+  levelLabels,
   normalizeDeliverables,
   normalizeTools,
   toolLabels,
+  typeGroupLines,
+  typeLabels,
 } from "../../model/catalogLabels";
 import {
   frequenciesFor,
@@ -33,7 +36,7 @@ import {
   sprintDays,
 } from "../../model/schedule";
 
-type Translate = (key: string) => string;
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
 export interface FormState {
   title: string;
@@ -198,9 +201,12 @@ export function conclusionBrief(form: FormState): string {
   return [closureBrief(form), criteria.length ? `Exit criteria: ${criteria.join("; ")}` : ""].filter(Boolean).join("\n");
 }
 
-export function defaults(t: Translate): FormState {
+/** A new plan's fields. Its title is a suggestion from the project's name
+ *  («Plan de pruebas Wallet Bancaria», UX-34), editable like any other. */
+export function defaults(t: Translate, projectName?: string): FormState {
+  const name = projectName?.trim();
   return {
-    title: t("testPlan.defaultTitle"),
+    title: name ? t("testPlan.suggestedTitle", { project: name }) : t("testPlan.defaultTitle"),
     version: "1.0",
     planDate: new Date().toISOString().slice(0, 10),
     status: "draft",
@@ -369,9 +375,6 @@ export function toInput(
 /** Maps the current (possibly unsaved) form to the export shape, shared by the
  *  .xlsx and .pdf exporters so both stay in sync. */
 export function toExportable(form: FormState, author: string, t: Translate): ExportablePlan {
-  // Localize option lists (predefined keys → labels; custom values as-is).
-  const loc = (arr: string[], known: string[], prefix: string) =>
-    arr.map((k) => (known.includes(k) ? t(`${prefix}.${k}`) : k));
   return {
     filenameBase: form.title.trim() || "plan",
     version: form.version,
@@ -382,10 +385,12 @@ export function toExportable(form: FormState, author: string, t: Translate): Exp
     purpose: form.purpose,
     scopeIn: form.scopeIn,
     scopeOut: form.scopeOut,
-    testTypes: loc(form.testTypes, TEST_TYPES, "testPlan.typeLabel"),
+    // By the step's groups, own entries last (UX-31).
+    testTypes: typeLabels(form.testTypes, t),
+    testTypeLines: typeGroupLines(form.testTypes, t),
     methodology: methodologyText(form, t),
     methodologyLines: methodologyLines(form, t),
-    testLevels: loc(form.testLevels, TEST_LEVELS, "testPlan.levelLabel"),
+    testLevels: levelLabels(form.testLevels, t),
     deliverables: deliverableLabels(form.deliverables, t),
     environmentConfig: form.environmentConfig,
     environmentRequirements: form.environmentRequirements,

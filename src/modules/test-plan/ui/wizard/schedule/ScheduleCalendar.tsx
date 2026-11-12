@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScheduleMilestone, ScheduleSprint } from "../../../model/types";
-import { addDays, isDrawable, isoOf, parseIso, toDisplay } from "../../../model/schedule";
+import { monthWeeks, moveDay, weekdayFormats } from "@shared/ui/monthGrid";
+import { isDrawable, isoOf, toDisplay } from "../../../model/schedule";
 
 export interface CalendarView {
   year: number;
@@ -54,13 +55,10 @@ export function ScheduleCalendar(props: Props) {
     () => ({
       month: new Intl.DateTimeFormat(lang, { month: "long", year: "numeric" }),
       day: new Intl.DateTimeFormat(lang, { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
-      wdShort: new Intl.DateTimeFormat(lang, { weekday: "short" }),
-      wdLong: new Intl.DateTimeFormat(lang, { weekday: "long" }),
+      weekdays: weekdayFormats(lang),
     }),
     [lang],
   );
-  // 2024-01-01 was a Monday: the week starts on Monday.
-  const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i));
 
   const preview =
     anchor && hover ? (anchor <= hover ? [anchor, hover] : [hover, anchor]) : anchor ? [anchor, anchor] : null;
@@ -78,35 +76,7 @@ export function ScheduleCalendar(props: Props) {
   const tabDay = focusDay >= firstVisible && focusDay <= lastVisible ? focusDay : firstVisible;
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>, day: string) {
-    const d = parseIso(day)!;
-    const dow = (d.getDay() + 6) % 7;
-    let next: string | null = null;
     switch (e.key) {
-      case "ArrowLeft":
-        next = addDays(day, -1);
-        break;
-      case "ArrowRight":
-        next = addDays(day, 1);
-        break;
-      case "ArrowUp":
-        next = addDays(day, -7);
-        break;
-      case "ArrowDown":
-        next = addDays(day, 7);
-        break;
-      case "Home":
-        next = addDays(day, -dow);
-        break;
-      case "End":
-        next = addDays(day, 6 - dow);
-        break;
-      case "PageUp":
-      case "PageDown": {
-        const m = new Date(d.getFullYear(), d.getMonth() + (e.key === "PageUp" ? -1 : 1), 1);
-        const last = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
-        next = isoOf(new Date(m.getFullYear(), m.getMonth(), Math.min(d.getDate(), last)));
-        break;
-      }
       case "Enter":
       case " ":
         e.preventDefault();
@@ -119,9 +89,9 @@ export function ScheduleCalendar(props: Props) {
           props.onEscape();
         }
         return;
-      default:
-        return;
     }
+    const next = moveDay(day, e.key);
+    if (!next) return;
     e.preventDefault();
     keyMoved.current = true;
     props.onFocusDay(next);
@@ -162,14 +132,8 @@ export function ScheduleCalendar(props: Props) {
         const first = firstOf(view.year, view.month + mi);
         const y = first.getFullYear();
         const m = first.getMonth();
-        const lead = (first.getDay() + 6) % 7;
         const days = new Date(y, m + 1, 0).getDate();
-        const slots: (number | null)[] = [
-          ...Array.from({ length: lead }, () => null),
-          ...Array.from({ length: days }, (_, i) => i + 1),
-        ];
-        while (slots.length % 7) slots.push(null);
-        const weeks = Array.from({ length: slots.length / 7 }, (_, w) => slots.slice(w * 7, w * 7 + 7));
+        const weeks = monthWeeks(y, m);
         const label = fmt.month.format(first);
         return (
           <div key={`${y}-${m}`} className="tps-month">
@@ -178,9 +142,9 @@ export function ScheduleCalendar(props: Props) {
             </span>
             <div role="grid" aria-label={`${t("testPlan.schedule.calendar")} · ${label}`} className="tps-grid">
               <div role="row" className="tps-week tps-week--head">
-                {weekdays.map((d) => (
-                  <span key={d.getDay()} role="columnheader" className="tps-wd">
-                    <abbr title={fmt.wdLong.format(d)}>{fmt.wdShort.format(d).replace(".", "")}</abbr>
+                {fmt.weekdays.map((d) => (
+                  <span key={d.key} role="columnheader" className="tps-wd">
+                    <abbr title={d.long}>{d.short}</abbr>
                   </span>
                 ))}
               </div>

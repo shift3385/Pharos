@@ -66,7 +66,9 @@ salieras desde otra pantalla.
 | Tab | Inicio | Recorre las tarjetas (son enlaces) y los paneles en orden |
 | Intro | Una tarjeta o una fila de «Próximas pruebas» | La abre |
 | ↑ ↓ e Intro | Selector de periodo y selector de proyecto de «Criterios de salida» | Recorren y eligen una opción |
-| ← → | Pestañas de «Próximas pruebas» (y las del Inicio en el móvil) | Cambian de pestaña |
+| ← → | Pestañas del Inicio en el móvil | Cambian de pestaña |
+| ↑ ↓ e Intro | Selector de «Próximas pruebas» | Eligen la lista |
+| ← → , Inicio, Fin | La gráfica de «Ejecuciones diarias» (con Tab) | Recorren los días y muestran sus valores |
 | Esc | Un selector abierto | Lo cierra |
 | Tab | Modo configurar | Pasa de un gadget a otro |
 | ← → ↑ ↓ | Un gadget, en el modo configurar | Lo mueve; dos gadgets iguales y contiguos se intercambian |
@@ -84,6 +86,12 @@ salieras desde otra pantalla.
   importados que aún esperan en la bandeja «Sin vincular» (capítulo 10). La
   tasa, como el progreso de cada proyecto, cuenta casos, así que no los
   incluye. Vincúlalos a su caso desde «Ejecuciones» y entrarán en la tasa.
+- **La gráfica de «Ejecuciones diarias» no rotula todos los días.** A propósito:
+  con muchos días las fechas se pisarían. Muestra el primero, uno por semana y
+  el último (con el mes cuando cambia). Pasa el ratón, toca la gráfica o
+  recórrela con las flechas para ver cada día.
+- **Falta una línea en la gráfica.** La ocultaste desde la leyenda: pulsa su
+  nombre para mostrarla. Siempre queda al menos una.
 - **«Ejecuciones diarias» suma más que la tasa.** La gráfica cuenta intentos:
   cada vez que se ejecutó algo, también los reintentos y los tests sin
   vincular. La tasa cuenta casos, una vez cada uno, con su último resultado.
@@ -130,13 +138,25 @@ salieras desde otra pantalla.
 - Las pestañas siguen el orden de tu distribución y no muestran los gadgets
   ocultos. La distribución se cambia en el escritorio.
 
+## «Ejecuciones diarias» y «Próximas pruebas»
+
+- **Ejecuciones diarias** dibuja una línea por estado: «Pasa», «Falla» y
+  «Otras» (esta, discontinua). Un punto marca cada día con algún intento. La
+  escala llega al valor más alto de lo que se ve, como poco 5. La leyenda
+  filtra: pulsa un estado para ocultar o mostrar su línea. Si el panel es muy
+  estrecho, muestra solo el total grande con una línea de tendencia.
+- **Próximas pruebas** elige su lista con un selector bajo el título: «No
+  ejecutadas», «Bloqueadas» o «Por confirmar», cada una con su número. En
+  «Por confirmar», cada fila dice cuándo falló («· falló el 8 nov»). La flecha a la
+  derecha del título es «Ver todas».
+
 ## Consejos
 
 - Pon arriba a la izquierda lo que miras primero: en el Inicio se lee de
   izquierda a derecha y de arriba abajo, y en ese orden se apilan en la tableta.
 
 - Empieza el día por «Próximas pruebas»: ordena por prioridad lo que falta,
-  lo bloqueado y lo que espera re-test.
+  lo bloqueado y lo que espera confirmación tras un arreglo.
 - Antes de una reunión de seguimiento, revisa «Criterios de salida» con el
   filtro «En riesgo»: son los proyectos de los que hay que hablar.
 - Para un informe formal del estado, usa el «Informe de estado» de Ejecuciones

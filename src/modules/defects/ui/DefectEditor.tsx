@@ -13,6 +13,7 @@ import { capabilities } from "@shared/platform";
 import { saveVia } from "@shared/export/saveFile";
 import { ListField } from "@shared/ui/fields";
 import { notify, unlessReported } from "@shared/ui/notify";
+import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { MAX_ATTACHMENT_MB, defectsApi } from "../api/defectsApi";
 import { NEXT_STATUSES, needsResolution } from "../model/lifecycle";
@@ -34,6 +35,7 @@ import { useConfirm } from "@shared/ui/useConfirm";
 import { ResultPickerDialog } from "./ResultPickerDialog";
 import { StatusBadge } from "./badges";
 import "@shared/ui/buttons.css";
+import { TextArea } from "@shared/ui/TextArea";
 
 const MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
 
@@ -359,17 +361,12 @@ export function DefectEditor({
           <div className="tc-form__grid df-grid">
             <label className="tp-field">
               <span>{t("defects.field.severity")}</span>
-              <select
+              <Select<DefectSeverity>
                 value={form.severity}
                 aria-describedby={`${uid}-sev-hint`}
-                onChange={(e) => update({ severity: e.target.value as DefectSeverity })}
-              >
-                {DEFECT_SEVERITIES.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`defects.severity.${s}`)}
-                  </option>
-                ))}
-              </select>
+                onChange={(severity) => update({ severity })}
+                options={DEFECT_SEVERITIES.map((s) => ({ value: s, label: t(`defects.severity.${s}`) }))}
+              />
               {/* Under its own field, not after the whole row (NC-051). */}
               <span id={`${uid}-sev-hint`} className="tp-field__hint">
                 {t("defects.field.severityHint")}
@@ -377,51 +374,40 @@ export function DefectEditor({
             </label>
             <label className="tp-field">
               <span>{t("defects.field.priority")}</span>
-              <select value={form.priority} onChange={(e) => update({ priority: e.target.value as DefectPriority })}>
-                {DEFECT_PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {t(`defects.priority.${p}`)}
-                  </option>
-                ))}
-              </select>
+              <Select<DefectPriority>
+                value={form.priority}
+                onChange={(priority) => update({ priority })}
+                options={DEFECT_PRIORITIES.map((p) => ({ value: p, label: t(`defects.priority.${p}`) }))}
+              />
             </label>
             <label className="tp-field">
               <span>{t("defects.field.status")}</span>
-              <select
+              <Select<DefectStatus>
                 value={form.status}
-                onChange={(e) => {
-                  const status = e.target.value as DefectStatus;
+                onChange={(status) => {
                   update({ status, resolution: needsResolution(status) ? form.resolution || (status === "closed" ? "fixed" : "") : "" });
                 }}
-              >
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`defects.status.${s}`)}
-                  </option>
-                ))}
-              </select>
+                options={statusOptions.map((s) => ({ value: s, label: t(`defects.status.${s}`) }))}
+              />
             </label>
             {needs && (
               <label className="tp-field">
                 <span>{t("defects.resolution.label")}</span>
-                <select
+                <Select<DefectResolution | "">
                   value={form.resolution}
                   aria-invalid={(attempted && !form.resolution) || undefined}
-                  onChange={(e) => update({ resolution: e.target.value as DefectResolution | "" })}
-                >
-                  <option value="">{t("defects.resolution.none")}</option>
-                  {DEFECT_RESOLUTIONS.map((r) => (
-                    <option key={r} value={r}>
-                      {t(`defects.resolution.${r}`)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(resolution) => update({ resolution })}
+                  options={[
+                    { value: "", label: t("defects.resolution.none") },
+                    ...DEFECT_RESOLUTIONS.map((r) => ({ value: r, label: t(`defects.resolution.${r}`) })),
+                  ]}
+                />
               </label>
             )}
           </div>
           <label className="tp-field">
             <span>{t("defects.field.description")}</span>
-            <textarea rows={3} value={form.description} onChange={(e) => update({ description: e.target.value })} />
+            <TextArea size="description" value={form.description} onChange={(e) => update({ description: e.target.value })} />
           </label>
           <p className="tp-field__grouplabel">{t("defects.field.labels")}</p>
           <ListField label={t("defects.field.labels")} items={form.labels} onChange={(labels) => update({ labels })} />
@@ -433,8 +419,8 @@ export function DefectEditor({
           </h3>
           <label className="tp-field">
             <span>{t("defects.field.steps")}</span>
-            <textarea
-              rows={5}
+            <TextArea
+              size="description"
               value={form.stepsToReproduce}
               onChange={(e) => update({ stepsToReproduce: e.target.value })}
             />
@@ -442,11 +428,11 @@ export function DefectEditor({
           <div className="tc-form__grid df-grid df-grid--2">
             <label className="tp-field">
               <span>{t("defects.field.expected")}</span>
-              <textarea rows={3} value={form.expected} onChange={(e) => update({ expected: e.target.value })} />
+              <TextArea size="short" value={form.expected} onChange={(e) => update({ expected: e.target.value })} />
             </label>
             <label className="tp-field">
               <span>{t("defects.field.actual")}</span>
-              <textarea rows={3} value={form.actual} onChange={(e) => update({ actual: e.target.value })} />
+              <TextArea size="short" value={form.actual} onChange={(e) => update({ actual: e.target.value })} />
             </label>
           </div>
         </section>

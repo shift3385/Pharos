@@ -42,7 +42,13 @@ export interface ImportResult {
 }
 
 const tp = (loc: typeof esLocale) => loc.testPlan as unknown as Record<string, Record<string, string>>;
-const TYPE_REV = reverse(tp(esLocale).typeLabel, tp(enLocale).typeLabel);
+const TYPE_REV = reverse(
+  tp(esLocale).typeLabel,
+  tp(enLocale).typeLabel,
+  // Labels of files exported before UX-34 dropped «re-test».
+  { retest: "Confirmación (re-test)" },
+  { retest: "Confirmation (re-test)" },
+);
 const LEVEL_REV = reverse(tp(esLocale).levelLabel, tp(enLocale).levelLabel);
 const STATUS_REV = reverse(tp(esLocale).statusLabel, tp(enLocale).statusLabel);
 const FREQUENCY_REV = reverse(tp(esLocale).frequencyLabel, tp(enLocale).frequencyLabel);
@@ -69,9 +75,9 @@ const FIELDS: FieldSpec[] = [
   { id: "purpose", labelKey: "testPlan.purpose", aliases: ["proposito", "purpose"], dir: "below", kind: "text" },
   { id: "scopeIn", labelKey: "testPlan.scopeIn", aliases: ["elementos dentro del alcance", "in-scope items"], dir: "below", kind: "listFree" },
   { id: "scopeOut", labelKey: "testPlan.scopeOut", aliases: ["fuera del alcance", "out of scope"], dir: "below", kind: "listFree" },
-  { id: "testTypes", labelKey: "testPlan.step.types", aliases: ["tipos de prueba", "test types"], dir: "below", kind: "catalog", rev: TYPE_REV },
+  { id: "testTypes", labelKey: "testPlan.testTypes", aliases: ["tipos de prueba", "test types"], dir: "below", kind: "catalog", rev: TYPE_REV },
   { id: "methodology", labelKey: "testPlan.methodology", aliases: ["metodologia agil (sprints, ceremonias, retrospectiva)", "agile methodology (sprints, ceremonies, retrospective)", "metodologia", "methodology"], dir: "below", kind: "methodology" },
-  { id: "testLevels", labelKey: "testPlan.step.levels", aliases: ["niveles de prueba", "test levels"], dir: "below", kind: "catalog", rev: LEVEL_REV },
+  { id: "testLevels", labelKey: "testPlan.testLevels", aliases: ["niveles de prueba", "test levels"], dir: "below", kind: "catalog", rev: LEVEL_REV },
   { id: "deliverables", labelKey: "testPlan.step.deliverables", aliases: ["entregables de prueba", "test deliverables"], dir: "below", kind: "catalogLines", rev: DELIVERABLE_REV },
   { id: "environmentConfig", labelKey: "testPlan.environmentConfig", aliases: ["configuracion", "configuration"], dir: "below", kind: "text" },
   { id: "environmentRequirements", labelKey: "testPlan.environmentRequirements", aliases: ["requisitos de hardware y software", "hardware and software requirements"], dir: "below", kind: "text" },

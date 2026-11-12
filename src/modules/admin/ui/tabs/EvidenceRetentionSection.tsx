@@ -5,6 +5,7 @@ import { useAuth } from "@modules/auth";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { joinLabels } from "@shared/ui/joinLabels";
 import { ProjectSelect, type ProjectChoice } from "@shared/ui/ProjectPicker";
+import { Select } from "@shared/ui/Select";
 import { useToast } from "@shared/ui/Toast";
 import { evidenceApi } from "../../api/evidenceApi";
 import { SettingsRow, SettingsSection } from "../SettingsSection";
@@ -299,19 +300,18 @@ function KindRow({
       htmlFor={id}
     >
       <span className="adm-inline">
-        <select
+        <Select<Mode>
           id={id}
           className="adm-input"
           value={draft.mode}
-          onChange={(e) => onChange({ ...draft, mode: e.target.value as Mode })}
+          onChange={(mode) => onChange({ ...draft, mode })}
           data-testid={`evidence-retention-${kind.kind}`}
-        >
-          <option value="default">
-            {t("admin.evidence.retention.default", { days: label(kind.defaultDays) })}
-          </option>
-          <option value="always">{t("admin.evidence.usage.rawAlways")}</option>
-          <option value="days">{t("admin.evidence.retention.days")}</option>
-        </select>
+          options={[
+            { value: "default", label: t("admin.evidence.retention.default", { days: label(kind.defaultDays) }) },
+            { value: "always", label: t("admin.evidence.usage.rawAlways") },
+            { value: "days", label: t("admin.evidence.retention.days") },
+          ]}
+        />
         {draft.mode === "days" && (
           <input
             className="adm-input adm-input--number u-num"

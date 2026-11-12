@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, $$, browser, expect } from "@wdio/globals";
-import { button, es } from "../support";
+import { button, es, startBlankProject } from "../support";
 
 export const fixturesDir = join(fileURLToPath(new URL(".", import.meta.url)), "fixtures");
 export const repoDir = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
@@ -46,9 +46,8 @@ export async function openProject(name: string) {
   await $(".pj-table, .pj-empty").waitForExist();
   const row = $(`a.pj-row__link*=${name}`);
   if (!(await row.isExisting())) {
-    await button(es.projects.new).click();
-    await $("#pj-new-name").setValue(name);
-    await button(es.projects.create).click();
+    await startBlankProject(name);
+    await button(es.projects.wizard.create).click();
   } else await row.click();
   await expect($(`h1=${name}`)).toBeDisplayed();
 }
@@ -274,7 +273,9 @@ async function lookUpField(label: string, scope: string): Promise<string | null>
       for (const l of Array.from(root.querySelectorAll("label"))) {
         const name = norm(l.textContent);
         if (name !== text && !name.startsWith(text)) continue;
-        const target = l.htmlFor ? document.getElementById(l.htmlFor) : l.querySelector("input,select,textarea");
+        const target = l.htmlFor
+          ? document.getElementById(l.htmlFor)
+          : l.querySelector('input,select,textarea,[role="combobox"]');
         if (target) return mark(target);
       }
       const aria = root.querySelector(`[aria-label="${text}"]`);
@@ -285,10 +286,77 @@ async function lookUpField(label: string, scope: string): Promise<string | null>
   );
 }
 
-/** Selects an <option> by its visible text in the control labelled `label`. */
+/** Picks an option by its visible text in the Pharos select labelled
+ *  `label` (UX-30). */
 export async function selectOption(label: string, text: string, scope = "body") {
-  const el = await field(label, scope);
-  await el.selectByVisibleText(text);
+  await chooseOption(await field(label, scope), { text });
+}
+
+/** Opens a Pharos select (UX-30: a `combobox` button with a `listbox`, or
+ *  a bottom sheet on a phone) and clicks the option with that value, visible
+ *  text or position — what `selectByAttribute` / `selectByVisibleText` /
+ *  `selectByIndex` did on a native `<select>`. */
+export async function chooseOption(
+  select: ReturnType<typeof $> | WebdriverIO.Element,
+  by: { value: string } | { text: string } | { index: number },
+) {
+  const el = await select;
+  await el.scrollIntoView({ block: "center" });
+  if ((await el.getAttribute("aria-expanded")) !== "true") await el.click();
+  const listId = await browser.waitUntil(async () => el.getAttribute("aria-controls"), {
+    timeout: 5_000,
+    timeoutMsg: "the select did not open",
+  });
+  const inList = `//*[@id=${xpathString(listId)}]`;
+  const opt = "(@role=\"option\" or @data-menu-item)";
+  const option =
+    "value" in by
+      ? $(`${inList}//*[@role="option" or @data-menu-item][@data-value=${xpathString(by.value)} or @data-testid[contains(., ${xpathString(`-option-${by.value}`)})]]`)
+      : "text" in by
+        ? $(
+            `${inList}//*[${opt}][.//span[(contains(@class,"menu__title") or contains(@class,"menu__text")) and not(contains(@class,"menu__text--stack")) and normalize-space(.)=${xpathString(by.text)}]]`,
+          )
+        : $(`(${inList}//*[${opt}])[${by.index + 1}]`);
+  await option.waitForDisplayed({ timeout: 5_000 });
+  await option.click();
+  // The list closes on a choice.
+  await browser.waitUntil(async () => (await el.getAttribute("aria-expanded")) === "false", {
+    timeout: 5_000,
+    timeoutMsg: "the select did not close after the choice",
+  });
+}
+
+/** Types an ISO day as dd/mm/aaaa in a Pharos DatePicker (UX-36), as a
+ *  person does, and waits until the field holds it. */
+export async function typeDate(input: ReturnType<typeof $> | WebdriverIO.Element, iso: string) {
+  const el = await input;
+  const [y, m, d] = iso.split("-");
+  await el.scrollIntoView({ block: "center" });
+  await el.setValue(`${d}/${m}/${y}`);
+  await browser.waitUntil(async () => (await el.getAttribute("data-value")) === iso, {
+    timeout: 5_000,
+    timeoutMsg: `the date field did not take ${iso}`,
+  });
+}
+
+/** Opens the calendar of a Pharos DatePicker (UX-36), moves with ‹ › to the
+ *  month of `iso` and clicks that day. */
+export async function pickDate(input: ReturnType<typeof $> | WebdriverIO.Element, iso: string) {
+  const el = await input;
+  await el.scrollIntoView({ block: "center" });
+  await el.$("..").$("button.pdate__btn").click();
+  const cal = $(".pdate-cal");
+  await cal.waitForDisplayed({ timeout: 5_000 });
+  for (let i = 0; i < 36 && !(await cal.$(`[data-day="${iso}"]`).isExisting()); i++) {
+    const first = (await cal.$("[data-day]").getAttribute("data-day")) ?? "";
+    const [prev, next] = Array.from(await cal.$$("button.pdate-cal__nav"));
+    await (iso < first ? prev : next).click();
+  }
+  await cal.$(`[data-day="${iso}"]`).click();
+  await browser.waitUntil(async () => (await el.getAttribute("data-value")) === iso, {
+    timeout: 5_000,
+    timeoutMsg: `the calendar did not pick ${iso}`,
+  });
 }
 
 /** A menu item (role menuitem/menuitemradio) whose text contains `text`. */
@@ -361,7 +429,7 @@ export async function clickForConfirm(selector: string, timeout = 15_000) {
   );
 }
 
-export { button, es };
+export { button, es, startBlankProject };
 
 /** XPath (relative to a scope element) of the innermost element whose own
  *  text contains `text`. */

@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ControlProps } from "@shared/ui/fieldProps";
+import { DatePicker } from "@shared/ui/DatePicker";
+import { Select } from "@shared/ui/Select";
 import type { CustomField } from "../model/types";
 import { MAX_LENGTH } from "../model/validate";
+import { TextArea } from "@shared/ui/TextArea";
 
 /** The control of one custom field value, by type. `undefined` from
  *  `onChange` clears the value. A select or multi-select offers the live
@@ -24,9 +27,9 @@ export function FieldValueInput({
   switch (field.fieldType) {
     case "long_text":
       return (
-        <textarea
+        <TextArea
+          size="short"
           {...control}
-          rows={3}
           maxLength={MAX_LENGTH.long_text}
           value={text}
           onChange={(e) => onChange(e.target.value || undefined)}
@@ -48,45 +51,34 @@ export function FieldValueInput({
       );
     case "date":
       return (
-        <input
-          {...control}
-          type="date"
-          value={text}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        />
+        <DatePicker {...control} value={text} onChange={(v) => onChange(v || undefined)} />
       );
     case "boolean":
       return (
-        <select
+        <Select
           {...control}
           value={value === true ? "yes" : value === false ? "no" : ""}
-          onChange={(e) =>
-            onChange(
-              e.target.value === "" ? undefined : e.target.value === "yes",
-            )
-          }
-        >
-          <option value="">{t("customFields.section.choose")}</option>
-          <option value="yes">{t("customFields.section.yes")}</option>
-          <option value="no">{t("customFields.section.no")}</option>
-        </select>
+          onChange={(v) => onChange(v === "" ? undefined : v === "yes")}
+          options={[
+            { value: "", label: t("customFields.section.choose") },
+            { value: "yes", label: t("customFields.section.yes") },
+            { value: "no", label: t("customFields.section.no") },
+          ]}
+        />
       );
     case "select":
       return (
-        <select
+        <Select
           {...control}
           value={text}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        >
-          <option value="">{t("customFields.section.choose")}</option>
-          {field.options
-            .filter((o) => !o.archived || o.id === value)
-            .map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-        </select>
+          onChange={(v) => onChange(v || undefined)}
+          options={[
+            { value: "", label: t("customFields.section.choose") },
+            ...field.options
+              .filter((o) => !o.archived || o.id === value)
+              .map((o) => ({ value: o.id, label: o.label })),
+          ]}
+        />
       );
     case "url":
       return (

@@ -10,6 +10,7 @@ import {
   PROJECT_B,
   acceptConfirm,
   button,
+  chooseOption,
   clickButton,
   dialog,
   es,
@@ -27,7 +28,7 @@ import {
 async function setPrefix(prefix: string) {
   await openSection("settings");
   await $("#pj-prefix").setValue(prefix);
-  await $("#pj-digits").selectByAttribute("value", "3");
+  await chooseOption($("#pj-digits"), { value: "3" });
   await button(es.projects.save).click();
   await waitForToast(es.projects.savedToast);
 }
@@ -81,7 +82,7 @@ chapter("ajustes", () => {
   step("campo-nuevo", {
     title: "Nuevo campo personalizado",
     caption:
-      "Los campos personalizados añaden a los casos lo que tu equipo necesite clasificar y que Pharos no trae de serie. En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. En este ejemplo, una selección «Navegador» con tres opciones.",
+      "Los campos personalizados añaden a los casos lo que tu equipo necesite clasificar y que Pharos no trae de serie. En «Campos personalizados», «Nuevo campo» abre el diálogo: nombre, clave, tipo (texto, número, fecha, sí/no, selección…), opciones y si es obligatorio. Un campo de tipo fecha se rellena en el caso con el selector de fechas de Pharos (capítulo 5). El botón [?] junto a «Clave» explica su formato (minúsculas, números y guion bajo) al pasar el ratón, con el tabulador o al tocarlo; debajo se recuerda que no se puede cambiar después. En este ejemplo, una selección «Navegador» con tres opciones.",
     covers: ["dialogs:src/modules/custom-fields/ui/CustomFieldDialog.tsx"],
     shot: { element: '[role="dialog"]' },
     run: async () => {

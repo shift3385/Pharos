@@ -20,6 +20,7 @@ import {
   tf,
   waitForText,
   waitForToast,
+  chooseOption,
 } from "./helpers";
 
 const R = es.runs;
@@ -101,8 +102,7 @@ chapter("ejecuciones", () => {
       await (await field(R.field.environment, D)).setValue("staging");
       // The cycle of chapter 7 (CYC-02): the first option after «Sin ciclo».
       const cycle = $(D).$('[data-testid="import-cycle"]');
-      await cycle.scrollIntoView();
-      await cycle.selectByIndex(1);
+      await chooseOption(cycle, { index: 1 });
       await waitForText(tf("runs.import.attachments_one", { count: 1 }));
     },
   });

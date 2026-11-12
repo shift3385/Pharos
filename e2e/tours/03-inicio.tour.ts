@@ -78,10 +78,10 @@ chapter("inicio", () => {
       await expect(byTestId("period-7d")).toBeDisplayed();
     },
     after: async () => {
-      // The period really filters: 7 days → 7 columns in «Ejecuciones diarias».
       await byTestId("period-7d").click();
       await expect(byTestId("home-period")).toHaveText(expect.stringContaining(es.dashboard.period["7d"]));
-      await browser.waitUntil(async () => (await $$('[data-testid="home-daily"] .home-chart__col')).length === 7);
+      // The period really filters: 7 days → 7 rows in the chart's data.
+      await browser.waitUntil(async () => (await $$(".home-daily .home-lines__data tbody tr")).length === 7);
     },
   });
 
@@ -151,7 +151,7 @@ chapter("inicio", () => {
   step("diarias", {
     title: "Ejecuciones diarias y sus datos",
     caption:
-      "Una columna por día del periodo con los intentos: cada vez que se ejecutó algo, reintentos y tests sin vincular incluidos, por eso puede sumar más que la tasa de éxito, que cuenta casos. Cada columna separa «Pasa», «Falla» y «Otras», sumando todos los proyectos; arriba a la derecha, el total del periodo. Pasa el ratón por una columna para ver su día. «Ver los datos» abre la misma información en una tabla (día, pasa, falla, otras, manuales e importadas), más cómoda de leer con un lector de pantalla o para copiar; en el escritorio se abre en una ventana, para que el panel no crezca.",
+      "Una línea por estado («Pasa», «Falla» y «Otras», esta discontinua) con los intentos de cada día del periodo: cada vez que se ejecutó algo, reintentos y tests sin vincular incluidos, por eso puede sumar más que la tasa de éxito, que cuenta casos. Un punto marca cada día con alguno; arriba a la derecha, el total del periodo. «Ver los datos» abre la misma información en una tabla (día, pasa, falla, otras, manuales e importadas), más cómoda de leer con un lector de pantalla o para copiar; en el escritorio se abre en una ventana, para que el panel no crezca.",
     covers: ["action:home-daily-table", "dialogs:src/app/dashboard/DailyExecutionsChart.tsx"],
     focus: '[role="dialog"]',
     run: async () => {
@@ -164,19 +164,53 @@ chapter("inicio", () => {
     },
   });
 
+  step("diarias-30", {
+    title: "Treinta días de un vistazo",
+    caption:
+      "Con «Últimos 30 días» el eje de fechas solo rotula el primer día, uno por semana y el último, con el mes cuando cambia, para que nunca se pisen; la escala llega al valor más alto que se ve (como poco, 5). Pasa el ratón, toca la gráfica o recórrela con las flechas del teclado: una línea vertical marca el día y una burbuja muestra su fecha y lo de cada estado. La leyenda también filtra: pulsa un estado para ocultar o mostrar su línea (siempre queda al menos uno) y la escala se ajusta a lo visible.",
+    covers: ["action:home-daily-tooltip", "action:home-daily-legend"],
+    focus: '[data-testid="home-daily-tip"]',
+    run: async () => {
+      await byTestId("home-period").click();
+      await byTestId("period-30d").click();
+      await browser.waitUntil(async () => (await $$(".home-daily .home-lines__data tbody tr")).length === 30);
+      const labels = await $$('[data-testid="home-daily-xlabel"]');
+      await expect(labels.length).toBeLessThanOrEqual(6);
+      // 30 days of data stretch nothing: no page scroll, no gadget scroll.
+      await browser.waitUntil(noScroll, { timeoutMsg: "Inicio scrolls at 1440 × 900 with 30 days" });
+      await expect(await innerScrolls()).toEqual([]);
+      // A tap on the chart: the bubble shows that day's date and values.
+      await $(".home-lines").click();
+      await expect(byTestId("home-daily-tip")).toBeDisplayed();
+    },
+    after: async () => {
+      // The legend filters, and puts it back.
+      await byTestId("daily-series-others").click();
+      await expect(byTestId("daily-series-others")).toHaveAttribute("aria-pressed", "false");
+      await byTestId("daily-series-others").click();
+      await expect(byTestId("daily-series-others")).toHaveAttribute("aria-pressed", "true");
+      await $("h1").moveTo();
+    },
+  });
+
   step("proximas", {
     title: "Próximas pruebas",
     caption:
-      "«Próximas pruebas» propone qué ejecutar a continuación, por prioridad, según el último resultado de cada caso: «No ejecutadas», «Bloqueadas» y «Re-test» (casos que fallaron y cuyo defecto ya está corregido). Cada fila abre el caso; «Ver todas» lleva a la lista de casos. Cambia de pestaña con un clic o con las flechas ← →.",
-    covers: ["tabs:src/app/dashboard/UpcomingTests.tsx"],
-    focus: UPCOMING,
+      "«Próximas pruebas» propone qué ejecutar a continuación, por prioridad, según el último resultado de cada caso. El selector bajo el título elige la lista, con su número: «No ejecutadas», «Bloqueadas» o «Por confirmar» (casos que fallaron y cuyo defecto ya está corregido; cada fila dice cuándo falló). Cada fila abre el caso; la flecha de la derecha («Ver todas») lleva a la lista de casos, y si no caben todas, «+N más» también.",
+    covers: ["action:home-upcoming-filter"],
+    focus: ['[data-testid="home-upcoming-filter"]', '[role="listbox"]'],
     run: async () => {
       await $(UPCOMING).scrollIntoView({ block: "center" });
-      // The tabs switch (Bloqueadas), and the capture shows the first one with its cases.
-      await byTestId("tab-home-up-blocked").click();
-      await expect(byTestId("tab-home-up-blocked")).toHaveAttribute("aria-selected", "true");
-      await byTestId("tab-home-up-notRun").click();
-      await expect(byTestId("tab-home-up-notRun")).toHaveAttribute("aria-selected", "true");
+      await byTestId("home-upcoming-filter").click();
+      await expect($('[role="listbox"]')).toBeDisplayed();
+      await expect(byTestId("home-upcoming-filter")).toHaveAttribute("aria-expanded", "true");
+    },
+    after: async () => {
+      await $('[role="option"]*=Bloqueadas').click();
+      await expect(byTestId("home-upcoming-filter")).toHaveText(expect.stringContaining("Bloqueadas"));
+      await byTestId("home-upcoming-filter").click();
+      await $('[role="option"]*=No ejecutadas').click();
+      await expect(byTestId("home-upcoming-filter")).toHaveText(expect.stringContaining("No ejecutadas"));
     },
   });
 

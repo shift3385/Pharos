@@ -7,7 +7,7 @@
 // something to show. Example: Liomar checks what is tested of Pharos 0.3.0.
 import { $, $$, browser, expect } from "@wdio/globals";
 import { chapter, step } from "./tour";
-import { PROJECT_A, byTestId, clickButton, dialog, es, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
+import { PROJECT_A, byTestId, chooseOption, clickButton, dialog, es, openProject, openSection, tf, waitForText, waitForToast } from "./helpers";
 
 const T = es.traceability;
 const D = '[role="dialog"]';
@@ -31,7 +31,7 @@ chapter("trazabilidad", () => {
   step("resultados", {
     title: "El último resultado de cada caso",
     caption:
-      "«Estado de prueba» es el último resultado final de cada caso, venga de un run manual o de un informe importado: el estado, la clave del run y la fecha. Los avisos lo matizan: «Flaky» (pasó tras fallar), «Desactualizado» (se ejecutó una revisión anterior del caso) y «Re-test» (falló y su defecto ya está corregido). «Defectos» enseña los de cada caso, con su severidad; los cerrados, atenuados. En este ejemplo, el caso de acceso PH-001 falla en el último run y lleva su defecto crítico.",
+      "«Estado de prueba» es el último resultado final de cada caso, venga de un run manual o de un informe importado: el estado, la clave del run y la fecha. Los avisos lo matizan: «Flaky» (pasó tras fallar), «Desactualizado» (se ejecutó una revisión anterior del caso) y «Por confirmar» (falló y su defecto ya está corregido). «Defectos» enseña los de cada caso, con su severidad; los cerrados, atenuados. En este ejemplo, el caso de acceso PH-001 falla en el último run y lleva su defecto crítico.",
     focus: '[data-testid^="trace-result-"]',
     run: async () => {
       await $('[data-testid="trace-run-link"]').scrollIntoView({ block: "center" });
@@ -46,8 +46,7 @@ chapter("trazabilidad", () => {
     focus: '[data-testid="trace-filter-build"]',
     run: async () => {
       const build = $('[data-testid="trace-filter-build"]');
-      await build.scrollIntoView({ block: "center" });
-      await build.selectByAttribute("value", "0.3.0-rc1");
+      await chooseOption(build, { value: "0.3.0-rc1" });
       await browser.waitUntil(async () => (await browser.getUrl()).includes("build="), { timeoutMsg: "the filter is not in the URL" });
       await browser.waitUntil(async () => (await $$("tbody tr")).length > 0, { timeoutMsg: "the filtered matrix has no rows" });
     },
@@ -76,9 +75,8 @@ chapter("trazabilidad", () => {
     focus: '[data-testid="trace-sort"]',
     run: async () => {
       const sort = $('[data-testid="trace-sort"]');
-      await sort.scrollIntoView({ block: "center" });
-      await sort.selectByAttribute("value", "key");
-      await sort.selectByAttribute("value", "risk");
+      await chooseOption(sort, { value: "key" });
+      await chooseOption(sort, { value: "risk" });
       await expect($('[data-testid^="trace-result-"]')).toBeExisting();
     },
   });

@@ -5,7 +5,6 @@ import {
   homeKpis,
   periodDays,
   projectKey,
-  visibleDayLabels,
   type HomeProject,
 } from "./homeData";
 
@@ -106,9 +105,4 @@ describe("home data (RED-V1)", () => {
     expect(periodDays("30d", today)[0].getMonth()).toBe(8); // 30 Sep
   });
 
-  it("shows every other day label counting back from today", () => {
-    expect(visibleDayLabels(5, false)).toEqual([true, true, true, true, true]);
-    expect(visibleDayLabels(5, true)).toEqual([true, false, true, false, true]);
-    expect(visibleDayLabels(4, true)).toEqual([false, true, false, true]);
-  });
 });
