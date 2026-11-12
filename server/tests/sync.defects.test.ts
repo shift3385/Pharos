@@ -11,7 +11,14 @@ import type { FastifyInstance } from "fastify";
 import type { Pool } from "pg";
 import { setupTestApp, truncateAll } from "./helpers";
 import { runMigrations } from "../src/db/migrate";
-import { convertPlannerDefects, fromCard, linkId, transitionAllowed, DEFECT_STATUSES } from "../src/modules/sync/defects";
+import {
+  convertPlannerDefects,
+  fromCard,
+  linkId,
+  stampLifecycle,
+  transitionAllowed,
+  DEFECT_STATUSES,
+} from "../src/modules/sync/defects";
 import { FEATURES_HEADER, SERVER_FEATURES, SERVER_VERSION, VERSION_HEADER } from "../src/modules/sync/sync.version";
 
 let app: FastifyInstance;
@@ -106,6 +113,14 @@ describe("defect conversion and ids (shared vectors)", () => {
         expect(transitionAllowed(from, to), `${from} → ${to}`).toBe(
           from === to || (VECTORS.transitions[from] as string[]).includes(to),
         );
+  });
+
+  it("stamps data.lifecycle as the desktop does (DOC-06)", () => {
+    const stamps = (VECTORS as unknown as { lifecycleStamps: { name: string; previous: unknown; from: string; to: string; expected: unknown }[] })
+      .lifecycleStamps;
+    expect(stamps.length).toBeGreaterThan(0);
+    for (const x of stamps)
+      expect(stampLifecycle(x.previous, x.from, x.to, "2026-11-12T10:00:00.000Z"), x.name).toEqual(x.expected);
   });
 });
 

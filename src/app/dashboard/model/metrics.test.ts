@@ -159,6 +159,7 @@ describe("home metrics mappers (RED-W6)", () => {
       target: null,
       value: null,
       met,
+      blocking: true,
     });
     expect(exitStatus(undefined)).toBe("unknown");
     expect(exitStatus(projectMetrics("p", { exitCriteria: [c(null)] }))).toBe("unknown");

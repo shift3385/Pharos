@@ -1,4 +1,512 @@
 {
+  "DOC-02/06: criteria by plan metric, the cycle's metrics and its closing": {
+    "cases": [
+      {
+        "caseId": "C1",
+        "caseStatus": "approved",
+        "defectIds": [],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "a1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Regresión 1",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "priority": "high",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_001",
+        "status": "passed",
+        "title": "Pagar"
+      },
+      {
+        "caseId": "C2",
+        "caseStatus": "approved",
+        "defectIds": [
+          "D1",
+          "D2"
+        ],
+        "flowId": null,
+        "last": {
+          "at": "2026-11-02T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "a2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Regresión 1",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "priority": "medium",
+        "requirementKeys": [],
+        "rowId": null,
+        "scenarioId": "ATS_002",
+        "status": "failed",
+        "title": "Reembolsar"
+      }
+    ],
+    "closure": {
+      "closedAt": "2026-11-05T00:00:00.000Z",
+      "closedBy": "u1",
+      "criteria": [
+        {
+          "blocking": true,
+          "criterion": "Tasa de éxito",
+          "index": 0,
+          "justification": "Los fallos son de un módulo detrás de un flag apagado.",
+          "kind": "passRate",
+          "manualMet": null,
+          "metric": "≥ 90%",
+          "op": ">=",
+          "state": "notMet",
+          "target": 90.0,
+          "value": 50.0
+        }
+      ],
+      "metrics": {
+        "defectsFixed": 1,
+        "defectsFound": 2,
+        "defectsReopened": 1,
+        "defectsUnfixed": 1,
+        "escapeRate": 0.0,
+        "executedCases": 2,
+        "values": {
+          "coverage": null,
+          "criticalDefects": 1.0,
+          "defectDensity": 100.0,
+          "escapedDefects": null,
+          "executed": 100.0,
+          "fixTime": 2.0,
+          "flakyRate": 0.0,
+          "passRate": 50.0,
+          "reopenRate": 100.0
+        }
+      },
+      "planId": "PL1",
+      "verdict": "goWithRisks"
+    },
+    "contractVersion": 1,
+    "coverage": {
+      "byRisk": {
+        "high": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "low": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "medium": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        },
+        "unassessed": {
+          "covered": 0,
+          "executed": 0,
+          "failed": 0,
+          "passed": 0,
+          "requirements": 0
+        }
+      },
+      "coverageRatio": null,
+      "covered": 0,
+      "executed": 0,
+      "passed": 0,
+      "requirements": 0
+    },
+    "daily": [],
+    "defects": {
+      "bySeverity": {
+        "critical": {
+          "open": 1,
+          "total": 1
+        },
+        "major": {
+          "open": 1,
+          "total": 1
+        },
+        "minor": {
+          "open": 0,
+          "total": 0
+        },
+        "trivial": {
+          "open": 0,
+          "total": 0
+        }
+      },
+      "byStatus": {
+        "open": 2
+      },
+      "open": 2,
+      "openBySeverity": {
+        "critical": 1,
+        "major": 1,
+        "minor": 0,
+        "trivial": 0
+      },
+      "total": 2
+    },
+    "exitCriteria": [
+      {
+        "blocking": true,
+        "criterion": "Tasa de éxito",
+        "index": 0,
+        "kind": "passRate",
+        "met": false,
+        "metric": "≥ 90%",
+        "op": ">=",
+        "target": 90.0,
+        "value": 50.0
+      },
+      {
+        "blocking": false,
+        "criterion": "Reapertura",
+        "index": 1,
+        "kind": "reopenRate",
+        "met": false,
+        "metric": "≤ 10%",
+        "op": "<=",
+        "target": 10.0,
+        "value": 100.0
+      },
+      {
+        "blocking": true,
+        "criterion": "Visto bueno del PO",
+        "index": 2,
+        "kind": null,
+        "met": null,
+        "metric": "",
+        "op": null,
+        "target": null,
+        "value": null
+      },
+      {
+        "blocking": true,
+        "criterion": "% de casos ejecutados",
+        "index": 3,
+        "kind": "executed",
+        "met": true,
+        "metric": "≥ 95%",
+        "op": ">=",
+        "target": 95.0,
+        "value": 100.0
+      },
+      {
+        "blocking": true,
+        "criterion": "Densidad de defectos",
+        "index": 4,
+        "kind": null,
+        "met": null,
+        "metric": "≤ 5",
+        "op": null,
+        "target": null,
+        "value": null
+      }
+    ],
+    "filter": {
+      "build": null,
+      "configurationId": null,
+      "cycleId": "CY1",
+      "dayStarts": null,
+      "environment": null,
+      "from": null,
+      "projectId": "P2",
+      "testPlanId": null,
+      "to": null
+    },
+    "lastExecutedAt": "2026-11-02T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 1,
+      "defectsFound": 2,
+      "defectsReopened": 1,
+      "defectsUnfixed": 1,
+      "escapeRate": 33.3,
+      "executedCases": 2,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 1.0,
+        "defectDensity": 100.0,
+        "escapedDefects": 1.0,
+        "executed": 100.0,
+        "fixTime": 2.0,
+        "flakyRate": 0.0,
+        "passRate": 50.0,
+        "reopenRate": 100.0
+      }
+    },
+    "options": {
+      "builds": [],
+      "environments": []
+    },
+    "passRate": 0.5,
+    "previous": null,
+    "progress": {
+      "blocked": 0,
+      "executed": 2,
+      "failed": 1,
+      "notRun": 0,
+      "other": 0,
+      "passed": 1,
+      "retest": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "progressUnit": "cell",
+    "projectId": "P2",
+    "requirements": [],
+    "runs": [
+      {
+        "build": null,
+        "configurationId": null,
+        "cycleId": "CY1",
+        "environment": null,
+        "id": "R1",
+        "runKey": "RUN-001",
+        "sourceTool": null,
+        "startedAt": "2026-11-01T09:00:00Z",
+        "status": "completed",
+        "title": "Regresión 1",
+        "trigger": "manual"
+      }
+    ],
+    "targets": [
+      {
+        "caseId": "C1",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-01T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "a1",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Regresión 1",
+          "sourceTool": null,
+          "stale": false,
+          "status": "passed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "passed"
+      },
+      {
+        "caseId": "C2",
+        "flowId": null,
+        "last": {
+          "at": "2026-11-02T10:00:00Z",
+          "configurationLabel": null,
+          "flaky": false,
+          "origin": "manual",
+          "resultId": "a2",
+          "revisionId": null,
+          "runId": "R1",
+          "runKey": "RUN-001",
+          "runTitle": "Regresión 1",
+          "sourceTool": null,
+          "stale": false,
+          "status": "failed",
+          "trigger": "manual"
+        },
+        "rowId": null,
+        "status": "failed"
+      }
+    ],
+    "undated": 0
+  },
+  "DOC-06: the trend shows closed cycles frozen and the active one live": {
+    "contractVersion": 1,
+    "daily": [
+      {
+        "blocked": 0,
+        "dayStart": 1762300800000,
+        "failed": 0,
+        "imported": 0,
+        "manual": 0,
+        "other": 0,
+        "passed": 0,
+        "skipped": 0,
+        "total": 0
+      }
+    ],
+    "projects": [
+      {
+        "counts": {
+          "blocked": 0,
+          "executed": 2,
+          "failed": 1,
+          "notRun": 0,
+          "other": 0,
+          "passed": 1,
+          "retest": 0,
+          "skipped": 0,
+          "total": 2
+        },
+        "coverage": null,
+        "defects": {
+          "open": 4,
+          "openBySeverity": {
+            "critical": 1,
+            "major": 1,
+            "minor": 2,
+            "trivial": 0
+          }
+        },
+        "exitCriteria": [
+          {
+            "blocking": true,
+            "criterion": "Tasa de éxito",
+            "index": 0,
+            "kind": "passRate",
+            "met": false,
+            "metric": "≥ 90%",
+            "op": ">=",
+            "target": 90.0,
+            "value": 50.0
+          },
+          {
+            "blocking": false,
+            "criterion": "Reapertura",
+            "index": 1,
+            "kind": "reopenRate",
+            "met": false,
+            "metric": "≤ 10%",
+            "op": "<=",
+            "target": 10.0,
+            "value": 100.0
+          },
+          {
+            "blocking": true,
+            "criterion": "Visto bueno del PO",
+            "index": 2,
+            "kind": null,
+            "met": null,
+            "metric": "",
+            "op": null,
+            "target": null,
+            "value": null
+          },
+          {
+            "blocking": true,
+            "criterion": "% de casos ejecutados",
+            "index": 3,
+            "kind": "executed",
+            "met": true,
+            "metric": "≥ 95%",
+            "op": ">=",
+            "target": 95.0,
+            "value": 100.0
+          },
+          {
+            "blocking": true,
+            "criterion": "Densidad de defectos",
+            "index": 4,
+            "kind": null,
+            "met": null,
+            "metric": "≤ 5",
+            "op": null,
+            "target": null,
+            "value": null
+          }
+        ],
+        "lastExecutedAt": "2026-11-07T10:00:00Z",
+        "objectives": [
+          {
+            "kind": "passRate",
+            "op": ">=",
+            "target": 90.0
+          },
+          {
+            "kind": "reopenRate",
+            "op": "<=",
+            "target": 10.0
+          },
+          {
+            "kind": "fixTime",
+            "op": "<=",
+            "target": 3.0
+          }
+        ],
+        "projectId": "P2",
+        "queue": {
+          "blocked": [],
+          "counts": {
+            "blocked": 0,
+            "notRun": 0,
+            "retest": 0
+          },
+          "notRun": [],
+          "retest": []
+        },
+        "trend": [
+          {
+            "closedAt": "2026-11-05T00:00:00.000Z",
+            "cycleId": "CY1",
+            "cycleKey": "CYC-001",
+            "status": "closed",
+            "title": "Regresión 1",
+            "values": {
+              "coverage": null,
+              "criticalDefects": 1.0,
+              "defectDensity": 100.0,
+              "escapedDefects": 1.0,
+              "executed": 100.0,
+              "fixTime": 2.0,
+              "flakyRate": 0.0,
+              "passRate": 50.0,
+              "reopenRate": 100.0
+            },
+            "verdict": "goWithRisks"
+          },
+          {
+            "closedAt": null,
+            "cycleId": "CY2",
+            "cycleKey": "CYC-002",
+            "status": "active",
+            "title": "Regresión 2",
+            "values": {
+              "coverage": null,
+              "criticalDefects": 0.0,
+              "defectDensity": 0.0,
+              "escapedDefects": 0.0,
+              "executed": 100.0,
+              "fixTime": null,
+              "flakyRate": 100.0,
+              "passRate": 100.0,
+              "reopenRate": null
+            },
+            "verdict": null
+          }
+        ]
+      }
+    ],
+    "undated": 0,
+    "windows": {}
+  },
   "a cycle scope counts the cycle's cells": {
     "cases": [
       {
@@ -42,6 +550,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -112,6 +621,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -122,6 +632,7 @@
         "value": 25.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -132,6 +643,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -154,11 +666,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 25.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -243,6 +775,7 @@
         "title": "One"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -336,6 +869,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -346,6 +880,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -356,6 +891,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -381,11 +917,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -483,6 +1039,7 @@
         "title": "ATS_2"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -553,6 +1110,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": 0,
         "kind": "executed",
@@ -563,6 +1121,7 @@
         "value": 50.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos ejecutados",
         "index": 1,
         "kind": "coverage",
@@ -573,6 +1132,7 @@
         "value": null
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos o mayores abiertos",
         "index": 2,
         "kind": null,
@@ -583,6 +1143,7 @@
         "value": null
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": 3,
         "kind": "criticalDefects",
@@ -605,11 +1166,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 50.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -696,6 +1277,7 @@
         "title": "Pay"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -766,6 +1348,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -776,6 +1359,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -786,6 +1370,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -808,11 +1393,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-03T09:00:00+01:00",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": 100.0,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 0.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 0.0,
+    "previous": null,
     "progress": {
       "blocked": 1,
       "executed": 1,
@@ -942,6 +1547,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -1012,6 +1618,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": 0,
         "kind": "executed",
@@ -1022,6 +1629,7 @@
         "value": 50.0
       },
       {
+        "blocking": true,
         "criterion": "Firma del responsable",
         "index": 2,
         "kind": null,
@@ -1032,6 +1640,7 @@
         "value": null
       },
       {
+        "blocking": true,
         "criterion": "Tasa de éxito",
         "index": 3,
         "kind": "passRate",
@@ -1042,6 +1651,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Casos críticos ejecutados",
         "index": 4,
         "kind": null,
@@ -1064,11 +1674,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 50.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -1166,6 +1796,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -1236,6 +1867,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -1246,6 +1878,7 @@
         "value": 50.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -1256,6 +1889,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -1278,6 +1912,25 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-03T00:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 50.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 0.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [
         "1.0",
@@ -1289,6 +1942,7 @@
       ]
     },
     "passRate": 0.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -1386,6 +2040,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -1456,6 +2111,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -1466,6 +2122,7 @@
         "value": 50.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -1476,6 +2133,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -1498,11 +2156,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T00:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 50.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -1614,6 +2292,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -1729,6 +2408,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -1739,6 +2419,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -1749,6 +2430,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -1776,11 +2458,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-10-26T09:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 2,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 0.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 0.0,
+    "previous": null,
     "progress": {
       "blocked": 1,
       "executed": 2,
@@ -1940,6 +2642,7 @@
         "title": "Three"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -2010,6 +2713,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -2020,6 +2724,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -2030,6 +2735,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -2052,11 +2758,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 3,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 66.7,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 3,
@@ -2204,6 +2930,7 @@
         },
         "exitCriteria": [
           {
+            "blocking": true,
             "criterion": "% de casos ejecutados",
             "index": null,
             "kind": "executed",
@@ -2214,6 +2941,7 @@
             "value": 100.0
           },
           {
+            "blocking": true,
             "criterion": "Defectos críticos abiertos",
             "index": null,
             "kind": "criticalDefects",
@@ -2224,6 +2952,7 @@
             "value": 0.0
           },
           {
+            "blocking": true,
             "criterion": "Cobertura de requisitos",
             "index": null,
             "kind": "coverage",
@@ -2235,6 +2964,7 @@
           }
         ],
         "lastExecutedAt": "2026-11-06T07:00:00Z",
+        "objectives": [],
         "projectId": "P9",
         "queue": {
           "blocked": [],
@@ -2245,7 +2975,8 @@
           },
           "notRun": [],
           "retest": []
-        }
+        },
+        "trend": []
       }
     ],
     "undated": 0,
@@ -2327,6 +3058,7 @@
         },
         "exitCriteria": [
           {
+            "blocking": true,
             "criterion": "% de casos ejecutados",
             "index": null,
             "kind": "executed",
@@ -2337,6 +3069,7 @@
             "value": 60.0
           },
           {
+            "blocking": true,
             "criterion": "Defectos críticos abiertos",
             "index": null,
             "kind": "criticalDefects",
@@ -2347,6 +3080,7 @@
             "value": 0.0
           },
           {
+            "blocking": true,
             "criterion": "Cobertura de requisitos",
             "index": null,
             "kind": "coverage",
@@ -2358,6 +3092,7 @@
           }
         ],
         "lastExecutedAt": "2026-11-07T00:00:00Z",
+        "objectives": [],
         "projectId": "P1",
         "queue": {
           "blocked": [
@@ -2388,7 +3123,8 @@
             }
           ],
           "retest": []
-        }
+        },
+        "trend": []
       },
       {
         "counts": {
@@ -2414,6 +3150,7 @@
         },
         "exitCriteria": [
           {
+            "blocking": true,
             "criterion": "% de casos ejecutados",
             "index": null,
             "kind": "executed",
@@ -2424,6 +3161,7 @@
             "value": null
           },
           {
+            "blocking": true,
             "criterion": "Defectos críticos abiertos",
             "index": null,
             "kind": "criticalDefects",
@@ -2434,6 +3172,7 @@
             "value": 0.0
           },
           {
+            "blocking": true,
             "criterion": "Cobertura de requisitos",
             "index": null,
             "kind": "coverage",
@@ -2445,6 +3184,7 @@
           }
         ],
         "lastExecutedAt": null,
+        "objectives": [],
         "projectId": "P2",
         "queue": {
           "blocked": [],
@@ -2455,7 +3195,8 @@
           },
           "notRun": [],
           "retest": []
-        }
+        },
+        "trend": []
       }
     ],
     "undated": 1,
@@ -2580,6 +3321,7 @@
         "title": "ATS_3"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -2666,6 +3408,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -2676,6 +3419,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -2686,6 +3430,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -2710,11 +3455,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:04:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 3,
+      "values": {
+        "coverage": 100.0,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 0.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 0.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 3,
@@ -2978,6 +3743,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -3053,6 +3819,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -3063,6 +3830,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -3073,6 +3841,7 @@
         "value": 2.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -3095,11 +3864,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 2,
+      "values": {
+        "coverage": 100.0,
+        "criticalDefects": 2.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 0.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 0.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 2,
@@ -3242,6 +4031,7 @@
         "title": "Refund"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -3312,6 +4102,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -3322,6 +4113,7 @@
         "value": 50.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -3332,6 +4124,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -3354,11 +4147,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-02T10:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": 50.0,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 50.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -3517,6 +4330,7 @@
         "title": "Three"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -3587,6 +4401,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -3597,6 +4412,7 @@
         "value": 33.3
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -3607,6 +4423,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -3629,11 +4446,31 @@
       "to": 1793577600000
     },
     "lastExecutedAt": "2026-11-01T00:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 33.3,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,
@@ -3745,6 +4582,7 @@
         "title": "Two"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -3815,6 +4653,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -3825,6 +4664,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -3835,6 +4675,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -3857,11 +4698,31 @@
       "to": null
     },
     "lastExecutedAt": "2026-11-01T11:00:00Z",
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 2,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 50.0,
+        "passRate": 50.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 0.5,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 2,
@@ -3967,6 +4828,7 @@
         "title": "One"
       }
     ],
+    "closure": null,
     "contractVersion": 1,
     "coverage": {
       "byRisk": {
@@ -4037,6 +4899,7 @@
     },
     "exitCriteria": [
       {
+        "blocking": true,
         "criterion": "% de casos ejecutados",
         "index": null,
         "kind": "executed",
@@ -4047,6 +4910,7 @@
         "value": 100.0
       },
       {
+        "blocking": true,
         "criterion": "Defectos críticos abiertos",
         "index": null,
         "kind": "criticalDefects",
@@ -4057,6 +4921,7 @@
         "value": 0.0
       },
       {
+        "blocking": true,
         "criterion": "Cobertura de requisitos",
         "index": null,
         "kind": "coverage",
@@ -4079,11 +4944,31 @@
       "to": null
     },
     "lastExecutedAt": null,
+    "metrics": {
+      "defectsFixed": 0,
+      "defectsFound": 0,
+      "defectsReopened": 0,
+      "defectsUnfixed": 0,
+      "escapeRate": null,
+      "executedCases": 1,
+      "values": {
+        "coverage": null,
+        "criticalDefects": 0.0,
+        "defectDensity": 0.0,
+        "escapedDefects": 0.0,
+        "executed": 100.0,
+        "fixTime": null,
+        "flakyRate": 0.0,
+        "passRate": 100.0,
+        "reopenRate": null
+      }
+    },
     "options": {
       "builds": [],
       "environments": []
     },
     "passRate": 1.0,
+    "previous": null,
     "progress": {
       "blocked": 0,
       "executed": 1,

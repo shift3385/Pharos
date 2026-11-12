@@ -14,19 +14,21 @@ import type { TokenService } from "../auth/tokens";
 import type { RemoteDoc } from "../sync/sync.repository";
 import { requireSupportedVersion } from "../sync/sync.version";
 import { createHash } from "node:crypto";
-import type { DomainReader, DomainStore } from "./domain.store";
+import type { DomainReader, DomainStore, DomainTx } from "./domain.store";
 import { withLinks, type LinkContext } from "./defects";
 import {
+  closeRecord,
   home,
   summarize,
   type AttemptData,
+  type CycleCloseInput,
   type ExecutionFilter,
   type HomeMetrics,
   type HomeRequest,
   type ProjectData,
 } from "./execution-summary";
 import { factsOf, isImported, linkDataOf, linkResolver, supersededShards, type ResultLink } from "./resultLink";
-import { sortable } from "./domain.service";
+import { sortable, timestamp } from "./domain.service";
 
 type Payload = Record<string, unknown>;
 const str = (p: Payload, k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");
@@ -217,6 +219,8 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
   const defects = docs("defect").map((d) => {
     const v = withLinks(ctx, d);
     const own = (v.links as { targetKind: string; targetId: string }[]) ?? [];
+    const data = obj(d.payload.data);
+    const life = obj(data.lifecycle);
     return {
       id: d.entityId,
       defectKey: str(d.payload, "defectKey"),
@@ -224,10 +228,16 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
       status: str(d.payload, "status"),
       caseIds: strings(v.caseIds),
       requirementIds: own.filter((l) => l.targetKind === "requirement").map((l) => l.targetId),
+      foundInRunId: strOrNull(d.payload, "foundInRunId"),
+      createdAt: strOrNull(d.payload, "createdAt"),
+      fixedAt: strOrNull(life, "fixedAt"),
+      reopens: numOrNull(life, "reopens") ?? 0,
+      escaped: data.escaped === true,
     };
   });
   const plan = [...docs("test_plan")].sort(byUpdatedDesc)[0];
   const criteria = plan ? obj(plan.payload.data).closureCriteria : undefined;
+  const metrics = plan ? obj(plan.payload.data).metrics : undefined;
   return {
     projectId,
     runs: runDocs.map((d) => ({
@@ -268,6 +278,10 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
       id: d.entityId,
       testPlanId: strOrNull(d.payload, "testPlanId"),
       configurationIds: strings(d.payload.configurationIds),
+      cycleKey: str(d.payload, "cycleKey"),
+      title: str(d.payload, "title"),
+      status: str(d.payload, "status"),
+      closure: latestClosure(d.payload.data),
     })),
     cycleItems: docs("test_cycle_item")
       .map((d) => ({
@@ -284,8 +298,37 @@ function projectData(project: RemoteDoc, docs: (kind: Kind) => RemoteDoc[]): Pro
       ? (Array.isArray(criteria) ? criteria : []).map((c) => ({
           criterion: str(obj(c), "criterion"),
           metric: str(obj(c), "metric"),
+          metricId: strOrNull(obj(c), "metricId"),
+          blocking: typeof obj(c).blocking === "boolean" ? (obj(c).blocking as boolean) : null,
         }))
       : null,
+    planMetrics: plan
+      ? (Array.isArray(metrics) ? metrics : []).flatMap((m) => {
+          const id = strOrNull(obj(m), "id");
+          if (!id) return [];
+          const kind = obj(m).kind;
+          return [{ id, kind: typeof kind === "string" ? kind : null, op: str(obj(m), "op"), target: numOrNull(obj(m), "target") }];
+        })
+      : null,
+  };
+}
+
+/** The latest closing of a cycle's `data.closures` (DOC-02), raw. */
+function latestClosure(data: unknown): unknown {
+  const list = obj(data).closures;
+  return Array.isArray(list) && list.length ? list[list.length - 1] : null;
+}
+
+/** A write transaction read as the derivation's reader: the user's own
+ *  documents, inside the lock (the closing, DOC-02). */
+function readerOf(tx: DomainTx): DomainReader {
+  return {
+    list: async (entity, projectIds, opts) =>
+      (await Promise.all(projectIds.map((id) => tx.list(entity, id, opts)))).flat(),
+    projects: async (ids) => {
+      const docs = await Promise.all((ids ?? []).map((id) => tx.get("project", id)));
+      return docs.filter((d): d is RemoteDoc => !!d && !d.deleted);
+    },
   };
 }
 
@@ -317,8 +360,49 @@ export function createExecutionService(store: DomainStore) {
       const projects = await store.read(userId, (r) => loadProjects(r, request.projectIds ?? null));
       return home(projects, request);
     },
+    /** «Cerrar ciclo» (DOC-02, `cycle_close` on the desktop): the gate over
+     *  the cycle's own summary, then the closing with its record, in one
+     *  transaction. Null if the cycle is not the user's. */
+    close: async (userId: string, cycleId: string, input: CycleCloseInput) =>
+      store.tx(userId, async (tx) => {
+        const doc = await tx.get("test_cycle", cycleId);
+        if (!doc || doc.deleted) return null;
+        if (str(doc.payload, "status") === "closed") throw new AppError(409, "cycle_closed", "cycle-closed");
+        const projectId = str(doc.payload, "projectId");
+        const [data] = await loadProjects(readerOf(tx), [projectId]);
+        if (!data) return null;
+        const summary = summarize(data, { projectId, cycleId });
+        const plan = [...(await tx.list("test_plan", projectId))].sort(byUpdatedDesc)[0];
+        const at = timestamp();
+        // `closedAt` as the desktop stamps it (UTC with ms); `updatedAt` as every web write.
+        const result = closeRecord(summary, input, plan?.entityId ?? null, new Date().toISOString(), userId);
+        if (!result.ok) throw new AppError(400, "gate_rejected", result.error);
+        const stored = obj(doc.payload.data);
+        const closures = Array.isArray(stored.closures) ? stored.closures : [];
+        await tx.put(
+          "test_cycle",
+          cycleId,
+          { ...doc.payload, status: "closed", data: { ...stored, closures: [...closures, result.closure] }, updatedAt: at },
+          doc,
+        );
+        return result.closure;
+      }),
   };
 }
+
+const closeSchema = z.object({
+  verdict: z.enum(["goWithRisks", "noGo"]).nullish(),
+  decisions: z
+    .array(
+      z.object({
+        position: z.number().int().min(0).max(500),
+        manualMet: z.boolean().nullish(),
+        justification: z.string().max(4000).nullish(),
+      }),
+    )
+    .max(500)
+    .default([]),
+});
 
 export type ExecutionService = ReturnType<typeof createExecutionService>;
 
@@ -362,4 +446,10 @@ export function executionRoutes(app: FastifyInstance, deps: { execution: Executi
   app.get("/api/execution/summary", { preHandler }, (req) =>
     deps.execution.summary(user(req), summaryQuerySchema.parse(req.query)),
   );
+  app.post("/api/cycles/:id/close", { preHandler }, async (req) => {
+    const { id } = req.params as { id: string };
+    const closure = await deps.execution.close(user(req), id, closeSchema.parse(req.body ?? {}));
+    if (!closure) throw new AppError(404, "not_found", "Cycle not found.");
+    return closure;
+  });
 }

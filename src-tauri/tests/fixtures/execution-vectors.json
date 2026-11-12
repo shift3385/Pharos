@@ -2340,6 +2340,616 @@
           }
         }
       }
+    },
+    {
+      "name": "DOC-02/06: criteria by plan metric, the cycle's metrics and its closing",
+      "kind": "summary",
+      "project": {
+        "projectId": "P2",
+        "runs": [
+          {
+            "id": "R1",
+            "runKey": "RUN-001",
+            "title": "Regresión 1",
+            "trigger": "manual",
+            "status": "completed",
+            "startedAt": "2026-11-01T09:00:00Z",
+            "createdAt": "2026-11-01 09:00:00",
+            "cycleId": "CY1"
+          },
+          {
+            "id": "R2",
+            "runKey": "RUN-002",
+            "title": "Regresión 2",
+            "trigger": "manual",
+            "status": "in_progress",
+            "startedAt": "2026-11-07T09:00:00Z",
+            "createdAt": "2026-11-07 09:00:00",
+            "cycleId": "CY2"
+          }
+        ],
+        "attempts": [
+          {
+            "id": "a1",
+            "runId": "R1",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-01T10:00:00Z",
+            "caseId": "C1",
+            "hlc": "1"
+          },
+          {
+            "id": "a2",
+            "runId": "R1",
+            "testKey": "manual:C2//",
+            "status": "failed",
+            "finishedAt": "2026-11-02T10:00:00Z",
+            "caseId": "C2",
+            "hlc": "2"
+          },
+          {
+            "id": "a3",
+            "runId": "R2",
+            "testKey": "manual:C1//",
+            "status": "passed",
+            "finishedAt": "2026-11-07T10:00:00Z",
+            "caseId": "C1",
+            "hlc": "3",
+            "declaredFlaky": true
+          }
+        ],
+        "cases": [
+          {
+            "id": "C1",
+            "scenarioId": "ATS_001",
+            "title": "Pagar",
+            "status": "approved",
+            "priority": "high"
+          },
+          {
+            "id": "C2",
+            "scenarioId": "ATS_002",
+            "title": "Reembolsar",
+            "status": "approved",
+            "priority": "medium"
+          }
+        ],
+        "defects": [
+          {
+            "id": "D1",
+            "defectKey": "DEF-001",
+            "severity": "major",
+            "status": "open",
+            "caseIds": [
+              "C2"
+            ],
+            "foundInRunId": "R1",
+            "createdAt": "2026-11-02T10:00:00Z",
+            "fixedAt": "2026-11-04T10:00:00Z",
+            "reopens": 1
+          },
+          {
+            "id": "D2",
+            "defectKey": "DEF-002",
+            "severity": "critical",
+            "status": "open",
+            "caseIds": [
+              "C2"
+            ],
+            "foundInRunId": "R1",
+            "createdAt": "2026-11-02 12:00:00"
+          },
+          {
+            "id": "D3",
+            "defectKey": "DEF-003",
+            "severity": "minor",
+            "status": "new",
+            "escaped": true,
+            "createdAt": "2026-11-06T08:00:00Z"
+          },
+          {
+            "id": "D4",
+            "defectKey": "DEF-004",
+            "severity": "minor",
+            "status": "new",
+            "escaped": true,
+            "createdAt": "2026-11-01T08:00:00Z"
+          }
+        ],
+        "cycles": [
+          {
+            "id": "CY1",
+            "cycleKey": "CYC-001",
+            "title": "Regresión 1",
+            "status": "closed",
+            "closure": {
+              "closedAt": "2026-11-05T00:00:00.000Z",
+              "closedBy": "u1",
+              "verdict": "goWithRisks",
+              "planId": "PL1",
+              "criteria": [
+                {
+                  "index": 0,
+                  "criterion": "Tasa de éxito",
+                  "metric": "≥ 90%",
+                  "kind": "passRate",
+                  "op": ">=",
+                  "target": 90,
+                  "value": 50,
+                  "blocking": true,
+                  "state": "notMet",
+                  "justification": "Los fallos son de un módulo detrás de un flag apagado."
+                }
+              ],
+              "metrics": {
+                "values": {
+                  "executed": 100,
+                  "passRate": 50,
+                  "criticalDefects": 1,
+                  "defectDensity": 100,
+                  "fixTime": 2,
+                  "reopenRate": 100,
+                  "flakyRate": 0
+                },
+                "executedCases": 2,
+                "defectsFound": 2,
+                "defectsFixed": 1,
+                "defectsUnfixed": 1,
+                "defectsReopened": 1,
+                "escapeRate": 0
+              }
+            }
+          },
+          {
+            "id": "CY2",
+            "cycleKey": "CYC-002",
+            "title": "Regresión 2",
+            "status": "active"
+          }
+        ],
+        "cycleItems": [
+          {
+            "id": "I1",
+            "cycleId": "CY1",
+            "caseId": "C1"
+          },
+          {
+            "id": "I2",
+            "cycleId": "CY1",
+            "caseId": "C2"
+          },
+          {
+            "id": "I3",
+            "cycleId": "CY2",
+            "caseId": "C1"
+          }
+        ],
+        "planCriteria": [
+          {
+            "criterion": "Tasa de éxito",
+            "metric": "≥ 90%",
+            "metricId": "m1"
+          },
+          {
+            "criterion": "Reapertura",
+            "metric": "≤ 10%",
+            "metricId": "m2",
+            "blocking": false
+          },
+          {
+            "criterion": "Visto bueno del PO",
+            "metric": "",
+            "metricId": "m3"
+          },
+          {
+            "criterion": "% de casos ejecutados",
+            "metric": "≥ 95%",
+            "metricId": "gone"
+          },
+          {
+            "criterion": "Densidad de defectos",
+            "metric": "≤ 5"
+          }
+        ],
+        "planMetrics": [
+          {
+            "id": "m1",
+            "kind": "passRate",
+            "op": ">=",
+            "target": 90
+          },
+          {
+            "id": "m2",
+            "kind": "reopenRate",
+            "op": "<=",
+            "target": 10
+          },
+          {
+            "id": "m3",
+            "kind": null,
+            "op": ">=",
+            "target": 0
+          },
+          {
+            "id": "m4",
+            "kind": "fixTime",
+            "op": "<=",
+            "target": 3
+          },
+          {
+            "id": "m5",
+            "kind": "unknownKind",
+            "op": ">=",
+            "target": 1
+          }
+        ]
+      },
+      "filter": {
+        "projectId": "P2",
+        "cycleId": "CY1"
+      },
+      "expected": {
+        "exitCriteria": [
+          {
+            "index": 0,
+            "kind": "passRate",
+            "op": ">=",
+            "target": 90,
+            "value": 50,
+            "met": false,
+            "blocking": true
+          },
+          {
+            "index": 1,
+            "kind": "reopenRate",
+            "op": "<=",
+            "target": 10,
+            "value": 100,
+            "met": false,
+            "blocking": false
+          },
+          {
+            "index": 2,
+            "kind": null,
+            "op": null,
+            "met": null,
+            "blocking": true
+          },
+          {
+            "index": 3,
+            "kind": "executed",
+            "op": ">=",
+            "target": 95,
+            "value": 100,
+            "met": true
+          },
+          {
+            "index": 4,
+            "kind": null,
+            "op": null,
+            "met": null
+          }
+        ],
+        "metrics": {
+          "executedCases": 2,
+          "defectsFound": 2,
+          "defectsFixed": 1,
+          "defectsUnfixed": 1,
+          "defectsReopened": 1,
+          "escapeRate": 33.3,
+          "values": {
+            "passRate": 50,
+            "defectDensity": 100,
+            "escapedDefects": 1,
+            "fixTime": 2,
+            "reopenRate": 100,
+            "criticalDefects": 1
+          }
+        },
+        "closure": {
+          "verdict": "goWithRisks",
+          "closedAt": "2026-11-05T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "DOC-06: the trend shows closed cycles frozen and the active one live",
+      "kind": "home",
+      "projects": [
+        {
+          "projectId": "P2",
+          "runs": [
+            {
+              "id": "R1",
+              "runKey": "RUN-001",
+              "title": "Regresión 1",
+              "trigger": "manual",
+              "status": "completed",
+              "startedAt": "2026-11-01T09:00:00Z",
+              "createdAt": "2026-11-01 09:00:00",
+              "cycleId": "CY1"
+            },
+            {
+              "id": "R2",
+              "runKey": "RUN-002",
+              "title": "Regresión 2",
+              "trigger": "manual",
+              "status": "in_progress",
+              "startedAt": "2026-11-07T09:00:00Z",
+              "createdAt": "2026-11-07 09:00:00",
+              "cycleId": "CY2"
+            }
+          ],
+          "attempts": [
+            {
+              "id": "a1",
+              "runId": "R1",
+              "testKey": "manual:C1//",
+              "status": "passed",
+              "finishedAt": "2026-11-01T10:00:00Z",
+              "caseId": "C1",
+              "hlc": "1"
+            },
+            {
+              "id": "a2",
+              "runId": "R1",
+              "testKey": "manual:C2//",
+              "status": "failed",
+              "finishedAt": "2026-11-02T10:00:00Z",
+              "caseId": "C2",
+              "hlc": "2"
+            },
+            {
+              "id": "a3",
+              "runId": "R2",
+              "testKey": "manual:C1//",
+              "status": "passed",
+              "finishedAt": "2026-11-07T10:00:00Z",
+              "caseId": "C1",
+              "hlc": "3",
+              "declaredFlaky": true
+            }
+          ],
+          "cases": [
+            {
+              "id": "C1",
+              "scenarioId": "ATS_001",
+              "title": "Pagar",
+              "status": "approved",
+              "priority": "high"
+            },
+            {
+              "id": "C2",
+              "scenarioId": "ATS_002",
+              "title": "Reembolsar",
+              "status": "approved",
+              "priority": "medium"
+            }
+          ],
+          "defects": [
+            {
+              "id": "D1",
+              "defectKey": "DEF-001",
+              "severity": "major",
+              "status": "open",
+              "caseIds": [
+                "C2"
+              ],
+              "foundInRunId": "R1",
+              "createdAt": "2026-11-02T10:00:00Z",
+              "fixedAt": "2026-11-04T10:00:00Z",
+              "reopens": 1
+            },
+            {
+              "id": "D2",
+              "defectKey": "DEF-002",
+              "severity": "critical",
+              "status": "open",
+              "caseIds": [
+                "C2"
+              ],
+              "foundInRunId": "R1",
+              "createdAt": "2026-11-02 12:00:00"
+            },
+            {
+              "id": "D3",
+              "defectKey": "DEF-003",
+              "severity": "minor",
+              "status": "new",
+              "escaped": true,
+              "createdAt": "2026-11-06T08:00:00Z"
+            },
+            {
+              "id": "D4",
+              "defectKey": "DEF-004",
+              "severity": "minor",
+              "status": "new",
+              "escaped": true,
+              "createdAt": "2026-11-01T08:00:00Z"
+            }
+          ],
+          "cycles": [
+            {
+              "id": "CY1",
+              "cycleKey": "CYC-001",
+              "title": "Regresión 1",
+              "status": "closed",
+              "closure": {
+                "closedAt": "2026-11-05T00:00:00.000Z",
+                "closedBy": "u1",
+                "verdict": "goWithRisks",
+                "planId": "PL1",
+                "criteria": [
+                  {
+                    "index": 0,
+                    "criterion": "Tasa de éxito",
+                    "metric": "≥ 90%",
+                    "kind": "passRate",
+                    "op": ">=",
+                    "target": 90,
+                    "value": 50,
+                    "blocking": true,
+                    "state": "notMet",
+                    "justification": "Los fallos son de un módulo detrás de un flag apagado."
+                  }
+                ],
+                "metrics": {
+                  "values": {
+                    "executed": 100,
+                    "passRate": 50,
+                    "criticalDefects": 1,
+                    "defectDensity": 100,
+                    "fixTime": 2,
+                    "reopenRate": 100,
+                    "flakyRate": 0
+                  },
+                  "executedCases": 2,
+                  "defectsFound": 2,
+                  "defectsFixed": 1,
+                  "defectsUnfixed": 1,
+                  "defectsReopened": 1,
+                  "escapeRate": 0
+                }
+              }
+            },
+            {
+              "id": "CY2",
+              "cycleKey": "CYC-002",
+              "title": "Regresión 2",
+              "status": "active"
+            }
+          ],
+          "cycleItems": [
+            {
+              "id": "I1",
+              "cycleId": "CY1",
+              "caseId": "C1"
+            },
+            {
+              "id": "I2",
+              "cycleId": "CY1",
+              "caseId": "C2"
+            },
+            {
+              "id": "I3",
+              "cycleId": "CY2",
+              "caseId": "C1"
+            }
+          ],
+          "planCriteria": [
+            {
+              "criterion": "Tasa de éxito",
+              "metric": "≥ 90%",
+              "metricId": "m1"
+            },
+            {
+              "criterion": "Reapertura",
+              "metric": "≤ 10%",
+              "metricId": "m2",
+              "blocking": false
+            },
+            {
+              "criterion": "Visto bueno del PO",
+              "metric": "",
+              "metricId": "m3"
+            },
+            {
+              "criterion": "% de casos ejecutados",
+              "metric": "≥ 95%",
+              "metricId": "gone"
+            },
+            {
+              "criterion": "Densidad de defectos",
+              "metric": "≤ 5"
+            }
+          ],
+          "planMetrics": [
+            {
+              "id": "m1",
+              "kind": "passRate",
+              "op": ">=",
+              "target": 90
+            },
+            {
+              "id": "m2",
+              "kind": "reopenRate",
+              "op": "<=",
+              "target": 10
+            },
+            {
+              "id": "m3",
+              "kind": null,
+              "op": ">=",
+              "target": 0
+            },
+            {
+              "id": "m4",
+              "kind": "fixTime",
+              "op": "<=",
+              "target": 3
+            },
+            {
+              "id": "m5",
+              "kind": "unknownKind",
+              "op": ">=",
+              "target": 1
+            }
+          ]
+        }
+      ],
+      "request": {
+        "dayStarts": [
+          1762300800000
+        ],
+        "now": 1762905600000,
+        "windows": []
+      },
+      "expected": {
+        "projects": [
+          {
+            "projectId": "P2",
+            "trend": [
+              {
+                "cycleId": "CY1",
+                "status": "closed",
+                "verdict": "goWithRisks",
+                "values": {
+                  "passRate": 50,
+                  "escapedDefects": 1,
+                  "fixTime": 2
+                }
+              },
+              {
+                "cycleId": "CY2",
+                "status": "active",
+                "verdict": null,
+                "closedAt": null,
+                "values": {
+                  "passRate": 100,
+                  "escapedDefects": 0
+                }
+              }
+            ],
+            "objectives": [
+              {
+                "kind": "passRate",
+                "op": ">=",
+                "target": 90
+              },
+              {
+                "kind": "reopenRate",
+                "op": "<=",
+                "target": 10
+              },
+              {
+                "kind": "fixTime",
+                "op": "<=",
+                "target": 3
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

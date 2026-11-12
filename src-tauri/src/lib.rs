@@ -212,6 +212,7 @@ pub fn run() {
             cycles::cycle_runs,
             cycles::cycle_progress_get,
             execution::execution_summary,
+            execution::cycle_close,
             home_metrics::home_metrics,
             defects::defect_list,
             defects::defect_get,

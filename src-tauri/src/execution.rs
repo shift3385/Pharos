@@ -18,8 +18,9 @@ use tauri::State;
 use crate::db::Db;
 use crate::runs::link::{self, Resolver, StoredFacts};
 use derive::{
-    AttemptData, CaseData, CriterionData, CycleData, CycleItemData, DefectData, ExecutionFilter,
-    ExecutionSummary, HomeMetrics, HomeRequest, ProjectData, RequirementData, RunData,
+    AttemptData, CaseData, CriterionData, CycleClosure, CycleData, CycleItemData, DefectData,
+    ExecutionFilter, ExecutionSummary, HomeMetrics, HomeRequest, PlanMetricData, ProjectData,
+    RequirementData, RunData,
 };
 
 fn err(e: rusqlite::Error) -> String {
@@ -218,32 +219,59 @@ pub(crate) fn load_project(
     if let Some(r) = resolver {
         resolvers.insert(project_id.to_string(), r);
     }
-    let defects = crate::defects::list_defects_using(conn, project_id, user, &mut resolvers)?
+    let listed = crate::defects::list_defects_using(conn, project_id, user, &mut resolvers)?;
+    // Defects stamped before 0.4.0 have no `data.lifecycle`: it is read once
+    // from the audit log's status changes (DOC-06).
+    let unstamped: Vec<&str> = listed
+        .iter()
+        .filter(|d| d.data.get("lifecycle").is_none())
+        .map(|d| d.id.as_str())
+        .collect();
+    let history = crate::defects::audit_lifecycle(conn, &unstamped)?;
+    let defects = listed
         .into_iter()
-        .map(|d| DefectData {
-            requirement_ids: d
-                .links
-                .iter()
-                .filter(|l| l.target_kind == "requirement")
-                .map(|l| l.target_id.clone())
-                .collect(),
-            id: d.id,
-            defect_key: d.defect_key,
-            severity: d.severity,
-            status: d.status,
-            case_ids: d.case_ids,
+        .map(|d| {
+            let (fixed_at, reopens) = match d.data.get("lifecycle") {
+                Some(l) => (
+                    l.get("fixedAt").and_then(Value::as_str).map(String::from),
+                    l.get("reopens").and_then(Value::as_i64).unwrap_or(0),
+                ),
+                None => history.get(&d.id).cloned().unwrap_or_default(),
+            };
+            DefectData {
+                requirement_ids: d
+                    .links
+                    .iter()
+                    .filter(|l| l.target_kind == "requirement")
+                    .map(|l| l.target_id.clone())
+                    .collect(),
+                escaped: d.data.get("escaped").and_then(Value::as_bool) == Some(true),
+                found_in_run_id: d.found_in_run_id,
+                created_at: Some(d.created_at),
+                fixed_at,
+                reopens,
+                id: d.id,
+                defect_key: d.defect_key,
+                severity: d.severity,
+                status: d.status,
+                case_ids: d.case_ids,
+            }
         })
         .collect();
     let cycles = rows(
         conn,
-        "SELECT id, test_plan_id, configuration_ids FROM test_cycles
-          WHERE project_id = ?1 AND deleted_at IS NULL",
+        "SELECT id, test_plan_id, configuration_ids, cycle_key, title, status, data
+           FROM test_cycles WHERE project_id = ?1 AND deleted_at IS NULL",
         project_id,
         |r| {
             Ok(CycleData {
                 id: r.get(0)?,
                 test_plan_id: r.get(1)?,
                 configuration_ids: strings(&json(r.get(2)?)),
+                cycle_key: r.get(3)?,
+                title: r.get(4)?,
+                status: r.get(5)?,
+                closure: latest_closure(&json(r.get(6)?)),
             })
         },
     )?;
@@ -265,27 +293,9 @@ pub(crate) fn load_project(
             })
         },
     )?;
-    let plan: Option<Value> = conn
-        .query_row(
-            "SELECT data FROM test_plans WHERE project_id = ?1 AND deleted_at IS NULL
-              ORDER BY updated_at DESC LIMIT 1",
-            params![project_id],
-            |r| r.get::<_, Option<String>>(0),
-        )
-        .optional()
-        .map_err(err)?
-        .map(json);
-    let plan_criteria = plan.map(|p| {
-        p.get("closureCriteria")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .map(|c| CriterionData {
-                criterion: c["criterion"].as_str().unwrap_or_default().to_string(),
-                metric: c["metric"].as_str().unwrap_or_default().to_string(),
-            })
-            .collect()
-    });
+    let plan = latest_plan(conn, project_id)?.map(|(_, data)| data);
+    let plan_criteria = plan.as_ref().map(plan_criteria_of);
+    let plan_metrics = plan.as_ref().map(plan_metrics_of);
     Ok(Some(ProjectData {
         project_id: project_id.to_string(),
         runs,
@@ -296,7 +306,67 @@ pub(crate) fn load_project(
         cycles,
         cycle_items,
         plan_criteria,
+        plan_metrics,
     }))
+}
+
+/// The project's plan the derivation reads (the latest updated): its id and
+/// `data`.
+pub(crate) fn latest_plan(
+    conn: &Connection,
+    project_id: &str,
+) -> Result<Option<(String, Value)>, String> {
+    conn.query_row(
+        "SELECT id, data FROM test_plans WHERE project_id = ?1 AND deleted_at IS NULL
+          ORDER BY updated_at DESC LIMIT 1",
+        params![project_id],
+        |r| Ok((r.get::<_, String>(0)?, json(r.get(1)?))),
+    )
+    .optional()
+    .map_err(err)
+}
+
+/// A plan's `closureCriteria`, with their link to a plan metric (PLN-06).
+fn plan_criteria_of(p: &Value) -> Vec<CriterionData> {
+    p.get("closureCriteria")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .map(|c| CriterionData {
+            criterion: c["criterion"].as_str().unwrap_or_default().to_string(),
+            metric: c["metric"].as_str().unwrap_or_default().to_string(),
+            metric_id: c["metricId"]
+                .as_str()
+                .filter(|s| !s.is_empty())
+                .map(String::from),
+            blocking: c["blocking"].as_bool(),
+        })
+        .collect()
+}
+
+/// A plan's `metrics` (PLN-06).
+fn plan_metrics_of(p: &Value) -> Vec<PlanMetricData> {
+    p.get("metrics")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|m| {
+            Some(PlanMetricData {
+                id: m["id"].as_str()?.to_string(),
+                kind: m["kind"].as_str().map(String::from),
+                op: m["op"].as_str().unwrap_or_default().to_string(),
+                target: m["target"].as_f64(),
+            })
+        })
+        .collect()
+}
+
+/// The latest closing of a cycle's `data.closures` (DOC-02).
+pub(crate) fn latest_closure(data: &Value) -> Option<CycleClosure> {
+    data.get("closures")
+        .and_then(Value::as_array)?
+        .last()
+        .and_then(|c| serde_json::from_value(c.clone()).ok())
 }
 
 /// The project's results as the derivation reads them, linked. Superseded
@@ -469,4 +539,65 @@ pub fn execution_summary(
     user_id: String,
 ) -> Result<Option<ExecutionSummary>, String> {
     db.with_conn(|conn| execution_summary_of(conn, &filter, &user_id))
+}
+
+/// «Cerrar ciclo» (DOC-02): the gate over the cycle's own summary, then the
+/// closing with its record. None if the cycle is not the user's.
+pub(crate) fn close_cycle(
+    conn: &Connection,
+    cycle_id: &str,
+    input: &derive::CycleCloseInput,
+    user: &str,
+) -> Result<Option<CycleClosure>, String> {
+    let project_id: Option<String> = conn
+        .query_row(
+            "SELECT project_id FROM test_cycles WHERE id = ?1 AND deleted_at IS NULL",
+            params![cycle_id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(err)?;
+    let Some(project_id) = project_id else {
+        return Ok(None);
+    };
+    let Some(data) = load_project(conn, &project_id, user)? else {
+        return Ok(None);
+    };
+    if data
+        .cycles
+        .iter()
+        .any(|c| c.id == cycle_id && c.status == "closed")
+    {
+        return Err("cycle-closed".into());
+    }
+    let summary = derive::summarize(
+        &data,
+        &ExecutionFilter {
+            project_id: project_id.clone(),
+            cycle_id: Some(cycle_id.to_string()),
+            ..Default::default()
+        },
+    );
+    let plan_id = latest_plan(conn, &project_id)?.map(|(id, _)| id);
+    let now: String = conn
+        .query_row("SELECT strftime('%Y-%m-%dT%H:%M:%fZ', 'now')", [], |r| {
+            r.get(0)
+        })
+        .map_err(err)?;
+    let record = derive::close_record(&summary, input, plan_id, &now, user)?;
+    let value = serde_json::to_value(&record).map_err(|e| e.to_string())?;
+    crate::cycles::record_closure(conn, cycle_id, user, &value)?;
+    Ok(Some(record))
+}
+
+#[tauri::command]
+pub fn cycle_close(
+    db: State<Db>,
+    cycle_id: String,
+    input: derive::CycleCloseInput,
+    user_id: String,
+) -> Result<Option<CycleClosure>, String> {
+    let record = db.with_tx(|conn| close_cycle(conn, &cycle_id, &input, &user_id))?;
+    db.persist()?;
+    Ok(record)
 }
