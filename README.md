@@ -4,7 +4,7 @@ Desktop QA test-management suite (offline-first). Guides each testing project
 safely to port, following ISO/IEC/IEEE 29119, ISO/IEC 25010 and the ISTQB CTFL
 Syllabus v4.0.1.
 
-> **Version 0.3.0-beta.1** (AI-assisted design: requirements from a project folder or from designs, AI help across the plan and cases, the Inicio gadget board and the 17-step plan, on top of 0.2.0's test execution) —
+> **Version 0.4.0-beta.1** (measurable strategy: the full ISO 29119-3 test plan with metrics and approval, a quality gate when closing a cycle, the closure report, the audit view, risk bands and cycle trends, on top of 0.3.0's AI-assisted design) —
 > test plans, test cases with Gherkin, templates,
 > local planner, AI assist with several providers, offline sync with conflict
 > panel, exports, requirements with a traceability matrix, a recovery key for
@@ -35,7 +35,7 @@ The **Installer** workflow builds the NSIS installer on every push to `main`
 (see "Continuous integration"). To install it:
 
 1. On GitHub: **Actions → Installer**, filter by the release tag (for the current
-   version, `v0.3.0-beta.1`), open that green run and download the artifact
+   version, `v0.4.0-beta.1`), open that green run and download the artifact
    `pharos-<version>-<commit>-windows` under **Artifacts** (you must be signed
    in to GitHub; artifacts expire after 30 days). Use the tag's run only:
    later pushes to `main` build artifacts with the same version number but
@@ -713,7 +713,7 @@ spikes are in `docs/spikes/`.
 
 ## Status
 
-Current version: **0.3.0-beta.1**, the first beta of 0.3.0 «Diseño asistido y experiencia» (ADR-0039), waiting for the user's validation with the 0.3.0 exit criteria; 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
+Current version: **0.4.0-beta.1**, the first beta of 0.4.0 «Estrategia medible» (ADR-0039), waiting for the user's validation with the 0.4.0 exit criteria; 0.3.0 «Diseño asistido y experiencia» is at `0.3.0-beta.1` (branch `release/0.3.0`); 0.2.0 was the test-execution release. It adds runs, imports, cycles, defects, the extended matrix and the status report to the
 complete interface redesign (wave 4, [ADR-0028](docs/adr/0028-rediseno-de-la-interfaz.md))
 on top of everything in `0.1.0-beta.1`, the first beta of the 0.1.0 milestone
 (planning and design + traceability; tag `v0.1.0-beta.1`). Gates A and B of the
