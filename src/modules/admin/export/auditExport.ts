@@ -3,6 +3,7 @@ import {
   AUDIT_EXPORT_CAP,
   AUDIT_MAX_LIMIT,
   diffRows,
+  elementName,
   summaryEntries,
   valueLines,
   type AuditPage,
@@ -60,7 +61,7 @@ export function exportRows(events: AuditRow[], l: AuditExportLabels): string[][]
       e.onBehalfOf ? l.actor(e.onBehalfOf) : "",
       l.action(e.action),
       l.entity(e.entity),
-      e.entityKey ?? e.entityId,
+      elementName(e) ?? e.entityId,
       e.projectName ?? e.projectId ?? "",
     ];
     const tail = [l.device(e.deviceId), String(e.chainSeq), e.hash];

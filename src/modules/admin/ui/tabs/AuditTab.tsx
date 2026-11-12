@@ -22,6 +22,7 @@ import {
   activeFilterCount,
   brokenEventIds,
   changedFields,
+  elementName,
   filtersFromParams,
   filtersToParams,
   parseActor,
@@ -244,7 +245,7 @@ export function AuditTab() {
     <button type="button" className="aud-open" onClick={() => setOpen(row)} data-testid={`audit-row-${row.id}`}>
       <span className="aud-open__key">
         {broken.has(row.id) && <span className="aud-bad">⚠ </span>}
-        {row.entityKey ?? labels.entity(row.entity)}
+        {elementName(row) ?? labels.entity(row.entity)}
       </span>
       <small>
         {labels.entity(row.entity)}
@@ -319,6 +320,7 @@ export function AuditTab() {
             value={filters.period}
             onChange={(period) => apply({ period })}
             options={periodOptions}
+            className="aud-period"
             aria-label={t("admin.audit.filters.period")}
             data-testid="audit-period"
           />

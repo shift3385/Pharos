@@ -323,3 +323,23 @@ export function changedFields(row: AuditRow): string[] {
 export function brokenEventIds(v: AuditVerify | null): Set<string> {
   return new Set((v?.chains ?? []).flatMap((c) => (c.broken?.eventId ? [c.broken.eventId] : [])));
 }
+
+/** The readable name of an event's element: its key (ATS_014, REQ-003…);
+ *  else the title or name its changes carry (after, or before for a
+ *  delete); else, for a project, the project's name. Null when none is known
+ *  (the screen then shows the element type). */
+export function elementName(row: AuditRow): string | null {
+  if (row.entityKey) return row.entityKey;
+  const diff = diffRows(row.changes);
+  for (const field of ["title", "name", "data.title", "data.name"]) {
+    const d = diff.find((x) => x.field === field);
+    const v = d && (typeof d.after === "string" && d.after ? d.after : d.before);
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  if (row.entity === "project" && row.projectName) return row.projectName;
+  return null;
+}
+
+/** A field's key for its label: `data.<key>` (the first level of a JSON
+ *  column, `journal::diff`) is labelled like `<key>`. */
+export const fieldKey = (field: string) => (field.startsWith("data.") ? field.slice(5) : field);
