@@ -18,6 +18,7 @@ import { RequirementSources } from "./RequirementSources";
 import { Info } from "lucide-react";
 import { StatusPill, type PillTone } from "@shared/ui/StatusPill";
 import { riskOfRecord, type RiskBand } from "../model/matrix";
+import { DEFAULT_RISK_BANDS, type RiskBands } from "@shared/risk/bands";
 
 const RISK_TONE: Record<RiskBand, PillTone> = {
   high: "error",
@@ -49,9 +50,12 @@ export function RequirementFormModal({
   existingKeys,
   onSave,
   onCancel,
+  bands = DEFAULT_RISK_BANDS,
 }: {
   requirement: Requirement | null;
   existingKeys: string[];
+  /** The project's risk bands (TRZ-04). */
+  bands?: RiskBands;
   onSave: (draft: RequirementDraft) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -68,7 +72,13 @@ export function RequirementFormModal({
     riskImpact: requirement?.riskImpact ?? null,
   }));
   const [draft, setDraft] = useState<RequirementDraft>(start);
-  const risk = riskOfRecord(draft);
+  const risk = riskOfRecord(draft, bands);
+  const bandsText = t("traceability.risk.bands", {
+    low: bands.low,
+    mediumFrom: bands.low + 1,
+    medium: bands.medium,
+    highFrom: bands.medium + 1,
+  });
   // Typed data is never thrown away without asking (draft rule, ADR-0027).
   const dirty = JSON.stringify(draft) !== JSON.stringify(start);
   // A Pharos confirmation, not the browser's (NC-017).
@@ -203,8 +213,8 @@ export function RequirementFormModal({
             className="tr-risk__info"
             tabIndex={0}
             role="img"
-            title={t("traceability.risk.bands")}
-            aria-label={t("traceability.risk.bands")}
+            title={bandsText}
+            aria-label={bandsText}
           >
             <Info size={15} aria-hidden="true" />
           </span>

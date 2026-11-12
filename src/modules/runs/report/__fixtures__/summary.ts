@@ -73,6 +73,8 @@ export const SUMMARY: ExecutionSummary = {
       low: { requirements: 1, covered: 1, executed: 1, passed: 1, failed: 0 },
       unassessed: { requirements: 0, covered: 0, executed: 0, passed: 0, failed: 0 },
     },
+    riskBands: { low: 4, medium: 12 },
+    weighted: { totalWeight: 24, coveredWeight: 24, passedWeight: 4, coverageRatio: 1, passedRatio: 4 / 24, unassessed: 0 },
   },
   defects: {
     total: 2, open: 1,

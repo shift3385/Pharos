@@ -63,11 +63,15 @@ function useSize() {
  */
 export function DailyLinesChart({
   points,
+  previous = null,
   status,
   label,
   periodText,
 }: {
   points: DailyPoint[];
+  /** RED-W4: the previous period's days, by position (day 1 with day 1),
+   *  drawn as one grey dotted line of their total. */
+  previous?: DailyPoint[] | null;
   status: "loading" | "ready" | "error";
   /** The chart's summary for screen readers. */
   label: string;
@@ -96,7 +100,10 @@ export function DailyLinesChart({
   const plotH = Math.max(1, height - PAD.top - PAD.bottom);
   const spark = width < SPARK_BELOW;
   const n = points.length;
-  const max = yAxisMax(points, visible);
+  const max = Math.max(
+    yAxisMax(points, visible),
+    previous ? yAxisMax(previous.map((p) => ({ passed: p.total, failed: 0, others: 0 })), ["passed"]) : 0,
+  );
   const xOf = (i: number) =>
     PAD.left + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const yOf = (v: number) => PAD.top + plotH - (v / max) * plotH;
@@ -110,7 +117,11 @@ export function DailyLinesChart({
   const dayText = (i: number) =>
     `${short.format(points[i].day)}: ${visible
       .map((s) => `${t(LABEL_KEY[s])} ${num.format(points[i][s])}`)
-      .join(", ")}`;
+      .join(", ")}${
+      previous?.[i]
+        ? `, ${t("dashboard.compare.tipPrevious", { day: short.format(previous[i].day), count: previous[i].total })}`
+        : ""
+    }`;
 
   const show = (i: number | null, fromKeys = false) => {
     setActive(i);
@@ -255,6 +266,15 @@ export function DailyLinesChart({
               y2={PAD.top + plotH}
             />
           )}
+          {ready && previous && previous.length > 1 && (
+            <g className="home-lines__series" data-series="previous" data-testid="home-daily-previous">
+              <path
+                d={previous
+                  .map((p, i) => `${i ? "L" : "M"}${xOf(i)},${yOf(p.total)}`)
+                  .join(" ")}
+              />
+            </g>
+          )}
           {ready &&
             visible.map((s) => (
               <g key={s} className="home-lines__series" data-series={s}>
@@ -294,6 +314,15 @@ export function DailyLinesChart({
                 <b>{num.format(tip[s])}</b> {t(LABEL_KEY[s])}
               </span>
             ))}
+            {previous?.[active!] && (
+              <span className="home-lines__tiprow">
+                <span className="home-lines__key" data-series="previous" />
+                {t("dashboard.compare.tipPrevious", {
+                  day: short.format(previous[active!].day),
+                  count: previous[active!].total,
+                })}
+              </span>
+            )}
           </div>
         )}
         <span className="sr-only" aria-live="polite">
@@ -327,6 +356,14 @@ export function DailyLinesChart({
             </li>
           );
         })}
+        {previous && (
+          <li title={t("dashboard.compare.legend")}>
+            <span className="home-lines__toggle home-lines__toggle--static">
+              <span className="home-lines__key" data-series="previous" aria-hidden="true" />
+              <span className="home-legend__label">{t("dashboard.compare.legendShort")}</span>
+            </span>
+          </li>
+        )}
       </ul>
 
       {/* The same numbers as a table, for screen readers (the chart is an image). */}

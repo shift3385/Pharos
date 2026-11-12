@@ -1117,3 +1117,78 @@
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
+
+/* TRZ-04: «Cobertura ponderada» (its term carries an InfoTip) and the
+   coverage by risk band in thin bars under the indicators. */
+.tz-kpi .tz-kpi__term {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tz-weighted-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tz-weighted-tip__calc {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.tz-bands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 6px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tz-bands__row {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+.tz-bands__row[data-band="high"] { --band: var(--color-error); }
+.tz-bands__row[data-band="medium"] { --band: var(--color-warning); }
+.tz-bands__row[data-band="low"] { --band: var(--color-success); }
+.tz-bands__row[data-band="unassessed"] { --band: var(--color-text-muted); }
+
+.tz-bands__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.tz-bands__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--band);
+}
+
+.tz-bands__track {
+  height: 6px;
+  overflow: hidden;
+  background: var(--color-surface-2);
+  border-radius: 3px;
+}
+
+.tz-bands__fill {
+  display: block;
+  height: 100%;
+  background: var(--band);
+  border-radius: 3px;
+}
+
+.tz-bands__count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

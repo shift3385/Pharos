@@ -5,4 +5,9 @@ export type Project = { id: string, workspaceId: string, ownerId: string, name: 
  * What the exported plan shows of its history: `current` (only the
  * version in force, the default) or `revisions` (PLN-02).
  */
-planExportHistory: string, createdAt: string, updatedAt: string, revision: number, };
+planExportHistory: string, 
+/**
+ * Risk bands (TRZ-04, ADR-0043): a level up to `risk_band_low` is low,
+ * up to `risk_band_medium` medium, above high (defaults 4 and 12).
+ */
+riskBandLow: number, riskBandMedium: number, createdAt: string, updatedAt: string, revision: number, };

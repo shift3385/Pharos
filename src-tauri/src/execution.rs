@@ -296,6 +296,18 @@ pub(crate) fn load_project(
     let plan = latest_plan(conn, project_id)?.map(|(_, data)| data);
     let plan_criteria = plan.as_ref().map(plan_criteria_of);
     let plan_metrics = plan.as_ref().map(plan_metrics_of);
+    let risk_bands = conn
+        .query_row(
+            "SELECT risk_band_low, risk_band_medium FROM projects WHERE id = ?1",
+            [project_id],
+            |r| {
+                Ok(crate::runs::derive::RiskBands::checked(
+                    r.get(0)?,
+                    r.get(1)?,
+                ))
+            },
+        )
+        .map_err(|e| e.to_string())?;
     Ok(Some(ProjectData {
         project_id: project_id.to_string(),
         runs,
@@ -307,6 +319,7 @@ pub(crate) fn load_project(
         cycle_items,
         plan_criteria,
         plan_metrics,
+        risk_bands,
     }))
 }
 

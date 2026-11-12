@@ -102,7 +102,7 @@ chapter("requisitos", () => {
   step("riesgo-requisito", {
     title: "El riesgo de un requisito",
     caption:
-      "En el mismo diálogo, «Riesgo» pide la probabilidad de que falle y su impacto, de 1 a 5 cada uno («Sin evaluar» si aún no lo sabes). Su producto es el nivel de riesgo: hasta 4, bajo; hasta 12, medio; por encima, alto. La matriz de trazabilidad ordena por riesgo (capítulo 13) y «Añadir por filtro» de los ciclos puede elegir los casos de los requisitos más arriesgados (capítulo 9).",
+      "En el mismo diálogo, «Riesgo» pide la probabilidad de que falle y su impacto, de 1 a 5 cada uno («Sin evaluar» si aún no lo sabes). Su producto es el nivel de riesgo, que cae en una banda: por defecto, hasta 4, bajo; hasta 12, medio; por encima, alto. Cada proyecto puede tener las suyas en «Ajustes del proyecto» (capítulo 14), y el ⓘ dice las que usa. La matriz de trazabilidad ordena por riesgo (capítulo 13) y «Añadir por filtro» de los ciclos puede elegir los casos de los requisitos más arriesgados (capítulo 9).",
     covers: ["action:requirement-risk"],
     shot: { element: D },
     run: async () => {

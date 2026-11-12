@@ -196,6 +196,8 @@ pub struct ProjectData {
     pub plan_criteria: Option<Vec<CriterionData>>,
     /// The project plan's `metrics` (PLN-06); None without a plan.
     pub plan_metrics: Option<Vec<PlanMetricData>>,
+    /// The project's risk bands (TRZ-04); None or invalid → the defaults.
+    pub risk_bands: Option<derive::RiskBands>,
 }
 
 #[cfg_attr(test, derive(TS), ts(export, optional_fields))]
@@ -245,6 +247,10 @@ impl ExecutionFilter {
 pub struct HomeWindow {
     pub id: String,
     pub from_index: usize,
+    /// RED-W4: the window ends before `day_starts[to_index]` (exclusive)
+    /// instead of at `now`; past the last day it ends at `now`, and at or
+    /// before `from_index` the window is left out.
+    pub to_index: Option<usize>,
 }
 
 #[cfg_attr(test, derive(TS), ts(export, optional_fields))]
@@ -420,6 +426,31 @@ pub struct CoverageSummary {
     pub executed: i64,
     pub passed: i64,
     pub by_risk: CoverageByRisk,
+    /// The bands the project uses (TRZ-04): its own or the defaults.
+    pub risk_bands: derive::RiskBands,
+    /// Coverage weighted by risk (TRZ-04, ADR-0043).
+    pub weighted: WeightedCoverage,
+}
+
+/// Each assessed requirement weighs its risk level (likelihood × impact,
+/// 1–25); the unassessed ones stay out and are counted apart.
+#[cfg_attr(test, derive(TS), ts(export))]
+#[derive(Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WeightedCoverage {
+    /// Σ level of the assessed requirements.
+    pub total_weight: i64,
+    /// Σ level of the assessed requirements with a live case.
+    pub covered_weight: i64,
+    /// Σ level of the assessed requirements with every live case executed
+    /// and the requirement passed (the `passed` rule of the bands).
+    pub passed_weight: i64,
+    /// covered / total; None without assessed requirements.
+    pub coverage_ratio: Option<f64>,
+    /// passed / total; None without assessed requirements.
+    pub passed_ratio: Option<f64>,
+    /// Requirements without both risk factors (outside the weights).
+    pub unassessed: i64,
 }
 
 #[cfg_attr(test, derive(TS), ts(export))]
@@ -1787,8 +1818,10 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
     requirements.sort_by(|a, b| {
         natural_cmp(&a.requirement_key, &b.requirement_key).then_with(|| a.id.cmp(&b.id))
     });
+    let bands = derive::RiskBands::or_default(data.risk_bands);
     let mut coverage = CoverageSummary {
         requirements: requirements.len() as i64,
+        risk_bands: bands,
         ..Default::default()
     };
     let mut req_rows = Vec::new();
@@ -1819,7 +1852,7 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         let status = derive::worst_status(ranked).unwrap_or(NOT_RUN).to_string();
         let level = derive::risk_level(r.risk_likelihood, r.risk_impact);
         let band = level
-            .map(|l| derive::risk_band(l, derive::DEFAULT_RISK_BANDS))
+            .map(|l| derive::risk_band(l, bands))
             .unwrap_or("unassessed");
         let mut defect_ids: Vec<String> = defects_by_requirement
             .get(r.id.as_str())
@@ -1845,6 +1878,19 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         b.executed += all_executed as i64;
         b.passed += (all_executed && status == "passed") as i64;
         b.failed += (status == "failed") as i64;
+        let w = &mut coverage.weighted;
+        match level {
+            Some(l) => {
+                w.total_weight += l;
+                w.covered_weight += if covered { l } else { 0 };
+                w.passed_weight += if all_executed && status == "passed" {
+                    l
+                } else {
+                    0
+                };
+            }
+            None => w.unassessed += 1,
+        }
         req_rows.push(RequirementExecution {
             requirement_id: r.id.clone(),
             requirement_key: r.requirement_key.clone(),
@@ -1868,6 +1914,9 @@ pub fn summarize(data: &ProjectData, filter: &ExecutionFilter) -> ExecutionSumma
         });
     }
     coverage.coverage_ratio = ratio(coverage.covered, coverage.requirements);
+    let w = &mut coverage.weighted;
+    w.coverage_ratio = ratio(w.covered_weight, w.total_weight);
+    w.passed_ratio = ratio(w.passed_weight, w.total_weight);
 
     // R10: defects, a snapshot now.
     let scoped = filter.cycle_id.is_some() || filter.test_plan_id.is_some();
@@ -2196,10 +2245,20 @@ pub fn home(all_projects: &[ProjectData], request: &HomeRequest) -> HomeMetrics 
         let Some(start) = ds.get(w.from_index).copied() else {
             continue;
         };
+        // RED-W4: with `to_index` the window ends before that day (the
+        // previous period); without it, or past the last day, at `now`.
+        if w.to_index.is_some_and(|i| i <= w.from_index) {
+            continue;
+        }
+        let end = w.to_index.and_then(|i| ds.get(i).copied());
         let mut counts = WindowCounts::default();
         for &data in &projects {
             let in_window: Vec<&AttemptData> = live_attempts(data)
-                .filter(|a| time_of(a).is_some_and(|(t, _)| t >= start && t <= request.now))
+                .filter(|a| {
+                    time_of(a).is_some_and(|(t, _)| {
+                        t >= start && t <= request.now && end.map_or(true, |e| t < e)
+                    })
+                })
                 .collect();
             let (finals, _) = finals(&in_window);
             // By case, as the progress (NC-029); unlinked tests apart.
