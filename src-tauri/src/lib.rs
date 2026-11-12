@@ -3,6 +3,7 @@
 
 mod ai;
 mod audit;
+mod audit_read;
 #[cfg(test)]
 mod audit_tests;
 mod custom_fields;
@@ -214,6 +215,9 @@ pub fn run() {
             execution::execution_summary,
             execution::cycle_close,
             home_metrics::home_metrics,
+            audit_read::audit_list,
+            audit_read::audit_facets,
+            audit_read::audit_verify,
             defects::defect_list,
             defects::defect_get,
             defects::defect_create,

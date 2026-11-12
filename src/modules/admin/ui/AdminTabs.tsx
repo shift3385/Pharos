@@ -5,6 +5,7 @@ import {
   LayoutTemplate,
   LifeBuoy,
   RefreshCw,
+  ScrollText,
   Shield,
   SlidersHorizontal,
   Sparkles,
@@ -19,6 +20,7 @@ const ICONS: Record<AdminTab, LucideIcon> = {
   sync: RefreshCw,
   security: Shield,
   evidence: HardDrive,
+  audit: ScrollText,
   diagnostics: LifeBuoy,
 };
 

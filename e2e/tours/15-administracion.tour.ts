@@ -267,6 +267,49 @@ chapter("administracion", () => {
     },
   });
 
+  step("auditoria", {
+    title: "Auditoría",
+    caption:
+      "«Auditoría» lista cada cambio de tu cuenta, el más reciente arriba: quién lo hizo (tú, un agente en tu nombre o el sistema), qué acción, sobre qué elemento y desde dónde (este equipo, la web u otro equipo). Por defecto ves los últimos 30 días; filtra por periodo, quién, elemento, acción o proyecto, o busca una clave. Arriba, Pharos comprueba que el registro está íntegro: ningún cambio se ha borrado, reordenado ni modificado.",
+    covers: ["admin:audit", "action:audit-verify"],
+    run: async () => {
+      await openAdminTab("audit");
+      await waitForText(A.audit.integrity.okTitle, 30_000);
+      await browser.waitUntil(async () => (await $$('[data-testid^="audit-row-"]')).length > 0, {
+        timeoutMsg: "no audit rows",
+      });
+    },
+  });
+
+  step("auditoria-detalle", {
+    title: "El antes y el después de un cambio",
+    caption:
+      "Pulsa un elemento de la lista para ver el cambio campo a campo: lo que había, tachado en rojo, y lo que hay ahora, en verde. Una importación o un borrado en cascada muestra sus recuentos. «Ver todo su historial» lista todos los cambios de ese elemento; «Copiar como JSON» copia el evento tal como se guardó.",
+    covers: ["dialogs:src/modules/admin/ui/audit/AuditDetail.tsx"],
+    shot: { element: D },
+    run: async () => {
+      await $('[data-testid^="audit-row-"]').click();
+      await expect(dialog()).toBeDisplayed();
+      await waitForText(A.audit.detail.linkOk);
+    },
+  });
+
+  step("auditoria-exportar", {
+    title: "Exportar la auditoría",
+    caption:
+      "«Exportar» guarda lo que muestran los filtros, todas las páginas, en Excel (.xlsx) o CSV: una fila por campo cambiado, con quién, cuándo, el antes y el después. El Excel lleva una hoja «Integridad» con el resultado de la comprobación.",
+    covers: ["action:audit-export"],
+    shot: false,
+    run: async () => {
+      await browser.keys("Escape");
+      await $(D).waitForExist({ reverse: true });
+      await byTestId("audit-export").click();
+      await menuItem(A.audit.export.xlsx).click();
+      await waitForToast(es.downloads.saved.split("{{")[0], 30_000);
+      expect(newestDownload(".xlsx")).toContain("pharos-auditoria-");
+    },
+  });
+
   step("ia-reemplazar-clave", {
     title: "Reemplazar una clave de IA guardada",
     caption:
