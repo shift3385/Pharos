@@ -115,7 +115,7 @@ La lista muestra cada ciclo con su clave, su título con la build y el entorno, 
 
 ### 9.14. Los ciclos en el móvil
 
-En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso. Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y una pastilla por configuración; su menú «⋯» lo sube, lo baja o lo quita. El asignado se cambia desde un ordenador.
+En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su progreso. Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y una pastilla por configuración; su menú «⋯» lo sube, lo baja o lo quita. El asignado se cambia en la propia tarjeta.
 
 <img src="img/ciclos/14-movil.png" alt="Los ciclos en el móvil" width="280">
 
@@ -152,18 +152,18 @@ En el móvil, cada ciclo es una tarjeta con su clave, su estado, su título, sus
 - **«No se pudieron cargar los ciclos.»** Pulsa «Reintentar».
 - **«Este ciclo ya no existe.»** Se eliminó, quizá en otro equipo. Vuelve a la
   lista con «← Ciclos».
-- **No puedo cambiar el asignado en el móvil o en una tableta.** El asignado
-  se edita en pantallas anchas; en las estrechas solo se ve.
 
 ## En el móvil
 
 - Cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su
   progreso.
-- Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y
-  una pastilla de resultado por configuración. Su menú «⋯» lo sube, lo baja o
+- Dentro de un ciclo, cada elemento es una tarjeta con su caso, el campo «Asignado»
+  (se edita igual que en el escritorio) y una pastilla de resultado por
+  configuración. Su menú «⋯» lo sube, lo baja o
   lo quita.
 - En pantallas estrechas se ocultan las columnas menos importantes (fechas,
-  configuraciones, runs, asignado).
+  configuraciones, runs); el asignado pasa bajo el título del caso y se sigue
+  editando.
 
 ## Consejos
 

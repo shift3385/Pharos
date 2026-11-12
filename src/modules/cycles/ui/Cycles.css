@@ -271,6 +271,19 @@
   outline-offset: 0;
 }
 
+/* Assignee under the title on tablet and mobile (NC-009). */
+.cy-assignee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cy-assignee .cy-inline-input {
+  flex: 1;
+  max-width: 260px;
+}
+
 /* ---- Mobile cards ---- */
 .cy-mcard {
   display: flex;

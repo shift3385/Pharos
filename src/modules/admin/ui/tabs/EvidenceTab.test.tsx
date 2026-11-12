@@ -158,6 +158,23 @@ describe("Administración → Evidencias", () => {
     expect(api.usage).not.toHaveBeenCalled();
   });
 
+  it("says how many attachments the files serve when several share one (NC-054)", async () => {
+    api.usage.mockResolvedValue(
+      usage({
+        blobs: 6,
+        byOwner: [
+          { ownerEntity: "defect", attachments: 3, bytes: 3 * MB },
+          { ownerEntity: "planner_card", attachments: 1, bytes: MB },
+          { ownerEntity: "result", attachments: 2, bytes: 2 * MB },
+          { ownerEntity: "run_shard", attachments: 2, bytes: 6 * MB },
+        ],
+      }),
+    );
+    renderTab();
+    expect(await screen.findByTestId("evidence-usage-total")).toHaveTextContent("12 MB · 6 archivos para 8 adjuntos");
+    expect(screen.getByText(/Un contenido idéntico se guarda una sola vez/)).toBeInTheDocument();
+  });
+
   it("shows the usage by owner and the raw report retention", async () => {
     renderTab();
     expect(await screen.findByTestId("evidence-usage-total")).toHaveTextContent("12 MB · 3 archivos");

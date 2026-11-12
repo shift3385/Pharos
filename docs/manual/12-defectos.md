@@ -107,7 +107,7 @@ Al soltar un defecto en «Otros», Pharos pregunta a qué estado pasa: «Rechaza
 
 ### 12.12. Eliminar un defecto
 
-Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila («Eliminar defecto») lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.
+Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.
 
 ![Eliminar un defecto](img/defectos/12-eliminar.png)
 
@@ -156,8 +156,8 @@ Al confirmar, el defecto desaparece de la lista. Si no se pudiera eliminar, un a
   título; un toque abre el defecto.
 - El tablero enseña una columna cada vez: desliza a los lados para pasar de
   un estado a otro.
-- Eliminar un defecto, por ahora, solo se puede desde la tabla en escritorio
-  o tableta.
+- Para eliminar un defecto en el móvil (o desde el tablero), ábrelo: su
+  editor tiene «Eliminar defecto».
 
 ## Consejos
 

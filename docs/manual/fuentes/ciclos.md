@@ -70,18 +70,18 @@ En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 - **«No se pudieron cargar los ciclos.»** Pulsa «Reintentar».
 - **«Este ciclo ya no existe.»** Se eliminó, quizá en otro equipo. Vuelve a la
   lista con «← Ciclos».
-- **No puedo cambiar el asignado en el móvil o en una tableta.** El asignado
-  se edita en pantallas anchas; en las estrechas solo se ve.
 
 ## En el móvil
 
 - Cada ciclo es una tarjeta con su clave, su estado, su título, sus fechas y su
   progreso.
-- Dentro de un ciclo, cada elemento es una tarjeta con su caso, su asignado y
-  una pastilla de resultado por configuración. Su menú «⋯» lo sube, lo baja o
+- Dentro de un ciclo, cada elemento es una tarjeta con su caso, el campo «Asignado»
+  (se edita igual que en el escritorio) y una pastilla de resultado por
+  configuración. Su menú «⋯» lo sube, lo baja o
   lo quita.
 - En pantallas estrechas se ocultan las columnas menos importantes (fechas,
-  configuraciones, runs, asignado).
+  configuraciones, runs); el asignado pasa bajo el título del caso y se sigue
+  editando.
 
 ## Consejos
 

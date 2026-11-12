@@ -16,6 +16,7 @@ import {
   clearInput,
   clickButton,
   dialog,
+  dismissConfirm,
   es,
   field,
   fixturesDir,
@@ -200,6 +201,22 @@ chapter("defectos", () => {
     },
   });
 
+  step("eliminar-desde-editor", {
+    title: "Eliminar desde el editor",
+    caption:
+      "El editor de un defecto guardado también tiene «Eliminar defecto», así que se puede borrar desde cualquier vista, también desde el tablero y el móvil, que abren el editor. Pide la misma confirmación crítica que la papelera de la tabla y, al confirmar, vuelve a la lista (en este ejemplo, Liomar cancela).",
+    covers: ["dialogs:src/modules/defects/ui/DefectEditor.tsx"],
+    shot: false,
+    run: async () => {
+      await clickButton(F.delete);
+      await expect($(ASK)).toBeDisplayed();
+      await expect($(ASK)).toHaveText(expect.stringContaining(LOGIN_BUG));
+    },
+    after: async () => {
+      await dismissConfirm();
+    },
+  });
+
   step("lista", {
     title: "La lista de defectos",
     caption:
@@ -251,7 +268,7 @@ chapter("defectos", () => {
   step("eliminar", {
     title: "Eliminar un defecto",
     caption:
-      "Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila («Eliminar defecto») lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.",
+      "Normalmente un defecto se cierra o se rechaza, no se borra. Si se creó por error (en este ejemplo, Liomar registró dos veces el fallo de acceso), la papelera de su fila (o «Eliminar defecto» en su editor, también desde el tablero y el móvil) lo borra tras una confirmación crítica: solo responden «Cancelar» y «Sí, eliminar». Su clave no se vuelve a usar.",
     covers: ["dialogs:src/modules/defects/ui/DefectsPage.tsx"],
     shot: { element: ASK },
     run: async () => {

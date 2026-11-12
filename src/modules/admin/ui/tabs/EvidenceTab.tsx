@@ -265,6 +265,7 @@ function UsageSection({
   const count = (state: string) => usage?.byState.find((s) => s.state === state)?.blobs ?? 0;
   const missing = count("missing");
   const damaged = count("damaged");
+  const attachments = usage?.byOwner.reduce((sum, o) => sum + o.attachments, 0) ?? 0;
   return (
     <SettingsSection
       title={t("admin.evidence.usage.title")}
@@ -281,6 +282,11 @@ function UsageSection({
           <HardDrive size={16} aria-hidden="true" />
           <span data-testid="evidence-usage-total">
             {usage ? t("admin.evidence.usage.totalValue", { size: size(usage.bytes), count: usage.blobs }) : "—"}
+            {/* Files are stored once per content; the table counts attachments,
+                and several can share a file (NC-054): say so when they differ. */}
+            {usage && attachments > 0 && attachments !== usage.blobs && (
+              <> {t("admin.evidence.usage.totalShared", { count: attachments })}</>
+            )}
           </span>
         </span>
       </SettingsRow>
