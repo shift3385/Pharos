@@ -106,7 +106,7 @@ salieras desde otra pantalla.
 - **«Este proyecto aún no tiene plan de pruebas» o «El plan de este proyecto no
   define criterios de salida».** Pharos aplica los criterios por defecto (95 %
   ejecutado, ningún defecto crítico abierto, 90 % de cobertura de requisitos).
-  Con «Abrir el plan» puedes definir los tuyos en el paso 17.
+  Con «Abrir el plan» puedes definir los tuyos en el paso 20.
 - **Un criterio dice «Sin datos».** Pharos no sabe medirlo solo (por ejemplo,
   uno escrito a mano que no reconoce). Compruébalo tú.
 - **«Ciclo actual», «Rango personalizado…» o «Comparar con el periodo anterior»
@@ -164,7 +164,7 @@ salieras desde otra pantalla.
 
 ## Véase también
 
-- Capítulo 5, «Plan de pruebas»: paso 17, «Criterios de cierre».
+- Capítulo 5, «Plan de pruebas»: paso 19, «Métricas y objetivos medibles», y paso 20, «Criterios de cierre».
 - Capítulo 11, «Ejecución manual»: el informe de estado.
 - Capítulo 13, «Trazabilidad»: la cobertura de requisitos.
 - [Glosario](../GLOSARIO.md): «Criterios de salida», «Tasa de éxito».

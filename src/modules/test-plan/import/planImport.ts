@@ -18,6 +18,7 @@ import {
 import { CEREMONIES, CEREMONY_FREQUENCIES } from "../model/catalogs";
 import { DELIVERABLE_REV, TOOL_REV } from "../model/catalogLabels";
 import { fromDisplay } from "../model/schedule";
+import { parseStrategySheets } from "./strategyImport";
 import type {
   ClosureCriterion,
   RiskItem,
@@ -67,6 +68,7 @@ interface FieldSpec {
 }
 
 const FIELDS: FieldSpec[] = [
+  { id: "documentId", labelKey: "testPlan.documentId", aliases: ["id de documento", "document id"], dir: "right", kind: "text" },
   { id: "version", labelKey: "testPlan.version", aliases: ["version"], dir: "right", kind: "text" },
   { id: "planDate", labelKey: "testPlan.date", aliases: ["fecha", "date"], dir: "right", kind: "text" },
   { id: "author", labelKey: "testPlan.author", aliases: ["elaborado por (nombre y apellidos)", "author (first and last name)", "elaborado por", "author"], dir: "right", kind: "text" },
@@ -164,7 +166,7 @@ export async function parsePlanXlsx(
 
   const data: TestPlanData = {};
   const rows: DetectionRow[] = [];
-  const total = FIELDS.length + TABLES.length + 1; // +1 for the title
+  const total = FIELDS.length + TABLES.length + 2; // +1 for the title, +1 for the 29119-3 sheets
   let done = 0;
 
   const push = (row: DetectionRow) => {
@@ -197,6 +199,8 @@ export async function parsePlanXlsx(
         if (spec.id === "version") version = raw;
         else if (spec.id === "planDate") planDate = raw;
         else if (spec.id === "author") { if (raw) author = raw; }
+        // The template's own placeholder is not a plan's ID (PLN-04).
+        else if (spec.id === "documentId") { if (raw && raw !== "PHRS-TP-0001") data.documentId = raw; else filled = false; }
         else (data as Record<string, unknown>)[spec.id] = raw;
         break;
       case "listFree": {
@@ -252,6 +256,12 @@ export async function parsePlanXlsx(
     push({ labelKey: spec.labelKey, status: raw.length ? "filled" : "empty", count: raw.length });
     await yieldFrame();
   }
+
+  // The 29119-3 sections of 0.4.0 (PLN-06), from their own sheets.
+  const strategy = parseStrategySheets(wb);
+  Object.assign(data, strategy);
+  const strategyCount = Object.keys(strategy).length;
+  push({ labelKey: "testPlan.strategySheet", status: strategyCount ? "filled" : "notFound", count: strategyCount || undefined });
 
   const input: Omit<TestPlanInput, "userId"> = {
     title,

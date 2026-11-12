@@ -181,3 +181,19 @@ export const TOOLS = Object.keys(TOOL_NAMES);
 
 /** A tool's name: the catalog brand, or the text the team typed. */
 export const toolName = (key: string) => TOOL_NAMES[key] ?? key;
+
+/** Test techniques by group (step «Técnicas de prueba», PLN-06; ISTQB CTFL
+ *  v4 chapter 4). A plan stores the keys; anything else is the team's own. */
+export const TECHNIQUE_GROUPS: { id: "blackBox" | "whiteBox" | "experience" | "collaborative"; keys: string[] }[] = [
+  { id: "blackBox", keys: ["equivalencePartitioning", "boundaryValues", "decisionTables", "stateTransition"] },
+  { id: "whiteBox", keys: ["statement", "branch"] },
+  { id: "experience", keys: ["errorGuessing", "exploratory", "checklist"] },
+  { id: "collaborative", keys: ["userStories", "acceptanceCriteria", "atdd"] },
+];
+export const TECHNIQUE_KEYS = TECHNIQUE_GROUPS.flatMap((g) => g.keys);
+
+/** Levels of independence of testing, least to most (CTFL v4 §1.5.3). */
+export const INDEPENDENCE_LEVELS = ["author", "peer", "team", "organization", "external"] as const;
+
+/** Estimation techniques (CTFL v4 §5.1.4) plus expert judgement. */
+export const ESTIMATION_TECHNIQUES = ["ratio", "extrapolation", "wideband", "threePoint", "expert"] as const;

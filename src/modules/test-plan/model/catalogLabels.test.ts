@@ -64,11 +64,12 @@ describe("tools typed before the catalog", () => {
 });
 
 describe("step completion", () => {
-  it("a new plan has its title, control data, methodology, deliverables, roles and criteria", () => {
+  it("a new plan has its title, control data, methodology, deliverables, roles, metrics and criteria", () => {
     const done = stepCompletion(defaults(t));
     const completed = STEP_IDS.filter((_, i) => done[i]);
     // Title, version and date are «Identificación del plan» (UX-31).
-    expect(completed).toEqual(["identification", "methodology", "deliverables", "roles", "closure"]);
+    // It starts with the metrics of the A3 criteria, linked to them (PLN-06).
+    expect(completed).toEqual(["identification", "methodology", "deliverables", "roles", "metrics", "closure"]);
   });
 
   it("a blank title is not completed", () => {

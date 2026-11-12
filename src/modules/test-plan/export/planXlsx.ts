@@ -3,9 +3,16 @@ import { addTableSheets, type ExportTable } from "@shared/export/extraTables";
 import { saveFile } from "@shared/export/saveFile";
 import templateEs from "../assets/plan-template-es.xlsx?url";
 import templateEn from "../assets/plan-template-en.xlsx?url";
+import { strategyTables, type StrategyExport } from "./planStrategy";
 
 export interface ExportablePlan {
   filenameBase: string;
+  /** The document's identifier (PLN-04); the template's own when absent. */
+  documentId?: string;
+  /** «Name · date» of the approval while «Aprobado» (PLN-07); "" otherwise. */
+  approvedBy?: string;
+  /** The ISO/IEC/IEEE 29119-3 sections of 0.4.0 (PLN-06). */
+  strategy?: StrategyExport;
   version: string;
   planDate: string;
   author: string;
@@ -44,6 +51,8 @@ export interface ExportablePlan {
    *  stays as it is), and the section after the header of the PDF. */
   history?: ExportTable;
 }
+
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -112,6 +121,7 @@ function fillTable(ws: ExcelJS.Worksheet, spec: TableSpec, items: unknown[]) {
 export async function buildPlanXlsx(
   p: ExportablePlan,
   lang: string,
+  t: Translate = (k) => k,
 ): Promise<{ filename: string; buffer: ArrayBuffer }> {
   const url = lang.startsWith("en") ? templateEn : templateEs;
   const buffer = await fetch(url).then((r) => r.arrayBuffer());
@@ -127,10 +137,19 @@ export async function buildPlanXlsx(
   };
 
   // Header.
+  if (p.documentId) ws.getCell("C3").value = p.documentId;
   set("C4", p.version);
   set("C5", p.planDate);
   set("C6", p.author);
   set("C7", p.status);
+  // «Aprobado por» in the free row under the status, styled like it.
+  if (p.approvedBy) {
+    const label = lang.startsWith("en") ? "Approved by" : "Aprobado por";
+    for (const col of ["B", "C", "D", "E", "F"]) ws.getCell(`${col}8`).style = { ...ws.getCell(`${col}7`).style };
+    safeMerge(ws, "C8:F8");
+    ws.getCell("B8").value = label;
+    ws.getCell("C8").value = p.approvedBy;
+  }
 
   // Single-value sections.
   set("B11", p.summary);
@@ -215,7 +234,12 @@ export async function buildPlanXlsx(
   );
 
   // After the template's sheet, which stays as it is (EXP-03).
-  addTableSheets(wb, [...(p.history ? [p.history] : []), ...(p.extraTables ?? [])]);
+  // Then the 29119-3 sections of 0.4.0 (PLN-06), which import reads back.
+  addTableSheets(wb, [
+    ...(p.history ? [p.history] : []),
+    ...strategyTables(p.strategy, t),
+    ...(p.extraTables ?? []),
+  ]);
 
   const filename = `${p.filenameBase || "plan"}.xlsx`;
   const out = await wb.xlsx.writeBuffer();
@@ -224,7 +248,7 @@ export async function buildPlanXlsx(
 
 /** Fills the PHAROS test-plan template (by language) and triggers a download
  *  (spec §5.4 / §16). Returns the downloaded file name. */
-export async function exportPlanXlsx(p: ExportablePlan, lang: string): Promise<string> {
-  const { filename, buffer } = await buildPlanXlsx(p, lang);
+export async function exportPlanXlsx(p: ExportablePlan, lang: string, t?: Translate): Promise<string> {
+  const { filename, buffer } = await buildPlanXlsx(p, lang, t);
   return saveFile(filename, buffer, XLSX_MIME);
 }
