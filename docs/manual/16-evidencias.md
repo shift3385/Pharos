@@ -14,7 +14,11 @@ sincronizan con tus otros equipos.
 partes:
 
 - **Almacén de evidencias:** cuánto ocupan, cuántos adjuntos hay de cada tipo,
-  cuántos han caducado y la retención de los reportes importados.
+  cuántos han caducado y la retención de los reportes importados. Un contenido
+  idéntico se guarda una sola vez, así que puede haber menos archivos que
+  adjuntos: «6 archivos para 8 adjuntos» significa que dos adjuntos comparten
+  archivo (por ejemplo, un defecto creado desde un resultado usa sus mismas
+  evidencias).
 - **Retención por proyecto:** cuánto se conserva cada tipo de evidencia de un
   proyecto (trazas, vídeos, reportes crudos, registros, capturas y otras)
   antes de que caduque su archivo. Caducar borra el archivo, nunca el
