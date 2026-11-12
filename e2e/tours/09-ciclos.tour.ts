@@ -14,6 +14,7 @@ import {
   openProject,
   openSection,
   pickDate,
+  selectOption,
   tf,
   typeDate,
   waitForText,
@@ -222,6 +223,17 @@ chapter("ciclos", () => {
       await $('[data-testid="gate-close"]').click();
       await waitForToast(es.gate.closedToast.split("{{")[0].trim());
       await expect($('[data-testid="cycle-verdict"]')).toBeDisplayed();
+    },
+    // The later chapters import into this cycle and record results in its
+    // runs (10, 11): reopen it, as «Editar» allows, so they find it open.
+    after: async () => {
+      await clickButton(Y.edit);
+      await expect(dialog()).toBeDisplayed();
+      await selectOption(Y.field.status, Y.status.active, D);
+      await clickButton(Y.save, D);
+      await $(D).waitForExist({ reverse: true });
+      await expect($('[data-testid="cycle-verdict"]')).not.toBeExisting();
+      await expect($('[data-testid="cycle-close"]')).toBeDisplayed();
     },
   });
 
