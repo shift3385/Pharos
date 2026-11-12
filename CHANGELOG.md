@@ -9,6 +9,80 @@ publicar cada versión ([ADR-0032](docs/adr/0032-fragmentos-del-changelog.md)).
 
 ## [Sin publicar]
 
+## [0.4.0-beta.1] - 2026-11-12
+
+Estrategia medible (ADR-0039): plan de pruebas ISO/IEC/IEEE 29119-3 completo de 22
+pasos con apartado de métricas y aprobación con autor y fecha, *quality gate* al
+cerrar un ciclo con informe go/no-go, tendencia entre ciclos, informe de cierre
+29119-3, Administración › Auditoría, bandas de riesgo por proyecto con cobertura
+ponderada y «Comparar con el periodo anterior» en Inicio. Beta para la validación
+del usuario con el criterio de salida de 0.4.0 (`docs/ROADMAP.md` §3). Trae dos
+migraciones (local `0039`, servidor `0018`). Un servidor 0.4 acepta apps 0.4 y 0.3
+(VERSIONING §6.5): las apps 0.2 deben actualizarse para sincronizar.
+
+### Añadido
+
+- **Administración › Auditoría.** Una pestaña nueva en «Cuenta y datos» que lista cada cambio de tu cuenta: quién lo hizo (tú, un agente `agent:` en tu nombre o el sistema), qué elemento, qué acción, cuándo y desde dónde (este equipo, la web u otro equipo). Por defecto muestra los últimos 30 días.
+- **Filtros** por periodo, quién, tipo de elemento, acción y proyecto, y una búsqueda por clave (ATS_014, REQ-003…). Los filtros quedan en la dirección, así un enlace abre la misma vista.
+- **Detalle de un cambio** con el antes y el después campo a campo: lo anterior tachado en rojo y lo nuevo en verde, y los textos largos (pasos, descripción) comparados por líneas. Una importación o un borrado en cascada muestra sus recuentos. «Ver todo su historial» lista todos los cambios de ese elemento.
+- **Comprobación de la cadena de auditoría** al abrir la pestaña: dice si el registro está íntegro o en qué evento se rompió y por qué (falta un evento, o se modificó fuera de Pharos), y lleva a ese evento.
+- **Exportar** lo filtrado a Excel (.xlsx, con una hoja «Integridad») o CSV, una fila por campo cambiado. Funciona en el escritorio y en la web.
+- **Informe de cierre de pruebas (ISO/IEC/IEEE 29119-3).** Un ciclo cerrado tiene «Informe de cierre» en su cabecera: identificación con su ID (TCR-…), resumen, desviaciones respecto al plan, la «Decisión de salida» con sus justificaciones, factores de bloqueo, medidas frente al ciclo anterior y al objetivo del plan, riesgos residuales (defectos abiertos y requisitos sin cubrir o sin pasar por riesgo), entregables, activos reutilizables y lecciones aprendidas. Los textos se guardan en el ciclo y se sincronizan; «Aprobar informe» deja autor y fecha, y cambiar un texto quita la aprobación. Se exporta a PDF y Excel.
+- **«Cerrar ciclo…» con quality gate.** Al cerrar un ciclo, Pharos evalúa sus criterios de salida. Cada criterio obligatorio que no se cumple (o que no tiene datos) pide una justificación de al menos 20 caracteres, los criterios manuales se marcan a mano y eliges «Go con riesgos» o «No-go». Si todo se cumple, el veredicto es «Go». Quién cerró, cuándo y por qué queda en Auditoría.
+- **Informe go/no-go.** El informe de estado de un ciclo cerrado empieza por «Decisión de salida»: el veredicto, cada criterio con su justificación y las métricas frente al ciclo anterior. También en la hoja «Decisión» del .xlsx y en el PDF.
+- **Criterios de salida medibles.** Un criterio del plan puede apuntar a una métrica del plan (con su objetivo), marcarse como orientativo o ser manual. Los planes anteriores se siguen leyendo como antes.
+- **Gadget «Tendencia de ciclos» en Inicio.** Muestra la tasa de éxito, la densidad de defectos, los escapes, el tiempo de corrección, la reapertura o el flaky de los últimos ciclos cerrados y del activo, con el objetivo del plan y el veredicto de cada ciclo. Avisa cuando una métrica empeora varios ciclos seguidos o se sale del objetivo.
+- **Escapes.** Un defecto se puede marcar como «Encontrado fuera de las pruebas (escape)». Cuenta contra el último ciclo cerrado antes de darlo de alta.
+- **Tiempo de corrección y reapertura.** Pharos registra cuándo se corrige por primera vez cada defecto y cuántas veces se reabre. En el escritorio, los defectos anteriores lo toman de la Auditoría.
+- **Plan de pruebas completo según ISO/IEC/IEEE 29119-3 y CTFL v4.** El
+  asistente pasa de 17 a 22 pasos: «Supuestos y restricciones», «Técnicas de
+  prueba» (caja negra, caja blanca, basadas en la experiencia y colaborativas,
+  más las propias), «Estimación y presupuesto» (con la estimación de tres
+  puntos calculada), «Entrada, suspensión y reanudación» y «Métricas y
+  objetivos medibles»; «Roles» añade la independencia de las pruebas y las
+  necesidades de formación. Los planes guardados abren igual, con los pasos
+  nuevos por completar.
+- **Métricas con objetivo que alimentan los criterios de salida.** Cada métrica
+  del catálogo (casos ejecutados, tasa de éxito, defectos críticos abiertos,
+  cobertura, densidad de defectos, defectos escapados, tiempo de corrección,
+  reapertura e inestables) lleva su comparador y su objetivo, y Pharos la
+  mide; las propias se valoran a mano. Marcar «Criterio de salida» la lleva a
+  «Criterios de cierre», donde cada criterio dice qué métrica lo mide y si es
+  bloqueante u orientativo. Un plan nuevo empieza con los tres criterios de
+  siempre enlazados a su métrica.
+- **«Sugerir con IA»** propone supuestos y restricciones, y criterios de
+  entrada, suspensión y reanudación, a partir del plan.
+- **Exportes:** el PDF incluye los apartados nuevos en el orden del
+  asistente; el .xlsx añade las hojas «Estrategia 29119-3», «Métricas» y
+  «Criterios de salida», que la importación vuelve a leer.
+- **Aprobación del plan con autor y fecha.** «Aprobar versión N», en «Estado
+  del plan», pide confirmación y deja constancia de quién aprobó, cuándo y qué
+  versión; se ve en el panel y en la cabecera del PDF y del .xlsx. Solo se
+  aprueba un plan guardado y en «Revisado». Si se edita el contenido de un
+  plan aprobado, un aviso lo dice antes de guardar y el plan vuelve a
+  «Revisado». El panel «Historial» muestra los últimos cambios de estado y
+  versión, con «pierde la aprobación» cuando toca. Un plan importado nunca
+  llega aprobado.
+- **ID de documento por plan.** «Identificación del plan» tiene «ID de
+  documento», por defecto `TP-<prefijo del proyecto>-<6 caracteres>` y
+  editable; el .xlsx y el PDF lo llevan en la cabecera (antes todos los planes
+  decían «PHRS-TP-0001»).
+- **Comparar con el periodo anterior, en Inicio.** El menú del periodo enciende la comparación con el periodo de la misma duración justo antes (ayer para «Hoy»). La «Tasa de éxito» muestra la diferencia en puntos y «Ejecuciones diarias» la diferencia del total en %, una línea con el total de cada día del periodo anterior y la columna «Anterior» en «Ver los datos». La pizarra sigue sin desplazamiento.
+- **Bandas de riesgo por proyecto.** En «Ajustes del proyecto», «Bandas de riesgo» decide hasta qué nivel (probabilidad × impacto, de 1 a 25) un requisito es de riesgo bajo y hasta cuál medio; el resto es alto. Por defecto, 4 y 12. Un mapa de 5 × 5 se repinta al escribir. La matriz, su orden por riesgo, el formulario del requisito y el informe usan las bandas del proyecto, y «A partir de uno existente» las copia.
+- **Cobertura ponderada por riesgo.** Trazabilidad añade «Cobertura ponderada»: cada requisito evaluado pesa su nivel de riesgo, así un hueco en lo más arriesgado se nota más. Debajo, la «aprobada» y cuántos requisitos sin evaluar quedan fuera, y una barra por banda con sus requisitos cubiertos. El informe de estado la incluye en su apartado de cobertura, con las bandas del proyecto.
+
+### Cambiado
+
+- **Un ciclo ya no se cierra desde «Editar».** El estado «Cerrado» se alcanza solo con «Cerrar ciclo…», que pasa por los criterios de salida. Un ciclo cerrado muestra su veredicto junto al estado y se sigue pudiendo reabrir editándolo.
+- **Distribución por defecto de Inicio.** «Próximas pruebas» y «Criterios de salida» son más bajos para dejar sitio a «Tendencia de ciclos», y todo sigue cabiendo sin desplazar la página. Si guardaste tu propia distribución y el nuevo gadget no cabe, queda en «Gadgets ocultos» y Pharos te lo avisa una vez.
+
+### Corregido
+
+- **Guardar el plan sin cambios ya no sube la versión ni deja una revisión.**
+  La versión solo sube cuando cambian el título o el contenido; cambiar el
+  estado o aprobar no la sube. Guardar sin cambios avisa de que no hay nada
+  que guardar.
+
 ## [0.3.0-beta.1] - 2026-11-12
 
 Diseño asistido y experiencia (ADR-0039): requisitos propuestos por la IA desde un
