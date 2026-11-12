@@ -129,6 +129,7 @@ describe("audit element names and field keys (AUD-01 polish)", () => {
     expect(elementName({ ...base, entity: "test_plan", changes: '{"title":[null,"Plan Q4"]}' })).toBe("Plan Q4");
     // A delete keeps the name it had.
     expect(elementName({ ...base, entity: "custom_field", changes: '{"name":["Canal",null]}' })).toBe("Canal");
+    expect(elementName({ ...base, entity: "custom_field", changes: '{"label":[null,"Canal"]}' })).toBe("Canal");
     expect(elementName(base)).toBe("Avianca");
     expect(elementName({ ...base, entity: "run", projectName: "Avianca" })).toBeNull();
   });

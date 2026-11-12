@@ -331,7 +331,7 @@ export function brokenEventIds(v: AuditVerify | null): Set<string> {
 export function elementName(row: AuditRow): string | null {
   if (row.entityKey) return row.entityKey;
   const diff = diffRows(row.changes);
-  for (const field of ["title", "name", "data.title", "data.name"]) {
+  for (const field of ["title", "name", "label", "data.title", "data.name"]) {
     const d = diff.find((x) => x.field === field);
     const v = d && (typeof d.after === "string" && d.after ? d.after : d.before);
     if (typeof v === "string" && v.trim()) return v.trim();
