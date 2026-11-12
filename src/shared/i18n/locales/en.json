@@ -3869,7 +3869,7 @@
     },
     "signs": "Signed by: {{name}} · {{at}} · recorded in Audit",
     "close": "Close cycle",
-    "closedToast": "Cycle closed · {{verdict}}",
+    "closedToast": "Cycle closed · {{verdict}}. Its completion report is now in the cycle header.",
     "error": {
       "incomplete": "A manual criterion is not marked or a mandatory criterion that is not met has no justification.",
       "justificationRequired": "Every mandatory criterion that is not met needs a justification of at least 20 characters.",
@@ -3895,5 +3895,118 @@
       "failing_one": "{{count}} mandatory criterion is not met and has its justification.",
       "failing_other": "{{count}} mandatory criteria are not met and have their justification."
     }
+  },
+  "completionReport": {
+    "open": "Completion report",
+    "title": "Test completion report",
+    "subtitle": "ISO/IEC/IEEE 29119-3, from the cycle's latest closing",
+    "fileBase": "Completion report",
+    "loadError": "The completion report could not be built. Check that the cycle is closed and try again.",
+    "stale": "This report belonged to the cycle's previous closing. Its texts are kept as a starting point and the approval was removed: review it, save it and approve it again.",
+    "autoVerdict": "The cycle was closed with the verdict «{{verdict}}».",
+    "planApproved": "approved",
+    "noPlan": "The project has no plan",
+    "field": {
+      "document": "Document ID",
+      "cycle": "Cycle",
+      "planned": "Planned period",
+      "closed": "Closed",
+      "buildEnv": "Build and environment"
+    },
+    "deviation": {
+      "end": "End of the cycle",
+      "none": "None",
+      "late_one": "+{{count}} day",
+      "late_other": "+{{count}} days",
+      "early_one": "{{count}} day early",
+      "early_other": "{{count}} days early",
+      "noDate": "No planned end date",
+      "executed": "Executed ({{unit}})",
+      "notRun_one": "{{count}} not run",
+      "notRun_other": "{{count}} not run",
+      "criteria": "Mandatory criteria met",
+      "justified_one": "{{count}} not met, with justification",
+      "justified_other": "{{count}} not met, with justification"
+    },
+    "col": {
+      "aspect": "Aspect",
+      "planned": "Planned",
+      "actual": "Actual",
+      "deviation": "Deviation",
+      "objective": "Plan objective",
+      "reached": "Reached?",
+      "defect": "Defect",
+      "situation": "Situation",
+      "deliverable": "Deliverable",
+      "origin": "Source",
+      "delivered": "Delivered"
+    },
+    "measure": {
+      "noTarget": "No objective"
+    },
+    "measuresNote": "Values frozen when the cycle was closed. The objective comes from the plan's metrics.",
+    "uncovered": "Not covered",
+    "openDefects": "Open defects of the cycle (as of today)",
+    "riskyRequirements": "Requirements not covered or not passed, by risk",
+    "noDefects": "No defect of the cycle is still open.",
+    "noRisky": "Every requirement in scope is covered and passes.",
+    "deliverable": {
+      "plan": "Test plan {{id}} v{{version}}",
+      "runs_one": "Run {{keys}}",
+      "runs_other": "Runs {{keys}} ({{count}})",
+      "defects_one": "{{count}} defect logged in the cycle",
+      "defects_other": "{{count}} defects logged in the cycle",
+      "report": "Completion report {{id}}"
+    },
+    "origin": {
+      "plan": "Plan · Deliverables",
+      "pharos": "Pharos"
+    },
+    "asset": {
+      "cases": "Cases of the cycle («Cases» sheet)",
+      "configurations": "Configurations",
+      "testData": "Test data (per the plan)"
+    },
+    "notes": "Comments",
+    "lessonsLabel": "Lessons learned",
+    "placeholder": {
+      "deviations": "Other deviations: changes of scope, environment or approach, and why.",
+      "blockers": "Causes: environments, data, dependencies, people…",
+      "risks": "The risk that is accepted and how it is mitigated.",
+      "assets": "Scripts, data sets, environments or tools that can be reused, and where they are.",
+      "lessons": "What worked, what you would change in the next cycle…"
+    },
+    "section": {
+      "identification": "Identification",
+      "summary": "Summary",
+      "deviations": "Deviations from the plan",
+      "evaluation": "Evaluation against the exit criteria",
+      "blockers": "Factors that blocked progress",
+      "measures": "Test measures",
+      "risks": "Residual risks",
+      "deliverables": "Test deliverables",
+      "assets": "Reusable test assets",
+      "lessons": "Lessons learned",
+      "approval": "Approval"
+    },
+    "sheet": {
+      "report": "Report",
+      "measures": "Measures",
+      "risks": "Residual risks",
+      "deliverables": "Deliverables",
+      "cases": "Cases"
+    },
+    "approvedBy": "Approved by {{name}} on {{at}}",
+    "draft": "Draft, not approved",
+    "approve": "Approve report",
+    "approveTitle": "Approve the completion report",
+    "approveMessage": "It will be approved by {{name}}, with today's date. If you change a text afterwards, the report loses its approval.",
+    "saveFirst": "Not approved. Save your changes to approve it.",
+    "loseApproval": "Saving these changes removes the report's approval.",
+    "syncNote": "The texts and the approval are saved in the cycle: they sync and are recorded in Audit.",
+    "save": "Save",
+    "savedToast": "Completion report saved",
+    "approvedToast": "Completion report approved",
+    "saveFailed": "The completion report could not be saved. Try again."
   }
 }

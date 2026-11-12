@@ -8,9 +8,9 @@ import type { ReportTable, StatusReport } from "./statusReport";
 // of the other exports: «Resumen» (sections 1–9 in order), «Resultados»
 // (the latest result of each case), «Defectos» and «Cobertura».
 
-const XLSX_MIME =
+export const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
+export const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 
 type Sheets = { summary: string; results: string; defects: string; coverage: string; decision: string };
 
@@ -24,8 +24,9 @@ function headerRow(ws: ExcelJS.Worksheet, row: number, headers: string[]) {
   });
 }
 
-/** Writes `table` from `row`; returns the next free row. */
-function table(ws: ExcelJS.Worksheet, row: number, t: ReportTable, empty: string) {
+/** Writes `table` from `row`; returns the next free row. The helpers
+ *  are shared with the test completion report (DOC-01). */
+export function table(ws: ExcelJS.Worksheet, row: number, t: ReportTable, empty: string) {
   headerRow(ws, row, t.headers);
   let r = row + 1;
   if (t.rows.length === 0) {
@@ -45,14 +46,14 @@ function table(ws: ExcelJS.Worksheet, row: number, t: ReportTable, empty: string
   return r + 1;
 }
 
-function section(ws: ExcelJS.Worksheet, row: number, title: string) {
+export function section(ws: ExcelJS.Worksheet, row: number, title: string) {
   const cell = ws.getRow(row).getCell(1);
   cell.value = title;
   cell.font = { bold: true, size: 12, color: { argb: argb(BRAND.navy900) } };
   return row + 1;
 }
 
-function pairs(ws: ExcelJS.Worksheet, row: number, list: [string, string][]) {
+export function pairs(ws: ExcelJS.Worksheet, row: number, list: [string, string][]) {
   let r = row;
   for (const [k, v] of list) {
     ws.getRow(r).getCell(1).value = k;
@@ -64,7 +65,7 @@ function pairs(ws: ExcelJS.Worksheet, row: number, list: [string, string][]) {
   return r + 1;
 }
 
-function text(ws: ExcelJS.Worksheet, row: number, value: string) {
+export function text(ws: ExcelJS.Worksheet, row: number, value: string) {
   ws.mergeCells(row, 1, row, 6);
   const cell = ws.getRow(row).getCell(1);
   cell.value = value.trim() || "—";

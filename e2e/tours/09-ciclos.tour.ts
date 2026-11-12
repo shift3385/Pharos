@@ -224,9 +224,44 @@ chapter("ciclos", () => {
       await waitForToast(es.gate.closedToast.split("{{")[0].trim());
       await expect($('[data-testid="cycle-verdict"]')).toBeDisplayed();
     },
+  });
+
+  step("informe-cierre", {
+    title: "El informe de cierre",
+    caption:
+      "En un ciclo cerrado, «Cerrar ciclo…» deja paso a «Informe de cierre»: el informe final de la ronda según ISO/IEC/IEEE 29119-3, con su ID (TCR-…). Pharos rellena lo que sabe del cierre: las desviaciones respecto al plan (fecha de fin, casos sin ejecutar, criterios que no se cumplen), la «Decisión de salida» con sus justificaciones, lo que bloqueó el avance, las métricas frente al ciclo anterior y al objetivo del plan, los defectos abiertos y los requisitos sin cubrir o sin pasar por riesgo, los entregables y los activos reutilizables. Tú escribes el resumen, las lecciones aprendidas y los comentarios de cada apartado, marcas los entregables del plan y pulsas «Guardar»: queda en el ciclo, se sincroniza y sale en Excel y PDF.",
+    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
+    shot: { element: D },
+    run: async () => {
+      await $('[data-testid="cycle-completion-report"]').click();
+      await expect($('[data-testid="completion-report"]')).toBeDisplayed();
+      await waitForText(es.completionReport.section.deviations);
+      await $('[data-testid="completion-lessons"]').setValue(
+        "Pedir al equipo de plataforma el entorno de staging una semana antes de la regresión.",
+      );
+      await $('[data-testid="completion-save"]').click();
+      await waitForToast(es.completionReport.savedToast);
+    },
+  });
+
+  step("aprobar-informe-cierre", {
+    title: "Aprobar el informe de cierre",
+    caption:
+      "Con todo guardado, «Aprobar informe» pide confirmación y deja tu nombre y la fecha en el apartado «Aprobación», en la cabecera del PDF y en el Excel. Si después cambias un texto, el informe pierde la aprobación al guardar. Si reabres el ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los textos, pero hay que aprobarlo otra vez.",
+    covers: ["dialogs:src/modules/runs/report/completion/CompletionReportDialog.tsx"],
+    shot: { element: '[role="alertdialog"]' },
+    run: async () => {
+      await $('[data-testid="completion-approve"]').click();
+      await expect($('[data-testid="completion-approve-confirm"]')).toBeDisplayed();
+    },
     // The later chapters import into this cycle and record results in its
-    // runs (10, 11): reopen it, as «Editar» allows, so they find it open.
+    // runs (10, 11): approve, close the report and reopen the cycle, as
+    // «Editar» allows, so they find it open.
     after: async () => {
+      await $('[data-testid="completion-approve-confirm"]').click();
+      await waitForToast(es.completionReport.approvedToast);
+      await browser.keys("Escape");
+      await $(".cd-overlay").waitForExist({ reverse: true });
       await clickButton(Y.edit);
       await expect(dialog()).toBeDisplayed();
       await selectOption(Y.field.status, Y.status.active, D);

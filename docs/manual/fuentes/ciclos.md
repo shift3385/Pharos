@@ -19,7 +19,7 @@ Los resultados de esos runs, manuales (capítulo 11) o importados de la
 automatización (capítulo 10), alimentan varias pantallas:
 
 - el progreso del ciclo;
-- el informe de estado (capítulo 11);
+- el informe de estado (capítulo 11) y, al cerrar, el informe de cierre;
 - el Inicio (capítulo 3);
 - la matriz de trazabilidad (capítulo 13).
 
@@ -57,6 +57,44 @@ escapes, tiempo de corrección, reapertura y flaky). También sale en la hoja
 
 Si reabres un ciclo y lo vuelves a cerrar, se guarda un cierre nuevo; los
 anteriores no se pierden.
+
+## El informe de cierre
+
+Un ciclo cerrado muestra **«Informe de cierre»** en su cabecera, donde estaba
+«Cerrar ciclo…». Es el informe final de la ronda según ISO/IEC/IEEE 29119-3
+(*Test Completion Report*), con su propio ID (`TCR-` seguido del prefijo del
+proyecto y la clave del ciclo). Tiene once apartados:
+
+1. **Identificación:** proyecto, ciclo, plan, periodo planificado, cierre,
+   build, entorno y ejecuciones.
+2. **Resumen:** empieza con las cifras y el veredicto; puedes reescribirlo.
+3. **Desviaciones respecto al plan:** la fecha de fin planificada frente al
+   cierre, los casos sin ejecutar y los criterios obligatorios que no se
+   cumplen, más tus comentarios.
+4. **Evaluación frente a los criterios de salida:** la «Decisión de salida»
+   del cierre, con cada justificación.
+5. **Factores que bloquearon el avance:** casos bloqueados, por confirmar,
+   flaky o de una revisión anterior, más tus comentarios.
+6. **Medidas de prueba:** las métricas congeladas al cerrar, frente al ciclo
+   anterior y al objetivo del plan (capítulo 5), y si se alcanza.
+7. **Riesgos residuales:** los defectos del ciclo que siguen abiertos hoy y
+   los requisitos sin cubrir o sin pasar, del riesgo más alto al más bajo.
+8. **Entregables:** los que guarda Pharos y los del plan, que marcas como
+   entregados.
+9. **Activos reutilizables:** casos, configuraciones y datos de prueba.
+10. **Lecciones aprendidas.**
+11. **Aprobación.**
+
+«Guardar» deja los textos y las marcas en el ciclo: se sincronizan con los
+demás equipos y quedan en Auditoría. Con todo guardado, **«Aprobar
+informe»** pide confirmación y registra tu nombre y la fecha. Si después
+cambias un texto y guardas, el informe pierde la aprobación. Si reabres el
+ciclo y lo vuelves a cerrar, el informe sigue al cierre nuevo: conserva los
+textos, pero hay que guardarlo y aprobarlo otra vez.
+
+«Exportar PDF» y «Exportar .xlsx» lo guardan en Descargas. El Excel trae el
+informe completo y las hojas «Decisión», «Medidas», «Riesgos residuales»,
+«Entregables» y «Casos».
 
 En este manual, Liomar prepara la «Regresión 0.3.0» de Pharos:
 

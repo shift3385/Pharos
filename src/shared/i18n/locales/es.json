@@ -3869,7 +3869,7 @@
     },
     "signs": "Firmará: {{name}} · {{at}} · queda en Auditoría",
     "close": "Cerrar ciclo",
-    "closedToast": "Ciclo cerrado · {{verdict}}",
+    "closedToast": "Ciclo cerrado · {{verdict}}. Su informe de cierre ya está en la cabecera del ciclo.",
     "error": {
       "incomplete": "Falta marcar algún criterio manual o justificar algún criterio obligatorio que no se cumple.",
       "justificationRequired": "Cada criterio obligatorio que no se cumple necesita una justificación de al menos 20 caracteres.",
@@ -3895,5 +3895,118 @@
       "failing_one": "{{count}} criterio obligatorio no se cumple y tiene su justificación.",
       "failing_other": "{{count}} criterios obligatorios no se cumplen y tienen su justificación."
     }
+  },
+  "completionReport": {
+    "open": "Informe de cierre",
+    "title": "Informe de cierre de pruebas",
+    "subtitle": "ISO/IEC/IEEE 29119-3, del último cierre del ciclo",
+    "fileBase": "Informe cierre",
+    "loadError": "No se pudo generar el informe de cierre. Comprueba que el ciclo está cerrado y vuelve a intentarlo.",
+    "stale": "Este informe era del cierre anterior del ciclo. Se conservan sus textos como punto de partida y se ha quitado la aprobación: revísalo, guárdalo y apruébalo de nuevo.",
+    "autoVerdict": "El ciclo se cerró con el veredicto «{{verdict}}».",
+    "planApproved": "aprobado",
+    "noPlan": "El proyecto no tiene plan",
+    "field": {
+      "document": "ID del documento",
+      "cycle": "Ciclo",
+      "planned": "Periodo planificado",
+      "closed": "Cerrado",
+      "buildEnv": "Build y entorno"
+    },
+    "deviation": {
+      "end": "Fin del ciclo",
+      "none": "Ninguna",
+      "late_one": "+{{count}} día",
+      "late_other": "+{{count}} días",
+      "early_one": "{{count}} día antes",
+      "early_other": "{{count}} días antes",
+      "noDate": "Sin fecha de fin planificada",
+      "executed": "Ejecutados ({{unit}})",
+      "notRun_one": "{{count}} sin ejecutar",
+      "notRun_other": "{{count}} sin ejecutar",
+      "criteria": "Criterios obligatorios cumplidos",
+      "justified_one": "{{count}} no se cumple, con justificación",
+      "justified_other": "{{count}} no se cumplen, con justificación"
+    },
+    "col": {
+      "aspect": "Aspecto",
+      "planned": "Planificado",
+      "actual": "Real",
+      "deviation": "Desviación",
+      "objective": "Objetivo del plan",
+      "reached": "¿Lo alcanza?",
+      "defect": "Defecto",
+      "situation": "Situación",
+      "deliverable": "Entregable",
+      "origin": "Origen",
+      "delivered": "Entregado"
+    },
+    "measure": {
+      "noTarget": "Sin objetivo"
+    },
+    "measuresNote": "Valores congelados al cerrar el ciclo. El objetivo sale de las métricas del plan.",
+    "uncovered": "Sin cubrir",
+    "openDefects": "Defectos abiertos del ciclo (a fecha de hoy)",
+    "riskyRequirements": "Requisitos sin cubrir o sin pasar, por riesgo",
+    "noDefects": "No queda ningún defecto abierto del ciclo.",
+    "noRisky": "Todos los requisitos del alcance están cubiertos y pasan.",
+    "deliverable": {
+      "plan": "Plan de pruebas {{id}} v{{version}}",
+      "runs_one": "Ejecución {{keys}}",
+      "runs_other": "Ejecuciones {{keys}} ({{count}})",
+      "defects_one": "{{count}} defecto registrado en el ciclo",
+      "defects_other": "{{count}} defectos registrados en el ciclo",
+      "report": "Informe de cierre {{id}}"
+    },
+    "origin": {
+      "plan": "Plan · Entregables",
+      "pharos": "Pharos"
+    },
+    "asset": {
+      "cases": "Casos del ciclo (hoja «Casos»)",
+      "configurations": "Configuraciones",
+      "testData": "Datos de prueba (según el plan)"
+    },
+    "notes": "Comentarios",
+    "lessonsLabel": "Lecciones aprendidas",
+    "placeholder": {
+      "deviations": "Otras desviaciones: cambios de alcance, de entorno o de enfoque, y su motivo.",
+      "blockers": "Causas: entornos, datos, dependencias, personas…",
+      "risks": "El riesgo que se acepta y cómo se mitiga.",
+      "assets": "Scripts, juegos de datos, entornos o herramientas que se pueden reutilizar y dónde están.",
+      "lessons": "Qué funcionó, qué cambiarías en el próximo ciclo…"
+    },
+    "section": {
+      "identification": "Identificación",
+      "summary": "Resumen",
+      "deviations": "Desviaciones respecto al plan",
+      "evaluation": "Evaluación frente a los criterios de salida",
+      "blockers": "Factores que bloquearon el avance",
+      "measures": "Medidas de prueba",
+      "risks": "Riesgos residuales",
+      "deliverables": "Entregables de prueba",
+      "assets": "Activos de prueba reutilizables",
+      "lessons": "Lecciones aprendidas",
+      "approval": "Aprobación"
+    },
+    "sheet": {
+      "report": "Informe",
+      "measures": "Medidas",
+      "risks": "Riesgos residuales",
+      "deliverables": "Entregables",
+      "cases": "Casos"
+    },
+    "approvedBy": "Aprobado por {{name}} el {{at}}",
+    "draft": "Borrador sin aprobar",
+    "approve": "Aprobar informe",
+    "approveTitle": "Aprobar el informe de cierre",
+    "approveMessage": "Quedará aprobado por {{name}}, con la fecha de hoy. Si después cambias un texto, el informe pierde la aprobación.",
+    "saveFirst": "Sin aprobar. Guarda los cambios para poder aprobar.",
+    "loseApproval": "Al guardar estos cambios, el informe pierde la aprobación.",
+    "syncNote": "Los textos y la aprobación se guardan en el ciclo: se sincronizan y quedan en Auditoría.",
+    "save": "Guardar",
+    "savedToast": "Informe de cierre guardado",
+    "approvedToast": "Informe de cierre aprobado",
+    "saveFailed": "No se pudo guardar el informe de cierre. Vuelve a intentarlo."
   }
 }
