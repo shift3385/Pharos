@@ -53,6 +53,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0045](0045-recuperacion-de-la-cuenta.md) | Contraseña de la cuenta: cambiarla, códigos de recuperación, restablecer por correo (SMTP opcional) y por un administrador (SEC-08, SEC-09) | Propuesto | 2026-11-17 |
 | [0046](0046-despliegue-tls-y-servidor-configurable.md) | Despliegue autoalojado: TLS con un proxy (Caddy) y servidor elegido al iniciar sesión, solo HTTPS salvo localhost (SEC-07, SEC-10) | Propuesto | 2026-11-17 |
 | [0047](0047-revision-y-aprobacion-de-casos.md) | Revisión y aprobación de casos por otra persona y baselines de suite (CAS-02) | Propuesto | 2026-11-17 |
+| 0048 | Notificaciones que viajan por el servidor (RED-W2); lo escribe la pista R de 0.5.0 | Reservado | 2026-11-17 |
 
 Los ADR 0011 a 0019 son la compuerta C
 ([ADR-0001](0001-linea-base-tres-compuertas.md)); cómo encajan entre sí está en

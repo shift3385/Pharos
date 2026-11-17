@@ -711,10 +711,12 @@ prueba de los diálogos con teclado se reescribió el 2026-11-16 y está pendien
       Migraciones: servidor 0019 y 0020; local 0040 y 0041.
     - **C** · SEC-08 y SEC-09 por correo ([ADR-0045](adr/0045-recuperacion-de-la-cuenta.md)).
       Migraciones del servidor 0021 y 0022.
-    - **R** · RED-W2, RED-W3, SYNC-09 y AUD-01c. Migraciones: local 0043 y 0044; servidor 0023 si
-      las notificaciones viajan.
+    - **R** · RED-W2, RED-W3, SYNC-09 y AUD-01c. ADR-0048 (notificaciones, lo escribe la pista).
+      Migraciones: local 0043; servidor 0023, si el usuario aprueba que las notificaciones viajen
+      por el servidor. La local 0044 se retiró: AUD-01c usa un contador en `sync_state` y un
+      fichero lateral.
     - **K** · CAS-02 en local ([ADR-0047](adr/0047-revision-y-aprobacion-de-casos.md)). Migraciones:
-      local 0042; servidor 0024.
+      local 0042. La 0024 del servidor se retiró: las baselines son documentos append-only.
   - **Ola 2:**
     - **I** · IA-12 ([ADR-0034](adr/0034-boveda-de-claves-ia-para-la-web.md)), migración del
       servidor 0016. Se fusiona después de D y de una revisión de seguridad por un agente

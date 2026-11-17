@@ -22,7 +22,7 @@
   - **Fases:**
     - **ola 1:** estados, baselines, la UI y la regla «el autor no aprueba su propia revisión», en local y en la web;
     - **ola 2:** con SYNC-07 en `main`, la regla de roles del workspace y el aviso de RED-W2 «caso a revisión o aprobado».
-  - **Migraciones reservadas:** local `0042`; servidor `0024`, solo si las baselines necesitan algo más que documentos (si no, se retira).
+  - **Migraciones:** se reserva la local `0042`. La `0024` del servidor se retiró el 2026-11-17: las baselines son documentos append-only y no necesitan esquema nuevo.
 - **Alternativas:**
   - Solo el Test Manager aprueba: un cuello de botella en equipos pequeños.
   - Dos revisores: más formalidad de la que piden los usuarios de 0.5.0; se puede añadir como opción del proyecto.
