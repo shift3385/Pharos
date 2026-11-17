@@ -85,7 +85,9 @@ import { useHideMobileChrome } from "@shared/ui/useShellChrome";
 import { useUnsavedChangesGuard } from "@shared/ui/useUnsavedChangesGuard";
 import { CaseNavBar, CaseNavFooter, type CaseNav, type SaveState } from "./CaseNavBar";
 import { GoToCaseDialog } from "./GoToCaseDialog";
-import { AutomationField, PriorityField, StatusField } from "./CaseMetaMenus";
+import { AutomationField, PriorityField } from "./CaseMetaMenus";
+import { CaseReviewPanel } from "./CaseReviewPanel";
+import { approvalLine } from "../export/approvalLine";
 import {
   CASE_TYPES,
   CustomFieldsSection,
@@ -110,6 +112,22 @@ import "./CaseList.css";
 import { TextArea } from "@shared/ui/TextArea";
 
 export type { CaseNav } from "./CaseNavBar";
+
+/** The form without what is not content (ADR-0047): the status, version,
+ *  priority, case type, automation, custom fields and AI marks. */
+function contentOfForm(f: FormState): string {
+  const {
+    status: _status,
+    version: _version,
+    priority: _priority,
+    caseType: _type,
+    automationStatus: _automation,
+    custom: _custom,
+    aiProvenance: _ai,
+    ...content
+  } = f;
+  return JSON.stringify(content);
+}
 
 type Tab = "split" | "editor" | "gherkin";
 
@@ -661,6 +679,9 @@ export function TestCaseEditor({
       },
       customRows: customSheetRows(form, fields, t),
       customSheet: customSheetLabels(t),
+      approvalLine: testCase
+        ? approvalLine(testCase.status, (testCase.data as { approval?: unknown }).approval, t, i18n.resolvedLanguage ?? "es")
+        : undefined,
     };
   }
 
@@ -764,6 +785,9 @@ export function TestCaseEditor({
   }, [nav]);
 
   const dirty = snapshot !== null && JSON.stringify(form) !== snapshot;
+  // Whether the unsaved changes touch the content (CAS-02): saving them
+  // sends a case in review or approved back to draft.
+  const contentEdited = dirty && snapshot !== null && contentOfForm(form) !== contentOfForm(JSON.parse(snapshot) as FormState);
   const saveState: SaveState = !testCase ? "new" : dirty ? "dirty" : "saved";
   // Every way out that changes the address (the bar's buttons, links, the
   // sidebar and pills, the system «Atrás») and closing the window ask first
@@ -834,7 +858,6 @@ export function TestCaseEditor({
   const metaGrid = (
     <div className="tc-meta-row">
       <PriorityField value={form.priority} onChange={(v) => update({ priority: v })} />
-      <StatusField value={form.status} onChange={(v) => update({ status: v })} />
       {caseTypeControl}
       <AutomationField
         value={form.automationStatus}
@@ -1333,6 +1356,22 @@ export function TestCaseEditor({
         </h2>
         {!checklist && viewSwitch}
       </header>
+
+      {testCase && (
+        <CaseReviewPanel
+          testCase={testCase}
+          dirty={dirty}
+          contentEdited={contentEdited}
+          onChanged={(saved) => {
+            setTestCase(saved);
+            const f = fromCase(saved);
+            setForm(f);
+            setSnapshot(JSON.stringify(f));
+            setGherkin(buildGherkin(f));
+            onSaved?.(saved);
+          }}
+        />
+      )}
 
       {showSummary && (
         <ErrorSummary

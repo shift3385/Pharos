@@ -23,6 +23,7 @@ const stored = (input: TestCaseInput): TestCase => ({
   automationStatus: null,
   author: input.author,
   data: input.data,
+  createdBy: "u1",
   createdAt: "2026-10-29T10:00:00.000Z",
   updatedAt: "2026-10-29T10:00:00.000Z",
   revision: 1,

@@ -6,7 +6,6 @@
     "reserved": {
       "0040": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-07, ADR-0042): workspaces kind/role/revoked, workspace_members mirror, oplog workspace_id",
       "0041": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): attachments by hash outside the oplog",
-      "0042": "0.5.0 plan (ADR-0039 milestone «Equipo»), track K (CAS-02, ADR-0047): case review states and suite baselines",
       "0043": "0.5.0 plan (ADR-0039 milestone «Equipo»), track R (RED-W2, RED-W3): notifications and trash"
     },
     "retired": {

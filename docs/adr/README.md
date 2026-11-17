@@ -52,7 +52,7 @@ marca el anterior como "Sustituido por ADR-NNNN".
 | [0044](0044-informe-de-cierre-29119-3.md) | Informe de cierre de pruebas 29119-3 de un ciclo cerrado, con textos y aprobación en el ciclo (DOC-01) | Aceptado | 2026-11-12 |
 | 0045 | Contraseña de la cuenta: cambiarla, códigos de recuperación, restablecer por correo (SMTP opcional) y por un administrador (SEC-08, SEC-09) | Reservado: lo aporta la pista C de 0.5.0 | 2026-11-17 |
 | 0046 | Despliegue autoalojado: TLS con un proxy (Caddy) y servidor elegido al iniciar sesión, solo HTTPS salvo localhost (SEC-07, SEC-10) | Reservado: lo aporta la pista D de 0.5.0 | 2026-11-17 |
-| 0047 | Revisión y aprobación de casos por otra persona y baselines de suite (CAS-02) | Reservado: lo aporta la pista K de 0.5.0 | 2026-11-17 |
+| [0047](0047-revision-de-casos-y-baselines.md) | Revisión de casos (borrador → revisión → aprobado) con autor, fecha y comprobación de quién aprueba, y baselines de suite congeladas (CAS-02) | Aceptado | 2026-11-17 |
 | 0048 | Notificaciones que viajan por el servidor (RED-W2) | Reservado: lo aporta la pista R de 0.5.0 | 2026-11-17 |
 
 Los ADR 0011 a 0019 son la compuerta C

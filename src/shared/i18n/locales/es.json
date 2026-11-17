@@ -1919,7 +1919,7 @@
     },
     "statusLabel": {
       "draft": "Borrador",
-      "reviewed": "Revisado",
+      "reviewed": "En revisión",
       "approved": "Aprobado",
       "obsolete": "Obsoleto"
     },
@@ -1974,7 +1974,7 @@
     },
     "statusHelp": {
       "draft": "En redacción, aún no revisado",
-      "reviewed": "Revisado por otra persona",
+      "reviewed": "Enviado a revisión; pendiente de aprobación",
       "approved": "Listo para ejecutar",
       "obsolete": "Ya no aplica; se conserva en el histórico"
     },
@@ -2042,7 +2042,19 @@
         "not_run": "Sin resultados"
       },
       "noResult": "Sin resultados todavía",
-      "resultAt": "Último resultado: {{date}}"
+      "resultAt": "Último resultado: {{date}}",
+      "toReview": "Por revisar",
+      "returned": "Devuelto",
+      "sentHint": "Enviado por {{name}} · {{date}}",
+      "approvedHint": "Aprobado por {{name}} · {{date}}",
+      "approvedSelfHint": "Aprobado por {{name}} (autoaprobación) · {{date}}",
+      "returnedHint": "Devuelto por {{name}}: «{{comment}}»",
+      "sendSelected": "Enviar a revisión",
+      "baselineSelected": "Congelar en baseline",
+      "sentToast_one": "{{count}} caso enviado a revisión",
+      "sentToast_other": "{{count}} casos enviados a revisión",
+      "sendFailed_one": "{{count}} caso no se pudo enviar.",
+      "sendFailed_other": "{{count}} casos no se pudieron enviar."
     },
     "nav": {
       "allCases": "Todos los casos",
@@ -2109,7 +2121,162 @@
     "restoreAction": "Restaurar",
     "restoredToast": "Revisión {{revision}} cargada en el editor. Guarda para conservarla.",
     "restoreFailed": "No se pudo leer esa revisión. Inténtalo de nuevo.",
-    "currentRevision": "Actual"
+    "currentRevision": "Actual",
+    "review": {
+      "send": "Enviar a revisión",
+      "sendTitle": "Enviar {{key}} a revisión",
+      "sendMessage": "La versión {{version}} queda pendiente de aprobación. Si alguien edita el contenido antes, vuelve a Borrador.",
+      "noteLabel": "Nota para quien revise (opcional)",
+      "approve": "Aprobar versión {{version}}",
+      "approveTitle": "Aprobar la versión {{version}}",
+      "approveMessage": "Quedará como aprobada por {{name}} el {{date}}.",
+      "approveAction": "Aprobar",
+      "selfApprovalNote": "Eres quien escribió este caso. Como en este espacio de trabajo no hay nadie más, puedes aprobarlo, y quedará registrado como autoaprobación.",
+      "return": "Devolver…",
+      "returnTitle": "Devolver {{key}} a Borrador",
+      "returnMessage": "Quien lo escribió verá tu comentario en el caso hasta que lo vuelva a enviar.",
+      "returnAction": "Devolver",
+      "commentLabel": "Qué hay que cambiar (obligatorio)",
+      "obsolete": "Marcar obsoleto",
+      "obsoleteTitle": "Marcar {{key}} como obsoleto",
+      "obsoleteMessage": "El caso se conserva en el histórico, pero deja de usarse. Puedes reactivarlo más tarde como borrador.",
+      "obsoleteApproved": "El caso pierde la aprobación y deja de usarse. Puedes reactivarlo más tarde como borrador.",
+      "reactivate": "Reactivar",
+      "reactivateTitle": "Reactivar {{key}}",
+      "reactivateMessage": "El caso vuelve a Borrador. Para aprobarlo otra vez hay que enviarlo a revisión.",
+      "saveFirst": "Guarda los cambios antes de seguir con la revisión.",
+      "notAllowed": {
+        "author": "Lo tiene que aprobar otra persona.",
+        "role": "Tu rol no puede aprobar casos.",
+        "notMember": "No eres miembro de este espacio de trabajo."
+      },
+      "banner": {
+        "sent": "Enviado a revisión por {{name}} · {{date}}",
+        "returned": "Devuelto por {{name}} · {{date}}",
+        "approved": "Aprobado por {{name}} · {{date}} · versión {{version}}",
+        "selfApproved": "autoaprobación",
+        "legacy": "Aprobado (sin registro de quién lo aprobó: se aprobó antes de la 0.5)."
+      },
+      "editingReviewed": "Este caso está en revisión. Si guardas cambios en el contenido, vuelve a Borrador y hay que enviarlo otra vez.",
+      "editingApproved": "Este caso está aprobado. Si guardas cambios en el contenido, vuelve a Borrador, pierde la aprobación y sube de versión.",
+      "changesSince": "Cambios desde la revisión {{revision}} ({{status}})",
+      "toast": {
+        "send": "{{key}} enviado a revisión",
+        "approve": "Versión {{version}} de {{key}} aprobada",
+        "return": "{{key}} devuelto a Borrador",
+        "obsolete": "{{key}} marcado como obsoleto",
+        "reactivate": "{{key}} reactivado como borrador"
+      },
+      "errors": {
+        "notAllowed": "No puedes aprobar este caso: lo tiene que aprobar otra persona.",
+        "comment": "Escribe qué hay que cambiar.",
+        "transition": "El caso cambió mientras tanto. Vuelve a abrirlo y repite la acción.",
+        "generic": "No se pudo completar la acción. Inténtalo de nuevo."
+      },
+      "approvedBy": "Aprobado por"
+    },
+    "diff": {
+      "none": "Sin cambios de contenido.",
+      "at": "{{field}} {{n}}",
+      "kind": {
+        "added": "añadido",
+        "removed": "quitado",
+        "changed": "cambiado",
+        "moved": "movido"
+      },
+      "field": {
+        "title": "Título",
+        "description": "Descripción",
+        "mappedUseCase": "Caso de uso",
+        "expectedResult": "Resultado esperado",
+        "testData": "Datos de prueba",
+        "dataRequirements": "Requisitos de datos",
+        "environmentRequirements": "Requisitos de entorno",
+        "notes": "Notas",
+        "traceability": "Otras referencias",
+        "featureSource": "Gherkin",
+        "background": "Precondición compartida",
+        "preconditions": "Precondición",
+        "steps": "Paso",
+        "postconditions": "Postcondición",
+        "acceptanceCriteria": "Criterio de aceptación",
+        "requirementKeys": "Requisito",
+        "examples": "Examples",
+        "flows": "Flujo"
+      }
+    },
+    "baselines": {
+      "open": "Baselines",
+      "title": "Baselines de suite",
+      "back": "Casos",
+      "lead": "Una baseline congela un conjunto de casos en su revisión exacta. No se edita ni se borra: para cambiarla, crea otra.",
+      "new": "Nueva baseline",
+      "newTitle": "Nueva baseline",
+      "newHint": "Guarda cada caso tal como está ahora, con su revisión y su estado.",
+      "name": "Nombre",
+      "namePlaceholder": "Regresión release 2.4",
+      "description": "Descripción (opcional)",
+      "casesLegend": "Casos",
+      "scope": {
+        "all_one": "Todos los casos del proyecto ({{count}}, sin contar los obsoletos)",
+        "all_other": "Todos los casos del proyecto ({{count}}, sin contar los obsoletos)",
+        "filtered_one": "El caso del filtro actual",
+        "filtered_other": "Los {{count}} casos del filtro actual",
+        "selected_one": "El caso seleccionado",
+        "selected_other": "Los {{count}} casos seleccionados"
+      },
+      "scopeLabel": {
+        "all_one": "Todos los casos",
+        "all_other": "Todos los casos",
+        "filtered_one": "Filtro de la lista",
+        "filtered_other": "Filtro de la lista",
+        "selected_one": "Selección de {{count}} caso",
+        "selected_other": "Selección de {{count}} casos"
+      },
+      "approvedOnlyLabel": "Solo los casos aprobados",
+      "approvedOnly": "Solo aprobados",
+      "leftOut_one": "Entran {{kept}} casos. Se queda fuera {{count}} que no está aprobado: {{keys}}.",
+      "leftOut_other": "Entran {{kept}} casos. Se quedan fuera {{count}} que no están aprobados: {{keys}}.",
+      "nothing": "Ningún caso entra en la baseline. Desmarca «Solo los casos aprobados» o elige otros casos.",
+      "freeze_one": "Congelar {{count}} caso",
+      "freeze_other": "Congelar {{count}} casos",
+      "createdToast": "Baseline «{{name}}» creada con {{count}} casos",
+      "createFailed": "No se pudo crear la baseline.",
+      "loadFailed": "No se pudieron cargar las baselines.",
+      "loading": "Cargando…",
+      "empty": "Aún no hay baselines en este proyecto.",
+      "compare": "Comparar",
+      "compareTitle": "Comparar",
+      "from": "Baseline de origen",
+      "to": "Comparar con",
+      "versus": "frente a",
+      "current": "Estado actual",
+      "onlyChanged": "Solo los casos con cambios ({{count}})",
+      "noChanges": "No hay diferencias.",
+      "col": {
+        "name": "Nombre",
+        "cases": "Casos",
+        "created": "Creada",
+        "actions": "Acciones",
+        "change": "Cambio",
+        "revision": "Revisión",
+        "status": "Estado"
+      },
+      "count": {
+        "added": "Añadidos",
+        "removed": "Quitados",
+        "content": "Contenido cambiado",
+        "status": "Solo estado cambiado",
+        "same": "Sin cambios"
+      },
+      "change": {
+        "added": "Añadido",
+        "removed": "Quitado",
+        "content": "Contenido",
+        "status": "Estado",
+        "same": "Sin cambios"
+      }
+    }
   },
   "dashboard": {
     "loadFailed": "No se pudieron cargar tus proyectos.",
