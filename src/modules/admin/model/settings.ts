@@ -36,6 +36,40 @@ export const AUTO_SYNC_MINUTES = [1, 5, 15, 30] as const;
  *  loop (`SyncStatusProvider`) re-reads them without a reload. */
 export const SYNC_SETTINGS_EVENT = "pharos:sync-settings";
 
+/** Fired on `window` when the background or the card shadow change, so the
+ *  account's copy follows (SYNC-09). */
+export const APPEARANCE_EVENT = "pharos:appearance";
+
+/** The appearance that follows the account (SYNC-09). An image of the device's
+ *  own never travels: its `background` is null. */
+export function appearanceOf(s: AdminSettings): {
+  cardShadow: boolean;
+  backgroundOpacity: number;
+  background: "default" | "none" | null;
+} {
+  return {
+    cardShadow: s.cardShadow,
+    backgroundOpacity: s.backgroundOpacity,
+    background: s.backgroundImage === DEFAULT_BACKGROUND ? "default" : s.backgroundImage === "" ? "none" : null,
+  };
+}
+
+/** Takes the account's appearance: the shadow and the opacity always; the
+ *  background unless this device uses an image of its own. */
+export function adoptAppearance(a: ReturnType<typeof appearanceOf>): void {
+  const current = loadSettings();
+  const own = appearanceOf(current).background === null;
+  const next: AdminSettings = {
+    ...current,
+    cardShadow: a.cardShadow,
+    backgroundOpacity: a.backgroundOpacity,
+    backgroundImage:
+      own || a.background === null ? current.backgroundImage : a.background === "default" ? DEFAULT_BACKGROUND : "",
+  };
+  writeSettings(next);
+  applyAppearance(next);
+}
+
 export const DEFAULT_SETTINGS: AdminSettings = {
   backgroundImage: DEFAULT_BACKGROUND,
   backgroundOpacity: 40,
@@ -84,6 +118,14 @@ export function loadSettings(): AdminSettings {
 }
 
 export function saveSettings(settings: AdminSettings): void {
+  const before = JSON.stringify(appearanceOf(loadSettings()));
+  const clean = writeSettings(settings);
+  if (typeof window !== "undefined" && JSON.stringify(appearanceOf(clean)) !== before) {
+    window.dispatchEvent(new Event(APPEARANCE_EVENT));
+  }
+}
+
+function writeSettings(settings: AdminSettings): AdminSettings {
   const clean: AdminSettings = {
     ...settings,
     // Clamp so a bad value can't wipe data instantly or hide the whole UI.
@@ -94,6 +136,7 @@ export function saveSettings(settings: AdminSettings): void {
     autoSyncMinutes: syncMinutes(settings.autoSyncMinutes),
   };
   localStorage.setItem(KEY, JSON.stringify({ ...clean, backgroundVersion: BACKGROUND_VERSION }));
+  return clean;
 }
 
 /** Saves only the sync settings (they apply at once, with no «Guardar») and

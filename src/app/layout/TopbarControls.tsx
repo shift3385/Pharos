@@ -3,9 +3,12 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Bell, Moon, Search, Sun, X } from "lucide-react";
 import { useTheme } from "@shared/theme/useTheme";
 import { Popover } from "@shared/ui/Popover";
+import { BottomSheet } from "@shared/ui/Menu";
+import { useBreakpoint } from "@shared/ui/useBreakpoint";
+import { badgeText, NotificationsPanel, useNotifications } from "@modules/notifications";
 import { usePopover } from "@shared/ui/usePopover";
 
-/** Placeholder panel body until the feature lands (wave 5, RED-W1/RED-W2). */
+/** Placeholder panel body until global search lands (RED-W1). */
 function Soon({ title, text }: { title: string; text: string }) {
   return (
     <div className="soon">
@@ -72,35 +75,58 @@ export function SearchTrigger() {
   );
 }
 
-/** Notifications trigger (SPEC §7/§8). Until the notifications panel exists
- *  (RED-W2) it opens a "coming soon" panel; no unread dot without data. */
+/** Notifications trigger (SPEC §7/§8, RED-W2): the bell, with the unread
+ *  count, opens the panel (a popover; a bottom sheet on mobile). Opening it
+ *  asks the server for what is new. */
 export function NotificationsTrigger({ onNavy }: { onNavy?: boolean }) {
   const { t } = useTranslation();
+  const mobile = useBreakpoint() === "mobile";
   const pop = usePopover("dialog");
+  const ctx = useNotifications();
+  const unread = ctx?.unread ?? 0;
+  const badge = badgeText(unread);
+  const label = unread ? t("shell.notificationsUnread", { count: unread }) : t("shell.notifications");
+  const { refresh } = ctx ?? {};
+  useEffect(() => {
+    if (pop.open) refresh?.();
+  }, [pop.open, refresh]);
   return (
     <>
       <button
         type="button"
-        className={onNavy ? "topbar__icon-btn topbar__icon-btn--navy" : "topbar__icon-btn"}
+        className={`topbar__icon-btn topbar__icon-btn--bell${onNavy ? " topbar__icon-btn--navy" : ""}`}
         {...pop.triggerProps}
-        aria-label={t("shell.notifications")}
-        title={t("shell.notifications")}
+        aria-label={label}
+        title={label}
         data-testid="notifications-trigger"
       >
         <Bell size={onNavy ? 20 : 17} aria-hidden="true" />
+        {badge && (
+          <span className="topbar__badge" aria-hidden="true" data-testid="notifications-badge">
+            {badge}
+          </span>
+        )}
       </button>
-      <Popover
-        open={pop.open}
-        onClose={pop.close}
-        anchorRef={pop.anchorRef}
-        id={pop.id}
-        role="dialog"
-        label={t("shell.notifications")}
-        placement="bottom-end"
-        className="topbar__panel"
-      >
-        <Soon title={t("shell.notifications")} text={t("shell.notificationsSoon")} />
-      </Popover>
+      {mobile ? (
+        pop.open && (
+          <BottomSheet id={pop.id} title={t("shell.notifications")} onClose={pop.close}>
+            <NotificationsPanel onDone={pop.close} showTitle={false} />
+          </BottomSheet>
+        )
+      ) : (
+        <Popover
+          open={pop.open}
+          onClose={pop.close}
+          anchorRef={pop.anchorRef}
+          id={pop.id}
+          role="dialog"
+          label={t("shell.notifications")}
+          placement="bottom-end"
+          className="topbar__panel topbar__panel--notifications"
+        >
+          <NotificationsPanel onDone={pop.close} />
+        </Popover>
+      )}
     </>
   );
 }

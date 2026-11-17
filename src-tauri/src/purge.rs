@@ -55,7 +55,7 @@ pub struct PurgeSummary {
 }
 
 impl PurgeSummary {
-    fn total(&self) -> usize {
+    pub(crate) fn total(&self) -> usize {
         self.projects
             + self.test_plans
             + self.test_cases
@@ -72,6 +72,20 @@ impl PurgeSummary {
 /// A purge candidate: id, project id and key ('' when the row has none).
 type Candidate = (String, String, String);
 
+/// Rows the trash empties now (RED-W3), by `(entity, id)`. A selected project
+/// takes every deleted row of it; `None` is everything past the retention.
+pub(crate) type Selection = std::collections::HashSet<(String, String)>;
+
+fn chosen(only: Option<&Selection>, entity: &str, id: &str, project_id: &str) -> bool {
+    match only {
+        None => true,
+        Some(sel) => {
+            sel.contains(&(entity.to_string(), id.to_string()))
+                || sel.contains(&("project".to_string(), project_id.to_string()))
+        }
+    }
+}
+
 fn exists(conn: &Connection, sql: &str, p: &[&dyn rusqlite::ToSql]) -> Result<bool, String> {
     conn.query_row(sql, p, |_| Ok(()))
         .optional()
@@ -81,7 +95,7 @@ fn exists(conn: &Connection, sql: &str, p: &[&dyn rusqlite::ToSql]) -> Result<bo
 
 /// True when the entity must wait: an open conflict, or a pending change the
 /// server has to receive first.
-fn held(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
+pub(crate) fn held(conn: &Connection, entity: &str, id: &str) -> Result<bool, String> {
     if exists(
         conn,
         "SELECT 1 FROM sync_conflicts WHERE entity = ?1 AND entity_id = ?2 AND resolved_at IS NULL",
@@ -262,6 +276,7 @@ fn purge_children(
     user: &str,
     days: i64,
     child: &Child,
+    only: Option<&Selection>,
 ) -> Result<usize, String> {
     let key_col = child
         .key
@@ -292,6 +307,9 @@ fn purge_children(
     );
     let mut purged = 0;
     for (id, project_id, key) in candidates(conn, &sql, user, days)? {
+        if !chosen(only, child.entity, &id, &project_id) {
+            continue;
+        }
         if held(conn, child.entity, &id)? || held(conn, "project", &project_id)? {
             continue;
         }
@@ -384,11 +402,19 @@ fn purge_orphan_results(conn: &Connection, user: &str, days: i64) -> Result<usiz
 /// A deleted project goes once nothing of it is left (its children are purged
 /// first, in the same run). Its key counters stay: they cost nothing and keep
 /// its numbers used if the project ever came back.
-fn purge_projects(conn: &Connection, user: &str, days: i64) -> Result<usize, String> {
+fn purge_projects(
+    conn: &Connection,
+    user: &str,
+    days: i64,
+    only: Option<&Selection>,
+) -> Result<usize, String> {
     let sql =
         format!("SELECT x.id, NULL, NULL FROM projects x WHERE x.owner_id = ?1 AND {EXPIRED}");
     let mut purged = 0;
     for (id, _, _) in candidates(conn, &sql, user, days)? {
+        if !chosen(only, "project", &id, &id) {
+            continue;
+        }
         let has_rows = CHILDREN.iter().try_fold(false, |found, c| {
             if found {
                 return Ok::<_, String>(true);
@@ -417,12 +443,20 @@ fn purge_projects(conn: &Connection, user: &str, days: i64) -> Result<usize, Str
 
 /// Templates do not sync yet (SYNC-04b), so their journal rows never leave
 /// this device and never hold a purge.
-fn purge_templates(conn: &Connection, user: &str, days: i64) -> Result<usize, String> {
+fn purge_templates(
+    conn: &Connection,
+    user: &str,
+    days: i64,
+    only: Option<&Selection>,
+) -> Result<usize, String> {
     let sql = format!(
         "SELECT x.id, NULL, NULL FROM templates x WHERE x.owner_id = ?1 AND x.is_builtin = 0 AND {EXPIRED}"
     );
     let mut purged = 0;
     for (id, _, _) in candidates(conn, &sql, user, days)? {
+        if !chosen(only, "template", &id, "") {
+            continue;
+        }
         conn.execute("DELETE FROM templates WHERE id = ?1", params![id])
             .map_err(|e| e.to_string())?;
         forget(conn, "template", &id)?;
@@ -437,10 +471,32 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
     if user.is_empty() {
         return Err("not-authenticated".into());
     }
-    let days = days.clamp(MIN_DAYS, MAX_DAYS);
+    purge_scoped(conn, user, days.clamp(MIN_DAYS, MAX_DAYS), None)
+}
+
+/// The trash's «Eliminar para siempre» and «Vaciar papelera» (RED-W3): the
+/// same purge with no retention left, for `only` those rows or for all.
+/// What is held (pending or in conflict) stays, as in the daily purge.
+pub(crate) fn purge_now(
+    conn: &Connection,
+    user: &str,
+    only: Option<&Selection>,
+) -> Result<PurgeSummary, String> {
+    if user.is_empty() {
+        return Err("not-authenticated".into());
+    }
+    purge_scoped(conn, user, 0, only)
+}
+
+fn purge_scoped(
+    conn: &Connection,
+    user: &str,
+    days: i64,
+    only: Option<&Selection>,
+) -> Result<PurgeSummary, String> {
     let mut counts = [0usize; CHILDREN.len()];
     for (n, child) in counts.iter_mut().zip(CHILDREN.iter()) {
-        *n = purge_children(conn, user, days, child)?;
+        *n = purge_children(conn, user, days, child, only)?;
     }
     let [test_plans, test_cases, requirements, planner_cards, runs, run_items, mappings, custom_fields, cycles, cycle_items, configurations, defect_links, defects] =
         counts;
@@ -450,11 +506,18 @@ pub(crate) fn purge(conn: &Connection, user: &str, days: i64) -> Result<PurgeSum
         requirements,
         planner_cards,
         custom_fields,
-        runs: runs + run_items + mappings + purge_orphan_results(conn, user, days)?,
+        runs: runs
+            + run_items
+            + mappings
+            + if only.is_none() {
+                purge_orphan_results(conn, user, days)?
+            } else {
+                0
+            },
         cycles: cycles + cycle_items + configurations,
         defects: defects + defect_links,
-        projects: purge_projects(conn, user, days)?,
-        templates: purge_templates(conn, user, days)?,
+        projects: purge_projects(conn, user, days, only)?,
+        templates: purge_templates(conn, user, days, only)?,
     })
 }
 

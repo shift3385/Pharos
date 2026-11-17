@@ -117,6 +117,9 @@ los tuyos.
 - El idioma también se puede cambiar después, desde el menú de usuario o desde
   el perfil; el tema, desde el perfil, la barra superior o «Administración ›
   General» (capítulo 15), donde además puedes elegir «Según el sistema».
+- El idioma, el tema y tus nombres viajan con tu cuenta: si los cambias en un
+  equipo, tus otros equipos los toman al sincronizar («Se aplica en todos tus
+  equipos», en el perfil). Gana el cambio más reciente.
 - La clave de recuperación, que sirve para abrir tus datos en un equipo nuevo,
   ya no está en el perfil: está en «Administración › Seguridad» (capítulo 15).
 

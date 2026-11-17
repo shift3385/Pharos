@@ -206,7 +206,7 @@ export function GeneralTab({ onDirtyChange }: { onDirtyChange?: (dirty: boolean)
           {retentionIssue && <FieldMessage id="adm-retention-msg" issue={retentionIssue} />}
         </SettingsRow>
 
-        <TrashSection />
+        <TrashSection retentionDays={saved.retentionDays} />
 
       </SettingsSection>
 

@@ -500,11 +500,72 @@
     },
     "trash": {
       "title": "Papelera",
-      "soon": "Próximamente",
-      "desc": "Aquí podrás ver lo borrado, restaurarlo o vaciar la papelera. Mientras tanto, lo borrado se elimina definitivamente de este equipo tras los días de retención.",
-      "soonHint": "Próximamente: Pharos aún no permite ver ni restaurar lo borrado.",
       "restore": "Restaurar",
-      "empty": "Vaciar papelera"
+      "empty": "Vaciar papelera",
+      "desc_one": "Lo borrado se guarda {{count}} día en este equipo y después se elimina para siempre. Cambia el plazo en Retención.",
+      "desc_other": "Lo borrado se guarda {{count}} días en este equipo y después se elimina para siempre. Cambia el plazo en Retención.",
+      "emptyDesc_one": "La papelera está vacía. Lo que borres se guardará aquí {{count}} día.",
+      "emptyDesc_other": "La papelera está vacía. Lo que borres se guardará aquí {{count}} días.",
+      "webOnly": "En la web no se guarda lo borrado. Abre la papelera en la app de escritorio.",
+      "loadFailed": "No se pudo leer la papelera. Vuelve a abrir Administración.",
+      "deleteForever": "Eliminar para siempre",
+      "nothingToEmpty": "No hay nada que vaciar",
+      "breakdown": "Desglose de la papelera",
+      "everything": "Todo",
+      "selected_one": "{{count}} seleccionado",
+      "selected_other": "{{count}} seleccionados",
+      "selectAll": "Seleccionar todo lo que se muestra",
+      "select": "Seleccionar «{{title}}»",
+      "col": {
+        "item": "Elemento",
+        "project": "Proyecto",
+        "deleted": "Borrado",
+        "purge": "Se elimina",
+        "actions": "Acciones"
+      },
+      "withChildren_one": "con {{count}} elemento",
+      "withChildren_other": "con {{count}} elementos",
+      "held": "Pendiente de sincronizar",
+      "heldHint": "Tiene cambios sin enviar o un conflicto: se conserva hasta sincronizar",
+      "purgeToday": "hoy",
+      "purgeIn_one": "en {{count}} día",
+      "purgeIn_other": "en {{count}} días",
+      "restoreHint": "Restaurar devuelve el elemento a su sitio con su clave y su historial, y se sincroniza como cualquier cambio. Restaurar un proyecto devuelve también lo que se borró con él. Un defecto vuelve sin sus adjuntos.",
+      "restored_one": "{{count}} elemento restaurado",
+      "restored_other": "{{count}} elementos restaurados",
+      "purged_one": "{{count}} elemento eliminado para siempre",
+      "purged_other": "{{count}} elementos eliminados para siempre",
+      "projectFirst": "Restaura antes su proyecto: está en la papelera",
+      "failed": "No se pudo completar. Vuelve a intentarlo.",
+      "confirmEmptyTitle": "¿Vaciar la papelera?",
+      "confirmEmpty_one": "Se eliminará para siempre en este equipo {{count}} elemento:",
+      "confirmEmpty_other": "Se eliminarán para siempre en este equipo {{count}} elementos:",
+      "confirmForeverTitle": "¿Eliminar para siempre?",
+      "confirmForever_one": "Se eliminará para siempre en este equipo {{count}} elemento:",
+      "confirmForever_other": "Se eliminarán para siempre en este equipo {{count}} elementos:",
+      "confirmHeld_one": "{{count}} elemento con cambios sin sincronizar se conserva hasta que se envíe.",
+      "confirmHeld_other": "{{count}} elementos con cambios sin sincronizar se conservan hasta que se envíen.",
+      "confirmIrreversible": "Esto no se puede deshacer; las claves no se reutilizan.",
+      "kind": {
+        "project_one": "Proyecto",
+        "project_other": "Proyectos",
+        "test_plan_one": "Plan de pruebas",
+        "test_plan_other": "Planes",
+        "test_case_one": "Caso de prueba",
+        "test_case_other": "Casos",
+        "requirement_one": "Requisito",
+        "requirement_other": "Requisitos",
+        "defect_one": "Defecto",
+        "defect_other": "Defectos",
+        "test_cycle_one": "Ciclo",
+        "test_cycle_other": "Ciclos",
+        "run_one": "Ejecución",
+        "run_other": "Ejecuciones",
+        "planner_card_one": "Tarjeta",
+        "planner_card_other": "Tarjetas",
+        "template_one": "Plantilla",
+        "template_other": "Plantillas"
+      }
     },
     "sync": {
       "title": "Sincronización",
@@ -1226,7 +1287,8 @@
     "theme": "Tema",
     "themeHelp": "Faro Nocturno, en claro u oscuro. «Según el sistema» sigue el ajuste de tu equipo.",
     "themeLight": "Claro",
-    "themeDark": "Oscuro"
+    "themeDark": "Oscuro",
+    "synced": "Se aplica en todos tus equipos"
   },
   "testPlan": {
     "loadFailed": "No se pudo cargar el plan de pruebas.",
@@ -2997,7 +3059,6 @@
     "searchClose": "Cerrar la búsqueda",
     "searchClear": "Borrar la búsqueda",
     "notifications": "Notificaciones",
-    "notificationsSoon": "Las notificaciones llegan en una próxima versión.",
     "themeToDark": "Cambiar a tema oscuro",
     "themeToLight": "Cambiar a tema claro",
     "userMenu": "Menú de usuario de {{name}}",
@@ -3010,7 +3071,9 @@
     "seeAllProjects": "Ver todos los proyectos",
     "noProjects": "Ningún proyecto coincide.",
     "back": "Volver a Proyectos",
-    "projectSections": "Secciones del proyecto"
+    "projectSections": "Secciones del proyecto",
+    "notificationsUnread_one": "Notificaciones: {{count}} sin leer",
+    "notificationsUnread_other": "Notificaciones: {{count}} sin leer"
   },
   "sortMenu": {
     "title": "Ordenar por",
@@ -4348,6 +4411,57 @@
         "title": "No se pudo guardar el servidor.",
         "detail": "Inténtalo de nuevo. Si sigue fallando, exporta el diagnóstico desde Administración."
       }
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAll": "Marcar todo como leído",
+    "allReadHint": "No hay nada sin leer",
+    "filter": "Mostrar",
+    "all": "Todas",
+    "unread": "Sin leer",
+    "unreadN": "Sin leer · {{count}}",
+    "noUnread": "No hay nada sin leer",
+    "emptyTitle": "Estás al día",
+    "emptyText": "Aquí verás invitaciones, revisiones, defectos asignados, ciclos cerrados, cambios en los miembros y conflictos.",
+    "kept": "Se guardan 90 días",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "someone": "Alguien",
+    "unreadMark": "Sin leer.",
+    "kind": {
+      "invitation": {
+        "received": "{{actor}} te invitó a {{title}}"
+      },
+      "case": {
+        "review_requested": "{{actor}} envió a revisión {{key}} {{title}}",
+        "approved": "{{actor}} aprobó {{key}} {{title}}",
+        "changes_requested": "{{actor}} devolvió {{key}} {{title}} con cambios"
+      },
+      "defect": {
+        "assigned": "{{actor}} te asignó {{key}} {{title}}"
+      },
+      "cycle": {
+        "closed": "{{actor}} cerró el ciclo {{key}} {{title}}"
+      },
+      "sync": {
+        "conflict_one": "{{count}} conflicto de sincronización por revisar",
+        "conflict_other": "{{count}} conflictos de sincronización por revisar"
+      },
+      "member": {
+        "joined": "{{actor}} se unió a {{title}}",
+        "removed": "Ya no eres miembro de {{title}}"
+      }
+    },
+    "action": {
+      "invitation": "Ver invitación",
+      "review": "Revisar",
+      "openCase": "Abrir caso",
+      "defect": "Ver defecto",
+      "report": "Ver informe",
+      "resolve": "Resolver",
+      "open": "Abrir",
+      "members": "Ver miembros"
     }
   }
 }
