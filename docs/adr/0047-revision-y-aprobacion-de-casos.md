@@ -1,0 +1,31 @@
+# ADR-0047 · Revisión y aprobación de casos y baselines de suite (CAS-02)
+
+- **Estado:** Propuesto.
+  - Las decisiones de dirección las aprobó el usuario el 2026-11-17 («Sí, apruebo todo»).
+  - Pasa a «Aceptado» cuando el usuario apruebe el plan y los bocetos de la pista K.
+- **Contexto:**
+  - Los casos tienen un `status` libre que empieza en `draft` (migración local 0003) y revisiones inmutables (ADR-0011), pero no hay un flujo de revisión.
+  - El criterio de salida de 0.5.0 pide que **otra persona apruebe un caso**.
+  - ISO/IEC/IEEE 29119-3 y el syllabus ISTQB tratan la revisión de los casos como una actividad propia.
+- **Decisión (aprobada como dirección):**
+  - **Estados:** `borrador → en revisión → aprobado`.
+    - Editar un caso aprobado crea una revisión nueva y lo devuelve a borrador.
+    - La revisión aprobada queda señalada en el historial.
+  - **Quién aprueba:**
+    - cualquier **Test Manager o Test Analyst del workspace que no sea el autor** de la revisión;
+    - **basta un revisor**;
+    - rechazar pide un motivo;
+    - aprobar y rechazar quedan en la auditoría con quién y cuándo.
+  - **Baseline de suite:**
+    - una foto con nombre de las revisiones aprobadas de un conjunto de casos;
+    - queda congelada, se puede comparar con el estado actual y un ciclo la puede usar como origen.
+  - **Fases:**
+    - **ola 1:** estados, baselines, la UI y la regla «el autor no aprueba su propia revisión», en local y en la web;
+    - **ola 2:** con SYNC-07 en `main`, la regla de roles del workspace y el aviso de RED-W2 «caso a revisión o aprobado».
+  - **Migraciones reservadas:** local `0042`; servidor `0024`, solo si las baselines necesitan algo más que documentos (si no, se retira).
+- **Alternativas:**
+  - Solo el Test Manager aprueba: un cuello de botella en equipos pequeños.
+  - Dos revisores: más formalidad de la que piden los usuarios de 0.5.0; se puede añadir como opción del proyecto.
+- **Consecuencias:**
+  - La pista K toca `src/modules/test-cases/**`, los comandos Rust de casos y las rutas de casos de `server/src/modules/domain/**`.
+  - Los informes y la matriz pueden filtrar por «solo casos aprobados» más adelante. Eso queda fuera de 0.5.0.

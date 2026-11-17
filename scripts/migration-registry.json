@@ -3,7 +3,13 @@
   "local": {
     "dir": "src-tauri/migrations",
     "registeredIn": "src-tauri/src/db.rs",
-    "reserved": {},
+    "reserved": {
+      "0040": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-07, ADR-0042): workspaces kind/role/revoked, workspace_members mirror, oplog workspace_id",
+      "0041": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): attachments by hash outside the oplog",
+      "0042": "0.5.0 plan (ADR-0039 milestone «Equipo»), track K (CAS-02, ADR-0047): case review states and suite baselines",
+      "0043": "0.5.0 plan (ADR-0039 milestone «Equipo»), track R (RED-W2, RED-W3): notifications and trash",
+      "0044": "0.5.0 plan (ADR-0039 milestone «Equipo»), track R (AUD-01c): device_id rotation after a restored copy (retire if not needed)"
+    },
     "retired": {
       "0014": "A1 spare, never used; A1 merged with 0012-0013",
       "0025": "E3 step 4 spare, never used: step 4 shipped as the single 0024",
@@ -18,7 +24,13 @@
   "server": {
     "dir": "server/migrations",
     "reserved": {
-      "0016": "IA-12 (ADR-0034): AI key vault for the web"
+      "0016": "IA-12 (ADR-0034): AI key vault for the web",
+      "0019": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-07, ADR-0042): workspaces, members, invitations, documents by workspace",
+      "0020": "0.5.0 plan (ADR-0039 milestone «Equipo»), track W (SYNC-04b): blobs by (workspace_id, sha256)",
+      "0021": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-08, ADR-0045): hashed recovery codes",
+      "0022": "0.5.0 plan (ADR-0039 milestone «Equipo»), track C (SEC-09, ADR-0045): one-time password reset tokens",
+      "0023": "0.5.0 plan (ADR-0039 milestone «Equipo»), track R (RED-W2): notifications, only if they travel (retire otherwise)",
+      "0024": "0.5.0 plan (ADR-0039 milestone «Equipo»), track K (CAS-02, ADR-0047): review and baselines, only if the server needs them (retire otherwise)"
     },
     "retired": {
       "0011": "E4 step 9 spare, never used: imports are documents of the step 4 entities",
